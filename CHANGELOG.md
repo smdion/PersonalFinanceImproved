@@ -4,6 +4,22 @@ All notable changes to Ledgr will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.1] - 2026-03-19
+
+### Fixed
+
+- Auto-versioning never fired — `experimental.instrumentationHook` was not enabled in Next.js config, so `instrumentation.ts` was silently ignored
+- Webpack bundling failure when instrumentationHook was enabled — refactored to use self-fetch against API routes instead of direct DB imports (avoids bundling `pg` and Node.js builtins)
+- Edge runtime crash (`process.on is not a function`) — added runtime guard so instrumentation only runs in Node.js server context
+- Multiple auto versions created on container restart — added duplicate check to `/api/versions/daily` that skips if an auto version already exists for today
+- Authentik OIDC groups not forwarded into session — OIDC provider was missing `groups` scope and profile callback, so all Authentik users were assigned viewer role regardless of group membership
+
+### Changed
+
+- Instrumentation startup tasks (backfills) moved to `/api/startup` route, called via self-fetch
+- Auto-versioning uses self-fetch to `/api/versions/daily` instead of direct DB queries
+- Externalized `pg` and related packages from webpack bundling via `serverComponentsExternalPackages`
+
 ## [0.1.0] - 2026-03-18
 
 ### Features
