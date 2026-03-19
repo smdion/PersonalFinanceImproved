@@ -1,0 +1,22 @@
+# dependencies
+node_modules
+
+# build
+.next/
+tsconfig.tsbuildinfo
+next-env.d.ts
+
+# environment / secrets
+.env
+.env.local
+.env.*.local
+
+# dev scratch (not committed)
+.scratch/
+
+# test artifacts
+test-results/
+playwright-report/
+
+# artifacts
+*.db

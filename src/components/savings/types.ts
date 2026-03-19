@@ -1,0 +1,50 @@
+import { formatDate } from "@/lib/utils/format";
+
+export interface PlannedTxForm {
+  goalId: number;
+  transactionDate: string;
+  amount: string;
+  description: string;
+  isRecurring: boolean;
+  recurrenceMonths: string;
+}
+
+export const emptyTxForm = (goalId: number): PlannedTxForm => ({
+  goalId,
+  transactionDate: "",
+  amount: "",
+  description: "",
+  isRecurring: false,
+  recurrenceMonths: "",
+});
+
+export interface NewFundForm {
+  name: string;
+  monthlyContribution: string;
+  targetAmount: string;
+  targetMode: "fixed" | "ongoing";
+  targetDate: string;
+  parentGoalId?: number | null;
+}
+
+export type SavingsTab = "projections" | "funds" | "transactions";
+
+export function monthKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export function monthLabel(d: Date): string {
+  return formatDate(d, "short");
+}
+
+export interface GoalProjection {
+  name: string;
+  goalId: number;
+  current: number;
+  target: number;
+  monthlyAllocation: number;
+  monthlyAllocations: number[];
+  balances: number[];
+  monthEvents: ({ amount: number; description: string }[] | null)[];
+  hasOverride: boolean[];
+}

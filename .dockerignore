@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.scratch
+.env
+.env.*
+*.md
+!README.md
+# Keep drizzle migrations — needed at runtime for db:migrate
+.vscode
+.idea
+coverage
+.turbo

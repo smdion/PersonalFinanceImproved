@@ -1,0 +1,391 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { DataFreshness } from "./data-freshness";
+import { signOut } from "next-auth/react";
+import {
+  LayoutDashboard,
+  Wallet,
+  ClipboardList,
+  Receipt,
+  TrendingUp,
+  Trophy,
+  Gem,
+  Palmtree,
+  BarChart3,
+  Home,
+  CreditCard,
+  Building2,
+  PiggyBank,
+  ScrollText,
+  Wrench,
+  Save,
+  Settings,
+  ChevronsLeft,
+  ChevronRight,
+  DollarSign,
+  LineChart,
+  Landmark,
+  CalendarClock,
+  Cog,
+  LogOut,
+  type LucideIcon,
+} from "lucide-react";
+
+// ── Navigation data structure ──
+
+type NavItem = { href: string; label: string; Icon: LucideIcon };
+type NavGroup = { label: string; Icon: LucideIcon; items: NavItem[] };
+type NavEntry = NavItem | NavGroup;
+
+function isGroup(entry: NavEntry): entry is NavGroup {
+  return "items" in entry;
+}
+
+const navStructure: NavEntry[] = [
+  { href: "/", label: "Dashboard", Icon: LayoutDashboard },
+  {
+    label: "Income",
+    Icon: DollarSign,
+    items: [
+      { href: "/paycheck", label: "Paycheck", Icon: Wallet },
+      { href: "/budget", label: "Budget", Icon: ClipboardList },
+      { href: "/expenses", label: "Expenses", Icon: Receipt },
+    ],
+  },
+  {
+    label: "Investments",
+    Icon: LineChart,
+    items: [
+      { href: "/portfolio", label: "Portfolio", Icon: TrendingUp },
+      { href: "/performance", label: "Performance", Icon: Trophy },
+      { href: "/brokerage", label: "Brokerage", Icon: BarChart3 },
+      { href: "/retirement", label: "Retirement", Icon: Palmtree },
+    ],
+  },
+  {
+    label: "Property",
+    Icon: Landmark,
+    items: [
+      { href: "/house", label: "House", Icon: Home },
+      { href: "/assets", label: "Assets", Icon: Building2 },
+      { href: "/liabilities", label: "Liabilities", Icon: CreditCard },
+      { href: "/networth", label: "Net Worth", Icon: Gem },
+    ],
+  },
+  {
+    label: "Planning",
+    Icon: CalendarClock,
+    items: [
+      { href: "/savings", label: "Savings", Icon: PiggyBank },
+      { href: "/tools", label: "Tools", Icon: Wrench },
+      { href: "/historical", label: "Historical", Icon: ScrollText },
+    ],
+  },
+  {
+    label: "System",
+    Icon: Cog,
+    items: [
+      { href: "/versions", label: "Versions", Icon: Save },
+      { href: "/settings", label: "Settings", Icon: Settings },
+    ],
+  },
+];
+
+// ── Components ──
+
+function NavLink({
+  item,
+  pathname,
+  collapsed,
+  showLabels,
+  onMobileClose,
+  indent = false,
+}: {
+  item: NavItem;
+  pathname: string;
+  collapsed: boolean;
+  showLabels: boolean;
+  onMobileClose: () => void;
+  indent?: boolean;
+}) {
+  const isActive =
+    pathname === item.href ||
+    (item.href !== "/" && pathname.startsWith(item.href + "/"));
+  return (
+    <Link
+      href={item.href}
+      aria-current={isActive ? "page" : undefined}
+      onClick={onMobileClose}
+      title={collapsed ? item.label : undefined}
+      className={`flex items-center gap-3 px-3 py-1.5 rounded text-sm transition-all duration-150 ${
+        indent && !collapsed ? "ml-4" : ""
+      } ${collapsed ? "md:justify-center" : ""} ${
+        isActive
+          ? "bg-surface-elevated/60 text-white border-l-[3px] border-sky-400"
+          : "text-faint hover:bg-surface-elevated border-l-[3px] border-transparent"
+      }`}
+    >
+      <item.Icon className="w-4 h-4 shrink-0" />
+      {showLabels && <span className="hidden md:inline">{item.label}</span>}
+      <span className="md:hidden">{item.label}</span>
+    </Link>
+  );
+}
+
+function CollapsibleNavGroup({
+  group,
+  pathname,
+  collapsed,
+  showLabels,
+  onMobileClose,
+}: {
+  group: NavGroup;
+  pathname: string;
+  collapsed: boolean;
+  showLabels: boolean;
+  onMobileClose: () => void;
+}) {
+  const hasActiveChild = group.items.some(
+    (item) => pathname === item.href || pathname.startsWith(item.href + "/"),
+  );
+  const [isOpen, setIsOpen] = useState(hasActiveChild);
+
+  // In collapsed mode, show only group icon (items visible on expand)
+  if (collapsed) {
+    return (
+      <div className="space-y-0.5">
+        {group.items.map((item) => (
+          <NavLink
+            key={item.href}
+            item={item}
+            pathname={pathname}
+            collapsed={collapsed}
+            showLabels={showLabels}
+            onMobileClose={onMobileClose}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <button
+        onClick={() => setIsOpen((o) => !o)}
+        className="w-full flex items-center gap-3 px-3 py-1.5 rounded text-sm text-faint hover:text-primary hover:bg-surface-elevated/50 transition-colors"
+      >
+        <group.Icon className="w-4 h-4 shrink-0" />
+        {showLabels && (
+          <span className="hidden md:inline flex-1 text-left text-xs font-semibold uppercase tracking-wider">
+            {group.label}
+          </span>
+        )}
+        <span className="md:hidden flex-1 text-left text-xs font-semibold uppercase tracking-wider">
+          {group.label}
+        </span>
+        <ChevronRight
+          className={`w-3 h-3 shrink-0 transition-transform duration-150 ${isOpen ? "rotate-90" : ""}`}
+        />
+      </button>
+      {isOpen && (
+        <div className="mt-0.5 space-y-0.5">
+          {group.items.map((item) => (
+            <NavLink
+              key={item.href}
+              item={item}
+              pathname={pathname}
+              collapsed={collapsed}
+              showLabels={showLabels}
+              onMobileClose={onMobileClose}
+              indent
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function Sidebar({
+  user,
+  isDemoOnly,
+  mobileOpen,
+  onMobileClose,
+  collapsed,
+  onToggleCollapse,
+}: {
+  user: { name: string; role: string };
+  isDemoOnly?: boolean;
+  mobileOpen: boolean;
+  onMobileClose: () => void;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
+}) {
+  const pathname = usePathname();
+  const showLabels = !collapsed;
+
+  return (
+    <>
+      {/* Mobile backdrop overlay */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          onClick={onMobileClose}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 transform transition-all duration-200 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        } md:translate-x-0 md:static md:h-screen md:sticky md:top-0 ${
+          collapsed ? "md:w-16" : "md:w-64"
+        } w-64 dark bg-surface-primary text-white flex flex-col`}
+      >
+        <div className="p-4 border-b">
+          <h1 className="text-lg font-bold flex items-center gap-2">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 32 32"
+              className="shrink-0"
+            >
+              <rect
+                width="32"
+                height="32"
+                rx="6"
+                className="fill-slate-700 dark:fill-slate-600"
+              />
+              <path
+                d="M10 6 L10 24 L22 24"
+                stroke="#38bdf8"
+                strokeWidth="3.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+              <line
+                x1="14"
+                y1="14"
+                x2="20"
+                y2="14"
+                stroke="#38bdf8"
+                strokeWidth="2"
+                strokeLinecap="round"
+                opacity="0.5"
+              />
+              <line
+                x1="14"
+                y1="18"
+                x2="18"
+                y2="18"
+                stroke="#38bdf8"
+                strokeWidth="2"
+                strokeLinecap="round"
+                opacity="0.5"
+              />
+            </svg>
+            {showLabels ? (
+              <span className="hidden md:inline">Ledgr</span>
+            ) : null}
+            <span className="md:hidden">Ledgr</span>
+          </h1>
+          {showLabels && (
+            <p className="text-sm text-faint hidden md:block">
+              {user.name} ({user.role})
+            </p>
+          )}
+        </div>
+        <nav
+          aria-label="Main navigation"
+          className="flex-1 overflow-y-auto p-2 space-y-1"
+        >
+          {navStructure.map((entry) =>
+            isGroup(entry) ? (
+              <CollapsibleNavGroup
+                key={entry.label}
+                group={entry}
+                pathname={pathname}
+                collapsed={collapsed}
+                showLabels={showLabels}
+                onMobileClose={onMobileClose}
+              />
+            ) : (
+              <NavLink
+                key={entry.href}
+                item={entry}
+                pathname={pathname}
+                collapsed={collapsed}
+                showLabels={showLabels}
+                onMobileClose={onMobileClose}
+              />
+            ),
+          )}
+        </nav>
+
+        {/* Data freshness */}
+        <div className="border-t">
+          {collapsed ? <DataFreshness compact /> : <DataFreshness />}
+        </div>
+
+        {/* Theme toggle */}
+        <div className="border-t py-2">
+          {collapsed ? <ThemeToggle compact /> : <ThemeToggle />}
+        </div>
+
+        {/* Sign out / Switch profile */}
+        <div className="border-t">
+          {isDemoOnly ? (
+            <Link
+              href="/demo"
+              className="w-full flex items-center gap-3 px-3 py-2 text-faint hover:text-blue-400 hover:bg-surface-elevated transition-colors"
+              title="Switch demo profile"
+            >
+              <LogOut className={`w-4 h-4 shrink-0 ${collapsed ? "mx-auto" : ""}`} />
+              {showLabels && <span className="text-xs hidden md:inline">Switch Profile</span>}
+              <span className="md:hidden text-xs">Switch Profile</span>
+            </Link>
+          ) : (
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="w-full flex items-center gap-3 px-3 py-2 text-faint hover:text-red-400 hover:bg-surface-elevated transition-colors"
+              title="Sign out"
+            >
+              <LogOut className={`w-4 h-4 shrink-0 ${collapsed ? "mx-auto" : ""}`} />
+              {showLabels && <span className="text-xs hidden md:inline">Sign Out</span>}
+              <span className="md:hidden text-xs">Sign Out</span>
+            </button>
+          )}
+        </div>
+
+        {/* Desktop collapse toggle — always pinned at bottom */}
+        <div className="hidden md:block border-t">
+          <button
+            onClick={onToggleCollapse}
+            className="w-full flex items-center justify-center gap-2 px-3 py-3 text-faint hover:text-primary hover:bg-surface-elevated transition-colors"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <ChevronsLeft
+              className={`w-5 h-5 transition-transform duration-200 ${collapsed ? "rotate-180" : ""}`}
+            />
+            {showLabels && <span className="text-xs">Collapse</span>}
+          </button>
+        </div>
+
+        {/* App version */}
+        {process.env.APP_VERSION && process.env.APP_VERSION !== "dev" && (
+          <div className="px-3 py-1.5 text-center">
+            <span className="text-[10px] text-faint/50">
+              {collapsed ? process.env.APP_VERSION : `v${process.env.APP_VERSION}`}
+            </span>
+          </div>
+        )}
+      </aside>
+    </>
+  );
+}

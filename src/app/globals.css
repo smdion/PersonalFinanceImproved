@@ -1,0 +1,480 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * CENTRALIZED THEME SYSTEM
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * All theme-aware colors are defined here as CSS custom properties (RGB
+ * triplets) and mapped to Tailwind utilities in tailwind.config.ts.
+ *
+ * HOW IT WORKS:
+ *   :root defines light-mode values; .dark overrides them for dark mode.
+ *   Tailwind config references them as rgb(var(--c-<color>-<shade>) / <alpha>)
+ *   so opacity modifiers (bg-blue-50/30) work automatically.
+ *
+ * ADDING A NEW COLOR SHADE:
+ *   1. Add --c-<color>-<shade> to both :root and .dark below
+ *   2. Add the shade to the matching color object in tailwind.config.ts
+ *   3. Use it normally: bg-blue-50, text-red-600, border-green-200, etc.
+ *
+ * WHAT'S CENTRALIZED vs NOT:
+ *   - Semantic surfaces/text/borders → --surface-*, --text-*, --border-*
+ *   - Color palette shades → --c-<color>-<shade> (ALL theme-aware shades)
+ *   - Mid-range shades (300-500) that work in both modes → Tailwind defaults
+ *   - Status/category colors at low opacity (bg-blue-900/20) → Tailwind defaults
+ *
+ * NEVER add .dark .bg-<class> { ... !important } overrides — use variables.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+:root {
+  /* ── Core ── */
+  --background: #ffffff;
+  --foreground: #171717;
+
+  /* ── Surfaces (structural neutrals for cards, panels, sections) ── */
+  --surface-primary: #ffffff;
+  --surface-secondary: #f9fafb;
+  --surface-elevated: #f3f4f6;
+  --surface-sunken: #f3f4f6;
+  --surface-strong: #e5e7eb;
+
+  /* ── Text (semantic text roles — use instead of text-gray-*) ── */
+  --text-primary: #111827;
+  --text-secondary: #374151;
+  --text-muted: #6b7280;
+  --text-faint: #9ca3af;
+
+  /* ── Borders (semantic border roles — use instead of border-gray-*) ── */
+  --border-default: #e5e7eb;
+  --border-subtle: #f3f4f6;
+  --border-strong: #d1d5db;
+
+  /* ── Focus ── */
+  --focus-ring: 56 189 248;
+
+  /* ── Forms ── */
+  --input-bg: #ffffff;
+  --input-border: #d1d5db;
+  --input-text: #111827;
+  --input-placeholder: #9ca3af;
+  --slider-track: #d1d5db;
+
+  /* ═══ Color Palette (RGB triplets for <alpha-value> support) ═══ */
+
+  /* ── Gray ── */
+  --c-gray-50: 249 250 251;
+  --c-gray-100: 243 244 246;
+  --c-gray-200: 229 231 235;
+  --c-gray-300: 209 213 219;
+  --c-gray-400: 156 163 175;
+  --c-gray-500: 107 114 128;
+  --c-gray-600: 75 85 99;
+  --c-gray-700: 55 65 81;
+  --c-gray-800: 31 41 55;
+  --c-gray-900: 17 24 39;
+
+  /* ── Blue ── */
+  --c-blue-50: 239 246 255;
+  --c-blue-100: 219 234 254;
+  --c-blue-200: 191 219 254;
+  --c-blue-300: 147 197 253;
+  --c-blue-500: 59 130 246;
+  --c-blue-600: 37 99 235;
+  --c-blue-700: 29 78 216;
+  --c-blue-800: 30 64 175;
+
+  /* ── Indigo ── */
+  --c-indigo-50: 238 242 255;
+  --c-indigo-100: 224 231 255;
+  --c-indigo-400: 129 140 248;
+  --c-indigo-500: 99 102 241;
+  --c-indigo-600: 79 70 229;
+  --c-indigo-700: 67 56 202;
+  --c-indigo-800: 55 48 163;
+
+  /* ── Amber ── */
+  --c-amber-50: 255 251 235;
+  --c-amber-100: 254 243 199;
+  --c-amber-200: 253 230 138;
+  --c-amber-300: 252 211 77;
+  --c-amber-500: 245 158 11;
+  --c-amber-600: 217 119 6;
+  --c-amber-700: 180 83 9;
+  --c-amber-800: 146 64 14;
+
+  /* ── Yellow ── */
+  --c-yellow-50: 254 252 232;
+  --c-yellow-100: 254 249 195;
+  --c-yellow-200: 254 240 138;
+  --c-yellow-600: 202 138 4;
+  --c-yellow-700: 161 98 7;
+  --c-yellow-800: 133 77 14;
+
+  /* ── Green ── */
+  --c-green-50: 240 253 244;
+  --c-green-100: 220 252 231;
+  --c-green-200: 187 247 208;
+  --c-green-300: 134 239 172;
+  --c-green-600: 22 163 74;
+  --c-green-700: 21 128 61;
+  --c-green-800: 22 101 52;
+
+  /* ── Emerald ── */
+  --c-emerald-50: 236 253 245;
+  --c-emerald-100: 209 250 229;
+  --c-emerald-200: 167 243 208;
+  --c-emerald-400: 52 211 153;
+  --c-emerald-500: 16 185 129;
+  --c-emerald-600: 5 150 105;
+  --c-emerald-700: 4 120 87;
+  --c-emerald-800: 6 95 70;
+
+  /* ── Red ── */
+  --c-red-50: 254 242 242;
+  --c-red-100: 254 226 226;
+  --c-red-200: 254 202 202;
+  --c-red-300: 252 165 165;
+  --c-red-400: 248 113 113;
+  --c-red-500: 239 68 68;
+  --c-red-600: 220 38 38;
+  --c-red-700: 185 28 28;
+  --c-red-800: 153 27 27;
+
+  /* ── Purple ── */
+  --c-purple-50: 250 245 255;
+  --c-purple-100: 243 232 255;
+  --c-purple-200: 233 213 255;
+  --c-purple-400: 192 132 252;
+  --c-purple-600: 147 51 234;
+  --c-purple-700: 126 34 206;
+
+  /* ── Orange ── */
+  --c-orange-50: 255 247 237;
+  --c-orange-100: 255 237 213;
+  --c-orange-200: 254 215 170;
+  --c-orange-600: 234 88 12;
+  --c-orange-700: 194 65 12;
+  --c-orange-800: 154 52 18;
+
+  /* ── Violet ── */
+  --c-violet-50: 245 243 255;
+  --c-violet-100: 237 233 254;
+  --c-violet-500: 139 92 246;
+  --c-violet-600: 124 58 237;
+  --c-violet-700: 109 40 217;
+
+  /* ── Teal ── */
+  --c-teal-100: 204 251 241;
+  --c-teal-700: 15 118 110;
+
+  /* ── Cyan ── */
+  --c-cyan-50: 236 254 255;
+  --c-cyan-200: 165 243 252;
+  --c-cyan-600: 8 145 178;
+}
+
+.dark {
+  /* ── Core ── */
+  --background: #0f172a;
+  --foreground: #e2e8f0;
+
+  /* ── Surfaces ── */
+  --surface-primary: #1e293b;
+  --surface-secondary: #0f172a;
+  --surface-elevated: #253347;
+  --surface-sunken: #0f172a;
+  --surface-strong: #334155;
+
+  /* ── Text ── */
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-faint: #64748b;
+
+  /* ── Borders ── */
+  --border-default: #334155;
+  --border-subtle: #1e293b;
+  --border-strong: #475569;
+
+  /* ── Focus ── */
+  --focus-ring: 125 211 252;
+
+  /* ── Forms ── */
+  --input-bg: #1e293b;
+  --input-border: #475569;
+  --input-text: #e2e8f0;
+  --input-placeholder: #64748b;
+  --slider-track: #374151;
+
+  /* ═══ Color Palette — Dark overrides ═══ */
+
+  /* ── Gray ── */
+  --c-gray-50: 15 23 42;
+  --c-gray-100: 37 51 71;
+  --c-gray-200: 51 65 85;
+  --c-gray-300: 71 85 105;
+  --c-gray-400: 126 143 166;
+  --c-gray-500: 168 184 204;
+  --c-gray-600: 168 184 204;
+  --c-gray-700: 203 213 225;
+  --c-gray-800: 226 232 240;
+  --c-gray-900: 241 245 249;
+
+  /* ── Blue ── */
+  --c-blue-50: 30 58 95;
+  --c-blue-100: 30 58 95;
+  --c-blue-200: 30 64 175;
+  --c-blue-300: 30 64 175;
+  --c-blue-500: 96 165 250;
+  --c-blue-600: 96 165 250;
+  --c-blue-700: 147 197 253;
+  --c-blue-800: 191 219 254;
+
+  /* ── Indigo ── */
+  --c-indigo-50: 30 27 75;
+  --c-indigo-100: 49 46 129;
+  --c-indigo-400: 99 102 241;
+  --c-indigo-500: 129 140 248;
+  --c-indigo-600: 129 140 248;
+  --c-indigo-700: 165 180 252;
+  --c-indigo-800: 199 210 254;
+
+  /* ── Amber ── */
+  --c-amber-50: 69 26 3;
+  --c-amber-100: 120 53 15;
+  --c-amber-200: 146 64 14;
+  --c-amber-300: 180 83 9;
+  --c-amber-500: 245 158 11;
+  --c-amber-600: 251 191 36;
+  --c-amber-700: 252 211 77;
+  --c-amber-800: 251 191 36;
+
+  /* ── Yellow ── */
+  --c-yellow-50: 66 32 6;
+  --c-yellow-100: 113 63 18;
+  --c-yellow-200: 133 77 14;
+  --c-yellow-600: 250 204 21;
+  --c-yellow-700: 253 224 71;
+  --c-yellow-800: 253 224 71;
+
+  /* ── Green ── */
+  --c-green-50: 5 46 22;
+  --c-green-100: 6 78 59;
+  --c-green-200: 6 95 70;
+  --c-green-300: 4 120 87;
+  --c-green-600: 74 222 128;
+  --c-green-700: 110 231 183;
+  --c-green-800: 134 239 172;
+
+  /* ── Emerald ── */
+  --c-emerald-50: 5 46 22;
+  --c-emerald-100: 6 78 59;
+  --c-emerald-200: 6 95 70;
+  --c-emerald-400: 52 211 153;
+  --c-emerald-500: 52 211 153;
+  --c-emerald-600: 52 211 153;
+  --c-emerald-700: 110 231 183;
+  --c-emerald-800: 134 239 172;
+
+  /* ── Red ── */
+  --c-red-50: 69 10 10;
+  --c-red-100: 127 29 29;
+  --c-red-200: 153 27 27;
+  --c-red-300: 185 28 28;
+  --c-red-400: 252 165 165;
+  --c-red-500: 248 113 113;
+  --c-red-600: 248 113 113;
+  --c-red-700: 252 165 165;
+  --c-red-800: 254 202 202;
+
+  /* ── Purple ── */
+  --c-purple-50: 46 16 101;
+  --c-purple-100: 59 7 100;
+  --c-purple-200: 76 29 149;
+  --c-purple-400: 196 181 253;
+  --c-purple-600: 167 139 250;
+  --c-purple-700: 196 181 253;
+
+  /* ── Orange ── */
+  --c-orange-50: 67 20 7;
+  --c-orange-100: 124 45 18;
+  --c-orange-200: 154 52 18;
+  --c-orange-600: 251 146 60;
+  --c-orange-700: 253 186 116;
+  --c-orange-800: 254 215 170;
+
+  /* ── Violet ── */
+  --c-violet-50: 46 16 101;
+  --c-violet-100: 76 29 149;
+  --c-violet-500: 124 58 237;
+  --c-violet-600: 167 139 250;
+  --c-violet-700: 196 181 253;
+
+  /* ── Teal ── */
+  --c-teal-100: 19 78 74;
+  --c-teal-700: 94 234 212;
+
+  /* ── Cyan ── */
+  --c-cyan-50: 8 51 68;
+  --c-cyan-200: 21 94 117;
+  --c-cyan-600: 34 211 238;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family:
+    var(--font-sans), "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Keyboard focus rings for accessibility */
+:focus-visible {
+  outline: 2px solid rgb(var(--focus-ring, 56 189 248));
+  outline-offset: 2px;
+}
+
+/* Tabular figures for all numbers — keeps columns aligned in tables and cards */
+.tabular-nums,
+.font-mono,
+code,
+pre,
+td,
+th {
+  font-variant-numeric: tabular-nums;
+}
+
+/* All formatted currency/number spans use mono font for alignment */
+.font-semibold,
+.font-bold {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Metric values (large currency displays on dashboard cards) */
+.text-2xl,
+.text-3xl,
+.text-4xl {
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * DARK MODE — Non-utility overrides
+ *
+ * These handle things CSS custom properties + Tailwind can't:
+ *   - HTML form elements (browser-native styling)
+ *   - Third-party library internals (Recharts SVG)
+ *   - Box shadows (not color utilities)
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+/* ── Form elements (inputs, selects, date pickers) ── */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border-color: var(--input-border) !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--input-placeholder) !important;
+}
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+/* ── Shadows (deeper on dark backgrounds for visible depth) ── */
+.dark .shadow-sm {
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.3) !important;
+}
+.dark .shadow-md {
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.4),
+    0 2px 4px -2px rgb(0 0 0 / 0.3) !important;
+}
+.dark .shadow-lg {
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.4),
+    0 4px 6px -4px rgb(0 0 0 / 0.3) !important;
+}
+
+/* ── Recharts / SVG (chart axes, gridlines, tooltips) ── */
+.dark .recharts-cartesian-grid line {
+  stroke: #334155 !important;
+}
+.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Chart fade-in when MC data arrives */
+.chart-fade-in {
+  animation: chartFadeIn 0.4s ease-out;
+}
+@keyframes chartFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Scrollbars (thin, unobtrusive in both modes) ── */
+.overflow-x-auto,
+.overflow-y-auto,
+.overflow-auto {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.overflow-x-auto::-webkit-scrollbar,
+.overflow-y-auto::-webkit-scrollbar,
+.overflow-auto::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.overflow-x-auto::-webkit-scrollbar-track,
+.overflow-y-auto::-webkit-scrollbar-track,
+.overflow-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+.overflow-x-auto::-webkit-scrollbar-thumb,
+.overflow-y-auto::-webkit-scrollbar-thumb,
+.overflow-auto::-webkit-scrollbar-thumb {
+  background-color: var(--border-strong);
+  border-radius: 3px;
+}
+
+/* Minimum touch target for WCAG 2.5.8 compliance */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media print {
+  /* Hide navigation and interactive chrome */
+  aside,
+  [data-scenario-bar],
+  .print\:hidden {
+    display: none !important;
+  }
+  /* Expand all content */
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  /* Remove shadows and borders for clean printing */
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg {
+    box-shadow: none !important;
+  }
+}

@@ -1,0 +1,608 @@
+"use client";
+
+import React, { useRef, useState } from "react";
+import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { trpc } from "@/lib/trpc";
+import { useUser, hasPermission } from "@/lib/context/user-context";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import {
+  SummaryCards,
+  NewFundFormCard,
+  GoalProjection,
+  monthKey,
+  type NewFundForm,
+} from "@/components/savings";
+import { BudgetCapacityBar } from "@/components/savings/budget-capacity-bar";
+import { SavingsTrajectoryChart } from "@/components/savings/savings-trajectory-chart";
+import { UpcomingGoals } from "@/components/savings/upcoming-goals";
+import { TransferForm } from "@/components/savings/transfer-form";
+import { BrokerageGoalsSection } from "@/components/cards/brokerage-goals";
+import {
+  FundManagementSection,
+  type FundManagementCallbacks,
+} from "@/components/savings/fund-management-section";
+import { AllocationEditorSection } from "@/components/savings/allocation-editor-section";
+import {
+  ApiSyncSection,
+  useApiSync,
+} from "@/components/savings/api-sync-section";
+
+export default function SavingsPage() {
+  const user = useUser();
+  const canEdit = hasPermission(user, "savings");
+  const utils = trpc.useUtils();
+
+  // ── Persisted settings ──
+  const [efundBudgetColumn, setEfundBudgetColumn] = usePersistedSetting<number>(
+    "efund_budget_column",
+    -1,
+  );
+  const [budgetColumn, setBudgetColumn] = usePersistedSetting<number>(
+    "budget_active_column",
+    0,
+  );
+  const [projectionYears, setProjectionYears] = usePersistedSetting<number>(
+    "savings_projection_years",
+    3,
+  );
+  const [activeContribProfileId] = usePersistedSetting<number | null>(
+    "active_contrib_profile_id",
+    null,
+  );
+
+  // ── Shared queries ──
+  const efundTierInput =
+    efundBudgetColumn >= 0
+      ? { budgetTierOverride: efundBudgetColumn }
+      : undefined;
+  const { data, isLoading, error } =
+    trpc.savings.getSummary.useQuery(efundTierInput);
+  const { data: reimbursementsData } =
+    trpc.savings.listEfundReimbursements.useQuery();
+  const { data: apiBalancesData } = trpc.savings.listApiBalances.useQuery();
+  const { data: apiCategoriesData } = trpc.budget.listApiCategories.useQuery();
+
+  const salaryOverrides = useSalaryOverrides();
+  const paycheckInput = {
+    ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+    ...(activeContribProfileId != null
+      ? { contributionProfileId: activeContribProfileId }
+      : {}),
+  };
+  const { data: paycheckData } = trpc.paycheck.getSummary.useQuery(
+    Object.keys(paycheckInput).length > 0 ? paycheckInput : undefined,
+  );
+  const { data: budgetData } = trpc.budget.getActiveSummary.useQuery({
+    selectedColumn: budgetColumn,
+  });
+
+  // ── Cross-section coordination ──
+  const apiSync = useApiSync();
+  const [editingMonth, setEditingMonth] = useState<Date | null>(null);
+  const [showTransferForm, setShowTransferForm] = useState(false);
+  const [showNewFund, setShowNewFund] = useState(false);
+  const [yearlyGrowth, setYearlyGrowth] = useState<
+    Record<number, { type: "pct" | "dollar"; value: number }>
+  >({});
+
+  // ── Top-level form state (lives here to render in correct layout position) ──
+  const [newFund, setNewFund] = useState<NewFundForm>({
+    name: "",
+    monthlyContribution: "",
+    targetAmount: "",
+    targetMode: "fixed",
+    targetDate: "",
+    parentGoalId: null,
+  });
+  const createGoal = trpc.settings.savingsGoals.create.useMutation({
+    onSuccess: () => {
+      utils.savings.invalidate();
+      setShowNewFund(false);
+    },
+  });
+  const createTransfer = trpc.savings.transfers.create.useMutation({
+    onSuccess: () => {
+      utils.savings.invalidate();
+      setShowTransferForm(false);
+    },
+  });
+
+  // ── Ref for FundManagementSection callbacks (goal updates used by other sections) ──
+  const fundCallbacksRef = useRef<FundManagementCallbacks | null>(null);
+
+  // ── Loading / error states ──
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-1/3" />
+        <SkeletonChart height={256} />
+      </div>
+    );
+  }
+
+  if (error)
+    return (
+      <p className="text-red-600 text-sm">
+        Failed to load savings data: {error.message}
+      </p>
+    );
+  if (!data)
+    return (
+      <EmptyState
+        message="No savings data available."
+        hint="Create a savings fund to start tracking goals."
+      />
+    );
+
+  const {
+    savings,
+    efund,
+    goals: rawGoals,
+    plannedTransactions,
+    allocationOverrides,
+    budgetTierLabels,
+    efundTierIndex,
+  } = data;
+
+  // ── Shared derived state ──
+  const overrideMap = new Map<string, number>();
+  for (const o of allocationOverrides ?? []) {
+    const d = new Date(o.monthDate + "T00:00:00");
+    overrideMap.set(`${o.goalId}:${monthKey(d)}`, o.amount);
+  }
+  const goalById = new Map(rawGoals.map((g) => [g.id, g]));
+
+  const childGoalsByParent = new Map<number, typeof rawGoals>();
+  for (const g of rawGoals) {
+    if (g.parentGoalId) {
+      const children = childGoalsByParent.get(g.parentGoalId) ?? [];
+      children.push(g);
+      childGoalsByParent.set(g.parentGoalId, children);
+    }
+  }
+
+  const apiBalanceMap = new Map<
+    number,
+    { balance: number; budgeted: number; activity: number }
+  >();
+  if (apiBalancesData?.balances) {
+    for (const b of apiBalancesData.balances) {
+      apiBalanceMap.set(b.goalId, {
+        balance: b.balance,
+        budgeted: b.budgeted,
+        activity: b.activity,
+      });
+    }
+  }
+
+  // ── Budget leftover ──
+  const maxMonthlyFunding = (() => {
+    if (!paycheckData || !budgetData?.result) return null;
+    const activePeople = paycheckData.people.filter((d) => d.paycheck && d.job);
+    if (activePeople.length === 0) return null;
+    const monthlyNet = activePeople.reduce((sum, d) => {
+      const pc = d.paycheck!;
+      // Use server-provided budget periods per month (respects per-job override)
+      const perMonth = (d as { budgetPerMonth?: number }).budgetPerMonth ?? pc.periodsPerYear / 12;
+      return sum + pc.netPay * perMonth;
+    }, 0);
+    const budgetTotal = budgetData.columnMonths
+      ? (budgetData.weightedAnnualTotal ?? 0) / 12
+      : (budgetData.result.totalMonthly ?? 0);
+    return monthlyNet - budgetTotal;
+  })();
+
+  // ── Budget frequency note for help text ──
+  const budgetNote = (() => {
+    if (!paycheckData) return undefined;
+    const notes = paycheckData.people
+      .filter((d) => d.paycheck && d.job)
+      .map((d) => (d as { budgetNote?: string }).budgetNote)
+      .filter(Boolean);
+    return notes.length > 0 ? notes.join("; ") : undefined;
+  })();
+
+  // ── Projection months ──
+  const projectionMonths = projectionYears * 12;
+  const now = new Date();
+  const monthDates: Date[] = [];
+  for (let i = 0; i < projectionMonths; i++) {
+    monthDates.push(new Date(now.getFullYear(), now.getMonth() + i, 1));
+  }
+
+  // ── Expand planned transactions ──
+  const txByGoalMonth = new Map<
+    number,
+    Map<string, { amount: number; description: string }[]>
+  >();
+  for (const tx of plannedTransactions) {
+    const addEntry = (
+      goalId: number,
+      mk: string,
+      amount: number,
+      desc: string,
+    ) => {
+      if (!txByGoalMonth.has(goalId)) txByGoalMonth.set(goalId, new Map());
+      const m = txByGoalMonth.get(goalId)!;
+      if (!m.has(mk)) m.set(mk, []);
+      m.get(mk)!.push({ amount, description: desc });
+    };
+    const txDate = new Date(tx.transactionDate + "T00:00:00");
+    addEntry(tx.goalId, monthKey(txDate), tx.amount, tx.description);
+    if (tx.isRecurring && tx.recurrenceMonths && tx.recurrenceMonths > 0) {
+      const last = monthDates[monthDates.length - 1]!;
+      let d = new Date(
+        txDate.getFullYear(),
+        txDate.getMonth() + tx.recurrenceMonths,
+        1,
+      );
+      while (d <= last) {
+        addEntry(tx.goalId, monthKey(d), tx.amount, tx.description);
+        d = new Date(d.getFullYear(), d.getMonth() + tx.recurrenceMonths, 1);
+      }
+    }
+  }
+
+  // ── Growth multipliers ──
+  const startYear = now.getFullYear();
+  const growthMultiplierByYear = new Map<number, number>();
+  {
+    let prevPool = 1;
+    for (let yr = startYear; yr <= startYear + projectionYears; yr++) {
+      const entry = yearlyGrowth[yr];
+      if (yr === startYear || !entry || entry.value === 0) {
+        growthMultiplierByYear.set(yr, prevPool);
+      } else if (entry.type === "pct") {
+        prevPool = prevPool * (1 + entry.value / 100);
+        growthMultiplierByYear.set(yr, prevPool);
+      } else {
+        growthMultiplierByYear.set(yr, prevPool);
+      }
+    }
+  }
+
+  const dollarIncreaseByYear = new Map<number, number>();
+  {
+    let cumDollar = 0;
+    for (let yr = startYear; yr <= startYear + projectionYears; yr++) {
+      const entry = yearlyGrowth[yr];
+      if (entry && entry.type === "dollar" && yr > startYear) {
+        cumDollar += entry.value;
+      }
+      dollarIncreaseByYear.set(yr, cumDollar);
+    }
+  }
+
+  function getAllocationForYear(baseAmount: number, year: number): number {
+    const multiplier = growthMultiplierByYear.get(year) ?? 1;
+    const dollarAdd = dollarIncreaseByYear.get(year) ?? 0;
+    return baseAmount * multiplier + dollarAdd;
+  }
+
+  // ── Goal projections ──
+  const parentFundGoals = savings.goals.filter((goal) => {
+    const raw = goalById.get(goal.goalId);
+    return !raw?.parentGoalId;
+  });
+  const goalProjections: GoalProjection[] = parentFundGoals.map((goal) => {
+    const raw = goalById.get(goal.goalId);
+    const goalId = goal.goalId;
+    const goalTxMap = txByGoalMonth.get(goalId);
+    const balances: number[] = [];
+    const monthEvents: ({ amount: number; description: string }[] | null)[] =
+      [];
+    const monthlyAllocations: number[] = [];
+    const hasOverride: boolean[] = [];
+    let balance = goal.current;
+    const pct = raw?.allocationPercent
+      ? parseFloat(raw.allocationPercent)
+      : null;
+    const baseAllocation =
+      pct !== null && maxMonthlyFunding !== null
+        ? (pct / 100) * maxMonthlyFunding
+        : goal.monthlyAllocation;
+
+    for (let i = 0; i < projectionMonths; i++) {
+      const mk = monthKey(monthDates[i]!);
+      const events = goalTxMap?.get(mk) ?? null;
+      const overrideKey = `${goalId}:${mk}`;
+      const overrideAmount = overrideMap.get(overrideKey);
+      const yr = monthDates[i]!.getFullYear();
+      const defaultAllocation = getAllocationForYear(baseAllocation, yr);
+      const allocation =
+        overrideAmount !== undefined ? overrideAmount : defaultAllocation;
+      balance += allocation;
+      if (events) {
+        for (const ev of events) balance += ev.amount;
+      }
+      balances.push(balance);
+      monthEvents.push(events);
+      monthlyAllocations.push(allocation);
+      hasOverride.push(overrideAmount !== undefined);
+    }
+
+    return {
+      name: goal.name,
+      goalId,
+      current: goal.current,
+      target: goal.target,
+      monthlyAllocation: baseAllocation,
+      monthlyAllocations,
+      balances,
+      monthEvents,
+      hasOverride,
+    };
+  });
+
+  const totalMonthlyAllocation = goalProjections.reduce(
+    (s, g) => s + g.monthlyAllocation,
+    0,
+  );
+
+  const basePool = maxMonthlyFunding ?? totalMonthlyAllocation;
+  const monthlyPools = monthDates.map((d) =>
+    getAllocationForYear(basePool, d.getFullYear()),
+  );
+
+  const handleFundClick = (fundName: string) => {
+    const el = document.getElementById(`fund-card-${fundName}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  // ── Top-level form handlers ──
+  const handleCreateFund = () => {
+    if (!newFund.name) return;
+    createGoal.mutate(
+      {
+        name: newFund.name,
+        parentGoalId: newFund.parentGoalId ?? null,
+        monthlyContribution: newFund.monthlyContribution || "0",
+        targetAmount: newFund.targetAmount || null,
+        targetMode: newFund.targetMode,
+        targetDate: newFund.targetDate || null,
+        isActive: true,
+        isEmergencyFund: false,
+        priority: rawGoals.length,
+      },
+      {
+        onSuccess: () => {
+          setNewFund({
+            name: "",
+            monthlyContribution: "",
+            targetAmount: "",
+            targetMode: "fixed",
+            targetDate: "",
+            parentGoalId: null,
+          });
+        },
+      },
+    );
+  };
+
+  // Stable wrappers for goal update callbacks (from FundManagementSection via ref)
+  const onGoalUpdate = (goalId: number, field: string, value: string) => {
+    fundCallbacksRef.current?.onGoalUpdate(goalId, field, value);
+  };
+  const onGoalUpdateMulti = (
+    goalId: number,
+    fields: Record<string, string>,
+  ) => {
+    fundCallbacksRef.current?.onGoalUpdateMulti(goalId, fields);
+  };
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Savings"
+        subtitle={
+          budgetData?.columnLabels?.[budgetColumn]
+            ? `Budget scenario: ${budgetData.columnLabels[budgetColumn]}`
+            : undefined
+        }
+      >
+        {canEdit && (
+          <div className="flex flex-wrap gap-2">
+            {apiBalancesData?.service && (
+              <>
+                <Button
+                  variant="secondary"
+                  onClick={apiSync.onPullBalances}
+                  disabled={apiSync.syncFromApiPending}
+                  title="Pull balances from budget API for all linked sinking funds"
+                >
+                  {apiSync.syncFromApiPending
+                    ? "Pulling..."
+                    : "\u2190 Pull Balances"}
+                </Button>
+                <button
+                  onClick={() =>
+                    apiSync.buildPushAllPreview(rawGoals, apiBalanceMap)
+                  }
+                  disabled={apiSync.pushToApiPending}
+                  className="px-3 py-1.5 border border-green-600 text-green-400 rounded text-sm hover:bg-green-600/20 disabled:opacity-50"
+                  title="Push monthly contributions to budget API (current + next month)"
+                >
+                  {apiSync.pushToApiPending
+                    ? "Pushing..."
+                    : "Push Contributions \u2192"}
+                </button>
+              </>
+            )}
+            <Button
+              variant="secondary"
+              onClick={() => setShowTransferForm(true)}
+            >
+              Transfer
+            </Button>
+            <Button
+              onClick={() => setShowNewFund(true)}
+            >
+              + New Fund
+            </Button>
+          </div>
+        )}
+      </PageHeader>
+
+      {/* Warnings */}
+      {savings.warnings.length > 0 && (
+        <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-3">
+          {savings.warnings.map((w, i) => (
+            <p key={i} className="text-sm text-yellow-400">
+              {w}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {canEdit && showTransferForm && (
+        <TransferForm
+          goals={rawGoals
+            .filter((g) => g.isActive && !g.parentGoalId)
+            .map((g) => ({ id: g.id, name: g.name }))}
+          onSubmit={(data) => createTransfer.mutate(data)}
+          isPending={createTransfer.isPending}
+          onCancel={() => setShowTransferForm(false)}
+        />
+      )}
+
+      {canEdit && showNewFund && (
+        <NewFundFormCard
+          newFund={newFund}
+          setNewFund={setNewFund}
+          onSubmit={handleCreateFund}
+          onCancel={() => setShowNewFund(false)}
+          isPending={createGoal.isPending}
+          availableParents={rawGoals
+            .filter((g) => !g.parentGoalId && g.isActive)
+            .map((g) => ({ id: g.id, name: g.name }))}
+        />
+      )}
+
+      {/* ── Overview ── */}
+      <section className="space-y-4">
+        <SummaryCards
+          savings={savings}
+          efund={efund}
+          paycheckData={paycheckData?.people}
+          maxMonthlyFunding={maxMonthlyFunding}
+          totalMonthlyAllocation={totalMonthlyAllocation}
+        />
+
+        {goalProjections.length > 0 && (
+          <UpcomingGoals
+            goalProjections={goalProjections}
+            savingsGoals={savings.goals}
+            plannedTransactions={plannedTransactions}
+            monthDates={monthDates}
+          />
+        )}
+      </section>
+
+      {/* ── Planning & Projections ── */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-3">
+          <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">
+            Projections
+          </h2>
+          <div className="flex-1 border-t border/50" />
+        </div>
+
+        <BudgetCapacityBar
+          maxMonthlyFunding={maxMonthlyFunding}
+          totalMonthlyAllocation={totalMonthlyAllocation}
+          budgetData={budgetData}
+          budgetColumn={budgetColumn}
+          setBudgetColumn={setBudgetColumn}
+          projectionYears={projectionYears}
+          setProjectionYears={setProjectionYears}
+          yearlyGrowth={yearlyGrowth}
+          setYearlyGrowth={setYearlyGrowth}
+          budgetNote={budgetNote}
+          goalProjections={goalProjections}
+          onGoalUpdate={onGoalUpdate}
+        />
+
+        {goalProjections.length > 0 && (
+          <SavingsTrajectoryChart
+            goalProjections={goalProjections}
+            monthDates={monthDates}
+            onFundClick={handleFundClick}
+          />
+        )}
+
+        <AllocationEditorSection
+          goalProjections={goalProjections}
+          monthDates={monthDates}
+          totalMonthlyAllocation={totalMonthlyAllocation}
+          maxMonthlyFunding={maxMonthlyFunding}
+          monthlyPools={monthlyPools}
+          canEdit={canEdit}
+          onGoalUpdate={onGoalUpdate}
+          onGoalUpdateMulti={onGoalUpdateMulti}
+          editingMonth={editingMonth}
+          setEditingMonth={setEditingMonth}
+        />
+      </section>
+
+      {/* ── Fund Details ── */}
+      <FundManagementSection
+        rawGoals={rawGoals}
+        goalProjections={goalProjections}
+        savings={savings}
+        plannedTransactions={plannedTransactions}
+        allocationOverrides={allocationOverrides}
+        monthDates={monthDates}
+        totalMonthlyAllocation={totalMonthlyAllocation}
+        maxMonthlyFunding={maxMonthlyFunding}
+        goalById={goalById}
+        childGoalsByParent={childGoalsByParent}
+        apiBalanceMap={apiBalanceMap}
+        canEdit={canEdit}
+        onEditMonth={setEditingMonth}
+        onDeleteOverride={apiSync.onDeleteOverride}
+        efund={efund}
+        budgetTierLabels={budgetTierLabels}
+        efundTierIndex={efundTierIndex}
+        onEfundTierChange={setEfundBudgetColumn}
+        reimbursementsData={reimbursementsData}
+        onLinkToApi={apiSync.onLinkToApi}
+        onUnlinkFromApi={apiSync.onUnlinkFromApi}
+        onConvertToBudgetItem={apiSync.onConvertToBudgetItem}
+        onPushPreview={apiSync.onPushPreview}
+        callbacksRef={fundCallbacksRef}
+        showNewFund={showNewFund}
+        setShowNewFund={setShowNewFund}
+        newFund={newFund}
+        setNewFund={setNewFund}
+        createGoalMutate={(params, options) =>
+          createGoal.mutate(params, options)
+        }
+        createGoalPending={createGoal.isPending}
+      />
+
+      {/* ── Long-term Investments ── */}
+      <section>
+        <BrokerageGoalsSection />
+      </section>
+
+      {/* ── API Sync Modals ── */}
+      <ApiSyncSection
+        rawGoals={rawGoals}
+        apiBalanceMap={apiBalanceMap}
+        apiBalancesData={apiBalancesData}
+        apiCategoriesData={apiCategoriesData}
+        canEdit={canEdit}
+        linkingGoalId={apiSync.linkingGoalId}
+        setLinkingGoalId={apiSync.setLinkingGoalId}
+        pushPreviewItems={apiSync.pushPreviewItems}
+        setPushPreviewItems={apiSync.setPushPreviewItems}
+        pendingPushGoalId={apiSync.pendingPushGoalId}
+        setPendingPushGoalId={apiSync.setPendingPushGoalId}
+      />
+    </div>
+  );
+}
