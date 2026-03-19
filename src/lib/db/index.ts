@@ -17,6 +17,9 @@ export const pool = new Pool({
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
   statement_timeout: 30000, // 30s — kill runaway queries before they hold connections
+  // Force UTC on every connection so timestamp columns (without time zone)
+  // are always read/written as UTC, regardless of the DB server's timezone.
+  options: "-c timezone=UTC",
 });
 
 // Log pool-level errors (idle client errors, unexpected disconnects).

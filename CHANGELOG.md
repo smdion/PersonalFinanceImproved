@@ -13,11 +13,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Edge runtime crash (`process.on is not a function`) — added runtime guard so instrumentation only runs in Node.js server context
 - Multiple auto versions created on container restart — added duplicate check to `/api/versions/daily` that skips if an auto version already exists for today
 - Authentik OIDC groups not forwarded into session — OIDC provider was missing `groups` scope and profile callback, so all Authentik users were assigned viewer role regardless of group membership
+- Timestamps displayed in wrong timezone — DB server timezone leaked into `timestamp` columns; forced UTC at the connection level so timestamps are consistent regardless of DB server timezone setting
 
 ### Changed
 
 - Instrumentation startup tasks (backfills) moved to `/api/startup` route, called via self-fetch
 - Auto-versioning uses self-fetch to `/api/versions/daily` instead of direct DB queries
+- All `timestamp` columns in schema updated to `timestamptz` for new deployments; existing databases handled via connection-level `timezone=UTC`
 - Externalized `pg` and related packages from webpack bundling via `serverComponentsExternalPackages`
 
 ## [0.1.0] - 2026-03-18

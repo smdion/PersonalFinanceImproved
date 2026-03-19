@@ -275,7 +275,7 @@ export const budgetProfiles = pgTable(
       "column_contribution_profile_ids",
     ).$type<(number | null)[]>(),
     isActive: boolean("is_active").notNull().default(false),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("budget_profiles_is_active_idx").on(table.isActive)],
 );
@@ -292,7 +292,7 @@ export const budgetItems = pgTable(
     amounts: jsonb("amounts").$type<number[]>().notNull(),
     apiCategoryName: text("api_category_name"),
     apiCategoryId: text("api_category_id"),
-    apiLastSyncedAt: timestamp("api_last_synced_at"),
+    apiLastSyncedAt: timestamp("api_last_synced_at", { withTimezone: true }),
     apiSyncDirection:
       apiSyncDirectionEnum("api_sync_direction").default("pull"),
     contributionAccountId: integer("contribution_account_id").references(
@@ -427,7 +427,7 @@ export const brokerageGoals = pgTable(
     priority: integer("priority").notNull().default(0),
     isActive: boolean("is_active").notNull().default(true),
     notes: text("notes"),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("brokerage_goals_is_active_idx").on(table.isActive)],
 );
@@ -488,7 +488,7 @@ export const performanceAccounts = pgTable(
     parentCategory: text("parent_category").notNull(),
     isActive: boolean("is_active").notNull().default(true),
     displayOrder: integer("display_order").notNull().default(0),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     uniqueIndex("performance_accounts_inst_type_idx").on(
@@ -516,7 +516,7 @@ export const portfolioSnapshots = pgTable(
   {
     id: serial("id").primaryKey(),
     snapshotDate: date("snapshot_date").notNull().unique(),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     notes: text("notes"),
   },
   (table) => [index("portfolio_snapshots_date_idx").on(table.snapshotDate)],
@@ -1181,7 +1181,7 @@ export const apiConnections = pgTable("api_connections", {
   linkedProfileId: integer("linked_profile_id"),
   linkedColumnIndex: integer("linked_column_index"),
   serverKnowledge: integer("server_knowledge"),
-  lastSyncedAt: timestamp("last_synced_at"),
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
 });
 
 export const budgetApiCache = pgTable(
@@ -1192,7 +1192,7 @@ export const budgetApiCache = pgTable(
     cacheKey: text("cache_key").notNull(),
     data: jsonb("data").$type<unknown>().notNull(),
     serverKnowledge: integer("server_knowledge"),
-    fetchedAt: timestamp("fetched_at").notNull().defaultNow(),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     uniqueIndex("budget_api_cache_service_key_idx").on(
@@ -1254,8 +1254,8 @@ export const relocationScenarios = pgTable("relocation_scenarios", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   params: jsonb("params").$type<RelocationScenarioParams>().notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 // --- Scenario overrides (global what-if system) ---
@@ -1275,8 +1275,8 @@ export const scenarios = pgTable("scenarios", {
     .notNull()
     .default({}),
   isBaseline: boolean("is_baseline").notNull().default(false),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 // --- Monte Carlo: Asset class parameters and glide path ---
@@ -1421,7 +1421,7 @@ export const contributionProfiles = pgTable("contribution_profiles", {
     .notNull()
     .default({}),
   isDefault: boolean("is_default").notNull().default(false),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 // --- State versions (full-database versioning) ---
@@ -1437,7 +1437,7 @@ export const stateVersions = pgTable(
     tableCount: integer("table_count").notNull(),
     totalRows: integer("total_rows").notNull(),
     sizeEstimateBytes: integer("size_estimate_bytes"),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     createdBy: text("created_by").notNull(),
   },
   (table) => [index("state_versions_created_at_idx").on(table.createdAt)],
@@ -1475,7 +1475,7 @@ export const changeLog = pgTable(
     oldValue: jsonb("old_value"),
     newValue: jsonb("new_value"),
     changedBy: text("changed_by").notNull(),
-    changedAt: timestamp("changed_at").notNull().defaultNow(),
+    changedAt: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     index("change_log_table_record_idx").on(table.tableName, table.recordId),
