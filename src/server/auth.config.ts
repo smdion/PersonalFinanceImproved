@@ -30,6 +30,15 @@ if (!process.env.AUTH_AUTHENTIK_ISSUER) {
     issuer: process.env.AUTH_AUTHENTIK_ISSUER,
     clientId: process.env.AUTH_AUTHENTIK_ID,
     clientSecret: process.env.AUTH_AUTHENTIK_SECRET,
+    authorization: { params: { scope: "openid email profile groups" } },
+    profile(profile) {
+      return {
+        id: profile.sub,
+        name: profile.name ?? profile.preferred_username,
+        email: profile.email,
+        groups: profile.groups ?? [],
+      };
+    },
   });
 }
 
