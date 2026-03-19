@@ -1,7 +1,8 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
+import { eq, and, gte, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { appSettings } from "@/lib/db/schema";
+import { appSettings, stateVersions } from "@/lib/db/schema";
 import { createVersion } from "@/lib/db/version-logic";
 import { log } from "@/lib/logger";
 
@@ -59,7 +60,27 @@ export async function GET(request: Request) {
       });
     }
 
-    const dateStr = today.toISOString().split("T")[0];
+    const dateStr = today.toISOString().split("T")[0]!;
+
+    // Skip if an auto version was already created today (e.g. container restart)
+    const existing = await db
+      .select({ id: stateVersions.id })
+      .from(stateVersions)
+      .where(
+        and(
+          eq(stateVersions.versionType, "auto"),
+          gte(stateVersions.createdAt, sql`${dateStr}::timestamp`),
+        ),
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      return NextResponse.json({
+        skipped: true,
+        reason: "Auto version already exists for today",
+      });
+    }
+
     const version = await createVersion(
       db as Parameters<typeof createVersion>[0],
       {

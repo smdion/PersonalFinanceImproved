@@ -5,6 +5,10 @@ const pkg = JSON.parse(readFileSync("./package.json", "utf8"));
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  experimental: {
+    instrumentationHook: true,
+    serverComponentsExternalPackages: ["pg", "pgpass", "pg-pool", "pg-types", "postgres-array", "postgres-bytea", "postgres-date", "postgres-interval"],
+  },
   env: {
     APP_VERSION: process.env.APP_VERSION ?? pkg.version ?? "dev",
   },
