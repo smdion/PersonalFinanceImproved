@@ -2,13 +2,14 @@
  * Core version logic: create, restore, export, import.
  *
  * All operations use transactions for consistency.
- * Restore uses SERIALIZABLE isolation — any failure auto-rolls back.
+ * PG restore uses a dedicated client connection for SERIALIZABLE isolation.
+ * SQLite restore relies on single-writer semantics (WAL mode).
  *
- * IMPORTANT: All state versions live in the same PostgreSQL database. Database-level
+ * IMPORTANT: All state versions live in the same database. Database-level
  * corruption (disk failure, unrecoverable WAL) would lose both live data and all
  * snapshots. For disaster recovery, pair this with external backups (pg_dump cron,
- * WAL archiving, or volume-level snapshots). See homelab-docs backup-definitions
- * for the container's backup schedule. (Review item H15)
+ * WAL archiving, volume-level snapshots, or SQLite file copies). See homelab-docs
+ * backup-definitions for the container's backup schedule. (Review item H15)
  */
 
 import { readFileSync } from "fs";
@@ -16,7 +17,8 @@ import { join } from "path";
 import { sql, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
-import { pool } from "./index";
+import { isPostgres } from "./dialect";
+import { truncateTables, resetSequences, jsonbLiteral } from "./compat";
 import { VERSION_TABLE_NAMES, VERSION_TABLES } from "./version-tables";
 import { log } from "@/lib/logger";
 
@@ -193,76 +195,72 @@ export async function restoreVersion(
 
   const tableDataMap = new Map(tableDatas.map((t) => [t.tableName, t]));
 
-  // Run restore in a SERIALIZABLE transaction
+  // Wrap in a transaction so truncate + inserts are atomic.
+  // If anything fails, the database rolls back to its pre-restore state.
   let restoredRows = 0;
 
-  // Truncate all user tables in one statement
-  const allTableNames = VERSION_TABLE_NAMES.map((n) => `"${n}"`).join(", ");
-  await database.execute(sql.raw(`TRUNCATE ${allTableNames} CASCADE`));
+  await database.transaction(async (tx) => {
+    // Truncate all user tables
+    await truncateTables(tx, VERSION_TABLE_NAMES);
 
-  // Insert rows per table in tier order (0 → 1 → 2)
-  const sortedTables = [...VERSION_TABLES].sort((a, b) => a.tier - b.tier);
+    // Insert rows per table in tier order (0 → 1 → 2)
+    const sortedTables = [...VERSION_TABLES].sort((a, b) => a.tier - b.tier);
 
-  for (const tableEntry of sortedTables) {
-    const tableData = tableDataMap.get(tableEntry.name);
-    if (
-      !tableData ||
-      !Array.isArray(tableData.data) ||
-      tableData.data.length === 0
-    ) {
-      continue;
-    }
+    for (const tableEntry of sortedTables) {
+      const tableData = tableDataMap.get(tableEntry.name);
+      if (
+        !tableData ||
+        !Array.isArray(tableData.data) ||
+        tableData.data.length === 0
+      ) {
+        continue;
+      }
 
-    const rows = tableData.data as Record<string, unknown>[];
-    const columns = Object.keys(rows[0]!);
-    const colList = columns.map((c) => `"${c}"`).join(", ");
-    const BATCH_SIZE = 500;
+      const rows = tableData.data as Record<string, unknown>[];
+      const columns = Object.keys(rows[0]!);
+      const colList = columns.map((c) => `"${c}"`).join(", ");
+      const BATCH_SIZE = 500;
 
-    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-      const batch = rows.slice(i, i + BATCH_SIZE);
-      const valueClauses = batch.map((row) => {
-        const values = columns.map((col) => {
-          const val = row[col];
-          if (val === null || val === undefined) return "NULL";
-          if (typeof val === "boolean") return val ? "TRUE" : "FALSE";
-          if (typeof val === "number") return String(val);
-          if (typeof val === "object")
-            return `'${JSON.stringify(val).replace(/'/g, "''")}'::jsonb`;
-          return `'${String(val).replace(/'/g, "''")}'`;
+      for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+        const batch = rows.slice(i, i + BATCH_SIZE);
+        const valueClauses = batch.map((row) => {
+          const values = columns.map((col) => {
+            const val = row[col];
+            if (val === null || val === undefined) return "NULL";
+            if (typeof val === "boolean") return val ? "TRUE" : "FALSE";
+            if (typeof val === "number") return String(val);
+            if (typeof val === "object")
+              return jsonbLiteral(val);
+            return `'${String(val).replace(/'/g, "''")}'`;
+          });
+          return `(${values.join(", ")})`;
         });
-        return `(${values.join(", ")})`;
-      });
-      await database.execute(
-        sql.raw(
-          `INSERT INTO "${tableEntry.name}" (${colList}) VALUES ${valueClauses.join(", ")}`,
-        ),
-      );
-      restoredRows += batch.length;
+        await tx.execute(
+          sql.raw(
+            `INSERT INTO "${tableEntry.name}" (${colList}) VALUES ${valueClauses.join(", ")}`,
+          ),
+        );
+        restoredRows += batch.length;
+      }
     }
-  }
 
-  // Reset serial sequences for all tables
-  for (const tableName of VERSION_TABLE_NAMES) {
-    await database.execute(
-      sql.raw(
-        `SELECT setval(pg_get_serial_sequence('"${tableName}"', 'id'), COALESCE((SELECT MAX(id) FROM "${tableName}"), 0) + 1, false)`,
-      ),
-    );
-  }
+    // Reset serial sequences for all tables (PG only — SQLite autoincrement is automatic)
+    await resetSequences(tx, VERSION_TABLE_NAMES);
 
-  // Log restore action
-  try {
-    await database.insert(schema.changeLog).values({
-      tableName: "state_versions",
-      recordId: versionId,
-      fieldName: "restore",
-      oldValue: null,
-      newValue: { action: "restore", versionName: version.name } as unknown,
-      changedBy: version.createdBy,
-    });
-  } catch {
-    // Non-critical
-  }
+    // Log restore action
+    try {
+      await tx.insert(schema.changeLog).values({
+        tableName: "state_versions",
+        recordId: versionId,
+        fieldName: "restore",
+        oldValue: null,
+        newValue: { action: "restore", versionName: version.name } as unknown,
+        changedBy: version.createdBy,
+      });
+    } catch {
+      // Non-critical
+    }
+  });
 
   return { restoredTables: tableDatas.length, restoredRows };
 }
@@ -318,8 +316,20 @@ export async function importBackup(
     }
   }
 
+  if (isPostgres()) {
+    return importBackupPg(database, backup);
+  }
+  return importBackupSqlite(database, backup);
+}
+
+async function importBackupPg(
+  database: NodePgDatabase<typeof schema>,
+  backup: BackupData,
+): Promise<{ restoredTables: number; restoredRows: number }> {
   // Use a dedicated connection so TRUNCATE, SET session_replication_role,
   // and all INSERTs run on the same connection in a single transaction.
+  const { pool } = await import("./index");
+  if (!pool) throw new Error("PG pool not available — importBackupPg requires PostgreSQL");
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -359,8 +369,7 @@ export async function importBackup(
           const placeholders = columns.map((col) => {
             const val = row[col];
             if (val === null || val === undefined) return "NULL";
-            const isJsonb = tableJsonbCols.has(col);
-            if (isJsonb) {
+            if (tableJsonbCols.has(col)) {
               params.push(JSON.stringify(val));
               return `$${params.length}::jsonb`;
             }
@@ -387,7 +396,7 @@ export async function importBackup(
     await client.query("SET session_replication_role = 'origin'");
     await client.query("COMMIT");
 
-    // Log import (non-critical, use pool connection)
+    // Log import (non-critical)
     try {
       await database.insert(schema.changeLog).values({
         tableName: "state_versions",
@@ -409,4 +418,61 @@ export async function importBackup(
   } finally {
     client.release();
   }
+}
+
+async function importBackupSqlite(
+  database: NodePgDatabase<typeof schema>,
+  backup: BackupData,
+): Promise<{ restoredTables: number; restoredRows: number }> {
+  // SQLite: use drizzle execute within a single connection (SQLite is single-writer)
+  await truncateTables(database, VERSION_TABLE_NAMES);
+
+  let restoredRows = 0;
+  const sortedTables = [...VERSION_TABLES].sort((a, b) => a.tier - b.tier);
+
+  for (const tableEntry of sortedTables) {
+    const rows = backup.tables[tableEntry.name] as Record<string, unknown>[];
+    if (!rows || rows.length === 0) continue;
+
+    const columns = Object.keys(rows[0]!);
+    const colList = columns.map((c) => `"${c}"`).join(", ");
+    const BATCH_SIZE = 500;
+
+    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+      const batch = rows.slice(i, i + BATCH_SIZE);
+      const valueClauses = batch.map((row) => {
+        const values = columns.map((col) => {
+          const val = row[col];
+          if (val === null || val === undefined) return "NULL";
+          if (typeof val === "boolean") return val ? "1" : "0";
+          if (typeof val === "number") return String(val);
+          if (typeof val === "object") return jsonbLiteral(val);
+          return `'${String(val).replace(/'/g, "''")}'`;
+        });
+        return `(${values.join(", ")})`;
+      });
+      await database.execute(
+        sql.raw(
+          `INSERT INTO "${tableEntry.name}" (${colList}) VALUES ${valueClauses.join(", ")}`,
+        ),
+      );
+      restoredRows += batch.length;
+    }
+  }
+
+  // Log import (non-critical)
+  try {
+    await database.insert(schema.changeLog).values({
+      tableName: "state_versions",
+      recordId: 0,
+      fieldName: "import",
+      oldValue: null,
+      newValue: { action: "import", exportedAt: backup.exportedAt } as unknown,
+      changedBy: "system",
+    });
+  } catch {
+    // Non-critical
+  }
+
+  return { restoredTables: sortedTables.length, restoredRows };
 }

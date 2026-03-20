@@ -13,13 +13,13 @@ import {
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
-  taxTreatmentEnum,
-  matchTaxTreatmentEnum,
-  contributionMethodEnum,
-  employerMatchTypeEnum,
-  hsaCoverageTypeEnum,
-  accountOwnershipEnum,
-} from "@/lib/db/schema";
+  TAX_TREATMENT_VALUES,
+  MATCH_TAX_TREATMENT_VALUES,
+  CONTRIBUTION_METHOD_VALUES,
+  EMPLOYER_MATCH_TYPE_VALUES,
+  HSA_COVERAGE_TYPE_VALUES,
+  ACCOUNT_OWNERSHIP_VALUES,
+} from "@/lib/config/enum-values";
 import { zDecimal } from "./_shared";
 
 // --- Zod schemas ---
@@ -80,19 +80,19 @@ const contributionAccountInput = z.object({
   subType: z.string().nullable().optional(),
   label: z.string().nullable().optional(),
   parentCategory: z.enum(parentCategoryEnum()).default("Retirement"),
-  taxTreatment: z.enum(taxTreatmentEnum.enumValues),
-  contributionMethod: z.enum(contributionMethodEnum.enumValues),
+  taxTreatment: z.enum(TAX_TREATMENT_VALUES),
+  contributionMethod: z.enum(CONTRIBUTION_METHOD_VALUES),
   contributionValue: zDecimal,
-  employerMatchType: z.enum(employerMatchTypeEnum.enumValues),
+  employerMatchType: z.enum(EMPLOYER_MATCH_TYPE_VALUES),
   employerMatchValue: zDecimal.nullable().optional(),
   employerMaxMatchPct: zDecimal.nullable().optional(),
   employerMatchTaxTreatment: z
-    .enum(matchTaxTreatmentEnum.enumValues)
+    .enum(MATCH_TAX_TREATMENT_VALUES)
     .default("pre_tax"),
-  hsaCoverageType: z.enum(hsaCoverageTypeEnum.enumValues).nullable().optional(),
+  hsaCoverageType: z.enum(HSA_COVERAGE_TYPE_VALUES).nullable().optional(),
   autoMaximize: z.boolean().default(false),
   isActive: z.boolean().default(true),
-  ownership: z.enum(accountOwnershipEnum.enumValues).default("individual"),
+  ownership: z.enum(ACCOUNT_OWNERSHIP_VALUES).default("individual"),
   performanceAccountId: z.number().int().nullable().optional(),
   targetAnnual: zDecimal.nullable().optional(),
   allocationPriority: z.number().int().default(0),

@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.1.1] - 2026-03-19
 
+### Added
+
+- **Dual database support** — SQLite as zero-config default for self-hosted users, PostgreSQL via `DATABASE_URL` for shared/production deployments
+- `DATABASE_URL` as single connection control point (replaces 5 individual `DATABASE_HOST`/`PORT`/`USER`/`PASSWORD`/`NAME` env vars)
+- `docker-compose.yml` defaults to SQLite (no database setup required)
+- `docker-compose.postgres.yml` for PostgreSQL deployments
+
+### Changed
+
+- Database dialect is now auto-detected from `DATABASE_URL` presence — no manual `DATABASE_PROVIDER` setting needed
+- Version restore operations are now wrapped in a transaction for atomicity
+- `drizzle.config.ts` uses `DATABASE_URL` connection string
+
 ### Fixed
 
 - Automatic daily snapshots were not being created

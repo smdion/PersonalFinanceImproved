@@ -4,9 +4,9 @@ import { cookies, headers } from "next/headers";
 import { auth } from "./auth";
 import { type Permission, ALL_PERMISSIONS } from "./auth";
 import { db, pool } from "@/lib/db";
+import { isPostgres } from "@/lib/db/dialect";
 import { rateLimit } from "@/lib/rate-limit";
 import * as schema from "@/lib/db/schema";
-import { drizzle } from "drizzle-orm/node-postgres";
 import { log } from "@/lib/logger";
 
 export type AuthLevel = "public" | "protected" | "admin" | Permission;
@@ -131,7 +131,8 @@ function logMutation(session: Session, path: string, rawInput: unknown) {
 // This avoids the pool-connection-hop problem where SET search_path on one
 // connection doesn't apply to queries that land on a different connection.
 const demoSchemaMiddleware = t.middleware(async ({ ctx, next }) => {
-  if (!ctx.demoSchema) return next({ ctx });
+  // Demo schemas require PG (uses SET search_path for isolation)
+  if (!ctx.demoSchema || !isPostgres()) return next({ ctx });
 
   // ctx.demoSchema is already validated by the regex in createContext,
   // but double-quote the identifier defensively.
@@ -139,7 +140,8 @@ const demoSchemaMiddleware = t.middleware(async ({ ctx, next }) => {
   const client = await pool.connect();
   try {
     await client.query(`SET search_path TO ${quotedSchema}, public`);
-    const demoDb = drizzle(client, { schema }) as unknown as typeof db;
+    const { drizzle: pgDrizzle } = await import("drizzle-orm/node-postgres");
+    const demoDb = pgDrizzle(client, { schema }) as unknown as typeof db;
     return await next({ ctx: { ...ctx, db: demoDb } });
   } finally {
     await client.query("SET search_path TO public");

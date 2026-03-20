@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db, pool } from "@/lib/db";
+import { db, pool, isPostgres } from "@/lib/db";
 import { sql } from "drizzle-orm";
 import { getActiveBudgetApi, getApiConnection } from "@/lib/budget-api";
 import { log } from "@/lib/logger";
@@ -11,13 +11,21 @@ export async function GET() {
   };
 
   try {
-    await db.execute(sql`SELECT 1`);
+    // PG: async .execute(). SQLite (better-sqlite3): synchronous .all().
+    // db is typed as NodePgDatabase but may be BetterSQLite3Database at runtime.
+    if (isPostgres()) {
+      await db.execute(sql`SELECT 1`);
+    } else {
+      (db as unknown as { all: (q: unknown) => unknown }).all(sql`SELECT 1`);
+    }
     status.database = "connected";
-    status.pool = {
-      total: pool.totalCount,
-      idle: pool.idleCount,
-      waiting: pool.waitingCount,
-    };
+    if (isPostgres() && pool) {
+      status.pool = {
+        total: pool.totalCount,
+        idle: pool.idleCount,
+        waiting: pool.waitingCount,
+      };
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     status.database = "disconnected";

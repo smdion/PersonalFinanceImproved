@@ -1,12 +1,12 @@
 import { z } from "zod/v4";
 import { sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
 import { cookies } from "next/headers";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { DEMO_PROFILES, getDemoProfileList } from "@/lib/demo";
 import type { DemoProfile } from "@/lib/demo";
 import * as schema from "@/lib/db/schema";
 import { db as appDb, pool } from "@/lib/db";
+import { isPostgres } from "@/lib/db/dialect";
 import { getParentCategory } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 
@@ -349,6 +349,10 @@ export const demoRouter = createTRPCRouter({
   activateProfile: protectedProcedure
     .input(z.object({ slug: demoSlugSchema }))
     .mutation(async ({ input }) => {
+      if (!isPostgres()) {
+        throw new Error("Demo mode requires PostgreSQL (uses PG schemas for isolation)");
+      }
+
       const profile = DEMO_PROFILES[input.slug];
       if (!profile) {
         throw new Error(`Unknown demo profile: ${input.slug}`);
@@ -369,6 +373,7 @@ export const demoRouter = createTRPCRouter({
           );
         }
 
+        const { drizzle } = await import("drizzle-orm/node-postgres");
         const cdb = drizzle(client, { schema }) as unknown as typeof appDb;
 
         // Create schema if not exists
@@ -460,6 +465,9 @@ export const demoRouter = createTRPCRouter({
   isDemoReady: protectedProcedure
     .input(z.object({ slug: demoSlugSchema }))
     .query(async ({ ctx, input }) => {
+      if (!isPostgres()) {
+        return { ready: false };
+      }
       const schemaName = `demo_${input.slug.replace(/-/g, "_")}`;
       const result = await ctx.db.execute<{ exists: boolean }>(
         sql`SELECT EXISTS(SELECT 1 FROM information_schema.schemata WHERE schema_name = ${schemaName}) as exists`,

@@ -39,13 +39,16 @@ git clone <repo-url> && cd ledgr
 
 # Configure environment
 cp .env.example .env
-# Edit .env — at minimum set DATABASE_PASSWORD and NEXTAUTH_SECRET
+# Edit .env — at minimum set NEXTAUTH_SECRET and CRON_SECRET
 
-# Start the app and database
+# Start the app (SQLite, zero config)
 docker compose up -d
+
+# Or with PostgreSQL:
+# docker compose -f docker-compose.postgres.yml up -d
 ```
 
-This starts both the app (port 3000) and a PostgreSQL 16 database. On first launch, migrations run automatically and you'll see the onboarding wizard.
+By default, Ledgr uses SQLite — no database setup required. For PostgreSQL, use the postgres compose file or set `DATABASE_URL` in `.env`. On first launch, migrations run automatically and you'll see the onboarding wizard.
 
 ### Generate Secrets
 
@@ -65,15 +68,17 @@ All configuration is done through environment variables. Copy `.env.example` to 
 
 | Variable | Description | Default |
 |---|---|---|
-| `DATABASE_HOST` | PostgreSQL hostname | `localhost` |
-| `DATABASE_PORT` | PostgreSQL port | `5432` |
-| `DATABASE_USER` | PostgreSQL username | `postgres` |
-| `DATABASE_PASSWORD` | PostgreSQL password | *(none — must set)* |
-| `DATABASE_NAME` | PostgreSQL database name | `ledgr` |
 | `NEXTAUTH_URL` | Full URL where the app is hosted (e.g. `http://localhost:3000`) | *(none — must set)* |
 | `NEXTAUTH_SECRET` | Random secret for session encryption. Generate with `openssl rand -base64 32` | *(none — must set)* |
 | `AUTH_TRUST_HOST` | Trust the `X-Forwarded-Host` header (set `true` behind a reverse proxy) | `true` |
 | `CRON_SECRET` | Secret token for authenticating cron job API calls | *(none — must set)* |
+
+### Optional — Database
+
+| Variable | Description | Default |
+|---|---|---|
+| `DATABASE_URL` | PostgreSQL connection string (e.g. `postgresql://user:pass@host:5432/ledgr`). Omit for SQLite. | *(none — SQLite)* |
+| `SQLITE_PATH` | Path to SQLite database file (only used when `DATABASE_URL` is not set) | `data/ledgr.db` |
 
 ### Optional — Authentication
 
@@ -113,7 +118,7 @@ All configuration is done through environment variables. Copy `.env.example` to 
 └──────────────┬───────────────────────────────┘
                │ SQL
 ┌──────────────▼───────────────────────────────┐
-│           PostgreSQL 16                      │
+│     SQLite (default) or PostgreSQL 16        │
 │    (migrations managed by Drizzle Kit)       │
 └──────────────────────────────────────────────┘
 ```
@@ -122,7 +127,7 @@ All configuration is done through environment variables. Copy `.env.example` to 
 
 - **End-to-end type safety** — TypeScript strict mode from database schema (Drizzle) through API (tRPC) to UI (React).
 - **Data-driven design** — Data shapes are the source of truth. Renderers are category-agnostic and read fields to render what's present. Display logic lives in data presence, not in call-site decisions.
-- **Self-hosted** — No external SaaS dependencies. Budget APIs (YNAB, Actual) are optional integrations.
+- **Self-hosted** — No external SaaS dependencies. SQLite by default (zero config), PostgreSQL supported. Budget APIs (YNAB, Actual) are optional integrations.
 
 ## Development
 
@@ -130,7 +135,7 @@ All configuration is done through environment variables. Copy `.env.example` to 
 
 - Node.js 20+
 - pnpm (via corepack: `corepack enable`)
-- PostgreSQL 15+
+- PostgreSQL 15+ *(optional — SQLite is used by default)*
 
 ### Setup
 
@@ -140,7 +145,8 @@ pnpm install
 
 # Configure environment
 cp .env.example .env
-# Edit .env — at minimum set DATABASE_* and NEXTAUTH_SECRET
+# Edit .env — set NEXTAUTH_SECRET and CRON_SECRET
+# Optionally set DATABASE_URL for PostgreSQL
 
 # Run database migrations
 pnpm db:migrate
@@ -208,7 +214,7 @@ docker compose restart ledgr
 - The container has a **1 GB memory limit** set in docker-compose.yml.
 - For HTTPS, place a reverse proxy (NGINX, Caddy, Traefik, etc.) in front of the app and set `NEXTAUTH_URL` to your public URL.
 - Set `AUTH_TRUST_HOST=true` when running behind a reverse proxy.
-- The database volume (`pgdata`) persists data across container restarts.
+- **SQLite mode**: The data volume (`ledgr_data`) persists the database file across container restarts. **PostgreSQL mode**: Data lives in the external PostgreSQL instance.
 
 ### Authentik OIDC Setup
 
@@ -242,7 +248,7 @@ pnpm test:watch    # Watch mode
 - [Next.js 14](https://nextjs.org/) (App Router, standalone output)
 - [TypeScript](https://www.typescriptlang.org/) (strict mode)
 - [tRPC](https://trpc.io/) (end-to-end type-safe API)
-- [Drizzle ORM](https://orm.drizzle.team/) + PostgreSQL 16
+- [Drizzle ORM](https://orm.drizzle.team/) + SQLite / PostgreSQL 16
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Recharts](https://recharts.org/) (charts and visualizations)
 - [NextAuth.js](https://next-auth.js.org/) (authentication via Authentik OIDC)

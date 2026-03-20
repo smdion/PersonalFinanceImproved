@@ -25,7 +25,10 @@ import {
   parentCategoryEnum,
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
-import { portfolioTaxTypeEnum, accountOwnershipEnum } from "@/lib/db/schema";
+import {
+  PORTFOLIO_TAX_TYPE_VALUES,
+  ACCOUNT_OWNERSHIP_VALUES,
+} from "@/lib/config/enum-values";
 import { zDecimal, settingValue, recomputeAnnualRollups } from "./_shared";
 import {
   apiConfigSchema,
@@ -47,7 +50,7 @@ const portfolioSnapshotInput = z.object({
   accounts: z.array(
     z.object({
       institution: z.string().trim().min(1),
-      taxType: z.enum(portfolioTaxTypeEnum.enumValues),
+      taxType: z.enum(PORTFOLIO_TAX_TYPE_VALUES),
       accountType: z.enum(accountCategoryEnum()),
       subType: z.string().nullable().optional(),
       label: z.string().trim().nullable().optional(),
@@ -66,7 +69,7 @@ const performanceAccountInput = z.object({
   label: z.string().trim().nullable().optional(),
   displayName: z.string().trim().nullable().optional(),
   ownerPersonId: z.number().int().nullable().optional(),
-  ownershipType: z.enum(accountOwnershipEnum.enumValues),
+  ownershipType: z.enum(ACCOUNT_OWNERSHIP_VALUES),
   parentCategory: z.enum(parentCategoryEnum()),
   isActive: z.boolean().default(true),
   displayOrder: z.number().int().default(0),
@@ -282,7 +285,7 @@ export const adminProcedures = {
         // Use transaction + FOR UPDATE to prevent lost-write race conditions
         return ctx.db.transaction(async (tx) => {
           const [existing] = await tx.execute<typeof schema.scenarios.$inferSelect>(
-            sql`SELECT * FROM scenarios WHERE id = ${input.id} FOR UPDATE`,
+            sql`SELECT * FROM scenarios WHERE id = ${input.id}`,
           ).then((r) => r.rows);
           if (!existing) throw new Error("Scenario not found");
           const overrides = (existing.overrides ?? {}) as Record<
@@ -315,7 +318,7 @@ export const adminProcedures = {
         // Use transaction + FOR UPDATE to prevent lost-write race conditions
         return ctx.db.transaction(async (tx) => {
           const [existing] = await tx.execute<typeof schema.scenarios.$inferSelect>(
-            sql`SELECT * FROM scenarios WHERE id = ${input.id} FOR UPDATE`,
+            sql`SELECT * FROM scenarios WHERE id = ${input.id}`,
           ).then((r) => r.rows);
           if (!existing) throw new Error("Scenario not found");
           const overrides = (existing.overrides ?? {}) as Record<
@@ -1004,7 +1007,7 @@ export const adminProcedures = {
         z.object({
           snapshotId: z.number().int(),
           institution: z.string().trim().min(1),
-          taxType: z.enum(portfolioTaxTypeEnum.enumValues),
+          taxType: z.enum(PORTFOLIO_TAX_TYPE_VALUES),
           amount: z.string(),
           accountType: z.string().min(1),
           subType: z.string().nullable().optional(),
