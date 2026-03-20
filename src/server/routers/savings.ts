@@ -90,15 +90,26 @@ export const savingsRouter = createTRPCRouter({
 
       const balanceMap = new Map<number, number>();
       if (activeGoalIds.length > 0) {
-        const latestBalances = await ctx.db.execute(sql`
-            SELECT DISTINCT ON (goal_id) goal_id, balance
-            FROM savings_monthly
-            WHERE goal_id IN (${sql.join(
-              activeGoalIds.map((id) => sql`${id}`),
-              sql`, `,
-            )})
-            ORDER BY goal_id, month_date DESC
-          `);
+        const { isPostgres } = await import("@/lib/db/dialect");
+        const inList = sql.join(
+          activeGoalIds.map((id) => sql`${id}`),
+          sql`, `,
+        );
+        const latestBalances = isPostgres()
+          ? await ctx.db.execute(sql`
+              SELECT DISTINCT ON (goal_id) goal_id, balance
+              FROM savings_monthly
+              WHERE goal_id IN (${inList})
+              ORDER BY goal_id, month_date DESC
+            `)
+          : await ctx.db.execute(sql`
+              SELECT goal_id, balance FROM savings_monthly t1
+              WHERE month_date = (
+                SELECT MAX(t2.month_date) FROM savings_monthly t2
+                WHERE t2.goal_id = t1.goal_id
+              )
+              AND goal_id IN (${inList})
+            `);
         for (const row of latestBalances.rows) {
           balanceMap.set(row.goal_id as number, num(row.balance as string));
         }

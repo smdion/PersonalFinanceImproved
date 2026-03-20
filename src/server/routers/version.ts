@@ -201,8 +201,9 @@ export const versionRouter = createTRPCRouter({
     .input(z.object({ confirmation: z.literal("delete") }))
     .mutation(async ({ ctx }) => {
       // Get all public tables
+      const { listTablesSQL, truncateTables } = await import("@/lib/db/compat");
       const tables = await ctx.db.execute<{ tablename: string }>(
-        sql`SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename`,
+        listTablesSQL(),
       );
 
       // Tables to preserve (versioning system + app config)
@@ -212,17 +213,13 @@ export const versionRouter = createTRPCRouter({
         "app_settings",
       ]);
 
-      // Truncate all user data tables in a single CASCADE statement
+      // Truncate all user data tables
       const toTruncate = tables.rows
         .map((r) => r.tablename)
         .filter((t) => !preserve.has(t));
 
       if (toTruncate.length > 0) {
-        await ctx.db.execute(
-          sql.raw(
-            `TRUNCATE TABLE ${toTruncate.map((t) => `"${t}"`).join(", ")} CASCADE`,
-          ),
-        );
+        await truncateTables(ctx.db, toTruncate);
       }
 
       return { ok: true, tablesCleared: toTruncate.length };

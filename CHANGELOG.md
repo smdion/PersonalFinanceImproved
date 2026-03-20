@@ -4,68 +4,69 @@ All notable changes to Ledgr will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.1] - 2026-03-19
+
+### Added
+
+- **Dual database support** — SQLite as zero-config default for self-hosted users, PostgreSQL via `DATABASE_URL` for shared/production deployments
+- `DATABASE_URL` as single connection control point (replaces 5 individual `DATABASE_HOST`/`PORT`/`USER`/`PASSWORD`/`NAME` env vars)
+- `docker-compose.yml` defaults to SQLite (no database setup required)
+- `docker-compose.postgres.yml` for PostgreSQL deployments
+
+### Changed
+
+- Database dialect is now auto-detected from `DATABASE_URL` presence — no manual `DATABASE_PROVIDER` setting needed
+- Version restore operations are now wrapped in a transaction for atomicity
+- `drizzle.config.ts` uses `DATABASE_URL` connection string
+
+### Fixed
+
+- Automatic daily snapshots were not being created
+- Container restarts no longer create duplicate snapshots for the same day
+- Authentik users now receive the correct role based on their group membership
+- Timestamps now display in the correct timezone regardless of database server settings
+- Dark mode: fixed visible dark boxes on the Historical page and other card backgrounds
+
 ## [0.1.0] - 2026-03-18
 
 ### Features
 
 - 7 withdrawal strategies (Fixed, Forgo-Inflation, Spending Decline, Constant %, Endowment, Vanguard Dynamic, Guyton-Klinger)
-- Full federal tax engine with 2025/2026 brackets, FICA, Additional Medicare Tax, LTCG graduated rates
-- Social Security taxation via IRS 3-tier provisional income formula
-- RMD compliance with SECURE 2.0 age thresholds and Uniform Lifetime Table
-- Monte Carlo simulation with Cholesky-correlated returns, glide-path support, and percentile bands
+- Federal tax engine with 2025/2026 brackets, FICA, Additional Medicare Tax, and LTCG graduated rates
+- Social Security taxation using the IRS provisional income formula
+- Required Minimum Distribution tracking with SECURE 2.0 age thresholds
+- Monte Carlo retirement simulations with correlated returns and percentile bands
 - IRMAA cliff detection with 2-year lookback
 - Mortgage calculator with amortization, extra payments, refinance chains, and what-if scenarios
-- Contribution routing: waterfall, percentage, and specs-based modes with IRS limit enforcement
+- Contribution routing with waterfall, percentage, and spec-based modes (IRS limits enforced)
 - Budget dashboard with income/expense tracking and category breakdowns
 - Savings goals tracking
 - Brokerage account management with performance metrics
 - Portfolio allocation and rebalancing views
 - Paycheck modeling with pre-tax/post-tax deduction breakdowns
-- Scenario system for comparing financial plans side-by-side
+- Side-by-side scenario comparison
 - State versioning with snapshot/restore and JSON export/import
 - Demo mode with pre-built profiles and read-only access
-- ACA subsidy estimator using national average premiums
+- ACA subsidy estimator
 
 ### Security
 
-- RBAC via Authentik OIDC with 9 granular permissions and admin/viewer roles
-- Local admin login with email/password (bcrypt-hashed, created during onboarding)
-- Permission-gated tRPC procedures for all mutation endpoints
-- First-run bootstrap grants admin to initial authenticated user
-- Cookie-based demo profile isolation with schema-level separation
-- Dev mode requires explicit ALLOW_DEV_MODE opt-in; defaults to viewer role
-
-### Performance
-
-- Pure calculator functions separated from data-fetching for testability
-- Server components for auth and DB checks; client components only for interactives
-- Connection pooling with dedicated connections for demo schema switching
-
-### Database
-
-- PostgreSQL with Drizzle ORM and strict TypeScript schema
-- Automated migrations via drizzle-kit
-- Schema drift detection using drizzle journal version tracking
-- Change log (audit trail) for all admin mutations
-- Auto-versioning with configurable retention policy
+- Role-based access via Authentik OIDC with granular permissions
+- Local admin login with email/password
+- First-run bootstrap grants admin to the initial user
+- Isolated demo profiles with read-only access
+- Dev mode requires explicit opt-in
 
 ### UI/UX
 
-- Dark/light theme via CSS custom properties
-- Responsive dashboard layout with sidebar navigation
-- Accessible skip-to-content link
-- Config-driven design system with no magic strings
-- Tooltip and card components via Radix UI primitives
+- Dark and light themes
+- Responsive dashboard with sidebar navigation
 - Recharts-based data visualizations
-
-### Testing
-
-- Vitest unit tests for financial calculators
-- Property-based testing with fast-check
-- Calculator validation against published research (Trinity Study, cFIREsim)
 
 ### Operations
 
+- PostgreSQL with Drizzle ORM and automated migrations
+- Audit trail for all admin changes
+- Auto-versioning with configurable retention
 - Multi-stage Docker build
-- Database health check on dashboard load with user-friendly error state
-- Structured JSON error logging for audit failures
+- Database health check with user-friendly error state

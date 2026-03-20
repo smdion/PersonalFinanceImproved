@@ -202,8 +202,8 @@ const fullAuthConfig: NextAuthConfig = {
         // OIDC (Authentik): map groups to permissions
         if (account?.provider === "authentik") {
           token.authMethod = "oidc";
-          // profile.groups is available via the OIDC provider
-          const groups = (token as Record<string, unknown>).groups;
+          // groups forwarded from the OIDC profile callback via the user object
+          const groups = (user as Record<string, unknown>).groups;
           const { adminGroup, groupToPermission } =
             await loadPermissionGroups();
           if (Array.isArray(groups) && groups.includes(adminGroup)) {

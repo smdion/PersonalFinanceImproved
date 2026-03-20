@@ -5,7 +5,7 @@ Thanks for your interest in contributing! Here's how to get started.
 ## Development Setup
 
 1. Fork and clone the repo
-2. Copy `.env.example` to `.env` and fill in your database credentials
+2. Copy `.env.example` to `.env` and set `NEXTAUTH_SECRET` and `CRON_SECRET` (database defaults to SQLite — no config needed)
 3. Install dependencies: `pnpm install`
 4. Run migrations: `pnpm db:migrate`
 5. Start dev server: `pnpm dev`

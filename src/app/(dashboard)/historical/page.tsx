@@ -206,8 +206,8 @@ export default function HistoricalPage() {
                   onClick={() => toggleGroup(key)}
                   className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors ${
                     hiddenGroups.has(key)
-                      ? "bg-surface-elevated text-faint border"
-                      : "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                      ? "bg-surface-elevated text-faint border border-default"
+                      : "bg-surface-elevated text-blue-600 border border-blue-500/30"
                   }`}
                 >
                   {label}
@@ -321,7 +321,7 @@ function HistoricalTable({
         <thead>
           {/* Group headers — sticky Year, then scrollable groups */}
           <tr className="border-b border-strong">
-            <th className="sticky left-0 z-20 bg-surface-primary dark:bg-slate-900 py-1 px-1 border-r border-strong" />
+            <th className="sticky left-0 z-20 bg-surface-primary py-1 px-1 border-r border-strong" />
             {showNW && (
               <th
                 className="text-center px-1 py-1 text-faint font-medium border-l"

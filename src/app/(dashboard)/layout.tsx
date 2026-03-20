@@ -55,12 +55,8 @@ export default async function DashboardLayout({
   try {
     await db.execute(sql`SELECT 1`);
     // Verify at least one core table exists
-    const result = await db.execute(
-      sql`SELECT EXISTS (
-        SELECT 1 FROM information_schema.tables
-        WHERE table_schema = 'public' AND table_name = 'people'
-      ) AS has_tables`,
-    );
+    const { tableExistsSQL } = await import("@/lib/db/compat");
+    const result = await db.execute(tableExistsSQL("people"));
     const hasTable = (result.rows[0] as { has_tables: boolean })?.has_tables;
     if (!hasTable) {
       dbError =

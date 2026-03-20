@@ -8,6 +8,13 @@
       "when": 1773895325298,
       "tag": "0000_initial_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1773950390890,
+      "tag": "0001_drop_pg_enums",
+      "breakpoints": true
     }
   ]
 }

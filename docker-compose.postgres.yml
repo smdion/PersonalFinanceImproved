@@ -1,0 +1,37 @@
+# PostgreSQL variant — use this if you prefer an external database.
+# Usage: docker compose -f docker-compose.postgres.yml up -d
+services:
+  ledgr:
+    build: .
+    container_name: ledgr
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ledgr}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - AUTH_TRUST_HOST=${AUTH_TRUST_HOST:-true}
+      - CRON_SECRET=${CRON_SECRET}
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16-alpine
+    container_name: ledgr-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-ledgr}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

@@ -1,5 +1,6 @@
 # Stage 1: Install dependencies
 FROM node:20-alpine AS deps
+RUN apk add --no-cache python3 make g++
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
@@ -19,11 +20,9 @@ ENV APP_VERSION=$APP_VERSION
 
 # Build-time placeholders — Next.js validates env during static generation.
 # Real values are injected at runtime via container environment variables.
-ENV DATABASE_HOST=build-placeholder
-ENV DATABASE_PORT=5432
-ENV DATABASE_USER=build-placeholder
-ENV DATABASE_PASSWORD=build-placeholder
-ENV DATABASE_NAME=build-placeholder
+# DATABASE_URL with a postgres:// prefix so env validation uses PG schema;
+# runtime containers override or omit this for SQLite.
+ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
 ENV NEXTAUTH_SECRET=build-placeholder-secret-at-least-32-chars
 ENV NEXTAUTH_URL=http://localhost:3000
 ENV AUTH_TRUST_HOST=true
@@ -47,23 +46,26 @@ ENV APP_VERSION=$APP_VERSION
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# Copy standalone output
+# Copy standalone output (includes node_modules traced by @vercel/nft).
+# outputFileTracingIncludes in next.config.mjs ensures better-sqlite3's
+# native .node binary is included even though the build uses PG mode.
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Copy drizzle migrations and runtime db:migrate script
+# Copy drizzle migrations (both PG and SQLite) and runtime db:migrate script
 COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/drizzle-sqlite ./drizzle-sqlite
 COPY --from=builder /app/db-migrate.ts ./db-migrate.ts
 COPY --from=builder /app/seed-reference-data.sql ./seed-reference-data.sql
 
-# Install tsx + migration dependencies (not in standalone output)
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && corepack prepare pnpm@latest --activate && \
-    pnpm add -g tsx && \
-    cd /app && pnpm add drizzle-orm pg
+# Install tsx for running db-migrate.ts at container startup
+RUN npm install -g tsx
 
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
+
+# Default SQLite data directory — writable by nextjs user.
+# Mount a volume here for persistence: -v ledgr_data:/app/data
+RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
 
 USER nextjs
 

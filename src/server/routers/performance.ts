@@ -2,6 +2,7 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { asc, eq, and, sql } from "drizzle-orm";
 import { log } from "@/lib/logger";
+import { isPostgres } from "@/lib/db/dialect";
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -711,11 +712,13 @@ export const performanceRouter = createTRPCRouter({
       const nextYear = year + 1;
 
       return await ctx.db.transaction(async (tx) => {
-      // Guard: reject if year is already finalized — locked with FOR UPDATE
-      // to prevent concurrent finalization of the same year
+      // Guard: reject if year is already finalized — PG uses FOR UPDATE row lock,
+      // SQLite relies on its single-writer transaction model for serialization.
       const existingAnnualRows: (typeof schema.annualPerformance.$inferSelect)[] =
         await tx.execute(
-          sql`SELECT * FROM annual_performance WHERE year = ${year} FOR UPDATE`,
+          isPostgres()
+            ? sql`SELECT * FROM annual_performance WHERE year = ${year} FOR UPDATE`
+            : sql`SELECT * FROM annual_performance WHERE year = ${year}`,
         ).then((r) => r.rows as (typeof schema.annualPerformance.$inferSelect)[]);
 
       if (existingAnnualRows.some((r) => r.isFinalized)) {
