@@ -24,6 +24,7 @@ function ServiceCard({
   const utils = trpc.useUtils();
 
   // Form state
+  const [showUpdateKey, setShowUpdateKey] = useState(false);
   const [ynabToken, setYnabToken] = useState("");
   const [ynabBudgetId, setYnabBudgetId] = useState("");
   const [ynabBudgets, setYnabBudgets] = useState<
@@ -41,7 +42,10 @@ function ServiceCard({
   };
 
   const saveConnectionMut = trpc.sync.saveConnection.useMutation({
-    onSuccess: invalidateAll,
+    onSuccess: () => {
+      invalidateAll();
+      setShowUpdateKey(false);
+    },
   });
   const testConnectionMut = trpc.sync.testConnection.useMutation();
   const fetchBudgetsMut = trpc.sync.fetchYnabBudgets.useMutation({
@@ -116,8 +120,8 @@ function ServiceCard({
           </div>
         )}
 
-        {/* Credential form (only when not connected) */}
-        {!isConnected && (
+        {/* Credential form (when not connected, or updating key) */}
+        {(!isConnected || showUpdateKey) && (
           <div className="space-y-3">
             {service === "ynab" ? (
               <>
@@ -219,13 +223,27 @@ function ServiceCard({
                 </div>
               </>
             )}
-            <button
-              onClick={handleSave}
-              disabled={saveConnectionMut.isPending}
-              className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-            >
-              {saveConnectionMut.isPending ? "Saving..." : "Save Connection"}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSave}
+                disabled={saveConnectionMut.isPending}
+                className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                {saveConnectionMut.isPending
+                  ? "Saving..."
+                  : showUpdateKey
+                    ? "Update Credentials"
+                    : "Save Connection"}
+              </button>
+              {showUpdateKey && (
+                <button
+                  onClick={() => setShowUpdateKey(false)}
+                  className="px-3 py-1.5 text-sm text-muted hover:text-primary"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
           </div>
         )}
 
@@ -265,6 +283,12 @@ function ServiceCard({
                 Deactivate
               </button>
             )}
+            <button
+              onClick={() => setShowUpdateKey(!showUpdateKey)}
+              className="px-3 py-1.5 text-sm text-muted hover:text-primary underline"
+            >
+              {showUpdateKey ? "Hide" : "Update Key"}
+            </button>
             <button
               onClick={handleDelete}
               disabled={deleteConnectionMut.isPending}
@@ -531,7 +555,7 @@ function PreviewPanel({
   } = preview;
   const cashDiff = cash.api - cash.manual;
   const [expandedBudget, setExpandedBudget] = useState(false);
-  const [expandedSavings, setExpandedSavings] = useState(false);
+  const expandedSavings = true; // savings section uses <details> for collapse
 
   // Manual match overrides: budgetItemId -> selected apiCategoryId
   const [budgetOverrides, setBudgetOverrides] = useState<
@@ -760,7 +784,7 @@ function PreviewPanel({
   const totalDrifted = driftedBudgetCount + driftedSavingsCount;
 
   return (
-    <div className="border-t border-subtle pt-3 space-y-3">
+    <div className="border-t border-subtle pt-4 space-y-4">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-muted uppercase tracking-wider">
           {isActive ? "Synced Data" : "Preview"}
@@ -848,127 +872,96 @@ function PreviewPanel({
         </div>
       )}
 
-      {/* Cash comparison */}
-      <div className="bg-surface-sunken rounded-lg p-3 space-y-2">
-        <p className="text-xs font-medium text-muted">Cash Balances</p>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-          <span className="text-muted">Manual (current)</span>
-          <span className="text-right font-medium">
-            {formatCurrency(cash.manual)}
-          </span>
-          <span className="text-muted">
-            {isActive ? "From API" : "From API (preview)"}
-          </span>
-          <span className="text-right font-medium">
-            {formatCurrency(cash.api)}
-          </span>
-        </div>
-        {!isActive && cashDiff !== 0 && (
-          <p
-            className={`text-xs ${cashDiff > 0 ? "text-green-600" : "text-red-600"}`}
-          >
-            {cashDiff > 0 ? "+" : ""}
-            {formatCurrency(cashDiff)} difference if activated
-          </p>
-        )}
-        {cash.apiAccounts.length > 0 && (
-          <div className="mt-1 space-y-0.5">
-            {cash.apiAccounts.map((a) => (
-              <div
-                key={a.name}
-                className="flex justify-between text-xs text-muted"
-              >
-                <span>
-                  {a.name} ({a.type})
-                </span>
-                <span>{formatCurrency(a.balance)}</span>
+      {/* Dashboard — compact overview row */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-surface-sunken rounded-lg p-3">
+          <p className="text-[10px] font-medium text-muted uppercase tracking-wide">Cash</p>
+          <div className="text-lg font-semibold text-primary">{formatCurrency(cash.api)}</div>
+          {cashDiff !== 0 && (
+            <p className={`text-[10px] ${cashDiff > 0 ? "text-green-400" : "text-red-400"}`}>
+              {cashDiff > 0 ? "+" : ""}{formatCurrency(cashDiff)} vs manual
+            </p>
+          )}
+          {cash.apiAccounts.length > 0 && (
+            <details className="mt-1.5">
+              <summary className="text-[10px] text-faint cursor-pointer hover:text-secondary select-none">
+                {cash.apiAccounts.length} accounts
+              </summary>
+              <div className="mt-1 space-y-0.5">
+                {cash.apiAccounts.map((a) => (
+                  <div key={a.name} className="flex justify-between text-[10px] text-faint">
+                    <span className="truncate mr-1">{a.name}</span>
+                    <span className="tabular-nums">{formatCurrency(a.balance)}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Account summary */}
-      <div className="grid grid-cols-3 gap-2 text-center">
-        <div className="bg-surface-sunken rounded p-2">
-          <div className="text-lg font-semibold text-primary">
-            {accounts.total}
-          </div>
-          <div className="text-[10px] text-muted">Accounts</div>
+            </details>
+          )}
         </div>
-        <div className="bg-surface-sunken rounded p-2">
-          <div className="text-lg font-semibold text-primary">
-            {accounts.onBudget}
-          </div>
-          <div className="text-[10px] text-muted">On Budget</div>
+        <div className="bg-surface-sunken rounded-lg p-3">
+          <p className="text-[10px] font-medium text-muted uppercase tracking-wide">Accounts</p>
+          <div className="text-lg font-semibold text-primary">{accounts.total}</div>
+          <p className="text-[10px] text-faint">{accounts.onBudget} on budget · {accounts.tracking} tracking</p>
+          {Object.keys(accounts.byType).length > 0 && (
+            <details className="mt-1.5">
+              <summary className="text-[10px] text-faint cursor-pointer hover:text-secondary select-none">
+                By type
+              </summary>
+              <div className="mt-1 space-y-0.5">
+                {Object.entries(accounts.byType)
+                  .sort((a, b) => b[1].balance - a[1].balance)
+                  .map(([type, info]) => (
+                    <div key={type} className="flex justify-between text-[10px] text-faint">
+                      <span>{type} ({info.count})</span>
+                      <span className="tabular-nums">{formatCurrency(info.balance)}</span>
+                    </div>
+                  ))}
+              </div>
+            </details>
+          )}
         </div>
-        <div className="bg-surface-sunken rounded p-2">
-          <div className="text-lg font-semibold text-primary">
-            {categories.total}
-          </div>
-          <div className="text-[10px] text-muted">Categories</div>
+        <div className="bg-surface-sunken rounded-lg p-3">
+          <p className="text-[10px] font-medium text-muted uppercase tracking-wide">Categories</p>
+          <div className="text-lg font-semibold text-primary">{categories.total}</div>
+          <p className="text-[10px] text-faint">{categories.groups} groups</p>
         </div>
       </div>
-
-      {/* Account type breakdown */}
-      {Object.keys(accounts.byType).length > 0 && (
-        <div className="space-y-1">
-          <p className="text-xs font-medium text-muted">Accounts by Type</p>
-          {Object.entries(accounts.byType)
-            .sort((a, b) => b[1].balance - a[1].balance)
-            .map(([type, info]) => (
-              <div
-                key={type}
-                className="flex justify-between text-xs text-muted"
-              >
-                <span>
-                  {type} ({info.count})
-                </span>
-                <span className="font-medium">
-                  {formatCurrency(info.balance)}
-                </span>
-              </div>
-            ))}
-        </div>
-      )}
 
       {/* Budget category matching — grouped by Ledgr category */}
       {budget && budget.matches.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-muted">
+        <details className="border border-subtle rounded-lg group/budget">
+          <summary className="px-3 py-2.5 cursor-pointer select-none flex items-center justify-between">
+            <span className="text-xs font-medium text-muted">
               Budget Category Matching
-            </p>
+            </span>
+            <span className="flex gap-2 text-[10px]">
+              <span className="text-green-400">{budget.summary.linked}</span>
+              <span className="text-yellow-400">{budget.summary.suggested}</span>
+              <span className="text-faint">{budget.summary.unmatched}</span>
+              {budget.summary.apiOnly > 0 && (
+                <span className="text-purple-400">{budget.summary.apiOnly} API-only</span>
+              )}
+            </span>
+          </summary>
+          <div className="px-3 pb-3 space-y-2">
+
+          {/* Inline details toggle for individual items */}
+          <div className="flex items-center justify-between">
             <button
               onClick={() => setExpandedBudget(!expandedBudget)}
               className="text-[10px] text-blue-500 hover:text-blue-700"
             >
-              {expandedBudget ? "Collapse" : "Expand"}
+              {expandedBudget ? "Hide items" : "Show items"}
             </button>
           </div>
 
-          {/* Summary counts */}
-          <div className="flex gap-3 text-[10px]">
-            <span className="text-green-600">
-              {budget.summary.linked} linked
-            </span>
-            <span className="text-yellow-600">
-              {budget.summary.suggested} suggested
-            </span>
-            <span className="text-faint">
-              {budget.summary.unmatched} unmatched
-            </span>
-            <span className="text-purple-500">
-              {budget.summary.apiOnly} API-only
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-[9px] text-faint">
+          <div className="flex items-center gap-2 text-[9px] text-faint flex-wrap">
             <span>Sync:</span>
-            <span className="text-blue-500">→ pull = API→Ledgr</span>
-            <span className="text-green-500">← push = Ledgr→API</span>
-            <span className="text-purple-500">⇄ both = 2-way</span>
+            <span className="text-blue-500">→ pull</span>
+            <span className="text-green-500">← push</span>
+            <span className="text-purple-500">⇄ both</span>
             <span className="text-faint">|</span>
-            <span>Set all linked to:</span>
+            <span>Set all:</span>
             {(["pull", "push", "both"] as const).map((dir) => (
               <button
                 key={dir}
@@ -1355,35 +1348,24 @@ function PreviewPanel({
                 </details>
               </div>
             )}
-        </div>
+          </div>
+        </details>
       )}
 
       {/* Savings / sinking fund matching */}
       {savings && savings.matches.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-muted">
+        <details className="border border-subtle rounded-lg">
+          <summary className="px-3 py-2.5 cursor-pointer select-none flex items-center justify-between">
+            <span className="text-xs font-medium text-muted">
               Sinking Fund Matching
-            </p>
-            <button
-              onClick={() => setExpandedSavings(!expandedSavings)}
-              className="text-[10px] text-blue-500 hover:text-blue-700"
-            >
-              {expandedSavings ? "Collapse" : "Expand"}
-            </button>
-          </div>
-
-          <div className="flex gap-3 text-[10px]">
-            <span className="text-green-600">
-              {savings.summary.linked} linked
             </span>
-            <span className="text-yellow-600">
-              {savings.summary.suggested} suggested
+            <span className="flex gap-2 text-[10px]">
+              <span className="text-green-400">{savings.summary.linked}</span>
+              <span className="text-yellow-400">{savings.summary.suggested}</span>
+              <span className="text-faint">{savings.summary.unmatched}</span>
             </span>
-            <span className="text-faint">
-              {savings.summary.unmatched} unmatched
-            </span>
-          </div>
+          </summary>
+          <div className="px-3 pb-3 space-y-2">
 
           {(savings.summary.suggested > 0 ||
             Object.values(savingsOverrides).some(Boolean)) && (
@@ -1542,7 +1524,8 @@ function PreviewPanel({
               </React.Fragment>
             ))}
           </div>
-        </div>
+          </div>
+        </details>
       )}
 
       {/* Non-payroll contribution account linking */}
@@ -1559,21 +1542,24 @@ function PreviewPanel({
             (ca) => !usedContribIds.has(ca.id),
           );
           const unlinkedBudgetItems = budget.matches.filter(
-            (m) => m.contributionAccountId == null,
+            (m) =>
+              m.contributionAccountId == null && m.status !== "linked",
           );
 
           if (linkedItems.length === 0 && unlinkedContribs.length === 0)
             return null;
 
           return (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted">
-                Contribution Account Linking
-              </p>
-              <p className="text-[10px] text-faint">
-                Link budget items to contribution accounts so the budget
-                auto-fills their monthly amounts.
-              </p>
+            <details className="border border-subtle rounded-lg">
+              <summary className="px-3 py-2.5 cursor-pointer select-none flex items-center justify-between">
+                <span className="text-xs font-medium text-muted">
+                  Contribution Account Linking
+                </span>
+                <span className="text-[10px] text-faint">
+                  {linkedItems.length} linked · {unlinkedContribs.length} unlinked
+                </span>
+              </summary>
+              <div className="px-3 pb-3 space-y-2">
 
               {/* Already linked items */}
               {linkedItems.length > 0 && (
@@ -1661,17 +1647,18 @@ function PreviewPanel({
                   ))}
                 </div>
               )}
-            </div>
+              </div>
+            </details>
           );
         })()}
 
       {/* Portfolio → Tracking Account Mappings */}
       {portfolio && portfolio.trackingAccounts.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-muted">
-              Ledgr Accounts ↔ Tracking Accounts
-            </p>
+        <details className="border border-subtle rounded-lg">
+          <summary className="px-3 py-2.5 cursor-pointer select-none flex items-center justify-between">
+            <span className="text-xs font-medium text-muted">
+              Tracking Account Mappings
+            </span>
             {(() => {
               const mappedRemoteIds = new Set(
                 portfolio.existingMappings.map((m) => m.remoteAccountId),
@@ -1682,24 +1669,17 @@ function PreviewPanel({
               const totalTracking = portfolio.trackingAccounts.length;
               const mappedCount = totalTracking - unmappedCount;
               return unmappedCount === 0 ? (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-600">
-                  All {totalTracking} tracking accounts mapped
+                <span className="text-[10px] text-green-400">
+                  {totalTracking}/{totalTracking} mapped
                 </span>
               ) : (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-600">
-                  {mappedCount}/{totalTracking} mapped ({unmappedCount}{" "}
-                  remaining)
+                <span className="text-[10px] text-amber-400">
+                  {mappedCount}/{totalTracking} mapped
                 </span>
               );
             })()}
-          </div>
-          <p className="text-[10px] text-faint">
-            Map Ledgr accounts (portfolio + assets) to API tracking accounts.
-            Push portfolio balances or pull asset values. Multiple Ledgr
-            accounts can roll up to one tracking account.
-            {portfolio.snapshotDate &&
-              ` Latest snapshot: ${portfolio.snapshotDate}`}
-          </p>
+          </summary>
+          <div className="px-3 pb-3 space-y-2">
 
           {/* Existing mappings */}
           {portfolio.existingMappings.length > 0 && (
@@ -1864,11 +1844,13 @@ function PreviewPanel({
                 localName: m.label,
               })),
             ];
-            const mappedLocalIds = new Set(
-              portfolio.existingMappings.map((m) => m.localId ?? m.localName),
+            const mappedLocalKeys = new Set(
+              portfolio.existingMappings.map(
+                (m) => `${m.localId ?? ""}|${m.localName}`,
+              ),
             );
             const availableLocal = allLocalOptions.filter(
-              (l) => !mappedLocalIds.has(l.localId),
+              (l) => !mappedLocalKeys.has(`${l.localId}|${l.localName}`),
             );
 
             return (
@@ -1960,22 +1942,31 @@ function PreviewPanel({
               >
                 <option value="">Select...</option>
                 {(() => {
-                  const mappedIds = new Set(
+                  // Build set of mapped identities using "localId|localName" composite
+                  // so two accounts sharing the same performanceAccountId (e.g. two IRAs
+                  // at the same institution owned by different people) are distinguished.
+                  const mappedKeys = new Set(
                     portfolio.existingMappings.map(
-                      (m) => m.localId ?? m.localName,
+                      (m) => `${m.localId ?? ""}|${m.localName}`,
                     ),
                   );
                   const unmappedPortfolio = portfolio.localAccounts.filter(
                     (a) =>
                       a.performanceAccountId != null &&
-                      !mappedIds.has(`performance:${a.performanceAccountId}`),
+                      !mappedKeys.has(
+                        `performance:${a.performanceAccountId}|${a.label}`,
+                      ),
                   );
                   const unmappedAssets = (portfolio.assetAccounts ?? []).filter(
-                    (a) => !mappedIds.has(`asset:${a.id}`),
+                    (a) =>
+                      !mappedKeys.has(`asset:${a.id}|${a.label}`),
                   );
                   const unmappedMortgages = (
                     portfolio.mortgageAccounts ?? []
-                  ).filter((m) => !mappedIds.has(`mortgage:${m.id}:${m.type}`));
+                  ).filter(
+                    (m) =>
+                      !mappedKeys.has(`mortgage:${m.id}:${m.type}|${m.label}`),
+                  );
                   return (
                     <>
                       {unmappedPortfolio.length > 0 && (
@@ -2090,7 +2081,8 @@ function PreviewPanel({
               Add
             </button>
           </div>
-        </div>
+          </div>
+        </details>
       )}
     </div>
   );
@@ -2123,47 +2115,50 @@ export function IntegrationsSettings() {
           <strong>Setup:</strong> Save credentials &rarr; Test &rarr; Sync
           &rarr; Review mappings &rarr; Activate when ready.
         </p>
-        <div className="bg-surface-sunken rounded-lg p-3 space-y-1.5 text-xs text-muted">
-          <p className="font-medium text-muted">How syncing works</p>
-          <p>
-            <strong className="text-blue-600">Sync Now</strong> (this page)
-            pulls data <em>from</em> the API into Ledgr&apos;s local cache
-            &mdash; accounts, categories, balances, and transactions. It never
-            writes to the API. Use it to refresh your cached data.
-          </p>
-          <p>
-            <strong className="text-green-600">Pushing to the API</strong>{" "}
-            happens on individual pages when you&apos;re ready:
-          </p>
-          <ul className="list-disc pl-4 space-y-0.5">
-            <li>
-              <strong>Budget page</strong> &mdash; &ldquo;Push to YNAB&rdquo;
-              sends budgeted amounts for items with push/both direction.
-            </li>
-            <li>
-              <strong>Savings page</strong> &mdash; &ldquo;Push
-              Contributions&rdquo; sends monthly contribution amounts and goal
-              targets for linked funds.
-            </li>
-            <li>
-              <strong>Savings auto-push</strong> &mdash; editing a linked
-              fund&apos;s monthly contribution saves locally first, then shows a
-              preview before pushing.
-            </li>
-          </ul>
-          <p>
-            All pushes show a <strong>confirmation preview</strong> with the
-            current API value, the new Ledgr value, and the difference &mdash;
-            nothing is written to the API until you confirm.
-          </p>
-          <p>
-            Per-item <strong>sync direction</strong> (set in the mappings below)
-            controls which way data flows:{" "}
-            <span className="text-blue-500">pull</span> = API&rarr;Ledgr,{" "}
-            <span className="text-green-500">push</span> = Ledgr&rarr;API,{" "}
-            <span className="text-purple-500">both</span> = two-way.
-          </p>
-        </div>
+        <details className="bg-surface-sunken rounded-lg text-xs text-muted">
+          <summary className="px-3 py-2 cursor-pointer font-medium text-muted hover:text-primary select-none">
+            How syncing works
+          </summary>
+          <div className="px-3 pb-3 space-y-1.5">
+            <p>
+              <strong className="text-blue-600">Sync Now</strong> (this page)
+              pulls data <em>from</em> the API into Ledgr&apos;s local cache
+              &mdash; accounts, categories, balances, and transactions. It never
+              writes to the API. Use it to refresh your cached data.
+            </p>
+            <p>
+              <strong className="text-green-600">Pushing to the API</strong>{" "}
+              happens on individual pages when you&apos;re ready:
+            </p>
+            <ul className="list-disc pl-4 space-y-0.5">
+              <li>
+                <strong>Budget page</strong> &mdash; &ldquo;Push to YNAB&rdquo;
+                sends budgeted amounts for items with push/both direction.
+              </li>
+              <li>
+                <strong>Savings page</strong> &mdash; &ldquo;Push
+                Contributions&rdquo; sends monthly contribution amounts and goal
+                targets for linked funds.
+              </li>
+              <li>
+                <strong>Savings auto-push</strong> &mdash; editing a linked
+                fund&apos;s monthly contribution saves locally first, then shows
+                a preview before pushing.
+              </li>
+            </ul>
+            <p>
+              All pushes show a <strong>confirmation preview</strong> with the
+              current API value, the new Ledgr value, and the difference &mdash;
+              nothing is written to the API until you confirm.
+            </p>
+            <p>
+              Per-item <strong>sync direction</strong> controls which way data
+              flows: <span className="text-blue-500">pull</span> = API&rarr;Ledgr,{" "}
+              <span className="text-green-500">push</span> = Ledgr&rarr;API,{" "}
+              <span className="text-purple-500">both</span> = two-way.
+            </p>
+          </div>
+        </details>
       </div>
 
       {/* Current status */}

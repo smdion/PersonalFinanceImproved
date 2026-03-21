@@ -632,34 +632,14 @@ export const savingsRouter = createTRPCRouter({
       return item;
     }),
 
-  /** Pull balances from budget API for all linked savings goals. */
+  /** Push monthly contributions to budget API goal targets for all linked savings goals (N and N+1). */
   syncSavingsFromApi: savingsProcedure.mutation(async ({ ctx }) => {
-    const active = await getActiveBudgetApi(ctx.db);
-    if (active === "none") {
+    const client = await getBudgetAPIClient(ctx.db);
+    if (!client) {
       throw new TRPCError({
         code: "PRECONDITION_FAILED",
         message: "No budget API active",
       });
-    }
-
-    const categoriesCache = await cacheGet<BudgetCategoryGroup[]>(
-      ctx.db,
-      active,
-      "categories",
-    );
-    if (!categoriesCache) {
-      throw new TRPCError({
-        code: "PRECONDITION_FAILED",
-        message: "No cached categories. Run Sync first.",
-      });
-    }
-
-    // Build a flat map of category ID -> balance
-    const catBalances = new Map<string, number>();
-    for (const group of categoriesCache.data) {
-      for (const cat of group.categories) {
-        catBalances.set(cat.id, cat.balance);
-      }
     }
 
     const goals = await ctx.db.select().from(schema.savingsGoals);
@@ -667,36 +647,33 @@ export const savingsRouter = createTRPCRouter({
       (g) => g.apiSyncEnabled && g.apiCategoryId,
     );
 
+    if (linkedGoals.length === 0) return { synced: 0 };
+
     const now = new Date();
-    const monthDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    const nextDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const nextMonth = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, "0")}-01`;
 
     let synced = 0;
     for (const goal of linkedGoals) {
-      const balance = catBalances.get(goal.apiCategoryId!);
-      if (balance === undefined) continue;
-
-      // Upsert savings_monthly for current month
-      const existing = await ctx.db
-        .select()
-        .from(schema.savingsMonthly)
-        .where(eq(schema.savingsMonthly.goalId, goal.id))
-        .then((rows) => rows.find((r) => r.monthDate === monthDate));
-
-      if (existing) {
-        await ctx.db
-          .update(schema.savingsMonthly)
-          .set({ balance: String(balance) })
-          .where(eq(schema.savingsMonthly.id, existing.id));
-      } else {
-        await ctx.db.insert(schema.savingsMonthly).values({
-          goalId: goal.id,
-          monthDate,
-          balance: String(balance),
-          depositOrWithdrawal: "0",
-          notes: `Synced from ${active.toUpperCase()}`,
-        });
+      const monthly = num(goal.monthlyContribution);
+      if (monthly > 0) {
+        try {
+          await client.updateCategoryGoalTarget(
+            goal.apiCategoryId!,
+            monthly,
+            currentMonth,
+          );
+          await client.updateCategoryGoalTarget(
+            goal.apiCategoryId!,
+            monthly,
+            nextMonth,
+          );
+          synced++;
+        } catch {
+          // Skip goals that fail (e.g., category deleted in API)
+        }
       }
-      synced++;
     }
 
     return { synced };
