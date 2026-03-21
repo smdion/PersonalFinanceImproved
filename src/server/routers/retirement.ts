@@ -59,7 +59,10 @@ const ENGINE_CATEGORIES = new Set<string>(PARENT_CATEGORY_VALUES);
  * Fetch all DB tables needed by the contribution engine / Monte Carlo projection.
  * Returns the raw query results — callers can destructure what they need.
  */
-export async function fetchRetirementData(db: Db) {
+export async function fetchRetirementData(
+  db: Db,
+  opts?: { snapshotId?: number },
+) {
   const [
     people,
     allJobs,
@@ -95,7 +98,7 @@ export async function fetchRetirementData(db: Db) {
       .select()
       .from(schema.contributionLimits)
       .where(eq(schema.contributionLimits.taxYear, new Date().getFullYear())),
-    getLatestSnapshot(db),
+    getLatestSnapshot(db, opts?.snapshotId),
     getAnnualExpensesFromBudget(db),
     db
       .select()
@@ -241,7 +244,11 @@ export async function buildEnginePayload(
   });
 
   // Average age and retirement age across all people
-  const currentYear = new Date().getFullYear();
+  // When a historical snapshot is selected, use its date as the reference point
+  const referenceDate = data.snapshotData?.snapshot.snapshotDate
+    ? new Date(data.snapshotData.snapshot.snapshotDate)
+    : new Date();
+  const currentYear = referenceDate.getFullYear();
   const avgAge = Math.round(
     perPersonSettings.reduce((s, p) => s + (currentYear - p.birthYear), 0) /
       perPersonSettings.length,
@@ -295,7 +302,7 @@ export async function buildEnginePayload(
       }
     });
   }
-  const asOfDate = new Date();
+  const asOfDate = referenceDate;
   const activeJobs = patchedJobs.filter((j) => !j.endDate);
   const jobSalaries = await Promise.all(
     activeJobs.map(async (j) => {
@@ -1114,7 +1121,7 @@ export const retirementRouter = createTRPCRouter({
       const allContribs = allContribsRaw.filter(
         (c) =>
           c.performanceAccountId != null &&
-          perfCatMap.get(c.performanceAccountId) === "Retirement",
+          perfCatMap.get(c.performanceAccountId) === "401k/IRA",
       );
 
       const primaryPerson = people.find((p) => p.isPrimaryUser) ?? people[0];

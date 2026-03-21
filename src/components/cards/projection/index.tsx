@@ -51,6 +51,7 @@ export function ProjectionCard(props: {
   decumulationExpenseOverride?: number;
   parentCategoryFilter?: string;
   contributionProfileId?: number;
+  snapshotId?: number;
 }) {
   const s = useProjectionState({
     people: props.people,
@@ -64,6 +65,7 @@ export function ProjectionCard(props: {
     decumulationExpenseOverride: props.decumulationExpenseOverride,
     parentCategoryFilter: props.parentCategoryFilter,
     contributionProfileId: props.contributionProfileId,
+    snapshotId: props.snapshotId,
   });
 
   // Destructure everything flat — identical variable names as before the hook extraction.

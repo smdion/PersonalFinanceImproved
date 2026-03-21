@@ -220,10 +220,14 @@ export const projectionRouter = createTRPCRouter({
         decumulationExpenseOverride: z.number().min(0).optional(),
         /** When true, skip the heavy projection calculation and return only metadata (settings, expenses, budget profiles). */
         metadataOnly: z.boolean().default(false),
+        /** Optional snapshot ID — use a historical portfolio snapshot instead of the latest. */
+        snapshotId: z.number().int().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const data = await fetchRetirementData(ctx.db);
+      const data = await fetchRetirementData(ctx.db, {
+        snapshotId: input.snapshotId,
+      });
       const payload = await buildEnginePayload(ctx.db, data, {
         salaryOverrides: input.salaryOverrides,
         contributionProfileId: input.contributionProfileId,
@@ -692,6 +696,8 @@ export const projectionRouter = createTRPCRouter({
             stdDev: z.number().min(0).max(0.1),
           })
           .optional(),
+        /** Optional snapshot ID — use a historical portfolio snapshot instead of the latest. */
+        snapshotId: z.number().int().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -704,7 +710,7 @@ export const projectionRouter = createTRPCRouter({
         savedAssetOverridesRow,
         savedInflationOverridesRow,
       ] = await Promise.all([
-        fetchRetirementData(ctx.db),
+        fetchRetirementData(ctx.db, { snapshotId: input.snapshotId }),
         ctx.db
           .select()
           .from(schema.assetClassParams)
@@ -1198,11 +1204,28 @@ export const projectionRouter = createTRPCRouter({
           accumulationBudgetProfileId: z.number().int().optional(),
           accumulationBudgetColumn: z.number().int().min(0).optional(),
           accumulationExpenseOverride: z.number().min(0).optional(),
+          snapshotId: z.number().int().optional(),
         })
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      const data = await fetchRetirementData(ctx.db);
+      // Load retirement data + MC config in parallel
+      const [
+        data,
+        assetClasses,
+        assetCorrelations,
+        glidePathRows,
+      ] = await Promise.all([
+        fetchRetirementData(ctx.db, { snapshotId: input?.snapshotId }),
+        ctx.db
+          .select()
+          .from(schema.assetClassParams)
+          .where(eq(schema.assetClassParams.isActive, true))
+          .orderBy(asc(schema.assetClassParams.sortOrder)),
+        ctx.db.select().from(schema.assetClassCorrelations),
+        ctx.db.select().from(schema.glidePathAllocations),
+      ]);
+
       const payload = await buildEnginePayload(ctx.db, data, {
         salaryOverrides: input?.salaryOverrides,
         contributionProfileId: input?.contributionProfileId,
@@ -1222,6 +1245,44 @@ export const projectionRouter = createTRPCRouter({
         avgRetirementAge,
       } = payload;
 
+      // Build MC inputs for success rate computation (200 trials per strategy)
+      const mcAssetClasses = assetClasses.map((ac) => ({
+        id: ac.id,
+        name: ac.name,
+        meanReturn: num(ac.meanReturn),
+        stdDev: num(ac.stdDev),
+      }));
+      const mcCorrelations = assetCorrelations.map((c) => ({
+        classAId: c.classAId,
+        classBId: c.classBId,
+        correlation: num(c.correlation),
+      }));
+      const gpByAge = new Map<number, Record<number, number>>();
+      for (const gp of glidePathRows) {
+        if (!gpByAge.has(gp.age)) gpByAge.set(gp.age, {});
+        gpByAge.get(gp.age)![gp.assetClassId] = num(gp.allocation);
+      }
+      const mcGlidePath = Array.from(gpByAge.entries())
+        .sort(([a], [b]) => a - b)
+        .map(([gpAge, allocations]) => ({ age: gpAge, allocations }));
+
+      // Build MC-aligned deterministic return rates using geometric means
+      const mcReturnRates: { label: string; rate: number }[] = [];
+      for (
+        let a = baseEngineInput.currentAge;
+        a <= baseEngineInput.projectionEndAge;
+        a++
+      ) {
+        const allocations = interpolateAllocations(mcGlidePath, a);
+        const blended = mcAssetClasses.reduce((sum, ac) => {
+          const w = allocations[ac.id] ?? 0;
+          return w > 0 ? sum + w * geometricMean(ac.meanReturn, ac.stdDev) : sum;
+        }, 0);
+        mcReturnRates.push({ label: `Age ${a}`, rate: blended });
+      }
+      const mcBaseEngineInput = { ...baseEngineInput, returnRates: mcReturnRates };
+      const hasMcData = mcAssetClasses.length > 0 && mcGlidePath.length > 0;
+
       const userStrategyParams = buildStrategyParams(settings);
       const activeStrategy =
         (settings.withdrawalStrategy as WithdrawalStrategyType) ?? "fixed";
@@ -1234,21 +1295,23 @@ export const projectionRouter = createTRPCRouter({
             ? userStrategyParams
             : { [strategyKey]: getStrategyDefaults(strategyKey) };
 
+        const decumulationDefaults = {
+          withdrawalRate: num(settings.withdrawalRate),
+          withdrawalRoutingMode: "bracket_filling" as const,
+          withdrawalOrder: getDefaultDecumulationOrder() as AccountCategory[],
+          withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS } as Record<
+            AccountCategory,
+            number
+          >,
+          withdrawalTaxPreference: {},
+          distributionTaxRates,
+          withdrawalStrategy: strategyKey,
+          strategyParams: params,
+        };
+
         const result = calculateProjection({
           ...baseEngineInput,
-          decumulationDefaults: {
-            withdrawalRate: num(settings.withdrawalRate),
-            withdrawalRoutingMode: "bracket_filling",
-            withdrawalOrder: getDefaultDecumulationOrder() as AccountCategory[],
-            withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS } as Record<
-              AccountCategory,
-              number
-            >,
-            withdrawalTaxPreference: {},
-            distributionTaxRates,
-            withdrawalStrategy: strategyKey,
-            strategyParams: params,
-          },
+          decumulationDefaults,
           accumulationOverrides: [],
           decumulationOverrides: [],
         });
@@ -1264,6 +1327,26 @@ export const projectionRouter = createTRPCRouter({
           withdrawals.length > 0
             ? withdrawals.reduce((s, w) => s + w, 0) / withdrawals.length
             : 0;
+
+        // Run lightweight MC (200 trials) for success rate
+        let successRate: number | null = null;
+        if (hasMcData) {
+          const mcResult = calculateMonteCarlo({
+            engineInput: {
+              ...mcBaseEngineInput,
+              decumulationDefaults,
+              accumulationOverrides: [],
+              decumulationOverrides: [],
+            },
+            numTrials: 200,
+            seed: 42, // deterministic seed for consistent results
+            assetClasses: mcAssetClasses,
+            correlations: mcCorrelations,
+            glidePath: mcGlidePath,
+            inflationRisk: { meanRate: 0.025, stdDev: 0.012 },
+          });
+          successRate = mcResult.successRate;
+        }
 
         return {
           strategy: strategyKey,
@@ -1281,6 +1364,7 @@ export const projectionRouter = createTRPCRouter({
             decYears.length > 0 ? decYears[decYears.length - 1]!.endBalance : 0,
           legacyAmount:
             decYears.length > 0 ? decYears[decYears.length - 1]!.endBalance : 0,
+          successRate,
           yearByYear: decYears.map((y) => ({
             age: y.age,
             withdrawal: roundToCents(y.totalWithdrawal),
