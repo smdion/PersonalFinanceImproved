@@ -4,6 +4,54 @@ All notable changes to Ledgr will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.2] - 2026-03-21
+
+### Added
+
+- **Performance tab groups** — split into "By Account" (401k/IRA, HSA, Brokerage) and "Rollup" (Retirement, Portfolio) with helper tooltips
+- **Retirement rollup tab** — aggregates all accounts with `parentCategory: "Retirement"` (401k/IRA + HSA + retirement brokerages) with year-level drill-down
+- **Rollovers column** — separates internal transfers (e.g., ESPP to brokerage) from actual contributions in the performance table
+- **Snapshot selector** — retirement projections can now use any historical portfolio snapshot, not just the latest
+- **YTD timeframe** — portfolio chart now has a "YTD" button alongside 3M/6M/1Y/3Y/All
+- **Hover comparison line** — hovering on the portfolio chart draws a horizontal reference line to compare values across time
+- **Monte Carlo success rate** — withdrawal strategy comparison table now shows a Monte Carlo success rate for each strategy (200 trials)
+- **YNAB key update** — connected YNAB integrations can now replace the API key without removing the connection
+
+### Changed
+
+- **YNAB budget pull** — pulling budget amounts from YNAB now uses the category goal target instead of the budgeted amount, so savings goals sync correctly
+- **Savings sync direction** — savings sync now pushes monthly contributions from Ledgr to YNAB goal targets (current + next month) instead of pulling balances
+- **Integration settings layout** — reorganized into collapsible sections (budget matching, sinking funds, contribution linking, tracking accounts) with a compact dashboard summary; "How syncing works" collapsed by default
+
+### Fixed
+
+- **Rollup contribution mismatch** — Retirement contributions appeared higher than Portfolio when cross-category rollovers were counted as contributions; now tracked separately
+- **Portfolio rollup** — annual totals now sum from per-category rows, correctly including HSA distributions and fees
+- **Account linking** — all performance rows properly linked to their performance accounts
+- **Parent category mismatch** — HSA and ESPP accounts now appear in the Retirement rollup tab
+- **IRA account disambiguation** — tracking account dropdowns now correctly distinguish owners (Sean vs Joanna) when accounts share the same performance ID
+- **Joint brokerage ownership** — brokerage sub-accounts are now correctly marked as joint (null owner) instead of being assigned to a single person
+- **Rollover fee detection** — transfer fees (e.g., UBS rollover fee) are now classified as fees instead of negative contributions
+
+### Security
+
+- **Column name validation** — backup import/restore validates all column names against the schema whitelist, preventing SQL injection via crafted backup files
+- Removed database error details from `/api/health` response body
+- Bound PostgreSQL port to `127.0.0.1` in `docker-compose.postgres.yml`
+
+### Fixed
+
+- Auto-version naming now uses local date (respects `TZ` env) instead of UTC
+- Auto-version dedup check works on both PG and SQLite
+
+### Changed
+
+- **SQLite pragmas** — connections now set `busy_timeout=5000`, `foreign_keys=ON`, and `synchronous=NORMAL` for reliability and concurrency
+- SQLite `truncateTables` deletes in reverse FK tier order instead of toggling `PRAGMA foreign_keys`
+- `importBackupSqlite` is now wrapped in a transaction for atomicity
+- `createVersion` reads + writes are now in a single transaction for point-in-time consistency
+- Pinned pnpm version in Dockerfile (`10.32.1`) for reproducible builds
+
 ## [0.1.1] - 2026-03-19
 
 ### Added
