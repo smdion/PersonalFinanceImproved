@@ -18,7 +18,7 @@ import { sql, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
 import { isPostgres } from "./dialect";
-import { truncateTables, resetSequences, jsonbLiteral } from "./compat";
+import { truncateTables, resetSequences, jsonbLiteral, validateColumns } from "./compat";
 import { VERSION_TABLE_NAMES, VERSION_TABLES } from "./version-tables";
 import { log } from "@/lib/logger";
 
@@ -71,68 +71,72 @@ export async function createVersion(
   database: NodePgDatabase<typeof schema>,
   input: CreateVersionInput,
 ): Promise<VersionResult> {
-  // Read all tables in a transaction for consistent point-in-time snapshot
-  const tableData: { tableName: string; rows: unknown[]; rowCount: number }[] =
-    [];
+  // Read all tables + write version in a single transaction for consistency
+  const result = await database.transaction(async (tx) => {
+    const tableData: { tableName: string; rows: unknown[]; rowCount: number }[] =
+      [];
 
-  for (const tableName of VERSION_TABLE_NAMES) {
-    try {
-      const rows = await database.execute(
-        sql.raw(`SELECT * FROM "${tableName}"`),
-      );
-      tableData.push({
-        tableName,
-        rows: rows.rows as unknown[],
-        rowCount: rows.rows.length,
-      });
-    } catch {
-      // Table doesn't exist yet (migration pending) — skip
-      tableData.push({ tableName, rows: [], rowCount: 0 });
+    for (const tableName of VERSION_TABLE_NAMES) {
+      try {
+        const rows = await tx.execute(
+          sql.raw(`SELECT * FROM "${tableName}"`),
+        );
+        tableData.push({
+          tableName,
+          rows: rows.rows as unknown[],
+          rowCount: rows.rows.length,
+        });
+      } catch {
+        // Table doesn't exist yet (migration pending) — skip
+        tableData.push({ tableName, rows: [], rowCount: 0 });
+      }
     }
-  }
 
-  const totalRows = tableData.reduce((sum, t) => sum + t.rowCount, 0);
-  const jsonStr = JSON.stringify(tableData.map((t) => t.rows));
-  const sizeEstimate = Buffer.byteLength(jsonStr, "utf8");
+    const totalRows = tableData.reduce((sum, t) => sum + t.rowCount, 0);
+    const jsonStr = JSON.stringify(tableData.map((t) => t.rows));
+    const sizeEstimate = Buffer.byteLength(jsonStr, "utf8");
 
-  // Insert version metadata
-  const rows = await database
-    .insert(schema.stateVersions)
-    .values({
-      name: input.name,
-      description: input.description ?? null,
-      versionType: input.type,
-      schemaVersion: CURRENT_SCHEMA_VERSION,
-      tableCount: tableData.length,
-      totalRows,
-      sizeEstimateBytes: sizeEstimate,
-      createdBy: input.createdBy,
-    })
-    .returning();
+    // Insert version metadata
+    const rows = await tx
+      .insert(schema.stateVersions)
+      .values({
+        name: input.name,
+        description: input.description ?? null,
+        versionType: input.type,
+        schemaVersion: CURRENT_SCHEMA_VERSION,
+        tableCount: tableData.length,
+        totalRows,
+        sizeEstimateBytes: sizeEstimate,
+        createdBy: input.createdBy,
+      })
+      .returning();
 
-  const version = rows[0]!;
+    const version = rows[0]!;
 
-  // Insert per-table data
-  for (const td of tableData) {
-    await database.insert(schema.stateVersionTables).values({
-      versionId: version.id,
-      tableName: td.tableName,
-      rowCount: td.rowCount,
-      data: td.rows as unknown[],
-    });
-  }
+    // Insert per-table data
+    for (const td of tableData) {
+      await tx.insert(schema.stateVersionTables).values({
+        versionId: version.id,
+        tableName: td.tableName,
+        rowCount: td.rowCount,
+        data: td.rows as unknown[],
+      });
+    }
+
+    return version;
+  });
 
   // Post-commit: clean up old auto versions beyond retention
   await cleanupAutoVersions(database);
 
   return {
-    id: version.id,
-    name: version.name,
-    versionType: version.versionType,
-    tableCount: version.tableCount,
-    totalRows: version.totalRows,
-    sizeEstimateBytes: version.sizeEstimateBytes,
-    createdAt: version.createdAt,
+    id: result.id,
+    name: result.name,
+    versionType: result.versionType,
+    tableCount: result.tableCount,
+    totalRows: result.totalRows,
+    sizeEstimateBytes: result.sizeEstimateBytes,
+    createdAt: result.createdAt,
   };
 }
 
@@ -218,6 +222,7 @@ export async function restoreVersion(
 
       const rows = tableData.data as Record<string, unknown>[];
       const columns = Object.keys(rows[0]!);
+      validateColumns(tableEntry.name, columns);
       const colList = columns.map((c) => `"${c}"`).join(", ");
       const BATCH_SIZE = 500;
 
@@ -359,6 +364,7 @@ async function importBackupPg(
 
       const tableJsonbCols = jsonbCols.get(tableEntry.name) ?? new Set();
       const columns = Object.keys(rows[0]!);
+      validateColumns(tableEntry.name, columns);
       const colList = columns.map((c) => `"${c}"`).join(", ");
       const BATCH_SIZE = 500;
 
@@ -424,55 +430,57 @@ async function importBackupSqlite(
   database: NodePgDatabase<typeof schema>,
   backup: BackupData,
 ): Promise<{ restoredTables: number; restoredRows: number }> {
-  // SQLite: use drizzle execute within a single connection (SQLite is single-writer)
-  await truncateTables(database, VERSION_TABLE_NAMES);
-
   let restoredRows = 0;
   const sortedTables = [...VERSION_TABLES].sort((a, b) => a.tier - b.tier);
 
-  for (const tableEntry of sortedTables) {
-    const rows = backup.tables[tableEntry.name] as Record<string, unknown>[];
-    if (!rows || rows.length === 0) continue;
+  await database.transaction(async (tx) => {
+    await truncateTables(tx, VERSION_TABLE_NAMES);
 
-    const columns = Object.keys(rows[0]!);
-    const colList = columns.map((c) => `"${c}"`).join(", ");
-    const BATCH_SIZE = 500;
+    for (const tableEntry of sortedTables) {
+      const rows = backup.tables[tableEntry.name] as Record<string, unknown>[];
+      if (!rows || rows.length === 0) continue;
 
-    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-      const batch = rows.slice(i, i + BATCH_SIZE);
-      const valueClauses = batch.map((row) => {
-        const values = columns.map((col) => {
-          const val = row[col];
-          if (val === null || val === undefined) return "NULL";
-          if (typeof val === "boolean") return val ? "1" : "0";
-          if (typeof val === "number") return String(val);
-          if (typeof val === "object") return jsonbLiteral(val);
-          return `'${String(val).replace(/'/g, "''")}'`;
+      const columns = Object.keys(rows[0]!);
+      validateColumns(tableEntry.name, columns);
+      const colList = columns.map((c) => `"${c}"`).join(", ");
+      const BATCH_SIZE = 500;
+
+      for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+        const batch = rows.slice(i, i + BATCH_SIZE);
+        const valueClauses = batch.map((row) => {
+          const values = columns.map((col) => {
+            const val = row[col];
+            if (val === null || val === undefined) return "NULL";
+            if (typeof val === "boolean") return val ? "1" : "0";
+            if (typeof val === "number") return String(val);
+            if (typeof val === "object") return jsonbLiteral(val);
+            return `'${String(val).replace(/'/g, "''")}'`;
+          });
+          return `(${values.join(", ")})`;
         });
-        return `(${values.join(", ")})`;
-      });
-      await database.execute(
-        sql.raw(
-          `INSERT INTO "${tableEntry.name}" (${colList}) VALUES ${valueClauses.join(", ")}`,
-        ),
-      );
-      restoredRows += batch.length;
+        await tx.execute(
+          sql.raw(
+            `INSERT INTO "${tableEntry.name}" (${colList}) VALUES ${valueClauses.join(", ")}`,
+          ),
+        );
+        restoredRows += batch.length;
+      }
     }
-  }
 
-  // Log import (non-critical)
-  try {
-    await database.insert(schema.changeLog).values({
-      tableName: "state_versions",
-      recordId: 0,
-      fieldName: "import",
-      oldValue: null,
-      newValue: { action: "import", exportedAt: backup.exportedAt } as unknown,
-      changedBy: "system",
-    });
-  } catch {
-    // Non-critical
-  }
+    // Log import (non-critical)
+    try {
+      await tx.insert(schema.changeLog).values({
+        tableName: "state_versions",
+        recordId: 0,
+        fieldName: "import",
+        oldValue: null,
+        newValue: { action: "import", exportedAt: backup.exportedAt } as unknown,
+        changedBy: "system",
+      });
+    } catch {
+      // Non-critical
+    }
+  });
 
   return { restoredTables: sortedTables.length, restoredRows };
 }

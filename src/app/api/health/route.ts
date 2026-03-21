@@ -29,8 +29,8 @@ export async function GET() {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     status.database = "disconnected";
-    status.databaseError = message;
     status.status = "degraded";
+    // Full error details go to structured logs, not the HTTP response
     log("error", "health_check_db_failed", {
       error: message,
       code: (err as NodeJS.ErrnoException).code,

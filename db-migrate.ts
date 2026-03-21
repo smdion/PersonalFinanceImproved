@@ -69,6 +69,9 @@ function runSQLite() {
 
   const sqlite = new Database(dbPath);
   sqlite.pragma('journal_mode = WAL');
+  sqlite.pragma('busy_timeout = 5000');
+  sqlite.pragma('foreign_keys = ON');
+  sqlite.pragma('synchronous = NORMAL');
   const db = drizzle(sqlite);
   migrate(db, { migrationsFolder: './drizzle-sqlite' });
   log('info', 'migrations_applied', { dialect: 'sqlite', path: dbPath });

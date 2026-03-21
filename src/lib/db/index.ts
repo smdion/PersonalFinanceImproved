@@ -23,8 +23,7 @@ if (isPostgres()) {
     max: env.DATABASE_POOL_MAX ? Number(env.DATABASE_POOL_MAX) : 20,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
-    statement_timeout: 30000,
-    options: "-c timezone=UTC",
+    options: "-c timezone=UTC -c statement_timeout=30000",
   });
 
   pool.on("error", (err: Error) => {
@@ -54,6 +53,9 @@ if (isPostgres()) {
 
   const sqlite = new Database(dbPath);
   sqlite.pragma("journal_mode = WAL");
+  sqlite.pragma("busy_timeout = 5000");
+  sqlite.pragma("foreign_keys = ON");
+  sqlite.pragma("synchronous = NORMAL");
   _db = sqliteDrizzle(sqlite, { schema });
 }
 /* eslint-enable */
