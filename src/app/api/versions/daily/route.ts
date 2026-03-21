@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-import { eq, and, gte, sql } from "drizzle-orm";
+import { eq, and, like } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { appSettings, stateVersions } from "@/lib/db/schema";
 import { createVersion } from "@/lib/db/version-logic";
@@ -60,16 +60,23 @@ export async function GET(request: Request) {
       });
     }
 
-    const dateStr = today.toISOString().split("T")[0]!;
+    // Use local date (respects TZ env) — not UTC — so the version name
+    // matches the calendar day the user sees.
+    const dateStr = [
+      today.getFullYear(),
+      String(today.getMonth() + 1).padStart(2, "0"),
+      String(today.getDate()).padStart(2, "0"),
+    ].join("-");
 
-    // Skip if an auto version was already created today (e.g. container restart)
+    // Skip if an auto version already exists with today's name (e.g. container restart).
+    // Match by name rather than timestamp — avoids PG/SQLite cast differences.
     const existing = await db
       .select({ id: stateVersions.id })
       .from(stateVersions)
       .where(
         and(
           eq(stateVersions.versionType, "auto"),
-          gte(stateVersions.createdAt, sql`${dateStr}::timestamp`),
+          like(stateVersions.name, `Auto ${dateStr}%`),
         ),
       )
       .limit(1);

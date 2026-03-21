@@ -733,8 +733,13 @@ export const syncRouter = createTRPCRouter({
         const peopleMap = new Map(allPeople.map((p) => [p.id, p.name]));
         const perfMap = new Map(perfAccounts.map((p) => [p.id, p]));
 
-        // Aggregate by performanceAccountId for stable identity
-        const perfIdMap = new Map<number, { label: string; balance: number }>();
+        // Aggregate by performanceAccountId + ownerPersonId for stable identity.
+        // Two people may share the same performanceAccountId (e.g. both have an IRA
+        // at the same institution) — they must appear as separate line items.
+        const perfOwnerMap = new Map<
+          string,
+          { perfId: number; label: string; balance: number }
+        >();
         for (const a of snapAccts) {
           if (!a.performanceAccountId) continue;
           const perf = perfMap.get(a.performanceAccountId);
@@ -752,18 +757,20 @@ export const syncRouter = createTRPCRouter({
             },
             ownerName ?? undefined,
           );
-          const existing = perfIdMap.get(a.performanceAccountId);
+          const key = `${a.performanceAccountId}:${a.ownerPersonId ?? ""}`;
+          const existing = perfOwnerMap.get(key);
           if (existing) {
             existing.balance += Number(a.amount);
           } else {
-            perfIdMap.set(a.performanceAccountId, {
+            perfOwnerMap.set(key, {
+              perfId: a.performanceAccountId,
               label,
               balance: Number(a.amount),
             });
           }
         }
-        portfolioLocalAccounts = Array.from(perfIdMap.entries())
-          .map(([perfId, { label, balance }]) => ({
+        portfolioLocalAccounts = Array.from(perfOwnerMap.values())
+          .map(({ perfId, label, balance }) => ({
             label,
             balance,
             performanceAccountId: perfId,

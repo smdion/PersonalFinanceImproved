@@ -66,6 +66,7 @@ export type UseProjectionStateProps = {
   decumulationExpenseOverride?: number;
   parentCategoryFilter?: string;
   contributionProfileId?: number;
+  snapshotId?: number;
 };
 
 export function useProjectionState({
@@ -80,6 +81,7 @@ export function useProjectionState({
   decumulationExpenseOverride,
   parentCategoryFilter,
   contributionProfileId,
+  snapshotId,
 }: UseProjectionStateProps) {
   const salaryOverrides = useSalaryOverrides();
 
@@ -250,6 +252,7 @@ export function useProjectionState({
         ? { decumulationExpenseOverride }
         : {}),
       ...(contributionProfileId != null ? { contributionProfileId } : {}),
+      ...(snapshotId != null ? { snapshotId } : {}),
     }),
     [
       salaryOverrides,
@@ -267,6 +270,7 @@ export function useProjectionState({
       decumulationBudgetColumn,
       decumulationExpenseOverride,
       contributionProfileId,
+      snapshotId,
     ],
   );
   const debouncedInput = useDebouncedValue(sharedInput, 600);

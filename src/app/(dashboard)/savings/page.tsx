@@ -412,11 +412,11 @@ export default function SavingsPage() {
                   variant="secondary"
                   onClick={apiSync.onPullBalances}
                   disabled={apiSync.syncFromApiPending}
-                  title="Pull balances from budget API for all linked sinking funds"
+                  title="Push monthly contributions to budget API goal targets (current + next month)"
                 >
                   {apiSync.syncFromApiPending
-                    ? "Pulling..."
-                    : "\u2190 Pull Balances"}
+                    ? "Syncing..."
+                    : "Sync Goals \u2192"}
                 </Button>
                 <button
                   onClick={() =>

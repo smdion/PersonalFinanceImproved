@@ -258,7 +258,7 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
     const mean = balances.reduce((s, v) => s + v, 0) / balances.length;
 
     percentileBands.push({
-      year: new Date().getFullYear() + yearIdx,
+      year: engineInput.asOfDate.getFullYear() + yearIdx,
       age: startAge + yearIdx,
       p5: percentile(sorted, 5),
       p10: percentile(sorted, 10),

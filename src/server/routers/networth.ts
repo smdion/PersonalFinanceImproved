@@ -447,6 +447,7 @@ export const networthRouter = createTRPCRouter({
     const totalMap = new Map(totals.map((t) => [t.snapshotId, num(t.total)]));
 
     return rows.map((r) => ({
+      id: r.snapshotId,
       date: r.snapshotDate,
       total: totalMap.get(r.snapshotId) ?? 0,
     }));

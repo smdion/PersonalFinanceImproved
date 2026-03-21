@@ -52,6 +52,12 @@ export default function RetirementPage() {
   const [contribProfileId, setContribProfileId] = useActiveContribProfile();
   const contribProfilesQuery = trpc.contributionProfile.list.useQuery();
   const contribProfiles = contribProfilesQuery.data ?? [];
+  const [snapshotId, setSnapshotId] = usePersistedSetting<number | null>(
+    "retirement_snapshot_id",
+    null,
+  );
+  const snapshotTotalsQuery = trpc.networth.listSnapshotTotals.useQuery();
+  const snapshotOptions = snapshotTotalsQuery.data ?? [];
   const engineInput = useMemo(
     () => ({
       metadataOnly: true as const,
@@ -68,6 +74,7 @@ export default function RetirementPage() {
       ...(decExpenseOverride
         ? { decumulationExpenseOverride: parseFloat(decExpenseOverride) }
         : {}),
+      ...(snapshotId != null ? { snapshotId } : {}),
     }),
     [
       salaryOverrides,
@@ -75,6 +82,7 @@ export default function RetirementPage() {
       decBudgetProfileId,
       decBudgetCol,
       decExpenseOverride,
+      snapshotId,
     ],
   );
   const debouncedEngineInput = useDebouncedValue(engineInput, 600);
@@ -107,6 +115,7 @@ export default function RetirementPage() {
       ...(decExpenseOverride
         ? { decumulationExpenseOverride: parseFloat(decExpenseOverride) }
         : {}),
+      ...(snapshotId != null ? { snapshotId } : {}),
     }),
     [
       salaryOverrides,
@@ -114,11 +123,13 @@ export default function RetirementPage() {
       decBudgetProfileId,
       decBudgetCol,
       decExpenseOverride,
+      snapshotId,
     ],
   );
   const { data: comparisonData, isLoading: comparisonLoading } =
     trpc.projection.computeStrategyComparison.useQuery(comparisonInput, {
-      enabled: comparisonExpanded,
+      enabled: comparisonExpanded && !isLoading && !isFetching,
+      placeholderData: (prev) => prev,
     });
 
   // Memoized callbacks — must be before early returns to preserve hook order.
@@ -238,6 +249,35 @@ export default function RetirementPage() {
           accColumnLabel ? `Budget scenario: ${accColumnLabel}` : undefined
         }
       />
+      {/* Snapshot selector */}
+      {snapshotOptions.length > 1 && (
+        <div className="flex items-center gap-2 mb-3">
+          <label className="text-xs text-muted">Portfolio Snapshot:</label>
+          <select
+            className="text-xs bg-surface-elevated border rounded px-2 py-1 text-primary"
+            value={snapshotId ?? ""}
+            onChange={(e) =>
+              setSnapshotId(e.target.value ? Number(e.target.value) : null)
+            }
+          >
+            <option value="">Latest</option>
+            {[...snapshotOptions].reverse().map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.date} — {formatCurrency(s.total)}
+              </option>
+            ))}
+          </select>
+          {snapshotId != null && (
+            <button
+              onClick={() => setSnapshotId(null)}
+              className="text-[10px] text-blue-400 hover:text-blue-300"
+            >
+              Reset to latest
+            </button>
+          )}
+        </div>
+      )}
+
       {isFetching && !isLoading && (
         <div className="text-xs text-faint animate-pulse mb-2">
           Updating projection...
@@ -255,6 +295,7 @@ export default function RetirementPage() {
         }
         parentCategoryFilter="Retirement"
         contributionProfileId={contribProfileId ?? undefined}
+        snapshotId={snapshotId ?? undefined}
       />
 
       {/* Strategy Comparison (lazy-loaded) */}

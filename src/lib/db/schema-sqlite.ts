@@ -480,6 +480,7 @@ export const annualPerformance = sqliteTable(
       .notNull()
       .default("0"),
     fees: text("fees").notNull().default("0"),
+    rollovers: text("rollovers").notNull().default("0"),
     lifetimeGains: text("lifetime_gains").notNull(),
     lifetimeContributions: text("lifetime_contributions").notNull(),
     lifetimeMatch: text("lifetime_match").notNull(),
@@ -520,6 +521,7 @@ export const accountPerformance = sqliteTable(
     distributions: text("distributions")
       .notNull()
       .default("0"),
+    rollovers: text("rollovers").notNull().default("0"),
     parentCategory: text("parent_category").notNull(),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
     isFinalized: integer("is_finalized", { mode: "boolean" }).notNull().default(false),

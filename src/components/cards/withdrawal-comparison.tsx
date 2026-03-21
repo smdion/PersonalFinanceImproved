@@ -38,6 +38,7 @@ type StrategyResult = {
   maxAnnualWithdrawal: number;
   endBalance: number;
   legacyAmount: number;
+  successRate: number | null;
   yearByYear: { age: number; withdrawal: number; endBalance: number }[];
 };
 
@@ -77,7 +78,7 @@ export function WithdrawalComparisonCard({
   return (
     <Card
       title="Withdrawal Strategy Comparison"
-      subtitle={`Comparing ${strategies.length} strategies from age ${retirementAge}`}
+      subtitle={`Comparing ${strategies.length} strategies from age ${retirementAge} · Success % via Monte Carlo`}
       className="mb-6"
       collapsible
       defaultOpen={false}
@@ -106,6 +107,11 @@ export function WithdrawalComparisonCard({
                 <th className="text-left py-1.5 pr-2 font-medium">Strategy</th>
                 <th className="text-right py-1.5 px-2 font-medium">
                   Depletion Age
+                </th>
+                <th className="text-right py-1.5 px-2 font-medium">
+                  <span title="Monte Carlo success rate (200 trials)">
+                    Success
+                  </span>
                 </th>
                 <th className="text-right py-1.5 px-2 font-medium">Year 1</th>
                 <th className="text-right py-1.5 px-2 font-medium">Avg/yr</th>
@@ -146,6 +152,23 @@ export function WithdrawalComparisonCard({
                     <td className="text-right py-1.5 px-2 tabular-nums text-faint">
                       {s.portfolioDepletionAge ?? (
                         <span className="text-green-400">Never</span>
+                      )}
+                    </td>
+                    <td className="text-right py-1.5 px-2 tabular-nums">
+                      {s.successRate !== null ? (
+                        <span
+                          className={
+                            s.successRate >= 0.9
+                              ? "text-green-400"
+                              : s.successRate >= 0.7
+                                ? "text-yellow-400"
+                                : "text-red-400"
+                          }
+                        >
+                          {Math.round(s.successRate * 100)}%
+                        </span>
+                      ) : (
+                        <span className="text-faint">—</span>
                       )}
                     </td>
                     <td className="text-right py-1.5 px-2 tabular-nums text-faint">

@@ -1,0 +1,2 @@
+ALTER TABLE "account_performance" ADD COLUMN "rollovers" numeric(12, 2) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE "annual_performance" ADD COLUMN "rollovers" numeric(12, 2) DEFAULT '0' NOT NULL;

@@ -65,14 +65,14 @@ export function taxTreatmentToShortLabel(taxTreatment: string): string {
 /**
  * Derive performance page display category from accountType string.
  * Groups by what TYPE of account it is, not its parentCategory goal.
- * See DESIGN.md § "Performance page display categories".
+ * "401k/IRA" covers 401k, 403b, and IRA accounts.
  */
 export function accountTypeToPerformanceCategory(
   accountType: string | null,
 ): string {
   if (accountType === "brokerage") return "Brokerage";
   if (accountType === "hsa") return "HSA";
-  return "Retirement";
+  return "401k/IRA";
 }
 
 /**

@@ -18,6 +18,7 @@ export type AnnualRow = {
   employerContributions: number;
   distributions: number;
   fees: number;
+  rollovers: number;
   lifetimeGains: number;
   lifetimeContributions: number;
   lifetimeMatch: number;
@@ -40,6 +41,7 @@ export type AccountRow = {
   employerContributions: number;
   fees: number;
   distributions: number;
+  rollovers: number;
   parentCategory: string;
   accountType: string | null;
   isActive: boolean;
@@ -71,6 +73,7 @@ export type CreateAccountData = {
   employerContributions: string;
   fees: string;
   distributions: string;
+  rollovers: string;
 };
 
 export type EditableCellProps = {

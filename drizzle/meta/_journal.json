@@ -15,6 +15,20 @@
       "when": 1773950390890,
       "tag": "0001_drop_pg_enums",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774310400000,
+      "tag": "0002_rename_retirement_category",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1774123201264,
+      "tag": "0003_add_rollovers_column",
+      "breakpoints": true
     }
   ]
 }
