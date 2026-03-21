@@ -145,6 +145,24 @@ export function YearRow({
         )}
         {isEditable ? (
           <EditableCell
+            value={row.rollovers}
+            formatter={formatCurrency}
+            isEditing={isEditingAnnual("rollovers")}
+            editValue={editValue}
+            onStartEdit={() =>
+              onStartEdit("annual", row.id, "rollovers", row.rollovers)
+            }
+            onEditValueChange={onEditValueChange}
+            onSaveEdit={onSaveEdit}
+            onKeyDown={onKeyDown}
+          />
+        ) : (
+          <td className="text-right px-4 py-3">
+            {formatCurrency(row.rollovers)}
+          </td>
+        )}
+        {isEditable ? (
+          <EditableCell
             value={row.fees}
             formatter={formatCurrency}
             isEditing={isEditingAnnual("fees")}
@@ -223,7 +241,7 @@ export function YearRow({
               {isHistoricalDivider && (
                 <tr className="bg-surface-elevated">
                   <td
-                    colSpan={12}
+                    colSpan={13}
                     className="px-8 py-1 text-[10px] text-faint uppercase tracking-wide font-medium"
                   >
                     Historical Accounts
@@ -349,6 +367,25 @@ export function YearRow({
                 )}
                 {acctEditable ? (
                   <EditableCell
+                    value={a.rollovers}
+                    formatter={formatCurrency}
+                    isEditing={isEditingAccount(a.id, "rollovers")}
+                    editValue={editValue}
+                    onStartEdit={() =>
+                      onStartEdit("account", a.id, "rollovers", a.rollovers)
+                    }
+                    onEditValueChange={onEditValueChange}
+                    onSaveEdit={onSaveEdit}
+                    onKeyDown={onKeyDown}
+                    className="text-muted"
+                  />
+                ) : (
+                  <td className="text-right px-4 py-2 text-muted">
+                    {formatCurrency(a.rollovers)}
+                  </td>
+                )}
+                {acctEditable ? (
+                  <EditableCell
                     value={a.fees}
                     formatter={formatCurrency}
                     isEditing={isEditingAccount(a.id, "fees")}
@@ -427,7 +464,7 @@ export function YearRow({
         })}
       {isExpanded && showAccounts && canEdit && (
         <tr className="bg-surface-sunken/30 border-b border-subtle">
-          <td colSpan={12} className="px-4 py-2 pl-10">
+          <td colSpan={13} className="px-4 py-2 pl-10">
             {showAddAccount ? (
               <AddAccountForm
                 year={row.year}

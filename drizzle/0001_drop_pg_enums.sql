@@ -30,10 +30,14 @@ ALTER TABLE "performance_accounts" ALTER COLUMN "created_at" SET DEFAULT now();-
 ALTER TABLE "portfolio_accounts" ALTER COLUMN "tax_type" SET DATA TYPE text;--> statement-breakpoint
 ALTER TABLE "portfolio_snapshots" ALTER COLUMN "created_at" SET DATA TYPE timestamp with time zone;--> statement-breakpoint
 ALTER TABLE "portfolio_snapshots" ALTER COLUMN "created_at" SET DEFAULT now();--> statement-breakpoint
-ALTER TABLE "relocation_scenarios" ALTER COLUMN "created_at" SET DATA TYPE timestamp with time zone;--> statement-breakpoint
-ALTER TABLE "relocation_scenarios" ALTER COLUMN "created_at" SET DEFAULT now();--> statement-breakpoint
-ALTER TABLE "relocation_scenarios" ALTER COLUMN "updated_at" SET DATA TYPE timestamp with time zone;--> statement-breakpoint
-ALTER TABLE "relocation_scenarios" ALTER COLUMN "updated_at" SET DEFAULT now();--> statement-breakpoint
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='relocation_scenarios') THEN
+    ALTER TABLE "relocation_scenarios" ALTER COLUMN "created_at" SET DATA TYPE timestamp with time zone;
+    ALTER TABLE "relocation_scenarios" ALTER COLUMN "created_at" SET DEFAULT now();
+    ALTER TABLE "relocation_scenarios" ALTER COLUMN "updated_at" SET DATA TYPE timestamp with time zone;
+    ALTER TABLE "relocation_scenarios" ALTER COLUMN "updated_at" SET DEFAULT now();
+  END IF;
+END $$;--> statement-breakpoint
 ALTER TABLE "scenarios" ALTER COLUMN "created_at" SET DATA TYPE timestamp with time zone;--> statement-breakpoint
 ALTER TABLE "scenarios" ALTER COLUMN "created_at" SET DEFAULT now();--> statement-breakpoint
 ALTER TABLE "scenarios" ALTER COLUMN "updated_at" SET DATA TYPE timestamp with time zone;--> statement-breakpoint

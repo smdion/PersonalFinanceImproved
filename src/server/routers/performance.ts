@@ -104,6 +104,7 @@ const annualUpdateInput = z.object({
   employerContributions: z.string().optional(),
   fees: z.string().optional(),
   distributions: z.string().optional(),
+  rollovers: z.string().optional(),
 });
 
 const accountUpdateInput = z.object({
@@ -116,6 +117,7 @@ const accountUpdateInput = z.object({
   employerContributions: z.string().optional(),
   fees: z.string().optional(),
   distributions: z.string().optional(),
+  rollovers: z.string().optional(),
 });
 
 const accountCreateInput = z.object({
@@ -129,12 +131,13 @@ const accountCreateInput = z.object({
   employerContributions: z.string().default("0"),
   fees: z.string().default("0"),
   distributions: z.string().default("0"),
+  rollovers: z.string().default("0"),
   isActive: z.boolean().default(true),
 });
 
 // --- Shared helpers (used by getSummary and finalizeYear) ---
 
-/** Modified Dietz return: gainLoss / (beginBal + (contribs + employer - distributions - fees) / 2) */
+/** Modified Dietz return: gainLoss / (beginBal + (contribs + rollovers + employer - distributions - fees) / 2) */
 function computeReturn(
   beginBal: number,
   contribs: number,
@@ -142,9 +145,10 @@ function computeReturn(
   employer: number,
   distributions: number,
   fees: number = 0,
+  rollovers: number = 0,
 ): number | null {
   const denominator =
-    beginBal + (contribs + employer - distributions - fees) / 2;
+    beginBal + (contribs + rollovers + employer - distributions - fees) / 2;
   if (denominator === 0) return null;
   return gainLoss / denominator;
 }
@@ -157,6 +161,7 @@ type AccountLike = {
   employerContributions: string | null;
   distributions: string | null;
   fees: string | null;
+  rollovers: string | null;
 };
 
 /** Sum a set of account rows into a rollup */
@@ -167,7 +172,8 @@ function sumAccounts(accts: AccountLike[]) {
     endBal = 0,
     employer = 0,
     distributions = 0,
-    fees = 0;
+    fees = 0,
+    rollovers = 0;
   for (const a of accts) {
     beginBal += num(a.beginningBalance);
     contribs += num(a.totalContributions);
@@ -176,6 +182,7 @@ function sumAccounts(accts: AccountLike[]) {
     employer += num(a.employerContributions);
     distributions += num(a.distributions);
     fees += num(a.fees);
+    rollovers += num(a.rollovers);
   }
   return {
     beginBal,
@@ -185,6 +192,62 @@ function sumAccounts(accts: AccountLike[]) {
     employer,
     distributions,
     fees,
+    rollovers,
+  };
+}
+
+type AnnualRowLike = {
+  beginningBalance: number;
+  totalContributions: number;
+  yearlyGainLoss: number;
+  endingBalance: number;
+  employerContributions: number;
+  distributions: number;
+  fees: number;
+  rollovers: number;
+  lifetimeGains: number;
+  lifetimeContributions: number;
+  lifetimeMatch: number;
+};
+
+/** Sum a set of annual rows (numeric) into a Portfolio rollup */
+function sumAnnualRows(rows: AnnualRowLike[]) {
+  let beginBal = 0,
+    contribs = 0,
+    gainLoss = 0,
+    endBal = 0,
+    employer = 0,
+    distributions = 0,
+    fees = 0,
+    rollovers = 0,
+    lifetimeGains = 0,
+    lifetimeContribs = 0,
+    lifetimeMatch = 0;
+  for (const r of rows) {
+    beginBal += r.beginningBalance;
+    contribs += r.totalContributions;
+    gainLoss += r.yearlyGainLoss;
+    endBal += r.endingBalance;
+    employer += r.employerContributions;
+    distributions += r.distributions;
+    fees += r.fees;
+    rollovers += r.rollovers;
+    lifetimeGains += r.lifetimeGains;
+    lifetimeContribs += r.lifetimeContributions;
+    lifetimeMatch += r.lifetimeMatch;
+  }
+  return {
+    beginBal,
+    contribs,
+    gainLoss,
+    endBal,
+    employer,
+    distributions,
+    fees,
+    rollovers,
+    lifetimeGains,
+    lifetimeContribs,
+    lifetimeMatch,
   };
 }
 
@@ -233,6 +296,7 @@ export const performanceRouter = createTRPCRouter({
       employerContributions: num(r.employerContributions),
       distributions: num(r.distributions),
       fees: num(r.fees),
+      rollovers: num(r.rollovers),
       lifetimeGains: num(r.lifetimeGains),
       lifetimeContributions: num(r.lifetimeContributions),
       lifetimeMatch: num(r.lifetimeMatch),
@@ -245,6 +309,15 @@ export const performanceRouter = createTRPCRouter({
     const existingAnnual = new Set(
       annualRows.map((r) => annualKey(r.year, r.category)),
     );
+
+    // Resolve parentCategory from master performance_accounts table.
+    // account_performance.parent_category is a legacy field that may not match
+    // the canonical parentCategory on the master record (e.g. HSA/ESPP accounts
+    // store "HSA"/"Brokerage" but master says "Retirement").
+    for (const a of accounts) {
+      const master = resolveMaster(a, perfLookups);
+      if (master) a.parentCategory = master.parentCategory;
+    }
 
     // Group account_performance by year → effective category (derived from account type)
     const accountsByYearCat = new Map<string, typeof accounts>();
@@ -304,10 +377,12 @@ export const performanceRouter = createTRPCRouter({
               sums.employer,
               sums.distributions,
               sums.fees,
+              sums.rollovers,
             ),
             employerContributions: sums.employer,
             distributions: sums.distributions,
             fees: sums.fees,
+            rollovers: sums.rollovers,
             lifetimeGains: 0,
             lifetimeContributions: 0,
             lifetimeMatch: 0,
@@ -328,6 +403,7 @@ export const performanceRouter = createTRPCRouter({
             row.employerContributions = sums.employer;
             row.distributions = sums.distributions;
             row.fees = sums.fees;
+            row.rollovers = sums.rollovers;
             row.annualReturnPct = computeReturn(
               sums.beginBal,
               sums.contribs,
@@ -335,13 +411,14 @@ export const performanceRouter = createTRPCRouter({
               sums.employer,
               sums.distributions,
               sums.fees,
+              sums.rollovers,
             );
           }
         }
       }
 
       // Portfolio row = sum of all categories for this year
-      // For years where only one category existed (e.g., pre-2023 = Retirement only),
+      // For years where only one category existed (e.g., pre-2023 = 401k/IRA only),
       // copy from that category's annual row to keep numbers consistent with stored data
       const portfolioKey = annualKey(year, "Portfolio");
       if (!existingAnnual.has(portfolioKey)) {
@@ -364,37 +441,41 @@ export const performanceRouter = createTRPCRouter({
             employerContributions: src.employerContributions,
             distributions: src.distributions,
             fees: src.fees,
+            rollovers: src.rollovers,
             lifetimeGains: src.lifetimeGains,
             lifetimeContributions: src.lifetimeContributions,
             lifetimeMatch: src.lifetimeMatch,
             isCurrentYear: src.isCurrentYear,
             isFinalized: src.isFinalized,
           });
-        } else if (yearAccounts.length > 0) {
-          // Multiple categories — sum from account data
-          const portfolioSums = sumAccounts(yearAccounts);
+        } else if (nonPortfolioCats.length > 0) {
+          // Multiple categories — sum from per-category annual rows (not account_performance)
+          // This correctly includes categories like HSA that may not have account_performance rows
+          const ps = sumAnnualRows(nonPortfolioCats);
           annualRows.push({
             id: -1,
             year,
             category: "Portfolio",
-            beginningBalance: portfolioSums.beginBal,
-            totalContributions: portfolioSums.contribs,
-            yearlyGainLoss: portfolioSums.gainLoss,
-            endingBalance: portfolioSums.endBal,
+            beginningBalance: ps.beginBal,
+            totalContributions: ps.contribs,
+            yearlyGainLoss: ps.gainLoss,
+            endingBalance: ps.endBal,
             annualReturnPct: computeReturn(
-              portfolioSums.beginBal,
-              portfolioSums.contribs,
-              portfolioSums.gainLoss,
-              portfolioSums.employer,
-              portfolioSums.distributions,
-              portfolioSums.fees,
+              ps.beginBal,
+              ps.contribs,
+              ps.gainLoss,
+              ps.employer,
+              ps.distributions,
+              ps.fees,
+              ps.rollovers,
             ),
-            employerContributions: portfolioSums.employer,
-            distributions: portfolioSums.distributions,
-            fees: portfolioSums.fees,
-            lifetimeGains: 0,
-            lifetimeContributions: 0,
-            lifetimeMatch: 0,
+            employerContributions: ps.employer,
+            distributions: ps.distributions,
+            fees: ps.fees,
+            rollovers: ps.rollovers,
+            lifetimeGains: ps.lifetimeGains,
+            lifetimeContributions: ps.lifetimeContribs,
+            lifetimeMatch: ps.lifetimeMatch,
             isCurrentYear: isCurrentYr,
             isFinalized: existingRow?.isFinalized ?? false,
           });
@@ -403,23 +484,31 @@ export const performanceRouter = createTRPCRouter({
       } else {
         // Existing Portfolio row: only recompute if not finalized
         const row = annualByKey.get(portfolioKey);
-        if (row && !row.isFinalized && yearAccounts.length > 0) {
-          const portfolioSums = sumAccounts(yearAccounts);
-          row.beginningBalance = portfolioSums.beginBal;
-          row.totalContributions = portfolioSums.contribs;
-          row.yearlyGainLoss = portfolioSums.gainLoss;
-          row.endingBalance = portfolioSums.endBal;
-          row.employerContributions = portfolioSums.employer;
-          row.distributions = portfolioSums.distributions;
-          row.fees = portfolioSums.fees;
+        const nonPortfolioForRecompute = annualRows.filter(
+          (r) => r.year === year && r.category !== "Portfolio",
+        );
+        if (row && !row.isFinalized && nonPortfolioForRecompute.length > 0) {
+          const ps = sumAnnualRows(nonPortfolioForRecompute);
+          row.beginningBalance = ps.beginBal;
+          row.totalContributions = ps.contribs;
+          row.yearlyGainLoss = ps.gainLoss;
+          row.endingBalance = ps.endBal;
+          row.employerContributions = ps.employer;
+          row.distributions = ps.distributions;
+          row.fees = ps.fees;
+          row.rollovers = ps.rollovers;
           row.annualReturnPct = computeReturn(
-            portfolioSums.beginBal,
-            portfolioSums.contribs,
-            portfolioSums.gainLoss,
-            portfolioSums.employer,
-            portfolioSums.distributions,
-            portfolioSums.fees,
+            ps.beginBal,
+            ps.contribs,
+            ps.gainLoss,
+            ps.employer,
+            ps.distributions,
+            ps.fees,
+            ps.rollovers,
           );
+          row.lifetimeGains = ps.lifetimeGains;
+          row.lifetimeContributions = ps.lifetimeContribs;
+          row.lifetimeMatch = ps.lifetimeMatch;
         }
       }
     }
@@ -434,6 +523,7 @@ export const performanceRouter = createTRPCRouter({
           row.employerContributions,
           row.distributions,
           row.fees,
+          row.rollovers,
         );
       }
     }
@@ -471,13 +561,109 @@ export const performanceRouter = createTRPCRouter({
       }
     }
 
+    // Synthesize "Retirement" parent-category rollup rows.
+    // Retirement = all accounts where parentCategory === "Retirement".
+    // 401k/IRA and HSA are fully Retirement — use their annual rows (which have correct
+    // employer contributions from the spreadsheet even for older years where account rows don't).
+    // Brokerage is mixed — only some accounts are Retirement (e.g. Retirement Brokerage, ESPP).
+    // For the Brokerage portion, sum from account_performance rows filtered by parentCategory.
+    const fullyRetirementCats = ["401k/IRA", "HSA"];
+    const retBrokerageByYear = new Map<string, typeof accounts>();
+    for (const a of accounts) {
+      if (
+        a.parentCategory === "Retirement" &&
+        getEffectiveCategory(a, perfLookups) === "Brokerage"
+      ) {
+        const arr = retBrokerageByYear.get(String(a.year)) ?? [];
+        arr.push(a);
+        retBrokerageByYear.set(String(a.year), arr);
+      }
+    }
+
+    const retYearsSet = new Set<number>();
+    for (const r of annualRows) {
+      if (fullyRetirementCats.includes(r.category)) retYearsSet.add(r.year);
+    }
+    for (const a of accounts) {
+      if (a.parentCategory === "Retirement") retYearsSet.add(a.year);
+    }
+    const retYears = Array.from(retYearsSet).sort((a, b) => a - b);
+
+    let retLtGains = 0,
+      retLtContribs = 0,
+      retLtMatch = 0;
+    for (const year of retYears) {
+      const isCurrentYr = year === currentYear;
+      const existingRow = annualRows.find((r) => r.year === year);
+
+      // Sum from annual rows for fully-Retirement categories
+      const catAnnualRows = annualRows.filter(
+        (r) =>
+          r.year === year && fullyRetirementCats.includes(r.category),
+      );
+      const annualSums = sumAnnualRows(catAnnualRows);
+
+      // Add Retirement-parentCategory brokerage accounts
+      const retBrokAccts = retBrokerageByYear.get(String(year)) ?? [];
+      const brokSums = sumAccounts(retBrokAccts);
+
+      const beginBal = annualSums.beginBal + brokSums.beginBal;
+      const contribs = annualSums.contribs + brokSums.contribs;
+      const gainLoss = annualSums.gainLoss + brokSums.gainLoss;
+      const endBal = annualSums.endBal + brokSums.endBal;
+      const employer = annualSums.employer + brokSums.employer;
+      const distributions = annualSums.distributions + brokSums.distributions;
+      const fees = annualSums.fees + brokSums.fees;
+      const rolloverSum = annualSums.rollovers + brokSums.rollovers;
+
+      retLtGains += gainLoss;
+      retLtContribs += contribs;
+      retLtMatch += employer;
+
+      annualRows.push({
+        id: -1,
+        year,
+        category: "Retirement",
+        beginningBalance: beginBal,
+        totalContributions: contribs,
+        yearlyGainLoss: gainLoss,
+        endingBalance: endBal,
+        annualReturnPct: computeReturn(
+          beginBal,
+          contribs,
+          gainLoss,
+          employer,
+          distributions,
+          fees,
+          rolloverSum,
+        ),
+        employerContributions: employer,
+        distributions,
+        fees,
+        rollovers: rolloverSum,
+        lifetimeGains: retLtGains,
+        lifetimeContributions: retLtContribs,
+        lifetimeMatch: retLtMatch,
+        isCurrentYear: isCurrentYr,
+        isFinalized: existingRow?.isFinalized ?? false,
+      });
+    }
+
     // Sort annual rows by year after synthesizing
     annualRows.sort((a, b) => a.year - b.year);
 
     // Categories available in the data (rebuild after synthesis)
-    const categories = Array.from(
-      new Set(annualRows.map((r) => r.category)),
-    ).sort();
+    const allCats = Array.from(new Set(annualRows.map((r) => r.category)));
+    // Account-type categories: 401k/IRA, HSA, Brokerage (sorted)
+    const accountTypeCategories = allCats
+      .filter((c) => !["Portfolio", "Retirement"].includes(c))
+      .sort();
+    // Parent-category rollups: Retirement (computed), Portfolio (grand total)
+    const parentCategories = ["Retirement", "Portfolio"].filter((c) =>
+      allCats.includes(c),
+    );
+    // Combined for backwards compat
+    const categories = [...accountTypeCategories, ...parentCategories];
 
     // Transform account rows — enrich with master account data + compute missing return %
     const accountRows = accounts.map((r) => {
@@ -488,6 +674,7 @@ export const performanceRouter = createTRPCRouter({
       const employer = num(r.employerContributions);
       const distributions = num(r.distributions);
       const fees = num(r.fees);
+      const rollovers = num(r.rollovers);
       const storedReturn = r.annualReturnPct ? num(r.annualReturnPct) : null;
       return {
         id: r.id,
@@ -512,11 +699,13 @@ export const performanceRouter = createTRPCRouter({
             employer,
             distributions,
             fees,
+            rollovers,
           ),
         employerContributions: employer,
         fees,
         distributions,
-        parentCategory: r.parentCategory,
+        rollovers,
+        parentCategory: master?.parentCategory ?? r.parentCategory,
         accountType: master?.accountType ?? null,
         isActive: r.isActive,
         performanceAccountId: r.performanceAccountId,
@@ -575,6 +764,8 @@ export const performanceRouter = createTRPCRouter({
 
     return {
       categories,
+      accountTypeCategories,
+      parentCategories,
       currentYear,
       annualRows,
       accountRows,
@@ -664,6 +855,7 @@ export const performanceRouter = createTRPCRouter({
           employerContributions: input.employerContributions,
           fees: input.fees,
           distributions: input.distributions,
+          rollovers: input.rollovers,
         })
         .returning();
       await stampPerformanceUpdated(ctx.db);
@@ -699,6 +891,7 @@ export const performanceRouter = createTRPCRouter({
               employerContributions: z.string(),
               distributions: z.string(),
               fees: z.string(),
+              rollovers: z.string().default("0"),
               lifetimeGains: z.string(),
               lifetimeContributions: z.string(),
               lifetimeMatch: z.string(),
@@ -757,36 +950,50 @@ export const performanceRouter = createTRPCRouter({
         .from(schema.performanceAccounts);
       const finalizeLookups = buildPerfAcctLookups(allPerfAccounts);
 
-      // 3. Compute rollups and persist finalized values for each category + Portfolio
-      // Categories derived from accountType (Brokerage, HSA, Retirement), not parentCategory
+      // 3. Compute rollups and persist finalized values for each category, then Portfolio
+      // Categories derived from accountType (Brokerage, HSA, 401k/IRA), not parentCategory
       const accountCategories = Array.from(
         new Set(
           finalizedAccts.map((a) => getEffectiveCategory(a, finalizeLookups)),
         ),
       );
-      const allCategories = [...accountCategories, "Portfolio"];
 
-      for (const category of allCategories) {
-        const catAccounts =
-          category === "Portfolio"
-            ? finalizedAccts
-            : finalizedAccts.filter(
-                (a) => getEffectiveCategory(a, finalizeLookups) === category,
-              );
+      // Track per-category finalized values so Portfolio can sum from them
+      const finalizedCatValues: AnnualRowLike[] = [];
 
+      // First pass: finalize per-category rows
+      for (const category of accountCategories) {
+        const catAccounts = finalizedAccts.filter(
+          (a) => getEffectiveCategory(a, finalizeLookups) === category,
+        );
         if (catAccounts.length === 0) continue;
 
         const override = overrideMap.get(category);
 
         if (override) {
-          // Use user-provided values
+          const vals: AnnualRowLike = {
+            beginningBalance: parseFloat(override.beginningBalance),
+            totalContributions: parseFloat(override.totalContributions),
+            yearlyGainLoss: parseFloat(override.yearlyGainLoss),
+            endingBalance: parseFloat(override.endingBalance),
+            employerContributions: parseFloat(override.employerContributions),
+            distributions: parseFloat(override.distributions),
+            fees: parseFloat(override.fees),
+            rollovers: parseFloat(override.rollovers),
+            lifetimeGains: parseFloat(override.lifetimeGains),
+            lifetimeContributions: parseFloat(override.lifetimeContributions),
+            lifetimeMatch: parseFloat(override.lifetimeMatch),
+          };
+          finalizedCatValues.push(vals);
+
           const returnPct = computeReturn(
-            parseFloat(override.beginningBalance),
-            parseFloat(override.totalContributions),
-            parseFloat(override.yearlyGainLoss),
-            parseFloat(override.employerContributions),
-            parseFloat(override.distributions),
-            parseFloat(override.fees),
+            vals.beginningBalance,
+            vals.totalContributions,
+            vals.yearlyGainLoss,
+            vals.employerContributions,
+            vals.distributions,
+            vals.fees,
+            vals.rollovers,
           );
 
           await tx
@@ -802,6 +1009,7 @@ export const performanceRouter = createTRPCRouter({
               employerContributions: override.employerContributions,
               distributions: override.distributions,
               fees: override.fees,
+              rollovers: override.rollovers,
               lifetimeGains: override.lifetimeGains,
               lifetimeContributions: override.lifetimeContributions,
               lifetimeMatch: override.lifetimeMatch,
@@ -816,6 +1024,9 @@ export const performanceRouter = createTRPCRouter({
           // Compute from account data
           const sums = sumAccounts(catAccounts);
           const prev = prevAnnualRows.find((r) => r.category === category);
+          const ltGains = num(prev?.lifetimeGains) + sums.gainLoss;
+          const ltContribs = num(prev?.lifetimeContributions) + sums.contribs;
+          const ltMatch = num(prev?.lifetimeMatch) + sums.employer;
           const returnPct = computeReturn(
             sums.beginBal,
             sums.contribs,
@@ -823,7 +1034,22 @@ export const performanceRouter = createTRPCRouter({
             sums.employer,
             sums.distributions,
             sums.fees,
+            sums.rollovers,
           );
+
+          finalizedCatValues.push({
+            beginningBalance: sums.beginBal,
+            totalContributions: sums.contribs,
+            yearlyGainLoss: sums.gainLoss,
+            endingBalance: sums.endBal,
+            employerContributions: sums.employer,
+            distributions: sums.distributions,
+            fees: sums.fees,
+            rollovers: sums.rollovers,
+            lifetimeGains: ltGains,
+            lifetimeContributions: ltContribs,
+            lifetimeMatch: ltMatch,
+          });
 
           await tx
             .update(schema.annualPerformance)
@@ -838,20 +1064,92 @@ export const performanceRouter = createTRPCRouter({
               employerContributions: sums.employer.toFixed(2),
               distributions: sums.distributions.toFixed(2),
               fees: sums.fees.toFixed(2),
-              lifetimeGains: (num(prev?.lifetimeGains) + sums.gainLoss).toFixed(
-                2,
-              ),
-              lifetimeContributions: (
-                num(prev?.lifetimeContributions) + sums.contribs
-              ).toFixed(2),
-              lifetimeMatch: (num(prev?.lifetimeMatch) + sums.employer).toFixed(
-                2,
-              ),
+              rollovers: sums.rollovers.toFixed(2),
+              lifetimeGains: ltGains.toFixed(2),
+              lifetimeContributions: ltContribs.toFixed(2),
+              lifetimeMatch: ltMatch.toFixed(2),
             })
             .where(
               and(
                 eq(schema.annualPerformance.year, year),
                 eq(schema.annualPerformance.category, category),
+              ),
+            );
+        }
+      }
+
+      // Second pass: finalize Portfolio row by summing per-category values
+      {
+        const portfolioOverride = overrideMap.get("Portfolio");
+        if (portfolioOverride) {
+          const returnPct = computeReturn(
+            parseFloat(portfolioOverride.beginningBalance),
+            parseFloat(portfolioOverride.totalContributions),
+            parseFloat(portfolioOverride.yearlyGainLoss),
+            parseFloat(portfolioOverride.employerContributions),
+            parseFloat(portfolioOverride.distributions),
+            parseFloat(portfolioOverride.fees),
+            parseFloat(portfolioOverride.rollovers),
+          );
+
+          await tx
+            .update(schema.annualPerformance)
+            .set({
+              isFinalized: true,
+              isCurrentYear: false,
+              beginningBalance: portfolioOverride.beginningBalance,
+              totalContributions: portfolioOverride.totalContributions,
+              yearlyGainLoss: portfolioOverride.yearlyGainLoss,
+              endingBalance: portfolioOverride.endingBalance,
+              annualReturnPct: returnPct?.toFixed(6) ?? null,
+              employerContributions: portfolioOverride.employerContributions,
+              distributions: portfolioOverride.distributions,
+              fees: portfolioOverride.fees,
+              rollovers: portfolioOverride.rollovers,
+              lifetimeGains: portfolioOverride.lifetimeGains,
+              lifetimeContributions: portfolioOverride.lifetimeContributions,
+              lifetimeMatch: portfolioOverride.lifetimeMatch,
+            })
+            .where(
+              and(
+                eq(schema.annualPerformance.year, year),
+                eq(schema.annualPerformance.category, "Portfolio"),
+              ),
+            );
+        } else if (finalizedCatValues.length > 0) {
+          const ps = sumAnnualRows(finalizedCatValues);
+          const returnPct = computeReturn(
+            ps.beginBal,
+            ps.contribs,
+            ps.gainLoss,
+            ps.employer,
+            ps.distributions,
+            ps.fees,
+            ps.rollovers,
+          );
+
+          await tx
+            .update(schema.annualPerformance)
+            .set({
+              isFinalized: true,
+              isCurrentYear: false,
+              beginningBalance: ps.beginBal.toFixed(2),
+              totalContributions: ps.contribs.toFixed(2),
+              yearlyGainLoss: ps.gainLoss.toFixed(2),
+              endingBalance: ps.endBal.toFixed(2),
+              annualReturnPct: returnPct?.toFixed(6) ?? null,
+              employerContributions: ps.employer.toFixed(2),
+              distributions: ps.distributions.toFixed(2),
+              fees: ps.fees.toFixed(2),
+              rollovers: ps.rollovers.toFixed(2),
+              lifetimeGains: ps.lifetimeGains.toFixed(2),
+              lifetimeContributions: ps.lifetimeContribs.toFixed(2),
+              lifetimeMatch: ps.lifetimeMatch.toFixed(2),
+            })
+            .where(
+              and(
+                eq(schema.annualPerformance.year, year),
+                eq(schema.annualPerformance.category, "Portfolio"),
               ),
             );
         }
@@ -901,12 +1199,16 @@ export const performanceRouter = createTRPCRouter({
 
         if (missingAccounts.length > 0) {
           await tx.insert(schema.accountPerformance).values(
-            missingAccounts.map((a) => ({
+            missingAccounts.map((a) => {
+              const masterAcct = a.performanceAccountId
+                ? allPerfAccounts.find((m) => m.id === a.performanceAccountId)
+                : null;
+              return {
               year: nextYear,
               institution: a.institution,
               accountLabel: a.accountLabel,
               ownerPersonId: a.ownerPersonId,
-              parentCategory: a.parentCategory,
+              parentCategory: masterAcct?.parentCategory ?? a.parentCategory,
               isActive: true,
               performanceAccountId: a.performanceAccountId,
               beginningBalance: a.endingBalance, // prev year ending = next year beginning
@@ -916,7 +1218,8 @@ export const performanceRouter = createTRPCRouter({
               employerContributions: "0",
               fees: "0",
               distributions: "0",
-            })),
+            };
+            }),
           );
         }
 

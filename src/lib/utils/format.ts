@@ -124,10 +124,11 @@ export function accountDisplayName(
   if (account.displayName) return account.displayName;
   // Priority 2: programmatic label (stored on performanceAccounts)
   if (account.accountLabel) {
-    // For joint accounts, rebuild label with specific owner name if not already present
+    // When an owner name is provided and the label doesn't already include it,
+    // rebuild with the owner prefix so duplicate account types (e.g. two IRAs
+    // at the same institution) are distinguishable.
     if (
       ownerName &&
-      account.ownershipType === "joint" &&
       !account.accountLabel.startsWith(ownerName) &&
       account.accountType &&
       account.institution

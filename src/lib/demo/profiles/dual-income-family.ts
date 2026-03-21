@@ -401,7 +401,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
 
   annualPerformance: [
     {
-      category: "Retirement",
+      category: "401k/IRA",
       year: 2023,
       beginningBalance: "240000",
       totalContributions: "42000",
@@ -429,7 +429,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       lifetimeMatch: "0",
     },
     {
-      category: "Retirement",
+      category: "401k/IRA",
       year: 2024,
       beginningBalance: "320000",
       totalContributions: "47750",
@@ -443,7 +443,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       lifetimeMatch: "35000",
     },
     {
-      category: "Retirement",
+      category: "401k/IRA",
       year: 2025,
       beginningBalance: "380000",
       totalContributions: "49000",

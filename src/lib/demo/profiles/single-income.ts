@@ -255,7 +255,7 @@ export const singleIncomeProfile: DemoProfile = {
 
   annualPerformance: [
     {
-      category: "Retirement",
+      category: "401k/IRA",
       year: 2023,
       beginningBalance: "25000",
       totalContributions: "15000",
@@ -269,7 +269,7 @@ export const singleIncomeProfile: DemoProfile = {
       lifetimeMatch: "6800",
     },
     {
-      category: "Retirement",
+      category: "401k/IRA",
       year: 2024,
       beginningBalance: "23000",
       totalContributions: "15500",
@@ -283,7 +283,7 @@ export const singleIncomeProfile: DemoProfile = {
       lifetimeMatch: "2550",
     },
     {
-      category: "Retirement",
+      category: "401k/IRA",
       year: 2025,
       beginningBalance: "35000",
       totalContributions: "15500",

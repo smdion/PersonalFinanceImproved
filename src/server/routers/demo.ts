@@ -266,7 +266,9 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
       annualReturnPct: ap.annualReturnPct,
       employerContributions: ap.employerContributions,
       fees: ap.fees,
-      parentCategory: ap.parentCategory,
+      parentCategory: perfId
+        ? (perfRows.find((p) => p.id === perfId)?.parentCategory ?? ap.parentCategory)
+        : ap.parentCategory,
       performanceAccountId: perfId,
     });
   }

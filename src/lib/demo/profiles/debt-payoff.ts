@@ -224,7 +224,7 @@ export const debtPayoffProfile: DemoProfile = {
 
   annualPerformance: [
     {
-      category: "Retirement",
+      category: "401k/IRA",
       year: 2023,
       beginningBalance: "0",
       totalContributions: "3720",
@@ -238,7 +238,7 @@ export const debtPayoffProfile: DemoProfile = {
       lifetimeMatch: "1240",
     },
     {
-      category: "Retirement",
+      category: "401k/IRA",
       year: 2024,
       beginningBalance: "4000",
       totalContributions: "5580",
@@ -252,7 +252,7 @@ export const debtPayoffProfile: DemoProfile = {
       lifetimeMatch: "3000",
     },
     {
-      category: "Retirement",
+      category: "401k/IRA",
       year: 2025,
       beginningBalance: "8500",
       totalContributions: "5580",

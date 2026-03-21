@@ -75,7 +75,8 @@ export default function PerformancePage() {
   }
 
   const {
-    categories,
+    accountTypeCategories,
+    parentCategories,
     currentYear,
     annualRows,
     accountRows,
@@ -174,7 +175,8 @@ export default function PerformancePage() {
       )}
 
       <CategoryTabs
-        categories={categories}
+        accountTypeCategories={accountTypeCategories ?? []}
+        parentCategories={parentCategories ?? []}
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
       />

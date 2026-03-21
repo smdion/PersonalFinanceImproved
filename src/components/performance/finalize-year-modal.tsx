@@ -13,6 +13,7 @@ type CategoryOverride = {
   employerContributions: string;
   distributions: string;
   fees: string;
+  rollovers: string;
   lifetimeGains: string;
   lifetimeContributions: string;
   lifetimeMatch: string;
@@ -31,6 +32,7 @@ const FIELDS = [
   { key: "totalContributions", label: "Contributions" },
   { key: "employerContributions", label: "Employer Match" },
   { key: "distributions", label: "Distributions" },
+  { key: "rollovers", label: "Rollovers" },
   { key: "fees", label: "Fees" },
   { key: "yearlyGainLoss", label: "Gain/Loss" },
   { key: "endingBalance", label: "Ending Balance" },
@@ -61,6 +63,7 @@ export function FinalizeYearModal({
         endingBalance: row.endingBalance.toFixed(2),
         employerContributions: row.employerContributions.toFixed(2),
         distributions: row.distributions.toFixed(2),
+        rollovers: row.rollovers.toFixed(2),
         fees: row.fees.toFixed(2),
         lifetimeGains: row.lifetimeGains.toFixed(2),
         lifetimeContributions: row.lifetimeContributions.toFixed(2),
@@ -78,7 +81,7 @@ export function FinalizeYearModal({
   const categories = rows
     .map((r) => r.category)
     .sort((a, b) => {
-      const order = ["Portfolio", "Retirement", "Brokerage", "HSA"];
+      const order = ["Portfolio", "Retirement", "401k/IRA", "Brokerage", "HSA"];
       return order.indexOf(a) - order.indexOf(b);
     });
 

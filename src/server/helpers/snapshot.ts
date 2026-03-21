@@ -51,22 +51,36 @@ export type SnapshotAccount = {
   accountLabel: string | null;
 };
 
-/**
- * Fetch the latest portfolio snapshot and its accounts.
- * Returns null if no snapshots exist.
- */
-export async function getLatestSnapshot(db: Db): Promise<{
+export type SnapshotResult = {
   snapshot: typeof schema.portfolioSnapshots.$inferSelect;
   accounts: SnapshotAccount[];
   total: number;
-} | null> {
-  const latestSnapshots = await db
-    .select()
-    .from(schema.portfolioSnapshots)
-    .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
-    .limit(1);
+};
 
-  const snapshot = latestSnapshots[0];
+/**
+ * Fetch a specific snapshot by ID, or the latest if no ID is given.
+ * Returns null if the snapshot doesn't exist.
+ */
+export async function getLatestSnapshot(
+  db: Db,
+  snapshotId?: number,
+): Promise<SnapshotResult | null> {
+  let snapshot: typeof schema.portfolioSnapshots.$inferSelect | undefined;
+  if (snapshotId != null) {
+    const rows = await db
+      .select()
+      .from(schema.portfolioSnapshots)
+      .where(eq(schema.portfolioSnapshots.id, snapshotId))
+      .limit(1);
+    snapshot = rows[0];
+  } else {
+    const rows = await db
+      .select()
+      .from(schema.portfolioSnapshots)
+      .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
+      .limit(1);
+    snapshot = rows[0];
+  }
   if (!snapshot) return null;
 
   const rawAccounts = await db

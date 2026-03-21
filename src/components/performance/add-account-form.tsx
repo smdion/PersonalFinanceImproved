@@ -73,6 +73,7 @@ export function AddAccountForm({
               employerContributions: "0",
               fees: "0",
               distributions: "0",
+              rollovers: "0",
             });
           }}
           disabled={isSaving || !selectedId}

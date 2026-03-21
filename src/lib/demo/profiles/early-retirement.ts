@@ -298,7 +298,7 @@ export const earlyRetirementProfile: DemoProfile = {
 
   annualPerformance: [
     {
-      category: "Retirement",
+      category: "401k/IRA",
       year: 2023,
       beginningBalance: "630000",
       totalContributions: "130000",
@@ -312,7 +312,7 @@ export const earlyRetirementProfile: DemoProfile = {
       lifetimeMatch: "60000",
     },
     {
-      category: "Retirement",
+      category: "401k/IRA",
       year: 2024,
       beginningBalance: "815000",
       totalContributions: "101150",
@@ -326,7 +326,7 @@ export const earlyRetirementProfile: DemoProfile = {
       lifetimeMatch: "70000",
     },
     {
-      category: "Retirement",
+      category: "401k/IRA",
       year: 2025,
       beginningBalance: "772850",
       totalContributions: "101650",

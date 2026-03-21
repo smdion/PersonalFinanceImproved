@@ -79,7 +79,11 @@ export function PerformanceTable({
             </th>
             <th className="text-right px-4 py-3 text-muted font-medium">
               Distributions
-              <HelpTip text="Withdrawals, rollovers, or money moved out of accounts during the year" />
+              <HelpTip text="Withdrawals or money taken out of accounts during the year" />
+            </th>
+            <th className="text-right px-4 py-3 text-muted font-medium">
+              Rollovers
+              <HelpTip text="Internal transfers between accounts. Positive = money rolled in, negative = money rolled out. Should net to zero at Portfolio level." />
             </th>
             <th className="text-right px-4 py-3 text-muted font-medium">
               Fees
@@ -103,13 +107,16 @@ export function PerformanceTable({
             if (!row) return null;
             const isExpanded = expandedYear === year;
             const yearAccountsAll = accountRows
-              .filter(
-                (a) =>
-                  a.year === year &&
-                  (activeCategory === "Portfolio" ||
-                    accountTypeToPerformanceCategory(a.accountType) ===
-                      activeCategory),
-              )
+              .filter((a) => {
+                if (a.year !== year) return false;
+                if (activeCategory === "Portfolio") return true;
+                if (activeCategory === "Retirement")
+                  return a.parentCategory === "Retirement";
+                return (
+                  accountTypeToPerformanceCategory(a.accountType) ===
+                  activeCategory
+                );
+              })
               .sort(
                 (a, b) =>
                   a.displayOrder - b.displayOrder ||

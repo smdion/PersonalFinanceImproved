@@ -535,6 +535,9 @@ export const annualPerformance = pgTable(
       .notNull()
       .default("0"),
     fees: decimal("fees", { precision: 12, scale: 2 }).notNull().default("0"),
+    rollovers: decimal("rollovers", { precision: 12, scale: 2 })
+      .notNull()
+      .default("0"),
     lifetimeGains: decimal("lifetime_gains", {
       precision: 12,
       scale: 2,
@@ -597,6 +600,9 @@ export const accountPerformance = pgTable(
       .default("0"),
     fees: decimal("fees", { precision: 12, scale: 2 }).notNull().default("0"),
     distributions: decimal("distributions", { precision: 12, scale: 2 })
+      .notNull()
+      .default("0"),
+    rollovers: decimal("rollovers", { precision: 12, scale: 2 })
       .notNull()
       .default("0"),
     parentCategory: text("parent_category").notNull(),
