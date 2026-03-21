@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import {
   AreaChart,
   Area,
@@ -8,14 +8,15 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
+  ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
 import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils/format";
 import { CHART_COLORS } from "@/lib/utils/colors";
 
-type TimeFrame = "3M" | "6M" | "1Y" | "3Y" | "All";
-const TIME_FRAMES: TimeFrame[] = ["3M", "6M", "1Y", "3Y", "All"];
+type TimeFrame = "YTD" | "3M" | "6M" | "1Y" | "3Y" | "All";
+const TIME_FRAMES: TimeFrame[] = ["YTD", "3M", "6M", "1Y", "3Y", "All"];
 
 type SnapshotPoint = { date: string; total: number };
 
@@ -34,33 +35,28 @@ function compactCurrency(value: number) {
   return `$${value.toFixed(0)}`;
 }
 
-function getTimeFrameMonths(tf: TimeFrame): number | null {
-  switch (tf) {
-    case "3M":
-      return 3;
-    case "6M":
-      return 6;
-    case "1Y":
-      return 12;
-    case "3Y":
-      return 36;
-    case "All":
-      return null;
+function getTimeFrameCutoff(tf: TimeFrame): string | null {
+  if (tf === "All") return null;
+  if (tf === "YTD") {
+    return `${new Date().getFullYear()}-01-01`;
   }
+  const months = { "3M": 3, "6M": 6, "1Y": 12, "3Y": 36 }[tf];
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - months);
+  return cutoff.toISOString().slice(0, 10);
 }
 
 export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
   const [timeFrame, setTimeFrame] = useState<TimeFrame>("1Y");
+  const [hoverValue, setHoverValue] = useState<number | null>(null);
+  const hoverRef = useRef<number | null>(null);
 
   const chartData = useMemo(() => {
     if (snapshots.length === 0) return [];
 
-    const months = getTimeFrameMonths(timeFrame);
+    const cutoffStr = getTimeFrameCutoff(timeFrame);
     let filtered = snapshots;
-    if (months !== null) {
-      const cutoff = new Date();
-      cutoff.setMonth(cutoff.getMonth() - months);
-      const cutoffStr = cutoff.toISOString().slice(0, 10);
+    if (cutoffStr !== null) {
       filtered = snapshots.filter((s) => s.date >= cutoffStr);
     }
 
@@ -169,6 +165,14 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
           />
           <RechartsTooltip
             content={({ active, payload }) => {
+              const val = active && payload?.length
+                ? (payload[0]!.payload as ChartPoint).total
+                : null;
+              // Sync hover value via ref + deferred state update to avoid render-during-render
+              if (hoverRef.current !== val) {
+                hoverRef.current = val;
+                queueMicrotask(() => setHoverValue(val));
+              }
               if (!active || !payload?.length) return null;
               const p = payload[0]!.payload as ChartPoint;
               return (
@@ -197,6 +201,20 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
               );
             }}
           />
+          {hoverValue !== null && (
+            <ReferenceLine
+              y={hoverValue}
+              stroke={CHART_COLORS.mcAxis}
+              strokeDasharray="4 3"
+              strokeOpacity={0.6}
+              label={{
+                value: compactCurrency(hoverValue),
+                position: "right",
+                fontSize: 10,
+                fill: CHART_COLORS.mcAxis,
+              }}
+            />
+          )}
           <Area
             type="monotone"
             dataKey="total"
