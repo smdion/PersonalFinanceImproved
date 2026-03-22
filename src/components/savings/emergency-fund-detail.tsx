@@ -120,7 +120,7 @@ export function EmergencyFundDetail({
                 </div>
               ))}
               <div className="border-t pt-1.5 flex justify-between text-xs text-faint">
-                <span>Counted as self-loan (added to "with repay" balance)</span>
+                <span>Counted as self-loan (added to with-repay balance)</span>
               </div>
             </div>
           )}
