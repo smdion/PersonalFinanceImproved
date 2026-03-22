@@ -44,11 +44,10 @@ export interface BudgetAPIClient {
     amount: number,
   ): Promise<void>;
 
-  /** Update the goal target for a category (e.g. sinking fund target balance) */
+  /** Update the goal target for a category (plan-level, not month-specific) */
   updateCategoryGoalTarget(
     categoryId: string,
     targetAmount: number,
-    month: string,
   ): Promise<void>;
 
   // -- Transactions --

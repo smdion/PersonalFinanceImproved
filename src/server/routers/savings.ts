@@ -759,9 +759,6 @@ export const savingsRouter = createTRPCRouter({
 
       if (toPush.length === 0) return { pushed: 0 };
 
-      const now = new Date();
-      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-
       let pushed = 0;
       for (const goal of toPush) {
         const monthly = num(goal.monthlyContribution);
@@ -770,7 +767,6 @@ export const savingsRouter = createTRPCRouter({
             await client.updateCategoryGoalTarget(
               goal.apiCategoryId!,
               monthly,
-              currentMonth,
             );
             pushed++;
           } catch {
