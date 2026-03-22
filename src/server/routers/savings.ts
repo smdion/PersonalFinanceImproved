@@ -47,24 +47,8 @@ const plannedTransactionInput = z.object({
   recurrenceMonths: z.number().int().nullable().optional(),
 });
 
-/** Parse reimbursement total from a YNAB category note. Each line: "amount - description". */
-function parseReimbursementTotal(note: string | null | undefined): number {
-  if (!note) return 0;
-  let total = 0;
-  for (const line of note.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    const match = trimmed.match(/^\$?([\d,.]+)\s*[-–—]\s*(.+)$/);
-    if (match) {
-      const amount = parseFloat(match[1]!.replace(/,/g, ""));
-      if (!isNaN(amount) && amount > 0) total += amount;
-    }
-  }
-  return total;
-}
-
-/** Look up the reimbursement total for the e-fund goal from the YNAB cache. */
-async function getEfundReimbursementTotal(
+/** Look up the reimbursement category's goalTarget for the e-fund (represents self-loan amount). */
+async function getEfundReimbursementGoalTarget(
   db: Parameters<typeof cacheGet>[0],
   efundGoal: { reimbursementApiCategoryId: string | null },
 ): Promise<number> {
@@ -80,7 +64,7 @@ async function getEfundReimbursementTotal(
   for (const group of categoriesCache.data) {
     for (const cat of group.categories) {
       if (cat.id === efundGoal.reimbursementApiCategoryId) {
-        return parseReimbursementTotal(cat.note);
+        return cat.goalTarget ?? 0;
       }
     }
   }
@@ -232,15 +216,16 @@ export const savingsRouter = createTRPCRouter({
           .filter((l) => l.fromGoalId === efundGoal.id)
           .reduce((s, l) => s + (num(l.amount) - num(l.repaidAmount)), 0);
 
-        const pendingReimbursements = await getEfundReimbursementTotal(
+        // The reimbursement category's goalTarget represents money owed back
+        // to the e-fund (self-loan tracked in YNAB). Add it to outstanding loans.
+        const reimbursementSelfLoan = await getEfundReimbursementGoalTarget(
           ctx.db,
           efundGoal,
         );
 
         const efundInput: EFundInput = {
           emergencyFundBalance: balanceMap.get(efundGoal.id) ?? 0,
-          outstandingSelfLoans: outstandingLoans,
-          pendingReimbursements,
+          outstandingSelfLoans: outstandingLoans + reimbursementSelfLoan,
           essentialMonthlyExpenses,
           targetMonths: efundGoal.targetMonths ?? 4,
           asOfDate: new Date(),

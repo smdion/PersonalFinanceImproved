@@ -44,7 +44,7 @@ export function EmergencyFundDetail({
         <div>
           <p className="text-faint text-xs mb-1">
             True Balance
-            <HelpTip text="Current balance minus outstanding self-loans and pending reimbursements" />
+            <HelpTip text="Current balance minus outstanding self-loans (money owed back to the fund)" />
           </p>
           <p className="text-lg font-semibold text-primary">
             {formatCurrency(efund.trueBalance)}
@@ -120,7 +120,7 @@ export function EmergencyFundDetail({
                 </div>
               ))}
               <div className="border-t pt-1.5 flex justify-between text-xs text-faint">
-                <span>Already subtracted from True Balance above</span>
+                <span>Counted as self-loan (added to "with repay" balance)</span>
               </div>
             </div>
           )}

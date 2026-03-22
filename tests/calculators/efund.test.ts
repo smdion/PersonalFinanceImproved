@@ -6,15 +6,14 @@ describe("calculateEFund", () => {
   const input: EFundInput = {
     emergencyFundBalance: 15000,
     outstandingSelfLoans: 0,
-    pendingReimbursements: 0,
     essentialMonthlyExpenses: 5500,
     targetMonths: 4,
     asOfDate: new Date("2025-03-07"),
   };
 
-  it("computes months covered from true balance", () => {
+  it("computes months covered from raw balance", () => {
     const result = calculateEFund(input);
-    // $15,000 / $5,500 = 2.727 months (no deductions)
+    // $15,000 / $5,500 = 2.727 months
     expect(result.monthsCovered).toBeCloseTo(2.727, 2);
     expect(result.rawBalance).toBe(15000);
   });
@@ -39,8 +38,8 @@ describe("calculateEFund", () => {
     expect(result.trueBalance).toBe(12000);
     expect(result.outstandingSelfLoans).toBe(3000);
     expect(result.balanceWithRepay).toBe(18000); // 15000 + 3000
-    // Current months = true balance / expenses = 12000 / 5500
-    expect(result.monthsCovered).toBeCloseTo(2.182, 2);
+    // Current months = raw balance / expenses = 15000 / 5500
+    expect(result.monthsCovered).toBeCloseTo(2.727, 2);
     // Repaid months = with-repay / expenses = 18000 / 5500
     expect(result.monthsCoveredWithRepay).toBeCloseTo(3.273, 2);
     // Needed = 22000 - 18000 = 4000
@@ -50,33 +49,27 @@ describe("calculateEFund", () => {
     );
   });
 
-  it("subtracts pending reimbursements from true balance and months", () => {
-    const withReimb: EFundInput = { ...input, pendingReimbursements: 500 };
-    const result = calculateEFund(withReimb);
-    expect(result.rawBalance).toBe(15000);
-    expect(result.trueBalance).toBe(14500); // 15000 - 500
-    // Months from true balance: 14500 / 5500 = 2.636
-    expect(result.monthsCovered).toBeCloseTo(2.636, 2);
-    // With repay still subtracts reimbursements: 15000 + 0 - 500 = 14500
-    expect(result.balanceWithRepay).toBe(14500);
-    // Needed = 22000 - 14500 = 7500
-    expect(result.neededAfterRepay).toBeCloseTo(7500, 0);
-    expect(result.warnings).toContainEqual(
-      expect.stringContaining("reimbursements"),
-    );
-  });
-
-  it("combines self-loans and reimbursements", () => {
-    const combined: EFundInput = {
-      ...input,
-      outstandingSelfLoans: 2000,
-      pendingReimbursements: 500,
+  it("matches spreadsheet Income Replacement Snapshot", () => {
+    // Real data: $14,961.07 balance, $559.15 self-loan, $3,896.49/mo tight expenses, 4 mo target
+    const real: EFundInput = {
+      emergencyFundBalance: 14961.07,
+      outstandingSelfLoans: 559.15,
+      essentialMonthlyExpenses: 3896.49,
+      targetMonths: 4,
+      asOfDate: new Date("2026-03-21"),
     };
-    const result = calculateEFund(combined);
-    expect(result.trueBalance).toBe(12500); // 15000 - 2000 - 500
-    // With repay = 15000 + 2000 - 500 = 16500
-    expect(result.balanceWithRepay).toBe(16500);
-    expect(result.monthsCovered).toBeCloseTo(12500 / 5500, 2);
+    const result = calculateEFund(real);
+    expect(result.rawBalance).toBe(14961.07);
+    // With Repay = 14961.07 + 559.15 = 15520.22
+    expect(result.balanceWithRepay).toBeCloseTo(15520.22, 2);
+    // Current Months = 14961.07 / 3896.49 = 3.84
+    expect(result.monthsCovered).toBeCloseTo(3.84, 1);
+    // Repaid Months = 15520.22 / 3896.49 = 3.98
+    expect(result.monthsCoveredWithRepay).toBeCloseTo(3.98, 1);
+    // Target = 4 * 3896.49 = 15585.96
+    expect(result.targetAmount).toBeCloseTo(15585.96, 2);
+    // Needed = 15585.96 - 15520.22 = 65.74
+    expect(result.neededAfterRepay).toBeCloseTo(65.74, 0);
   });
 
   it("caps progress at 100%", () => {
@@ -115,8 +108,8 @@ describe("calculateEFund", () => {
     const result = calculateEFund(overLoaned);
     expect(result.trueBalance).toBe(0);
     expect(result.rawBalance).toBe(15000);
-    // Current months uses true balance (clamped to 0)
-    expect(result.monthsCovered).toBe(0);
+    // Current months uses raw balance
+    expect(result.monthsCovered).toBeCloseTo(2.727, 2);
     // With repay = 15000 + 20000 = 35000
     expect(result.balanceWithRepay).toBe(35000);
   });

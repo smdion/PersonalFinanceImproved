@@ -3,9 +3,10 @@
  *
  * Calculates how many months of essential expenses the emergency fund covers.
  * Matches the spreadsheet's "Income Replacement Snapshot" layout:
- *   - Current balance (raw)
- *   - Self-loan amount borrowed from the fund
- *   - Balance "with repay" (what you'd have once loans are repaid)
+ *   - Current balance (raw YNAB balance)
+ *   - Self-loan amount (money owed back to the fund)
+ *   - True balance (raw minus self-loans — what's actually available)
+ *   - Balance "with repay" (raw + self-loans — what you'd have once loans are repaid)
  *   - Current months covered (raw balance / essential expenses)
  *   - Repaid months (with-repay balance / essential expenses)
  *   - Target amount (targetMonths × essential expenses)
@@ -22,29 +23,19 @@ export function calculateEFund(input: EFundInput): EFundResult {
   const {
     emergencyFundBalance,
     outstandingSelfLoans,
-    pendingReimbursements,
     essentialMonthlyExpenses,
     targetMonths,
   } = input;
 
   const rawBalance = emergencyFundBalance;
-  // True balance = actual balance minus loans and pending reimbursements
-  const trueBalance = Math.max(
-    0,
-    rawBalance - outstandingSelfLoans - pendingReimbursements,
-  );
-  // "With repay" = what you'd have once all self-loans are repaid back (still minus reimbursements)
-  const balanceWithRepay =
-    rawBalance + outstandingSelfLoans - pendingReimbursements;
+  // True balance = actual balance minus money loaned out from this fund
+  const trueBalance = Math.max(0, rawBalance - outstandingSelfLoans);
+  // "With repay" = what you'd have once all self-loans are repaid back
+  const balanceWithRepay = rawBalance + outstandingSelfLoans;
 
   if (outstandingSelfLoans > 0) {
     warnings.push(
       `E-fund has $${outstandingSelfLoans.toLocaleString()} in outstanding self-loans`,
-    );
-  }
-  if (pendingReimbursements > 0) {
-    warnings.push(
-      `$${pendingReimbursements.toLocaleString()} in pending reimbursements excluded from balance`,
     );
   }
 
@@ -54,10 +45,10 @@ export function calculateEFund(input: EFundInput): EFundResult {
     );
   }
 
-  // Current months: true balance / essential expenses (accounts for loans + reimbursements)
+  // Current months: raw balance / essential expenses (spreadsheet "Current Months")
   const monthsCovered =
     essentialMonthlyExpenses > 0
-      ? (safeDivide(trueBalance, essentialMonthlyExpenses) as number)
+      ? (safeDivide(rawBalance, essentialMonthlyExpenses) as number)
       : null;
 
   // Repaid months: with-repay balance / essential expenses (spreadsheet "Repaid Months")
