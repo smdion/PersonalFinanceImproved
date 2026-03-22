@@ -632,53 +632,6 @@ export const savingsRouter = createTRPCRouter({
       return item;
     }),
 
-  /** Push monthly contributions to budget API goal targets for all linked savings goals (N and N+1). */
-  syncSavingsFromApi: savingsProcedure.mutation(async ({ ctx }) => {
-    const client = await getBudgetAPIClient(ctx.db);
-    if (!client) {
-      throw new TRPCError({
-        code: "PRECONDITION_FAILED",
-        message: "No budget API active",
-      });
-    }
-
-    const goals = await ctx.db.select().from(schema.savingsGoals);
-    const linkedGoals = goals.filter(
-      (g) => g.apiSyncEnabled && g.apiCategoryId,
-    );
-
-    if (linkedGoals.length === 0) return { synced: 0 };
-
-    const now = new Date();
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-    const nextDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    const nextMonth = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, "0")}-01`;
-
-    let synced = 0;
-    for (const goal of linkedGoals) {
-      const monthly = num(goal.monthlyContribution);
-      if (monthly > 0) {
-        try {
-          await client.updateCategoryGoalTarget(
-            goal.apiCategoryId!,
-            monthly,
-            currentMonth,
-          );
-          await client.updateCategoryGoalTarget(
-            goal.apiCategoryId!,
-            monthly,
-            nextMonth,
-          );
-          synced++;
-        } catch {
-          // Skip goals that fail (e.g., category deleted in API)
-        }
-      }
-    }
-
-    return { synced };
-  }),
-
   /** Get API category balances for linked savings goals (for display). */
   listApiBalances: protectedProcedure.query(async ({ ctx }) => {
     const active = await getActiveBudgetApi(ctx.db);
@@ -723,8 +676,8 @@ export const savingsRouter = createTRPCRouter({
   }),
 
   /**
-   * Push monthly contributions to budget API for linked sinking funds.
-   * Sets the budgeted amount for current month (N) and next month (N+1).
+   * Push monthly contributions as budget API goal targets for linked sinking funds.
+   * Sets the goal target at the plan/category level (not month-specific).
    * Can optionally push a single goal by ID.
    */
   pushContributionsToApi: savingsProcedure
@@ -746,26 +699,15 @@ export const savingsRouter = createTRPCRouter({
 
       if (toPush.length === 0) return { pushed: 0 };
 
-      const now = new Date();
-      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-      const nextDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      const nextMonth = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, "0")}-01`;
-
       let pushed = 0;
       for (const goal of toPush) {
         const monthly = num(goal.monthlyContribution);
-        // Push monthly contribution as the YNAB goal target (not Assigned — user controls that manually)
+        // Push monthly contribution as the YNAB goal target (plan-level, not month-specific)
         if (monthly > 0) {
           try {
             await client.updateCategoryGoalTarget(
               goal.apiCategoryId!,
               monthly,
-              currentMonth,
-            );
-            await client.updateCategoryGoalTarget(
-              goal.apiCategoryId!,
-              monthly,
-              nextMonth,
             );
             pushed++;
           } catch {
