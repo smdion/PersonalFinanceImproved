@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Improved
 
+- **Sidebar navigation restructured** — reorganized from Income/Investments/Property/Planning/System to Cash Flow/Wealth/Net Worth/Analysis/System to match how people think about money; moved Help to a standalone footer link; aligned sign-out styling with other footer items
+- **Net Worth page renamed to Trends** — the net worth visualization page is now called "Trends" in the sidebar and page header, reflecting its role as a chart/visualization page within the Net Worth group
 - **Assets page UI/UX** — consolidated duplicate summary/detail cards into a single "Asset Breakdown" card with grouped sections (Cash, Property, Other Assets) and subtotals; all-zero years filtered from history table
 - **Historical snapshots moved** — removed the "Historical Snapshots" card from the Assets page; this data already lives on the Historical page under the filterable "Assets" column group
 
@@ -25,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Help & Guide page** — new `/help` page with collapsible sections walking through every feature, organized by nav group (Cash Flow, Wealth, Net Worth, Analysis, System) plus cross-cutting topics (scenarios, contribution profiles, budget API integration, demo mode, tips & shortcuts); accessible from the sidebar footer
 - **Calculator logic tests** — 27 unit tests covering FICA base distinction, cross-calculator consistency, bonus placement, Medicare thresholds, SS cap transition, refinance chains, wealth formula, and multi-column budgets
 
 ## [0.1.2] - 2026-03-21
