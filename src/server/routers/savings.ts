@@ -155,6 +155,35 @@ export const savingsRouter = createTRPCRouter({
         }
       }
 
+      // Override balances for API-linked goals with live YNAB cache values
+      const apiLinkedGoals = activeGoals.filter(
+        (g) => g.apiSyncEnabled && g.apiCategoryId,
+      );
+      if (apiLinkedGoals.length > 0) {
+        const active = await getActiveBudgetApi(ctx.db);
+        if (active !== "none") {
+          const categoriesCache = await cacheGet<BudgetCategoryGroup[]>(
+            ctx.db,
+            active,
+            "categories",
+          );
+          if (categoriesCache) {
+            const catBalanceMap = new Map<string, number>();
+            for (const group of categoriesCache.data) {
+              for (const cat of group.categories) {
+                catBalanceMap.set(cat.id, cat.balance);
+              }
+            }
+            for (const goal of apiLinkedGoals) {
+              const apiBalance = catBalanceMap.get(goal.apiCategoryId!);
+              if (apiBalance !== undefined) {
+                balanceMap.set(goal.id, apiBalance);
+              }
+            }
+          }
+        }
+      }
+
       // Budget profile info for tier selection
       const activeProfile = budgetProfiles[0];
       const budgetTierLabels = activeProfile?.columnLabels ?? [];
@@ -745,15 +774,18 @@ export const savingsRouter = createTRPCRouter({
 
       if (toPush.length === 0) return { pushed: 0 };
 
+      const now = new Date();
+      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+
       let pushed = 0;
       for (const goal of toPush) {
         const monthly = num(goal.monthlyContribution);
-        // Push monthly contribution as the YNAB goal target (plan-level, not month-specific)
         if (monthly > 0) {
           try {
             await client.updateCategoryGoalTarget(
               goal.apiCategoryId!,
               monthly,
+              currentMonth,
             );
             pushed++;
           } catch {
