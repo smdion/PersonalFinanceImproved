@@ -14,7 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Improved
 
-- **Assets page UI/UX** — consolidated duplicate summary/detail cards into a single "Asset Breakdown" card with grouped sections (Cash, Property, Other Assets) and subtotals; historical snapshots now open by default with guidance text explaining live vs frozen rows; all-zero years filtered from history table
+- **Assets page UI/UX** — consolidated duplicate summary/detail cards into a single "Asset Breakdown" card with grouped sections (Cash, Property, Other Assets) and subtotals; all-zero years filtered from history table
+- **Historical snapshots moved** — removed the "Historical Snapshots" card from the Assets page; this data already lives on the Historical page under the filterable "Assets" column group
 
 ### Fixed
 

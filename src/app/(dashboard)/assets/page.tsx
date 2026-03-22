@@ -11,12 +11,6 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
 import Link from "next/link";
-import {
-  ColHeader,
-  StickyLeftHeader,
-  StickyLeftCell,
-  NumCell,
-} from "@/components/historical/cells";
 
 function SyncBadge({ source }: { source: string }) {
   return (
@@ -106,23 +100,11 @@ export default function AssetsPage() {
     );
   }
 
-  const { current, history } = data;
+  const { current } = data;
   const currentYear = new Date().getFullYear();
   const hasHouse = current.hasHouse;
   const apiLabel =
     current.activeBudgetApi !== "none" ? current.activeBudgetApi : "";
-
-  // Historical table — filter out all-zero rows and sort descending
-  const sorted = [...history]
-    .filter(
-      (row) =>
-        row.isCurrent ||
-        row.cash !== 0 ||
-        row.houseValue !== 0 ||
-        row.homeImprovements !== 0 ||
-        row.otherAssets !== 0
-    )
-    .sort((a, b) => b.year - a.year);
 
   return (
     <div>
@@ -447,69 +429,6 @@ export default function AssetsPage() {
         </div>
       </Card>
 
-      {/* Historical Snapshots — open by default, filtered to non-empty years */}
-      <Card
-        title={
-          <>
-            Historical Snapshots{" "}
-            <HelpTip text="Year-end asset values. The current year updates automatically from your live data. Past years are frozen snapshots." />
-          </>
-        }
-        collapsible
-        defaultOpen
-        className="mb-6"
-      >
-        <p className="text-xs text-faint mb-3">
-          Each row is a year-end snapshot. The current year reflects live values; previous years are frozen at their Dec 31 totals.
-          {apiLabel && (
-            <>
-              {" "}
-              Cash and synced assets update automatically from{" "}
-              {apiLabel.toUpperCase()}.
-            </>
-          )}
-        </p>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs whitespace-nowrap border-collapse">
-            <thead>
-              <tr className="border-b">
-                <StickyLeftHeader offset={0} borderRight>
-                  Year
-                </StickyLeftHeader>
-                <ColHeader border>Cash</ColHeader>
-                {hasHouse && <ColHeader>House Value</ColHeader>}
-                {hasHouse && <ColHeader>Home Imp</ColHeader>}
-                <ColHeader>Other Assets</ColHeader>
-                <ColHeader>Total</ColHeader>
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((row) => (
-                <tr
-                  key={row.year}
-                  className={`border-b border-subtle hover:bg-surface-sunken/50 ${
-                    row.isCurrent ? "bg-blue-50/30" : ""
-                  }`}
-                >
-                  <StickyLeftCell offset={0} borderRight>
-                    <span className="font-medium">{row.year}</span>
-                    {row.isCurrent && (
-                      <span className="ml-1 text-[10px] font-medium text-blue-600 bg-blue-50 px-1 py-0.5 rounded">
-                        Live
-                      </span>
-                    )}
-                  </StickyLeftCell>
-                  <NumCell value={row.cash} border />
-                  {hasHouse && <NumCell value={row.houseValue} />}
-                  {hasHouse && <NumCell value={row.homeImprovements} />}
-                  <NumCell value={row.otherAssets} />
-                  <NumCell value={row.totalAssets} bold />
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
     </div>
   );
 }
