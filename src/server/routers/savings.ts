@@ -47,6 +47,46 @@ const plannedTransactionInput = z.object({
   recurrenceMonths: z.number().int().nullable().optional(),
 });
 
+/** Parse reimbursement total from a YNAB category note. Each line: "amount - description". */
+function parseReimbursementTotal(note: string | null | undefined): number {
+  if (!note) return 0;
+  let total = 0;
+  for (const line of note.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const match = trimmed.match(/^\$?([\d,.]+)\s*[-–—]\s*(.+)$/);
+    if (match) {
+      const amount = parseFloat(match[1]!.replace(/,/g, ""));
+      if (!isNaN(amount) && amount > 0) total += amount;
+    }
+  }
+  return total;
+}
+
+/** Look up the reimbursement total for the e-fund goal from the YNAB cache. */
+async function getEfundReimbursementTotal(
+  db: Parameters<typeof cacheGet>[0],
+  efundGoal: { reimbursementApiCategoryId: string | null },
+): Promise<number> {
+  if (!efundGoal.reimbursementApiCategoryId) return 0;
+  const active = await getActiveBudgetApi(db);
+  if (active === "none") return 0;
+  const categoriesCache = await cacheGet<BudgetCategoryGroup[]>(
+    db,
+    active,
+    "categories",
+  );
+  if (!categoriesCache) return 0;
+  for (const group of categoriesCache.data) {
+    for (const cat of group.categories) {
+      if (cat.id === efundGoal.reimbursementApiCategoryId) {
+        return parseReimbursementTotal(cat.note);
+      }
+    }
+  }
+  return 0;
+}
+
 export const savingsRouter = createTRPCRouter({
   getSummary: protectedProcedure
     .input(z.object({ budgetTierOverride: z.number().optional() }).optional())
@@ -163,9 +203,15 @@ export const savingsRouter = createTRPCRouter({
           .filter((l) => l.fromGoalId === efundGoal.id)
           .reduce((s, l) => s + (num(l.amount) - num(l.repaidAmount)), 0);
 
+        const pendingReimbursements = await getEfundReimbursementTotal(
+          ctx.db,
+          efundGoal,
+        );
+
         const efundInput: EFundInput = {
           emergencyFundBalance: balanceMap.get(efundGoal.id) ?? 0,
           outstandingSelfLoans: outstandingLoans,
+          pendingReimbursements,
           essentialMonthlyExpenses,
           targetMonths: efundGoal.targetMonths ?? 4,
           asOfDate: new Date(),
