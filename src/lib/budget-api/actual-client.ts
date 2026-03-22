@@ -297,7 +297,6 @@ export class ActualClient implements BudgetAPIClient {
   async updateCategoryGoalTarget(
     _categoryId: string,
     _targetAmount: number,
-    _month: string,
   ): Promise<void> {
     // Actual Budget doesn't support goal targets natively — no-op
   }

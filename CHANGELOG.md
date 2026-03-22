@@ -4,6 +4,32 @@ All notable changes to Ledgr will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.3] - 2026-03-22
+
+### Changed
+
+- **Savings goal balances** — API-linked savings goals now pull their balance from the YNAB category cache instead of the stale internal table
+- **YNAB goal target push** — goal targets are now correctly pushed once at the plan level instead of redundantly for current + next month
+- **Budget pull** — no longer falls back to YNAB "Assigned" amount when no goal target is set; defaults to $0 instead
+
+### Improved
+
+- **Sidebar navigation restructured** — reorganized from Income/Investments/Property/Planning/System to Cash Flow/Wealth/Net Worth/Analysis/System to match how people think about money; moved Help to a standalone footer link; aligned sign-out styling with other footer items
+- **Net Worth page renamed to Trends** — the net worth visualization page is now called "Trends" in the sidebar and page header, reflecting its role as a chart/visualization page within the Net Worth group
+- **Assets page UI/UX** — consolidated duplicate summary/detail cards into a single "Asset Breakdown" card with grouped sections (Cash, Property, Other Assets) and subtotals; all-zero years filtered from history table
+- **Historical snapshots moved** — removed the "Historical Snapshots" card from the Assets page; this data already lives on the Historical page under the filterable "Assets" column group
+
+### Fixed
+
+- **Emergency fund self-loan** — the YNAB reimbursement category's goal target is now correctly treated as a self-loan (money owed back to the fund) instead of being subtracted from the balance; matches the spreadsheet's Income Replacement Snapshot exactly
+- **Duplicate sync button** — removed the redundant "Sync Goals" button on the Savings page that did the same thing as "Push Contributions"
+- **Monte Carlo snapshots** — fixed integration test snapshots that were off by one year after calendar rollover
+
+### Added
+
+- **Help & Guide page** — new `/help` page with collapsible sections walking through every feature, organized by nav group (Cash Flow, Wealth, Net Worth, Analysis, System) plus cross-cutting topics (scenarios, contribution profiles, budget API integration, demo mode, tips & shortcuts); accessible from the sidebar footer
+- **Calculator logic tests** — 27 unit tests covering FICA base distinction, cross-calculator consistency, bonus placement, Medicare thresholds, SS cap transition, refinance chains, wealth formula, and multi-column budgets
+
 ## [0.1.2] - 2026-03-21
 
 ### Added

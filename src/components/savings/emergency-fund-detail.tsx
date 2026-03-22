@@ -37,9 +37,6 @@ export function EmergencyFundDetail({
   reimbursements?: ReimbursementData | null;
 }) {
   const [showReimbursements, setShowReimbursements] = useState(false);
-  const adjustedBalance = reimbursements
-    ? efund.trueBalance + reimbursements.total
-    : null;
 
   return (
     <Card title="Emergency Fund Detail">
@@ -47,7 +44,7 @@ export function EmergencyFundDetail({
         <div>
           <p className="text-faint text-xs mb-1">
             True Balance
-            <HelpTip text="Current balance minus any amounts earmarked for sinking fund repayments" />
+            <HelpTip text="Current balance minus outstanding self-loans (money owed back to the fund)" />
           </p>
           <p className="text-lg font-semibold text-primary">
             {formatCurrency(efund.trueBalance)}
@@ -122,13 +119,8 @@ export function EmergencyFundDetail({
                   </span>
                 </div>
               ))}
-              <div className="border-t pt-1.5 flex justify-between text-xs font-medium">
-                <span className="text-secondary">Adjusted Balance</span>
-                <span className="text-green-600 tabular-nums">
-                  {adjustedBalance !== null
-                    ? formatCurrency(adjustedBalance)
-                    : "—"}
-                </span>
+              <div className="border-t pt-1.5 flex justify-between text-xs text-faint">
+                <span>Counted as self-loan (added to with-repay balance)</span>
               </div>
             </div>
           )}

@@ -26,12 +26,12 @@ import {
   Settings,
   ChevronsLeft,
   ChevronRight,
-  DollarSign,
-  LineChart,
+  ArrowLeftRight,
+  Search,
   Landmark,
-  CalendarClock,
   Cog,
   LogOut,
+  HelpCircle,
   type LucideIcon,
 } from "lucide-react";
 
@@ -48,8 +48,8 @@ function isGroup(entry: NavEntry): entry is NavGroup {
 const navStructure: NavEntry[] = [
   { href: "/", label: "Dashboard", Icon: LayoutDashboard },
   {
-    label: "Income",
-    Icon: DollarSign,
+    label: "Cash Flow",
+    Icon: ArrowLeftRight,
     items: [
       { href: "/paycheck", label: "Paycheck", Icon: Wallet },
       { href: "/budget", label: "Budget", Icon: ClipboardList },
@@ -57,32 +57,32 @@ const navStructure: NavEntry[] = [
     ],
   },
   {
-    label: "Investments",
-    Icon: LineChart,
+    label: "Wealth",
+    Icon: TrendingUp,
     items: [
-      { href: "/portfolio", label: "Portfolio", Icon: TrendingUp },
+      { href: "/savings", label: "Savings", Icon: PiggyBank },
+      { href: "/portfolio", label: "Portfolio", Icon: Gem },
       { href: "/performance", label: "Performance", Icon: Trophy },
       { href: "/brokerage", label: "Brokerage", Icon: BarChart3 },
-      { href: "/retirement", label: "Retirement", Icon: Palmtree },
     ],
   },
   {
-    label: "Property",
+    label: "Net Worth",
     Icon: Landmark,
     items: [
       { href: "/house", label: "House", Icon: Home },
       { href: "/assets", label: "Assets", Icon: Building2 },
       { href: "/liabilities", label: "Liabilities", Icon: CreditCard },
-      { href: "/networth", label: "Net Worth", Icon: Gem },
+      { href: "/networth", label: "Trends", Icon: TrendingUp },
     ],
   },
   {
-    label: "Planning",
-    Icon: CalendarClock,
+    label: "Analysis",
+    Icon: Search,
     items: [
-      { href: "/savings", label: "Savings", Icon: PiggyBank },
-      { href: "/tools", label: "Tools", Icon: Wrench },
+      { href: "/retirement", label: "Retirement", Icon: Palmtree },
       { href: "/historical", label: "Historical", Icon: ScrollText },
+      { href: "/tools", label: "Tools", Icon: Wrench },
     ],
   },
   {
@@ -228,6 +228,8 @@ export function Sidebar({
   const pathname = usePathname();
   const showLabels = !collapsed;
 
+  const helpItem: NavItem = { href: "/help", label: "Help", Icon: HelpCircle };
+
   return (
     <>
       {/* Mobile backdrop overlay */}
@@ -327,37 +329,40 @@ export function Sidebar({
           )}
         </nav>
 
-        {/* Data freshness */}
+        {/* Footer area */}
         <div className="border-t">
           {collapsed ? <DataFreshness compact /> : <DataFreshness />}
         </div>
 
-        {/* Theme toggle */}
-        <div className="border-t py-2">
+        <div className="border-t px-2 py-1.5 space-y-0.5">
+          <NavLink
+            item={helpItem}
+            pathname={pathname}
+            collapsed={collapsed}
+            showLabels={showLabels}
+            onMobileClose={onMobileClose}
+          />
           {collapsed ? <ThemeToggle compact /> : <ThemeToggle />}
-        </div>
-
-        {/* Sign out / Switch profile */}
-        <div className="border-t">
           {isDemoOnly ? (
             <Link
               href="/demo"
-              className="w-full flex items-center gap-3 px-3 py-2 text-faint hover:text-blue-400 hover:bg-surface-elevated transition-colors"
-              title="Switch demo profile"
+              onClick={onMobileClose}
+              className="flex items-center gap-3 px-3 py-1.5 rounded text-sm text-faint hover:text-blue-400 hover:bg-surface-elevated transition-colors"
+              title={collapsed ? "Switch Profile" : undefined}
             >
-              <LogOut className={`w-4 h-4 shrink-0 ${collapsed ? "mx-auto" : ""}`} />
-              {showLabels && <span className="text-xs hidden md:inline">Switch Profile</span>}
-              <span className="md:hidden text-xs">Switch Profile</span>
+              <LogOut className="w-4 h-4 shrink-0" />
+              {showLabels && <span className="hidden md:inline">Switch Profile</span>}
+              <span className="md:hidden">Switch Profile</span>
             </Link>
           ) : (
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
-              className="w-full flex items-center gap-3 px-3 py-2 text-faint hover:text-red-400 hover:bg-surface-elevated transition-colors"
-              title="Sign out"
+              className="w-full flex items-center gap-3 px-3 py-1.5 rounded text-sm text-faint hover:text-red-400 hover:bg-surface-elevated transition-colors"
+              title={collapsed ? "Sign Out" : undefined}
             >
-              <LogOut className={`w-4 h-4 shrink-0 ${collapsed ? "mx-auto" : ""}`} />
-              {showLabels && <span className="text-xs hidden md:inline">Sign Out</span>}
-              <span className="md:hidden text-xs">Sign Out</span>
+              <LogOut className="w-4 h-4 shrink-0" />
+              {showLabels && <span className="hidden md:inline">Sign Out</span>}
+              <span className="md:hidden">Sign Out</span>
             </button>
           )}
         </div>

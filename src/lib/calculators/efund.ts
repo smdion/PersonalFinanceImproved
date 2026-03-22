@@ -3,9 +3,10 @@
  *
  * Calculates how many months of essential expenses the emergency fund covers.
  * Matches the spreadsheet's "Income Replacement Snapshot" layout:
- *   - Current balance (raw)
- *   - Self-loan amount borrowed from the fund
- *   - Balance "with repay" (what you'd have once loans are repaid)
+ *   - Current balance (raw YNAB balance)
+ *   - Self-loan amount (money owed back to the fund)
+ *   - True balance (raw minus self-loans — what's actually available)
+ *   - Balance "with repay" (raw + self-loans — what you'd have once loans are repaid)
  *   - Current months covered (raw balance / essential expenses)
  *   - Repaid months (with-repay balance / essential expenses)
  *   - Target amount (targetMonths × essential expenses)

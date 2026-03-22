@@ -162,9 +162,6 @@ export function useApiSync() {
       utils.budget.invalidate();
     },
   });
-  const syncFromApi = trpc.savings.syncSavingsFromApi.useMutation({
-    onSuccess: () => utils.savings.invalidate(),
-  });
   const pushToApi = trpc.savings.pushContributionsToApi.useMutation();
   const deleteOverride = trpc.savings.allocationOverrides.delete.useMutation({
     onSuccess: () => utils.savings.invalidate(),
@@ -217,9 +214,7 @@ export function useApiSync() {
     pendingPushGoalId,
     setPendingPushGoalId,
     // Callbacks for header buttons
-    syncFromApiPending: syncFromApi.isPending,
     pushToApiPending: pushToApi.isPending,
-    onPullBalances: () => syncFromApi.mutate(),
     // Callbacks for FundManagementSection
     onLinkToApi,
     onUnlinkFromApi,
@@ -242,7 +237,7 @@ export function useApiSync() {
         const currentBudgeted = apiBalanceMap.get(g.id)?.budgeted ?? 0;
         items.push({
           name: g.name,
-          field: "Budgeted (current + next month)",
+          field: "Goal Target",
           currentYnab: currentBudgeted,
           newValue: amount,
         });

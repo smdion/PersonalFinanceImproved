@@ -147,7 +147,7 @@ export default function NetWorthPage() {
   return (
     <div>
       <PageHeader
-        title="Net Worth"
+        title="Trends"
         subtitle={
           <div className="space-y-0.5">
             {snapshotDate && <p>Balance updated: {formatDate(snapshotDate)}</p>}

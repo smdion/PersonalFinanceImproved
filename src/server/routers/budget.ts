@@ -942,7 +942,7 @@ export const budgetRouter = createTRPCRouter({
 
         const amounts = budgetAmountsSchema.parse(item.amounts);
         const colIdx = Math.min(input.selectedColumn, amounts.length - 1);
-        amounts[colIdx] = apiCat.goalTarget ?? apiCat.budgeted;
+        amounts[colIdx] = apiCat.goalTarget ?? 0;
 
         await ctx.db
           .update(schema.budgetItems)
@@ -973,11 +973,6 @@ export const budgetRouter = createTRPCRouter({
           message: "Budget API client not available",
         });
       }
-
-      const now = new Date();
-      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-      const nextDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      const nextMonth = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, "0")}-01`;
 
       // Use linked profile from apiConnections (consistent with sync.ts orchestrator)
       const [conn] = await ctx.db
@@ -1012,17 +1007,8 @@ export const budgetRouter = createTRPCRouter({
         const colIdx = Math.min(input.selectedColumn, amounts.length - 1);
         const amount = amounts[colIdx] ?? 0;
 
-        // Push as YNAB goal target (not Assigned — user controls that manually)
-        await client.updateCategoryGoalTarget(
-          item.apiCategoryId,
-          amount,
-          currentMonth,
-        );
-        await client.updateCategoryGoalTarget(
-          item.apiCategoryId,
-          amount,
-          nextMonth,
-        );
+        // Push as YNAB goal target (plan-level, not month-specific)
+        await client.updateCategoryGoalTarget(item.apiCategoryId, amount);
         await ctx.db
           .update(schema.budgetItems)
           .set({ apiLastSyncedAt: new Date() })

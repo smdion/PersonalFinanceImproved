@@ -47,6 +47,30 @@ const plannedTransactionInput = z.object({
   recurrenceMonths: z.number().int().nullable().optional(),
 });
 
+/** Look up the reimbursement category's goalTarget for the e-fund (represents self-loan amount). */
+async function getEfundReimbursementGoalTarget(
+  db: Parameters<typeof cacheGet>[0],
+  efundGoal: { reimbursementApiCategoryId: string | null },
+): Promise<number> {
+  if (!efundGoal.reimbursementApiCategoryId) return 0;
+  const active = await getActiveBudgetApi(db);
+  if (active === "none") return 0;
+  const categoriesCache = await cacheGet<BudgetCategoryGroup[]>(
+    db,
+    active,
+    "categories",
+  );
+  if (!categoriesCache) return 0;
+  for (const group of categoriesCache.data) {
+    for (const cat of group.categories) {
+      if (cat.id === efundGoal.reimbursementApiCategoryId) {
+        return cat.goalTarget ?? 0;
+      }
+    }
+  }
+  return 0;
+}
+
 export const savingsRouter = createTRPCRouter({
   getSummary: protectedProcedure
     .input(z.object({ budgetTierOverride: z.number().optional() }).optional())
@@ -115,6 +139,35 @@ export const savingsRouter = createTRPCRouter({
         }
       }
 
+      // Override balances for API-linked goals with live YNAB cache values
+      const apiLinkedGoals = activeGoals.filter(
+        (g) => g.apiSyncEnabled && g.apiCategoryId,
+      );
+      if (apiLinkedGoals.length > 0) {
+        const active = await getActiveBudgetApi(ctx.db);
+        if (active !== "none") {
+          const categoriesCache = await cacheGet<BudgetCategoryGroup[]>(
+            ctx.db,
+            active,
+            "categories",
+          );
+          if (categoriesCache) {
+            const catBalanceMap = new Map<string, number>();
+            for (const group of categoriesCache.data) {
+              for (const cat of group.categories) {
+                catBalanceMap.set(cat.id, cat.balance);
+              }
+            }
+            for (const goal of apiLinkedGoals) {
+              const apiBalance = catBalanceMap.get(goal.apiCategoryId!);
+              if (apiBalance !== undefined) {
+                balanceMap.set(goal.id, apiBalance);
+              }
+            }
+          }
+        }
+      }
+
       // Budget profile info for tier selection
       const activeProfile = budgetProfiles[0];
       const budgetTierLabels = activeProfile?.columnLabels ?? [];
@@ -163,9 +216,16 @@ export const savingsRouter = createTRPCRouter({
           .filter((l) => l.fromGoalId === efundGoal.id)
           .reduce((s, l) => s + (num(l.amount) - num(l.repaidAmount)), 0);
 
+        // The reimbursement category's goalTarget represents money owed back
+        // to the e-fund (self-loan tracked in YNAB). Add it to outstanding loans.
+        const reimbursementSelfLoan = await getEfundReimbursementGoalTarget(
+          ctx.db,
+          efundGoal,
+        );
+
         const efundInput: EFundInput = {
           emergencyFundBalance: balanceMap.get(efundGoal.id) ?? 0,
-          outstandingSelfLoans: outstandingLoans,
+          outstandingSelfLoans: outstandingLoans + reimbursementSelfLoan,
           essentialMonthlyExpenses,
           targetMonths: efundGoal.targetMonths ?? 4,
           asOfDate: new Date(),
@@ -632,53 +692,6 @@ export const savingsRouter = createTRPCRouter({
       return item;
     }),
 
-  /** Push monthly contributions to budget API goal targets for all linked savings goals (N and N+1). */
-  syncSavingsFromApi: savingsProcedure.mutation(async ({ ctx }) => {
-    const client = await getBudgetAPIClient(ctx.db);
-    if (!client) {
-      throw new TRPCError({
-        code: "PRECONDITION_FAILED",
-        message: "No budget API active",
-      });
-    }
-
-    const goals = await ctx.db.select().from(schema.savingsGoals);
-    const linkedGoals = goals.filter(
-      (g) => g.apiSyncEnabled && g.apiCategoryId,
-    );
-
-    if (linkedGoals.length === 0) return { synced: 0 };
-
-    const now = new Date();
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-    const nextDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    const nextMonth = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, "0")}-01`;
-
-    let synced = 0;
-    for (const goal of linkedGoals) {
-      const monthly = num(goal.monthlyContribution);
-      if (monthly > 0) {
-        try {
-          await client.updateCategoryGoalTarget(
-            goal.apiCategoryId!,
-            monthly,
-            currentMonth,
-          );
-          await client.updateCategoryGoalTarget(
-            goal.apiCategoryId!,
-            monthly,
-            nextMonth,
-          );
-          synced++;
-        } catch {
-          // Skip goals that fail (e.g., category deleted in API)
-        }
-      }
-    }
-
-    return { synced };
-  }),
-
   /** Get API category balances for linked savings goals (for display). */
   listApiBalances: protectedProcedure.query(async ({ ctx }) => {
     const active = await getActiveBudgetApi(ctx.db);
@@ -723,8 +736,8 @@ export const savingsRouter = createTRPCRouter({
   }),
 
   /**
-   * Push monthly contributions to budget API for linked sinking funds.
-   * Sets the budgeted amount for current month (N) and next month (N+1).
+   * Push monthly contributions as budget API goal targets for linked sinking funds.
+   * Sets the goal target at the plan/category level (not month-specific).
    * Can optionally push a single goal by ID.
    */
   pushContributionsToApi: savingsProcedure
@@ -746,26 +759,14 @@ export const savingsRouter = createTRPCRouter({
 
       if (toPush.length === 0) return { pushed: 0 };
 
-      const now = new Date();
-      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-      const nextDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      const nextMonth = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, "0")}-01`;
-
       let pushed = 0;
       for (const goal of toPush) {
         const monthly = num(goal.monthlyContribution);
-        // Push monthly contribution as the YNAB goal target (not Assigned — user controls that manually)
         if (monthly > 0) {
           try {
             await client.updateCategoryGoalTarget(
               goal.apiCategoryId!,
               monthly,
-              currentMonth,
-            );
-            await client.updateCategoryGoalTarget(
-              goal.apiCategoryId!,
-              monthly,
-              nextMonth,
             );
             pushed++;
           } catch {

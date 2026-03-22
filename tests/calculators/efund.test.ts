@@ -49,6 +49,29 @@ describe("calculateEFund", () => {
     );
   });
 
+  it("matches spreadsheet Income Replacement Snapshot", () => {
+    // Real data: $14,961.07 balance, $559.15 self-loan, $3,896.49/mo tight expenses, 4 mo target
+    const real: EFundInput = {
+      emergencyFundBalance: 14961.07,
+      outstandingSelfLoans: 559.15,
+      essentialMonthlyExpenses: 3896.49,
+      targetMonths: 4,
+      asOfDate: new Date("2026-03-21"),
+    };
+    const result = calculateEFund(real);
+    expect(result.rawBalance).toBe(14961.07);
+    // With Repay = 14961.07 + 559.15 = 15520.22
+    expect(result.balanceWithRepay).toBeCloseTo(15520.22, 2);
+    // Current Months = 14961.07 / 3896.49 = 3.84
+    expect(result.monthsCovered).toBeCloseTo(3.84, 1);
+    // Repaid Months = 15520.22 / 3896.49 = 3.98
+    expect(result.monthsCoveredWithRepay).toBeCloseTo(3.98, 1);
+    // Target = 4 * 3896.49 = 15585.96
+    expect(result.targetAmount).toBeCloseTo(15585.96, 2);
+    // Needed = 15585.96 - 15520.22 = 65.74
+    expect(result.neededAfterRepay).toBeCloseTo(65.74, 0);
+  });
+
   it("caps progress at 100%", () => {
     const overTarget: EFundInput = { ...input, emergencyFundBalance: 50000 };
     const result = calculateEFund(overTarget);

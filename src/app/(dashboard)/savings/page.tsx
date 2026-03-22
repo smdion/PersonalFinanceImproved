@@ -407,30 +407,18 @@ export default function SavingsPage() {
         {canEdit && (
           <div className="flex flex-wrap gap-2">
             {apiBalancesData?.service && (
-              <>
-                <Button
-                  variant="secondary"
-                  onClick={apiSync.onPullBalances}
-                  disabled={apiSync.syncFromApiPending}
-                  title="Push monthly contributions to budget API goal targets (current + next month)"
-                >
-                  {apiSync.syncFromApiPending
-                    ? "Syncing..."
-                    : "Sync Goals \u2192"}
-                </Button>
                 <button
                   onClick={() =>
                     apiSync.buildPushAllPreview(rawGoals, apiBalanceMap)
                   }
                   disabled={apiSync.pushToApiPending}
                   className="px-3 py-1.5 border border-green-600 text-green-400 rounded text-sm hover:bg-green-600/20 disabled:opacity-50"
-                  title="Push monthly contributions to budget API (current + next month)"
+                  title="Push monthly contributions as budget API goal targets"
                 >
                   {apiSync.pushToApiPending
                     ? "Pushing..."
                     : "Push Contributions \u2192"}
                 </button>
-              </>
             )}
             <Button
               variant="secondary"

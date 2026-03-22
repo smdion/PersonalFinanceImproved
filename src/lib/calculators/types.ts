@@ -358,7 +358,7 @@ export type SavingsResult = {
 
 export type EFundInput = {
   emergencyFundBalance: number;
-  outstandingSelfLoans: number; // loans taken from the e-fund (reduces true balance)
+  outstandingSelfLoans: number; // money owed back to the e-fund (subtracted from true balance, added in "with repay")
   essentialMonthlyExpenses: number;
   targetMonths: number; // user-configurable target (e.g. 4 months)
   asOfDate: Date;
