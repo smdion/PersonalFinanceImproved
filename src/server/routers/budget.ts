@@ -942,7 +942,7 @@ export const budgetRouter = createTRPCRouter({
 
         const amounts = budgetAmountsSchema.parse(item.amounts);
         const colIdx = Math.min(input.selectedColumn, amounts.length - 1);
-        amounts[colIdx] = apiCat.goalTarget ?? apiCat.budgeted;
+        amounts[colIdx] = apiCat.goalTarget ?? 0;
 
         await ctx.db
           .update(schema.budgetItems)
