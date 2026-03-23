@@ -21,6 +21,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Sync router decomposition** — split 1,774-line sync router (29 procedures) into 5 domain sub-routers (connections, core, config, names, mappings) using `mergeRouters` for flat API surface preservation
 - **Projection engine extraction** — extracted 1,400-line year loop from `projection.ts` into `projection-year-handlers.ts` with structured `ProjectionLoopState`/`ProjectionContext` types; main engine reduced to ~165 lines of validation and orchestration
 - **Projection state hook decomposition** — split 1,147-line `useProjectionState` into three focused sub-hooks: `useProjectionFormState` (UI/view state), `useProjectionQueries` (data fetching/mutations), `useProjectionDerived` (computed data); main hook reduced to thin composition layer
+- **Contribution accounts split** — split 2,107-line `contribution-accounts.tsx` into 7 flat sibling files (AccountCard, SubAccountRow, ContributionRow, CreateAccountForm, InlineText/InlineSelect, shared types); orchestrator reduced to 607 lines
+- **Integrations split** — split 2,203-line `integrations.tsx` into 5 flat sibling files (PreviewPanel 1,554 lines, StatusBadge, ApiCategorySelect, shared types); orchestrator reduced to 458 lines
+- **Projection table split** — split 3,667-line `projection-table.tsx` into 6 flat sibling files (AccumulationRow, DecumulationRow, renderMcCell, ContribMethodologySection, shared types); orchestrator reduced to 401 lines; renderMcCell uses explicit parameter object per module interface contracts
 
 ### Fixed
 
