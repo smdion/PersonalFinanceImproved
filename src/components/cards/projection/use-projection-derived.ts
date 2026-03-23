@@ -9,17 +9,18 @@ import {
   getAccountSegments,
   getSegmentBalance,
   getAllCategories,
-  categoriesWithTaxPreference,
   getAccountTypeConfig,
   taxTypeToSubKey,
   ACCOUNT_TYPE_CONFIG,
 } from "@/lib/config/account-types";
 import type { ProjectionFormState } from "./use-projection-form-state";
 import type { ProjectionQueries } from "./use-projection-queries";
-import type { UseProjectionStateProps, EngineContribRate, AcctBreakdown } from "./use-projection-state";
-import {
-  renderTooltip as _renderTooltip,
-} from "./tooltip-renderer";
+import type {
+  UseProjectionStateProps,
+  EngineContribRate,
+  AcctBreakdown,
+} from "./use-projection-state";
+import { renderTooltip as _renderTooltip } from "./tooltip-renderer";
 import {
   ROTH_CONVERSION_BRACKET_PRESETS,
   _singleBucketCategories,
@@ -259,12 +260,14 @@ export function useProjectionDerived(
     const balanceTaxTypes = new Set<string>();
     if (result) {
       for (const yr of result.projectionByYear) {
+        /* eslint-disable no-restricted-syntax -- type narrowing for dynamic engine output */
         if (
           "slots" in yr &&
           Array.isArray((yr as unknown as Record<string, unknown>).slots)
         ) {
           for (const slot of (yr as unknown as Record<string, unknown>)
             .slots as Record<string, unknown>[]) {
+            /* eslint-enable no-restricted-syntax */
             const hasContrib =
               (slot.employeeContrib ?? 0) !== 0 ||
               (slot.employerMatch ?? 0) !== 0;
@@ -277,7 +280,14 @@ export function useProjectionDerived(
                 ACCOUNT_TYPE_CONFIG[slotCat as AcctCat].isOverflowTarget
               ) {
                 const iabs = (
-                  yr as { individualAccountBalances?: { category: string; parentCategory?: string; contribution: number; employerMatch: number }[] }
+                  yr as {
+                    individualAccountBalances?: {
+                      category: string;
+                      parentCategory?: string;
+                      contribution: number;
+                      employerMatch: number;
+                    }[];
+                  }
                 ).individualAccountBalances;
                 const hasMatchingContrib = iabs?.some(
                   (ia) =>

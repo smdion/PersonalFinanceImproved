@@ -122,7 +122,7 @@ export function FinancialCheckupCard() {
     ...(activeContribProfileId != null
       ? { contributionProfileId: activeContribProfileId }
       : {}),
-  } as Parameters<typeof trpc.contribution.getSummary.useQuery>[0];
+  } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
   const [efundBudgetColumn] = usePersistedSetting<number>(
     "efund_budget_column",
     -1,
@@ -139,10 +139,10 @@ export function FinancialCheckupCard() {
     efundBudgetColumn >= 0
       ? { budgetTierOverride: efundBudgetColumn }
       : undefined;
-  const savings = trpc.savings.getSummary.useQuery(efundTierInput);
-  const contribs = trpc.contribution.getSummary.useQuery(contribInput);
-  const mortgage = trpc.mortgage.getActiveSummary.useQuery();
-  const networth = trpc.networth.getSummary.useQuery();
+  const savings = trpc.savings.computeSummary.useQuery(efundTierInput);
+  const contribs = trpc.contribution.computeSummary.useQuery(contribInput);
+  const mortgage = trpc.mortgage.computeActiveSummary.useQuery();
+  const networth = trpc.networth.computeSummary.useQuery();
 
   const isLoading =
     savings.isLoading ||
@@ -236,6 +236,7 @@ export function FinancialCheckupCard() {
   const totalContribsDollars = contribPeople.reduce(
     (s, d) =>
       s +
+      // eslint-disable-next-line no-restricted-syntax -- type narrowing for untyped API response
       ((d.result as unknown as Record<string, number>)[contribTotalKey] ?? 0),
     0,
   );

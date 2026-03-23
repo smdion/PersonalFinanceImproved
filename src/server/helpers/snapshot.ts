@@ -4,7 +4,7 @@
 import { eq, desc, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { AccountCategory } from "@/lib/calculators/types";
-import { num } from "./transforms";
+import { toNumber } from "./transforms";
 import type { Db } from "./transforms";
 import { parseAppSettings } from "./settings";
 import { stripInstitutionSuffix } from "@/lib/utils/format";
@@ -115,7 +115,7 @@ export async function getLatestSnapshot(
     subType: a.subType,
     label: a.label,
     parentCategory: a.perfParentCategory ?? a.parentCategory,
-    amount: num(a.amount),
+    amount: toNumber(a.amount),
     ownerPersonId: a.ownerPersonId,
     performanceAccountId: a.performanceAccountId,
     displayName: a.displayName,
@@ -238,7 +238,7 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
   for (const pt of propTaxRows) {
     propTaxByYear.set(
       pt.year,
-      (propTaxByYear.get(pt.year) ?? 0) + num(pt.taxAmount),
+      (propTaxByYear.get(pt.year) ?? 0) + toNumber(pt.taxAmount),
     );
   }
 
@@ -287,7 +287,7 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
     const byType: Record<string, number> = {};
 
     for (const acct of yearAccounts) {
-      const endBal = num(acct.endingBalance);
+      const endBal = toNumber(acct.endingBalance);
       const master = resolveHistoryMaster(acct);
       const accountType = master?.accountType ?? "unknown";
 
@@ -304,11 +304,11 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
     const yearAccounts = accountPerfRows.filter((a) => a.year === year);
     const accounts: YearEndRow["perfByAccount"] = yearAccounts.map((acct) => ({
       label: `${acct.institution} — ${acct.accountLabel}`,
-      beginningBalance: num(acct.beginningBalance),
-      contributions: num(acct.totalContributions),
-      employerMatch: num(acct.employerContributions),
-      gainLoss: num(acct.yearlyGainLoss),
-      endingBalance: num(acct.endingBalance),
+      beginningBalance: toNumber(acct.beginningBalance),
+      contributions: toNumber(acct.totalContributions),
+      employerMatch: toNumber(acct.employerContributions),
+      gainLoss: toNumber(acct.yearlyGainLoss),
+      endingBalance: toNumber(acct.endingBalance),
     }));
     perfByAccountByYear.set(year, accounts);
   }
@@ -329,12 +329,13 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
   for (const row of annualPerfRows) {
     if (!row.isFinalized || row.category !== "Portfolio") continue;
     perfSummaryByYear.set(row.year, {
-      beginningBalance: num(row.beginningBalance),
-      contributions: num(row.totalContributions),
-      employerMatch: num(row.employerContributions),
-      gainLoss: num(row.yearlyGainLoss),
-      endingBalance: num(row.endingBalance),
-      returnPct: row.annualReturnPct !== null ? num(row.annualReturnPct) : null,
+      beginningBalance: toNumber(row.beginningBalance),
+      contributions: toNumber(row.totalContributions),
+      employerMatch: toNumber(row.employerContributions),
+      gainLoss: toNumber(row.yearlyGainLoss),
+      endingBalance: toNumber(row.endingBalance),
+      returnPct:
+        row.annualReturnPct !== null ? toNumber(row.annualReturnPct) : null,
     });
   }
 
@@ -353,13 +354,13 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
       distributions = 0,
       fees = 0;
     for (const a of yearAccounts) {
-      beginBal += num(a.beginningBalance);
-      contribs += num(a.totalContributions);
-      employer += num(a.employerContributions);
-      gainLoss += num(a.yearlyGainLoss);
-      endBal += num(a.endingBalance);
-      distributions += num(a.distributions);
-      fees += num(a.fees);
+      beginBal += toNumber(a.beginningBalance);
+      contribs += toNumber(a.totalContributions);
+      employer += toNumber(a.employerContributions);
+      gainLoss += toNumber(a.yearlyGainLoss);
+      endBal += toNumber(a.endingBalance);
+      distributions += toNumber(a.distributions);
+      fees += toNumber(a.fees);
     }
     const denom = beginBal + (contribs + employer - distributions - fees) / 2;
     perfSummaryByYear.set(year, {
@@ -401,23 +402,24 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
     const perfSummary = perfSummaryByYear.get(year);
 
     // Portfolio fields: prefer finalized performance data over stored net_worth_annual
-    const portfolioTotal = perf?.portfolioTotal ?? num(r.portfolioTotal);
+    const portfolioTotal = perf?.portfolioTotal ?? toNumber(r.portfolioTotal);
     // Portfolio breakdown by accountType: prefer perf data, fall back to legacy columns
     const portfolioByType: Record<string, number> = perf?.byType ?? {
-      "401k": num(r.retirementTotal), // legacy: 401k+403b+IRA combined
-      hsa: num(r.hsa),
-      brokerage: num(r.ltBrokerage) + num(r.espp) + num(r.rBrokerage),
+      "401k": toNumber(r.retirementTotal), // legacy: 401k+403b+IRA combined
+      hsa: toNumber(r.hsa),
+      brokerage:
+        toNumber(r.ltBrokerage) + toNumber(r.espp) + toNumber(r.rBrokerage),
     };
 
     // Non-portfolio fields always from net_worth_annual
-    const cash = num(r.cash);
-    const houseValue = num(r.houseValue);
-    const otherAssets = num(r.otherAssets);
+    const cash = toNumber(r.cash);
+    const houseValue = toNumber(r.houseValue);
+    const otherAssets = toNumber(r.otherAssets);
     // Mortgage balance: derived from loan amortization when loan data covers this year,
     // falls back to manual netWorthAnnual.mortgageBalance for years predating loan data
     const mortgageBalance =
-      mortgageBalanceByYear.get(year) ?? num(r.mortgageBalance);
-    const otherLiabilities = num(r.otherLiabilities);
+      mortgageBalanceByYear.get(year) ?? toNumber(r.mortgageBalance);
+    const otherLiabilities = toNumber(r.otherLiabilities);
     const netWorth =
       portfolioTotal +
       cash +
@@ -436,17 +438,19 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
       cash,
       houseValue,
       otherAssets,
-      homeImprovements: num(r.homeImprovementsCumulative),
+      homeImprovements: toNumber(r.homeImprovementsCumulative),
       mortgageBalance,
       otherLiabilities,
-      grossIncome: num(r.grossIncome),
-      combinedAgi: num(r.combinedAgi),
-      ssaEarnings: r.ssaEarnings ? num(r.ssaEarnings) : null,
-      effectiveTaxRate: r.effectiveTaxRate ? num(r.effectiveTaxRate) : null,
-      taxesPaid: r.taxesPaid ? num(r.taxesPaid) : null,
+      grossIncome: toNumber(r.grossIncome),
+      combinedAgi: toNumber(r.combinedAgi),
+      ssaEarnings: r.ssaEarnings ? toNumber(r.ssaEarnings) : null,
+      effectiveTaxRate: r.effectiveTaxRate
+        ? toNumber(r.effectiveTaxRate)
+        : null,
+      taxesPaid: r.taxesPaid ? toNumber(r.taxesPaid) : null,
       propertyTaxes:
         propTaxByYear.get(year) ??
-        (r.propertyTaxes ? num(r.propertyTaxes) : null),
+        (r.propertyTaxes ? toNumber(r.propertyTaxes) : null),
       perfBeginningBalance: perfSummary?.beginningBalance ?? null,
       perfContributions: perfSummary?.contributions ?? null,
       perfEmployerMatch: perfSummary?.employerMatch ?? null,
@@ -486,7 +490,7 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
 
     const activeLoan = mortgageLoans.find((m) => m.isActive);
     const houseValue = activeLoan
-      ? num(
+      ? toNumber(
           activeLoan.propertyValueEstimated ?? activeLoan.propertyValuePurchase,
         )
       : 0;
@@ -534,12 +538,12 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
         distributions = 0,
         fees = 0;
       for (const a of currentYearAcctPerf) {
-        beginBal += num(a.beginningBalance);
-        contribs += num(a.totalContributions);
-        employer += num(a.employerContributions);
-        gainLoss += num(a.yearlyGainLoss);
-        distributions += num(a.distributions);
-        fees += num(a.fees);
+        beginBal += toNumber(a.beginningBalance);
+        contribs += toNumber(a.totalContributions);
+        employer += toNumber(a.employerContributions);
+        gainLoss += toNumber(a.yearlyGainLoss);
+        distributions += toNumber(a.distributions);
+        fees += toNumber(a.fees);
       }
       const denom = beginBal + (contribs + employer - distributions - fees) / 2;
       perfSummary = {
@@ -554,14 +558,14 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
     } else if (currentPortfolioRow) {
       // Fallback to annual_performance row if no account data
       perfSummary = {
-        beginningBalance: num(currentPortfolioRow.beginningBalance),
-        contributions: num(currentPortfolioRow.totalContributions),
-        employerMatch: num(currentPortfolioRow.employerContributions),
-        gainLoss: num(currentPortfolioRow.yearlyGainLoss),
-        endingBalance: num(currentPortfolioRow.endingBalance),
+        beginningBalance: toNumber(currentPortfolioRow.beginningBalance),
+        contributions: toNumber(currentPortfolioRow.totalContributions),
+        employerMatch: toNumber(currentPortfolioRow.employerContributions),
+        gainLoss: toNumber(currentPortfolioRow.yearlyGainLoss),
+        endingBalance: toNumber(currentPortfolioRow.endingBalance),
         returnPct:
           currentPortfolioRow.annualReturnPct !== null
-            ? num(currentPortfolioRow.annualReturnPct)
+            ? toNumber(currentPortfolioRow.annualReturnPct)
             : null,
       };
     }

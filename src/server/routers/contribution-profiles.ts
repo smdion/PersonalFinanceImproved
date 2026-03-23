@@ -15,7 +15,7 @@ import {
   aggregateContributionsByCategory,
   computeBonusGross,
   loadLiveContribData,
-  num,
+  toNumber,
   resolveProfile,
 } from "@/server/helpers";
 import { accountDisplayName } from "@/lib/utils/format";
@@ -268,7 +268,7 @@ export const contributionProfileRouter = createTRPCRouter({
         const person = peopleMap.get(j.personId);
         const currentSalary =
           jobSalaries.find((js) => js.job.id === j.id)?.salary ??
-          num(j.annualSalary);
+          toNumber(j.annualSalary);
         const estimatedBonus = computeBonusGross(
           currentSalary,
           j.bonusPercent,
@@ -281,7 +281,7 @@ export const contributionProfileRouter = createTRPCRouter({
           personId: j.personId,
           personName: person?.name ?? `Person ${j.personId}`,
           employerName: j.employerName,
-          liveSalary: num(j.annualSalary),
+          liveSalary: toNumber(j.annualSalary),
           currentSalary,
           estimatedBonus,
           overrideSalary: salaryOverrides[String(j.personId)] ?? null,

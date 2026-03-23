@@ -2,11 +2,13 @@ import { z } from "zod/v4";
 import { eq, and } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { db as appDb } from "@/lib/db";
-import { num } from "@/server/helpers";
+import { toNumber } from "@/server/helpers";
 import { settingValueSchema } from "@/lib/db/json-schemas";
 
 /** Accepts both the main db instance and transaction handles. */
-export type DbType = typeof appDb | Parameters<Parameters<typeof appDb.transaction>[0]>[0];
+export type DbType =
+  | typeof appDb
+  | Parameters<Parameters<typeof appDb.transaction>[0]>[0];
 
 /** Validates a string represents a valid decimal number. */
 export const zDecimal = z
@@ -47,13 +49,13 @@ export async function recomputeAnnualRollups(db: DbType, year: number) {
       distributions: 0,
       fees: 0,
     };
-    existing.beginBal += num(r.beginningBalance);
-    existing.contribs += num(r.totalContributions);
-    existing.gainLoss += num(r.yearlyGainLoss);
-    existing.endBal += num(r.endingBalance);
-    existing.employer += num(r.employerContributions);
-    existing.distributions += num(r.distributions);
-    existing.fees += num(r.fees);
+    existing.beginBal += toNumber(r.beginningBalance);
+    existing.contribs += toNumber(r.totalContributions);
+    existing.gainLoss += toNumber(r.yearlyGainLoss);
+    existing.endBal += toNumber(r.endingBalance);
+    existing.employer += toNumber(r.employerContributions);
+    existing.distributions += toNumber(r.distributions);
+    existing.fees += toNumber(r.fees);
     categoryMap.set(cat, existing);
   }
 

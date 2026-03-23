@@ -16,7 +16,7 @@ export function SavingsGoalsCard() {
       ? { budgetTierOverride: efundBudgetColumn }
       : undefined;
   const { data, isLoading, error } =
-    trpc.savings.getSummary.useQuery(efundTierInput);
+    trpc.savings.computeSummary.useQuery(efundTierInput);
   if (isLoading) return <LoadingCard title="Savings Goals" />;
   if (error)
     return <ErrorCard title="Savings Goals" message="Failed to load" />;

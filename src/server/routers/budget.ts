@@ -14,7 +14,7 @@ import { calculateBudget } from "@/lib/calculators/budget";
 import type { BudgetInput } from "@/lib/calculators/types";
 import {
   computeBudgetAnnualTotal,
-  num,
+  toNumber,
   getPeriodsPerYear,
   getEffectiveIncome,
   getCurrentSalary,
@@ -150,7 +150,7 @@ export const budgetRouter = createTRPCRouter({
     }),
 
   /** Returns the active budget profile's calculator result for a given column. */
-  getActiveSummary: protectedProcedure
+  computeActiveSummary: protectedProcedure
     .input(
       z
         .object({
@@ -244,7 +244,7 @@ export const budgetRouter = createTRPCRouter({
 
         for (const c of activeContribs) {
           if (!linkedContribIds.has(c.id)) continue;
-          const val = num(c.contributionValue);
+          const val = toNumber(c.contributionValue);
           const jobPeriodsPerYear = c.jobId
             ? getPeriodsPerYear(
                 activeJobs.find((j) => j.id === c.jobId)?.payPeriod ??
@@ -416,12 +416,18 @@ export const budgetRouter = createTRPCRouter({
       const profile = profiles[0];
       if (!profile) throw new Error("No active profile");
 
-      const newLabels = columnLabelsSchema.parse([...profile.columnLabels, input.label]);
+      const newLabels = columnLabelsSchema.parse([
+        ...profile.columnLabels,
+        input.label,
+      ]);
       const newMonths = profile.columnMonths
         ? columnMonthsSchema.parse([...(profile.columnMonths as number[]), 0])
         : null;
       const newContribIds = profile.columnContributionProfileIds
-        ? columnContributionProfileIdsSchema.parse([...(profile.columnContributionProfileIds as (number | null)[]), null])
+        ? columnContributionProfileIdsSchema.parse([
+            ...(profile.columnContributionProfileIds as (number | null)[]),
+            null,
+          ])
         : null;
       await ctx.db
         .update(schema.budgetProfiles)
@@ -438,7 +444,10 @@ export const budgetRouter = createTRPCRouter({
         .from(schema.budgetItems)
         .where(eq(schema.budgetItems.profileId, profile.id));
       for (const item of items) {
-        const amounts = budgetAmountsSchema.parse([...(item.amounts as number[]), 0]);
+        const amounts = budgetAmountsSchema.parse([
+          ...(item.amounts as number[]),
+          0,
+        ]);
         await ctx.db
           .update(schema.budgetItems)
           .set({ amounts })

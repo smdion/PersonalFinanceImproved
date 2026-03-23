@@ -22,7 +22,7 @@ function LivingCostMappingEditor() {
   const { data: appSettings, isLoading: settingsLoading } =
     trpc.settings.appSettings.list.useQuery();
   const { data: budgetData, isLoading: budgetLoading } =
-    trpc.budget.getActiveSummary.useQuery();
+    trpc.budget.computeActiveSummary.useQuery();
   const upsert = trpc.settings.appSettings.upsert.useMutation({
     onSuccess: () => utils.settings.appSettings.list.invalidate(),
   });

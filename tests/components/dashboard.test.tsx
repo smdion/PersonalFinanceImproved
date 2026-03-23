@@ -32,6 +32,9 @@ vi.mock("@/components/cards/dashboard/utils", () => ({
       {title}: {message}
     </div>
   ),
+  CardBoundary: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
 }));
 
 vi.mock("@/components/ui/page-header", () => ({

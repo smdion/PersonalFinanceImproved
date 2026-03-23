@@ -4,7 +4,7 @@
 import { eq, and, lte, gt, desc, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
-import { num } from "./transforms";
+import { toNumber } from "./transforms";
 import type { Db } from "./transforms";
 
 /**
@@ -34,9 +34,9 @@ export async function getCurrentSalary(
     .limit(1);
 
   if (changes.length > 0 && changes[0]) {
-    return num(changes[0].newSalary);
+    return toNumber(changes[0].newSalary);
   }
-  return num(fallbackSalary);
+  return toNumber(fallbackSalary);
 }
 
 /**
@@ -113,10 +113,10 @@ export function computeBonusGross(
   bonusOverride: string | null,
   monthsInBonusYear: number | null,
 ): number {
-  if (bonusOverride) return roundToCents(num(bonusOverride));
-  const pct = num(bonusPercent);
+  if (bonusOverride) return roundToCents(toNumber(bonusOverride));
+  const pct = toNumber(bonusPercent);
   if (pct <= 0) return 0;
-  const mult = num(bonusMultiplier) || 1;
+  const mult = toNumber(bonusMultiplier) || 1;
   const months = monthsInBonusYear ?? 12;
   return roundToCents(salary * pct * mult * (months / 12));
 }
@@ -145,7 +145,7 @@ export async function getFutureSalaryChanges(
     .orderBy(asc(schema.salaryChanges.effectiveDate));
 
   return changes.map((c: { newSalary: string; effectiveDate: string }) => ({
-    salary: num(c.newSalary),
+    salary: toNumber(c.newSalary),
     effectiveDate: c.effectiveDate,
   }));
 }

@@ -113,9 +113,9 @@ export function ContributionsCard() {
     ...(activeContribProfileId != null
       ? { contributionProfileId: activeContribProfileId }
       : {}),
-  } as Parameters<typeof trpc.contribution.getSummary.useQuery>[0];
+  } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
   const { data, isLoading, error } =
-    trpc.contribution.getSummary.useQuery(contribInput);
+    trpc.contribution.computeSummary.useQuery(contribInput);
   const [contribPeriod, setContribPeriod] = useState<ContribPeriod>("annual");
   if (isLoading) return <LoadingCard title="Contributions" />;
   if (error)

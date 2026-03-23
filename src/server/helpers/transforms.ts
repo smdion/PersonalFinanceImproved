@@ -8,7 +8,7 @@ import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
 export type Db = typeof _db;
 
 /** Parse Drizzle decimal string to number. */
-export function num(v: string | null | undefined): number {
+export function toNumber(v: string | null | undefined): number {
   if (v === null || v === undefined) return 0;
   return parseFloat(v);
 }

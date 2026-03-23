@@ -18,7 +18,7 @@ import {
   getDisplayGroup,
   getParentCategory,
 } from "@/lib/config/account-types";
-import { num, getPeriodsPerYear } from "./transforms";
+import { toNumber, getPeriodsPerYear } from "./transforms";
 import type { Db } from "./transforms";
 import { getCurrentSalary } from "./salary";
 
@@ -91,7 +91,7 @@ export function buildContribAccounts(
   periodsPerYear: number,
 ): ContributionAccountInput[] {
   return [...jobContribs, ...personalContribs].map((c) => {
-    const contribValue = num(c.contributionValue);
+    const contribValue = toNumber(c.contributionValue);
     const annual = computeAnnualContribution(
       c.contributionMethod,
       contribValue,
@@ -105,8 +105,8 @@ export function buildContribAccounts(
 
     const matchAnnual = computeEmployerMatch(
       c.employerMatchType,
-      num(c.employerMatchValue),
-      num(c.employerMaxMatchPct),
+      toNumber(c.employerMatchValue),
+      toNumber(c.employerMaxMatchPct),
       annual,
       c.contributionMethod,
       contribValue,
@@ -195,7 +195,7 @@ export function aggregateContributionsByCategory(
 
   for (const c of activeContribs) {
     const cat = c.accountType;
-    const cv = num(c.contributionValue);
+    const cv = toNumber(c.contributionValue);
     // Direct job link, or fall back to person's first active job when jobId is null
     const js = c.jobId
       ? jobSalaries.find((x) => x.job.id === c.jobId)
@@ -221,8 +221,8 @@ export function aggregateContributionsByCategory(
 
     const matchAmount = computeEmployerMatch(
       c.employerMatchType,
-      num(c.employerMatchValue),
-      num(c.employerMaxMatchPct),
+      toNumber(c.employerMatchValue),
+      toNumber(c.employerMaxMatchPct),
       annual,
       c.contributionMethod,
       cv,
@@ -291,7 +291,7 @@ export function buildContributionDisplaySpecs(
   jobSalaries: JobSalaryRef[],
 ): ContribDisplaySpec[] {
   const rawSpecs = activeContribs
-    .filter((c) => num(c.contributionValue) > 0)
+    .filter((c) => toNumber(c.contributionValue) > 0)
     .map((c) => {
       const ownerPerson = people.find((p) => p.id === c.personId);
       const job = c.jobId
@@ -302,7 +302,7 @@ export function buildContributionDisplaySpecs(
         : jobSalaries.find((x) => x.job.personId === c.personId);
       const salary = js?.salary ?? 0;
       const periods = getPeriodsPerYear(job?.payPeriod ?? "biweekly");
-      const cv = num(c.contributionValue);
+      const cv = toNumber(c.contributionValue);
       const method = c.contributionMethod ?? "percent_of_salary";
       const value = method === "percent_of_salary" ? cv / 100 : cv;
       const annual = computeAnnualContribution(
@@ -313,8 +313,8 @@ export function buildContributionDisplaySpecs(
       );
       const matchAnnual = computeEmployerMatch(
         c.employerMatchType,
-        num(c.employerMatchValue),
-        num(c.employerMaxMatchPct),
+        toNumber(c.employerMatchValue),
+        toNumber(c.employerMaxMatchPct),
         annual,
         c.contributionMethod,
         cv,
@@ -444,7 +444,11 @@ export function resolveProfile(
   profile: typeof schema.contributionProfiles.$inferSelect,
   liveContribs: LiveContribRow[],
   liveJobs: (typeof schema.jobs.$inferSelect)[],
-  liveJobSalaries: { job: { id: number; personId: number }; salary: number; totalComp: number }[],
+  liveJobSalaries: {
+    job: { id: number; personId: number };
+    salary: number;
+    totalComp: number;
+  }[],
 ) {
   const salaryOverrides = profile.salaryOverrides as Record<string, number>;
   const contribOverridesRoot = profile.contributionOverrides as Record<
@@ -678,7 +682,11 @@ export type ContribInputRow = {
 export function buildProfileContribData(
   activeContribs: ContribInputRow[],
   activeJobs: { id: number; personId: number; payPeriod: string }[],
-  jobSalaries: { job: { id: number; personId: number }; salary: number; totalComp: number }[],
+  jobSalaries: {
+    job: { id: number; personId: number };
+    salary: number;
+    totalComp: number;
+  }[],
   ctx: ProfileContribContext,
 ): ProfileContribData {
   // salary = effective income (respects includeBonusInContributions flag)
@@ -734,12 +742,12 @@ export function buildProfileContribData(
   // Build per-account contribution specs
   const contributionSpecs: ContributionSpec[] = activeContribs
     .filter((c) => {
-      const cv = num(String(c.contributionValue ?? "0"));
+      const cv = toNumber(String(c.contributionValue ?? "0"));
       return cv > 0;
     })
     .map((c) => {
       const cat = c.accountType;
-      const cv = num(String(c.contributionValue ?? "0"));
+      const cv = toNumber(String(c.contributionValue ?? "0"));
       const method = (c.contributionMethod ??
         "percent_of_salary") as ContributionSpec["method"];
       let value: number;
@@ -821,7 +829,8 @@ export function buildProfileContribData(
         salaryFraction,
         periodsPerYear,
         baseAnnual,
-        taxTreatment: (c.taxTreatment ?? "pre_tax") as ContributionSpec["taxTreatment"],
+        taxTreatment: (c.taxTreatment ??
+          "pre_tax") as ContributionSpec["taxTreatment"],
         personId: c.personId,
         ownerName: contribOwner,
         accountName: matchedAcct?.name,

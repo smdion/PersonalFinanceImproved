@@ -138,7 +138,7 @@ export default function PaycheckPage() {
     data: rawData,
     isLoading,
     error,
-  } = trpc.paycheck.getSummary.useQuery(
+  } = trpc.paycheck.computeSummary.useQuery(
     Object.keys(queryInput).length > 0 ? queryInput : undefined,
     { placeholderData: (prev) => prev },
   );

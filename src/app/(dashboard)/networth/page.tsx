@@ -21,14 +21,15 @@ import {
   YoYTable,
   FinancialIndependenceCard,
 } from "@/components/networth";
+import { CardBoundary } from "@/components/cards/dashboard/utils";
 
 export default function NetWorthPage() {
   const utils = trpc.useUtils();
-  const { data, isLoading, error } = trpc.networth.getSummary.useQuery();
+  const { data, isLoading, error } = trpc.networth.computeSummary.useQuery();
   const { data: historyData } = trpc.networth.listHistory.useQuery();
   const primaryBirthYear = historyData?.primaryBirthYear;
   const [budgetColumn] = usePersistedSetting<number>("budget_active_column", 0);
-  const { data: budgetData } = trpc.budget.getActiveSummary.useQuery({
+  const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: budgetColumn,
   });
   const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
@@ -186,91 +187,110 @@ export default function NetWorthPage() {
       </div>
 
       {/* Net Worth Over Time */}
-      {displayHistory && displayHistory.length > 1 && (
-        <NetWorthLineChart history={displayHistory} />
-      )}
+      <CardBoundary title="Net Worth Charts">
+        {displayHistory && displayHistory.length > 1 && (
+          <NetWorthLineChart history={displayHistory} />
+        )}
 
-      {/* Journey to Abundance */}
-      {displayHistory && displayHistory.length > 1 && primaryBirthYear && (
-        <JourneyToAbundanceChart
-          history={displayHistory}
-          primaryBirthYear={primaryBirthYear}
-        />
-      )}
+        {/* Journey to Abundance */}
+        {displayHistory && displayHistory.length > 1 && primaryBirthYear && (
+          <JourneyToAbundanceChart
+            history={displayHistory}
+            primaryBirthYear={primaryBirthYear}
+          />
+        )}
+      </CardBoundary>
 
       {/* Net Worth Comparison */}
-      <NetWorthCompare
-        availableYears={availableYears}
-        useMarketValue={useMarketValue}
-      />
+      <CardBoundary title="Net Worth Comparison">
+        <NetWorthCompare
+          availableYears={availableYears}
+          useMarketValue={useMarketValue}
+        />
+      </CardBoundary>
 
       {/* Pie Charts: Net Worth Location + Tax Location */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <NetWorthLocationPie
-          portfolioTotal={portfolioTotal}
-          houseValue={displayHomeValue}
-          cash={cash}
-          otherAssets={otherAssets}
-        />
-        <TaxLocationPie byTaxType={byTaxType} portfolioTotal={portfolioTotal} />
-      </div>
+      <CardBoundary title="Net Worth Allocation">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <NetWorthLocationPie
+            portfolioTotal={portfolioTotal}
+            houseValue={displayHomeValue}
+            cash={cash}
+            otherAssets={otherAssets}
+          />
+          <TaxLocationPie
+            byTaxType={byTaxType}
+            portfolioTotal={portfolioTotal}
+          />
+        </div>
+      </CardBoundary>
 
       {/* Net Worth Composition */}
-      <NetWorthComposition
-        portfolioTotal={portfolioTotal}
-        displayHomeValue={displayHomeValue}
-        cash={cash}
-        otherAssets={otherAssets}
-        totalLiabilities={result.totalLiabilities}
-        displayNetWorth={displayNetWorth}
-        hasHouse={hasHouse}
-      />
+      <CardBoundary title="Net Worth Composition">
+        <NetWorthComposition
+          portfolioTotal={portfolioTotal}
+          displayHomeValue={displayHomeValue}
+          cash={cash}
+          otherAssets={otherAssets}
+          totalLiabilities={result.totalLiabilities}
+          displayNetWorth={displayNetWorth}
+          hasHouse={hasHouse}
+        />
+      </CardBoundary>
 
       {/* Asset & Liability breakdown */}
-      <AssetsLiabilitiesCards
-        portfolioTotal={portfolioTotal}
-        portfolioAccounts={portfolioAccounts}
-        byTaxType={byTaxType}
-        cash={cash}
-        cashSource={cashSource}
-        displayHomeValue={displayHomeValue}
-        otherAssets={otherAssets}
-        otherAssetItems={otherAssetItems}
-        otherAssetsSyncSource={otherAssetsSyncSource}
-        mortgageBalance={mortgageBalance}
-        otherLiabilities={otherLiabilities}
-        totalLiabilities={result.totalLiabilities}
-        useMarketValue={useMarketValue}
-        hasHouse={hasHouse}
-        onSettingUpdate={handleSettingUpdate}
-      />
+      <CardBoundary title="Assets & Liabilities">
+        <AssetsLiabilitiesCards
+          portfolioTotal={portfolioTotal}
+          portfolioAccounts={portfolioAccounts}
+          byTaxType={byTaxType}
+          cash={cash}
+          cashSource={cashSource}
+          displayHomeValue={displayHomeValue}
+          otherAssets={otherAssets}
+          otherAssetItems={otherAssetItems}
+          otherAssetsSyncSource={otherAssetsSyncSource}
+          mortgageBalance={mortgageBalance}
+          otherLiabilities={otherLiabilities}
+          totalLiabilities={result.totalLiabilities}
+          useMarketValue={useMarketValue}
+          hasHouse={hasHouse}
+          onSettingUpdate={handleSettingUpdate}
+        />
+      </CardBoundary>
 
       {/* Metrics row */}
-      <MetricsRow
-        wealthScore={result.wealthScore}
-        wealthTarget={result.wealthTarget}
-        fiProgress={result.fiProgress}
-        fiTarget={result.fiTarget}
-        netWorthMarket={result.netWorthMarket}
-        netWorthCostBasis={result.netWorthCostBasis}
-      />
+      <CardBoundary title="Key Metrics">
+        <MetricsRow
+          wealthScore={result.wealthScore}
+          wealthTarget={result.wealthTarget}
+          fiProgress={result.fiProgress}
+          fiTarget={result.fiTarget}
+          netWorthMarket={result.netWorthMarket}
+          netWorthCostBasis={result.netWorthCostBasis}
+        />
+      </CardBoundary>
 
       {/* YoY History Table */}
-      {displayHistory && displayHistory.length > 1 && (
-        <YoYTable history={displayHistory} hasHouse={hasHouse} />
-      )}
+      <CardBoundary title="Year-over-Year History">
+        {displayHistory && displayHistory.length > 1 && (
+          <YoYTable history={displayHistory} hasHouse={hasHouse} />
+        )}
+      </CardBoundary>
 
       {/* FI target explanation */}
-      <FinancialIndependenceCard
-        fiTarget={result.fiTarget}
-        fiProgress={result.fiProgress}
-        portfolioTotal={portfolioTotal}
-        cash={cash}
-        withdrawalRate={data.withdrawalRate}
-        budgetColumnLabels={budgetData?.columnLabels}
-        currentExpenseColumn={currentExpenseColumn}
-        onExpenseColumnChange={handleExpenseColumnChange}
-      />
+      <CardBoundary title="Financial Independence">
+        <FinancialIndependenceCard
+          fiTarget={result.fiTarget}
+          fiProgress={result.fiProgress}
+          portfolioTotal={portfolioTotal}
+          cash={cash}
+          withdrawalRate={data.withdrawalRate}
+          budgetColumnLabels={budgetData?.columnLabels}
+          currentExpenseColumn={currentExpenseColumn}
+          onExpenseColumnChange={handleExpenseColumnChange}
+        />
+      </CardBoundary>
 
       {result.warnings.length > 0 && (
         <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">

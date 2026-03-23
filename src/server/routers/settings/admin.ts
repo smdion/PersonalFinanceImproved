@@ -17,7 +17,7 @@ import {
   RBAC_SETTINGS_PREFIX,
   RBAC_ADMIN_GROUP_KEY,
 } from "@/server/auth";
-import { num } from "@/server/helpers";
+import { toNumber } from "@/server/helpers";
 import { buildAccountLabel, accountDisplayName } from "@/lib/utils/format";
 import {
   accountCategoryEnum,
@@ -284,9 +284,11 @@ export const adminProcedures = {
       .mutation(async ({ ctx, input }) => {
         // Use transaction + FOR UPDATE to prevent lost-write race conditions
         return ctx.db.transaction(async (tx) => {
-          const [existing] = await tx.execute<typeof schema.scenarios.$inferSelect>(
-            sql`SELECT * FROM scenarios WHERE id = ${input.id}`,
-          ).then((r) => r.rows);
+          const [existing] = await tx
+            .execute<
+              typeof schema.scenarios.$inferSelect
+            >(sql`SELECT * FROM scenarios WHERE id = ${input.id}`)
+            .then((r) => r.rows);
           if (!existing) throw new Error("Scenario not found");
           const overrides = (existing.overrides ?? {}) as Record<
             string,
@@ -317,9 +319,11 @@ export const adminProcedures = {
       .mutation(async ({ ctx, input }) => {
         // Use transaction + FOR UPDATE to prevent lost-write race conditions
         return ctx.db.transaction(async (tx) => {
-          const [existing] = await tx.execute<typeof schema.scenarios.$inferSelect>(
-            sql`SELECT * FROM scenarios WHERE id = ${input.id}`,
-          ).then((r) => r.rows);
+          const [existing] = await tx
+            .execute<
+              typeof schema.scenarios.$inferSelect
+            >(sql`SELECT * FROM scenarios WHERE id = ${input.id}`)
+            .then((r) => r.rows);
           if (!existing) throw new Error("Scenario not found");
           const overrides = (existing.overrides ?? {}) as Record<
             string,
@@ -362,10 +366,7 @@ export const adminProcedures = {
         z.object({
           service: z.string().min(1),
           config: apiConfigSchema,
-          accountMappings: z
-            .array(accountMappingSchema)
-            .nullable()
-            .optional(),
+          accountMappings: z.array(accountMappingSchema).nullable().optional(),
         }),
       )
       .mutation(async ({ ctx, input }) => {
@@ -775,7 +776,8 @@ export const adminProcedures = {
                   subType: a.subType ?? null,
                   label: a.label ?? null,
                   parentCategory: a.performanceAccountId
-                    ? (perfCatMap.get(a.performanceAccountId) ?? a.parentCategory)
+                    ? (perfCatMap.get(a.performanceAccountId) ??
+                      a.parentCategory)
                     : a.parentCategory,
                   amount: a.amount,
                   ownerPersonId: a.ownerPersonId,
@@ -799,7 +801,8 @@ export const adminProcedures = {
             if (a.performanceAccountId) {
               perfTotals.set(
                 a.performanceAccountId,
-                (perfTotals.get(a.performanceAccountId) ?? 0) + num(a.amount),
+                (perfTotals.get(a.performanceAccountId) ?? 0) +
+                  toNumber(a.amount),
               );
             }
           }

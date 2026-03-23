@@ -31,7 +31,7 @@ export function BrokerageGoalsSection() {
   const { data: goals, isLoading } = trpc.brokerage.listGoals.useQuery();
   const invalidateBrokerage = () => {
     utils.brokerage.listGoals.invalidate();
-    utils.brokerage.getSummary.invalidate();
+    utils.brokerage.computeSummary.invalidate();
   };
   const createGoal = trpc.brokerage.createGoal.useMutation({
     onSuccess: () => {

@@ -7,7 +7,7 @@ import {
   brokerageProcedure,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { num } from "@/server/helpers";
+import { toNumber } from "@/server/helpers";
 
 const plannedTransactionInput = z.object({
   goalId: z.number().int(),
@@ -35,7 +35,7 @@ export const brokerageRouter = createTRPCRouter({
     return goals.map((g) => ({
       id: g.id,
       name: g.name,
-      targetAmount: num(g.targetAmount),
+      targetAmount: toNumber(g.targetAmount),
       targetYear: g.targetYear,
       priority: g.priority,
       isActive: g.isActive,
@@ -104,7 +104,7 @@ export const brokerageRouter = createTRPCRouter({
 
   // ══ SUMMARY (goals + planned transactions for brokerage page) ══
 
-  getSummary: protectedProcedure.query(async ({ ctx }) => {
+  computeSummary: protectedProcedure.query(async ({ ctx }) => {
     const [goals, plannedTransactions] = await Promise.all([
       ctx.db
         .select()
@@ -124,7 +124,7 @@ export const brokerageRouter = createTRPCRouter({
       goals: goals.map((g) => ({
         id: g.id,
         name: g.name,
-        targetAmount: num(g.targetAmount),
+        targetAmount: toNumber(g.targetAmount),
         targetYear: g.targetYear,
         priority: g.priority,
         isActive: g.isActive,
@@ -134,7 +134,7 @@ export const brokerageRouter = createTRPCRouter({
         id: t.id,
         goalId: t.goalId,
         transactionDate: t.transactionDate,
-        amount: num(t.amount),
+        amount: toNumber(t.amount),
         description: t.description,
         isRecurring: t.isRecurring,
         recurrenceMonths: t.recurrenceMonths,

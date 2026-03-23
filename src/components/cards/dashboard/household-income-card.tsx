@@ -24,7 +24,7 @@ export function HouseholdIncomeCard() {
       ? { contributionProfileId: activeContribProfileId }
       : {}),
   };
-  const { data, isLoading, error } = trpc.paycheck.getSummary.useQuery(
+  const { data, isLoading, error } = trpc.paycheck.computeSummary.useQuery(
     Object.keys(queryInput).length > 0 ? queryInput : undefined,
   );
   if (isLoading) return <LoadingCard title="Household Income" />;

@@ -22,7 +22,7 @@ import type { EditingCell } from "@/components/performance";
 export default function PerformancePage() {
   const user = useUser();
   const canEdit = hasPermission(user, "performance");
-  const { data, isLoading, error } = trpc.performance.getSummary.useQuery();
+  const { data, isLoading, error } = trpc.performance.computeSummary.useQuery();
   const utils = trpc.useUtils();
   const [activeCategory, setActiveCategory] = useState("Portfolio");
   const [expandedYear, setExpandedYear] = useState<number | null>(null);
@@ -32,22 +32,22 @@ export default function PerformancePage() {
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
 
   const updateAnnual = trpc.performance.updateAnnual.useMutation({
-    onSuccess: () => utils.performance.getSummary.invalidate(),
+    onSuccess: () => utils.performance.computeSummary.invalidate(),
   });
   const updateAccount = trpc.performance.updateAccount.useMutation({
-    onSuccess: () => utils.performance.getSummary.invalidate(),
+    onSuccess: () => utils.performance.computeSummary.invalidate(),
   });
   const createAccount = trpc.performance.createAccount.useMutation({
     onSuccess: () => {
-      utils.performance.getSummary.invalidate();
+      utils.performance.computeSummary.invalidate();
       setShowAddAccount(null);
     },
   });
   const deleteAccount = trpc.performance.deleteAccount.useMutation({
-    onSuccess: () => utils.performance.getSummary.invalidate(),
+    onSuccess: () => utils.performance.computeSummary.invalidate(),
   });
   const finalizeYear = trpc.performance.finalizeYear.useMutation({
-    onSuccess: () => utils.performance.getSummary.invalidate(),
+    onSuccess: () => utils.performance.computeSummary.invalidate(),
   });
 
   if (isLoading) {

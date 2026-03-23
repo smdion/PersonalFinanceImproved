@@ -2,11 +2,7 @@
 
 import { z } from "zod/v4";
 import { eq } from "drizzle-orm";
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  adminProcedure,
-} from "../trpc";
+import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import {
   getClientForService,
@@ -115,9 +111,10 @@ export const syncConnectionsRouter = createTRPCRouter({
           })),
         };
       } catch (e) {
+        const msg = e instanceof Error ? e.message : "Unknown error";
         return {
           success: false as const,
-          error: e instanceof Error ? e.message : "Unknown error",
+          error: msg.slice(0, 200),
         };
       }
     }),
@@ -139,9 +136,10 @@ export const syncConnectionsRouter = createTRPCRouter({
         const budgetName = await client.getBudgetName();
         return { success: true, budgetName };
       } catch (e) {
+        const msg = e instanceof Error ? e.message : "Unknown error";
         return {
           success: false,
-          error: e instanceof Error ? e.message : "Unknown error",
+          error: msg.slice(0, 200),
         };
       }
     }),

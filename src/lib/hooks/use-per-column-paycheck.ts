@@ -38,23 +38,23 @@ export function usePerColumnPaycheck(
   };
 
   // Fixed number of hooks — React rules require stable hook count
-  const q0 = trpc.paycheck.getSummary.useQuery(
+  const q0 = trpc.paycheck.computeSummary.useQuery(
     buildInput(uniqueIds[0] ?? null) as never,
     { enabled: uniqueIds.length > 0 },
   );
-  const q1 = trpc.paycheck.getSummary.useQuery(
+  const q1 = trpc.paycheck.computeSummary.useQuery(
     buildInput(uniqueIds[1] ?? null) as never,
     { enabled: uniqueIds.length > 1 },
   );
-  const q2 = trpc.paycheck.getSummary.useQuery(
+  const q2 = trpc.paycheck.computeSummary.useQuery(
     buildInput(uniqueIds[2] ?? null) as never,
     { enabled: uniqueIds.length > 2 },
   );
-  const q3 = trpc.paycheck.getSummary.useQuery(
+  const q3 = trpc.paycheck.computeSummary.useQuery(
     buildInput(uniqueIds[3] ?? null) as never,
     { enabled: uniqueIds.length > 3 },
   );
-  const q4 = trpc.paycheck.getSummary.useQuery(
+  const q4 = trpc.paycheck.computeSummary.useQuery(
     buildInput(uniqueIds[4] ?? null) as never,
     { enabled: uniqueIds.length > 4 },
   );

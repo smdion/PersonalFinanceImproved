@@ -6,7 +6,8 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { LoadingCard, ErrorCard } from "./utils";
 
 export function MortgageCard() {
-  const { data, isLoading, error } = trpc.mortgage.getActiveSummary.useQuery();
+  const { data, isLoading, error } =
+    trpc.mortgage.computeActiveSummary.useQuery();
   if (isLoading) return <LoadingCard title="Mortgage" />;
   if (error) return <ErrorCard title="Mortgage" message="Failed to load" />;
 

@@ -7,7 +7,7 @@ import { calculateContributions } from "@/lib/calculators/contribution";
 import { countPeriodsElapsed } from "@/lib/calculators/paycheck";
 import { accountDisplayName, stripInstitutionSuffix } from "@/lib/utils/format";
 import {
-  num,
+  toNumber,
   getPeriodsPerYear,
   getCurrentSalary,
   getEffectiveIncome,
@@ -90,7 +90,7 @@ type PersonSnapshot = {
 };
 
 export const contributionRouter = createTRPCRouter({
-  getSummary: protectedProcedure
+  computeSummary: protectedProcedure
     .input(
       z
         .object({
@@ -142,7 +142,7 @@ export const contributionRouter = createTRPCRouter({
       );
 
       const limitsRecord: Record<string, number> = {};
-      for (const l of allLimits) limitsRecord[l.limitType] = num(l.value);
+      for (const l of allLimits) limitsRecord[l.limitType] = toNumber(l.value);
 
       // Apply contribution profile overrides if selected
       const profileResult = await loadAndApplyContribProfile(
@@ -247,7 +247,7 @@ export const contributionRouter = createTRPCRouter({
                   getLimitGroup(c.accountType as AccountCategory) === "401k" &&
                   c.contributionMethod === "percent_of_salary",
               )
-              .reduce((s, c) => s + num(c.contributionValue) / 100, 0);
+              .reduce((s, c) => s + toNumber(c.contributionValue) / 100, 0);
             bonus401k = roundToCents(bonusGross * bonusPct);
           }
 
@@ -540,7 +540,7 @@ export const contributionRouter = createTRPCRouter({
       );
       const jointAccountTypes: AccountTypeSnapshot[] = [];
       for (const c of jointContribs) {
-        const val = num(c.contributionValue);
+        const val = toNumber(c.contributionValue);
         const periodsPerYear = results[0]?.periodsPerYear ?? 26;
         const salary = 0;
         const annual =
@@ -553,7 +553,7 @@ export const contributionRouter = createTRPCRouter({
                 : val;
         const matchAnnual =
           c.employerMatchType === "fixed_annual"
-            ? num(c.employerMatchValue)
+            ? toNumber(c.employerMatchValue)
             : 0;
 
         const linkedPerfLabel = c.performanceAccountId

@@ -8,7 +8,7 @@ import { formatCurrency } from "@/lib/utils/format";
 import { LoadingCard, ErrorCard } from "./utils";
 
 export function NetWorthCard() {
-  const { data, isLoading, error } = trpc.networth.getSummary.useQuery();
+  const { data, isLoading, error } = trpc.networth.computeSummary.useQuery();
   const [useMarket, setUseMarket] = useState(true);
   if (isLoading) return <LoadingCard title="Net Worth" />;
   if (error) return <ErrorCard title="Net Worth" message="Failed to load" />;

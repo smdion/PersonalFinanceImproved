@@ -3,11 +3,11 @@ import { asc } from "drizzle-orm";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
-import { num, buildMortgageInputs } from "@/server/helpers";
+import { toNumber, buildMortgageInputs } from "@/server/helpers";
 import type { MortgageInput, MortgageWhatIf } from "@/lib/calculators/types";
 
 export const mortgageRouter = createTRPCRouter({
-  getActiveSummary: protectedProcedure.query(async ({ ctx }) => {
+  computeActiveSummary: protectedProcedure.query(async ({ ctx }) => {
     const [loans, extraPayments, whatIfRows] = await Promise.all([
       ctx.db
         .select()
@@ -28,9 +28,9 @@ export const mortgageRouter = createTRPCRouter({
     const whatIfScenarios: MortgageWhatIf[] = whatIfRows.map((s) => ({
       id: s.id,
       label: s.label,
-      extraMonthlyPrincipal: num(s.extraMonthlyPrincipal),
-      extraOneTimePayment: num(s.extraOneTimePayment),
-      refinanceRate: s.refinanceRate ? num(s.refinanceRate) : undefined,
+      extraMonthlyPrincipal: toNumber(s.extraMonthlyPrincipal),
+      extraOneTimePayment: toNumber(s.extraOneTimePayment),
+      refinanceRate: s.refinanceRate ? toNumber(s.refinanceRate) : undefined,
       refinanceTerm: s.refinanceTerm ?? undefined,
       loanId: s.loanId ?? undefined,
     }));

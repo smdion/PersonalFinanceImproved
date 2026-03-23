@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import { protectedProcedure, adminProcedure, publicProcedure } from "../../trpc";
+import {
+  protectedProcedure,
+  adminProcedure,
+  publicProcedure,
+} from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { hashPassword } from "@/lib/auth/password";
 
@@ -50,7 +54,11 @@ export const onboardingProcedures = {
         email: z.string().email("Invalid email address").max(200),
         password: z
           .string()
-          .min(12, "Password must be at least 12 characters"),
+          .min(12, "Password must be at least 12 characters")
+          .refine(
+            (p) => /[A-Z]/.test(p) && /[0-9]/.test(p),
+            "Password must contain at least one uppercase letter and one digit",
+          ),
       }),
     )
     .mutation(async ({ ctx, input }) => {

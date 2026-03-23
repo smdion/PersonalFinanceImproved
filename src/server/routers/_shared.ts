@@ -12,7 +12,7 @@
  *
  * Convention:
  *  - DB → tRPC response: NUMERIC columns arrive as `string` (e.g. "1234.56").
- *  - Server helpers use `num()` from `@/server/helpers/transforms` to parse
+ *  - Server helpers use `toNumber()` from `@/server/helpers/transforms` to parse
  *    strings to numbers when doing arithmetic (see that module for details).
  *  - Client code should use `parseFloat(value)` or `Number(value)` when it
  *    needs a numeric value for calculations, charts, or formatting.
@@ -28,6 +28,6 @@
 
 // This file is intentionally declaration-only (documentation + re-exports).
 // Import shared utilities from their canonical locations:
-//   num()                → @/server/helpers/transforms
+//   toNumber()           → @/server/helpers/transforms
 //   zDecimal             → @/server/routers/settings/_shared
 //   protectedProcedure   → @/server/trpc

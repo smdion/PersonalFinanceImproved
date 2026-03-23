@@ -7,8 +7,10 @@ import {
   createTRPCRouter,
   protectedProcedure,
   syncProcedure,
+  expensiveRateLimitMiddleware,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
+import { log } from "@/lib/logger";
 import {
   getClientForService,
   getActiveBudgetApi,
@@ -35,6 +37,7 @@ export const syncCoreRouter = createTRPCRouter({
    * Pulls accounts, categories, current month, and transactions into cache.
    */
   syncAll: syncProcedure
+    .use(expensiveRateLimitMiddleware)
     .input(z.object({ service: serviceEnum }))
     .mutation(async ({ ctx, input }) => {
       const client = await getClientForService(ctx.db, input.service);
@@ -178,8 +181,10 @@ export const syncCoreRouter = createTRPCRouter({
               assetsPulled++;
             }
           }
-        } catch {
-          // Asset pull failure shouldn't fail the sync
+        } catch (err) {
+          log("warn", "asset_pull_failed", {
+            error: err instanceof Error ? err.message : String(err),
+          });
         }
 
         return {
@@ -195,9 +200,10 @@ export const syncCoreRouter = createTRPCRouter({
           },
         };
       } catch (e) {
+        const msg = e instanceof Error ? e.message : "Unknown error";
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: `Sync failed: ${e instanceof Error ? e.message : "Unknown error"}`,
+          message: `Sync failed: ${msg.slice(0, 200)}`,
         });
       }
     }),

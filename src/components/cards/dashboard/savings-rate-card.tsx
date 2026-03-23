@@ -26,9 +26,9 @@ export function SavingsRateCard() {
     ...(activeProfileId != null
       ? { contributionProfileId: activeProfileId }
       : {}),
-  } as Parameters<typeof trpc.contribution.getSummary.useQuery>[0];
+  } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
   const { data, isLoading, error } =
-    trpc.contribution.getSummary.useQuery(contribInput);
+    trpc.contribution.computeSummary.useQuery(contribInput);
   const [highIncomeThreshold] = usePersistedSetting<number>(
     "high_income_threshold",
     200000,
@@ -95,9 +95,8 @@ export function SavingsRateCard() {
   }
   // Add joint account contributions to group totals
   for (const jat of data?.jointAccountTypes ?? []) {
-    const group = jat.parentCategory === "Retirement"
-      ? "retirement"
-      : "taxable";
+    const group =
+      jat.parentCategory === "Retirement" ? "retirement" : "taxable";
     groupTotals[group] =
       (groupTotals[group] ?? 0) +
       (excludeMatch ? jat.employeeContrib : jat.totalContrib);

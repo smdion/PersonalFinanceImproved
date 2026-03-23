@@ -5,7 +5,7 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateRelocation } from "@/lib/calculators/relocation";
 import {
-  num,
+  toNumber,
   getCurrentSalary,
   getEffectiveIncome,
   getTotalCompensation,
@@ -212,7 +212,8 @@ export async function buildEnginePayload(
   const primaryActiveJobs = patchedJobs.filter(
     (j) => !j.endDate && j.personId === primaryPerson.id,
   );
-  const filingStatus = settings.filingStatus ?? primaryActiveJobs[0]?.w4FilingStatus ?? "MFJ";
+  const filingStatus =
+    settings.filingStatus ?? primaryActiveJobs[0]?.w4FilingStatus ?? "MFJ";
   const latestTaxYear =
     allTaxBrackets.length > 0
       ? Math.max(...allTaxBrackets.map((b) => b.taxYear))
@@ -485,7 +486,7 @@ export async function buildEnginePayload(
   const costBasisRaw = settingsMap.get("brokerage_cost_basis");
   const costBasisVal =
     costBasisRaw != null && costBasisRaw !== "null"
-      ? num(String(costBasisRaw))
+      ? toNumber(String(costBasisRaw))
       : 0;
   portfolioByTaxType.afterTaxBasis = costBasisVal;
   // Distribute cost basis to per-parentCategory buckets proportionally by afterTax balance
@@ -501,17 +502,17 @@ export async function buildEnginePayload(
   const rampRaw = settingsMap.get("brokerage_contribution_increase");
   const brokerageContributionRamp =
     rampRaw != null && rampRaw !== "null" && rampRaw !== '"0"'
-      ? num(String(rampRaw).replace(/"/g, ""))
+      ? toNumber(String(rampRaw).replace(/"/g, ""))
       : 0;
   const limitGrowthRaw = settingsMap.get("irs_limit_growth_rate");
   const irsLimitGrowthRate =
     limitGrowthRaw != null
-      ? num(String(limitGrowthRaw))
+      ? toNumber(String(limitGrowthRaw))
       : IRS_LIMIT_GROWTH_RATE;
 
   // IRS limits
   const limitsMap: Record<string, number> = {};
-  for (const l of allLimits) limitsMap[l.limitType] = num(l.value);
+  for (const l of allLimits) limitsMap[l.limitType] = toNumber(l.value);
 
   // Per-person account types for limit aggregation
   const activeContribs = allContribs
@@ -592,7 +593,7 @@ export async function buildEnginePayload(
     .filter((o) => !hasMultiplePeople && o.personId === primaryPerson.id)
     .map((o) => ({
       year: o.projectionYear,
-      value: num(o.overrideSalary),
+      value: toNumber(o.overrideSalary),
       notes: o.notes ?? undefined,
     }));
 
@@ -600,7 +601,7 @@ export async function buildEnginePayload(
   const perPersonSalaryOverrides = plainSalaryOverrides.map((o) => ({
     personId: o.personId,
     year: o.projectionYear,
-    value: num(o.overrideSalary),
+    value: toNumber(o.overrideSalary),
   }));
 
   // Pre-resolve contribution profiles for profile-switch overrides
@@ -620,16 +621,14 @@ export async function buildEnginePayload(
             inArray(schema.contributionProfiles.id, profileSwitchProfileIds),
           )
       : [];
-  const switchProfileMap = new Map(
-    switchProfileRows.map((p) => [p.id, p]),
-  );
+  const switchProfileMap = new Map(switchProfileRows.map((p) => [p.id, p]));
 
   // Budget overrides from DB (stored as monthly, engine expects monthly too)
   const dbBudgetOverrides = budgetOverrideRows
     .filter((o) => o.personId === primaryPerson.id)
     .map((o) => ({
       year: o.projectionYear,
-      value: num(o.overrideMonthlyBudget),
+      value: toNumber(o.overrideMonthlyBudget),
       notes: o.notes ?? undefined,
     }));
 
@@ -640,7 +639,7 @@ export async function buildEnginePayload(
     .sort((a, b) => b.age - a.age)[0];
   const relevantReturnRates = returnRates
     .filter((r) => r.age >= age || (floorRate && r.age === floorRate.age))
-    .map((r) => ({ label: `Age ${r.age}`, rate: num(r.rateOfReturn) }));
+    .map((r) => ({ label: `Age ${r.age}`, rate: toNumber(r.rateOfReturn) }));
 
   // Expenses — phase-based budget columns
   const selectedScenario = retScenarios.find((s) => s.isSelected);
@@ -720,7 +719,11 @@ export async function buildEnginePayload(
       targetAnnual: c.targetAnnual,
       allocationPriority: c.allocationPriority,
     })),
-    activeJobs.map((j) => ({ id: j.id, personId: j.personId, payPeriod: j.payPeriod })),
+    activeJobs.map((j) => ({
+      id: j.id,
+      personId: j.personId,
+      payPeriod: j.payPeriod,
+    })),
     jobSalaries,
     profileContribCtx,
   );
@@ -749,7 +752,12 @@ export async function buildEnginePayload(
   }));
   const liveJobSalaries = await Promise.all(
     activeJobs.map(async (j) => {
-      const dbSalary = await getCurrentSalary(db, j.id, j.annualSalary, asOfDate);
+      const dbSalary = await getCurrentSalary(
+        db,
+        j.id,
+        j.annualSalary,
+        asOfDate,
+      );
       return {
         job: { id: j.id, personId: j.personId },
         salary: getEffectiveIncome(j, dbSalary),
@@ -760,7 +768,7 @@ export async function buildEnginePayload(
 
   const profileSwitches: ProfileSwitch[] = [];
 
-  const raiseRate = num(settings.salaryAnnualIncrease);
+  const raiseRate = toNumber(settings.salaryAnnualIncrease);
 
   for (const override of profileSwitchOverrides) {
     const profile = switchProfileMap.get(override.contributionProfileId!);
@@ -772,8 +780,7 @@ export async function buildEnginePayload(
     if (salaryOvr && Object.keys(salaryOvr).length > 0) {
       const yearsFromNow = override.projectionYear - currentYear;
       for (const [personIdStr, baseSalary] of Object.entries(salaryOvr)) {
-        const grownSalary =
-          baseSalary * Math.pow(1 + raiseRate, yearsFromNow);
+        const grownSalary = baseSalary * Math.pow(1 + raiseRate, yearsFromNow);
         perPersonSalaryOverrides.push({
           personId: Number(personIdStr),
           year: override.projectionYear,
@@ -829,8 +836,7 @@ export async function buildEnginePayload(
       baseYearContributions: data.baseYearContributions,
       baseYearEmployerMatch: data.baseYearEmployerMatch,
       employerMatchByParentCat: data.employerMatchByParentCat,
-      contributionRate:
-        switchedContribRate > 0 ? switchedContribRate : 0.25,
+      contributionRate: switchedContribRate > 0 ? switchedContribRate : 0.25,
     });
   }
 
@@ -872,12 +878,12 @@ export async function buildEnginePayload(
   // When bracket data is available, estimate effective rates from brackets instead of using
   // flat DB values (which may be stale or overly conservative, e.g. flat 22% vs actual ~12-15%)
   const dbTraditionalRate = selectedScenario
-    ? num(selectedScenario.distributionTaxRateTraditional)
+    ? toNumber(selectedScenario.distributionTaxRateTraditional)
     : 0;
   const dbBrokerageRate = selectedScenario
-    ? num(selectedScenario.distributionTaxRateBrokerage)
+    ? toNumber(selectedScenario.distributionTaxRateBrokerage)
     : 0;
-  const taxMult = num(settings.taxMultiplier);
+  const taxMult = toNumber(settings.taxMultiplier);
 
   let effectiveTraditionalRate = dbTraditionalRate;
   let effectiveBrokerageRate = dbBrokerageRate;
@@ -907,17 +913,21 @@ export async function buildEnginePayload(
 
   const distributionTaxRates = {
     traditionalFallbackRate: effectiveTraditionalRate,
-    roth: selectedScenario ? num(selectedScenario.distributionTaxRateRoth) : 0,
-    hsa: selectedScenario ? num(selectedScenario.distributionTaxRateHsa) : 0,
+    roth: selectedScenario
+      ? toNumber(selectedScenario.distributionTaxRateRoth)
+      : 0,
+    hsa: selectedScenario
+      ? toNumber(selectedScenario.distributionTaxRateHsa)
+      : 0,
     brokerage: effectiveBrokerageRate,
     taxBrackets: bracketData.length > 0 ? bracketData : undefined,
     taxMultiplier: taxMult,
     grossUpForTaxes: settings.grossUpForTaxes,
-    rothBracketTarget: num(settings.rothBracketTarget ?? "0.12"),
+    rothBracketTarget: toNumber(settings.rothBracketTarget ?? "0.12"),
     enableRothConversions: settings.enableRothConversions,
     rothConversionTarget:
       settings.rothConversionTarget != null
-        ? num(settings.rothConversionTarget)
+        ? toNumber(settings.rothConversionTarget)
         : undefined,
   };
 
@@ -928,8 +938,8 @@ export async function buildEnginePayload(
     retirementAge: avgRetirementAge,
     projectionEndAge: maxEndAge,
     currentSalary: totalCompensation,
-    salaryGrowthRate: num(settings.salaryAnnualIncrease),
-    salaryCap: settings.salaryCap ? num(settings.salaryCap) : null,
+    salaryGrowthRate: toNumber(settings.salaryAnnualIncrease),
+    salaryCap: settings.salaryCap ? toNumber(settings.salaryCap) : null,
     salaryOverrides: dbSalaryOverrides,
     salaryByPerson: hasMultiplePeople ? salaryByPerson : undefined,
     perPersonSalaryOverrides: hasMultiplePeople
@@ -964,7 +974,7 @@ export async function buildEnginePayload(
     brokerageGoals: brokerageGoalRows.map((g) => ({
       id: g.id,
       name: g.name,
-      targetAmount: num(g.targetAmount),
+      targetAmount: toNumber(g.targetAmount),
       targetYear: g.targetYear,
       priority: g.priority,
     })),
@@ -991,12 +1001,12 @@ export async function buildEnginePayload(
       decumulationExpenses !== accumulationExpenses
         ? decumulationExpenses
         : undefined,
-    inflationRate: num(settings.annualInflation),
+    inflationRate: toNumber(settings.annualInflation),
     postRetirementInflationRate: settings.postRetirementInflation
-      ? num(settings.postRetirementInflation)
+      ? toNumber(settings.postRetirementInflation)
       : undefined,
     returnRates: relevantReturnRates,
-    socialSecurityAnnual: num(settings.socialSecurityMonthly) * 12,
+    socialSecurityAnnual: toNumber(settings.socialSecurityMonthly) * 12,
     ssStartAge: settings.ssStartAge,
     birthYear: new Date(primaryPerson.dateOfBirth).getFullYear(),
     filingStatus,
@@ -1316,7 +1326,7 @@ export const retirementRouter = createTRPCRouter({
         let totalContribs = 0;
         let totalEmployerMatch = 0;
         for (const c of contribs) {
-          const cv = num(c.contributionValue);
+          const cv = toNumber(c.contributionValue);
           const js = salaries.find((x) => x.job.id === c.jobId);
           const job = activeJobs.find((j) => j.id === c.jobId);
           const salary = js?.salary ?? 0;
@@ -1330,8 +1340,8 @@ export const retirementRouter = createTRPCRouter({
           totalContribs += annual;
           totalEmployerMatch += computeEmployerMatch(
             c.employerMatchType,
-            num(c.employerMatchValue),
-            num(c.employerMaxMatchPct),
+            toNumber(c.employerMatchValue),
+            toNumber(c.employerMaxMatchPct),
             annual,
             c.contributionMethod,
             cv,
@@ -1427,14 +1437,14 @@ export const retirementRouter = createTRPCRouter({
             (r.age >= age && r.age <= settings.retirementAge) ||
             (relocFloor && r.age === relocFloor.age),
         )
-        .map((r) => num(r.rateOfReturn));
+        .map((r) => toNumber(r.rateOfReturn));
       const avgReturnRate =
         relevantRates.length > 0
           ? relevantRates.reduce((s, r) => s + r, 0) / relevantRates.length
           : 0.07;
 
       const selectedScenario = retScenarios.find((s) => s.isSelected);
-      const salaryGrowthRate = num(settings.salaryAnnualIncrease);
+      const salaryGrowthRate = toNumber(settings.salaryAnnualIncrease);
 
       const result = calculateRelocation({
         currentMonthlyExpenses: currentMonthly,
@@ -1454,11 +1464,11 @@ export const retirementRouter = createTRPCRouter({
         currentSalaryGrowthRate: salaryGrowthRate,
         relocationSalaryGrowthRate: salaryGrowthRate,
         withdrawalRate: selectedScenario
-          ? num(selectedScenario.withdrawalRate)
-          : num(settings.withdrawalRate),
-        inflationRate: num(settings.annualInflation),
+          ? toNumber(selectedScenario.withdrawalRate)
+          : toNumber(settings.withdrawalRate),
+        inflationRate: toNumber(settings.annualInflation),
         nominalReturnRate: avgReturnRate,
-        socialSecurityAnnual: num(settings.socialSecurityMonthly) * 12,
+        socialSecurityAnnual: toNumber(settings.socialSecurityMonthly) * 12,
         asOfDate,
       });
 

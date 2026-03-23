@@ -1,7 +1,11 @@
 /** Projection router for long-term financial forecasting including accumulation/decumulation phases, Monte Carlo simulations, and lump-sum scenario modeling. */
 import { eq, asc, sql } from "drizzle-orm";
 import { z } from "zod/v4";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  expensiveRateLimitMiddleware,
+} from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateProjection } from "@/lib/calculators/engine";
 import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
@@ -9,7 +13,7 @@ import {
   interpolateAllocations,
   geometricMean,
 } from "@/lib/calculators/random";
-import { num } from "@/server/helpers";
+import { toNumber } from "@/server/helpers";
 import type {
   AccountBalance,
   AccountCategory,
@@ -86,10 +90,7 @@ const decumulationOverrideSchema = z
         .record(z.enum(accountCategoryEnum()), z.number())
         .optional(),
       withdrawalTaxPreference: z
-        .record(
-          z.enum(accountCategoryEnum()),
-          z.enum(["traditional", "roth"]),
-        )
+        .record(z.enum(accountCategoryEnum()), z.enum(["traditional", "roth"]))
         .optional(),
       withdrawalAccountCaps: z
         .record(z.enum(accountCategoryEnum()), z.number())
@@ -140,31 +141,31 @@ function buildStrategyParams(settings: {
 }): Partial<Record<WithdrawalStrategyType, Record<string, number | boolean>>> {
   return {
     guyton_klinger: {
-      upperGuardrail: num(settings.gkUpperGuardrail ?? "0.80"),
-      lowerGuardrail: num(settings.gkLowerGuardrail ?? "1.20"),
-      increasePercent: num(settings.gkIncreasePct ?? "0.10"),
-      decreasePercent: num(settings.gkDecreasePct ?? "0.10"),
+      upperGuardrail: toNumber(settings.gkUpperGuardrail ?? "0.80"),
+      lowerGuardrail: toNumber(settings.gkLowerGuardrail ?? "1.20"),
+      increasePercent: toNumber(settings.gkIncreasePct ?? "0.10"),
+      decreasePercent: toNumber(settings.gkDecreasePct ?? "0.10"),
       skipInflationAfterLoss: settings.gkSkipInflationAfterLoss,
     },
     spending_decline: {
-      annualDeclineRate: num(settings.sdAnnualDeclineRate ?? "0.02"),
+      annualDeclineRate: toNumber(settings.sdAnnualDeclineRate ?? "0.02"),
     },
     constant_percentage: {
-      withdrawalPercent: num(settings.cpWithdrawalPercent ?? "0.05"),
-      floorPercent: num(settings.cpFloorPercent ?? "0.90"),
+      withdrawalPercent: toNumber(settings.cpWithdrawalPercent ?? "0.05"),
+      floorPercent: toNumber(settings.cpFloorPercent ?? "0.90"),
     },
     endowment: {
-      withdrawalPercent: num(settings.enWithdrawalPercent ?? "0.05"),
+      withdrawalPercent: toNumber(settings.enWithdrawalPercent ?? "0.05"),
       rollingYears: settings.enRollingYears ?? 10,
-      floorPercent: num(settings.enFloorPercent ?? "0.90"),
+      floorPercent: toNumber(settings.enFloorPercent ?? "0.90"),
     },
     vanguard_dynamic: {
-      basePercent: num(settings.vdBasePercent ?? "0.05"),
-      ceilingPercent: num(settings.vdCeilingPercent ?? "0.05"),
-      floorPercent: num(settings.vdFloorPercent ?? "0.025"),
+      basePercent: toNumber(settings.vdBasePercent ?? "0.05"),
+      ceilingPercent: toNumber(settings.vdCeilingPercent ?? "0.05"),
+      floorPercent: toNumber(settings.vdFloorPercent ?? "0.025"),
     },
     rmd_spending: {
-      rmdMultiplier: num(settings.rmdMultiplier ?? "1.0"),
+      rmdMultiplier: toNumber(settings.rmdMultiplier ?? "1.0"),
     },
   };
 }
@@ -187,7 +188,7 @@ function buildDecumulationDefaults(
   distributionTaxRates: DecumulationDefaults["distributionTaxRates"],
 ): DecumulationDefaults {
   return {
-    withdrawalRate: num(settings.withdrawalRate),
+    withdrawalRate: toNumber(settings.withdrawalRate),
     withdrawalRoutingMode:
       clientDefaults.withdrawalRoutingMode as DecumulationDefaults["withdrawalRoutingMode"],
     withdrawalOrder: clientDefaults.withdrawalOrder as AccountCategory[],
@@ -526,7 +527,7 @@ export const projectionRouter = createTRPCRouter({
           id: o.id,
           personId: o.personId,
           projectionYear: o.projectionYear,
-          overrideSalary: num(o.overrideSalary),
+          overrideSalary: toNumber(o.overrideSalary),
           contributionProfileId: o.contributionProfileId ?? null,
           notes: o.notes,
         })),
@@ -537,7 +538,7 @@ export const projectionRouter = createTRPCRouter({
             id: o.id,
             personId: o.personId,
             projectionYear: o.projectionYear,
-            overrideMonthlyBudget: num(o.overrideMonthlyBudget),
+            overrideMonthlyBudget: toNumber(o.overrideMonthlyBudget),
             notes: o.notes,
           })),
         primaryPersonId: primaryPerson.id,
@@ -585,7 +586,7 @@ export const projectionRouter = createTRPCRouter({
         brokerageGoals: data.brokerageGoalRows.map((g) => ({
           id: g.id,
           name: g.name,
-          targetAmount: num(g.targetAmount),
+          targetAmount: toNumber(g.targetAmount),
           targetYear: g.targetYear,
           priority: g.priority,
         })),
@@ -602,6 +603,7 @@ export const projectionRouter = createTRPCRouter({
    * Returns percentile bands for fan chart, success rate, and key metrics.
    */
   computeMonteCarloProjection: protectedProcedure
+    .use(expensiveRateLimitMiddleware)
     .input(
       z.object({
         numTrials: z.number().int().min(100).max(10000).default(1000),
@@ -875,7 +877,7 @@ export const projectionRouter = createTRPCRouter({
         effectiveAssetOverrides.map((o) => [o.id, o]),
       );
       const returnOverrideById = new Map(
-        presetRoRows.map((ro) => [ro.asset_class_id, num(ro.mean_return)]),
+        presetRoRows.map((ro) => [ro.asset_class_id, toNumber(ro.mean_return)]),
       );
       const hasReturnOverrides = returnOverrideById.size > 0;
 
@@ -892,12 +894,12 @@ export const projectionRouter = createTRPCRouter({
       }
 
       // Build MC-specific inputs: UI overrides > preset return overrides > preset multiplier > DB values
-      const returnMultiplier = preset ? num(preset.returnMultiplier) : 1.0;
-      const volMultiplier = preset ? num(preset.volMultiplier) : 1.0;
+      const returnMultiplier = preset ? toNumber(preset.returnMultiplier) : 1.0;
+      const volMultiplier = preset ? toNumber(preset.volMultiplier) : 1.0;
 
       const mcAssetClasses = assetClasses.map((ac) => {
-        const dbReturn = num(ac.meanReturn);
-        const dbStdDev = num(ac.stdDev);
+        const dbReturn = toNumber(ac.meanReturn);
+        const dbStdDev = toNumber(ac.stdDev);
         const uiOverride = overrideById.get(ac.id);
         return {
           id: ac.id,
@@ -919,7 +921,7 @@ export const projectionRouter = createTRPCRouter({
       const mcCorrelations = assetCorrelations.map((c) => ({
         classAId: c.classAId,
         classBId: c.classBId,
-        correlation: num(c.correlation),
+        correlation: toNumber(c.correlation),
       }));
 
       // Glide path: DB preset for named presets, glide_path_allocations for custom
@@ -929,7 +931,7 @@ export const projectionRouter = createTRPCRouter({
         const gpByAge = new Map<number, Record<number, number>>();
         for (const row of presetGpRows) {
           if (!gpByAge.has(row.age)) gpByAge.set(row.age, {});
-          gpByAge.get(row.age)![row.asset_class_id] = num(row.allocation);
+          gpByAge.get(row.age)![row.asset_class_id] = toNumber(row.allocation);
         }
         mcGlidePath = Array.from(gpByAge.entries())
           .sort(([a], [b]) => a - b)
@@ -939,7 +941,7 @@ export const projectionRouter = createTRPCRouter({
         const gpByAge = new Map<number, Record<number, number>>();
         for (const gp of glidePathRows) {
           if (!gpByAge.has(gp.age)) gpByAge.set(gp.age, {});
-          gpByAge.get(gp.age)![gp.assetClassId] = num(gp.allocation);
+          gpByAge.get(gp.age)![gp.assetClassId] = toNumber(gp.allocation);
         }
         mcGlidePath = Array.from(gpByAge.entries())
           .sort(([a], [b]) => a - b)
@@ -949,8 +951,8 @@ export const projectionRouter = createTRPCRouter({
       // Resolve effective inflation risk: explicit UI override > saved DB overrides > preset DB values > fallback
       const baseInflationRisk = preset
         ? {
-            meanRate: num(preset.inflationMean),
-            stdDev: num(preset.inflationStdDev),
+            meanRate: toNumber(preset.inflationMean),
+            stdDev: toNumber(preset.inflationStdDev),
           }
         : { meanRate: 0.025, stdDev: 0.012 };
       const effectiveInflationRisk =
@@ -966,8 +968,8 @@ export const projectionRouter = createTRPCRouter({
         baseInflationRisk;
 
       // Resolve return clamp bounds from preset (or defaults)
-      const returnClampMin = preset ? num(preset.returnClampMin) : -0.5;
-      const returnClampMax = preset ? num(preset.returnClampMax) : 1.0;
+      const returnClampMin = preset ? toNumber(preset.returnClampMin) : -0.5;
+      const returnClampMax = preset ? toNumber(preset.returnClampMax) : 1.0;
 
       // Build MC-aligned deterministic return rates using GEOMETRIC means.
       // The arithmetic mean is the expected single-year return, but deterministic compounding
@@ -1024,8 +1026,8 @@ export const projectionRouter = createTRPCRouter({
       const dbAssetClasses = assetClasses.map((ac) => ({
         id: ac.id,
         name: ac.name,
-        meanReturn: num(ac.meanReturn),
-        stdDev: num(ac.stdDev),
+        meanReturn: toNumber(ac.meanReturn),
+        stdDev: toNumber(ac.stdDev),
       }));
 
       return {
@@ -1043,7 +1045,7 @@ export const projectionRouter = createTRPCRouter({
             totalRealContrib +
             Object.values(employerMatchByCategory).reduce((s, v) => s + v, 0),
           annualExpenses: annualExpensesVal,
-          inflationRate: num(settings.annualInflation),
+          inflationRate: toNumber(settings.annualInflation),
           salary: totalCompensation,
           assetClasses: mcAssetClasses,
           dbAssetClasses,
@@ -1058,7 +1060,7 @@ export const projectionRouter = createTRPCRouter({
           blendedReturn,
           blendedVol,
           inflationRisk: effectiveInflationRisk,
-          withdrawalRate: num(settings.withdrawalRate),
+          withdrawalRate: toNumber(settings.withdrawalRate),
           decumulationExpenseOverride: input.decumulationExpenseOverride,
           accumulationExpenseOverride: input.accumulationExpenseOverride,
           taxMode: input.taxMode,
@@ -1182,21 +1184,17 @@ export const projectionRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       // Load retirement data + MC config in parallel
-      const [
-        data,
-        assetClasses,
-        assetCorrelations,
-        glidePathRows,
-      ] = await Promise.all([
-        fetchRetirementData(ctx.db, { snapshotId: input?.snapshotId }),
-        ctx.db
-          .select()
-          .from(schema.assetClassParams)
-          .where(eq(schema.assetClassParams.isActive, true))
-          .orderBy(asc(schema.assetClassParams.sortOrder)),
-        ctx.db.select().from(schema.assetClassCorrelations),
-        ctx.db.select().from(schema.glidePathAllocations),
-      ]);
+      const [data, assetClasses, assetCorrelations, glidePathRows] =
+        await Promise.all([
+          fetchRetirementData(ctx.db, { snapshotId: input?.snapshotId }),
+          ctx.db
+            .select()
+            .from(schema.assetClassParams)
+            .where(eq(schema.assetClassParams.isActive, true))
+            .orderBy(asc(schema.assetClassParams.sortOrder)),
+          ctx.db.select().from(schema.assetClassCorrelations),
+          ctx.db.select().from(schema.glidePathAllocations),
+        ]);
 
       const payload = await buildEnginePayload(ctx.db, data, {
         salaryOverrides: input?.salaryOverrides,
@@ -1221,18 +1219,18 @@ export const projectionRouter = createTRPCRouter({
       const mcAssetClasses = assetClasses.map((ac) => ({
         id: ac.id,
         name: ac.name,
-        meanReturn: num(ac.meanReturn),
-        stdDev: num(ac.stdDev),
+        meanReturn: toNumber(ac.meanReturn),
+        stdDev: toNumber(ac.stdDev),
       }));
       const mcCorrelations = assetCorrelations.map((c) => ({
         classAId: c.classAId,
         classBId: c.classBId,
-        correlation: num(c.correlation),
+        correlation: toNumber(c.correlation),
       }));
       const gpByAge = new Map<number, Record<number, number>>();
       for (const gp of glidePathRows) {
         if (!gpByAge.has(gp.age)) gpByAge.set(gp.age, {});
-        gpByAge.get(gp.age)![gp.assetClassId] = num(gp.allocation);
+        gpByAge.get(gp.age)![gp.assetClassId] = toNumber(gp.allocation);
       }
       const mcGlidePath = Array.from(gpByAge.entries())
         .sort(([a], [b]) => a - b)
@@ -1248,11 +1246,16 @@ export const projectionRouter = createTRPCRouter({
         const allocations = interpolateAllocations(mcGlidePath, a);
         const blended = mcAssetClasses.reduce((sum, ac) => {
           const w = allocations[ac.id] ?? 0;
-          return w > 0 ? sum + w * geometricMean(ac.meanReturn, ac.stdDev) : sum;
+          return w > 0
+            ? sum + w * geometricMean(ac.meanReturn, ac.stdDev)
+            : sum;
         }, 0);
         mcReturnRates.push({ label: `Age ${a}`, rate: blended });
       }
-      const mcBaseEngineInput = { ...baseEngineInput, returnRates: mcReturnRates };
+      const mcBaseEngineInput = {
+        ...baseEngineInput,
+        returnRates: mcReturnRates,
+      };
       const hasMcData = mcAssetClasses.length > 0 && mcGlidePath.length > 0;
 
       const userStrategyParams = buildStrategyParams(settings);
@@ -1268,7 +1271,7 @@ export const projectionRouter = createTRPCRouter({
             : { [strategyKey]: getStrategyDefaults(strategyKey) };
 
         const decumulationDefaults = {
-          withdrawalRate: num(settings.withdrawalRate),
+          withdrawalRate: toNumber(settings.withdrawalRate),
           withdrawalRoutingMode: "bracket_filling" as const,
           withdrawalOrder: getDefaultDecumulationOrder() as AccountCategory[],
           withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS } as Record<

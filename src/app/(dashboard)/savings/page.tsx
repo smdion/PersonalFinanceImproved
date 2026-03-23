@@ -32,6 +32,7 @@ import {
   ApiSyncSection,
   useApiSync,
 } from "@/components/savings/api-sync-section";
+import { CardBoundary } from "@/components/cards/dashboard/utils";
 
 export default function SavingsPage() {
   const user = useUser();
@@ -62,7 +63,7 @@ export default function SavingsPage() {
       ? { budgetTierOverride: efundBudgetColumn }
       : undefined;
   const { data, isLoading, error } =
-    trpc.savings.getSummary.useQuery(efundTierInput);
+    trpc.savings.computeSummary.useQuery(efundTierInput);
   const { data: reimbursementsData } =
     trpc.savings.listEfundReimbursements.useQuery();
   const { data: apiBalancesData } = trpc.savings.listApiBalances.useQuery();
@@ -75,10 +76,10 @@ export default function SavingsPage() {
       ? { contributionProfileId: activeContribProfileId }
       : {}),
   };
-  const { data: paycheckData } = trpc.paycheck.getSummary.useQuery(
+  const { data: paycheckData } = trpc.paycheck.computeSummary.useQuery(
     Object.keys(paycheckInput).length > 0 ? paycheckInput : undefined,
   );
-  const { data: budgetData } = trpc.budget.getActiveSummary.useQuery({
+  const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: budgetColumn,
   });
 
@@ -189,7 +190,9 @@ export default function SavingsPage() {
     const monthlyNet = activePeople.reduce((sum, d) => {
       const pc = d.paycheck!;
       // Use server-provided budget periods per month (respects per-job override)
-      const perMonth = (d as { budgetPerMonth?: number }).budgetPerMonth ?? pc.periodsPerYear / 12;
+      const perMonth =
+        (d as { budgetPerMonth?: number }).budgetPerMonth ??
+        pc.periodsPerYear / 12;
       return sum + pc.netPay * perMonth;
     }, 0);
     const budgetTotal = budgetData.columnMonths
@@ -409,18 +412,18 @@ export default function SavingsPage() {
         {canEdit && (
           <div className="flex flex-wrap gap-2">
             {apiBalancesData?.service && (
-                <button
-                  onClick={() =>
-                    apiSync.buildPushAllPreview(rawGoals, apiBalanceMap)
-                  }
-                  disabled={apiSync.pushToApiPending}
-                  className="px-3 py-1.5 border border-green-600 text-green-400 rounded text-sm hover:bg-green-600/20 disabled:opacity-50"
-                  title="Push monthly contributions as budget API goal targets"
-                >
-                  {apiSync.pushToApiPending
-                    ? "Pushing..."
-                    : "Push Contributions \u2192"}
-                </button>
+              <button
+                onClick={() =>
+                  apiSync.buildPushAllPreview(rawGoals, apiBalanceMap)
+                }
+                disabled={apiSync.pushToApiPending}
+                className="px-3 py-1.5 border border-green-600 text-green-400 rounded text-sm hover:bg-green-600/20 disabled:opacity-50"
+                title="Push monthly contributions as budget API goal targets"
+              >
+                {apiSync.pushToApiPending
+                  ? "Pushing..."
+                  : "Push Contributions \u2192"}
+              </button>
             )}
             <Button
               variant="secondary"
@@ -428,11 +431,7 @@ export default function SavingsPage() {
             >
               Transfer
             </Button>
-            <Button
-              onClick={() => setShowNewFund(true)}
-            >
-              + New Fund
-            </Button>
+            <Button onClick={() => setShowNewFund(true)}>+ New Fund</Button>
           </div>
         )}
       </PageHeader>
@@ -473,111 +472,119 @@ export default function SavingsPage() {
       )}
 
       {/* ── Overview ── */}
-      <section className="space-y-4">
-        <SummaryCards
-          savings={savings}
-          efund={efund}
-          paycheckData={paycheckData?.people}
-          maxMonthlyFunding={maxMonthlyFunding}
-          totalMonthlyAllocation={totalMonthlyAllocation}
-        />
-
-        {goalProjections.length > 0 && (
-          <UpcomingGoals
-            goalProjections={goalProjections}
-            savingsGoals={savings.goals}
-            plannedTransactions={plannedTransactions}
-            monthDates={monthDates}
+      <CardBoundary title="Savings Overview">
+        <section className="space-y-4">
+          <SummaryCards
+            savings={savings}
+            efund={efund}
+            paycheckData={paycheckData?.people}
+            maxMonthlyFunding={maxMonthlyFunding}
+            totalMonthlyAllocation={totalMonthlyAllocation}
           />
-        )}
-      </section>
+
+          {goalProjections.length > 0 && (
+            <UpcomingGoals
+              goalProjections={goalProjections}
+              savingsGoals={savings.goals}
+              plannedTransactions={plannedTransactions}
+              monthDates={monthDates}
+            />
+          )}
+        </section>
+      </CardBoundary>
 
       {/* ── Planning & Projections ── */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-3">
-          <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">
-            Projections
-          </h2>
-          <div className="flex-1 border-t border/50" />
-        </div>
+      <CardBoundary title="Savings Projections">
+        <section className="space-y-4">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">
+              Projections
+            </h2>
+            <div className="flex-1 border-t border/50" />
+          </div>
 
-        <BudgetCapacityBar
-          maxMonthlyFunding={maxMonthlyFunding}
-          totalMonthlyAllocation={totalMonthlyAllocation}
-          budgetData={budgetData}
-          budgetColumn={budgetColumn}
-          setBudgetColumn={setBudgetColumn}
-          projectionYears={projectionYears}
-          setProjectionYears={setProjectionYears}
-          yearlyGrowth={yearlyGrowth}
-          setYearlyGrowth={setYearlyGrowth}
-          budgetNote={budgetNote}
-          goalProjections={goalProjections}
-          onGoalUpdate={onGoalUpdate}
-        />
+          <BudgetCapacityBar
+            maxMonthlyFunding={maxMonthlyFunding}
+            totalMonthlyAllocation={totalMonthlyAllocation}
+            budgetData={budgetData}
+            budgetColumn={budgetColumn}
+            setBudgetColumn={setBudgetColumn}
+            projectionYears={projectionYears}
+            setProjectionYears={setProjectionYears}
+            yearlyGrowth={yearlyGrowth}
+            setYearlyGrowth={setYearlyGrowth}
+            budgetNote={budgetNote}
+            goalProjections={goalProjections}
+            onGoalUpdate={onGoalUpdate}
+          />
 
-        {goalProjections.length > 0 && (
-          <SavingsTrajectoryChart
+          {goalProjections.length > 0 && (
+            <SavingsTrajectoryChart
+              goalProjections={goalProjections}
+              monthDates={monthDates}
+              onFundClick={handleFundClick}
+            />
+          )}
+
+          <AllocationEditorSection
             goalProjections={goalProjections}
             monthDates={monthDates}
-            onFundClick={handleFundClick}
+            totalMonthlyAllocation={totalMonthlyAllocation}
+            maxMonthlyFunding={maxMonthlyFunding}
+            monthlyPools={monthlyPools}
+            canEdit={canEdit}
+            onGoalUpdate={onGoalUpdate}
+            onGoalUpdateMulti={onGoalUpdateMulti}
+            editingMonth={editingMonth}
+            setEditingMonth={setEditingMonth}
           />
-        )}
+        </section>
+      </CardBoundary>
 
-        <AllocationEditorSection
+      {/* ── Fund Details ── */}
+      <CardBoundary title="Fund Management">
+        <FundManagementSection
+          rawGoals={rawGoals}
           goalProjections={goalProjections}
+          savings={savings}
+          plannedTransactions={plannedTransactions}
+          allocationOverrides={allocationOverrides}
           monthDates={monthDates}
           totalMonthlyAllocation={totalMonthlyAllocation}
           maxMonthlyFunding={maxMonthlyFunding}
-          monthlyPools={monthlyPools}
+          goalById={goalById}
+          childGoalsByParent={childGoalsByParent}
+          apiBalanceMap={apiBalanceMap}
           canEdit={canEdit}
-          onGoalUpdate={onGoalUpdate}
-          onGoalUpdateMulti={onGoalUpdateMulti}
-          editingMonth={editingMonth}
-          setEditingMonth={setEditingMonth}
+          onEditMonth={setEditingMonth}
+          onDeleteOverride={apiSync.onDeleteOverride}
+          efund={efund}
+          budgetTierLabels={budgetTierLabels}
+          efundTierIndex={efundTierIndex}
+          onEfundTierChange={setEfundBudgetColumn}
+          reimbursementsData={reimbursementsData}
+          onLinkToApi={apiSync.onLinkToApi}
+          onUnlinkFromApi={apiSync.onUnlinkFromApi}
+          onConvertToBudgetItem={apiSync.onConvertToBudgetItem}
+          onPushPreview={apiSync.onPushPreview}
+          callbacksRef={fundCallbacksRef}
+          showNewFund={showNewFund}
+          setShowNewFund={setShowNewFund}
+          newFund={newFund}
+          setNewFund={setNewFund}
+          createGoalMutate={(params, options) =>
+            createGoal.mutate(params, options)
+          }
+          createGoalPending={createGoal.isPending}
         />
-      </section>
-
-      {/* ── Fund Details ── */}
-      <FundManagementSection
-        rawGoals={rawGoals}
-        goalProjections={goalProjections}
-        savings={savings}
-        plannedTransactions={plannedTransactions}
-        allocationOverrides={allocationOverrides}
-        monthDates={monthDates}
-        totalMonthlyAllocation={totalMonthlyAllocation}
-        maxMonthlyFunding={maxMonthlyFunding}
-        goalById={goalById}
-        childGoalsByParent={childGoalsByParent}
-        apiBalanceMap={apiBalanceMap}
-        canEdit={canEdit}
-        onEditMonth={setEditingMonth}
-        onDeleteOverride={apiSync.onDeleteOverride}
-        efund={efund}
-        budgetTierLabels={budgetTierLabels}
-        efundTierIndex={efundTierIndex}
-        onEfundTierChange={setEfundBudgetColumn}
-        reimbursementsData={reimbursementsData}
-        onLinkToApi={apiSync.onLinkToApi}
-        onUnlinkFromApi={apiSync.onUnlinkFromApi}
-        onConvertToBudgetItem={apiSync.onConvertToBudgetItem}
-        onPushPreview={apiSync.onPushPreview}
-        callbacksRef={fundCallbacksRef}
-        showNewFund={showNewFund}
-        setShowNewFund={setShowNewFund}
-        newFund={newFund}
-        setNewFund={setNewFund}
-        createGoalMutate={(params, options) =>
-          createGoal.mutate(params, options)
-        }
-        createGoalPending={createGoal.isPending}
-      />
+      </CardBoundary>
 
       {/* ── Long-term Investments ── */}
-      <section>
-        <BrokerageGoalsSection />
-      </section>
+      <CardBoundary title="Long-term Investments">
+        <section>
+          <BrokerageGoalsSection />
+        </section>
+      </CardBoundary>
 
       {/* ── API Sync Modals ── */}
       <ApiSyncSection

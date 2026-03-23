@@ -19,7 +19,10 @@ const demoSlugSchema = z
   .string()
   .min(1)
   .max(MAX_SLUG_LENGTH)
-  .regex(DEMO_SLUG_REGEX, "Slug must be lowercase alphanumeric with hyphens only");
+  .regex(
+    DEMO_SLUG_REGEX,
+    "Slug must be lowercase alphanumeric with hyphens only",
+  );
 
 /**
  * Escape a SQL identifier (schema/table/sequence name) to prevent injection.
@@ -268,7 +271,8 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
       employerContributions: ap.employerContributions,
       fees: ap.fees,
       parentCategory: perfId
-        ? (perfRows.find((p) => p.id === perfId)?.parentCategory ?? ap.parentCategory)
+        ? (perfRows.find((p) => p.id === perfId)?.parentCategory ??
+          ap.parentCategory)
         : ap.parentCategory,
       performanceAccountId: perfId,
     });
@@ -353,7 +357,9 @@ export const demoRouter = createTRPCRouter({
     .input(z.object({ slug: demoSlugSchema }))
     .mutation(async ({ input }) => {
       if (!isPostgres()) {
-        throw new Error("Demo mode requires PostgreSQL (uses PG schemas for isolation)");
+        throw new Error(
+          "Demo mode requires PostgreSQL (uses PG schemas for isolation)",
+        );
       }
 
       const profile = DEMO_PROFILES[input.slug];
@@ -377,6 +383,7 @@ export const demoRouter = createTRPCRouter({
         }
 
         const { drizzle } = await import("drizzle-orm/node-postgres");
+        // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM type limitation
         const cdb = drizzle(client, { schema }) as unknown as typeof appDb;
 
         // Create schema if not exists

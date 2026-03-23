@@ -65,7 +65,7 @@ const EDITABLE_FIELDS = new Set([
 export default function HistoricalPage() {
   const [showJobHistory, setShowJobHistory] = useState(false);
   const [hiddenGroups, setHiddenGroups] = useState<Set<ColumnGroup>>(new Set());
-  const { data, isLoading, error } = trpc.historical.getSummary.useQuery();
+  const { data, isLoading, error } = trpc.historical.computeSummary.useQuery();
   const utils = trpc.useUtils();
 
   const invalidateAll = () => {

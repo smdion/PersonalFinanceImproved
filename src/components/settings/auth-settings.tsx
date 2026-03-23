@@ -5,26 +5,21 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 
 export function AuthSettings() {
-  const [testResult, setTestResult] = useState<{
-    configured: boolean;
-    reachable: boolean;
-    issuer: string | null;
-  } | null>(null);
-  const [testing, setTesting] = useState(false);
+  const [shouldTest, setShouldTest] = useState(false);
 
   const testConnection = trpc.settings.testOidcConnection.useQuery(undefined, {
-    enabled: false,
+    enabled: shouldTest,
   });
 
-  const handleTest = async () => {
-    setTesting(true);
-    try {
-      const result = await testConnection.refetch();
-      setTestResult(result.data ?? null);
-    } catch {
-      setTestResult({ configured: false, reachable: false, issuer: null });
+  const testResult = testConnection.data ?? null;
+  const testing = testConnection.isFetching;
+
+  const handleTest = () => {
+    if (shouldTest) {
+      testConnection.refetch();
+    } else {
+      setShouldTest(true);
     }
-    setTesting(false);
   };
 
   const envVars = [
@@ -104,9 +99,7 @@ export function AuthSettings() {
 
       {/* Local Admin Info */}
       <section>
-        <h3 className="text-lg font-semibold text-primary mb-1">
-          Local Admin
-        </h3>
+        <h3 className="text-lg font-semibold text-primary mb-1">Local Admin</h3>
         <p className="text-sm text-muted">
           A local admin account was created during onboarding. This account
           serves as a fallback login method when Authentik is unavailable.

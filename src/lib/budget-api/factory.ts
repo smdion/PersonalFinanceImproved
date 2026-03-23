@@ -62,6 +62,7 @@ export async function getClientForService(
   }
 
   if (service === "actual") {
+    // eslint-disable-next-line no-restricted-syntax -- type narrowing for untyped API response
     const actualConfig = config as unknown as ActualConfig;
     if (
       !actualConfig.serverUrl ||

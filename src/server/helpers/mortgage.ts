@@ -8,7 +8,7 @@ import type {
   MortgageExtraPayment,
 } from "@/lib/calculators/types";
 import { MAX_EXTRA_PAYMENTS } from "@/lib/constants";
-import { num } from "./transforms";
+import { toNumber } from "./transforms";
 
 /**
  * Build mortgage inputs from DB rows and compute current balance via amortization.
@@ -21,15 +21,15 @@ export function buildMortgageInputs(
   const loanInputs: MortgageLoanInput[] = mortgageLoans.map((l) => ({
     id: l.id,
     name: l.name,
-    originalBalance: num(l.originalLoanAmount),
-    interestRate: num(l.interestRate),
+    originalBalance: toNumber(l.originalLoanAmount),
+    interestRate: toNumber(l.interestRate),
     termMonths: l.termYears * 12,
     startDate: new Date(l.firstPaymentDate),
-    monthlyPI: num(l.principalAndInterest),
+    monthlyPI: toNumber(l.principalAndInterest),
     refinancedFromId: l.refinancedFromId ?? undefined,
     isActive: l.isActive,
     paidOffDate: l.paidOffDate ? new Date(l.paidOffDate) : undefined,
-    apiBalance: l.apiBalance ? num(l.apiBalance) : undefined,
+    apiBalance: l.apiBalance ? toNumber(l.apiBalance) : undefined,
     apiBalanceDate: l.apiBalanceDate ? new Date(l.apiBalanceDate) : undefined,
   }));
 
@@ -39,7 +39,7 @@ export function buildMortgageInputs(
       extras.push({
         loanId: ep.loanId,
         date: new Date(ep.paymentDate),
-        amount: num(ep.amount),
+        amount: toNumber(ep.amount),
       });
     } else if (ep.startDate && ep.endDate) {
       const start = new Date(ep.startDate);
@@ -51,7 +51,7 @@ export function buildMortgageInputs(
         extras.push({
           loanId: ep.loanId,
           date: new Date(current),
-          amount: num(ep.amount),
+          amount: toNumber(ep.amount),
         });
         current.setMonth(current.getMonth() + 1);
         count++;

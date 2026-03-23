@@ -22,9 +22,7 @@ export function DebugSettings() {
     },
   });
 
-  const { data } = trpc.settings.getDataFreshness.useQuery(undefined, {
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data } = trpc.settings.getDataFreshness.useQuery();
 
   const updateMut = trpc.settings.updateDataFreshness.useMutation({
     onSuccess: () => utils.settings.getDataFreshness.invalidate(),
@@ -154,7 +152,8 @@ export function DebugSettings() {
               settings are preserved. This cannot be undone.
             </p>
             <p className="text-xs text-muted">
-              Type <span className="font-mono font-bold">delete</span> to confirm:
+              Type <span className="font-mono font-bold">delete</span> to
+              confirm:
             </p>
             <input
               type="text"
@@ -167,7 +166,9 @@ export function DebugSettings() {
             <div className="flex gap-2">
               <button
                 onClick={() => resetMut.mutate({ confirmation: "delete" })}
-                disabled={resetText !== "delete" || resetMut.isPending || !admin}
+                disabled={
+                  resetText !== "delete" || resetMut.isPending || !admin
+                }
                 className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 {resetMut.isPending ? "Clearing..." : "Clear All Data"}

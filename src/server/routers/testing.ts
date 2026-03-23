@@ -29,7 +29,10 @@ export const testingRouter = createTRPCRouter({
   runTests: adminProcedure
     .input(
       z.object({
-        fileFilter: z.string().optional(),
+        fileFilter: z
+          .string()
+          .regex(/^[a-zA-Z0-9\-_.*\/]+$/, "Invalid filter pattern")
+          .optional(),
       }),
     )
     .mutation(async ({ input }): Promise<RunTestsOutput> => {
@@ -62,8 +65,7 @@ export const testingRouter = createTRPCRouter({
           }
         }
 
-        const message =
-          err instanceof Error ? err.message : String(err);
+        const message = err instanceof Error ? err.message : String(err);
         return {
           success: false,
           numTests: 0,

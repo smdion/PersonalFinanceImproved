@@ -61,10 +61,13 @@ export function useProjectionState(props: UseProjectionStateProps) {
       if (form.accumForm.contributionRate !== "")
         o.contributionRate = parseFloat(form.accumForm.contributionRate) / 100;
       if (form.accumForm.routingMode !== "")
-        o.routingMode = form.accumForm.routingMode as "waterfall" | "percentage";
+        o.routingMode = form.accumForm.routingMode as
+          | "waterfall"
+          | "percentage";
       const defaultOrder = getDefaultAccumulationOrder();
       if (
-        JSON.stringify(form.accumForm.accountOrder) !== JSON.stringify(defaultOrder)
+        form.accumForm.accountOrder.length !== defaultOrder.length ||
+        form.accumForm.accountOrder.some((v, i) => v !== defaultOrder[i])
       )
         o.accountOrder = form.accumForm.accountOrder;
       const splits: Record<AccountCategory, number> = buildCategoryRecord(
@@ -105,7 +108,9 @@ export function useProjectionState(props: UseProjectionStateProps) {
         .map((e) => ({
           amount: parseFloat(e.amount),
           targetAccount: e.targetAccount,
-          ...(e.taxType !== "" ? { taxType: e.taxType as "traditional" | "roth" } : {}),
+          ...(e.taxType !== ""
+            ? { taxType: e.taxType as "traditional" | "roth" }
+            : {}),
           ...(e.label ? { label: e.label } : {}),
         }));
       if (ls.length > 0) o.lumpSums = ls;
@@ -122,7 +127,14 @@ export function useProjectionState(props: UseProjectionStateProps) {
       personName: form.isPersonFiltered ? derived.personFilterName : "",
     });
     form.setShowAccumForm(false);
-  }, [form.accumForm, form.isPersonFiltered, derived.personFilterName, form.setAccumOverrides, form.setAccumForm, form.setShowAccumForm]);
+  }, [
+    form.accumForm,
+    form.isPersonFiltered,
+    derived.personFilterName,
+    form.setAccumOverrides,
+    form.setAccumForm,
+    form.setShowAccumForm,
+  ]);
 
   const handleAddDecumOverride = useCallback(() => {
     const year = parseInt(form.decumForm.year);
@@ -139,8 +151,8 @@ export function useProjectionState(props: UseProjectionStateProps) {
         o.withdrawalRoutingMode = form.decumForm.withdrawalRoutingMode;
       const defaultOrder = getDefaultDecumulationOrder();
       if (
-        JSON.stringify(form.decumForm.withdrawalOrder) !==
-        JSON.stringify(defaultOrder)
+        form.decumForm.withdrawalOrder.length !== defaultOrder.length ||
+        form.decumForm.withdrawalOrder.some((v, i) => v !== defaultOrder[i])
       )
         o.withdrawalOrder = form.decumForm.withdrawalOrder;
       const wsplits: Record<AccountCategory, number> = buildCategoryRecord(
@@ -183,14 +195,18 @@ export function useProjectionState(props: UseProjectionStateProps) {
         ttc.roth = parseFloat(form.decumForm.withdrawalTaxTypeCaps.roth);
       if (Object.keys(ttc).length > 0) o.withdrawalTaxTypeCaps = ttc;
       if (form.decumForm.rothConversionTarget !== "") {
-        o.rothConversionTarget = parseFloat(form.decumForm.rothConversionTarget);
+        o.rothConversionTarget = parseFloat(
+          form.decumForm.rothConversionTarget,
+        );
       }
       const ls = form.decumForm.lumpSums
         .filter((e) => e.amount !== "" && parseFloat(e.amount) > 0)
         .map((e) => ({
           amount: parseFloat(e.amount),
           targetAccount: e.targetAccount,
-          ...(e.taxType !== "" ? { taxType: e.taxType as "traditional" | "roth" } : {}),
+          ...(e.taxType !== ""
+            ? { taxType: e.taxType as "traditional" | "roth" }
+            : {}),
           ...(e.label ? { label: e.label } : {}),
         }));
       if (ls.length > 0) o.lumpSums = ls;
@@ -207,7 +223,14 @@ export function useProjectionState(props: UseProjectionStateProps) {
       personName: form.isPersonFiltered ? derived.personFilterName : "",
     });
     form.setShowDecumForm(false);
-  }, [form.decumForm, form.isPersonFiltered, derived.personFilterName, form.setDecumOverrides, form.setDecumForm, form.setShowDecumForm]);
+  }, [
+    form.decumForm,
+    form.isPersonFiltered,
+    derived.personFilterName,
+    form.setDecumOverrides,
+    form.setDecumForm,
+    form.setShowDecumForm,
+  ]);
 
   // Flat return — preserves the existing API surface for all consumers
   return {

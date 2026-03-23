@@ -7,7 +7,7 @@
  *
  *   export default async function Page() {
  *     const helpers = await createServerHelpers();
- *     await helpers.networth.getSummary.prefetch();
+ *     await helpers.networth.computeSummary.prefetch();
  *     return (
  *       <HydrationProvider dehydratedState={helpers.dehydrate()}>
  *         <ClientPage />

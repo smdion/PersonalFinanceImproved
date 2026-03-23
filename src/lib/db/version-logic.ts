@@ -18,7 +18,7 @@ import { sql, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
 import { isPostgres } from "./dialect";
-import { truncateTables, resetSequences, jsonbLiteral, validateColumns } from "./compat";
+import { truncateTables, resetSequences, validateColumns } from "./compat";
 import { VERSION_TABLE_NAMES, VERSION_TABLES } from "./version-tables";
 import { log } from "@/lib/logger";
 
@@ -73,14 +73,15 @@ export async function createVersion(
 ): Promise<VersionResult> {
   // Read all tables + write version in a single transaction for consistency
   const result = await database.transaction(async (tx) => {
-    const tableData: { tableName: string; rows: unknown[]; rowCount: number }[] =
-      [];
+    const tableData: {
+      tableName: string;
+      rows: unknown[];
+      rowCount: number;
+    }[] = [];
 
     for (const tableName of VERSION_TABLE_NAMES) {
       try {
-        const rows = await tx.execute(
-          sql.raw(`SELECT * FROM "${tableName}"`),
-        );
+        const rows = await tx.execute(sql.raw(`SELECT * FROM "${tableName}"`));
         tableData.push({
           tableName,
           rows: rows.rows as unknown[],
@@ -165,8 +166,10 @@ async function cleanupAutoVersions(database: NodePgDatabase<typeof schema>) {
           .where(eq(schema.stateVersions.id, v.id));
       }
     }
-  } catch {
-    // Cleanup failures are non-critical
+  } catch (err) {
+    log("warn", "cleanup_auto_versions_failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 }
 
@@ -231,19 +234,18 @@ export async function restoreVersion(
         const valueClauses = batch.map((row) => {
           const values = columns.map((col) => {
             const val = row[col];
-            if (val === null || val === undefined) return "NULL";
-            if (typeof val === "boolean") return val ? "TRUE" : "FALSE";
-            if (typeof val === "number") return String(val);
-            if (typeof val === "object")
-              return jsonbLiteral(val);
-            return `'${String(val).replace(/'/g, "''")}'`;
+            if (val === null || val === undefined) return sql`NULL`;
+            if (typeof val === "boolean") return val ? sql`TRUE` : sql`FALSE`;
+            if (typeof val === "object") {
+              const jsonStr = JSON.stringify(val);
+              return isPostgres() ? sql`${jsonStr}::jsonb` : sql`${jsonStr}`;
+            }
+            return sql`${val}`;
           });
-          return `(${values.join(", ")})`;
+          return sql`(${sql.join(values, sql.raw(", "))})`;
         });
         await tx.execute(
-          sql.raw(
-            `INSERT INTO "${tableEntry.name}" (${colList}) VALUES ${valueClauses.join(", ")}`,
-          ),
+          sql`INSERT INTO ${sql.raw(`"${tableEntry.name}"`)} (${sql.raw(colList)}) VALUES ${sql.join(valueClauses, sql.raw(", "))}`,
         );
         restoredRows += batch.length;
       }
@@ -334,7 +336,10 @@ async function importBackupPg(
   // Use a dedicated connection so TRUNCATE, SET session_replication_role,
   // and all INSERTs run on the same connection in a single transaction.
   const { pool } = await import("./index");
-  if (!pool) throw new Error("PG pool not available — importBackupPg requires PostgreSQL");
+  if (!pool)
+    throw new Error(
+      "PG pool not available — importBackupPg requires PostgreSQL",
+    );
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -355,7 +360,10 @@ async function importBackupPg(
          WHERE table_schema = 'public' AND table_name = $1 AND data_type = 'jsonb'`,
         [t.name],
       );
-      jsonbCols.set(t.name, new Set(colRows.map((r: { column_name: string }) => r.column_name)));
+      jsonbCols.set(
+        t.name,
+        new Set(colRows.map((r: { column_name: string }) => r.column_name)),
+      );
     }
 
     for (const tableEntry of sortedTables) {
@@ -409,7 +417,10 @@ async function importBackupPg(
         recordId: 0,
         fieldName: "import",
         oldValue: null,
-        newValue: { action: "import", exportedAt: backup.exportedAt } as unknown,
+        newValue: {
+          action: "import",
+          exportedAt: backup.exportedAt,
+        } as unknown,
         changedBy: "system",
       });
     } catch {
@@ -419,7 +430,9 @@ async function importBackupPg(
     return { restoredTables: sortedTables.length, restoredRows };
   } catch (err) {
     await client.query("ROLLBACK").catch(() => {});
-    await client.query("SET session_replication_role = 'origin'").catch(() => {});
+    await client
+      .query("SET session_replication_role = 'origin'")
+      .catch(() => {});
     throw err;
   } finally {
     client.release();
@@ -450,18 +463,18 @@ async function importBackupSqlite(
         const valueClauses = batch.map((row) => {
           const values = columns.map((col) => {
             const val = row[col];
-            if (val === null || val === undefined) return "NULL";
-            if (typeof val === "boolean") return val ? "1" : "0";
-            if (typeof val === "number") return String(val);
-            if (typeof val === "object") return jsonbLiteral(val);
-            return `'${String(val).replace(/'/g, "''")}'`;
+            if (val === null || val === undefined) return sql`NULL`;
+            if (typeof val === "boolean") return val ? sql`TRUE` : sql`FALSE`;
+            if (typeof val === "object") {
+              const jsonStr = JSON.stringify(val);
+              return isPostgres() ? sql`${jsonStr}::jsonb` : sql`${jsonStr}`;
+            }
+            return sql`${val}`;
           });
-          return `(${values.join(", ")})`;
+          return sql`(${sql.join(values, sql.raw(", "))})`;
         });
         await tx.execute(
-          sql.raw(
-            `INSERT INTO "${tableEntry.name}" (${colList}) VALUES ${valueClauses.join(", ")}`,
-          ),
+          sql`INSERT INTO ${sql.raw(`"${tableEntry.name}"`)} (${sql.raw(colList)}) VALUES ${sql.join(valueClauses, sql.raw(", "))}`,
         );
         restoredRows += batch.length;
       }
@@ -474,7 +487,10 @@ async function importBackupSqlite(
         recordId: 0,
         fieldName: "import",
         oldValue: null,
-        newValue: { action: "import", exportedAt: backup.exportedAt } as unknown,
+        newValue: {
+          action: "import",
+          exportedAt: backup.exportedAt,
+        } as unknown,
         changedBy: "system",
       });
     } catch {

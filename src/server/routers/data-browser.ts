@@ -102,14 +102,12 @@ export const dataBrowserRouter = createTRPCRouter({
       assertKnownTable(input.tableName);
 
       const countRes = await ctx.db.execute<{ count: string | number }>(
-        sql.raw(`SELECT COUNT(*) AS count FROM "${input.tableName}"`),
+        sql`SELECT COUNT(*) AS count FROM ${sql.raw(`"${input.tableName}"`)}`,
       );
       const totalCount = Number(countRes.rows[0]?.count ?? 0);
 
       const rowsRes = await ctx.db.execute(
-        sql.raw(
-          `SELECT * FROM "${input.tableName}" ORDER BY 1 LIMIT ${input.limit} OFFSET ${input.offset}`,
-        ),
+        sql`SELECT * FROM ${sql.raw(`"${input.tableName}"`)} ORDER BY 1 LIMIT ${input.limit} OFFSET ${input.offset}`,
       );
 
       return {
@@ -125,7 +123,7 @@ export const dataBrowserRouter = createTRPCRouter({
       assertKnownTable(input.tableName);
 
       const res = await ctx.db.execute(
-        sql.raw(`SELECT * FROM "${input.tableName}" ORDER BY 1`),
+        sql`SELECT * FROM ${sql.raw(`"${input.tableName}"`)} ORDER BY 1`,
       );
       return res.rows as Record<string, unknown>[];
     }),

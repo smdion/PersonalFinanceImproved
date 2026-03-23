@@ -10,7 +10,8 @@ import {
 import * as schema from "@/lib/db/schema";
 import { calculateSavings } from "@/lib/calculators/savings";
 import { calculateEFund } from "@/lib/calculators/efund";
-import { num, computeBudgetAnnualTotal } from "@/server/helpers";
+import { toNumber, computeBudgetAnnualTotal } from "@/server/helpers";
+import { log } from "@/lib/logger";
 import type { SavingsInput, EFundInput } from "@/lib/calculators/types";
 import {
   getActiveBudgetApi,
@@ -73,7 +74,7 @@ async function getEfundReimbursementGoalTarget(
 }
 
 export const savingsRouter = createTRPCRouter({
-  getSummary: protectedProcedure
+  computeSummary: protectedProcedure
     .input(z.object({ budgetTierOverride: z.number().optional() }).optional())
     .query(async ({ ctx, input }) => {
       const [
@@ -136,7 +137,10 @@ export const savingsRouter = createTRPCRouter({
               AND goal_id IN (${inList})
             `);
         for (const row of latestBalances.rows) {
-          balanceMap.set(row.goal_id as number, num(row.balance as string));
+          balanceMap.set(
+            row.goal_id as number,
+            toNumber(row.balance as string),
+          );
         }
       }
 
@@ -215,7 +219,10 @@ export const savingsRouter = createTRPCRouter({
       if (efundGoal) {
         const outstandingLoans = selfLoans
           .filter((l) => l.fromGoalId === efundGoal.id)
-          .reduce((s, l) => s + (num(l.amount) - num(l.repaidAmount)), 0);
+          .reduce(
+            (s, l) => s + (toNumber(l.amount) - toNumber(l.repaidAmount)),
+            0,
+          );
 
         // The reimbursement category's goalTarget represents money owed back
         // to the e-fund (self-loan tracked in YNAB). Add it to outstanding loans.
@@ -236,18 +243,18 @@ export const savingsRouter = createTRPCRouter({
 
       // Calculate total monthly contributions for the pool
       const totalMonthlyPool = activeGoals.reduce(
-        (s, g) => s + num(g.monthlyContribution),
+        (s, g) => s + toNumber(g.monthlyContribution),
         0,
       );
 
       const savingsInput: SavingsInput = {
         goals: activeGoals.map((g) => {
-          const monthlyContrib = num(g.monthlyContribution);
+          const monthlyContrib = toNumber(g.monthlyContribution);
           // E-fund target is derived from calculator (targetMonths × essential expenses)
           const targetBalance =
             g.isEmergencyFund && efundResult
               ? efundResult.targetAmount
-              : num(g.targetAmount);
+              : toNumber(g.targetAmount);
           return {
             id: g.id,
             name: g.name,
@@ -271,7 +278,7 @@ export const savingsRouter = createTRPCRouter({
         id: t.id,
         goalId: t.goalId,
         transactionDate: t.transactionDate,
-        amount: num(t.amount),
+        amount: toNumber(t.amount),
         description: t.description,
         isRecurring: t.isRecurring,
         recurrenceMonths: t.recurrenceMonths,
@@ -283,7 +290,7 @@ export const savingsRouter = createTRPCRouter({
         id: o.id,
         goalId: o.goalId,
         monthDate: o.monthDate,
-        amount: num(o.amount),
+        amount: toNumber(o.amount),
       }));
 
       return {
@@ -762,16 +769,16 @@ export const savingsRouter = createTRPCRouter({
 
       let pushed = 0;
       for (const goal of toPush) {
-        const monthly = num(goal.monthlyContribution);
+        const monthly = toNumber(goal.monthlyContribution);
         if (monthly > 0) {
           try {
-            await client.updateCategoryGoalTarget(
-              goal.apiCategoryId!,
-              monthly,
-            );
+            await client.updateCategoryGoalTarget(goal.apiCategoryId!, monthly);
             pushed++;
-          } catch {
-            // Skip goals that fail (e.g., category deleted in API)
+          } catch (err) {
+            log("warn", "push_goal_target_failed", {
+              goalId: goal.id,
+              error: err instanceof Error ? err.message : String(err),
+            });
           }
         }
       }

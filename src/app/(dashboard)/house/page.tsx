@@ -22,9 +22,9 @@ function SyncBadge({ source }: { source: string }) {
 
 export default function HousePage() {
   const { data: assetData, isLoading: assetsLoading } =
-    trpc.assets.getSummary.useQuery();
+    trpc.assets.computeSummary.useQuery();
   const { data: mortgageData, isLoading: mortgageLoading } =
-    trpc.mortgage.getActiveSummary.useQuery();
+    trpc.mortgage.computeActiveSummary.useQuery();
   const { data: propTaxes, isLoading: taxesLoading } =
     trpc.assets.listPropertyTaxes.useQuery();
   const utils = trpc.useUtils();
@@ -390,7 +390,10 @@ export default function HousePage() {
             <tbody>
               {propTaxes.map((pt) =>
                 editingTax === pt.id ? (
-                  <tr key={pt.id} className="border-b border-subtle bg-blue-50/30">
+                  <tr
+                    key={pt.id}
+                    className="border-b border-subtle bg-blue-50/30"
+                  >
                     <td className="py-1.5 font-medium">{pt.year}</td>
                     <td className="py-1.5 text-right">
                       <input
@@ -428,7 +431,9 @@ export default function HousePage() {
                             upsertTaxMutation.mutate({
                               loanId,
                               year: pt.year,
-                              assessedValue: editTaxAssessed ? Number(editTaxAssessed) : null,
+                              assessedValue: editTaxAssessed
+                                ? Number(editTaxAssessed)
+                                : null,
                               taxAmount: Number(editTaxAmount),
                               note: editTaxNote || null,
                             });
@@ -447,55 +452,62 @@ export default function HousePage() {
                     </td>
                   </tr>
                 ) : (
-                <tr
-                  key={pt.id}
-                  className="group border-b border-subtle hover:bg-surface-sunken cursor-pointer"
-                  onClick={() => {
-                    setEditingTax(pt.id);
-                    setEditTaxAssessed(pt.assessedValue != null ? String(pt.assessedValue) : "");
-                    setEditTaxAmount(String(pt.taxAmount));
-                    setEditTaxNote(pt.note ?? "");
-                  }}
-                >
-                  <td className="py-1.5 font-medium">{pt.year}</td>
-                  <td className="py-1.5 text-right tabular-nums">
-                    {pt.assessedValue != null
-                      ? formatCurrency(pt.assessedValue)
-                      : "—"}
-                  </td>
-                  <td className="py-1.5 text-right tabular-nums font-medium">
-                    {formatCurrency(pt.taxAmount)}
-                  </td>
-                  <td className="py-1.5 text-right tabular-nums text-muted">
-                    {pt.assessedValue != null && pt.assessedValue > 0
-                      ? formatPercent(pt.taxAmount / pt.assessedValue, 2)
-                      : "—"}
-                  </td>
-                  <td className="py-1.5 text-muted text-xs truncate max-w-[120px]">
-                    {pt.note ?? ""}
-                  </td>
-                  <td className="py-1.5">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); deleteTaxMutation.mutate({ id: pt.id }); }}
-                      className="opacity-0 group-hover:opacity-100 p-0.5 text-faint hover:text-red-600 transition-all"
-                      title="Delete"
-                    >
-                      <svg
-                        className="w-3.5 h-3.5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
+                  <tr
+                    key={pt.id}
+                    className="group border-b border-subtle hover:bg-surface-sunken cursor-pointer"
+                    onClick={() => {
+                      setEditingTax(pt.id);
+                      setEditTaxAssessed(
+                        pt.assessedValue != null
+                          ? String(pt.assessedValue)
+                          : "",
+                      );
+                      setEditTaxAmount(String(pt.taxAmount));
+                      setEditTaxNote(pt.note ?? "");
+                    }}
+                  >
+                    <td className="py-1.5 font-medium">{pt.year}</td>
+                    <td className="py-1.5 text-right tabular-nums">
+                      {pt.assessedValue != null
+                        ? formatCurrency(pt.assessedValue)
+                        : "—"}
+                    </td>
+                    <td className="py-1.5 text-right tabular-nums font-medium">
+                      {formatCurrency(pt.taxAmount)}
+                    </td>
+                    <td className="py-1.5 text-right tabular-nums text-muted">
+                      {pt.assessedValue != null && pt.assessedValue > 0
+                        ? formatPercent(pt.taxAmount / pt.assessedValue, 2)
+                        : "—"}
+                    </td>
+                    <td className="py-1.5 text-muted text-xs truncate max-w-[120px]">
+                      {pt.note ?? ""}
+                    </td>
+                    <td className="py-1.5">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteTaxMutation.mutate({ id: pt.id });
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-0.5 text-faint hover:text-red-600 transition-all"
+                        title="Delete"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                    </button>
-                  </td>
-                </tr>
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
                 ),
               )}
             </tbody>
@@ -616,48 +628,51 @@ export default function HousePage() {
                       </button>
                     </div>
                   ) : (
-                  <div
-                    key={hi.id}
-                    className="group flex justify-between items-center py-1 border-b border-subtle pl-3 cursor-pointer"
-                    onClick={() => {
-                      setEditingHI(hi.id);
-                      setEditHIDesc(hi.description);
-                      setEditHICost(String(hi.cost));
-                    }}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <span className="text-muted">{hi.description}</span>
-                      {hi.note && (
-                        <p className="text-[10px] text-faint truncate">
-                          {hi.note}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="font-medium">
-                        {formatCurrency(hi.cost)}
-                      </span>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); deleteHIMutation.mutate({ id: hi.id }); }}
-                        className="opacity-0 group-hover:opacity-100 p-0.5 text-faint hover:text-red-600 transition-all"
-                        title="Delete"
-                      >
-                        <svg
-                          className="w-3.5 h-3.5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
+                    <div
+                      key={hi.id}
+                      className="group flex justify-between items-center py-1 border-b border-subtle pl-3 cursor-pointer"
+                      onClick={() => {
+                        setEditingHI(hi.id);
+                        setEditHIDesc(hi.description);
+                        setEditHICost(String(hi.cost));
+                      }}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <span className="text-muted">{hi.description}</span>
+                        {hi.note && (
+                          <p className="text-[10px] text-faint truncate">
+                            {hi.note}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium">
+                          {formatCurrency(hi.cost)}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteHIMutation.mutate({ id: hi.id });
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 text-faint hover:text-red-600 transition-all"
+                          title="Delete"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
+                          <svg
+                            className="w-3.5 h-3.5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
-                  </div>
                   ),
                 )}
               </div>

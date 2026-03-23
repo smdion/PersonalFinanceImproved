@@ -1,6 +1,8 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Card } from "@/components/ui/card";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 
 export function LoadingCard({ title }: { title: string }) {
   return (
@@ -24,5 +26,24 @@ export function ErrorCard({
     <Card title={title}>
       <p className="text-sm text-red-500">{message}</p>
     </Card>
+  );
+}
+
+/** Wrap a card/section in an error boundary with a fallback error card. */
+export function CardBoundary({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <ErrorBoundary
+      fallback={
+        <ErrorCard title={title} message="This card encountered an error" />
+      }
+    >
+      {children}
+    </ErrorBoundary>
   );
 }

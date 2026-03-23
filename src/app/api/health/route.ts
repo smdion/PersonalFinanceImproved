@@ -16,6 +16,7 @@ export async function GET() {
     if (isPostgres()) {
       await db.execute(sql`SELECT 1`);
     } else {
+      // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM type limitation
       (db as unknown as { all: (q: unknown) => unknown }).all(sql`SELECT 1`);
     }
     status.database = "connected";

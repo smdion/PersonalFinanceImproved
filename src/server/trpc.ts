@@ -69,7 +69,8 @@ if (
   process.env.ALLOW_DEV_MODE === "true"
 ) {
   log("warn", "security_dev_mode_in_prod", {
-    message: "ALLOW_DEV_MODE=true is ignored in production. Remove it from your environment.",
+    message:
+      "ALLOW_DEV_MODE=true is ignored in production. Remove it from your environment.",
   });
 }
 
@@ -147,6 +148,7 @@ const demoSchemaMiddleware = t.middleware(async ({ ctx, next }) => {
   try {
     await client.query(`SET search_path TO ${quotedSchema}, public`);
     const { drizzle: pgDrizzle } = await import("drizzle-orm/node-postgres");
+    // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM type limitation
     const demoDb = pgDrizzle(client, { schema }) as unknown as typeof db;
     return await next({ ctx: { ...ctx, db: demoDb } });
   } finally {
@@ -169,7 +171,10 @@ const demoOnlyGuard = t.middleware(async ({ ctx, next, type, path }) => {
 // ── Rate-limit helpers ──
 
 const RATE_LIMIT_PUBLIC = { maxRequests: 60, windowMs: 60_000 } as const;
-const RATE_LIMIT_AUTHENTICATED = { maxRequests: 200, windowMs: 60_000 } as const;
+const RATE_LIMIT_AUTHENTICATED = {
+  maxRequests: 200,
+  windowMs: 60_000,
+} as const;
 
 async function getRateLimitKey(): Promise<string> {
   try {
@@ -222,6 +227,29 @@ const authenticatedRateLimitMiddleware = t.middleware(async ({ ctx, next }) => {
   return next({ ctx });
 });
 
+/** Rate limit for expensive operations (Monte Carlo, full sync) — 5 per minute per user. */
+const RATE_LIMIT_EXPENSIVE = { maxRequests: 5, windowMs: 60_000 } as const;
+
+export const expensiveRateLimitMiddleware = t.middleware(
+  async ({ ctx, next, path }) => {
+    const key = ctx.session?.user?.id
+      ? `expensive:${ctx.session.user.id}:${path}`
+      : `expensive:${await getRateLimitKey()}:${path}`;
+    const { success } = rateLimit(
+      key,
+      RATE_LIMIT_EXPENSIVE.maxRequests,
+      RATE_LIMIT_EXPENSIVE.windowMs,
+    );
+    if (!success) {
+      throw new TRPCError({
+        code: "TOO_MANY_REQUESTS",
+        message: "This operation is rate-limited. Please wait before retrying.",
+      });
+    }
+    return next({ ctx });
+  },
+);
+
 // ── Error logging middleware ──
 // Logs unexpected errors (not UNAUTHORIZED/FORBIDDEN/NOT_FOUND) so they're
 // visible in container logs instead of silently returning to the client.
@@ -230,7 +258,13 @@ const errorLoggingMiddleware = t.middleware(async ({ next, path, type }) => {
   if (!result.ok) {
     const err = result.error;
     // Skip expected auth/permission/validation errors — only log server-side problems
-    const skipCodes = new Set(["UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND", "BAD_REQUEST", "TOO_MANY_REQUESTS"]);
+    const skipCodes = new Set([
+      "UNAUTHORIZED",
+      "FORBIDDEN",
+      "NOT_FOUND",
+      "BAD_REQUEST",
+      "TOO_MANY_REQUESTS",
+    ]);
     if (!skipCodes.has(err.code)) {
       log("error", "trpc_error", {
         path,
@@ -245,7 +279,10 @@ const errorLoggingMiddleware = t.middleware(async ({ next, path, type }) => {
 });
 
 // Base procedure with error logging, demo schema support + demo-only guard
-const baseProcedure = t.procedure.use(errorLoggingMiddleware).use(demoOnlyGuard).use(demoSchemaMiddleware);
+const baseProcedure = t.procedure
+  .use(errorLoggingMiddleware)
+  .use(demoOnlyGuard)
+  .use(demoSchemaMiddleware);
 
 // ── Procedures ──
 

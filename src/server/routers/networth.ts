@@ -6,7 +6,7 @@ import * as schema from "@/lib/db/schema";
 import { calculateNetWorth } from "@/lib/calculators/net-worth";
 import { accountDisplayName } from "@/lib/utils/format";
 import {
-  num,
+  toNumber,
   getSalariesForJobs,
   getAnnualExpensesFromBudget,
   computeMortgageBalance,
@@ -24,7 +24,7 @@ import { getAge } from "@/lib/utils/date";
 import type { NetWorthInput } from "@/lib/calculators/types";
 
 export const networthRouter = createTRPCRouter({
-  getSummary: protectedProcedure.query(async ({ ctx }) => {
+  computeSummary: protectedProcedure.query(async ({ ctx }) => {
     const [
       people,
       allJobs,
@@ -160,13 +160,13 @@ export const networthRouter = createTRPCRouter({
     const activeLoans = mortgageLoans.filter((m) => m.isActive);
     const activeMortgage = activeLoans[0];
     const homeValueEstimated = activeMortgage
-      ? num(
+      ? toNumber(
           activeMortgage.propertyValueEstimated ??
             activeMortgage.propertyValuePurchase,
         )
       : 0;
     const homeValuePurchase = activeMortgage
-      ? num(activeMortgage.propertyValuePurchase)
+      ? toNumber(activeMortgage.propertyValuePurchase)
       : 0;
     const homeValueConservative = homeValuePurchase + homeImprovements;
 
@@ -185,7 +185,7 @@ export const networthRouter = createTRPCRouter({
         "No retirement settings found. Configure withdrawal rate in retirement settings.",
       );
     }
-    const withdrawalRate = num(primaryRetSettings.withdrawalRate);
+    const withdrawalRate = toNumber(primaryRetSettings.withdrawalRate);
 
     const input: NetWorthInput = {
       portfolioTotal,
@@ -260,7 +260,7 @@ export const networthRouter = createTRPCRouter({
     const activeMortgageForHistory =
       mortgageLoansAll.find((m) => m.isActive) ?? mortgageLoansAll[0];
     const purchasePrice = activeMortgageForHistory
-      ? num(activeMortgageForHistory.propertyValuePurchase)
+      ? toNumber(activeMortgageForHistory.propertyValuePurchase)
       : 0;
 
     // Derive cost-basis and totals from shared year-end rows
@@ -391,7 +391,7 @@ export const networthRouter = createTRPCRouter({
 
       const items = snapshots.map((s) => {
         const accounts = accountsBySnapshot.get(s.id) ?? [];
-        const total = accounts.reduce((sum, a) => sum + num(a.amount), 0);
+        const total = accounts.reduce((sum, a) => sum + toNumber(a.amount), 0);
         return {
           id: s.id,
           snapshotDate: s.snapshotDate,
@@ -403,7 +403,7 @@ export const networthRouter = createTRPCRouter({
             taxType: a.taxType,
             accountType: a.accountType,
             subType: a.subType,
-            amount: num(a.amount),
+            amount: toNumber(a.amount),
             ownerPersonId: a.ownerPersonId,
             ownerName: a.ownerName,
             performanceAccountId: a.performanceAccountId,
@@ -445,7 +445,9 @@ export const networthRouter = createTRPCRouter({
       .from(schema.portfolioAccounts)
       .groupBy(schema.portfolioAccounts.snapshotId);
 
-    const totalMap = new Map(totals.map((t) => [t.snapshotId, num(t.total)]));
+    const totalMap = new Map(
+      totals.map((t) => [t.snapshotId, toNumber(t.total)]),
+    );
 
     return rows.map((r) => ({
       id: r.snapshotId,
@@ -481,7 +483,7 @@ export const networthRouter = createTRPCRouter({
       otherLiabilities: 0,
       annualSalary: 0,
       annualExpenses,
-      withdrawalRate: num(retSettings.withdrawalRate),
+      withdrawalRate: toNumber(retSettings.withdrawalRate),
       age: 0,
       yearsWorking: 0,
       asOfDate: new Date(),
@@ -533,12 +535,14 @@ export const networthRouter = createTRPCRouter({
         const activeMortgage = activeLoans[0];
         if (!activeMortgage) return 0;
         if (useMarketValue) {
-          return num(
+          return toNumber(
             activeMortgage.propertyValueEstimated ??
               activeMortgage.propertyValuePurchase,
           );
         }
-        return num(activeMortgage.propertyValuePurchase) + homeImprovements;
+        return (
+          toNumber(activeMortgage.propertyValuePurchase) + homeImprovements
+        );
       })();
       const { cash } = await getEffectiveCash(ctx.db, settings);
       const otherAssets = await getEffectiveOtherAssets(ctx.db, settings);
@@ -576,11 +580,11 @@ export const networthRouter = createTRPCRouter({
           .from(schema.portfolioAccounts)
           .where(eq(schema.portfolioAccounts.snapshotId, closest.id));
 
-        const total = accounts.reduce((s, a) => s + num(a.amount), 0);
+        const total = accounts.reduce((s, a) => s + toNumber(a.amount), 0);
         const byTaxType: Record<string, number> = {};
         for (const a of accounts) {
           const key = a.taxType;
-          byTaxType[key] = (byTaxType[key] ?? 0) + num(a.amount);
+          byTaxType[key] = (byTaxType[key] ?? 0) + toNumber(a.amount);
         }
 
         return { total, byTaxType, snapshotDate: closest.snapshotDate };

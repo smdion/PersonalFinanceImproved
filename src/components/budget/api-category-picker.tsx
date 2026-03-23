@@ -22,13 +22,13 @@ export function ApiCategoryPicker({
   const { data } = trpc.budget.listApiCategories.useQuery();
   const linkMut = trpc.budget.linkToApi.useMutation({
     onSuccess: () => {
-      utils.budget.getActiveSummary.invalidate();
+      utils.budget.computeActiveSummary.invalidate();
       onClose();
     },
   });
   const unlinkMut = trpc.budget.unlinkFromApi.useMutation({
     onSuccess: () => {
-      utils.budget.getActiveSummary.invalidate();
+      utils.budget.computeActiveSummary.invalidate();
       onClose();
     },
   });

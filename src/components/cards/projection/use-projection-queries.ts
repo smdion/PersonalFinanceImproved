@@ -151,7 +151,6 @@ export function useProjectionQueries(
     },
     {
       enabled: engineQuery.isSuccess && !engineQuery.isFetching,
-      staleTime: 5 * 60 * 1000,
       placeholderData: (prev) => prev,
     },
   );
@@ -185,7 +184,11 @@ export function useProjectionQueries(
     if (saved.assetClassOverrides && saved.assetClassOverrides.length > 0) {
       setMcAssetClassOverrides(saved.assetClassOverrides);
     }
-  }, [mcQuery.data?.savedOverrides, mcPrefetchQuery.data?.savedOverrides, setMcAssetClassOverrides]);
+  }, [
+    mcQuery.data?.savedOverrides,
+    mcPrefetchQuery.data?.savedOverrides,
+    setMcAssetClassOverrides,
+  ]);
 
   const mcLoading =
     projectionMode === "monteCarlo" &&

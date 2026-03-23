@@ -1,8 +1,7 @@
 "use client";
 
 import { PageHeader } from "@/components/ui/page-header";
-import { ErrorBoundary } from "@/components/ui/error-boundary";
-import { ErrorCard } from "@/components/cards/dashboard/utils";
+import { CardBoundary } from "@/components/cards/dashboard/utils";
 import {
   HouseholdIncomeCard,
   SavingsRateCard,
@@ -20,24 +19,6 @@ import {
 } from "@/components/cards/dashboard";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { trpc } from "@/lib/trpc";
-
-function CardBoundary({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <ErrorBoundary
-      fallback={
-        <ErrorCard title={title} message="This card encountered an error" />
-      }
-    >
-      {children}
-    </ErrorBoundary>
-  );
-}
 
 export default function DashboardPage() {
   const utils = trpc.useUtils();

@@ -6,7 +6,7 @@ import * as schema from "@/lib/db/schema";
 import { calculatePaycheck } from "@/lib/calculators/paycheck";
 import { calculateTax } from "@/lib/calculators/tax";
 import {
-  num,
+  toNumber,
   getPeriodsPerYear,
   getRegularPeriodsPerMonth,
   getBudgetFrequencyNote,
@@ -54,7 +54,7 @@ function buildBracketInput(
 }
 
 export const paycheckRouter = createTRPCRouter({
-  getSummary: protectedProcedure
+  computeSummary: protectedProcedure
     .input(
       z
         .object({
@@ -97,10 +97,10 @@ export const paycheckRouter = createTRPCRouter({
       ]);
 
       const limitsMap = new Map<string, number>();
-      for (const l of allLimits) limitsMap.set(l.limitType, num(l.value));
+      for (const l of allLimits) limitsMap.set(l.limitType, toNumber(l.value));
 
       const limitsRecord: Record<string, number> = {};
-      for (const l of allLimits) limitsRecord[l.limitType] = num(l.value);
+      for (const l of allLimits) limitsRecord[l.limitType] = toNumber(l.value);
 
       // Apply contribution profile overrides if selected
       const profileResult = await loadAndApplyContribProfile(
@@ -176,7 +176,7 @@ export const paycheckRouter = createTRPCRouter({
           );
           const deductions: DeductionLine[] = jobDeductions.map((d) => ({
             name: d.deductionName,
-            amount: num(d.amountPerPeriod),
+            amount: toNumber(d.amountPerPeriod),
             taxTreatment: d.isPretax
               ? ("pre_tax" as const)
               : ("after_tax" as const),
@@ -216,10 +216,10 @@ export const paycheckRouter = createTRPCRouter({
             taxBrackets: taxBracketInput,
             limits: limitsRecord,
             ytdGrossEarnings: 0,
-            bonusPercent: num(activeJob.bonusPercent),
-            bonusMultiplier: num(activeJob.bonusMultiplier),
+            bonusPercent: toNumber(activeJob.bonusPercent),
+            bonusMultiplier: toNumber(activeJob.bonusMultiplier),
             bonusOverride: activeJob.bonusOverride
-              ? num(activeJob.bonusOverride)
+              ? toNumber(activeJob.bonusOverride)
               : null,
             monthsInBonusYear: activeJob.monthsInBonusYear,
             includeContribInBonus: activeJob.includeBonusInContributions,
@@ -259,7 +259,7 @@ export const paycheckRouter = createTRPCRouter({
 
           const rawContribs = [...jobContribs, ...personalContribs];
           const budgetOverride = activeJob.budgetPeriodsPerMonth
-            ? num(activeJob.budgetPeriodsPerMonth)
+            ? toNumber(activeJob.budgetPeriodsPerMonth)
             : null;
 
           return {

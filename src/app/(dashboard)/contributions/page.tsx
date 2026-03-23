@@ -30,16 +30,15 @@ function periodLabel(mode: PeriodMode): string {
 }
 
 export default function ContributionsPage() {
-  const { data, isLoading } = trpc.contribution.getSummary.useQuery();
-  const { data: profiles } =
-    trpc.contributionProfile.list.useQuery();
+  const { data, isLoading } = trpc.contribution.computeSummary.useQuery();
+  const { data: profiles } = trpc.contributionProfile.list.useQuery();
   const [period, setPeriod] = useState<PeriodMode>("annual");
   const [activeProfileId] = useActiveContribProfile();
   const [selectedProfileId, setSelectedProfileId] = useState<
     number | undefined
   >(activeProfileId ?? undefined);
 
-  const { data: profileData } = trpc.contribution.getSummary.useQuery(
+  const { data: profileData } = trpc.contribution.computeSummary.useQuery(
     { contributionProfileId: selectedProfileId },
     { enabled: !!selectedProfileId },
   );
@@ -201,7 +200,9 @@ export default function ContributionsPage() {
         <Card title="Employer Match" className="mb-6">
           <div className="flex items-center gap-4 py-2">
             <div className="text-2xl font-bold text-emerald-600">
-              {formatCurrency(toDisplay(totalEmployerMatch, avgPeriodsPerYear, period))}
+              {formatCurrency(
+                toDisplay(totalEmployerMatch, avgPeriodsPerYear, period),
+              )}
               <span className="text-sm font-normal text-muted ml-1">{pl}</span>
             </div>
             <span className="text-sm text-muted">
@@ -245,17 +246,29 @@ export default function ContributionsPage() {
                       </td>
                       <td className="text-right py-1.5">
                         {formatCurrency(
-                          toDisplay(a.employeeContrib, person.periodsPerYear, period),
+                          toDisplay(
+                            a.employeeContrib,
+                            person.periodsPerYear,
+                            period,
+                          ),
                         )}
                       </td>
                       <td className="text-right py-1.5 text-emerald-600">
                         {formatCurrency(
-                          toDisplay(a.employerMatch, person.periodsPerYear, period),
+                          toDisplay(
+                            a.employerMatch,
+                            person.periodsPerYear,
+                            period,
+                          ),
                         )}
                       </td>
                       <td className="text-right py-1.5 font-medium">
                         {formatCurrency(
-                          toDisplay(a.totalContrib, person.periodsPerYear, period),
+                          toDisplay(
+                            a.totalContrib,
+                            person.periodsPerYear,
+                            period,
+                          ),
                         )}
                       </td>
                     </tr>
@@ -300,10 +313,7 @@ export default function ContributionsPage() {
                       : "bg-blue-500";
 
                 return (
-                  <tr
-                    key={a.accountType}
-                    className="border-b border-subtle"
-                  >
+                  <tr key={a.accountType} className="border-b border-subtle">
                     <td className="py-2">
                       <span className="flex items-center gap-2">
                         <span
@@ -315,8 +325,18 @@ export default function ContributionsPage() {
                         <span>{a.accountType}</span>
                         {a.tradContrib > 0 && a.taxFreeContrib > 0 && (
                           <span className="text-xs text-muted">
-                            T:{formatPercent(a.tradContrib / (a.tradContrib + a.taxFreeContrib), 0)}
-                            /R:{formatPercent(a.taxFreeContrib / (a.tradContrib + a.taxFreeContrib), 0)}
+                            T:
+                            {formatPercent(
+                              a.tradContrib /
+                                (a.tradContrib + a.taxFreeContrib),
+                              0,
+                            )}
+                            /R:
+                            {formatPercent(
+                              a.taxFreeContrib /
+                                (a.tradContrib + a.taxFreeContrib),
+                              0,
+                            )}
                           </span>
                         )}
                       </span>
@@ -346,9 +366,7 @@ export default function ContributionsPage() {
                       )}
                     </td>
                     <td className="text-right py-2 text-muted">
-                      {a.limit > 0
-                        ? formatCurrency(a.limit)
-                        : "—"}
+                      {a.limit > 0 ? formatCurrency(a.limit) : "—"}
                     </td>
                     <td className="py-2 pl-4">
                       {a.limit > 0 ? (

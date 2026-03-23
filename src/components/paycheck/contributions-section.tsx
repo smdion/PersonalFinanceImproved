@@ -70,7 +70,7 @@ export function ContributionsSection({
       ? { contributionProfileId: activeProfileId }
       : undefined;
   const { data: contribData } =
-    trpc.contribution.getSummary.useQuery(contribInput);
+    trpc.contribution.computeSummary.useQuery(contribInput);
 
   // Build lookup from contribId -> per-contrib computed data
   const perContribMap = new Map<

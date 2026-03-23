@@ -4,7 +4,7 @@
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
-import { num } from "./transforms";
+import { toNumber } from "./transforms";
 import type { Db } from "./transforms";
 import { parseAppSettings } from "./settings";
 
@@ -109,7 +109,7 @@ export async function getEffectiveOtherAssetsDetailed(
       .sort((a, b) => a.year - b.year);
     if (entries.length > 0) {
       const latest = entries[entries.length - 1]!;
-      const val = num(latest.value);
+      const val = toNumber(latest.value);
       if (val > 0) {
         items.push({
           id: latest.id,

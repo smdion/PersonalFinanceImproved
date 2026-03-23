@@ -26,7 +26,7 @@ interface AdminDraft {
   confirmPassword: string;
 }
 
-interface Props {
+interface OnboardingWizardProps {
   onComplete: () => void;
 }
 
@@ -103,7 +103,9 @@ function AdminStep({
   return (
     <div className="flex flex-col gap-6 py-4">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-primary">Create Admin Account</h2>
+        <h2 className="text-2xl font-bold text-primary">
+          Create Admin Account
+        </h2>
         <p className="text-muted mt-1">
           Set up a local admin account for logging in. This is your primary
           login and recovery method.
@@ -215,7 +217,9 @@ function OidcStep() {
   return (
     <div className="flex flex-col gap-6 py-4">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-primary">Connect to Authentik</h2>
+        <h2 className="text-2xl font-bold text-primary">
+          Connect to Authentik
+        </h2>
         <p className="text-muted mt-1">
           Enable SSO for your household. You can set this up later in Settings.
         </p>
@@ -276,8 +280,9 @@ function OidcStep() {
       </div>
 
       <p className="text-xs text-muted text-center">
-        After setting environment variables, restart the container for changes to
-        take effect. OIDC can also be configured later from the Settings page.
+        After setting environment variables, restart the container for changes
+        to take effect. OIDC can also be configured later from the Settings
+        page.
       </p>
     </div>
   );
@@ -311,7 +316,9 @@ function PeopleStep({
     } else {
       const year = parseInt(birthYear, 10);
       if (isNaN(year) || year < 1900 || year > new Date().getFullYear()) {
-        setBirthYearError(`Enter a year between 1900 and ${new Date().getFullYear()}`);
+        setBirthYearError(
+          `Enter a year between 1900 and ${new Date().getFullYear()}`,
+        );
         hasError = true;
       }
     }
@@ -386,7 +393,10 @@ function PeopleStep({
             type="text"
             placeholder="Name"
             value={name}
-            onChange={(e) => { setName(e.target.value); setNameError(null); }}
+            onChange={(e) => {
+              setName(e.target.value);
+              setNameError(null);
+            }}
             onKeyDown={(e) => e.key === "Enter" && addPerson()}
             className={`w-full px-3 py-2 rounded-lg border bg-surface-primary text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-blue-500 ${nameError ? "border-red-400" : "border-default"}`}
           />
@@ -397,7 +407,10 @@ function PeopleStep({
             type="number"
             placeholder="Birth year"
             value={birthYear}
-            onChange={(e) => { setBirthYear(e.target.value); setBirthYearError(null); }}
+            onChange={(e) => {
+              setBirthYear(e.target.value);
+              setBirthYearError(null);
+            }}
             onKeyDown={(e) => e.key === "Enter" && addPerson()}
             className={`w-32 px-3 py-2 rounded-lg border bg-surface-primary text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${birthYearError ? "border-red-400" : "border-default"}`}
           />
@@ -532,7 +545,10 @@ function IncomeStep({
               type="text"
               placeholder="Employer name"
               value={employerName}
-              onChange={(e) => { setEmployerName(e.target.value); setEmployerError(null); }}
+              onChange={(e) => {
+                setEmployerName(e.target.value);
+                setEmployerError(null);
+              }}
               className={`w-full px-3 py-2 rounded-lg border bg-surface-primary text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-blue-500 ${employerError ? "border-red-400" : "border-default"}`}
             />
             <FormError message={employerError} />
@@ -542,7 +558,10 @@ function IncomeStep({
               type="number"
               placeholder="Annual salary"
               value={annualSalary}
-              onChange={(e) => { setAnnualSalary(e.target.value); setSalaryError(null); }}
+              onChange={(e) => {
+                setAnnualSalary(e.target.value);
+                setSalaryError(null);
+              }}
               className={`w-40 px-3 py-2 rounded-lg border bg-surface-primary text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${salaryError ? "border-red-400" : "border-default"}`}
             />
             <FormError message={salaryError} />
@@ -630,7 +649,7 @@ function ProgressBar({
 
 // --- Main wizard ---
 
-export function OnboardingWizard({ onComplete }: Props) {
+export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [step, setStep] = useState(0);
   const [admin, setAdmin] = useState<AdminDraft>({
     name: "",
@@ -688,9 +707,7 @@ export function OnboardingWizard({ onComplete }: Props) {
       // Full page reload to pick up all imported data
       window.location.reload();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to restore backup",
-      );
+      setError(err instanceof Error ? err.message : "Failed to restore backup");
       setIsRestoring(false);
     }
   };
@@ -861,7 +878,10 @@ export function OnboardingWizard({ onComplete }: Props) {
           </div>
         )}
         {stepError && (
-          <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-sm" role="alert">
+          <div
+            className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-sm"
+            role="alert"
+          >
             {stepError}
           </div>
         )}

@@ -4,7 +4,7 @@ import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import {
-  num,
+  toNumber,
   buildYearEndHistory,
   getEffectiveCash,
   computeMortgageBalance,
@@ -16,7 +16,7 @@ export const assetsRouter = createTRPCRouter({
    * Asset-focused summary: current state + year-over-year history.
    * Includes API sync status per item so the UI can show sync badges.
    */
-  getSummary: protectedProcedure.query(async ({ ctx }) => {
+  computeSummary: protectedProcedure.query(async ({ ctx }) => {
     const [
       yearEndHistory,
       homeImprovements,
@@ -79,7 +79,7 @@ export const assetsRouter = createTRPCRouter({
     // Mortgage data
     const activeLoan = mortgageLoans.find((m) => m.isActive);
     const houseValue = activeLoan
-      ? num(
+      ? toNumber(
           activeLoan.propertyValueEstimated ?? activeLoan.propertyValuePurchase,
         )
       : 0;
@@ -117,7 +117,7 @@ export const assetsRouter = createTRPCRouter({
     for (const year of allYears) {
       const itemsUpToYear = homeImprovements.filter((hi) => hi.year <= year);
       const cumulative = itemsUpToYear.reduce(
-        (sum, hi) => sum + num(hi.cost),
+        (sum, hi) => sum + toNumber(hi.cost),
         0,
       );
       const itemsThisYear = homeImprovements.filter((hi) => hi.year === year);
@@ -144,7 +144,7 @@ export const assetsRouter = createTRPCRouter({
         .sort((a, b) => a.year - b.year);
       if (entries.length > 0) {
         const latest = entries[entries.length - 1]!;
-        const val = num(latest.value);
+        const val = toNumber(latest.value);
         if (val > 0) {
           currentOtherAssetItems.push({
             id: latest.id,
@@ -184,7 +184,7 @@ export const assetsRouter = createTRPCRouter({
         );
         if (entries.length > 0) {
           const latest = entries[entries.length - 1]!;
-          const val = num(latest.value);
+          const val = toNumber(latest.value);
           if (val > 0) {
             items.push({ id: latest.id, name, value: val, note: latest.note });
           }
@@ -223,7 +223,7 @@ export const assetsRouter = createTRPCRouter({
             id: i.id,
             year: i.year,
             description: i.description,
-            cost: num(i.cost),
+            cost: toNumber(i.cost),
             note: i.note,
           })) ?? [],
         otherAssets: oaTotal,
@@ -266,7 +266,7 @@ export const assetsRouter = createTRPCRouter({
         id: hi.id,
         year: hi.year,
         description: hi.description,
-        cost: num(hi.cost),
+        cost: toNumber(hi.cost),
         note: hi.note,
       })),
       notes: notesMap,
@@ -424,8 +424,8 @@ export const assetsRouter = createTRPCRouter({
       if (rows.length > 0) {
         return rows.map((r) => ({
           ...r,
-          assessedValue: r.assessedValue ? num(r.assessedValue) : null,
-          taxAmount: num(r.taxAmount),
+          assessedValue: r.assessedValue ? toNumber(r.assessedValue) : null,
+          taxAmount: toNumber(r.taxAmount),
         }));
       }
 
@@ -445,7 +445,7 @@ export const assetsRouter = createTRPCRouter({
           loanId: input?.loanId ?? 0,
           year: new Date(r.yearEndDate).getFullYear(),
           assessedValue: null,
-          taxAmount: num(r.propertyTaxes!),
+          taxAmount: toNumber(r.propertyTaxes!),
           note: "From historical records",
         }));
     }),

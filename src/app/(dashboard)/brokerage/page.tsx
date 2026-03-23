@@ -22,7 +22,10 @@ import {
 } from "@/lib/calculators/brokerage-goals";
 import type { AccumOverride } from "@/components/cards/projection/types";
 import type { AccountCategory } from "@/lib/calculators/types";
-import { ALL_CATEGORIES, catDisplayLabel } from "@/components/cards/projection/utils";
+import {
+  ALL_CATEGORIES,
+  catDisplayLabel,
+} from "@/components/cards/projection/utils";
 
 type BrokerageTab = "projection" | "goals" | "transactions";
 
@@ -36,7 +39,9 @@ export default function BrokeragePage() {
     null,
   );
   // Brokerage lump sum overrides (one-time injections)
-  const [brokerageLumpSums, setBrokerageLumpSums] = useState<BrokerageLumpSumEntry[]>([]);
+  const [brokerageLumpSums, setBrokerageLumpSums] = useState<
+    BrokerageLumpSumEntry[]
+  >([]);
 
   const accumOverridesFromLumpSums: AccumOverride[] = React.useMemo(() => {
     const byYear = new Map<number, AccumOverride>();
@@ -49,37 +54,43 @@ export default function BrokeragePage() {
         ov = { year: y, lumpSums: [] };
         byYear.set(y, ov);
       }
-      ov.lumpSums!.push({ amount: amt, targetAccount: ls.targetAccount, ...(ls.label ? { label: ls.label } : {}) });
+      ov.lumpSums!.push({
+        amount: amt,
+        targetAccount: ls.targetAccount,
+        ...(ls.label ? { label: ls.label } : {}),
+      });
     }
     return Array.from(byYear.values()).sort((a, b) => a.year - b.year);
   }, [brokerageLumpSums]);
 
   const engineInput = {
     ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
-    ...(accumOverridesFromLumpSums.length > 0 ? { accumulationOverrides: accumOverridesFromLumpSums } : {}),
+    ...(accumOverridesFromLumpSums.length > 0
+      ? { accumulationOverrides: accumOverridesFromLumpSums }
+      : {}),
   };
   const contribInput = {
     ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
     ...(activeProfileId != null
       ? { contributionProfileId: activeProfileId }
       : {}),
-  } as Parameters<typeof trpc.contribution.getSummary.useQuery>[0];
+  } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
 
   const { data, isLoading, error } =
     trpc.projection.computeProjection.useQuery(engineInput);
   const { data: contribData } =
-    trpc.contribution.getSummary.useQuery(contribInput);
-  const { data: brokerageData } = trpc.brokerage.getSummary.useQuery();
+    trpc.contribution.computeSummary.useQuery(contribInput);
+  const { data: brokerageData } = trpc.brokerage.computeSummary.useQuery();
 
   const createTx = trpc.brokerage.plannedTransactions.create.useMutation({
     onSuccess: () => {
-      utils.brokerage.getSummary.invalidate();
+      utils.brokerage.computeSummary.invalidate();
       setAddingTx(false);
       setTxForm(emptyTxForm);
     },
   });
   const deleteTx = trpc.brokerage.plannedTransactions.delete.useMutation({
-    onSuccess: () => utils.brokerage.getSummary.invalidate(),
+    onSuccess: () => utils.brokerage.computeSummary.invalidate(),
   });
 
   const [activeTab, setActiveTab] = useState<BrokerageTab>("projection");
@@ -253,15 +264,32 @@ export default function BrokeragePage() {
               {brokerageLumpSums.length > 0 && (
                 <div className="space-y-1 mb-3">
                   {brokerageLumpSums.map((ls, i) => (
-                    <div key={i} className="flex items-center gap-2 bg-surface-sunken rounded px-3 py-1.5 text-xs">
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 bg-surface-sunken rounded px-3 py-1.5 text-xs"
+                    >
                       <span className="font-semibold">{ls.year}</span>
-                      <span>+{ls.amount ? formatCurrency(parseFloat(ls.amount)) : "$0"}</span>
-                      <span className="text-muted">→ {catDisplayLabel[ls.targetAccount] ?? ls.targetAccount}</span>
-                      {ls.label && <span className="text-muted">({ls.label})</span>}
+                      <span>
+                        +
+                        {ls.amount
+                          ? formatCurrency(parseFloat(ls.amount))
+                          : "$0"}
+                      </span>
+                      <span className="text-muted">
+                        →{" "}
+                        {catDisplayLabel[ls.targetAccount] ?? ls.targetAccount}
+                      </span>
+                      {ls.label && (
+                        <span className="text-muted">({ls.label})</span>
+                      )}
                       <button
                         type="button"
                         className="text-red-400 hover:text-red-600 ml-auto"
-                        onClick={() => setBrokerageLumpSums((prev) => prev.filter((_, j) => j !== i))}
+                        onClick={() =>
+                          setBrokerageLumpSums((prev) =>
+                            prev.filter((_, j) => j !== i),
+                          )
+                        }
                       >
                         ×
                       </button>
@@ -269,7 +297,9 @@ export default function BrokeragePage() {
                   ))}
                 </div>
               )}
-              <BrokerageLumpSumForm onAdd={(ls) => setBrokerageLumpSums((prev) => [...prev, ls])} />
+              <BrokerageLumpSumForm
+                onAdd={(ls) => setBrokerageLumpSums((prev) => [...prev, ls])}
+              />
             </Card>
           )}
 
@@ -714,9 +744,18 @@ function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
   );
 }
 
-type BrokerageLumpSumEntry = { year: string; amount: string; targetAccount: AccountCategory; label: string };
+type BrokerageLumpSumEntry = {
+  year: string;
+  amount: string;
+  targetAccount: AccountCategory;
+  label: string;
+};
 
-function BrokerageLumpSumForm({ onAdd }: { onAdd: (ls: BrokerageLumpSumEntry) => void }) {
+function BrokerageLumpSumForm({
+  onAdd,
+}: {
+  onAdd: (ls: BrokerageLumpSumEntry) => void;
+}) {
   const [form, setForm] = useState<BrokerageLumpSumEntry>({
     year: String(new Date().getFullYear() + 1),
     amount: "",
@@ -750,7 +789,12 @@ function BrokerageLumpSumForm({ onAdd }: { onAdd: (ls: BrokerageLumpSumEntry) =>
         <span className="text-[10px] text-muted">Account</span>
         <select
           value={form.targetAccount}
-          onChange={(e) => setForm((f) => ({ ...f, targetAccount: e.target.value as AccountCategory }))}
+          onChange={(e) =>
+            setForm((f) => ({
+              ...f,
+              targetAccount: e.target.value as AccountCategory,
+            }))
+          }
           className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-sm"
         >
           {ALL_CATEGORIES.map((cat) => (

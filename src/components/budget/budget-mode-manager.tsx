@@ -43,7 +43,7 @@ export function BudgetModeManager({
         {cols.map((label, idx) => {
           const currentProfileId = columnContributionProfileIds?.[idx] ?? null;
           return (
-            <div key={idx} className="flex items-center gap-2">
+            <div key={label} className="flex items-center gap-2">
               <InlineEdit
                 value={label}
                 onSave={(newLabel) => {

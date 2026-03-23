@@ -47,7 +47,7 @@ function ExternalLink({ href, label }: { href: string; label: string }) {
 }
 
 export default function AssetsPage() {
-  const { data, isLoading, error } = trpc.assets.getSummary.useQuery();
+  const { data, isLoading, error } = trpc.assets.computeSummary.useQuery();
   const utils = trpc.useUtils();
 
   const [addingAsset, setAddingAsset] = useState(false);
@@ -86,7 +86,9 @@ export default function AssetsPage() {
 
   if (error) {
     return (
-      <p className="text-red-600 text-sm">Failed to load asset data: {error.message}</p>
+      <p className="text-red-600 text-sm">
+        Failed to load asset data: {error.message}
+      </p>
     );
   }
 
@@ -130,8 +132,7 @@ export default function AssetsPage() {
         <Card
           title={
             <>
-              Cash{" "}
-              <HelpTip text="Liquid cash across all on-budget accounts" />
+              Cash <HelpTip text="Liquid cash across all on-budget accounts" />
             </>
           }
         >
@@ -231,9 +232,7 @@ export default function AssetsPage() {
               <div className="flex justify-between items-center py-1.5 border-b border-subtle">
                 <span className="text-muted">
                   Home Value
-                  {current.houseValueSynced && (
-                    <SyncBadge source={apiLabel} />
-                  )}
+                  {current.houseValueSynced && <SyncBadge source={apiLabel} />}
                 </span>
                 {!current.houseValueSynced ? (
                   <InlineEdit
@@ -258,9 +257,7 @@ export default function AssetsPage() {
               <div className="flex justify-between items-center py-1.5 border-b border-subtle">
                 <span className="text-muted">
                   Mortgage Balance
-                  {current.mortgageSynced && (
-                    <SyncBadge source={apiLabel} />
-                  )}
+                  {current.mortgageSynced && <SyncBadge source={apiLabel} />}
                   <ExternalLink
                     href="/liabilities"
                     label="Manage on Liabilities page"
@@ -274,10 +271,7 @@ export default function AssetsPage() {
                 <div className="flex justify-between items-center py-1.5 border-b border-subtle">
                   <span className="text-muted">
                     Home Improvements
-                    <ExternalLink
-                      href="/house"
-                      label="Manage on House page"
-                    />
+                    <ExternalLink href="/house" label="Manage on House page" />
                   </span>
                   <span className="font-medium">
                     {formatCurrency(current.homeImprovements)}
@@ -309,7 +303,8 @@ export default function AssetsPage() {
 
             {current.otherAssetItems.length === 0 && !addingAsset && (
               <p className="text-faint text-xs italic py-2">
-                No other assets tracked. Click &quot;+ Add&quot; to track vehicles, jewelry, or other valuables.
+                No other assets tracked. Click &quot;+ Add&quot; to track
+                vehicles, jewelry, or other valuables.
               </p>
             )}
 
@@ -352,9 +347,7 @@ export default function AssetsPage() {
                   )}
                   {!item.synced && (
                     <button
-                      onClick={() =>
-                        deleteOAMutation.mutate({ id: item.id })
-                      }
+                      onClick={() => deleteOAMutation.mutate({ id: item.id })}
                       className="opacity-0 group-hover:opacity-100 p-0.5 text-faint hover:text-red-600 transition-all"
                       title="Remove asset"
                     >
@@ -430,7 +423,6 @@ export default function AssetsPage() {
           </div>
         </div>
       </Card>
-
     </div>
   );
 }

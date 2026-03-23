@@ -3,10 +3,10 @@ import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { num, buildYearEndHistory } from "@/server/helpers";
+import { toNumber, buildYearEndHistory } from "@/server/helpers";
 
 export const historicalRouter = createTRPCRouter({
-  getSummary: protectedProcedure.query(async ({ ctx }) => {
+  computeSummary: protectedProcedure.query(async ({ ctx }) => {
     const [
       yearEndHistory,
       people,
@@ -54,7 +54,7 @@ export const historicalRouter = createTRPCRouter({
           .filter((sc) => sc.jobId === job.id)
           .map((sc) => ({
             effectiveDate: sc.effectiveDate,
-            newSalary: num(sc.newSalary),
+            newSalary: toNumber(sc.newSalary),
             reason: sc.notes,
           }));
 
@@ -62,7 +62,7 @@ export const historicalRouter = createTRPCRouter({
           employer: job.employerName,
           startDate: job.startDate,
           endDate: job.endDate,
-          salary: num(job.annualSalary),
+          salary: toNumber(job.annualSalary),
           changes: jobChanges,
         });
       }
@@ -99,7 +99,7 @@ export const historicalRouter = createTRPCRouter({
     for (const year of allYears) {
       const itemsUpToYear = homeImprovements.filter((hi) => hi.year <= year);
       const cumulative = itemsUpToYear.reduce(
-        (sum, hi) => sum + num(hi.cost),
+        (sum, hi) => sum + toNumber(hi.cost),
         0,
       );
       const itemsThisYear = homeImprovements.filter((hi) => hi.year === year);
@@ -126,7 +126,7 @@ export const historicalRouter = createTRPCRouter({
         );
         if (entries.length > 0) {
           const latest = entries[entries.length - 1]!; // already sorted by year asc
-          const val = num(latest.value);
+          const val = toNumber(latest.value);
           if (val > 0) {
             items.push({ name, value: val, note: latest.note });
           }
@@ -169,7 +169,7 @@ export const historicalRouter = createTRPCRouter({
             id: i.id,
             year: i.year,
             description: i.description,
-            cost: num(i.cost),
+            cost: toNumber(i.cost),
             note: i.note,
           })) ?? [],
         otherAssets:

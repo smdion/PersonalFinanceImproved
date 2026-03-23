@@ -2,7 +2,13 @@
 
 /** Multi-profile budget management page with per-column paycheck breakdowns, salary overrides, and category-level editing. */
 
-import React, { useState, useCallback, useRef, useMemo, useEffect } from "react";
+import React, {
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+  useEffect,
+} from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
@@ -32,6 +38,7 @@ import {
   type PushPreviewItem,
 } from "@/components/ui/push-preview-modal";
 import { FormError } from "@/components/ui/form-error";
+import { CardBoundary } from "@/components/cards/dashboard/utils";
 
 export default function BudgetPage() {
   const user = useUser();
@@ -51,7 +58,7 @@ export default function BudgetPage() {
   // Show the viewing profile if set, otherwise fall back to active
   const displayProfileId = viewingProfileId ?? activeProfileId;
 
-  const { data, isLoading, error } = trpc.budget.getActiveSummary.useQuery({
+  const { data, isLoading, error } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
     ...(displayProfileId != null ? { profileId: displayProfileId } : {}),
   });
@@ -66,87 +73,24 @@ export default function BudgetPage() {
   const setActiveProfile = trpc.budget.setActiveProfile.useMutation({
     onSuccess: () => {
       utils.budget.listProfiles.invalidate();
-      utils.budget.getActiveSummary.invalidate();
+      utils.budget.computeActiveSummary.invalidate();
     },
   });
   const updateCell = trpc.budget.updateItemAmount.useMutation({
     onMutate: async (variables) => {
-      await utils.budget.getActiveSummary.cancel();
+      await utils.budget.computeActiveSummary.cancel();
       const queryInput = { selectedColumn: activeColumn };
-      const previous = utils.budget.getActiveSummary.getData(queryInput);
+      const previous = utils.budget.computeActiveSummary.getData(queryInput);
       if (previous && "rawItems" in previous) {
-        utils.budget.getActiveSummary.setData(queryInput, {
+        utils.budget.computeActiveSummary.setData(queryInput, {
           ...previous,
-          rawItems: previous.rawItems.map((item: typeof previous.rawItems[number]) => {
-            if (item.id !== variables.id) return item;
-            const newAmounts = [...item.amounts];
-            newAmounts[variables.colIndex] = variables.amount;
-            return { ...item, amounts: newAmounts };
-          }),
-        });
-      }
-      return { previous, queryInput };
-    },
-    onError: (_err, _variables, context) => {
-      if (context?.previous) {
-        utils.budget.getActiveSummary.setData(context.queryInput, context.previous);
-      }
-    },
-    onSettled: () => utils.budget.getActiveSummary.invalidate(),
-  });
-  const updateBatch = trpc.budget.updateItemAmounts.useMutation({
-    onSuccess: () => utils.budget.getActiveSummary.invalidate(),
-  });
-  const addColumn = trpc.budget.addColumn.useMutation({
-    onSuccess: () => utils.budget.getActiveSummary.invalidate(),
-  });
-  const removeColumn = trpc.budget.removeColumn.useMutation({
-    onSuccess: () => utils.budget.getActiveSummary.invalidate(),
-  });
-  const renameColumn = trpc.budget.renameColumn.useMutation({
-    onSuccess: () => utils.budget.getActiveSummary.invalidate(),
-  });
-  const createItem = trpc.budget.createItem.useMutation({
-    onSuccess: () => {
-      utils.budget.getActiveSummary.invalidate();
-      setAddingItemToCategory(null);
-    },
-  });
-  const deleteItem = trpc.budget.deleteItem.useMutation({
-    onMutate: async (variables) => {
-      await utils.budget.getActiveSummary.cancel();
-      const queryInput = { selectedColumn: activeColumn };
-      const previous = utils.budget.getActiveSummary.getData(queryInput);
-      if (previous && "rawItems" in previous) {
-        utils.budget.getActiveSummary.setData(queryInput, {
-          ...previous,
-          rawItems: previous.rawItems.filter((item: typeof previous.rawItems[number]) => item.id !== variables.id),
-        });
-      }
-      return { previous, queryInput };
-    },
-    onError: (_err, _variables, context) => {
-      if (context?.previous) {
-        utils.budget.getActiveSummary.setData(context.queryInput, context.previous);
-      }
-    },
-    onSettled: () => utils.budget.getActiveSummary.invalidate(),
-  });
-  const moveItem = trpc.budget.moveItem.useMutation({
-    onSuccess: () => utils.budget.getActiveSummary.invalidate(),
-  });
-  const updateItemEssential = trpc.budget.updateItemEssential.useMutation({
-    onMutate: async (variables) => {
-      await utils.budget.getActiveSummary.cancel();
-      const queryInput = { selectedColumn: activeColumn };
-      const previous = utils.budget.getActiveSummary.getData(queryInput);
-      if (previous && "rawItems" in previous) {
-        utils.budget.getActiveSummary.setData(queryInput, {
-          ...previous,
-          rawItems: previous.rawItems.map((item: typeof previous.rawItems[number]) =>
-            item.id === variables.id
-              ? { ...item, isEssential: variables.isEssential }
-              : item,
+          rawItems: previous.rawItems.map(
+            (item: (typeof previous.rawItems)[number]) => {
+              if (item.id !== variables.id) return item;
+              const newAmounts = [...item.amounts];
+              newAmounts[variables.colIndex] = variables.amount;
+              return { ...item, amounts: newAmounts };
+            },
           ),
         });
       }
@@ -154,24 +98,103 @@ export default function BudgetPage() {
     },
     onError: (_err, _variables, context) => {
       if (context?.previous) {
-        utils.budget.getActiveSummary.setData(context.queryInput, context.previous);
+        utils.budget.computeActiveSummary.setData(
+          context.queryInput,
+          context.previous,
+        );
       }
     },
-    onSettled: () => utils.budget.getActiveSummary.invalidate(),
+    onSettled: () => utils.budget.computeActiveSummary.invalidate(),
+  });
+  const updateBatch = trpc.budget.updateItemAmounts.useMutation({
+    onSuccess: () => utils.budget.computeActiveSummary.invalidate(),
+  });
+  const addColumn = trpc.budget.addColumn.useMutation({
+    onSuccess: () => utils.budget.computeActiveSummary.invalidate(),
+  });
+  const removeColumn = trpc.budget.removeColumn.useMutation({
+    onSuccess: () => utils.budget.computeActiveSummary.invalidate(),
+  });
+  const renameColumn = trpc.budget.renameColumn.useMutation({
+    onSuccess: () => utils.budget.computeActiveSummary.invalidate(),
+  });
+  const createItem = trpc.budget.createItem.useMutation({
+    onSuccess: () => {
+      utils.budget.computeActiveSummary.invalidate();
+      setAddingItemToCategory(null);
+    },
+  });
+  const deleteItem = trpc.budget.deleteItem.useMutation({
+    onMutate: async (variables) => {
+      await utils.budget.computeActiveSummary.cancel();
+      const queryInput = { selectedColumn: activeColumn };
+      const previous = utils.budget.computeActiveSummary.getData(queryInput);
+      if (previous && "rawItems" in previous) {
+        utils.budget.computeActiveSummary.setData(queryInput, {
+          ...previous,
+          rawItems: previous.rawItems.filter(
+            (item: (typeof previous.rawItems)[number]) =>
+              item.id !== variables.id,
+          ),
+        });
+      }
+      return { previous, queryInput };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previous) {
+        utils.budget.computeActiveSummary.setData(
+          context.queryInput,
+          context.previous,
+        );
+      }
+    },
+    onSettled: () => utils.budget.computeActiveSummary.invalidate(),
+  });
+  const moveItem = trpc.budget.moveItem.useMutation({
+    onSuccess: () => utils.budget.computeActiveSummary.invalidate(),
+  });
+  const updateItemEssential = trpc.budget.updateItemEssential.useMutation({
+    onMutate: async (variables) => {
+      await utils.budget.computeActiveSummary.cancel();
+      const queryInput = { selectedColumn: activeColumn };
+      const previous = utils.budget.computeActiveSummary.getData(queryInput);
+      if (previous && "rawItems" in previous) {
+        utils.budget.computeActiveSummary.setData(queryInput, {
+          ...previous,
+          rawItems: previous.rawItems.map(
+            (item: (typeof previous.rawItems)[number]) =>
+              item.id === variables.id
+                ? { ...item, isEssential: variables.isEssential }
+                : item,
+          ),
+        });
+      }
+      return { previous, queryInput };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previous) {
+        utils.budget.computeActiveSummary.setData(
+          context.queryInput,
+          context.previous,
+        );
+      }
+    },
+    onSettled: () => utils.budget.computeActiveSummary.invalidate(),
   });
   const updateCategoryEssential =
     trpc.budget.updateCategoryEssential.useMutation({
       onMutate: async (variables) => {
-        await utils.budget.getActiveSummary.cancel();
+        await utils.budget.computeActiveSummary.cancel();
         const queryInput = { selectedColumn: activeColumn };
-        const previous = utils.budget.getActiveSummary.getData(queryInput);
+        const previous = utils.budget.computeActiveSummary.getData(queryInput);
         if (previous && "rawItems" in previous) {
-          utils.budget.getActiveSummary.setData(queryInput, {
+          utils.budget.computeActiveSummary.setData(queryInput, {
             ...previous,
-            rawItems: previous.rawItems.map((item: typeof previous.rawItems[number]) =>
-              item.category === variables.category
-                ? { ...item, isEssential: variables.isEssential }
-                : item,
+            rawItems: previous.rawItems.map(
+              (item: (typeof previous.rawItems)[number]) =>
+                item.category === variables.category
+                  ? { ...item, isEssential: variables.isEssential }
+                  : item,
             ),
           });
         }
@@ -179,29 +202,32 @@ export default function BudgetPage() {
       },
       onError: (_err, _variables, context) => {
         if (context?.previous) {
-          utils.budget.getActiveSummary.setData(context.queryInput, context.previous);
+          utils.budget.computeActiveSummary.setData(
+            context.queryInput,
+            context.previous,
+          );
         }
       },
-      onSettled: () => utils.budget.getActiveSummary.invalidate(),
+      onSettled: () => utils.budget.computeActiveSummary.invalidate(),
     });
   const updateColumnMonths = trpc.budget.updateColumnMonths.useMutation({
     onSuccess: () => {
-      utils.budget.getActiveSummary.invalidate();
+      utils.budget.computeActiveSummary.invalidate();
       utils.budget.listProfiles.invalidate();
     },
   });
   const updateColumnContribProfiles =
     trpc.budget.updateColumnContributionProfileIds.useMutation({
       onSuccess: () => {
-        utils.budget.getActiveSummary.invalidate();
+        utils.budget.computeActiveSummary.invalidate();
         utils.budget.listProfiles.invalidate();
       },
     });
   const syncFromApi = trpc.budget.syncBudgetFromApi.useMutation({
-    onSuccess: () => utils.budget.getActiveSummary.invalidate(),
+    onSuccess: () => utils.budget.computeActiveSummary.invalidate(),
   });
   const syncToApi = trpc.budget.syncBudgetToApi.useMutation({
-    onSuccess: () => utils.budget.getActiveSummary.invalidate(),
+    onSuccess: () => utils.budget.computeActiveSummary.invalidate(),
   });
   const createProfile = trpc.budget.createProfile.useMutation({
     onSuccess: () => utils.budget.listProfiles.invalidate(),
@@ -214,7 +240,7 @@ export default function BudgetPage() {
   });
   const convertToGoal = trpc.savings.convertBudgetItemToGoal.useMutation({
     onSuccess: () => {
-      utils.budget.getActiveSummary.invalidate();
+      utils.budget.computeActiveSummary.invalidate();
       utils.savings.invalidate();
     },
   });
@@ -268,7 +294,9 @@ export default function BudgetPage() {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
-          setVisibleCount((prev) => Math.min(prev + LOAD_MORE_COUNT, categoryCount));
+          setVisibleCount((prev) =>
+            Math.min(prev + LOAD_MORE_COUNT, categoryCount),
+          );
         }
       },
       { rootMargin: "200px" },
@@ -443,7 +471,9 @@ export default function BudgetPage() {
 
   if (error) {
     return (
-      <p className="text-red-600 text-sm">Failed to load budget: {error.message}</p>
+      <p className="text-red-600 text-sm">
+        Failed to load budget: {error.message}
+      </p>
     );
   }
 
@@ -571,7 +601,7 @@ export default function BudgetPage() {
       </div>
 
       {activeTab === "budget" && (
-        <>
+        <CardBoundary title="Budget Profiles">
           {/* Active budget summary bar */}
           <div className="flex flex-wrap items-center justify-between gap-2 bg-surface-sunken rounded-lg px-4 py-3 mb-4">
             <div className="flex flex-wrap items-center gap-3 sm:gap-6">
@@ -782,113 +812,118 @@ export default function BudgetPage() {
               {(allProfiles ?? []).map((p) => {
                 const isViewing = p.id === displayProfileId;
                 return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setViewingProfileId(p.id)}
-                  className={`w-full text-left px-3 py-2 rounded-md transition-colors group ${
-                    isViewing
-                      ? "bg-blue-50 border border-blue-300"
-                      : "hover:bg-surface-sunken border border-transparent"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      {renamingProfileId === p.id ? (
-                        <input
-                          type="text"
-                          value={renameValue}
-                          onChange={(e) => setRenameValue(e.target.value)}
-                          onBlur={() => {
-                            if (
-                              renameValue.trim() &&
-                              renameValue.trim() !== p.name
-                            ) {
-                              renameProfile.mutate({
-                                id: p.id,
-                                name: renameValue.trim(),
-                              });
-                            }
-                            setRenamingProfileId(null);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter")
-                              (e.target as HTMLInputElement).blur();
-                            if (e.key === "Escape") setRenamingProfileId(null);
-                          }}
-                          autoFocus
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-xs font-medium text-primary bg-surface-primary border border-strong rounded px-1 py-0.5 w-full"
-                        />
-                      ) : (
-                        <span className="text-xs font-medium text-primary truncate">
-                          {p.name}
-                        </span>
-                      )}
-                      {p.isActive && (
-                        <span className="text-[8px] px-1 py-0.5 rounded bg-green-100 text-green-700 font-semibold shrink-0">
-                          ACTIVE
-                        </span>
-                      )}
-                      {apiService && apiLinkedProfileId === p.id && (
-                        <span className="text-[8px] px-1 py-0.5 rounded bg-blue-100 text-blue-700 font-semibold shrink-0">
-                          ⇄ {apiService.toUpperCase()} →{""}
-                          {(p.columnLabels as string[])?.[
-                            apiLinkedColumnIndex
-                          ] ?? "Mode" + apiLinkedColumnIndex}
-                        </span>
-                      )}
-                    </div>
-                    {canEdit && renamingProfileId !== p.id && (
-                      <div
-                        className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {!p.isActive && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setActiveProfile.mutate({ id: p.id })
-                            }
-                            className="text-[10px] text-faint hover:text-green-600"
-                          >
-                            activate
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setRenamingProfileId(p.id);
-                            setRenameValue(p.name);
-                          }}
-                          className="text-[10px] text-faint hover:text-blue-600"
-                        >
-                          edit
-                        </button>
-                        {!p.isActive && (
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              if (await confirm(`Delete profile"${p.name}"?`)) {
-                                deleteProfile.mutate({ id: p.id });
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setViewingProfileId(p.id)}
+                    className={`w-full text-left px-3 py-2 rounded-md transition-colors group ${
+                      isViewing
+                        ? "bg-blue-50 border border-blue-300"
+                        : "hover:bg-surface-sunken border border-transparent"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        {renamingProfileId === p.id ? (
+                          <input
+                            type="text"
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            onBlur={() => {
+                              if (
+                                renameValue.trim() &&
+                                renameValue.trim() !== p.name
+                              ) {
+                                renameProfile.mutate({
+                                  id: p.id,
+                                  name: renameValue.trim(),
+                                });
                               }
+                              setRenamingProfileId(null);
                             }}
-                            className="text-[10px] text-faint hover:text-red-600"
-                          >
-                            ×
-                          </button>
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter")
+                                (e.target as HTMLInputElement).blur();
+                              if (e.key === "Escape")
+                                setRenamingProfileId(null);
+                            }}
+                            autoFocus
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-xs font-medium text-primary bg-surface-primary border border-strong rounded px-1 py-0.5 w-full"
+                          />
+                        ) : (
+                          <span className="text-xs font-medium text-primary truncate">
+                            {p.name}
+                          </span>
+                        )}
+                        {p.isActive && (
+                          <span className="text-[8px] px-1 py-0.5 rounded bg-green-100 text-green-700 font-semibold shrink-0">
+                            ACTIVE
+                          </span>
+                        )}
+                        {apiService && apiLinkedProfileId === p.id && (
+                          <span className="text-[8px] px-1 py-0.5 rounded bg-blue-100 text-blue-700 font-semibold shrink-0">
+                            ⇄ {apiService.toUpperCase()} →{""}
+                            {(p.columnLabels as string[])?.[
+                              apiLinkedColumnIndex
+                            ] ?? "Mode" + apiLinkedColumnIndex}
+                          </span>
                         )}
                       </div>
-                    )}
-                  </div>
-                  <div className="flex gap-3 mt-1 text-[10px] text-muted">
-                    <span>{formatCurrency(p.annualTotal)}/yr</span>
-                    <span>
-                      {p.columnCount} mode{p.columnCount !== 1 ? "s" : ""}
-                      {(p.columnMonths as number[] | null) ? " (weighted)" : ""}
-                    </span>
-                  </div>
-                </button>
+                      {canEdit && renamingProfileId !== p.id && (
+                        <div
+                          className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {!p.isActive && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setActiveProfile.mutate({ id: p.id })
+                              }
+                              className="text-[10px] text-faint hover:text-green-600"
+                            >
+                              activate
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRenamingProfileId(p.id);
+                              setRenameValue(p.name);
+                            }}
+                            className="text-[10px] text-faint hover:text-blue-600"
+                          >
+                            edit
+                          </button>
+                          {!p.isActive && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (
+                                  await confirm(`Delete profile"${p.name}"?`)
+                                ) {
+                                  deleteProfile.mutate({ id: p.id });
+                                }
+                              }}
+                              className="text-[10px] text-faint hover:text-red-600"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-3 mt-1 text-[10px] text-muted">
+                      <span>{formatCurrency(p.annualTotal)}/yr</span>
+                      <span>
+                        {p.columnCount} mode{p.columnCount !== 1 ? "s" : ""}
+                        {(p.columnMonths as number[] | null)
+                          ? " (weighted)"
+                          : ""}
+                      </span>
+                    </div>
+                  </button>
                 );
               })}
             </div>
@@ -1094,13 +1129,15 @@ export default function BudgetPage() {
               )}
             </div>
           </div>
-        </>
+        </CardBoundary>
       )}
 
       {activeTab === "contributions" && (
-        <ContributionProfileManager
-          canEdit={hasPermission(user, "contributionProfile")}
-        />
+        <CardBoundary title="Contribution Profiles">
+          <ContributionProfileManager
+            canEdit={hasPermission(user, "contributionProfile")}
+          />
+        </CardBoundary>
       )}
 
       {/* Push to YNAB preview modal */}
@@ -1209,9 +1246,7 @@ function buildPayrollBreakdown(paycheckData: unknown): PayrollBreakdown | null {
 
   // Build dynamic budget note from all people's notes
   const budgetNote =
-    budgetNotes.length > 0
-      ? budgetNotes.join("; ")
-      : "Regular monthly pay";
+    budgetNotes.length > 0 ? budgetNotes.join("; ") : "Regular monthly pay";
 
   return {
     grossMonthly,

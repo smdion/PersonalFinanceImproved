@@ -30,7 +30,8 @@ export default function LiabilitiesPage() {
   const [showSchedule, setShowSchedule] = useState<number | null>(null);
   const [showHistSchedule, setShowHistSchedule] = useState<number | null>(null);
   const [showManageLoans, setShowManageLoans] = useState(false);
-  const { data, isLoading, error } = trpc.mortgage.getActiveSummary.useQuery();
+  const { data, isLoading, error } =
+    trpc.mortgage.computeActiveSummary.useQuery();
   const utils = trpc.useUtils();
 
   if (isLoading) {

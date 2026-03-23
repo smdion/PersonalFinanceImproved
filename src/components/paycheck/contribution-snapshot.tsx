@@ -34,7 +34,7 @@ export function ContributionSnapshot() {
       ? { contributionProfileId: activeProfileId }
       : undefined;
   const { data, isLoading, error } =
-    trpc.contribution.getSummary.useQuery(contribInput);
+    trpc.contribution.computeSummary.useQuery(contribInput);
   const [contribPeriod, setContribPeriod] = useState<ContribPeriod>("annual");
 
   if (isLoading)

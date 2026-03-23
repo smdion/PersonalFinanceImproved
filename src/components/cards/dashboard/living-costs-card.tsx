@@ -19,7 +19,7 @@ export function LivingCostsCard() {
   const isYtd = viewMode === "ytd";
   const [budgetColumn] = usePersistedSetting<number>("budget_active_column", 0);
   const { data: budgetData, isLoading: bLoading } =
-    trpc.budget.getActiveSummary.useQuery({
+    trpc.budget.computeActiveSummary.useQuery({
       selectedColumn: budgetColumn,
     });
   const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
@@ -35,7 +35,7 @@ export function LivingCostsCard() {
       : {}),
   };
   const { data: paycheckData, isLoading: pLoading } =
-    trpc.paycheck.getSummary.useQuery(
+    trpc.paycheck.computeSummary.useQuery(
       Object.keys(lcQueryInput).length > 0 ? lcQueryInput : undefined,
     );
   const [useGross, setUseGross] = useState(false);

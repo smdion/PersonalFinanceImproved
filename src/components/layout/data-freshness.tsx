@@ -9,12 +9,8 @@ import { formatDate } from "@/lib/utils/format";
 export function DataFreshness({ compact }: { compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const utils = trpc.useUtils();
-  const { data } = trpc.settings.getDataFreshness.useQuery(undefined, {
-    staleTime: 5 * 60 * 1000,
-  });
-  const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery(undefined, {
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data } = trpc.settings.getDataFreshness.useQuery();
+  const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
   const syncAllMut = trpc.sync.syncAll.useMutation({
     onSuccess: () => {
       utils.sync.getSyncStatus.invalidate();

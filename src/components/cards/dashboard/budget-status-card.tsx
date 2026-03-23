@@ -8,7 +8,7 @@ import { LoadingCard, ErrorCard } from "./utils";
 
 export function BudgetStatusCard() {
   const [activeColumn] = usePersistedSetting<number>("budget_active_column", 0);
-  const { data, isLoading, error } = trpc.budget.getActiveSummary.useQuery({
+  const { data, isLoading, error } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
   });
   if (isLoading) return <LoadingCard title="Budget" />;
