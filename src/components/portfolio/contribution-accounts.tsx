@@ -1,5 +1,7 @@
 "use client";
 
+/** Top-level account and contribution settings panel that fetches all portfolio data via tRPC and orchestrates CRUD mutations across accounts, contributions, and sub-accounts. */
+
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";

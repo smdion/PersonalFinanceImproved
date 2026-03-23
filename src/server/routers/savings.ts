@@ -1,3 +1,4 @@
+/** Savings router for savings goals, emergency fund calculations, planned transactions, and budget API expense integration. */
 import { eq, asc, sql, lt } from "drizzle-orm";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";

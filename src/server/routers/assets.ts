@@ -1,3 +1,4 @@
+/** Asset management router covering home improvements, other assets, year-end history, and historical notes with API sync status. */
 import { and, asc, desc, eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";

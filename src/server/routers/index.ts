@@ -1,3 +1,4 @@
+/** Root tRPC router that merges all domain sub-routers into the unified app API surface. */
 import { createTRPCRouter } from "../trpc";
 import { settingsRouter } from "./settings";
 import { paycheckRouter } from "./paycheck";

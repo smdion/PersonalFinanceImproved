@@ -1,5 +1,7 @@
 "use client";
 
+/** Retirement readiness page projecting savings growth, contribution strategies, and FIRE targets. */
+
 import { useMemo, useCallback } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";

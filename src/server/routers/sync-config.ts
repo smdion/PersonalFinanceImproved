@@ -1,5 +1,4 @@
-// Sync config router — API configuration procedures (active API, linked
-// profile/column, category skip/unskip).  Extracted from sync.ts.
+/** Sync config router for managing the active budget API selection, linked profile/column settings, and category skip/unskip rules. */
 
 import { z } from "zod/v4";
 import { eq } from "drizzle-orm";

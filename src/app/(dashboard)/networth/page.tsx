@@ -1,5 +1,7 @@
 "use client";
 
+/** Net worth dashboard displaying historical charts, account breakdowns, and future projections. */
+
 import { useState, useMemo, useCallback } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";

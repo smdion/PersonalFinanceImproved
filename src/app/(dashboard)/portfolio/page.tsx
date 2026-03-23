@@ -1,5 +1,7 @@
 "use client";
 
+/** Portfolio overview page showing account holdings, allocation, and point-in-time snapshots. */
+
 import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";

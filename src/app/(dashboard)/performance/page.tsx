@@ -1,5 +1,7 @@
 "use client";
 
+/** Portfolio performance page tracking time-weighted returns across accounts and time periods. */
+
 import React, { useState } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { confirm } from "@/components/ui/confirm-dialog";

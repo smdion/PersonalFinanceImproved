@@ -1,5 +1,6 @@
 "use client";
 
+/** Year-by-year projection table with dynamic column headers, accumulation/decumulation row delegation, and Monte Carlo overlay. */
 import { HelpTip } from "@/components/ui/help-tip";
 import { Tooltip } from "@/components/ui/tooltip";
 import {

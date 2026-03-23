@@ -1,5 +1,7 @@
 "use client";
 
+/** Form for creating a new performance account with institution, type, ownership, and category fields. */
+
 import React, { useState } from "react";
 import {
   ACCOUNT_TYPE_CONFIG,

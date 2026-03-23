@@ -1,5 +1,6 @@
 "use client";
 
+/** Settings tab for managing long-term capital gains tax brackets by tax year and filing status, with inline threshold/rate editing and year duplication. */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";

@@ -1,5 +1,6 @@
 "use client";
 
+/** Debug settings tab providing diagnostics mode toggle, data freshness date overrides, an embedded test runner, and a danger-zone full data reset. */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { usePersistedToggle } from "@/lib/hooks/use-persisted-setting";

@@ -1,3 +1,4 @@
+/** Mortgage router for amortization calculations, extra payment tracking, and what-if refinance scenarios across multiple loans. */
 import { asc } from "drizzle-orm";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";

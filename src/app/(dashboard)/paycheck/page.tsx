@@ -1,5 +1,7 @@
 "use client";
 
+/** Paycheck gross-to-net calculator that breaks down taxes, deductions, and take-home pay. */
+
 import React, { useState } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";

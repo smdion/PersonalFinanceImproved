@@ -1,3 +1,4 @@
+/** Projection router for long-term financial forecasting including accumulation/decumulation phases, Monte Carlo simulations, and lump-sum scenario modeling. */
 import { eq, asc, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../trpc";

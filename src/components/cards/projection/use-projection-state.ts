@@ -1,7 +1,4 @@
-// Projection state — thin composition of domain-specific sub-hooks.
-// Sub-hooks: form state (UI), queries (data fetching), derived (computed data).
-// Override form handlers live here because they bridge form state + derived data.
-
+/** Projection state — composes form state, data-fetching queries, and derived computations into a single hook, plus override form submission handlers that bridge them. */
 import { useCallback } from "react";
 import type { AccountCategory } from "@/lib/calculators/types";
 import {

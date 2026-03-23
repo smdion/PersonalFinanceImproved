@@ -1,6 +1,4 @@
-// Data fetching and mutations for the projection card.
-// Depends on form state (overrides, MC settings) to build query inputs.
-
+/** Data fetching and mutations for the projection card — deterministic engine query, Monte Carlo queries with prefetch, salary/budget override CRUD, and glide-path mutations. */
 import { useMemo, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";

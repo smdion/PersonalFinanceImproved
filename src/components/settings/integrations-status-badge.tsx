@@ -1,3 +1,4 @@
+/** Renders a colored status badge (linked, suggested, or unmatched) for budget/savings integration match rows. */
 import React from "react";
 import { STATUS_STYLES } from "./integrations-types";
 

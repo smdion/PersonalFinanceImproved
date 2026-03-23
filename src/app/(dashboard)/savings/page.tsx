@@ -1,5 +1,7 @@
 "use client";
 
+/** Savings goals tracking page showing progress, contributions, and projected completion dates. */
+
 import React, { useRef, useState } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";

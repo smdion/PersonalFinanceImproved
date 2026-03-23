@@ -1,5 +1,6 @@
 "use client";
 
+/** Settings tab for managing household members (name, date of birth, primary flag) using the generic DataTable with an inline person form. */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";

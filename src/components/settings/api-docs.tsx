@@ -1,5 +1,6 @@
 "use client";
 
+/** Interactive API documentation browser that lists all tRPC endpoints with filtering by router, auth level, and type, and expands to show input schema fields. */
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import type { ApiEndpoint } from "@/lib/types/api-docs";

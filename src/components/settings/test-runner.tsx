@@ -1,5 +1,6 @@
 "use client";
 
+/** In-browser test runner UI that executes Vitest suites via tRPC, with directory quick-run buttons, custom file filtering, and per-file pass/fail result display. */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 

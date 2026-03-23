@@ -1,3 +1,4 @@
+/** Expandable section below the projection table showing contribution specs, methodology links, and engine validation evidence. */
 import React from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { accountColor, taxTypeTextColor, taxTypeLabel } from "@/lib/utils/colors";

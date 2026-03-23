@@ -1,3 +1,4 @@
+/** Admin data browser router for inspecting database tables, columns, and row data with raw SQL queries against a whitelisted table set. */
 import { z } from "zod/v4";
 import { sql } from "drizzle-orm";
 import { createTRPCRouter, adminProcedure } from "../trpc";

@@ -1,3 +1,4 @@
+/** Renders a single accumulation-phase table row with salary, contribution breakdowns, balance columns, and MC cell. */
 import React from "react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { accountTextColor, taxTypeTextColor, taxTypeLabel } from "@/lib/utils/colors";

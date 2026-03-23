@@ -1,5 +1,7 @@
 "use client";
 
+/** Settings page with tabbed panels for managing people, tax brackets, contribution limits, and app config. */
+
 import { PeopleSettings } from "@/components/settings/people";
 import { ContributionLimitsSettings } from "@/components/settings/contribution-limits";
 import { TaxBracketsSettings } from "@/components/settings/tax-brackets";

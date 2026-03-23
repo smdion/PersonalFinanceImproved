@@ -1,3 +1,5 @@
+/** Login page supporting credential-based and OIDC authentication flows. */
+
 import { Suspense } from "react";
 import { LoginForm } from "./login-form";
 

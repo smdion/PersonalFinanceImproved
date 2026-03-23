@@ -1,3 +1,4 @@
+/** Demo router for creating, listing, activating, and destroying isolated demo schemas seeded with predefined financial profiles. */
 import { z } from "zod/v4";
 import { sql } from "drizzle-orm";
 import { cookies } from "next/headers";

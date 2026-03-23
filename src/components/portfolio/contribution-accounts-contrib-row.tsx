@@ -1,5 +1,7 @@
 "use client";
 
+/** Contribution row UI: displays a single contribution's summary/edit view with tax treatment, method, employer match fields, and an add-contribution form. */
+
 import React, { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, accountDisplayName } from "@/lib/utils/format";

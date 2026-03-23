@@ -1,3 +1,5 @@
+/** Reusable inline-edit primitives (text input and select) used by contribution-account detail forms. */
+
 import React from "react";
 
 export function InlineText({

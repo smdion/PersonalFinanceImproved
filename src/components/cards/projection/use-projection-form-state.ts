@@ -1,6 +1,4 @@
-// Form and UI state for the projection card.
-// Pure local state — no external dependencies, no queries.
-
+/** Pure local form and UI state for the projection card — withdrawal config, override forms, view toggles, and MC settings with no external dependencies. */
 import { useState } from "react";
 import type { AccountCategory } from "@/lib/calculators/types";
 import { type AssetClassOverride } from "@/components/cards/mc-simulation-assumptions";

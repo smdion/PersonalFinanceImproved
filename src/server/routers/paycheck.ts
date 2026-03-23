@@ -1,3 +1,4 @@
+/** Paycheck router for gross-to-net pay calculations including federal/state tax withholding, pre-tax deductions, and per-period contribution breakdowns. */
 import { eq, asc } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../trpc";

@@ -1,5 +1,7 @@
 "use client";
 
+/** Tracks miscellaneous assets such as home improvements and vehicles, with value editing and categorized summaries. */
+
 import { useState } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";

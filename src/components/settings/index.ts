@@ -1,3 +1,4 @@
+/** Barrel export for all settings tab components. */
 export { GeneralSettings } from "./general";
 export { PeopleSettings } from "./people";
 export { ContributionLimitsSettings } from "./contribution-limits";

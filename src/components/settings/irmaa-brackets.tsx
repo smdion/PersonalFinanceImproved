@@ -1,5 +1,6 @@
 "use client";
 
+/** Settings tab for managing Medicare IRMAA surcharge brackets by tax year and filing status, with inline threshold/surcharge editing and year duplication. */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";

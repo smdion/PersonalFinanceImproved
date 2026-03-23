@@ -1,5 +1,7 @@
 "use client";
 
+/** Admin-only database table inspector that lets authorized users browse raw table data with pagination. */
+
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatNumber } from "@/lib/utils/format";

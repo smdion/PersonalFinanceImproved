@@ -1,5 +1,4 @@
-// Sync router — budget API connection management and data synchronization.
-// Split into domain sub-routers for maintainability; merged flat to preserve API surface.
+/** Sync router that merges connection, core sync, config, name-matching, and account-mapping sub-routers into a flat API surface for budget API synchronization. */
 
 import { mergeRouters } from "../trpc";
 import { syncConnectionsRouter } from "./sync-connections";

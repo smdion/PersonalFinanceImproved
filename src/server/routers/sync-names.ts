@@ -1,4 +1,4 @@
-// Sync Names router — rename Ledgr items to match API names (or vice versa).
+/** Sync names router for renaming budget item subcategories to match API category names or vice versa. */
 
 import { z } from "zod/v4";
 import { eq, isNotNull } from "drizzle-orm";

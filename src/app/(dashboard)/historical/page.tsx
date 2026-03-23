@@ -1,5 +1,7 @@
 "use client";
 
+/** Shows historical year-end net worth and account balances with trend charts and annual growth metrics. */
+
 import { useState } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";

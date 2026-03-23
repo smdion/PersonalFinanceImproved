@@ -1,3 +1,4 @@
+/** Introspection router that walks the app router tree to produce a list of all API endpoints for the docs UI. */
 import { createTRPCRouter, adminProcedure } from "../trpc";
 import { walkRouter, type ApiEndpoint } from "../api-docs";
 

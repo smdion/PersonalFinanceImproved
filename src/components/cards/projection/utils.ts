@@ -1,3 +1,4 @@
+/** Data-driven utility functions and lookup tables for the projection table — tax bucket mapping, slot/column balance extraction, parent-category filtering, and per-account split computation. */
 import type {
   EngineYearProjection,
   EngineAccumulationYear,

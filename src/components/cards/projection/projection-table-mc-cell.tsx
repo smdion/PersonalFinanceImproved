@@ -1,3 +1,4 @@
+/** Renders a single Monte Carlo median cell with p5-p95 percentile tooltip and delta-vs-deterministic indicator. */
 import React from "react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";

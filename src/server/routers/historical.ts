@@ -1,3 +1,4 @@
+/** Historical data router providing year-end balance history, salary timelines, home improvements, other assets, and historical notes management. */
 import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";

@@ -1,5 +1,7 @@
 "use client";
 
+/** Sub-account UI: renders individual sub-account rows with owner/active controls, a collapsible inactive section, and an add-sub-account form. */
+
 import React, { useState } from "react";
 import { formatCurrency } from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";

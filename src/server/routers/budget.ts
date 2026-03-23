@@ -1,3 +1,4 @@
+/** Budget router for multi-profile budget management including category items, column tiers, contribution profile linking, and budget API integration. */
 import { eq, asc } from "drizzle-orm";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";

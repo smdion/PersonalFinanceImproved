@@ -1,6 +1,4 @@
-// Derived/computed data from engine query results.
-// Memoized transformations, filtering, and presentation helpers.
-
+/** Memoized derived data from engine query results — person filtering, visible column detection, deflation, contribution rate schedules, tooltip rendering, and milestone-based year filtering. */
 import { useMemo, useCallback, useEffect } from "react";
 import type {
   EngineYearProjection,

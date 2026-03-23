@@ -1,5 +1,6 @@
 "use client";
 
+/** Settings tab for managing the age-based expected annual return rate table used by projection calculators, with inline rate editing and row add/delete. */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";

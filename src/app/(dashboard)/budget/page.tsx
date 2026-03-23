@@ -1,5 +1,7 @@
 "use client";
 
+/** Multi-profile budget management page with per-column paycheck breakdowns, salary overrides, and category-level editing. */
+
 import React, { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";

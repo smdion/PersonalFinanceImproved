@@ -1,5 +1,7 @@
 "use client";
 
+/** Displays taxable brokerage account balances, goals, and projection charts with permission-gated editing. */
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";

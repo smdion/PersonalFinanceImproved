@@ -1,3 +1,4 @@
+/** Admin testing router that executes Vitest test suites on-demand and returns structured pass/fail results. */
 import { z } from "zod/v4";
 import { execSync } from "child_process";
 import { createTRPCRouter, adminProcedure } from "../trpc";

@@ -1,5 +1,7 @@
 "use client";
 
+/** Expandable account card that composes settings, sub-accounts, and contributions sections for a single performance account. */
+
 import React, { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, accountDisplayName } from "@/lib/utils/format";

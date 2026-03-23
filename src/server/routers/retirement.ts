@@ -1,3 +1,4 @@
+/** Retirement router for readiness analysis including savings rates, employer matches, tax bucket projections, relocation comparisons, and profile-switching scenarios. */
 import { eq, asc, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../trpc";

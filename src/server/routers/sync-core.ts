@@ -1,5 +1,4 @@
-// Sync core router — syncAll, getPreview, computeExpenseComparison.
-// Extracted from sync.ts to keep router files focused.
+/** Sync core router handling full data synchronization, sync preview generation, and expense comparison between budget API and local data. */
 
 import { z } from "zod/v4";
 import { eq, sql } from "drizzle-orm";

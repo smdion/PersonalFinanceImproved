@@ -1,5 +1,7 @@
 "use client";
 
+/** Database version snapshots page for browsing, comparing, and restoring historical data states. */
+
 import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";

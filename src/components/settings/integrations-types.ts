@@ -1,4 +1,4 @@
-// Shared types for integration sub-components.
+/** Shared TypeScript types, interfaces, and style constants for the budget API integration sub-components (YNAB/Actual). */
 
 export type Service = "ynab" | "actual";
 

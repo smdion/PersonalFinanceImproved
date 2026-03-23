@@ -1,5 +1,6 @@
 "use client";
 
+/** Unified overrides panel for accumulation/decumulation, salary, and budget year-level overrides with inline add/edit/delete forms. */
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { taxTypeLabel, accountTextColor } from "@/lib/utils/colors";

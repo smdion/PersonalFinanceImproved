@@ -1,5 +1,7 @@
 "use client";
 
+/** Time-frame-selectable area chart that visualizes portfolio total value over time from snapshot data, with hover tooltips showing period-over-period change. */
+
 import { useState, useMemo, useRef } from "react";
 import {
   AreaChart,

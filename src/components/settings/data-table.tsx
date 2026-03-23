@@ -1,5 +1,6 @@
 "use client";
 
+/** Generic CRUD data table component with column rendering, inline add/edit forms, and row deletion — used by settings tabs like People. */
 import { useState } from "react";
 import { confirm } from "@/components/ui/confirm-dialog";
 

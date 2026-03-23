@@ -1,3 +1,4 @@
+/** Shared TypeScript types for the projection table, including the full ProjectionState shape and table component props. */
 import type { useProjectionState } from "./use-projection-state";
 
 export type ProjectionState = ReturnType<typeof useProjectionState>;

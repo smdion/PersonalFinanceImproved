@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Contribution accounts split** — split 2,107-line `contribution-accounts.tsx` into 7 flat sibling files (AccountCard, SubAccountRow, ContributionRow, CreateAccountForm, InlineText/InlineSelect, shared types); orchestrator reduced to 607 lines
 - **Integrations split** — split 2,203-line `integrations.tsx` into 5 flat sibling files (PreviewPanel 1,554 lines, StatusBadge, ApiCategorySelect, shared types); orchestrator reduced to 458 lines
 - **Projection table split** — split 3,667-line `projection-table.tsx` into 6 flat sibling files (AccumulationRow, DecumulationRow, renderMcCell, ContribMethodologySection, shared types); orchestrator reduced to 401 lines; renderMcCell uses explicit parameter object per module interface contracts
+- **Component-level JSDoc** — added module-level JSDoc comments to 89 files: 16 projection components, 8 portfolio components, 18 settings components, 25 router files, and 22 page components; coverage raised from 19% to ~73%
 
 ### Fixed
 

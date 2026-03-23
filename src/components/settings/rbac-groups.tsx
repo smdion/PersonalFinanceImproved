@@ -1,5 +1,6 @@
 "use client";
 
+/** Settings tab for configuring RBAC by mapping Authentik OIDC group names to app permissions (admin, scenario, portfolio, etc.), with setup instructions and reset-to-defaults. */
 import React, { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";

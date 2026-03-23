@@ -1,5 +1,7 @@
 "use client";
 
+/** Manages retirement and savings contribution allocations across accounts, with IRS limit tracking and profile switching. */
+
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";

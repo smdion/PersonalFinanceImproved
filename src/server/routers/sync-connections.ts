@@ -1,4 +1,4 @@
-// Sync connection management — CRUD for budget API connections and status checks.
+/** Sync connections router for CRUD operations on YNAB/Actual budget API credentials and connection status checks. */
 
 import { z } from "zod/v4";
 import { eq } from "drizzle-orm";

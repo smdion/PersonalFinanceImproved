@@ -1,5 +1,7 @@
 "use client";
 
+/** Analyzes and compares expenses across budget profiles and categories with bar charts and period-over-period breakdowns. */
+
 import { useState, useMemo, useCallback } from "react";
 import { SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";

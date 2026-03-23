@@ -1,3 +1,4 @@
+/** Net worth router that aggregates account snapshots, mortgage balances, cash, and other assets into a current and projected net worth summary. */
 import { eq, asc, desc, sql, gte, lte, and } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../trpc";

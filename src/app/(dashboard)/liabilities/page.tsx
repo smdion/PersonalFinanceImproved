@@ -1,5 +1,7 @@
 "use client";
 
+/** Consolidated liabilities page showing mortgage details, amortization schedule, and other outstanding debts. */
+
 import { useState } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";

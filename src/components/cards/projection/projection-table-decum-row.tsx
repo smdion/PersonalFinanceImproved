@@ -1,3 +1,4 @@
+/** Renders a single decumulation-phase table row with withdrawal breakdowns, tax costs, balance columns, and MC cell. */
 import React from "react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { accountTextColor, taxTypeTextColor, taxTypeLabel } from "@/lib/utils/colors";

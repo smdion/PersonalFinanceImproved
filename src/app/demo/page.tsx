@@ -1,5 +1,7 @@
 "use client";
 
+/** Demo mode entry page for selecting a demo profile and launching the app without credentials. */
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";

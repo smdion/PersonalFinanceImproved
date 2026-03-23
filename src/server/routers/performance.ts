@@ -1,3 +1,4 @@
+/** Performance router for portfolio time-weighted return tracking, snapshot ingestion, account-level performance history, and category rollup calculations. */
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { asc, eq, and, sql } from "drizzle-orm";

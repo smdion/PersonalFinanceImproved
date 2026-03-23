@@ -1,5 +1,6 @@
 "use client";
 
+/** Top-level ProjectionCard component — orchestrates the projection state hook, chart visualization, MC simulation controls, and delegates to ProjectionTable, OverridesPanel, and DecumulationConfig. */
 import { Toggle } from "@/components/ui/toggle";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SlidePanel } from "@/components/ui/slide-panel";

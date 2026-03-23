@@ -1,3 +1,4 @@
+/** Brokerage router for managing taxable investment goals, planned transactions, and allocation tracking. */
 import { eq, asc } from "drizzle-orm";
 import { z } from "zod/v4";
 import {

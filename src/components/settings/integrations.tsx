@@ -1,5 +1,6 @@
 "use client";
 
+/** Settings tab for managing YNAB and Actual Budget API connections — handles credential entry, connection testing, syncing, activation, and renders the preview panel for each service. */
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";

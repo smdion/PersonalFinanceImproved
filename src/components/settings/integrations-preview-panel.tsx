@@ -1,5 +1,6 @@
 "use client";
 
+/** Displays the post-sync preview panel for a budget API integration, showing cash, accounts, category mappings, budget/savings matches, portfolio links, and profile configuration. */
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils/format";

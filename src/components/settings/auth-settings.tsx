@@ -1,5 +1,6 @@
 "use client";
 
+/** Settings tab for Authentik OIDC authentication — displays required environment variables and provides a connection test button. */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 

@@ -1,5 +1,7 @@
 "use client";
 
+/** Financial calculators and tools page (compound interest, loan payoff, tax estimators, etc.). */
+
 import { useState, useMemo, useCallback } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";

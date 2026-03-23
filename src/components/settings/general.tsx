@@ -1,5 +1,6 @@
 "use client";
 
+/** General settings tab containing the living-cost category mapping editor, which assigns budget categories to Dave Ramsey spending ranges. */
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import {

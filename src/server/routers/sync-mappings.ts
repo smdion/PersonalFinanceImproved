@@ -1,5 +1,4 @@
-// Sync-mappings router — account mapping procedures for portfolio push + asset tracking.
-// Extracted from sync.ts to keep router files focused.
+/** Sync mappings router for managing account-level mappings between budget API accounts and local portfolio/asset tracking accounts. */
 
 import { z } from "zod/v4";
 import { eq, sql } from "drizzle-orm";
