@@ -1000,6 +1000,20 @@ export type ContributionSpec = {
  * 3. The engine resolves the full config per year (sticky-forward per field)
  *    and routes money accordingly.
  */
+/** A mid-projection contribution profile switch entry.
+ *  Contains the contribution structure to swap in at the target year.
+ *  Salary overrides from profiles are handled separately via perPersonSalaryOverrides. */
+export type ProfileSwitch = {
+  year: number;
+  contributionSpecs: ContributionSpec[];
+  employerMatchRateByCategory: Record<AccountCategory, number>;
+  /** Base-year contributions per category. Used for year-0 real-contrib path
+   *  and brokerage intentional-contribution detection in all years. */
+  baseYearContributions: Record<AccountCategory, number>;
+  baseYearEmployerMatch: Record<AccountCategory, number>;
+  employerMatchByParentCat?: Map<AccountCategory, Map<string, number>>;
+};
+
 export type ProjectionInput = {
   // --- Defaults (from Projection Assumptions) ---
   accumulationDefaults: AccumulationDefaults;
@@ -1078,6 +1092,16 @@ export type ProjectionInput = {
    * - Brokerage / ESPP accounts have no IRS cap
    */
   contributionSpecs?: ContributionSpec[];
+
+  /**
+   * Mid-projection contribution profile switches. When a user selects a
+   * different contribution profile for a future year, the engine swaps in
+   * that profile's full contribution structure (specs, employer match).
+   * Salary overrides from profiles are fed into perPersonSalaryOverrides
+   * by the router — the engine handles them via the existing salary mechanism.
+   * Sorted by year ascending.
+   */
+  profileSwitches?: ProfileSwitch[];
 
   // --- Real contribution amounts for base year ---
   /** Actual per-category contributions from paycheck data. Used for year 0

@@ -1,0 +1,2 @@
+ALTER TABLE "retirement_salary_overrides" ADD COLUMN "contribution_profile_id" integer;--> statement-breakpoint
+ALTER TABLE "retirement_salary_overrides" ADD CONSTRAINT "retirement_salary_overrides_contribution_profile_id_contribution_profiles_id_fk" FOREIGN KEY ("contribution_profile_id") REFERENCES "public"."contribution_profiles"("id") ON DELETE set null ON UPDATE no action;

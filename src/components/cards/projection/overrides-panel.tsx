@@ -164,7 +164,7 @@ export function OverridesPanel({ state: s, accumulationExpenseOverride }: Overri
                                 {Object.entries(o.accountCaps)
                                   .map(
                                     ([k, v]) =>
-                                      `${k}=${formatCurrency(v as number)}`,
+                                      `${catDisplayLabel[k] ?? k}=${formatCurrency(v as number)}`,
                                   )
                                   .join(",")}
                               </span>
@@ -175,7 +175,7 @@ export function OverridesPanel({ state: s, accumulationExpenseOverride }: Overri
                                 {Object.entries(o.taxSplits)
                                   .map(
                                     ([k, v]) =>
-                                      `${k}=${formatPercent(v as number)}R`,
+                                      `${catDisplayLabel[k] ?? k}=${formatPercent(v as number)}R`,
                                   )
                                   .join(",")}
                               </span>
@@ -186,7 +186,7 @@ export function OverridesPanel({ state: s, accumulationExpenseOverride }: Overri
                                 {Object.entries(o.taxTypeCaps)
                                   .map(
                                     ([k, v]) =>
-                                      `${k}=${formatCurrency(v as number)}`,
+                                      `${k === "traditional" ? "Trad" : k === "roth" ? "Roth" : k}=${formatCurrency(v as number)}`,
                                   )
                                   .join(",")}
                               </span>
@@ -588,7 +588,7 @@ export function OverridesPanel({ state: s, accumulationExpenseOverride }: Overri
                                 {Object.entries(o.withdrawalAccountCaps)
                                   .map(
                                     ([k, v]) =>
-                                      `${k}=${formatCurrency(v as number)}`,
+                                      `${catDisplayLabel[k] ?? k}=${formatCurrency(v as number)}`,
                                   )
                                   .join(",")}
                               </span>
@@ -1056,12 +1056,12 @@ export function OverridesPanel({ state: s, accumulationExpenseOverride }: Overri
               )}
             </div>
 
-            {/* --- LIFE CHANGES — salary & budget --- */}
+            {/* --- LIFE CHANGES — contribution & budget --- */}
             <div className="border-t border-subtle pt-3">
               <div className="flex items-center justify-between mb-2">
                 <h5 className="text-[11px] font-medium text-muted uppercase tracking-wide">
-                  Salary &amp; Budget
-                  <HelpTip text="Per-year overrides for salary and monthly budget. Each override sticks forward until the next one. These are saved to the database and persist across sessions." />
+                  Contribution &amp; Budget
+                  <HelpTip text="Per-year overrides for contribution profile (salary + contributions) and monthly budget. Each override sticks forward until the next one. These are saved to the database and persist across sessions." />
                 </h5>
                 <button
                   type="button"
@@ -1077,7 +1077,7 @@ export function OverridesPanel({ state: s, accumulationExpenseOverride }: Overri
                 <div className="flex flex-wrap gap-3 text-xs text-faint">
                   {(dbSalaryOverrides ?? []).length > 0 && (
                     <span>
-                      {dbSalaryOverrides!.length} salary override
+                      {dbSalaryOverrides!.length} contribution override
                       {dbSalaryOverrides!.length !== 1 ? "s" : ""}
                     </span>
                   )}
@@ -1095,11 +1095,12 @@ export function OverridesPanel({ state: s, accumulationExpenseOverride }: Overri
 
               {showLifeOverrides && (
                 <div className="space-y-4">
-                  {/* Salary Overrides */}
+                  {/* Contribution Overrides */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[10px] font-medium text-muted uppercase">
-                        Salary
+                        Contribution
+                        <HelpTip text="Override the contribution profile (salary + contributions) at a specific future year. The salary from the selected profile is adjusted to future dollars using your Pre-Retirement Raise rate." />
                         {isPersonFiltered && (
                           <span className="text-blue-500 normal-case font-normal ml-1">
                             ({personFilterName})
@@ -1127,8 +1128,17 @@ export function OverridesPanel({ state: s, accumulationExpenseOverride }: Overri
                               <span className="font-medium">
                                 {o.projectionYear}
                               </span>
-                              {" →"}
-                              {formatCurrency(o.overrideSalary)}/yr
+                              {" → "}
+                              {o.contributionProfileId
+                                ? (() => {
+                                    const profile = s.contribProfileSummaries?.find(
+                                      (p) => p.id === o.contributionProfileId,
+                                    );
+                                    return profile
+                                      ? `${profile.name} (${formatCurrency(o.overrideSalary)}/yr)`
+                                      : `${formatCurrency(o.overrideSalary)}/yr`;
+                                  })()
+                                : `${formatCurrency(o.overrideSalary)}/yr`}
                               {enginePeople && enginePeople.length > 1 && (
                                 <span className="text-blue-500 text-[10px] ml-1">
                                   [
@@ -1149,7 +1159,7 @@ export function OverridesPanel({ state: s, accumulationExpenseOverride }: Overri
                               onClick={() =>
                                 deleteSalaryOverride.mutate({ id: o.id })
                               }
-                              aria-label="Remove salary override"
+                              aria-label="Remove contribution override"
                             >
                               ×
                             </button>
@@ -1160,31 +1170,7 @@ export function OverridesPanel({ state: s, accumulationExpenseOverride }: Overri
 
                     {showSalaryForm && (
                       <div className="bg-surface-sunken border rounded-lg p-3 space-y-2">
-                        {(() => {
-                          let currentSal = combinedSalary;
-                          if (
-                            isPersonFiltered &&
-                            salaryByPerson &&
-                            enginePeople
-                          ) {
-                            const person = enginePeople.find(
-                              (p) => p.id === personFilter,
-                            );
-                            if (person && salaryByPerson[person.id] != null) {
-                              currentSal = salaryByPerson[person.id]!;
-                            }
-                          }
-                          return currentSal > 0 ? (
-                            <p className="text-[10px] text-faint">
-                              Current:{""}
-                              <span className="font-medium text-muted">
-                                {formatCurrency(currentSal)}/yr
-                              </span>
-                              {isPersonFiltered ? ` (${personFilterName})` : ""}
-                            </p>
-                          ) : null;
-                        })()}
-                        <div className="flex gap-2 items-end">
+                        <div className="flex gap-2 items-end flex-wrap">
                           <label className="block">
                             <span className="text-[10px] text-muted">Year</span>
                             <input
@@ -1199,22 +1185,87 @@ export function OverridesPanel({ state: s, accumulationExpenseOverride }: Overri
                               className="mt-0.5 block w-20 rounded border border-strong px-2 py-1 text-xs"
                             />
                           </label>
-                          <label className="block flex-1">
+                          <label className="block">
                             <span className="text-[10px] text-muted">
-                              Annual Salary ($)
+                              Source
                             </span>
-                            <input
-                              type="number"
-                              value={salaryForm.value}
+                            <select
+                              value={salaryForm.source}
                               onChange={(e) =>
                                 setSalaryForm((f) => ({
                                   ...f,
-                                  value: e.target.value,
+                                  source: e.target.value as "custom" | "profile",
                                 }))
                               }
-                              className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-xs"
-                            />
+                              className="mt-0.5 block rounded border border-strong px-2 py-1 text-xs"
+                            >
+                              {s.contribProfileSummaries &&
+                                s.contribProfileSummaries.length > 0 && (
+                                  <option value="profile">
+                                    From contribution profile
+                                  </option>
+                                )}
+                              <option value="custom">Custom amount</option>
+                            </select>
                           </label>
+                          {salaryForm.source === "profile" &&
+                            s.contribProfileSummaries && (
+                              <label className="block">
+                                <span className="text-[10px] text-muted">
+                                  Profile
+                                </span>
+                                <select
+                                  value={salaryForm.profileId}
+                                  onChange={(e) =>
+                                    setSalaryForm((f) => ({
+                                      ...f,
+                                      profileId: e.target.value,
+                                    }))
+                                  }
+                                  className="mt-0.5 block rounded border border-strong px-2 py-1 text-xs"
+                                >
+                                  <option value="">Select...</option>
+                                  {s.contribProfileSummaries
+                                    .slice()
+                                    .sort((a, b) =>
+                                      a.isDefault === b.isDefault
+                                        ? 0
+                                        : a.isDefault
+                                          ? -1
+                                          : 1,
+                                    )
+                                    .map((cp) => (
+                                      <option
+                                        key={cp.id}
+                                        value={String(cp.id)}
+                                      >
+                                        {cp.isDefault ? "\u2713 " : ""}
+                                        {cp.name} (
+                                        {formatCurrency(cp.summary.combinedSalary)}
+                                        /yr)
+                                      </option>
+                                    ))}
+                                </select>
+                              </label>
+                            )}
+                          {salaryForm.source === "custom" && (
+                            <label className="block flex-1">
+                              <span className="text-[10px] text-muted">
+                                Annual Salary ($)
+                              </span>
+                              <input
+                                type="number"
+                                value={salaryForm.value}
+                                onChange={(e) =>
+                                  setSalaryForm((f) => ({
+                                    ...f,
+                                    value: e.target.value,
+                                  }))
+                                }
+                                className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-xs"
+                              />
+                            </label>
+                          )}
                           <label className="block flex-1">
                             <span className="text-[10px] text-muted">
                               Notes
@@ -1228,11 +1279,47 @@ export function OverridesPanel({ state: s, accumulationExpenseOverride }: Overri
                                   notes: e.target.value,
                                 }))
                               }
-                              placeholder="e.g. Promotion"
+                              placeholder="e.g. New job, Promotion"
                               className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-xs"
                             />
                           </label>
                         </div>
+                        {/* Preview resolved value for profile source */}
+                        {salaryForm.source === "profile" &&
+                          salaryForm.profileId &&
+                          salaryForm.year &&
+                          (() => {
+                            const profile = s.contribProfileSummaries?.find(
+                              (p) => String(p.id) === salaryForm.profileId,
+                            );
+                            if (!profile) return null;
+                            const baseSalary = profile.summary.combinedSalary;
+                            const yr = parseInt(salaryForm.year);
+                            const currentYear = new Date().getFullYear();
+                            const yearsOut = Math.max(0, yr - currentYear);
+                            const raiseRate = s.engineSettings?.salaryAnnualIncrease
+                              ? Number(s.engineSettings.salaryAnnualIncrease)
+                              : 0;
+                            const futureSalary =
+                              baseSalary * Math.pow(1 + raiseRate, yearsOut);
+                            return (
+                              <p className="text-[10px] text-muted">
+                                {profile.name}: {formatCurrency(baseSalary)}/yr today
+                                {yearsOut > 0 && raiseRate > 0 && (
+                                  <>
+                                    {" → "}
+                                    <span className="font-medium text-emerald-600">
+                                      {formatCurrency(futureSalary)}/yr
+                                    </span>
+                                    {" in "}
+                                    {yr} ({formatPercent(raiseRate)}/yr raise
+                                    {" × "}
+                                    {yearsOut}yr)
+                                  </>
+                                )}
+                              </p>
+                            );
+                          })()}
                         <div className="flex gap-2">
                           <button
                             type="button"
@@ -1240,15 +1327,47 @@ export function OverridesPanel({ state: s, accumulationExpenseOverride }: Overri
                             onClick={() => {
                               if (!salaryOverridePersonId) return;
                               const yr = parseInt(salaryForm.year);
-                              const val = parseFloat(salaryForm.value);
-                              if (isNaN(yr) || isNaN(val)) return;
+                              if (isNaN(yr)) return;
+
+                              let resolvedSalary: number;
+                              let notes = salaryForm.notes || "";
+
+                              let contributionProfileId: number | null = null;
+
+                              if (salaryForm.source === "profile") {
+                                const profile = s.contribProfileSummaries?.find(
+                                  (p) => String(p.id) === salaryForm.profileId,
+                                );
+                                if (!profile) return;
+                                // Store the profile's base salary for display (engine uses full profile data)
+                                resolvedSalary = profile.summary.combinedSalary;
+                                contributionProfileId = profile.id;
+                                // Prepend profile name to notes
+                                const profileNote = `Profile: ${profile.name}`;
+                                notes = notes
+                                  ? `${profileNote} — ${notes}`
+                                  : profileNote;
+                              } else {
+                                resolvedSalary = parseFloat(salaryForm.value);
+                                if (isNaN(resolvedSalary)) return;
+                              }
+
                               createSalaryOverride.mutate({
                                 personId: salaryOverridePersonId,
                                 projectionYear: yr,
-                                overrideSalary: String(val),
-                                notes: salaryForm.notes || null,
+                                overrideSalary: String(
+                                  Math.round(resolvedSalary * 100) / 100,
+                                ),
+                                contributionProfileId,
+                                notes: notes || null,
                               });
-                              setSalaryForm({ year: "", value: "", notes: "" });
+                              setSalaryForm({
+                                year: "",
+                                source: "profile",
+                                profileId: "",
+                                value: "",
+                                notes: "",
+                              });
                               setShowSalaryForm(false);
                             }}
                           >
@@ -1505,13 +1624,30 @@ export function OverridesPanel({ state: s, accumulationExpenseOverride }: Overri
                             const colIdx =
                               parseInt(budgetForm.profileColumn, 10) || 0;
                             const monthly = profile.columnTotals[colIdx] ?? 0;
+                            const yr = parseInt(budgetForm.year);
+                            const currentYear = new Date().getFullYear();
+                            const yearsOut =
+                              !isNaN(yr) ? Math.max(0, yr - currentYear) : 0;
+                            const inflationRate =
+                              s.engineSettings?.annualInflation
+                                ? Number(s.engineSettings.annualInflation)
+                                : 0;
+                            const futureMonthly =
+                              monthly * Math.pow(1 + inflationRate, yearsOut);
                             return (
                               <p className="text-[10px] text-muted">
-                                Resolved:{""}
-                                <span className="font-medium">
-                                  {formatCurrency(monthly)}/mo
-                                </span>
-                                {""}({formatCurrency(monthly * 12)}/yr)
+                                {formatCurrency(monthly)}/mo today
+                                {yearsOut > 0 && inflationRate > 0 && (
+                                  <>
+                                    {" → "}
+                                    <span className="font-medium text-emerald-600">
+                                      {formatCurrency(futureMonthly)}/mo
+                                    </span>
+                                    {" in "}
+                                    {yr} ({formatPercent(inflationRate)}/yr
+                                    inflation × {yearsOut}yr)
+                                  </>
+                                )}
                               </p>
                             );
                           })()}
@@ -1543,14 +1679,31 @@ export function OverridesPanel({ state: s, accumulationExpenseOverride }: Overri
                                 if (!profile) return;
                                 const colIdx =
                                   parseInt(budgetForm.profileColumn, 10) || 0;
-                                resolvedValue =
+                                const todayMonthly =
                                   profile.columnTotals[colIdx] ?? 0;
+                                // Inflate to future dollars at the target year
+                                const currentYear = new Date().getFullYear();
+                                const yearsOut = Math.max(0, yr - currentYear);
+                                const inflationRate =
+                                  s.engineSettings?.annualInflation
+                                    ? Number(s.engineSettings.annualInflation)
+                                    : 0;
+                                resolvedValue =
+                                  todayMonthly *
+                                  Math.pow(1 + inflationRate, yearsOut);
                                 const colLabel =
                                   profile.columnLabels[colIdx] ?? "";
                                 const prefix = `Budget: ${profile.name}${colLabel ? ` (${colLabel})` : ""}`;
-                                resolvedNotes = resolvedNotes
-                                  ? `${prefix} — ${resolvedNotes}`
-                                  : prefix;
+                                if (yearsOut > 0 && inflationRate > 0) {
+                                  const inflNote = `${formatCurrency(todayMonthly)}/mo today → ${formatCurrency(resolvedValue)}/mo in ${yr}`;
+                                  resolvedNotes = resolvedNotes
+                                    ? `${prefix} — ${inflNote} — ${resolvedNotes}`
+                                    : `${prefix} — ${inflNote}`;
+                                } else {
+                                  resolvedNotes = resolvedNotes
+                                    ? `${prefix} — ${resolvedNotes}`
+                                    : prefix;
+                                }
                               } else {
                                 resolvedValue = parseFloat(budgetForm.value);
                                 if (isNaN(resolvedValue)) return;

@@ -7,11 +7,14 @@ import { roundToCents } from "@/lib/utils/math";
 import { isTaxFree } from "@/lib/config/account-types";
 import type {
   ContributionAccountInput,
+  ContributionSpec,
   AccountCategory,
 } from "@/lib/calculators/types";
+import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
 import {
   buildCategoryRecord,
   categoriesWithTaxPreference,
+  getAllCategories,
   getDisplayGroup,
   getParentCategory,
 } from "@/lib/config/account-types";
@@ -388,12 +391,18 @@ export async function loadLiveContribData(db: Db) {
   const perfAccountMap = new Map(allPerfAccounts.map((pa) => [pa.id, pa]));
 
   // Get current salaries (with salary_changes applied)
+  // Import salary helpers for bonus-aware compensation
+  const { getEffectiveIncome, getTotalCompensation } = await import("./salary");
   const jobSalaries = await Promise.all(
-    activeJobs.map(async (j) => ({
-      job: { id: j.id },
-      salary: await getCurrentSalary(db, j.id, j.annualSalary),
-      personId: j.personId,
-    })),
+    activeJobs.map(async (j) => {
+      const baseSalary = await getCurrentSalary(db, j.id, j.annualSalary);
+      return {
+        job: { id: j.id },
+        salary: getEffectiveIncome(j, baseSalary),
+        totalComp: getTotalCompensation(j, baseSalary),
+        personId: j.personId,
+      };
+    }),
   );
 
   const peopleMap = new Map(allPeople.map((p) => [p.id, p]));
@@ -422,6 +431,7 @@ export async function loadLiveContribData(db: Db) {
     jobSalaries: jobSalaries.map((js) => ({
       job: { id: js.job.id, personId: js.personId },
       salary: js.salary,
+      totalComp: js.totalComp,
     })),
     rawContribRows: allContribs, // All accounts (active + inactive/stubbed) for profile editor
     peopleMap,
@@ -434,7 +444,7 @@ export function resolveProfile(
   profile: typeof schema.contributionProfiles.$inferSelect,
   liveContribs: LiveContribRow[],
   liveJobs: (typeof schema.jobs.$inferSelect)[],
-  liveJobSalaries: { job: { id: number; personId: number }; salary: number }[],
+  liveJobSalaries: { job: { id: number; personId: number }; salary: number; totalComp: number }[],
 ) {
   const salaryOverrides = profile.salaryOverrides as Record<string, number>;
   const contribOverridesRoot = profile.contributionOverrides as Record<
@@ -444,12 +454,15 @@ export function resolveProfile(
   const contribOverrides = contribOverridesRoot.contributionAccounts ?? {};
   const jobOverrides = contribOverridesRoot.jobs ?? {};
 
-  // Apply salary overrides
+  // Apply salary overrides — when a profile overrides salary, both salary and
+  // totalComp are set to the override value (bonus is excluded from overrides)
   const jobSalaries = liveJobSalaries.map((js) => {
     const job = liveJobs.find((j) => j.id === js.job.id);
     if (!job) return js;
     const override = salaryOverrides[String(job.personId)];
-    return override !== undefined ? { job: js.job, salary: override } : js;
+    return override !== undefined
+      ? { job: js.job, salary: override, totalComp: override }
+      : js;
   });
 
   // Apply contribution account overrides
@@ -602,4 +615,245 @@ export async function loadAndApplyContribProfile(
   }
 
   return { contribs, jobs, salaryMap };
+}
+
+// ---------------------------------------------------------------------------
+// Profile → Engine data builder
+// ---------------------------------------------------------------------------
+
+/** Context needed from the main buildEnginePayload for spec building. */
+export type ProfileContribContext = {
+  perfCategoryMap: Map<number, string>;
+  personNameById: Map<number, string>;
+  accountBreakdownByCategory: Record<
+    string,
+    {
+      name: string;
+      taxType: string;
+      accountType?: string;
+      ownerName?: string;
+      parentCategory?: string;
+    }[]
+  >;
+};
+
+/** Result of building engine contribution data from a resolved profile. */
+export type ProfileContribData = {
+  contributionSpecs: ContributionSpec[];
+  baseYearContributions: Record<AccountCategory, number>;
+  baseYearEmployerMatch: Record<AccountCategory, number>;
+  employerMatchRateByCategory: Record<AccountCategory, number>;
+  employerMatchByParentCat: Map<AccountCategory, Map<string, number>>;
+  salaryByPerson: Record<number, number>;
+  combinedSalary: number;
+};
+
+/** Minimal contribution row shape needed by buildProfileContribData. */
+export type ContribInputRow = {
+  id: number;
+  personId: number;
+  jobId: number | null;
+  accountType: AccountCategory;
+  subType: string | null;
+  label?: string | null;
+  parentCategory?: string | null;
+  contributionMethod: string | null;
+  contributionValue: string | number | null;
+  taxTreatment: string | null;
+  employerMatchType: string | null;
+  employerMatchValue: string | number | null;
+  employerMaxMatchPct: string | number | null;
+  performanceAccountId?: number | null;
+  targetAnnual?: string | number | null;
+  allocationPriority?: number | null;
+};
+
+/**
+ * Build engine contribution data (specs, employer match, base-year amounts)
+ * from a resolved contribution profile.
+ *
+ * This is the same logic that buildEnginePayload() uses inline for the default
+ * profile, extracted so it can be called for each profile-switch year.
+ */
+export function buildProfileContribData(
+  activeContribs: ContribInputRow[],
+  activeJobs: { id: number; personId: number; payPeriod: string }[],
+  jobSalaries: { job: { id: number; personId: number }; salary: number; totalComp: number }[],
+  ctx: ProfileContribContext,
+): ProfileContribData {
+  // salary = effective income (respects includeBonusInContributions flag)
+  // totalComp = always includes bonus — used for rate calculations
+  const totalCompensation = jobSalaries.reduce(
+    (sum, js) => sum + js.totalComp,
+    0,
+  );
+
+  // Aggregate contributions and employer match by category
+  const contribRows: ContribRow[] = activeContribs.map((c) => ({
+    personId: c.personId,
+    jobId: c.jobId,
+    accountType: c.accountType,
+    subType: c.subType,
+    label: c.label ?? null,
+    parentCategory: c.parentCategory ?? "",
+    contributionMethod: c.contributionMethod ?? "percent_of_salary",
+    contributionValue: String(c.contributionValue ?? "0"),
+    taxTreatment: c.taxTreatment ?? "pre_tax",
+    employerMatchType: c.employerMatchType,
+    employerMatchValue: c.employerMatchValue
+      ? String(c.employerMatchValue)
+      : null,
+    employerMaxMatchPct: c.employerMaxMatchPct
+      ? String(c.employerMaxMatchPct)
+      : null,
+  }));
+
+  const {
+    contribByCategory,
+    employerMatchByCategory,
+    employerMatchByParentCat,
+  } = aggregateContributionsByCategory(
+    contribRows,
+    activeJobs,
+    jobSalaries.map((js) => ({
+      job: { id: js.job.id, personId: js.job.personId },
+      salary: js.salary,
+    })),
+  );
+
+  // Employer match rates (fraction of total compensation)
+  const employerMatchRateByCategory = Object.fromEntries(
+    getAllCategories().map((cat) => [
+      cat,
+      totalCompensation > 0
+        ? employerMatchByCategory[cat] / totalCompensation
+        : 0,
+    ]),
+  ) as Record<AccountCategory, number>;
+
+  // Build per-account contribution specs
+  const contributionSpecs: ContributionSpec[] = activeContribs
+    .filter((c) => {
+      const cv = num(String(c.contributionValue ?? "0"));
+      return cv > 0;
+    })
+    .map((c) => {
+      const cat = c.accountType;
+      const cv = num(String(c.contributionValue ?? "0"));
+      const method = (c.contributionMethod ??
+        "percent_of_salary") as ContributionSpec["method"];
+      let value: number;
+      let baseAnnual: number;
+      let periodsPerYear: number | undefined;
+
+      let salaryFraction = 1;
+      if (method === "percent_of_salary") {
+        value = cv / 100;
+        const js = jobSalaries.find((x) => x.job.id === c.jobId);
+        const jobSalary = js ? js.salary : 0;
+        baseAnnual = jobSalary * value;
+        salaryFraction =
+          totalCompensation > 0 ? jobSalary / totalCompensation : 1;
+      } else if (method === "fixed_per_period") {
+        value = cv;
+        const job = activeJobs.find((j) => j.id === c.jobId);
+        periodsPerYear = getPeriodsPerYear(job?.payPeriod ?? "biweekly");
+        baseAnnual = cv * periodsPerYear;
+      } else {
+        // fixed_monthly
+        value = cv;
+        baseAnnual = cv * 12;
+      }
+
+      // Match contribution to its individual account
+      const contribOwner = ctx.personNameById.get(c.personId);
+      const matchTaxType =
+        TAX_TREATMENT_TO_TAX_TYPE[c.taxTreatment ?? "pre_tax"] ??
+        c.taxTreatment;
+      const catAccts = ctx.accountBreakdownByCategory[cat] ?? [];
+      const exactOwner = (a: { ownerName?: string }) =>
+        a.ownerName === contribOwner;
+      const ownerMatch = (a: { ownerName?: string }) =>
+        a.ownerName === contribOwner || a.ownerName === undefined;
+      const contribParentCat =
+        c.parentCategory ??
+        (c.performanceAccountId
+          ? ctx.perfCategoryMap.get(c.performanceAccountId)
+          : undefined);
+      const parentCatMatch = (a: { parentCategory?: string }) => {
+        if (a.parentCategory && contribParentCat)
+          return a.parentCategory === contribParentCat;
+        return true;
+      };
+      const matchedAcct =
+        catAccts.find(
+          (a) =>
+            exactOwner(a) &&
+            a.taxType === matchTaxType &&
+            a.accountType === c.accountType &&
+            parentCatMatch(a),
+        ) ??
+        catAccts.find(
+          (a) =>
+            a.ownerName === undefined &&
+            a.taxType === matchTaxType &&
+            a.accountType === c.accountType &&
+            parentCatMatch(a),
+        ) ??
+        catAccts.find(
+          (a) =>
+            exactOwner(a) && a.taxType === matchTaxType && parentCatMatch(a),
+        ) ??
+        catAccts.find(
+          (a) =>
+            a.ownerName === undefined &&
+            a.taxType === matchTaxType &&
+            parentCatMatch(a),
+        ) ??
+        catAccts.find((a) => exactOwner(a) && parentCatMatch(a)) ??
+        catAccts.find((a) => ownerMatch(a));
+
+      return {
+        category: cat,
+        name: c.subType ?? c.accountType,
+        method,
+        value,
+        salaryFraction,
+        periodsPerYear,
+        baseAnnual,
+        taxTreatment: (c.taxTreatment ?? "pre_tax") as ContributionSpec["taxTreatment"],
+        personId: c.personId,
+        ownerName: contribOwner,
+        accountName: matchedAcct?.name,
+        targetAnnual: c.targetAnnual ? Number(c.targetAnnual) : null,
+        allocationPriority: c.allocationPriority ?? 0,
+        parentCategory:
+          c.parentCategory ??
+          (c.performanceAccountId
+            ? ctx.perfCategoryMap.get(c.performanceAccountId)
+            : undefined),
+      };
+    });
+
+  // Base year contributions
+  const baseYearContributions = Object.fromEntries(
+    getAllCategories().map((cat) => [cat, contribByCategory[cat].annual]),
+  ) as Record<AccountCategory, number>;
+
+  // Per-person salary map (totalComp for display / rate consistency)
+  const salaryByPerson: Record<number, number> = {};
+  for (const js of jobSalaries) {
+    salaryByPerson[js.job.personId] =
+      (salaryByPerson[js.job.personId] ?? 0) + js.totalComp;
+  }
+
+  return {
+    contributionSpecs,
+    baseYearContributions,
+    baseYearEmployerMatch: employerMatchByCategory,
+    employerMatchRateByCategory,
+    employerMatchByParentCat,
+    salaryByPerson,
+    combinedSalary: totalCompensation,
+  };
 }

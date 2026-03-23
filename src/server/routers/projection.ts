@@ -485,6 +485,7 @@ export const projectionRouter = createTRPCRouter({
           personId: o.personId,
           projectionYear: o.projectionYear,
           overrideSalary: num(o.overrideSalary),
+          contributionProfileId: o.contributionProfileId ?? null,
           notes: o.notes,
         })),
         salaryByPerson,

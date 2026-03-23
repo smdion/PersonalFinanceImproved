@@ -166,10 +166,12 @@ export function useProjectionState({
     content: React.ReactNode;
   } | null>(null);
 
-  // --- Salary/Budget override form state ---
+  // --- Contribution/Budget override form state ---
   const [showSalaryForm, setShowSalaryForm] = useState(false);
   const [salaryForm, setSalaryForm] = useState({
     year: "",
+    source: "profile" as "custom" | "profile",
+    profileId: "",
     value: "",
     notes: "",
   });
@@ -620,6 +622,8 @@ export function useProjectionState({
     engineData && engineData.result
       ? engineData.budgetProfileSummaries
       : undefined;
+  const contribProfilesQuery = trpc.contributionProfile.list.useQuery();
+  const contribProfileSummaries = contribProfilesQuery.data;
   const contribSpecs = useMemo(() => {
     const raw =
       engineData && engineData.result && "contributionSpecs" in engineData
@@ -1082,6 +1086,7 @@ export function useProjectionState({
     engineSettings,
     annualExpenses,
     budgetProfileSummaries,
+    contribProfileSummaries,
     contribSpecs,
     getPersonYearTotals,
     personDepletionInfo,

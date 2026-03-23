@@ -252,7 +252,18 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
   } = validated;
 
   // Clone contribution specs so salaryFraction updates don't mutate caller's input
-  const contributionSpecs = inputContributionSpecs?.map((s) => ({ ...s }));
+  let contributionSpecs = inputContributionSpecs?.map((s) => ({ ...s }));
+
+  // Mutable active references for profile switching
+  let activeEmployerMatchRateByCategory = employerMatchRateByCategory;
+  let activeBaseYearContributions = baseYearContributions;
+  let activeBaseYearEmployerMatch = baseYearEmployerMatch;
+  let activeEmployerMatchByParentCat = employerMatchByParentCat;
+
+  // Pre-sort profile switches
+  const sortedProfileSwitches = [...(input.profileSwitches ?? [])].sort(
+    (a, b) => a.year - b.year,
+  );
 
   // Sort overrides by year
   const sortedAccOverrides = [...accumulationOverrides].sort(
@@ -411,6 +422,38 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
     }
     returnRate = Math.max(MIN_RETURN_RATE, returnRate);
 
+    // Check for contribution profile switch at this year (sticky-forward).
+    // If multiple switches share the same year, last one wins (sorted ascending).
+    // Note: a switch at year 0 replaces baseYearContributions used by the
+    // useRealContribs path — the year-0 pro-rated amounts will reflect the
+    // switched profile's base amounts, not actual paycheck data.
+    for (const ps of sortedProfileSwitches) {
+      if (ps.year > year) break;
+      if (ps.year === year) {
+        // Switch contribution structure only — salary continues unaffected.
+        // A profile switch changes which accounts receive contributions and
+        // how much, but the household salary trajectory stays the same.
+        contributionSpecs = ps.contributionSpecs.map((s) => ({ ...s }));
+        activeEmployerMatchRateByCategory = ps.employerMatchRateByCategory;
+        activeBaseYearContributions = ps.baseYearContributions;
+        activeBaseYearEmployerMatch = ps.baseYearEmployerMatch;
+        activeEmployerMatchByParentCat = ps.employerMatchByParentCat;
+        // Rebuild spec-to-account mapping for the new specs
+        if (hasIndividualAccounts && contributionSpecs) {
+          const rebuilt = buildSpecToAccountMapping(
+            contributionSpecs,
+            indAccts,
+            indKey,
+            indParentCat,
+          );
+          specToAccount.clear();
+          rebuilt.specToAccount.forEach((v, k) => specToAccount.set(k, v));
+          accountsWithSpecs.clear();
+          rebuilt.accountsWithSpecs.forEach((v) => accountsWithSpecs.add(v));
+        }
+      }
+    }
+
     // Salary projection (only during accumulation)
     if (isAccumulation) {
       if (hasPerPersonSalary) {
@@ -564,7 +607,7 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
       // Year 0 with real contribution data: use actual per-account amounts
       // instead of salary × rate which can create artificial overflow
       const useRealContribs =
-        y === 0 && baseYearContributions && baseYearEmployerMatch;
+        y === 0 && activeBaseYearContributions && activeBaseYearEmployerMatch;
 
       // Pro-rate year 0 contributions/match based on months remaining in the year
       const proRate = y === 0 ? firstYearFraction : 1;
@@ -572,7 +615,7 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
       let targetContribution: number;
       if (useRealContribs) {
         targetContribution = roundToCents(
-          Object.values(baseYearContributions).reduce((s, v) => s + v, 0) *
+          Object.values(activeBaseYearContributions!).reduce((s, v) => s + v, 0) *
             proRate,
         );
       } else if (contributionSpecs && contributionSpecs.length > 0) {
@@ -613,10 +656,10 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
           getAllCategories().map((cat) => [
             cat,
             useRealContribs
-              ? roundToCents((baseYearEmployerMatch[cat] ?? 0) * proRate)
+              ? roundToCents((activeBaseYearEmployerMatch![cat] ?? 0) * proRate)
               : roundToCents(
                   projectedSalary *
-                    Math.max(0, employerMatchRateByCategory[cat] ?? 0) *
+                    Math.max(0, activeEmployerMatchRateByCategory[cat] ?? 0) *
                     proRate,
                 ),
           ]),
@@ -633,11 +676,11 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
         slots = categories
           .filter(
             (cat) =>
-              baseYearContributions[cat] > 0 || yearEmployerMatch[cat] > 0,
+              activeBaseYearContributions![cat] > 0 || yearEmployerMatch[cat] > 0,
           )
           .map((cat) => {
             const employeeContrib = roundToCents(
-              baseYearContributions[cat] * proRate,
+              activeBaseYearContributions![cat] * proRate,
             );
             const irsLimit = yearLimits[cat];
             const rothFrac = configGetRothFraction(cat, config.taxSplits);
@@ -759,7 +802,7 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
         const brokerageContrib =
           slots.find((s) => isOverflowTarget(s.category))?.employeeContrib ?? 0;
         // Base year brokerage is intentional; scale proportionally with salary
-        const baseIntentional = baseYearContributions?.brokerage ?? 0;
+        const baseIntentional = activeBaseYearContributions?.brokerage ?? 0;
         const salaryScale =
           currentSalary > 0 ? projectedSalary / currentSalary : 1;
         const intentional = roundToCents(baseIntentional * salaryScale);
@@ -844,7 +887,7 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
           proRate,
           overflowToBrokerage,
           rampAmount,
-          employerMatchByParentCat,
+          employerMatchByParentCat: activeEmployerMatchByParentCat,
         });
         indContribs = distResult.indContribs;
         indMatch = distResult.indMatch;
