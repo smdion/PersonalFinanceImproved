@@ -137,8 +137,16 @@ export async function createTestCaller(
     try {
       fs.unlinkSync(dbPath);
       // Also clean up WAL and SHM files
-      fs.unlinkSync(dbPath + "-wal").catch?.(() => {});
-      fs.unlinkSync(dbPath + "-shm").catch?.(() => {});
+      try {
+        fs.unlinkSync(dbPath + "-wal");
+      } catch {
+        /* may not exist */
+      }
+      try {
+        fs.unlinkSync(dbPath + "-shm");
+      } catch {
+        /* may not exist */
+      }
     } catch {
       // File already deleted
     }
