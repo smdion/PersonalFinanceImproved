@@ -183,7 +183,7 @@ export async function seedBudgetProfile(
     .insert(sqliteSchema.budgetProfiles)
     .values({
       name,
-      isActive: isActive ? 1 : 0,
+      isActive,
       columnLabels: ["Standard"],
     })
     .returning({ id: sqliteSchema.budgetProfiles.id })
