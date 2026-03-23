@@ -184,7 +184,7 @@ export async function seedBudgetProfile(
     .values({
       name,
       isActive: isActive ? 1 : 0,
-      columnLabels: JSON.stringify(["Standard"]),
+      columnLabels: ["Standard"],
     })
     .returning({ id: sqliteSchema.budgetProfiles.id })
     .get();
