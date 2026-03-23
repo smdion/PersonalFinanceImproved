@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Projection router deduplication** — extracted `buildDecumulationDefaults()` helper and shared `accumulationOverrideSchema`/`decumulationOverrideSchema` Zod constants, removing ~120 lines of duplicated schema and builder logic
 - **API types boundary fix** — moved `ApiEndpoint` and `AuthLevel` types from `server/` to `lib/types/api-docs.ts` so client components no longer cross the server/client import boundary
 - **Contribution profile initialization** — contributions page comparison dropdown now initializes from the globally active profile instead of always starting at `undefined`
+- **Calculator types domain split** — split 1,705-line `calculators/types.ts` into 6 domain files (shared, calculators, engine-config, engine-projection, relocation, monte-carlo) with barrel re-export preserving all existing imports
 
 ### Fixed
 
