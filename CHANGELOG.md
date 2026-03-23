@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Calculator types domain split** — split 1,705-line `calculators/types.ts` into 6 domain files (shared, calculators, engine-config, engine-projection, relocation, monte-carlo) with barrel re-export preserving all existing imports
 - **Sync router decomposition** — split 1,774-line sync router (29 procedures) into 5 domain sub-routers (connections, core, config, names, mappings) using `mergeRouters` for flat API surface preservation
 - **Projection engine extraction** — extracted 1,400-line year loop from `projection.ts` into `projection-year-handlers.ts` with structured `ProjectionLoopState`/`ProjectionContext` types; main engine reduced to ~165 lines of validation and orchestration
+- **Projection state hook decomposition** — split 1,147-line `useProjectionState` into three focused sub-hooks: `useProjectionFormState` (UI/view state), `useProjectionQueries` (data fetching/mutations), `useProjectionDerived` (computed data); main hook reduced to thin composition layer
 
 ### Fixed
 
