@@ -193,6 +193,15 @@ export function OverridesPanel({ state: s, accumulationExpenseOverride }: Overri
                             )}
                           </>
                         )}
+                        {o.lumpSums && o.lumpSums.length > 0 && (
+                          <span className="text-emerald-700">
+                            {o.lumpSums.map((ls, k) => (
+                              <span key={k}>
+                                +{formatCurrency(ls.amount)}{ls.label ? ` ${ls.label}` : ""} → {catDisplayLabel[ls.targetAccount] ?? ls.targetAccount}
+                              </span>
+                            ))}
+                          </span>
+                        )}
                         {o.notes && (
                           <span className="text-emerald-400">({o.notes})</span>
                         )}
@@ -504,6 +513,97 @@ export function OverridesPanel({ state: s, accumulationExpenseOverride }: Overri
                     </>
                   )}
 
+                  {/* Lump Sums */}
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted">
+                        Lump Sums
+                        <HelpTip text="One-time dollar injections (bonus, inheritance, rollover). Not subject to IRS contribution limits. Only applied in this exact year." />
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAccumForm((f) => ({
+                            ...f,
+                            lumpSums: [
+                              ...f.lumpSums,
+                              { amount: "", targetAccount: ALL_CATEGORIES[0]!, taxType: "" as const, label: "" },
+                            ],
+                          }))
+                        }
+                        className="text-[10px] text-emerald-600 hover:underline"
+                      >
+                        + Add Lump Sum
+                      </button>
+                    </div>
+                    {accumForm.lumpSums.map((ls, li) => (
+                      <div key={li} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-1 mt-1 items-end">
+                        <label className="block">
+                          <span className="text-[10px] text-muted">Amount</span>
+                          <input
+                            type="number"
+                            min={0}
+                            placeholder="$50,000"
+                            value={ls.amount}
+                            onChange={(e) =>
+                              setAccumForm((f) => ({
+                                ...f,
+                                lumpSums: f.lumpSums.map((x, j) => j === li ? { ...x, amount: e.target.value } : x),
+                              }))
+                            }
+                            className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-sm"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-[10px] text-muted">Account</span>
+                          <select
+                            value={ls.targetAccount}
+                            onChange={(e) =>
+                              setAccumForm((f) => ({
+                                ...f,
+                                lumpSums: f.lumpSums.map((x, j) => j === li ? { ...x, targetAccount: e.target.value as typeof ls.targetAccount } : x),
+                              }))
+                            }
+                            className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-sm"
+                          >
+                            {ALL_CATEGORIES.map((cat) => (
+                              <option key={cat} value={cat}>
+                                {catDisplayLabel[cat] ?? cat}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="block">
+                          <span className="text-[10px] text-muted">Label</span>
+                          <input
+                            type="text"
+                            placeholder="Inheritance"
+                            value={ls.label}
+                            onChange={(e) =>
+                              setAccumForm((f) => ({
+                                ...f,
+                                lumpSums: f.lumpSums.map((x, j) => j === li ? { ...x, label: e.target.value } : x),
+                              }))
+                            }
+                            className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-sm"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setAccumForm((f) => ({
+                              ...f,
+                              lumpSums: f.lumpSums.filter((_, j) => j !== li),
+                            }))
+                          }
+                          className="text-red-400 hover:text-red-600 text-xs pb-1"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
                   <label className="block">
                     <span className="text-xs text-muted">Notes</span>
                     <input
@@ -602,6 +702,15 @@ export function OverridesPanel({ state: s, accumulationExpenseOverride }: Overri
                               </span>
                             )}
                           </>
+                        )}
+                        {o.lumpSums && o.lumpSums.length > 0 && (
+                          <span className="text-amber-700">
+                            {o.lumpSums.map((ls, k) => (
+                              <span key={k}>
+                                +{formatCurrency(ls.amount)}{ls.label ? ` ${ls.label}` : ""} → {catDisplayLabel[ls.targetAccount] ?? ls.targetAccount}
+                              </span>
+                            ))}
+                          </span>
                         )}
                         {o.notes && (
                           <span className="text-amber-400">({o.notes})</span>
@@ -1031,6 +1140,97 @@ export function OverridesPanel({ state: s, accumulationExpenseOverride }: Overri
                       </div>
                     </>
                   )}
+
+                  {/* Lump Sums */}
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted">
+                        Lump Sums
+                        <HelpTip text="One-time dollar injections during retirement (windfall, inheritance, rollover). Only applied in this exact year." />
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDecumForm((f) => ({
+                            ...f,
+                            lumpSums: [
+                              ...f.lumpSums,
+                              { amount: "", targetAccount: ALL_CATEGORIES[0]!, taxType: "" as const, label: "" },
+                            ],
+                          }))
+                        }
+                        className="text-[10px] text-amber-600 hover:underline"
+                      >
+                        + Add Lump Sum
+                      </button>
+                    </div>
+                    {decumForm.lumpSums.map((ls, li) => (
+                      <div key={li} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-1 mt-1 items-end">
+                        <label className="block">
+                          <span className="text-[10px] text-muted">Amount</span>
+                          <input
+                            type="number"
+                            min={0}
+                            placeholder="$50,000"
+                            value={ls.amount}
+                            onChange={(e) =>
+                              setDecumForm((f) => ({
+                                ...f,
+                                lumpSums: f.lumpSums.map((x, j) => j === li ? { ...x, amount: e.target.value } : x),
+                              }))
+                            }
+                            className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-sm"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-[10px] text-muted">Account</span>
+                          <select
+                            value={ls.targetAccount}
+                            onChange={(e) =>
+                              setDecumForm((f) => ({
+                                ...f,
+                                lumpSums: f.lumpSums.map((x, j) => j === li ? { ...x, targetAccount: e.target.value as typeof ls.targetAccount } : x),
+                              }))
+                            }
+                            className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-sm"
+                          >
+                            {ALL_CATEGORIES.map((cat) => (
+                              <option key={cat} value={cat}>
+                                {catDisplayLabel[cat] ?? cat}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="block">
+                          <span className="text-[10px] text-muted">Label</span>
+                          <input
+                            type="text"
+                            placeholder="Inheritance"
+                            value={ls.label}
+                            onChange={(e) =>
+                              setDecumForm((f) => ({
+                                ...f,
+                                lumpSums: f.lumpSums.map((x, j) => j === li ? { ...x, label: e.target.value } : x),
+                              }))
+                            }
+                            className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-sm"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDecumForm((f) => ({
+                              ...f,
+                              lumpSums: f.lumpSums.filter((_, j) => j !== li),
+                            }))
+                          }
+                          className="text-red-400 hover:text-red-600 text-xs pb-1"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
 
                   <label className="block">
                     <span className="text-xs text-muted">Notes</span>

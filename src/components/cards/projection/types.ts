@@ -84,6 +84,13 @@ export type TooltipData =
 // Accumulation override form types
 // ---------------------------------------------------------------------------
 
+export type LumpSumFormEntry = {
+  amount: string;
+  targetAccount: AccountCategory;
+  taxType: "traditional" | "roth" | "";
+  label: string;
+};
+
 export type AccumOverrideForm = {
   year: string;
   personName: string; // '' = household-wide
@@ -94,6 +101,7 @@ export type AccumOverrideForm = {
   taxSplits: Record<string, string>;
   accountCaps: Record<AccountCategory, string>;
   taxTypeCaps: { traditional: string; roth: string };
+  lumpSums: LumpSumFormEntry[];
   reset: boolean;
   notes: string;
 };
@@ -113,6 +121,7 @@ export const emptyAccumForm: AccumOverrideForm = {
   ),
   accountCaps: buildCategoryRecord(() => "") as Record<AccountCategory, string>,
   taxTypeCaps: { traditional: "", roth: "" },
+  lumpSums: [],
   reset: false,
   notes: "",
 };
@@ -132,6 +141,7 @@ export type DecumOverrideForm = {
   withdrawalAccountCaps: Record<AccountCategory, string>;
   withdrawalTaxTypeCaps: { traditional: string; roth: string };
   rothConversionTarget: string; // '' = no change, '0' = disable, '0.10'/'0.12'/etc = target bracket
+  lumpSums: LumpSumFormEntry[];
   reset: boolean;
   notes: string;
 };
@@ -155,6 +165,7 @@ export const emptyDecumForm: DecumOverrideForm = {
   >,
   withdrawalTaxTypeCaps: { traditional: "", roth: "" },
   rothConversionTarget: "",
+  lumpSums: [],
   reset: false,
   notes: "",
 };
@@ -173,6 +184,12 @@ export type AccumOverride = {
   taxSplits?: Record<string, number>;
   accountCaps?: Record<AccountCategory, number>;
   taxTypeCaps?: Partial<Record<"traditional" | "roth", number>>;
+  lumpSums?: Array<{
+    amount: number;
+    targetAccount: AccountCategory;
+    taxType?: "traditional" | "roth";
+    label?: string;
+  }>;
   reset?: boolean;
   notes?: string;
 };
@@ -188,6 +205,12 @@ export type DecumOverride = {
   withdrawalAccountCaps?: Record<AccountCategory, number>;
   withdrawalTaxTypeCaps?: Partial<Record<"traditional" | "roth", number>>;
   rothConversionTarget?: number; // 0 = disable, 0.10/0.12/etc = target bracket
+  lumpSums?: Array<{
+    amount: number;
+    targetAccount: AccountCategory;
+    taxType?: "traditional" | "roth";
+    label?: string;
+  }>;
   reset?: boolean;
   notes?: string;
 };

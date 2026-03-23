@@ -8,6 +8,18 @@ import type {
 } from "@/lib/config/account-types";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 
+/**
+ * A one-time dollar-amount injection or withdrawal in a specific year.
+ * NOT sticky-forward — only applied in the exact override year.
+ * Bypasses IRS contribution limits (models rollovers, inheritances, etc.).
+ */
+export type LumpSum = {
+  amount: number;
+  targetAccount: AccountCategory;
+  taxType?: "traditional" | "roth";
+  label?: string;
+};
+
 // --- Shared types ---
 
 export type PayPeriodType = "weekly" | "biweekly" | "semimonthly" | "monthly";
@@ -705,6 +717,12 @@ export type AccumulationOverride = {
   taxTypeCaps?: Partial<Record<RoutingTaxType, number>>;
 
   /**
+   * One-time dollar injections for this year. NOT sticky-forward.
+   * Bypasses IRS contribution limits (models rollovers, inheritances, windfalls).
+   */
+  lumpSums?: LumpSum[];
+
+  /**
    * When true, ALL fields revert to AccumulationDefaults from this year onward.
    * Any other fields set in the same override are ignored when reset is true.
    */
@@ -729,6 +747,8 @@ export type ResolvedAccumulationConfig = {
   accountCaps: Record<AccountCategory, number | null>;
   /** null = no cross-account tax-type cap. */
   taxTypeCaps: Record<RoutingTaxType, number | null>;
+  /** Lump sums for this year only (NOT sticky-forward). Empty if none. */
+  lumpSums: LumpSum[];
 };
 
 // --- Decumulation (withdrawing / distributing) ---
@@ -917,6 +937,12 @@ export type DecumulationOverride = {
   rothConversionTarget?: number;
 
   /**
+   * One-time dollar withdrawals for this year. NOT sticky-forward.
+   * Models windfall spending, one-time distributions, etc.
+   */
+  lumpSums?: LumpSum[];
+
+  /**
    * When true, ALL decumulation fields revert to DecumulationDefaults.
    */
   reset?: boolean;
@@ -941,6 +967,8 @@ export type ResolvedDecumulationConfig = {
   withdrawalTaxTypeCaps: Record<RoutingTaxType, number | null>;
   /** Resolved Roth conversion target marginal rate (sticky-forward from overrides). undefined = use defaults. */
   rothConversionTarget?: number;
+  /** Lump sums for this year only (NOT sticky-forward). Empty if none. */
+  lumpSums: LumpSum[];
 };
 
 /**

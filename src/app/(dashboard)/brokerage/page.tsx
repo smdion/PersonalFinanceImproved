@@ -18,6 +18,9 @@ import {
   type BrokerageGoalYear,
   type BrokerageGoalStatus,
 } from "@/lib/calculators/brokerage-goals";
+import type { AccumOverride } from "@/components/cards/projection/types";
+import type { AccountCategory } from "@/lib/calculators/types";
+import { ALL_CATEGORIES, catDisplayLabel } from "@/components/cards/projection/utils";
 
 type BrokerageTab = "projection" | "goals" | "transactions";
 
@@ -30,7 +33,29 @@ export default function BrokeragePage() {
     "active_contrib_profile_id",
     null,
   );
-  const engineInput = salaryOverrides.length > 0 ? { salaryOverrides } : {};
+  // Brokerage lump sum overrides (one-time injections)
+  const [brokerageLumpSums, setBrokerageLumpSums] = useState<BrokerageLumpSumEntry[]>([]);
+
+  const accumOverridesFromLumpSums: AccumOverride[] = React.useMemo(() => {
+    const byYear = new Map<number, AccumOverride>();
+    for (const ls of brokerageLumpSums) {
+      const y = parseInt(ls.year);
+      const amt = parseFloat(ls.amount);
+      if (isNaN(y) || isNaN(amt) || amt <= 0) continue;
+      let ov = byYear.get(y);
+      if (!ov) {
+        ov = { year: y, lumpSums: [] };
+        byYear.set(y, ov);
+      }
+      ov.lumpSums!.push({ amount: amt, targetAccount: ls.targetAccount, ...(ls.label ? { label: ls.label } : {}) });
+    }
+    return Array.from(byYear.values()).sort((a, b) => a.year - b.year);
+  }, [brokerageLumpSums]);
+
+  const engineInput = {
+    ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+    ...(accumOverridesFromLumpSums.length > 0 ? { accumulationOverrides: accumOverridesFromLumpSums } : {}),
+  };
   const contribInput = {
     ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
     ...(activeProfileId != null
@@ -213,6 +238,36 @@ export default function BrokeragePage() {
           {brokerageResult.goals.length > 0 && (
             <Card title="Brokerage Goals" className="mt-6">
               <GoalStatusTable goals={brokerageResult.goals} />
+            </Card>
+          )}
+
+          {/* Lump Sum Overrides */}
+          {canEdit && (
+            <Card title="Lump Sum Events" className="mt-6">
+              <p className="text-xs text-muted mb-2">
+                One-time dollar injections (bonus, inheritance, rollover).
+                <HelpTip text="Lump sums bypass IRS contribution limits and are only applied in the specified year." />
+              </p>
+              {brokerageLumpSums.length > 0 && (
+                <div className="space-y-1 mb-3">
+                  {brokerageLumpSums.map((ls, i) => (
+                    <div key={i} className="flex items-center gap-2 bg-surface-sunken rounded px-3 py-1.5 text-xs">
+                      <span className="font-semibold">{ls.year}</span>
+                      <span>+{ls.amount ? formatCurrency(parseFloat(ls.amount)) : "$0"}</span>
+                      <span className="text-muted">→ {catDisplayLabel[ls.targetAccount] ?? ls.targetAccount}</span>
+                      {ls.label && <span className="text-muted">({ls.label})</span>}
+                      <button
+                        type="button"
+                        className="text-red-400 hover:text-red-600 ml-auto"
+                        onClick={() => setBrokerageLumpSums((prev) => prev.filter((_, j) => j !== i))}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <BrokerageLumpSumForm onAdd={(ls) => setBrokerageLumpSums((prev) => [...prev, ls])} />
             </Card>
           )}
 
@@ -653,6 +708,77 @@ function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
           })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+type BrokerageLumpSumEntry = { year: string; amount: string; targetAccount: AccountCategory; label: string };
+
+function BrokerageLumpSumForm({ onAdd }: { onAdd: (ls: BrokerageLumpSumEntry) => void }) {
+  const [form, setForm] = useState<BrokerageLumpSumEntry>({
+    year: String(new Date().getFullYear() + 1),
+    amount: "",
+    targetAccount: "brokerage" as AccountCategory,
+    label: "",
+  });
+
+  return (
+    <div className="grid grid-cols-[80px_1fr_1fr_1fr_auto] gap-2 items-end text-sm">
+      <label className="block">
+        <span className="text-[10px] text-muted">Year</span>
+        <input
+          type="number"
+          value={form.year}
+          onChange={(e) => setForm((f) => ({ ...f, year: e.target.value }))}
+          className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-sm"
+        />
+      </label>
+      <label className="block">
+        <span className="text-[10px] text-muted">Amount</span>
+        <input
+          type="number"
+          min={0}
+          placeholder="$50,000"
+          value={form.amount}
+          onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+          className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-sm"
+        />
+      </label>
+      <label className="block">
+        <span className="text-[10px] text-muted">Account</span>
+        <select
+          value={form.targetAccount}
+          onChange={(e) => setForm((f) => ({ ...f, targetAccount: e.target.value as AccountCategory }))}
+          className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-sm"
+        >
+          {ALL_CATEGORIES.map((cat) => (
+            <option key={cat} value={cat}>
+              {catDisplayLabel[cat] ?? cat}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="block">
+        <span className="text-[10px] text-muted">Label</span>
+        <input
+          type="text"
+          placeholder="Bonus"
+          value={form.label}
+          onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
+          className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-sm"
+        />
+      </label>
+      <button
+        type="button"
+        onClick={() => {
+          if (!form.amount || parseFloat(form.amount) <= 0) return;
+          onAdd(form);
+          setForm((f) => ({ ...f, amount: "", label: "" }));
+        }}
+        className="bg-emerald-600 text-white text-xs rounded px-3 py-1.5 hover:bg-emerald-700"
+      >
+        Add
+      </button>
     </div>
   );
 }

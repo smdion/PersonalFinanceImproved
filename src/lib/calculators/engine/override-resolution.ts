@@ -13,6 +13,7 @@ import type {
   DecumulationOverride,
   ResolvedDecumulationConfig,
   AccountCategory,
+  LumpSum,
 } from "../types";
 import {
   getAllCategories,
@@ -44,6 +45,7 @@ export function resolveAccumulationConfig(
     taxSplits: { ...defaults.taxSplits },
     accountCaps: buildCategoryRecord(() => null),
     taxTypeCaps: { traditional: null, roth: null },
+    lumpSums: [],
   };
 
   // Apply overrides in year order (they should already be sorted)
@@ -60,6 +62,7 @@ export function resolveAccumulationConfig(
         taxSplits: { ...defaults.taxSplits },
         accountCaps: buildCategoryRecord(() => null),
         taxTypeCaps: { traditional: null, roth: null },
+        lumpSums: [],
       };
       continue;
     }
@@ -99,6 +102,11 @@ export function resolveAccumulationConfig(
     }
   }
 
+  // Lump sums: exact-year match only (NOT sticky-forward)
+  config.lumpSums = overrides
+    .filter((o) => o.year === year && o.lumpSums?.length)
+    .flatMap((o) => o.lumpSums as LumpSum[]);
+
   return config;
 }
 
@@ -129,6 +137,7 @@ export function resolveDecumulationConfig(
     ) as Record<AccountCategory, "traditional" | "roth" | null>,
     withdrawalAccountCaps: buildCategoryRecord(() => null),
     withdrawalTaxTypeCaps: { traditional: null, roth: null },
+    lumpSums: [],
   };
 
   for (const o of overrides) {
@@ -151,6 +160,7 @@ export function resolveDecumulationConfig(
         ) as Record<AccountCategory, "traditional" | "roth" | null>,
         withdrawalAccountCaps: buildCategoryRecord(() => null),
         withdrawalTaxTypeCaps: { traditional: null, roth: null },
+        lumpSums: [],
       };
       continue;
     }
@@ -198,6 +208,11 @@ export function resolveDecumulationConfig(
     if (o.rothConversionTarget !== undefined)
       config.rothConversionTarget = o.rothConversionTarget;
   }
+
+  // Lump sums: exact-year match only (NOT sticky-forward)
+  config.lumpSums = overrides
+    .filter((o) => o.year === year && o.lumpSums?.length)
+    .flatMap((o) => o.lumpSums as LumpSum[]);
 
   return config;
 }

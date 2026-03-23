@@ -869,6 +869,29 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
         addBasis(acctBal[OVERFLOW_CATEGORY], rampAmount);
       }
 
+      // Apply lump sums (one-time injections, NOT subject to IRS limits)
+      for (const ls of config.lumpSums) {
+        const bs = getAccountTypeConfig(ls.targetAccount).balanceStructure;
+        if (bs === "roth_traditional") {
+          if (ls.taxType === "roth") {
+            balances.taxFree += ls.amount;
+            addRoth(acctBal[ls.targetAccount], ls.amount);
+          } else {
+            balances.preTax += ls.amount;
+            addTraditional(acctBal[ls.targetAccount], ls.amount);
+          }
+        } else if (bs === "single_bucket") {
+          balances.hsa += ls.amount;
+          addBalance(acctBal[ls.targetAccount], ls.amount);
+        } else {
+          // basis_tracking (brokerage)
+          balances.afterTax += ls.amount;
+          balances.afterTaxBasis += ls.amount;
+          addBalance(acctBal[ls.targetAccount], ls.amount);
+          addBasis(acctBal[ls.targetAccount], ls.amount);
+        }
+      }
+
       // Route contributions, match, overflow, and ramp to individual accounts
       // Extracted to individual-account-tracking.ts
       let indContribs = new Map<string, number>();
@@ -1287,6 +1310,28 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
 
       // Ensure no negative balances — extracted to balance-deduction.ts
       clampBalances(balances, acctBal);
+
+      // Apply decumulation lump sums (one-time injections/windfalls, NOT subject to limits)
+      for (const ls of config.lumpSums) {
+        const bs = getAccountTypeConfig(ls.targetAccount).balanceStructure;
+        if (bs === "roth_traditional") {
+          if (ls.taxType === "roth") {
+            balances.taxFree += ls.amount;
+            addRoth(acctBal[ls.targetAccount], ls.amount);
+          } else {
+            balances.preTax += ls.amount;
+            addTraditional(acctBal[ls.targetAccount], ls.amount);
+          }
+        } else if (bs === "single_bucket") {
+          balances.hsa += ls.amount;
+          addBalance(acctBal[ls.targetAccount], ls.amount);
+        } else {
+          balances.afterTax += ls.amount;
+          balances.afterTaxBasis += ls.amount;
+          addBalance(acctBal[ls.targetAccount], ls.amount);
+          addBasis(acctBal[ls.targetAccount], ls.amount);
+        }
+      }
 
       // Reinvest RMD excess into brokerage (#39) — extracted to balance-deduction.ts
       const shouldReinvestRmdExcess = input.reinvestRmdExcess !== false; // default: true

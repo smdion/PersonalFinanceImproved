@@ -470,6 +470,16 @@ export function useProjectionState({
       if (accumForm.taxTypeCaps.roth !== "")
         ttc.roth = parseFloat(accumForm.taxTypeCaps.roth);
       if (Object.keys(ttc).length > 0) o.taxTypeCaps = ttc;
+      // Lump sums
+      const ls = accumForm.lumpSums
+        .filter((e) => e.amount !== "" && parseFloat(e.amount) > 0)
+        .map((e) => ({
+          amount: parseFloat(e.amount),
+          targetAccount: e.targetAccount,
+          ...(e.taxType !== "" ? { taxType: e.taxType as "traditional" | "roth" } : {}),
+          ...(e.label ? { label: e.label } : {}),
+        }));
+      if (ls.length > 0) o.lumpSums = ls;
     }
     if (accumForm.notes) o.notes = accumForm.notes;
 
@@ -551,6 +561,16 @@ export function useProjectionState({
       if (decumForm.rothConversionTarget !== "") {
         o.rothConversionTarget = parseFloat(decumForm.rothConversionTarget);
       }
+      // Lump sums
+      const ls = decumForm.lumpSums
+        .filter((e) => e.amount !== "" && parseFloat(e.amount) > 0)
+        .map((e) => ({
+          amount: parseFloat(e.amount),
+          targetAccount: e.targetAccount,
+          ...(e.taxType !== "" ? { taxType: e.taxType as "traditional" | "roth" } : {}),
+          ...(e.label ? { label: e.label } : {}),
+        }));
+      if (ls.length > 0) o.lumpSums = ls;
     }
     if (decumForm.notes) o.notes = decumForm.notes;
 

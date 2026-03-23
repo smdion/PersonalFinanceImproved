@@ -28,6 +28,17 @@ import {
 } from "@/lib/config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
 import { roundToCents } from "@/lib/utils/math";
+
+const lumpSumSchema = z
+  .array(
+    z.object({
+      amount: z.number().positive(),
+      targetAccount: z.enum(accountCategoryEnum()),
+      taxType: z.enum(["traditional", "roth"]).optional(),
+      label: z.string().max(100).optional(),
+    }),
+  )
+  .optional();
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 import { fetchRetirementData, buildEnginePayload } from "./retirement";
 import {
@@ -160,6 +171,7 @@ export const projectionRouter = createTRPCRouter({
                   roth: z.number().optional(),
                 })
                 .optional(),
+              lumpSums: lumpSumSchema,
               reset: z.boolean().optional(),
               notes: z.string().optional(),
             }),
@@ -197,6 +209,7 @@ export const projectionRouter = createTRPCRouter({
                 })
                 .optional(),
               rothConversionTarget: z.number().min(0).max(1).optional(),
+              lumpSums: lumpSumSchema,
               reset: z.boolean().optional(),
               notes: z.string().optional(),
             }),
@@ -638,6 +651,7 @@ export const projectionRouter = createTRPCRouter({
                   roth: z.number().optional(),
                 })
                 .optional(),
+              lumpSums: lumpSumSchema,
               reset: z.boolean().optional(),
               notes: z.string().optional(),
             }),
@@ -675,6 +689,7 @@ export const projectionRouter = createTRPCRouter({
                 })
                 .optional(),
               rothConversionTarget: z.number().min(0).max(1).optional(),
+              lumpSums: lumpSumSchema,
               reset: z.boolean().optional(),
               notes: z.string().optional(),
             }),
