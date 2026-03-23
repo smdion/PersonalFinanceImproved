@@ -43,8 +43,15 @@ export default function BudgetPage() {
     "budget_name_col_width",
     192,
   );
+  const { data: allProfiles } = trpc.budget.listProfiles.useQuery();
+  const activeProfileId = allProfiles?.find((p) => p.isActive)?.id ?? null;
+  const [viewingProfileId, setViewingProfileId] = useState<number | null>(null);
+  // Show the viewing profile if set, otherwise fall back to active
+  const displayProfileId = viewingProfileId ?? activeProfileId;
+
   const { data, isLoading, error } = trpc.budget.getActiveSummary.useQuery({
     selectedColumn: activeColumn,
+    ...(displayProfileId != null ? { profileId: displayProfileId } : {}),
   });
   const { data: apiActualsData } = trpc.budget.listApiActuals.useQuery();
   const salaryOverrides = useSalaryOverrides();
@@ -53,7 +60,6 @@ export default function BudgetPage() {
     null,
   );
   const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
-  const { data: allProfiles } = trpc.budget.listProfiles.useQuery();
   const { data: savingsGoals } = trpc.settings.savingsGoals.list.useQuery();
   const setActiveProfile = trpc.budget.setActiveProfile.useMutation({
     onSuccess: () => {
@@ -359,6 +365,9 @@ export default function BudgetPage() {
   // --- Per-column contribution profile resolution (must be before early returns) ---
 
   const profile = data?.profile ?? null;
+  const activeProfile = allProfiles?.find((p) => p.isActive) ?? null;
+  const isViewingNonActive =
+    displayProfileId != null && displayProfileId !== activeProfileId;
   const cols = (data?.columnLabels as string[] | undefined) ?? [];
   const numCols = cols.length;
 
@@ -565,10 +574,26 @@ export default function BudgetPage() {
           <div className="flex flex-wrap items-center justify-between gap-2 bg-surface-sunken rounded-lg px-4 py-3 mb-4">
             <div className="flex flex-wrap items-center gap-3 sm:gap-6">
               <div className="flex items-center gap-2">
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-semibold uppercase">
-                  Active
-                </span>
-                <span className="text-xs text-muted">{profile?.name}</span>
+                {isViewingNonActive ? (
+                  <>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-semibold uppercase">
+                      Viewing
+                    </span>
+                    <span className="text-xs text-muted">{profile?.name}</span>
+                    {activeProfile && (
+                      <span className="text-[10px] text-faint">
+                        (active: {activeProfile.name})
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-semibold uppercase">
+                      Active
+                    </span>
+                    <span className="text-xs text-muted">{profile?.name}</span>
+                  </>
+                )}
                 {apiService && apiLinkedProfileId === profile?.id && (
                   <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-600 font-semibold">
                     ⇄ {apiService.toUpperCase()} →{""}
@@ -752,16 +777,15 @@ export default function BudgetPage() {
                   </button>
                 )}
               </div>
-              {(allProfiles ?? []).map((p) => (
+              {(allProfiles ?? []).map((p) => {
+                const isViewing = p.id === displayProfileId;
+                return (
                 <button
                   key={p.id}
                   type="button"
-                  onClick={() => {
-                    if (p.id !== profile?.id)
-                      setActiveProfile.mutate({ id: p.id });
-                  }}
+                  onClick={() => setViewingProfileId(p.id)}
                   className={`w-full text-left px-3 py-2 rounded-md transition-colors group ${
-                    p.isActive
+                    isViewing
                       ? "bg-blue-50 border border-blue-300"
                       : "hover:bg-surface-sunken border border-transparent"
                   }`}
@@ -818,6 +842,17 @@ export default function BudgetPage() {
                         className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                         onClick={(e) => e.stopPropagation()}
                       >
+                        {!p.isActive && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setActiveProfile.mutate({ id: p.id })
+                            }
+                            className="text-[10px] text-faint hover:text-green-600"
+                          >
+                            activate
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => {
@@ -852,7 +887,8 @@ export default function BudgetPage() {
                     </span>
                   </div>
                 </button>
-              ))}
+                );
+              })}
             </div>
 
             {/* Right: budget detail panel */}

@@ -48,17 +48,22 @@ export default function PaycheckPage() {
   const taxYearOverride = taxYearSetting ?? undefined;
   const setTaxYearOverride = (yr: number | undefined) =>
     setTaxYearSetting(yr ?? null);
-  const [contribProfileId, setContribProfileId] = useActiveContribProfile();
+  const [contribProfileId] = useActiveContribProfile();
   const utils = trpc.useUtils();
 
   // Contribution profile state
   const contribProfilesQuery = trpc.contributionProfile.list.useQuery();
   const contribProfiles = contribProfilesQuery.data ?? [];
-  const activeProfileQuery = trpc.contributionProfile.getById.useQuery(
-    { id: contribProfileId! },
-    { enabled: contribProfileId != null },
+
+  // Local viewing state — defaults to global active, but can view others without activating
+  const [viewingContribId, setViewingContribId] = useState<number | null>(null);
+  const displayContribId = viewingContribId ?? contribProfileId;
+
+  const viewingProfileQuery = trpc.contributionProfile.getById.useQuery(
+    { id: displayContribId! },
+    { enabled: displayContribId != null },
   );
-  const activeProfile = activeProfileQuery.data;
+  const activeProfile = viewingProfileQuery.data;
   const isProfileMode =
     canEditProfiles && activeProfile != null && !activeProfile.isDefault;
 
@@ -123,8 +128,8 @@ export default function PaycheckPage() {
       ? { salaryOverrides: scenarioSalaryOverrides }
       : {}),
     ...(taxYearOverride ? { taxYearOverride } : {}),
-    ...(contribProfileId != null
-      ? { contributionProfileId: contribProfileId }
+    ...(displayContribId != null
+      ? { contributionProfileId: displayContribId }
       : {}),
   };
   const {
@@ -479,9 +484,9 @@ export default function PaycheckPage() {
             <span className="text-xs text-muted">Profile:</span>
             <select
               className="text-xs border rounded px-2 py-1 bg-surface-primary"
-              value={contribProfileId ?? ""}
+              value={displayContribId ?? ""}
               onChange={(e) =>
-                setContribProfileId(
+                setViewingContribId(
                   e.target.value ? Number(e.target.value) : null,
                 )
               }
@@ -493,6 +498,11 @@ export default function PaycheckPage() {
                 </option>
               ))}
             </select>
+            {displayContribId !== contribProfileId && (
+              <span className="text-[10px] text-muted font-medium">
+                (viewing — not active)
+              </span>
+            )}
             {isProfileMode && (
               <span className="text-[10px] text-amber-600 font-medium">
                 Edits update profile

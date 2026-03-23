@@ -150,14 +150,29 @@ export const budgetRouter = createTRPCRouter({
 
   /** Returns the active budget profile's calculator result for a given column. */
   getActiveSummary: protectedProcedure
-    .input(z.object({ selectedColumn: z.number().optional() }).optional())
+    .input(
+      z
+        .object({
+          selectedColumn: z.number().optional(),
+          profileId: z.number().optional(),
+        })
+        .optional(),
+    )
     .query(async ({ ctx, input }) => {
-      const profiles = await ctx.db
-        .select()
-        .from(schema.budgetProfiles)
-        .where(eq(schema.budgetProfiles.isActive, true));
-
-      const activeProfile = profiles[0];
+      let activeProfile;
+      if (input?.profileId) {
+        const rows = await ctx.db
+          .select()
+          .from(schema.budgetProfiles)
+          .where(eq(schema.budgetProfiles.id, input.profileId));
+        activeProfile = rows[0];
+      } else {
+        const rows = await ctx.db
+          .select()
+          .from(schema.budgetProfiles)
+          .where(eq(schema.budgetProfiles.isActive, true));
+        activeProfile = rows[0];
+      }
       if (!activeProfile) {
         return { profile: null, result: null, columnLabels: [] as string[] };
       }

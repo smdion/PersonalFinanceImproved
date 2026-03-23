@@ -4,6 +4,26 @@ All notable changes to Ledgr will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.5] - 2026-03-23
+
+### Added
+
+- **Lump-sum injections for projections** — one-time dollar-amount events (bonus, inheritance, windfall, rollover) on accumulation and decumulation overrides; supports target account selection, traditional/Roth tax type, and optional label; lump sums are year-exact (not sticky-forward like rate overrides); wired through override resolution and projection engine for both retirement and brokerage pages
+- **Brokerage lump-sum form** — inline form on the brokerage page to add one-time injections by year, amount, account, and label; merged into accumulation overrides and passed to the projection engine
+- **UI test runner (debug mode)** — when diagnostics mode is enabled in Settings, a "Tests" section appears with Run All, per-directory quick-run buttons, custom file filter, and inline pass/fail/skip results with failure details; backed by a tRPC endpoint that shells out to vitest with JSON reporter
+- **Active profile switchers in ScenarioBar** — generic `ProfilePill` component (one data shape, one renderer) used for both Budget and Contribution profile selection; global activation from the top bar affects all consuming pages
+- **Budget profile viewing without activation** — clicking a budget profile in the sidebar now shows it for editing without making it globally active; explicit "activate" action in hover menu for non-active profiles
+- **Paycheck profile viewing without activation** — contribution profile dropdown on the paycheck page now changes the local view without setting the global active profile; visual indicator when viewing a non-active profile
+
+### Fixed
+
+- **Override audit trail** — `created_by` and `updated_by` columns added to retirement salary/budget override tables; populated from the authenticated OIDC/local session user, not the household person
+- **GK spending strategy param layout** — Guyton-Klinger guardrail parameters now render in paired groups (Upper Guardrail + Decrease %, Lower Guardrail + Increase %) using data-driven `group` metadata on `ParamField` instead of strategy-specific renderer logic
+
+### Changed
+
+- **`getActiveSummary` accepts `profileId`** — budget summary query now accepts an optional `profileId` parameter to fetch any profile's data, enabling view-without-activate on the budget page
+
 ## [0.1.4] - 2026-03-22
 
 ### Added

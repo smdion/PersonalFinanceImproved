@@ -5,6 +5,9 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { trpc } from "@/lib/trpc";
 import { confirm } from "@/components/ui/confirm-dialog";
+import { ProfilePill } from "./profile-pill";
+import type { ProfileOption } from "./profile-pill";
+import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 
 export function ScenarioBar() {
   const {
@@ -34,6 +37,27 @@ export function ScenarioBar() {
   const createMut = trpc.settings.scenarios.create.useMutation();
   const deleteMut = trpc.settings.scenarios.delete.useMutation();
   const utils = trpc.useUtils();
+
+  // Profile switcher data
+  const { data: budgetProfiles } = trpc.budget.listProfiles.useQuery();
+  const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
+  const [activeContribId, setActiveContribId] = useActiveContribProfile();
+
+  const activateBudget = trpc.budget.setActiveProfile.useMutation({
+    onSuccess: () => utils.budget.listProfiles.invalidate(),
+  });
+
+  const budgetOptions: ProfileOption[] = (budgetProfiles ?? []).map((p) => ({
+    id: p.id,
+    name: p.name,
+    isActive: p.isActive,
+  }));
+
+  const contribOptions: ProfileOption[] = (contribProfiles ?? []).map((p) => ({
+    id: p.id,
+    name: p.name,
+    isActive: p.id === activeContribId,
+  }));
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -382,6 +406,23 @@ export function ScenarioBar() {
           )}
         </div>
       </div>
+
+      {/* Divider */}
+      <div className="w-px h-4 bg-surface-strong" />
+
+      {/* Profile switchers */}
+      <ProfilePill
+        label="Budget"
+        options={budgetOptions}
+        onActivate={(id) => activateBudget.mutate({ id: Number(id) })}
+        isPending={activateBudget.isPending}
+      />
+      <div className="w-px h-4 bg-surface-strong" />
+      <ProfilePill
+        label="Contrib"
+        options={contribOptions}
+        onActivate={(id) => setActiveContribId(Number(id))}
+      />
 
       {/* Divider */}
       <div className="w-px h-4 bg-surface-strong" />
