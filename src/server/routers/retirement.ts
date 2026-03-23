@@ -211,7 +211,7 @@ export async function buildEnginePayload(
   const primaryActiveJobs = patchedJobs.filter(
     (j) => !j.endDate && j.personId === primaryPerson.id,
   );
-  const filingStatus = primaryActiveJobs[0]?.w4FilingStatus ?? "MFJ";
+  const filingStatus = settings.filingStatus ?? primaryActiveJobs[0]?.w4FilingStatus ?? "MFJ";
   const latestTaxYear =
     allTaxBrackets.length > 0
       ? Math.max(...allTaxBrackets.map((b) => b.taxYear))

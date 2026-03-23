@@ -904,9 +904,29 @@ export default function RetirementPage() {
                 <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
                   Taxes in Retirement
                 </h4>
-                <span className="text-[10px] text-faint">
-                  {filingStatus} brackets
-                </span>
+                <select
+                  className="text-[10px] text-faint bg-transparent border border-transparent hover:border-border rounded px-1 py-0.5 cursor-pointer focus:outline-none focus:border-accent"
+                  value={settings.filingStatusExplicit ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value || null;
+                    upsertSettings.mutate({
+                      personId: settings.personId,
+                      retirementAge: settings.retirementAge,
+                      endAge: settings.endAge,
+                      returnAfterRetirement: settings.returnAfterRetirement,
+                      annualInflation: settings.annualInflation,
+                      salaryAnnualIncrease: settings.salaryAnnualIncrease,
+                      filingStatus: val as "MFJ" | "Single" | "HOH" | null,
+                    });
+                  }}
+                >
+                  <option value="">Auto ({filingStatus})</option>
+                  <option value="MFJ">MFJ</option>
+                  <option value="Single">Single</option>
+                  <option value="HOH">HOH</option>
+                </select>
+                <span className="text-[10px] text-faint">brackets</span>
+                <HelpTip text="Tax filing status used for retirement tax estimates — affects federal brackets, LTCG rates, IRMAA thresholds, and Social Security taxation. 'Auto' inherits from your primary job's W-4. Override it here if your filing status will change in retirement." />
                 <span className="text-[9px] text-purple-400 bg-purple-50 px-1.5 py-0.5 rounded">
                   Deterministic + MC Advanced
                 </span>

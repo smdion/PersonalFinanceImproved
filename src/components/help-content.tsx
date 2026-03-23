@@ -720,8 +720,9 @@ export function HelpContent() {
           </li>
           <li>
             <strong>People</strong> &mdash; Add household members with birth
-            dates and tax filing status. People drive paycheck calculations and
-            retirement projections.
+            dates and W-4 filing status. The W-4 status drives paycheck withholding;
+            retirement projections have their own filing status override in the
+            Taxes in Retirement section.
           </li>
           <li>
             <strong>IRS Limits</strong> &mdash; Review and adjust annual

@@ -539,6 +539,7 @@ export const projectionRouter = createTRPCRouter({
           enableAcaAwareness: settings.enableAcaAwareness,
           householdSize: settings.householdSize,
           filingStatus,
+          filingStatusExplicit: settings.filingStatus ?? null,
         },
         perPersonSettings,
         annualExpenses: annualExpensesVal,

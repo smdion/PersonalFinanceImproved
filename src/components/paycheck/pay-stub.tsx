@@ -149,7 +149,7 @@ export function PayStub({
           <div className="flex justify-between text-muted">
             <span>
               Federal W/H
-              <HelpTip text="Federal income tax withheld based on your W-4 filing status and salary" />
+              <HelpTip text="Federal income tax withheld based on your W-4 filing status and salary. This is your per-job withholding election — retirement projections use a separate filing status setting." />
             </span>
             <span className="text-red-600">
               -{formatCurrency(paycheck.federalWithholding)}

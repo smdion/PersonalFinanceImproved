@@ -54,6 +54,7 @@ const retirementSettingsInput = z.object({
   householdSize: z.number().int().min(1).max(8).optional(),
   socialSecurityMonthly: zDecimal.optional(),
   ssStartAge: z.number().int().min(62).max(70).optional(),
+  filingStatus: z.enum(["MFJ", "Single", "HOH"]).nullable().optional(),
 });
 
 const retirementScenarioInput = z.object({

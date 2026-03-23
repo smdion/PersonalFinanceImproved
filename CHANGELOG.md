@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Active profile switchers in ScenarioBar** — generic `ProfilePill` component (one data shape, one renderer) used for both Budget and Contribution profile selection; global activation from the top bar affects all consuming pages
 - **Budget profile viewing without activation** — clicking a budget profile in the sidebar now shows it for editing without making it globally active; explicit "activate" action in hover menu for non-active profiles
 - **Paycheck profile viewing without activation** — contribution profile dropdown on the paycheck page now changes the local view without setting the global active profile; visual indicator when viewing a non-active profile
+- **Configurable filing status for retirement** — filing status (MFJ/Single/HOH) is now an explicit setting on the retirement page instead of being silently derived from the primary job's W-4; affects federal tax brackets, LTCG rates, IRMAA thresholds, Social Security taxation, and NIIT; defaults to "Auto" which inherits from the W-4 for backward compatibility; dropdown selector in the "Taxes in Retirement" section
+- **Filing status HelpTips** — contextual help explaining the relationship between W-4 filing status (per-job withholding) and retirement filing status (projection tax estimates); updated paycheck pay-stub and Settings help content
 
 ### Fixed
 

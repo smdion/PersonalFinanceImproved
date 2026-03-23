@@ -1,0 +1,1 @@
+ALTER TABLE "retirement_settings" ADD COLUMN "filing_status" varchar(10);

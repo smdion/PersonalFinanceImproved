@@ -50,6 +50,13 @@
       "when": 1774241698008,
       "tag": "0006_goofy_rawhide_kid",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1774276818652,
+      "tag": "0007_melted_swordsman",
+      "breakpoints": true
     }
   ]
 }

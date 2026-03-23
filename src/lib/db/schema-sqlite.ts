@@ -480,7 +480,9 @@ export const annualPerformance = sqliteTable(
       .notNull()
       .default("0"),
     fees: text("fees").notNull().default("0"),
-    rollovers: text("rollovers").notNull().default("0"),
+    rollovers: text("rollovers")
+      .notNull()
+      .default("0"),
     lifetimeGains: text("lifetime_gains").notNull(),
     lifetimeContributions: text("lifetime_contributions").notNull(),
     lifetimeMatch: text("lifetime_match").notNull(),
@@ -521,7 +523,9 @@ export const accountPerformance = sqliteTable(
     distributions: text("distributions")
       .notNull()
       .default("0"),
-    rollovers: text("rollovers").notNull().default("0"),
+    rollovers: text("rollovers")
+      .notNull()
+      .default("0"),
     parentCategory: text("parent_category").notNull(),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
     isFinalized: integer("is_finalized", { mode: "boolean" }).notNull().default(false),
@@ -806,6 +810,8 @@ export const retirementSettings = sqliteTable(
       .default(false),
     /** Household size for ACA FPL calculation. */
     householdSize: integer("household_size").notNull().default(2),
+    /** Explicit filing status for retirement projections. Null = derive from primary job W-4. */
+    filingStatus: text("filing_status").$type<W4FilingStatus>(),
   },
   (table) => [index("retirement_settings_person_id_idx").on(table.personId)],
 );
@@ -917,7 +923,7 @@ export const taxBrackets = sqliteTable(
 // ── LTCG brackets ───────────────────────────────────────────────
 
 export type LtcgBracketEntry = {
-  threshold: number; // Infinity stored as null in JSON
+  threshold: number | null; // null = Infinity (top bracket)
   rate: number;
 };
 
