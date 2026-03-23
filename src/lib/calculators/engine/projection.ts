@@ -52,7 +52,8 @@ import {
   MAX_BROKERAGE_RAMP_YEARS,
 } from "../../constants";
 import { getRmdStartAge } from "../../config/rmd-tables";
-import { getLtcgRate } from "../../config/tax-tables";
+import { getLtcgRate, computeLtcgTax } from "../../config/tax-tables";
+import { computeNiit } from "../../config/niit";
 import {
   resolveAccumulationConfig,
   resolveDecumulationConfig,
@@ -1237,11 +1238,6 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
             )
           : taxRates.traditionalFallbackRate;
 
-      // Compute actual LTCG rate based on total taxable income (graduated brackets)
-      const actualLtcgRate = filingStatus
-        ? getLtcgRate(actualTaxableIncome, filingStatus)
-        : taxRates.brokerage;
-
       // Basis-aware brokerage tax: only gains portion is taxable
       let brokerageTaxCost = 0;
       let brokerageBasisPortion = 0;
@@ -1255,7 +1251,10 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
         brokerageGainsPortion = roundToCents(
           brokerageWithdrawal - brokerageBasisPortion,
         );
-        brokerageTaxCost = roundToCents(brokerageGainsPortion * actualLtcgRate);
+        // Progressive LTCG tax: stack gains on top of ordinary income across 0%/15%/20% brackets
+        brokerageTaxCost = filingStatus
+          ? roundToCents(computeLtcgTax(actualTaxableIncome, brokerageGainsPortion, filingStatus))
+          : roundToCents(brokerageGainsPortion * taxRates.brokerage);
         // Annotate the slot with basis/gains breakdown
         if (brokerageSlot) {
           brokerageSlot.basisPortion = brokerageBasisPortion;
@@ -1263,7 +1262,7 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
         }
       }
 
-      const taxCost = roundToCents(
+      let taxCost = roundToCents(
         totalTraditionalWithdrawal * actualTraditionalRate +
           totalRothWithdrawal * taxRates.roth +
           hsaWithdrawal * taxRates.hsa +
@@ -1330,24 +1329,48 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
       });
       const { rothConversionAmount, rothConversionTaxCost } = rothResult;
 
-      // Recompute LTCG rate including Roth conversion income (#37).
+      // Recompute LTCG tax including Roth conversion income (#37).
       // Roth conversions are taxed as ordinary income and push total taxable income
       // into potentially higher LTCG brackets (0%/15%/20%).
-      const postConversionLtcgRate =
-        rothConversionAmount > 0 && filingStatus
-          ? getLtcgRate(
-              actualTaxableIncome + rothConversionAmount,
-              filingStatus,
-            )
-          : actualLtcgRate;
+      let postConversionLtcgRate: number;
+      if (rothConversionAmount > 0 && filingStatus && brokerageGainsPortion > 0) {
+        const revisedOrdinary = actualTaxableIncome + rothConversionAmount;
+        brokerageTaxCost = roundToCents(
+          computeLtcgTax(revisedOrdinary, brokerageGainsPortion, filingStatus),
+        );
+        postConversionLtcgRate = brokerageGainsPortion > 0
+          ? brokerageTaxCost / brokerageGainsPortion
+          : 0;
+        // Recompute taxCost with revised brokerage tax
+        taxCost = roundToCents(
+          totalTraditionalWithdrawal * actualTraditionalRate +
+            totalRothWithdrawal * taxRates.roth +
+            hsaWithdrawal * taxRates.hsa +
+            brokerageTaxCost,
+        );
+      } else {
+        postConversionLtcgRate = brokerageGainsPortion > 0
+          ? brokerageTaxCost / brokerageGainsPortion
+          : (filingStatus ? getLtcgRate(actualTaxableIncome, filingStatus) : taxRates.brokerage);
+      }
 
-      // --- IRMAA Awareness (Phase 6) ---
-      // Compute current-year MAGI and store for 2-year lookback (#18).
+      // --- NIIT (Net Investment Income Tax, 3.8% surtax) ---
+      // Applies to lesser of net investment income or MAGI exceeding threshold.
+      // Roth conversions raise MAGI but are NOT net investment income.
       const currentYearMagi =
         totalTraditionalWithdrawal +
         rothConversionAmount +
         brokerageGainsPortion +
         taxableSS;
+      const niitAmount = filingStatus
+        ? computeNiit(currentYearMagi, brokerageGainsPortion, filingStatus)
+        : 0;
+      if (niitAmount > 0) {
+        taxCost = roundToCents(taxCost + niitAmount);
+      }
+
+      // --- IRMAA Awareness (Phase 6) ---
+      // Store MAGI for 2-year lookback (#18).
       magiHistory.push(currentYearMagi);
       // IRMAA uses year N-2 MAGI per IRS rules; fall back to current year for first 2 years.
       const irmaaLookbackMagi =
@@ -1460,6 +1483,7 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
         rothConversionAmount,
         rothConversionTaxCost,
         strategyAction,
+        niitAmount,
         irmaaCost,
         acaSubsidyPreserved,
         acaMagiHeadroom,

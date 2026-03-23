@@ -56,11 +56,14 @@ INSERT INTO tax_brackets (tax_year, filing_status, w4_checkbox, brackets) VALUES
   (2026, 'HOH', true, '[{"rate": 0, "threshold": 0, "baseWithholding": 0}, {"rate": 0.1, "threshold": 11250, "baseWithholding": 0}, {"rate": 0.12, "threshold": 1975, "baseWithholding": 850}, {"rate": 0.22, "threshold": 43675, "baseWithholding": 3721}, {"rate": 0.24, "threshold": 62925, "baseWithholding": 7956}, {"rate": 0.32, "threshold": 109000, "baseWithholding": 19230}, {"rate": 0.35, "threshold": 136500, "baseWithholding": 27742}, {"rate": 0.37, "threshold": 324425, "baseWithholding": 93515.75}]')
 ON CONFLICT DO NOTHING;
 
--- LTCG brackets (Long-Term Capital Gains) — IRS Revenue Procedure 2024-40
+-- LTCG brackets (Long-Term Capital Gains) — IRS Revenue Procedure 2024-40 (2025), 2025-32 (2026)
 INSERT INTO ltcg_brackets (tax_year, filing_status, brackets) VALUES
   (2025, 'MFJ', '[{"threshold": 94050, "rate": 0}, {"threshold": 583750, "rate": 0.15}, {"threshold": null, "rate": 0.2}]'),
   (2025, 'Single', '[{"threshold": 47025, "rate": 0}, {"threshold": 518900, "rate": 0.15}, {"threshold": null, "rate": 0.2}]'),
-  (2025, 'HOH', '[{"threshold": 63000, "rate": 0}, {"threshold": 551350, "rate": 0.15}, {"threshold": null, "rate": 0.2}]')
+  (2025, 'HOH', '[{"threshold": 63000, "rate": 0}, {"threshold": 551350, "rate": 0.15}, {"threshold": null, "rate": 0.2}]'),
+  (2026, 'MFJ', '[{"threshold": 98900, "rate": 0}, {"threshold": 613700, "rate": 0.15}, {"threshold": null, "rate": 0.2}]'),
+  (2026, 'Single', '[{"threshold": 49450, "rate": 0}, {"threshold": 545500, "rate": 0.15}, {"threshold": null, "rate": 0.2}]'),
+  (2026, 'HOH', '[{"threshold": 66200, "rate": 0}, {"threshold": 579600, "rate": 0.15}, {"threshold": null, "rate": 0.2}]')
 ON CONFLICT DO NOTHING;
 
 -- IRMAA brackets (Medicare premium surcharges) — CMS 2026 projected thresholds

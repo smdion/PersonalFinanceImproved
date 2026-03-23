@@ -19,6 +19,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- **LTCG bracket stacking** — capital gains are now progressively taxed across 0%/15%/20% brackets by stacking gains on top of ordinary income, instead of applying a single flat marginal rate to all gains; affects projection engine (post-routing + Roth conversion recomputation) and pre-routing tax estimation (all 3 routing modes)
+- **NIIT (3.8% Net Investment Income Tax)** — new surtax on the lesser of net investment income or MAGI exceeding $200k Single / $250k MFJ; Roth conversions raise MAGI but are not subject to NIIT; added to projection engine after Roth conversion phase and registered in tax freshness system
+- **2026 LTCG bracket data** — seed file and code fallback updated to 2026 thresholds from IRS Revenue Procedure 2025-32 (MFJ: $98,900/$613,700, Single: $49,450/$545,500, HOH: $66,200/$579,600)
+- **TCJA bracket verification** — confirmed TCJA rates (10/12/22/24/32/35/37%) made permanent by "One Big Beautiful Bill Act" (signed July 4, 2025); updated canary test
 - **Salary basis mismatch** — profile switch employer match rates now use total compensation (including bonus) instead of raw base salary, matching the default profile path
 - **Contribution override double-inflation** — profile switch salary overrides are grown by the configured raise rate to the switch year and fed through the existing salary override mechanism; no special engine logic needed
 - **ESPP/account persistence after override** — switching contribution profile at a future year now stops accounts not in the new profile (e.g. ESPP) instead of keeping the original profile's accounts active

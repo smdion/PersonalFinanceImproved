@@ -108,8 +108,8 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
   },
   {
     name: "LTCG brackets (seed)",
-    validThrough: 2025,
-    source: "IRS Revenue Procedure 2024-40",
+    validThrough: 2026,
+    source: "IRS Revenue Procedure 2025-32",
     updateUrl: "https://www.irs.gov/newsroom/irs-provides-tax-inflation-adjustments",
     location: "seed-reference-data.sql → ltcg_brackets",
     changeFrequency: "annual",
@@ -126,8 +126,8 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
   // --- Code fallbacks (should match latest seed data) ---
   {
     name: "LTCG bracket fallback (code)",
-    validThrough: 2025,
-    source: "IRS Revenue Procedure 2024-40",
+    validThrough: 2026,
+    source: "IRS Revenue Procedure 2025-32",
     updateUrl: "https://www.irs.gov/newsroom/irs-provides-tax-inflation-adjustments",
     location: "src/lib/config/tax-tables.ts → LTCG_BRACKETS",
     changeFrequency: "annual",
@@ -191,6 +191,13 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
     validThrough: 2026,
     source: "IRC §3101(b)(2) — not indexed to inflation",
     location: "seed-reference-data.sql → fica_medicare_surtax_threshold",
+    changeFrequency: "legislative-only",
+  },
+  {
+    name: "NIIT thresholds ($200k/$250k) and rate (3.8%)",
+    validThrough: 2026,
+    source: "IRC §1411 — not indexed to inflation (ACA 2013)",
+    location: "src/lib/config/niit.ts → NIIT_THRESHOLDS, NIIT_RATE",
     changeFrequency: "legislative-only",
   },
 ];

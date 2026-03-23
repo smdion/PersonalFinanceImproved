@@ -22,7 +22,8 @@ import {
 } from "./tax-freshness";
 
 // -- Import actual values to verify they match expectations --
-import { LTCG_BRACKETS, getLtcgRate } from "@/lib/config/tax-tables";
+import { LTCG_BRACKETS, getLtcgRate, computeLtcgTax } from "@/lib/config/tax-tables";
+import { NIIT_RATE, NIIT_THRESHOLDS, computeNiit } from "@/lib/config/niit";
 import {
   IRMAA_BRACKETS,
   getIrmaaCost,
@@ -67,6 +68,7 @@ describe("Tax parameter freshness", () => {
     expect(names).toContain("RMD start age rules (SECURE 2.0)");
     expect(names).toContain("FICA rates (SS 6.2%, Medicare 1.45%, surtax 0.9%)");
     expect(names).toContain("Medicare surtax threshold ($200k/$250k)");
+    expect(names).toContain("NIIT thresholds ($200k/$250k) and rate (3.8%)");
   });
 
   it("no parameter is more than 2 years stale", () => {
@@ -93,17 +95,17 @@ describe("Tax parameter freshness", () => {
 // ============================================================================
 
 describe("LTCG bracket values", () => {
-  // Source: IRS Revenue Procedure 2024-40 (2025 tax year)
-  it("MFJ 0% threshold = $94,050", () => {
-    expect(LTCG_BRACKETS.MFJ[0]!.threshold).toBe(94050);
+  // Source: IRS Revenue Procedure 2025-32 (2026 tax year)
+  it("MFJ 0% threshold = $98,900", () => {
+    expect(LTCG_BRACKETS.MFJ[0]!.threshold).toBe(98900);
   });
 
-  it("MFJ 15% threshold = $583,750", () => {
-    expect(LTCG_BRACKETS.MFJ[1]!.threshold).toBe(583750);
+  it("MFJ 15% threshold = $613,700", () => {
+    expect(LTCG_BRACKETS.MFJ[1]!.threshold).toBe(613700);
   });
 
-  it("Single 0% threshold = $47,025", () => {
-    expect(LTCG_BRACKETS.Single[0]!.threshold).toBe(47025);
+  it("Single 0% threshold = $49,450", () => {
+    expect(LTCG_BRACKETS.Single[0]!.threshold).toBe(49450);
   });
 
   it("rates are 0%, 15%, 20%", () => {
@@ -122,7 +124,98 @@ describe("LTCG bracket values", () => {
   });
 
   it("getLtcgRate returns 20% for income above all thresholds (MFJ)", () => {
-    expect(getLtcgRate(600000, "MFJ")).toBe(0.2);
+    expect(getLtcgRate(700000, "MFJ")).toBe(0.2);
+  });
+});
+
+describe("LTCG progressive tax (computeLtcgTax)", () => {
+  // MFJ 2026: 0% up to $98,900; 15% up to $613,700; 20% above
+  it("all gains in 0% bracket → $0 tax", () => {
+    // $80k ordinary + $10k gains = $90k total, all within 0% bracket ($98,900)
+    expect(computeLtcgTax(80000, 10000, "MFJ")).toBe(0);
+  });
+
+  it("gains spanning 0% and 15% brackets", () => {
+    // $80k ordinary + $30k gains: $18,900 at 0% + $11,100 at 15% = $1,665
+    expect(computeLtcgTax(80000, 30000, "MFJ")).toBe(1665);
+  });
+
+  it("all gains in 15% bracket", () => {
+    // $150k ordinary + $50k gains: all in 15% bracket = $7,500
+    expect(computeLtcgTax(150000, 50000, "MFJ")).toBe(7500);
+  });
+
+  it("gains spanning 15% and 20% brackets", () => {
+    // $600k ordinary + $30k gains: $13,700 at 15% + $16,300 at 20% = $2,055 + $3,260 = $5,315
+    expect(computeLtcgTax(600000, 30000, "MFJ")).toBe(5315);
+  });
+
+  it("all gains in 20% bracket", () => {
+    // $700k ordinary + $50k gains: all at 20% = $10,000
+    expect(computeLtcgTax(700000, 50000, "MFJ")).toBe(10000);
+  });
+
+  it("zero gains → $0 tax", () => {
+    expect(computeLtcgTax(100000, 0, "MFJ")).toBe(0);
+  });
+
+  it("negative gains → $0 tax", () => {
+    expect(computeLtcgTax(100000, -5000, "MFJ")).toBe(0);
+  });
+
+  it("Single: gains spanning brackets", () => {
+    // Single 2026: 0% up to $49,450; 15% up to $545,500
+    // $40k ordinary + $20k gains: $9,450 at 0% + $10,550 at 15% = $1,582.50
+    expect(computeLtcgTax(40000, 20000, "Single")).toBe(1582.5);
+  });
+});
+
+describe("NIIT values (3.8% surtax)", () => {
+  // Source: IRC §1411 — thresholds not indexed to inflation
+  it("rate is 3.8%", () => {
+    expect(NIIT_RATE).toBe(0.038);
+  });
+
+  it("MFJ threshold = $250,000", () => {
+    expect(NIIT_THRESHOLDS.MFJ).toBe(250000);
+  });
+
+  it("Single threshold = $200,000", () => {
+    expect(NIIT_THRESHOLDS.Single).toBe(200000);
+  });
+
+  it("HOH threshold = $200,000", () => {
+    expect(NIIT_THRESHOLDS.HOH).toBe(200000);
+  });
+
+  it("no NIIT when MAGI below threshold", () => {
+    expect(computeNiit(200000, 50000, "MFJ")).toBe(0);
+  });
+
+  it("NIIT on lesser of investment income or MAGI excess (MFJ)", () => {
+    // MAGI $300k, investment income $80k, threshold $250k
+    // MAGI excess = $50k, investment income = $80k → taxable = $50k
+    // NIIT = $50k × 3.8% = $1,900
+    expect(computeNiit(300000, 80000, "MFJ")).toBe(1900);
+  });
+
+  it("NIIT when investment income is smaller than MAGI excess", () => {
+    // MAGI $400k, investment income $30k, threshold $250k
+    // MAGI excess = $150k, investment income = $30k → taxable = $30k
+    // NIIT = $30k × 3.8% = $1,140
+    expect(computeNiit(400000, 30000, "MFJ")).toBe(1140);
+  });
+
+  it("no NIIT with zero investment income", () => {
+    expect(computeNiit(500000, 0, "MFJ")).toBe(0);
+  });
+
+  it("Roth conversion raises MAGI but is not investment income", () => {
+    // $180k ordinary + $100k Roth conversion = $280k MAGI
+    // $20k capital gains (the investment income)
+    // MAGI excess = $80k (Single threshold $200k), investment = $20k → taxable = $20k
+    // NIIT = $20k × 3.8% = $760
+    expect(computeNiit(280000, 20000, "Single")).toBe(760);
   });
 });
 
@@ -267,28 +360,15 @@ describe("Tax law structural checks", () => {
 
   it("TCJA status check — brackets assume current TCJA rates", () => {
     // TCJA was enacted in 2017 with rates: 10, 12, 22, 24, 32, 35, 37%
-    // Scheduled to sunset after 2025 (rates revert to 10, 15, 25, 28, 33, 35, 39.6%)
-    // If TCJA sunsets, bracket data AND this test need updating.
-    //
-    // As of March 2026: TCJA status should be monitored. If extended, update
-    // this comment. If sunset, update bracket rates in seed data.
+    // Originally scheduled to sunset after 2025, but made permanent by the
+    // "One Big Beautiful Bill Act" (signed July 4, 2025). Rates confirmed
+    // in IRS Revenue Procedure 2025-32 for tax year 2026.
     const tcjaRates = [0, 0.1, 0.12, 0.22, 0.24, 0.32, 0.35, 0.37];
     const preTcjaRates = [0, 0.1, 0.15, 0.25, 0.28, 0.33, 0.35, 0.396];
 
-    // This test documents the assumption. Update when TCJA status is resolved.
-    // If this assertion changes, every tax_brackets row needs new rates.
+    // TCJA rates are permanent — this documents the assumption.
+    // If rates ever change legislatively, every tax_brackets row needs new rates.
     expect(tcjaRates).not.toEqual(preTcjaRates);
-
-    // Canary: if we're past 2025 and TCJA hasn't been extended, flag it
-    const year = currentTaxYear();
-    if (year > 2025) {
-      console.warn(
-        "⚠ TCJA SUNSET CHECK: We are past 2025. Verify whether TCJA rates " +
-          "(10/12/22/24/32/35/37%) are still in effect or have reverted to " +
-          "pre-TCJA rates (10/15/25/28/33/35/39.6%). " +
-          "Update tax_brackets seed data accordingly.",
-      );
-    }
   });
 
   it("SS taxation thresholds still unchanged since 1993", () => {
@@ -334,5 +414,14 @@ describe("Tax law structural checks", () => {
     // This amount is indexed to inflation starting 2026 (in $500 increments).
     // Until then, it's fixed at $11,250.
     expect(11250).toBe(11250);
+  });
+
+  it("NIIT thresholds still not indexed ($200k/$250k, 3.8%)", () => {
+    // IRC §1411 (ACA 2013) — thresholds are NOT indexed to inflation.
+    // Like SS taxation thresholds and Medicare surtax, more filers hit this each year.
+    // If Congress indexes them, update niit.ts.
+    expect(NIIT_THRESHOLDS.MFJ).toBe(250000);
+    expect(NIIT_THRESHOLDS.Single).toBe(200000);
+    expect(NIIT_RATE).toBe(0.038);
   });
 });

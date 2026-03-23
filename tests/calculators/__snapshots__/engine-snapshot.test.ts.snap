@@ -1236,7 +1236,7 @@ exports[`engine snapshot parity > fixture 26: LTCG 15%/20% zone — higher incom
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 956162.57,
+    "endBalance": 961097.79,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2016,7 +2016,7 @@ exports[`engine snapshot parity > fixture 41: rothConversionTarget override via 
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 2280279.75,
+    "endBalance": 2280291.58,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,

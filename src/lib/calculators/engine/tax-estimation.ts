@@ -25,7 +25,7 @@ import {
   getRothBalance,
   getTotalBalance,
 } from "../../config/account-types";
-import { getLtcgRate } from "../../config/tax-tables";
+import { getLtcgRate, computeLtcgTax } from "../../config/tax-tables";
 import { MAX_EFFECTIVE_TAX_RATE } from "../../constants";
 
 // ---------------------------------------------------------------------------
@@ -285,14 +285,18 @@ export function estimateWithdrawalTaxCost(
         if (rothTypeCap !== null) rothDraw = Math.min(rothDraw, rothTypeCap);
         estRemaining -= rothDraw;
       }
-      // Phase 3: Brokerage — LTCG on gains only (graduated rate)
+      // Phase 3: Brokerage — LTCG on gains only (progressive stacking)
       if (balances.afterTax > 0 && estRemaining > 0) {
         const brokDraw = Math.min(estRemaining, balances.afterTax);
         const basisRatio =
           balances.afterTaxBasis > 0
             ? Math.min(1, balances.afterTaxBasis / balances.afterTax)
             : 0;
-        estTax += brokDraw * (1 - basisRatio) * estLtcgRate;
+        const estGains = brokDraw * (1 - basisRatio);
+        const estOrdinary = iterEstTradTotal + taxableSS;
+        estTax += filingStatus
+          ? computeLtcgTax(estOrdinary, estGains, filingStatus)
+          : estGains * estLtcgRate;
         estRemaining -= brokDraw;
       }
       // Phase 4: HSA — 0% tax (qualified medical)
@@ -319,14 +323,18 @@ export function estimateWithdrawalTaxCost(
           );
           estRemaining -= draw;
         } else if (isOverflowTarget(category)) {
-          // Brokerage — LTCG on gains only (graduated rate)
+          // Brokerage — LTCG on gains only (progressive stacking)
           const available = getTotalBalance(acctBal[category]);
           const draw = Math.min(maxFromAccount, available);
           const basisRatio =
             balances.afterTax > 0 && balances.afterTaxBasis > 0
               ? Math.min(1, balances.afterTaxBasis / balances.afterTax)
               : 0;
-          estTax += draw * (1 - basisRatio) * estLtcgRate;
+          const estGains = draw * (1 - basisRatio);
+          const estOrdinary = iterEstTradTotal + taxableSS;
+          estTax += filingStatus
+            ? computeLtcgTax(estOrdinary, estGains, filingStatus)
+            : estGains * estLtcgRate;
           estRemaining -= draw;
         } else {
           // Roth/traditional split account
@@ -394,16 +402,21 @@ export function estimateWithdrawalTaxCost(
         balances.afterTax > 0 && balances.afterTaxBasis > 0
           ? Math.min(1, balances.afterTaxBasis / balances.afterTax)
           : 0;
-      estTax =
-        totalBalance > 0
-          ? afterTaxNeed *
+      if (totalBalance > 0) {
+        const estBrokWithdrawal = afterTaxNeed * (balances.afterTax / totalBalance);
+        const estBrokGains = estBrokWithdrawal * (1 - basisRatio);
+        const estBrokTax = filingStatus
+          ? computeLtcgTax(estTaxableIncome, estBrokGains, filingStatus)
+          : estBrokGains * estLtcgRate;
+        estTax =
+          afterTaxNeed *
             (estTraditionalPortion * traditionalRate +
               (balances.taxFree / totalBalance) * taxRates.roth +
-              (balances.hsa / totalBalance) * taxRates.hsa +
-              (balances.afterTax / totalBalance) *
-                (1 - basisRatio) *
-                estLtcgRate)
-          : 0;
+              (balances.hsa / totalBalance) * taxRates.hsa) +
+          estBrokTax;
+      } else {
+        estTax = 0;
+      }
     }
 
     // After first iteration, recompute taxableSS using accurate IRS formula

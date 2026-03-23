@@ -1372,6 +1372,9 @@ export type EngineDecumulationYear = {
   // --- Spending strategy fields (Phase 5) ---
   /** Strategy action taken this year (e.g. 'increase', 'decrease', 'skip_inflation', 'floor_applied'). */
   strategyAction: string | null;
+  // --- NIIT (Net Investment Income Tax, 3.8% surtax) ---
+  /** NIIT amount: 3.8% × min(net investment income, MAGI - threshold). 0 if below threshold. */
+  niitAmount: number;
   // --- IRMAA fields (Phase 6) ---
   /** Annual IRMAA surcharge cost (per person, age 65+). 0 if below threshold or awareness disabled. */
   irmaaCost: number;
