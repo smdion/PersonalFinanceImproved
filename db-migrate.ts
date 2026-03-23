@@ -30,6 +30,71 @@ async function runPostgres() {
   try {
     const db = drizzle(pool);
     await migrate(db, { migrationsFolder: './drizzle' });
+
+    // Backfill migration journal: if DB was bootstrapped via `drizzle-kit push`,
+    // migrations may exist on disk but not in __drizzle_migrations. For each
+    // un-recorded migration, apply the SQL (idempotent ALTERs) and record it.
+    const journal = JSON.parse(
+      fs.readFileSync(path.resolve('./drizzle/meta/_journal.json'), 'utf-8'),
+    );
+    const client = await pool.connect();
+    try {
+      const { rows: recorded } = await client.query(
+        'SELECT hash FROM __drizzle_migrations',
+      );
+      const recordedHashes = new Set(recorded.map((r: { hash: string }) => r.hash));
+      const crypto = await import('crypto');
+      // PG error codes for idempotent DDL (locale-independent)
+      const IGNORABLE_PG_CODES = new Set([
+        '42701', // duplicate_column
+        '42P07', // duplicate_table
+        '42710', // duplicate_object (index, constraint, etc.)
+        '23505', // unique_violation
+      ]);
+      for (const entry of journal.entries) {
+        const sqlPath = path.resolve(`./drizzle/${entry.tag}.sql`);
+        if (!fs.existsSync(sqlPath)) continue;
+        const sql = fs.readFileSync(sqlPath, 'utf-8');
+        const hash = crypto.createHash('sha256').update(sql).digest('hex');
+        if (recordedHashes.has(hash)) continue;
+        // Try to apply each statement inside a transaction (may already exist from a prior push)
+        const statements = sql
+          .split('--> statement-breakpoint')
+          .map((s: string) => s.trim())
+          .filter(Boolean);
+        await client.query('BEGIN');
+        try {
+          for (const stmt of statements) {
+            // Use savepoints so a failed DDL doesn't abort the entire transaction
+            await client.query('SAVEPOINT backfill_stmt');
+            try {
+              await client.query(stmt);
+              await client.query('RELEASE SAVEPOINT backfill_stmt');
+            } catch (stmtErr) {
+              const code = (stmtErr as { code?: string }).code;
+              if (code && IGNORABLE_PG_CODES.has(code)) {
+                await client.query('ROLLBACK TO SAVEPOINT backfill_stmt');
+              } else {
+                throw stmtErr;
+              }
+            }
+          }
+          // Record in journal (within same transaction)
+          await client.query(
+            'INSERT INTO __drizzle_migrations (hash, created_at) VALUES ($1, $2)',
+            [hash, String(Date.now())],
+          );
+          await client.query('COMMIT');
+          log('info', 'migration_backfilled', { tag: entry.tag });
+        } catch (txErr) {
+          await client.query('ROLLBACK');
+          throw txErr;
+        }
+      }
+    } finally {
+      client.release();
+    }
+
     log('info', 'migrations_applied', { dialect: 'postgresql' });
 
     // Seed reference data if empty

@@ -1012,6 +1012,8 @@ export type ProfileSwitch = {
   baseYearContributions: Record<AccountCategory, number>;
   baseYearEmployerMatch: Record<AccountCategory, number>;
   employerMatchByParentCat?: Map<AccountCategory, Map<string, number>>;
+  /** Contribution rate ceiling derived from this profile's total contributions / compensation. */
+  contributionRate: number;
 };
 
 export type ProjectionInput = {

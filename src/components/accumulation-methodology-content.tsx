@@ -351,13 +351,22 @@ export function AccumulationMethodologyContent() {
           Contribution ceiling
         </h4>
         <p>
-          The engine enforces a ceiling of{" "}
+          The engine derives a contribution rate from your current total
+          contributions divided by total compensation. For example, if you
+          contribute $81k on a $280k salary, your rate is ~29%. This becomes a
+          ceiling: each projected year, total contributions across all accounts
+          cannot exceed{" "}
           <code className="text-[11px] bg-surface-elevated px-1 rounded">
             salary × contributionRate
           </code>
-          . If per-account specs sum to more than this ceiling, contributions
-          are capped and a warning is emitted. This prevents specs from
-          over-allocating relative to your stated savings goal.
+          .
+        </p>
+        <p className="mt-1.5">
+          When the sum of all per-account contributions exceeds this ceiling,
+          every account is scaled down proportionally to fit. This prevents the
+          projection from assuming you&apos;ll save more than you currently do.
+          You can override this rate for any future year in the Saving overrides
+          panel.
         </p>
 
         <h4 className="font-semibold text-secondary mt-4">Overflow handling</h4>

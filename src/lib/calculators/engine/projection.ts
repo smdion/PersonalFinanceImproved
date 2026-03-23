@@ -211,7 +211,7 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
   }
 
   const {
-    accumulationDefaults,
+    accumulationDefaults: inputAccumulationDefaults,
     decumulationDefaults,
     accumulationOverrides,
     decumulationOverrides,
@@ -250,6 +250,9 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
     inflationRate,
     postRetirementInflationRate: validatedPostRetirementInflation,
   } = validated;
+
+  // Mutable copy of accumulation defaults — profile switches may update contributionRate
+  const accumulationDefaults = { ...inputAccumulationDefaults };
 
   // Clone contribution specs so salaryFraction updates don't mutate caller's input
   let contributionSpecs = inputContributionSpecs?.map((s) => ({ ...s }));
@@ -438,6 +441,8 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
         activeBaseYearContributions = ps.baseYearContributions;
         activeBaseYearEmployerMatch = ps.baseYearEmployerMatch;
         activeEmployerMatchByParentCat = ps.employerMatchByParentCat;
+        // Update contribution rate ceiling for the new profile
+        accumulationDefaults.contributionRate = ps.contributionRate;
         // Rebuild spec-to-account mapping for the new specs
         if (hasIndividualAccounts && contributionSpecs) {
           const rebuilt = buildSpecToAccountMapping(

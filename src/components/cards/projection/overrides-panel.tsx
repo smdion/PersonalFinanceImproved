@@ -277,7 +277,7 @@ export function OverridesPanel({ state: s, accumulationExpenseOverride }: Overri
                         <label className="block">
                           <span className="text-xs text-muted">
                             Contribution Rate %
-                            <HelpTip text="Max percentage of salary to contribute. Caps total contributions across all accounts. Leave blank to keep current rate." />
+                            <HelpTip text="Ceiling on total contributions as a % of salary. Auto-derived from your current contributions ÷ compensation. If per-account totals exceed this ceiling, all accounts are scaled down proportionally. Override here to raise or lower the cap from this year onward. Leave blank to keep the current rate." />
                           </span>
                           <input
                             type="number"

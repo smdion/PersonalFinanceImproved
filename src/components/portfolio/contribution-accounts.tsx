@@ -1621,15 +1621,21 @@ function ContributionRow({
               />
             )}
             {cfg?.isOverflowTarget && (
-              <InlineText
-                label="Overflow Priority"
-                value={String(c.allocationPriority ?? 0)}
-                placeholder="0"
-                onSave={(val) =>
-                  onUpdate?.({ allocationPriority: parseInt(val, 10) || 0 })
-                }
-                disabled={!onUpdate}
-              />
+              <div>
+                <div className="flex items-center gap-1 mb-0.5">
+                  <span className="text-[10px] text-muted">Overflow Priority</span>
+                  <HelpTip text="When contributions exceed IRS limits in tax-advantaged accounts (401k, IRA, HSA), the excess overflows to brokerage accounts. Lower number = filled first. Accounts with an Annual Target are filled up to that target before others. The lowest-priority account receives any remaining overflow." />
+                </div>
+                <InlineText
+                  label=""
+                  value={String(c.allocationPriority ?? 0)}
+                  placeholder="0"
+                  onSave={(val) =>
+                    onUpdate?.({ allocationPriority: parseInt(val, 10) || 0 })
+                  }
+                  disabled={!onUpdate}
+                />
+              </div>
             )}
             <div className="col-span-2">
               <InlineText
@@ -1847,7 +1853,7 @@ function InlineText({
 }) {
   return (
     <div>
-      <label className="block text-[10px] text-muted mb-0.5">{label}</label>
+      {label && <label className="block text-[10px] text-muted mb-0.5">{label}</label>}
       {disabled ? (
         <div className="border border-subtle bg-surface-sunken rounded px-2 py-1 text-xs text-muted">
           {value || placeholder || "—"}

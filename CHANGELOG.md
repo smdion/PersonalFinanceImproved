@@ -4,6 +4,43 @@ All notable changes to Ledgr will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.4] - 2026-03-22
+
+### Added
+
+- **Per-year contribution profile switching** — salary/contribution overrides can now reference a contribution profile; the engine switches to that profile's full contribution structure (accounts, employer match) from the target year forward instead of only changing the salary dollar amount
+- **Future-dollar budget overrides** — budget overrides from a profile are inflation-adjusted to the target year with preview showing today → future breakdown
+- **`buildProfileContribData()` helper** — single source of truth for building engine contribution data from any resolved profile, used by both default and switched profiles
+- **LTCG brackets in database** — long-term capital gains brackets moved from hardcoded config to a database table with year/filing-status versioning; new Settings tab for editing thresholds and rates by year with copy-from-year support
+- **IRMAA tables in database** — IRMAA surcharge brackets moved from hardcoded config to a database table; new Settings tab showing MAGI thresholds, annual surcharges, and monthly equivalents per filing status with 2-year lookback context
+- **Contributions page** — standalone household contribution analysis at `/contributions` with savings rate summary (total/retirement/portfolio), per-person account breakdown with utilization bars, employer match analysis, traditional vs Roth split, and contribution profile comparison
+- **Raw Data Browser** — admin-only live database table browser at `/data-browser` with table list, row counts, column metadata with type badges, paginated data viewer, JSON cell expansion, and JSON export
+- **Tax parameter freshness tests** — automated expiration system that tracks 13 tax parameter sets (federal brackets, LTCG, IRMAA, ACA FPL, RMD, FICA, SS thresholds, SECURE 2.0) with source citations; warns at 1 year stale, fails at 2+ years; includes value verification against known-good IRS data and structural law canaries (TCJA sunset, unindexed thresholds)
+
+### Fixed
+
+- **Salary basis mismatch** — profile switch employer match rates now use total compensation (including bonus) instead of raw base salary, matching the default profile path
+- **Contribution override double-inflation** — profile switch salary overrides are grown by the configured raise rate to the switch year and fed through the existing salary override mechanism; no special engine logic needed
+- **ESPP/account persistence after override** — switching contribution profile at a future year now stops accounts not in the new profile (e.g. ESPP) instead of keeping the original profile's accounts active
+- **Contribution rate ceiling spike at profile switch** — contribution rate ceiling is now recalculated from the switched profile's total contributions instead of using the stale default profile rate, preventing an 11.2% jump in 401k/IRA/HSA when ESPP is removed
+- **Overflow routing fallback** — when IRS overflow occurs and no matching brokerage specs exist for a person, overflow now routes to joint/unowned brokerage accounts instead of silently disappearing
+- **Brokerage parentCategory filtering** — Retirement page no longer shows Portfolio-parentCategory brokerage (e.g. Long Term Brokerage) in the brokerage column, In/Out totals, or tooltip breakdowns; all columns and tooltips now use the same parentCategory-filtered data source
+- **Tooltip/table data consistency** — brokerage column, In/Out column, and tax-type view tooltips now share the same filtered math as their table cells (previously tooltips used raw unfiltered slot data)
+- **Brokerage match display** — brokerage column now shows total (employee + match) with `+m` badge, matching 401k/IRA/HSA column behavior
+- **Salary tooltip person filter** — salary tooltip now shows person-specific salary and change percentage when a person filter is active, matching the table cell
+- **Sidebar test suite** — updated test assertions to match v0.1.3 nav group rename (Income→Cash Flow, Investments→Wealth, Property→Net Worth, Planning→Analysis)
+
+### Improved
+
+- **Contribution ceiling explanation** — methodology panel now explains where the rate comes from, how scaling works, and where to override it
+- **Contribution Rate HelpTip** — overrides panel explains auto-derivation from current contributions and proportional scaling behavior
+- **Overflow Priority HelpTip** — brokerage contribution accounts now explain overflow routing order and priority numbers
+
+### Changed
+
+- **Tax constants dependency injection** — `getLtcgRate()`, `getIrmaaCost()`, and `getNextIrmaaCliff()` now accept optional DB-loaded brackets, falling back to hardcoded defaults when no DB rows exist
+- **Sidebar navigation** — added Contributions to Analysis group and Raw Data to System group
+
 ## [0.1.3] - 2026-03-22
 
 ### Changed

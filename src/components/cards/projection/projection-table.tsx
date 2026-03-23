@@ -458,6 +458,74 @@ export function ProjectionTable({
                                   AccumulationSlot
                                 >(yr.slots.map((s) => [s.category, s]));
                                 const pt = getPersonYearTotals(yr); // real per-person balances
+                                // When parentCategoryFilter is active, compute brokerage contributions
+                                // from individual accounts matching the filter (e.g. Retirement page
+                                // should not include Portfolio-parentCategory brokerage like Long Term).
+                                const pcfBrokContrib =
+                                  parentCategoryFilter
+                                    ? (() => {
+                                        const iabs =
+                                          yr.individualAccountBalances ?? [];
+                                        const matching = iabs.filter(
+                                          (ia) =>
+                                            ACCOUNT_TYPE_CONFIG[
+                                              ia.category as AcctCat
+                                            ]?.isOverflowTarget &&
+                                            ia.parentCategory ===
+                                              parentCategoryFilter,
+                                        );
+                                        if (matching.length === 0) return null;
+                                        return {
+                                          employee: matching.reduce(
+                                            (s, ia) => s + ia.contribution,
+                                            0,
+                                          ),
+                                          match: matching.reduce(
+                                            (s, ia) => s + ia.employerMatch,
+                                            0,
+                                          ),
+                                        };
+                                      })()
+                                    : undefined;
+                                // How much brokerage contrib to subtract from totals on filtered pages
+                                const pcfBrokAdj =
+                                  parentCategoryFilter && !pt
+                                    ? (() => {
+                                        const iabs =
+                                          yr.individualAccountBalances ?? [];
+                                        const allBrok = iabs.filter(
+                                          (ia) =>
+                                            ACCOUNT_TYPE_CONFIG[
+                                              ia.category as AcctCat
+                                            ]?.isOverflowTarget,
+                                        );
+                                        const matchBrok = allBrok.filter(
+                                          (ia) =>
+                                            ia.parentCategory ===
+                                            parentCategoryFilter,
+                                        );
+                                        return {
+                                          employee:
+                                            allBrok.reduce(
+                                              (s, ia) => s + ia.contribution,
+                                              0,
+                                            ) -
+                                            matchBrok.reduce(
+                                              (s, ia) => s + ia.contribution,
+                                              0,
+                                            ),
+                                          match:
+                                            allBrok.reduce(
+                                              (s, ia) => s + ia.employerMatch,
+                                              0,
+                                            ) -
+                                            matchBrok.reduce(
+                                              (s, ia) => s + ia.employerMatch,
+                                              0,
+                                            ),
+                                        };
+                                      })()
+                                    : { employee: 0, match: 0 };
                                 return (
                                   <tr
                                     key={yr.year}
@@ -515,16 +583,36 @@ export function ProjectionTable({
                                           result.projectionByYear.find(
                                             (y) => y.year === yr.year - 1,
                                           );
+                                        // Use person-filtered salary if applicable
+                                        const personId =
+                                          isPersonFiltered &&
+                                          enginePeople?.find(
+                                            (p) => p.id === personFilter,
+                                          )?.id;
+                                        const currentSal = personId
+                                          ? (yr.projectedSalaryByPerson?.[
+                                              personId
+                                            ] ?? yr.projectedSalary)
+                                          : yr.projectedSalary;
                                         const prevSalary =
                                           prevYr &&
                                           prevYr.phase === "accumulation"
-                                            ? (prevYr as EngineAccumulationYear)
-                                                .projectedSalary
+                                            ? personId
+                                              ? ((
+                                                  prevYr as EngineAccumulationYear
+                                                ).projectedSalaryByPerson?.[
+                                                  personId
+                                                ] ??
+                                                (
+                                                  prevYr as EngineAccumulationYear
+                                                ).projectedSalary)
+                                              : (
+                                                  prevYr as EngineAccumulationYear
+                                                ).projectedSalary
                                             : null;
                                         const pctChange =
                                           prevSalary && prevSalary > 0
-                                            ? (yr.projectedSalary -
-                                                prevSalary) /
+                                            ? (currentSal - prevSalary) /
                                               prevSalary
                                             : null;
                                         const lines: {
@@ -978,8 +1066,15 @@ export function ProjectionTable({
                                               ).displayLabel;
                                             const ofRawMatch =
                                               bSlot?.employerMatch ?? 0;
+                                            // Prefer person filter, then parentCategory filter, then raw slot
                                             const ofContrib =
-                                              pt?.byCategoryContrib[ofCat];
+                                              pt?.byCategoryContrib[ofCat] ??
+                                              (parentCategoryFilter
+                                                ? pcfBrokContrib ?? {
+                                                    employee: 0,
+                                                    match: 0,
+                                                  }
+                                                : null);
                                             const ofEmp = ofContrib
                                               ? ofContrib.employee
                                               : (bSlot?.employeeContrib ?? 0);
@@ -1032,7 +1127,7 @@ export function ProjectionTable({
                                                                 allMatchAnnual,
                                                               });
                                                             const spMatch =
-                                                              ofRawMatch *
+                                                              ofMatch *
                                                               mFrac;
                                                             return {
                                                               label,
@@ -1096,12 +1191,12 @@ export function ProjectionTable({
                                                         yr.rateCeilingScale < 1
                                                           ? {
                                                               uncapped: deflate(
-                                                                bSlot.employeeContrib /
+                                                                ofEmp /
                                                                   yr.rateCeilingScale,
                                                                 yr.year,
                                                               ),
                                                               capped: deflate(
-                                                                bSlot.employeeContrib,
+                                                                ofEmp,
                                                                 yr.year,
                                                               ),
                                                               pct:
@@ -1141,19 +1236,19 @@ export function ProjectionTable({
                                                 <td
                                                   className={`text-right py-1.5 px-2 ${accountTextColor(ofCat)}${yr.overflowToBrokerage > 0 ? " font-medium" : ""}`}
                                                 >
-                                                  {(bSlot?.employeeContrib ??
-                                                    0) > 0
+                                                  {ofEmp + ofMatch > 0
                                                     ? formatCurrency(
                                                         deflate(
-                                                          pt?.byCategoryContrib[
-                                                            ofCat
-                                                          ]?.employee ??
-                                                            bSlot!
-                                                              .employeeContrib,
+                                                          ofEmp + ofMatch,
                                                           yr.year,
                                                         ),
                                                       )
                                                     : "---"}
+                                                  {ofMatch > 0 && (
+                                                    <span className="text-[9px] text-green-600 align-super ml-px">
+                                                      +m
+                                                    </span>
+                                                  )}
                                                 </td>
                                               </Tooltip>
                                             );
@@ -1191,10 +1286,19 @@ export function ProjectionTable({
                                                 0,
                                               );
                                             // Determine which specs and slot amounts apply to this bucket (data-driven via bucketSlotMap)
-                                            const slotEmp = slotBucketContrib(
-                                              slot,
-                                              bucket,
-                                            );
+                                            const isOFTarget =
+                                              ACCOUNT_TYPE_CONFIG[
+                                                cat as AcctCat
+                                              ]?.isOverflowTarget;
+                                            // When parentCategoryFilter active, use filtered brokerage data
+                                            const slotEmp =
+                                              parentCategoryFilter && isOFTarget
+                                                ? (pcfBrokContrib?.employee ?? 0)
+                                                : slotBucketContrib(slot, bucket);
+                                            const slotMatch =
+                                              parentCategoryFilter && isOFTarget
+                                                ? (pcfBrokContrib?.match ?? 0)
+                                                : slot.employerMatch;
                                             const bucketSpecs =
                                               filterSpecsForBucket(
                                                 allCatSpecs,
@@ -1205,7 +1309,7 @@ export function ProjectionTable({
                                                 ?.matchIsAssociated ?? false;
                                             if (
                                               slotEmp === 0 &&
-                                              slot.employerMatch === 0
+                                              slotMatch === 0
                                             )
                                               continue;
                                             if (bucketSpecs.length === 0)
@@ -1240,10 +1344,10 @@ export function ProjectionTable({
                                               let assocMtch = 0;
                                               if (isAssoc) {
                                                 assocMtch =
-                                                  slot.employerMatch * mFrac;
+                                                  slotMatch * mFrac;
                                               } else {
                                                 mtch =
-                                                  slot.employerMatch * mFrac;
+                                                  slotMatch * mFrac;
                                               }
                                               if (
                                                 emp > 0 ||
@@ -1430,7 +1534,8 @@ export function ProjectionTable({
                                         const empAmount = deflate(
                                           pt
                                             ? pt.contribution
-                                            : yr.totalEmployee,
+                                            : yr.totalEmployee -
+                                                pcfBrokAdj.employee,
                                           yr.year,
                                         );
                                         const matchAmount = pt
@@ -1441,8 +1546,14 @@ export function ProjectionTable({
                                               ),
                                               yr.year,
                                             )
-                                          : yr.totalEmployer > 0
-                                            ? deflate(yr.totalEmployer, yr.year)
+                                          : yr.totalEmployer -
+                                                pcfBrokAdj.match >
+                                              0
+                                            ? deflate(
+                                                yr.totalEmployer -
+                                                  pcfBrokAdj.match,
+                                                yr.year,
+                                              )
                                             : 0;
                                         const budgetProfileName =
                                           accumulationExpenseOverride != null
@@ -1489,31 +1600,49 @@ export function ProjectionTable({
                                               !ACCOUNT_TYPE_CONFIG[c]
                                                 .supportsRothSplit,
                                           )) {
-                                            const sbSlot = yr.slots.find(
-                                              (s) => s.category === sbCat,
-                                            );
+                                            const isOF =
+                                              ACCOUNT_TYPE_CONFIG[sbCat]
+                                                ?.isOverflowTarget;
+                                            // When parentCategoryFilter active, use filtered brokerage data
                                             if (
-                                              sbSlot &&
-                                              sbSlot.employeeContrib > 0
+                                              parentCategoryFilter &&
+                                              isOF
                                             ) {
-                                              bucketTotals.push({
-                                                label:
-                                                  getAccountTypeConfig(sbCat)
-                                                    .displayLabel,
-                                                amount: deflate(
-                                                  sbSlot.employeeContrib,
-                                                  yr.year,
-                                                ),
-                                                color:
-                                                  sbCat ===
-                                                  getAllCategories().find(
-                                                    (c) =>
-                                                      ACCOUNT_TYPE_CONFIG[c]
-                                                        .isOverflowTarget,
-                                                  )
+                                              const filteredEmp =
+                                                pcfBrokContrib?.employee ?? 0;
+                                              if (filteredEmp > 0) {
+                                                bucketTotals.push({
+                                                  label:
+                                                    getAccountTypeConfig(sbCat)
+                                                      .displayLabel,
+                                                  amount: deflate(
+                                                    filteredEmp,
+                                                    yr.year,
+                                                  ),
+                                                  color: "amber",
+                                                });
+                                              }
+                                            } else {
+                                              const sbSlot = yr.slots.find(
+                                                (s) => s.category === sbCat,
+                                              );
+                                              if (
+                                                sbSlot &&
+                                                sbSlot.employeeContrib > 0
+                                              ) {
+                                                bucketTotals.push({
+                                                  label:
+                                                    getAccountTypeConfig(sbCat)
+                                                      .displayLabel,
+                                                  amount: deflate(
+                                                    sbSlot.employeeContrib,
+                                                    yr.year,
+                                                  ),
+                                                  color: isOF
                                                     ? "amber"
                                                     : "emerald",
-                                              });
+                                                });
+                                              }
                                             }
                                           }
                                           inOutItems.push(...bucketTotals);
@@ -1646,11 +1775,15 @@ export function ProjectionTable({
                                             pt
                                               ? pt.contribution
                                               : yr.totalEmployee +
-                                                  yr.totalEmployer,
+                                                  yr.totalEmployer -
+                                                  pcfBrokAdj.employee -
+                                                  pcfBrokAdj.match,
                                             yr.year,
                                           ),
                                         )}
-                                        {yr.totalEmployer > 0 && (
+                                        {yr.totalEmployer -
+                                          pcfBrokAdj.match >
+                                          0 && (
                                           <span className="text-[9px] text-green-600 align-super ml-px">
                                             +m
                                           </span>

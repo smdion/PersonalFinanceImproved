@@ -787,7 +787,27 @@ export function useProjectionState({
               (slot.employerMatch ?? 0) !== 0;
             const hasWithdrawal = (slot.withdrawal ?? 0) !== 0;
             if (hasContrib || hasWithdrawal) {
-              contribCats.add(slot.category as string);
+              const slotCat = slot.category as string;
+              // For brokerage on parentCategory-filtered pages, only show if
+              // individual accounts with matching parentCategory have contributions
+              if (
+                parentCategoryFilter &&
+                slotCat in ACCOUNT_TYPE_CONFIG &&
+                ACCOUNT_TYPE_CONFIG[slotCat as AcctCat].isOverflowTarget
+              ) {
+                const iabs = (
+                  yr as { individualAccountBalances?: { category: string; parentCategory?: string; contribution: number; employerMatch: number }[] }
+                ).individualAccountBalances;
+                const hasMatchingContrib = iabs?.some(
+                  (ia) =>
+                    ia.category === slotCat &&
+                    ia.parentCategory === parentCategoryFilter &&
+                    (ia.contribution !== 0 || ia.employerMatch !== 0),
+                );
+                if (hasMatchingContrib) contribCats.add(slotCat);
+              } else {
+                contribCats.add(slotCat);
+              }
             }
             // Contribution tax types
             if (
@@ -828,7 +848,7 @@ export function useProjectionState({
       }
     }
     return { contribCats, contribTaxTypes, balanceAccts, balanceTaxTypes };
-  }, [result]);
+  }, [result, parentCategoryFilter]);
 
   // Generic column labels — specific account names are in tooltips (balanceHeaderTooltip)
   const columnLabel: Record<string, string> = Object.fromEntries(

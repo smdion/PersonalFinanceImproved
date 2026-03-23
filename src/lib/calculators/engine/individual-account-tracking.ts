@@ -394,6 +394,23 @@ export function distributeContributions(
           }
         }
       }
+
+      // Fallback: if remaining overflow wasn't routed (no matching specs),
+      // distribute to joint/unowned brokerage accounts directly.
+      if (remaining > 0) {
+        const jointBrok = brokAccts.filter(
+          (ia) => ia.ownerPersonId == null,
+        );
+        const fallbackAccts =
+          jointBrok.length > 0 ? jointBrok : brokAccts;
+        const perAcct = roundToCents(remaining / fallbackAccts.length);
+        for (const ia of fallbackAccts) {
+          const k = indKey(ia);
+          indContribs.set(k, (indContribs.get(k) ?? 0) + perAcct);
+          indBal.set(k, (indBal.get(k) ?? 0) + perAcct);
+          indOverflow.set(k, (indOverflow.get(k) ?? 0) + perAcct);
+        }
+      }
     }
   }
 

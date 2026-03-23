@@ -25,7 +25,6 @@ import type {
   TaxBuckets,
   AccountBalances,
   AccountCategory,
-  ContributionSpec,
   ProfileSwitch,
 } from "@/lib/calculators/types";
 import {
@@ -568,7 +567,7 @@ export async function buildEnginePayload(
   const {
     contribByCategory,
     employerMatchByCategory,
-    employerMatchByParentCat,
+    employerMatchByParentCat: _employerMatchByParentCat,
   } = aggregateContributionsByCategory(activeContribs, activeJobs, jobSalaries);
 
   // Build per-person salary map from job salaries
@@ -811,6 +810,17 @@ export async function buildEnginePayload(
       profileContribCtx,
     );
 
+    // Compute per-profile contribution rate ceiling
+    const switchedTotalComp = resolved.jobSalaries.reduce(
+      (s, js) => s + js.totalComp,
+      0,
+    );
+    const switchedTotalContrib = Object.values(
+      data.baseYearContributions,
+    ).reduce((s, v) => s + v, 0);
+    const switchedContribRate =
+      switchedTotalComp > 0 ? switchedTotalContrib / switchedTotalComp : 0;
+
     profileSwitches.push({
       year: override.projectionYear,
       contributionSpecs: data.contributionSpecs,
@@ -818,6 +828,8 @@ export async function buildEnginePayload(
       baseYearContributions: data.baseYearContributions,
       baseYearEmployerMatch: data.baseYearEmployerMatch,
       employerMatchByParentCat: data.employerMatchByParentCat,
+      contributionRate:
+        switchedContribRate > 0 ? switchedContribRate : 0.25,
     });
   }
 
