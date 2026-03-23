@@ -1313,9 +1313,24 @@ export default function RetirementPage() {
                   rmdMultiplier: "rmdMultiplier",
                 };
 
-                return (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1 text-sm mt-2">
-                    {meta.paramFields.map((field) => {
+                // Partition fields into layout items: grouped pairs or standalone
+                type LayoutItem =
+                  | { kind: "standalone"; field: typeof meta.paramFields[number] }
+                  | { kind: "group"; groupName: string; fields: typeof meta.paramFields[number][] };
+                const layoutItems: LayoutItem[] = [];
+                const seenGroups = new Set<string>();
+                for (const field of meta.paramFields) {
+                  if (field.group) {
+                    if (seenGroups.has(field.group)) continue;
+                    seenGroups.add(field.group);
+                    const grouped = meta.paramFields.filter((f) => f.group === field.group);
+                    layoutItems.push({ kind: "group", groupName: field.group, fields: grouped });
+                  } else {
+                    layoutItems.push({ kind: "standalone", field });
+                  }
+                }
+
+                const renderField = (field: typeof meta.paramFields[number]) => {
                       const dbCol = paramToDbColumn[field.key];
                       if (!dbCol || !settings) return null;
                       const currentVal = (settings as Record<string, unknown>)[
@@ -1534,6 +1549,23 @@ export default function RetirementPage() {
                               )}
                             </select>
                           </div>
+                        </div>
+                      );
+                };
+
+                return (
+                  <div className="space-y-1 text-sm mt-2">
+                    {layoutItems.map((item) => {
+                      if (item.kind === "group") {
+                        return (
+                          <div key={item.groupName} className="grid grid-cols-2 gap-x-4 gap-y-1">
+                            {item.fields.map((f) => renderField(f))}
+                          </div>
+                        );
+                      }
+                      return (
+                        <div key={item.field.key} className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1">
+                          {renderField(item.field)}
                         </div>
                       );
                     })}

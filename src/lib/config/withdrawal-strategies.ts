@@ -22,6 +22,8 @@ export type ParamField = {
   step?: number;
   default: number | boolean;
   tooltip?: string;
+  /** Fields sharing the same group render side-by-side as a visual pair. */
+  group?: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -121,6 +123,18 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         default: 0.8,
         tooltip:
           "If current withdrawal rate drops below initial rate × this factor, increase spending.",
+        group: "upper",
+      },
+      {
+        key: "decreasePercent",
+        label: "Decrease %",
+        type: "percent",
+        min: 0.01,
+        max: 0.3,
+        step: 0.01,
+        default: 0.1,
+        tooltip: "Spending decrease when upper guardrail triggers.",
+        group: "upper",
       },
       {
         key: "lowerGuardrail",
@@ -132,6 +146,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         default: 1.2,
         tooltip:
           "If current withdrawal rate exceeds initial rate × this factor, decrease spending.",
+        group: "lower",
       },
       {
         key: "increasePercent",
@@ -141,17 +156,8 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         max: 0.3,
         step: 0.01,
         default: 0.1,
-        tooltip: "Spending increase when upper guardrail triggers.",
-      },
-      {
-        key: "decreasePercent",
-        label: "Decrease %",
-        type: "percent",
-        min: 0.01,
-        max: 0.3,
-        step: 0.01,
-        default: 0.1,
-        tooltip: "Spending decrease when lower guardrail triggers.",
+        tooltip: "Spending increase when lower guardrail triggers.",
+        group: "lower",
       },
       {
         key: "skipInflationAfterLoss",
