@@ -4,7 +4,15 @@ All notable changes to Ledgr will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [0.1.6] - Unreleased
+## [0.1.6] - 2026-03-23
+
+### Added
+
+- **Automation framework** — pre-commit hooks (husky + lint-staged), ESLint rules (no-casts, no-empty-catch, no-index-key), CI enforcement (blocking audit, file size checks, import boundaries, migration safety), structured review prompts (4 scripts), release automation (`pnpm release`)
+- **Test expansion** — 801 vitest tests across 54 files: 5 tRPC router integration tests (31 tests), 6 component tests (49 tests), 3 server helper tests (50 tests), 4 config freshness tests (~70 tests); 9 E2E Playwright specs (26 tests)
+- **Dependency management** — Dependabot config (weekly npm, monthly GitHub Actions), `@next/bundle-analyzer` integration (`pnpm analyze`, `pnpm check:bundle`)
+- **Documentation tooling** — `verify-docs.ts` with 18 codebase count checks, AUTO-GEN inline markers for automated count updates (`pnpm docs:update`), known-diffs manifest and checker (`pnpm check:known-diffs`)
+- **Seed script hardening** — column header assertions (fail-fast on spreadsheet drift), duplicate portfolio snapshot detection, consolidated summary report, auto-validate after seed
 
 ### Improved
 
