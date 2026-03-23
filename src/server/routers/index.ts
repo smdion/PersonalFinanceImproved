@@ -18,6 +18,7 @@ import { contributionProfileRouter } from "./contribution-profiles";
 import { syncRouter } from "./sync";
 import { demoRouter } from "./demo";
 import { dataBrowserRouter } from "./data-browser";
+import { testingRouter } from "./testing";
 
 export const appRouter = createTRPCRouter({
   settings: settingsRouter,
@@ -39,6 +40,7 @@ export const appRouter = createTRPCRouter({
   sync: syncRouter,
   demo: demoRouter,
   dataBrowser: dataBrowserRouter,
+  testing: testingRouter,
 });
 
 export type AppRouter = typeof appRouter;

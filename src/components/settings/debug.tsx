@@ -4,6 +4,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { usePersistedToggle } from "@/lib/hooks/use-persisted-setting";
 import { useUser, isAdmin } from "@/lib/context/user-context";
+import { TestRunner } from "./test-runner";
 
 export function DebugSettings() {
   const user = useUser();
@@ -59,6 +60,13 @@ export function DebugSettings() {
           </div>
         </label>
       </div>
+
+      {/* Test Runner (admin + debug mode only) */}
+      {diagMode && admin && (
+        <div className="border-t border-subtle pt-4">
+          <TestRunner />
+        </div>
+      )}
 
       {/* Data freshness overrides */}
       <div>
