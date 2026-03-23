@@ -824,6 +824,8 @@ export const retirementSalaryOverrides = sqliteTable(
       { onDelete: "set null" },
     ),
     notes: text("notes"),
+    createdBy: text("created_by"),
+    updatedBy: text("updated_by"),
   },
   (table) => [
     uniqueIndex("retirement_salary_overrides_person_year_idx").on(
@@ -844,6 +846,8 @@ export const retirementBudgetOverrides = sqliteTable(
     projectionYear: integer("projection_year").notNull(),
     overrideMonthlyBudget: text("override_monthly_budget").notNull(),
     notes: text("notes"),
+    createdBy: text("created_by"),
+    updatedBy: text("updated_by"),
   },
   (table) => [
     uniqueIndex("retirement_budget_overrides_person_year_idx").on(

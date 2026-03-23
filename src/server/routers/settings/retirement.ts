@@ -4,6 +4,7 @@ import {
   createTRPCRouter,
   protectedProcedure,
   adminProcedure,
+  getSessionUserLabel,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import {
@@ -132,7 +133,7 @@ export const retirementProcedures = {
       .mutation(({ ctx, input }) =>
         ctx.db
           .insert(schema.retirementSalaryOverrides)
-          .values(input)
+          .values({ ...input, createdBy: getSessionUserLabel(ctx.session) })
           .returning()
           .then((r) => r[0]),
       ),
@@ -150,7 +151,7 @@ export const retirementProcedures = {
       .mutation(({ ctx, input: { id, ...data } }) =>
         ctx.db
           .update(schema.retirementSalaryOverrides)
-          .set(data)
+          .set({ ...data, updatedBy: getSessionUserLabel(ctx.session) })
           .where(eq(schema.retirementSalaryOverrides.id, id))
           .returning()
           .then((r) => r[0]),
@@ -183,7 +184,7 @@ export const retirementProcedures = {
       .mutation(({ ctx, input }) =>
         ctx.db
           .insert(schema.retirementBudgetOverrides)
-          .values(input)
+          .values({ ...input, createdBy: getSessionUserLabel(ctx.session) })
           .returning()
           .then((r) => r[0]),
       ),
@@ -200,7 +201,7 @@ export const retirementProcedures = {
       .mutation(({ ctx, input: { id, ...data } }) =>
         ctx.db
           .update(schema.retirementBudgetOverrides)
-          .set(data)
+          .set({ ...data, updatedBy: getSessionUserLabel(ctx.session) })
           .where(eq(schema.retirementBudgetOverrides.id, id))
           .returning()
           .then((r) => r[0]),

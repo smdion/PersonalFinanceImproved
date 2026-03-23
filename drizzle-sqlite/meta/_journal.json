@@ -22,6 +22,13 @@
       "when": 1774123203859,
       "tag": "0002_add_rollovers_column",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1774241696047,
+      "tag": "0003_reflective_stardust",
+      "breakpoints": true
     }
   ]
 }

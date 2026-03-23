@@ -104,6 +104,11 @@ export const createCallerFactory = t.createCallerFactory;
 
 // ── Shared change_log middleware (fire-and-forget, never blocks) ──
 
+/** Extract display label from OIDC/local session user. */
+export function getSessionUserLabel(session: Session): string {
+  return session.user.name ?? session.user.email ?? "unknown";
+}
+
 function logMutation(session: Session, path: string, rawInput: unknown) {
   const input = rawInput as Record<string, unknown> | undefined;
   const recordId = typeof input?.id === "number" ? input.id : 0;
@@ -114,7 +119,7 @@ function logMutation(session: Session, path: string, rawInput: unknown) {
       fieldName: "*",
       oldValue: null,
       newValue: input ?? null,
-      changedBy: session.user.name ?? session.user.email ?? "unknown",
+      changedBy: getSessionUserLabel(session),
     })
     .catch((err: unknown) => {
       // Log audit errors but never break mutations

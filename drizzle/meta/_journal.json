@@ -43,6 +43,13 @@
       "when": 1774220364084,
       "tag": "0005_cold_random",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1774241698008,
+      "tag": "0006_goofy_rawhide_kid",
+      "breakpoints": true
     }
   ]
 }

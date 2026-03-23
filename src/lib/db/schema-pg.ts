@@ -997,6 +997,8 @@ export const retirementSalaryOverrides = pgTable(
       { onDelete: "set null" },
     ),
     notes: text("notes"),
+    createdBy: text("created_by"),
+    updatedBy: text("updated_by"),
   },
   (table) => [
     uniqueIndex("retirement_salary_overrides_person_year_idx").on(
@@ -1020,6 +1022,8 @@ export const retirementBudgetOverrides = pgTable(
       scale: 2,
     }).notNull(),
     notes: text("notes"),
+    createdBy: text("created_by"),
+    updatedBy: text("updated_by"),
   },
   (table) => [
     uniqueIndex("retirement_budget_overrides_person_year_idx").on(
