@@ -333,12 +333,9 @@ export function Sidebar({
           )}
         </nav>
 
-        {/* Footer area */}
-        <div className="border-t">
-          {collapsed ? <DataFreshness compact /> : <DataFreshness />}
-        </div>
-
+        {/* Footer */}
         <div className="border-t px-2 py-1.5 space-y-0.5">
+          <DataFreshness compact={collapsed} />
           <NavLink
             item={helpItem}
             pathname={pathname}
@@ -346,12 +343,11 @@ export function Sidebar({
             showLabels={showLabels}
             onMobileClose={onMobileClose}
           />
-          {collapsed ? <ThemeToggle compact /> : <ThemeToggle />}
           {isDemoOnly ? (
             <Link
               href="/demo"
               onClick={onMobileClose}
-              className="flex items-center gap-3 px-3 py-1.5 rounded text-sm text-faint hover:text-blue-400 hover:bg-surface-elevated transition-colors"
+              className={`flex items-center gap-3 px-3 py-1.5 rounded text-sm text-faint hover:text-blue-400 hover:bg-surface-elevated transition-colors ${collapsed ? "md:justify-center" : ""}`}
               title={collapsed ? "Switch Profile" : undefined}
             >
               <LogOut className="w-4 h-4 shrink-0" />
@@ -361,7 +357,7 @@ export function Sidebar({
           ) : (
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
-              className="w-full flex items-center gap-3 px-3 py-1.5 rounded text-sm text-faint hover:text-red-400 hover:bg-surface-elevated transition-colors"
+              className={`w-full flex items-center gap-3 px-3 py-1.5 rounded text-sm text-faint hover:text-red-400 hover:bg-surface-elevated transition-colors ${collapsed ? "md:justify-center" : ""}`}
               title={collapsed ? "Sign Out" : undefined}
             >
               <LogOut className="w-4 h-4 shrink-0" />
@@ -371,29 +367,39 @@ export function Sidebar({
           )}
         </div>
 
-        {/* Desktop collapse toggle — always pinned at bottom */}
-        <div className="hidden md:block border-t">
+        {/* Mobile theme toggle */}
+        <div className="md:hidden px-2 pb-1">
+          <ThemeToggle />
+        </div>
+
+        {/* Utility bar — theme + collapse + version (desktop only) */}
+        <div
+          className={`hidden md:flex items-center border-t py-1.5 ${
+            collapsed
+              ? "flex-col gap-1 px-0"
+              : "flex-row px-2"
+          }`}
+        >
+          <ThemeToggle compact />
+          {!collapsed && <div className="flex-1" />}
+          {!collapsed &&
+            process.env.APP_VERSION &&
+            process.env.APP_VERSION !== "dev" && (
+              <span className="text-[10px] text-faint/50 mr-1">
+                v{process.env.APP_VERSION}
+              </span>
+            )}
           <button
             onClick={onToggleCollapse}
-            className="w-full flex items-center justify-center gap-2 px-3 py-3 text-faint hover:text-primary hover:bg-surface-elevated transition-colors"
+            className="p-1 text-faint hover:text-primary transition-colors"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <ChevronsLeft
-              className={`w-5 h-5 transition-transform duration-200 ${collapsed ? "rotate-180" : ""}`}
+              className={`w-4 h-4 transition-transform duration-200 ${collapsed ? "rotate-180" : ""}`}
             />
-            {showLabels && <span className="text-xs">Collapse</span>}
           </button>
         </div>
-
-        {/* App version */}
-        {process.env.APP_VERSION && process.env.APP_VERSION !== "dev" && (
-          <div className="px-3 py-1.5 text-center">
-            <span className="text-[10px] text-faint/50">
-              {collapsed ? process.env.APP_VERSION : `v${process.env.APP_VERSION}`}
-            </span>
-          </div>
-        )}
       </aside>
     </>
   );

@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import { SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { PageHeader } from "@/components/ui/page-header";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, formatPercent, compactCurrency } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import {
   BarChart,
@@ -72,7 +72,7 @@ const PIE_COLORS = [
 
 function pct(value: number, total: number): string {
   if (total === 0) return "—";
-  return `${((value / total) * 100).toFixed(1)}%`;
+  return formatPercent(value / total, 1);
 }
 
 // ── Component ──
@@ -346,7 +346,7 @@ export default function ExpensesPage() {
         <SummaryCard
           label="Savings Rate"
           value={
-            monthlyNetIncome > 0 ? `${(savingsRate * 100).toFixed(1)}%` : "—"
+            monthlyNetIncome > 0 ? formatPercent(savingsRate, 1) : "—"
           }
           sub={
             formatCurrency(Math.max(0, monthlyNetIncome - totalActual)) +
@@ -382,7 +382,7 @@ export default function ExpensesPage() {
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                 <XAxis
                   type="number"
-                  tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+                  tickFormatter={(v: number) => compactCurrency(v)}
                   fontSize={10}
                 />
                 <YAxis
@@ -850,7 +850,7 @@ function ProgressBar({ value, small }: { value: number; small?: boolean }) {
       <span
         className={`text-[10px] tabular-nums w-8 text-right ${isOver ? "text-red-600 font-semibold" : "text-muted"}`}
       >
-        {value >= 9.99 ? "—" : `${(value * 100).toFixed(0)}%`}
+        {value >= 9.99 ? "—" : formatPercent(value)}
       </span>
     </div>
   );

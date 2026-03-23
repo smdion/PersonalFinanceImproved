@@ -77,7 +77,8 @@ describe("Sidebar", () => {
   it("renders DataFreshness and ThemeToggle", () => {
     render(<Sidebar {...defaultProps} />);
     expect(screen.getByTestId("data-freshness")).toBeInTheDocument();
-    expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
+    // ThemeToggle renders twice: once for mobile, once for desktop utility bar
+    expect(screen.getAllByTestId("theme-toggle").length).toBe(2);
   });
 
   it("shows collapse button", () => {

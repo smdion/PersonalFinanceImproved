@@ -63,17 +63,33 @@ export function taxTreatmentToShortLabel(taxTreatment: string): string {
 }
 
 /**
- * Derive performance page display category from accountType string.
- * Groups by what TYPE of account it is, not its parentCategory goal.
+ * Performance display category config — maps account types to performance page groupings.
  * "401k/IRA" covers 401k, 403b, and IRA accounts.
  */
+const PERF_CATEGORY_MAP: Record<string, string> = {
+  brokerage: "Brokerage",
+  hsa: "HSA",
+};
+const PERF_CATEGORY_DEFAULT = "401k/IRA";
+
+/** Derive performance page display category from accountType string. */
 export function accountTypeToPerformanceCategory(
   accountType: string | null,
 ): string {
-  if (accountType === "brokerage") return "Brokerage";
-  if (accountType === "hsa") return "HSA";
-  return "401k/IRA";
+  return (accountType && PERF_CATEGORY_MAP[accountType]) ?? PERF_CATEGORY_DEFAULT;
 }
+
+/**
+ * Performance categories whose accounts are entirely Retirement-parentCategory.
+ * Brokerage is excluded because it spans both Retirement and Portfolio goals.
+ */
+export const FULLY_RETIREMENT_PERF_CATEGORIES = [
+  PERF_CATEGORY_DEFAULT, // "401k/IRA"
+  "HSA",
+] as const;
+
+/** Parent-category rollup names used in performance data. */
+export const PARENT_CATEGORY_ROLLUPS = ["Retirement", "Portfolio"] as const;
 
 /**
  * Bridge map: DB tax_treatment (snake_case) → portfolio tax_type (camelCase).

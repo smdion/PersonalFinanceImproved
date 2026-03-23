@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
-import type { ApiEndpoint } from "@/server/api-docs";
+import type { ApiEndpoint } from "@/lib/types/api-docs";
 import type { SchemaField } from "@/lib/utils/zod-introspect";
 
 // ── Badge configs (data-driven, no if-chains) ──

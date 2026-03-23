@@ -4,6 +4,24 @@ All notable changes to Ledgr will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.6] - Unreleased
+
+### Improved
+
+- **Sidebar redesign** — consolidated footer layout with DataFreshness (compact tooltip), Help link, and Sign Out in a single group; separated utility bar (theme toggle + collapse); improved collapsed-mode centering for all interactive elements
+- **Shared `compactCurrency()` formatter** — deduplicated three independent compact-currency implementations (net worth charts, chart defaults, portfolio chart) into a single `compactCurrency()` in `format.ts`; original call sites re-export for backward compatibility
+- **Shared `formatPercent()` adoption** — replaced ad-hoc `toFixed` percentage formatting across house, expenses, portfolio, historical, and YoY table pages with the shared `formatPercent()` helper
+- **Shared `formatNumber()` adoption** — replaced raw `.toLocaleString()` calls in the data browser with the shared `formatNumber()` helper
+- **Config-driven chart colors** — replaced 20-line nested ternary color selection in projection cards with a `CATEGORY_CHART_HEX` lookup table and `categoryChartHex()` function in `colors.ts`
+- **Config-driven performance categories** — replaced if-chain in `accountTypeToPerformanceCategory()` with `PERF_CATEGORY_MAP` config table; exported `FULLY_RETIREMENT_PERF_CATEGORIES` and `PARENT_CATEGORY_ROLLUPS` constants to eliminate magic strings in the performance router
+- **Projection router deduplication** — extracted `buildDecumulationDefaults()` helper and shared `accumulationOverrideSchema`/`decumulationOverrideSchema` Zod constants, removing ~120 lines of duplicated schema and builder logic
+- **API types boundary fix** — moved `ApiEndpoint` and `AuthLevel` types from `server/` to `lib/types/api-docs.ts` so client components no longer cross the server/client import boundary
+- **Contribution profile initialization** — contributions page comparison dropdown now initializes from the globally active profile instead of always starting at `undefined`
+
+### Fixed
+
+- **Sidebar test regression** — updated ThemeToggle test assertion to expect two instances (mobile + desktop) after sidebar redesign
+
 ## [0.1.5] - 2026-03-23
 
 ### Added

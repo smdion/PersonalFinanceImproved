@@ -21,7 +21,11 @@ import {
   invalidateYearEndCache,
 } from "@/server/helpers";
 import { accountDisplayName, stripInstitutionSuffix } from "@/lib/utils/format";
-import { accountTypeToPerformanceCategory } from "@/lib/config/display-labels";
+import {
+  accountTypeToPerformanceCategory,
+  FULLY_RETIREMENT_PERF_CATEGORIES,
+  PARENT_CATEGORY_ROLLUPS,
+} from "@/lib/config/display-labels";
 
 type DbType = typeof appDb;
 type PerfAccount = typeof schema.performanceAccounts.$inferSelect;
@@ -567,7 +571,7 @@ export const performanceRouter = createTRPCRouter({
     // employer contributions from the spreadsheet even for older years where account rows don't).
     // Brokerage is mixed — only some accounts are Retirement (e.g. Retirement Brokerage, ESPP).
     // For the Brokerage portion, sum from account_performance rows filtered by parentCategory.
-    const fullyRetirementCats = ["401k/IRA", "HSA"];
+    const fullyRetirementCats: readonly string[] = FULLY_RETIREMENT_PERF_CATEGORIES;
     const retBrokerageByYear = new Map<string, typeof accounts>();
     for (const a of accounts) {
       if (
@@ -655,11 +659,12 @@ export const performanceRouter = createTRPCRouter({
     // Categories available in the data (rebuild after synthesis)
     const allCats = Array.from(new Set(annualRows.map((r) => r.category)));
     // Account-type categories: 401k/IRA, HSA, Brokerage (sorted)
+    const rollupSet = new Set<string>(PARENT_CATEGORY_ROLLUPS);
     const accountTypeCategories = allCats
-      .filter((c) => !["Portfolio", "Retirement"].includes(c))
+      .filter((c) => !rollupSet.has(c))
       .sort();
     // Parent-category rollups: Retirement (computed), Portfolio (grand total)
-    const parentCategories = ["Retirement", "Portfolio"].filter((c) =>
+    const parentCategories = PARENT_CATEGORY_ROLLUPS.filter((c) =>
       allCats.includes(c),
     );
     // Combined for backwards compat

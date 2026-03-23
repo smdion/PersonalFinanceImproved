@@ -12,18 +12,18 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
   const { theme, setTheme } = useTheme();
 
   if (compact) {
-    // Icon-only toggle for collapsed sidebar
+    // Icon-only toggle for utility bar / collapsed sidebar
     const next =
       theme === "light" ? "dark" : theme === "dark" ? "system" : "light";
     const current = options.find((o) => o.value === theme)!;
     return (
       <button
         onClick={() => setTheme(next)}
-        className="w-full flex items-center justify-center p-2 text-faint hover:text-white transition-colors"
+        className="p-1 text-faint hover:text-primary transition-colors"
         aria-label={`Theme: ${current.label}. Click to switch.`}
         title={`Theme: ${current.label}`}
       >
-        <span className="text-base">{current.icon}</span>
+        <span className="text-sm">{current.icon}</span>
       </button>
     );
   }

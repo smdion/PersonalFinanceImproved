@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { formatNumber } from "@/lib/utils/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
@@ -144,7 +145,7 @@ export default function DataBrowserPage() {
               className="w-full px-2 py-1 text-sm border rounded bg-surface-primary"
             />
             <p className="text-xs text-faint mt-1">
-              {tables.length} tables &middot; {totalRows.toLocaleString()} rows
+              {tables.length} tables &middot; {formatNumber(totalRows)} rows
             </p>
           </div>
           <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
@@ -199,7 +200,7 @@ export default function DataBrowserPage() {
                     {selectedTable}
                   </h2>
                   <p className="text-xs text-muted">
-                    {totalCount.toLocaleString()} rows &middot;{" "}
+                    {formatNumber(totalCount)} rows &middot;{" "}
                     {columns.length} columns
                   </p>
                 </div>
@@ -278,7 +279,7 @@ export default function DataBrowserPage() {
                   <p className="text-xs text-muted">
                     Showing {page * pageSize + 1}–
                     {Math.min((page + 1) * pageSize, totalCount)} of{" "}
-                    {totalCount.toLocaleString()}
+                    {formatNumber(totalCount)}
                   </p>
                   <div className="flex items-center gap-2">
                     <button

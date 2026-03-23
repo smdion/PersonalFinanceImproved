@@ -12,7 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Card } from "@/components/ui/card";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, formatPercent, compactCurrency } from "@/lib/utils/format";
 import { CHART_COLORS } from "@/lib/utils/colors";
 
 type TimeFrame = "YTD" | "3M" | "6M" | "1Y" | "3Y" | "All";
@@ -28,12 +28,7 @@ type ChartPoint = {
   changePct: number | null;
 };
 
-function compactCurrency(value: number) {
-  if (Math.abs(value) >= 1_000_000)
-    return `$${(value / 1_000_000).toFixed(1)}M`;
-  if (Math.abs(value) >= 1_000) return `$${(value / 1_000).toFixed(0)}k`;
-  return `$${value.toFixed(0)}`;
-}
+
 
 function getTimeFrameCutoff(tf: TimeFrame): string | null {
   if (tf === "All") return null;

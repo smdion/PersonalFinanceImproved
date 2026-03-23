@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,9 +32,10 @@ export default function ContributionsPage() {
   const { data: profiles } =
     trpc.contributionProfile.list.useQuery();
   const [period, setPeriod] = useState<PeriodMode>("annual");
+  const [activeProfileId] = useActiveContribProfile();
   const [selectedProfileId, setSelectedProfileId] = useState<
     number | undefined
-  >(undefined);
+  >(activeProfileId ?? undefined);
 
   const { data: profileData } = trpc.contribution.getSummary.useQuery(
     { contributionProfileId: selectedProfileId },

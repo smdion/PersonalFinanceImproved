@@ -8,7 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { HelpTip } from "@/components/ui/help-tip";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
 
 function SyncBadge({ source }: { source: string }) {
   return (
@@ -199,7 +199,7 @@ export default function HousePage() {
             )}
             label={
               loanResult
-                ? `${((1 - loanResult.currentBalance / (current?.houseValue ?? 1)) * 100).toFixed(1)}% equity`
+                ? `${formatPercent(1 - loanResult.currentBalance / (current?.houseValue ?? 1), 1)} equity`
                 : undefined
             }
           />
@@ -239,7 +239,7 @@ export default function HousePage() {
             <div>
               <div className="text-muted">Rate</div>
               <div className="font-medium">
-                {(Number(activeLoan.interestRate) * 100).toFixed(3)}%
+                {formatPercent(Number(activeLoan.interestRate), 3)}
               </div>
             </div>
             <div>
@@ -282,7 +282,7 @@ export default function HousePage() {
             <div>
               <div className="text-muted">Paid Off</div>
               <div className="font-medium">
-                {(loanResult.payoffPercent * 100).toFixed(1)}%
+                {formatPercent(loanResult.payoffPercent, 1)}
               </div>
             </div>
           </div>
@@ -466,7 +466,7 @@ export default function HousePage() {
                   </td>
                   <td className="py-1.5 text-right tabular-nums text-muted">
                     {pt.assessedValue != null && pt.assessedValue > 0
-                      ? `${((pt.taxAmount / pt.assessedValue) * 100).toFixed(2)}%`
+                      ? formatPercent(pt.taxAmount / pt.assessedValue, 2)
                       : "—"}
                   </td>
                   <td className="py-1.5 text-muted text-xs truncate max-w-[120px]">

@@ -666,7 +666,7 @@ function HistoricalTable({
                       className={`text-right py-1.5 px-1.5 ${changeColor(pctChange)}`}
                     >
                       {pctChange !== null
-                        ? `${pctChange >= 0 ? "+" : ""}${(pctChange * 100).toFixed(1)}%`
+                        ? `${pctChange >= 0 ? "+" : ""}${formatPercent(pctChange, 1)}`
                         : "\u2014"}
                     </td>
                   </>

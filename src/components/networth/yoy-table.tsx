@@ -2,7 +2,7 @@
 
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import type { HistoryRow } from "./types";
 
 export function YoYTable({
@@ -113,7 +113,7 @@ export function YoYTable({
                     }`}
                   >
                     {pctChange !== null
-                      ? `${pctChange >= 0 ? "+" : ""}${(pctChange * 100).toFixed(1)}%`
+                      ? `${pctChange >= 0 ? "+" : ""}${formatPercent(pctChange, 1)}`
                       : "\u2014"}
                   </td>
                 </tr>

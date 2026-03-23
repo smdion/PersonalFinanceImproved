@@ -7,7 +7,7 @@ import { MethodologyContent } from "@/components/methodology-content";
 import { AccumulationMethodologyContent } from "@/components/accumulation-methodology-content";
 import { DecumulationMethodologyContent } from "@/components/decumulation-methodology-content";
 import { ValidationContent } from "@/components/validation-content";
-import { taxTypeLabel } from "@/lib/utils/colors";
+import { taxTypeLabel, categoryChartHex } from "@/lib/utils/colors";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import type { EngineYearProjection } from "@/lib/calculators/types";
 import {
@@ -1030,26 +1030,7 @@ export function ProjectionCard(props: {
                   const ACCT_SEGMENTS = getAccountSegments()
                     .map((seg) => ({
                       key: seg.key,
-                      hex:
-                        seg.subKey === "roth"
-                          ? seg.category === "401k"
-                            ? "#93c5fd"
-                            : seg.category === "ira"
-                              ? "#c4b5fd"
-                              : seg.category === "hsa"
-                                ? "#6ee7b7"
-                                : seg.category === "brokerage"
-                                  ? "#fdba74"
-                                  : "#9ca3af"
-                          : seg.category === "401k"
-                            ? "#3b82f6"
-                            : seg.category === "ira"
-                              ? "#8b5cf6"
-                              : seg.category === "hsa"
-                                ? "#10b981"
-                                : seg.category === "brokerage"
-                                  ? "#f97316"
-                                  : "#6b7280",
+                      hex: categoryChartHex(seg.category, seg.subKey === "roth"),
                       label: columnLabel[seg.key] ?? seg.label,
                       get: (yr: EngineYearProjection) =>
                         getSegmentBalance(yr.balanceByAccount, seg),

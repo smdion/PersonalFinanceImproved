@@ -14,6 +14,7 @@ import type {
   AccountCategory,
   AccumulationOverride,
   DecumulationOverride,
+  DecumulationDefaults,
 } from "@/lib/calculators/types";
 import {
   accountCategoryEnum,
@@ -39,6 +40,72 @@ const lumpSumSchema = z
     }),
   )
   .optional();
+
+// Shared Zod schemas for accumulation/decumulation overrides — used by
+// computeProjection and computeMonteCarloProjection inputs.
+const accumulationOverrideSchema = z
+  .array(
+    z.object({
+      year: z.number().int(),
+      contributionRate: z.number().min(0).max(1).optional(),
+      routingMode: z.enum(["waterfall", "percentage"]).optional(),
+      accountOrder: z.array(z.enum(accountCategoryEnum())).optional(),
+      accountSplits: z
+        .record(z.enum(accountCategoryEnum()), z.number())
+        .optional(),
+      taxSplits: z
+        .record(z.enum(accountCategoryEnum()), z.number().min(0).max(1))
+        .optional(),
+      accountCaps: z
+        .record(z.enum(accountCategoryEnum()), z.number())
+        .optional(),
+      taxTypeCaps: z
+        .object({
+          traditional: z.number().optional(),
+          roth: z.number().optional(),
+        })
+        .optional(),
+      lumpSums: lumpSumSchema,
+      reset: z.boolean().optional(),
+      notes: z.string().optional(),
+    }),
+  )
+  .default([]);
+
+const decumulationOverrideSchema = z
+  .array(
+    z.object({
+      year: z.number().int(),
+      withdrawalRate: z.number().min(0).max(1).optional(),
+      withdrawalRoutingMode: z
+        .enum(["bracket_filling", "waterfall", "percentage"])
+        .optional(),
+      withdrawalOrder: z.array(z.enum(accountCategoryEnum())).optional(),
+      withdrawalSplits: z
+        .record(z.enum(accountCategoryEnum()), z.number())
+        .optional(),
+      withdrawalTaxPreference: z
+        .record(
+          z.enum(accountCategoryEnum()),
+          z.enum(["traditional", "roth"]),
+        )
+        .optional(),
+      withdrawalAccountCaps: z
+        .record(z.enum(accountCategoryEnum()), z.number())
+        .optional(),
+      withdrawalTaxTypeCaps: z
+        .object({
+          traditional: z.number().optional(),
+          roth: z.number().optional(),
+        })
+        .optional(),
+      rothConversionTarget: z.number().min(0).max(1).optional(),
+      lumpSums: lumpSumSchema,
+      reset: z.boolean().optional(),
+      notes: z.string().optional(),
+    }),
+  )
+  .default([]);
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 import { fetchRetirementData, buildEnginePayload } from "./retirement";
 import {
@@ -101,6 +168,42 @@ function buildStrategyParams(settings: {
   };
 }
 
+/**
+ * Build decumulation defaults from DB settings + client-supplied routing overrides.
+ * Shared by computeProjection and computeMonteCarloProjection.
+ */
+function buildDecumulationDefaults(
+  settings: Parameters<typeof buildStrategyParams>[0] & {
+    withdrawalRate: string | null;
+    withdrawalStrategy: string | null;
+  },
+  clientDefaults: {
+    withdrawalRoutingMode: string;
+    withdrawalOrder: string[];
+    withdrawalSplits: Record<string, number>;
+    withdrawalTaxPreference: Record<string, string>;
+  },
+  distributionTaxRates: DecumulationDefaults["distributionTaxRates"],
+): DecumulationDefaults {
+  return {
+    withdrawalRate: num(settings.withdrawalRate),
+    withdrawalRoutingMode:
+      clientDefaults.withdrawalRoutingMode as DecumulationDefaults["withdrawalRoutingMode"],
+    withdrawalOrder: clientDefaults.withdrawalOrder as AccountCategory[],
+    withdrawalSplits: clientDefaults.withdrawalSplits as Record<
+      AccountCategory,
+      number
+    >,
+    withdrawalTaxPreference: clientDefaults.withdrawalTaxPreference as Partial<
+      Record<AccountCategory, "traditional" | "roth">
+    >,
+    distributionTaxRates,
+    withdrawalStrategy:
+      (settings.withdrawalStrategy as WithdrawalStrategyType) ?? "fixed",
+    strategyParams: buildStrategyParams(settings),
+  };
+}
+
 export const projectionRouter = createTRPCRouter({
   /**
    * Contribution/Distribution Engine
@@ -149,72 +252,10 @@ export const projectionRouter = createTRPCRouter({
           }),
 
         // --- Accumulation overrides ---
-        accumulationOverrides: z
-          .array(
-            z.object({
-              year: z.number().int(),
-              contributionRate: z.number().min(0).max(1).optional(),
-              routingMode: z.enum(["waterfall", "percentage"]).optional(),
-              accountOrder: z.array(z.enum(accountCategoryEnum())).optional(),
-              accountSplits: z
-                .record(z.enum(accountCategoryEnum()), z.number())
-                .optional(),
-              taxSplits: z
-                .record(z.enum(accountCategoryEnum()), z.number().min(0).max(1))
-                .optional(),
-              accountCaps: z
-                .record(z.enum(accountCategoryEnum()), z.number())
-                .optional(),
-              taxTypeCaps: z
-                .object({
-                  traditional: z.number().optional(),
-                  roth: z.number().optional(),
-                })
-                .optional(),
-              lumpSums: lumpSumSchema,
-              reset: z.boolean().optional(),
-              notes: z.string().optional(),
-            }),
-          )
-          .default([]),
+        accumulationOverrides: accumulationOverrideSchema,
 
         // --- Decumulation overrides ---
-        decumulationOverrides: z
-          .array(
-            z.object({
-              year: z.number().int(),
-              withdrawalRate: z.number().min(0).max(1).optional(),
-              withdrawalRoutingMode: z
-                .enum(["bracket_filling", "waterfall", "percentage"])
-                .optional(),
-              withdrawalOrder: z
-                .array(z.enum(accountCategoryEnum()))
-                .optional(),
-              withdrawalSplits: z
-                .record(z.enum(accountCategoryEnum()), z.number())
-                .optional(),
-              withdrawalTaxPreference: z
-                .record(
-                  z.enum(accountCategoryEnum()),
-                  z.enum(["traditional", "roth"]),
-                )
-                .optional(),
-              withdrawalAccountCaps: z
-                .record(z.enum(accountCategoryEnum()), z.number())
-                .optional(),
-              withdrawalTaxTypeCaps: z
-                .object({
-                  traditional: z.number().optional(),
-                  roth: z.number().optional(),
-                })
-                .optional(),
-              rothConversionTarget: z.number().min(0).max(1).optional(),
-              lumpSums: lumpSumSchema,
-              reset: z.boolean().optional(),
-              notes: z.string().optional(),
-            }),
-          )
-          .default([]),
+        decumulationOverrides: decumulationOverrideSchema,
 
         // --- Optional salary overrides from UI ---
         salaryOverrides: z
@@ -323,24 +364,11 @@ export const projectionRouter = createTRPCRouter({
         ? null
         : calculateProjection({
             ...baseEngineInput,
-            decumulationDefaults: {
-              withdrawalRate: num(settings.withdrawalRate),
-              withdrawalRoutingMode:
-                input.decumulationDefaults.withdrawalRoutingMode,
-              withdrawalOrder: input.decumulationDefaults
-                .withdrawalOrder as AccountCategory[],
-              withdrawalSplits: input.decumulationDefaults
-                .withdrawalSplits as Record<AccountCategory, number>,
-              withdrawalTaxPreference: input.decumulationDefaults
-                .withdrawalTaxPreference as Partial<
-                Record<AccountCategory, "traditional" | "roth">
-              >,
+            decumulationDefaults: buildDecumulationDefaults(
+              settings,
+              input.decumulationDefaults,
               distributionTaxRates,
-              withdrawalStrategy:
-                (settings.withdrawalStrategy as WithdrawalStrategyType) ??
-                "fixed",
-              strategyParams: buildStrategyParams(settings),
-            },
+            ),
             accumulationOverrides:
               input.accumulationOverrides as AccumulationOverride[],
             decumulationOverrides:
@@ -630,72 +658,10 @@ export const projectionRouter = createTRPCRouter({
           }),
 
         // --- Accumulation overrides (mirrors getProjection) ---
-        accumulationOverrides: z
-          .array(
-            z.object({
-              year: z.number().int(),
-              contributionRate: z.number().min(0).max(1).optional(),
-              routingMode: z.enum(["waterfall", "percentage"]).optional(),
-              accountOrder: z.array(z.enum(accountCategoryEnum())).optional(),
-              accountSplits: z
-                .record(z.enum(accountCategoryEnum()), z.number())
-                .optional(),
-              taxSplits: z
-                .record(z.enum(accountCategoryEnum()), z.number().min(0).max(1))
-                .optional(),
-              accountCaps: z
-                .record(z.enum(accountCategoryEnum()), z.number())
-                .optional(),
-              taxTypeCaps: z
-                .object({
-                  traditional: z.number().optional(),
-                  roth: z.number().optional(),
-                })
-                .optional(),
-              lumpSums: lumpSumSchema,
-              reset: z.boolean().optional(),
-              notes: z.string().optional(),
-            }),
-          )
-          .default([]),
+        accumulationOverrides: accumulationOverrideSchema,
 
         // --- Decumulation overrides (mirrors getProjection) ---
-        decumulationOverrides: z
-          .array(
-            z.object({
-              year: z.number().int(),
-              withdrawalRate: z.number().min(0).max(1).optional(),
-              withdrawalRoutingMode: z
-                .enum(["bracket_filling", "waterfall", "percentage"])
-                .optional(),
-              withdrawalOrder: z
-                .array(z.enum(accountCategoryEnum()))
-                .optional(),
-              withdrawalSplits: z
-                .record(z.enum(accountCategoryEnum()), z.number())
-                .optional(),
-              withdrawalTaxPreference: z
-                .record(
-                  z.enum(accountCategoryEnum()),
-                  z.enum(["traditional", "roth"]),
-                )
-                .optional(),
-              withdrawalAccountCaps: z
-                .record(z.enum(accountCategoryEnum()), z.number())
-                .optional(),
-              withdrawalTaxTypeCaps: z
-                .object({
-                  traditional: z.number().optional(),
-                  roth: z.number().optional(),
-                })
-                .optional(),
-              rothConversionTarget: z.number().min(0).max(1).optional(),
-              lumpSums: lumpSumSchema,
-              reset: z.boolean().optional(),
-              notes: z.string().optional(),
-            }),
-          )
-          .default([]),
+        decumulationOverrides: decumulationOverrideSchema,
 
         // --- Phase-based budget selection (independent profile+column per phase) ---
         accumulationBudgetProfileId: z.number().int().optional(),
@@ -794,23 +760,11 @@ export const projectionRouter = createTRPCRouter({
       // Build the full engine input — mirrors getProjection so MC respects the same overrides
       const engineInput = {
         ...baseEngineInput,
-        decumulationDefaults: {
-          withdrawalRate: num(settings.withdrawalRate),
-          withdrawalRoutingMode:
-            input.decumulationDefaults.withdrawalRoutingMode,
-          withdrawalOrder: input.decumulationDefaults
-            .withdrawalOrder as AccountCategory[],
-          withdrawalSplits: input.decumulationDefaults
-            .withdrawalSplits as Record<AccountCategory, number>,
-          withdrawalTaxPreference: input.decumulationDefaults
-            .withdrawalTaxPreference as Partial<
-            Record<AccountCategory, "traditional" | "roth">
-          >,
+        decumulationDefaults: buildDecumulationDefaults(
+          settings,
+          input.decumulationDefaults,
           distributionTaxRates,
-          withdrawalStrategy:
-            (settings.withdrawalStrategy as WithdrawalStrategyType) ?? "fixed",
-          strategyParams: buildStrategyParams(settings),
-        },
+        ),
         accumulationOverrides:
           input.accumulationOverrides as AccumulationOverride[],
         decumulationOverrides:

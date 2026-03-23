@@ -7,6 +7,7 @@ import { useUser, hasPermission } from "@/lib/context/user-context";
 import { Card } from "@/components/ui/card";
 import {
   formatCurrency,
+  formatPercent,
   formatDate,
   accountDisplayName,
 } from "@/lib/utils/format";
@@ -549,7 +550,7 @@ function SummaryTable({
               {formatCurrency(r.amount)}
               {showPct && total > 0 && (
                 <span className="text-faint ml-1">
-                  ({((r.amount / total) * 100).toFixed(1)}%)
+                  ({formatPercent(r.amount / total, 1)})
                 </span>
               )}
             </span>

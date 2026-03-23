@@ -66,6 +66,18 @@ export function formatDate(
 }
 
 /**
+ * Format a large currency value in compact form (e.g., 1500000 → "$1.5M", 45000 → "$45k").
+ * Suitable for chart axes and summary displays where full precision isn't needed.
+ */
+export function compactCurrency(value: number): string {
+  const abs = Math.abs(value);
+  const sign = value < 0 ? "-" : "";
+  if (abs >= 1_000_000) return `${sign}$${(abs / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `${sign}$${(abs / 1_000).toFixed(0)}k`;
+  return `${sign}$${abs.toFixed(0)}`;
+}
+
+/**
  * Format a number with commas (e.g., 1234567 → "1,234,567").
  */
 export function formatNumber(value: number, decimals = 0): string {

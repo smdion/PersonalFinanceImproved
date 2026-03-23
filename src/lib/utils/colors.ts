@@ -170,3 +170,21 @@ export const TAX_PIE_COLORS: Record<string, string> = {
   hsa: "#10b981", // emerald-500
   afterTax: "#f97316", // orange-500
 };
+
+/** Hex chart colors per account category, with roth (lighter) and traditional (standard) variants */
+const CATEGORY_CHART_HEX: Record<string, { standard: string; roth: string }> = {
+  "401k":      { standard: "#3b82f6", roth: "#93c5fd" }, // blue-500 / blue-300
+  "403b":      { standard: "#3b82f6", roth: "#93c5fd" }, // shares 401k colors
+  ira:         { standard: "#8b5cf6", roth: "#c4b5fd" }, // violet-500 / violet-300
+  hsa:         { standard: "#10b981", roth: "#6ee7b7" }, // emerald-500 / emerald-300
+  brokerage:   { standard: "#f97316", roth: "#fdba74" }, // orange-500 / orange-300
+  espp:        { standard: "#f59e0b", roth: "#fcd34d" }, // amber-500 / amber-300
+  pension:     { standard: "#6366f1", roth: "#a5b4fc" }, // indigo-500 / indigo-300
+};
+const DEFAULT_CHART_HEX = { standard: "#6b7280", roth: "#9ca3af" }; // gray-500 / gray-400
+
+/** Get hex color for a category chart segment (Recharts/SVG) */
+export function categoryChartHex(category: string, isRoth: boolean): string {
+  const entry = CATEGORY_CHART_HEX[category] ?? DEFAULT_CHART_HEX;
+  return isRoth ? entry.roth : entry.standard;
+}
