@@ -19,9 +19,13 @@
     "compare": "tsx .scratch/compare/compare-xlsx-to-live.ts",
     "seed:safe": "pnpm validate && pnpm seed && pnpm validate",
     "docs:verify": "tsx scripts/verify-docs.ts",
+    "docs:update": "tsx scripts/verify-docs.ts --update",
     "check:file-size": "bash scripts/check-file-size.sh",
     "check:known-diffs": "tsx scripts/check-known-diffs.ts",
     "release": "bash scripts/release.sh",
+    "analyze": "ANALYZE=true pnpm build",
+    "check:bundle": "tsx scripts/check-bundle-size.ts",
+    "check:migrations": "tsx scripts/check-migrations.ts",
     "prepare": "husky"
   },
   "dependencies": {
@@ -47,6 +51,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.2.1",
     "@playwright/test": "^1.52.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

@@ -31,6 +31,10 @@ jobs:
       - name: Check file sizes
         run: bash scripts/check-file-size.sh
 
+      - name: Check migrations
+        run: pnpm check:migrations
+        continue-on-error: true
+
       - name: Test
         run: npx vitest run
 
@@ -38,9 +42,8 @@ jobs:
         run: pnpm docs:verify
         continue-on-error: true
 
-      - name: Audit dependencies
+      - name: Audit dependencies (high/critical)
         run: pnpm audit --audit-level=high
-        continue-on-error: true
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium

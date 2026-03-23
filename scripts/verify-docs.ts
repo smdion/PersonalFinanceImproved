@@ -197,57 +197,16 @@ function parseDesignClaims(): Record<string, number> {
 
   const claims: Record<string, number> = {};
 
-  // Helper: find first match and extract the number
-  const extract = (key: string, pattern: RegExp): void => {
-    const match = doc.match(pattern);
-    if (match?.[1]) {
-      claims[key] = parseInt(match[1], 10);
+  // Extract all AUTO-GEN markers: <!-- AUTO-GEN:key -->N<!-- /AUTO-GEN -->
+  const markerRe = /<!-- AUTO-GEN:(\w+) -->(\d+)<!-- \/AUTO-GEN -->/g;
+  let match;
+  while ((match = markerRe.exec(doc)) !== null) {
+    const key = match[1];
+    // Only take the first occurrence of each key (avoid duplicates inflating)
+    if (!(key in claims)) {
+      claims[key] = parseInt(match[2], 10);
     }
-  };
-
-  // "**24 pages:**" or "24 pages"
-  extract("pages", /\*\*(\d+)\s+pages[:\*]/);
-
-  // "13 calculators" (in bold or plain)
-  extract("calculators", /\*?\*?(\d+)\s+calculators\b/);
-
-  // "20 modules" in engine context
-  extract("engineModules", /engine[^]*?(\d+)\s+modules/i);
-
-  // "20 primary tRPC routers"
-  extract("primaryRouters", /(\d+)\s+primary\s+tRPC\s+routers/);
-
-  // "6 settings sub-routers"
-  extract("settingsSubRouters", /(\d+)\s+settings\s+sub-routers/);
-
-  // "8 migrations"
-  extract("migrations", /(\d+)\s+migrations/);
-
-  // "50+ tables" — extract the base number
-  extract("tables", /(\d+)\+?\s+tables/);
-
-  // "17 settings components" or "17 settings sub-components"
-  extract("settingsComponents", /(\d+)\s+settings\s+(?:sub-)?components/);
-
-  // "17 dashboard card components"
-  extract("dashboardCards", /(\d+)\s+dashboard\s+card\s+components/);
-
-  // "21 shared components" (in tree comment)
-  extract("uiComponents", /(\d+)\s+shared\s+components/);
-
-  // Domain component counts from tree comments
-  extract("paycheckComponents", /(\d+)\s+paycheck\s+domain\s+components/);
-  extract("budgetComponents", /(\d+)\s+budget\s+domain\s+components/);
-  extract("mortgageComponents", /(\d+)\s+mortgage\s+domain\s+components/);
-  extract("savingsComponents", /(\d+)\s+savings\s+domain\s+components/);
-  extract(
-    "networthComponents",
-    /(\d+)\s+net\s+worth\s+visualization\s+components/,
-  );
-  extract(
-    "performanceComponents",
-    /(\d+)\s+performance\s+tracking\s+components/,
-  );
+  }
 
   return claims;
 }
@@ -262,24 +221,13 @@ function parseTestingClaims(): Record<string, number> {
 
   const claims: Record<string, number> = {};
 
-  // "**40 vitest files**"
-  const vitestMatch = doc.match(/\*\*(\d+)\s+vitest\s+files\*\*/);
-  if (vitestMatch?.[1]) {
-    claims["vitestFiles"] = parseInt(vitestMatch[1], 10);
-  }
-
-  // "**7 Playwright E2E tests** (3 files)"
-  const e2eFileMatch = doc.match(
-    /Playwright\s+E2E\s+tests\*?\*?\s*\((\d+)\s+files?\)/,
-  );
-  if (e2eFileMatch?.[1]) {
-    claims["e2eFiles"] = parseInt(e2eFileMatch[1], 10);
-  }
-
-  // Total test count: "**672 tests**"
-  const totalMatch = doc.match(/\*\*(\d+)\s+tests\*\*/);
-  if (totalMatch?.[1]) {
-    claims["totalTests"] = parseInt(totalMatch[1], 10);
+  // Extract all AUTO-GEN markers
+  const markerRe = /<!-- AUTO-GEN:(\w+) -->(\d+)<!-- \/AUTO-GEN -->/g;
+  let match;
+  while ((match = markerRe.exec(doc)) !== null) {
+    if (!(match[1] in claims)) {
+      claims[match[1]] = parseInt(match[2], 10);
+    }
   }
 
   return claims;
@@ -322,6 +270,36 @@ function compare(
   };
 }
 
+// ── AUTO-GEN Marker Update ──────────────────────────────────────────────────
+
+const AUTO_GEN_RE = /<!-- AUTO-GEN:(\w+) -->(\d+)<!-- \/AUTO-GEN -->/g;
+
+function updateAutoGenMarkers(
+  relPath: string,
+  counts: Record<string, number>,
+): { updated: number; path: string } {
+  const fullPath = path.join(ROOT, relPath);
+  if (!fs.existsSync(fullPath)) return { updated: 0, path: relPath };
+
+  const original = fs.readFileSync(fullPath, "utf-8");
+  let updated = 0;
+
+  const result = original.replace(AUTO_GEN_RE, (match, key, oldVal) => {
+    const newVal = counts[key];
+    if (newVal !== undefined && String(newVal) !== oldVal) {
+      updated++;
+      return `<!-- AUTO-GEN:${key} -->${newVal}<!-- /AUTO-GEN -->`;
+    }
+    return match;
+  });
+
+  if (updated > 0) {
+    fs.writeFileSync(fullPath, result, "utf-8");
+  }
+
+  return { updated, path: relPath };
+}
+
 function main(): void {
   console.log("");
   console.log("Documentation Freshness Check");
@@ -351,6 +329,31 @@ function main(): void {
     networthComponents: countNetworthComponents(),
     performanceComponents: countPerformanceComponents(),
   };
+
+  // --update mode: replace AUTO-GEN markers with actual counts
+  const isUpdate = process.argv.includes("--update");
+  if (isUpdate) {
+    console.log(
+      "Mode: --update (replacing AUTO-GEN markers with actual counts)\n",
+    );
+    const docs = [".scratch/docs/DESIGN.md", ".scratch/docs/TESTING.md"];
+    let totalUpdated = 0;
+    for (const doc of docs) {
+      const { updated, path: docPath } = updateAutoGenMarkers(doc, actual);
+      if (updated > 0) {
+        console.log(`  Updated ${updated} marker(s) in ${docPath}`);
+        totalUpdated += updated;
+      } else {
+        console.log(`  No changes needed in ${docPath}`);
+      }
+    }
+    console.log(`\n${totalUpdated} marker(s) updated total.`);
+    if (totalUpdated > 0) {
+      console.log("Re-verifying after update...\n");
+    } else {
+      console.log("");
+    }
+  }
 
   // Parse doc claims
   const designClaims = parseDesignClaims();
