@@ -409,9 +409,10 @@ export function IntegrationsSettings() {
             </p>
             <p>
               Per-item <strong>sync direction</strong> controls which way data
-              flows: <span className="text-blue-500">pull</span> = API&rarr;Ledgr,{" "}
-              <span className="text-green-500">push</span> = Ledgr&rarr;API,{" "}
-              <span className="text-purple-500">both</span> = two-way.
+              flows: <span className="text-blue-500">pull</span> =
+              API&rarr;Ledgr, <span className="text-green-500">push</span> =
+              Ledgr&rarr;API, <span className="text-purple-500">both</span> =
+              two-way.
             </p>
           </div>
         </details>

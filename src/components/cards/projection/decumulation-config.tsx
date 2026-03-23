@@ -4,10 +4,7 @@
 import { HelpTip } from "@/components/ui/help-tip";
 import { AccountBadge } from "@/components/ui/account-badge";
 import type { AccountCategory } from "@/lib/calculators/types";
-import {
-  accountTextColor,
-  taxTypeLabel,
-} from "@/lib/utils/colors";
+import { accountTextColor, taxTypeLabel } from "@/lib/utils/colors";
 import { formatPercent } from "@/lib/utils/format";
 import {
   getAllCategories,
@@ -100,9 +97,7 @@ type DecumulationConfigProps = {
   setWithdrawalSplits: React.Dispatch<
     React.SetStateAction<Record<AccountCategory, number>>
   >;
-  withdrawalTaxPref: Partial<
-    Record<AccountCategory, "traditional" | "roth">
-  >;
+  withdrawalTaxPref: Partial<Record<AccountCategory, "traditional" | "roth">>;
   setWithdrawalTaxPref: React.Dispatch<
     React.SetStateAction<
       Partial<Record<AccountCategory, "traditional" | "roth">>
@@ -160,8 +155,8 @@ export function DecumulationConfig({
           </span>
           {withdrawalRoutingMode === "bracket_filling" ? (
             <span>
-              Bracket fill (Traditional → Roth → Brokerage → HSA) with
-              RMDs, SS tax torpedo, graduated LTCG
+              Bracket fill (Traditional → Roth → Brokerage → HSA) with RMDs, SS
+              tax torpedo, graduated LTCG
             </span>
           ) : withdrawalRoutingMode === "waterfall" ? (
             <>
@@ -198,9 +193,7 @@ export function DecumulationConfig({
               <div className="inline-flex rounded-md border bg-surface-sunken p-0.5">
                 <button
                   type="button"
-                  onClick={() =>
-                    setWithdrawalRoutingMode("bracket_filling")
-                  }
+                  onClick={() => setWithdrawalRoutingMode("bracket_filling")}
                   className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
                     withdrawalRoutingMode === "bracket_filling"
                       ? "bg-surface-primary text-primary shadow-sm border"
@@ -252,59 +245,51 @@ export function DecumulationConfig({
               </p>
               <ol className="list-decimal list-inside space-y-0.5 text-emerald-700">
                 <li>
-                  <span className="font-medium">
-                    {taxTypeLabel("preTax")}
-                  </span>
+                  <span className="font-medium">{taxTypeLabel("preTax")}</span>
                   {""}
-                  (401k/IRA) up to the bracket ceiling — uses IRS
-                  provisional income formula for SS taxation
+                  (401k/IRA) up to the bracket ceiling — uses IRS provisional
+                  income formula for SS taxation
                 </li>
                 <li>
-                  <span className="font-medium">
-                    {taxTypeLabel("taxFree")}
-                  </span>
+                  <span className="font-medium">{taxTypeLabel("taxFree")}</span>
                   {""}
                   (401k/IRA Roth) for the remainder — no tax impact
                 </li>
                 <li>
-                  <span className="font-medium">Brokerage</span> as
-                  overflow — taxed at graduated LTCG rates (0%/15%/20%)
+                  <span className="font-medium">Brokerage</span> as overflow —
+                  taxed at graduated LTCG rates (0%/15%/20%)
                 </li>
                 <li>
-                  <span className="font-medium">HSA</span> last resort —
-                  most tax-advantaged, compounds longest
+                  <span className="font-medium">HSA</span> last resort — most
+                  tax-advantaged, compounds longest
                 </li>
               </ol>
               <div className="border-t border-emerald-200 pt-1.5 mt-1.5 space-y-0.5 text-emerald-600">
                 <p>
-                  <span className="font-medium text-emerald-700">
-                    RMDs
-                  </span>
-                  {""}— Required Minimum Distributions enforced at the IRS
-                  start age (SECURE 2.0: 73 or 75). Traditional
-                  withdrawals are forced above your bracket target when
-                  needed.
+                  <span className="font-medium text-emerald-700">RMDs</span>
+                  {""}— Required Minimum Distributions enforced at the IRS start
+                  age (SECURE 2.0: 73 or 75). Traditional withdrawals are forced
+                  above your bracket target when needed.
                 </p>
                 <p>
                   <span className="font-medium text-emerald-700">
                     Roth conversions
                   </span>
-                  {""}— When enabled, automatically converts Traditional →
-                  Roth to fill the target bracket. Most valuable pre-RMD
-                  age.
+                  {""}— When enabled, automatically converts Traditional → Roth
+                  to fill the target bracket. Most valuable pre-RMD age.
                 </p>
                 <p>
                   <span className="font-medium text-emerald-700">
                     IRMAA / ACA
                   </span>
-                  {""}— When enabled, constrains withdrawals and
-                  conversions near Medicare surcharge cliffs (65+) or ACA
-                  subsidy cliffs (pre-65).
+                  {""}— When enabled, constrains withdrawals and conversions
+                  near Medicare surcharge cliffs (65+) or ACA subsidy cliffs
+                  (pre-65).
                 </p>
               </div>
               <p className="text-emerald-600">
-                Configure bracket targets, Roth conversions, and
-                healthcare awareness in retirement settings above.
+                Configure bracket targets, Roth conversions, and healthcare
+                awareness in retirement settings above.
               </p>
             </div>
           )}
@@ -404,9 +389,7 @@ export function DecumulationConfig({
                   </label>
                 ))}
                 {getAllCategories()
-                  .filter(
-                    (cat) => !ACCOUNT_TYPE_CONFIG[cat].supportsRothSplit,
-                  )
+                  .filter((cat) => !ACCOUNT_TYPE_CONFIG[cat].supportsRothSplit)
                   .map((cat) => (
                     <div key={cat} className="flex items-center">
                       <div>

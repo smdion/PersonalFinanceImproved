@@ -386,7 +386,9 @@ export function BudgetSummaryTable({
                       <span className="w-2 h-2 rounded-full bg-green-500" />
                     )}
                     Take-Home Pay
-                    <HelpTip text={`${payrollBreakdowns.find((b) => b?.budgetNote)?.budgetNote ?? "Regular monthly pay"}. Extra paycheck months are not included — that income is available outside the budget.`} />
+                    <HelpTip
+                      text={`${payrollBreakdowns.find((b) => b?.budgetNote)?.budgetNote ?? "Regular monthly pay"}. Extra paycheck months are not included — that income is available outside the budget.`}
+                    />
                   </span>
                 </td>
                 {allColumnResults.map((_, i) => (

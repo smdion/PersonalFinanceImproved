@@ -3,18 +3,20 @@
 /** Expandable account card that composes settings, sub-accounts, and contributions sections for a single performance account. */
 
 import React, { useState } from "react";
-import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, accountDisplayName } from "@/lib/utils/format";
-import { taxTypeLabel } from "@/lib/utils/colors";
-import {
-  ACCOUNT_TYPE_CONFIG,
-  getAllCategories,
-} from "@/lib/config/account-types";
+import { ACCOUNT_TYPE_CONFIG } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { ContribRow, PortfolioSub } from "./contribution-accounts-types";
 import { InlineText, InlineSelect } from "./contribution-accounts-inline";
-import { SubAccountRow, SubAccountInactiveSection, AddSubAccountForm } from "./contribution-accounts-sub-account";
-import { ContributionRow, AddContribForm } from "./contribution-accounts-contrib-row";
+import {
+  SubAccountRow,
+  SubAccountInactiveSection,
+  AddSubAccountForm,
+} from "./contribution-accounts-sub-account";
+import {
+  ContributionRow,
+  AddContribForm,
+} from "./contribution-accounts-contrib-row";
 
 export function AccountCard({
   account: pa,
@@ -473,4 +475,3 @@ export function AccountCard({
 // ---------------------------------------------------------------------------
 // Sub-Account Row + Inactive Section
 // ---------------------------------------------------------------------------
-

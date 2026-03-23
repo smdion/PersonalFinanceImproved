@@ -120,9 +120,7 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     warnings.push("Annual salary is negative — results may be incorrect.");
   }
   if (input.annualSalary > 10_000_000) {
-    warnings.push(
-      "Annual salary exceeds $10M — verify this is correct.",
-    );
+    warnings.push("Annual salary exceeds $10M — verify this is correct.");
   }
   if (input.bonusPercent < 0 || input.bonusPercent > 5) {
     warnings.push(

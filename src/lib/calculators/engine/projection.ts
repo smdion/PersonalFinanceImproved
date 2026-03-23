@@ -18,10 +18,7 @@
  */
 import type { ProjectionInput, ProjectionResult } from "../types";
 import { roundToCents } from "../../utils/math";
-import {
-  MAX_INFLATION_RATE,
-  MIN_INFLATION_RATE,
-} from "../../constants";
+import { MAX_INFLATION_RATE, MIN_INFLATION_RATE } from "../../constants";
 import { resolveDecumulationConfig } from "./override-resolution";
 import {
   buildProjectionContext,

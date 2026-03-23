@@ -17,10 +17,9 @@ import { calculateBudget } from "@/lib/calculators/budget";
 import { calculateContributions } from "@/lib/calculators/contribution";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
 import { calculateNetWorth } from "@/lib/calculators/net-worth";
-import { calculateSavings } from "@/lib/calculators/savings";
+// calculateSavings reserved for future savings logic-gap tests
 import { calculateEFund } from "@/lib/calculators/efund";
 import {
-  MFJ_2C_BRACKETS,
   MFJ_NO_CHECKBOX_BRACKETS,
   PERSON_A_PAYCHECK_INPUT,
   PERSON_B_PAYCHECK_INPUT,
@@ -31,13 +30,8 @@ import {
 import type {
   PaycheckInput,
   TaxInput,
-  BudgetInput,
-  ContributionInput,
   MortgageInput,
   NetWorthInput,
-  SavingsInput,
-  EFundInput,
-  DeductionLine,
 } from "@/lib/calculators/types";
 
 // ════════════════════════════════════════
@@ -57,7 +51,12 @@ describe("FICA base distinction", () => {
     const input: PaycheckInput = {
       ...baseInput,
       deductions: [
-        { name: "Medical", amount: 200, taxTreatment: "pre_tax", ficaExempt: true },
+        {
+          name: "Medical",
+          amount: 200,
+          taxTreatment: "pre_tax",
+          ficaExempt: true,
+        },
       ],
     };
     const result = calculatePaycheck(input);
@@ -70,7 +69,12 @@ describe("FICA base distinction", () => {
     const input: PaycheckInput = {
       ...baseInput,
       deductions: [
-        { name: "Custom", amount: 200, taxTreatment: "pre_tax", ficaExempt: false },
+        {
+          name: "Custom",
+          amount: 200,
+          taxTreatment: "pre_tax",
+          ficaExempt: false,
+        },
       ],
     };
     const result = calculatePaycheck(input);
@@ -83,8 +87,18 @@ describe("FICA base distinction", () => {
     const input: PaycheckInput = {
       ...baseInput,
       deductions: [
-        { name: "Medical", amount: 150, taxTreatment: "pre_tax", ficaExempt: true },
-        { name: "Other", amount: 100, taxTreatment: "pre_tax", ficaExempt: false },
+        {
+          name: "Medical",
+          amount: 150,
+          taxTreatment: "pre_tax",
+          ficaExempt: true,
+        },
+        {
+          name: "Other",
+          amount: 100,
+          taxTreatment: "pre_tax",
+          ficaExempt: false,
+        },
       ],
     };
     const result = calculatePaycheck(input);
@@ -97,13 +111,23 @@ describe("FICA base distinction", () => {
     const exemptInput: PaycheckInput = {
       ...baseInput,
       deductions: [
-        { name: "Exempt", amount: 200, taxTreatment: "pre_tax", ficaExempt: true },
+        {
+          name: "Exempt",
+          amount: 200,
+          taxTreatment: "pre_tax",
+          ficaExempt: true,
+        },
       ],
     };
     const nonExemptInput: PaycheckInput = {
       ...baseInput,
       deductions: [
-        { name: "NonExempt", amount: 200, taxTreatment: "pre_tax", ficaExempt: false },
+        {
+          name: "NonExempt",
+          amount: 200,
+          taxTreatment: "pre_tax",
+          ficaExempt: false,
+        },
       ],
     };
     const exemptResult = calculatePaycheck(exemptInput);
@@ -182,9 +206,24 @@ describe("cross-calculator consistency", () => {
   it("budget essential ≤ total budget ≤ combined net pay", () => {
     const budget = calculateBudget({
       items: [
-        { category: "Housing", label: "Mortgage", amounts: [1500], isEssential: true },
-        { category: "Food", label: "Groceries", amounts: [500], isEssential: true },
-        { category: "Fun", label: "Entertainment", amounts: [200], isEssential: false },
+        {
+          category: "Housing",
+          label: "Mortgage",
+          amounts: [1500],
+          isEssential: true,
+        },
+        {
+          category: "Food",
+          label: "Groceries",
+          amounts: [500],
+          isEssential: true,
+        },
+        {
+          category: "Fun",
+          label: "Entertainment",
+          amounts: [200],
+          isEssential: false,
+        },
       ],
       columnLabels: ["Standard"],
       selectedColumn: 0,
@@ -501,34 +540,88 @@ describe("net worth wealth formula age transition", () => {
 
 describe("budget multi-column scenarios", () => {
   const items = [
-    { category: "Housing", label: "Mortgage", amounts: [1500, 1500, 1500], isEssential: true },
-    { category: "Food", label: "Groceries", amounts: [500, 400, 300], isEssential: true },
-    { category: "Fun", label: "Dining", amounts: [300, 150, 0], isEssential: false },
-    { category: "Fun", label: "Hobbies", amounts: [200, 100, 50], isEssential: false },
+    {
+      category: "Housing",
+      label: "Mortgage",
+      amounts: [1500, 1500, 1500],
+      isEssential: true,
+    },
+    {
+      category: "Food",
+      label: "Groceries",
+      amounts: [500, 400, 300],
+      isEssential: true,
+    },
+    {
+      category: "Fun",
+      label: "Dining",
+      amounts: [300, 150, 0],
+      isEssential: false,
+    },
+    {
+      category: "Fun",
+      label: "Hobbies",
+      amounts: [200, 100, 50],
+      isEssential: false,
+    },
   ];
   const labels = ["Standard", "Tight", "Emergency"];
 
   it("emergency budget ≤ tight budget ≤ standard budget", () => {
-    const standard = calculateBudget({ items, columnLabels: labels, selectedColumn: 0, asOfDate: AS_OF_DATE });
-    const tight = calculateBudget({ items, columnLabels: labels, selectedColumn: 1, asOfDate: AS_OF_DATE });
-    const emergency = calculateBudget({ items, columnLabels: labels, selectedColumn: 2, asOfDate: AS_OF_DATE });
+    const standard = calculateBudget({
+      items,
+      columnLabels: labels,
+      selectedColumn: 0,
+      asOfDate: AS_OF_DATE,
+    });
+    const tight = calculateBudget({
+      items,
+      columnLabels: labels,
+      selectedColumn: 1,
+      asOfDate: AS_OF_DATE,
+    });
+    const emergency = calculateBudget({
+      items,
+      columnLabels: labels,
+      selectedColumn: 2,
+      asOfDate: AS_OF_DATE,
+    });
 
     expect(emergency.totalMonthly).toBeLessThanOrEqual(tight.totalMonthly);
     expect(tight.totalMonthly).toBeLessThanOrEqual(standard.totalMonthly);
   });
 
   it("essential amounts stay fixed across tighter budgets when designed that way", () => {
-    const standard = calculateBudget({ items, columnLabels: labels, selectedColumn: 0, asOfDate: AS_OF_DATE });
-    const emergency = calculateBudget({ items, columnLabels: labels, selectedColumn: 2, asOfDate: AS_OF_DATE });
+    const standard = calculateBudget({
+      items,
+      columnLabels: labels,
+      selectedColumn: 0,
+      asOfDate: AS_OF_DATE,
+    });
+    const emergency = calculateBudget({
+      items,
+      columnLabels: labels,
+      selectedColumn: 2,
+      asOfDate: AS_OF_DATE,
+    });
 
     // Mortgage (essential) stays at $1500 across all columns
-    const stdMortgage = standard.categories.find((c) => c.name === "Housing")?.items.find((i) => i.label === "Mortgage");
-    const emgMortgage = emergency.categories.find((c) => c.name === "Housing")?.items.find((i) => i.label === "Mortgage");
+    const stdMortgage = standard.categories
+      .find((c) => c.name === "Housing")
+      ?.items.find((i) => i.label === "Mortgage");
+    const emgMortgage = emergency.categories
+      .find((c) => c.name === "Housing")
+      ?.items.find((i) => i.label === "Mortgage");
     expect(stdMortgage?.amount).toBe(emgMortgage?.amount);
   });
 
   it("discretionary items can be zero in emergency column", () => {
-    const emergency = calculateBudget({ items, columnLabels: labels, selectedColumn: 2, asOfDate: AS_OF_DATE });
+    const emergency = calculateBudget({
+      items,
+      columnLabels: labels,
+      selectedColumn: 2,
+      asOfDate: AS_OF_DATE,
+    });
 
     const dining = emergency.categories
       .find((c) => c.name === "Fun")

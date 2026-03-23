@@ -4,7 +4,6 @@
 
 import type {
   PayPeriodType,
-  TaxTreatmentType,
   FilingStatusType,
   DeductionLine,
   TaxBracketInput,

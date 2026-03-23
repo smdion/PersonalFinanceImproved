@@ -130,19 +130,15 @@ export const taxLimitsProcedures = {
           asc(schema.ltcgBrackets.filingStatus),
         ),
     ),
-    create: adminProcedure
-      .input(ltcgBracketInput)
-      .mutation(({ ctx, input }) =>
-        ctx.db
-          .insert(schema.ltcgBrackets)
-          .values(input)
-          .returning()
-          .then((r) => r[0]),
-      ),
+    create: adminProcedure.input(ltcgBracketInput).mutation(({ ctx, input }) =>
+      ctx.db
+        .insert(schema.ltcgBrackets)
+        .values(input)
+        .returning()
+        .then((r) => r[0]),
+    ),
     update: adminProcedure
-      .input(
-        z.object({ id: z.number().int() }).extend(ltcgBracketInput.shape),
-      )
+      .input(z.object({ id: z.number().int() }).extend(ltcgBracketInput.shape))
       .mutation(({ ctx, input: { id, ...data } }) =>
         ctx.db
           .update(schema.ltcgBrackets)
@@ -170,19 +166,15 @@ export const taxLimitsProcedures = {
           asc(schema.irmaaBrackets.filingStatus),
         ),
     ),
-    create: adminProcedure
-      .input(irmaaBracketInput)
-      .mutation(({ ctx, input }) =>
-        ctx.db
-          .insert(schema.irmaaBrackets)
-          .values(input)
-          .returning()
-          .then((r) => r[0]),
-      ),
+    create: adminProcedure.input(irmaaBracketInput).mutation(({ ctx, input }) =>
+      ctx.db
+        .insert(schema.irmaaBrackets)
+        .values(input)
+        .returning()
+        .then((r) => r[0]),
+    ),
     update: adminProcedure
-      .input(
-        z.object({ id: z.number().int() }).extend(irmaaBracketInput.shape),
-      )
+      .input(z.object({ id: z.number().int() }).extend(irmaaBracketInput.shape))
       .mutation(({ ctx, input: { id, ...data } }) =>
         ctx.db
           .update(schema.irmaaBrackets)

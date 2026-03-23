@@ -20,7 +20,13 @@ export default function GlobalError({
           <h2 style={{ color: "#dc2626" }}>Something went wrong</h2>
           <p>{error.message || "An unexpected error occurred."}</p>
           {error.digest && (
-            <p style={{ fontSize: "0.75rem", color: "#6b7280", fontFamily: "monospace" }}>
+            <p
+              style={{
+                fontSize: "0.75rem",
+                color: "#6b7280",
+                fontFamily: "monospace",
+              }}
+            >
               Error ID: {error.digest}
             </p>
           )}

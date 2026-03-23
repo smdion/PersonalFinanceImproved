@@ -19,7 +19,13 @@ type EmptyStateProps = {
  * Basic usage:   <EmptyState message="No data." />
  * Enhanced:      <EmptyState icon={<Inbox />} message="No goals yet." action={{ label: "Add Goal", onClick: ... }} />
  */
-export function EmptyState({ message, hint, icon, action, link }: EmptyStateProps) {
+export function EmptyState({
+  message,
+  hint,
+  icon,
+  action,
+  link,
+}: EmptyStateProps) {
   return (
     <div role="status" className="text-center py-12">
       {icon && (

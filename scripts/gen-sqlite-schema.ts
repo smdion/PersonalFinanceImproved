@@ -60,17 +60,11 @@ out = out.replace(
 
 // --- decimal("col", { precision: X, scale: Y }) → text("col") ---
 // Handle multi-line decimal declarations
-out = out.replace(
-  /decimal\("([^"]+)",\s*\{[^}]*\}\)/g,
-  'text("$1")',
-);
+out = out.replace(/decimal\("([^"]+)",\s*\{[^}]*\}\)/g, 'text("$1")');
 
 // --- jsonb("col") → text("col", { mode: "json" }) ---
 // Single-line form
-out = out.replace(
-  /jsonb\("([^"]+)"\)/g,
-  'text("$1", { mode: "json" })',
-);
+out = out.replace(/jsonb\("([^"]+)"\)/g, 'text("$1", { mode: "json" })');
 // Multi-line form: jsonb(\n  "col",\n)
 out = out.replace(
   /jsonb\(\s*\n\s*"([^"]+)",?\s*\n\s*\)/g,
@@ -85,29 +79,17 @@ out = out.replace(
 
 // --- date("col") → text("col") ---
 // Only match standalone date() calls, not "updated_at" etc.
-out = out.replace(
-  /\bdate\("([^"]+)"\)/g,
-  'text("$1")',
-);
+out = out.replace(/\bdate\("([^"]+)"\)/g, 'text("$1")');
 
 // --- varchar("col", { length: N }) → text("col") ---
-out = out.replace(
-  /varchar\("([^"]+)",\s*\{[^}]*\}\)/g,
-  'text("$1")',
-);
+out = out.replace(/varchar\("([^"]+)",\s*\{[^}]*\}\)/g, 'text("$1")');
 
 // --- .default({}) for json columns needs sql wrapper ---
 // jsonb default {} becomes text default — need to stringify
-out = out.replace(
-  /\.default\(\{\}\)/g,
-  ".default(sql`'{}'`)",
-);
+out = out.replace(/\.default\(\{\}\)/g, ".default(sql`'{}'`)");
 
 // --- .defaultNow() remaining (multi-line timestamp patterns) ---
-out = out.replace(
-  /\.defaultNow\(\)/g,
-  ".default(sql`(unixepoch())`)",
-);
+out = out.replace(/\.defaultNow\(\)/g, ".default(sql`(unixepoch())`)");
 
 // --- Write output ---
 const outPath = path.resolve(__dirname, "../src/lib/db/schema-sqlite.ts");

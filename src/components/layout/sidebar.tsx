@@ -351,7 +351,9 @@ export function Sidebar({
               title={collapsed ? "Switch Profile" : undefined}
             >
               <LogOut className="w-4 h-4 shrink-0" />
-              {showLabels && <span className="hidden md:inline">Switch Profile</span>}
+              {showLabels && (
+                <span className="hidden md:inline">Switch Profile</span>
+              )}
               <span className="md:hidden">Switch Profile</span>
             </Link>
           ) : (
@@ -375,9 +377,7 @@ export function Sidebar({
         {/* Utility bar — theme + collapse + version (desktop only) */}
         <div
           className={`hidden md:flex items-center border-t py-1.5 ${
-            collapsed
-              ? "flex-col gap-1 px-0"
-              : "flex-row px-2"
+            collapsed ? "flex-col gap-1 px-0" : "flex-row px-2"
           }`}
         >
           <ThemeToggle compact />

@@ -20,7 +20,11 @@ type BadgeProps = {
  * For account-type badges (401k, IRA, etc.), use AccountBadge instead —
  * it derives colors from the centralized account-types config.
  */
-export function Badge({ children, color = "gray", className = "" }: BadgeProps) {
+export function Badge({
+  children,
+  color = "gray",
+  className = "",
+}: BadgeProps) {
   return (
     <span
       className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide ${colorStyles[color]} ${className}`}

@@ -3,7 +3,13 @@
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 
-export function DemoBanner({ profileName, isDemoOnly }: { profileName: string; isDemoOnly?: boolean }) {
+export function DemoBanner({
+  profileName,
+  isDemoOnly,
+}: {
+  profileName: string;
+  isDemoOnly?: boolean;
+}) {
   const router = useRouter();
   const utils = trpc.useUtils();
 

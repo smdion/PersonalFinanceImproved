@@ -11,7 +11,11 @@ export default function DashboardError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[dashboard-error]", error.digest ?? "no-digest", error.message);
+    console.error(
+      "[dashboard-error]",
+      error.digest ?? "no-digest",
+      error.message,
+    );
   }, [error]);
 
   return (
@@ -25,9 +29,7 @@ export default function DashboardError({
       {error.digest && (
         <p className="text-xs text-muted font-mono">Error ID: {error.digest}</p>
       )}
-      <Button onClick={reset}>
-        Try again
-      </Button>
+      <Button onClick={reset}>Try again</Button>
     </div>
   );
 }

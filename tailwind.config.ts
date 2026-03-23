@@ -14,8 +14,7 @@ import type { Config } from "tailwindcss";
  * Shades NOT listed here (e.g. blue-400, green-500) keep Tailwind's
  * built-in defaults, which work well in both light and dark modes.
  */
-const c = (name: string) =>
-  `rgb(var(--c-${name}) / <alpha-value>)` as const;
+const c = (name: string) => `rgb(var(--c-${name}) / <alpha-value>)` as const;
 
 const themeColors = {
   gray: {

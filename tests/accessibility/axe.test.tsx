@@ -20,9 +20,12 @@ import { Toggle } from "@/components/ui/toggle";
 // ---------------------------------------------------------------------------
 
 async function getViolations(container: HTMLElement) {
-  const results = await axe.run(container as axe.ElementContext, {
-    rules: { "color-contrast": { enabled: false } },
-  } as axe.RunOptions);
+  const results = await axe.run(
+    container as axe.ElementContext,
+    {
+      rules: { "color-contrast": { enabled: false } },
+    } as axe.RunOptions,
+  );
   return results.violations;
 }
 
@@ -130,11 +133,7 @@ describe("Accessibility — axe-core", () => {
 
   it("Toggle renders without violations", async () => {
     const { container } = render(
-      <Toggle
-        checked={false}
-        onChange={() => {}}
-        label="Include taxes"
-      />,
+      <Toggle checked={false} onChange={() => {}} label="Include taxes" />,
     );
     const violations = await getViolations(container);
     expect(violations, formatViolations(violations)).toHaveLength(0);

@@ -149,7 +149,9 @@ export default function VersionsPage() {
       const blob = await res.blob();
       const disposition = res.headers.get("Content-Disposition") ?? "";
       const match = disposition.match(/filename="(.+)"/);
-      const filename = match?.[1] ?? `ledgr-backup-${new Date().toISOString().split("T")[0]}.json`;
+      const filename =
+        match?.[1] ??
+        `ledgr-backup-${new Date().toISOString().split("T")[0]}.json`;
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -201,10 +203,7 @@ export default function VersionsPage() {
         title="Versions"
         subtitle="Full-database versioning with automatic and manual save points"
       >
-        <Button
-          size="xs"
-          onClick={() => setShowCreateForm(true)}
-        >
+        <Button size="xs" onClick={() => setShowCreateForm(true)}>
           Create Version
         </Button>
       </PageHeader>
@@ -455,9 +454,7 @@ export default function VersionsPage() {
                     resetConfirmText !== "delete" || resetMutation.isPending
                   }
                 >
-                  {resetMutation.isPending
-                    ? "Clearing..."
-                    : "Clear All Data"}
+                  {resetMutation.isPending ? "Clearing..." : "Clear All Data"}
                 </Button>
                 <button
                   onClick={() => {

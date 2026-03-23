@@ -17,7 +17,9 @@ export function InlineText({
 }) {
   return (
     <div>
-      {label && <label className="block text-[10px] text-muted mb-0.5">{label}</label>}
+      {label && (
+        <label className="block text-[10px] text-muted mb-0.5">{label}</label>
+      )}
       {disabled ? (
         <div className="border border-subtle bg-surface-sunken rounded px-2 py-1 text-xs text-muted">
           {value || placeholder || "—"}

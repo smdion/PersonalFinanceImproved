@@ -96,7 +96,12 @@ export function jsonbLiteral(val: unknown): string {
 
 /** Get jsonb/json column names for a table. */
 export async function getJsonColumns(
-  client: { query: (sql: string, params?: unknown[]) => Promise<{ rows: { column_name: string }[] }> },
+  client: {
+    query: (
+      sql: string,
+      params?: unknown[],
+    ) => Promise<{ rows: { column_name: string }[] }>;
+  },
   tableName: string,
 ): Promise<Set<string>> {
   if (isPostgres()) {
@@ -121,19 +126,33 @@ let _validColumnsCache: Map<string, Set<string>> | null = null;
 
 function buildValidColumnsCache(): Map<string, Set<string>> {
   if (_validColumnsCache) return _validColumnsCache;
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const schema = isPostgres() ? require("./schema-pg") : require("./schema-sqlite");
+  /* eslint-disable @typescript-eslint/no-require-imports -- dynamic require for dialect-specific schema */
+  const schema = isPostgres()
+    ? require("./schema-pg")
+    : require("./schema-sqlite");
+  /* eslint-enable @typescript-eslint/no-require-imports */
   const cache = new Map<string, Set<string>>();
   for (const value of Object.values(schema)) {
     // Drizzle table objects have a Symbol that getTableColumns can read
     try {
-      const cols = getTableColumns(value as Parameters<typeof getTableColumns>[0]);
+      const cols = getTableColumns(
+        value as Parameters<typeof getTableColumns>[0],
+      );
       if (cols && typeof cols === "object") {
         const firstCol = Object.values(cols)[0];
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const tableName = (firstCol as any)?.table?.[Symbol.for("drizzle:Name")];
+        const tableName = (firstCol as any)?.table?.[
+          Symbol.for("drizzle:Name")
+        ];
         if (tableName && typeof tableName === "string") {
-          cache.set(tableName, new Set(Object.values(cols).map((c: unknown) => (c as { name: string }).name)));
+          cache.set(
+            tableName,
+            new Set(
+              Object.values(cols).map(
+                (c: unknown) => (c as { name: string }).name,
+              ),
+            ),
+          );
         }
       }
     } catch {

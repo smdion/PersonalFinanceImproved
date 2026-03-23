@@ -4,7 +4,7 @@
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
-import type { PreviewData, Service, BudgetMatch, SavingsMatch } from "./integrations-types";
+import type { PreviewData, Service, BudgetMatch } from "./integrations-types";
 import { StatusBadge } from "./integrations-status-badge";
 import { ApiCategorySelect } from "./integrations-api-category-select";
 
@@ -351,11 +351,18 @@ export function PreviewPanel({
       {/* Dashboard — compact overview row */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-surface-sunken rounded-lg p-3">
-          <p className="text-[10px] font-medium text-muted uppercase tracking-wide">Cash</p>
-          <div className="text-lg font-semibold text-primary">{formatCurrency(cash.api)}</div>
+          <p className="text-[10px] font-medium text-muted uppercase tracking-wide">
+            Cash
+          </p>
+          <div className="text-lg font-semibold text-primary">
+            {formatCurrency(cash.api)}
+          </div>
           {cashDiff !== 0 && (
-            <p className={`text-[10px] ${cashDiff > 0 ? "text-green-400" : "text-red-400"}`}>
-              {cashDiff > 0 ? "+" : ""}{formatCurrency(cashDiff)} vs manual
+            <p
+              className={`text-[10px] ${cashDiff > 0 ? "text-green-400" : "text-red-400"}`}
+            >
+              {cashDiff > 0 ? "+" : ""}
+              {formatCurrency(cashDiff)} vs manual
             </p>
           )}
           {cash.apiAccounts.length > 0 && (
@@ -365,9 +372,14 @@ export function PreviewPanel({
               </summary>
               <div className="mt-1 space-y-0.5">
                 {cash.apiAccounts.map((a) => (
-                  <div key={a.name} className="flex justify-between text-[10px] text-faint">
+                  <div
+                    key={a.name}
+                    className="flex justify-between text-[10px] text-faint"
+                  >
                     <span className="truncate mr-1">{a.name}</span>
-                    <span className="tabular-nums">{formatCurrency(a.balance)}</span>
+                    <span className="tabular-nums">
+                      {formatCurrency(a.balance)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -375,9 +387,15 @@ export function PreviewPanel({
           )}
         </div>
         <div className="bg-surface-sunken rounded-lg p-3">
-          <p className="text-[10px] font-medium text-muted uppercase tracking-wide">Accounts</p>
-          <div className="text-lg font-semibold text-primary">{accounts.total}</div>
-          <p className="text-[10px] text-faint">{accounts.onBudget} on budget · {accounts.tracking} tracking</p>
+          <p className="text-[10px] font-medium text-muted uppercase tracking-wide">
+            Accounts
+          </p>
+          <div className="text-lg font-semibold text-primary">
+            {accounts.total}
+          </div>
+          <p className="text-[10px] text-faint">
+            {accounts.onBudget} on budget · {accounts.tracking} tracking
+          </p>
           {Object.keys(accounts.byType).length > 0 && (
             <details className="mt-1.5">
               <summary className="text-[10px] text-faint cursor-pointer hover:text-secondary select-none">
@@ -387,9 +405,16 @@ export function PreviewPanel({
                 {Object.entries(accounts.byType)
                   .sort((a, b) => b[1].balance - a[1].balance)
                   .map(([type, info]) => (
-                    <div key={type} className="flex justify-between text-[10px] text-faint">
-                      <span>{type} ({info.count})</span>
-                      <span className="tabular-nums">{formatCurrency(info.balance)}</span>
+                    <div
+                      key={type}
+                      className="flex justify-between text-[10px] text-faint"
+                    >
+                      <span>
+                        {type} ({info.count})
+                      </span>
+                      <span className="tabular-nums">
+                        {formatCurrency(info.balance)}
+                      </span>
                     </div>
                   ))}
               </div>
@@ -397,8 +422,12 @@ export function PreviewPanel({
           )}
         </div>
         <div className="bg-surface-sunken rounded-lg p-3">
-          <p className="text-[10px] font-medium text-muted uppercase tracking-wide">Categories</p>
-          <div className="text-lg font-semibold text-primary">{categories.total}</div>
+          <p className="text-[10px] font-medium text-muted uppercase tracking-wide">
+            Categories
+          </p>
+          <div className="text-lg font-semibold text-primary">
+            {categories.total}
+          </div>
           <p className="text-[10px] text-faint">{categories.groups} groups</p>
         </div>
       </div>
@@ -412,418 +441,427 @@ export function PreviewPanel({
             </span>
             <span className="flex gap-2 text-[10px]">
               <span className="text-green-400">{budget.summary.linked}</span>
-              <span className="text-yellow-400">{budget.summary.suggested}</span>
+              <span className="text-yellow-400">
+                {budget.summary.suggested}
+              </span>
               <span className="text-faint">{budget.summary.unmatched}</span>
               {budget.summary.apiOnly > 0 && (
-                <span className="text-purple-400">{budget.summary.apiOnly} API-only</span>
+                <span className="text-purple-400">
+                  {budget.summary.apiOnly} API-only
+                </span>
               )}
             </span>
           </summary>
           <div className="px-3 pb-3 space-y-2">
-
-          {/* Inline details toggle for individual items */}
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setExpandedBudget(!expandedBudget)}
-              className="text-[10px] text-blue-500 hover:text-blue-700"
-            >
-              {expandedBudget ? "Hide items" : "Show items"}
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2 text-[9px] text-faint flex-wrap">
-            <span>Sync:</span>
-            <span className="text-blue-500">→ pull</span>
-            <span className="text-green-500">← push</span>
-            <span className="text-purple-500">⇄ both</span>
-            <span className="text-faint">|</span>
-            <span>Set all:</span>
-            {(["pull", "push", "both"] as const).map((dir) => (
+            {/* Inline details toggle for individual items */}
+            <div className="flex items-center justify-between">
               <button
-                key={dir}
-                onClick={() => {
-                  const linked = budget.matches.filter(
-                    (m) => m.status === "linked" && m.syncDirection !== dir,
-                  );
-                  for (const m of linked) {
-                    setBudgetSyncDirMut.mutate({
-                      budgetItemId: m.budgetItemId,
-                      syncDirection: dir,
-                    });
-                  }
-                }}
-                disabled={setBudgetSyncDirMut.isPending}
-                className={`px-1 py-0.5 rounded disabled:opacity-50 ${
-                  dir === "push"
-                    ? "text-green-500 hover:bg-green-50"
-                    : dir === "both"
-                      ? "text-purple-500 hover:bg-purple-50"
-                      : "text-blue-500 hover:bg-blue-50"
-                }`}
+                onClick={() => setExpandedBudget(!expandedBudget)}
+                className="text-[10px] text-blue-500 hover:text-blue-700"
               >
-                {dir}
+                {expandedBudget ? "Hide items" : "Show items"}
               </button>
-            ))}
-          </div>
+            </div>
 
-          {/* Apply all button */}
-          {totalActionable > 0 && (
-            <button
-              onClick={applyAllBudgetMatches}
-              disabled={linkBudgetMut.isPending}
-              className="w-full px-2 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-            >
-              {linkBudgetMut.isPending
-                ? "Linking..."
-                : `Apply all suggested matches (${suggestedCount + overrideCount})`}
-            </button>
-          )}
-
-          {/* Grouped by category */}
-          {expandedBudget && (
-            <div className="space-y-2">
-              {budgetByCategory.map(([category, items]) => (
-                <div key={category}>
-                  <p className="text-[10px] font-semibold text-muted uppercase tracking-wide mb-0.5">
-                    {category}
-                  </p>
-                  <div className="space-y-0.5 pl-1">
-                    {items.map((m) => (
-                      <div
-                        key={m.budgetItemId}
-                        className="flex items-center gap-1 text-xs min-h-[24px]"
-                      >
-                        <StatusBadge status={m.status} />
-                        <span
-                          className="text-secondary truncate min-w-[80px] max-w-[120px]"
-                          title={m.ledgrName}
-                        >
-                          {m.ledgrName}
-                        </span>
-                        <span className="text-faint">&rarr;</span>
-
-                        {m.status === "linked" && (
-                          <>
-                            <span
-                              className="text-muted truncate flex-1"
-                              title={`${m.apiGroupName} > ${m.apiCategoryName}`}
-                            >
-                              {m.apiCategoryName}
-                            </span>
-                            <button
-                              onClick={() => {
-                                const next =
-                                  m.syncDirection === "pull"
-                                    ? "push"
-                                    : m.syncDirection === "push"
-                                      ? "both"
-                                      : "pull";
-                                setBudgetSyncDirMut.mutate({
-                                  budgetItemId: m.budgetItemId,
-                                  syncDirection: next,
-                                });
-                              }}
-                              disabled={setBudgetSyncDirMut.isPending}
-                              className={`text-[9px] px-1 py-0.5 rounded whitespace-nowrap disabled:opacity-50 ${
-                                m.syncDirection === "push"
-                                  ? "bg-green-50 text-green-600 hover:bg-green-100"
-                                  : m.syncDirection === "both"
-                                    ? "bg-purple-50 text-purple-600 hover:bg-purple-100"
-                                    : "bg-blue-50 text-blue-600 hover:bg-blue-100"
-                              }`}
-                              title={`Sync: ${m.syncDirection ?? "pull"} (click to change)`}
-                            >
-                              {m.syncDirection === "push"
-                                ? "← push"
-                                : m.syncDirection === "both"
-                                  ? "⇄ both"
-                                  : "→ pull"}
-                            </button>
-                            {(m.nameDrifted || m.categoryDrifted) && (
-                              <span className="flex gap-0.5">
-                                {m.nameDrifted && (
-                                  <button
-                                    onClick={() =>
-                                      renameBudgetToApiMut.mutate({
-                                        budgetItemId: m.budgetItemId,
-                                      })
-                                    }
-                                    disabled={renameBudgetToApiMut.isPending}
-                                    className="text-[10px] px-1 py-0.5 bg-amber-50 text-amber-600 rounded hover:bg-amber-100 whitespace-nowrap disabled:opacity-50"
-                                    title={`Rename "${m.ledgrName}" → "${m.apiCategoryName}"`}
-                                  >
-                                    Name
-                                  </button>
-                                )}
-                                {m.categoryDrifted && m.apiGroupName && (
-                                  <button
-                                    onClick={() =>
-                                      moveBudgetToApiGroupMut.mutate({
-                                        budgetItemId: m.budgetItemId,
-                                        apiGroupName: m.apiGroupName!,
-                                      })
-                                    }
-                                    disabled={moveBudgetToApiGroupMut.isPending}
-                                    className="text-[10px] px-1 py-0.5 bg-purple-50 text-purple-600 rounded hover:bg-purple-100 whitespace-nowrap disabled:opacity-50"
-                                    title={`Move from "${m.ledgrCategory}" → "${m.apiGroupName}"`}
-                                  >
-                                    Group
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => {
-                                    if (m.nameDrifted)
-                                      renameBudgetApiNameMut.mutate({
-                                        budgetItemId: m.budgetItemId,
-                                      });
-                                  }}
-                                  disabled={renameBudgetApiNameMut.isPending}
-                                  className="text-[10px] px-1 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
-                                  title="Keep Ledgr names"
-                                >
-                                  Keep
-                                </button>
-                              </span>
-                            )}
-                            <button
-                              onClick={() =>
-                                unlinkBudgetMut.mutate({
-                                  budgetItemId: m.budgetItemId,
-                                })
-                              }
-                              disabled={unlinkBudgetMut.isPending}
-                              className="text-red-400 hover:text-red-600 text-[10px] whitespace-nowrap"
-                              title="Unlink"
-                            >
-                              &times;
-                            </button>
-                          </>
-                        )}
-
-                        {m.status === "suggested" && (
-                          <>
-                            <span
-                              className="text-yellow-700 truncate flex-1"
-                              title={`${m.apiGroupName} > ${m.apiCategoryName}`}
-                            >
-                              {m.apiCategoryName}
-                            </span>
-                            {expandedBudget && (
-                              <button
-                                onClick={() =>
-                                  applyBudgetLink(
-                                    m.budgetItemId,
-                                    m.apiCategoryId!,
-                                  )
-                                }
-                                disabled={linkBudgetMut.isPending}
-                                className="text-[10px] text-blue-500 hover:text-blue-700 whitespace-nowrap"
-                              >
-                                Link
-                              </button>
-                            )}
-                          </>
-                        )}
-
-                        {m.status === "unmatched" && expandedBudget && (
-                          <div className="flex-1">
-                            <ApiCategorySelect
-                              value={budgetOverrides[m.budgetItemId] ?? ""}
-                              options={allApiCats}
-                              onChange={(v) =>
-                                setBudgetOverrides((prev) => ({
-                                  ...prev,
-                                  [m.budgetItemId]: v,
-                                }))
-                              }
-                            />
-                          </div>
-                        )}
-
-                        {m.status === "unmatched" && !expandedBudget && (
-                          <span className="text-faint text-[10px] italic flex-1">
-                            unmapped
-                          </span>
-                        )}
-
-                        {m.apiBudgeted != null && (
-                          <span className="text-faint tabular-nums whitespace-nowrap text-[10px]">
-                            {formatCurrency(m.apiBudgeted)}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+            <div className="flex items-center gap-2 text-[9px] text-faint flex-wrap">
+              <span>Sync:</span>
+              <span className="text-blue-500">→ pull</span>
+              <span className="text-green-500">← push</span>
+              <span className="text-purple-500">⇄ both</span>
+              <span className="text-faint">|</span>
+              <span>Set all:</span>
+              {(["pull", "push", "both"] as const).map((dir) => (
+                <button
+                  key={dir}
+                  onClick={() => {
+                    const linked = budget.matches.filter(
+                      (m) => m.status === "linked" && m.syncDirection !== dir,
+                    );
+                    for (const m of linked) {
+                      setBudgetSyncDirMut.mutate({
+                        budgetItemId: m.budgetItemId,
+                        syncDirection: dir,
+                      });
+                    }
+                  }}
+                  disabled={setBudgetSyncDirMut.isPending}
+                  className={`px-1 py-0.5 rounded disabled:opacity-50 ${
+                    dir === "push"
+                      ? "text-green-500 hover:bg-green-50"
+                      : dir === "both"
+                        ? "text-purple-500 hover:bg-purple-50"
+                        : "text-blue-500 hover:bg-blue-50"
+                  }`}
+                >
+                  {dir}
+                </button>
               ))}
             </div>
-          )}
 
-          {/* Unmatched API categories — create new or link to existing Ledgr items */}
-          {budget.unmatchedApiCategories.length > 0 && (
-            <div className="border-t border-subtle pt-2 space-y-1">
-              <p className="text-[10px] font-medium text-muted">
-                API categories not in Ledgr (
-                {budget.unmatchedApiCategories.length})
-              </p>
-              <p className="text-[10px] text-faint">
-                Link to an existing Ledgr item, create a new one, or ignore.
-              </p>
-              <div className="space-y-1">
-                {budget.unmatchedApiCategories.map((c) => (
-                  <div key={c.id} className="space-y-0.5">
-                    <div className="flex items-center gap-1.5 text-xs">
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 whitespace-nowrap">
-                        API only
-                      </span>
-                      <span
-                        className="text-muted truncate flex-1"
-                        title={`${c.groupName} > ${c.name}`}
-                      >
-                        {c.groupName} &rsaquo; {c.name}
-                      </span>
-                      {c.budgeted !== 0 && (
-                        <span className="text-faint tabular-nums text-[10px] whitespace-nowrap">
-                          {formatCurrency(c.budgeted)}
-                        </span>
-                      )}
-                      <button
-                        onClick={() => createFromApi(c)}
-                        disabled={createItemMut.isPending}
-                        className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
-                      >
-                        + Create
-                      </button>
-                      <button
-                        onClick={() =>
-                          skipCategoryMut.mutate({ service, categoryId: c.id })
-                        }
-                        disabled={skipCategoryMut.isPending}
-                        className="text-[10px] px-1.5 py-0.5 bg-surface-sunken text-muted rounded hover:bg-surface-elevated whitespace-nowrap disabled:opacity-50"
-                      >
-                        Skip
-                      </button>
-                    </div>
-                    {/* Link to existing budget item or savings goal */}
-                    {(unlinkedLedgrItems.length > 0 ||
-                      (savings &&
-                        savings.matches.some(
-                          (m) => m.status === "unmatched",
-                        ))) && (
-                      <div className="flex items-center gap-1 pl-14">
-                        <select
-                          value={apiToExisting[c.id] ?? ""}
-                          onChange={(e) =>
-                            setApiToExisting((prev) => ({
-                              ...prev,
-                              [c.id]: e.target.value,
-                            }))
-                          }
-                          className="flex-1 px-1 py-0.5 text-[10px] border rounded bg-surface-primary"
+            {/* Apply all button */}
+            {totalActionable > 0 && (
+              <button
+                onClick={applyAllBudgetMatches}
+                disabled={linkBudgetMut.isPending}
+                className="w-full px-2 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                {linkBudgetMut.isPending
+                  ? "Linking..."
+                  : `Apply all suggested matches (${suggestedCount + overrideCount})`}
+              </button>
+            )}
+
+            {/* Grouped by category */}
+            {expandedBudget && (
+              <div className="space-y-2">
+                {budgetByCategory.map(([category, items]) => (
+                  <div key={category}>
+                    <p className="text-[10px] font-semibold text-muted uppercase tracking-wide mb-0.5">
+                      {category}
+                    </p>
+                    <div className="space-y-0.5 pl-1">
+                      {items.map((m) => (
+                        <div
+                          key={m.budgetItemId}
+                          className="flex items-center gap-1 text-xs min-h-[24px]"
                         >
-                          <option value="">Link to existing...</option>
-                          {unlinkedLedgrItems.length > 0 && (
-                            <optgroup label="Budget Items">
-                              {unlinkedLedgrItems.map((item) => (
-                                <option
-                                  key={`b:${item.budgetItemId}`}
-                                  value={`budget:${item.budgetItemId}`}
-                                >
-                                  {item.ledgrCategory} &rsaquo; {item.ledgrName}
-                                </option>
-                              ))}
-                            </optgroup>
-                          )}
-                          {savings &&
-                            savings.matches.filter(
-                              (m) => m.status === "unmatched",
-                            ).length > 0 && (
-                              <optgroup label="Sinking Funds">
-                                {savings.matches
-                                  .filter((m) => m.status === "unmatched")
-                                  .map((m) => (
-                                    <option
-                                      key={`s:${m.goalId}`}
-                                      value={`savings:${m.goalId}`}
-                                    >
-                                      {m.goalName}
-                                    </option>
-                                  ))}
-                              </optgroup>
-                            )}
-                        </select>
-                        {apiToExisting[c.id] && (
-                          <button
-                            onClick={() => {
-                              const val = apiToExisting[c.id]!;
-                              if (val.startsWith("budget:")) {
-                                linkApiToExisting(
-                                  c.id,
-                                  c.name,
-                                  Number(val.slice(7)),
-                                );
-                              } else if (val.startsWith("savings:")) {
-                                applySavingsLink(Number(val.slice(8)), c.id);
-                              }
-                            }}
-                            disabled={
-                              linkBudgetMut.isPending ||
-                              linkSavingsMut.isPending
-                            }
-                            className="text-[10px] px-1.5 py-0.5 bg-green-50 text-green-600 rounded hover:bg-green-100 whitespace-nowrap disabled:opacity-50"
+                          <StatusBadge status={m.status} />
+                          <span
+                            className="text-secondary truncate min-w-[80px] max-w-[120px]"
+                            title={m.ledgrName}
                           >
-                            Link
-                          </button>
-                        )}
-                      </div>
-                    )}
+                            {m.ledgrName}
+                          </span>
+                          <span className="text-faint">&rarr;</span>
+
+                          {m.status === "linked" && (
+                            <>
+                              <span
+                                className="text-muted truncate flex-1"
+                                title={`${m.apiGroupName} > ${m.apiCategoryName}`}
+                              >
+                                {m.apiCategoryName}
+                              </span>
+                              <button
+                                onClick={() => {
+                                  const next =
+                                    m.syncDirection === "pull"
+                                      ? "push"
+                                      : m.syncDirection === "push"
+                                        ? "both"
+                                        : "pull";
+                                  setBudgetSyncDirMut.mutate({
+                                    budgetItemId: m.budgetItemId,
+                                    syncDirection: next,
+                                  });
+                                }}
+                                disabled={setBudgetSyncDirMut.isPending}
+                                className={`text-[9px] px-1 py-0.5 rounded whitespace-nowrap disabled:opacity-50 ${
+                                  m.syncDirection === "push"
+                                    ? "bg-green-50 text-green-600 hover:bg-green-100"
+                                    : m.syncDirection === "both"
+                                      ? "bg-purple-50 text-purple-600 hover:bg-purple-100"
+                                      : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                                }`}
+                                title={`Sync: ${m.syncDirection ?? "pull"} (click to change)`}
+                              >
+                                {m.syncDirection === "push"
+                                  ? "← push"
+                                  : m.syncDirection === "both"
+                                    ? "⇄ both"
+                                    : "→ pull"}
+                              </button>
+                              {(m.nameDrifted || m.categoryDrifted) && (
+                                <span className="flex gap-0.5">
+                                  {m.nameDrifted && (
+                                    <button
+                                      onClick={() =>
+                                        renameBudgetToApiMut.mutate({
+                                          budgetItemId: m.budgetItemId,
+                                        })
+                                      }
+                                      disabled={renameBudgetToApiMut.isPending}
+                                      className="text-[10px] px-1 py-0.5 bg-amber-50 text-amber-600 rounded hover:bg-amber-100 whitespace-nowrap disabled:opacity-50"
+                                      title={`Rename "${m.ledgrName}" → "${m.apiCategoryName}"`}
+                                    >
+                                      Name
+                                    </button>
+                                  )}
+                                  {m.categoryDrifted && m.apiGroupName && (
+                                    <button
+                                      onClick={() =>
+                                        moveBudgetToApiGroupMut.mutate({
+                                          budgetItemId: m.budgetItemId,
+                                          apiGroupName: m.apiGroupName!,
+                                        })
+                                      }
+                                      disabled={
+                                        moveBudgetToApiGroupMut.isPending
+                                      }
+                                      className="text-[10px] px-1 py-0.5 bg-purple-50 text-purple-600 rounded hover:bg-purple-100 whitespace-nowrap disabled:opacity-50"
+                                      title={`Move from "${m.ledgrCategory}" → "${m.apiGroupName}"`}
+                                    >
+                                      Group
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => {
+                                      if (m.nameDrifted)
+                                        renameBudgetApiNameMut.mutate({
+                                          budgetItemId: m.budgetItemId,
+                                        });
+                                    }}
+                                    disabled={renameBudgetApiNameMut.isPending}
+                                    className="text-[10px] px-1 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
+                                    title="Keep Ledgr names"
+                                  >
+                                    Keep
+                                  </button>
+                                </span>
+                              )}
+                              <button
+                                onClick={() =>
+                                  unlinkBudgetMut.mutate({
+                                    budgetItemId: m.budgetItemId,
+                                  })
+                                }
+                                disabled={unlinkBudgetMut.isPending}
+                                className="text-red-400 hover:text-red-600 text-[10px] whitespace-nowrap"
+                                title="Unlink"
+                              >
+                                &times;
+                              </button>
+                            </>
+                          )}
+
+                          {m.status === "suggested" && (
+                            <>
+                              <span
+                                className="text-yellow-700 truncate flex-1"
+                                title={`${m.apiGroupName} > ${m.apiCategoryName}`}
+                              >
+                                {m.apiCategoryName}
+                              </span>
+                              {expandedBudget && (
+                                <button
+                                  onClick={() =>
+                                    applyBudgetLink(
+                                      m.budgetItemId,
+                                      m.apiCategoryId!,
+                                    )
+                                  }
+                                  disabled={linkBudgetMut.isPending}
+                                  className="text-[10px] text-blue-500 hover:text-blue-700 whitespace-nowrap"
+                                >
+                                  Link
+                                </button>
+                              )}
+                            </>
+                          )}
+
+                          {m.status === "unmatched" && expandedBudget && (
+                            <div className="flex-1">
+                              <ApiCategorySelect
+                                value={budgetOverrides[m.budgetItemId] ?? ""}
+                                options={allApiCats}
+                                onChange={(v) =>
+                                  setBudgetOverrides((prev) => ({
+                                    ...prev,
+                                    [m.budgetItemId]: v,
+                                  }))
+                                }
+                              />
+                            </div>
+                          )}
+
+                          {m.status === "unmatched" && !expandedBudget && (
+                            <span className="text-faint text-[10px] italic flex-1">
+                              unmapped
+                            </span>
+                          )}
+
+                          {m.apiBudgeted != null && (
+                            <span className="text-faint tabular-nums whitespace-nowrap text-[10px]">
+                              {formatCurrency(m.apiBudgeted)}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Skipped API categories */}
-          {budget.skippedApiCategories &&
-            budget.skippedApiCategories.length > 0 && (
-              <div className="border-t border-subtle pt-2">
-                <details className="group">
-                  <summary className="text-[10px] font-medium text-faint cursor-pointer hover:text-secondary">
-                    Skipped ({budget.skippedApiCategories.length})
-                  </summary>
-                  <div className="mt-1 space-y-1">
-                    {budget.skippedApiCategories.map((c) => (
-                      <div
-                        key={c.id}
-                        className="flex items-center gap-1.5 text-xs"
-                      >
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-sunken text-faint whitespace-nowrap">
-                          Skipped
+            {/* Unmatched API categories — create new or link to existing Ledgr items */}
+            {budget.unmatchedApiCategories.length > 0 && (
+              <div className="border-t border-subtle pt-2 space-y-1">
+                <p className="text-[10px] font-medium text-muted">
+                  API categories not in Ledgr (
+                  {budget.unmatchedApiCategories.length})
+                </p>
+                <p className="text-[10px] text-faint">
+                  Link to an existing Ledgr item, create a new one, or ignore.
+                </p>
+                <div className="space-y-1">
+                  {budget.unmatchedApiCategories.map((c) => (
+                    <div key={c.id} className="space-y-0.5">
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 whitespace-nowrap">
+                          API only
                         </span>
                         <span
-                          className="text-faint truncate flex-1"
+                          className="text-muted truncate flex-1"
                           title={`${c.groupName} > ${c.name}`}
                         >
                           {c.groupName} &rsaquo; {c.name}
                         </span>
+                        {c.budgeted !== 0 && (
+                          <span className="text-faint tabular-nums text-[10px] whitespace-nowrap">
+                            {formatCurrency(c.budgeted)}
+                          </span>
+                        )}
+                        <button
+                          onClick={() => createFromApi(c)}
+                          disabled={createItemMut.isPending}
+                          className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
+                        >
+                          + Create
+                        </button>
                         <button
                           onClick={() =>
-                            unskipCategoryMut.mutate({
+                            skipCategoryMut.mutate({
                               service,
                               categoryId: c.id,
                             })
                           }
-                          disabled={unskipCategoryMut.isPending}
-                          className="text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded hover:bg-amber-100 whitespace-nowrap disabled:opacity-50"
+                          disabled={skipCategoryMut.isPending}
+                          className="text-[10px] px-1.5 py-0.5 bg-surface-sunken text-muted rounded hover:bg-surface-elevated whitespace-nowrap disabled:opacity-50"
                         >
-                          Restore
+                          Skip
                         </button>
                       </div>
-                    ))}
-                  </div>
-                </details>
+                      {/* Link to existing budget item or savings goal */}
+                      {(unlinkedLedgrItems.length > 0 ||
+                        (savings &&
+                          savings.matches.some(
+                            (m) => m.status === "unmatched",
+                          ))) && (
+                        <div className="flex items-center gap-1 pl-14">
+                          <select
+                            value={apiToExisting[c.id] ?? ""}
+                            onChange={(e) =>
+                              setApiToExisting((prev) => ({
+                                ...prev,
+                                [c.id]: e.target.value,
+                              }))
+                            }
+                            className="flex-1 px-1 py-0.5 text-[10px] border rounded bg-surface-primary"
+                          >
+                            <option value="">Link to existing...</option>
+                            {unlinkedLedgrItems.length > 0 && (
+                              <optgroup label="Budget Items">
+                                {unlinkedLedgrItems.map((item) => (
+                                  <option
+                                    key={`b:${item.budgetItemId}`}
+                                    value={`budget:${item.budgetItemId}`}
+                                  >
+                                    {item.ledgrCategory} &rsaquo;{" "}
+                                    {item.ledgrName}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
+                            {savings &&
+                              savings.matches.filter(
+                                (m) => m.status === "unmatched",
+                              ).length > 0 && (
+                                <optgroup label="Sinking Funds">
+                                  {savings.matches
+                                    .filter((m) => m.status === "unmatched")
+                                    .map((m) => (
+                                      <option
+                                        key={`s:${m.goalId}`}
+                                        value={`savings:${m.goalId}`}
+                                      >
+                                        {m.goalName}
+                                      </option>
+                                    ))}
+                                </optgroup>
+                              )}
+                          </select>
+                          {apiToExisting[c.id] && (
+                            <button
+                              onClick={() => {
+                                const val = apiToExisting[c.id]!;
+                                if (val.startsWith("budget:")) {
+                                  linkApiToExisting(
+                                    c.id,
+                                    c.name,
+                                    Number(val.slice(7)),
+                                  );
+                                } else if (val.startsWith("savings:")) {
+                                  applySavingsLink(Number(val.slice(8)), c.id);
+                                }
+                              }}
+                              disabled={
+                                linkBudgetMut.isPending ||
+                                linkSavingsMut.isPending
+                              }
+                              className="text-[10px] px-1.5 py-0.5 bg-green-50 text-green-600 rounded hover:bg-green-100 whitespace-nowrap disabled:opacity-50"
+                            >
+                              Link
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
+
+            {/* Skipped API categories */}
+            {budget.skippedApiCategories &&
+              budget.skippedApiCategories.length > 0 && (
+                <div className="border-t border-subtle pt-2">
+                  <details className="group">
+                    <summary className="text-[10px] font-medium text-faint cursor-pointer hover:text-secondary">
+                      Skipped ({budget.skippedApiCategories.length})
+                    </summary>
+                    <div className="mt-1 space-y-1">
+                      {budget.skippedApiCategories.map((c) => (
+                        <div
+                          key={c.id}
+                          className="flex items-center gap-1.5 text-xs"
+                        >
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-sunken text-faint whitespace-nowrap">
+                            Skipped
+                          </span>
+                          <span
+                            className="text-faint truncate flex-1"
+                            title={`${c.groupName} > ${c.name}`}
+                          >
+                            {c.groupName} &rsaquo; {c.name}
+                          </span>
+                          <button
+                            onClick={() =>
+                              unskipCategoryMut.mutate({
+                                service,
+                                categoryId: c.id,
+                              })
+                            }
+                            disabled={unskipCategoryMut.isPending}
+                            className="text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded hover:bg-amber-100 whitespace-nowrap disabled:opacity-50"
+                          >
+                            Restore
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                </div>
+              )}
           </div>
         </details>
       )}
@@ -837,169 +875,172 @@ export function PreviewPanel({
             </span>
             <span className="flex gap-2 text-[10px]">
               <span className="text-green-400">{savings.summary.linked}</span>
-              <span className="text-yellow-400">{savings.summary.suggested}</span>
+              <span className="text-yellow-400">
+                {savings.summary.suggested}
+              </span>
               <span className="text-faint">{savings.summary.unmatched}</span>
             </span>
           </summary>
           <div className="px-3 pb-3 space-y-2">
+            {(savings.summary.suggested > 0 ||
+              Object.values(savingsOverrides).some(Boolean)) && (
+              <button
+                onClick={applyAllSavingsMatches}
+                disabled={linkSavingsMut.isPending}
+                className="w-full px-2 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                {linkSavingsMut.isPending
+                  ? "Linking..."
+                  : "Apply all suggested matches"}
+              </button>
+            )}
 
-          {(savings.summary.suggested > 0 ||
-            Object.values(savingsOverrides).some(Boolean)) && (
-            <button
-              onClick={applyAllSavingsMatches}
-              disabled={linkSavingsMut.isPending}
-              className="w-full px-2 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-            >
-              {linkSavingsMut.isPending
-                ? "Linking..."
-                : "Apply all suggested matches"}
-            </button>
-          )}
+            <div className="space-y-0.5">
+              {savings.matches.map((m) => (
+                <React.Fragment key={m.goalId}>
+                  <div className="flex items-center gap-1.5 text-xs min-h-[24px]">
+                    <StatusBadge status={m.status} />
+                    <span className="text-secondary truncate min-w-[80px] max-w-[120px]">
+                      {m.goalName}
+                    </span>
+                    <span className="text-faint">&rarr;</span>
 
-          <div className="space-y-0.5">
-            {savings.matches.map((m) => (
-              <React.Fragment key={m.goalId}>
-                <div className="flex items-center gap-1.5 text-xs min-h-[24px]">
-                  <StatusBadge status={m.status} />
-                  <span className="text-secondary truncate min-w-[80px] max-w-[120px]">
-                    {m.goalName}
-                  </span>
-                  <span className="text-faint">&rarr;</span>
-
-                  {m.status === "linked" && (
-                    <>
-                      <span className="text-muted truncate flex-1">
-                        {m.apiCategoryName}
-                      </span>
-                      <span
-                        className="text-[9px] px-1 py-0.5 rounded bg-purple-50 text-purple-600"
-                        title="Balance pulled from API, monthly contribution pushed to API"
-                      >
-                        ⇄ pull balance / push contribution
-                      </span>
-                      {m.nameDrifted && (
-                        <>
-                          <button
-                            onClick={() =>
-                              renameSavingsToApiMut.mutate({ goalId: m.goalId })
-                            }
-                            disabled={renameSavingsToApiMut.isPending}
-                            className="text-[10px] px-1 py-0.5 bg-amber-50 text-amber-600 rounded hover:bg-amber-100 whitespace-nowrap disabled:opacity-50"
-                            title={`Rename Ledgr "${m.goalName}" to "${m.apiCategoryName}"`}
-                          >
-                            Use API
-                          </button>
-                          <button
-                            onClick={() =>
-                              renameSavingsApiNameMut.mutate({
-                                goalId: m.goalId,
-                              })
-                            }
-                            disabled={renameSavingsApiNameMut.isPending}
-                            className="text-[10px] px-1 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
-                            title={`Keep Ledgr name "${m.goalName}"`}
-                          >
-                            Keep
-                          </button>
-                        </>
-                      )}
-                      <button
-                        onClick={() =>
-                          unlinkSavingsMut.mutate({ goalId: m.goalId })
-                        }
-                        disabled={unlinkSavingsMut.isPending}
-                        className="text-red-400 hover:text-red-600 text-[10px] whitespace-nowrap"
-                        title="Unlink"
-                      >
-                        &times;
-                      </button>
-                    </>
-                  )}
-
-                  {m.status === "suggested" && (
-                    <>
-                      <span className="text-yellow-700 truncate flex-1">
-                        {m.apiCategoryName}
-                      </span>
-                      {expandedSavings && (
+                    {m.status === "linked" && (
+                      <>
+                        <span className="text-muted truncate flex-1">
+                          {m.apiCategoryName}
+                        </span>
+                        <span
+                          className="text-[9px] px-1 py-0.5 rounded bg-purple-50 text-purple-600"
+                          title="Balance pulled from API, monthly contribution pushed to API"
+                        >
+                          ⇄ pull balance / push contribution
+                        </span>
+                        {m.nameDrifted && (
+                          <>
+                            <button
+                              onClick={() =>
+                                renameSavingsToApiMut.mutate({
+                                  goalId: m.goalId,
+                                })
+                              }
+                              disabled={renameSavingsToApiMut.isPending}
+                              className="text-[10px] px-1 py-0.5 bg-amber-50 text-amber-600 rounded hover:bg-amber-100 whitespace-nowrap disabled:opacity-50"
+                              title={`Rename Ledgr "${m.goalName}" to "${m.apiCategoryName}"`}
+                            >
+                              Use API
+                            </button>
+                            <button
+                              onClick={() =>
+                                renameSavingsApiNameMut.mutate({
+                                  goalId: m.goalId,
+                                })
+                              }
+                              disabled={renameSavingsApiNameMut.isPending}
+                              className="text-[10px] px-1 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
+                              title={`Keep Ledgr name "${m.goalName}"`}
+                            >
+                              Keep
+                            </button>
+                          </>
+                        )}
                         <button
                           onClick={() =>
-                            applySavingsLink(m.goalId, m.apiCategoryId!)
+                            unlinkSavingsMut.mutate({ goalId: m.goalId })
                           }
-                          disabled={linkSavingsMut.isPending}
-                          className="text-[10px] text-blue-500 hover:text-blue-700 whitespace-nowrap"
+                          disabled={unlinkSavingsMut.isPending}
+                          className="text-red-400 hover:text-red-600 text-[10px] whitespace-nowrap"
+                          title="Unlink"
                         >
-                          Link
+                          &times;
                         </button>
-                      )}
-                    </>
-                  )}
+                      </>
+                    )}
 
-                  {m.status === "unmatched" && expandedSavings && (
-                    <div className="flex-1">
-                      <ApiCategorySelect
-                        value={savingsOverrides[m.goalId] ?? ""}
-                        options={allApiCats}
-                        onChange={(v) =>
-                          setSavingsOverrides((prev) => ({
-                            ...prev,
-                            [m.goalId]: v,
-                          }))
-                        }
-                      />
-                    </div>
-                  )}
+                    {m.status === "suggested" && (
+                      <>
+                        <span className="text-yellow-700 truncate flex-1">
+                          {m.apiCategoryName}
+                        </span>
+                        {expandedSavings && (
+                          <button
+                            onClick={() =>
+                              applySavingsLink(m.goalId, m.apiCategoryId!)
+                            }
+                            disabled={linkSavingsMut.isPending}
+                            className="text-[10px] text-blue-500 hover:text-blue-700 whitespace-nowrap"
+                          >
+                            Link
+                          </button>
+                        )}
+                      </>
+                    )}
 
-                  {m.status === "unmatched" && !expandedSavings && (
-                    <span className="text-faint text-[10px] italic flex-1">
-                      unmapped
-                    </span>
-                  )}
+                    {m.status === "unmatched" && expandedSavings && (
+                      <div className="flex-1">
+                        <ApiCategorySelect
+                          value={savingsOverrides[m.goalId] ?? ""}
+                          options={allApiCats}
+                          onChange={(v) =>
+                            setSavingsOverrides((prev) => ({
+                              ...prev,
+                              [m.goalId]: v,
+                            }))
+                          }
+                        />
+                      </div>
+                    )}
 
-                  {m.apiBalance != null && (
-                    <span className="text-faint tabular-nums whitespace-nowrap text-[10px]">
-                      {formatCurrency(m.apiBalance)}
-                    </span>
-                  )}
-                </div>
-                {/* Reimbursement category link for e-fund goal */}
-                {m.isEmergencyFund && m.status === "linked" && (
-                  <div className="flex items-center gap-1.5 text-xs ml-4 min-h-[24px]">
-                    <span className="text-faint text-[10px]">
-                      ↳ Reimbursement category:
-                    </span>
-                    <div className="flex-1 max-w-[200px]">
-                      <ApiCategorySelect
-                        value={m.reimbursementApiCategoryId ?? ""}
-                        options={allApiCats}
-                        onChange={(v) =>
-                          linkReimbursementMut.mutate({
-                            goalId: m.goalId,
-                            apiCategoryId: v || null,
-                          })
-                        }
-                      />
-                    </div>
-                    {m.reimbursementApiCategoryId && (
-                      <button
-                        onClick={() =>
-                          linkReimbursementMut.mutate({
-                            goalId: m.goalId,
-                            apiCategoryId: null,
-                          })
-                        }
-                        disabled={linkReimbursementMut.isPending}
-                        className="text-red-400 hover:text-red-600 text-[10px]"
-                        title="Unlink reimbursement category"
-                      >
-                        &times;
-                      </button>
+                    {m.status === "unmatched" && !expandedSavings && (
+                      <span className="text-faint text-[10px] italic flex-1">
+                        unmapped
+                      </span>
+                    )}
+
+                    {m.apiBalance != null && (
+                      <span className="text-faint tabular-nums whitespace-nowrap text-[10px]">
+                        {formatCurrency(m.apiBalance)}
+                      </span>
                     )}
                   </div>
-                )}
-              </React.Fragment>
-            ))}
-          </div>
+                  {/* Reimbursement category link for e-fund goal */}
+                  {m.isEmergencyFund && m.status === "linked" && (
+                    <div className="flex items-center gap-1.5 text-xs ml-4 min-h-[24px]">
+                      <span className="text-faint text-[10px]">
+                        ↳ Reimbursement category:
+                      </span>
+                      <div className="flex-1 max-w-[200px]">
+                        <ApiCategorySelect
+                          value={m.reimbursementApiCategoryId ?? ""}
+                          options={allApiCats}
+                          onChange={(v) =>
+                            linkReimbursementMut.mutate({
+                              goalId: m.goalId,
+                              apiCategoryId: v || null,
+                            })
+                          }
+                        />
+                      </div>
+                      {m.reimbursementApiCategoryId && (
+                        <button
+                          onClick={() =>
+                            linkReimbursementMut.mutate({
+                              goalId: m.goalId,
+                              apiCategoryId: null,
+                            })
+                          }
+                          disabled={linkReimbursementMut.isPending}
+                          className="text-red-400 hover:text-red-600 text-[10px]"
+                          title="Unlink reimbursement category"
+                        >
+                          &times;
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
           </div>
         </details>
       )}
@@ -1018,8 +1059,7 @@ export function PreviewPanel({
             (ca) => !usedContribIds.has(ca.id),
           );
           const unlinkedBudgetItems = budget.matches.filter(
-            (m) =>
-              m.contributionAccountId == null && m.status !== "linked",
+            (m) => m.contributionAccountId == null && m.status !== "linked",
           );
 
           if (linkedItems.length === 0 && unlinkedContribs.length === 0)
@@ -1032,97 +1072,97 @@ export function PreviewPanel({
                   Contribution Account Linking
                 </span>
                 <span className="text-[10px] text-faint">
-                  {linkedItems.length} linked · {unlinkedContribs.length} unlinked
+                  {linkedItems.length} linked · {unlinkedContribs.length}{" "}
+                  unlinked
                 </span>
               </summary>
               <div className="px-3 pb-3 space-y-2">
+                {/* Already linked items */}
+                {linkedItems.length > 0 && (
+                  <div className="space-y-0.5">
+                    {linkedItems.map((m) => {
+                      const ca = contribAccounts.find(
+                        (c) => c.id === m.contributionAccountId,
+                      );
+                      return (
+                        <div
+                          key={m.budgetItemId}
+                          className="flex items-center gap-1.5 text-xs min-h-[24px]"
+                        >
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-700 whitespace-nowrap">
+                            Linked
+                          </span>
+                          <span
+                            className="text-secondary truncate min-w-[80px] max-w-[140px]"
+                            title={`${m.ledgrCategory} > ${m.ledgrName}`}
+                          >
+                            {m.ledgrName}
+                          </span>
+                          <span className="text-faint">&rarr;</span>
+                          <span className="text-green-700 truncate flex-1">
+                            {ca?.displayLabel ??
+                              `Account #${m.contributionAccountId}`}
+                          </span>
+                          <button
+                            onClick={() =>
+                              unlinkContribMut.mutate({
+                                budgetItemId: m.budgetItemId,
+                              })
+                            }
+                            disabled={unlinkContribMut.isPending}
+                            className="text-red-400 hover:text-red-600 text-[10px] whitespace-nowrap"
+                            title="Unlink contribution account"
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
 
-              {/* Already linked items */}
-              {linkedItems.length > 0 && (
-                <div className="space-y-0.5">
-                  {linkedItems.map((m) => {
-                    const ca = contribAccounts.find(
-                      (c) => c.id === m.contributionAccountId,
-                    );
-                    return (
+                {/* Unlinked contribution accounts — pick a budget item to link */}
+                {unlinkedContribs.length > 0 && (
+                  <div className="space-y-0.5 border-t border-subtle pt-2">
+                    <p className="text-[10px] text-faint mb-1">
+                      {unlinkedContribs.length} unlinked contribution{" "}
+                      {unlinkedContribs.length === 1 ? "account" : "accounts"}
+                    </p>
+                    {unlinkedContribs.map((ca) => (
                       <div
-                        key={m.budgetItemId}
+                        key={ca.id}
                         className="flex items-center gap-1.5 text-xs min-h-[24px]"
                       >
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-700 whitespace-nowrap">
-                          Linked
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-elevated text-faint whitespace-nowrap">
+                          Unlinked
                         </span>
-                        <span
-                          className="text-secondary truncate min-w-[80px] max-w-[140px]"
-                          title={`${m.ledgrCategory} > ${m.ledgrName}`}
-                        >
-                          {m.ledgrName}
+                        <span className="text-secondary truncate min-w-[80px] max-w-[140px]">
+                          {ca.displayLabel}
                         </span>
                         <span className="text-faint">&rarr;</span>
-                        <span className="text-green-700 truncate flex-1">
-                          {ca?.displayLabel ??
-                            `Account #${m.contributionAccountId}`}
-                        </span>
-                        <button
-                          onClick={() =>
-                            unlinkContribMut.mutate({
-                              budgetItemId: m.budgetItemId,
-                            })
-                          }
-                          disabled={unlinkContribMut.isPending}
-                          className="text-red-400 hover:text-red-600 text-[10px] whitespace-nowrap"
-                          title="Unlink contribution account"
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              linkContribMut.mutate({
+                                budgetItemId: Number(e.target.value),
+                                contributionAccountId: ca.id,
+                              });
+                            }
+                          }}
+                          className="flex-1 px-1 py-0.5 text-[11px] border border-strong rounded bg-surface-primary"
                         >
-                          &times;
-                        </button>
+                          <option value="">Select budget item...</option>
+                          {unlinkedBudgetItems.map((m) => (
+                            <option key={m.budgetItemId} value={m.budgetItemId}>
+                              {m.ledgrCategory} &rsaquo; {m.ledgrName}
+                            </option>
+                          ))}
+                        </select>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Unlinked contribution accounts — pick a budget item to link */}
-              {unlinkedContribs.length > 0 && (
-                <div className="space-y-0.5 border-t border-subtle pt-2">
-                  <p className="text-[10px] text-faint mb-1">
-                    {unlinkedContribs.length} unlinked contribution{" "}
-                    {unlinkedContribs.length === 1 ? "account" : "accounts"}
-                  </p>
-                  {unlinkedContribs.map((ca) => (
-                    <div
-                      key={ca.id}
-                      className="flex items-center gap-1.5 text-xs min-h-[24px]"
-                    >
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-elevated text-faint whitespace-nowrap">
-                        Unlinked
-                      </span>
-                      <span className="text-secondary truncate min-w-[80px] max-w-[140px]">
-                        {ca.displayLabel}
-                      </span>
-                      <span className="text-faint">&rarr;</span>
-                      <select
-                        value=""
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            linkContribMut.mutate({
-                              budgetItemId: Number(e.target.value),
-                              contributionAccountId: ca.id,
-                            });
-                          }
-                        }}
-                        className="flex-1 px-1 py-0.5 text-[11px] border border-strong rounded bg-surface-primary"
-                      >
-                        <option value="">Select budget item...</option>
-                        {unlinkedBudgetItems.map((m) => (
-                          <option key={m.budgetItemId} value={m.budgetItemId}>
-                            {m.ledgrCategory} &rsaquo; {m.ledgrName}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
               </div>
             </details>
           );
@@ -1156,407 +1196,411 @@ export function PreviewPanel({
             })()}
           </summary>
           <div className="px-3 pb-3 space-y-2">
-
-          {/* Existing mappings */}
-          {portfolio.existingMappings.length > 0 && (
-            <div className="space-y-0.5">
-              {portfolio.existingMappings.map((m, i) => {
-                const tracking = portfolio.trackingAccounts.find(
-                  (a) => a.id === m.remoteAccountId,
-                );
-                return (
-                  <div
-                    key={i}
-                    className="flex items-center gap-1.5 text-xs bg-green-50 rounded px-2 py-1"
-                  >
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 whitespace-nowrap">
-                      Mapped
-                    </span>
-                    <span className="text-secondary truncate flex-1">
-                      {(() => {
-                        const lid = m.localId ?? m.localName;
-                        const mm = lid.match(/^mortgage:(\d+):(\w+)$/);
-                        if (mm) {
-                          return (
-                            portfolio.mortgageAccounts?.find(
-                              (ma) =>
-                                ma.id === Number(mm[1]) && ma.type === mm[2],
-                            )?.label ?? m.localName
-                          );
-                        }
-                        return m.localName;
-                      })()}
-                    </span>
-                    <span className="text-faint">&rarr;</span>
-                    <span className="text-muted truncate flex-1">
-                      {tracking?.name ?? m.remoteAccountId.slice(0, 12) + "..."}
-                    </span>
-                    <button
-                      onClick={() => {
-                        const next =
-                          m.syncDirection === "pull"
-                            ? "push"
-                            : m.syncDirection === "push"
-                              ? "both"
-                              : "pull";
-                        const updated = portfolio.existingMappings.map(
-                          (em, j) =>
-                            j === i
-                              ? {
-                                  ...em,
-                                  syncDirection: next as
-                                    | "pull"
-                                    | "push"
-                                    | "both",
-                                }
-                              : em,
-                        );
-                        updateMappingsMut.mutate({
-                          service,
-                          mappings: updated,
-                        });
-                      }}
-                      disabled={updateMappingsMut.isPending}
-                      className={`text-[10px] px-1 py-0.5 rounded disabled:opacity-50 ${
-                        m.syncDirection === "push"
-                          ? "bg-green-100 text-green-600 hover:bg-green-200"
-                          : m.syncDirection === "pull"
-                            ? "bg-blue-100 text-blue-600 hover:bg-blue-200"
-                            : "bg-purple-100 text-purple-600 hover:bg-purple-200"
-                      }`}
-                      title={`Sync: ${m.syncDirection} (click to change)`}
+            {/* Existing mappings */}
+            {portfolio.existingMappings.length > 0 && (
+              <div className="space-y-0.5">
+                {portfolio.existingMappings.map((m, i) => {
+                  const tracking = portfolio.trackingAccounts.find(
+                    (a) => a.id === m.remoteAccountId,
+                  );
+                  return (
+                    <div
+                      key={i}
+                      className="flex items-center gap-1.5 text-xs bg-green-50 rounded px-2 py-1"
                     >
-                      {m.syncDirection === "push"
-                        ? "← push"
-                        : m.syncDirection === "both"
-                          ? "⇄ both"
-                          : "→ pull"}
-                    </button>
-                    {tracking && (
-                      <span className="text-faint tabular-nums text-[10px] whitespace-nowrap">
-                        {formatCurrency(tracking.balance)}
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 whitespace-nowrap">
+                        Mapped
                       </span>
-                    )}
-                    <button
-                      onClick={() => {
-                        const updated = portfolio.existingMappings.filter(
-                          (_, j) => j !== i,
+                      <span className="text-secondary truncate flex-1">
+                        {(() => {
+                          const lid = m.localId ?? m.localName;
+                          const mm = lid.match(/^mortgage:(\d+):(\w+)$/);
+                          if (mm) {
+                            return (
+                              portfolio.mortgageAccounts?.find(
+                                (ma) =>
+                                  ma.id === Number(mm[1]) && ma.type === mm[2],
+                              )?.label ?? m.localName
+                            );
+                          }
+                          return m.localName;
+                        })()}
+                      </span>
+                      <span className="text-faint">&rarr;</span>
+                      <span className="text-muted truncate flex-1">
+                        {tracking?.name ??
+                          m.remoteAccountId.slice(0, 12) + "..."}
+                      </span>
+                      <button
+                        onClick={() => {
+                          const next =
+                            m.syncDirection === "pull"
+                              ? "push"
+                              : m.syncDirection === "push"
+                                ? "both"
+                                : "pull";
+                          const updated = portfolio.existingMappings.map(
+                            (em, j) =>
+                              j === i
+                                ? {
+                                    ...em,
+                                    syncDirection: next as
+                                      | "pull"
+                                      | "push"
+                                      | "both",
+                                  }
+                                : em,
+                          );
+                          updateMappingsMut.mutate({
+                            service,
+                            mappings: updated,
+                          });
+                        }}
+                        disabled={updateMappingsMut.isPending}
+                        className={`text-[10px] px-1 py-0.5 rounded disabled:opacity-50 ${
+                          m.syncDirection === "push"
+                            ? "bg-green-100 text-green-600 hover:bg-green-200"
+                            : m.syncDirection === "pull"
+                              ? "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                              : "bg-purple-100 text-purple-600 hover:bg-purple-200"
+                        }`}
+                        title={`Sync: ${m.syncDirection} (click to change)`}
+                      >
+                        {m.syncDirection === "push"
+                          ? "← push"
+                          : m.syncDirection === "both"
+                            ? "⇄ both"
+                            : "→ pull"}
+                      </button>
+                      {tracking && (
+                        <span className="text-faint tabular-nums text-[10px] whitespace-nowrap">
+                          {formatCurrency(tracking.balance)}
+                        </span>
+                      )}
+                      <button
+                        onClick={() => {
+                          const updated = portfolio.existingMappings.filter(
+                            (_, j) => j !== i,
+                          );
+                          updateMappingsMut.mutate({
+                            service,
+                            mappings: updated,
+                          });
+                        }}
+                        className="text-red-400 hover:text-red-600 text-xs"
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Rollup summary: show which local accounts aggregate to each tracking account */}
+            {portfolio.existingMappings.length > 1 &&
+              (() => {
+                const rollups = new Map<string, string[]>();
+                for (const m of portfolio.existingMappings) {
+                  const list = rollups.get(m.remoteAccountId) ?? [];
+                  list.push(m.localName); // Display name for rollup
+                  rollups.set(m.remoteAccountId, list);
+                }
+                const multiRollups = Array.from(rollups.entries()).filter(
+                  ([, names]) => names.length > 1,
+                );
+                if (multiRollups.length === 0) return null;
+                return (
+                  <div className="text-[10px] text-faint space-y-0.5">
+                    {multiRollups.map(([remoteId, names]) => {
+                      const tracking = portfolio.trackingAccounts.find(
+                        (a) => a.id === remoteId,
+                      );
+                      const localTotal = names.reduce((sum, n) => {
+                        const acct = portfolio.localAccounts.find(
+                          (a) => a.label === n,
                         );
-                        updateMappingsMut.mutate({
-                          service,
-                          mappings: updated,
-                        });
-                      }}
-                      className="text-red-400 hover:text-red-600 text-xs"
-                    >
-                      &times;
-                    </button>
+                        return sum + (acct?.balance ?? 0);
+                      }, 0);
+                      return (
+                        <div key={remoteId}>
+                          {names.join(" + ")} = {formatCurrency(localTotal)}{" "}
+                          &rarr; {tracking?.name ?? "Unknown"}
+                        </div>
+                      );
+                    })}
                   </div>
                 );
-              })}
-            </div>
-          )}
+              })()}
 
-          {/* Rollup summary: show which local accounts aggregate to each tracking account */}
-          {portfolio.existingMappings.length > 1 &&
-            (() => {
-              const rollups = new Map<string, string[]>();
-              for (const m of portfolio.existingMappings) {
-                const list = rollups.get(m.remoteAccountId) ?? [];
-                list.push(m.localName); // Display name for rollup
-                rollups.set(m.remoteAccountId, list);
-              }
-              const multiRollups = Array.from(rollups.entries()).filter(
-                ([, names]) => names.length > 1,
+            {/* Unmapped tracking accounts */}
+            {(() => {
+              const mappedRemoteIds = new Set(
+                portfolio.existingMappings.map((m) => m.remoteAccountId),
               );
-              if (multiRollups.length === 0) return null;
+              const unmappedTracking = portfolio.trackingAccounts.filter(
+                (a) => !mappedRemoteIds.has(a.id),
+              );
+              if (unmappedTracking.length === 0) return null;
+
+              // Build available local options with { localId, localName } pairs
+              const allLocalOptions: { localId: string; localName: string }[] =
+                [
+                  ...portfolio.localAccounts
+                    .filter((a) => a.performanceAccountId != null)
+                    .map((a) => ({
+                      localId: `performance:${a.performanceAccountId}`,
+                      localName: a.label,
+                    })),
+                  ...(portfolio.assetAccounts ?? []).map((a) => ({
+                    localId: `asset:${a.id}`,
+                    localName: a.label,
+                  })),
+                  ...(portfolio.mortgageAccounts ?? []).map((m) => ({
+                    localId: `mortgage:${m.id}:${m.type}`,
+                    localName: m.label,
+                  })),
+                ];
+              const mappedLocalKeys = new Set(
+                portfolio.existingMappings.map(
+                  (m) => `${m.localId ?? ""}|${m.localName}`,
+                ),
+              );
+              const availableLocal = allLocalOptions.filter(
+                (l) => !mappedLocalKeys.has(`${l.localId}|${l.localName}`),
+              );
+
               return (
-                <div className="text-[10px] text-faint space-y-0.5">
-                  {multiRollups.map(([remoteId, names]) => {
-                    const tracking = portfolio.trackingAccounts.find(
-                      (a) => a.id === remoteId,
-                    );
-                    const localTotal = names.reduce((sum, n) => {
-                      const acct = portfolio.localAccounts.find(
-                        (a) => a.label === n,
-                      );
-                      return sum + (acct?.balance ?? 0);
-                    }, 0);
-                    return (
-                      <div key={remoteId}>
-                        {names.join(" + ")} = {formatCurrency(localTotal)}{" "}
-                        &rarr; {tracking?.name ?? "Unknown"}
+                <div className="border-t border-subtle pt-2 space-y-1">
+                  <p className="text-[10px] font-medium text-muted">
+                    Unmapped tracking accounts ({unmappedTracking.length})
+                  </p>
+                  <div className="space-y-1">
+                    {unmappedTracking.map((t) => (
+                      <div key={t.id} className="space-y-0.5">
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 whitespace-nowrap">
+                            API only
+                          </span>
+                          <span className="text-muted truncate flex-1">
+                            {t.name}
+                          </span>
+                          <span className="text-faint tabular-nums text-[10px] whitespace-nowrap">
+                            {formatCurrency(t.balance)}
+                          </span>
+                          <button
+                            onClick={() =>
+                              createAssetAndMapMut.mutate({
+                                service,
+                                assetName: t.name,
+                                balance: t.balance,
+                                remoteAccountId: t.id,
+                                syncDirection: "pull",
+                              })
+                            }
+                            disabled={createAssetAndMapMut.isPending}
+                            className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
+                          >
+                            + Create Asset
+                          </button>
+                        </div>
+                        {availableLocal.length > 0 && (
+                          <div className="flex items-center gap-1 pl-14">
+                            <select
+                              defaultValue=""
+                              onChange={(e) => {
+                                if (!e.target.value) return;
+                                const opt = availableLocal.find(
+                                  (o) => o.localId === e.target.value,
+                                );
+                                if (!opt) return;
+                                const updated = [
+                                  ...portfolio.existingMappings,
+                                  {
+                                    localId: opt.localId,
+                                    localName: opt.localName,
+                                    remoteAccountId: t.id,
+                                    syncDirection: "pull" as const,
+                                  },
+                                ];
+                                updateMappingsMut.mutate({
+                                  service,
+                                  mappings: updated,
+                                });
+                              }}
+                              className="flex-1 px-1 py-0.5 text-[10px] border rounded bg-surface-primary"
+                            >
+                              <option value="">Link to existing...</option>
+                              {availableLocal.map((l) => (
+                                <option key={l.localId} value={l.localId}>
+                                  {l.localName}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
               );
             })()}
 
-          {/* Unmapped tracking accounts */}
-          {(() => {
-            const mappedRemoteIds = new Set(
-              portfolio.existingMappings.map((m) => m.remoteAccountId),
-            );
-            const unmappedTracking = portfolio.trackingAccounts.filter(
-              (a) => !mappedRemoteIds.has(a.id),
-            );
-            if (unmappedTracking.length === 0) return null;
-
-            // Build available local options with { localId, localName } pairs
-            const allLocalOptions: { localId: string; localName: string }[] = [
-              ...portfolio.localAccounts
-                .filter((a) => a.performanceAccountId != null)
-                .map((a) => ({
-                  localId: `performance:${a.performanceAccountId}`,
-                  localName: a.label,
-                })),
-              ...(portfolio.assetAccounts ?? []).map((a) => ({
-                localId: `asset:${a.id}`,
-                localName: a.label,
-              })),
-              ...(portfolio.mortgageAccounts ?? []).map((m) => ({
-                localId: `mortgage:${m.id}:${m.type}`,
-                localName: m.label,
-              })),
-            ];
-            const mappedLocalKeys = new Set(
-              portfolio.existingMappings.map(
-                (m) => `${m.localId ?? ""}|${m.localName}`,
-              ),
-            );
-            const availableLocal = allLocalOptions.filter(
-              (l) => !mappedLocalKeys.has(`${l.localId}|${l.localName}`),
-            );
-
-            return (
-              <div className="border-t border-subtle pt-2 space-y-1">
-                <p className="text-[10px] font-medium text-muted">
-                  Unmapped tracking accounts ({unmappedTracking.length})
-                </p>
-                <div className="space-y-1">
-                  {unmappedTracking.map((t) => (
-                    <div key={t.id} className="space-y-0.5">
-                      <div className="flex items-center gap-1.5 text-xs">
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 whitespace-nowrap">
-                          API only
-                        </span>
-                        <span className="text-muted truncate flex-1">
-                          {t.name}
-                        </span>
-                        <span className="text-faint tabular-nums text-[10px] whitespace-nowrap">
-                          {formatCurrency(t.balance)}
-                        </span>
-                        <button
-                          onClick={() =>
-                            createAssetAndMapMut.mutate({
-                              service,
-                              assetName: t.name,
-                              balance: t.balance,
-                              remoteAccountId: t.id,
-                              syncDirection: "pull",
-                            })
-                          }
-                          disabled={createAssetAndMapMut.isPending}
-                          className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
-                        >
-                          + Create Asset
-                        </button>
-                      </div>
-                      {availableLocal.length > 0 && (
-                        <div className="flex items-center gap-1 pl-14">
-                          <select
-                            defaultValue=""
-                            onChange={(e) => {
-                              if (!e.target.value) return;
-                              const opt = availableLocal.find(
-                                (o) => o.localId === e.target.value,
-                              );
-                              if (!opt) return;
-                              const updated = [
-                                ...portfolio.existingMappings,
-                                {
-                                  localId: opt.localId,
-                                  localName: opt.localName,
-                                  remoteAccountId: t.id,
-                                  syncDirection: "pull" as const,
-                                },
-                              ];
-                              updateMappingsMut.mutate({
-                                service,
-                                mappings: updated,
-                              });
-                            }}
-                            className="flex-1 px-1 py-0.5 text-[10px] border rounded bg-surface-primary"
-                          >
-                            <option value="">Link to existing...</option>
-                            {availableLocal.map((l) => (
-                              <option key={l.localId} value={l.localId}>
-                                {l.localName}
+            {/* Add new mapping */}
+            <div className="flex gap-1 items-end flex-wrap border-t border-subtle pt-2">
+              <div className="flex-1 min-w-[100px]">
+                <label className="block text-[10px] font-medium text-muted mb-0.5">
+                  Ledgr Account
+                </label>
+                <select
+                  value={newPortfolioLocal}
+                  onChange={(e) => setNewPortfolioLocal(e.target.value)}
+                  className="w-full px-1 py-1 text-[11px] border border-strong rounded bg-surface-primary"
+                >
+                  <option value="">Select...</option>
+                  {(() => {
+                    // Build set of mapped identities using "localId|localName" composite
+                    // so two accounts sharing the same performanceAccountId (e.g. two IRAs
+                    // at the same institution owned by different people) are distinguished.
+                    const mappedKeys = new Set(
+                      portfolio.existingMappings.map(
+                        (m) => `${m.localId ?? ""}|${m.localName}`,
+                      ),
+                    );
+                    const unmappedPortfolio = portfolio.localAccounts.filter(
+                      (a) =>
+                        a.performanceAccountId != null &&
+                        !mappedKeys.has(
+                          `performance:${a.performanceAccountId}|${a.label}`,
+                        ),
+                    );
+                    const unmappedAssets = (
+                      portfolio.assetAccounts ?? []
+                    ).filter(
+                      (a) => !mappedKeys.has(`asset:${a.id}|${a.label}`),
+                    );
+                    const unmappedMortgages = (
+                      portfolio.mortgageAccounts ?? []
+                    ).filter(
+                      (m) =>
+                        !mappedKeys.has(
+                          `mortgage:${m.id}:${m.type}|${m.label}`,
+                        ),
+                    );
+                    return (
+                      <>
+                        {unmappedPortfolio.length > 0 && (
+                          <optgroup label="Portfolio Accounts">
+                            {unmappedPortfolio.map((a) => (
+                              <option
+                                key={`p:${a.performanceAccountId}`}
+                                value={`performance:${a.performanceAccountId}|${a.label}`}
+                              >
+                                {a.label} ({formatCurrency(a.balance)})
                               </option>
                             ))}
-                          </select>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                          </optgroup>
+                        )}
+                        {unmappedAssets.length > 0 && (
+                          <optgroup label="Assets / Liabilities">
+                            {unmappedAssets.map((a) => (
+                              <option
+                                key={`a:${a.id}`}
+                                value={`asset:${a.id}|${a.label}`}
+                              >
+                                {a.label} ({formatCurrency(a.balance)})
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        {unmappedMortgages.length > 0 && (
+                          <optgroup label="Mortgage Properties">
+                            {unmappedMortgages.map((m) => (
+                              <option
+                                key={`m:${m.id}:${m.type}`}
+                                value={`mortgage:${m.id}:${m.type}|${m.label}`}
+                              >
+                                {m.label} ({formatCurrency(m.value)})
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                      </>
+                    );
+                  })()}
+                </select>
               </div>
-            );
-          })()}
-
-          {/* Add new mapping */}
-          <div className="flex gap-1 items-end flex-wrap border-t border-subtle pt-2">
-            <div className="flex-1 min-w-[100px]">
-              <label className="block text-[10px] font-medium text-muted mb-0.5">
-                Ledgr Account
-              </label>
-              <select
-                value={newPortfolioLocal}
-                onChange={(e) => setNewPortfolioLocal(e.target.value)}
-                className="w-full px-1 py-1 text-[11px] border border-strong rounded bg-surface-primary"
-              >
-                <option value="">Select...</option>
-                {(() => {
-                  // Build set of mapped identities using "localId|localName" composite
-                  // so two accounts sharing the same performanceAccountId (e.g. two IRAs
-                  // at the same institution owned by different people) are distinguished.
-                  const mappedKeys = new Set(
-                    portfolio.existingMappings.map(
-                      (m) => `${m.localId ?? ""}|${m.localName}`,
-                    ),
-                  );
-                  const unmappedPortfolio = portfolio.localAccounts.filter(
-                    (a) =>
-                      a.performanceAccountId != null &&
-                      !mappedKeys.has(
-                        `performance:${a.performanceAccountId}|${a.label}`,
-                      ),
-                  );
-                  const unmappedAssets = (portfolio.assetAccounts ?? []).filter(
-                    (a) =>
-                      !mappedKeys.has(`asset:${a.id}|${a.label}`),
-                  );
-                  const unmappedMortgages = (
-                    portfolio.mortgageAccounts ?? []
-                  ).filter(
-                    (m) =>
-                      !mappedKeys.has(`mortgage:${m.id}:${m.type}|${m.label}`),
-                  );
-                  return (
-                    <>
-                      {unmappedPortfolio.length > 0 && (
-                        <optgroup label="Portfolio Accounts">
-                          {unmappedPortfolio.map((a) => (
-                            <option
-                              key={`p:${a.performanceAccountId}`}
-                              value={`performance:${a.performanceAccountId}|${a.label}`}
-                            >
-                              {a.label} ({formatCurrency(a.balance)})
-                            </option>
-                          ))}
-                        </optgroup>
-                      )}
-                      {unmappedAssets.length > 0 && (
-                        <optgroup label="Assets / Liabilities">
-                          {unmappedAssets.map((a) => (
-                            <option
-                              key={`a:${a.id}`}
-                              value={`asset:${a.id}|${a.label}`}
-                            >
-                              {a.label} ({formatCurrency(a.balance)})
-                            </option>
-                          ))}
-                        </optgroup>
-                      )}
-                      {unmappedMortgages.length > 0 && (
-                        <optgroup label="Mortgage Properties">
-                          {unmappedMortgages.map((m) => (
-                            <option
-                              key={`m:${m.id}:${m.type}`}
-                              value={`mortgage:${m.id}:${m.type}|${m.label}`}
-                            >
-                              {m.label} ({formatCurrency(m.value)})
-                            </option>
-                          ))}
-                        </optgroup>
-                      )}
-                    </>
-                  );
-                })()}
-              </select>
-            </div>
-            <div className="flex-1 min-w-[100px]">
-              <label className="block text-[10px] font-medium text-muted mb-0.5">
-                Tracking Account
-              </label>
-              <select
-                value={newPortfolioRemote}
-                onChange={(e) => setNewPortfolioRemote(e.target.value)}
-                className="w-full px-1 py-1 text-[11px] border border-strong rounded bg-surface-primary"
-              >
-                <option value="">Select...</option>
-                {portfolio.trackingAccounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name} ({formatCurrency(a.balance)})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="w-16">
-              <label className="block text-[10px] font-medium text-muted mb-0.5">
-                Dir
-              </label>
-              <select
-                value={newPortfolioDirection}
-                onChange={(e) =>
-                  setNewPortfolioDirection(
-                    e.target.value as "push" | "pull" | "both",
-                  )
+              <div className="flex-1 min-w-[100px]">
+                <label className="block text-[10px] font-medium text-muted mb-0.5">
+                  Tracking Account
+                </label>
+                <select
+                  value={newPortfolioRemote}
+                  onChange={(e) => setNewPortfolioRemote(e.target.value)}
+                  className="w-full px-1 py-1 text-[11px] border border-strong rounded bg-surface-primary"
+                >
+                  <option value="">Select...</option>
+                  {portfolio.trackingAccounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name} ({formatCurrency(a.balance)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="w-16">
+                <label className="block text-[10px] font-medium text-muted mb-0.5">
+                  Dir
+                </label>
+                <select
+                  value={newPortfolioDirection}
+                  onChange={(e) =>
+                    setNewPortfolioDirection(
+                      e.target.value as "push" | "pull" | "both",
+                    )
+                  }
+                  className="w-full px-1 py-1 text-[11px] border border-strong rounded bg-surface-primary"
+                >
+                  <option value="push">Push</option>
+                  <option value="pull">Pull</option>
+                  <option value="both">Both</option>
+                </select>
+              </div>
+              <button
+                onClick={() => {
+                  if (!newPortfolioLocal || !newPortfolioRemote) return;
+                  // Value format: "localId|localName"
+                  const pipeIdx = newPortfolioLocal.indexOf("|");
+                  const localId =
+                    pipeIdx >= 0
+                      ? newPortfolioLocal.slice(0, pipeIdx)
+                      : newPortfolioLocal;
+                  const localName =
+                    pipeIdx >= 0
+                      ? newPortfolioLocal.slice(pipeIdx + 1)
+                      : newPortfolioLocal;
+                  const updated = [
+                    ...portfolio.existingMappings,
+                    {
+                      localId,
+                      localName,
+                      remoteAccountId: newPortfolioRemote,
+                      syncDirection: newPortfolioDirection,
+                    },
+                  ];
+                  updateMappingsMut.mutate({ service, mappings: updated });
+                  setNewPortfolioLocal("");
+                  setNewPortfolioRemote("");
+                }}
+                disabled={
+                  !newPortfolioLocal ||
+                  !newPortfolioRemote ||
+                  updateMappingsMut.isPending
                 }
-                className="w-full px-1 py-1 text-[11px] border border-strong rounded bg-surface-primary"
+                className="px-2 py-1 text-[11px] bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               >
-                <option value="push">Push</option>
-                <option value="pull">Pull</option>
-                <option value="both">Both</option>
-              </select>
+                Add
+              </button>
             </div>
-            <button
-              onClick={() => {
-                if (!newPortfolioLocal || !newPortfolioRemote) return;
-                // Value format: "localId|localName"
-                const pipeIdx = newPortfolioLocal.indexOf("|");
-                const localId =
-                  pipeIdx >= 0
-                    ? newPortfolioLocal.slice(0, pipeIdx)
-                    : newPortfolioLocal;
-                const localName =
-                  pipeIdx >= 0
-                    ? newPortfolioLocal.slice(pipeIdx + 1)
-                    : newPortfolioLocal;
-                const updated = [
-                  ...portfolio.existingMappings,
-                  {
-                    localId,
-                    localName,
-                    remoteAccountId: newPortfolioRemote,
-                    syncDirection: newPortfolioDirection,
-                  },
-                ];
-                updateMappingsMut.mutate({ service, mappings: updated });
-                setNewPortfolioLocal("");
-                setNewPortfolioRemote("");
-              }}
-              disabled={
-                !newPortfolioLocal ||
-                !newPortfolioRemote ||
-                updateMappingsMut.isPending
-              }
-              className="px-2 py-1 text-[11px] bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-            >
-              Add
-            </button>
-          </div>
           </div>
         </details>
       )}

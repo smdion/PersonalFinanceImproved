@@ -42,7 +42,10 @@ export function AddCategoryForm({ onCreateCategory }: AddCategoryFormProps) {
         <input
           type="text"
           value={name}
-          onChange={(e) => { setName(e.target.value); setValidationError(null); }}
+          onChange={(e) => {
+            setName(e.target.value);
+            setValidationError(null);
+          }}
           placeholder="Category name..."
           className={`border rounded px-2 py-1 text-xs ${validationError ? "border-red-400" : ""}`}
           autoFocus

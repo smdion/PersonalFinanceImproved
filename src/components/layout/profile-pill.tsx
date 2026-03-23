@@ -82,9 +82,7 @@ export function ProfilePill({
                   setOpen(false);
                 }}
                 className={`w-full text-left px-3 py-2 hover:bg-surface-sunken flex items-center gap-2 first:rounded-t-lg last:rounded-b-lg ${
-                  o.isActive
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-secondary"
+                  o.isActive ? "bg-blue-50 text-blue-700" : "text-secondary"
                 }`}
               >
                 <span className="truncate">{o.name}</span>

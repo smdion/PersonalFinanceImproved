@@ -370,7 +370,9 @@ export function BudgetCapacityBar({
           <div className="flex items-center gap-4">
             <span className="text-faint">
               Budget leftover:{" "}
-              <HelpTip text={`Based on regular monthly pay (${budgetNote ?? "2 paychecks/month for biweekly"}). Extra paycheck months are not included.`} />
+              <HelpTip
+                text={`Based on regular monthly pay (${budgetNote ?? "2 paychecks/month for biweekly"}). Extra paycheck months are not included.`}
+              />
               <span className="font-semibold text-primary">
                 {formatCurrency(maxMonthlyFunding)}
               </span>

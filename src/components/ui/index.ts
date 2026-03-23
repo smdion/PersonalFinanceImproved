@@ -18,4 +18,9 @@ export { Button } from "./button";
 export { Badge } from "./badge";
 export { DataTable } from "./data-table";
 export type { DataTableColumn } from "./data-table";
-export { Skeleton, SkeletonMetric, SkeletonTable, SkeletonChart } from "./skeleton";
+export {
+  Skeleton,
+  SkeletonMetric,
+  SkeletonTable,
+  SkeletonChart,
+} from "./skeleton";

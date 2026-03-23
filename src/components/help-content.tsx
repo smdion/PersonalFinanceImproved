@@ -66,7 +66,13 @@ function Kbd({ children }: { children: React.ReactNode }) {
   );
 }
 
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+function NavLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
   return (
     <Link href={href} className="text-blue-600 hover:text-blue-700 underline">
       {children}
@@ -83,13 +89,11 @@ export function HelpContent() {
       <div className="text-sm text-muted space-y-2 pb-2">
         <p>
           Ledgr is a self-hosted personal finance dashboard. It brings together
-          your income, budgets, investments, savings, and retirement
-          planning into one place so you can see your full financial picture and
-          run what-if scenarios without sharing data with third parties.
+          your income, budgets, investments, savings, and retirement planning
+          into one place so you can see your full financial picture and run
+          what-if scenarios without sharing data with third parties.
         </p>
-        <p>
-          Click any section below to learn how that part of the app works.
-        </p>
+        <p>Click any section below to learn how that part of the app works.</p>
       </div>
 
       {/* ── Getting started ── */}
@@ -126,8 +130,8 @@ export function HelpContent() {
         </ol>
         <p>
           Once these basics are in place, the Dashboard will populate with
-          meaningful cards. You can always refine things later &mdash; every page
-          works independently.
+          meaningful cards. You can always refine things later &mdash; every
+          page works independently.
         </p>
       </Section>
 
@@ -146,8 +150,8 @@ export function HelpContent() {
             icon-only mode. Click again to expand.
           </li>
           <li>
-            <strong>Mobile</strong> &mdash; On smaller screens, tap the hamburger
-            menu to open the sidebar as an overlay.
+            <strong>Mobile</strong> &mdash; On smaller screens, tap the
+            hamburger menu to open the sidebar as an overlay.
           </li>
           <li>
             <strong>Theme</strong> &mdash; Toggle dark/light mode from the
@@ -168,18 +172,48 @@ export function HelpContent() {
           area of the app:
         </p>
         <ul className="list-disc list-inside space-y-1 ml-2">
-          <li><strong>Net Worth</strong> &mdash; Current total net worth.</li>
-          <li><strong>Household Income</strong> &mdash; Combined monthly/annual income.</li>
-          <li><strong>Financial Checkup</strong> &mdash; Health score across key metrics.</li>
-          <li><strong>Savings Goals</strong> &mdash; Progress toward your sinking funds.</li>
-          <li><strong>Retirement Status</strong> &mdash; Projection summary.</li>
-          <li><strong>Contributions</strong> &mdash; 401(k), HSA, and IRA funding status.</li>
-          <li><strong>Fidelity &amp; Dollar Multipliers</strong> &mdash; Financial independence benchmarks.</li>
-          <li><strong>Living Costs</strong> &mdash; Monthly expense total.</li>
-          <li><strong>Mortgage Status</strong> &mdash; Remaining balance and progress.</li>
-          <li><strong>Savings Rate</strong> &mdash; Percentage of income saved.</li>
-          <li><strong>Budget Status</strong> &mdash; Spending versus target.</li>
-          <li><strong>Tax Summary</strong> &mdash; Effective tax rate breakdown.</li>
+          <li>
+            <strong>Net Worth</strong> &mdash; Current total net worth.
+          </li>
+          <li>
+            <strong>Household Income</strong> &mdash; Combined monthly/annual
+            income.
+          </li>
+          <li>
+            <strong>Financial Checkup</strong> &mdash; Health score across key
+            metrics.
+          </li>
+          <li>
+            <strong>Savings Goals</strong> &mdash; Progress toward your sinking
+            funds.
+          </li>
+          <li>
+            <strong>Retirement Status</strong> &mdash; Projection summary.
+          </li>
+          <li>
+            <strong>Contributions</strong> &mdash; 401(k), HSA, and IRA funding
+            status.
+          </li>
+          <li>
+            <strong>Fidelity &amp; Dollar Multipliers</strong> &mdash; Financial
+            independence benchmarks.
+          </li>
+          <li>
+            <strong>Living Costs</strong> &mdash; Monthly expense total.
+          </li>
+          <li>
+            <strong>Mortgage Status</strong> &mdash; Remaining balance and
+            progress.
+          </li>
+          <li>
+            <strong>Savings Rate</strong> &mdash; Percentage of income saved.
+          </li>
+          <li>
+            <strong>Budget Status</strong> &mdash; Spending versus target.
+          </li>
+          <li>
+            <strong>Tax Summary</strong> &mdash; Effective tax rate breakdown.
+          </li>
         </ul>
         <p>
           Each card links to its full page for deeper detail. If a card shows an
@@ -189,7 +223,9 @@ export function HelpContent() {
       </Section>
 
       {/* ━━ CASH FLOW ━━ */}
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">Cash Flow</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">
+        Cash Flow
+      </h3>
 
       {/* ── Paycheck ── */}
       <Section title="Paycheck" icon={Wallet}>
@@ -217,8 +253,8 @@ export function HelpContent() {
             other pre/post-tax deductions.
           </li>
           <li>
-            <strong>Multi-person</strong> &mdash; Compare paychecks
-            side-by-side for each household member.
+            <strong>Multi-person</strong> &mdash; Compare paychecks side-by-side
+            for each household member.
           </li>
           <li>
             <strong>Contribution profiles</strong> &mdash; Save named sets of
@@ -227,7 +263,8 @@ export function HelpContent() {
           </li>
           <li>
             <strong>Scenario mode</strong> &mdash; Toggle into what-if mode to
-            test salary or contribution changes without affecting your real data.
+            test salary or contribution changes without affecting your real
+            data.
           </li>
         </ul>
       </Section>
@@ -274,8 +311,8 @@ export function HelpContent() {
       {/* ── Expenses ── */}
       <Section title="Expenses" icon={Receipt}>
         <p>
-          The <NavLink href="/expenses">Expenses</NavLink> page visualizes
-          where your money goes.
+          The <NavLink href="/expenses">Expenses</NavLink> page visualizes where
+          your money goes.
         </p>
         <ul className="list-disc list-inside space-y-1 ml-2">
           <li>
@@ -297,7 +334,9 @@ export function HelpContent() {
       </Section>
 
       {/* ━━ WEALTH ━━ */}
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">Wealth</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">
+        Wealth
+      </h3>
 
       {/* ── Savings ── */}
       <Section title="Savings" icon={PiggyBank}>
@@ -356,8 +395,8 @@ export function HelpContent() {
         <ul className="list-disc list-inside space-y-1 ml-2">
           <li>
             <strong>Tax-location grouping</strong> &mdash; Accounts are grouped
-            by type: Pre-tax (401k, Traditional IRA), Tax-free (Roth),
-            HSA, and After-tax (brokerage).
+            by type: Pre-tax (401k, Traditional IRA), Tax-free (Roth), HSA, and
+            After-tax (brokerage).
           </li>
           <li>
             <strong>Account details</strong> &mdash; Each account shows the
@@ -432,7 +471,9 @@ export function HelpContent() {
       </Section>
 
       {/* ━━ NET WORTH ━━ */}
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">Net Worth</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">
+        Net Worth
+      </h3>
 
       {/* ── House ── */}
       <Section title="House" icon={Home}>
@@ -569,7 +610,9 @@ export function HelpContent() {
       </Section>
 
       {/* ━━ ANALYSIS ━━ */}
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">Analysis</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">
+        Analysis
+      </h3>
 
       {/* ── Retirement ── */}
       <Section title="Retirement" icon={Palmtree}>
@@ -585,7 +628,8 @@ export function HelpContent() {
             growth using randomized returns calibrated to historical data.{" "}
             <NavLink href="/retirement/accumulation-methodology">
               Read the methodology
-            </NavLink>.
+            </NavLink>
+            .
           </li>
           <li>
             <strong>Decumulation phase</strong> &mdash; The withdrawal years
@@ -593,7 +637,8 @@ export function HelpContent() {
             (e.g. 4% rule, guardrails) across thousands of scenarios.{" "}
             <NavLink href="/retirement/decumulation-methodology">
               Read the methodology
-            </NavLink>.
+            </NavLink>
+            .
           </li>
           <li>
             <strong>Success rate</strong> &mdash; The percentage of simulated
@@ -673,7 +718,9 @@ export function HelpContent() {
       </Section>
 
       {/* ━━ SYSTEM ━━ */}
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">System</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">
+        System
+      </h3>
 
       {/* ── Versions ── */}
       <Section title="Versions" icon={Save}>
@@ -720,9 +767,9 @@ export function HelpContent() {
           </li>
           <li>
             <strong>People</strong> &mdash; Add household members with birth
-            dates and W-4 filing status. The W-4 status drives paycheck withholding;
-            retirement projections have their own filing status override in the
-            Taxes in Retirement section.
+            dates and W-4 filing status. The W-4 status drives paycheck
+            withholding; retirement projections have their own filing status
+            override in the Taxes in Retirement section.
           </li>
           <li>
             <strong>IRS Limits</strong> &mdash; Review and adjust annual
@@ -761,7 +808,9 @@ export function HelpContent() {
       </Section>
 
       {/* ── Cross-cutting features ── */}
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">Features</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">
+        Features
+      </h3>
 
       <Section title="Scenarios & What-If Mode">
         <p>
@@ -801,32 +850,32 @@ export function HelpContent() {
         <ul className="list-disc list-inside space-y-1 ml-2">
           <li>
             <strong>Create profiles</strong> on the Paycheck page &mdash; name
-            them descriptively (e.g. &ldquo;Max Retirement&rdquo;,
-            &ldquo;House Down Payment&rdquo;).
+            them descriptively (e.g. &ldquo;Max Retirement&rdquo;, &ldquo;House
+            Down Payment&rdquo;).
           </li>
           <li>
-            <strong>Switch profiles</strong> to instantly recalculate
-            take-home pay, budget capacity, and savings projections.
+            <strong>Switch profiles</strong> to instantly recalculate take-home
+            pay, budget capacity, and savings projections.
           </li>
           <li>
-            Profiles are used across Budget, Brokerage, Savings, and
-            Retirement pages for consistent projections.
+            Profiles are used across Budget, Brokerage, Savings, and Retirement
+            pages for consistent projections.
           </li>
         </ul>
       </Section>
 
       <Section title="Budget API Integration (YNAB / Actual Budget)">
         <p>
-          Ledgr can optionally sync with{" "}
-          <strong>YNAB</strong> (You Need A Budget) or{" "}
-          <strong>Actual Budget</strong> to pull in real spending data.
+          Ledgr can optionally sync with <strong>YNAB</strong> (You Need A
+          Budget) or <strong>Actual Budget</strong> to pull in real spending
+          data.
         </p>
         <ul className="list-disc list-inside space-y-1 ml-2">
           <li>
             <strong>Setup</strong> &mdash; Go to{" "}
-            <NavLink href="/settings">Settings &gt; Integrations</NavLink>.
-            For YNAB, enter your personal access token. For Actual Budget,
-            enter your server URL and password.
+            <NavLink href="/settings">Settings &gt; Integrations</NavLink>. For
+            YNAB, enter your personal access token. For Actual Budget, enter
+            your server URL and password.
           </li>
           <li>
             <strong>What syncs</strong> &mdash; Budget categories, category
@@ -875,7 +924,9 @@ export function HelpContent() {
           </li>
           <li>
             <strong>Help tips</strong> &mdash; Look for small{" "}
-            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-surface-sunken border border-default text-[10px] font-bold text-faint">?</span>{" "}
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-surface-sunken border border-default text-[10px] font-bold text-faint">
+              ?
+            </span>{" "}
             icons throughout the app. Hover over them for contextual
             explanations.
           </li>
@@ -885,8 +936,8 @@ export function HelpContent() {
           </li>
           <li>
             <strong>Error isolation</strong> &mdash; If one card or section
-            fails to load, the rest of the page still works. Refresh the page
-            or check Settings if something looks wrong.
+            fails to load, the rest of the page still works. Refresh the page or
+            check Settings if something looks wrong.
           </li>
           <li>
             <strong>Snapshots before big changes</strong> &mdash; Visit{" "}

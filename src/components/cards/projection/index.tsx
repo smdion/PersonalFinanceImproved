@@ -11,9 +11,7 @@ import { ValidationContent } from "@/components/validation-content";
 import { taxTypeLabel, categoryChartHex } from "@/lib/utils/colors";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import type { EngineYearProjection } from "@/lib/calculators/types";
-import {
-  SimulationAssumptions,
-} from "@/components/cards/mc-simulation-assumptions";
+import { SimulationAssumptions } from "@/components/cards/mc-simulation-assumptions";
 import {
   ComposedChart,
   Bar,
@@ -32,7 +30,10 @@ import {
 import { DecumulationConfig } from "./decumulation-config";
 import { OverridesPanel } from "./overrides-panel";
 import { ProjectionTable } from "./projection-table";
-import { useProjectionState, type EngineContribRate } from "./use-projection-state";
+import {
+  useProjectionState,
+  type EngineContribRate,
+} from "./use-projection-state";
 
 // ---------------------------------------------------------------------------
 // Main Component
@@ -72,47 +73,82 @@ export function ProjectionCard(props: {
   // Destructure everything flat — identical variable names as before the hook extraction.
   // This ensures zero changes in the render section below.
   const {
-    withdrawalRoutingMode, setWithdrawalRoutingMode,
-    withdrawalOrder, setWithdrawalOrder,
-    withdrawalSplits, setWithdrawalSplits,
-    withdrawalTaxPref, setWithdrawalTaxPref,
-    projectionMode, setProjectionMode,
-    mcTrials, setMcTrials,
-    mcPreset, setMcPreset,
-    mcTaxMode, setMcTaxMode,
-    mcAssetClassOverrides, setMcAssetClassOverrides,
-    dollarMode, setDollarMode,
-    balanceView, setBalanceView,
-    contribView, setContribView,
-    showAllYears, setShowAllYears,
-    fanBandRange, setFanBandRange,
-    showMethodology, setShowMethodology,
-    showAccumMethodology, setShowAccumMethodology,
-    showDecumMethodology, setShowDecumMethodology,
-    showValidation, setShowValidation,
-    showAssumptions, setShowAssumptions,
-    showDecumConfig, setShowDecumConfig,
-    personFilter, setPersonFilter,
+    withdrawalRoutingMode,
+    setWithdrawalRoutingMode,
+    withdrawalOrder,
+    setWithdrawalOrder,
+    withdrawalSplits,
+    setWithdrawalSplits,
+    withdrawalTaxPref,
+    setWithdrawalTaxPref,
+    projectionMode,
+    setProjectionMode,
+    mcTrials,
+    setMcTrials,
+    mcPreset,
+    setMcPreset,
+    mcTaxMode,
+    setMcTaxMode,
+    mcAssetClassOverrides,
+    setMcAssetClassOverrides,
+    dollarMode,
+    setDollarMode,
+    balanceView,
+    setBalanceView,
+    contribView,
+    setContribView,
+    showAllYears,
+    setShowAllYears,
+    fanBandRange,
+    setFanBandRange,
+    showMethodology,
+    setShowMethodology,
+    showAccumMethodology,
+    setShowAccumMethodology,
+    showDecumMethodology,
+    setShowDecumMethodology,
+    showValidation,
+    setShowValidation,
+    showAssumptions,
+    setShowAssumptions,
+    showDecumConfig,
+    setShowDecumConfig,
+    personFilter,
+    setPersonFilter,
     isPersonFiltered,
-    updateGlidePath, updateInflationRisk, updateClampBounds,
-    updateAssetClassOverrides, updateInflationOverrides,
-    engineQuery, mcPrefetchQuery, mcQuery,
+    updateGlidePath,
+    updateInflationRisk,
+    updateClampBounds,
+    updateAssetClassOverrides,
+    updateInflationOverrides,
+    engineQuery,
+    mcPrefetchQuery,
+    mcQuery,
     personFilterName,
-    mcLoading, mcBandsByYear, mcIsPrefetch, mcChartPending,
+    mcLoading,
+    mcBandsByYear,
+    mcIsPrefetch,
+    mcChartPending,
     result,
     enginePeople,
     engineSettings,
-    getPersonYearTotals, personDepletionInfo,
-    visibleColumns, columnLabel,
-    baseYear, deflate,
+    getPersonYearTotals,
+    personDepletionInfo,
+    visibleColumns,
+    columnLabel,
+    baseYear,
+    deflate,
   } = s;
 
   // Props forwarded for render-section access
   const {
-    parentCategoryFilter, people,
-    accumulationBudgetProfileId, accumulationBudgetColumn,
+    parentCategoryFilter,
+    people,
+    accumulationBudgetProfileId,
+    accumulationBudgetColumn,
     accumulationExpenseOverride,
-    decumulationBudgetProfileId, decumulationBudgetColumn,
+    decumulationBudgetProfileId,
+    decumulationBudgetColumn,
     decumulationExpenseOverride,
   } = props;
 
@@ -1031,7 +1067,10 @@ export function ProjectionCard(props: {
                   const ACCT_SEGMENTS = getAccountSegments()
                     .map((seg) => ({
                       key: seg.key,
-                      hex: categoryChartHex(seg.category, seg.subKey === "roth"),
+                      hex: categoryChartHex(
+                        seg.category,
+                        seg.subKey === "roth",
+                      ),
                       label: columnLabel[seg.key] ?? seg.label,
                       get: (yr: EngineYearProjection) =>
                         getSegmentBalance(yr.balanceByAccount, seg),
@@ -1677,21 +1716,20 @@ export function ProjectionCard(props: {
             </div>
           )}
 
-
-              {/* ============================================================= */}
-              {/* UNIFIED TABLE (Deterministic view) */}
-              {/* ============================================================= */}
-              <ProjectionTable
-                state={s}
-                people={people}
-                parentCategoryFilter={parentCategoryFilter}
-                accumulationBudgetProfileId={accumulationBudgetProfileId}
-                accumulationBudgetColumn={accumulationBudgetColumn}
-                accumulationExpenseOverride={accumulationExpenseOverride}
-                decumulationBudgetProfileId={decumulationBudgetProfileId}
-                decumulationBudgetColumn={decumulationBudgetColumn}
-                decumulationExpenseOverride={decumulationExpenseOverride}
-              />
+          {/* ============================================================= */}
+          {/* UNIFIED TABLE (Deterministic view) */}
+          {/* ============================================================= */}
+          <ProjectionTable
+            state={s}
+            people={people}
+            parentCategoryFilter={parentCategoryFilter}
+            accumulationBudgetProfileId={accumulationBudgetProfileId}
+            accumulationBudgetColumn={accumulationBudgetColumn}
+            accumulationExpenseOverride={accumulationExpenseOverride}
+            decumulationBudgetProfileId={decumulationBudgetProfileId}
+            decumulationBudgetColumn={decumulationBudgetColumn}
+            decumulationExpenseOverride={decumulationExpenseOverride}
+          />
 
           {/* ================================================================= */}
           {/* DECUMULATION DEFAULTS */}
@@ -1711,11 +1749,13 @@ export function ProjectionCard(props: {
             setWithdrawalTaxPref={setWithdrawalTaxPref}
           />
 
-
           {/* ================================================================= */}
           {/* UNIFIED OVERRIDES */}
           {/* ================================================================= */}
-          <OverridesPanel state={s} accumulationExpenseOverride={accumulationExpenseOverride} />
+          <OverridesPanel
+            state={s}
+            accumulationExpenseOverride={accumulationExpenseOverride}
+          />
         </div>
       </div>
       <SlidePanel

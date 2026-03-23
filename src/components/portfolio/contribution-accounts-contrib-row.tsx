@@ -4,8 +4,6 @@
 
 import React, { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
-import { formatCurrency, accountDisplayName } from "@/lib/utils/format";
-import { taxTypeLabel } from "@/lib/utils/colors";
 import {
   CONTRIBUTION_METHOD_LABELS as METHOD_LABELS,
   TAX_TREATMENT_LABELS as TAX_LABELS,
@@ -15,7 +13,6 @@ import {
 } from "@/lib/config/display-labels";
 import {
   ACCOUNT_TYPE_CONFIG,
-  getAllCategories,
   getDefaultTaxTreatment,
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
@@ -313,7 +310,9 @@ export function ContributionRow({
             {cfg?.isOverflowTarget && (
               <div>
                 <div className="flex items-center gap-1 mb-0.5">
-                  <span className="text-[10px] text-muted">Overflow Priority</span>
+                  <span className="text-[10px] text-muted">
+                    Overflow Priority
+                  </span>
                   <HelpTip text="When contributions exceed IRS limits in tax-advantaged accounts (401k, IRA, HSA), the excess overflows to brokerage accounts. Lower number = filled first. Accounts with an Annual Target are filled up to that target before others. The lowest-priority account receives any remaining overflow." />
                 </div>
                 <InlineText

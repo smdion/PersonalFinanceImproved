@@ -403,7 +403,8 @@ export function estimateWithdrawalTaxCost(
           ? Math.min(1, balances.afterTaxBasis / balances.afterTax)
           : 0;
       if (totalBalance > 0) {
-        const estBrokWithdrawal = afterTaxNeed * (balances.afterTax / totalBalance);
+        const estBrokWithdrawal =
+          afterTaxNeed * (balances.afterTax / totalBalance);
         const estBrokGains = estBrokWithdrawal * (1 - basisRatio);
         const estBrokTax = filingStatus
           ? computeLtcgTax(estTaxableIncome, estBrokGains, filingStatus)

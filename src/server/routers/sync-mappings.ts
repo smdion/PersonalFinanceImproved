@@ -3,11 +3,7 @@
 import { z } from "zod/v4";
 import { eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  adminProcedure,
-} from "../trpc";
+import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import {
   getClientForService,

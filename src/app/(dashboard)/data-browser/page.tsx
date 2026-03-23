@@ -150,7 +150,10 @@ export default function DataBrowserPage() {
               {tables.length} tables &middot; {formatNumber(totalRows)} rows
             </p>
           </div>
-          <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
+          <div
+            className="overflow-y-auto"
+            style={{ maxHeight: "calc(100vh - 300px)" }}
+          >
             {tablesQuery.isLoading ? (
               <div className="p-3 text-sm text-muted">Loading...</div>
             ) : (
@@ -202,8 +205,8 @@ export default function DataBrowserPage() {
                     {selectedTable}
                   </h2>
                   <p className="text-xs text-muted">
-                    {formatNumber(totalCount)} rows &middot;{" "}
-                    {columns.length} columns
+                    {formatNumber(totalCount)} rows &middot; {columns.length}{" "}
+                    columns
                   </p>
                 </div>
                 <div className="flex items-center gap-2">

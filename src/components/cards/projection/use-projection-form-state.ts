@@ -8,7 +8,12 @@ import {
   getDefaultDecumulationOrder,
   ACCOUNT_TYPE_CONFIG,
 } from "@/lib/config/account-types";
-import type { AccumOverrideForm, DecumOverrideForm, AccumOverride, DecumOverride } from "./types";
+import type {
+  AccumOverrideForm,
+  DecumOverrideForm,
+  AccumOverride,
+  DecumOverride,
+} from "./types";
 import { emptyAccumForm, emptyDecumForm } from "./types";
 import { usePersistedToggle } from "@/lib/hooks/use-persisted-setting";
 

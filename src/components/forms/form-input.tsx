@@ -1,6 +1,9 @@
 import { forwardRef, type InputHTMLAttributes } from "react";
 
-type FormInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "className"> & {
+type FormInputProps = Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  "className"
+> & {
   /** Additional classes. */
   className?: string;
 };

@@ -211,8 +211,16 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
               contribution strategy.
             </p>
           )}
-          <FormError error={deleteMutation.error} prefix="Failed to delete profile" className="mt-2 px-2" />
-          <FormError error={renameMutation.error} prefix="Failed to rename profile" className="mt-2 px-2" />
+          <FormError
+            error={deleteMutation.error}
+            prefix="Failed to delete profile"
+            className="mt-2 px-2"
+          />
+          <FormError
+            error={renameMutation.error}
+            prefix="Failed to rename profile"
+            className="mt-2 px-2"
+          />
         </div>
 
         {/* Right: detail panel */}

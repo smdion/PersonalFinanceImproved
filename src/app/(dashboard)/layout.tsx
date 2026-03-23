@@ -1,4 +1,6 @@
+// eslint-disable-next-line no-restricted-imports -- Server Component, server-side only
 import { auth } from "@/server/auth";
+// eslint-disable-next-line no-restricted-imports -- Server Component, server-side only
 import type { Permission } from "@/server/auth";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -105,7 +107,9 @@ export default async function DashboardLayout({
       >
         Skip to content
       </a>
-      {demoProfile && <DemoBanner profileName={demoProfile.name} isDemoOnly={isDemoOnly} />}
+      {demoProfile && (
+        <DemoBanner profileName={demoProfile.name} isDemoOnly={isDemoOnly} />
+      )}
       <DashboardLayoutClient user={user} isDemoOnly={isDemoOnly}>
         <UserProvider
           user={{

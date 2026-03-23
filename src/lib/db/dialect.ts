@@ -6,7 +6,10 @@ export type Dialect = "postgresql" | "sqlite";
 
 export function getDialect(): Dialect {
   const url = process.env.DATABASE_URL;
-  if (url && (url.startsWith("postgres://") || url.startsWith("postgresql://"))) {
+  if (
+    url &&
+    (url.startsWith("postgres://") || url.startsWith("postgresql://"))
+  ) {
     return "postgresql";
   }
   return "sqlite";

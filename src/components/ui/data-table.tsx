@@ -167,11 +167,11 @@ export function DataTable<T extends { id: number | string }>({
                     <th
                       key={col.key}
                       className={`text-left ${cellPad} font-medium text-secondary ${
-                        col.sticky
-                          ? "sticky left-0 z-10 bg-surface-sunken"
-                          : ""
+                        col.sticky ? "sticky left-0 z-10 bg-surface-sunken" : ""
                       } ${isSortable ? "cursor-pointer select-none hover:text-primary" : ""} ${col.className ?? ""}`}
-                      onClick={isSortable ? () => handleSort(col.key) : undefined}
+                      onClick={
+                        isSortable ? () => handleSort(col.key) : undefined
+                      }
                     >
                       <span className="inline-flex items-center gap-1">
                         {col.label}

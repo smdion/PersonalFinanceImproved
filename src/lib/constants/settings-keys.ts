@@ -16,13 +16,20 @@ export const SK_BUDGET_NAME_COL_WIDTH = "budget_name_col_width";
 export const SK_ACTIVE_CONTRIB_PROFILE_ID = "active_contrib_profile_id";
 
 // ── Retirement ──────────────────────────────────────────────────────
-export const SK_RETIREMENT_ACC_BUDGET_PROFILE_ID = "retirement_acc_budget_profile_id";
-export const SK_RETIREMENT_ACC_BUDGET_COL = "retirement_accumulation_budget_column";
-export const SK_RETIREMENT_ACC_EXPENSE_OVERRIDE = "retirement_acc_expense_override";
-export const SK_RETIREMENT_DEC_BUDGET_PROFILE_ID = "retirement_dec_budget_profile_id";
-export const SK_RETIREMENT_DEC_BUDGET_COL = "retirement_decumulation_budget_column";
-export const SK_RETIREMENT_DEC_EXPENSE_OVERRIDE = "retirement_dec_expense_override";
-export const SK_RETIREMENT_COMPARISON_EXPANDED = "retirement_comparison_expanded";
+export const SK_RETIREMENT_ACC_BUDGET_PROFILE_ID =
+  "retirement_acc_budget_profile_id";
+export const SK_RETIREMENT_ACC_BUDGET_COL =
+  "retirement_accumulation_budget_column";
+export const SK_RETIREMENT_ACC_EXPENSE_OVERRIDE =
+  "retirement_acc_expense_override";
+export const SK_RETIREMENT_DEC_BUDGET_PROFILE_ID =
+  "retirement_dec_budget_profile_id";
+export const SK_RETIREMENT_DEC_BUDGET_COL =
+  "retirement_decumulation_budget_column";
+export const SK_RETIREMENT_DEC_EXPENSE_OVERRIDE =
+  "retirement_dec_expense_override";
+export const SK_RETIREMENT_COMPARISON_EXPANDED =
+  "retirement_comparison_expanded";
 
 // ── Savings ─────────────────────────────────────────────────────────
 export const SK_EFUND_BUDGET_COLUMN = "efund_budget_column";

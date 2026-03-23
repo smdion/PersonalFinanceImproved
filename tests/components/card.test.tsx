@@ -32,9 +32,9 @@ describe("Card", () => {
 
   it("applies custom className", () => {
     const { container } = render(<Card className="custom-class">X</Card>);
-    expect(container.firstElementChild?.classList.contains("custom-class")).toBe(
-      true,
-    );
+    expect(
+      container.firstElementChild?.classList.contains("custom-class"),
+    ).toBe(true);
   });
 
   // --- Linked variant ---
@@ -88,10 +88,7 @@ describe("Card", () => {
         <span>Content</span>
       </Card>,
     );
-    expect(screen.getByRole("button")).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
+    expect(screen.getByRole("button")).toHaveAttribute("aria-expanded", "true");
   });
 
   it("has correct aria-expanded when collapsed", () => {
@@ -148,7 +145,12 @@ describe("Card", () => {
 
   it("headerRight click does not propagate to collapsible toggle", () => {
     render(
-      <Card title="Header" collapsible defaultOpen={true} headerRight={<button>Edit</button>}>
+      <Card
+        title="Header"
+        collapsible
+        defaultOpen={true}
+        headerRight={<button>Edit</button>}
+      >
         <span>Body</span>
       </Card>,
     );
@@ -196,12 +198,7 @@ describe("Metric", () => {
   });
 
   it("renders negative trend with down arrow", () => {
-    render(
-      <Metric
-        value="$200"
-        trend={{ value: "3%", positive: false }}
-      />,
-    );
+    render(<Metric value="$200" trend={{ value: "3%", positive: false }} />);
     const trendEl = screen.getByText(/3%/);
     expect(trendEl.textContent).toContain("\u2193"); // down arrow
     expect(trendEl.className).toContain("text-red-600");

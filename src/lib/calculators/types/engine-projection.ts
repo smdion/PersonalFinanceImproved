@@ -1,6 +1,6 @@
 // Engine projection output types — year rows, phase results, and the full projection result.
 
-import type { AccountCategory, AccountBalance } from "@/lib/config/account-types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import type {
   TaxBuckets,
   AccountBalances,
@@ -8,7 +8,6 @@ import type {
   IndividualAccountInput,
   RetirementYearOverride,
   FilingStatusType,
-  LumpSum,
 } from "./shared";
 import type {
   AccumulationDefaults,
@@ -21,7 +20,6 @@ import type {
   ProfileSwitch,
   ResolvedAccumulationConfig,
   ResolvedDecumulationConfig,
-  RoutingMode,
 } from "./engine-config";
 
 // --- Engine Input ---

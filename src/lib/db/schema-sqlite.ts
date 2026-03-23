@@ -38,7 +38,9 @@ export const people = sqliteTable("people", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   dateOfBirth: text("date_of_birth").notNull(),
-  isPrimaryUser: integer("is_primary_user", { mode: "boolean" }).notNull().default(false),
+  isPrimaryUser: integer("is_primary_user", { mode: "boolean" })
+    .notNull()
+    .default(false),
 });
 
 export const jobs = sqliteTable(
@@ -56,24 +58,24 @@ export const jobs = sqliteTable(
     startDate: text("start_date").notNull(),
     anchorPayDate: text("anchor_pay_date"), // a known payday — defaults to startDate if null
     endDate: text("end_date"),
-    bonusPercent: text("bonus_percent")
-      .notNull()
-      .default("0"),
-    bonusMultiplier: text("bonus_multiplier")
-      .notNull()
-      .default("1.0"),
+    bonusPercent: text("bonus_percent").notNull().default("0"),
+    bonusMultiplier: text("bonus_multiplier").notNull().default("1.0"),
     monthsInBonusYear: integer("months_in_bonus_year").notNull().default(12),
     include401kInBonus: integer("include_401k_in_bonus", { mode: "boolean" })
       .notNull()
       .default(false),
-    includeBonusInContributions: integer("include_bonus_in_contributions", { mode: "boolean" })
+    includeBonusInContributions: integer("include_bonus_in_contributions", {
+      mode: "boolean",
+    })
       .notNull()
       .default(true),
     bonusOverride: text("bonus_override"),
     bonusMonth: integer("bonus_month"), // 1-12, month when bonus is typically paid (null = unknown/spread)
     bonusDayOfMonth: integer("bonus_day_of_month"), // 1-31, day of month when bonus is paid (null = first period of month)
     w4FilingStatus: text("w4_filing_status").$type<W4FilingStatus>().notNull(),
-    w4Box2cChecked: integer("w4_box2c_checked", { mode: "boolean" }).notNull().default(false),
+    w4Box2cChecked: integer("w4_box2c_checked", { mode: "boolean" })
+      .notNull()
+      .default(false),
     additionalFedWithholding: text("additional_fed_withholding")
       .notNull()
       .default("0"),
@@ -110,9 +112,13 @@ export const contributionAccounts = sqliteTable(
     label: text("label"),
     parentCategory: text("parent_category").notNull().default("Retirement"),
     taxTreatment: text("tax_treatment").$type<TaxTreatment>().notNull(),
-    contributionMethod: text("contribution_method").$type<ContributionMethod>().notNull(),
+    contributionMethod: text("contribution_method")
+      .$type<ContributionMethod>()
+      .notNull(),
     contributionValue: text("contribution_value").notNull(),
-    employerMatchType: text("employer_match_type").$type<EmployerMatchType>().notNull(),
+    employerMatchType: text("employer_match_type")
+      .$type<EmployerMatchType>()
+      .notNull(),
     employerMatchValue: text("employer_match_value"),
     employerMaxMatchPct: text("employer_max_match_pct"),
     employerMatchTaxTreatment: text("employer_match_tax_treatment")
@@ -120,9 +126,14 @@ export const contributionAccounts = sqliteTable(
       .notNull()
       .default("pre_tax"),
     hsaCoverageType: text("hsa_coverage_type").$type<HsaCoverageType>(),
-    autoMaximize: integer("auto_maximize", { mode: "boolean" }).notNull().default(false),
+    autoMaximize: integer("auto_maximize", { mode: "boolean" })
+      .notNull()
+      .default(false),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
-    ownership: text("ownership").$type<AccountOwnership>().notNull().default("individual"),
+    ownership: text("ownership")
+      .$type<AccountOwnership>()
+      .notNull()
+      .default("individual"),
     performanceAccountId: integer("performance_account_id").references(
       () => performanceAccounts.id,
       { onDelete: "set null" },
@@ -172,7 +183,9 @@ export const paycheckDeductions = sqliteTable(
     deductionName: text("deduction_name").notNull(),
     amountPerPeriod: text("amount_per_period").notNull(),
     isPretax: integer("is_pretax", { mode: "boolean" }).notNull(),
-    ficaExempt: integer("fica_exempt", { mode: "boolean" }).notNull().default(false),
+    ficaExempt: integer("fica_exempt", { mode: "boolean" })
+      .notNull()
+      .default(false),
   },
   (table) => [index("paycheck_deductions_job_id_idx").on(table.jobId)],
 );
@@ -183,13 +196,19 @@ export const budgetProfiles = sqliteTable(
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     name: text("name").notNull().unique(),
     description: text("description"),
-    columnLabels: text("column_labels", { mode: "json" }).$type<string[]>().notNull(),
+    columnLabels: text("column_labels", { mode: "json" })
+      .$type<string[]>()
+      .notNull(),
     columnMonths: text("column_months", { mode: "json" }).$type<number[]>(),
-    columnContributionProfileIds: text(
-      "column_contribution_profile_ids", { mode: "json" },
-    ).$type<(number | null)[]>(),
-    isActive: integer("is_active", { mode: "boolean" }).notNull().default(false),
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+    columnContributionProfileIds: text("column_contribution_profile_ids", {
+      mode: "json",
+    }).$type<(number | null)[]>(),
+    isActive: integer("is_active", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
   },
   (table) => [index("budget_profiles_is_active_idx").on(table.isActive)],
 );
@@ -207,13 +226,16 @@ export const budgetItems = sqliteTable(
     apiCategoryName: text("api_category_name"),
     apiCategoryId: text("api_category_id"),
     apiLastSyncedAt: integer("api_last_synced_at", { mode: "timestamp" }),
-    apiSyncDirection:
-      text("api_sync_direction").$type<ApiSyncDirection>().default("pull"),
+    apiSyncDirection: text("api_sync_direction")
+      .$type<ApiSyncDirection>()
+      .default("pull"),
     contributionAccountId: integer("contribution_account_id").references(
       () => contributionAccounts.id,
       { onDelete: "set null" },
     ),
-    isEssential: integer("is_essential", { mode: "boolean" }).notNull().default(true),
+    isEssential: integer("is_essential", { mode: "boolean" })
+      .notNull()
+      .default(true),
     sortOrder: integer("sort_order").notNull().default(0),
   },
   (table) => [
@@ -239,15 +261,17 @@ export const savingsGoals = sqliteTable(
     targetDate: text("target_date"),
     priority: integer("priority").notNull().default(0),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
-    isEmergencyFund: integer("is_emergency_fund", { mode: "boolean" }).notNull().default(false),
+    isEmergencyFund: integer("is_emergency_fund", { mode: "boolean" })
+      .notNull()
+      .default(false),
     apiCategoryId: text("api_category_id"),
     apiCategoryName: text("api_category_name"),
-    apiSyncEnabled: integer("api_sync_enabled", { mode: "boolean" }).notNull().default(false),
+    apiSyncEnabled: integer("api_sync_enabled", { mode: "boolean" })
+      .notNull()
+      .default(false),
     reimbursementApiCategoryId: text("reimbursement_api_category_id"),
     targetMode: text("target_mode").notNull().default("fixed"), // 'fixed' | 'ongoing'
-    monthlyContribution: text("monthly_contribution")
-      .notNull()
-      .default("0"),
+    monthlyContribution: text("monthly_contribution").notNull().default("0"),
     allocationPercent: text("allocation_percent"), // % of budget leftover (e.g., 25.5 = 25.5%)
   },
   (table) => [
@@ -290,7 +314,9 @@ export const savingsPlannedTransactions = sqliteTable(
     transactionDate: text("transaction_date").notNull(),
     amount: text("amount").notNull(), // positive = deposit, negative = withdrawal
     description: text("description").notNull(),
-    isRecurring: integer("is_recurring", { mode: "boolean" }).notNull().default(false),
+    isRecurring: integer("is_recurring", { mode: "boolean" })
+      .notNull()
+      .default(false),
     recurrenceMonths: integer("recurrence_months"), // if recurring, repeat every N months
     transferPairId: text("transfer_pair_id"), // non-null + shared between two rows = a transfer pair
   },
@@ -329,7 +355,9 @@ export const brokerageGoals = sqliteTable(
     priority: integer("priority").notNull().default(0),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
     notes: text("notes"),
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
   },
   (table) => [index("brokerage_goals_is_active_idx").on(table.isActive)],
 );
@@ -344,7 +372,9 @@ export const brokeragePlannedTransactions = sqliteTable(
     transactionDate: text("transaction_date").notNull(),
     amount: text("amount").notNull(), // positive = deposit, negative = withdrawal
     description: text("description").notNull(),
-    isRecurring: integer("is_recurring", { mode: "boolean" }).notNull().default(false),
+    isRecurring: integer("is_recurring", { mode: "boolean" })
+      .notNull()
+      .default(false),
     recurrenceMonths: integer("recurrence_months"), // if recurring, repeat every N months
   },
   (table) => [index("brokerage_planned_tx_goal_id_idx").on(table.goalId)],
@@ -362,9 +392,7 @@ export const selfLoans = sqliteTable(
     }),
     amount: text("amount").notNull(),
     loanDate: text("loan_date").notNull(),
-    repaidAmount: text("repaid_amount")
-      .notNull()
-      .default("0"),
+    repaidAmount: text("repaid_amount").notNull().default("0"),
     repaidDate: text("repaid_date"),
   },
   (table) => [
@@ -390,7 +418,9 @@ export const performanceAccounts = sqliteTable(
     parentCategory: text("parent_category").notNull(),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
     displayOrder: integer("display_order").notNull().default(0),
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
   },
   (table) => [
     uniqueIndex("performance_accounts_inst_type_idx").on(
@@ -418,7 +448,9 @@ export const portfolioSnapshots = sqliteTable(
   {
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     snapshotDate: text("snapshot_date").notNull().unique(),
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
     notes: text("notes"),
   },
   (table) => [index("portfolio_snapshots_date_idx").on(table.snapshotDate)],
@@ -476,18 +508,18 @@ export const annualPerformance = sqliteTable(
     employerContributions: text("employer_contributions")
       .notNull()
       .default("0"),
-    distributions: text("distributions")
-      .notNull()
-      .default("0"),
+    distributions: text("distributions").notNull().default("0"),
     fees: text("fees").notNull().default("0"),
-    rollovers: text("rollovers")
-      .notNull()
-      .default("0"),
+    rollovers: text("rollovers").notNull().default("0"),
     lifetimeGains: text("lifetime_gains").notNull(),
     lifetimeContributions: text("lifetime_contributions").notNull(),
     lifetimeMatch: text("lifetime_match").notNull(),
-    isCurrentYear: integer("is_current_year", { mode: "boolean" }).notNull().default(false),
-    isFinalized: integer("is_finalized", { mode: "boolean" }).notNull().default(false),
+    isCurrentYear: integer("is_current_year", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    isFinalized: integer("is_finalized", { mode: "boolean" })
+      .notNull()
+      .default(false),
   },
   (table) => [
     uniqueIndex("annual_performance_year_cat_idx").on(
@@ -520,15 +552,13 @@ export const accountPerformance = sqliteTable(
       .notNull()
       .default("0"),
     fees: text("fees").notNull().default("0"),
-    distributions: text("distributions")
-      .notNull()
-      .default("0"),
-    rollovers: text("rollovers")
-      .notNull()
-      .default("0"),
+    distributions: text("distributions").notNull().default("0"),
+    rollovers: text("rollovers").notNull().default("0"),
     parentCategory: text("parent_category").notNull(),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
-    isFinalized: integer("is_finalized", { mode: "boolean" }).notNull().default(false),
+    isFinalized: integer("is_finalized", { mode: "boolean" })
+      .notNull()
+      .default(false),
     performanceAccountId: integer("performance_account_id").references(
       () => performanceAccounts.id,
       { onDelete: "restrict" },
@@ -557,40 +587,20 @@ export const netWorthAnnual = sqliteTable("net_worth_annual", {
   taxesPaid: text("taxes_paid"),
   // Assets
   cash: text("cash").notNull().default("0"),
-  houseValue: text("house_value")
-    .notNull()
-    .default("0"),
-  retirementTotal: text("retirement_total")
-    .notNull()
-    .default("0"),
+  houseValue: text("house_value").notNull().default("0"),
+  retirementTotal: text("retirement_total").notNull().default("0"),
   hsa: text("hsa").notNull().default("0"),
-  ltBrokerage: text("lt_brokerage")
-    .notNull()
-    .default("0"),
+  ltBrokerage: text("lt_brokerage").notNull().default("0"),
   espp: text("espp").notNull().default("0"),
-  rBrokerage: text("r_brokerage")
-    .notNull()
-    .default("0"),
-  otherAssets: text("other_assets")
-    .notNull()
-    .default("0"),
+  rBrokerage: text("r_brokerage").notNull().default("0"),
+  otherAssets: text("other_assets").notNull().default("0"),
   // Liabilities
-  mortgageBalance: text("mortgage_balance")
-    .notNull()
-    .default("0"),
-  otherLiabilities: text("other_liabilities")
-    .notNull()
-    .default("0"),
+  mortgageBalance: text("mortgage_balance").notNull().default("0"),
+  otherLiabilities: text("other_liabilities").notNull().default("0"),
   // Breakdowns
-  taxFreeTotal: text("tax_free_total")
-    .notNull()
-    .default("0"),
-  taxDeferredTotal: text("tax_deferred_total")
-    .notNull()
-    .default("0"),
-  portfolioTotal: text("portfolio_total")
-    .notNull()
-    .default("0"),
+  taxFreeTotal: text("tax_free_total").notNull().default("0"),
+  taxDeferredTotal: text("tax_deferred_total").notNull().default("0"),
+  portfolioTotal: text("portfolio_total").notNull().default("0"),
   homeImprovementsCumulative: text("home_improvements_cumulative")
     .notNull()
     .default("0"),
@@ -640,17 +650,15 @@ export const mortgageLoans = sqliteTable(
   {
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     name: text("name").notNull(),
-    isActive: integer("is_active", { mode: "boolean" }).notNull().default(false),
+    isActive: integer("is_active", { mode: "boolean" })
+      .notNull()
+      .default(false),
     refinancedFromId: integer("refinanced_from_id"),
     paidOffDate: text("paid_off_date"),
     principalAndInterest: text("principal_and_interest").notNull(),
     pmi: text("pmi").notNull().default("0"),
-    insuranceAndTaxes: text("insurance_and_taxes")
-      .notNull()
-      .default("0"),
-    totalEscrow: text("total_escrow")
-      .notNull()
-      .default("0"),
+    insuranceAndTaxes: text("insurance_and_taxes").notNull().default("0"),
+    totalEscrow: text("total_escrow").notNull().default("0"),
     interestRate: text("interest_rate").notNull(),
     termYears: integer("term_years").notNull(),
     originalLoanAmount: text("original_loan_amount").notNull(),
@@ -675,9 +683,7 @@ export const mortgageWhatIfScenarios = sqliteTable(
     }),
     label: text("label").notNull(),
     extraMonthlyPrincipal: text("extra_monthly_principal").notNull(),
-    extraOneTimePayment: text("extra_one_time_payment")
-      .notNull()
-      .default("0"),
+    extraOneTimePayment: text("extra_one_time_payment").notNull().default("0"),
     refinanceRate: text("refinance_rate"),
     refinanceTerm: integer("refinance_term"),
     sortOrder: integer("sort_order").notNull().default(0),
@@ -696,7 +702,9 @@ export const mortgageExtraPayments = sqliteTable(
     startDate: text("start_date"),
     endDate: text("end_date"),
     amount: text("amount").notNull(),
-    isActual: integer("is_actual", { mode: "boolean" }).notNull().default(false),
+    isActual: integer("is_actual", { mode: "boolean" })
+      .notNull()
+      .default(false),
     notes: text("notes"),
   },
   (table) => [
@@ -740,16 +748,16 @@ export const retirementSettings = sqliteTable(
     postRetirementInflation: text("post_retirement_inflation"),
     salaryAnnualIncrease: text("salary_annual_increase").notNull(),
     salaryCap: text("salary_cap"),
-    raisesDuringRetirement: integer("raises_during_retirement", { mode: "boolean" })
+    raisesDuringRetirement: integer("raises_during_retirement", {
+      mode: "boolean",
+    })
       .notNull()
       .default(false),
-    withdrawalRate: text("withdrawal_rate")
+    withdrawalRate: text("withdrawal_rate").notNull().default("0.04"),
+    taxMultiplier: text("tax_multiplier").notNull().default("1.0"),
+    grossUpForTaxes: integer("gross_up_for_taxes", { mode: "boolean" })
       .notNull()
-      .default("0.04"),
-    taxMultiplier: text("tax_multiplier")
-      .notNull()
-      .default("1.0"),
-    grossUpForTaxes: integer("gross_up_for_taxes", { mode: "boolean" }).notNull().default(true),
+      .default(true),
     /** Target marginal rate for Roth optimization (e.g. 0.12 = stay in 12% bracket). Null = disabled. */
     rothBracketTarget: text("roth_bracket_target").default("0.12"),
     /** Monthly Social Security benefit estimate in today's dollars. */
@@ -759,15 +767,15 @@ export const retirementSettings = sqliteTable(
     /** Age at which Social Security income begins. */
     ssStartAge: integer("ss_start_age").notNull().default(67),
     /** Enable automatic Roth conversions during decumulation (fills target bracket). */
-    enableRothConversions: integer("enable_roth_conversions", { mode: "boolean" })
+    enableRothConversions: integer("enable_roth_conversions", {
+      mode: "boolean",
+    })
       .notNull()
       .default(false),
     /** Target marginal rate for Roth conversions (null = inherit from rothBracketTarget). */
     rothConversionTarget: text("roth_conversion_target"),
     /** Withdrawal/spending strategy (see withdrawal-strategies.ts registry). */
-    withdrawalStrategy: text("withdrawal_strategy")
-      .notNull()
-      .default("fixed"),
+    withdrawalStrategy: text("withdrawal_strategy").notNull().default("fixed"),
     /** G-K: upper guardrail — if currentRate < initialRate × this, increase spending (e.g. 0.80). */
     gkUpperGuardrail: text("gk_upper_guardrail").default("0.80"),
     /** G-K: lower guardrail — if currentRate > initialRate × this, decrease spending (e.g. 1.20). */
@@ -777,7 +785,9 @@ export const retirementSettings = sqliteTable(
     /** G-K: spending decrease percentage when lower guardrail triggers (e.g. 0.10 = 10%). */
     gkDecreasePct: text("gk_decrease_pct").default("0.10"),
     /** G-K: skip inflation adjustment in years following a portfolio loss. */
-    gkSkipInflationAfterLoss: integer("gk_skip_inflation_after_loss", { mode: "boolean" })
+    gkSkipInflationAfterLoss: integer("gk_skip_inflation_after_loss", {
+      mode: "boolean",
+    })
       .notNull()
       .default(true),
     /** Spending Decline: annual real decline rate (e.g. 0.02 = 2%). */
@@ -882,11 +892,15 @@ export const retirementScenarios = sqliteTable("retirement_scenarios", {
   distributionTaxRateBrokerage: text("distribution_tax_rate_brokerage")
     .notNull()
     .default("0.15"),
-  ltBrokerageEnabled: integer("lt_brokerage_enabled", { mode: "boolean" }).notNull().default(true),
+  ltBrokerageEnabled: integer("lt_brokerage_enabled", { mode: "boolean" })
+    .notNull()
+    .default(true),
   ltBrokerageAnnualContribution: text("lt_brokerage_annual_contribution")
     .notNull()
     .default("0"),
-  isSelected: integer("is_selected", { mode: "boolean" }).notNull().default(false),
+  isSelected: integer("is_selected", { mode: "boolean" })
+    .notNull()
+    .default(false),
   notes: text("notes"),
 });
 
@@ -909,7 +923,9 @@ export const taxBrackets = sqliteTable(
     taxYear: integer("tax_year").notNull(),
     filingStatus: text("filing_status").$type<W4FilingStatus>().notNull(),
     w4Checkbox: integer("w4_checkbox", { mode: "boolean" }).notNull(),
-    brackets: text("brackets", { mode: "json" }).$type<TaxBracketEntry[]>().notNull(),
+    brackets: text("brackets", { mode: "json" })
+      .$type<TaxBracketEntry[]>()
+      .notNull(),
   },
   (table) => [
     uniqueIndex("tax_brackets_year_status_checkbox_idx").on(
@@ -933,7 +949,9 @@ export const ltcgBrackets = sqliteTable(
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     taxYear: integer("tax_year").notNull(),
     filingStatus: text("filing_status").$type<W4FilingStatus>().notNull(),
-    brackets: text("brackets", { mode: "json" }).$type<LtcgBracketEntry[]>().notNull(),
+    brackets: text("brackets", { mode: "json" })
+      .$type<LtcgBracketEntry[]>()
+      .notNull(),
   },
   (table) => [
     uniqueIndex("ltcg_brackets_year_status_idx").on(
@@ -956,7 +974,9 @@ export const irmaaBrackets = sqliteTable(
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     taxYear: integer("tax_year").notNull(),
     filingStatus: text("filing_status").$type<W4FilingStatus>().notNull(),
-    brackets: text("brackets", { mode: "json" }).$type<IrmaaBracketEntry[]>().notNull(),
+    brackets: text("brackets", { mode: "json" })
+      .$type<IrmaaBracketEntry[]>()
+      .notNull(),
   },
   (table) => [
     uniqueIndex("irmaa_brackets_year_status_idx").on(
@@ -984,8 +1004,12 @@ export const apiConnections = sqliteTable("api_connections", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   service: text("service").notNull().unique(),
   config: text("config", { mode: "json" }).$type<ApiConfig>().notNull(),
-  accountMappings: text("account_mappings", { mode: "json" }).$type<AccountMapping[]>(),
-  skippedCategoryIds: text("skipped_category_ids", { mode: "json" }).$type<string[]>(),
+  accountMappings: text("account_mappings", { mode: "json" }).$type<
+    AccountMapping[]
+  >(),
+  skippedCategoryIds: text("skipped_category_ids", { mode: "json" }).$type<
+    string[]
+  >(),
   linkedProfileId: integer("linked_profile_id"),
   linkedColumnIndex: integer("linked_column_index"),
   serverKnowledge: integer("server_knowledge"),
@@ -1000,7 +1024,9 @@ export const budgetApiCache = sqliteTable(
     cacheKey: text("cache_key").notNull(),
     data: text("data", { mode: "json" }).$type<unknown>().notNull(),
     serverKnowledge: integer("server_knowledge"),
-    fetchedAt: integer("fetched_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+    fetchedAt: integer("fetched_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
   },
   (table) => [
     uniqueIndex("budget_api_cache_service_key_idx").on(
@@ -1061,9 +1087,15 @@ export type RelocationScenarioParams = {
 export const relocationScenarios = sqliteTable("relocation_scenarios", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
-  params: text("params", { mode: "json" }).$type<RelocationScenarioParams>().notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  params: text("params", { mode: "json" })
+    .$type<RelocationScenarioParams>()
+    .notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
 });
 
 // --- Scenario overrides (global what-if system) ---
@@ -1082,9 +1114,15 @@ export const scenarios = sqliteTable("scenarios", {
     .$type<ScenarioOverrides>()
     .notNull()
     .default(sql`'{}'`),
-  isBaseline: integer("is_baseline", { mode: "boolean" }).notNull().default(false),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  isBaseline: integer("is_baseline", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
 });
 
 // --- Monte Carlo: Asset class parameters and glide path ---
@@ -1149,25 +1187,13 @@ export const mcPresets = sqliteTable(
     key: text("key").notNull().unique(), // 'aggressive', 'default', 'conservative'
     label: text("label").notNull(),
     description: text("description").notNull(),
-    returnMultiplier: text("return_multiplier")
-      .notNull()
-      .default("1.000000"),
-    volMultiplier: text("vol_multiplier")
-      .notNull()
-      .default("1.000000"),
-    inflationMean: text("inflation_mean")
-      .notNull()
-      .default("0.025000"),
-    inflationStdDev: text("inflation_std_dev")
-      .notNull()
-      .default("0.012000"),
+    returnMultiplier: text("return_multiplier").notNull().default("1.000000"),
+    volMultiplier: text("vol_multiplier").notNull().default("1.000000"),
+    inflationMean: text("inflation_mean").notNull().default("0.025000"),
+    inflationStdDev: text("inflation_std_dev").notNull().default("0.012000"),
     defaultTrials: integer("default_trials").notNull().default(5000),
-    returnClampMin: text("return_clamp_min")
-      .notNull()
-      .default("-0.500000"),
-    returnClampMax: text("return_clamp_max")
-      .notNull()
-      .default("1.000000"),
+    returnClampMin: text("return_clamp_min").notNull().default("-0.500000"),
+    returnClampMax: text("return_clamp_max").notNull().default("1.000000"),
     sortOrder: integer("sort_order").notNull().default(0),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   },
@@ -1228,8 +1254,12 @@ export const contributionProfiles = sqliteTable("contribution_profiles", {
     .$type<ScenarioOverrides>()
     .notNull()
     .default(sql`'{}'`),
-  isDefault: integer("is_default", { mode: "boolean" }).notNull().default(false),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  isDefault: integer("is_default", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
 });
 
 // --- State versions (full-database versioning) ---
@@ -1245,7 +1275,9 @@ export const stateVersions = sqliteTable(
     tableCount: integer("table_count").notNull(),
     totalRows: integer("total_rows").notNull(),
     sizeEstimateBytes: integer("size_estimate_bytes"),
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
     createdBy: text("created_by").notNull(),
   },
   (table) => [index("state_versions_created_at_idx").on(table.createdAt)],
@@ -1283,7 +1315,9 @@ export const changeLog = sqliteTable(
     oldValue: text("old_value", { mode: "json" }),
     newValue: text("new_value", { mode: "json" }),
     changedBy: text("changed_by").notNull(),
-    changedAt: integer("changed_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+    changedAt: integer("changed_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
   },
   (table) => [
     index("change_log_table_record_idx").on(table.tableName, table.recordId),

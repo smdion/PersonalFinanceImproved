@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
+// eslint-disable-next-line no-restricted-imports -- API route, server-side only
 import { auth } from "@/server/auth";
 import { importBackup, type BackupData } from "@/lib/db/version-logic";
 import { log } from "@/lib/logger";
@@ -14,15 +15,16 @@ const MAX_JSON_DEPTH = 10; // guard against deeply nested JSONB structures
 const backupDataSchema = z.object({
   schemaVersion: z.string().min(1).max(50),
   exportedAt: z.string().min(1).max(50),
-  tables: z.record(z.string().max(100), z.array(z.record(z.string().max(200), z.unknown()))),
+  tables: z.record(
+    z.string().max(100),
+    z.array(z.record(z.string().max(200), z.unknown())),
+  ),
 });
 
 /** Recursively check that no string exceeds MAX_STRING_LENGTH and depth doesn't exceed MAX_JSON_DEPTH. */
-function validateImportDepthAndSize(
-  value: unknown,
-  depth = 0,
-): string | null {
-  if (depth > MAX_JSON_DEPTH) return `Nested structure exceeds maximum depth of ${MAX_JSON_DEPTH}`;
+function validateImportDepthAndSize(value: unknown, depth = 0): string | null {
+  if (depth > MAX_JSON_DEPTH)
+    return `Nested structure exceeds maximum depth of ${MAX_JSON_DEPTH}`;
   if (typeof value === "string" && value.length > MAX_STRING_LENGTH) {
     return `String value exceeds maximum length of ${MAX_STRING_LENGTH} characters`;
   }

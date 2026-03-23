@@ -30,40 +30,42 @@ const personInput = z.object({
   isPrimaryUser: z.boolean().default(false),
 });
 
-const jobInput = z.object({
-  personId: z.number().int(),
-  employerName: z.string().trim().min(1),
-  title: z.string().trim().nullable().optional(),
-  annualSalary: zDecimal,
-  payPeriod: z.enum(["weekly", "biweekly", "semimonthly", "monthly"]),
-  payWeek: z.enum(["even", "odd", "na"]),
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  anchorPayDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .nullable()
-    .optional(),
-  endDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .nullable()
-    .optional(),
-  bonusPercent: zDecimal.default("0"),
-  bonusMultiplier: zDecimal.default("1.0"),
-  monthsInBonusYear: z.number().int().default(12),
-  include401kInBonus: z.boolean().default(false),
-  includeBonusInContributions: z.boolean().default(false),
-  bonusOverride: zDecimal.nullable().optional(),
-  bonusMonth: z.number().int().min(1).max(12).nullable().optional(),
-  bonusDayOfMonth: z.number().int().min(1).max(31).nullable().optional(),
-  w4FilingStatus: z.enum(["MFJ", "Single", "HOH"]),
-  w4Box2cChecked: z.boolean().default(false),
-  additionalFedWithholding: zDecimal.default("0"),
-  budgetPeriodsPerMonth: zDecimal.nullable().optional(),
-}).refine(
-  (data) => !data.endDate || data.endDate >= data.startDate,
-  { message: "End date must be on or after start date", path: ["endDate"] },
-);
+const jobInput = z
+  .object({
+    personId: z.number().int(),
+    employerName: z.string().trim().min(1),
+    title: z.string().trim().nullable().optional(),
+    annualSalary: zDecimal,
+    payPeriod: z.enum(["weekly", "biweekly", "semimonthly", "monthly"]),
+    payWeek: z.enum(["even", "odd", "na"]),
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    anchorPayDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable()
+      .optional(),
+    endDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable()
+      .optional(),
+    bonusPercent: zDecimal.default("0"),
+    bonusMultiplier: zDecimal.default("1.0"),
+    monthsInBonusYear: z.number().int().default(12),
+    include401kInBonus: z.boolean().default(false),
+    includeBonusInContributions: z.boolean().default(false),
+    bonusOverride: zDecimal.nullable().optional(),
+    bonusMonth: z.number().int().min(1).max(12).nullable().optional(),
+    bonusDayOfMonth: z.number().int().min(1).max(31).nullable().optional(),
+    w4FilingStatus: z.enum(["MFJ", "Single", "HOH"]),
+    w4Box2cChecked: z.boolean().default(false),
+    additionalFedWithholding: zDecimal.default("0"),
+    budgetPeriodsPerMonth: zDecimal.nullable().optional(),
+  })
+  .refine((data) => !data.endDate || data.endDate >= data.startDate, {
+    message: "End date must be on or after start date",
+    path: ["endDate"],
+  });
 
 const salaryChangeInput = z.object({
   jobId: z.number().int(),

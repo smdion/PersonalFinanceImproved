@@ -66,37 +66,37 @@ All configuration is done through environment variables. Copy `.env.example` to 
 
 ### Required
 
-| Variable | Description | Default |
-|---|---|---|
-| `NEXTAUTH_URL` | Full URL where the app is hosted (e.g. `http://localhost:3000`) | *(none — must set)* |
-| `NEXTAUTH_SECRET` | Random secret for session encryption. Generate with `openssl rand -base64 32` | *(none — must set)* |
-| `AUTH_TRUST_HOST` | Trust the `X-Forwarded-Host` header (set `true` behind a reverse proxy) | `true` |
-| `CRON_SECRET` | Secret token for authenticating cron job API calls | *(none — must set)* |
+| Variable          | Description                                                                   | Default             |
+| ----------------- | ----------------------------------------------------------------------------- | ------------------- |
+| `NEXTAUTH_URL`    | Full URL where the app is hosted (e.g. `http://localhost:3000`)               | _(none — must set)_ |
+| `NEXTAUTH_SECRET` | Random secret for session encryption. Generate with `openssl rand -base64 32` | _(none — must set)_ |
+| `AUTH_TRUST_HOST` | Trust the `X-Forwarded-Host` header (set `true` behind a reverse proxy)       | `true`              |
+| `CRON_SECRET`     | Secret token for authenticating cron job API calls                            | _(none — must set)_ |
 
 ### Optional — Database
 
-| Variable | Description | Default |
-|---|---|---|
-| `DATABASE_URL` | PostgreSQL connection string (e.g. `postgresql://user:pass@host:5432/ledgr`). Omit for SQLite. | *(none — SQLite)* |
-| `SQLITE_PATH` | Path to SQLite database file (only used when `DATABASE_URL` is not set) | `data/ledgr.db` |
+| Variable       | Description                                                                                    | Default           |
+| -------------- | ---------------------------------------------------------------------------------------------- | ----------------- |
+| `DATABASE_URL` | PostgreSQL connection string (e.g. `postgresql://user:pass@host:5432/ledgr`). Omit for SQLite. | _(none — SQLite)_ |
+| `SQLITE_PATH`  | Path to SQLite database file (only used when `DATABASE_URL` is not set)                        | `data/ledgr.db`   |
 
 ### Optional — Authentication
 
-| Variable | Description |
-|---|---|
-| `ALLOW_DEV_MODE` | Set `true` to enable dev-mode credentials login (type any name to log in, no Authentik needed) |
-| `AUTH_AUTHENTIK_ISSUER` | Authentik OIDC issuer URL (e.g. `https://auth.example.com/application/o/ledgr`) |
-| `AUTH_AUTHENTIK_ID` | Authentik OIDC client ID |
-| `AUTH_AUTHENTIK_SECRET` | Authentik OIDC client secret |
-| `DEMO_ONLY` | Set `true` for demo-only mode — no login required, read-only with profile chooser |
+| Variable                | Description                                                                                    |
+| ----------------------- | ---------------------------------------------------------------------------------------------- |
+| `ALLOW_DEV_MODE`        | Set `true` to enable dev-mode credentials login (type any name to log in, no Authentik needed) |
+| `AUTH_AUTHENTIK_ISSUER` | Authentik OIDC issuer URL (e.g. `https://auth.example.com/application/o/ledgr`)                |
+| `AUTH_AUTHENTIK_ID`     | Authentik OIDC client ID                                                                       |
+| `AUTH_AUTHENTIK_SECRET` | Authentik OIDC client secret                                                                   |
+| `DEMO_ONLY`             | Set `true` for demo-only mode — no login required, read-only with profile chooser              |
 
 ### Optional — Budget API Integration
 
-| Variable | Description |
-|---|---|
-| `YNAB_ACCESS_TOKEN` | [YNAB](https://api.ynab.com/) personal access token for budget sync |
+| Variable            | Description                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------ |
+| `YNAB_ACCESS_TOKEN` | [YNAB](https://api.ynab.com/) personal access token for budget sync                  |
 | `ACTUAL_SERVER_URL` | [Actual Budget](https://actualbudget.org/) server URL (e.g. `http://localhost:5006`) |
-| `ACTUAL_PASSWORD` | Actual Budget server password |
+| `ACTUAL_PASSWORD`   | Actual Budget server password                                                        |
 
 ## Architecture
 
@@ -135,7 +135,7 @@ All configuration is done through environment variables. Copy `.env.example` to 
 
 - Node.js 20+
 - pnpm (via corepack: `corepack enable`)
-- PostgreSQL 15+ *(optional — SQLite is used by default)*
+- PostgreSQL 15+ _(optional — SQLite is used by default)_
 
 ### Setup
 
@@ -159,28 +159,28 @@ Open [http://localhost:3000](http://localhost:3000). On first launch you'll see 
 
 ### Commands
 
-| Command | Description |
-|---|---|
-| `pnpm dev` | Start development server |
-| `pnpm build` | Production build |
-| `pnpm start` | Start production server |
-| `pnpm test` | Run all tests |
-| `pnpm test:watch` | Run tests in watch mode |
-| `pnpm lint` | Lint and format check |
-| `pnpm format` | Auto-format with Prettier |
+| Command            | Description                                  |
+| ------------------ | -------------------------------------------- |
+| `pnpm dev`         | Start development server                     |
+| `pnpm build`       | Production build                             |
+| `pnpm start`       | Start production server                      |
+| `pnpm test`        | Run all tests                                |
+| `pnpm test:watch`  | Run tests in watch mode                      |
+| `pnpm lint`        | Lint and format check                        |
+| `pnpm format`      | Auto-format with Prettier                    |
 | `pnpm db:generate` | Generate a new migration from schema changes |
-| `pnpm db:migrate` | Run pending migrations |
-| `pnpm db:studio` | Open Drizzle Studio (visual DB browser) |
+| `pnpm db:migrate`  | Run pending migrations                       |
+| `pnpm db:studio`   | Open Drizzle Studio (visual DB browser)      |
 
 ### Authentication Modes
 
 Ledgr supports three authentication modes:
 
-| Mode | When | How |
-|---|---|---|
-| **Local Admin** | Always available | Email/password login against a `local_admins` table. The first admin account is created during the onboarding wizard. |
-| **Authentik OIDC** | `AUTH_AUTHENTIK_ISSUER` is set | SSO via Authentik with RBAC group mapping. Shows as primary login button alongside the local admin form. |
-| **Dev Mode** | `ALLOW_DEV_MODE=true` and no Authentik configured | Type any name to auto-login as admin. For local development only — never use in production. |
+| Mode               | When                                              | How                                                                                                                   |
+| ------------------ | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| **Local Admin**    | Always available                                  | Email/password login against a `local_admins` table. The first admin account is created during the onboarding wizard. |
+| **Authentik OIDC** | `AUTH_AUTHENTIK_ISSUER` is set                    | SSO via Authentik with RBAC group mapping. Shows as primary login button alongside the local admin form.              |
+| **Dev Mode**       | `ALLOW_DEV_MODE=true` and no Authentik configured | Type any name to auto-login as admin. For local development only — never use in production.                           |
 
 In production, use **Authentik OIDC** for SSO or **Local Admin** for standalone self-hosted deployments without an identity provider.
 

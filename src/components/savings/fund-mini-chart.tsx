@@ -198,7 +198,12 @@ export function FundMiniChart({
             strokeWidth={2}
             fill={`url(#grad-${fundColor.replace("#", "")})`}
             dot={(props) => {
-              const { cx, cy, payload, index } = props as { cx: number; cy: number; payload: ChartDataPoint; index: number };
+              const { cx, cy, payload, index } = props as {
+                cx: number;
+                cy: number;
+                payload: ChartDataPoint;
+                index: number;
+              };
               if (!payload?.events?.length) return <g key={index} />;
               const hasWithdrawal = payload.events.some(
                 (e: { amount: number }) => e.amount < 0,

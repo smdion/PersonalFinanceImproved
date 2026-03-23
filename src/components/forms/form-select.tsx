@@ -1,6 +1,9 @@
 import { forwardRef, type SelectHTMLAttributes } from "react";
 
-type FormSelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "className"> & {
+type FormSelectProps = Omit<
+  SelectHTMLAttributes<HTMLSelectElement>,
+  "className"
+> & {
   className?: string;
 };
 

@@ -44,7 +44,9 @@ test.describe("Budget page", () => {
     await page.waitForLoadState("networkidle");
 
     // Check that no unhandled error overlay is shown (Next.js dev error overlay)
-    const errorOverlay = page.locator("#__next-build-error, [data-nextjs-dialog]");
+    const errorOverlay = page.locator(
+      "#__next-build-error, [data-nextjs-dialog]",
+    );
     expect(await errorOverlay.count()).toBe(0);
 
     // Check page body does not contain common crash indicators

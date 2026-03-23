@@ -20,11 +20,7 @@ import {
 import type {
   PaycheckInput,
   TaxInput,
-  BudgetInput,
-  ContributionInput,
-  MortgageInput,
   NetWorthInput,
-  SavingsInput,
 } from "@/lib/calculators/types";
 
 const JAN_1 = new Date("2025-01-01");
@@ -899,7 +895,9 @@ describe("retirement projection edge cases", () => {
     const result = calculateProjection(
       makeBaseProjection({ inflationRate: 5.0 }),
     );
-    expect(result.warnings.some((w) => w.includes("Inflation rate clamped"))).toBe(true);
+    expect(
+      result.warnings.some((w) => w.includes("Inflation rate clamped")),
+    ).toBe(true);
   });
 
   it("clamps extreme negative salary growth and warns", () => {
@@ -1008,7 +1006,10 @@ describe("retirement projection edge cases", () => {
     // First year of mid-year start should have pro-rated contributions
     const midFirst = resultMid.projectionByYear[0]!;
     const janFirst = resultJan.projectionByYear[0]!;
-    if (midFirst.phase === "accumulation" && janFirst.phase === "accumulation") {
+    if (
+      midFirst.phase === "accumulation" &&
+      janFirst.phase === "accumulation"
+    ) {
       // Jul 1 → ~7/12 months remaining ≈ 0.583
       expect(midFirst.proRateFraction).toBeCloseTo(7 / 12, 2);
       // Mid-year has more months remaining → contributes more in year 1

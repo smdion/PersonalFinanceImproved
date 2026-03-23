@@ -4,7 +4,15 @@ import { AddItemForm } from "@/components/budget/add-item-form";
 
 // Mock FormError to render error messages simply
 vi.mock("@/components/ui/form-error", () => ({
-  FormError: ({ message, error, prefix }: { message?: string | null; error?: { message: string } | null; prefix?: string }) => {
+  FormError: ({
+    message,
+    error,
+    prefix,
+  }: {
+    message?: string | null;
+    error?: { message: string } | null;
+    prefix?: string;
+  }) => {
     const text = message ?? error?.message ?? null;
     if (!text) return null;
     const display = prefix ? `${prefix}: ${text}` : text;
@@ -118,18 +126,19 @@ describe("AddItemForm", () => {
 
   it("displays mutation error from parent", () => {
     render(
-      <AddItemForm
-        {...defaultProps}
-        error={{ message: "Duplicate name" }}
-      />,
+      <AddItemForm {...defaultProps} error={{ message: "Duplicate name" }} />,
     );
-    expect(screen.getByText("Failed to add item: Duplicate name")).toBeInTheDocument();
+    expect(
+      screen.getByText("Failed to add item: Duplicate name"),
+    ).toBeInTheDocument();
   });
 
   it("renders as standalone block with category label", () => {
     render(<AddItemForm {...defaultProps} standalone={true} />);
     expect(screen.getByText("Housing")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("First item name...")).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("First item name..."),
+    ).toBeInTheDocument();
   });
 
   it("renders as table row when not standalone", () => {

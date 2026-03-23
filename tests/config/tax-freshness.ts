@@ -110,7 +110,8 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
     name: "LTCG brackets (seed)",
     validThrough: 2026,
     source: "IRS Revenue Procedure 2025-32",
-    updateUrl: "https://www.irs.gov/newsroom/irs-provides-tax-inflation-adjustments",
+    updateUrl:
+      "https://www.irs.gov/newsroom/irs-provides-tax-inflation-adjustments",
     location: "seed-reference-data.sql → ltcg_brackets",
     changeFrequency: "annual",
   },
@@ -128,7 +129,8 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
     name: "LTCG bracket fallback (code)",
     validThrough: 2026,
     source: "IRS Revenue Procedure 2025-32",
-    updateUrl: "https://www.irs.gov/newsroom/irs-provides-tax-inflation-adjustments",
+    updateUrl:
+      "https://www.irs.gov/newsroom/irs-provides-tax-inflation-adjustments",
     location: "src/lib/config/tax-tables.ts → LTCG_BRACKETS",
     changeFrequency: "annual",
   },
@@ -144,7 +146,8 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
     name: "ACA Federal Poverty Level",
     validThrough: 2026,
     source: "HHS Federal Register (2026 projected)",
-    updateUrl: "https://aspe.hhs.gov/topics/poverty-economic-mobility/hhs-poverty-guidelines",
+    updateUrl:
+      "https://aspe.hhs.gov/topics/poverty-economic-mobility/hhs-poverty-guidelines",
     location: "src/lib/config/aca-tables.ts → FPL_BY_HOUSEHOLD",
     changeFrequency: "annual",
   },
@@ -161,7 +164,8 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
     name: "SS taxation thresholds",
     validThrough: 2026,
     source: "IRC §86 — unchanged since 1993, not indexed",
-    location: "src/lib/calculators/engine/tax-estimation.ts → SS_TAX_THRESHOLDS",
+    location:
+      "src/lib/calculators/engine/tax-estimation.ts → SS_TAX_THRESHOLDS",
     changeFrequency: "legislative-only",
   },
   {
@@ -182,7 +186,8 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
   {
     name: "FICA rates (SS 6.2%, Medicare 1.45%, surtax 0.9%)",
     validThrough: 2026,
-    source: "IRC §3101 — SS rate unchanged since 1990, Medicare surtax since 2013",
+    source:
+      "IRC §3101 — SS rate unchanged since 1990, Medicare surtax since 2013",
     location: "seed-reference-data.sql → contribution_limits (fica_*)",
     changeFrequency: "legislative-only",
   },

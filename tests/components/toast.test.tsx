@@ -5,7 +5,11 @@ import { render, screen, fireEvent } from "@testing-library/react";
 // but we need to control the toast store. We mock the hook to inject toasts.
 const mockDismiss = vi.fn();
 
-let mockToasts: Array<{ id: string; message: string; variant: "success" | "error" | "info" }> = [];
+let mockToasts: Array<{
+  id: string;
+  message: string;
+  variant: "success" | "error" | "info";
+}> = [];
 
 vi.mock("@/lib/hooks/use-toast", () => ({
   useToasts: () => ({

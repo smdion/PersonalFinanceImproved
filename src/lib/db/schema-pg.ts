@@ -126,12 +126,16 @@ export const contributionAccounts = pgTable(
     label: text("label"),
     parentCategory: text("parent_category").notNull().default("Retirement"),
     taxTreatment: text("tax_treatment").$type<TaxTreatment>().notNull(),
-    contributionMethod: text("contribution_method").$type<ContributionMethod>().notNull(),
+    contributionMethod: text("contribution_method")
+      .$type<ContributionMethod>()
+      .notNull(),
     contributionValue: decimal("contribution_value", {
       precision: 12,
       scale: 2,
     }).notNull(),
-    employerMatchType: text("employer_match_type").$type<EmployerMatchType>().notNull(),
+    employerMatchType: text("employer_match_type")
+      .$type<EmployerMatchType>()
+      .notNull(),
     employerMatchValue: decimal("employer_match_value", {
       precision: 12,
       scale: 2,
@@ -147,7 +151,10 @@ export const contributionAccounts = pgTable(
     hsaCoverageType: text("hsa_coverage_type").$type<HsaCoverageType>(),
     autoMaximize: boolean("auto_maximize").notNull().default(false),
     isActive: boolean("is_active").notNull().default(true),
-    ownership: text("ownership").$type<AccountOwnership>().notNull().default("individual"),
+    ownership: text("ownership")
+      .$type<AccountOwnership>()
+      .notNull()
+      .default("individual"),
     performanceAccountId: integer("performance_account_id").references(
       () => performanceAccounts.id,
       { onDelete: "set null" },
@@ -217,7 +224,9 @@ export const budgetProfiles = pgTable(
       "column_contribution_profile_ids",
     ).$type<(number | null)[]>(),
     isActive: boolean("is_active").notNull().default(false),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [index("budget_profiles_is_active_idx").on(table.isActive)],
 );
@@ -235,8 +244,9 @@ export const budgetItems = pgTable(
     apiCategoryName: text("api_category_name"),
     apiCategoryId: text("api_category_id"),
     apiLastSyncedAt: timestamp("api_last_synced_at", { withTimezone: true }),
-    apiSyncDirection:
-      text("api_sync_direction").$type<ApiSyncDirection>().default("pull"),
+    apiSyncDirection: text("api_sync_direction")
+      .$type<ApiSyncDirection>()
+      .default("pull"),
     contributionAccountId: integer("contribution_account_id").references(
       () => contributionAccounts.id,
       { onDelete: "set null" },
@@ -369,7 +379,9 @@ export const brokerageGoals = pgTable(
     priority: integer("priority").notNull().default(0),
     isActive: boolean("is_active").notNull().default(true),
     notes: text("notes"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [index("brokerage_goals_is_active_idx").on(table.isActive)],
 );
@@ -430,7 +442,9 @@ export const performanceAccounts = pgTable(
     parentCategory: text("parent_category").notNull(),
     isActive: boolean("is_active").notNull().default(true),
     displayOrder: integer("display_order").notNull().default(0),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
     uniqueIndex("performance_accounts_inst_type_idx").on(
@@ -458,7 +472,9 @@ export const portfolioSnapshots = pgTable(
   {
     id: serial("id").primaryKey(),
     snapshotDate: date("snapshot_date").notNull().unique(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     notes: text("notes"),
   },
   (table) => [index("portfolio_snapshots_date_idx").on(table.snapshotDate)],
@@ -629,8 +645,12 @@ export const accountPerformance = pgTable(
 export const netWorthAnnual = pgTable("net_worth_annual", {
   id: serial("id").primaryKey(),
   yearEndDate: date("year_end_date").notNull().unique(),
-  grossIncome: decimal("gross_income", { precision: 12, scale: 2 }).notNull().default("0"),
-  combinedAgi: decimal("combined_agi", { precision: 12, scale: 2 }).notNull().default("0"),
+  grossIncome: decimal("gross_income", { precision: 12, scale: 2 })
+    .notNull()
+    .default("0"),
+  combinedAgi: decimal("combined_agi", { precision: 12, scale: 2 })
+    .notNull()
+    .default("0"),
   ssaEarnings: decimal("ssa_earnings", { precision: 12, scale: 2 }),
   effectiveTaxRate: decimal("effective_tax_rate", { precision: 8, scale: 6 }),
   taxesPaid: decimal("taxes_paid", { precision: 12, scale: 2 }),
@@ -977,7 +997,9 @@ export const retirementSettings = pgTable(
     /** Household size for ACA FPL calculation. */
     householdSize: integer("household_size").notNull().default(2),
     /** Explicit filing status for retirement projections. Null = derive from primary job W-4. */
-    filingStatus: varchar("filing_status", { length: 10 }).$type<W4FilingStatus>(),
+    filingStatus: varchar("filing_status", {
+      length: 10,
+    }).$type<W4FilingStatus>(),
   },
   (table) => [index("retirement_settings_person_id_idx").on(table.personId)],
 );
@@ -1196,7 +1218,9 @@ export const budgetApiCache = pgTable(
     cacheKey: text("cache_key").notNull(),
     data: jsonb("data").$type<unknown>().notNull(),
     serverKnowledge: integer("server_knowledge"),
-    fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull().defaultNow(),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
     uniqueIndex("budget_api_cache_service_key_idx").on(
@@ -1258,8 +1282,12 @@ export const relocationScenarios = pgTable("relocation_scenarios", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   params: jsonb("params").$type<RelocationScenarioParams>().notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 // --- Scenario overrides (global what-if system) ---
@@ -1279,8 +1307,12 @@ export const scenarios = pgTable("scenarios", {
     .notNull()
     .default({}),
   isBaseline: boolean("is_baseline").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 // --- Monte Carlo: Asset class parameters and glide path ---
@@ -1425,7 +1457,9 @@ export const contributionProfiles = pgTable("contribution_profiles", {
     .notNull()
     .default({}),
   isDefault: boolean("is_default").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 // --- State versions (full-database versioning) ---
@@ -1441,7 +1475,9 @@ export const stateVersions = pgTable(
     tableCount: integer("table_count").notNull(),
     totalRows: integer("total_rows").notNull(),
     sizeEstimateBytes: integer("size_estimate_bytes"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     createdBy: text("created_by").notNull(),
   },
   (table) => [index("state_versions_created_at_idx").on(table.createdAt)],
@@ -1479,7 +1515,9 @@ export const changeLog = pgTable(
     oldValue: jsonb("old_value"),
     newValue: jsonb("new_value"),
     changedBy: text("changed_by").notNull(),
-    changedAt: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
+    changedAt: timestamp("changed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
     index("change_log_table_record_idx").on(table.tableName, table.recordId),

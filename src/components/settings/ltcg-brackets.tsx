@@ -55,9 +55,7 @@ export function LtcgBracketsSettings() {
         <h2 className="text-lg font-semibold mb-4">
           Long-Term Capital Gains Brackets
         </h2>
-        <p className="text-muted text-sm mb-3">
-          No LTCG brackets configured.
-        </p>
+        <p className="text-muted text-sm mb-3">No LTCG brackets configured.</p>
         {admin && (
           <button
             onClick={() => setShowAddYear(true)}
@@ -187,9 +185,7 @@ export function LtcgBracketsSettings() {
             <button
               onClick={() => {
                 setShowAddYear(!showAddYear);
-                setNewYear(
-                  String((years[0] ?? new Date().getFullYear()) + 1),
-                );
+                setNewYear(String((years[0] ?? new Date().getFullYear()) + 1));
                 setCopyFrom(years[0] ?? null);
               }}
               className="px-2 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded-full hover:bg-blue-50 transition-colors"
@@ -218,9 +214,7 @@ export function LtcgBracketsSettings() {
               <select
                 value={copyFrom ?? ""}
                 onChange={(e) =>
-                  setCopyFrom(
-                    e.target.value ? parseInt(e.target.value) : null,
-                  )
+                  setCopyFrom(e.target.value ? parseInt(e.target.value) : null)
                 }
                 className="ml-2 px-2 py-1 text-sm border rounded"
               >
@@ -288,12 +282,8 @@ export function LtcgBracketsSettings() {
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="text-xs text-muted">
-                      <th className="text-left pb-1 font-normal">
-                        Up To
-                      </th>
-                      <th className="text-right pb-1 font-normal">
-                        Rate
-                      </th>
+                      <th className="text-left pb-1 font-normal">Up To</th>
+                      <th className="text-right pb-1 font-normal">Rate</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -301,15 +291,11 @@ export function LtcgBracketsSettings() {
                       <tr key={i} className="border-t border-subtle">
                         <td className="py-1 pr-2">
                           {b.threshold === null ? (
-                            <span className="text-sm text-muted">
-                              Above
-                            </span>
+                            <span className="text-sm text-muted">Above</span>
                           ) : (
                             <InlineEdit
                               value={b.threshold.toString()}
-                              formatDisplay={() =>
-                                formatDollar(b.threshold)
-                              }
+                              formatDisplay={() => formatDollar(b.threshold)}
                               parseInput={parseDollar}
                               onSave={(v) =>
                                 handleBracketUpdate(
@@ -357,9 +343,9 @@ export function LtcgBracketsSettings() {
 
       <div className="flex items-center justify-between mt-4">
         <p className="text-xs text-faint">
-          Source: IRS Revenue Procedure (adjusted annually for inflation).
-          Rates apply to long-term gains based on total taxable income. Edit
-          rates as percentages (e.g., enter 15 for 15%).
+          Source: IRS Revenue Procedure (adjusted annually for inflation). Rates
+          apply to long-term gains based on total taxable income. Edit rates as
+          percentages (e.g., enter 15 for 15%).
         </p>
         {admin && years.length > 1 && confirmDelete !== activeYear && (
           <button

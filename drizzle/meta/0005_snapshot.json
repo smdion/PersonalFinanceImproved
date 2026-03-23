@@ -208,12 +208,8 @@
           "name": "account_performance_owner_person_id_people_id_fk",
           "tableFrom": "account_performance",
           "tableTo": "people",
-          "columnsFrom": [
-            "owner_person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_person_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -221,12 +217,8 @@
           "name": "account_performance_performance_account_id_performance_accounts_id_fk",
           "tableFrom": "account_performance",
           "tableTo": "performance_accounts",
-          "columnsFrom": [
-            "performance_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["performance_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -451,9 +443,7 @@
         "api_connections_service_unique": {
           "name": "api_connections_service_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "service"
-          ]
+          "columns": ["service"]
         }
       },
       "policies": {},
@@ -490,9 +480,7 @@
         "app_settings_key_unique": {
           "name": "app_settings_key_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "key"
-          ]
+          "columns": ["key"]
         }
       },
       "policies": {},
@@ -586,12 +574,8 @@
           "name": "asset_class_correlations_class_a_id_asset_class_params_id_fk",
           "tableFrom": "asset_class_correlations",
           "tableTo": "asset_class_params",
-          "columnsFrom": [
-            "class_a_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["class_a_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -599,12 +583,8 @@
           "name": "asset_class_correlations_class_b_id_asset_class_params_id_fk",
           "tableFrom": "asset_class_correlations",
           "tableTo": "asset_class_params",
-          "columnsFrom": [
-            "class_b_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["class_b_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -681,9 +661,7 @@
         "asset_class_params_name_unique": {
           "name": "asset_class_params_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "policies": {},
@@ -840,12 +818,8 @@
           "name": "brokerage_planned_transactions_goal_id_brokerage_goals_id_fk",
           "tableFrom": "brokerage_planned_transactions",
           "tableTo": "brokerage_goals",
-          "columnsFrom": [
-            "goal_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["goal_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1057,12 +1031,8 @@
           "name": "budget_items_profile_id_budget_profiles_id_fk",
           "tableFrom": "budget_items",
           "tableTo": "budget_profiles",
-          "columnsFrom": [
-            "profile_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["profile_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1070,12 +1040,8 @@
           "name": "budget_items_contribution_account_id_contribution_accounts_id_fk",
           "tableFrom": "budget_items",
           "tableTo": "contribution_accounts",
-          "columnsFrom": [
-            "contribution_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["contribution_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1164,9 +1130,7 @@
         "budget_profiles_name_unique": {
           "name": "budget_profiles_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "policies": {},
@@ -1503,12 +1467,8 @@
           "name": "contribution_accounts_job_id_jobs_id_fk",
           "tableFrom": "contribution_accounts",
           "tableTo": "jobs",
-          "columnsFrom": [
-            "job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["job_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1516,12 +1476,8 @@
           "name": "contribution_accounts_person_id_people_id_fk",
           "tableFrom": "contribution_accounts",
           "tableTo": "people",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -1529,12 +1485,8 @@
           "name": "contribution_accounts_performance_account_id_performance_accounts_id_fk",
           "tableFrom": "contribution_accounts",
           "tableTo": "performance_accounts",
-          "columnsFrom": [
-            "performance_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["performance_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1673,9 +1625,7 @@
         "contribution_profiles_name_unique": {
           "name": "contribution_profiles_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "policies": {},
@@ -1754,12 +1704,8 @@
           "name": "glide_path_allocations_asset_class_id_asset_class_params_id_fk",
           "tableFrom": "glide_path_allocations",
           "tableTo": "asset_class_params",
-          "columnsFrom": [
-            "asset_class_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["asset_class_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2097,12 +2043,8 @@
           "name": "jobs_person_id_people_id_fk",
           "tableFrom": "jobs",
           "tableTo": "people",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -2156,9 +2098,7 @@
         "local_admins_email_unique": {
           "name": "local_admins_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -2308,12 +2248,8 @@
           "name": "mc_preset_glide_paths_preset_id_mc_presets_id_fk",
           "tableFrom": "mc_preset_glide_paths",
           "tableTo": "mc_presets",
-          "columnsFrom": [
-            "preset_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["preset_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2321,12 +2257,8 @@
           "name": "mc_preset_glide_paths_asset_class_id_asset_class_params_id_fk",
           "tableFrom": "mc_preset_glide_paths",
           "tableTo": "asset_class_params",
-          "columnsFrom": [
-            "asset_class_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["asset_class_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2394,12 +2326,8 @@
           "name": "mc_preset_return_overrides_preset_id_mc_presets_id_fk",
           "tableFrom": "mc_preset_return_overrides",
           "tableTo": "mc_presets",
-          "columnsFrom": [
-            "preset_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["preset_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2407,12 +2335,8 @@
           "name": "mc_preset_return_overrides_asset_class_id_asset_class_params_id_fk",
           "tableFrom": "mc_preset_return_overrides",
           "tableTo": "asset_class_params",
-          "columnsFrom": [
-            "asset_class_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["asset_class_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2538,9 +2462,7 @@
         "mc_presets_key_unique": {
           "name": "mc_presets_key_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "key"
-          ]
+          "columns": ["key"]
         }
       },
       "policies": {},
@@ -2623,12 +2545,8 @@
           "name": "mortgage_extra_payments_loan_id_mortgage_loans_id_fk",
           "tableFrom": "mortgage_extra_payments",
           "tableTo": "mortgage_loans",
-          "columnsFrom": [
-            "loan_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["loan_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2863,12 +2781,8 @@
           "name": "mortgage_what_if_scenarios_loan_id_mortgage_loans_id_fk",
           "tableFrom": "mortgage_what_if_scenarios",
           "tableTo": "mortgage_loans",
-          "columnsFrom": [
-            "loan_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["loan_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3039,9 +2953,7 @@
         "net_worth_annual_year_end_date_unique": {
           "name": "net_worth_annual_year_end_date_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "year_end_date"
-          ]
+          "columns": ["year_end_date"]
         }
       },
       "policies": {},
@@ -3177,12 +3089,8 @@
           "name": "paycheck_deductions_job_id_jobs_id_fk",
           "tableFrom": "paycheck_deductions",
           "tableTo": "jobs",
-          "columnsFrom": [
-            "job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["job_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3414,12 +3322,8 @@
           "name": "performance_accounts_owner_person_id_people_id_fk",
           "tableFrom": "performance_accounts",
           "tableTo": "people",
-          "columnsFrom": [
-            "owner_person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_person_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -3626,12 +3530,8 @@
           "name": "portfolio_accounts_snapshot_id_portfolio_snapshots_id_fk",
           "tableFrom": "portfolio_accounts",
           "tableTo": "portfolio_snapshots",
-          "columnsFrom": [
-            "snapshot_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["snapshot_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3639,12 +3539,8 @@
           "name": "portfolio_accounts_owner_person_id_people_id_fk",
           "tableFrom": "portfolio_accounts",
           "tableTo": "people",
-          "columnsFrom": [
-            "owner_person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_person_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -3652,12 +3548,8 @@
           "name": "portfolio_accounts_performance_account_id_performance_accounts_id_fk",
           "tableFrom": "portfolio_accounts",
           "tableTo": "performance_accounts",
-          "columnsFrom": [
-            "performance_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["performance_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -3726,9 +3618,7 @@
         "portfolio_snapshots_snapshot_date_unique": {
           "name": "portfolio_snapshots_snapshot_date_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "snapshot_date"
-          ]
+          "columns": ["snapshot_date"]
         }
       },
       "policies": {},
@@ -3804,12 +3694,8 @@
           "name": "property_taxes_loan_id_mortgage_loans_id_fk",
           "tableFrom": "property_taxes",
           "tableTo": "mortgage_loans",
-          "columnsFrom": [
-            "loan_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["loan_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3943,12 +3829,8 @@
           "name": "retirement_budget_overrides_person_id_people_id_fk",
           "tableFrom": "retirement_budget_overrides",
           "tableTo": "people",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -4043,12 +3925,8 @@
           "name": "retirement_salary_overrides_person_id_people_id_fk",
           "tableFrom": "retirement_salary_overrides",
           "tableTo": "people",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -4056,12 +3934,8 @@
           "name": "retirement_salary_overrides_contribution_profile_id_contribution_profiles_id_fk",
           "tableFrom": "retirement_salary_overrides",
           "tableTo": "contribution_profiles",
-          "columnsFrom": [
-            "contribution_profile_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["contribution_profile_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -4446,12 +4320,8 @@
           "name": "retirement_settings_person_id_people_id_fk",
           "tableFrom": "retirement_settings",
           "tableTo": "people",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -4461,9 +4331,7 @@
         "retirement_settings_person_id_unique": {
           "name": "retirement_settings_person_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "person_id"
-          ]
+          "columns": ["person_id"]
         }
       },
       "policies": {},
@@ -4500,9 +4368,7 @@
         "return_rate_table_age_unique": {
           "name": "return_rate_table_age_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "age"
-          ]
+          "columns": ["age"]
         }
       },
       "policies": {},
@@ -4572,12 +4438,8 @@
           "name": "salary_changes_job_id_jobs_id_fk",
           "tableFrom": "salary_changes",
           "tableTo": "jobs",
-          "columnsFrom": [
-            "job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["job_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -4645,12 +4507,8 @@
           "name": "savings_allocation_overrides_goal_id_savings_goals_id_fk",
           "tableFrom": "savings_allocation_overrides",
           "tableTo": "savings_goals",
-          "columnsFrom": [
-            "goal_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["goal_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -4791,9 +4649,7 @@
         "savings_goals_name_unique": {
           "name": "savings_goals_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "policies": {},
@@ -4889,12 +4745,8 @@
           "name": "savings_monthly_goal_id_savings_goals_id_fk",
           "tableFrom": "savings_monthly",
           "tableTo": "savings_goals",
-          "columnsFrom": [
-            "goal_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["goal_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -4981,12 +4833,8 @@
           "name": "savings_planned_transactions_goal_id_savings_goals_id_fk",
           "tableFrom": "savings_planned_transactions",
           "tableTo": "savings_goals",
-          "columnsFrom": [
-            "goal_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["goal_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -5141,12 +4989,8 @@
           "name": "self_loans_from_goal_id_savings_goals_id_fk",
           "tableFrom": "self_loans",
           "tableTo": "savings_goals",
-          "columnsFrom": [
-            "from_goal_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["from_goal_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -5154,12 +4998,8 @@
           "name": "self_loans_to_goal_id_savings_goals_id_fk",
           "tableFrom": "self_loans",
           "tableTo": "savings_goals",
-          "columnsFrom": [
-            "to_goal_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["to_goal_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -5248,12 +5088,8 @@
           "name": "state_version_tables_version_id_state_versions_id_fk",
           "tableFrom": "state_version_tables",
           "tableTo": "state_versions",
-          "columnsFrom": [
-            "version_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["version_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

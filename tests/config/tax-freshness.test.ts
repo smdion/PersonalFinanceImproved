@@ -22,7 +22,11 @@ import {
 } from "./tax-freshness";
 
 // -- Import actual values to verify they match expectations --
-import { LTCG_BRACKETS, getLtcgRate, computeLtcgTax } from "@/lib/config/tax-tables";
+import {
+  LTCG_BRACKETS,
+  getLtcgRate,
+  computeLtcgTax,
+} from "@/lib/config/tax-tables";
 import { NIIT_RATE, NIIT_THRESHOLDS, computeNiit } from "@/lib/config/niit";
 import {
   IRMAA_BRACKETS,
@@ -36,7 +40,6 @@ import {
 } from "@/lib/config/aca-tables";
 import {
   UNIFORM_LIFETIME_TABLE,
-  getRmdFactor,
   getRmdStartAge,
 } from "@/lib/config/rmd-tables";
 
@@ -66,7 +69,9 @@ describe("Tax parameter freshness", () => {
     expect(names).toContain("SS taxation thresholds");
     expect(names).toContain("RMD Uniform Lifetime Table");
     expect(names).toContain("RMD start age rules (SECURE 2.0)");
-    expect(names).toContain("FICA rates (SS 6.2%, Medicare 1.45%, surtax 0.9%)");
+    expect(names).toContain(
+      "FICA rates (SS 6.2%, Medicare 1.45%, surtax 0.9%)",
+    );
     expect(names).toContain("Medicare surtax threshold ($200k/$250k)");
     expect(names).toContain("NIIT thresholds ($200k/$250k) and rate (3.8%)");
   });
@@ -235,9 +240,7 @@ describe("IRMAA bracket values", () => {
 
   it("surcharges increase monotonically", () => {
     for (const status of ["MFJ", "Single", "HOH"] as const) {
-      const surcharges = IRMAA_BRACKETS[status].map(
-        (b) => b.annualSurcharge,
-      );
+      const surcharges = IRMAA_BRACKETS[status].map((b) => b.annualSurcharge);
       for (let i = 1; i < surcharges.length; i++) {
         expect(surcharges[i]).toBeGreaterThan(surcharges[i - 1]!);
       }

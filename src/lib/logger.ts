@@ -1,6 +1,10 @@
 type LogLevel = "info" | "warn" | "error";
 
-export function log(level: LogLevel, event: string, data?: Record<string, unknown>) {
+export function log(
+  level: LogLevel,
+  event: string,
+  data?: Record<string, unknown>,
+) {
   const entry = {
     timestamp: new Date().toISOString(),
     level,

@@ -76,7 +76,9 @@ const PERF_CATEGORY_DEFAULT = "401k/IRA";
 export function accountTypeToPerformanceCategory(
   accountType: string | null,
 ): string {
-  return (accountType && PERF_CATEGORY_MAP[accountType]) ?? PERF_CATEGORY_DEFAULT;
+  return (
+    (accountType && PERF_CATEGORY_MAP[accountType]) ?? PERF_CATEGORY_DEFAULT
+  );
 }
 
 /**

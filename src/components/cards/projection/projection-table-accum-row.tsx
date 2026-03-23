@@ -1,7 +1,11 @@
 /** Renders a single accumulation-phase table row with salary, contribution breakdowns, balance columns, and MC cell. */
 import React from "react";
 import { Tooltip } from "@/components/ui/tooltip";
-import { accountTextColor, taxTypeTextColor, taxTypeLabel } from "@/lib/utils/colors";
+import {
+  accountTextColor,
+  taxTypeTextColor,
+  taxTypeLabel,
+} from "@/lib/utils/colors";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import type {
   AccountCategory,
@@ -22,7 +26,6 @@ import {
   catDisplayLabel,
   bucketSlotMap,
   _singleBucketCategories,
-  isAccumYear,
   itemTaxType,
   colKeyParts,
   colBalance,
@@ -41,7 +44,10 @@ import {
   computeAccountSplits,
 } from "./utils";
 import type { ProjectionState } from "./projection-table-types";
-import { renderMcCell, type RenderMcCellOptions } from "./projection-table-mc-cell";
+import {
+  renderMcCell,
+  type RenderMcCellOptions,
+} from "./projection-table-mc-cell";
 
 export type AccumulationRowProps = {
   yr: EngineAccumulationYear;
@@ -76,13 +82,23 @@ export function AccumulationRow({
 }: AccumulationRowProps) {
   const {
     accumOverrides,
-    balanceView, contribView,
-    diagMode,
-    personFilter, isPersonFiltered, personFilterName,
+    balanceView,
+    contribView,
+    diagMode: _diagMode,
+    personFilter,
+    isPersonFiltered,
+    personFilterName,
     visibleColumns,
-    deflate, getPersonYearTotals, baseYear, displayAge, renderTooltip,
-    enginePeople, engineSettings, realDefaults,
-    contribSpecs, budgetProfileSummaries,
+    deflate,
+    getPersonYearTotals,
+    baseYear: _baseYear,
+    displayAge,
+    renderTooltip,
+    enginePeople,
+    engineSettings,
+    realDefaults: _realDefaults,
+    contribSpecs,
+    budgetProfileSummaries,
     result,
   } = s;
 
@@ -95,68 +111,40 @@ export function AccumulationRow({
   // When parentCategoryFilter is active, compute brokerage contributions
   // from individual accounts matching the filter (e.g. Retirement page
   // should not include Portfolio-parentCategory brokerage like Long Term).
-  const pcfBrokContrib =
-    parentCategoryFilter
-      ? (() => {
-          const iabs =
-            yr.individualAccountBalances ?? [];
-          const matching = iabs.filter(
-            (ia) =>
-              ACCOUNT_TYPE_CONFIG[
-                ia.category as AcctCat
-              ]?.isOverflowTarget &&
-              ia.parentCategory ===
-                parentCategoryFilter,
-          );
-          if (matching.length === 0) return null;
-          return {
-            employee: matching.reduce(
-              (s, ia) => s + ia.contribution,
-              0,
-            ),
-            match: matching.reduce(
-              (s, ia) => s + ia.employerMatch,
-              0,
-            ),
-          };
-        })()
-      : undefined;
+  const pcfBrokContrib = parentCategoryFilter
+    ? (() => {
+        const iabs = yr.individualAccountBalances ?? [];
+        const matching = iabs.filter(
+          (ia) =>
+            ACCOUNT_TYPE_CONFIG[ia.category as AcctCat]?.isOverflowTarget &&
+            ia.parentCategory === parentCategoryFilter,
+        );
+        if (matching.length === 0) return null;
+        return {
+          employee: matching.reduce((s, ia) => s + ia.contribution, 0),
+          match: matching.reduce((s, ia) => s + ia.employerMatch, 0),
+        };
+      })()
+    : undefined;
   // How much brokerage contrib to subtract from totals on filtered pages
   const pcfBrokAdj =
     parentCategoryFilter && !pt
       ? (() => {
-          const iabs =
-            yr.individualAccountBalances ?? [];
+          const iabs = yr.individualAccountBalances ?? [];
           const allBrok = iabs.filter(
             (ia) =>
-              ACCOUNT_TYPE_CONFIG[
-                ia.category as AcctCat
-              ]?.isOverflowTarget,
+              ACCOUNT_TYPE_CONFIG[ia.category as AcctCat]?.isOverflowTarget,
           );
           const matchBrok = allBrok.filter(
-            (ia) =>
-              ia.parentCategory ===
-              parentCategoryFilter,
+            (ia) => ia.parentCategory === parentCategoryFilter,
           );
           return {
             employee:
-              allBrok.reduce(
-                (s, ia) => s + ia.contribution,
-                0,
-              ) -
-              matchBrok.reduce(
-                (s, ia) => s + ia.contribution,
-                0,
-              ),
+              allBrok.reduce((s, ia) => s + ia.contribution, 0) -
+              matchBrok.reduce((s, ia) => s + ia.contribution, 0),
             match:
-              allBrok.reduce(
-                (s, ia) => s + ia.employerMatch,
-                0,
-              ) -
-              matchBrok.reduce(
-                (s, ia) => s + ia.employerMatch,
-                0,
-              ),
+              allBrok.reduce((s, ia) => s + ia.employerMatch, 0) -
+              matchBrok.reduce((s, ia) => s + ia.employerMatch, 0),
           };
         })()
       : { employee: 0, match: 0 };
@@ -181,17 +169,14 @@ export function AccumulationRow({
             side="right"
             maxWidth={220}
           >
-            <span className="text-[9px] text-blue-500 align-super">
-              *
-            </span>
+            <span className="text-[9px] text-blue-500 align-super">*</span>
           </Tooltip>
         )}
       </td>
       <Tooltip
         content={(() => {
           const pp = people ?? enginePeople;
-          if (!pp || pp.length < 2)
-            return undefined;
+          if (!pp || pp.length < 2) return undefined;
           return renderTooltip({
             kind: "info",
             lines: pp.map((p) => ({
@@ -202,52 +187,34 @@ export function AccumulationRow({
         })()}
         side="top"
       >
-        <td className="py-1.5 px-2">
-          {displayAge(yr.year) ?? yr.age}
-        </td>
+        <td className="py-1.5 px-2">{displayAge(yr.year) ?? yr.age}</td>
       </Tooltip>
       <td className="py-1.5 px-2">
-        <span className="text-green-600 text-[10px] font-medium">
-          SAVE
-        </span>
+        <span className="text-green-600 text-[10px] font-medium">SAVE</span>
       </td>
       <Tooltip
         content={(() => {
-          const prevYr =
-            result.projectionByYear.find(
-              (y) => y.year === yr.year - 1,
-            );
+          const prevYr = result.projectionByYear.find(
+            (y) => y.year === yr.year - 1,
+          );
           // Use person-filtered salary if applicable
           const personId =
             isPersonFiltered &&
-            enginePeople?.find(
-              (p) => p.id === personFilter,
-            )?.id;
+            enginePeople?.find((p) => p.id === personFilter)?.id;
           const currentSal = personId
-            ? (yr.projectedSalaryByPerson?.[
-                personId
-              ] ?? yr.projectedSalary)
+            ? (yr.projectedSalaryByPerson?.[personId] ?? yr.projectedSalary)
             : yr.projectedSalary;
           const prevSalary =
-            prevYr &&
-            prevYr.phase === "accumulation"
+            prevYr && prevYr.phase === "accumulation"
               ? personId
-                ? ((
-                    prevYr as EngineAccumulationYear
-                  ).projectedSalaryByPerson?.[
+                ? ((prevYr as EngineAccumulationYear).projectedSalaryByPerson?.[
                     personId
-                  ] ??
-                  (
-                    prevYr as EngineAccumulationYear
-                  ).projectedSalary)
-                : (
-                    prevYr as EngineAccumulationYear
-                  ).projectedSalary
+                  ] ?? (prevYr as EngineAccumulationYear).projectedSalary)
+                : (prevYr as EngineAccumulationYear).projectedSalary
               : null;
           const pctChange =
             prevSalary && prevSalary > 0
-              ? (currentSal - prevSalary) /
-                prevSalary
+              ? (currentSal - prevSalary) / prevSalary
               : null;
           const lines: {
             text: string;
@@ -271,10 +238,7 @@ export function AccumulationRow({
               style: "header",
             });
           }
-          if (
-            !yr.hasSalaryOverride &&
-            engineSettings
-          ) {
+          if (!yr.hasSalaryOverride && engineSettings) {
             lines.push({
               text: `Annual raise: ${formatPercent(Number(engineSettings.salaryAnnualIncrease), 1)}/yr`,
               style: "meta",
@@ -289,31 +253,18 @@ export function AccumulationRow({
       >
         <td className="text-right py-1.5 px-2 text-muted">
           {(() => {
-            let displaySalary =
-              yr.projectedSalary;
+            let displaySalary = yr.projectedSalary;
             if (
               isPersonFiltered &&
               yr.projectedSalaryByPerson &&
               enginePeople
             ) {
-              const person = enginePeople.find(
-                (p) => p.id === personFilter,
-              );
-              if (
-                person &&
-                yr.projectedSalaryByPerson[
-                  person.id
-                ] != null
-              ) {
-                displaySalary =
-                  yr.projectedSalaryByPerson[
-                    person.id
-                  ]!;
+              const person = enginePeople.find((p) => p.id === personFilter);
+              if (person && yr.projectedSalaryByPerson[person.id] != null) {
+                displaySalary = yr.projectedSalaryByPerson[person.id]!;
               }
             }
-            return formatCurrency(
-              deflate(displaySalary, yr.year),
-            );
+            return formatCurrency(deflate(displaySalary, yr.year));
           })()}
         </td>
       </Tooltip>
@@ -322,10 +273,8 @@ export function AccumulationRow({
           yr.projectedSalary > 0
             ? (() => {
                 const effectiveSalary =
-                  yr.proRateFraction != null &&
-                  yr.proRateFraction > 0
-                    ? yr.projectedSalary *
-                      yr.proRateFraction
+                  yr.proRateFraction != null && yr.proRateFraction > 0
+                    ? yr.projectedSalary * yr.proRateFraction
                     : yr.projectedSalary;
                 const effectiveRate = safeDivide(
                   yr.totalEmployee,
@@ -333,10 +282,7 @@ export function AccumulationRow({
                 );
                 const lines: {
                   text: string;
-                  style:
-                    | "header"
-                    | "meta"
-                    | "note";
+                  style: "header" | "meta" | "note";
                   color?: TipColor;
                 }[] = [
                   {
@@ -366,9 +312,7 @@ export function AccumulationRow({
                   });
                 }
                 if (yr.rateCeilingScale == null) {
-                  const diff =
-                    effectiveRate -
-                    yr.config.contributionRate;
+                  const diff = effectiveRate - yr.config.contributionRate;
                   if (Math.abs(diff) > 0.001) {
                     lines.push({
                       text: `Actual ${diff > 0 ? "higher" : "lower"} — per-account specs${diff < 0 ? " / IRS limits" : ""}`,
@@ -380,9 +324,7 @@ export function AccumulationRow({
                 if (
                   accumOverrides.some(
                     (o) =>
-                      o.year === yr.year &&
-                      o.contributionRate !==
-                        undefined,
+                      o.year === yr.year && o.contributionRate !== undefined,
                   )
                 ) {
                   lines.push({
@@ -405,10 +347,8 @@ export function AccumulationRow({
             ? formatPercent(
                 safeDivide(
                   yr.totalEmployee,
-                  yr.proRateFraction != null &&
-                    yr.proRateFraction > 0
-                    ? yr.projectedSalary *
-                        yr.proRateFraction
+                  yr.proRateFraction != null && yr.proRateFraction > 0
+                    ? yr.projectedSalary * yr.proRateFraction
                     : yr.projectedSalary,
                 ),
                 1,
@@ -421,37 +361,25 @@ export function AccumulationRow({
           {getAllCategories()
             .filter(
               (c) =>
-                !ACCOUNT_TYPE_CONFIG[c]
-                  .isOverflowTarget &&
+                !ACCOUNT_TYPE_CONFIG[c].isOverflowTarget &&
                 visibleColumns.contribCats.has(c),
             )
             .map((cat) => {
               const slot = slotMap.get(cat);
-              const rawEmp =
-                slot?.employeeContrib ?? 0;
-              const rawMatch =
-                slot?.employerMatch ?? 0;
-              const catContrib =
-                pt?.byCategoryContrib[cat];
-              const emp = catContrib
-                ? catContrib.employee
-                : rawEmp;
-              const match = catContrib
-                ? catContrib.match
-                : rawMatch;
+              const rawEmp = slot?.employeeContrib ?? 0;
+              const rawMatch = slot?.employerMatch ?? 0;
+              const catContrib = pt?.byCategoryContrib[cat];
+              const emp = catContrib ? catContrib.employee : rawEmp;
+              const match = catContrib ? catContrib.match : rawMatch;
               const total = emp + match;
               // Build per-person breakdown for tooltip
               const catSpecs =
-                contribSpecs?.filter(
-                  (s) => s.category === cat,
-                ) ?? [];
+                contribSpecs?.filter((s) => s.category === cat) ?? [];
               const specTotal = catSpecs.reduce(
-                (s, sp) =>
-                  s + (sp.baseAnnual || 0),
+                (s, sp) => s + (sp.baseAnnual || 0),
                 0,
               );
-              const catLabel =
-                catDisplayLabel[cat] ?? cat;
+              const catLabel = catDisplayLabel[cat] ?? cat;
               const finalTooltip =
                 emp > 0 || match > 0
                   ? (() => {
@@ -461,108 +389,62 @@ export function AccumulationRow({
                               .filter(
                                 (sp) =>
                                   !isPersonFiltered ||
-                                  sp.personId ===
-                                    personFilter,
+                                  sp.personId === personFilter,
                               )
                               .map((sp) => {
-                                const frac =
-                                  specFrac({
-                                    baseAnnual:
-                                      sp.baseAnnual ||
-                                      0,
-                                    specTotal,
-                                    specCount:
-                                      catSpecs.length,
-                                  });
-                                const personEmp =
-                                  rawEmp * frac;
-                                const label =
-                                  sp.ownerName
-                                    ? `${sp.ownerName} (${sp.name})`
-                                    : sp.name;
-                                const matchTotal =
-                                  catSpecs.reduce(
-                                    (s2, s2p) =>
-                                      s2 +
-                                      (s2p.matchAnnual ??
-                                        0),
-                                    0,
-                                  );
-                                const mFrac =
-                                  matchFracOf({
-                                    matchAnnual:
-                                      sp.matchAnnual ??
-                                      0,
-                                    allMatchAnnual:
-                                      matchTotal,
-                                  });
+                                const frac = specFrac({
+                                  baseAnnual: sp.baseAnnual || 0,
+                                  specTotal,
+                                  specCount: catSpecs.length,
+                                });
+                                const personEmp = rawEmp * frac;
+                                const label = sp.ownerName
+                                  ? `${sp.ownerName} (${sp.name})`
+                                  : sp.name;
+                                const matchTotal = catSpecs.reduce(
+                                  (s2, s2p) => s2 + (s2p.matchAnnual ?? 0),
+                                  0,
+                                );
+                                const mFrac = matchFracOf({
+                                  matchAnnual: sp.matchAnnual ?? 0,
+                                  allMatchAnnual: matchTotal,
+                                });
                                 return {
                                   label,
-                                  amount: deflate(
-                                    personEmp,
-                                    yr.year,
-                                  ),
-                                  taxType:
-                                    itemTaxType(
-                                      cat,
-                                      sp.taxTreatment,
-                                    ),
+                                  amount: deflate(personEmp, yr.year),
+                                  taxType: itemTaxType(cat, sp.taxTreatment),
                                   match:
-                                    (sp.matchAnnual ??
-                                      0) > 0
-                                      ? deflate(
-                                          rawMatch *
-                                            mFrac,
-                                          yr.year,
-                                        )
+                                    (sp.matchAnnual ?? 0) > 0
+                                      ? deflate(rawMatch * mFrac, yr.year)
                                       : undefined,
-                                  matchLabel:
-                                    getDisplayConfig(
-                                      cat,
-                                      sp.name !==
-                                        cat
-                                        ? sp.name
-                                        : undefined,
-                                    )
-                                      .employerMatchLabel,
+                                  matchLabel: getDisplayConfig(
+                                    cat,
+                                    sp.name !== cat ? sp.name : undefined,
+                                  ).employerMatchLabel,
                                 };
                               })
                           : [
                               {
                                 label:
-                                  catSpecs[0]
-                                    ?.ownerName ??
+                                  catSpecs[0]?.ownerName ??
                                   (isPersonFiltered
                                     ? personFilterName
                                     : "Employee"),
-                                amount: deflate(
-                                  emp,
-                                  yr.year,
+                                amount: deflate(emp, yr.year),
+                                taxType: itemTaxType(
+                                  cat,
+                                  catSpecs[0]?.taxTreatment,
                                 ),
-                                taxType:
-                                  itemTaxType(
-                                    cat,
-                                    catSpecs[0]
-                                      ?.taxTreatment,
-                                  ),
                                 match:
                                   match > 0
-                                    ? deflate(
-                                        match,
-                                        yr.year,
-                                      )
+                                    ? deflate(match, yr.year)
                                     : undefined,
-                                matchLabel:
-                                  getDisplayConfig(
-                                    cat,
-                                    catSpecs[0]
-                                      ?.name !==
-                                      cat
-                                      ? catSpecs[0]
-                                          ?.name
-                                      : undefined,
-                                  )
-                                    .employerMatchLabel,
+                                matchLabel: getDisplayConfig(
+                                  cat,
+                                  catSpecs[0]?.name !== cat
+                                    ? catSpecs[0]?.name
+                                    : undefined,
+                                ).employerMatchLabel,
                               },
                             ];
                       return renderTooltip({
@@ -570,111 +452,63 @@ export function AccumulationRow({
                         header: `${catLabel} Contributions`,
                         items,
                         taxSplit:
-                          getAccountTypeConfig(
-                            cat,
-                          ).supportsRothSplit &&
+                          getAccountTypeConfig(cat).supportsRothSplit &&
                           slot &&
-                          (slot.rothContrib > 0 ||
-                            slot.traditionalContrib >
-                              0)
+                          (slot.rothContrib > 0 || slot.traditionalContrib > 0)
                             ? {
-                                traditional:
-                                  deflate(
-                                    slot.traditionalContrib,
-                                    yr.year,
-                                  ),
-                                roth: deflate(
-                                  slot.rothContrib,
+                                traditional: deflate(
+                                  slot.traditionalContrib,
                                   yr.year,
                                 ),
+                                roth: deflate(slot.rothContrib, yr.year),
                               }
                             : undefined,
                         rateCeiling:
-                          yr.rateCeilingScale !=
-                            null &&
-                          yr.rateCeilingScale <
-                            1 &&
+                          yr.rateCeilingScale != null &&
+                          yr.rateCeilingScale < 1 &&
                           yr.rateCeilingScale > 0
                             ? {
                                 uncapped: deflate(
-                                  safeDivide(
-                                    emp,
-                                    yr.rateCeilingScale,
-                                  ),
+                                  safeDivide(emp, yr.rateCeilingScale),
                                   yr.year,
                                 ),
-                                capped: deflate(
-                                  emp,
-                                  yr.year,
-                                ),
-                                pct:
-                                  1 -
-                                  yr.rateCeilingScale,
+                                capped: deflate(emp, yr.year),
+                                pct: 1 - yr.rateCeilingScale,
                               }
                             : undefined,
                         irsLimit: slot
                           ? {
                               category: catLabel,
-                              limit: deflate(
-                                slot.irsLimit,
-                                yr.year,
-                              ),
-                              used: deflate(
-                                emp,
-                                yr.year,
-                              ),
+                              limit: deflate(slot.irsLimit, yr.year),
+                              used: deflate(emp, yr.year),
                             }
                           : undefined,
                         proRate:
-                          yr.proRateFraction !=
-                          null
+                          yr.proRateFraction != null
                             ? {
-                                months:
-                                  proRateMonths(
-                                    yr.proRateFraction,
-                                  ),
-                                annualAmount:
-                                  deflate(
-                                    specTotal,
-                                    yr.year,
-                                  ),
-                                proRatedAmount:
-                                  deflate(
-                                    emp,
-                                    yr.year,
-                                  ),
+                                months: proRateMonths(yr.proRateFraction),
+                                annualAmount: deflate(specTotal, yr.year),
+                                proRatedAmount: deflate(emp, yr.year),
                               }
                             : undefined,
                       });
                     })()
                   : undefined;
               return (
-                <Tooltip
-                  key={cat}
-                  content={finalTooltip}
-                  side="top"
-                >
+                <Tooltip key={cat} content={finalTooltip} side="top">
                   <td
                     className={`text-right py-1.5 px-2 ${accountTextColor(cat)}`}
                   >
-                    {formatCurrency(
-                      deflate(total, yr.year),
-                    )}
+                    {formatCurrency(deflate(total, yr.year))}
                     {match > 0 && (
                       <span className="text-[9px] text-green-600 align-super ml-px">
                         +m
                       </span>
                     )}
-                    {getAccountTypeConfig(cat)
-                      .hasIrsLimit &&
+                    {getAccountTypeConfig(cat).hasIrsLimit &&
                       slot?.cappedByAccount && (
-                        <Tooltip
-                          content="Account cap hit"
-                          side="top"
-                        >
-                          <span className="text-amber-500 ml-0.5">
-                            ^
-                          </span>
+                        <Tooltip content="Account cap hit" side="top">
+                          <span className="text-amber-500 ml-0.5">^</span>
                         </Tooltip>
                       )}
                   </td>
@@ -684,199 +518,118 @@ export function AccumulationRow({
           {getAllCategories()
             .filter(
               (c) =>
-                ACCOUNT_TYPE_CONFIG[c]
-                  .isOverflowTarget &&
+                ACCOUNT_TYPE_CONFIG[c].isOverflowTarget &&
                 visibleColumns.contribCats.has(c),
             )
             .map((ofCat) => {
               const bSlot = slotMap.get(ofCat);
               const ofSpecs =
-                contribSpecs?.filter(
-                  (s) => s.category === ofCat,
-                ) ?? [];
-              const ofLabel =
-                getAccountTypeConfig(
-                  ofCat,
-                ).displayLabel;
-              const ofRawMatch =
-                bSlot?.employerMatch ?? 0;
+                contribSpecs?.filter((s) => s.category === ofCat) ?? [];
+              const ofLabel = getAccountTypeConfig(ofCat).displayLabel;
+              const ofRawMatch = bSlot?.employerMatch ?? 0;
               // Prefer person filter, then parentCategory filter, then raw slot
               const ofContrib =
                 pt?.byCategoryContrib[ofCat] ??
                 (parentCategoryFilter
-                  ? pcfBrokContrib ?? {
+                  ? (pcfBrokContrib ?? {
                       employee: 0,
                       match: 0,
-                    }
+                    })
                   : null);
               const ofEmp = ofContrib
                 ? ofContrib.employee
                 : (bSlot?.employeeContrib ?? 0);
-              const ofMatch = ofContrib
-                ? ofContrib.match
-                : ofRawMatch;
+              const ofMatch = ofContrib ? ofContrib.match : ofRawMatch;
               const finalOfTooltip =
-                bSlot &&
-                (ofEmp > 0 || ofMatch > 0)
+                bSlot && (ofEmp > 0 || ofMatch > 0)
                   ? (() => {
-                      const allMatchAnnual =
-                        ofSpecs.reduce(
-                          (s, sp) =>
-                            s +
-                            (sp.matchAnnual ?? 0),
-                          0,
-                        );
+                      const allMatchAnnual = ofSpecs.reduce(
+                        (s, sp) => s + (sp.matchAnnual ?? 0),
+                        0,
+                      );
                       const items: TooltipLineItem[] =
                         ofSpecs.length > 0
                           ? ofSpecs.map((sp) => {
-                              const bSpecTotal =
-                                ofSpecs.reduce(
-                                  (s, s2) =>
-                                    s +
-                                    (s2.baseAnnual ||
-                                      0),
-                                  0,
-                                );
-                              const frac =
-                                specFrac({
-                                  baseAnnual:
-                                    sp.baseAnnual ||
-                                    0,
-                                  specTotal:
-                                    bSpecTotal,
-                                  specCount:
-                                    ofSpecs.length,
-                                });
-                              const label =
-                                sp.ownerName
-                                  ? `${sp.ownerName} (${sp.name})`
-                                  : sp.name;
-                              const personOf =
-                                ofEmp * frac;
-                              const mFrac =
-                                matchFracOf({
-                                  matchAnnual:
-                                    sp.matchAnnual ??
-                                    0,
-                                  allMatchAnnual,
-                                });
-                              const spMatch =
-                                ofMatch *
-                                mFrac;
+                              const bSpecTotal = ofSpecs.reduce(
+                                (s, s2) => s + (s2.baseAnnual || 0),
+                                0,
+                              );
+                              const frac = specFrac({
+                                baseAnnual: sp.baseAnnual || 0,
+                                specTotal: bSpecTotal,
+                                specCount: ofSpecs.length,
+                              });
+                              const label = sp.ownerName
+                                ? `${sp.ownerName} (${sp.name})`
+                                : sp.name;
+                              const personOf = ofEmp * frac;
+                              const mFrac = matchFracOf({
+                                matchAnnual: sp.matchAnnual ?? 0,
+                                allMatchAnnual,
+                              });
+                              const spMatch = ofMatch * mFrac;
                               return {
                                 label,
-                                amount: deflate(
-                                  personOf,
-                                  yr.year,
-                                ),
+                                amount: deflate(personOf, yr.year),
                                 match:
                                   spMatch > 0
-                                    ? deflate(
-                                        spMatch,
-                                        yr.year,
-                                      )
+                                    ? deflate(spMatch, yr.year)
                                     : undefined,
-                                matchLabel:
-                                  getDisplayConfig(
-                                    ofCat,
-                                    sp.name !==
-                                      ofCat
-                                      ? sp.name
-                                      : undefined,
-                                  )
-                                    .employerMatchLabel,
+                                matchLabel: getDisplayConfig(
+                                  ofCat,
+                                  sp.name !== ofCat ? sp.name : undefined,
+                                ).employerMatchLabel,
                               };
                             })
                           : [
                               {
                                 label: "Employee",
-                                amount: deflate(
-                                  ofEmp,
-                                  yr.year,
-                                ),
+                                amount: deflate(ofEmp, yr.year),
                                 match:
                                   ofMatch > 0
-                                    ? deflate(
-                                        ofMatch,
-                                        yr.year,
-                                      )
+                                    ? deflate(ofMatch, yr.year)
                                     : undefined,
                                 matchLabel:
-                                  getDisplayConfig(
-                                    ofCat,
-                                  )
-                                    .employerMatchLabel,
+                                  getDisplayConfig(ofCat).employerMatchLabel,
                               },
                             ];
-                      const ofAnnual =
-                        ofSpecs.reduce(
-                          (s, sp) =>
-                            s +
-                            (sp.baseAnnual || 0),
-                          0,
-                        );
+                      const ofAnnual = ofSpecs.reduce(
+                        (s, sp) => s + (sp.baseAnnual || 0),
+                        0,
+                      );
                       return renderTooltip({
                         kind: "money",
                         header: `${ofLabel} Contributions`,
                         items,
                         rateCeiling:
-                          yr.rateCeilingScale !=
-                            null &&
-                          yr.rateCeilingScale < 1
+                          yr.rateCeilingScale != null && yr.rateCeilingScale < 1
                             ? {
                                 uncapped: deflate(
-                                  ofEmp /
-                                    yr.rateCeilingScale,
+                                  ofEmp / yr.rateCeilingScale,
                                   yr.year,
                                 ),
-                                capped: deflate(
-                                  ofEmp,
-                                  yr.year,
-                                ),
-                                pct:
-                                  1 -
-                                  yr.rateCeilingScale,
+                                capped: deflate(ofEmp, yr.year),
+                                pct: 1 - yr.rateCeilingScale,
                               }
                             : undefined,
                         proRate:
-                          yr.proRateFraction !=
-                            null && ofAnnual > 0
+                          yr.proRateFraction != null && ofAnnual > 0
                             ? {
-                                months:
-                                  proRateMonths(
-                                    yr.proRateFraction,
-                                  ),
-                                annualAmount:
-                                  deflate(
-                                    ofAnnual,
-                                    yr.year,
-                                  ),
-                                proRatedAmount:
-                                  deflate(
-                                    ofEmp,
-                                    yr.year,
-                                  ),
+                                months: proRateMonths(yr.proRateFraction),
+                                annualAmount: deflate(ofAnnual, yr.year),
+                                proRatedAmount: deflate(ofEmp, yr.year),
                               }
                             : undefined,
                       });
                     })()
                   : undefined;
               return (
-                <Tooltip
-                  key={ofCat}
-                  content={finalOfTooltip}
-                  side="top"
-                >
+                <Tooltip key={ofCat} content={finalOfTooltip} side="top">
                   <td
                     className={`text-right py-1.5 px-2 ${accountTextColor(ofCat)}${yr.overflowToBrokerage > 0 ? " font-medium" : ""}`}
                   >
                     {ofEmp + ofMatch > 0
-                      ? formatCurrency(
-                          deflate(
-                            ofEmp + ofMatch,
-                            yr.year,
-                          ),
-                        )
+                      ? formatCurrency(deflate(ofEmp + ofMatch, yr.year))
                       : "---"}
                     {ofMatch > 0 && (
                       <span className="text-[9px] text-green-600 align-super ml-px">
@@ -890,17 +643,8 @@ export function AccumulationRow({
         </>
       ) : (
         /* Contribution columns by tax type */
-        (
-          [
-            "preTax",
-            "taxFree",
-            "hsa",
-            "afterTax",
-          ] as const
-        )
-          .filter((t) =>
-            visibleColumns.contribTaxTypes.has(t),
-          )
+        (["preTax", "taxFree", "hsa", "afterTax"] as const)
+          .filter((t) => visibleColumns.contribTaxTypes.has(t))
           .map((bucket) => {
             // Build per-spec items for this tax bucket
             let bucketTotal = 0;
@@ -910,20 +654,14 @@ export function AccumulationRow({
             for (const slot of yr.slots) {
               const cat = slot.category;
               const allCatSpecs =
-                contribSpecs?.filter(
-                  (s) => s.category === cat,
-                ) ?? [];
-              const allMatchAnnual =
-                allCatSpecs.reduce(
-                  (s, sp) =>
-                    s + (sp.matchAnnual ?? 0),
-                  0,
-                );
+                contribSpecs?.filter((s) => s.category === cat) ?? [];
+              const allMatchAnnual = allCatSpecs.reduce(
+                (s, sp) => s + (sp.matchAnnual ?? 0),
+                0,
+              );
               // Determine which specs and slot amounts apply to this bucket (data-driven via bucketSlotMap)
               const isOFTarget =
-                ACCOUNT_TYPE_CONFIG[
-                  cat as AcctCat
-                ]?.isOverflowTarget;
+                ACCOUNT_TYPE_CONFIG[cat as AcctCat]?.isOverflowTarget;
               // When parentCategoryFilter active, use filtered brokerage data
               const slotEmp =
                 parentCategoryFilter && isOFTarget
@@ -933,36 +671,18 @@ export function AccumulationRow({
                 parentCategoryFilter && isOFTarget
                   ? (pcfBrokContrib?.match ?? 0)
                   : slot.employerMatch;
-              const bucketSpecs =
-                filterSpecsForBucket(
-                  allCatSpecs,
-                  bucket,
-                );
-              const isAssoc =
-                bucketSlotMap[bucket]
-                  ?.matchIsAssociated ?? false;
-              if (
-                slotEmp === 0 &&
-                slotMatch === 0
-              )
-                continue;
-              if (bucketSpecs.length === 0)
-                continue;
+              const bucketSpecs = filterSpecsForBucket(allCatSpecs, bucket);
+              const isAssoc = bucketSlotMap[bucket]?.matchIsAssociated ?? false;
+              if (slotEmp === 0 && slotMatch === 0) continue;
+              if (bucketSpecs.length === 0) continue;
               // Distribute slot amounts proportionally across specs
-              const specBaseTotal =
-                bucketSpecs.reduce(
-                  (s, sp) =>
-                    s + (sp.baseAnnual || 0),
-                  0,
-                );
-              const catLabel =
-                catDisplayLabel[cat] ?? cat;
+              const specBaseTotal = bucketSpecs.reduce(
+                (s, sp) => s + (sp.baseAnnual || 0),
+                0,
+              );
+              const catLabel = catDisplayLabel[cat] ?? cat;
               for (const sp of bucketSpecs) {
-                if (
-                  isPersonFiltered &&
-                  sp.personId !== personFilter
-                )
-                  continue;
+                if (isPersonFiltered && sp.personId !== personFilter) continue;
                 const frac = specFrac({
                   baseAnnual: sp.baseAnnual || 0,
                   specTotal: specBaseTotal,
@@ -970,50 +690,30 @@ export function AccumulationRow({
                 });
                 const emp = slotEmp * frac;
                 const mFrac = matchFracOf({
-                  matchAnnual:
-                    sp.matchAnnual ?? 0,
+                  matchAnnual: sp.matchAnnual ?? 0,
                   allMatchAnnual,
                 });
                 let mtch = 0;
                 let assocMtch = 0;
                 if (isAssoc) {
-                  assocMtch =
-                    slotMatch * mFrac;
+                  assocMtch = slotMatch * mFrac;
                 } else {
-                  mtch =
-                    slotMatch * mFrac;
+                  mtch = slotMatch * mFrac;
                 }
-                if (
-                  emp > 0 ||
-                  mtch > 0 ||
-                  assocMtch > 0
-                ) {
+                if (emp > 0 || mtch > 0 || assocMtch > 0) {
                   items.push({
                     label: sp.ownerName
                       ? `${sp.ownerName} ${catLabel}`
                       : catLabel,
                     amount: deflate(emp, yr.year),
-                    taxType: itemTaxType(
-                      cat,
-                      sp.taxTreatment,
-                    ),
-                    match:
-                      mtch > 0
-                        ? deflate(mtch, yr.year)
-                        : undefined,
+                    taxType: itemTaxType(cat, sp.taxTreatment),
+                    match: mtch > 0 ? deflate(mtch, yr.year) : undefined,
                     matchLabel: getDisplayConfig(
                       cat,
-                      sp.name !== cat
-                        ? sp.name
-                        : undefined,
+                      sp.name !== cat ? sp.name : undefined,
                     ).employerMatchLabel,
                     associatedMatch:
-                      assocMtch > 0
-                        ? deflate(
-                            assocMtch,
-                            yr.year,
-                          )
-                        : undefined,
+                      assocMtch > 0 ? deflate(assocMtch, yr.year) : undefined,
                   });
                   bucketTotal += emp;
                   bucketMatch += mtch;
@@ -1021,39 +721,24 @@ export function AccumulationRow({
                 }
               }
             }
-            const total =
-              bucketTotal + bucketMatch;
+            const total = bucketTotal + bucketMatch;
             // Compute annual (full-year) amount from specs for this bucket (data-driven)
             let bucketAnnual = 0;
             const bMap = bucketSlotMap[bucket];
             for (const slot of yr.slots) {
               // Skip slots that don't contribute to this bucket
-              if (
-                bMap?.categoryFilter &&
-                slot.category !==
-                  bMap.categoryFilter
-              )
+              if (bMap?.categoryFilter && slot.category !== bMap.categoryFilter)
                 continue;
               if (
                 !bMap?.categoryFilter &&
-                _singleBucketCategories.has(
-                  slot.category,
-                )
+                _singleBucketCategories.has(slot.category)
               )
                 continue;
               const catSpAll =
-                contribSpecs?.filter(
-                  (s) =>
-                    s.category === slot.category,
-                ) ?? [];
-              const filtered =
-                filterSpecsForBucket(
-                  catSpAll,
-                  bucket,
-                );
+                contribSpecs?.filter((s) => s.category === slot.category) ?? [];
+              const filtered = filterSpecsForBucket(catSpAll, bucket);
               bucketAnnual += filtered.reduce(
-                (s, sp) =>
-                  s + (sp.baseAnnual || 0),
+                (s, sp) => s + (sp.baseAnnual || 0),
                 0,
               );
             }
@@ -1071,17 +756,11 @@ export function AccumulationRow({
                             items.length > 1
                               ? {
                                   label: "Total",
-                                  amount: deflate(
-                                    bucketTotal,
-                                    yr.year,
-                                  ),
+                                  amount: deflate(bucketTotal, yr.year),
                                   match:
-                                    bucketMatch +
-                                      bucketAssocMatch >
-                                    0
+                                    bucketMatch + bucketAssocMatch > 0
                                       ? deflate(
-                                          bucketMatch +
-                                            bucketAssocMatch,
+                                          bucketMatch + bucketAssocMatch,
                                           yr.year,
                                         )
                                       : undefined,
@@ -1092,24 +771,11 @@ export function AccumulationRow({
                               ? `Match flows to ${taxTypeLabel("preTax")}`
                               : undefined,
                           proRate:
-                            yr.proRateFraction !=
-                              null &&
-                            bucketAnnual > 0
+                            yr.proRateFraction != null && bucketAnnual > 0
                               ? {
-                                  months:
-                                    proRateMonths(
-                                      yr.proRateFraction,
-                                    ),
-                                  annualAmount:
-                                    deflate(
-                                      bucketAnnual,
-                                      yr.year,
-                                    ),
-                                  proRatedAmount:
-                                    deflate(
-                                      bucketTotal,
-                                      yr.year,
-                                    ),
+                                  months: proRateMonths(yr.proRateFraction),
+                                  annualAmount: deflate(bucketAnnual, yr.year),
+                                  proRatedAmount: deflate(bucketTotal, yr.year),
                                 }
                               : undefined,
                         });
@@ -1121,13 +787,8 @@ export function AccumulationRow({
                 <td
                   className={`text-right py-1.5 px-2 ${taxTypeTextColor(bucket)}`}
                 >
-                  {total > 0
-                    ? formatCurrency(
-                        deflate(total, yr.year),
-                      )
-                    : "---"}
-                  {(bucketMatch > 0 ||
-                    bucketAssocMatch > 0) && (
+                  {total > 0 ? formatCurrency(deflate(total, yr.year)) : "---"}
+                  {(bucketMatch > 0 || bucketAssocMatch > 0) && (
                     <span className="text-[9px] text-green-600 align-super ml-px">
                       +m
                     </span>
@@ -1139,55 +800,30 @@ export function AccumulationRow({
       )}
       <Tooltip
         content={(() => {
-          const iabs =
-            yr.individualAccountBalances ?? [];
+          const iabs = yr.individualAccountBalances ?? [];
           const totalGrowth = (
-            pt
-              ? iabs.filter(
-                  (ia) =>
-                    ia.ownerPersonId ===
-                    personFilter,
-                )
-              : iabs
+            pt ? iabs.filter((ia) => ia.ownerPersonId === personFilter) : iabs
           ).reduce((s, ia) => s + ia.growth, 0);
           const accBudgetProfile =
             accumulationBudgetProfileId != null
               ? budgetProfileSummaries?.find(
-                  (p) =>
-                    p.id ===
-                    accumulationBudgetProfileId,
+                  (p) => p.id === accumulationBudgetProfileId,
                 )
               : undefined;
           const mine = pt
-            ? iabs.filter(
-                (ia) =>
-                  ia.ownerPersonId ===
-                  personFilter,
-              )
+            ? iabs.filter((ia) => ia.ownerPersonId === personFilter)
             : [];
           const empAmount = deflate(
-            pt
-              ? pt.contribution
-              : yr.totalEmployee -
-                  pcfBrokAdj.employee,
+            pt ? pt.contribution : yr.totalEmployee - pcfBrokAdj.employee,
             yr.year,
           );
           const matchAmount = pt
             ? deflate(
-                mine.reduce(
-                  (s, ia) => s + ia.employerMatch,
-                  0,
-                ),
+                mine.reduce((s, ia) => s + ia.employerMatch, 0),
                 yr.year,
               )
-            : yr.totalEmployer -
-                  pcfBrokAdj.match >
-                0
-              ? deflate(
-                  yr.totalEmployer -
-                    pcfBrokAdj.match,
-                  yr.year,
-                )
+            : yr.totalEmployer - pcfBrokAdj.match > 0
+              ? deflate(yr.totalEmployer - pcfBrokAdj.match, yr.year)
               : 0;
           const budgetProfileName =
             accumulationExpenseOverride != null
@@ -1196,8 +832,7 @@ export function AccumulationRow({
                 ? `${accBudgetProfile.name}${accumulationBudgetColumn != null && accBudgetProfile.columnLabels[accumulationBudgetColumn] ? ` (${accBudgetProfile.columnLabels[accumulationBudgetColumn]})` : ""}${yr.hasBudgetOverride && budgetOverrideNotes ? ` (${budgetOverrideNotes})` : ""}`
                 : undefined;
           // Build per-bucket items from slots (shows all tax types that have contributions)
-          const inOutItems: TooltipLineItem[] =
-            [];
+          const inOutItems: TooltipLineItem[] = [];
           if (matchAmount > 0)
             inOutItems.push({
               label: "Match",
@@ -1213,68 +848,37 @@ export function AccumulationRow({
             if (yr.totalTraditional > 0)
               bucketTotals.push({
                 label: taxTypeLabel("preTax"),
-                amount: deflate(
-                  yr.totalTraditional,
-                  yr.year,
-                ),
+                amount: deflate(yr.totalTraditional, yr.year),
                 color: "blue",
               });
             if (yr.totalRoth > 0)
               bucketTotals.push({
                 label: taxTypeLabel("taxFree"),
-                amount: deflate(
-                  yr.totalRoth,
-                  yr.year,
-                ),
+                amount: deflate(yr.totalRoth, yr.year),
                 color: "violet",
               });
             // Single-bucket categories (HSA, brokerage, etc.)
             for (const sbCat of getAllCategories().filter(
-              (c) =>
-                !ACCOUNT_TYPE_CONFIG[c]
-                  .supportsRothSplit,
+              (c) => !ACCOUNT_TYPE_CONFIG[c].supportsRothSplit,
             )) {
-              const isOF =
-                ACCOUNT_TYPE_CONFIG[sbCat]
-                  ?.isOverflowTarget;
+              const isOF = ACCOUNT_TYPE_CONFIG[sbCat]?.isOverflowTarget;
               // When parentCategoryFilter active, use filtered brokerage data
-              if (
-                parentCategoryFilter &&
-                isOF
-              ) {
-                const filteredEmp =
-                  pcfBrokContrib?.employee ?? 0;
+              if (parentCategoryFilter && isOF) {
+                const filteredEmp = pcfBrokContrib?.employee ?? 0;
                 if (filteredEmp > 0) {
                   bucketTotals.push({
-                    label:
-                      getAccountTypeConfig(sbCat)
-                        .displayLabel,
-                    amount: deflate(
-                      filteredEmp,
-                      yr.year,
-                    ),
+                    label: getAccountTypeConfig(sbCat).displayLabel,
+                    amount: deflate(filteredEmp, yr.year),
                     color: "amber",
                   });
                 }
               } else {
-                const sbSlot = yr.slots.find(
-                  (s) => s.category === sbCat,
-                );
-                if (
-                  sbSlot &&
-                  sbSlot.employeeContrib > 0
-                ) {
+                const sbSlot = yr.slots.find((s) => s.category === sbCat);
+                if (sbSlot && sbSlot.employeeContrib > 0) {
                   bucketTotals.push({
-                    label:
-                      getAccountTypeConfig(sbCat)
-                        .displayLabel,
-                    amount: deflate(
-                      sbSlot.employeeContrib,
-                      yr.year,
-                    ),
-                    color: isOF
-                      ? "amber"
-                      : "emerald",
+                    label: getAccountTypeConfig(sbCat).displayLabel,
+                    amount: deflate(sbSlot.employeeContrib, yr.year),
+                    color: isOF ? "amber" : "emerald",
                   });
                 }
               }
@@ -1289,23 +893,16 @@ export function AccumulationRow({
             }[] = [];
             let ptTrad = 0,
               ptRoth = 0;
-            const ptSingleBucket = new Map<
-              string,
-              number
-            >();
+            const ptSingleBucket = new Map<string, number>();
             for (const ia of mine) {
-              const cfg =
-                ACCOUNT_TYPE_CONFIG[ia.category];
+              const cfg = ACCOUNT_TYPE_CONFIG[ia.category];
               if (cfg?.supportsRothSplit) {
-                if (ia.taxType === "preTax")
-                  ptTrad += ia.contribution;
+                if (ia.taxType === "preTax") ptTrad += ia.contribution;
                 else ptRoth += ia.contribution;
               } else {
                 ptSingleBucket.set(
                   ia.category,
-                  (ptSingleBucket.get(
-                    ia.category,
-                  ) ?? 0) + ia.contribution,
+                  (ptSingleBucket.get(ia.category) ?? 0) + ia.contribution,
                 );
               }
             }
@@ -1321,19 +918,13 @@ export function AccumulationRow({
                 amount: deflate(ptRoth, yr.year),
                 color: "violet",
               });
-            Array.from(
-              ptSingleBucket.entries(),
-            ).forEach(([sbCat, sbAmt]) => {
+            Array.from(ptSingleBucket.entries()).forEach(([sbCat, sbAmt]) => {
               if (sbAmt > 0) {
-                const cfg = getAccountTypeConfig(
-                  sbCat as AccountCategory,
-                );
+                const cfg = getAccountTypeConfig(sbCat as AccountCategory);
                 bucketTotals.push({
                   label: cfg.displayLabel,
                   amount: deflate(sbAmt, yr.year),
-                  color: cfg.isOverflowTarget
-                    ? "amber"
-                    : "emerald",
+                  color: cfg.isOverflowTarget ? "amber" : "emerald",
                 });
               }
             });
@@ -1342,35 +933,23 @@ export function AccumulationRow({
           return renderTooltip({
             kind: "money",
             header: `${isPersonFiltered ? personFilterName : "Employee"}: ${formatCurrency(empAmount)}`,
-            items:
-              inOutItems.length > 0
-                ? inOutItems
-                : undefined,
+            items: inOutItems.length > 0 ? inOutItems : undefined,
             growth:
               Math.abs(totalGrowth) > 1
                 ? {
-                    amount: deflate(
-                      totalGrowth,
-                      yr.year,
-                    ),
+                    amount: deflate(totalGrowth, yr.year),
                   }
                 : undefined,
             budget: budgetProfileName
               ? {
                   profile: budgetProfileName,
-                  amount: deflate(
-                    yr.projectedExpenses,
-                    yr.year,
-                  ),
+                  amount: deflate(yr.projectedExpenses, yr.year),
                 }
               : undefined,
             overrideNote:
               accumOverrideNotes &&
               !accumOverrides.some(
-                (o) =>
-                  o.year === yr.year &&
-                  o.contributionRate !==
-                    undefined,
+                (o) => o.year === yr.year && o.contributionRate !== undefined,
               )
                 ? `Override: ${accumOverrideNotes}`
                 : undefined,
@@ -1379,22 +958,14 @@ export function AccumulationRow({
                 ? (() => {
                     const totalAnnual =
                       contribSpecs?.reduce(
-                        (s, sp) =>
-                          s +
-                          (sp.baseAnnual || 0),
+                        (s, sp) => s + (sp.baseAnnual || 0),
                         0,
                       ) ?? 0;
                     return totalAnnual > 0
                       ? {
-                          months: proRateMonths(
-                            yr.proRateFraction,
-                          ),
-                          annualAmount: deflate(
-                            totalAnnual,
-                            yr.year,
-                          ),
-                          proRatedAmount:
-                            empAmount,
+                          months: proRateMonths(yr.proRateFraction),
+                          annualAmount: deflate(totalAnnual, yr.year),
+                          proRatedAmount: empAmount,
                         }
                       : undefined;
                   })()
@@ -1415,9 +986,7 @@ export function AccumulationRow({
               yr.year,
             ),
           )}
-          {yr.totalEmployer -
-            pcfBrokAdj.match >
-            0 && (
+          {yr.totalEmployer - pcfBrokAdj.match > 0 && (
             <span className="text-[9px] text-green-600 align-super ml-px">
               +m
             </span>
@@ -1425,126 +994,70 @@ export function AccumulationRow({
         </td>
       </Tooltip>
       {balanceView === "taxType" ? (
-        (
-          [
-            "preTax",
-            "taxFree",
-            "hsa",
-            "afterTax",
-          ] as const
-        )
-          .filter((t) =>
-            visibleColumns.balanceTaxTypes.has(t),
-          )
+        (["preTax", "taxFree", "hsa", "afterTax"] as const)
+          .filter((t) => visibleColumns.balanceTaxTypes.has(t))
           .map((bucket) => {
-            const bal = pt
-              ? pt.byTaxType[bucket]
-              : yr.balanceByTaxType[bucket];
-            const totalBal = pt
-              ? pt.balance
-              : yr.endBalance;
+            const bal = pt ? pt.byTaxType[bucket] : yr.balanceByTaxType[bucket];
+            const totalBal = pt ? pt.balance : yr.endBalance;
             const pct = pctOf(bal, totalBal);
             // Compute authoritative total change from engine's year-over-year balance
-            const prevYr =
-              result.projectionByYear.find(
-                (y) => y.year === yr.year - 1,
-              );
-            const prevPt = prevYr
-              ? getPersonYearTotals(prevYr)
-              : null;
+            const prevYr = result.projectionByYear.find(
+              (y) => y.year === yr.year - 1,
+            );
+            const prevPt = prevYr ? getPersonYearTotals(prevYr) : null;
             const prevBucketBal = prevYr
               ? prevPt
                 ? prevPt.byTaxType[bucket]
                 : prevYr.balanceByTaxType[bucket]
               : 0;
             // Compute splitContrib from authoritative slot data (mirrors engine balance routing)
-            const splitContrib =
-              slotsBucketBalanceInflow(
-                yr.slots,
-                bucket,
-              );
+            const splitContrib = slotsBucketBalanceInflow(yr.slots, bucket);
             // Build per-account items from individual account balances (for balance/growth detail)
-            const bucketAccts = (
-              yr.individualAccountBalances ?? []
-            ).filter(
+            const bucketAccts = (yr.individualAccountBalances ?? []).filter(
               (ia) =>
                 iaBelongsToBucket(ia, bucket) &&
-                (!isPersonFiltered ||
-                  ia.ownerPersonId ===
-                    personFilter),
+                (!isPersonFiltered || ia.ownerPersonId === personFilter),
             );
-            const {
-              splits: bucketSplits,
-              splitGrowth,
-            } = computeAccountSplits(bucketAccts);
-            const acctItems: TooltipLineItem[] =
-              bucketSplits.map((sp) => {
-                const subItems: TooltipLineItem[] =
-                  [];
-                if (sp.contribution > 1)
-                  subItems.push({
-                    label: "contrib",
-                    amount: deflate(
-                      sp.contribution,
-                      yr.year,
-                    ),
-                    prefix: "+",
-                    color: "green",
-                  });
-                if (Math.abs(sp.growth) > 1)
-                  subItems.push({
-                    label: "growth",
-                    amount: deflate(
-                      sp.growth,
-                      yr.year,
-                    ),
-                    prefix:
-                      sp.growth >= 0
-                        ? "+"
-                        : undefined,
-                    color:
-                      sp.growth >= 0
-                        ? "blue"
-                        : "red",
-                  });
-                return {
-                  label: sp.name,
-                  amount: deflate(
-                    sp.balance,
-                    yr.year,
-                  ),
-                  taxType: itemTaxType(
-                    sp.category,
-                    sp.taxType,
-                  ),
-                  sub:
-                    subItems.length > 0
-                      ? subItems
-                      : undefined,
-                };
-              });
-            const deflatedBal = deflate(
-              bal,
-              yr.year,
-            );
-            const {
-              displayChange,
-              displayContrib,
-              displayGrowth,
-              boyBal,
-            } = computeColumnChange({
-              deflate,
-              bal,
-              year: yr.year,
-              prev: prevYr
-                ? {
-                    bal: prevBucketBal,
-                    year: prevYr.year,
-                  }
-                : null,
-              splitContrib,
-              splitGrowth,
+            const { splits: bucketSplits, splitGrowth } =
+              computeAccountSplits(bucketAccts);
+            const acctItems: TooltipLineItem[] = bucketSplits.map((sp) => {
+              const subItems: TooltipLineItem[] = [];
+              if (sp.contribution > 1)
+                subItems.push({
+                  label: "contrib",
+                  amount: deflate(sp.contribution, yr.year),
+                  prefix: "+",
+                  color: "green",
+                });
+              if (Math.abs(sp.growth) > 1)
+                subItems.push({
+                  label: "growth",
+                  amount: deflate(sp.growth, yr.year),
+                  prefix: sp.growth >= 0 ? "+" : undefined,
+                  color: sp.growth >= 0 ? "blue" : "red",
+                });
+              return {
+                label: sp.name,
+                amount: deflate(sp.balance, yr.year),
+                taxType: itemTaxType(sp.category, sp.taxType),
+                sub: subItems.length > 0 ? subItems : undefined,
+              };
             });
+            const deflatedBal = deflate(bal, yr.year);
+            const { displayChange, displayContrib, displayGrowth, boyBal } =
+              computeColumnChange({
+                deflate,
+                bal,
+                year: yr.year,
+                prev: prevYr
+                  ? {
+                      bal: prevBucketBal,
+                      year: prevYr.year,
+                    }
+                  : null,
+                splitContrib,
+                splitGrowth,
+              });
             const changeParts: {
               label: string;
               amount: number;
@@ -1560,10 +1073,7 @@ export function AccumulationRow({
               changeParts.push({
                 label: "growth",
                 amount: displayGrowth,
-                color:
-                  displayGrowth >= 0
-                    ? "blue"
-                    : "red",
+                color: displayGrowth >= 0 ? "blue" : "red",
               });
             const tooltipContent =
               acctItems.length > 0
@@ -1576,37 +1086,22 @@ export function AccumulationRow({
                     yearChange: {
                       total: deflatedBal,
                       change: displayChange,
-                      parts:
-                        changeParts.length > 0
-                          ? changeParts
-                          : undefined,
+                      parts: changeParts.length > 0 ? changeParts : undefined,
                     },
                     proRate:
-                      yr.proRateFraction !=
-                        null &&
-                      yr.proRateFraction > 0
+                      yr.proRateFraction != null && yr.proRateFraction > 0
                         ? {
-                            months: proRateMonths(
-                              yr.proRateFraction,
-                            ),
+                            months: proRateMonths(yr.proRateFraction),
                             annualAmount: deflate(
-                              safeDivide(
-                                splitContrib,
-                                yr.proRateFraction,
-                              ),
+                              safeDivide(splitContrib, yr.proRateFraction),
                               yr.year,
                             ),
-                            proRatedAmount:
-                              deflate(
-                                splitContrib,
-                                yr.year,
-                              ),
+                            proRatedAmount: deflate(splitContrib, yr.year),
                           }
                         : undefined,
                     legend: [
                       {
-                        label:
-                          "Green = contributions",
+                        label: "Green = contributions",
                         color: "green",
                       },
                       {
@@ -1617,17 +1112,11 @@ export function AccumulationRow({
                   })
                 : undefined;
             return (
-              <Tooltip
-                key={bucket}
-                content={tooltipContent}
-                side="top"
-              >
+              <Tooltip key={bucket} content={tooltipContent} side="top">
                 <td
                   className={`text-right py-1.5 px-2 ${taxTypeTextColor(bucket)}`}
                 >
-                  {formatCurrency(
-                    deflate(bal, yr.year),
-                  )}
+                  {formatCurrency(deflate(bal, yr.year))}
                 </td>
               </Tooltip>
             );
@@ -1637,82 +1126,50 @@ export function AccumulationRow({
           {getAccountSegments()
             .map((seg) => ({
               key: seg.key,
-              val: getSegmentBalance(
-                yr.balanceByAccount,
-                seg,
-              ),
-              color: accountTextColor(
-                seg.category,
-              ),
+              val: getSegmentBalance(yr.balanceByAccount, seg),
+              color: accountTextColor(seg.category),
               label: seg.label,
             }))
-            .filter((col) =>
-              visibleColumns.balanceAccts.has(
-                col.key,
-              ),
-            )
+            .filter((col) => visibleColumns.balanceAccts.has(col.key))
             .map((col) => {
-              const catKey = colKeyParts(
-                col.key,
-              ).category;
-              const bal = pt
-                ? (pt.byAccount[col.key] ?? 0)
-                : col.val;
-              const totalBal = pt
-                ? pt.balance
-                : yr.endBalance;
+              const catKey = colKeyParts(col.key).category;
+              const bal = pt ? (pt.byAccount[col.key] ?? 0) : col.val;
+              const totalBal = pt ? pt.balance : yr.endBalance;
               const pct = pctOf(bal, totalBal);
               // Filter by the exact taxType this column represents
-              const colTaxType = colEngineTaxType(
-                col.key,
-              );
+              const colTaxType = colEngineTaxType(col.key);
               // Use engine's individualAccountBalances — includes all accounts
               // (not just snapshot), so contributions to new tax types appear.
-              const colIabs = (
-                yr.individualAccountBalances ?? []
-              ).filter(
+              const colIabs = (yr.individualAccountBalances ?? []).filter(
                 (ia) =>
                   ia.category === catKey &&
-                  (colTaxType == null ||
-                    ia.taxType === colTaxType) &&
-                  (!isPersonFiltered ||
-                    ia.ownerPersonId ===
-                      personFilter),
+                  (colTaxType == null || ia.taxType === colTaxType) &&
+                  (!isPersonFiltered || ia.ownerPersonId === personFilter),
               );
               // Get previous year's value for this column from the engine
-              const colPrevYr =
-                result.projectionByYear.find(
-                  (y) => y.year === yr.year - 1,
-                );
+              const colPrevYr = result.projectionByYear.find(
+                (y) => y.year === yr.year - 1,
+              );
               const colPrevPt = colPrevYr
                 ? getPersonYearTotals(colPrevYr)
                 : null;
               const colPrevVal = colPrevYr
                 ? colPrevPt
-                  ? (colPrevPt.byAccount[
-                      col.key
-                    ] ?? 0)
-                  : colBalance(
-                      colPrevYr.balanceByAccount,
-                      col.key,
-                    )
+                  ? (colPrevPt.byAccount[col.key] ?? 0)
+                  : colBalance(colPrevYr.balanceByAccount, col.key)
                 : 0;
               // splitContrib from authoritative slot data (mirrors engine balance routing)
-              const colSplitContrib =
-                slotsColumnBalanceInflow(
-                  yr.slots,
-                  col.key,
-                );
+              const colSplitContrib = slotsColumnBalanceInflow(
+                yr.slots,
+                col.key,
+              );
               // Per-account splits for balance/growth detail
-              const {
-                splits,
-                splitGrowth: colSplitGrowth,
-              } = computeAccountSplits(colIabs);
-              const colSplitsTotal =
-                splits.reduce(
-                  (s, sp) => s + sp.balance,
-                  0,
-                );
+              const { splits, splitGrowth: colSplitGrowth } =
+                computeAccountSplits(colIabs);
+              const colSplitsTotal = splits.reduce(
+                (s, sp) => s + sp.balance,
+                0,
+              );
               // Total change = difference of deflated balances (matches table rows)
               const {
                 displayChange: colDisplayChange,
@@ -1732,10 +1189,7 @@ export function AccumulationRow({
                 splitContrib: colSplitContrib,
                 splitGrowth: colSplitGrowth,
               });
-              const colDeflatedBal = deflate(
-                bal,
-                yr.year,
-              );
+              const colDeflatedBal = deflate(bal, yr.year);
               const tooltipContent =
                 splits.length > 0
                   ? (() => {
@@ -1747,90 +1201,48 @@ export function AccumulationRow({
                       if (colDisplayContrib > 0)
                         colChangeParts.push({
                           label: "contrib",
-                          amount:
-                            colDisplayContrib,
+                          amount: colDisplayContrib,
                           color: "green",
                         });
-                      if (
-                        Math.abs(
-                          colDisplayGrowth,
-                        ) > 1
-                      )
+                      if (Math.abs(colDisplayGrowth) > 1)
                         colChangeParts.push({
                           label: "growth",
-                          amount:
-                            colDisplayGrowth,
-                          color:
-                            colDisplayGrowth >= 0
-                              ? "blue"
-                              : "red",
+                          amount: colDisplayGrowth,
+                          color: colDisplayGrowth >= 0 ? "blue" : "red",
                         });
-                      const splitItems: TooltipLineItem[] =
-                        splits.map(
-                          ({
-                            name: acctName,
-                            taxType: spTaxType,
-                            balance: spBal,
-                            contribution:
-                              spContrib,
-                            growth: spGrowth,
-                          }) => {
-                            const entryPct =
-                              pctOf(
-                                spBal,
-                                colSplitsTotal,
-                              );
-                            const subItems: TooltipLineItem[] =
-                              [];
-                            if (spContrib > 1)
-                              subItems.push({
-                                label: "contrib",
-                                amount: deflate(
-                                  spContrib,
-                                  yr.year,
-                                ),
-                                prefix: "+",
-                                color: "green",
-                              });
-                            if (
-                              Math.abs(spGrowth) >
-                              1
-                            )
-                              subItems.push({
-                                label: "growth",
-                                amount: deflate(
-                                  spGrowth,
-                                  yr.year,
-                                ),
-                                prefix:
-                                  spGrowth >= 0
-                                    ? "+"
-                                    : undefined,
-                                color:
-                                  spGrowth >= 0
-                                    ? "blue"
-                                    : "red",
-                              });
-                            return {
-                              label: acctName,
-                              amount: deflate(
-                                spBal,
-                                yr.year,
-                              ),
-                              pct: entryPct,
-                              taxType:
-                                itemTaxType(
-                                  catKey,
-                                  spTaxType,
-                                ),
-                              sub:
-                                subItems.length >
-                                0
-                                  ? subItems
-                                  : undefined,
-                            };
-                          },
-                        );
+                      const splitItems: TooltipLineItem[] = splits.map(
+                        ({
+                          name: acctName,
+                          taxType: spTaxType,
+                          balance: spBal,
+                          contribution: spContrib,
+                          growth: spGrowth,
+                        }) => {
+                          const entryPct = pctOf(spBal, colSplitsTotal);
+                          const subItems: TooltipLineItem[] = [];
+                          if (spContrib > 1)
+                            subItems.push({
+                              label: "contrib",
+                              amount: deflate(spContrib, yr.year),
+                              prefix: "+",
+                              color: "green",
+                            });
+                          if (Math.abs(spGrowth) > 1)
+                            subItems.push({
+                              label: "growth",
+                              amount: deflate(spGrowth, yr.year),
+                              prefix: spGrowth >= 0 ? "+" : undefined,
+                              color: spGrowth >= 0 ? "blue" : "red",
+                            });
+                          return {
+                            label: acctName,
+                            amount: deflate(spBal, yr.year),
+                            pct: entryPct,
+                            taxType: itemTaxType(catKey, spTaxType),
+                            sub: subItems.length > 0 ? subItems : undefined,
+                          };
+                        },
+                      );
                       return renderTooltip({
                         kind: "money",
                         header: `${col.label}: ${pct}% of portfolio`,
@@ -1838,23 +1250,19 @@ export function AccumulationRow({
                         items: splitItems,
                         yearChange: {
                           total: colDeflatedBal,
-                          change:
-                            colDisplayChange,
+                          change: colDisplayChange,
                           parts:
-                            colChangeParts.length >
-                            0
+                            colChangeParts.length > 0
                               ? colChangeParts
                               : undefined,
                         },
                         legend: [
                           {
-                            label:
-                              "Green = contributions",
+                            label: "Green = contributions",
                             color: "green",
                           },
                           {
-                            label:
-                              "Blue = growth",
+                            label: "Blue = growth",
                             color: "blue",
                           },
                         ],
@@ -1862,17 +1270,9 @@ export function AccumulationRow({
                     })()
                   : undefined;
               return (
-                <Tooltip
-                  key={col.key}
-                  content={tooltipContent}
-                  side="top"
-                >
-                  <td
-                    className={`text-right py-1.5 px-2 ${col.color}`}
-                  >
-                    {formatCurrency(
-                      deflate(bal, yr.year),
-                    )}
+                <Tooltip key={col.key} content={tooltipContent} side="top">
+                  <td className={`text-right py-1.5 px-2 ${col.color}`}>
+                    {formatCurrency(deflate(bal, yr.year))}
                   </td>
                 </Tooltip>
               );
@@ -1883,26 +1283,14 @@ export function AccumulationRow({
         content={
           yr.endBalance > 0
             ? (() => {
-                const ptBal = pt
-                  ? pt.balance
-                  : yr.endBalance;
+                const ptBal = pt ? pt.balance : yr.endBalance;
                 const items: TooltipLineItem[] = (
-                  [
-                    "preTax",
-                    "taxFree",
-                    "hsa",
-                    "afterTax",
-                  ] as const
+                  ["preTax", "taxFree", "hsa", "afterTax"] as const
                 ).map((b) => {
-                  const bVal = pt
-                    ? pt.byTaxType[b]
-                    : yr.balanceByTaxType[b];
+                  const bVal = pt ? pt.byTaxType[b] : yr.balanceByTaxType[b];
                   return {
                     label: taxTypeLabel(b),
-                    amount: deflate(
-                      bVal,
-                      yr.year,
-                    ),
+                    amount: deflate(bVal, yr.year),
                     pct: pctOf(bVal, ptBal),
                   };
                 });
@@ -1915,28 +1303,17 @@ export function AccumulationRow({
                       ? (() => {
                           const totalAnnual =
                             contribSpecs?.reduce(
-                              (s, sp) =>
-                                s +
-                                (sp.baseAnnual ||
-                                  0),
+                              (s, sp) => s + (sp.baseAnnual || 0),
                               0,
                             ) ?? 0;
                           return totalAnnual > 0
                             ? {
-                                months:
-                                  proRateMonths(
-                                    yr.proRateFraction,
-                                  ),
-                                annualAmount:
-                                  deflate(
-                                    totalAnnual,
-                                    yr.year,
-                                  ),
-                                proRatedAmount:
-                                  deflate(
-                                    yr.totalEmployee,
-                                    yr.year,
-                                  ),
+                                months: proRateMonths(yr.proRateFraction),
+                                annualAmount: deflate(totalAnnual, yr.year),
+                                proRatedAmount: deflate(
+                                  yr.totalEmployee,
+                                  yr.year,
+                                ),
                               }
                             : undefined;
                         })()
@@ -1948,20 +1325,12 @@ export function AccumulationRow({
         side="top"
       >
         <td className="text-right py-1.5 px-2 font-semibold">
-          {formatCurrency(
-            deflate(
-              pt ? pt.balance : yr.endBalance,
-              yr.year,
-            ),
-          )}
+          {formatCurrency(deflate(pt ? pt.balance : yr.endBalance, yr.year))}
         </td>
       </Tooltip>
       {renderMcCell(
         yr,
-        deflate(
-          pt ? pt.balance : yr.endBalance,
-          yr.year,
-        ),
+        deflate(pt ? pt.balance : yr.endBalance, yr.year),
         mcCellOpts,
       )}
       <td className="py-1.5 pl-2 text-[10px] text-faint whitespace-nowrap border-l border-subtle">
@@ -1985,12 +1354,7 @@ export function AccumulationRow({
           >
             <span className="text-amber-600">
               ↗{""}
-              {formatCurrency(
-                deflate(
-                  yr.overflowToBrokerage,
-                  yr.year,
-                ),
-              )}
+              {formatCurrency(deflate(yr.overflowToBrokerage, yr.year))}
               {""}
               overflow
             </span>

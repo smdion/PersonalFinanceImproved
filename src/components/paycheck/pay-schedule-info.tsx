@@ -103,7 +103,9 @@ export function PayScheduleInfo({
               onChange={(e) =>
                 onUpdateJob("budgetPeriodsPerMonth", e.target.value || "")
               }
-              placeholder={String(PAY_PERIOD_CONFIG[job.payPeriod]?.defaultBudgetPerMonth ?? "")}
+              placeholder={String(
+                PAY_PERIOD_CONFIG[job.payPeriod]?.defaultBudgetPerMonth ?? "",
+              )}
               className="text-xs border rounded px-1.5 py-0.5 bg-surface-primary hover:border-strong cursor-pointer w-[60px]"
             />
           </label>

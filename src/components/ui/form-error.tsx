@@ -23,17 +23,19 @@ type FormErrorProps = {
   className?: string;
 };
 
-export function FormError({ error, message, prefix, className }: FormErrorProps) {
+export function FormError({
+  error,
+  message,
+  prefix,
+  className,
+}: FormErrorProps) {
   const text = message ?? error?.message ?? null;
   if (!text) return null;
 
   const display = prefix ? `${prefix}: ${text}` : text;
 
   return (
-    <p
-      role="alert"
-      className={`text-xs text-red-600 mt-1 ${className ?? ""}`}
-    >
+    <p role="alert" className={`text-xs text-red-600 mt-1 ${className ?? ""}`}>
       {display}
     </p>
   );
@@ -43,7 +45,12 @@ export function FormError({ error, message, prefix, className }: FormErrorProps)
  * Larger block-level form error, matching the onboarding wizard style.
  * Use for top-of-form or section-level errors.
  */
-export function FormErrorBlock({ error, message, prefix, className }: FormErrorProps) {
+export function FormErrorBlock({
+  error,
+  message,
+  prefix,
+  className,
+}: FormErrorProps) {
   const text = message ?? error?.message ?? null;
   if (!text) return null;
 

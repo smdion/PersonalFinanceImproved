@@ -17,9 +17,7 @@ if (isPostgres()) {
 
   const pool = new pg.Pool({
     connectionString: env.DATABASE_URL,
-    ssl: env.DATABASE_SSL === "true"
-      ? { rejectUnauthorized: false }
-      : false,
+    ssl: env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : false,
     max: env.DATABASE_POOL_MAX ? Number(env.DATABASE_POOL_MAX) : 20,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,

@@ -145,23 +145,17 @@
         },
         "account_performance_owner_id_idx": {
           "name": "account_performance_owner_id_idx",
-          "columns": [
-            "owner_person_id"
-          ],
+          "columns": ["owner_person_id"],
           "isUnique": false
         },
         "account_performance_perf_acct_idx": {
           "name": "account_performance_perf_acct_idx",
-          "columns": [
-            "performance_account_id"
-          ],
+          "columns": ["performance_account_id"],
           "isUnique": false
         },
         "account_performance_is_active_idx": {
           "name": "account_performance_is_active_idx",
-          "columns": [
-            "is_active"
-          ],
+          "columns": ["is_active"],
           "isUnique": false
         }
       },
@@ -170,12 +164,8 @@
           "name": "account_performance_owner_person_id_people_id_fk",
           "tableFrom": "account_performance",
           "tableTo": "people",
-          "columnsFrom": [
-            "owner_person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_person_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -183,12 +173,8 @@
           "name": "account_performance_performance_account_id_performance_accounts_id_fk",
           "tableFrom": "account_performance",
           "tableTo": "performance_accounts",
-          "columnsFrom": [
-            "performance_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["performance_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -321,10 +307,7 @@
       "indexes": {
         "annual_performance_year_cat_idx": {
           "name": "annual_performance_year_cat_idx",
-          "columns": [
-            "year",
-            "category"
-          ],
+          "columns": ["year", "category"],
           "isUnique": true
         }
       },
@@ -408,9 +391,7 @@
       "indexes": {
         "api_connections_service_unique": {
           "name": "api_connections_service_unique",
-          "columns": [
-            "service"
-          ],
+          "columns": ["service"],
           "isUnique": true
         }
       },
@@ -447,9 +428,7 @@
       "indexes": {
         "app_settings_key_unique": {
           "name": "app_settings_key_unique",
-          "columns": [
-            "key"
-          ],
+          "columns": ["key"],
           "isUnique": true
         }
       },
@@ -493,24 +472,17 @@
       "indexes": {
         "asset_class_correlations_pair_idx": {
           "name": "asset_class_correlations_pair_idx",
-          "columns": [
-            "class_a_id",
-            "class_b_id"
-          ],
+          "columns": ["class_a_id", "class_b_id"],
           "isUnique": true
         },
         "asset_class_correlations_class_a_idx": {
           "name": "asset_class_correlations_class_a_idx",
-          "columns": [
-            "class_a_id"
-          ],
+          "columns": ["class_a_id"],
           "isUnique": false
         },
         "asset_class_correlations_class_b_idx": {
           "name": "asset_class_correlations_class_b_idx",
-          "columns": [
-            "class_b_id"
-          ],
+          "columns": ["class_b_id"],
           "isUnique": false
         }
       },
@@ -519,12 +491,8 @@
           "name": "asset_class_correlations_class_a_id_asset_class_params_id_fk",
           "tableFrom": "asset_class_correlations",
           "tableTo": "asset_class_params",
-          "columnsFrom": [
-            "class_a_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["class_a_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -532,12 +500,8 @@
           "name": "asset_class_correlations_class_b_id_asset_class_params_id_fk",
           "tableFrom": "asset_class_correlations",
           "tableTo": "asset_class_params",
-          "columnsFrom": [
-            "class_b_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["class_b_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -597,16 +561,12 @@
       "indexes": {
         "asset_class_params_name_unique": {
           "name": "asset_class_params_name_unique",
-          "columns": [
-            "name"
-          ],
+          "columns": ["name"],
           "isUnique": true
         },
         "asset_class_params_is_active_idx": {
           "name": "asset_class_params_is_active_idx",
-          "columns": [
-            "is_active"
-          ],
+          "columns": ["is_active"],
           "isUnique": false
         }
       },
@@ -681,9 +641,7 @@
       "indexes": {
         "brokerage_goals_is_active_idx": {
           "name": "brokerage_goals_is_active_idx",
-          "columns": [
-            "is_active"
-          ],
+          "columns": ["is_active"],
           "isUnique": false
         }
       },
@@ -749,9 +707,7 @@
       "indexes": {
         "brokerage_planned_tx_goal_id_idx": {
           "name": "brokerage_planned_tx_goal_id_idx",
-          "columns": [
-            "goal_id"
-          ],
+          "columns": ["goal_id"],
           "isUnique": false
         }
       },
@@ -760,12 +716,8 @@
           "name": "brokerage_planned_transactions_goal_id_brokerage_goals_id_fk",
           "tableFrom": "brokerage_planned_transactions",
           "tableTo": "brokerage_goals",
-          "columnsFrom": [
-            "goal_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["goal_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -824,10 +776,7 @@
       "indexes": {
         "budget_api_cache_service_key_idx": {
           "name": "budget_api_cache_service_key_idx",
-          "columns": [
-            "service",
-            "cache_key"
-          ],
+          "columns": ["service", "cache_key"],
           "isUnique": true
         }
       },
@@ -930,18 +879,12 @@
       "indexes": {
         "budget_items_profile_id_idx": {
           "name": "budget_items_profile_id_idx",
-          "columns": [
-            "profile_id"
-          ],
+          "columns": ["profile_id"],
           "isUnique": false
         },
         "budget_items_profile_cat_sub_idx": {
           "name": "budget_items_profile_cat_sub_idx",
-          "columns": [
-            "profile_id",
-            "category",
-            "subcategory"
-          ],
+          "columns": ["profile_id", "category", "subcategory"],
           "isUnique": true
         }
       },
@@ -950,12 +893,8 @@
           "name": "budget_items_profile_id_budget_profiles_id_fk",
           "tableFrom": "budget_items",
           "tableTo": "budget_profiles",
-          "columnsFrom": [
-            "profile_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["profile_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -963,12 +902,8 @@
           "name": "budget_items_contribution_account_id_contribution_accounts_id_fk",
           "tableFrom": "budget_items",
           "tableTo": "contribution_accounts",
-          "columnsFrom": [
-            "contribution_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["contribution_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1042,16 +977,12 @@
       "indexes": {
         "budget_profiles_name_unique": {
           "name": "budget_profiles_name_unique",
-          "columns": [
-            "name"
-          ],
+          "columns": ["name"],
           "isUnique": true
         },
         "budget_profiles_is_active_idx": {
           "name": "budget_profiles_is_active_idx",
-          "columns": [
-            "is_active"
-          ],
+          "columns": ["is_active"],
           "isUnique": false
         }
       },
@@ -1124,17 +1055,12 @@
       "indexes": {
         "change_log_table_record_idx": {
           "name": "change_log_table_record_idx",
-          "columns": [
-            "table_name",
-            "record_id"
-          ],
+          "columns": ["table_name", "record_id"],
           "isUnique": false
         },
         "change_log_changed_at_idx": {
           "name": "change_log_changed_at_idx",
-          "columns": [
-            "changed_at"
-          ],
+          "columns": ["changed_at"],
           "isUnique": false
         }
       },
@@ -1317,37 +1243,27 @@
       "indexes": {
         "contribution_accounts_job_id_idx": {
           "name": "contribution_accounts_job_id_idx",
-          "columns": [
-            "job_id"
-          ],
+          "columns": ["job_id"],
           "isUnique": false
         },
         "contribution_accounts_person_id_idx": {
           "name": "contribution_accounts_person_id_idx",
-          "columns": [
-            "person_id"
-          ],
+          "columns": ["person_id"],
           "isUnique": false
         },
         "contribution_accounts_acct_type_idx": {
           "name": "contribution_accounts_acct_type_idx",
-          "columns": [
-            "account_type"
-          ],
+          "columns": ["account_type"],
           "isUnique": false
         },
         "contribution_accounts_parent_cat_idx": {
           "name": "contribution_accounts_parent_cat_idx",
-          "columns": [
-            "parent_category"
-          ],
+          "columns": ["parent_category"],
           "isUnique": false
         },
         "contribution_accounts_is_active_idx": {
           "name": "contribution_accounts_is_active_idx",
-          "columns": [
-            "is_active"
-          ],
+          "columns": ["is_active"],
           "isUnique": false
         }
       },
@@ -1356,12 +1272,8 @@
           "name": "contribution_accounts_job_id_jobs_id_fk",
           "tableFrom": "contribution_accounts",
           "tableTo": "jobs",
-          "columnsFrom": [
-            "job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["job_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1369,12 +1281,8 @@
           "name": "contribution_accounts_person_id_people_id_fk",
           "tableFrom": "contribution_accounts",
           "tableTo": "people",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -1382,12 +1290,8 @@
           "name": "contribution_accounts_performance_account_id_performance_accounts_id_fk",
           "tableFrom": "contribution_accounts",
           "tableTo": "performance_accounts",
-          "columnsFrom": [
-            "performance_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["performance_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1443,10 +1347,7 @@
       "indexes": {
         "contribution_limits_year_type_idx": {
           "name": "contribution_limits_year_type_idx",
-          "columns": [
-            "tax_year",
-            "limit_type"
-          ],
+          "columns": ["tax_year", "limit_type"],
           "isUnique": true
         }
       },
@@ -1515,9 +1416,7 @@
       "indexes": {
         "contribution_profiles_name_unique": {
           "name": "contribution_profiles_name_unique",
-          "columns": [
-            "name"
-          ],
+          "columns": ["name"],
           "isUnique": true
         }
       },
@@ -1561,17 +1460,12 @@
       "indexes": {
         "glide_path_age_class_idx": {
           "name": "glide_path_age_class_idx",
-          "columns": [
-            "age",
-            "asset_class_id"
-          ],
+          "columns": ["age", "asset_class_id"],
           "isUnique": true
         },
         "glide_path_asset_class_idx": {
           "name": "glide_path_asset_class_idx",
-          "columns": [
-            "asset_class_id"
-          ],
+          "columns": ["asset_class_id"],
           "isUnique": false
         }
       },
@@ -1580,12 +1474,8 @@
           "name": "glide_path_allocations_asset_class_id_asset_class_params_id_fk",
           "tableFrom": "glide_path_allocations",
           "tableTo": "asset_class_params",
-          "columnsFrom": [
-            "asset_class_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["asset_class_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1629,10 +1519,7 @@
       "indexes": {
         "historical_notes_year_field_idx": {
           "name": "historical_notes_year_field_idx",
-          "columns": [
-            "year",
-            "field"
-          ],
+          "columns": ["year", "field"],
           "isUnique": true
         }
       },
@@ -1854,9 +1741,7 @@
       "indexes": {
         "jobs_person_id_idx": {
           "name": "jobs_person_id_idx",
-          "columns": [
-            "person_id"
-          ],
+          "columns": ["person_id"],
           "isUnique": false
         }
       },
@@ -1865,12 +1750,8 @@
           "name": "jobs_person_id_people_id_fk",
           "tableFrom": "jobs",
           "tableTo": "people",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1922,9 +1803,7 @@
       "indexes": {
         "local_admins_email_unique": {
           "name": "local_admins_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         }
       },
@@ -1975,18 +1854,12 @@
       "indexes": {
         "mc_preset_gp_idx": {
           "name": "mc_preset_gp_idx",
-          "columns": [
-            "preset_id",
-            "age",
-            "asset_class_id"
-          ],
+          "columns": ["preset_id", "age", "asset_class_id"],
           "isUnique": true
         },
         "mc_preset_gp_preset_idx": {
           "name": "mc_preset_gp_preset_idx",
-          "columns": [
-            "preset_id"
-          ],
+          "columns": ["preset_id"],
           "isUnique": false
         }
       },
@@ -1995,12 +1868,8 @@
           "name": "mc_preset_glide_paths_preset_id_mc_presets_id_fk",
           "tableFrom": "mc_preset_glide_paths",
           "tableTo": "mc_presets",
-          "columnsFrom": [
-            "preset_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["preset_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2008,12 +1877,8 @@
           "name": "mc_preset_glide_paths_asset_class_id_asset_class_params_id_fk",
           "tableFrom": "mc_preset_glide_paths",
           "tableTo": "asset_class_params",
-          "columnsFrom": [
-            "asset_class_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["asset_class_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2057,10 +1922,7 @@
       "indexes": {
         "mc_preset_ro_idx": {
           "name": "mc_preset_ro_idx",
-          "columns": [
-            "preset_id",
-            "asset_class_id"
-          ],
+          "columns": ["preset_id", "asset_class_id"],
           "isUnique": true
         }
       },
@@ -2069,12 +1931,8 @@
           "name": "mc_preset_return_overrides_preset_id_mc_presets_id_fk",
           "tableFrom": "mc_preset_return_overrides",
           "tableTo": "mc_presets",
-          "columnsFrom": [
-            "preset_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["preset_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2082,12 +1940,8 @@
           "name": "mc_preset_return_overrides_asset_class_id_asset_class_params_id_fk",
           "tableFrom": "mc_preset_return_overrides",
           "tableTo": "asset_class_params",
-          "columnsFrom": [
-            "asset_class_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["asset_class_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2203,16 +2057,12 @@
       "indexes": {
         "mc_presets_key_unique": {
           "name": "mc_presets_key_unique",
-          "columns": [
-            "key"
-          ],
+          "columns": ["key"],
           "isUnique": true
         },
         "mc_presets_is_active_idx": {
           "name": "mc_presets_is_active_idx",
-          "columns": [
-            "is_active"
-          ],
+          "columns": ["is_active"],
           "isUnique": false
         }
       },
@@ -2285,9 +2135,7 @@
       "indexes": {
         "mortgage_extra_payments_loan_id_idx": {
           "name": "mortgage_extra_payments_loan_id_idx",
-          "columns": [
-            "loan_id"
-          ],
+          "columns": ["loan_id"],
           "isUnique": false
         }
       },
@@ -2296,12 +2144,8 @@
           "name": "mortgage_extra_payments_loan_id_mortgage_loans_id_fk",
           "tableFrom": "mortgage_extra_payments",
           "tableTo": "mortgage_loans",
-          "columnsFrom": [
-            "loan_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["loan_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2453,9 +2297,7 @@
       "indexes": {
         "mortgage_loans_is_active_idx": {
           "name": "mortgage_loans_is_active_idx",
-          "columns": [
-            "is_active"
-          ],
+          "columns": ["is_active"],
           "isUnique": false
         }
       },
@@ -2529,9 +2371,7 @@
       "indexes": {
         "mortgage_what_if_loan_id_idx": {
           "name": "mortgage_what_if_loan_id_idx",
-          "columns": [
-            "loan_id"
-          ],
+          "columns": ["loan_id"],
           "isUnique": false
         }
       },
@@ -2540,12 +2380,8 @@
           "name": "mortgage_what_if_scenarios_loan_id_mortgage_loans_id_fk",
           "tableFrom": "mortgage_what_if_scenarios",
           "tableTo": "mortgage_loans",
-          "columnsFrom": [
-            "loan_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["loan_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2731,9 +2567,7 @@
       "indexes": {
         "net_worth_annual_year_end_date_unique": {
           "name": "net_worth_annual_year_end_date_unique",
-          "columns": [
-            "year_end_date"
-          ],
+          "columns": ["year_end_date"],
           "isUnique": true
         }
       },
@@ -2784,10 +2618,7 @@
       "indexes": {
         "other_asset_items_name_year_idx": {
           "name": "other_asset_items_name_year_idx",
-          "columns": [
-            "name",
-            "year"
-          ],
+          "columns": ["name", "year"],
           "isUnique": true
         }
       },
@@ -2846,9 +2677,7 @@
       "indexes": {
         "paycheck_deductions_job_id_idx": {
           "name": "paycheck_deductions_job_id_idx",
-          "columns": [
-            "job_id"
-          ],
+          "columns": ["job_id"],
           "isUnique": false
         }
       },
@@ -2857,12 +2686,8 @@
           "name": "paycheck_deductions_job_id_jobs_id_fk",
           "tableFrom": "paycheck_deductions",
           "tableTo": "jobs",
-          "columnsFrom": [
-            "job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["job_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3022,24 +2847,17 @@
         },
         "idx_perf_accounts_inst_label": {
           "name": "idx_perf_accounts_inst_label",
-          "columns": [
-            "institution",
-            "account_label"
-          ],
+          "columns": ["institution", "account_label"],
           "isUnique": false
         },
         "performance_accounts_category_idx": {
           "name": "performance_accounts_category_idx",
-          "columns": [
-            "parent_category"
-          ],
+          "columns": ["parent_category"],
           "isUnique": false
         },
         "performance_accounts_is_active_idx": {
           "name": "performance_accounts_is_active_idx",
-          "columns": [
-            "is_active"
-          ],
+          "columns": ["is_active"],
           "isUnique": false
         }
       },
@@ -3048,12 +2866,8 @@
           "name": "performance_accounts_owner_person_id_people_id_fk",
           "tableFrom": "performance_accounts",
           "tableTo": "people",
-          "columnsFrom": [
-            "owner_person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_person_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -3160,51 +2974,37 @@
       "indexes": {
         "portfolio_accounts_snapshot_id_idx": {
           "name": "portfolio_accounts_snapshot_id_idx",
-          "columns": [
-            "snapshot_id"
-          ],
+          "columns": ["snapshot_id"],
           "isUnique": false
         },
         "portfolio_accounts_owner_id_idx": {
           "name": "portfolio_accounts_owner_id_idx",
-          "columns": [
-            "owner_person_id"
-          ],
+          "columns": ["owner_person_id"],
           "isUnique": false
         },
         "idx_portfolio_accounts_owner": {
           "name": "idx_portfolio_accounts_owner",
-          "columns": [
-            "owner_person_id"
-          ],
+          "columns": ["owner_person_id"],
           "isUnique": false
         },
         "portfolio_accounts_perf_acct_idx": {
           "name": "portfolio_accounts_perf_acct_idx",
-          "columns": [
-            "performance_account_id"
-          ],
+          "columns": ["performance_account_id"],
           "isUnique": false
         },
         "portfolio_accounts_acct_type_idx": {
           "name": "portfolio_accounts_acct_type_idx",
-          "columns": [
-            "account_type"
-          ],
+          "columns": ["account_type"],
           "isUnique": false
         },
         "portfolio_accounts_parent_cat_idx": {
           "name": "portfolio_accounts_parent_cat_idx",
-          "columns": [
-            "parent_category"
-          ],
+          "columns": ["parent_category"],
           "isUnique": false
         },
         "portfolio_accounts_is_active_idx": {
           "name": "portfolio_accounts_is_active_idx",
-          "columns": [
-            "is_active"
-          ],
+          "columns": ["is_active"],
           "isUnique": false
         }
       },
@@ -3213,12 +3013,8 @@
           "name": "portfolio_accounts_snapshot_id_portfolio_snapshots_id_fk",
           "tableFrom": "portfolio_accounts",
           "tableTo": "portfolio_snapshots",
-          "columnsFrom": [
-            "snapshot_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["snapshot_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3226,12 +3022,8 @@
           "name": "portfolio_accounts_owner_person_id_people_id_fk",
           "tableFrom": "portfolio_accounts",
           "tableTo": "people",
-          "columnsFrom": [
-            "owner_person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_person_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -3239,12 +3031,8 @@
           "name": "portfolio_accounts_performance_account_id_performance_accounts_id_fk",
           "tableFrom": "portfolio_accounts",
           "tableTo": "performance_accounts",
-          "columnsFrom": [
-            "performance_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["performance_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -3294,16 +3082,12 @@
       "indexes": {
         "portfolio_snapshots_snapshot_date_unique": {
           "name": "portfolio_snapshots_snapshot_date_unique",
-          "columns": [
-            "snapshot_date"
-          ],
+          "columns": ["snapshot_date"],
           "isUnique": true
         },
         "portfolio_snapshots_date_idx": {
           "name": "portfolio_snapshots_date_idx",
-          "columns": [
-            "snapshot_date"
-          ],
+          "columns": ["snapshot_date"],
           "isUnique": false
         }
       },
@@ -3361,10 +3145,7 @@
       "indexes": {
         "property_taxes_loan_year_idx": {
           "name": "property_taxes_loan_year_idx",
-          "columns": [
-            "loan_id",
-            "year"
-          ],
+          "columns": ["loan_id", "year"],
           "isUnique": true
         }
       },
@@ -3373,12 +3154,8 @@
           "name": "property_taxes_loan_id_mortgage_loans_id_fk",
           "tableFrom": "property_taxes",
           "tableTo": "mortgage_loans",
-          "columnsFrom": [
-            "loan_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["loan_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3476,17 +3253,12 @@
       "indexes": {
         "retirement_budget_overrides_person_year_idx": {
           "name": "retirement_budget_overrides_person_year_idx",
-          "columns": [
-            "person_id",
-            "projection_year"
-          ],
+          "columns": ["person_id", "projection_year"],
           "isUnique": true
         },
         "retirement_budget_overrides_person_id_idx": {
           "name": "retirement_budget_overrides_person_id_idx",
-          "columns": [
-            "person_id"
-          ],
+          "columns": ["person_id"],
           "isUnique": false
         }
       },
@@ -3495,12 +3267,8 @@
           "name": "retirement_budget_overrides_person_id_people_id_fk",
           "tableFrom": "retirement_budget_overrides",
           "tableTo": "people",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -3551,17 +3319,12 @@
       "indexes": {
         "retirement_salary_overrides_person_year_idx": {
           "name": "retirement_salary_overrides_person_year_idx",
-          "columns": [
-            "person_id",
-            "projection_year"
-          ],
+          "columns": ["person_id", "projection_year"],
           "isUnique": true
         },
         "retirement_salary_overrides_person_id_idx": {
           "name": "retirement_salary_overrides_person_id_idx",
-          "columns": [
-            "person_id"
-          ],
+          "columns": ["person_id"],
           "isUnique": false
         }
       },
@@ -3570,12 +3333,8 @@
           "name": "retirement_salary_overrides_person_id_people_id_fk",
           "tableFrom": "retirement_salary_overrides",
           "tableTo": "people",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -3985,16 +3744,12 @@
       "indexes": {
         "retirement_settings_person_id_unique": {
           "name": "retirement_settings_person_id_unique",
-          "columns": [
-            "person_id"
-          ],
+          "columns": ["person_id"],
           "isUnique": true
         },
         "retirement_settings_person_id_idx": {
           "name": "retirement_settings_person_id_idx",
-          "columns": [
-            "person_id"
-          ],
+          "columns": ["person_id"],
           "isUnique": false
         }
       },
@@ -4003,12 +3758,8 @@
           "name": "retirement_settings_person_id_people_id_fk",
           "tableFrom": "retirement_settings",
           "tableTo": "people",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -4045,9 +3796,7 @@
       "indexes": {
         "return_rate_table_age_unique": {
           "name": "return_rate_table_age_unique",
-          "columns": [
-            "age"
-          ],
+          "columns": ["age"],
           "isUnique": true
         }
       },
@@ -4105,9 +3854,7 @@
       "indexes": {
         "salary_changes_job_id_idx": {
           "name": "salary_changes_job_id_idx",
-          "columns": [
-            "job_id"
-          ],
+          "columns": ["job_id"],
           "isUnique": false
         }
       },
@@ -4116,12 +3863,8 @@
           "name": "salary_changes_job_id_jobs_id_fk",
           "tableFrom": "salary_changes",
           "tableTo": "jobs",
-          "columnsFrom": [
-            "job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["job_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -4165,10 +3908,7 @@
       "indexes": {
         "savings_alloc_override_goal_month_idx": {
           "name": "savings_alloc_override_goal_month_idx",
-          "columns": [
-            "goal_id",
-            "month_date"
-          ],
+          "columns": ["goal_id", "month_date"],
           "isUnique": true
         }
       },
@@ -4177,12 +3917,8 @@
           "name": "savings_allocation_overrides_goal_id_savings_goals_id_fk",
           "tableFrom": "savings_allocation_overrides",
           "tableTo": "savings_goals",
-          "columnsFrom": [
-            "goal_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["goal_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -4316,16 +4052,12 @@
       "indexes": {
         "savings_goals_name_unique": {
           "name": "savings_goals_name_unique",
-          "columns": [
-            "name"
-          ],
+          "columns": ["name"],
           "isUnique": true
         },
         "savings_goals_is_active_idx": {
           "name": "savings_goals_is_active_idx",
-          "columns": [
-            "is_active"
-          ],
+          "columns": ["is_active"],
           "isUnique": false
         }
       },
@@ -4388,17 +4120,12 @@
       "indexes": {
         "savings_monthly_goal_id_idx": {
           "name": "savings_monthly_goal_id_idx",
-          "columns": [
-            "goal_id"
-          ],
+          "columns": ["goal_id"],
           "isUnique": false
         },
         "savings_monthly_goal_month_idx": {
           "name": "savings_monthly_goal_month_idx",
-          "columns": [
-            "goal_id",
-            "month_date"
-          ],
+          "columns": ["goal_id", "month_date"],
           "isUnique": true
         }
       },
@@ -4407,12 +4134,8 @@
           "name": "savings_monthly_goal_id_savings_goals_id_fk",
           "tableFrom": "savings_monthly",
           "tableTo": "savings_goals",
-          "columnsFrom": [
-            "goal_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["goal_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -4485,9 +4208,7 @@
       "indexes": {
         "savings_planned_tx_goal_id_idx": {
           "name": "savings_planned_tx_goal_id_idx",
-          "columns": [
-            "goal_id"
-          ],
+          "columns": ["goal_id"],
           "isUnique": false
         }
       },
@@ -4496,12 +4217,8 @@
           "name": "savings_planned_transactions_goal_id_savings_goals_id_fk",
           "tableFrom": "savings_planned_transactions",
           "tableTo": "savings_goals",
-          "columnsFrom": [
-            "goal_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["goal_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -4630,16 +4347,12 @@
       "indexes": {
         "self_loans_from_goal_id_idx": {
           "name": "self_loans_from_goal_id_idx",
-          "columns": [
-            "from_goal_id"
-          ],
+          "columns": ["from_goal_id"],
           "isUnique": false
         },
         "self_loans_to_goal_id_idx": {
           "name": "self_loans_to_goal_id_idx",
-          "columns": [
-            "to_goal_id"
-          ],
+          "columns": ["to_goal_id"],
           "isUnique": false
         }
       },
@@ -4648,12 +4361,8 @@
           "name": "self_loans_from_goal_id_savings_goals_id_fk",
           "tableFrom": "self_loans",
           "tableTo": "savings_goals",
-          "columnsFrom": [
-            "from_goal_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["from_goal_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -4661,12 +4370,8 @@
           "name": "self_loans_to_goal_id_savings_goals_id_fk",
           "tableFrom": "self_loans",
           "tableTo": "savings_goals",
-          "columnsFrom": [
-            "to_goal_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["to_goal_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -4717,17 +4422,12 @@
       "indexes": {
         "state_version_tables_version_id_idx": {
           "name": "state_version_tables_version_id_idx",
-          "columns": [
-            "version_id"
-          ],
+          "columns": ["version_id"],
           "isUnique": false
         },
         "state_version_tables_version_table_idx": {
           "name": "state_version_tables_version_table_idx",
-          "columns": [
-            "version_id",
-            "table_name"
-          ],
+          "columns": ["version_id", "table_name"],
           "isUnique": true
         }
       },
@@ -4736,12 +4436,8 @@
           "name": "state_version_tables_version_id_state_versions_id_fk",
           "tableFrom": "state_version_tables",
           "tableTo": "state_versions",
-          "columnsFrom": [
-            "version_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["version_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -4828,9 +4524,7 @@
       "indexes": {
         "state_versions_created_at_idx": {
           "name": "state_versions_created_at_idx",
-          "columns": [
-            "created_at"
-          ],
+          "columns": ["created_at"],
           "isUnique": false
         }
       },
@@ -4881,11 +4575,7 @@
       "indexes": {
         "tax_brackets_year_status_checkbox_idx": {
           "name": "tax_brackets_year_status_checkbox_idx",
-          "columns": [
-            "tax_year",
-            "filing_status",
-            "w4_checkbox"
-          ],
+          "columns": ["tax_year", "filing_status", "w4_checkbox"],
           "isUnique": true
         }
       },

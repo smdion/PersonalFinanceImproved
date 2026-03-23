@@ -47,12 +47,8 @@ export function IrmaaBracketsSettings() {
   if (!data || data.length === 0) {
     return (
       <div>
-        <h2 className="text-lg font-semibold mb-4">
-          IRMAA Tables
-        </h2>
-        <p className="text-muted text-sm mb-3">
-          No IRMAA brackets configured.
-        </p>
+        <h2 className="text-lg font-semibold mb-4">IRMAA Tables</h2>
+        <p className="text-muted text-sm mb-3">No IRMAA brackets configured.</p>
         {admin && (
           <button
             onClick={() => setShowAddYear(true)}
@@ -171,9 +167,7 @@ export function IrmaaBracketsSettings() {
             <button
               onClick={() => {
                 setShowAddYear(!showAddYear);
-                setNewYear(
-                  String((years[0] ?? new Date().getFullYear()) + 1),
-                );
+                setNewYear(String((years[0] ?? new Date().getFullYear()) + 1));
                 setCopyFrom(years[0] ?? null);
               }}
               className="px-2 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded-full hover:bg-blue-50 transition-colors"
@@ -185,10 +179,10 @@ export function IrmaaBracketsSettings() {
       </div>
 
       <p className="text-xs text-muted mb-4">
-        IRMAA uses a 2-year MAGI lookback — {activeYear} premiums are based
-        on {activeYear - 2} MAGI. Surcharges are per-person (Part B + Part D
-        combined, above the standard premium). Brackets are cliff-based —
-        going $1 over triggers the full surcharge.
+        IRMAA uses a 2-year MAGI lookback — {activeYear} premiums are based on{" "}
+        {activeYear - 2} MAGI. Surcharges are per-person (Part B + Part D
+        combined, above the standard premium). Brackets are cliff-based — going
+        $1 over triggers the full surcharge.
       </p>
 
       {/* Add year dialog */}
@@ -209,9 +203,7 @@ export function IrmaaBracketsSettings() {
               <select
                 value={copyFrom ?? ""}
                 onChange={(e) =>
-                  setCopyFrom(
-                    e.target.value ? parseInt(e.target.value) : null,
-                  )
+                  setCopyFrom(e.target.value ? parseInt(e.target.value) : null)
                 }
                 className="ml-2 px-2 py-1 text-sm border rounded"
               >
@@ -279,15 +271,9 @@ export function IrmaaBracketsSettings() {
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="text-xs text-muted">
-                      <th className="text-left pb-1 font-normal">
-                        MAGI Over
-                      </th>
-                      <th className="text-right pb-1 font-normal">
-                        Annual
-                      </th>
-                      <th className="text-right pb-1 font-normal">
-                        Monthly
-                      </th>
+                      <th className="text-left pb-1 font-normal">MAGI Over</th>
+                      <th className="text-right pb-1 font-normal">Annual</th>
+                      <th className="text-right pb-1 font-normal">Monthly</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -296,9 +282,7 @@ export function IrmaaBracketsSettings() {
                         <td className="py-1 pr-2">
                           <InlineEdit
                             value={b.magiThreshold.toString()}
-                            formatDisplay={() =>
-                              formatDollar(b.magiThreshold)
-                            }
+                            formatDisplay={() => formatDollar(b.magiThreshold)}
                             parseInput={parseDollar}
                             onSave={(v) =>
                               handleBracketUpdate(
@@ -350,8 +334,8 @@ export function IrmaaBracketsSettings() {
 
       <div className="flex items-center justify-between mt-4">
         <p className="text-xs text-faint">
-          Source: CMS Medicare Part B/D premium adjustments. Surcharges are
-          per person per year.
+          Source: CMS Medicare Part B/D premium adjustments. Surcharges are per
+          person per year.
         </p>
         {admin && years.length > 1 && confirmDelete !== activeYear && (
           <button

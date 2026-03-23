@@ -76,9 +76,7 @@ export function TestRunner() {
 
       {/* Results */}
       {runTests.isPending && (
-        <div className="text-sm text-muted animate-pulse">
-          Running tests...
-        </div>
+        <div className="text-sm text-muted animate-pulse">Running tests...</div>
       )}
 
       {runTests.isError && (
@@ -109,7 +107,8 @@ export function TestRunner() {
             {result.numSkipped > 0 && (
               <>
                 {" "}
-                / <span className="text-muted">{result.numSkipped} skipped</span>
+                /{" "}
+                <span className="text-muted">{result.numSkipped} skipped</span>
               </>
             )}
             <span className="text-muted ml-2">
@@ -132,7 +131,10 @@ export function TestRunner() {
 function TestFileBlock({
   file,
 }: {
-  file: { file: string; tests: { name: string; status: string; duration: number; error?: string }[] };
+  file: {
+    file: string;
+    tests: { name: string; status: string; duration: number; error?: string }[];
+  };
 }) {
   const [expanded, setExpanded] = useState(
     file.tests.some((t) => t.status === "fail"),
@@ -148,9 +150,7 @@ function TestFileBlock({
       >
         <span className="font-mono text-muted truncate">{file.file}</span>
         <span className="flex items-center gap-2 shrink-0 ml-2">
-          {passed > 0 && (
-            <span className="text-green-600">{passed} pass</span>
-          )}
+          {passed > 0 && <span className="text-green-600">{passed} pass</span>}
           {failed > 0 && <span className="text-red-600">{failed} fail</span>}
           <span className="text-faint">{expanded ? "▼" : "▶"}</span>
         </span>

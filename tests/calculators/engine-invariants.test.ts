@@ -308,7 +308,7 @@ function arbitraryRmdInput(): fc.Arbitrary<ProjectionInput> {
 // Helper: sum per-account category slot contributions
 // ---------------------------------------------------------------------------
 
-function sumSlotContributions(slots: EngineAccumulationYear["slots"]): number {
+function _sumSlotContributions(slots: EngineAccumulationYear["slots"]): number {
   return slots.reduce((sum, s) => sum + s.employeeContrib + s.employerMatch, 0);
 }
 
@@ -357,7 +357,7 @@ const RMD_FACTORS: Record<number, number> = {
 // IRMAA thresholds (2025 approximate — for structural invariant checks only)
 // ---------------------------------------------------------------------------
 
-const IRMAA_CLIFFS_MFJ = [206000, 258000, 322000, 386000, 750000];
+const _IRMAA_CLIFFS_MFJ = [206000, 258000, 322000, 386000, 750000];
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -621,8 +621,8 @@ describe("engine invariants", () => {
                 ) / 100;
               // If the engine flagged an RMD shortfall warning, the Traditional
               // balance was insufficient — skip this year (capacity issue, not a bug).
-              const hasShortfallWarning = year.warnings?.some((w: string) =>
-                w.includes("RMD") && w.includes("SHORTFALL"),
+              const hasShortfallWarning = year.warnings?.some(
+                (w: string) => w.includes("RMD") && w.includes("SHORTFALL"),
               );
               if (hasShortfallWarning || diff > year.rmdAmount * 0.05) continue;
               const tolerance = Math.max(year.rmdAmount * 0.02, 10);

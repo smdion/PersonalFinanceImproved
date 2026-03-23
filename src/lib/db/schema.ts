@@ -9,7 +9,15 @@ import { isPostgres } from "./dialect";
 import * as pg from "./schema-pg";
 
 // Types are dialect-independent — always from PG schema
-export type { TaxBracketEntry, LtcgBracketEntry, IrmaaBracketEntry, ApiConfig, AccountMapping, RelocationScenarioParams, ScenarioOverrides } from "./schema-pg";
+export type {
+  TaxBracketEntry,
+  LtcgBracketEntry,
+  IrmaaBracketEntry,
+  ApiConfig,
+  AccountMapping,
+  RelocationScenarioParams,
+  ScenarioOverrides,
+} from "./schema-pg";
 
 // At runtime, load the active dialect's schema.
 // The `as typeof pg` cast is safe because both schemas export identical

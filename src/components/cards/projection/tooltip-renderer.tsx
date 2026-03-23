@@ -14,8 +14,7 @@ export function renderLineItem(
   nested = false,
 ): React.ReactNode {
   const colorCls = item.color ? tipColorClass[item.color] : "";
-  const prefixStr =
-    item.prefix === "+" ? "+" : item.prefix === "-" ? "-" : "";
+  const prefixStr = item.prefix === "+" ? "+" : item.prefix === "-" ? "-" : "";
   const taxLabel =
     item.taxType === "roth"
       ? " (Roth)"

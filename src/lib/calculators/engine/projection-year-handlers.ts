@@ -611,10 +611,7 @@ export function runPreYearSetup(
     state.projectedExpenses = budgetOverrideMap.get(year)!;
   } else if (
     y > 0 &&
-    !(
-      age === input.retirementAge &&
-      input.decumulationAnnualExpenses != null
-    )
+    !(age === input.retirementAge && input.decumulationAnnualExpenses != null)
   ) {
     state.projectedExpenses =
       state.projectedExpenses * (1 + effectiveInflation);
@@ -629,19 +626,15 @@ export function runPreYearSetup(
   let strategyAction: string | null = null;
 
   if (!isAccumulation && activeStrategy !== "fixed") {
-    const result = applySpendingStrategy(
-      activeStrategy,
-      activeStrategyParams,
-      {
-        projectedExpenses: state.projectedExpenses,
-        portfolioBalance: preTotalBalance,
-        effectiveInflation,
-        hasBudgetOverride: budgetOverrideMap.has(year),
-        yearIndex: y,
-        age,
-        crossYearState: state.spendingState,
-      },
-    );
+    const result = applySpendingStrategy(activeStrategy, activeStrategyParams, {
+      projectedExpenses: state.projectedExpenses,
+      portfolioBalance: preTotalBalance,
+      effectiveInflation,
+      hasBudgetOverride: budgetOverrideMap.has(year),
+      yearIndex: y,
+      age,
+      crossYearState: state.spendingState,
+    });
     state.projectedExpenses = result.projectedExpenses;
     strategyAction = result.action;
     Object.assign(state.spendingState, result.updatedState);
@@ -753,13 +746,8 @@ export function runAccumulationYear(
         projectedAge <= superRange[1]
       ) {
         const superKey = `${group}_super`;
-        yearLimits[cat] += roundToCents(
-          (catchupLimits[superKey] ?? 0) * lgf,
-        );
-      } else if (
-        cfg.catchupAge !== null &&
-        projectedAge >= cfg.catchupAge
-      ) {
+        yearLimits[cat] += roundToCents((catchupLimits[superKey] ?? 0) * lgf);
+      } else if (cfg.catchupAge !== null && projectedAge >= cfg.catchupAge) {
         yearLimits[cat] += roundToCents((catchupLimits[group] ?? 0) * lgf);
       }
     }
@@ -776,10 +764,8 @@ export function runAccumulationYear(
   let targetContribution: number;
   if (useRealContribs) {
     targetContribution = roundToCents(
-      Object.values(activeBaseYearContributions!).reduce(
-        (s, v) => s + v,
-        0,
-      ) * proRate,
+      Object.values(activeBaseYearContributions!).reduce((s, v) => s + v, 0) *
+        proRate,
     );
   } else if (contributionSpecs && contributionSpecs.length > 0) {
     // Sum projected per-account contributions (before IRS capping)
@@ -814,22 +800,18 @@ export function runAccumulationYear(
   }
 
   // Employer match (grows with salary in future years; pro-rated for year 0)
-  const yearEmployerMatch: Record<AccountCategory, number> =
-    Object.fromEntries(
-      getAllCategories().map((cat) => [
-        cat,
-        useRealContribs
-          ? roundToCents((activeBaseYearEmployerMatch![cat] ?? 0) * proRate)
-          : roundToCents(
-              projectedSalary *
-                Math.max(
-                  0,
-                  activeEmployerMatchRateByCategory[cat] ?? 0,
-                ) *
-                proRate,
-            ),
-      ]),
-    ) as Record<AccountCategory, number>;
+  const yearEmployerMatch: Record<AccountCategory, number> = Object.fromEntries(
+    getAllCategories().map((cat) => [
+      cat,
+      useRealContribs
+        ? roundToCents((activeBaseYearEmployerMatch![cat] ?? 0) * proRate)
+        : roundToCents(
+            projectedSalary *
+              Math.max(0, activeEmployerMatchRateByCategory[cat] ?? 0) *
+              proRate,
+          ),
+    ]),
+  ) as Record<AccountCategory, number>;
 
   let slots: AccumulationSlot[];
   let routeWarnings: string[];
@@ -842,8 +824,7 @@ export function runAccumulationYear(
     slots = categories
       .filter(
         (cat) =>
-          activeBaseYearContributions![cat] > 0 ||
-          yearEmployerMatch[cat] > 0,
+          activeBaseYearContributions![cat] > 0 || yearEmployerMatch[cat] > 0,
       )
       .map((cat) => {
         const employeeContrib = roundToCents(
@@ -947,9 +928,7 @@ export function runAccumulationYear(
     routeWarnings = routed.warnings;
   }
 
-  const totalEmployee = roundToCents(
-    sumBy(slots, (s) => s.employeeContrib),
-  );
+  const totalEmployee = roundToCents(sumBy(slots, (s) => s.employeeContrib));
   const totalEmployer = roundToCents(sumBy(slots, (s) => s.employerMatch));
   const totalRoth = roundToCents(sumBy(slots, (s) => s.rothContrib));
   const totalTraditional = roundToCents(
@@ -963,16 +942,13 @@ export function runAccumulationYear(
   if (useRealContribs) {
     overflowToBrokerage = 0;
   } else if (contributionSpecs && contributionSpecs.length > 0) {
-    overflowToBrokerage =
-      specOverflow < OVERFLOW_TOLERANCE ? 0 : specOverflow;
+    overflowToBrokerage = specOverflow < OVERFLOW_TOLERANCE ? 0 : specOverflow;
   } else {
     const brokerageContrib =
       slots.find((s) => isOverflowTarget(s.category))?.employeeContrib ?? 0;
     // Base year brokerage is intentional; scale proportionally with salary
-    const baseIntentional =
-      state.activeBaseYearContributions?.brokerage ?? 0;
-    const salaryScale =
-      currentSalary > 0 ? projectedSalary / currentSalary : 1;
+    const baseIntentional = state.activeBaseYearContributions?.brokerage ?? 0;
+    const salaryScale = currentSalary > 0 ? projectedSalary / currentSalary : 1;
     const intentional = roundToCents(baseIntentional * salaryScale);
     const raw = Math.max(0, roundToCents(brokerageContrib - intentional));
     overflowToBrokerage = raw < OVERFLOW_TOLERANCE ? 0 : raw;
@@ -1155,24 +1131,23 @@ export function runAccumulationYear(
   }
 
   // Build individual account year balances -- extracted to individual-account-tracking.ts
-  const indYearBalances: IndividualAccountYearBalance[] =
-    hasIndividualAccounts
-      ? buildIndividualYearBalances(
-          indAccts,
-          indKey,
-          indBal,
-          indParentCat,
-          "accumulation",
-          {
-            contribs: indContribs,
-            match: indMatch,
-            growth: indGrowth,
-            intentional: indIntentional,
-            overflow: indOverflow,
-            ramp: indRamp,
-          },
-        )
-      : [];
+  const indYearBalances: IndividualAccountYearBalance[] = hasIndividualAccounts
+    ? buildIndividualYearBalances(
+        indAccts,
+        indKey,
+        indBal,
+        indParentCat,
+        "accumulation",
+        {
+          contribs: indContribs,
+          match: indMatch,
+          growth: indGrowth,
+          intentional: indIntentional,
+          overflow: indOverflow,
+          ramp: indRamp,
+        },
+      )
+    : [];
 
   const endBalance = roundToCents(
     balances.preTax + balances.taxFree + balances.hsa + balances.afterTax,
@@ -1385,8 +1360,7 @@ export function runDecumulationYear(
         Math.max(0, incomeCap - taxableSS),
       );
       if (rothOptTraditionalCap < Infinity) {
-        const existingTradCap =
-          routeConfig.withdrawalTaxTypeCaps.traditional;
+        const existingTradCap = routeConfig.withdrawalTaxTypeCaps.traditional;
         routeConfig.withdrawalTaxTypeCaps = {
           ...routeConfig.withdrawalTaxTypeCaps,
           traditional:
@@ -1398,9 +1372,7 @@ export function runDecumulationYear(
         // but only where the user hasn't set an explicit preference (null = no preference).
         const tradOverrides = Object.fromEntries(
           categoriesWithTaxPreference()
-            .filter(
-              (cat) => routeConfig.withdrawalTaxPreference[cat] === null,
-            )
+            .filter((cat) => routeConfig.withdrawalTaxPreference[cat] === null)
             .map((cat) => [cat, "traditional" as const]),
         );
         routeConfig.withdrawalTaxPreference = {
@@ -1410,11 +1382,7 @@ export function runDecumulationYear(
         routeConfig.withdrawalOrder = getDefaultDecumulationOrder();
       }
     }
-    routeResult = routeWithdrawals(
-      targetWithdrawal,
-      routeConfig,
-      acctBalances,
-    );
+    routeResult = routeWithdrawals(targetWithdrawal, routeConfig, acctBalances);
   }
 
   const { slots, warnings: routeWarnings } = routeResult;
@@ -1457,8 +1425,7 @@ export function runDecumulationYear(
   const hsaWithdrawal =
     slots.find(
       (s) =>
-        getAccountTypeConfig(s.category).balanceStructure ===
-        "single_bucket",
+        getAccountTypeConfig(s.category).balanceStructure === "single_bucket",
     )?.withdrawal ?? 0;
   const brokerageSlot = slots.find((s) => isOverflowTarget(s.category));
   const brokerageWithdrawal = brokerageSlot?.withdrawal ?? 0;
@@ -1478,10 +1445,7 @@ export function runDecumulationYear(
   let brokerageBasisPortion = 0;
   let brokerageGainsPortion = 0;
   if (brokerageWithdrawal > 0 && balances.afterTax > 0) {
-    const basisRatio = Math.min(
-      1,
-      balances.afterTaxBasis / balances.afterTax,
-    );
+    const basisRatio = Math.min(1, balances.afterTaxBasis / balances.afterTax);
     brokerageBasisPortion = roundToCents(brokerageWithdrawal * basisRatio);
     brokerageGainsPortion = roundToCents(
       brokerageWithdrawal - brokerageBasisPortion,
@@ -1596,19 +1560,13 @@ export function runDecumulationYear(
   // Roth conversions are taxed as ordinary income and push total taxable income
   // into potentially higher LTCG brackets (0%/15%/20%).
   let postConversionLtcgRate: number;
-  if (
-    rothConversionAmount > 0 &&
-    filingStatus &&
-    brokerageGainsPortion > 0
-  ) {
+  if (rothConversionAmount > 0 && filingStatus && brokerageGainsPortion > 0) {
     const revisedOrdinary = actualTaxableIncome + rothConversionAmount;
     brokerageTaxCost = roundToCents(
       computeLtcgTax(revisedOrdinary, brokerageGainsPortion, filingStatus),
     );
     postConversionLtcgRate =
-      brokerageGainsPortion > 0
-        ? brokerageTaxCost / brokerageGainsPortion
-        : 0;
+      brokerageGainsPortion > 0 ? brokerageTaxCost / brokerageGainsPortion : 0;
     // Recompute taxCost with revised brokerage tax
     taxCost = roundToCents(
       totalTraditionalWithdrawal * actualTraditionalRate +

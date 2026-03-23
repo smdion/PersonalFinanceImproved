@@ -49,7 +49,11 @@ export function calculateNetWorth(input: NetWorthInput): NetWorthResult {
   } = input;
 
   // Warn if mortgage exists but no home value — net worth appears artificially negative
-  if (mortgageBalance > 0 && homeValueEstimated === 0 && homeValueConservative === 0) {
+  if (
+    mortgageBalance > 0 &&
+    homeValueEstimated === 0 &&
+    homeValueConservative === 0
+  ) {
     warnings.push(
       `Mortgage balance of $${mortgageBalance.toLocaleString()} exists but home value is $0. ` +
         `Net worth may appear artificially negative. Set a home value in mortgage settings.`,

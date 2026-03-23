@@ -40,22 +40,13 @@ export function renderMcCell(
   } = opts;
   if (!mcBandsByYear) return null;
   const band = mcBandsByYear.get(yr.year);
-  if (!band)
-    return (
-      <td className="text-right py-1.5 px-2 text-faint">
-        ---
-      </td>
-    );
+  if (!band) return <td className="text-right py-1.5 px-2 text-faint">---</td>;
   const mcP50 = deflate(band.p50, yr.year);
-  const showDelta =
-    !isPersonFiltered && !parentCategoryFilter;
+  const showDelta = !isPersonFiltered && !parentCategoryFilter;
   const delta = mcP50 - detBal;
-  const deltaColor =
-    delta >= 0 ? "text-green-600" : "text-red-500";
+  const deltaColor = delta >= 0 ? "text-green-600" : "text-red-500";
   // Proof: show MC's own deterministic year data to verify overrides are applied (diag mode only)
-  const mcDetYr = diagMode
-    ? mcDetByYear?.get(yr.year)
-    : undefined;
+  const mcDetYr = diagMode ? mcDetByYear?.get(yr.year) : undefined;
   let proofNote: string | undefined;
   if (mcDetYr) {
     const parts: string[] = [];
@@ -79,9 +70,7 @@ export function renderMcCell(
       parts.push(
         `Withdrawals: ${formatCurrency(deflate(decYr.totalWithdrawal, yr.year))}`,
       );
-      parts.push(
-        `Tax rate: ${formatPercent(decYr.effectiveTaxRate, 1)}`,
-      );
+      parts.push(`Tax rate: ${formatPercent(decYr.effectiveTaxRate, 1)}`);
     }
     proofNote = `MC Engine: ${parts.join(" ·")}`;
   }
@@ -112,9 +101,7 @@ export function renderMcCell(
         ...(isPersonFiltered || proofNote
           ? {
               overrideNote: [
-                isPersonFiltered
-                  ? "MC values are household aggregate"
-                  : "",
+                isPersonFiltered ? "MC values are household aggregate" : "",
                 proofNote ?? "",
               ]
                 .filter(Boolean)

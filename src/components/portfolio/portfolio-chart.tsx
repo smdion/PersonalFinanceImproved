@@ -14,7 +14,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Card } from "@/components/ui/card";
-import { formatCurrency, formatPercent, compactCurrency } from "@/lib/utils/format";
+import { formatCurrency, compactCurrency } from "@/lib/utils/format";
 import { CHART_COLORS } from "@/lib/utils/colors";
 
 type TimeFrame = "YTD" | "3M" | "6M" | "1Y" | "3Y" | "All";
@@ -29,8 +29,6 @@ type ChartPoint = {
   change: number | null;
   changePct: number | null;
 };
-
-
 
 function getTimeFrameCutoff(tf: TimeFrame): string | null {
   if (tf === "All") return null;
@@ -162,9 +160,10 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
           />
           <RechartsTooltip
             content={({ active, payload }) => {
-              const val = active && payload?.length
-                ? (payload[0]!.payload as ChartPoint).total
-                : null;
+              const val =
+                active && payload?.length
+                  ? (payload[0]!.payload as ChartPoint).total
+                  : null;
               // Sync hover value via ref + deferred state update to avoid render-during-render
               if (hoverRef.current !== val) {
                 hoverRef.current = val;
