@@ -28,8 +28,15 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
+      - name: Check file sizes
+        run: bash scripts/check-file-size.sh
+
       - name: Test
         run: npx vitest run
+
+      - name: Verify docs freshness
+        run: pnpm docs:verify
+        continue-on-error: true
 
       - name: Audit dependencies
         run: pnpm audit --audit-level=high

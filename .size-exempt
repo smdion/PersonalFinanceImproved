@@ -1,0 +1,18 @@
+# Files exempt from the 1500-line size limit.
+# Each entry should have a tracking issue or plan to split.
+# Review quarterly — remove entries as files are refactored.
+
+# Projection table — complex multi-section rendering (split planned in FEATURE-ROADMAP.md)
+src/components/cards/projection/projection-table-accum-row.tsx
+src/components/cards/projection/overrides-panel.tsx
+src/components/cards/projection/index.tsx
+
+# Engine year handlers — core simulation loop, tightly coupled steps
+src/lib/calculators/engine/projection-year-handlers.ts
+
+# Full-page components with multiple sections
+src/app/(dashboard)/retirement/page.tsx
+src/app/(dashboard)/tools/page.tsx
+
+# Integrations preview — multiple API provider panels
+src/components/settings/integrations-preview-panel.tsx
