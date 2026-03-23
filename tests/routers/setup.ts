@@ -13,6 +13,8 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import type { Session } from "next-auth";
+// eslint-disable-next-line no-restricted-imports -- test harness needs Permission type
+import type { Permission } from "@/server/auth";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 
 // Import schema for SQLite
@@ -52,7 +54,7 @@ export const viewerSession: Session = {
 };
 
 export function createViewerSessionWithPermissions(
-  permissions: string[],
+  permissions: Permission[],
 ): Session {
   return {
     user: {
