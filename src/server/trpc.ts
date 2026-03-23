@@ -100,6 +100,7 @@ export async function createContext(): Promise<Context> {
 const t = initTRPC.context<Context>().meta<ProcedureMeta>().create();
 
 export const createTRPCRouter = t.router;
+export const mergeRouters = t.mergeRouters;
 export const createCallerFactory = t.createCallerFactory;
 
 // ── Shared change_log middleware (fire-and-forget, never blocks) ──
