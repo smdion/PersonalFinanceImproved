@@ -992,6 +992,10 @@ export const retirementSalaryOverrides = pgTable(
       precision: 12,
       scale: 2,
     }).notNull(),
+    contributionProfileId: integer("contribution_profile_id").references(
+      () => contributionProfiles.id,
+      { onDelete: "set null" },
+    ),
     notes: text("notes"),
   },
   (table) => [
@@ -1102,6 +1106,52 @@ export const taxBrackets = pgTable(
       table.taxYear,
       table.filingStatus,
       table.w4Checkbox,
+    ),
+  ],
+);
+
+// ── LTCG brackets ───────────────────────────────────────────────
+
+export type LtcgBracketEntry = {
+  threshold: number | null; // null = Infinity (top bracket)
+  rate: number;
+};
+
+export const ltcgBrackets = pgTable(
+  "ltcg_brackets",
+  {
+    id: serial("id").primaryKey(),
+    taxYear: integer("tax_year").notNull(),
+    filingStatus: text("filing_status").$type<W4FilingStatus>().notNull(),
+    brackets: jsonb("brackets").$type<LtcgBracketEntry[]>().notNull(),
+  },
+  (table) => [
+    uniqueIndex("ltcg_brackets_year_status_idx").on(
+      table.taxYear,
+      table.filingStatus,
+    ),
+  ],
+);
+
+// ── IRMAA brackets ──────────────────────────────────────────────
+
+export type IrmaaBracketEntry = {
+  magiThreshold: number;
+  annualSurcharge: number;
+};
+
+export const irmaaBrackets = pgTable(
+  "irmaa_brackets",
+  {
+    id: serial("id").primaryKey(),
+    taxYear: integer("tax_year").notNull(),
+    filingStatus: text("filing_status").$type<W4FilingStatus>().notNull(),
+    brackets: jsonb("brackets").$type<IrmaaBracketEntry[]>().notNull(),
+  },
+  (table) => [
+    uniqueIndex("irmaa_brackets_year_status_idx").on(
+      table.taxYear,
+      table.filingStatus,
     ),
   ],
 );

@@ -819,6 +819,10 @@ export const retirementSalaryOverrides = sqliteTable(
       .references(() => people.id, { onDelete: "restrict" }),
     projectionYear: integer("projection_year").notNull(),
     overrideSalary: text("override_salary").notNull(),
+    contributionProfileId: integer("contribution_profile_id").references(
+      () => contributionProfiles.id,
+      { onDelete: "set null" },
+    ),
     notes: text("notes"),
   },
   (table) => [
@@ -902,6 +906,52 @@ export const taxBrackets = sqliteTable(
       table.taxYear,
       table.filingStatus,
       table.w4Checkbox,
+    ),
+  ],
+);
+
+// ── LTCG brackets ───────────────────────────────────────────────
+
+export type LtcgBracketEntry = {
+  threshold: number; // Infinity stored as null in JSON
+  rate: number;
+};
+
+export const ltcgBrackets = sqliteTable(
+  "ltcg_brackets",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    taxYear: integer("tax_year").notNull(),
+    filingStatus: text("filing_status").$type<W4FilingStatus>().notNull(),
+    brackets: text("brackets", { mode: "json" }).$type<LtcgBracketEntry[]>().notNull(),
+  },
+  (table) => [
+    uniqueIndex("ltcg_brackets_year_status_idx").on(
+      table.taxYear,
+      table.filingStatus,
+    ),
+  ],
+);
+
+// ── IRMAA brackets ──────────────────────────────────────────────
+
+export type IrmaaBracketEntry = {
+  magiThreshold: number;
+  annualSurcharge: number;
+};
+
+export const irmaaBrackets = sqliteTable(
+  "irmaa_brackets",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    taxYear: integer("tax_year").notNull(),
+    filingStatus: text("filing_status").$type<W4FilingStatus>().notNull(),
+    brackets: text("brackets", { mode: "json" }).$type<IrmaaBracketEntry[]>().notNull(),
+  },
+  (table) => [
+    uniqueIndex("irmaa_brackets_year_status_idx").on(
+      table.taxYear,
+      table.filingStatus,
     ),
   ],
 );

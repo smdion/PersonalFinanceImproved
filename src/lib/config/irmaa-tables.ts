@@ -46,12 +46,15 @@ export const IRMAA_BRACKETS: Record<FilingStatusType, IrmaaBracket[]> = {
 /**
  * Get the annual IRMAA surcharge (per person) for a given MAGI and filing status.
  * Returns 0 if below the first tier.
+ *
+ * @param dbBrackets Optional DB-loaded brackets (overrides hardcoded defaults).
  */
 export function getIrmaaCost(
   magi: number,
   filingStatus: FilingStatusType,
+  dbBrackets?: Record<string, IrmaaBracket[]>,
 ): number {
-  const brackets = IRMAA_BRACKETS[filingStatus];
+  const brackets = (dbBrackets ?? IRMAA_BRACKETS)[filingStatus];
   if (!brackets) return 0;
   let surcharge = 0;
   for (const b of brackets) {
@@ -62,12 +65,15 @@ export function getIrmaaCost(
 
 /**
  * Get the nearest IRMAA cliff above the current MAGI, or null if already above all tiers.
+ *
+ * @param dbBrackets Optional DB-loaded brackets (overrides hardcoded defaults).
  */
 export function getNextIrmaaCliff(
   magi: number,
   filingStatus: FilingStatusType,
+  dbBrackets?: Record<string, IrmaaBracket[]>,
 ): number | null {
-  const brackets = IRMAA_BRACKETS[filingStatus];
+  const brackets = (dbBrackets ?? IRMAA_BRACKETS)[filingStatus];
   if (!brackets) return null;
   for (const b of brackets) {
     if (magi <= b.magiThreshold) return b.magiThreshold;

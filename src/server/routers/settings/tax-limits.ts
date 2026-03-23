@@ -7,7 +7,11 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { zDecimal } from "./_shared";
-import { taxBracketsSchema } from "@/lib/db/json-schemas";
+import {
+  taxBracketsSchema,
+  ltcgBracketsSchema,
+  irmaaBracketsSchema,
+} from "@/lib/db/json-schemas";
 
 // --- Zod schemas ---
 
@@ -23,6 +27,18 @@ const taxBracketInput = z.object({
   filingStatus: z.enum(["MFJ", "Single", "HOH"]),
   w4Checkbox: z.boolean(),
   brackets: taxBracketsSchema,
+});
+
+const ltcgBracketInput = z.object({
+  taxYear: z.number().int().min(2000).max(2100),
+  filingStatus: z.enum(["MFJ", "Single", "HOH"]),
+  brackets: ltcgBracketsSchema,
+});
+
+const irmaaBracketInput = z.object({
+  taxYear: z.number().int().min(2000).max(2100),
+  filingStatus: z.enum(["MFJ", "Single", "HOH"]),
+  brackets: irmaaBracketsSchema,
 });
 
 // --- Procedures ---
@@ -101,6 +117,86 @@ export const taxLimitsProcedures = {
         ctx.db
           .delete(schema.taxBrackets)
           .where(eq(schema.taxBrackets.id, input.id)),
+      ),
+  }),
+
+  ltcgBrackets: createTRPCRouter({
+    list: protectedProcedure.query(({ ctx }) =>
+      ctx.db
+        .select()
+        .from(schema.ltcgBrackets)
+        .orderBy(
+          asc(schema.ltcgBrackets.taxYear),
+          asc(schema.ltcgBrackets.filingStatus),
+        ),
+    ),
+    create: adminProcedure
+      .input(ltcgBracketInput)
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .insert(schema.ltcgBrackets)
+          .values(input)
+          .returning()
+          .then((r) => r[0]),
+      ),
+    update: adminProcedure
+      .input(
+        z.object({ id: z.number().int() }).extend(ltcgBracketInput.shape),
+      )
+      .mutation(({ ctx, input: { id, ...data } }) =>
+        ctx.db
+          .update(schema.ltcgBrackets)
+          .set(data)
+          .where(eq(schema.ltcgBrackets.id, id))
+          .returning()
+          .then((r) => r[0]),
+      ),
+    delete: adminProcedure
+      .input(z.object({ id: z.number().int() }))
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .delete(schema.ltcgBrackets)
+          .where(eq(schema.ltcgBrackets.id, input.id)),
+      ),
+  }),
+
+  irmaaBrackets: createTRPCRouter({
+    list: protectedProcedure.query(({ ctx }) =>
+      ctx.db
+        .select()
+        .from(schema.irmaaBrackets)
+        .orderBy(
+          asc(schema.irmaaBrackets.taxYear),
+          asc(schema.irmaaBrackets.filingStatus),
+        ),
+    ),
+    create: adminProcedure
+      .input(irmaaBracketInput)
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .insert(schema.irmaaBrackets)
+          .values(input)
+          .returning()
+          .then((r) => r[0]),
+      ),
+    update: adminProcedure
+      .input(
+        z.object({ id: z.number().int() }).extend(irmaaBracketInput.shape),
+      )
+      .mutation(({ ctx, input: { id, ...data } }) =>
+        ctx.db
+          .update(schema.irmaaBrackets)
+          .set(data)
+          .where(eq(schema.irmaaBrackets.id, id))
+          .returning()
+          .then((r) => r[0]),
+      ),
+    delete: adminProcedure
+      .input(z.object({ id: z.number().int() }))
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .delete(schema.irmaaBrackets)
+          .where(eq(schema.irmaaBrackets.id, input.id)),
       ),
   }),
 };

@@ -35,13 +35,25 @@ export const LTCG_BRACKETS: Record<FilingStatusType, LtcgBracket[]> = {
  * For simplicity, returns a single rate (the marginal rate at the given income level).
  * A blended rate would be more accurate for large gains spanning brackets, but the
  * single-rate approximation is sufficient for projection purposes.
+ *
+ * @param dbBrackets Optional DB-loaded brackets (overrides hardcoded defaults).
+ *                   Thresholds use null for Infinity (top bracket).
  */
 export function getLtcgRate(
   totalTaxableIncome: number,
   filingStatus: FilingStatusType,
+  dbBrackets?: Record<string, { threshold: number | null; rate: number }[]>,
 ): number {
-  const brackets = LTCG_BRACKETS[filingStatus];
-  if (!brackets) return 0.15; // fallback
+  // Use DB brackets if provided, falling back to hardcoded defaults
+  const raw = dbBrackets
+    ? dbBrackets[filingStatus]
+    : LTCG_BRACKETS[filingStatus];
+  if (!raw) return 0.15; // fallback
+  // Normalize null thresholds to Infinity (DB stores null for top bracket)
+  const brackets = raw.map((b) => ({
+    threshold: b.threshold ?? Infinity,
+    rate: b.rate,
+  }));
   for (const b of brackets) {
     if (totalTaxableIncome <= b.threshold) return b.rate;
   }

@@ -9,7 +9,7 @@ import { isPostgres } from "./dialect";
 import * as pg from "./schema-pg";
 
 // Types are dialect-independent — always from PG schema
-export type { TaxBracketEntry, ApiConfig, AccountMapping, RelocationScenarioParams, ScenarioOverrides } from "./schema-pg";
+export type { TaxBracketEntry, LtcgBracketEntry, IrmaaBracketEntry, ApiConfig, AccountMapping, RelocationScenarioParams, ScenarioOverrides } from "./schema-pg";
 
 // At runtime, load the active dialect's schema.
 // The `as typeof pg` cast is safe because both schemas export identical
@@ -57,6 +57,8 @@ export const retirementBudgetOverrides = active.retirementBudgetOverrides;
 export const retirementScenarios = active.retirementScenarios;
 export const returnRateTable = active.returnRateTable;
 export const taxBrackets = active.taxBrackets;
+export const ltcgBrackets = active.ltcgBrackets;
+export const irmaaBrackets = active.irmaaBrackets;
 export const apiConnections = active.apiConnections;
 export const budgetApiCache = active.budgetApiCache;
 export const appSettings = active.appSettings;

@@ -10,6 +10,8 @@ import { ApiDocsSettings } from "@/components/settings/api-docs";
 import { IntegrationsSettings } from "@/components/settings/integrations";
 import { AuthSettings } from "@/components/settings/auth-settings";
 import { ReturnRatesSettings } from "@/components/settings/return-rates";
+import { LtcgBracketsSettings } from "@/components/settings/ltcg-brackets";
+import { IrmaaBracketsSettings } from "@/components/settings/irmaa-brackets";
 import { PageHeader } from "@/components/ui/page-header";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
@@ -19,6 +21,8 @@ const baseTabs = [
   { key: "people", label: "People" },
   { key: "limits", label: "IRS Limits" },
   { key: "tax", label: "Tax Brackets" },
+  { key: "ltcg", label: "LTCG Brackets" },
+  { key: "irmaa", label: "IRMAA Tables" },
   { key: "returns", label: "Return Rates" },
   { key: "integrations", label: "Integrations" },
 ] as const;
@@ -73,6 +77,8 @@ export default function SettingsPage() {
         {activeTab === "people" && <PeopleSettings />}
         {activeTab === "limits" && <ContributionLimitsSettings />}
         {activeTab === "tax" && <TaxBracketsSettings />}
+        {activeTab === "ltcg" && <LtcgBracketsSettings />}
+        {activeTab === "irmaa" && <IrmaaBracketsSettings />}
         {activeTab === "returns" && <ReturnRatesSettings />}
         {activeTab === "integrations" && <IntegrationsSettings />}
         {activeTab === "auth" && admin && <AuthSettings />}

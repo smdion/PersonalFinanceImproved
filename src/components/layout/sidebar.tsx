@@ -32,6 +32,8 @@ import {
   Cog,
   LogOut,
   HelpCircle,
+  Layers,
+  Database,
   type LucideIcon,
 } from "lucide-react";
 
@@ -81,6 +83,7 @@ const navStructure: NavEntry[] = [
     Icon: Search,
     items: [
       { href: "/retirement", label: "Retirement", Icon: Palmtree },
+      { href: "/contributions", label: "Contributions", Icon: Layers },
       { href: "/historical", label: "Historical", Icon: ScrollText },
       { href: "/tools", label: "Tools", Icon: Wrench },
     ],
@@ -91,6 +94,7 @@ const navStructure: NavEntry[] = [
     items: [
       { href: "/versions", label: "Versions", Icon: Save },
       { href: "/settings", label: "Settings", Icon: Settings },
+      { href: "/data-browser", label: "Raw Data", Icon: Database },
     ],
   },
 ];

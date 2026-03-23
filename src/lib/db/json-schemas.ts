@@ -56,6 +56,28 @@ export const taxBracketEntrySchema = z.object({
 /** tax_brackets.brackets — ordered list of bracket entries */
 export const taxBracketsSchema = z.array(taxBracketEntrySchema);
 
+// ── ltcg_brackets ───────────────────────────────────────────────
+
+/** Single entry inside ltcg_brackets.brackets */
+export const ltcgBracketEntrySchema = z.object({
+  threshold: z.number().nullable(), // null = Infinity (top bracket)
+  rate: z.number(),
+});
+
+/** ltcg_brackets.brackets — ordered list of LTCG bracket entries */
+export const ltcgBracketsSchema = z.array(ltcgBracketEntrySchema);
+
+// ── irmaa_brackets ──────────────────────────────────────────────
+
+/** Single entry inside irmaa_brackets.brackets */
+export const irmaaBracketEntrySchema = z.object({
+  magiThreshold: z.number(),
+  annualSurcharge: z.number(),
+});
+
+/** irmaa_brackets.brackets — ordered list of IRMAA bracket entries */
+export const irmaaBracketsSchema = z.array(irmaaBracketEntrySchema);
+
 // ── api_connections ─────────────────────────────────────────────
 
 /** api_connections.config */

@@ -55,3 +55,17 @@ INSERT INTO tax_brackets (tax_year, filing_status, w4_checkbox, brackets) VALUES
   (2026, 'HOH', false, '[{"rate": 0, "threshold": 0, "baseWithholding": 0}, {"rate": 0.1, "threshold": 13900, "baseWithholding": 0}, {"rate": 0.12, "threshold": 30900, "baseWithholding": 1700}, {"rate": 0.22, "threshold": 78750, "baseWithholding": 7442}, {"rate": 0.24, "threshold": 117250, "baseWithholding": 15912}, {"rate": 0.32, "threshold": 211200, "baseWithholding": 38460}, {"rate": 0.35, "threshold": 264400, "baseWithholding": 55484}, {"rate": 0.37, "threshold": 640250, "baseWithholding": 187031.5}]'),
   (2026, 'HOH', true, '[{"rate": 0, "threshold": 0, "baseWithholding": 0}, {"rate": 0.1, "threshold": 11250, "baseWithholding": 0}, {"rate": 0.12, "threshold": 1975, "baseWithholding": 850}, {"rate": 0.22, "threshold": 43675, "baseWithholding": 3721}, {"rate": 0.24, "threshold": 62925, "baseWithholding": 7956}, {"rate": 0.32, "threshold": 109000, "baseWithholding": 19230}, {"rate": 0.35, "threshold": 136500, "baseWithholding": 27742}, {"rate": 0.37, "threshold": 324425, "baseWithholding": 93515.75}]')
 ON CONFLICT DO NOTHING;
+
+-- LTCG brackets (Long-Term Capital Gains) — IRS Revenue Procedure 2024-40
+INSERT INTO ltcg_brackets (tax_year, filing_status, brackets) VALUES
+  (2025, 'MFJ', '[{"threshold": 94050, "rate": 0}, {"threshold": 583750, "rate": 0.15}, {"threshold": null, "rate": 0.2}]'),
+  (2025, 'Single', '[{"threshold": 47025, "rate": 0}, {"threshold": 518900, "rate": 0.15}, {"threshold": null, "rate": 0.2}]'),
+  (2025, 'HOH', '[{"threshold": 63000, "rate": 0}, {"threshold": 551350, "rate": 0.15}, {"threshold": null, "rate": 0.2}]')
+ON CONFLICT DO NOTHING;
+
+-- IRMAA brackets (Medicare premium surcharges) — CMS 2026 projected thresholds
+INSERT INTO irmaa_brackets (tax_year, filing_status, brackets) VALUES
+  (2026, 'MFJ', '[{"magiThreshold": 206000, "annualSurcharge": 1056}, {"magiThreshold": 258000, "annualSurcharge": 2640}, {"magiThreshold": 322000, "annualSurcharge": 4224}, {"magiThreshold": 386000, "annualSurcharge": 5808}, {"magiThreshold": 750000, "annualSurcharge": 6924}]'),
+  (2026, 'Single', '[{"magiThreshold": 103000, "annualSurcharge": 1056}, {"magiThreshold": 129000, "annualSurcharge": 2640}, {"magiThreshold": 161000, "annualSurcharge": 4224}, {"magiThreshold": 193000, "annualSurcharge": 5808}, {"magiThreshold": 375000, "annualSurcharge": 6924}]'),
+  (2026, 'HOH', '[{"magiThreshold": 103000, "annualSurcharge": 1056}, {"magiThreshold": 129000, "annualSurcharge": 2640}, {"magiThreshold": 161000, "annualSurcharge": 4224}, {"magiThreshold": 193000, "annualSurcharge": 5808}, {"magiThreshold": 375000, "annualSurcharge": 6924}]')
+ON CONFLICT DO NOTHING;

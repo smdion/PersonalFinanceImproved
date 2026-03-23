@@ -44,21 +44,21 @@ describe("Sidebar", () => {
 
   it("renders nav groups", () => {
     render(<Sidebar {...defaultProps} />);
-    expect(screen.getAllByText("Income").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Investments").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Property").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Planning").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Cash Flow").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Wealth").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Net Worth").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Analysis").length).toBeGreaterThan(0);
     expect(screen.getAllByText("System").length).toBeGreaterThan(0);
   });
 
   it("expands a group when clicked", () => {
     render(<Sidebar {...defaultProps} />);
 
-    // Income group should be collapsed by default (not active)
+    // Cash Flow group should be collapsed by default (not active)
     expect(screen.queryByText("Paycheck")).toBeNull();
 
     // Click to expand — use first match (desktop sidebar)
-    fireEvent.click(screen.getAllByText("Income")[0]!);
+    fireEvent.click(screen.getAllByText("Cash Flow")[0]!);
     expect(screen.getAllByText("Paycheck").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Budget").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Expenses").length).toBeGreaterThan(0);
@@ -67,10 +67,10 @@ describe("Sidebar", () => {
   it("collapses a group when clicked again", () => {
     render(<Sidebar {...defaultProps} />);
 
-    fireEvent.click(screen.getAllByText("Income")[0]!);
+    fireEvent.click(screen.getAllByText("Cash Flow")[0]!);
     expect(screen.getAllByText("Paycheck").length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getAllByText("Income")[0]!);
+    fireEvent.click(screen.getAllByText("Cash Flow")[0]!);
     expect(screen.queryByText("Paycheck")).toBeNull();
   });
 

@@ -24,6 +24,8 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "retirement_scenarios", tier: 0 },
   { name: "return_rate_table", tier: 0 },
   { name: "tax_brackets", tier: 0 },
+  { name: "ltcg_brackets", tier: 0 },
+  { name: "irmaa_brackets", tier: 0 },
   { name: "api_connections", tier: 0 },
   { name: "app_settings", tier: 0 },
   { name: "local_admins", tier: 0 },
