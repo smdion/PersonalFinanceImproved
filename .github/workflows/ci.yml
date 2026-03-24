@@ -53,7 +53,7 @@ jobs:
       - name: E2E tests (SQLite + demo mode)
         run: |
           cp -r .next/static .next/standalone/.next/static
-          cp -r public .next/standalone/public
+          [ -d public ] && cp -r public .next/standalone/public || true
           pnpm db:migrate
           pnpm run test:e2e
         env:
