@@ -278,6 +278,7 @@ export async function restoreVersion(
         recordId: versionId,
         fieldName: "restore",
         oldValue: null,
+        // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM jsonb column requires unknown type
         newValue: { action: "restore", versionName: version.name } as unknown,
         changedBy: version.createdBy,
       });
@@ -451,6 +452,7 @@ async function importBackupPg(
         newValue: {
           action: "import",
           exportedAt: backup.exportedAt,
+          // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM jsonb column requires unknown type
         } as unknown,
         changedBy: "system",
       });
@@ -521,6 +523,7 @@ async function importBackupSqlite(
         newValue: {
           action: "import",
           exportedAt: backup.exportedAt,
+          // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM jsonb column requires unknown type
         } as unknown,
         changedBy: "system",
       });

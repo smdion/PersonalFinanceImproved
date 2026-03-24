@@ -464,7 +464,7 @@ export default function ToolsPage() {
                             >
                               {(currentProf?.columnLabels ?? []).map(
                                 (label: string, i: number) => (
-                                  <option key={i} value={i}>
+                                  <option key={label} value={i}>
                                     {label} (
                                     {formatCurrency(
                                       (currentProf?.columnTotals ?? [])[i] ?? 0,
@@ -549,7 +549,7 @@ export default function ToolsPage() {
                             >
                               {(targetProf?.columnLabels ?? []).map(
                                 (label: string, i: number) => (
-                                  <option key={i} value={i}>
+                                  <option key={label} value={i}>
                                     {label} (
                                     {formatCurrency(
                                       (targetProf?.columnTotals ?? [])[i] ?? 0,
@@ -809,9 +809,9 @@ export default function ToolsPage() {
                 {/* Warnings from calculator */}
                 {r.warnings.length > 0 && (
                   <div className="space-y-1">
-                    {r.warnings.map((w, i) => (
+                    {r.warnings.map((w) => (
                       <div
-                        key={i}
+                        key={w}
                         className="text-xs text-amber-600 bg-amber-50 rounded p-2"
                       >
                         {w}
@@ -884,7 +884,8 @@ export default function ToolsPage() {
                           p.downPaymentPercent < 1;
                         return (
                           <div
-                            key={i}
+                            // eslint-disable-next-line react/no-array-index-key -- purchase entries have no stable ID
+                            key={`${p.name}-${p.purchaseYear}-${i}`}
                             className="flex items-center gap-1 bg-orange-50 text-orange-700 rounded px-2 py-1 text-xs"
                           >
                             <span className="font-medium">{p.name}</span>
@@ -1184,7 +1185,8 @@ export default function ToolsPage() {
                           : `${formatCurrency(adj.monthlyExpenses)}/mo`;
                         return (
                           <div
-                            key={i}
+                            // eslint-disable-next-line react/no-array-index-key -- year adjustments have no stable ID
+                            key={`${adj.year}-${i}`}
                             className="flex items-center gap-1 bg-blue-50 text-blue-700 rounded px-2 py-1 text-xs"
                           >
                             <span>
@@ -1343,7 +1345,7 @@ export default function ToolsPage() {
                                     >
                                       {labels.map(
                                         (label: string, idx: number) => (
-                                          <option key={idx} value={idx}>
+                                          <option key={label} value={idx}>
                                             {label} (
                                             {formatCurrency(totals[idx] ?? 0)}
                                             /mo)

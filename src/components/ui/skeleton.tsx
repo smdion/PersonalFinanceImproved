@@ -45,6 +45,7 @@ export function SkeletonTable({
       <div className="flex gap-3">
         {[...Array(columns)].map((_, i) => (
           <div
+            // eslint-disable-next-line react/no-array-index-key -- skeleton placeholders
             key={i}
             className="animate-pulse h-6 bg-surface-strong rounded flex-1"
           />
@@ -52,9 +53,11 @@ export function SkeletonTable({
       </div>
       {/* Data rows */}
       {[...Array(rows)].map((_, i) => (
+        // eslint-disable-next-line react/no-array-index-key -- skeleton placeholders
         <div key={i} className="flex gap-3">
           {[...Array(columns)].map((_, j) => (
             <div
+              // eslint-disable-next-line react/no-array-index-key -- skeleton placeholders
               key={j}
               className="animate-pulse h-8 bg-surface-elevated rounded flex-1"
             />

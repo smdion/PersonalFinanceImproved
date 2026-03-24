@@ -398,7 +398,10 @@ export default function BudgetPage() {
   const activeProfile = allProfiles?.find((p) => p.isActive) ?? null;
   const isViewingNonActive =
     displayProfileId != null && displayProfileId !== activeProfileId;
-  const cols = (data?.columnLabels as string[] | undefined) ?? [];
+  const cols = useMemo(
+    () => (data?.columnLabels as string[] | undefined) ?? [],
+    [data?.columnLabels],
+  );
   const numCols = cols.length;
 
   const columnContribProfileIds = useMemo(() => {

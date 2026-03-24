@@ -696,13 +696,14 @@ export default function VersionsPage() {
                     <tbody>
                       {previewData.rows.map((row, i) => (
                         <tr
-                          key={i}
+                          // eslint-disable-next-line react/no-array-index-key
+                          key={String((row as Record<string, unknown>).id ?? i)}
                           className="border-b border-subtle hover:bg-surface-sunken"
                         >
-                          {Object.values(row as Record<string, unknown>).map(
-                            (val, j) => (
+                          {Object.entries(row as Record<string, unknown>).map(
+                            ([col, val]) => (
                               <td
-                                key={j}
+                                key={col}
                                 className="px-2 py-1 text-secondary font-mono max-w-[200px] truncate"
                               >
                                 {val === null ? (

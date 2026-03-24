@@ -108,7 +108,10 @@ export function ContribMethodologySection({
                           TAX_TREATMENT_TO_BUCKET[spec.taxTreatment] ??
                           spec.taxTreatment;
                         return (
-                          <tr key={i} className="border-t border-blue-100/60">
+                          <tr
+                            key={`${spec.category}-${spec.personId ?? spec.ownerName ?? i}`}
+                            className="border-t border-blue-100/60"
+                          >
                             <td className="py-1 pr-2">
                               <div className="flex items-center gap-1.5">
                                 <span
@@ -270,9 +273,9 @@ export function ContribMethodologySection({
       {/* Warnings */}
       {result.warnings.length > 0 && (
         <div className="space-y-1">
-          {result.warnings.map((w, i) => (
+          {result.warnings.map((w) => (
             <div
-              key={i}
+              key={w}
               className="text-xs text-amber-600 bg-amber-50 rounded px-3 py-1.5"
             >
               {w}

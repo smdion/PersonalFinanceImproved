@@ -851,7 +851,10 @@ export default function PortfolioPage() {
     [sortCol],
   );
 
-  const rawSnapshots = paginatedSnapshots?.snapshots ?? [];
+  const rawSnapshots = useMemo(
+    () => paginatedSnapshots?.snapshots ?? [],
+    [paginatedSnapshots?.snapshots],
+  );
 
   const snapshotsWithDelta = useMemo(
     () =>
@@ -1199,7 +1202,8 @@ export default function PortfolioPage() {
                                           );
                                           return (
                                             <div
-                                              key={ai}
+                                              // eslint-disable-next-line react/no-array-index-key -- snapshot sub-rows lack unique IDs
+                                              key={`${a.accountType}-${a.ownerPersonId}-${a.subType}-${ai}`}
                                               className="flex justify-between items-baseline py-0.5 pl-4 border-b border-subtle"
                                             >
                                               <span className="text-xs text-muted">

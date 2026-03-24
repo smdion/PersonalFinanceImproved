@@ -288,7 +288,10 @@ export function LtcgBracketsSettings() {
                   </thead>
                   <tbody>
                     {brackets.map((b, i) => (
-                      <tr key={i} className="border-t border-subtle">
+                      <tr
+                        key={String(b.threshold)}
+                        className="border-t border-subtle"
+                      >
                         <td className="py-1 pr-2">
                           {b.threshold === null ? (
                             <span className="text-sm text-muted">Above</span>

@@ -43,7 +43,7 @@ export function FinancialIndependenceCard({
             <div className="flex gap-1">
               {budgetColumnLabels.map((label: string, idx: number) => (
                 <button
-                  key={idx}
+                  key={label}
                   onClick={() => onExpenseColumnChange(idx)}
                   className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
                     idx === currentExpenseColumn

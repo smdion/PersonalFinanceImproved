@@ -193,9 +193,9 @@ export function FundOverridesSummary({
             </p>
           )}
 
-          {ranges.map((range, i) => (
+          {ranges.map((range) => (
             <div
-              key={i}
+              key={range.startMonth}
               className="flex items-center justify-between text-xs py-1 px-2 bg-surface-elevated rounded"
             >
               <div className="flex items-center gap-3">

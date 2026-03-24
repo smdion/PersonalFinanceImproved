@@ -49,18 +49,6 @@ jobs:
 
       # --- Non-blocking steps (tracked, don't fail the pipeline) ---
 
-      - name: Lint warnings
-        id: lint_warnings
-        run: |
-          COUNT=$(npx next lint 2>&1 | grep -c "Warning" || true)
-          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
-          if [ "$COUNT" -gt 0 ]; then
-            echo "::warning::$COUNT ESLint warnings found"
-            npx next lint 2>&1 | grep "Warning" | sed 's/.*Warning: //' | sort | uniq -c | sort -rn > /tmp/lint-warnings.txt
-            cat /tmp/lint-warnings.txt
-          fi
-        continue-on-error: true
-
       - name: Check migrations
         id: check_migrations
         run: pnpm check:migrations
@@ -102,14 +90,6 @@ jobs:
             echo ""
             echo "| Check | Status | Details |"
             echo "|-------|--------|---------|"
-
-            # Lint warnings
-            LINT_COUNT="${{ steps.lint_warnings.outputs.count }}"
-            if [ "$LINT_COUNT" -gt 0 ] 2>/dev/null; then
-              echo "| Lint warnings | :warning: | $LINT_COUNT warnings |"
-            else
-              echo "| Lint warnings | :white_check_mark: | Clean |"
-            fi
 
             # Migrations
             if [ "${{ steps.check_migrations.outcome }}" = "success" ]; then

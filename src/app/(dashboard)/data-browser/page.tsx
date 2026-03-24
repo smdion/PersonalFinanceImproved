@@ -260,7 +260,8 @@ export default function DataBrowserPage() {
                     <tbody>
                       {rows.map((row, i) => (
                         <tr
-                          key={i}
+                          // eslint-disable-next-line react/no-array-index-key
+                          key={String((row as Record<string, unknown>).id ?? i)}
                           className="border-b border-subtle hover:bg-surface-elevated/50"
                         >
                           {columns.map((col) => (
