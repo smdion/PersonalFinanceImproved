@@ -54,6 +54,7 @@ jobs:
         run: |
           cp -r .next/static .next/standalone/.next/static
           [ -d public ] && cp -r public .next/standalone/public || true
+          rm -f .next/standalone/.env
           pnpm db:migrate
           pnpm run test:e2e
         env:
