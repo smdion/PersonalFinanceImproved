@@ -35,6 +35,17 @@ jobs:
         run: pnpm check:migrations
         continue-on-error: true
 
+      - name: Build
+        run: pnpm build
+        env:
+          DATABASE_URL: postgresql://build:build@localhost:5432/build
+          NEXTAUTH_SECRET: build-placeholder-secret-at-least-32-chars
+          NEXTAUTH_URL: http://localhost:3000
+          AUTH_TRUST_HOST: "true"
+          AUTH_AUTHENTIK_ISSUER: https://build-placeholder/application/o/ledgr/
+          AUTH_AUTHENTIK_ID: build-placeholder
+          AUTH_AUTHENTIK_SECRET: build-placeholder
+
       - name: Test
         run: npx vitest run
 
