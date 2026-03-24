@@ -2,8 +2,9 @@
  * Auto-backfill performanceAccountId on rows that predate the FK column.
  *
  * Runs on startup (via instrumentation.ts). Idempotent — only touches rows
- * where performanceAccountId IS NULL. If it fails, the app still works via
- * the existing fallback matching in performance.ts / snapshot.ts.
+ * where performanceAccountId IS NULL and snapshotId IS NULL (snapshot rows
+ * are excluded). If it fails, the app still works via the existing fallback
+ * matching in performance.ts / snapshot.ts.
  */
 
 import { and, eq, isNull } from "drizzle-orm";
