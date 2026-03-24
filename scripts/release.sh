@@ -106,11 +106,15 @@ else
   echo -e "${YELLOW}  verify-docs.ts not found, skipping${NC}"
 fi
 
-# Step 6: Commit
+# Step 6: Commit (skip if version was already bumped in a prior commit)
 echo -e "\n${BOLD}[6/8] Committing...${NC}"
 git add package.json
-git commit -m "release: $TAG"
-echo -e "${GREEN}  Committed${NC}"
+if git diff --cached --quiet; then
+  echo -e "${YELLOW}  package.json already at $VERSION — skipping release commit${NC}"
+else
+  git commit -m "release: $TAG"
+  echo -e "${GREEN}  Committed${NC}"
+fi
 
 # Step 7: Tag
 echo -e "\n${BOLD}[7/8] Tagging $TAG...${NC}"
