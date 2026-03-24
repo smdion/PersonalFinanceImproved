@@ -94,7 +94,7 @@ export function YoYComparison({ years, data }: YoYComparisonProps) {
                 <td className="px-4 py-2 text-muted">{m.label}</td>
                 {values.map((v, i) => (
                   <td
-                    key={rows[i].year}
+                    key={rows[i]?.year ?? i}
                     className={`text-right px-4 py-2 font-medium ${
                       m.colorize
                         ? v >= 0
