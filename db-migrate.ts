@@ -112,20 +112,12 @@ async function createPreMigrationBackup(
 
     // Export all versioned tables
     const tables: Record<string, unknown[]> = {};
-    let schemaVersion = "unknown";
 
-    // Try to read the old schema version from the journal that was in the DB
-    try {
-      const { rows: hashRows } = await client.query(
-        "SELECT hash FROM __drizzle_migrations ORDER BY created_at DESC LIMIT 1",
-      );
-      if (hashRows[0]) {
-        // We can't reverse the hash to a tag name, so just record the count
-        schemaVersion = `pre-squash-${appliedCount}-migrations`;
-      }
-    } catch {
-      // Ignore — schemaVersion stays "unknown"
-    }
+    // Map the pre-squash DB to a known schema tag so the backup is importable.
+    // We can't reverse the Drizzle migration hash to a tag name, but any DB
+    // with more applied migrations than journal entries was running v0.1.x.
+    // Use the last v0.1.x tag so the transformer applies all renames/defaults.
+    const schemaVersion = "0008_prior_year_contrib";
 
     for (const tableName of VERSION_TABLE_NAMES) {
       try {
