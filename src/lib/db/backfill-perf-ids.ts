@@ -6,7 +6,7 @@
  * the existing fallback matching in performance.ts / snapshot.ts.
  */
 
-import { eq, isNull } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import * as schema from "./schema";
 import { stripInstitutionSuffix } from "@/lib/utils/format";
 import { getDisplayConfig } from "@/lib/config/account-types";
@@ -82,7 +82,12 @@ export async function backfillPerformanceAccountIds(db: Db) {
       ownerPersonId: schema.portfolioAccounts.ownerPersonId,
     })
     .from(schema.portfolioAccounts)
-    .where(isNull(schema.portfolioAccounts.performanceAccountId));
+    .where(
+      and(
+        isNull(schema.portfolioAccounts.performanceAccountId),
+        isNull(schema.portfolioAccounts.snapshotId),
+      ),
+    );
 
   for (const row of nullPortfolio) {
     const key = `${row.institution}:${row.accountType}:${row.subType ?? ""}:${row.label ?? ""}:${row.ownerPersonId ?? ""}`;
