@@ -1449,6 +1449,33 @@ export const mcPresetReturnOverrides = pgTable(
   ],
 );
 
+// --- Monte Carlo: User-created simulation presets ---
+
+export const mcUserPresets = pgTable("mc_user_presets", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  simulations: integer("simulations").notNull().default(1000),
+  returnMean: decimal("return_mean", { precision: 12, scale: 6 }).notNull(),
+  returnStdDev: decimal("return_std_dev", {
+    precision: 12,
+    scale: 6,
+  }).notNull(),
+  inflationMean: decimal("inflation_mean", {
+    precision: 12,
+    scale: 6,
+  }).notNull(),
+  inflationStdDev: decimal("inflation_std_dev", {
+    precision: 12,
+    scale: 6,
+  }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // --- Contribution profiles (what-if salary/contribution overrides) ---
 
 export const contributionProfiles = pgTable("contribution_profiles", {

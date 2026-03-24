@@ -1244,6 +1244,24 @@ export const mcPresetReturnOverrides = sqliteTable(
   ],
 );
 
+// --- Monte Carlo: User-created simulation presets ---
+
+export const mcUserPresets = sqliteTable("mc_user_presets", {
+  id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  simulations: integer("simulations").notNull().default(1000),
+  returnMean: text("return_mean").notNull(),
+  returnStdDev: text("return_std_dev").notNull(),
+  inflationMean: text("inflation_mean").notNull(),
+  inflationStdDev: text("inflation_std_dev").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
 // --- Contribution profiles (what-if salary/contribution overrides) ---
 
 export const contributionProfiles = sqliteTable("contribution_profiles", {
