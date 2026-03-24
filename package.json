@@ -26,6 +26,8 @@
     "analyze": "ANALYZE=true pnpm build",
     "check:bundle": "tsx scripts/check-bundle-size.ts",
     "check:migrations": "tsx scripts/check-migrations.ts",
+    "backup:export": "tsx scripts/export-backup.ts",
+    "backup:import": "tsx scripts/import-backup.ts",
     "prepare": "husky"
   },
   "dependencies": {

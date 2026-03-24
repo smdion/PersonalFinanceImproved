@@ -129,7 +129,6 @@ describe("AccountCard", () => {
         portfolioSubs={[
           {
             id: 1,
-            institution: "Fidelity",
             taxType: "traditional",
             amount: "100000",
             accountType: "401k",

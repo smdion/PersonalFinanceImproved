@@ -1,15 +1,3 @@
-CREATE TYPE "public"."account_ownership_enum" AS ENUM('individual', 'joint');--> statement-breakpoint
-CREATE TYPE "public"."api_sync_direction_enum" AS ENUM('pull', 'push', 'both');--> statement-breakpoint
-CREATE TYPE "public"."budget_api_service_enum" AS ENUM('ynab', 'actual');--> statement-breakpoint
-CREATE TYPE "public"."contribution_method_enum" AS ENUM('percent_of_salary', 'fixed_per_period', 'fixed_monthly', 'fixed_annual');--> statement-breakpoint
-CREATE TYPE "public"."employer_match_type_enum" AS ENUM('none', 'percent_of_contribution', 'dollar_match', 'fixed_annual');--> statement-breakpoint
-CREATE TYPE "public"."hsa_coverage_type_enum" AS ENUM('self_only', 'family');--> statement-breakpoint
-CREATE TYPE "public"."match_tax_treatment_enum" AS ENUM('pre_tax', 'tax_free');--> statement-breakpoint
-CREATE TYPE "public"."pay_period_enum" AS ENUM('weekly', 'biweekly', 'semimonthly', 'monthly');--> statement-breakpoint
-CREATE TYPE "public"."pay_week_enum" AS ENUM('even', 'odd', 'na');--> statement-breakpoint
-CREATE TYPE "public"."portfolio_tax_type_enum" AS ENUM('preTax', 'taxFree', 'hsa', 'afterTax');--> statement-breakpoint
-CREATE TYPE "public"."tax_treatment_enum" AS ENUM('pre_tax', 'tax_free', 'after_tax', 'hsa');--> statement-breakpoint
-CREATE TYPE "public"."w4_filing_status_enum" AS ENUM('MFJ', 'Single', 'HOH');--> statement-breakpoint
 CREATE TABLE "account_performance" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"year" integer NOT NULL,
@@ -24,6 +12,7 @@ CREATE TABLE "account_performance" (
 	"employer_contributions" numeric(12, 2) DEFAULT '0' NOT NULL,
 	"fees" numeric(12, 2) DEFAULT '0' NOT NULL,
 	"distributions" numeric(12, 2) DEFAULT '0' NOT NULL,
+	"rollovers" numeric(12, 2) DEFAULT '0' NOT NULL,
 	"parent_category" text NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"is_finalized" boolean DEFAULT false NOT NULL,
@@ -42,6 +31,7 @@ CREATE TABLE "annual_performance" (
 	"employer_contributions" numeric(12, 2) DEFAULT '0' NOT NULL,
 	"distributions" numeric(12, 2) DEFAULT '0' NOT NULL,
 	"fees" numeric(12, 2) DEFAULT '0' NOT NULL,
+	"rollovers" numeric(12, 2) DEFAULT '0' NOT NULL,
 	"lifetime_gains" numeric(12, 2) NOT NULL,
 	"lifetime_contributions" numeric(12, 2) NOT NULL,
 	"lifetime_match" numeric(12, 2) NOT NULL,
@@ -59,7 +49,7 @@ CREATE TABLE "api_connections" (
 	"linked_profile_id" integer,
 	"linked_column_index" integer,
 	"server_knowledge" integer,
-	"last_synced_at" timestamp,
+	"last_synced_at" timestamp with time zone,
 	CONSTRAINT "api_connections_service_unique" UNIQUE("service")
 );
 --> statement-breakpoint
@@ -95,7 +85,7 @@ CREATE TABLE "brokerage_goals" (
 	"priority" integer DEFAULT 0 NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"notes" text,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "brokerage_planned_transactions" (
@@ -110,11 +100,11 @@ CREATE TABLE "brokerage_planned_transactions" (
 --> statement-breakpoint
 CREATE TABLE "budget_api_cache" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"service" "budget_api_service_enum" NOT NULL,
+	"service" text NOT NULL,
 	"cache_key" text NOT NULL,
 	"data" jsonb NOT NULL,
 	"server_knowledge" integer,
-	"fetched_at" timestamp DEFAULT now() NOT NULL
+	"fetched_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "budget_items" (
@@ -125,8 +115,8 @@ CREATE TABLE "budget_items" (
 	"amounts" jsonb NOT NULL,
 	"api_category_name" text,
 	"api_category_id" text,
-	"api_last_synced_at" timestamp,
-	"api_sync_direction" "api_sync_direction_enum" DEFAULT 'pull',
+	"api_last_synced_at" timestamp with time zone,
+	"api_sync_direction" text DEFAULT 'pull',
 	"contribution_account_id" integer,
 	"is_essential" boolean DEFAULT true NOT NULL,
 	"sort_order" integer DEFAULT 0 NOT NULL
@@ -140,7 +130,7 @@ CREATE TABLE "budget_profiles" (
 	"column_months" jsonb,
 	"column_contribution_profile_ids" jsonb,
 	"is_active" boolean DEFAULT false NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "budget_profiles_name_unique" UNIQUE("name")
 );
 --> statement-breakpoint
@@ -152,7 +142,7 @@ CREATE TABLE "change_log" (
 	"old_value" jsonb,
 	"new_value" jsonb,
 	"changed_by" text NOT NULL,
-	"changed_at" timestamp DEFAULT now() NOT NULL
+	"changed_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "contribution_accounts" (
@@ -163,22 +153,24 @@ CREATE TABLE "contribution_accounts" (
 	"sub_type" text,
 	"label" text,
 	"parent_category" text DEFAULT 'Retirement' NOT NULL,
-	"tax_treatment" "tax_treatment_enum" NOT NULL,
-	"contribution_method" "contribution_method_enum" NOT NULL,
+	"tax_treatment" text NOT NULL,
+	"contribution_method" text NOT NULL,
 	"contribution_value" numeric(12, 2) NOT NULL,
-	"employer_match_type" "employer_match_type_enum" NOT NULL,
+	"employer_match_type" text NOT NULL,
 	"employer_match_value" numeric(12, 2),
 	"employer_max_match_pct" numeric(8, 6),
-	"employer_match_tax_treatment" "match_tax_treatment_enum" DEFAULT 'pre_tax' NOT NULL,
-	"hsa_coverage_type" "hsa_coverage_type_enum",
+	"employer_match_tax_treatment" text DEFAULT 'pre_tax' NOT NULL,
+	"hsa_coverage_type" text,
 	"auto_maximize" boolean DEFAULT false NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
-	"ownership" "account_ownership_enum" DEFAULT 'individual' NOT NULL,
+	"ownership" text DEFAULT 'individual' NOT NULL,
 	"performance_account_id" integer,
 	"target_annual" numeric(12, 2),
 	"allocation_priority" integer DEFAULT 0 NOT NULL,
 	"notes" text,
 	"is_payroll_deducted" boolean,
+	"prior_year_contrib_amount" numeric(12, 2) DEFAULT '0' NOT NULL,
+	"prior_year_contrib_year" integer,
 	CONSTRAINT "contribution_accounts_parent_cat_check" CHECK (parent_category IN ('Retirement', 'Portfolio'))
 );
 --> statement-breakpoint
@@ -197,7 +189,7 @@ CREATE TABLE "contribution_profiles" (
 	"salary_overrides" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"contribution_overrides" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"is_default" boolean DEFAULT false NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "contribution_profiles_name_unique" UNIQUE("name")
 );
 --> statement-breakpoint
@@ -223,14 +215,21 @@ CREATE TABLE "home_improvement_items" (
 	"note" text
 );
 --> statement-breakpoint
+CREATE TABLE "irmaa_brackets" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"tax_year" integer NOT NULL,
+	"filing_status" text NOT NULL,
+	"brackets" jsonb NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "jobs" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"person_id" integer NOT NULL,
 	"employer_name" text NOT NULL,
 	"title" text,
 	"annual_salary" numeric(12, 2) NOT NULL,
-	"pay_period" "pay_period_enum" NOT NULL,
-	"pay_week" "pay_week_enum" NOT NULL,
+	"pay_period" text NOT NULL,
+	"pay_week" text NOT NULL,
 	"start_date" date NOT NULL,
 	"anchor_pay_date" date,
 	"end_date" date,
@@ -242,7 +241,7 @@ CREATE TABLE "jobs" (
 	"bonus_override" numeric(12, 2),
 	"bonus_month" integer,
 	"bonus_day_of_month" integer,
-	"w4_filing_status" "w4_filing_status_enum" NOT NULL,
+	"w4_filing_status" text NOT NULL,
 	"w4_box2c_checked" boolean DEFAULT false NOT NULL,
 	"additional_fed_withholding" numeric(12, 2) DEFAULT '0' NOT NULL,
 	"budget_periods_per_month" numeric(6, 4)
@@ -255,6 +254,13 @@ CREATE TABLE "local_admins" (
 	"name" text NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "local_admins_email_unique" UNIQUE("email")
+);
+--> statement-breakpoint
+CREATE TABLE "ltcg_brackets" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"tax_year" integer NOT NULL,
+	"filing_status" text NOT NULL,
+	"brackets" jsonb NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "mc_preset_glide_paths" (
@@ -392,11 +398,11 @@ CREATE TABLE "performance_accounts" (
 	"account_label" text NOT NULL,
 	"display_name" text,
 	"owner_person_id" integer,
-	"ownership_type" "account_ownership_enum" NOT NULL,
+	"ownership_type" text NOT NULL,
 	"parent_category" text NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"display_order" integer DEFAULT 0 NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "performance_accounts_parent_cat_check" CHECK (parent_category IN ('Retirement', 'Portfolio'))
 );
 --> statement-breakpoint
@@ -404,7 +410,7 @@ CREATE TABLE "portfolio_accounts" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"snapshot_id" integer NOT NULL,
 	"institution" text NOT NULL,
-	"tax_type" "portfolio_tax_type_enum" NOT NULL,
+	"tax_type" text NOT NULL,
 	"amount" numeric(12, 2) NOT NULL,
 	"account_type" text NOT NULL,
 	"sub_type" text,
@@ -419,7 +425,7 @@ CREATE TABLE "portfolio_accounts" (
 CREATE TABLE "portfolio_snapshots" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"snapshot_date" date NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"notes" text,
 	CONSTRAINT "portfolio_snapshots_snapshot_date_unique" UNIQUE("snapshot_date")
 );
@@ -437,8 +443,8 @@ CREATE TABLE "relocation_scenarios" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"params" jsonb NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "retirement_budget_overrides" (
@@ -446,7 +452,9 @@ CREATE TABLE "retirement_budget_overrides" (
 	"person_id" integer NOT NULL,
 	"projection_year" integer NOT NULL,
 	"override_monthly_budget" numeric(12, 2) NOT NULL,
-	"notes" text
+	"notes" text,
+	"created_by" text,
+	"updated_by" text
 );
 --> statement-breakpoint
 CREATE TABLE "retirement_salary_overrides" (
@@ -454,7 +462,10 @@ CREATE TABLE "retirement_salary_overrides" (
 	"person_id" integer NOT NULL,
 	"projection_year" integer NOT NULL,
 	"override_salary" numeric(12, 2) NOT NULL,
-	"notes" text
+	"contribution_profile_id" integer,
+	"notes" text,
+	"created_by" text,
+	"updated_by" text
 );
 --> statement-breakpoint
 CREATE TABLE "retirement_scenarios" (
@@ -467,7 +478,7 @@ CREATE TABLE "retirement_scenarios" (
 	"distribution_tax_rate_roth" numeric(8, 6) DEFAULT '0' NOT NULL,
 	"distribution_tax_rate_hsa" numeric(8, 6) DEFAULT '0' NOT NULL,
 	"distribution_tax_rate_brokerage" numeric(8, 6) DEFAULT '0.15' NOT NULL,
-	"lt_brokerage_enabled" boolean DEFAULT true NOT NULL,
+	"is_lt_brokerage_enabled" boolean DEFAULT true NOT NULL,
 	"lt_brokerage_annual_contribution" numeric(12, 2) DEFAULT '0' NOT NULL,
 	"is_selected" boolean DEFAULT false NOT NULL,
 	"notes" text
@@ -511,6 +522,7 @@ CREATE TABLE "retirement_settings" (
 	"enable_irmaa_awareness" boolean DEFAULT false NOT NULL,
 	"enable_aca_awareness" boolean DEFAULT false NOT NULL,
 	"household_size" integer DEFAULT 2 NOT NULL,
+	"filing_status" varchar(10),
 	CONSTRAINT "retirement_settings_person_id_unique" UNIQUE("person_id")
 );
 --> statement-breakpoint
@@ -549,7 +561,7 @@ CREATE TABLE "savings_goals" (
 	"is_emergency_fund" boolean DEFAULT false NOT NULL,
 	"api_category_id" text,
 	"api_category_name" text,
-	"api_sync_enabled" boolean DEFAULT false NOT NULL,
+	"is_api_sync_enabled" boolean DEFAULT false NOT NULL,
 	"reimbursement_api_category_id" text,
 	"target_mode" text DEFAULT 'fixed' NOT NULL,
 	"monthly_contribution" numeric(12, 2) DEFAULT '0' NOT NULL,
@@ -584,8 +596,8 @@ CREATE TABLE "scenarios" (
 	"description" text,
 	"overrides" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"is_baseline" boolean DEFAULT false NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "self_loans" (
@@ -615,14 +627,14 @@ CREATE TABLE "state_versions" (
 	"table_count" integer NOT NULL,
 	"total_rows" integer NOT NULL,
 	"size_estimate_bytes" integer,
-	"created_at" timestamp DEFAULT now() NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"created_by" text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "tax_brackets" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"tax_year" integer NOT NULL,
-	"filing_status" "w4_filing_status_enum" NOT NULL,
+	"filing_status" text NOT NULL,
 	"w4_checkbox" boolean NOT NULL,
 	"brackets" jsonb NOT NULL
 );
@@ -653,6 +665,7 @@ ALTER TABLE "portfolio_accounts" ADD CONSTRAINT "portfolio_accounts_performance_
 ALTER TABLE "property_taxes" ADD CONSTRAINT "property_taxes_loan_id_mortgage_loans_id_fk" FOREIGN KEY ("loan_id") REFERENCES "public"."mortgage_loans"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "retirement_budget_overrides" ADD CONSTRAINT "retirement_budget_overrides_person_id_people_id_fk" FOREIGN KEY ("person_id") REFERENCES "public"."people"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "retirement_salary_overrides" ADD CONSTRAINT "retirement_salary_overrides_person_id_people_id_fk" FOREIGN KEY ("person_id") REFERENCES "public"."people"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "retirement_salary_overrides" ADD CONSTRAINT "retirement_salary_overrides_contribution_profile_id_contribution_profiles_id_fk" FOREIGN KEY ("contribution_profile_id") REFERENCES "public"."contribution_profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "retirement_settings" ADD CONSTRAINT "retirement_settings_person_id_people_id_fk" FOREIGN KEY ("person_id") REFERENCES "public"."people"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "salary_changes" ADD CONSTRAINT "salary_changes_job_id_jobs_id_fk" FOREIGN KEY ("job_id") REFERENCES "public"."jobs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "savings_allocation_overrides" ADD CONSTRAINT "savings_allocation_overrides_goal_id_savings_goals_id_fk" FOREIGN KEY ("goal_id") REFERENCES "public"."savings_goals"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -687,7 +700,9 @@ CREATE UNIQUE INDEX "contribution_limits_year_type_idx" ON "contribution_limits"
 CREATE UNIQUE INDEX "glide_path_age_class_idx" ON "glide_path_allocations" USING btree ("age","asset_class_id");--> statement-breakpoint
 CREATE INDEX "glide_path_asset_class_idx" ON "glide_path_allocations" USING btree ("asset_class_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "historical_notes_year_field_idx" ON "historical_notes" USING btree ("year","field");--> statement-breakpoint
+CREATE UNIQUE INDEX "irmaa_brackets_year_status_idx" ON "irmaa_brackets" USING btree ("tax_year","filing_status");--> statement-breakpoint
 CREATE INDEX "jobs_person_id_idx" ON "jobs" USING btree ("person_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "ltcg_brackets_year_status_idx" ON "ltcg_brackets" USING btree ("tax_year","filing_status");--> statement-breakpoint
 CREATE UNIQUE INDEX "mc_preset_gp_idx" ON "mc_preset_glide_paths" USING btree ("preset_id","age","asset_class_id");--> statement-breakpoint
 CREATE INDEX "mc_preset_gp_preset_idx" ON "mc_preset_glide_paths" USING btree ("preset_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "mc_preset_ro_idx" ON "mc_preset_return_overrides" USING btree ("preset_id","asset_class_id");--> statement-breakpoint

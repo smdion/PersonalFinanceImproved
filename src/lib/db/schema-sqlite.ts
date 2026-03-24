@@ -270,7 +270,7 @@ export const savingsGoals = sqliteTable(
       .default(false),
     apiCategoryId: text("api_category_id"),
     apiCategoryName: text("api_category_name"),
-    apiSyncEnabled: integer("api_sync_enabled", { mode: "boolean" })
+    isApiSyncEnabled: integer("is_api_sync_enabled", { mode: "boolean" })
       .notNull()
       .default(false),
     reimbursementApiCategoryId: text("reimbursement_api_category_id"),
@@ -896,7 +896,7 @@ export const retirementScenarios = sqliteTable("retirement_scenarios", {
   distributionTaxRateBrokerage: text("distribution_tax_rate_brokerage")
     .notNull()
     .default("0.15"),
-  ltBrokerageEnabled: integer("lt_brokerage_enabled", { mode: "boolean" })
+  isLtBrokerageEnabled: integer("is_lt_brokerage_enabled", { mode: "boolean" })
     .notNull()
     .default(true),
   ltBrokerageAnnualContribution: text("lt_brokerage_annual_contribution")

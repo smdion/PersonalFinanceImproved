@@ -12,6 +12,7 @@ CREATE TABLE `account_performance` (
 	`employer_contributions` text DEFAULT '0' NOT NULL,
 	`fees` text DEFAULT '0' NOT NULL,
 	`distributions` text DEFAULT '0' NOT NULL,
+	`rollovers` text DEFAULT '0' NOT NULL,
 	`parent_category` text NOT NULL,
 	`is_active` integer DEFAULT true NOT NULL,
 	`is_finalized` integer DEFAULT false NOT NULL,
@@ -36,6 +37,7 @@ CREATE TABLE `annual_performance` (
 	`employer_contributions` text DEFAULT '0' NOT NULL,
 	`distributions` text DEFAULT '0' NOT NULL,
 	`fees` text DEFAULT '0' NOT NULL,
+	`rollovers` text DEFAULT '0' NOT NULL,
 	`lifetime_gains` text NOT NULL,
 	`lifetime_contributions` text NOT NULL,
 	`lifetime_match` text NOT NULL,
@@ -191,6 +193,8 @@ CREATE TABLE `contribution_accounts` (
 	`allocation_priority` integer DEFAULT 0 NOT NULL,
 	`notes` text,
 	`is_payroll_deducted` integer,
+	`prior_year_contrib_amount` text DEFAULT '0' NOT NULL,
+	`prior_year_contrib_year` integer,
 	FOREIGN KEY (`job_id`) REFERENCES `jobs`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`person_id`) REFERENCES `people`(`id`) ON UPDATE no action ON DELETE restrict,
 	FOREIGN KEY (`performance_account_id`) REFERENCES `performance_accounts`(`id`) ON UPDATE no action ON DELETE set null,
@@ -248,6 +252,14 @@ CREATE TABLE `home_improvement_items` (
 	`note` text
 );
 --> statement-breakpoint
+CREATE TABLE `irmaa_brackets` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`tax_year` integer NOT NULL,
+	`filing_status` text NOT NULL,
+	`brackets` text NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `irmaa_brackets_year_status_idx` ON `irmaa_brackets` (`tax_year`,`filing_status`);--> statement-breakpoint
 CREATE TABLE `jobs` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`person_id` integer NOT NULL,
@@ -284,6 +296,14 @@ CREATE TABLE `local_admins` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `local_admins_email_unique` ON `local_admins` (`email`);--> statement-breakpoint
+CREATE TABLE `ltcg_brackets` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`tax_year` integer NOT NULL,
+	`filing_status` text NOT NULL,
+	`brackets` text NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `ltcg_brackets_year_status_idx` ON `ltcg_brackets` (`tax_year`,`filing_status`);--> statement-breakpoint
 CREATE TABLE `mc_preset_glide_paths` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`preset_id` integer NOT NULL,
@@ -508,6 +528,8 @@ CREATE TABLE `retirement_budget_overrides` (
 	`projection_year` integer NOT NULL,
 	`override_monthly_budget` text NOT NULL,
 	`notes` text,
+	`created_by` text,
+	`updated_by` text,
 	FOREIGN KEY (`person_id`) REFERENCES `people`(`id`) ON UPDATE no action ON DELETE restrict
 );
 --> statement-breakpoint
@@ -518,8 +540,12 @@ CREATE TABLE `retirement_salary_overrides` (
 	`person_id` integer NOT NULL,
 	`projection_year` integer NOT NULL,
 	`override_salary` text NOT NULL,
+	`contribution_profile_id` integer,
 	`notes` text,
-	FOREIGN KEY (`person_id`) REFERENCES `people`(`id`) ON UPDATE no action ON DELETE restrict
+	`created_by` text,
+	`updated_by` text,
+	FOREIGN KEY (`person_id`) REFERENCES `people`(`id`) ON UPDATE no action ON DELETE restrict,
+	FOREIGN KEY (`contribution_profile_id`) REFERENCES `contribution_profiles`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `retirement_salary_overrides_person_year_idx` ON `retirement_salary_overrides` (`person_id`,`projection_year`);--> statement-breakpoint
@@ -534,7 +560,7 @@ CREATE TABLE `retirement_scenarios` (
 	`distribution_tax_rate_roth` text DEFAULT '0' NOT NULL,
 	`distribution_tax_rate_hsa` text DEFAULT '0' NOT NULL,
 	`distribution_tax_rate_brokerage` text DEFAULT '0.15' NOT NULL,
-	`lt_brokerage_enabled` integer DEFAULT true NOT NULL,
+	`is_lt_brokerage_enabled` integer DEFAULT true NOT NULL,
 	`lt_brokerage_annual_contribution` text DEFAULT '0' NOT NULL,
 	`is_selected` integer DEFAULT false NOT NULL,
 	`notes` text
@@ -578,6 +604,7 @@ CREATE TABLE `retirement_settings` (
 	`enable_irmaa_awareness` integer DEFAULT false NOT NULL,
 	`enable_aca_awareness` integer DEFAULT false NOT NULL,
 	`household_size` integer DEFAULT 2 NOT NULL,
+	`filing_status` text,
 	FOREIGN KEY (`person_id`) REFERENCES `people`(`id`) ON UPDATE no action ON DELETE restrict
 );
 --> statement-breakpoint
@@ -622,7 +649,7 @@ CREATE TABLE `savings_goals` (
 	`is_emergency_fund` integer DEFAULT false NOT NULL,
 	`api_category_id` text,
 	`api_category_name` text,
-	`api_sync_enabled` integer DEFAULT false NOT NULL,
+	`is_api_sync_enabled` integer DEFAULT false NOT NULL,
 	`reimbursement_api_category_id` text,
 	`target_mode` text DEFAULT 'fixed' NOT NULL,
 	`monthly_contribution` text DEFAULT '0' NOT NULL,

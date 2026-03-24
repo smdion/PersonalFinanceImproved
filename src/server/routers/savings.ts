@@ -146,7 +146,7 @@ export const savingsRouter = createTRPCRouter({
 
       // Override balances for API-linked goals with live YNAB cache values
       const apiLinkedGoals = activeGoals.filter(
-        (g) => g.apiSyncEnabled && g.apiCategoryId,
+        (g) => g.isApiSyncEnabled && g.apiCategoryId,
       );
       if (apiLinkedGoals.length > 0) {
         const active = await getActiveBudgetApi(ctx.db);
@@ -554,7 +554,7 @@ export const savingsRouter = createTRPCRouter({
         .set({
           apiCategoryId: input.apiCategoryId,
           apiCategoryName: input.apiCategoryName,
-          apiSyncEnabled: true,
+          isApiSyncEnabled: true,
         })
         .where(eq(schema.savingsGoals.id, input.goalId));
       return { ok: true };
@@ -569,7 +569,7 @@ export const savingsRouter = createTRPCRouter({
         .set({
           apiCategoryId: null,
           apiCategoryName: null,
-          apiSyncEnabled: false,
+          isApiSyncEnabled: false,
         })
         .where(eq(schema.savingsGoals.id, input.goalId));
       return { ok: true };
@@ -610,7 +610,7 @@ export const savingsRouter = createTRPCRouter({
           targetMode: input.targetMode,
           apiCategoryId: item.apiCategoryId,
           apiCategoryName: item.apiCategoryName,
-          apiSyncEnabled: !!item.apiCategoryId,
+          isApiSyncEnabled: !!item.apiCategoryId,
         })
         .returning();
 
@@ -728,7 +728,7 @@ export const savingsRouter = createTRPCRouter({
 
     const goals = await ctx.db.select().from(schema.savingsGoals);
     const balances = goals
-      .filter((g) => g.apiSyncEnabled && g.apiCategoryId)
+      .filter((g) => g.isApiSyncEnabled && g.apiCategoryId)
       .map((g) => {
         const cat = catMap.get(g.apiCategoryId!);
         return {
@@ -760,7 +760,7 @@ export const savingsRouter = createTRPCRouter({
       }
 
       const goals = await ctx.db.select().from(schema.savingsGoals);
-      const linked = goals.filter((g) => g.apiSyncEnabled && g.apiCategoryId);
+      const linked = goals.filter((g) => g.isApiSyncEnabled && g.apiCategoryId);
       const toPush = input?.goalId
         ? linked.filter((g) => g.id === input.goalId)
         : linked;

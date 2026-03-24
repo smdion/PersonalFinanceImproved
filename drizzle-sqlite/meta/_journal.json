@@ -1,40 +1,12 @@
 {
-  "version": "7",
+  "version": "6",
   "dialect": "sqlite",
   "entries": [
     {
       "idx": 0,
       "version": "6",
-      "when": 1773952658085,
-      "tag": "0000_initial_schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1774310400000,
-      "tag": "0001_rename_retirement_category",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1774123203859,
-      "tag": "0002_add_rollovers_column",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1774241696047,
-      "tag": "0003_reflective_stardust",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1774531200000,
-      "tag": "0004_prior_year_contrib",
+      "when": 1774319523547,
+      "tag": "0000_v2_initial_schema",
       "breakpoints": true
     }
   ]

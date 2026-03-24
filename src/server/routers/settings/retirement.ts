@@ -70,7 +70,7 @@ const retirementScenarioInput = z.object({
   distributionTaxRateBrokerage: zDecimal.default(
     String(DEFAULT_TAX_RATE_BROKERAGE),
   ),
-  ltBrokerageEnabled: z.boolean().default(true),
+  isLtBrokerageEnabled: z.boolean().default(true),
   ltBrokerageAnnualContribution: zDecimal.default("0"),
   isSelected: z.boolean().default(false),
   notes: z.string().nullable().optional(),

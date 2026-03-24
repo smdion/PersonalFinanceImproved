@@ -287,7 +287,7 @@ export const savingsGoals = pgTable(
     isEmergencyFund: boolean("is_emergency_fund").notNull().default(false),
     apiCategoryId: text("api_category_id"),
     apiCategoryName: text("api_category_name"),
-    apiSyncEnabled: boolean("api_sync_enabled").notNull().default(false),
+    isApiSyncEnabled: boolean("is_api_sync_enabled").notNull().default(false),
     reimbursementApiCategoryId: text("reimbursement_api_category_id"),
     targetMode: text("target_mode").notNull().default("fixed"), // 'fixed' | 'ongoing'
     monthlyContribution: decimal("monthly_contribution", {
@@ -1104,7 +1104,9 @@ export const retirementScenarios = pgTable("retirement_scenarios", {
   })
     .notNull()
     .default("0.15"),
-  ltBrokerageEnabled: boolean("lt_brokerage_enabled").notNull().default(true),
+  isLtBrokerageEnabled: boolean("is_lt_brokerage_enabled")
+    .notNull()
+    .default(true),
   ltBrokerageAnnualContribution: decimal("lt_brokerage_annual_contribution", {
     precision: 12,
     scale: 2,

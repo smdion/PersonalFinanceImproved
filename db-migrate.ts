@@ -22,6 +22,157 @@ function getDialect(): "postgresql" | "sqlite" {
   return "sqlite";
 }
 
+// Table names that are included in versioned backups (must match version-tables.ts)
+const VERSION_TABLE_NAMES = [
+  "people",
+  "budget_profiles",
+  "savings_goals",
+  "mortgage_loans",
+  "contribution_limits",
+  "retirement_scenarios",
+  "return_rate_table",
+  "tax_brackets",
+  "ltcg_brackets",
+  "irmaa_brackets",
+  "api_connections",
+  "app_settings",
+  "local_admins",
+  "scenarios",
+  "asset_class_params",
+  "mc_presets",
+  "portfolio_snapshots",
+  "brokerage_goals",
+  "contribution_profiles",
+  "net_worth_annual",
+  "home_improvement_items",
+  "other_asset_items",
+  "historical_notes",
+  "relocation_scenarios",
+  "jobs",
+  "budget_items",
+  "savings_monthly",
+  "savings_planned_transactions",
+  "savings_allocation_overrides",
+  "self_loans",
+  "performance_accounts",
+  "mortgage_what_if_scenarios",
+  "mortgage_extra_payments",
+  "retirement_settings",
+  "retirement_salary_overrides",
+  "retirement_budget_overrides",
+  "asset_class_correlations",
+  "glide_path_allocations",
+  "brokerage_planned_transactions",
+  "annual_performance",
+  "property_taxes",
+  "salary_changes",
+  "paycheck_deductions",
+  "contribution_accounts",
+  "portfolio_accounts",
+  "account_performance",
+  "mc_preset_glide_paths",
+  "mc_preset_return_overrides",
+];
+
+async function createPreMigrationBackup(
+  pool: import("pg").Pool,
+): Promise<string | null> {
+  const client = await pool.connect();
+  try {
+    // Check if __drizzle_migrations table exists (indicates an existing DB)
+    const { rows: tableCheck } = await client.query(
+      `SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_name = '__drizzle_migrations'
+      ) AS exists`,
+    );
+    if (!tableCheck[0]?.exists) return null; // Fresh DB — no backup needed
+
+    // Check current migration count in DB
+    const { rows: migrationRows } = await client.query(
+      "SELECT count(*)::int AS count FROM __drizzle_migrations",
+    );
+    const appliedCount = migrationRows[0]?.count ?? 0;
+
+    // Read the new journal to see how many migrations we expect
+    const journal = JSON.parse(
+      fs.readFileSync(path.resolve("./drizzle/meta/_journal.json"), "utf-8"),
+    );
+    const journalCount = journal.entries?.length ?? 0;
+
+    // If DB has more migrations than journal (squash scenario), create backup
+    if (appliedCount <= journalCount) return null; // Normal upgrade or fresh — no backup needed
+
+    log("info", "pre_migration_backup_start", {
+      appliedMigrations: appliedCount,
+      journalMigrations: journalCount,
+      reason:
+        "Migration squash detected — applied count exceeds journal entries",
+    });
+
+    // Export all versioned tables
+    const tables: Record<string, unknown[]> = {};
+    let schemaVersion = "unknown";
+
+    // Try to read the old schema version from the journal that was in the DB
+    try {
+      const { rows: hashRows } = await client.query(
+        "SELECT hash FROM __drizzle_migrations ORDER BY created_at DESC LIMIT 1",
+      );
+      if (hashRows[0]) {
+        // We can't reverse the hash to a tag name, so just record the count
+        schemaVersion = `pre-squash-${appliedCount}-migrations`;
+      }
+    } catch {
+      // Ignore — schemaVersion stays "unknown"
+    }
+
+    for (const tableName of VERSION_TABLE_NAMES) {
+      try {
+        const { rows } = await client.query(`SELECT * FROM "${tableName}"`);
+        tables[tableName] = rows;
+      } catch {
+        // Table may not exist in older schemas — skip
+        tables[tableName] = [];
+      }
+    }
+
+    const backup = {
+      schemaVersion,
+      exportedAt: new Date().toISOString(),
+      preUpgradeBackup: true,
+      tables,
+    };
+
+    // Write to /data/ (Docker volume) or current directory
+    const backupDir = fs.existsSync("/data") ? "/data" : ".";
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const backupPath = path.join(
+      backupDir,
+      `pre-upgrade-backup-${timestamp}.json`,
+    );
+
+    fs.writeFileSync(backupPath, JSON.stringify(backup));
+    log("info", "pre_migration_backup_complete", {
+      path: backupPath,
+      tableCount: Object.keys(tables).length,
+      totalRows: Object.values(tables).reduce(
+        (sum, rows) => sum + rows.length,
+        0,
+      ),
+    });
+    return backupPath;
+  } catch (err) {
+    // Non-fatal: log and continue with migration
+    log("warn", "pre_migration_backup_failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  } finally {
+    client.release();
+  }
+}
+
 async function runPostgres() {
   const { drizzle } = await import("drizzle-orm/node-postgres");
   const { migrate } = await import("drizzle-orm/node-postgres/migrator");
@@ -36,6 +187,11 @@ async function runPostgres() {
   });
 
   try {
+    // Pre-migration auto-backup: if the DB has existing tables but the
+    // migration journal differs (e.g., v0.1.x → v0.2.0 squash), export
+    // all versioned table data to a JSON file before applying migrations.
+    const preUpgradeBackupPath = await createPreMigrationBackup(pool);
+
     const db = drizzle(pool);
     await migrate(db, { migrationsFolder: "./drizzle" });
 
@@ -106,6 +262,33 @@ async function runPostgres() {
     }
 
     log("info", "migrations_applied", { dialect: "postgresql" });
+
+    // Write upgrade banner flag if a pre-migration backup was created
+    if (preUpgradeBackupPath) {
+      const flagClient = await pool.connect();
+      try {
+        await flagClient.query(
+          `INSERT INTO app_settings (key, value)
+           VALUES ('pre_upgrade_backup', $1::jsonb)
+           ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+          [
+            JSON.stringify({
+              path: preUpgradeBackupPath,
+              createdAt: new Date().toISOString(),
+            }),
+          ],
+        );
+        log("info", "upgrade_banner_flag_set", {
+          path: preUpgradeBackupPath,
+        });
+      } catch (flagErr) {
+        log("warn", "upgrade_banner_flag_failed", {
+          error: flagErr instanceof Error ? flagErr.message : String(flagErr),
+        });
+      } finally {
+        flagClient.release();
+      }
+    }
 
     // Seed reference data if empty
     const seedClient = await pool.connect();

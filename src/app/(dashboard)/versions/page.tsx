@@ -32,6 +32,7 @@ export default function VersionsPage() {
   const { data: versions, isLoading } = trpc.version.list.useQuery();
   const { data: retentionData } = trpc.version.getRetention.useQuery();
   const { data: scheduleData } = trpc.version.getSchedule.useQuery();
+  const { data: upgradeBanner } = trpc.version.getUpgradeBanner.useQuery();
 
   const createMutation = trpc.version.create.useMutation({
     onSuccess: () => {
@@ -53,6 +54,9 @@ export default function VersionsPage() {
   });
   const setRetentionMutation = trpc.version.setRetention.useMutation({
     onSuccess: () => utils.version.getRetention.invalidate(),
+  });
+  const dismissBannerMutation = trpc.version.dismissUpgradeBanner.useMutation({
+    onSuccess: () => utils.version.getUpgradeBanner.invalidate(),
   });
   const setScheduleMutation = trpc.version.setSchedule.useMutation({
     onSuccess: () => utils.version.getSchedule.invalidate(),
@@ -207,6 +211,37 @@ export default function VersionsPage() {
           Create Version
         </Button>
       </PageHeader>
+
+      {/* Upgrade banner */}
+      {upgradeBanner && (
+        <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/30">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-200">
+                Upgrade Complete: v0.1.x → v0.2.0
+              </h3>
+              <p className="mt-1 text-sm text-blue-800 dark:text-blue-300">
+                Your data was migrated automatically. A pre-upgrade backup was
+                saved to{" "}
+                <code className="rounded bg-blue-100 px-1 py-0.5 text-xs font-mono dark:bg-blue-900/50">
+                  {upgradeBanner.backupPath}
+                </code>
+              </p>
+              <p className="mt-1.5 text-xs text-blue-700 dark:text-blue-400">
+                Your existing v0.1.x backups can still be imported — they are
+                automatically transformed to the new schema.
+              </p>
+            </div>
+            <button
+              onClick={() => dismissBannerMutation.mutate()}
+              disabled={dismissBannerMutation.isPending}
+              className="shrink-0 rounded px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-blue-900/50"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Create form modal */}
       {showCreateForm && (

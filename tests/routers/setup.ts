@@ -68,8 +68,11 @@ export function createViewerSessionWithPermissions(
   };
 }
 
+const _callerFactory = createCallerFactory(appRouter);
+type CallerType = ReturnType<typeof _callerFactory>;
+
 interface TestCaller {
-  caller: ReturnType<ReturnType<typeof createCallerFactory>>;
+  caller: CallerType;
   db: BetterSQLite3Database<typeof sqliteSchema>;
   rawDb: DbType;
   sqlite: InstanceType<typeof Database>;
