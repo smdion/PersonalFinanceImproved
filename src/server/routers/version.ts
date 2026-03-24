@@ -238,7 +238,7 @@ export const versionRouter = createTRPCRouter({
   }),
 
   /** Dismiss the upgrade banner by removing the app_settings flag. */
-  dismissUpgradeBanner: protectedProcedure.mutation(async ({ ctx }) => {
+  dismissUpgradeBanner: versionProcedure.mutation(async ({ ctx }) => {
     await ctx.db
       .delete(schema.appSettings)
       .where(eq(schema.appSettings.key, "pre_upgrade_backup"));
