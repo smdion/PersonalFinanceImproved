@@ -522,7 +522,7 @@ CREATE TABLE "retirement_settings" (
 	"enable_irmaa_awareness" boolean DEFAULT false NOT NULL,
 	"enable_aca_awareness" boolean DEFAULT false NOT NULL,
 	"household_size" integer DEFAULT 2 NOT NULL,
-	"filing_status" varchar(10),
+	"filing_status" text,
 	CONSTRAINT "retirement_settings_person_id_unique" UNIQUE("person_id")
 );
 --> statement-breakpoint

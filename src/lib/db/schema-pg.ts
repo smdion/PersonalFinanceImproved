@@ -1004,9 +1004,7 @@ export const retirementSettings = pgTable(
     /** Household size for ACA FPL calculation. */
     householdSize: integer("household_size").notNull().default(2),
     /** Explicit filing status for retirement projections. Null = derive from primary job W-4. */
-    filingStatus: varchar("filing_status", {
-      length: 10,
-    }).$type<W4FilingStatus>(),
+    filingStatus: text("filing_status").$type<W4FilingStatus>(),
   },
   (table) => [index("retirement_settings_person_id_idx").on(table.personId)],
 );
