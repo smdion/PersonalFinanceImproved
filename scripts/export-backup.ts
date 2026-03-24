@@ -8,6 +8,7 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import { VERSION_TABLE_NAMES } from "../src/lib/db/version-tables";
 
 function getDialect(): "postgresql" | "sqlite" {
   const url = process.env.DATABASE_URL;
@@ -38,57 +39,7 @@ function readSchemaVersion(): string {
   }
 }
 
-// Table names matching version-tables.ts
-const VERSION_TABLE_NAMES = [
-  "people",
-  "budget_profiles",
-  "savings_goals",
-  "mortgage_loans",
-  "contribution_limits",
-  "retirement_scenarios",
-  "return_rate_table",
-  "tax_brackets",
-  "ltcg_brackets",
-  "irmaa_brackets",
-  "api_connections",
-  "app_settings",
-  "local_admins",
-  "scenarios",
-  "asset_class_params",
-  "mc_presets",
-  "portfolio_snapshots",
-  "brokerage_goals",
-  "contribution_profiles",
-  "net_worth_annual",
-  "home_improvement_items",
-  "other_asset_items",
-  "historical_notes",
-  "relocation_scenarios",
-  "jobs",
-  "budget_items",
-  "savings_monthly",
-  "savings_planned_transactions",
-  "savings_allocation_overrides",
-  "self_loans",
-  "performance_accounts",
-  "mortgage_what_if_scenarios",
-  "mortgage_extra_payments",
-  "retirement_settings",
-  "retirement_salary_overrides",
-  "retirement_budget_overrides",
-  "asset_class_correlations",
-  "glide_path_allocations",
-  "brokerage_planned_transactions",
-  "annual_performance",
-  "property_taxes",
-  "salary_changes",
-  "paycheck_deductions",
-  "contribution_accounts",
-  "portfolio_accounts",
-  "account_performance",
-  "mc_preset_glide_paths",
-  "mc_preset_return_overrides",
-];
+// VERSION_TABLE_NAMES imported from src/lib/db/version-tables.ts (canonical registry)
 
 async function exportPostgres(): Promise<Record<string, unknown[]>> {
   const { Pool } = await import("pg");

@@ -22,7 +22,8 @@ function getDialect(): "postgresql" | "sqlite" {
   return "sqlite";
 }
 
-// Table names that are included in versioned backups (must match version-tables.ts)
+// Table names that are included in versioned backups (must match version-tables.ts).
+// This is a local copy because db-migrate.ts runs in Docker where src/ isn't available.
 const VERSION_TABLE_NAMES = [
   "people",
   "budget_profiles",
