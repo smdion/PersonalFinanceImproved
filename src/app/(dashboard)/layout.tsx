@@ -9,7 +9,7 @@ import { DashboardShell } from "./dashboard-shell";
 import { UserProvider } from "@/lib/context/user-context";
 import { DemoBanner } from "@/components/layout/demo-banner";
 import { DEMO_PROFILES } from "@/lib/demo";
-import { db } from "@/lib/db";
+import { db, isPostgres } from "@/lib/db";
 import { sql } from "drizzle-orm";
 
 const isDev = !process.env.AUTH_AUTHENTIK_ISSUER;
@@ -53,13 +53,29 @@ export default async function DashboardLayout({
   }
 
   // Check database connectivity before rendering dashboard
+  // PG exposes async db.execute(); SQLite (better-sqlite3) only has db.all()/db.get().
   let dbError: string | null = null;
   try {
-    await db.execute(sql`SELECT 1`);
+    if (isPostgres()) {
+      await db.execute(sql`SELECT 1`);
+    } else {
+      // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM type limitation
+      (db as unknown as { all: (q: unknown) => unknown }).all(sql`SELECT 1`);
+    }
     // Verify at least one core table exists
     const { tableExistsSQL } = await import("@/lib/db/compat");
-    const result = await db.execute(tableExistsSQL("people"));
-    const hasTable = (result.rows[0] as { has_tables: boolean })?.has_tables;
+    const query = tableExistsSQL("people");
+    let hasTable: boolean;
+    if (isPostgres()) {
+      const result = await db.execute(query);
+      hasTable = (result.rows[0] as { has_tables: boolean })?.has_tables;
+    } else {
+      // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM type limitation
+      const rows = (db as unknown as { all: (q: unknown) => unknown[] }).all(
+        query,
+      );
+      hasTable = (rows[0] as { has_tables: number })?.has_tables === 1;
+    }
     if (!hasTable) {
       dbError =
         "Database tables not found. Migrations may need to run. Please restart the application.";
