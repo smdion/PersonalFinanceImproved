@@ -47,6 +47,20 @@ jobs:
       - name: Test
         run: npx vitest run
 
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E tests (SQLite + demo mode)
+        run: |
+          pnpm db:migrate
+          pnpm run test:e2e
+        env:
+          CI: true
+          DEMO_ONLY: "true"
+          NEXTAUTH_SECRET: e2e-placeholder-secret-at-least-32-chars
+          NEXTAUTH_URL: http://localhost:3000
+          AUTH_TRUST_HOST: "true"
+
       # --- Non-blocking steps (tracked, don't fail the pipeline) ---
 
       - name: Check migrations
@@ -68,17 +82,6 @@ jobs:
           VULN_LINE=$(echo "$OUTPUT" | grep "vulnerabilities found" || echo "0 vulnerabilities found")
           echo "summary=$VULN_LINE" >> "$GITHUB_OUTPUT"
         continue-on-error: true
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-        continue-on-error: true
-
-      - name: E2E tests
-        id: e2e
-        run: pnpm run test:e2e
-        continue-on-error: true
-        env:
-          CI: true
 
       # --- Summary of non-blocking issues ---
 
@@ -111,13 +114,6 @@ jobs:
               echo "| Dependency audit | :white_check_mark: | Clean |"
             else
               echo "| Dependency audit | :warning: | ${AUDIT_SUMMARY:-Vulnerabilities found} |"
-            fi
-
-            # E2E
-            if [ "${{ steps.e2e.outcome }}" = "success" ]; then
-              echo "| E2E tests | :white_check_mark: | Passed |"
-            else
-              echo "| E2E tests | :warning: | Failed (needs running app + DB) |"
             fi
 
             echo ""
