@@ -233,8 +233,20 @@ export const versionRouter = createTRPCRouter({
       .from(schema.appSettings)
       .where(eq(schema.appSettings.key, "pre_upgrade_backup"));
     if (!row) return null;
-    const data = row.value as { path: string; createdAt: string };
-    return { backupPath: data.path, createdAt: data.createdAt };
+    const data = row.value;
+    if (
+      typeof data !== "object" ||
+      data === null ||
+      typeof (data as Record<string, unknown>).path !== "string" ||
+      typeof (data as Record<string, unknown>).createdAt !== "string"
+    ) {
+      return null;
+    }
+    const { path: backupPath, createdAt } = data as {
+      path: string;
+      createdAt: string;
+    };
+    return { backupPath, createdAt };
   }),
 
   /** Dismiss the upgrade banner by removing the app_settings flag. */

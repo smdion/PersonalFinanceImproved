@@ -17,8 +17,8 @@ src/app/(dashboard)/tools/page.tsx
 # Integrations preview — multiple API provider panels
 src/components/settings/integrations-preview-panel.tsx
 
-# Schema definition — single-file-per-dialect convention, grows with tables
+# Schema definition — single-file-per-dialect convention, grows with tables (TODO.md quarterly review)
 src/lib/db/schema-pg.ts
 
-# Retirement router — at limit (1502), not worth splitting for 2 lines
+# Retirement router — at limit (1502), not worth splitting for 2 lines (TODO.md quarterly review)
 src/server/routers/retirement.ts

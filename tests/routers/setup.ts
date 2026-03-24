@@ -124,8 +124,7 @@ export async function createTestCaller(
   const rawDb = db as unknown as DbType;
 
   // Create tRPC caller
-  const createCaller = createCallerFactory(appRouter);
-  const caller = createCaller({
+  const caller = _callerFactory({
     db: rawDb,
     session,
     demoSchema: null,
