@@ -65,6 +65,10 @@ export type AccountTypeConfig = {
   /** Age range for super-catchup (SECURE 2.0), e.g. [60, 63]. null = no super-catchup. */
   superCatchupAgeRange: readonly [number, number] | null;
 
+  // --- Prior-year contributions ---
+  /** Whether contributions can be designated for the prior tax year (IRS window: Jan 1 – ~Apr 15). */
+  supportsPriorYearContrib: boolean;
+
   // --- Routing ---
   isOverflowTarget: boolean;
   fixedContribScalesWithSalary: boolean;

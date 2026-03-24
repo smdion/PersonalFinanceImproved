@@ -142,6 +142,10 @@ export const contributionAccounts = sqliteTable(
     allocationPriority: integer("allocation_priority").notNull().default(0),
     notes: text("notes"),
     isPayrollDeducted: integer("is_payroll_deducted", { mode: "boolean" }),
+    priorYearContribAmount: text("prior_year_contrib_amount")
+      .notNull()
+      .default("0"),
+    priorYearContribYear: integer("prior_year_contrib_year"),
   },
   (table) => [
     index("contribution_accounts_job_id_idx").on(table.jobId),

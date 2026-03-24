@@ -100,6 +100,7 @@ const contributionAccountInput = z.object({
   allocationPriority: z.number().int().default(0),
   notes: z.string().nullable().optional(),
   isPayrollDeducted: z.boolean().nullable().optional(),
+  priorYearContribAmount: zDecimal.optional(),
 });
 
 const deductionInput = z.object({
@@ -295,6 +296,19 @@ export const paycheckProcedures = {
           .extend(contributionAccountInput.shape),
       )
       .mutation(async ({ ctx, input: { id, ...data } }) => {
+        // Validate priorYearContribAmount only allowed for eligible account types
+        if (
+          data.priorYearContribAmount !== undefined &&
+          Number(data.priorYearContribAmount) > 0
+        ) {
+          const cfg = getAccountTypeConfig(data.accountType as AccountCategory);
+          if (!cfg.supportsPriorYearContrib) {
+            throw new Error(
+              `Prior-year contributions are not supported for ${data.accountType} accounts`,
+            );
+          }
+        }
+
         // Resolve the performanceAccountId — use incoming value, or look up existing row
         const perfAccountId =
           data.performanceAccountId !== undefined
@@ -327,6 +341,37 @@ export const paycheckProcedures = {
           .update(schema.contributionAccounts)
           .set(resolvedData)
           .where(eq(schema.contributionAccounts.id, id))
+          .returning()
+          .then((r) => r[0]);
+      }),
+    setPriorYearAmount: adminProcedure
+      .input(
+        z.object({
+          id: z.number().int(),
+          priorYearContribAmount: zDecimal,
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        // Look up the account type to validate eligibility
+        const [row] = await ctx.db
+          .select({ accountType: schema.contributionAccounts.accountType })
+          .from(schema.contributionAccounts)
+          .where(eq(schema.contributionAccounts.id, input.id));
+        if (!row) throw new Error("Contribution account not found");
+        const cfg = getAccountTypeConfig(row.accountType as AccountCategory);
+        if (!cfg.supportsPriorYearContrib) {
+          throw new Error(
+            `Prior-year contributions are not supported for ${row.accountType} accounts`,
+          );
+        }
+        const priorYear = new Date().getFullYear() - 1;
+        return ctx.db
+          .update(schema.contributionAccounts)
+          .set({
+            priorYearContribAmount: input.priorYearContribAmount,
+            priorYearContribYear: priorYear,
+          })
+          .where(eq(schema.contributionAccounts.id, input.id))
           .returning()
           .then((r) => r[0]);
       }),

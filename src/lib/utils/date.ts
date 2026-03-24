@@ -12,3 +12,14 @@ export function getAge(birthDate: Date, asOfDate: Date): number {
   }
   return age;
 }
+
+/**
+ * Whether the given date falls within the IRS prior-year contribution window
+ * (January 1 through April 15). During this window, IRA and HSA contributions
+ * can be designated for the prior tax year.
+ */
+export function isPriorYearContribWindow(date: Date = new Date()): boolean {
+  const month = date.getMonth(); // 0-indexed
+  const day = date.getDate();
+  return month < 3 || (month === 3 && day <= 15);
+}
