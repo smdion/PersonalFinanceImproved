@@ -9,11 +9,6 @@ import type {
   DeductionLine,
   ContributionAccountInput,
   PaycheckInput,
-  TaxInput,
-  ContributionInput,
-  NetWorthInput,
-  SavingsInput,
-  MortgageInput,
 } from "@/lib/calculators/types";
 
 // ── 2025 MFJ Tax Brackets (W-4 2(c) CHECKED) ──

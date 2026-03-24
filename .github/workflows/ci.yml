@@ -44,8 +44,8 @@ jobs:
           AUTH_AUTHENTIK_ID: build-placeholder
           AUTH_AUTHENTIK_SECRET: build-placeholder
 
-      - name: Test
-        run: npx vitest run
+      - name: Test with coverage thresholds
+        run: pnpm test:coverage
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium

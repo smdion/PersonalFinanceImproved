@@ -192,3 +192,241 @@ export async function seedBudgetProfile(
     .get();
   return result.id;
 }
+
+/**
+ * Seed a job for a person.
+ */
+export function seedJob(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  personId: number,
+  overrides: Partial<typeof sqliteSchema.jobs.$inferInsert> = {},
+): number {
+  const result = db
+    .insert(sqliteSchema.jobs)
+    .values({
+      personId,
+      employerName: "TestCo",
+      annualSalary: "120000",
+      payPeriod: "biweekly",
+      payWeek: "even",
+      startDate: "2020-01-01",
+      w4FilingStatus: "MFJ",
+      ...overrides,
+    })
+    .returning({ id: sqliteSchema.jobs.id })
+    .get();
+  return result.id;
+}
+
+/**
+ * Seed a budget item into a profile.
+ */
+export function seedBudgetItem(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  profileId: number,
+  overrides: Partial<typeof sqliteSchema.budgetItems.$inferInsert> = {},
+): number {
+  const result = db
+    .insert(sqliteSchema.budgetItems)
+    .values({
+      profileId,
+      category: "Essentials",
+      subcategory: "Groceries",
+      amounts: [500],
+      ...overrides,
+    })
+    .returning({ id: sqliteSchema.budgetItems.id })
+    .get();
+  return result.id;
+}
+
+/**
+ * Seed a savings goal.
+ */
+export function seedSavingsGoal(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  overrides: Partial<typeof sqliteSchema.savingsGoals.$inferInsert> = {},
+): number {
+  const result = db
+    .insert(sqliteSchema.savingsGoals)
+    .values({
+      name: "Emergency Fund",
+      targetAmount: "10000",
+      monthlyContribution: "500",
+      priority: 1,
+      isActive: true,
+      ...overrides,
+    })
+    .returning({ id: sqliteSchema.savingsGoals.id })
+    .get();
+  return result.id;
+}
+
+/**
+ * Seed a performance account.
+ */
+export function seedPerformanceAccount(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  overrides: Partial<typeof sqliteSchema.performanceAccounts.$inferInsert> = {},
+): number {
+  const name = overrides.name ?? "401k Account";
+  const institution = overrides.institution ?? "Fidelity";
+  const result = db
+    .insert(sqliteSchema.performanceAccounts)
+    .values({
+      institution,
+      accountType: "401k",
+      accountLabel: `${institution} ${name}`,
+      ownershipType: "individual",
+      parentCategory: "Retirement",
+      ...overrides,
+    })
+    .returning({ id: sqliteSchema.performanceAccounts.id })
+    .get();
+  return result.id;
+}
+
+/**
+ * Seed a portfolio snapshot with accounts.
+ */
+export function seedSnapshot(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  date = "2025-01-15",
+  accounts: {
+    performanceAccountId: number;
+    amount: string;
+    taxType?: string;
+    institution?: string;
+    accountType?: string;
+  }[] = [],
+): number {
+  const snap = db
+    .insert(sqliteSchema.portfolioSnapshots)
+    .values({ snapshotDate: date })
+    .returning({ id: sqliteSchema.portfolioSnapshots.id })
+    .get();
+  for (const a of accounts) {
+    db.insert(sqliteSchema.portfolioAccounts)
+      .values({
+        snapshotId: snap.id,
+        performanceAccountId: a.performanceAccountId,
+        amount: a.amount,
+        taxType: a.taxType ?? "preTax",
+        institution: a.institution ?? "Fidelity",
+        accountType: a.accountType ?? "401k",
+      })
+      .run();
+  }
+  return snap.id;
+}
+
+/**
+ * Seed an app setting key-value pair.
+ */
+export function seedAppSetting(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  key: string,
+  value: string,
+): void {
+  db.insert(sqliteSchema.appSettings).values({ key, value }).run();
+}
+
+/**
+ * Seed a contribution account.
+ */
+export function seedContributionAccount(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  overrides: Partial<
+    typeof sqliteSchema.contributionAccounts.$inferInsert
+  > = {},
+): number {
+  const result = db
+    .insert(sqliteSchema.contributionAccounts)
+    .values({
+      name: "401k Contribution",
+      category: "401k",
+      method: "percent_of_salary",
+      value: "0.10",
+      taxTreatment: "pre_tax",
+      isActive: true,
+      ...overrides,
+    })
+    .returning({ id: sqliteSchema.contributionAccounts.id })
+    .get();
+  return result.id;
+}
+
+/**
+ * Seed a contribution profile.
+ */
+export function seedContributionProfile(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  overrides: Partial<
+    typeof sqliteSchema.contributionProfiles.$inferInsert
+  > = {},
+): number {
+  const result = db
+    .insert(sqliteSchema.contributionProfiles)
+    .values({
+      name: "Default Profile",
+      isActive: true,
+      ...overrides,
+    })
+    .returning({ id: sqliteSchema.contributionProfiles.id })
+    .get();
+  return result.id;
+}
+
+/**
+ * Seed a full "standard" dataset: person + job + budget profile + items + savings goal + performance account + snapshot.
+ * Returns all IDs for use in tests.
+ */
+export function seedStandardDataset(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+) {
+  const personId = db
+    .insert(sqliteSchema.people)
+    .values({
+      name: "Test Person",
+      dateOfBirth: "1990-01-01",
+      isPrimaryUser: true,
+    })
+    .returning({ id: sqliteSchema.people.id })
+    .get().id;
+
+  const jobId = seedJob(db, personId);
+
+  const profileId = db
+    .insert(sqliteSchema.budgetProfiles)
+    .values({ name: "Main Budget", isActive: true, columnLabels: ["Standard"] })
+    .returning({ id: sqliteSchema.budgetProfiles.id })
+    .get().id;
+
+  const itemIds = [
+    seedBudgetItem(db, profileId, {
+      category: "Essentials",
+      subcategory: "Rent",
+      amounts: [2000],
+    }),
+    seedBudgetItem(db, profileId, {
+      category: "Essentials",
+      subcategory: "Groceries",
+      amounts: [600],
+    }),
+    seedBudgetItem(db, profileId, {
+      category: "Lifestyle",
+      subcategory: "Dining",
+      amounts: [200],
+    }),
+  ];
+
+  const goalId = seedSavingsGoal(db);
+
+  const perfAcctId = seedPerformanceAccount(db);
+
+  const snapId = seedSnapshot(db, "2025-01-15", [
+    { performanceAccountId: perfAcctId, amount: "100000", taxType: "preTax" },
+  ]);
+
+  return { personId, jobId, profileId, itemIds, goalId, perfAcctId, snapId };
+}

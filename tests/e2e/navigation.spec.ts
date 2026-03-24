@@ -14,9 +14,9 @@ test.describe("Dashboard navigation", () => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    for (const { path, heading } of dashboardPages) {
+    for (const { path } of dashboardPages) {
       await page.goto(path);
-      const response = await page.waitForLoadState("networkidle");
+      await page.waitForLoadState("networkidle");
 
       // Page should not error out (no 500-level failures)
       await expect(page.locator("body")).toBeVisible();
