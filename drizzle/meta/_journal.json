@@ -57,6 +57,13 @@
       "when": 1774276818652,
       "tag": "0007_melted_swordsman",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1774531200000,
+      "tag": "0008_prior_year_contrib",
+      "breakpoints": true
     }
   ]
 }

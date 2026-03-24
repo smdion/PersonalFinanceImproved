@@ -163,6 +163,13 @@ export const contributionAccounts = pgTable(
     allocationPriority: integer("allocation_priority").notNull().default(0),
     notes: text("notes"),
     isPayrollDeducted: boolean("is_payroll_deducted"),
+    priorYearContribAmount: decimal("prior_year_contrib_amount", {
+      precision: 12,
+      scale: 2,
+    })
+      .notNull()
+      .default("0"),
+    priorYearContribYear: integer("prior_year_contrib_year"),
   },
   (table) => [
     index("contribution_accounts_job_id_idx").on(table.jobId),

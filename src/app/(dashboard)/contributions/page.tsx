@@ -2,7 +2,7 @@
 
 /** Manages retirement and savings contribution allocations across accounts, with IRS limit tracking and profile switching. */
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { PageHeader } from "@/components/ui/page-header";
@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { accountColor } from "@/lib/utils/colors";
+import { useUser, hasPermission } from "@/lib/context/user-context";
 
 type PeriodMode = "annual" | "monthly" | "per-period";
 
@@ -30,10 +31,17 @@ function periodLabel(mode: PeriodMode): string {
 }
 
 export default function ContributionsPage() {
+  const user = useUser();
+  const canEdit = hasPermission(user, "portfolio");
+  const utils = trpc.useUtils();
   const { data, isLoading } = trpc.contribution.computeSummary.useQuery();
   const { data: profiles } = trpc.contributionProfile.list.useQuery();
   const [period, setPeriod] = useState<PeriodMode>("annual");
   const [activeProfileId] = useActiveContribProfile();
+  const setPriorYear =
+    trpc.settings.contributionAccounts.setPriorYearAmount.useMutation({
+      onSuccess: () => utils.contribution.computeSummary.invalidate(),
+    });
   const [selectedProfileId, setSelectedProfileId] = useState<
     number | undefined
   >(activeProfileId ?? undefined);
@@ -61,6 +69,7 @@ export default function ContributionsPage() {
   }
 
   const people = data?.people ?? [];
+  const priorYearWindow = data?.priorYearWindow ?? null;
 
   if (!data || people.length === 0) {
     return (
@@ -162,6 +171,20 @@ export default function ContributionsPage() {
           </div>
         </div>
       </PageHeader>
+
+      {/* Prior-year contribution window banner */}
+      {priorYearWindow && (
+        <div className="bg-surface-elevated border border-subtle rounded-lg px-4 py-3 mb-6">
+          <p className="text-sm text-secondary">
+            <span className="font-medium text-primary">
+              Prior-year contributions:
+            </span>{" "}
+            You can designate IRA and HSA contributions for tax year{" "}
+            {priorYearWindow.priorYear} until {priorYearWindow.deadline}. Set
+            prior-year amounts on individual accounts in the Portfolio settings.
+          </p>
+        </div>
+      )}
 
       {/* Household summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -313,81 +336,154 @@ export default function ContributionsPage() {
                       : "bg-blue-500";
 
                 return (
-                  <tr key={a.accountType} className="border-b border-subtle">
-                    <td className="py-2">
-                      <span className="flex items-center gap-2">
-                        <span
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{
-                            backgroundColor: accountColor(a.colorKey),
-                          }}
-                        />
-                        <span>{a.accountType}</span>
-                        {a.tradContrib > 0 && a.taxFreeContrib > 0 && (
-                          <span className="text-xs text-muted">
-                            T:
-                            {formatPercent(
-                              a.tradContrib /
-                                (a.tradContrib + a.taxFreeContrib),
-                              0,
-                            )}
-                            /R:
-                            {formatPercent(
-                              a.taxFreeContrib /
-                                (a.tradContrib + a.taxFreeContrib),
-                              0,
-                            )}
-                          </span>
-                        )}
-                      </span>
-                    </td>
-                    <td className="text-right py-2">
-                      {formatCurrency(
-                        toDisplay(
-                          a.employeeContrib,
-                          person.periodsPerYear,
-                          period,
-                        ),
-                      )}
-                    </td>
-                    <td className="text-right py-2">
-                      {a.employerMatch > 0 ? (
-                        <span className="text-emerald-600">
-                          {formatCurrency(
-                            toDisplay(
-                              a.employerMatch,
-                              person.periodsPerYear,
-                              period,
-                            ),
+                  <React.Fragment key={a.accountType}>
+                    <tr className="border-b border-subtle">
+                      <td className="py-2">
+                        <span className="flex items-center gap-2">
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{
+                              backgroundColor: accountColor(a.colorKey),
+                            }}
+                          />
+                          <span>{a.accountType}</span>
+                          {a.tradContrib > 0 && a.taxFreeContrib > 0 && (
+                            <span className="text-xs text-muted">
+                              T:
+                              {formatPercent(
+                                a.tradContrib /
+                                  (a.tradContrib + a.taxFreeContrib),
+                                0,
+                              )}
+                              /R:
+                              {formatPercent(
+                                a.taxFreeContrib /
+                                  (a.tradContrib + a.taxFreeContrib),
+                                0,
+                              )}
+                            </span>
                           )}
                         </span>
-                      ) : (
-                        <span className="text-muted">—</span>
-                      )}
-                    </td>
-                    <td className="text-right py-2 text-muted">
-                      {a.limit > 0 ? formatCurrency(a.limit) : "—"}
-                    </td>
-                    <td className="py-2 pl-4">
-                      {a.limit > 0 ? (
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-2 bg-surface-elevated rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${barColor}`}
-                              style={{
-                                width: `${Math.min(100, utilPct)}%`,
+                      </td>
+                      <td className="text-right py-2">
+                        {formatCurrency(
+                          toDisplay(
+                            a.employeeContrib,
+                            person.periodsPerYear,
+                            period,
+                          ),
+                        )}
+                      </td>
+                      <td className="text-right py-2">
+                        {a.employerMatch > 0 ? (
+                          <span className="text-emerald-600">
+                            {formatCurrency(
+                              toDisplay(
+                                a.employerMatch,
+                                person.periodsPerYear,
+                                period,
+                              ),
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
+                      </td>
+                      <td className="text-right py-2 text-muted">
+                        {a.limit > 0 ? formatCurrency(a.limit) : "—"}
+                      </td>
+                      <td className="py-2 pl-4">
+                        {a.limit > 0 ? (
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-2 bg-surface-elevated rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${barColor}`}
+                                style={{
+                                  width: `${Math.min(100, utilPct)}%`,
+                                }}
+                              />
+                            </div>
+                            <span className="text-xs text-muted w-10 text-right">
+                              {formatPercent(a.fundingPct, 0)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted">No limit</span>
+                        )}
+                      </td>
+                    </tr>
+                    {a.priorYear && (
+                      <tr className="border-b border-subtle bg-surface-elevated">
+                        <td className="py-1.5 pl-6 text-xs text-secondary">
+                          Prior year ({priorYearWindow?.priorYear})
+                        </td>
+                        <td className="text-right py-1.5">
+                          {canEdit && a.priorYear.contribs.length === 1 ? (
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              max={a.priorYear.limit}
+                              defaultValue={a.priorYear.amount || ""}
+                              placeholder="0"
+                              className="w-24 text-right text-xs border rounded px-1.5 py-0.5 bg-surface-primary text-primary border-subtle"
+                              onBlur={(e) => {
+                                const val = e.target.value || "0";
+                                if (Number(val) !== a.priorYear!.amount) {
+                                  const contribId =
+                                    a.priorYear!.contribs[0]?.id;
+                                  if (contribId != null) {
+                                    setPriorYear.mutate({
+                                      id: contribId,
+                                      priorYearContribAmount: val,
+                                    });
+                                  }
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter")
+                                  (e.target as HTMLInputElement).blur();
                               }}
                             />
+                          ) : canEdit && a.priorYear.contribs.length > 1 ? (
+                            <span className="text-xs text-muted">
+                              {formatCurrency(a.priorYear.amount)} (split)
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted">
+                              {formatCurrency(a.priorYear.amount)}
+                            </span>
+                          )}
+                        </td>
+                        <td className="text-right py-1.5 text-xs text-muted">
+                          {formatCurrency(a.priorYear.remaining)} left
+                        </td>
+                        <td className="text-right py-1.5 text-xs text-muted">
+                          {formatCurrency(a.priorYear.limit)}
+                        </td>
+                        <td className="py-1.5 pl-4">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1.5 bg-surface-sunken rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-blue-500"
+                                style={{
+                                  width: `${Math.min(100, a.priorYear.limit > 0 ? (a.priorYear.amount / a.priorYear.limit) * 100 : 0)}%`,
+                                }}
+                              />
+                            </div>
+                            <span className="text-[10px] text-muted w-10 text-right">
+                              {a.priorYear.limit > 0
+                                ? formatPercent(
+                                    a.priorYear.amount / a.priorYear.limit,
+                                    0,
+                                  )
+                                : "—"}
+                            </span>
                           </div>
-                          <span className="text-xs text-muted w-10 text-right">
-                            {formatPercent(a.fundingPct, 0)}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted">No limit</span>
-                      )}
-                    </td>
-                  </tr>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </tbody>

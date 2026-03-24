@@ -4,6 +4,17 @@ All notable changes to Ledgr will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.7] - 2026-03-23
+
+### Added
+
+- **Prior-year tax contributions** — IRA and HSA contributions can now be designated for the prior tax year during the IRS window (January 1 – April 15). New `priorYearContribAmount` and `priorYearContribYear` columns on contribution accounts; year-tagged so stale values are automatically ignored when the next window opens. Inline editable input on the Contributions page for eligible accounts; prior-year limit, remaining room, and utilization bar displayed per account type. Config-driven via `supportsPriorYearContrib` flag on `AccountTypeConfig` — no account-type if-chains. Lightweight `setPriorYearAmount` mutation for inline editing. `isPriorYearContribWindow()` utility in `date.ts`.
+- **Savings page budget mode awareness** — savings page now derives the active contribution profile from the budget column's linked profile (`columnContributionProfileIds`), fixing a holistic rule violation where it previously used an independent profile. Cross-mode capacity comparison strip shows `maxMonthlyFunding` for each budget column. PageHeader subtitle shows active budget mode and contribution profile name. Extracted `computeMaxMonthlyFunding` pure calculator to `lib/calculators/savings-capacity.ts`.
+
+### Improved
+
+- **Contributions page theme support** — prior-year banner and sub-rows use semantic design tokens (`bg-surface-elevated`, `text-secondary`, `border-subtle`) instead of hardcoded color classes
+
 ## [0.1.6] - 2026-03-23
 
 ### Added

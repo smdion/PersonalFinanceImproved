@@ -17,7 +17,7 @@ import {
   loadAndApplyContribProfile,
 } from "@/server/helpers";
 import { roundToCents } from "@/lib/utils/math";
-import { getAge } from "@/lib/utils/date";
+import { getAge, isPriorYearContribWindow } from "@/lib/utils/date";
 import type {
   ContributionInput,
   AccountCategory,
@@ -57,6 +57,12 @@ type AccountTypeSnapshot = {
   employerMatchLabel: string; // config-driven: 'match' or 'disc.' etc.
   targetAnnual: number | null; // user's self-imposed annual target (null = no target)
   allocationPriority: number; // overflow routing priority (lower = higher priority)
+  priorYear?: {
+    amount: number; // total designated for prior tax year across all contribs in this category
+    limit: number; // prior year's IRS limit
+    remaining: number; // room left in prior year
+    contribs: { id: number; amount: number }[]; // per-contrib breakdown for inline editing
+  };
 };
 
 /** Per-raw-contrib computed data — lets consumers (e.g. Paycheck page) use
@@ -68,6 +74,11 @@ type PerContribData = {
   limit: number; // resolved IRS limit (with coverage variant + catchup)
   siblingAnnualTotal: number; // sum of annual amounts for other contribs in same limit group
   limitGroup: string | null;
+  priorYear?: {
+    amount: number; // designated for prior tax year
+    limit: number; // prior year's IRS limit
+    remaining: number; // room left in prior year
+  };
 };
 
 type PersonSnapshot = {
@@ -107,29 +118,44 @@ export const contributionRouter = createTRPCRouter({
           (o) => [o.personId, o.salary] as const,
         ),
       );
-      const [people, allJobs, allContribs, allLimits, perfAccounts] =
-        await Promise.all([
-          ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
-          ctx.db.select().from(schema.jobs),
-          ctx.db
-            .select()
-            .from(schema.contributionAccounts)
-            .where(eq(schema.contributionAccounts.isActive, true)),
-          ctx.db
-            .select()
-            .from(schema.contributionLimits)
-            .where(
-              eq(schema.contributionLimits.taxYear, new Date().getFullYear()),
-            ),
-          ctx.db
-            .select({
-              id: schema.performanceAccounts.id,
-              parentCategory: schema.performanceAccounts.parentCategory,
-              accountLabel: schema.performanceAccounts.accountLabel,
-              displayName: schema.performanceAccounts.displayName,
-            })
-            .from(schema.performanceAccounts),
-        ]);
+      const currentYear = new Date().getFullYear();
+      const inPriorYearWindow = isPriorYearContribWindow();
+      const priorYear = currentYear - 1;
+
+      const [
+        people,
+        allJobs,
+        allContribs,
+        allLimits,
+        priorYearLimitsRaw,
+        perfAccounts,
+      ] = await Promise.all([
+        ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
+        ctx.db.select().from(schema.jobs),
+        ctx.db
+          .select()
+          .from(schema.contributionAccounts)
+          .where(eq(schema.contributionAccounts.isActive, true)),
+        ctx.db
+          .select()
+          .from(schema.contributionLimits)
+          .where(eq(schema.contributionLimits.taxYear, currentYear)),
+        // Fetch prior-year limits only during the IRS window
+        inPriorYearWindow
+          ? ctx.db
+              .select()
+              .from(schema.contributionLimits)
+              .where(eq(schema.contributionLimits.taxYear, priorYear))
+          : Promise.resolve([]),
+        ctx.db
+          .select({
+            id: schema.performanceAccounts.id,
+            parentCategory: schema.performanceAccounts.parentCategory,
+            accountLabel: schema.performanceAccounts.accountLabel,
+            displayName: schema.performanceAccounts.displayName,
+          })
+          .from(schema.performanceAccounts),
+      ]);
 
       // Build label map for performance accounts — strip institution suffix for category grouping
       // e.g. "Long Term Brokerage (Vanguard)" → "Long Term Brokerage"
@@ -143,6 +169,10 @@ export const contributionRouter = createTRPCRouter({
 
       const limitsRecord: Record<string, number> = {};
       for (const l of allLimits) limitsRecord[l.limitType] = toNumber(l.value);
+
+      const priorYearLimitsRecord: Record<string, number> = {};
+      for (const l of priorYearLimitsRaw)
+        priorYearLimitsRecord[l.limitType] = toNumber(l.value);
 
       // Apply contribution profile overrides if selected
       const profileResult = await loadAndApplyContribProfile(
@@ -284,6 +314,42 @@ export const contributionRouter = createTRPCRouter({
             return limit;
           };
 
+          // Resolve prior-year IRS limit for an account type
+          const resolvePriorYearLimit = (
+            accountType: string,
+            hsaCoverageType: string | null,
+          ): number => {
+            if (
+              !categoriesWithIrsLimit().includes(accountType as AccountCategory)
+            )
+              return 0;
+            const cfg = getAccountTypeConfig(accountType as AccountCategory);
+            if (!cfg.supportsPriorYearContrib) return 0;
+            const keys = cfg.irsLimitKeys;
+            if (!keys) return 0;
+            let baseKey = keys.base;
+            if (keys.coverageVariant && hsaCoverageType === "family")
+              baseKey = keys.coverageVariant;
+            // Use prior-year age (one year younger)
+            const priorYearAge = age - 1;
+            let limit = priorYearLimitsRecord[baseKey] ?? 0;
+            if (
+              cfg.superCatchupAgeRange &&
+              priorYearAge >= cfg.superCatchupAgeRange[0] &&
+              priorYearAge <= cfg.superCatchupAgeRange[1]
+            ) {
+              if (keys.superCatchup)
+                limit += priorYearLimitsRecord[keys.superCatchup] ?? 0;
+            } else if (
+              cfg.catchupAge !== null &&
+              priorYearAge >= cfg.catchupAge &&
+              keys.catchup
+            ) {
+              limit += priorYearLimitsRecord[keys.catchup] ?? 0;
+            }
+            return limit;
+          };
+
           // Build per-raw-contrib computed data for consumers (Paycheck page)
           const perContribData: PerContribData[] = rawContribs.map((rc, i) => {
             const annual = accounts[i]!.annualContribution;
@@ -316,6 +382,28 @@ export const contributionRouter = createTRPCRouter({
                 }
               }
             }
+
+            // Prior-year contribution tracking — only use amount if it's tagged for the correct year
+            const rawPyAmount = toNumber(rc.priorYearContribAmount);
+            const priorYearAmount =
+              rc.priorYearContribYear === priorYear ? rawPyAmount : 0;
+            let priorYearData: PerContribData["priorYear"];
+            if (
+              inPriorYearWindow &&
+              cfg?.supportsPriorYearContrib &&
+              priorYearAmount > 0
+            ) {
+              const pyLimit = resolvePriorYearLimit(
+                rc.accountType,
+                rc.hsaCoverageType,
+              );
+              priorYearData = {
+                amount: priorYearAmount,
+                limit: pyLimit,
+                remaining: Math.max(0, pyLimit - priorYearAmount),
+              };
+            }
+
             return {
               contribId: rc.id,
               annualAmount: roundToCents(annual),
@@ -323,6 +411,7 @@ export const contributionRouter = createTRPCRouter({
               limit,
               siblingAnnualTotal: roundToCents(siblingAnnualTotal),
               limitGroup: group,
+              priorYear: priorYearData,
             };
           });
 
@@ -342,6 +431,8 @@ export const contributionRouter = createTRPCRouter({
               colorKey: string;
               targetAnnual: number | null;
               allocationPriority: number;
+              priorYearAmount: number;
+              priorYearContribs: { id: number; amount: number }[];
             }
           >();
           for (let i = 0; i < accounts.length; i++) {
@@ -404,7 +495,15 @@ export const contributionRouter = createTRPCRouter({
                 ? Number(rawContrib.targetAnnual)
                 : null,
               allocationPriority: rawContrib.allocationPriority ?? 0,
+              priorYearAmount: 0,
+              priorYearContribs: [],
             };
+            const pyAmt =
+              rawContrib.priorYearContribYear === priorYear
+                ? toNumber(rawContrib.priorYearContribAmount)
+                : 0;
+            entry.priorYearAmount += pyAmt;
+            entry.priorYearContribs.push({ id: rawContrib.id, amount: pyAmt });
             entry.employee += acct.annualContribution;
             entry.match += acct.employerMatch;
             if (isTaxFree(acct.taxTreatment))
@@ -453,6 +552,29 @@ export const contributionRouter = createTRPCRouter({
                   : 0;
             }
 
+            // Prior-year contribution data (only during IRS window for eligible types)
+            let priorYearSnapshot: AccountTypeSnapshot["priorYear"];
+            if (inPriorYearWindow && cfg?.supportsPriorYearContrib) {
+              const hsaAcct = rawContribs.find(
+                (c) => c.accountType === data.colorKey,
+              );
+              const pyLimit = resolvePriorYearLimit(
+                data.colorKey,
+                hsaAcct?.hsaCoverageType ?? null,
+              );
+              if (pyLimit > 0) {
+                priorYearSnapshot = {
+                  amount: roundToCents(data.priorYearAmount),
+                  limit: pyLimit,
+                  remaining: Math.max(
+                    0,
+                    pyLimit - roundToCents(data.priorYearAmount),
+                  ),
+                  contribs: data.priorYearContribs,
+                };
+              }
+            }
+
             accountTypes.push({
               accountType: cat,
               colorKey: data.colorKey,
@@ -473,6 +595,7 @@ export const contributionRouter = createTRPCRouter({
               employerMatchLabel: data.employerMatchLabel,
               targetAnnual: data.targetAnnual,
               allocationPriority: data.allocationPriority,
+              priorYear: priorYearSnapshot,
             });
           }
 
@@ -624,6 +747,9 @@ export const contributionRouter = createTRPCRouter({
         limits: limitsRecord,
         jointAccountTypes,
         jointTotals,
+        priorYearWindow: inPriorYearWindow
+          ? { priorYear, deadline: `April 15, ${currentYear}` }
+          : null,
       };
     }),
 });

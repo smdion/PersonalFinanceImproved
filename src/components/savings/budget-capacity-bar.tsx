@@ -282,6 +282,7 @@ export function BudgetCapacityBar({
   budgetNote,
   goalProjections,
   onGoalUpdate,
+  crossModeCapacity,
 }: {
   maxMonthlyFunding: number | null;
   totalMonthlyAllocation: number;
@@ -300,6 +301,7 @@ export function BudgetCapacityBar({
   budgetNote?: string;
   goalProjections: GoalProjection[];
   onGoalUpdate: (goalId: number, field: string, value: string) => void;
+  crossModeCapacity?: { label: string; amount: number | null }[];
 }) {
   const [showPctAllocator, setShowPctAllocator] = useState(false);
   const basePool = maxMonthlyFunding ?? totalMonthlyAllocation;
@@ -398,6 +400,27 @@ export function BudgetCapacityBar({
               ? `Over by ${formatCurrency(totalMonthlyAllocation - maxMonthlyFunding)}`
               : `${formatCurrency(maxMonthlyFunding - totalMonthlyAllocation)} unallocated`}
           </span>
+        </div>
+      )}
+
+      {/* Cross-mode capacity comparison */}
+      {crossModeCapacity && crossModeCapacity.length > 1 && (
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+          <span className="text-faint font-medium">By mode:</span>
+          {crossModeCapacity.map((mode, index) => (
+            <span
+              key={mode.label}
+              className={`tabular-nums ${
+                index === budgetColumn
+                  ? "text-primary font-semibold"
+                  : "text-muted"
+              }`}
+            >
+              {mode.label}:{" "}
+              {mode.amount !== null ? formatCurrency(mode.amount) : "—"}
+              /mo
+            </span>
+          ))}
         </div>
       )}
 

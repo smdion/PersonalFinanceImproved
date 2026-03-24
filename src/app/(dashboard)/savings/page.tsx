@@ -33,6 +33,11 @@ import {
   useApiSync,
 } from "@/components/savings/api-sync-section";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
+import { usePerColumnPaycheck } from "@/lib/hooks/use-per-column-paycheck";
+import {
+  computeMaxMonthlyFunding,
+  type CapacityPerson,
+} from "@/lib/calculators/savings-capacity";
 
 export default function SavingsPage() {
   const user = useUser();
@@ -69,19 +74,45 @@ export default function SavingsPage() {
   const { data: apiBalancesData } = trpc.savings.listApiBalances.useQuery();
   const { data: apiCategoriesData } = trpc.budget.listApiCategories.useQuery();
 
+  const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
+    selectedColumn: budgetColumn,
+  });
+
+  // Derive contribution profile from the budget column's linked profile (holistic rule)
+  const linkedProfileId =
+    (
+      budgetData?.profile?.columnContributionProfileIds as
+        | (number | null)[]
+        | null
+    )?.[budgetColumn] ?? null;
+  const effectiveContribProfileId = linkedProfileId ?? activeContribProfileId;
+
   const salaryOverrides = useSalaryOverrides();
   const paycheckInput = {
     ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
-    ...(activeContribProfileId != null
-      ? { contributionProfileId: activeContribProfileId }
+    ...(effectiveContribProfileId != null
+      ? { contributionProfileId: effectiveContribProfileId }
       : {}),
   };
   const { data: paycheckData } = trpc.paycheck.computeSummary.useQuery(
     Object.keys(paycheckInput).length > 0 ? paycheckInput : undefined,
   );
-  const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
-    selectedColumn: budgetColumn,
-  });
+
+  // Fetch contribution profiles list for subtitle display
+  const { data: contribProfilesList } =
+    trpc.contributionProfile.list.useQuery();
+
+  // Per-column paycheck data for cross-mode capacity comparison
+  const columnContribProfileIds =
+    (budgetData?.profile?.columnContributionProfileIds as
+      | (number | null)[]
+      | null) ??
+    budgetData?.columnLabels?.map(() => null) ??
+    [];
+  const perColumnPaychecks = usePerColumnPaycheck(
+    columnContribProfileIds,
+    salaryOverrides,
+  );
 
   // ── Cross-section coordination ──
   const apiSync = useApiSync();
@@ -183,23 +214,41 @@ export default function SavingsPage() {
   }
 
   // ── Budget leftover ──
-  const maxMonthlyFunding = (() => {
-    if (!paycheckData || !budgetData?.result) return null;
-    const activePeople = paycheckData.people.filter((d) => d.paycheck && d.job);
-    if (activePeople.length === 0) return null;
-    const monthlyNet = activePeople.reduce((sum, d) => {
-      const pc = d.paycheck!;
-      // Use server-provided budget periods per month (respects per-job override)
-      const perMonth =
-        (d as { budgetPerMonth?: number }).budgetPerMonth ??
-        pc.periodsPerYear / 12;
-      return sum + pc.netPay * perMonth;
-    }, 0);
-    const budgetTotal = budgetData.columnMonths
+  const budgetMonthlyTotal = budgetData?.result
+    ? budgetData.columnMonths
       ? (budgetData.weightedAnnualTotal ?? 0) / 12
-      : (budgetData.result.totalMonthly ?? 0);
-    return monthlyNet - budgetTotal;
-  })();
+      : (budgetData.result.totalMonthly ?? 0)
+    : null;
+  const maxMonthlyFunding =
+    paycheckData && budgetMonthlyTotal !== null
+      ? computeMaxMonthlyFunding(
+          paycheckData.people as CapacityPerson[],
+          budgetMonthlyTotal,
+        )
+      : null;
+
+  // ── Cross-mode capacity (all budget columns) ──
+  const crossModeCapacity =
+    budgetData?.result && budgetData.columnLabels
+      ? budgetData.columnLabels.map((label, index) => {
+          const colPaycheck = perColumnPaychecks[index];
+          const colResult = budgetData.allColumnResults?.[index] as
+            | { totalMonthly: number }
+            | undefined;
+          if (!colPaycheck || !colResult)
+            return { label, amount: null as number | null };
+          const colBudgetTotal = budgetData.columnMonths
+            ? (budgetData.weightedAnnualTotal ?? 0) / 12
+            : colResult.totalMonthly;
+          return {
+            label,
+            amount: computeMaxMonthlyFunding(
+              colPaycheck.people as CapacityPerson[],
+              colBudgetTotal,
+            ),
+          };
+        })
+      : undefined;
 
   // ── Budget frequency note for help text ──
   const budgetNote = (() => {
@@ -403,11 +452,19 @@ export default function SavingsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Savings"
-        subtitle={
-          budgetData?.columnLabels?.[budgetColumn]
-            ? `Budget scenario: ${budgetData.columnLabels[budgetColumn]}`
-            : undefined
-        }
+        subtitle={(() => {
+          const budgetLabel = budgetData?.columnLabels?.[budgetColumn];
+          if (!budgetLabel) return undefined;
+          const profileName =
+            effectiveContribProfileId != null
+              ? (contribProfilesList?.find(
+                  (p) => p.id === effectiveContribProfileId,
+                )?.name ?? null)
+              : null;
+          return profileName
+            ? `Budget: ${budgetLabel} | Profile: ${profileName}`
+            : `Budget: ${budgetLabel} | Profile: Live`;
+        })()}
       >
         {canEdit && (
           <div className="flex flex-wrap gap-2">
@@ -516,6 +573,7 @@ export default function SavingsPage() {
             budgetNote={budgetNote}
             goalProjections={goalProjections}
             onGoalUpdate={onGoalUpdate}
+            crossModeCapacity={crossModeCapacity}
           />
 
           {goalProjections.length > 0 && (

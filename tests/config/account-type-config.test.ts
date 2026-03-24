@@ -24,9 +24,6 @@ import {
   getDefaultDecumulationOrder,
   buildCategoryRecord,
   accountCategoryEnum,
-  ACCOUNT_CATEGORY_VALUES,
-  DEFAULT_ACCUMULATION_ORDER,
-  DEFAULT_DECUMULATION_ORDER,
   DEFAULT_WITHDRAWAL_TAX_PREF,
   DEFAULT_WITHDRAWAL_SPLITS,
   type AccountCategory,
@@ -37,8 +34,6 @@ import {
   CONTRIBUTION_METHOD_LABELS_SHORT,
   TAX_TREATMENT_LABELS,
   EMPLOYER_MATCH_LABELS,
-  MATCH_TAX_LABELS,
-  HSA_COVERAGE_LABELS,
   displayLabel,
 } from "@/lib/config/display-labels";
 
@@ -79,6 +74,7 @@ describe("ACCOUNT_TYPE_CONFIG", () => {
       "hasDiscountBar",
       "taxPreferenceNote",
       "subTypeOptions",
+      "supportsPriorYearContrib",
     ];
     for (const cat of getAllCategories()) {
       const cfg = ACCOUNT_TYPE_CONFIG[cat];
@@ -86,6 +82,25 @@ describe("ACCOUNT_TYPE_CONFIG", () => {
         expect(cfg).toHaveProperty(key);
       }
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Prior-year contribution eligibility
+// ---------------------------------------------------------------------------
+
+describe("supportsPriorYearContrib", () => {
+  it("is true for IRA and HSA only", () => {
+    expect(getAccountTypeConfig("ira").supportsPriorYearContrib).toBe(true);
+    expect(getAccountTypeConfig("hsa").supportsPriorYearContrib).toBe(true);
+  });
+
+  it("is false for employer-sponsored plans and brokerage", () => {
+    expect(getAccountTypeConfig("401k").supportsPriorYearContrib).toBe(false);
+    expect(getAccountTypeConfig("403b").supportsPriorYearContrib).toBe(false);
+    expect(getAccountTypeConfig("brokerage").supportsPriorYearContrib).toBe(
+      false,
+    );
   });
 });
 
