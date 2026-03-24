@@ -261,6 +261,38 @@ async function runPostgres() {
       client.release();
     }
 
+    // Clean up old migration journal entries after squash so the backup
+    // check (appliedCount > journalCount) doesn't trigger on every restart.
+    if (preUpgradeBackupPath) {
+      const cleanupClient = await pool.connect();
+      try {
+        const { rows: currentEntries } = await cleanupClient.query(
+          "SELECT id, hash FROM __drizzle_migrations ORDER BY created_at ASC",
+        );
+        if (currentEntries.length > 1) {
+          // Keep only the last entry (the backfilled squashed migration)
+          const lastId = currentEntries[currentEntries.length - 1]!.id;
+          await cleanupClient.query(
+            "DELETE FROM __drizzle_migrations WHERE id != $1",
+            [lastId],
+          );
+          log("info", "migration_journal_cleaned", {
+            removed: currentEntries.length - 1,
+            kept: 1,
+          });
+        }
+      } catch (cleanupErr) {
+        log("warn", "migration_journal_cleanup_failed", {
+          error:
+            cleanupErr instanceof Error
+              ? cleanupErr.message
+              : String(cleanupErr),
+        });
+      } finally {
+        cleanupClient.release();
+      }
+    }
+
     // Post-migration column renames: v0.2.0 renamed two boolean columns.
     // The squashed schema has the new names, but existing DBs still have old names.
     // These ALTERs are idempotent — they no-op if the column already has the new name.
