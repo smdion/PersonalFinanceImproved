@@ -112,17 +112,15 @@ describe("sync core — syncAll", () => {
         },
       ]),
       getMonthDetail: vi.fn().mockResolvedValue({ categories: [] }),
-      getTransactions: vi
-        .fn()
-        .mockResolvedValue([
-          {
-            id: "tx-1",
-            date: "2026-01-15",
-            amount: -50,
-            categoryName: "Groceries",
-            deleted: false,
-          },
-        ]),
+      getTransactions: vi.fn().mockResolvedValue([
+        {
+          id: "tx-1",
+          date: "2026-01-15",
+          amount: -50,
+          categoryName: "Groceries",
+          deleted: false,
+        },
+      ]),
     };
 
     mockGetClientForService.mockResolvedValue(mockClient);
@@ -148,18 +146,16 @@ describe("sync core — syncAll", () => {
     const assetRow = db.select().from(schema.otherAssetItems).all()[0]!;
 
     const mockClient = {
-      getAccounts: vi
-        .fn()
-        .mockResolvedValue([
-          {
-            id: "track-1",
-            name: "Car Value",
-            balance: 22000,
-            onBudget: false,
-            closed: false,
-            type: "otherAsset",
-          },
-        ]),
+      getAccounts: vi.fn().mockResolvedValue([
+        {
+          id: "track-1",
+          name: "Car Value",
+          balance: 22000,
+          onBudget: false,
+          closed: false,
+          type: "otherAsset",
+        },
+      ]),
       getCategories: vi.fn().mockResolvedValue([]),
       getMonthDetail: vi.fn().mockResolvedValue({ categories: [] }),
       getTransactions: vi.fn().mockResolvedValue([]),
@@ -205,18 +201,16 @@ describe("sync core — syncAll", () => {
     const loan = db.select().from(schema.mortgageLoans).all()[0]!;
 
     const mockClient = {
-      getAccounts: vi
-        .fn()
-        .mockResolvedValue([
-          {
-            id: "track-prop",
-            name: "Home Value",
-            balance: 420000,
-            onBudget: false,
-            closed: false,
-            type: "otherAsset",
-          },
-        ]),
+      getAccounts: vi.fn().mockResolvedValue([
+        {
+          id: "track-prop",
+          name: "Home Value",
+          balance: 420000,
+          onBudget: false,
+          closed: false,
+          type: "otherAsset",
+        },
+      ]),
       getCategories: vi.fn().mockResolvedValue([]),
       getMonthDetail: vi.fn().mockResolvedValue({ categories: [] }),
       getTransactions: vi.fn().mockResolvedValue([]),
@@ -251,18 +245,16 @@ describe("sync core — syncAll", () => {
     const loan = loans[0]!;
 
     const mockClient = {
-      getAccounts: vi
-        .fn()
-        .mockResolvedValue([
-          {
-            id: "track-loan",
-            name: "Mortgage",
-            balance: -285000,
-            onBudget: false,
-            closed: false,
-            type: "mortgage",
-          },
-        ]),
+      getAccounts: vi.fn().mockResolvedValue([
+        {
+          id: "track-loan",
+          name: "Mortgage",
+          balance: -285000,
+          onBudget: false,
+          closed: false,
+          type: "mortgage",
+        },
+      ]),
       getCategories: vi.fn().mockResolvedValue([]),
       getMonthDetail: vi.fn().mockResolvedValue({ categories: [] }),
       getTransactions: vi.fn().mockResolvedValue([]),
