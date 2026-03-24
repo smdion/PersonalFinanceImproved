@@ -17,7 +17,7 @@ import { log } from "@/lib/logger";
 
 /** All schema version tags that we know how to import from. */
 export const KNOWN_SCHEMA_VERSIONS = [
-  // v0.1.x series (PostgreSQL journal tags)
+  // v0.1.x series — PostgreSQL journal tags
   "0000_initial_schema",
   "0001_drop_pg_enums",
   "0002_rename_retirement_category",
@@ -27,9 +27,25 @@ export const KNOWN_SCHEMA_VERSIONS = [
   "0006_goofy_rawhide_kid",
   "0007_melted_swordsman",
   "0008_prior_year_contrib",
+  // v0.1.x series — SQLite journal tags (different numbering, no PG-specific migrations)
+  "0001_rename_retirement_category", // SQLite 0001 = PG 0002
+  "0002_add_rollovers_column", // SQLite 0002 = PG 0003
+  "0003_reflective_stardust", // SQLite 0003 = PG 0004-0007 combined
+  "0004_prior_year_contrib", // SQLite 0004 = PG 0008
 ] as const;
 
 export type KnownSchemaVersion = (typeof KNOWN_SCHEMA_VERSIONS)[number];
+
+/**
+ * Maps SQLite journal tags to their PG equivalents so the cumulative
+ * transform logic (which uses PG tag positions) works for both dialects.
+ */
+const SQLITE_TO_PG_TAG: Record<string, string> = {
+  "0001_rename_retirement_category": "0002_rename_retirement_category",
+  "0002_add_rollovers_column": "0003_add_rollovers_column",
+  "0003_reflective_stardust": "0007_melted_swordsman", // Combined PG 0004-0007
+  "0004_prior_year_contrib": "0008_prior_year_contrib",
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -94,12 +110,16 @@ function renameValue(
 // Schema version ordering (for "at least version X" checks)
 // ---------------------------------------------------------------------------
 
+/** PG tags in canonical order — used for cumulative "at least version X" checks. */
+const PG_TAGS = KNOWN_SCHEMA_VERSIONS.slice(0, 9); // First 9 entries are PG
 const VERSION_ORDER: Map<string, number> = new Map(
-  KNOWN_SCHEMA_VERSIONS.map((tag, index) => [tag, index]),
+  PG_TAGS.map((tag, index) => [tag, index]),
 );
 
+/** Resolve a schema tag to its position in the PG ordering (SQLite tags normalized). */
 function versionIndex(tag: string): number {
-  return VERSION_ORDER.get(tag) ?? -1;
+  const normalized = SQLITE_TO_PG_TAG[tag] ?? tag;
+  return VERSION_ORDER.get(normalized) ?? -1;
 }
 
 // ---------------------------------------------------------------------------
@@ -118,7 +138,7 @@ function versionIndex(tag: string): number {
  * 5. 0007+ add: `filing_status` on retirement_settings
  * 6. 0008+ add: `prior_year_contrib_amount`/`prior_year_contrib_year` on contribution_accounts
  * 7. Always: rename `api_sync_enabled` → `is_api_sync_enabled` (savings_goals)
- * 8. Always: rename `lt_brokerage_enabled` → `is_lt_brokerage_enabled` (retirement_settings)
+ * 8. Always: rename `lt_brokerage_enabled` → `is_lt_brokerage_enabled` (retirement_scenarios)
  */
 function transformV01xToV020(
   tables: TableData,
@@ -193,7 +213,7 @@ function transformV01xToV020(
   );
   renameColumn(
     tables,
-    "retirement_settings",
+    "retirement_scenarios",
     "lt_brokerage_enabled",
     "is_lt_brokerage_enabled",
   );

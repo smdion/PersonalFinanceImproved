@@ -245,21 +245,21 @@ describe("transformBackupToCurrentSchema — v0.1.x to v0.2.0", () => {
     expect(goals[1]!.is_api_sync_enabled).toBe(false);
   });
 
-  it("renames lt_brokerage_enabled to is_lt_brokerage_enabled in retirement_settings", () => {
+  it("renames lt_brokerage_enabled to is_lt_brokerage_enabled in retirement_scenarios", () => {
     const tables = makeBackup({
-      retirement_settings: [{ id: 1, lt_brokerage_enabled: true }],
+      retirement_scenarios: [{ id: 1, lt_brokerage_enabled: true }],
     });
     const result = transformBackupToCurrentSchema(
       tables,
       "0008_prior_year_contrib",
       CURRENT_VERSION,
     );
-    const settings = result.tables.retirement_settings![0] as Record<
+    const scenario = result.tables.retirement_scenarios![0] as Record<
       string,
       unknown
     >;
-    expect(settings.is_lt_brokerage_enabled).toBe(true);
-    expect(settings).not.toHaveProperty("lt_brokerage_enabled");
+    expect(scenario.is_lt_brokerage_enabled).toBe(true);
+    expect(scenario).not.toHaveProperty("lt_brokerage_enabled");
   });
 });
 
@@ -274,9 +274,8 @@ describe("transformBackupToCurrentSchema — full cumulative from 0000", () => {
       account_performance: [{ id: 1, contributions: "100" }],
       retirement_salary_overrides: [{ id: 1, new_salary: "100000" }],
       retirement_budget_overrides: [{ id: 1, amount: "5000" }],
-      retirement_settings: [
-        { id: 1, retirement_age: 65, lt_brokerage_enabled: true },
-      ],
+      retirement_settings: [{ id: 1, retirement_age: 65 }],
+      retirement_scenarios: [{ id: 1, lt_brokerage_enabled: true }],
       contribution_accounts: [{ id: 1, account_type: "ira" }],
       savings_goals: [{ id: 1, api_sync_enabled: true }],
     });
@@ -314,14 +313,20 @@ describe("transformBackupToCurrentSchema — full cumulative from 0000", () => {
     expect(budgetOverride.created_by).toBeNull();
     expect(budgetOverride.updated_by).toBeNull();
 
-    // Retirement settings: filing_status + boolean rename
+    // Retirement settings: filing_status
     const settings = result.tables.retirement_settings![0] as Record<
       string,
       unknown
     >;
     expect(settings.filing_status).toBeNull();
-    expect(settings.is_lt_brokerage_enabled).toBe(true);
-    expect(settings).not.toHaveProperty("lt_brokerage_enabled");
+
+    // Retirement scenarios: boolean rename
+    const scenario = result.tables.retirement_scenarios![0] as Record<
+      string,
+      unknown
+    >;
+    expect(scenario.is_lt_brokerage_enabled).toBe(true);
+    expect(scenario).not.toHaveProperty("lt_brokerage_enabled");
 
     // Contribution accounts: prior-year columns
     const account = result.tables.contribution_accounts![0] as Record<
@@ -358,9 +363,34 @@ describe("KNOWN_SCHEMA_VERSIONS completeness", () => {
   });
 
   it("known versions list contains the expected v0.1.x tags", () => {
+    // PG tags
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0000_initial_schema");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0008_prior_year_contrib");
-    expect(KNOWN_SCHEMA_VERSIONS.length).toBe(9);
+    // SQLite tags
+    expect(KNOWN_SCHEMA_VERSIONS).toContain("0003_reflective_stardust");
+    expect(KNOWN_SCHEMA_VERSIONS).toContain("0004_prior_year_contrib");
+    // 9 PG + 4 SQLite-specific
+    expect(KNOWN_SCHEMA_VERSIONS.length).toBe(13);
+  });
+
+  it("SQLite tags transform correctly (same as PG equivalents)", () => {
+    // 0003_reflective_stardust = PG 0004-0007 combined
+    // Should NOT apply 0004-0007 changes (already included)
+    const tables = makeBackup({
+      retirement_settings: [{ id: 1 }],
+    });
+    const result = transformBackupToCurrentSchema(
+      tables,
+      "0003_reflective_stardust",
+      CURRENT_VERSION,
+    );
+    expect(result.transformed).toBe(true);
+    // filing_status should NOT be added (0007 is included in reflective_stardust)
+    const settings = result.tables.retirement_settings![0] as Record<
+      string,
+      unknown
+    >;
+    expect(settings).not.toHaveProperty("filing_status");
   });
 });
 
