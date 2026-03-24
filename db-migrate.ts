@@ -294,50 +294,51 @@ async function runPostgres() {
     }
 
     // Post-migration column renames: v0.2.0 renamed two boolean columns.
-    // The squashed schema has the new names, but existing DBs still have old names.
-    // These ALTERs are idempotent — they no-op if the column already has the new name.
-    const renameClient = await pool.connect();
-    try {
-      const renames = [
-        {
-          table: "savings_goals",
-          from: "api_sync_enabled",
-          to: "is_api_sync_enabled",
-        },
-        {
-          table: "retirement_scenarios",
-          from: "lt_brokerage_enabled",
-          to: "is_lt_brokerage_enabled",
-        },
-      ];
-      for (const { table, from, to } of renames) {
-        try {
-          // Check if the old column still exists
-          const { rows } = await renameClient.query(
-            `SELECT 1 FROM information_schema.columns
-             WHERE table_name = $1 AND column_name = $2`,
-            [table, from],
-          );
-          if (rows.length > 0) {
-            await renameClient.query(
-              `ALTER TABLE "${table}" RENAME COLUMN "${from}" TO "${to}"`,
+    // Only needed during v0.1.x → v0.2.0 upgrade (when a pre-upgrade backup was created).
+    // Fresh installs already have the correct column names from the squashed schema.
+    if (preUpgradeBackupPath) {
+      const renameClient = await pool.connect();
+      try {
+        const renames = [
+          {
+            table: "savings_goals",
+            from: "api_sync_enabled",
+            to: "is_api_sync_enabled",
+          },
+          {
+            table: "retirement_scenarios",
+            from: "lt_brokerage_enabled",
+            to: "is_lt_brokerage_enabled",
+          },
+        ];
+        for (const { table, from, to } of renames) {
+          try {
+            const { rows } = await renameClient.query(
+              `SELECT 1 FROM information_schema.columns
+               WHERE table_name = $1 AND column_name = $2`,
+              [table, from],
             );
-            log("info", "column_renamed", { table, from, to });
+            if (rows.length > 0) {
+              await renameClient.query(
+                `ALTER TABLE "${table}" RENAME COLUMN "${from}" TO "${to}"`,
+              );
+              log("info", "column_renamed", { table, from, to });
+            }
+          } catch (renameErr) {
+            log("warn", "column_rename_skipped", {
+              table,
+              from,
+              to,
+              error:
+                renameErr instanceof Error
+                  ? renameErr.message
+                  : String(renameErr),
+            });
           }
-        } catch (renameErr) {
-          log("warn", "column_rename_skipped", {
-            table,
-            from,
-            to,
-            error:
-              renameErr instanceof Error
-                ? renameErr.message
-                : String(renameErr),
-          });
         }
+      } finally {
+        renameClient.release();
       }
-    } finally {
-      renameClient.release();
     }
 
     log("info", "migrations_applied", { dialect: "postgresql" });
