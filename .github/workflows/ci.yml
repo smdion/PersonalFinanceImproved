@@ -52,11 +52,14 @@ jobs:
 
       - name: E2E tests (SQLite + demo mode)
         run: |
+          cp -r .next/static .next/standalone/.next/static
+          cp -r public .next/standalone/public
           pnpm db:migrate
           pnpm run test:e2e
         env:
           CI: true
           DEMO_ONLY: "true"
+          SQLITE_PATH: ${{ github.workspace }}/data/ledgr.db
           NEXTAUTH_SECRET: e2e-placeholder-secret-at-least-32-chars
           NEXTAUTH_URL: http://localhost:3000
           AUTH_TRUST_HOST: "true"
