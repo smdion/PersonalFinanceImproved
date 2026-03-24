@@ -137,10 +137,36 @@ async function run() {
       await pool.end();
     }
   } else {
-    console.error(
-      "SQLite CLI import not yet implemented. Use the web UI at /versions.",
-    );
-    process.exit(1);
+    const Database = (await import("better-sqlite3")).default;
+    const { drizzle } = await import("drizzle-orm/better-sqlite3");
+    const schemaSqlite = await import("../src/lib/db/schema-sqlite");
+
+    const dbPath = process.env.SQLITE_PATH ?? "data/ledgr.db";
+    if (!fs.existsSync(dbPath)) {
+      console.error(`SQLite database not found: ${dbPath}`);
+      process.exit(1);
+    }
+
+    const sqlite = new Database(dbPath);
+    sqlite.pragma("journal_mode = WAL");
+    sqlite.pragma("busy_timeout = 5000");
+    sqlite.pragma("foreign_keys = ON");
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = drizzle(sqlite, { schema: schemaSqlite }) as any;
+      const { importBackup } = await import("../src/lib/db/version-logic");
+      const result = await importBackup(db, {
+        schemaVersion: backup.schemaVersion,
+        exportedAt: backup.exportedAt,
+        tables: backup.tables,
+      });
+      console.error(
+        `Import complete: ${result.restoredTables} tables, ${result.restoredRows} rows`,
+      );
+    } finally {
+      sqlite.close();
+    }
   }
 }
 
