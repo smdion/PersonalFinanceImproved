@@ -54,7 +54,8 @@ jobs:
         run: |
           cp -r .next/static .next/standalone/.next/static
           [ -d public ] && cp -r public .next/standalone/public || true
-          rm -f .next/standalone/.env
+          # Ensure standalone server uses SQLite, not Postgres from build .env
+          printf 'SQLITE_PATH=%s/data/ledgr.db\nDEMO_ONLY=true\nNEXTAUTH_SECRET=e2e-placeholder-secret-at-least-32-chars\nNEXTAUTH_URL=http://localhost:3000\nAUTH_TRUST_HOST=true\n' "$GITHUB_WORKSPACE" > .next/standalone/.env
           pnpm db:migrate
           pnpm run test:e2e
         env:
