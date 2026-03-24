@@ -279,24 +279,31 @@ async function runPostgres() {
         },
       ];
       for (const { table, from, to } of renames) {
-        // Check if the old column still exists
-        const { rows } = await renameClient.query(
-          `SELECT 1 FROM information_schema.columns
-           WHERE table_name = $1 AND column_name = $2`,
-          [table, from],
-        );
-        if (rows.length > 0) {
-          await renameClient.query(
-            `ALTER TABLE "${table}" RENAME COLUMN "${from}" TO "${to}"`,
+        try {
+          // Check if the old column still exists
+          const { rows } = await renameClient.query(
+            `SELECT 1 FROM information_schema.columns
+             WHERE table_name = $1 AND column_name = $2`,
+            [table, from],
           );
-          log("info", "column_renamed", { table, from, to });
+          if (rows.length > 0) {
+            await renameClient.query(
+              `ALTER TABLE "${table}" RENAME COLUMN "${from}" TO "${to}"`,
+            );
+            log("info", "column_renamed", { table, from, to });
+          }
+        } catch (renameErr) {
+          log("warn", "column_rename_skipped", {
+            table,
+            from,
+            to,
+            error:
+              renameErr instanceof Error
+                ? renameErr.message
+                : String(renameErr),
+          });
         }
       }
-    } catch (renameErr) {
-      log("warn", "column_rename_failed", {
-        error:
-          renameErr instanceof Error ? renameErr.message : String(renameErr),
-      });
     } finally {
       renameClient.release();
     }
