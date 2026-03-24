@@ -144,8 +144,8 @@ async function createPreMigrationBackup(
       tables,
     };
 
-    // Write to /data/ (Docker volume) or current directory
-    const backupDir = fs.existsSync("/data") ? "/data" : ".";
+    // Write to /app/data/ (Docker volume) or current directory
+    const backupDir = fs.existsSync("/app/data") ? "/app/data" : ".";
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const backupPath = path.join(
       backupDir,
@@ -259,6 +259,46 @@ async function runPostgres() {
       }
     } finally {
       client.release();
+    }
+
+    // Post-migration column renames: v0.2.0 renamed two boolean columns.
+    // The squashed schema has the new names, but existing DBs still have old names.
+    // These ALTERs are idempotent — they no-op if the column already has the new name.
+    const renameClient = await pool.connect();
+    try {
+      const renames = [
+        {
+          table: "savings_goals",
+          from: "api_sync_enabled",
+          to: "is_api_sync_enabled",
+        },
+        {
+          table: "retirement_scenarios",
+          from: "lt_brokerage_enabled",
+          to: "is_lt_brokerage_enabled",
+        },
+      ];
+      for (const { table, from, to } of renames) {
+        // Check if the old column still exists
+        const { rows } = await renameClient.query(
+          `SELECT 1 FROM information_schema.columns
+           WHERE table_name = $1 AND column_name = $2`,
+          [table, from],
+        );
+        if (rows.length > 0) {
+          await renameClient.query(
+            `ALTER TABLE "${table}" RENAME COLUMN "${from}" TO "${to}"`,
+          );
+          log("info", "column_renamed", { table, from, to });
+        }
+      }
+    } catch (renameErr) {
+      log("warn", "column_rename_failed", {
+        error:
+          renameErr instanceof Error ? renameErr.message : String(renameErr),
+      });
+    } finally {
+      renameClient.release();
     }
 
     log("info", "migrations_applied", { dialect: "postgresql" });
