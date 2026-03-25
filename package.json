@@ -25,6 +25,7 @@
     "check:file-size": "bash scripts/check-file-size.sh",
     "check:known-diffs": "tsx scripts/check-known-diffs.ts",
     "release": "bash scripts/release.sh",
+    "deploy": "bash scripts/deploy.sh",
     "analyze": "ANALYZE=true pnpm build",
     "check:bundle": "tsx scripts/check-bundle-size.ts",
     "check:migrations": "tsx scripts/check-migrations.ts",

@@ -6,7 +6,7 @@ services:
     container_name: ledgr
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       # No DATABASE_URL = SQLite mode (zero config).
       # Set DATABASE_URL=postgresql://... for PostgreSQL.
@@ -16,10 +16,18 @@ services:
       - CRON_SECRET=${CRON_SECRET}
     volumes:
       - ledgr_data:/app/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     deploy:
       resources:
         limits:
           memory: 1G
+          cpus: "1.0"
 
 volumes:
   ledgr_data:

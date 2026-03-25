@@ -14,6 +14,7 @@ permissions:
 jobs:
   create-review-issue:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v6
@@ -22,7 +23,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
@@ -49,7 +50,6 @@ jobs:
 
           # Docs freshness
           DOCS_OUTPUT=$(pnpm docs:verify 2>&1 || true)
-          DOCS_STATUS=$?
 
           # Save to env
           {
@@ -86,12 +86,12 @@ jobs:
           gh issue create \
             --title "Quarterly review — $(date +%B\ %Y)" \
             --label "maintenance" \
-            --body "$(cat <<'ISSUE_BODY'
+            --body "$(cat <<ISSUE_BODY
           ## Quarterly Review Checklist
 
           ### File Size Exemptions
 
-          Review `.size-exempt` — split files where practical, re-justify the rest.
+          Review \`.size-exempt\` — split files where practical, re-justify the rest.
 
           **Currently exempt:**
           $EXEMPT_FILES
@@ -99,9 +99,9 @@ jobs:
           <details>
           <summary>Full file size report</summary>
 
-          ```
+          \`\`\`
           $SIZE_OUTPUT
-          ```
+          \`\`\`
           </details>
 
           ### ESLint Warnings
@@ -111,9 +111,9 @@ jobs:
           <details>
           <summary>Warning breakdown (top 10 rules)</summary>
 
-          ```
+          \`\`\`
           $LINT_BREAKDOWN
-          ```
+          \`\`\`
           </details>
 
           - [ ] Review top warning categories — fix or suppress with justification
@@ -126,9 +126,9 @@ jobs:
           <details>
           <summary>Full audit output</summary>
 
-          ```
+          \`\`\`
           $AUDIT_OUTPUT
-          ```
+          \`\`\`
           </details>
 
           - [ ] Address any new high/critical vulnerabilities
@@ -145,18 +145,18 @@ jobs:
           <details>
           <summary>Docs verification output</summary>
 
-          ```
+          \`\`\`
           $DOCS_OUTPUT
-          ```
+          \`\`\`
           </details>
 
           - [ ] Fix any stale auto-generated docs
 
           ### Housekeeping
 
-          - [ ] Review `.size-exempt` files — split or re-justify each entry
+          - [ ] Review \`.size-exempt\` files — split or re-justify each entry
           - [ ] Review open major dependency PRs — merge, close, or defer with reason
-          - [ ] Check Docker image size (`docker images ledgr`) — flag if significantly larger
+          - [ ] Check Docker image size (\`docker images ledgr\`) — flag if significantly larger
           - [ ] Review CI pipeline — any steps consistently slow or failing?
           - [ ] Review non-blocking CI steps — are any ready to become blocking?
 

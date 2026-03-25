@@ -1,5 +1,5 @@
 # Stage 1: Install dependencies
-FROM node:24-alpine AS deps
+FROM node:24.14.0-alpine@sha256:e9445c64ace1a9b5cdc60fc98dd82d1e5142985d902f41c2407e8fffe49d46a3 AS deps
 RUN apk add --no-cache python3 make g++
 RUN corepack enable && corepack prepare pnpm@10.32.1 --activate
 WORKDIR /app
@@ -7,7 +7,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # Stage 2: Build
-FROM node:24-alpine AS builder
+FROM node:24.14.0-alpine@sha256:e9445c64ace1a9b5cdc60fc98dd82d1e5142985d902f41c2407e8fffe49d46a3 AS builder
 RUN corepack enable && corepack prepare pnpm@10.32.1 --activate
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -31,10 +31,15 @@ ENV AUTH_AUTHENTIK_ID=build-placeholder
 ENV AUTH_AUTHENTIK_SECRET=build-placeholder
 
 RUN pnpm build
-# Compile db-migrate.ts to JS so the runner stage doesn't need tsx
+
+# Compile db-migrate.ts to JS so the runner stage doesn't need tsx.
+# Native modules are external — resolved at runtime from traced node_modules.
+RUN npx esbuild db-migrate.ts \
+  --bundle --platform=node --target=node24 --outfile=db-migrate.js \
+  --external:better-sqlite3 --external:pg --external:drizzle-orm --external:crypto
 
 # Stage 3: Production runner
-FROM node:24-alpine AS runner
+FROM node:24.14.0-alpine@sha256:e9445c64ace1a9b5cdc60fc98dd82d1e5142985d902f41c2407e8fffe49d46a3 AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -43,6 +48,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # App version — inherited from build arg for health endpoint
 ARG APP_VERSION=dev
 ENV APP_VERSION=$APP_VERSION
+
+# OCI image metadata for provenance and traceability
+LABEL org.opencontainers.image.title="Ledgr"
+LABEL org.opencontainers.image.description="Personal finance dashboard"
+LABEL org.opencontainers.image.version="${APP_VERSION}"
+LABEL org.opencontainers.image.source="https://github.com/seandion/ledgr"
+LABEL org.opencontainers.image.licenses="MIT"
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
@@ -53,16 +65,13 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Copy drizzle migrations (both PG and SQLite) and runtime db:migrate script
+# Copy drizzle migrations (both PG and SQLite) and compiled db:migrate script
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/drizzle-sqlite ./drizzle-sqlite
-COPY --from=builder /app/db-migrate.ts ./db-migrate.ts
+COPY --from=builder /app/db-migrate.js ./db-migrate.js
 COPY --from=builder /app/seed-reference-data.sql ./seed-reference-data.sql
 
-# Install tsx for running db-migrate.ts at container startup
-RUN npm install -g tsx
-
-COPY docker-entrypoint.sh ./docker-entrypoint.sh
+COPY --chmod=555 docker-entrypoint.sh ./docker-entrypoint.sh
 
 # Default SQLite data directory — writable by nextjs user.
 # Mount a volume here for persistence: -v ledgr_data:/app/data
@@ -78,4 +87,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-CMD ["sh", "docker-entrypoint.sh"]
+CMD ["./docker-entrypoint.sh"]
