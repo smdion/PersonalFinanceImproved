@@ -6,6 +6,60 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.3.2] - 2026-03-25
+
+### CI/CD
+
+- Added Playwright browser caching — saves ~30-45s per CI run (I1)
+- Added Playwright artifact upload on failure for post-mortem debugging (I2)
+- Moved `pnpm audit` to non-blocking — quarterly review catches advisories (I3)
+- Added Next.js build cache (`.next/cache`) for faster incremental CI builds (M1)
+- Added `concurrency` group to cancel superseded CI runs (M2)
+- Added `if: success()` guards on non-blocking steps to skip after blocking failures (M4)
+- Added `timeout-minutes: 15` to CI and quarterly-review jobs (N1)
+- Added Docker build smoke test as non-blocking CI step (N2)
+- Moved audit status into CI health summary table
+- Fixed quarterly review heredoc bug — variables now expand correctly in GitHub issues (I4)
+- Fixed Node version mismatch in quarterly-review workflow (20 → 24) (M3)
+- Removed dead `$DOCS_STATUS` variable capture in quarterly-review (M6)
+- Fixed dual env source in E2E step — `.env` file now derives from step `env:` block (M5)
+- Added Dependabot tracking for Docker base image updates (I5)
+
+### Security
+
+- Removed `unsafe-eval` from Content-Security-Policy `script-src` directive (I7)
+- Added `object-src 'none'` and `base-uri 'self'` to CSP (I7)
+- Added Cross-Origin headers: COOP `same-origin`, CORP `same-origin`, COEP `require-corp` (N3)
+- Set `X-XSS-Protection: 0` — deprecated header previously set to legacy mode (M9)
+- Container filesystem now read-only with tmpfs for `/tmp` (I8)
+- Dropped all Linux capabilities (`cap_drop: ALL`) and set `no-new-privileges` (I9)
+- Bound container port to `127.0.0.1` only — no longer exposed on all interfaces (M8)
+- Added CPU limit (`cpus: 1.0`) alongside existing memory limit (M10)
+- Added `umask 0077` to entrypoint — SQLite files created as owner-only (I11)
+- Split health endpoint: `/api/health` returns simple probe, `/api/health/detailed` requires CRON_SECRET bearer token (M7)
+- Applied same hardening to `docker-compose.postgres.yml`
+
+### Docker
+
+- Pinned base image to `node:24.14.0-alpine@sha256:...` for reproducible builds (I5)
+- Compiled `db-migrate.ts` to JS via esbuild in builder stage — removed global `tsx` install from production image (I6)
+- Added OCI image labels for provenance and traceability (I10)
+- Set explicit `--chmod=555` on entrypoint COPY and switched to direct execution (M11)
+- Entrypoint now runs `node db-migrate.js` instead of `tsx db-migrate.ts`
+
+### Release & Deploy
+
+- Added `deploy.sh` — automated build, canary deploy (demo first), health verification, rollback support (C1)
+- Images now tagged as `ledgr:X.Y.Z` alongside `latest` — previous versions preserved for rollback (I13)
+- Deploy script enforces version matches git tag and package.json (I14)
+- Demo container deployed and health-checked before prod (canary pattern) (M14)
+- Added `--dry-run` mode to release script — validates without committing (M13)
+- Added lockfile drift check to release script (N7)
+- Switched to atomic `git push --follow-tags` — prevents orphaned commits without tags (I12)
+- Tightened CHANGELOG version grep to match section headers only (`^## .*$VERSION`) (M12)
+
+---
+
 ## [0.3.1] - 2026-03-25
 
 ### Framework

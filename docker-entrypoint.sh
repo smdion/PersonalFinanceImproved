@@ -1,12 +1,15 @@
 #!/bin/sh
 set -e
 
+# Restrict file permissions for SQLite database files (owner-only)
+umask 0077
+
 # Pre-migration backup: The auto-versioning system in instrumentation.ts
 # creates point-in-time snapshots on startup, providing automatic
 # pre-migration recovery points without a separate backup step here.
 
 echo "Running database migrations..."
-if ! tsx db-migrate.ts; then
+if ! node db-migrate.js; then
   echo "ERROR: Database migration failed — container cannot start." >&2
   exit 1
 fi
