@@ -34,7 +34,7 @@ RUN pnpm build
 
 # Compile db-migrate.ts to JS so the runner stage doesn't need tsx.
 # Native modules are external — resolved at runtime from traced node_modules.
-RUN ./node_modules/.bin/esbuild db-migrate.ts \
+RUN pnpm exec esbuild db-migrate.ts \
   --bundle --platform=node --target=node24 --outfile=db-migrate.js \
   --external:better-sqlite3 --external:pg --external:drizzle-orm --external:crypto
 
