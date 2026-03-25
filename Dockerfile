@@ -71,7 +71,8 @@ COPY --from=builder /app/drizzle-sqlite ./drizzle-sqlite
 COPY --from=builder /app/db-migrate.js ./db-migrate.js
 COPY --from=builder /app/seed-reference-data.sql ./seed-reference-data.sql
 
-COPY --chmod=555 docker-entrypoint.sh ./docker-entrypoint.sh
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod 555 docker-entrypoint.sh
 
 # Default SQLite data directory — writable by nextjs user.
 # Mount a volume here for persistence: -v ledgr_data:/app/data
