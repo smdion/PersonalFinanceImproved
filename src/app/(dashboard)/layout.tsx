@@ -3,6 +3,7 @@ import { auth } from "@/server/auth";
 // eslint-disable-next-line no-restricted-imports -- Server Component, server-side only
 import type { Permission } from "@/server/auth";
 import { cookies } from "next/headers";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DashboardLayout as DashboardLayoutClient } from "@/components/layout/dashboard-layout";
 import { DashboardShell } from "./dashboard-shell";
@@ -94,12 +95,12 @@ export default async function DashboardLayout({
             Database Unavailable
           </h1>
           <p className="text-muted mb-6">{dbError}</p>
-          <a
+          <Link
             href="/"
             className="inline-block px-6 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
           >
             Retry
-          </a>
+          </Link>
         </div>
       </div>
     );
