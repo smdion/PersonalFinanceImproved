@@ -1,5 +1,5 @@
 # Stage 1: Install dependencies
-FROM node:20-alpine AS deps
+FROM node:24-alpine AS deps
 RUN apk add --no-cache python3 make g++
 RUN corepack enable && corepack prepare pnpm@10.32.1 --activate
 WORKDIR /app
@@ -7,7 +7,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # Stage 2: Build
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 RUN corepack enable && corepack prepare pnpm@10.32.1 --activate
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -34,7 +34,7 @@ RUN pnpm build
 # Compile db-migrate.ts to JS so the runner stage doesn't need tsx
 
 # Stage 3: Production runner
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
