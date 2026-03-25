@@ -12,12 +12,18 @@ import {
   getCurrentSalary,
   getEffectiveIncome,
   buildContribAccounts,
-  requireLimit,
   computeBonusGross,
   loadAndApplyContribProfile,
 } from "@/server/helpers";
 import { roundToCents } from "@/lib/utils/math";
 import { getAge, isPriorYearContribWindow } from "@/lib/utils/date";
+import {
+  resolveIrsLimit,
+  resolvePriorYearLimit,
+  computeSiblingTotal,
+  isEligibleForPriorYear,
+} from "@/lib/pure/contributions";
+import { findActiveJob } from "@/lib/pure/profiles";
 import type {
   ContributionInput,
   AccountCategory,
@@ -190,9 +196,7 @@ export const contributionRouter = createTRPCRouter({
 
       const results: PersonSnapshot[] = await Promise.all(
         people.map(async (person) => {
-          const activeJob = effectiveJobs.find(
-            (j) => j.personId === person.id && !j.endDate,
-          );
+          const activeJob = findActiveJob(effectiveJobs, person.id);
           if (!activeJob) {
             return {
               person,
@@ -285,70 +289,20 @@ export const contributionRouter = createTRPCRouter({
           const resolveContribLimit = (
             accountType: string,
             hsaCoverageType: string | null,
-          ): number => {
-            if (
-              !categoriesWithIrsLimit().includes(accountType as AccountCategory)
-            )
-              return 0;
-            const cfg = getAccountTypeConfig(accountType as AccountCategory);
-            const keys = cfg.irsLimitKeys;
-            if (!keys) return 0;
-            let baseKey = keys.base;
-            if (keys.coverageVariant && hsaCoverageType === "family")
-              baseKey = keys.coverageVariant;
-            let limit = requireLimit(limitsRecord, baseKey);
-            if (
-              cfg.superCatchupAgeRange &&
-              age >= cfg.superCatchupAgeRange[0] &&
-              age <= cfg.superCatchupAgeRange[1]
-            ) {
-              if (keys.superCatchup)
-                limit += limitsRecord[keys.superCatchup] ?? 0;
-            } else if (
-              cfg.catchupAge !== null &&
-              age >= cfg.catchupAge &&
-              keys.catchup
-            ) {
-              limit += limitsRecord[keys.catchup] ?? 0;
-            }
-            return limit;
-          };
+          ): number =>
+            resolveIrsLimit(accountType, age, hsaCoverageType, limitsRecord);
 
           // Resolve prior-year IRS limit for an account type
-          const resolvePriorYearLimit = (
+          const resolveContribPriorYearLimit = (
             accountType: string,
             hsaCoverageType: string | null,
-          ): number => {
-            if (
-              !categoriesWithIrsLimit().includes(accountType as AccountCategory)
-            )
-              return 0;
-            const cfg = getAccountTypeConfig(accountType as AccountCategory);
-            if (!cfg.supportsPriorYearContrib) return 0;
-            const keys = cfg.irsLimitKeys;
-            if (!keys) return 0;
-            let baseKey = keys.base;
-            if (keys.coverageVariant && hsaCoverageType === "family")
-              baseKey = keys.coverageVariant;
-            // Use prior-year age (one year younger)
-            const priorYearAge = age - 1;
-            let limit = priorYearLimitsRecord[baseKey] ?? 0;
-            if (
-              cfg.superCatchupAgeRange &&
-              priorYearAge >= cfg.superCatchupAgeRange[0] &&
-              priorYearAge <= cfg.superCatchupAgeRange[1]
-            ) {
-              if (keys.superCatchup)
-                limit += priorYearLimitsRecord[keys.superCatchup] ?? 0;
-            } else if (
-              cfg.catchupAge !== null &&
-              priorYearAge >= cfg.catchupAge &&
-              keys.catchup
-            ) {
-              limit += priorYearLimitsRecord[keys.catchup] ?? 0;
-            }
-            return limit;
-          };
+          ): number =>
+            resolvePriorYearLimit(
+              accountType,
+              age,
+              hsaCoverageType,
+              priorYearLimitsRecord,
+            );
 
           // Build per-raw-contrib computed data for consumers (Paycheck page)
           const perContribData: PerContribData[] = rawContribs.map((rc, i) => {
@@ -366,22 +320,17 @@ export const contributionRouter = createTRPCRouter({
             )
               ? getAccountTypeConfig(rc.accountType as AccountCategory)
               : null;
-            let siblingAnnualTotal = 0;
-            if (group) {
-              for (let j = 0; j < rawContribs.length; j++) {
-                if (j === i) continue;
-                if (
-                  getLimitGroup(
-                    rawContribs[j]!.accountType as AccountCategory,
-                  ) !== group
+            const siblingAnnualTotal = group
+              ? computeSiblingTotal(
+                  rawContribs.map((rc, idx) => ({
+                    accountType: rc.accountType,
+                    annualContribution: accounts[idx]!.annualContribution,
+                    employerMatch: accounts[idx]!.employerMatch,
+                  })),
+                  i,
+                  cfg?.matchCountsTowardLimit ?? false,
                 )
-                  continue;
-                siblingAnnualTotal += accounts[j]!.annualContribution;
-                if (cfg?.matchCountsTowardLimit) {
-                  siblingAnnualTotal += accounts[j]!.employerMatch;
-                }
-              }
-            }
+              : 0;
 
             // Prior-year contribution tracking — only use amount if it's tagged for the correct year
             const rawPyAmount = toNumber(rc.priorYearContribAmount);
@@ -389,11 +338,13 @@ export const contributionRouter = createTRPCRouter({
               rc.priorYearContribYear === priorYear ? rawPyAmount : 0;
             let priorYearData: PerContribData["priorYear"];
             if (
-              inPriorYearWindow &&
-              cfg?.supportsPriorYearContrib &&
-              priorYearAmount > 0
+              isEligibleForPriorYear(
+                inPriorYearWindow,
+                rc.accountType,
+                priorYearAmount,
+              )
             ) {
-              const pyLimit = resolvePriorYearLimit(
+              const pyLimit = resolveContribPriorYearLimit(
                 rc.accountType,
                 rc.hsaCoverageType,
               );
@@ -558,7 +509,7 @@ export const contributionRouter = createTRPCRouter({
               const hsaAcct = rawContribs.find(
                 (c) => c.accountType === data.colorKey,
               );
-              const pyLimit = resolvePriorYearLimit(
+              const pyLimit = resolveContribPriorYearLimit(
                 data.colorKey,
                 hsaAcct?.hsaCoverageType ?? null,
               );

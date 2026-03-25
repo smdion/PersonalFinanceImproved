@@ -17,7 +17,6 @@ import {
   RBAC_SETTINGS_PREFIX,
   RBAC_ADMIN_GROUP_KEY,
 } from "@/server/auth";
-import { toNumber } from "@/server/helpers";
 import { buildAccountLabel, accountDisplayName } from "@/lib/utils/format";
 import {
   accountCategoryEnum,
@@ -30,6 +29,13 @@ import {
   ACCOUNT_OWNERSHIP_VALUES,
 } from "@/lib/config/enum-values";
 import { zDecimal, settingValue, recomputeAnnualRollups } from "./_shared";
+import {
+  buildPrevInactiveKeys,
+  resolveAccountActiveStatus,
+  computeSnapshotEndingBalances,
+  resolveSnapshotParentCategory,
+} from "@/lib/pure/portfolio";
+import { canDeletePerformanceAccount } from "@/lib/pure/profiles";
 import {
   apiConfigSchema,
   accountMappingSchema,
@@ -670,10 +676,11 @@ export const adminProcedures = {
           .from(schema.accountPerformance)
           .where(eq(schema.accountPerformance.performanceAccountId, input.id));
         const perfCount = Number(perfCountRow?.count ?? 0);
-        if (perfCount > 0) {
+        const deleteCheck = canDeletePerformanceAccount(perfCount);
+        if (!deleteCheck.allowed) {
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
-            message: `Cannot delete: ${perfCount} performance record(s) reference this account. Deactivate it instead.`,
+            message: deleteCheck.reason!,
           });
         }
 
@@ -742,7 +749,7 @@ export const adminProcedures = {
               .where(sql`${schema.portfolioSnapshots.id} != ${snap.id}`)
               .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
               .limit(1);
-            const prevInactiveKeys = new Set<string>();
+            let prevInactiveKeys = new Set<string>();
             if (prevSnapshots.length > 0) {
               const prevAccounts = await tx
                 .select({
@@ -756,35 +763,34 @@ export const adminProcedures = {
                 .where(
                   eq(schema.portfolioAccounts.snapshotId, prevSnapshots[0]!.id),
                 );
-              for (const pa of prevAccounts) {
-                if (!pa.isActive) {
-                  prevInactiveKeys.add(
-                    `${pa.performanceAccountId ?? ""}_${pa.taxType}_${pa.subType ?? ""}`,
-                  );
-                }
-              }
+              prevInactiveKeys = buildPrevInactiveKeys(prevAccounts);
             }
 
             await tx.insert(schema.portfolioAccounts).values(
-              input.accounts.map((a) => {
-                const key = `${a.performanceAccountId ?? ""}_${a.taxType}_${a.subType ?? ""}`;
-                return {
-                  snapshotId: snap.id,
-                  institution: a.institution,
-                  taxType: a.taxType,
-                  accountType: a.accountType,
-                  subType: a.subType ?? null,
-                  label: a.label ?? null,
-                  parentCategory: a.performanceAccountId
-                    ? (perfCatMap.get(a.performanceAccountId) ??
-                      a.parentCategory)
-                    : a.parentCategory,
-                  amount: a.amount,
-                  ownerPersonId: a.ownerPersonId,
-                  performanceAccountId: a.performanceAccountId ?? null,
-                  isActive: !prevInactiveKeys.has(key),
-                };
-              }),
+              input.accounts.map((a) => ({
+                snapshotId: snap.id,
+                institution: a.institution,
+                taxType: a.taxType,
+                accountType: a.accountType,
+                subType: a.subType ?? null,
+                label: a.label ?? null,
+                parentCategory: resolveSnapshotParentCategory(
+                  a.parentCategory,
+                  a.performanceAccountId ?? null,
+                  perfCatMap,
+                ),
+                amount: a.amount,
+                ownerPersonId: a.ownerPersonId,
+                performanceAccountId: a.performanceAccountId ?? null,
+                isActive: resolveAccountActiveStatus(
+                  {
+                    performanceAccountId: a.performanceAccountId ?? null,
+                    taxType: a.taxType,
+                    subType: a.subType ?? null,
+                  },
+                  prevInactiveKeys,
+                ),
+              })),
             );
           }
 
@@ -796,16 +802,12 @@ export const adminProcedures = {
             .where(eq(schema.accountPerformance.year, snapshotYear));
 
           // Group snapshot accounts by performanceAccountId, sum amounts
-          const perfTotals = new Map<number, number>();
-          for (const a of input.accounts) {
-            if (a.performanceAccountId) {
-              perfTotals.set(
-                a.performanceAccountId,
-                (perfTotals.get(a.performanceAccountId) ?? 0) +
-                  toNumber(a.amount),
-              );
-            }
-          }
+          const perfTotals = computeSnapshotEndingBalances(
+            input.accounts.map((a) => ({
+              performanceAccountId: a.performanceAccountId ?? null,
+              amount: a.amount,
+            })),
+          );
 
           // Update ending_balance for each matching account_performance row
           const updatedPerfIds = new Set<number>();
