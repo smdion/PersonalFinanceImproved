@@ -16,8 +16,13 @@ import { reportError } from "@/lib/error-reporting";
 let versionInterval: ReturnType<typeof setInterval> | undefined;
 
 export async function register() {
-  // Only run on the Node.js server runtime (not edge)
-  if (typeof process.on !== "function") return;
+  // Only run on the Node.js server runtime (not edge).
+  // Use globalThis check — referencing process.on directly throws in Edge.
+  if (
+    typeof globalThis.process === "undefined" ||
+    typeof globalThis.process.on !== "function"
+  )
+    return;
 
   process.on("unhandledRejection", (reason) => {
     const err = reason instanceof Error ? reason : new Error(String(reason));
