@@ -225,4 +225,35 @@ export const versionRouter = createTRPCRouter({
 
       return { ok: true, tablesCleared: toTruncate.length };
     }),
+
+  /** Check if a pre-upgrade backup banner should be shown. */
+  getUpgradeBanner: protectedProcedure.query(async ({ ctx }) => {
+    const [row] = await ctx.db
+      .select({ value: schema.appSettings.value })
+      .from(schema.appSettings)
+      .where(eq(schema.appSettings.key, "pre_upgrade_backup"));
+    if (!row) return null;
+    const data = row.value;
+    if (
+      typeof data !== "object" ||
+      data === null ||
+      typeof (data as Record<string, unknown>).path !== "string" ||
+      typeof (data as Record<string, unknown>).createdAt !== "string"
+    ) {
+      return null;
+    }
+    const { path: backupPath, createdAt } = data as {
+      path: string;
+      createdAt: string;
+    };
+    return { backupPath, createdAt };
+  }),
+
+  /** Dismiss the upgrade banner by removing the app_settings flag. */
+  dismissUpgradeBanner: versionProcedure.mutation(async ({ ctx }) => {
+    await ctx.db
+      .delete(schema.appSettings)
+      .where(eq(schema.appSettings.key, "pre_upgrade_backup"));
+    return { ok: true };
+  }),
 });

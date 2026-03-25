@@ -157,8 +157,8 @@ function TestFileBlock({
       </button>
       {expanded && (
         <div className="border-t border-subtle px-3 py-1.5 space-y-1">
-          {file.tests.map((t, i) => (
-            <div key={i}>
+          {file.tests.map((t) => (
+            <div key={t.name}>
               <div className="flex items-center gap-2 text-[11px]">
                 <span
                   className={

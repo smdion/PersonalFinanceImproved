@@ -634,7 +634,7 @@ export default function RetirementPage() {
                                 >
                                   {decLabels.map(
                                     (label: string, idx: number) => (
-                                      <option key={idx} value={idx}>
+                                      <option key={label} value={idx}>
                                         {label} (
                                         {formatCurrency(
                                           (decTotals[idx] ?? 0) * 12,

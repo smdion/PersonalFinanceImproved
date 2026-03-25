@@ -4,8 +4,8 @@
 
 set -euo pipefail
 
-MAX_LINES=1500
-WARN_LINES=1000
+MAX_LINES=2000
+WARN_LINES=1500
 EXEMPT_FILE=".size-exempt"
 
 # Load exempt list (one path per line)

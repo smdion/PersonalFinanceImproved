@@ -278,7 +278,10 @@ export function IrmaaBracketsSettings() {
                   </thead>
                   <tbody>
                     {brackets.map((b, i) => (
-                      <tr key={i} className="border-t border-subtle">
+                      <tr
+                        key={b.magiThreshold}
+                        className="border-t border-subtle"
+                      >
                         <td className="py-1 pr-2">
                           <InlineEdit
                             value={b.magiThreshold.toString()}

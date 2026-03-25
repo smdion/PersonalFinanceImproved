@@ -1022,7 +1022,7 @@ export function ProjectionCard(props: {
                         85, 80, 74, 68, 60, 52, 44, 36, 28, 20,
                       ].map((h, i) => (
                         <div
-                          key={i}
+                          key={h}
                           className="flex-1 rounded-t bg-surface-strong animate-pulse"
                           style={{
                             height: `${h}%`,
@@ -1493,8 +1493,8 @@ export function ProjectionCard(props: {
                       {/* MC warnings */}
                       {mcQuery.data.result.warnings.length > 0 && (
                         <div className="text-xs text-amber-600 bg-amber-50 rounded px-3 py-2">
-                          {mcQuery.data.result.warnings.map((w, i) => (
-                            <div key={i}>{w}</div>
+                          {mcQuery.data.result.warnings.map((w) => (
+                            <div key={w}>{w}</div>
                           ))}
                         </div>
                       )}

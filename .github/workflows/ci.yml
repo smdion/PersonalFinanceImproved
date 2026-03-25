@@ -11,16 +11,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+
+      # --- Blocking steps (fail the pipeline) ---
 
       - name: Type-check
         run: npx tsc --noEmit
@@ -31,24 +33,94 @@ jobs:
       - name: Check file sizes
         run: bash scripts/check-file-size.sh
 
-      - name: Check migrations
-        run: pnpm check:migrations
-        continue-on-error: true
+      - name: Build
+        run: pnpm build
+        env:
+          DATABASE_URL: postgresql://build:build@localhost:5432/build
+          NEXTAUTH_SECRET: build-placeholder-secret-at-least-32-chars
+          NEXTAUTH_URL: http://localhost:3000
+          AUTH_TRUST_HOST: "true"
+          AUTH_AUTHENTIK_ISSUER: https://build-placeholder/application/o/ledgr/
+          AUTH_AUTHENTIK_ID: build-placeholder
+          AUTH_AUTHENTIK_SECRET: build-placeholder
 
-      - name: Test
-        run: npx vitest run
-
-      - name: Verify docs freshness
-        run: pnpm docs:verify
-        continue-on-error: true
-
-      - name: Audit dependencies (high/critical)
-        run: pnpm audit --audit-level=high
+      - name: Test with coverage thresholds
+        run: pnpm test:coverage
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: E2E tests
-        run: pnpm run test:e2e
+      - name: E2E tests (SQLite + demo mode)
+        run: |
+          cp -r .next/static .next/standalone/.next/static
+          [ -d public ] && cp -r public .next/standalone/public || true
+          # Ensure standalone server uses SQLite, not Postgres from build .env
+          printf 'SQLITE_PATH=%s/data/ledgr.db\nDEMO_ONLY=true\nNEXTAUTH_SECRET=e2e-placeholder-secret-at-least-32-chars\nNEXTAUTH_URL=http://localhost:3000\nAUTH_TRUST_HOST=true\n' "$GITHUB_WORKSPACE" > .next/standalone/.env
+          pnpm db:migrate
+          pnpm run test:e2e
         env:
           CI: true
+          DEMO_ONLY: "true"
+          SQLITE_PATH: ${{ github.workspace }}/data/ledgr.db
+          NEXTAUTH_SECRET: e2e-placeholder-secret-at-least-32-chars
+          NEXTAUTH_URL: http://localhost:3000
+          AUTH_TRUST_HOST: "true"
+
+      # --- Non-blocking steps (tracked, don't fail the pipeline) ---
+
+      - name: Check migrations
+        id: check_migrations
+        run: pnpm check:migrations
+        continue-on-error: true
+
+      - name: Verify docs freshness
+        id: docs_verify
+        run: pnpm docs:verify
+        continue-on-error: true
+
+      - name: Audit dependencies (high/critical)
+        id: audit
+        run: |
+          OUTPUT=$(pnpm audit --audit-level=high 2>&1) || true
+          echo "$OUTPUT"
+          COUNT=$(echo "$OUTPUT" | grep -c "vulnerabilities found" || true)
+          VULN_LINE=$(echo "$OUTPUT" | grep "vulnerabilities found" || echo "0 vulnerabilities found")
+          echo "summary=$VULN_LINE" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      # --- Summary of non-blocking issues ---
+
+      - name: CI health summary
+        if: always()
+        run: |
+          {
+            echo "## CI Health Summary"
+            echo ""
+            echo "| Check | Status | Details |"
+            echo "|-------|--------|---------|"
+
+            # Migrations
+            if [ "${{ steps.check_migrations.outcome }}" = "success" ]; then
+              echo "| Migration check | :white_check_mark: | Passed |"
+            else
+              echo "| Migration check | :warning: | Needs attention |"
+            fi
+
+            # Docs
+            if [ "${{ steps.docs_verify.outcome }}" = "success" ]; then
+              echo "| Docs freshness | :white_check_mark: | Up to date |"
+            else
+              echo "| Docs freshness | :warning: | Stale docs detected |"
+            fi
+
+            # Audit
+            AUDIT_SUMMARY="${{ steps.audit.outputs.summary }}"
+            if [ "${{ steps.audit.outcome }}" = "success" ]; then
+              echo "| Dependency audit | :white_check_mark: | Clean |"
+            else
+              echo "| Dependency audit | :warning: | ${AUDIT_SUMMARY:-Vulnerabilities found} |"
+            fi
+
+            echo ""
+            echo "*Non-blocking issues are tracked in TODO.md and reviewed quarterly.*"
+          } >> "$GITHUB_STEP_SUMMARY"

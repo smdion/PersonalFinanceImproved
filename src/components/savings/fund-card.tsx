@@ -22,7 +22,7 @@ interface RawGoal {
   priority: number;
   apiCategoryId?: string | null;
   apiCategoryName?: string | null;
-  apiSyncEnabled?: boolean | null;
+  isApiSyncEnabled?: boolean | null;
 }
 
 interface PlannedTransaction {
@@ -270,7 +270,7 @@ export function FundCard({
                 E-Fund
               </span>
             )}
-            {rawGoal.apiSyncEnabled && rawGoal.apiCategoryName && (
+            {rawGoal.isApiSyncEnabled && rawGoal.apiCategoryName && (
               <span
                 className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-blue-100 text-blue-600 border border-blue-200"
                 title={`Synced from ${rawGoal.apiCategoryName}`}
@@ -303,7 +303,7 @@ export function FundCard({
                   onClick={() => setShowMenu(false)}
                 />
                 <div className="absolute right-0 top-full mt-1 z-20 bg-surface-primary border rounded-md shadow-lg py-1 min-w-[120px]">
-                  {onLinkToApi && !rawGoal.apiSyncEnabled && (
+                  {onLinkToApi && !rawGoal.isApiSyncEnabled && (
                     <button
                       onClick={() => {
                         setShowMenu(false);
@@ -314,7 +314,7 @@ export function FundCard({
                       Link to API
                     </button>
                   )}
-                  {onUnlinkFromApi && rawGoal.apiSyncEnabled && (
+                  {onUnlinkFromApi && rawGoal.isApiSyncEnabled && (
                     <button
                       onClick={() => {
                         setShowMenu(false);
@@ -378,7 +378,7 @@ export function FundCard({
       </div>
 
       {/* ── API sync panel (when linked) ── */}
-      {apiBalance && rawGoal.apiSyncEnabled && (
+      {apiBalance && rawGoal.isApiSyncEnabled && (
         <div className="mb-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-center justify-between text-xs mb-1">
             <span className="text-blue-600 font-medium">
@@ -567,7 +567,7 @@ export function FundCard({
           {totalMonthlyAllocation > 0 && (
             <span className="text-[10px] text-muted">({pct}% of pool)</span>
           )}
-          {rawGoal.apiSyncEnabled && (
+          {rawGoal.isApiSyncEnabled && (
             <span
               className="text-[9px] text-blue-600/70"
               title="Monthly contribution pushes to budget API for current + next month"

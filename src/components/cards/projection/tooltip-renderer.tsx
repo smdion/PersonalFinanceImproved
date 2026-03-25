@@ -76,19 +76,22 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
         {data.lines.map((l, i) => {
           if (l.style === "header")
             return (
-              <div key={i} className="font-medium">
+              // eslint-disable-next-line react/no-array-index-key -- tooltip lines have no stable ID
+              <div key={`${i}-${l.text}`} className="font-medium">
                 {l.text}
               </div>
             );
           if (l.style === "meta")
             return (
-              <div key={i} className="text-faint text-[10px]">
+              // eslint-disable-next-line react/no-array-index-key -- tooltip lines have no stable ID
+              <div key={`${i}-${l.text}`} className="text-faint text-[10px]">
                 {l.text}
               </div>
             );
           const noteCls = l.color ? tipColorClass[l.color] : "text-faint";
           return (
-            <div key={i} className={`text-[10px] ${noteCls}`}>
+            // eslint-disable-next-line react/no-array-index-key -- tooltip lines have no stable ID
+            <div key={`${i}-${l.text}`} className={`text-[10px] ${noteCls}`}>
               {l.text}
             </div>
           );
@@ -196,7 +199,7 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
             <span className="text-muted text-[10px] ml-1">
               (
               {d.yearChange.parts.map((p, i) => (
-                <span key={i}>
+                <span key={p.label}>
                   {i > 0 && " ·"}
                   <span className={tipColorClass[p.color]}>
                     {p.amount >= 0 ? "+" : ""}
@@ -256,7 +259,7 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       {d.legend && d.legend.length > 0 && (
         <div className="text-muted text-[10px]">
           {d.legend.map((e, ei) => (
-            <span key={ei}>
+            <span key={e.label}>
               {ei > 0 && " ·"}
               <span className={tipColorClass[e.color]}>{e.label}</span>
             </span>

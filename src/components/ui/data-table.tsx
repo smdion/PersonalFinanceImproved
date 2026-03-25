@@ -107,6 +107,7 @@ export function DataTable<T extends { id: number | string }>({
         <div className="space-y-2">
           {[...Array(3)].map((_, i) => (
             <div
+              // eslint-disable-next-line react/no-array-index-key -- skeleton placeholders have no identity
               key={i}
               className="h-8 bg-surface-sunken rounded animate-pulse"
             />

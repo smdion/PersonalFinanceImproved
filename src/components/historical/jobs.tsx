@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { DataTable } from "@/components/settings/data-table";
@@ -87,8 +87,10 @@ export function JobsSettings() {
     onSuccess: () => utils.settings.jobs.list.invalidate(),
   });
 
-  const personName = (id: number) =>
-    people?.find((p) => p.id === id)?.name ?? String(id);
+  const personName = useCallback(
+    (id: number) => people?.find((p) => p.id === id)?.name ?? String(id),
+    [people],
+  );
 
   // Build salary timeline for chart
   const salaryTimeline = useMemo(() => {
@@ -167,14 +169,14 @@ export function JobsSettings() {
     }
 
     return filled;
-  }, [data, salaryChanges, people]);
+  }, [data, salaryChanges, people, personName]);
 
   const personNames = useMemo(() => {
     if (!data || !people) return [];
     return Array.from(
       new Set(data.map((j: Job) => personName(j.personId as number))),
     );
-  }, [data, people]);
+  }, [data, people, personName]);
 
   // Group jobs by person for timeline display
   const jobsByPerson = useMemo(() => {
@@ -192,7 +194,7 @@ export function JobsSettings() {
         a.startDate.localeCompare(b.startDate),
       ),
     }));
-  }, [data, people]);
+  }, [data, people, personName]);
 
   return (
     <div className="space-y-6">

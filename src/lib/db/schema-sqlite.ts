@@ -270,7 +270,7 @@ export const savingsGoals = sqliteTable(
       .default(false),
     apiCategoryId: text("api_category_id"),
     apiCategoryName: text("api_category_name"),
-    apiSyncEnabled: integer("api_sync_enabled", { mode: "boolean" })
+    isApiSyncEnabled: integer("is_api_sync_enabled", { mode: "boolean" })
       .notNull()
       .default(false),
     reimbursementApiCategoryId: text("reimbursement_api_category_id"),
@@ -896,7 +896,7 @@ export const retirementScenarios = sqliteTable("retirement_scenarios", {
   distributionTaxRateBrokerage: text("distribution_tax_rate_brokerage")
     .notNull()
     .default("0.15"),
-  ltBrokerageEnabled: integer("lt_brokerage_enabled", { mode: "boolean" })
+  isLtBrokerageEnabled: integer("is_lt_brokerage_enabled", { mode: "boolean" })
     .notNull()
     .default(true),
   ltBrokerageAnnualContribution: text("lt_brokerage_annual_contribution")
@@ -1243,6 +1243,24 @@ export const mcPresetReturnOverrides = sqliteTable(
     uniqueIndex("mc_preset_ro_idx").on(table.presetId, table.assetClassId),
   ],
 );
+
+// --- Monte Carlo: User-created simulation presets ---
+
+export const mcUserPresets = sqliteTable("mc_user_presets", {
+  id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  simulations: integer("simulations").notNull().default(1000),
+  returnMean: text("return_mean").notNull(),
+  returnStdDev: text("return_std_dev").notNull(),
+  inflationMean: text("inflation_mean").notNull(),
+  inflationStdDev: text("inflation_std_dev").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
 
 // --- Contribution profiles (what-if salary/contribution overrides) ---
 

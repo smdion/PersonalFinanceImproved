@@ -25,6 +25,7 @@ export function HelpTip({
     lines && lines.length > 0 ? (
       <div className="flex flex-col gap-0.5">
         {lines.map((line, i) => (
+          // eslint-disable-next-line react/no-array-index-key
           <div key={i}>{line}</div>
         ))}
       </div>

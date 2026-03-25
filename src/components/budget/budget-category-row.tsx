@@ -131,6 +131,7 @@ export function BudgetCategoryRow({
         </td>
         {catTotals.map((total, i) => (
           <td
+            // eslint-disable-next-line react/no-array-index-key -- positional column totals have no stable identity
             key={i}
             className="text-right py-1.5 px-3 font-semibold text-primary tabular-nums"
           >

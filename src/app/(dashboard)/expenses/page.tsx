@@ -424,6 +424,7 @@ export default function ExpensesPage() {
                   >
                     {groupSummary.map((entry, i) => (
                       <Cell
+                        // eslint-disable-next-line react/no-array-index-key -- Recharts Cell requires index key
                         key={i}
                         fill={entry.diff > 0 ? COLORS.over : COLORS.under}
                       />
@@ -452,6 +453,7 @@ export default function ExpensesPage() {
                       nameKey="name"
                     >
                       {spendingPie.map((entry, i) => (
+                        // eslint-disable-next-line react/no-array-index-key
                         <Cell key={i} fill={entry.color} />
                       ))}
                     </Pie>

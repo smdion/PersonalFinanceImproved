@@ -373,8 +373,8 @@ export function NetWorthCompare({
           {/* Limitations note */}
           {data.limitations.length > 0 && (
             <div className="text-[10px] text-faint pt-2 border-t border-subtle space-y-0.5">
-              {data.limitations.map((l, i) => (
-                <p key={i}>{l}</p>
+              {data.limitations.map((l) => (
+                <p key={l}>{l}</p>
               ))}
             </div>
           )}

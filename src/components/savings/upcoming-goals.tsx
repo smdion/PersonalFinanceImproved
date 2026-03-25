@@ -162,9 +162,9 @@ export function UpcomingGoals({
       </div>
 
       <div className="space-y-2.5">
-        {visibleItems.map((item, i) => (
+        {visibleItems.map((item) => (
           <div
-            key={`${item.fundName}-${item.type}-${i}`}
+            key={`${item.fundName}-${item.type}`}
             className={`flex items-center gap-3 rounded-lg px-3 py-2.5 border ${
               item.type === "expense"
                 ? item.funded

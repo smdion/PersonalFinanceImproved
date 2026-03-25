@@ -219,7 +219,10 @@ export function OverridesPanel({
                   {o.lumpSums && o.lumpSums.length > 0 && (
                     <span className="text-emerald-700">
                       {o.lumpSums.map((ls, k) => (
-                        <span key={k}>
+                        <span
+                          // eslint-disable-next-line react/no-array-index-key -- lump sums have no stable ID
+                          key={`${ls.targetAccount}-${ls.amount}-${k}`}
+                        >
                           +{formatCurrency(ls.amount)}
                           {ls.label ? ` ${ls.label}` : ""} →{" "}
                           {catDisplayLabel[ls.targetAccount] ??
@@ -560,7 +563,8 @@ export function OverridesPanel({
               </div>
               {accumForm.lumpSums.map((ls, li) => (
                 <div
-                  key={li}
+                  // eslint-disable-next-line react/no-array-index-key -- form entries have no stable ID
+                  key={`lump-${li}-${ls.targetAccount}`}
                   className="grid grid-cols-[1fr_1fr_1fr_auto] gap-1 mt-1 items-end"
                 >
                   <label className="block">
@@ -741,7 +745,10 @@ export function OverridesPanel({
                   {o.lumpSums && o.lumpSums.length > 0 && (
                     <span className="text-amber-700">
                       {o.lumpSums.map((ls, k) => (
-                        <span key={k}>
+                        <span
+                          // eslint-disable-next-line react/no-array-index-key -- lump sums have no stable ID
+                          key={`${ls.targetAccount}-${ls.amount}-${k}`}
+                        >
                           +{formatCurrency(ls.amount)}
                           {ls.label ? ` ${ls.label}` : ""} →{" "}
                           {catDisplayLabel[ls.targetAccount] ??
@@ -1196,7 +1203,8 @@ export function OverridesPanel({
               </div>
               {decumForm.lumpSums.map((ls, li) => (
                 <div
-                  key={li}
+                  // eslint-disable-next-line react/no-array-index-key -- form entries have no stable ID
+                  key={`lump-${li}-${ls.targetAccount}`}
                   className="grid grid-cols-[1fr_1fr_1fr_auto] gap-1 mt-1 items-end"
                 >
                   <label className="block">
@@ -1775,7 +1783,10 @@ export function OverridesPanel({
                                     className="mt-0.5 block rounded border border-strong px-2 py-1 text-xs"
                                   >
                                     {profile.columnLabels.map((label, i) => (
-                                      <option key={i} value={String(i)}>
+                                      <option
+                                        key={`col-${label}`}
+                                        value={String(i)}
+                                      >
                                         {label || `Col ${i + 1}`} (
                                         {formatCurrency(
                                           profile.columnTotals[i] ?? 0,
