@@ -28,16 +28,15 @@ test.describe("Dashboard navigation", () => {
   });
 
   test("sidebar links are present", async ({ page }) => {
-    await page.goto("/");
-    await page.waitForLoadState("networkidle");
+    // Navigate to a dashboard sub-page so the sidebar groups are expanded
+    // (collapsible groups only render child links when open)
+    for (const { path } of dashboardPages) {
+      await page.goto(path);
+      await page.waitForLoadState("networkidle");
 
-    // The sidebar should contain links to each major section
-    const sidebar = page.locator("nav");
-    if ((await sidebar.count()) > 0) {
-      for (const { path } of dashboardPages) {
+      const sidebar = page.locator("nav");
+      if ((await sidebar.count()) > 0) {
         const link = sidebar.locator(`a[href="${path}"]`);
-        // At least one nav element should contain these links
-        // (sidebar may be collapsed, so we check existence not visibility)
         expect(await link.count()).toBeGreaterThanOrEqual(1);
       }
     }
