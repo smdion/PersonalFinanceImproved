@@ -16,6 +16,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Fixed timezone bug in salary temporal resolution (date string parsing vs `new Date()`)
 - Moved `computeReturn`, `sumAccounts`, `sumAnnualRows` canonical implementations from performance router to pure module
 
+### Fixed
+
+- Replaced `corepack` with `npm install -g pnpm` in Dockerfile (Node 25 removed corepack)
+
 ### ESLint
 
 - Added import boundary rule: pure modules cannot import DB/ORM code or the helpers barrel
