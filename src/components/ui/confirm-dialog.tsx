@@ -116,7 +116,7 @@ export function ConfirmDialog() {
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  });
+  }, [state, handleCancel]);
 
   if (!state) return null;
 

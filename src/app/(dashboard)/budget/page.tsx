@@ -340,7 +340,7 @@ export default function BudgetPage() {
   useEffect(() => {
     editDraftsRef.current = editDrafts;
     updateBatchRef.current = updateBatch;
-  });
+  }, [editDrafts, updateBatch]);
 
   const saveAllDrafts = async () => {
     const drafts = editDraftsRef.current;
@@ -362,15 +362,12 @@ export default function BudgetPage() {
   };
 
   const toggleEditMode = () => {
-    setEditMode((prev) => {
-      if (prev) {
-        saveAllDrafts();
-        return prev; // saveAllDrafts will set editMode to false
-      } else {
-        setEditDrafts(new Map());
-        return true;
-      }
-    });
+    if (editMode) {
+      saveAllDrafts();
+    } else {
+      setEditDrafts(new Map());
+      setEditMode(true);
+    }
   };
 
   // --- Name column resize ---

@@ -1,6 +1,4 @@
-// eslint-disable-next-line no-restricted-imports -- Server Component, server-side only
 import { auth } from "@/server/auth";
-// eslint-disable-next-line no-restricted-imports -- Server Component, server-side only
 import type { Permission } from "@/server/auth";
 import { cookies } from "next/headers";
 import Link from "next/link";

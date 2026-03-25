@@ -29,7 +29,7 @@ const config = [
     },
   },
   {
-    files: ["src/components/**/*.{ts,tsx}", "src/app/**/*.{ts,tsx}"],
+    files: ["src/components/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": [
         "error",

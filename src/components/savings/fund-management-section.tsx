@@ -292,7 +292,9 @@ export function FundManagementSection({
     );
   };
 
-  // Expose goal update callbacks to parent via ref (in useEffect to avoid ref write during render)
+  // Expose goal update callbacks to parent via ref (in useEffect to avoid ref write during render).
+  // No dependency array: handlers close over query data that changes frequently,
+  // and ref assignment is trivially cheap.
   useEffect(() => {
     callbacksRef.current = {
       onGoalUpdate: handleGoalUpdate,

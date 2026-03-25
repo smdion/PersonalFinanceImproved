@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-// eslint-disable-next-line no-restricted-imports -- API route, server-side only
 import { auth } from "@/server/auth";
 import { exportBackup } from "@/lib/db/version-logic";
 import { log } from "@/lib/logger";
