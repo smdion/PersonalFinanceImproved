@@ -22,6 +22,8 @@ import type {
   TaxBracketInput,
   TaxInput,
 } from "@/lib/calculators/types";
+import { computeHouseholdTax } from "@/lib/pure/tax";
+import { findActiveJob } from "@/lib/pure/profiles";
 
 /** Build TaxBracketInput from DB bracket row + limits. */
 function buildBracketInput(
@@ -119,9 +121,7 @@ export const paycheckRouter = createTRPCRouter({
       // Use Promise.all since getCurrentSalary is async
       const results = await Promise.all(
         people.map(async (person) => {
-          const activeJob = effectiveJobs.find(
-            (j) => j.personId === person.id && !j.endDate,
-          );
+          const activeJob = findActiveJob(effectiveJobs, person.id);
           if (!activeJob) {
             return {
               person,
@@ -319,29 +319,15 @@ export const paycheckRouter = createTRPCRouter({
             asOfDate,
           });
           // Use combined federal tax but per-person FICA (each has own SS wage base cap)
-          const perPersonFicaSS = activePeople.reduce(
-            (s, r) => s + (r.tax?.ficaSS ?? 0),
-            0,
+          householdTax = computeHouseholdTax(
+            activePeople.map((r) => ({
+              salary: r.salary,
+              preTaxDeductionsAnnual: 0, // already factored into combinedTax
+              ficaSS: r.tax?.ficaSS ?? 0,
+              ficaMedicare: r.tax?.ficaMedicare ?? 0,
+            })),
+            combinedTax,
           );
-          const perPersonFicaMed = activePeople.reduce(
-            (s, r) => s + (r.tax?.ficaMedicare ?? 0),
-            0,
-          );
-          householdTax = {
-            federalTax: combinedTax.federalTax,
-            ficaSS: perPersonFicaSS,
-            ficaMedicare: perPersonFicaMed,
-            totalTax:
-              combinedTax.federalTax + perPersonFicaSS + perPersonFicaMed,
-            effectiveRate:
-              combinedGross > 0
-                ? (combinedTax.federalTax +
-                    perPersonFicaSS +
-                    perPersonFicaMed) /
-                  combinedGross
-                : 0,
-            marginalRate: combinedTax.marginalRate,
-          };
         }
       }
 

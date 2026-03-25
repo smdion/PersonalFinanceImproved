@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { createTRPCRouter } from "../trpc";
+import { canDeleteContribProfile } from "@/lib/pure/profiles";
 import { taxTreatmentToShortLabel } from "@/lib/config/display-labels";
 import { protectedProcedure, contributionProfileProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
@@ -393,8 +394,6 @@ export const contributionProfileRouter = createTRPCRouter({
         .from(schema.contributionProfiles)
         .where(eq(schema.contributionProfiles.id, input.id));
       if (!existing[0]) throw new Error("Profile not found");
-      if (existing[0].isDefault)
-        throw new Error("Cannot delete the default (Live) profile");
 
       // Prevent deleting the currently active profile
       const activeSettingRows = await ctx.db
@@ -402,11 +401,12 @@ export const contributionProfileRouter = createTRPCRouter({
         .from(schema.appSettings)
         .where(eq(schema.appSettings.key, "active_contrib_profile_id"));
       const activeId = activeSettingRows[0]?.value as number | null;
-      if (activeId === input.id) {
-        throw new Error(
-          "Cannot delete the active profile. Switch to a different profile first.",
-        );
-      }
+      const deleteCheck = canDeleteContribProfile(
+        existing[0],
+        activeId,
+        input.id,
+      );
+      if (!deleteCheck.allowed) throw new Error(deleteCheck.reason);
 
       await ctx.db
         .delete(schema.contributionProfiles)

@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure, budgetProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
+import { canDeleteBudgetProfile, canRemoveColumn } from "@/lib/pure/profiles";
 import {
   columnLabelsSchema,
   columnMonthsSchema,
@@ -123,7 +124,8 @@ export const budgetRouter = createTRPCRouter({
         .where(eq(schema.budgetProfiles.id, input.id));
       const profile = profiles[0];
       if (!profile) throw new Error("Profile not found");
-      if (profile.isActive) throw new Error("Cannot delete the active profile");
+      const deleteCheck = canDeleteBudgetProfile(profile);
+      if (!deleteCheck.allowed) throw new Error(deleteCheck.reason);
 
       // Delete associated items first
       await ctx.db
@@ -466,10 +468,11 @@ export const budgetRouter = createTRPCRouter({
         .where(eq(schema.budgetProfiles.isActive, true));
       const profile = profiles[0];
       if (!profile) throw new Error("No active profile");
-      if (profile.columnLabels.length <= 1)
-        throw new Error("Cannot remove the last column");
-      if (input.colIndex >= profile.columnLabels.length)
-        throw new Error("Invalid column index");
+      const colCheck = canRemoveColumn(
+        profile.columnLabels.length,
+        input.colIndex,
+      );
+      if (!colCheck.allowed) throw new Error(colCheck.reason);
 
       const newLabels = columnLabelsSchema.parse(
         profile.columnLabels.filter(
