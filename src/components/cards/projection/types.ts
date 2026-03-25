@@ -86,6 +86,7 @@ export type TooltipData =
 // ---------------------------------------------------------------------------
 
 export type LumpSumFormEntry = {
+  id: string;
   amount: string;
   targetAccount: AccountCategory;
   taxType: "traditional" | "roth" | "";
@@ -186,6 +187,7 @@ export type AccumOverride = {
   accountCaps?: Record<AccountCategory, number>;
   taxTypeCaps?: Partial<Record<"traditional" | "roth", number>>;
   lumpSums?: Array<{
+    id: string;
     amount: number;
     targetAccount: AccountCategory;
     taxType?: "traditional" | "roth";
@@ -207,6 +209,7 @@ export type DecumOverride = {
   withdrawalTaxTypeCaps?: Partial<Record<"traditional" | "roth", number>>;
   rothConversionTarget?: number; // 0 = disable, 0.10/0.12/etc = target bracket
   lumpSums?: Array<{
+    id: string;
     amount: number;
     targetAccount: AccountCategory;
     taxType?: "traditional" | "roth";

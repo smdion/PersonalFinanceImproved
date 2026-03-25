@@ -17,7 +17,7 @@ import { monthKey } from "./types";
 interface FundMiniChartProps {
   balances: number[];
   monthDates: Date[];
-  monthEvents: ({ amount: number; description: string }[] | null)[];
+  monthEvents: ({ id: string; amount: number; description: string }[] | null)[];
   target: number;
   fundColor: string;
   onClickMonth?: (monthIndex: number) => void;
@@ -28,7 +28,7 @@ interface ChartDataPoint {
   monthIndex: number;
   balance: number;
   negativeBalance: number | null;
-  events: { amount: number; description: string }[] | null;
+  events: { id: string; amount: number; description: string }[] | null;
 }
 
 export function FundMiniChart({
@@ -159,7 +159,7 @@ export function FundMiniChart({
                   </p>
                   {point.events?.map((ev) => (
                     <p
-                      key={`${ev.description}-${ev.amount}`}
+                      key={ev.id}
                       className={`text-[10px] ${ev.amount < 0 ? "text-red-600" : "text-green-600"}`}
                     >
                       {ev.description}: {ev.amount >= 0 ? "+" : ""}

@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.3.4] - 2026-03-25
+
+### Fixed
+
+- Migrated `middleware.ts` to `proxy.ts` (Next.js 16 deprecated middleware convention)
+- Fixed TW4 default border color — bare `border` / `border-t` etc. now use semantic `--border-default` token instead of `currentColor` (was rendering stark white/black lines)
+- Softened border tokens in both light and dark mode for subtler card/section dividers
+- Added `unsafe-eval` to CSP in dev mode only (React 19 requires eval for dev debugging)
+- Added `ALLOWED_DEV_ORIGINS` env var for Next.js 16 cross-origin dev server access
+- Fixed nested `<button>` hydration error in budget profile list
+- Fixed 6 duplicate React key warnings across savings, projection, and upcoming-goals components
+- Added stable `id` field to `MonthEvent` type — savings events now keyed by ID instead of array index
+- Added `crypto.randomUUID()` IDs to lump sum form entries, purchase entries, and year adjustments
+- Replaced all fixable `eslint-disable react/no-array-index-key` directives with proper stable keys
+- Improved clarity of all remaining `eslint-disable` justification comments
+- Fixed dev DB schema drift (column renames `api_sync_enabled` → `is_api_sync_enabled`, `lt_brokerage_enabled` → `is_lt_brokerage_enabled`)
+
+---
+
 ## [0.3.3] - 2026-03-25
 
 ### Architecture

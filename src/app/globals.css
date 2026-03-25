@@ -195,9 +195,9 @@
   --text-faint: #9ca3af;
 
   /* ── Borders (semantic border roles — use instead of border-gray-*) ── */
-  --border-default: #e5e7eb;
-  --border-subtle: #f3f4f6;
-  --border-strong: #d1d5db;
+  --border-default: #edeef0;
+  --border-subtle: #f3f4f5;
+  --border-strong: #e2e4e8;
 
   /* ── Focus ── */
   --focus-ring: 56 189 248;
@@ -342,9 +342,9 @@
   --text-faint: #64748b;
 
   /* ── Borders ── */
-  --border-default: #334155;
-  --border-subtle: #1e293b;
-  --border-strong: #475569;
+  --border-default: #222d3b;
+  --border-subtle: #1f2a37;
+  --border-strong: #2a3748;
 
   /* ── Focus ── */
   --focus-ring: 125 211 252;
@@ -473,6 +473,19 @@
 body {
   color: var(--foreground);
   background: var(--background);
+}
+
+/*
+ * TW4 changed the default border-color from gray-200 to currentColor,
+ * which produces stark white/black lines.  Override globally so that
+ * bare `border`, `border-t`, etc. use our semantic token instead.
+ */
+@layer base {
+  *,
+  ::after,
+  ::before {
+    border-color: var(--border-default);
+  }
 }
 
 /* Keyboard focus rings for accessibility */

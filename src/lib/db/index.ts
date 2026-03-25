@@ -5,7 +5,7 @@ import { log } from "@/lib/logger";
 // Re-export dialect helper for use by other modules
 export { getDialect, isPostgres, isSQLite } from "./dialect";
 
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports -- dynamic require is required for runtime dialect selection between SQLite (better-sqlite3) and PostgreSQL (pg); `any` is used because _db and _pool types differ per dialect and are narrowed via the exported typed const below */
 let _db: any;
 let _pool: any = null; // only set for PG
 

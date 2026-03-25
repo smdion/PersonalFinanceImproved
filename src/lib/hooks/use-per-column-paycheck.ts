@@ -70,7 +70,7 @@ export function usePerColumnPaycheck(
     }
     // Map each column to its corresponding query result
     return perColumnProfileIds.map((id) => dataByKey.get(String(id)) ?? null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `queries` is omitted: new array ref every render; reactive content captured via q0.data–q4.data
   }, [
     perColumnProfileIds,
     uniqueIds,

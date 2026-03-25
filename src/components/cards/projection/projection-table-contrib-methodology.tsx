@@ -103,13 +103,13 @@ export function ContribMethodologySection({
                           personFilter === "all" ||
                           spec.personId === personFilter,
                       )
-                      .map((spec, i) => {
+                      .map((spec) => {
                         const bucket =
                           TAX_TREATMENT_TO_BUCKET[spec.taxTreatment] ??
                           spec.taxTreatment;
                         return (
                           <tr
-                            key={`${spec.category}-${spec.personId ?? spec.ownerName ?? i}`}
+                            key={`${spec.category}-${spec.taxTreatment}-${spec.personId ?? spec.ownerName}`}
                             className="border-t border-blue-100/60"
                           >
                             <td className="py-1 pr-2">

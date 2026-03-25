@@ -824,11 +824,18 @@ export default function BudgetPage() {
               {(allProfiles ?? []).map((p) => {
                 const isViewing = p.id === displayProfileId;
                 return (
-                  <button
+                  <div
                     key={p.id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setViewingProfileId(p.id)}
-                    className={`w-full text-left px-3 py-2 rounded-md transition-colors group ${
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setViewingProfileId(p.id);
+                      }
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-md transition-colors group cursor-pointer ${
                       isViewing
                         ? "bg-blue-50 border border-blue-300"
                         : "hover:bg-surface-sunken border border-transparent"
@@ -935,7 +942,7 @@ export default function BudgetPage() {
                           : ""}
                       </span>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>

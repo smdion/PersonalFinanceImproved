@@ -161,7 +161,7 @@ export function FundTimelineDetail({
                     <div className="mt-1 space-y-0.5">
                       {events.map((ev) => (
                         <div
-                          key={`${ev.description}-${ev.amount}`}
+                          key={ev.id}
                           className={`text-xs flex items-center gap-2 ${
                             ev.amount < 0 ? "text-red-600" : "text-green-600"
                           }`}

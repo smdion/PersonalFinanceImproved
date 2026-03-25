@@ -28,6 +28,7 @@ export default function ToolsPage() {
   const [relocTargetOverride, setRelocTargetOverride] = useState<string>("");
   const [relocYearAdjustments, setRelocYearAdjustments] = useState<
     {
+      id: string;
       year: number;
       monthlyExpenses: number;
       profileId?: number;
@@ -51,6 +52,7 @@ export default function ToolsPage() {
   // Large purchases state
   const [relocLargePurchases, setRelocLargePurchases] = useState<
     {
+      id: string;
       name: string;
       purchasePrice: number;
       downPaymentPercent?: number;
@@ -199,8 +201,18 @@ export default function ToolsPage() {
         ? String(params.relocationExpenseOverride)
         : "",
     );
-    setRelocYearAdjustments(params.yearAdjustments ?? []);
-    setRelocLargePurchases(params.largePurchases ?? []);
+    setRelocYearAdjustments(
+      (params.yearAdjustments ?? []).map((a) => ({
+        ...a,
+        id: crypto.randomUUID(),
+      })),
+    );
+    setRelocLargePurchases(
+      (params.largePurchases ?? []).map((p) => ({
+        ...p,
+        id: crypto.randomUUID(),
+      })),
+    );
     setRelocCurrentContribProfileId(params.currentContributionProfileId);
     setRelocTargetContribProfileId(params.relocationContributionProfileId);
   }, []);
@@ -878,14 +890,13 @@ export default function ToolsPage() {
 
                   {relocLargePurchases.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-2">
-                      {relocLargePurchases.map((p, i) => {
+                      {relocLargePurchases.map((p) => {
                         const isFinanced =
                           p.downPaymentPercent !== undefined &&
                           p.downPaymentPercent < 1;
                         return (
                           <div
-                            // eslint-disable-next-line react/no-array-index-key -- purchase entries have no stable ID
-                            key={`${p.name}-${p.purchaseYear}-${i}`}
+                            key={p.id}
                             className="flex items-center gap-1 bg-orange-50 text-orange-700 rounded px-2 py-1 text-xs"
                           >
                             <span className="font-medium">{p.name}</span>
@@ -915,7 +926,7 @@ export default function ToolsPage() {
                               className="ml-1 text-orange-400 hover:text-red-600"
                               onClick={() =>
                                 setRelocLargePurchases((prev) =>
-                                  prev.filter((_, j) => j !== i),
+                                  prev.filter((x) => x.id !== p.id),
                                 )
                               }
                             >
@@ -1106,6 +1117,7 @@ export default function ToolsPage() {
 
                           const purchase: (typeof relocLargePurchases)[number] =
                             {
+                              id: crypto.randomUUID(),
                               name: purchaseForm.name,
                               purchasePrice: price,
                               purchaseYear: year,
@@ -1174,7 +1186,7 @@ export default function ToolsPage() {
 
                   {relocYearAdjustments.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-2">
-                      {relocYearAdjustments.map((adj, i) => {
+                      {relocYearAdjustments.map((adj) => {
                         const adjProf = adj.profileId
                           ? bi.profiles.find(
                               (p: { id: number }) => p.id === adj.profileId,
@@ -1185,8 +1197,7 @@ export default function ToolsPage() {
                           : `${formatCurrency(adj.monthlyExpenses)}/mo`;
                         return (
                           <div
-                            // eslint-disable-next-line react/no-array-index-key -- year adjustments have no stable ID
-                            key={`${adj.year}-${i}`}
+                            key={adj.id}
                             className="flex items-center gap-1 bg-blue-50 text-blue-700 rounded px-2 py-1 text-xs"
                           >
                             <span>
@@ -1201,7 +1212,7 @@ export default function ToolsPage() {
                               className="ml-1 text-blue-400 hover:text-red-600"
                               onClick={() =>
                                 setRelocYearAdjustments((prev) =>
-                                  prev.filter((_, j) => j !== i),
+                                  prev.filter((a) => a.id !== adj.id),
                                 )
                               }
                             >
@@ -1393,6 +1404,7 @@ export default function ToolsPage() {
                                 return [
                                   ...filtered,
                                   {
+                                    id: crypto.randomUUID(),
                                     year,
                                     monthlyExpenses: 0,
                                     profileId: profId,
@@ -1413,6 +1425,7 @@ export default function ToolsPage() {
                                 return [
                                   ...filtered,
                                   {
+                                    id: crypto.randomUUID(),
                                     year,
                                     monthlyExpenses: monthly,
                                     notes: relocAdjForm.notes || undefined,

@@ -37,6 +37,12 @@ export function monthLabel(d: Date): string {
   return formatDate(d, "short");
 }
 
+export interface MonthEvent {
+  id: string;
+  amount: number;
+  description: string;
+}
+
 export interface GoalProjection {
   name: string;
   goalId: number;
@@ -45,6 +51,6 @@ export interface GoalProjection {
   monthlyAllocation: number;
   monthlyAllocations: number[];
   balances: number[];
-  monthEvents: ({ amount: number; description: string }[] | null)[];
+  monthEvents: (MonthEvent[] | null)[];
   hasOverride: boolean[];
 }
