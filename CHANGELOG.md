@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.3.0] - 2026-03-24
+
+### Framework
+
+- Migrated to Next.js 15.5.14 (from 14.2.35) and React 19 (from 18)
+- Resolves all Next.js 14 CVEs including CVSS 10.0 React2Shell vulnerability
+- Updated eslint-config-next to 15.5.14, @types/react and @types/react-dom to v19
+- Moved `serverComponentsExternalPackages` and `outputFileTracingIncludes` out of experimental config (stable in Next.js 15)
+- Removed `instrumentationHook` experimental flag (on by default in Next.js 15)
+
+---
+
 ## [0.2.1] - 2026-03-24
 
 ### Infrastructure
