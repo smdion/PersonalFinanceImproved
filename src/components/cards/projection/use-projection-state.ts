@@ -106,6 +106,7 @@ export function useProjectionState(props: UseProjectionStateProps) {
       const ls = form.accumForm.lumpSums
         .filter((e) => e.amount !== "" && parseFloat(e.amount) > 0)
         .map((e) => ({
+          id: e.id,
           amount: parseFloat(e.amount),
           targetAccount: e.targetAccount,
           ...(e.taxType !== ""
@@ -195,6 +196,7 @@ export function useProjectionState(props: UseProjectionStateProps) {
       const ls = form.decumForm.lumpSums
         .filter((e) => e.amount !== "" && parseFloat(e.amount) > 0)
         .map((e) => ({
+          id: e.id,
           amount: parseFloat(e.amount),
           targetAccount: e.targetAccount,
           ...(e.taxType !== ""

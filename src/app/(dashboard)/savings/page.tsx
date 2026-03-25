@@ -269,9 +269,10 @@ export default function SavingsPage() {
   }
 
   // ── Expand planned transactions ──
+  let eventSeq = 0;
   const txByGoalMonth = new Map<
     number,
-    Map<string, { amount: number; description: string }[]>
+    Map<string, { id: string; amount: number; description: string }[]>
   >();
   for (const tx of plannedTransactions) {
     const addEntry = (
@@ -283,7 +284,7 @@ export default function SavingsPage() {
       if (!txByGoalMonth.has(goalId)) txByGoalMonth.set(goalId, new Map());
       const m = txByGoalMonth.get(goalId)!;
       if (!m.has(mk)) m.set(mk, []);
-      m.get(mk)!.push({ amount, description: desc });
+      m.get(mk)!.push({ id: `ev-${++eventSeq}`, amount, description: desc });
     };
     const txDate = new Date(tx.transactionDate + "T00:00:00");
     addEntry(tx.goalId, monthKey(txDate), tx.amount, tx.description);
@@ -347,8 +348,10 @@ export default function SavingsPage() {
     const goalId = goal.goalId;
     const goalTxMap = txByGoalMonth.get(goalId);
     const balances: number[] = [];
-    const monthEvents: ({ amount: number; description: string }[] | null)[] =
-      [];
+    const monthEvents: (
+      | { id: string; amount: number; description: string }[]
+      | null
+    )[] = [];
     const monthlyAllocations: number[] = [];
     const hasOverride: boolean[] = [];
     let balance = goal.current;

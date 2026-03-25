@@ -218,11 +218,8 @@ export function OverridesPanel({
                   )}
                   {o.lumpSums && o.lumpSums.length > 0 && (
                     <span className="text-emerald-700">
-                      {o.lumpSums.map((ls, k) => (
-                        <span
-                          // eslint-disable-next-line react/no-array-index-key -- lump sums have no stable ID
-                          key={`${ls.targetAccount}-${ls.amount}-${k}`}
-                        >
+                      {o.lumpSums.map((ls) => (
+                        <span key={ls.id}>
                           +{formatCurrency(ls.amount)}
                           {ls.label ? ` ${ls.label}` : ""} →{" "}
                           {catDisplayLabel[ls.targetAccount] ??
@@ -548,6 +545,7 @@ export function OverridesPanel({
                       lumpSums: [
                         ...f.lumpSums,
                         {
+                          id: crypto.randomUUID(),
                           amount: "",
                           targetAccount: ALL_CATEGORIES[0]!,
                           taxType: "" as const,
@@ -563,8 +561,7 @@ export function OverridesPanel({
               </div>
               {accumForm.lumpSums.map((ls, li) => (
                 <div
-                  // eslint-disable-next-line react/no-array-index-key -- form entries have no stable ID
-                  key={`lump-${li}-${ls.targetAccount}`}
+                  key={ls.id}
                   className="grid grid-cols-[1fr_1fr_1fr_auto] gap-1 mt-1 items-end"
                 >
                   <label className="block">
@@ -744,11 +741,8 @@ export function OverridesPanel({
                   )}
                   {o.lumpSums && o.lumpSums.length > 0 && (
                     <span className="text-amber-700">
-                      {o.lumpSums.map((ls, k) => (
-                        <span
-                          // eslint-disable-next-line react/no-array-index-key -- lump sums have no stable ID
-                          key={`${ls.targetAccount}-${ls.amount}-${k}`}
-                        >
+                      {o.lumpSums.map((ls) => (
+                        <span key={ls.id}>
                           +{formatCurrency(ls.amount)}
                           {ls.label ? ` ${ls.label}` : ""} →{" "}
                           {catDisplayLabel[ls.targetAccount] ??
@@ -1188,6 +1182,7 @@ export function OverridesPanel({
                       lumpSums: [
                         ...f.lumpSums,
                         {
+                          id: crypto.randomUUID(),
                           amount: "",
                           targetAccount: ALL_CATEGORIES[0]!,
                           taxType: "" as const,
@@ -1203,8 +1198,7 @@ export function OverridesPanel({
               </div>
               {decumForm.lumpSums.map((ls, li) => (
                 <div
-                  // eslint-disable-next-line react/no-array-index-key -- form entries have no stable ID
-                  key={`lump-${li}-${ls.targetAccount}`}
+                  key={ls.id}
                   className="grid grid-cols-[1fr_1fr_1fr_auto] gap-1 mt-1 items-end"
                 >
                   <label className="block">

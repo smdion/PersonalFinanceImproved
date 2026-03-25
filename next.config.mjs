@@ -9,6 +9,9 @@ const pkg = JSON.parse(readFileSync("./package.json", "utf8"));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  allowedDevOrigins: process.env.ALLOWED_DEV_ORIGINS
+    ? process.env.ALLOWED_DEV_ORIGINS.split(",")
+    : [],
   output: "standalone",
   serverExternalPackages: [
     "better-sqlite3",
@@ -76,7 +79,7 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline'",
+              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob:",
               "font-src 'self'",

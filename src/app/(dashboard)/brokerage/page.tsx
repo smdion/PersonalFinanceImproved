@@ -55,6 +55,7 @@ export default function BrokeragePage() {
         byYear.set(y, ov);
       }
       ov.lumpSums!.push({
+        id: ls.id,
         amount: amt,
         targetAccount: ls.targetAccount,
         ...(ls.label ? { label: ls.label } : {}),
@@ -263,10 +264,9 @@ export default function BrokeragePage() {
               </p>
               {brokerageLumpSums.length > 0 && (
                 <div className="space-y-1 mb-3">
-                  {brokerageLumpSums.map((ls, i) => (
+                  {brokerageLumpSums.map((ls) => (
                     <div
-                      // eslint-disable-next-line react/no-array-index-key -- lump sum entries have no stable ID
-                      key={`${ls.year}-${ls.targetAccount}-${i}`}
+                      key={ls.id}
                       className="flex items-center gap-2 bg-surface-sunken rounded px-3 py-1.5 text-xs"
                     >
                       <span className="font-semibold">{ls.year}</span>
@@ -288,7 +288,7 @@ export default function BrokeragePage() {
                         className="text-red-400 hover:text-red-600 ml-auto"
                         onClick={() =>
                           setBrokerageLumpSums((prev) =>
-                            prev.filter((_, j) => j !== i),
+                            prev.filter((x) => x.id !== ls.id),
                           )
                         }
                       >
@@ -746,6 +746,7 @@ function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
 }
 
 type BrokerageLumpSumEntry = {
+  id: string;
   year: string;
   amount: string;
   targetAccount: AccountCategory;
@@ -757,7 +758,7 @@ function BrokerageLumpSumForm({
 }: {
   onAdd: (ls: BrokerageLumpSumEntry) => void;
 }) {
-  const [form, setForm] = useState<BrokerageLumpSumEntry>({
+  const [form, setForm] = useState<Omit<BrokerageLumpSumEntry, "id">>({
     year: String(new Date().getFullYear() + 1),
     amount: "",
     targetAccount: "brokerage" as AccountCategory,
@@ -819,7 +820,7 @@ function BrokerageLumpSumForm({
         type="button"
         onClick={() => {
           if (!form.amount || parseFloat(form.amount) <= 0) return;
-          onAdd(form);
+          onAdd({ ...form, id: crypto.randomUUID() });
           setForm((f) => ({ ...f, amount: "", label: "" }));
         }}
         className="bg-emerald-600 text-white text-xs rounded px-3 py-1.5 hover:bg-emerald-700"

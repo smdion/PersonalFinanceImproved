@@ -1203,7 +1203,7 @@ export default function PortfolioPage() {
                                           );
                                           return (
                                             <div
-                                              // eslint-disable-next-line react/no-array-index-key -- snapshot sub-rows lack unique IDs
+                                              // eslint-disable-next-line react/no-array-index-key -- SnapshotAccountWithPerf has no ID; index breaks ties when accountType/ownerPersonId/subType collide within a group
                                               key={`${a.accountType}-${a.ownerPersonId}-${a.subType}-${ai}`}
                                               className="flex justify-between items-baseline py-0.5 pl-4 border-b border-subtle"
                                             >

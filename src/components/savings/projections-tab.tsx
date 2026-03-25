@@ -393,7 +393,7 @@ function ProjectionCell({
         <div className="mt-0.5">
           {events.map((e) => (
             <div
-              key={`${e.description}-${e.amount}`}
+              key={e.id}
               className={`text-[10px] leading-tight truncate ${
                 e.amount < 0 ? "text-red-500" : "text-green-600"
               }`}

@@ -6,10 +6,10 @@ const isDemoOnly = process.env.DEMO_ONLY === "true";
 
 const { auth } = NextAuth(authConfig);
 
-// Use the edge-compatible auth config (no DB imports) for middleware.
+// Use the edge-compatible auth config (no DB imports) for the proxy.
 // Full auth (with DB) is only used in server components / API routes.
 // In demo-only mode, skip auth entirely — no login required.
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   if (isDemoOnly) {
     return NextResponse.next();
   }

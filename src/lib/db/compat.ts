@@ -126,7 +126,7 @@ let _validColumnsCache: Map<string, Set<string>> | null = null;
 
 function buildValidColumnsCache(): Map<string, Set<string>> {
   if (_validColumnsCache) return _validColumnsCache;
-  /* eslint-disable @typescript-eslint/no-require-imports -- dynamic require for dialect-specific schema */
+  /* eslint-disable @typescript-eslint/no-require-imports -- dynamic require is required for runtime dialect selection; schema-sqlite cannot be statically imported because it only exists in SQLite deployments */
   const schema = isPostgres()
     ? require("./schema-pg")
     : require("./schema-sqlite");
@@ -140,7 +140,7 @@ function buildValidColumnsCache(): Map<string, Set<string>> {
       );
       if (cols && typeof cols === "object") {
         const firstCol = Object.values(cols)[0];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Drizzle column objects are not publicly typed; `any` is needed to access the internal `.table[Symbol.for("drizzle:Name")]` property
         const tableName = (firstCol as any)?.table?.[
           Symbol.for("drizzle:Name")
         ];

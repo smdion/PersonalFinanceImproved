@@ -113,7 +113,7 @@ export function EmergencyFundDetail({
             <div className="mt-2 space-y-1.5 ml-4">
               {reimbursements.items.map((item) => (
                 <div
-                  key={`${item.description}-${item.amount}`}
+                  key={item.description}
                   className="flex justify-between text-xs"
                 >
                   <span className="text-secondary">{item.description}</span>

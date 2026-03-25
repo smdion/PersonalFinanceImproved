@@ -23,7 +23,7 @@ export type {
 // The `as typeof pg` cast is safe because both schemas export identical
 // table/column names — only the underlying Drizzle dialect differs.
 type Schema = typeof pg;
-/* eslint-disable @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/no-require-imports -- dynamic require is required for runtime dialect selection: SQLite schema cannot be statically imported because it is only present in SQLite deployments */
 const active: Schema = isPostgres()
   ? pg
   : (require("./schema-sqlite") as Schema);

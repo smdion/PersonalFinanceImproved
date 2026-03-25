@@ -575,8 +575,10 @@ export function ProjectionCard(props: {
                   active: boolean,
                   onClick: () => void,
                   label: string,
+                  key?: string,
                 ) => (
                   <button
+                    key={key ?? label}
                     type="button"
                     onClick={onClick}
                     className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${
