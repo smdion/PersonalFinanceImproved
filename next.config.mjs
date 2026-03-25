@@ -10,21 +10,20 @@ const pkg = JSON.parse(readFileSync("./package.json", "utf8"));
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  serverExternalPackages: [
+    "better-sqlite3",
+    "bindings",
+    "file-uri-to-path",
+    "pg",
+    "pgpass",
+    "pg-pool",
+    "pg-types",
+    "postgres-array",
+    "postgres-bytea",
+    "postgres-date",
+    "postgres-interval",
+  ],
   experimental: {
-    instrumentationHook: true,
-    serverComponentsExternalPackages: [
-      "better-sqlite3",
-      "bindings",
-      "file-uri-to-path",
-      "pg",
-      "pgpass",
-      "pg-pool",
-      "pg-types",
-      "postgres-array",
-      "postgres-bytea",
-      "postgres-date",
-      "postgres-interval",
-    ],
     // nft traces JS imports but not native binaries. This pulls in the
     // compiled .node file that better-sqlite3 needs at runtime.
     outputFileTracingIncludes: {
