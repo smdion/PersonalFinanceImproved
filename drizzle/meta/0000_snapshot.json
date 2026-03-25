@@ -1,5 +1,5 @@
 {
-  "id": "606fa13a-ba5e-47e3-8f04-eea6c258016b",
+  "id": "63e0797a-a2ad-4656-9ecb-22be5e028fbe",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -84,6 +84,13 @@
         },
         "distributions": {
           "name": "distributions",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "rollovers": {
+          "name": "rollovers",
           "type": "numeric(12, 2)",
           "primaryKey": false,
           "notNull": true,
@@ -295,6 +302,13 @@
           "notNull": true,
           "default": "'0'"
         },
+        "rollovers": {
+          "name": "rollovers",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
         "lifetime_gains": {
           "name": "lifetime_gains",
           "type": "numeric(12, 2)",
@@ -417,7 +431,7 @@
         },
         "last_synced_at": {
           "name": "last_synced_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         }
@@ -704,7 +718,7 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -828,8 +842,7 @@
         },
         "service": {
           "name": "service",
-          "type": "budget_api_service_enum",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -853,7 +866,7 @@
         },
         "fetched_at": {
           "name": "fetched_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -937,14 +950,13 @@
         },
         "api_last_synced_at": {
           "name": "api_last_synced_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },
         "api_sync_direction": {
           "name": "api_sync_direction",
-          "type": "api_sync_direction_enum",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "default": "'pull'"
@@ -1089,7 +1101,7 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -1173,7 +1185,7 @@
         },
         "changed_at": {
           "name": "changed_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -1273,15 +1285,13 @@
         },
         "tax_treatment": {
           "name": "tax_treatment",
-          "type": "tax_treatment_enum",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
         "contribution_method": {
           "name": "contribution_method",
-          "type": "contribution_method_enum",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -1293,8 +1303,7 @@
         },
         "employer_match_type": {
           "name": "employer_match_type",
-          "type": "employer_match_type_enum",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -1312,16 +1321,14 @@
         },
         "employer_match_tax_treatment": {
           "name": "employer_match_tax_treatment",
-          "type": "match_tax_treatment_enum",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
           "default": "'pre_tax'"
         },
         "hsa_coverage_type": {
           "name": "hsa_coverage_type",
-          "type": "hsa_coverage_type_enum",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -1341,8 +1348,7 @@
         },
         "ownership": {
           "name": "ownership",
-          "type": "account_ownership_enum",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
           "default": "'individual'"
@@ -1375,6 +1381,19 @@
         "is_payroll_deducted": {
           "name": "is_payroll_deducted",
           "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prior_year_contrib_amount": {
+          "name": "prior_year_contrib_amount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "prior_year_contrib_year": {
+          "name": "prior_year_contrib_year",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         }
@@ -1606,7 +1625,7 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -1812,6 +1831,65 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.irmaa_brackets": {
+      "name": "irmaa_brackets",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tax_year": {
+          "name": "tax_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "filing_status": {
+          "name": "filing_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "brackets": {
+          "name": "brackets",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "irmaa_brackets_year_status_idx": {
+          "name": "irmaa_brackets_year_status_idx",
+          "columns": [
+            {
+              "expression": "tax_year",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "filing_status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.jobs": {
       "name": "jobs",
       "schema": "",
@@ -1848,15 +1926,13 @@
         },
         "pay_period": {
           "name": "pay_period",
-          "type": "pay_period_enum",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
         "pay_week": {
           "name": "pay_week",
-          "type": "pay_week_enum",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -1933,8 +2009,7 @@
         },
         "w4_filing_status": {
           "name": "w4_filing_status",
-          "type": "w4_filing_status_enum",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -2039,6 +2114,65 @@
           "columns": ["email"]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.ltcg_brackets": {
+      "name": "ltcg_brackets",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tax_year": {
+          "name": "tax_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "filing_status": {
+          "name": "filing_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "brackets": {
+          "name": "brackets",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "ltcg_brackets_year_status_idx": {
+          "name": "ltcg_brackets_year_status_idx",
+          "columns": [
+            {
+              "expression": "tax_year",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "filing_status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -3072,8 +3206,7 @@
         },
         "ownership_type": {
           "name": "ownership_type",
-          "type": "account_ownership_enum",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -3099,7 +3232,7 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -3243,8 +3376,7 @@
         },
         "tax_type": {
           "name": "tax_type",
-          "type": "portfolio_tax_type_enum",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -3464,7 +3596,7 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -3611,14 +3743,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -3662,6 +3794,18 @@
         },
         "notes": {
           "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_by": {
+          "name": "updated_by",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -3750,8 +3894,26 @@
           "primaryKey": false,
           "notNull": true
         },
+        "contribution_profile_id": {
+          "name": "contribution_profile_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "notes": {
           "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_by": {
+          "name": "updated_by",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -3803,6 +3965,15 @@
           "columnsFrom": ["person_id"],
           "columnsTo": ["id"],
           "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "retirement_salary_overrides_contribution_profile_id_contribution_profiles_id_fk": {
+          "name": "retirement_salary_overrides_contribution_profile_id_contribution_profiles_id_fk",
+          "tableFrom": "retirement_salary_overrides",
+          "tableTo": "contribution_profiles",
+          "columnsFrom": ["contribution_profile_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -3874,8 +4045,8 @@
           "notNull": true,
           "default": "'0.15'"
         },
-        "lt_brokerage_enabled": {
-          "name": "lt_brokerage_enabled",
+        "is_lt_brokerage_enabled": {
+          "name": "is_lt_brokerage_enabled",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
@@ -4162,6 +4333,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": 2
+        },
+        "filing_status": {
+          "name": "filing_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -4458,8 +4635,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "api_sync_enabled": {
-          "name": "api_sync_enabled",
+        "is_api_sync_enabled": {
+          "name": "is_api_sync_enabled",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
@@ -4749,14 +4926,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -5020,7 +5197,7 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -5074,8 +5251,7 @@
         },
         "filing_status": {
           "name": "filing_status",
-          "type": "w4_filing_status_enum",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -5129,78 +5305,7 @@
       "isRLSEnabled": false
     }
   },
-  "enums": {
-    "public.account_ownership_enum": {
-      "name": "account_ownership_enum",
-      "schema": "public",
-      "values": ["individual", "joint"]
-    },
-    "public.api_sync_direction_enum": {
-      "name": "api_sync_direction_enum",
-      "schema": "public",
-      "values": ["pull", "push", "both"]
-    },
-    "public.budget_api_service_enum": {
-      "name": "budget_api_service_enum",
-      "schema": "public",
-      "values": ["ynab", "actual"]
-    },
-    "public.contribution_method_enum": {
-      "name": "contribution_method_enum",
-      "schema": "public",
-      "values": [
-        "percent_of_salary",
-        "fixed_per_period",
-        "fixed_monthly",
-        "fixed_annual"
-      ]
-    },
-    "public.employer_match_type_enum": {
-      "name": "employer_match_type_enum",
-      "schema": "public",
-      "values": [
-        "none",
-        "percent_of_contribution",
-        "dollar_match",
-        "fixed_annual"
-      ]
-    },
-    "public.hsa_coverage_type_enum": {
-      "name": "hsa_coverage_type_enum",
-      "schema": "public",
-      "values": ["self_only", "family"]
-    },
-    "public.match_tax_treatment_enum": {
-      "name": "match_tax_treatment_enum",
-      "schema": "public",
-      "values": ["pre_tax", "tax_free"]
-    },
-    "public.pay_period_enum": {
-      "name": "pay_period_enum",
-      "schema": "public",
-      "values": ["weekly", "biweekly", "semimonthly", "monthly"]
-    },
-    "public.pay_week_enum": {
-      "name": "pay_week_enum",
-      "schema": "public",
-      "values": ["even", "odd", "na"]
-    },
-    "public.portfolio_tax_type_enum": {
-      "name": "portfolio_tax_type_enum",
-      "schema": "public",
-      "values": ["preTax", "taxFree", "hsa", "afterTax"]
-    },
-    "public.tax_treatment_enum": {
-      "name": "tax_treatment_enum",
-      "schema": "public",
-      "values": ["pre_tax", "tax_free", "after_tax", "hsa"]
-    },
-    "public.w4_filing_status_enum": {
-      "name": "w4_filing_status_enum",
-      "schema": "public",
-      "values": ["MFJ", "Single", "HOH"]
-    }
-  },
+  "enums": {},
   "schemas": {},
   "sequences": {},
   "roles": {},

@@ -79,6 +79,7 @@ export const glidePathAllocations = active.glidePathAllocations;
 export const mcPresets = active.mcPresets;
 export const mcPresetGlidePaths = active.mcPresetGlidePaths;
 export const mcPresetReturnOverrides = active.mcPresetReturnOverrides;
+export const mcUserPresets = active.mcUserPresets;
 export const contributionProfiles = active.contributionProfiles;
 export const stateVersions = active.stateVersions;
 export const stateVersionTables = active.stateVersionTables;

@@ -10,7 +10,8 @@ A self-hosted personal finance dashboard for tracking income, budgets, investmen
 - **Budget Management** — Category-based budgeting with YNAB and Actual Budget sync support. Track spending against targets with real-time budget API integration.
 - **Portfolio Tracking** — Multi-account portfolio with asset allocation, performance history, tax-location analysis, and rebalancing tools. Supports brokerage and retirement account types.
 - **Net Worth** — Year-over-year net worth tracking with asset and liability breakdowns, trend visualization, and milestone tracking.
-- **Retirement Planning** — Monte Carlo simulations with both accumulation and decumulation phases, validated against Trinity Study benchmarks. Includes methodology documentation pages.
+- **Retirement Planning** — Monte Carlo simulations with both accumulation and decumulation phases, validated against Trinity Study benchmarks. 7 withdrawal strategies, IRMAA cliff detection, RMD tracking, lump-sum injections, and configurable filing status.
+- **Contributions** — Household contribution analysis with savings rate summary, per-person account breakdown, employer match analysis, IRS limit enforcement, prior-year tax contributions, and multiple contribution profiles.
 - **Savings Goals** — Fund-based savings tracking with contribution allocation and projections.
 - **Mortgage** — Amortization tables, refinance comparison, and extra payment modeling.
 - **Expenses** — Expense tracking and categorization across accounts.
@@ -20,13 +21,17 @@ A self-hosted personal finance dashboard for tracking income, budgets, investmen
 
 ### Platform Features
 
-- **Tax Engine** — Built-in federal and state tax calculation with bracket-aware withholding.
+- **Tax Engine** — Federal tax engine with 2025/2026 brackets, FICA, Additional Medicare Tax, LTCG graduated rates (progressive stacking), NIIT surtax, and Social Security taxation. LTCG and IRMAA brackets stored in database with year/filing-status versioning.
 - **Monte Carlo Simulation** — Probabilistic retirement outcome modeling with configurable parameters.
 - **Onboarding Wizard** — Guided setup for new users with demo profiles to explore the app before entering real data.
 - **Demo Mode** — Read-only demo mode with profile chooser (no login required).
 - **Dark Mode** — Full dark/light theme support.
-- **RBAC** — Role-based access control via Authentik OIDC integration.
+- **RBAC** — Role-based access control via Authentik OIDC integration with granular viewer permissions.
+- **Raw Data Browser** — Admin-only live database table viewer with row counts, column metadata, paginated data, and JSON export.
+- **Help & Guide** — Walkthrough of every feature organized by section.
 - **Auto-Versioning** — Automatic database snapshots on startup for pre-migration recovery points.
+- **Cross-Version Backup Import** — Import backups from older schema versions; data is automatically transformed to the current schema.
+- **CLI Backup Tools** — `pnpm backup:export` and `pnpm backup:import` for headless environments and scripted workflows.
 - **Health Check** — Built-in `/api/health` endpoint for container orchestration.
 
 ## Quick Start
@@ -135,7 +140,7 @@ All configuration is done through environment variables. Copy `.env.example` to 
 
 - Node.js 20+
 - pnpm (via corepack: `corepack enable`)
-- PostgreSQL 15+ _(optional — SQLite is used by default)_
+- PostgreSQL 16+ _(optional — SQLite is used by default)_
 
 ### Setup
 
@@ -159,18 +164,20 @@ Open [http://localhost:3000](http://localhost:3000). On first launch you'll see 
 
 ### Commands
 
-| Command            | Description                                  |
-| ------------------ | -------------------------------------------- |
-| `pnpm dev`         | Start development server                     |
-| `pnpm build`       | Production build                             |
-| `pnpm start`       | Start production server                      |
-| `pnpm test`        | Run all tests                                |
-| `pnpm test:watch`  | Run tests in watch mode                      |
-| `pnpm lint`        | Lint and format check                        |
-| `pnpm format`      | Auto-format with Prettier                    |
-| `pnpm db:generate` | Generate a new migration from schema changes |
-| `pnpm db:migrate`  | Run pending migrations                       |
-| `pnpm db:studio`   | Open Drizzle Studio (visual DB browser)      |
+| Command              | Description                                  |
+| -------------------- | -------------------------------------------- |
+| `pnpm dev`           | Start development server                     |
+| `pnpm build`         | Production build                             |
+| `pnpm start`         | Start production server                      |
+| `pnpm test`          | Run all tests                                |
+| `pnpm test:watch`    | Run tests in watch mode                      |
+| `pnpm lint`          | Lint and format check                        |
+| `pnpm format`        | Auto-format with Prettier                    |
+| `pnpm db:generate`   | Generate a new migration from schema changes |
+| `pnpm db:migrate`    | Run pending migrations                       |
+| `pnpm db:studio`     | Open Drizzle Studio (visual DB browser)      |
+| `pnpm backup:export` | Export all data to JSON (stdout or `--out`)  |
+| `pnpm backup:import` | Import a JSON backup (supports `--dry-run`)  |
 
 ### Authentication Modes
 
@@ -236,7 +243,7 @@ Both integrations are optional. Budget features work without them — you can ma
 
 ## Testing
 
-570+ tests covering calculators, retirement benchmarks, and UI components.
+830+ tests across 57 files covering calculators, retirement benchmarks, tRPC routers, UI components, and database operations.
 
 ```bash
 pnpm test          # Run once

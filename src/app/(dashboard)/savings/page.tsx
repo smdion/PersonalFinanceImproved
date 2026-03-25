@@ -496,8 +496,8 @@ export default function SavingsPage() {
       {/* Warnings */}
       {savings.warnings.length > 0 && (
         <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-3">
-          {savings.warnings.map((w, i) => (
-            <p key={i} className="text-sm text-yellow-400">
+          {savings.warnings.map((w) => (
+            <p key={w} className="text-sm text-yellow-400">
               {w}
             </p>
           ))}

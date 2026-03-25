@@ -221,15 +221,18 @@ export function useProjectionDerived(
   }, [isPersonFiltered, personFilter, result]);
 
   // --- Account breakdown ---
-  const accountBreakdown: Record<string, AcctBreakdown[]> =
-    engineData &&
-    engineData.result &&
-    "accountBreakdownByCategory" in engineData
-      ? (engineData.accountBreakdownByCategory as Record<
-          string,
-          AcctBreakdown[]
-        >)
-      : {};
+  const accountBreakdown = useMemo<Record<string, AcctBreakdown[]>>(
+    () =>
+      engineData &&
+      engineData.result &&
+      "accountBreakdownByCategory" in engineData
+        ? (engineData.accountBreakdownByCategory as Record<
+            string,
+            AcctBreakdown[]
+          >)
+        : {},
+    [engineData],
+  );
 
   const filteredBreakdown = useMemo(() => {
     let base = accountBreakdown;

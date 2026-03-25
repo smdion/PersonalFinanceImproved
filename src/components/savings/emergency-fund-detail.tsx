@@ -111,8 +111,11 @@ export function EmergencyFundDetail({
 
           {showReimbursements && (
             <div className="mt-2 space-y-1.5 ml-4">
-              {reimbursements.items.map((item, i) => (
-                <div key={i} className="flex justify-between text-xs">
+              {reimbursements.items.map((item) => (
+                <div
+                  key={`${item.description}-${item.amount}`}
+                  className="flex justify-between text-xs"
+                >
                   <span className="text-secondary">{item.description}</span>
                   <span className="text-faint tabular-nums">
                     {formatCurrency(item.amount)}
@@ -137,7 +140,7 @@ export function EmergencyFundDetail({
             onChange={(e) => onTierChange(Number(e.target.value))}
           >
             {budgetTierLabels.map((label: string, i: number) => (
-              <option key={i} value={i}>
+              <option key={label} value={i}>
                 {label}
               </option>
             ))}

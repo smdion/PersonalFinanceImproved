@@ -21,6 +21,7 @@ import { isPostgres } from "./dialect";
 import { truncateTables, resetSequences, validateColumns } from "./compat";
 import { VERSION_TABLE_NAMES, VERSION_TABLES } from "./version-tables";
 import { log } from "@/lib/logger";
+import { transformBackupToCurrentSchema } from "./backup-transforms";
 
 /**
  * Derive CURRENT_SCHEMA_VERSION from the drizzle journal automatically.
@@ -187,20 +188,36 @@ export async function restoreVersion(
     throw new Error(`Version ${versionId} not found`);
   }
 
-  // Schema drift check
-  if (version.schemaVersion !== CURRENT_SCHEMA_VERSION) {
-    throw new Error(
-      `Schema mismatch: version was created at ${version.schemaVersion}, current is ${CURRENT_SCHEMA_VERSION}. Run migrations first.`,
-    );
-  }
-
   // Load all table data
   const tableDatas = await database
     .select()
     .from(schema.stateVersionTables)
     .where(eq(schema.stateVersionTables.versionId, versionId));
 
-  const tableDataMap = new Map(tableDatas.map((t) => [t.tableName, t]));
+  // Transform snapshot data if it was created at an older schema version
+  const rawTableMap: Record<string, unknown[]> = {};
+  for (const t of tableDatas) {
+    if (Array.isArray(t.data) && t.data.length > 0) {
+      rawTableMap[t.tableName] = t.data;
+    }
+  }
+
+  const { tables: transformedMap } = transformBackupToCurrentSchema(
+    rawTableMap,
+    version.schemaVersion,
+    CURRENT_SCHEMA_VERSION,
+  );
+
+  // Rebuild the table data map with transformed data
+  const tableDataMap = new Map(
+    tableDatas.map((t) => [
+      t.tableName,
+      {
+        ...t,
+        data: transformedMap[t.tableName] ?? t.data,
+      },
+    ]),
+  );
 
   // Wrap in a transaction so truncate + inserts are atomic.
   // If anything fails, the database rolls back to its pre-restore state.
@@ -261,6 +278,7 @@ export async function restoreVersion(
         recordId: versionId,
         fieldName: "restore",
         oldValue: null,
+        // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM jsonb column requires unknown type
         newValue: { action: "restore", versionName: version.name } as unknown,
         changedBy: version.createdBy,
       });
@@ -306,27 +324,41 @@ export async function importBackup(
   database: NodePgDatabase<typeof schema>,
   backup: BackupData,
 ): Promise<{ restoredTables: number; restoredRows: number }> {
-  // Validate schema version
-  if (backup.schemaVersion !== CURRENT_SCHEMA_VERSION) {
-    throw new Error(
-      `Schema mismatch: backup was created at ${backup.schemaVersion}, current is ${CURRENT_SCHEMA_VERSION}.`,
+  // Transform backup to current schema if needed (supports v0.1.x → v0.2.0+)
+  const { tables: transformedTables, transformed } =
+    transformBackupToCurrentSchema(
+      backup.tables,
+      backup.schemaVersion,
+      CURRENT_SCHEMA_VERSION,
     );
+
+  if (transformed) {
+    log("info", "backup_import_transformed", {
+      from: backup.schemaVersion,
+      to: CURRENT_SCHEMA_VERSION,
+    });
   }
+
+  const transformedBackup: BackupData = {
+    ...backup,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    tables: transformedTables,
+  };
 
   // Validate structure — tables present in backup must be arrays
   for (const tableName of VERSION_TABLE_NAMES) {
     if (
-      backup.tables[tableName] !== undefined &&
-      !Array.isArray(backup.tables[tableName])
+      transformedBackup.tables[tableName] !== undefined &&
+      !Array.isArray(transformedBackup.tables[tableName])
     ) {
       throw new Error(`Backup table ${tableName} data must be an array`);
     }
   }
 
   if (isPostgres()) {
-    return importBackupPg(database, backup);
+    return importBackupPg(database, transformedBackup);
   }
-  return importBackupSqlite(database, backup);
+  return importBackupSqlite(database, transformedBackup);
 }
 
 async function importBackupPg(
@@ -420,6 +452,7 @@ async function importBackupPg(
         newValue: {
           action: "import",
           exportedAt: backup.exportedAt,
+          // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM jsonb column requires unknown type
         } as unknown,
         changedBy: "system",
       });
@@ -490,6 +523,7 @@ async function importBackupSqlite(
         newValue: {
           action: "import",
           exportedAt: backup.exportedAt,
+          // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM jsonb column requires unknown type
         } as unknown,
         changedBy: "system",
       });

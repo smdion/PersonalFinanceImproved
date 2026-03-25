@@ -13,7 +13,7 @@ interface RawGoal {
   monthlyContribution: string | null;
   targetAmount: string | null;
   apiCategoryId?: string | null;
-  apiSyncEnabled?: boolean | null;
+  isApiSyncEnabled?: boolean | null;
 }
 
 interface ApiCategoryGroup {
@@ -232,7 +232,7 @@ export function useApiSync() {
     ) => {
       const items: PushPreviewItem[] = [];
       for (const g of rawGoals) {
-        if (!g.apiSyncEnabled || !g.apiCategoryId) continue;
+        if (!g.isApiSyncEnabled || !g.apiCategoryId) continue;
         const amount = parseFloat(g.monthlyContribution ?? "0") || 0;
         const currentBudgeted = apiBalanceMap.get(g.id)?.budgeted ?? 0;
         items.push({

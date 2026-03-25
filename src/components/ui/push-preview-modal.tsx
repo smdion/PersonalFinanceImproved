@@ -66,10 +66,13 @@ export function PushPreviewModal({
                 </tr>
               </thead>
               <tbody>
-                {changed.map((item, i) => {
+                {changed.map((item) => {
                   const delta = item.newValue - item.currentYnab;
                   return (
-                    <tr key={i} className="border-b border-subtle">
+                    <tr
+                      key={`${item.name}-${item.field}`}
+                      className="border-b border-subtle"
+                    >
                       <td
                         className="py-1.5 pr-2 text-secondary truncate max-w-[140px]"
                         title={item.name}

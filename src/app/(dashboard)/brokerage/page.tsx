@@ -265,7 +265,8 @@ export default function BrokeragePage() {
                 <div className="space-y-1 mb-3">
                   {brokerageLumpSums.map((ls, i) => (
                     <div
-                      key={i}
+                      // eslint-disable-next-line react/no-array-index-key -- lump sum entries have no stable ID
+                      key={`${ls.year}-${ls.targetAccount}-${i}`}
                       className="flex items-center gap-2 bg-surface-sunken rounded px-3 py-1.5 text-xs"
                     >
                       <span className="font-semibold">{ls.year}</span>
@@ -436,8 +437,8 @@ export default function BrokeragePage() {
       {/* Warnings */}
       {brokerageResult.warnings.length > 0 && (
         <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3">
-          {brokerageResult.warnings.map((w, i) => (
-            <p key={i} className="text-xs text-amber-700">
+          {brokerageResult.warnings.map((w) => (
+            <p key={w} className="text-xs text-amber-700">
               {w}
             </p>
           ))}

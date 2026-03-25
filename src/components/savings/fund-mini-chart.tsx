@@ -157,9 +157,9 @@ export function FundMiniChart({
                   >
                     {formatCurrency(point.balance)}
                   </p>
-                  {point.events?.map((ev, i) => (
+                  {point.events?.map((ev) => (
                     <p
-                      key={i}
+                      key={`${ev.description}-${ev.amount}`}
                       className={`text-[10px] ${ev.amount < 0 ? "text-red-600" : "text-green-600"}`}
                     >
                       {ev.description}: {ev.amount >= 0 ? "+" : ""}

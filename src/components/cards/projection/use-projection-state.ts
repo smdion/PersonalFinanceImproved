@@ -127,14 +127,7 @@ export function useProjectionState(props: UseProjectionStateProps) {
       personName: form.isPersonFiltered ? derived.personFilterName : "",
     });
     form.setShowAccumForm(false);
-  }, [
-    form.accumForm,
-    form.isPersonFiltered,
-    derived.personFilterName,
-    form.setAccumOverrides,
-    form.setAccumForm,
-    form.setShowAccumForm,
-  ]);
+  }, [form, derived.personFilterName]);
 
   const handleAddDecumOverride = useCallback(() => {
     const year = parseInt(form.decumForm.year);
@@ -223,14 +216,7 @@ export function useProjectionState(props: UseProjectionStateProps) {
       personName: form.isPersonFiltered ? derived.personFilterName : "",
     });
     form.setShowDecumForm(false);
-  }, [
-    form.decumForm,
-    form.isPersonFiltered,
-    derived.personFilterName,
-    form.setDecumOverrides,
-    form.setDecumForm,
-    form.setShowDecumForm,
-  ]);
+  }, [form, derived.personFilterName]);
 
   // Flat return — preserves the existing API surface for all consumers
   return {

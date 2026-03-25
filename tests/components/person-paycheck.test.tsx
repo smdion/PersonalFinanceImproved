@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { PersonPaycheck } from "@/components/paycheck/person-paycheck";
+import type { PaycheckResult } from "@/lib/calculators/types/calculators";
 
 vi.mock("@/components/ui/inline-edit", () => ({
   InlineEdit: ({
@@ -63,13 +64,13 @@ vi.mock("@/components/paycheck/salary-tracker", () => ({
 const baseJob = {
   id: 1,
   employerName: "Acme Corp",
-  title: "Software Engineer",
+  title: "Software Engineer" as string | null,
   annualSalary: "120000",
   bonusPercent: "10",
   bonusMultiplier: "1",
-  bonusOverride: null,
-  bonusMonth: 3,
-  bonusDayOfMonth: 15,
+  bonusOverride: null as string | null,
+  bonusMonth: 3 as number | null,
+  bonusDayOfMonth: 15 as number | null,
   include401kInBonus: false,
   includeBonusInContributions: true,
   payPeriod: "biweekly",
@@ -80,22 +81,28 @@ const baseJob = {
   startDate: "2020-01-01",
 };
 
-const basePaycheck = {
-  grossPerPeriod: 4615.38,
-  netPerPeriod: 3200,
-  annualGross: 120000,
-  annualNet: 83200,
-  annualFederalTax: 18000,
-  annualStateTax: 6000,
-  annualSocialSecurity: 7440,
-  annualMedicare: 1740,
-  annualPreTaxDeductions: 0,
-  annualPostTaxDeductions: 0,
-  annualContributions: 0,
-  annualEmployerMatch: 0,
+const basePaycheck: PaycheckResult = {
+  gross: 4615.38,
+  preTaxDeductions: [],
+  federalTaxableGross: 4615.38,
+  federalWithholding: 692.31,
+  ficaSS: 286.15,
+  ficaMedicare: 66.92,
+  postTaxDeductions: [],
+  netPay: 3200,
+  bonusEstimate: {
+    bonusGross: 12000,
+    bonusNet: 9360,
+    bonusFederalWithholding: 2640,
+    bonusFica: 0,
+  },
+  bonusPeriod: null,
+  extraPaycheckMonths: [],
+  yearSchedule: [],
   periodsPerYear: 26,
-  deductions: [],
-  contributions: [],
+  periodsElapsedYtd: 0,
+  nextPayDate: "2026-01-09",
+  payFrequencyLabel: "Biweekly",
   warnings: [],
 };
 
@@ -105,7 +112,7 @@ const defaultProps = {
   salary: 120000,
   futureSalaryChanges: [],
   paycheck: basePaycheck,
-  mode: "standard" as const,
+  mode: "projected" as const,
   activeSalaryOverride: null,
   onToggleSalary: vi.fn(),
   onUpdateJob: vi.fn(),

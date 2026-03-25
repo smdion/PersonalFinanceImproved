@@ -64,8 +64,8 @@ function SchemaTable({ fields }: { fields: SchemaField[] }) {
         </tr>
       </thead>
       <tbody>
-        {fields.map((f: SchemaField, i: number) => (
-          <tr key={i} className="border-b border-subtle">
+        {fields.map((f: SchemaField) => (
+          <tr key={f.name} className="border-b border-subtle">
             <td className="px-4 py-1.5 font-mono text-primary">{f.name}</td>
             <td className="px-4 py-1.5 font-mono text-muted">{f.type}</td>
             <td className="px-4 py-1.5">

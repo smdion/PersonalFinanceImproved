@@ -310,7 +310,10 @@ export function TaxBracketsSettings() {
                           </thead>
                           <tbody>
                             {brackets.map((b, i) => (
-                              <tr key={i} className="border-t border-subtle">
+                              <tr
+                                key={b.threshold}
+                                className="border-t border-subtle"
+                              >
                                 <td className="py-1 pr-2">
                                   <InlineEdit
                                     value={b.threshold.toString()}

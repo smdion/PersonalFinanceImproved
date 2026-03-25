@@ -292,8 +292,8 @@ export function SimulationAssumptions({
             <div className="text-[11px] text-amber-700 bg-amber-50 rounded px-2.5 py-2 border border-amber-200">
               <span className="font-semibold">Active overrides:</span>
               <ul className="mt-0.5 ml-3 list-disc space-y-0">
-                {activeOverrides.map((o, i) => (
-                  <li key={i}>{o}</li>
+                {activeOverrides.map((o) => (
+                  <li key={o}>{o}</li>
                 ))}
               </ul>
             </div>

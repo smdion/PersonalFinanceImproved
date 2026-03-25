@@ -287,7 +287,7 @@ export const savingsGoals = pgTable(
     isEmergencyFund: boolean("is_emergency_fund").notNull().default(false),
     apiCategoryId: text("api_category_id"),
     apiCategoryName: text("api_category_name"),
-    apiSyncEnabled: boolean("api_sync_enabled").notNull().default(false),
+    isApiSyncEnabled: boolean("is_api_sync_enabled").notNull().default(false),
     reimbursementApiCategoryId: text("reimbursement_api_category_id"),
     targetMode: text("target_mode").notNull().default("fixed"), // 'fixed' | 'ongoing'
     monthlyContribution: decimal("monthly_contribution", {
@@ -1004,9 +1004,7 @@ export const retirementSettings = pgTable(
     /** Household size for ACA FPL calculation. */
     householdSize: integer("household_size").notNull().default(2),
     /** Explicit filing status for retirement projections. Null = derive from primary job W-4. */
-    filingStatus: varchar("filing_status", {
-      length: 10,
-    }).$type<W4FilingStatus>(),
+    filingStatus: text("filing_status").$type<W4FilingStatus>(),
   },
   (table) => [index("retirement_settings_person_id_idx").on(table.personId)],
 );
@@ -1104,7 +1102,9 @@ export const retirementScenarios = pgTable("retirement_scenarios", {
   })
     .notNull()
     .default("0.15"),
-  ltBrokerageEnabled: boolean("lt_brokerage_enabled").notNull().default(true),
+  isLtBrokerageEnabled: boolean("is_lt_brokerage_enabled")
+    .notNull()
+    .default(true),
   ltBrokerageAnnualContribution: decimal("lt_brokerage_annual_contribution", {
     precision: 12,
     scale: 2,
@@ -1448,6 +1448,33 @@ export const mcPresetReturnOverrides = pgTable(
     uniqueIndex("mc_preset_ro_idx").on(table.presetId, table.assetClassId),
   ],
 );
+
+// --- Monte Carlo: User-created simulation presets ---
+
+export const mcUserPresets = pgTable("mc_user_presets", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  simulations: integer("simulations").notNull().default(1000),
+  returnMean: decimal("return_mean", { precision: 12, scale: 6 }).notNull(),
+  returnStdDev: decimal("return_std_dev", {
+    precision: 12,
+    scale: 6,
+  }).notNull(),
+  inflationMean: decimal("inflation_mean", {
+    precision: 12,
+    scale: 6,
+  }).notNull(),
+  inflationStdDev: decimal("inflation_std_dev", {
+    precision: 12,
+    scale: 6,
+  }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 // --- Contribution profiles (what-if salary/contribution overrides) ---
 

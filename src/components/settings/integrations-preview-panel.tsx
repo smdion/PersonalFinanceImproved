@@ -338,7 +338,7 @@ export function PreviewPanel({
                 className="px-1 py-1 text-[11px] border border-strong rounded bg-surface-primary min-w-[80px]"
               >
                 {profile.columnLabels.map((label, i) => (
-                  <option key={i} value={i}>
+                  <option key={label} value={i}>
                     {label}
                   </option>
                 ))}
@@ -1205,7 +1205,7 @@ export function PreviewPanel({
                   );
                   return (
                     <div
-                      key={i}
+                      key={m.localId ?? m.localName}
                       className="flex items-center gap-1.5 text-xs bg-green-50 rounded px-2 py-1"
                     >
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 whitespace-nowrap">

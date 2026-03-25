@@ -391,9 +391,9 @@ function ProjectionCell({
       {/* Events — only when present */}
       {events && (
         <div className="mt-0.5">
-          {events.map((e, ei) => (
+          {events.map((e) => (
             <div
-              key={ei}
+              key={`${e.description}-${e.amount}`}
               className={`text-[10px] leading-tight truncate ${
                 e.amount < 0 ? "text-red-500" : "text-green-600"
               }`}

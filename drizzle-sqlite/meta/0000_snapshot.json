@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "13dc28f5-76ec-413b-981a-1f27050097f9",
+  "id": "6155cd27-b708-4f53-873c-16f8c5cb485d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "account_performance": {
@@ -95,6 +95,14 @@
         },
         "distributions": {
           "name": "distributions",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        },
+        "rollovers": {
+          "name": "rollovers",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -260,6 +268,14 @@
         },
         "fees": {
           "name": "fees",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        },
+        "rollovers": {
+          "name": "rollovers",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -1238,6 +1254,21 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "prior_year_contrib_amount": {
+          "name": "prior_year_contrib_amount",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        },
+        "prior_year_contrib_year": {
+          "name": "prior_year_contrib_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -1573,6 +1604,50 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "irmaa_brackets": {
+      "name": "irmaa_brackets",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "tax_year": {
+          "name": "tax_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "filing_status": {
+          "name": "filing_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "brackets": {
+          "name": "brackets",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "irmaa_brackets_year_status_idx": {
+          "name": "irmaa_brackets_year_status_idx",
+          "columns": ["tax_year", "filing_status"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "jobs": {
       "name": "jobs",
       "columns": {
@@ -1804,6 +1879,50 @@
         "local_admins_email_unique": {
           "name": "local_admins_email_unique",
           "columns": ["email"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "ltcg_brackets": {
+      "name": "ltcg_brackets",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "tax_year": {
+          "name": "tax_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "filing_status": {
+          "name": "filing_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "brackets": {
+          "name": "brackets",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "ltcg_brackets_year_status_idx": {
+          "name": "ltcg_brackets_year_status_idx",
+          "columns": ["tax_year", "filing_status"],
           "isUnique": true
         }
       },
@@ -3248,6 +3367,20 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -3308,8 +3441,29 @@
           "notNull": true,
           "autoincrement": false
         },
+        "contribution_profile_id": {
+          "name": "contribution_profile_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "notes": {
           "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "updated_by": {
+          "name": "updated_by",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -3336,6 +3490,15 @@
           "columnsFrom": ["person_id"],
           "columnsTo": ["id"],
           "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "retirement_salary_overrides_contribution_profile_id_contribution_profiles_id_fk": {
+          "name": "retirement_salary_overrides_contribution_profile_id_contribution_profiles_id_fk",
+          "tableFrom": "retirement_salary_overrides",
+          "tableTo": "contribution_profiles",
+          "columnsFrom": ["contribution_profile_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -3413,8 +3576,8 @@
           "autoincrement": false,
           "default": "'0.15'"
         },
-        "lt_brokerage_enabled": {
-          "name": "lt_brokerage_enabled",
+        "is_lt_brokerage_enabled": {
+          "name": "is_lt_brokerage_enabled",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -3739,6 +3902,13 @@
           "notNull": true,
           "autoincrement": false,
           "default": 2
+        },
+        "filing_status": {
+          "name": "filing_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -4010,8 +4180,8 @@
           "notNull": false,
           "autoincrement": false
         },
-        "api_sync_enabled": {
-          "name": "api_sync_enabled",
+        "is_api_sync_enabled": {
+          "name": "is_api_sync_enabled",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,

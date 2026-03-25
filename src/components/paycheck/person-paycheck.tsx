@@ -222,8 +222,8 @@ export function PersonPaycheck({
 
           {paycheck.warnings.length > 0 && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              {paycheck.warnings.map((w, i) => (
-                <p key={i} className="text-sm text-yellow-800">
+              {paycheck.warnings.map((w) => (
+                <p key={w} className="text-sm text-yellow-800">
                   {w}
                 </p>
               ))}

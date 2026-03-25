@@ -316,8 +316,8 @@ export function SavingsGoalsCard() {
                     </span>
                   ) : status?.kind === "shortfall" && status.shortfalls ? (
                     <div className="text-[10px] text-red-600 space-y-0">
-                      {status.shortfalls.slice(0, 3).map((s, i) => (
-                        <div key={i}>
+                      {status.shortfalls.slice(0, 3).map((s) => (
+                        <div key={s.month}>
                           -{formatCurrency(s.amount)} in {s.month}
                         </div>
                       ))}

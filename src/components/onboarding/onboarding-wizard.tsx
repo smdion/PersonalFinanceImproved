@@ -361,7 +361,7 @@ function PeopleStep({
         <div className="space-y-2">
           {people.map((person, i) => (
             <div
-              key={i}
+              key={`${person.name}-${person.dateOfBirth}`}
               className="flex items-center justify-between bg-surface-primary border border-default rounded-lg px-4 py-3"
             >
               <div>
@@ -501,7 +501,7 @@ function IncomeStep({
         <div className="space-y-2">
           {jobs.map((job, i) => (
             <div
-              key={i}
+              key={`${job.personIndex}-${job.employerName}`}
               className="flex items-center justify-between bg-surface-primary border border-default rounded-lg px-4 py-3"
             >
               <div>
@@ -533,7 +533,7 @@ function IncomeStep({
             className="px-3 py-2 rounded-lg border border-default bg-surface-primary text-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {people.map((p, i) => (
-              <option key={i} value={i}>
+              <option key={p.name} value={i}>
                 {p.name}
               </option>
             ))}

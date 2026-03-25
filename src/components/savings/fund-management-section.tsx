@@ -24,7 +24,7 @@ interface RawGoal {
   priority: number;
   apiCategoryId?: string | null;
   apiCategoryName?: string | null;
-  apiSyncEnabled?: boolean | null;
+  isApiSyncEnabled?: boolean | null;
 }
 
 interface PlannedTransaction {
@@ -212,7 +212,7 @@ export function FundManagementSection({
         onSuccess: () => {
           if (
             field === "monthlyContribution" &&
-            raw.apiSyncEnabled &&
+            raw.isApiSyncEnabled &&
             raw.apiCategoryId
           ) {
             const newAmount = parseFloat(value) || 0;
@@ -262,7 +262,7 @@ export function FundManagementSection({
         onSuccess: () => {
           if (
             "monthlyContribution" in fields &&
-            raw.apiSyncEnabled &&
+            raw.isApiSyncEnabled &&
             raw.apiCategoryId
           ) {
             const newAmount = parseFloat(fields.monthlyContribution!) || 0;

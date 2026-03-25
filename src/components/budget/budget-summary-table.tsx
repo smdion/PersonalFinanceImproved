@@ -178,7 +178,7 @@ export function BudgetSummaryTable({
                 </td>
                 {allColumnResults.map((_, i) => (
                   <td
-                    key={i}
+                    key={cols[i]}
                     className="text-right py-1 px-2 tabular-nums text-green-800 font-medium"
                   >
                     {formatCurrency(payrollBreakdowns[i]?.grossMonthly ?? 0)}
@@ -196,7 +196,7 @@ export function BudgetSummaryTable({
                     </td>
                     {line.amounts.map((amt, i) => (
                       <td
-                        key={i}
+                        key={cols[i]}
                         className="text-right py-0.5 px-2 tabular-nums text-green-700 text-[10px]"
                       >
                         {formatCurrency(amt ?? 0)}
@@ -218,7 +218,7 @@ export function BudgetSummaryTable({
                 </td>
                 {allColumnResults.map((_, i) => (
                   <td
-                    key={i}
+                    key={cols[i]}
                     className="text-right py-1 px-2 tabular-nums text-red-600"
                   >
                     −{formatCurrency(payrollBreakdowns[i]?.totalTaxes ?? 0)}
@@ -233,7 +233,7 @@ export function BudgetSummaryTable({
                     </td>
                     {allColumnResults.map((_, i) => (
                       <td
-                        key={i}
+                        key={cols[i]}
                         className="text-right py-0.5 px-2 tabular-nums text-red-500 text-[10px]"
                       >
                         −
@@ -249,7 +249,7 @@ export function BudgetSummaryTable({
                     </td>
                     {allColumnResults.map((_, i) => (
                       <td
-                        key={i}
+                        key={cols[i]}
                         className="text-right py-0.5 px-2 tabular-nums text-red-500 text-[10px]"
                       >
                         −{formatCurrency(payrollBreakdowns[i]?.ficaSS ?? 0)}
@@ -262,7 +262,7 @@ export function BudgetSummaryTable({
                     </td>
                     {allColumnResults.map((_, i) => (
                       <td
-                        key={i}
+                        key={cols[i]}
                         className="text-right py-0.5 px-2 tabular-nums text-red-500 text-[10px]"
                       >
                         −
@@ -291,7 +291,7 @@ export function BudgetSummaryTable({
                     </td>
                     {allColumnResults.map((_, i) => (
                       <td
-                        key={i}
+                        key={cols[i]}
                         className="text-right py-1 px-2 tabular-nums text-red-600"
                       >
                         −
@@ -300,9 +300,9 @@ export function BudgetSummaryTable({
                     ))}
                   </tr>
                   {showPreTax &&
-                    preTaxDetailLines.map((line, di) => (
+                    preTaxDetailLines.map((line) => (
                       <tr
-                        key={`pre-${di}`}
+                        key={`pre-${line.name}`}
                         className="border-b border-subtle bg-surface-sunken/50"
                       >
                         <td className="py-0.5 pr-3 pl-8 text-faint text-[10px]">
@@ -310,7 +310,7 @@ export function BudgetSummaryTable({
                         </td>
                         {line.amounts.map((amt, i) => (
                           <td
-                            key={i}
+                            key={cols[i]}
                             className="text-right py-0.5 px-2 tabular-nums text-red-500 text-[10px]"
                           >
                             −{formatCurrency(amt ?? 0)}
@@ -337,7 +337,7 @@ export function BudgetSummaryTable({
                     </td>
                     {allColumnResults.map((_, i) => (
                       <td
-                        key={i}
+                        key={cols[i]}
                         className="text-right py-1 px-2 tabular-nums text-red-600"
                       >
                         −
@@ -348,9 +348,9 @@ export function BudgetSummaryTable({
                     ))}
                   </tr>
                   {showPostTax &&
-                    postTaxDetailLines.map((line, di) => (
+                    postTaxDetailLines.map((line) => (
                       <tr
-                        key={`post-${di}`}
+                        key={`post-${line.name}`}
                         className="border-b border-subtle bg-surface-sunken/50"
                       >
                         <td className="py-0.5 pr-3 pl-8 text-faint text-[10px]">
@@ -358,7 +358,7 @@ export function BudgetSummaryTable({
                         </td>
                         {line.amounts.map((amt, i) => (
                           <td
-                            key={i}
+                            key={cols[i]}
                             className="text-right py-0.5 px-2 tabular-nums text-red-500 text-[10px]"
                           >
                             −{formatCurrency(amt ?? 0)}
@@ -393,7 +393,7 @@ export function BudgetSummaryTable({
                 </td>
                 {allColumnResults.map((_, i) => (
                   <td
-                    key={i}
+                    key={cols[i]}
                     className="text-right py-1 px-2 tabular-nums text-green-700 font-semibold"
                   >
                     {formatCurrency(payrollBreakdowns[i]?.netMonthly ?? 0)}
@@ -411,7 +411,7 @@ export function BudgetSummaryTable({
                     </td>
                     {line.amounts.map((amt, i) => (
                       <td
-                        key={i}
+                        key={cols[i]}
                         className="text-right py-0.5 px-2 tabular-nums text-green-600 text-[10px]"
                       >
                         {formatCurrency(amt ?? 0)}
@@ -431,7 +431,7 @@ export function BudgetSummaryTable({
                 </td>
                 {allColumnResults.map((r, i) => (
                   <td
-                    key={i}
+                    key={cols[i]}
                     className="text-right py-1 px-2 tabular-nums text-blue-600"
                   >
                     −{formatCurrency(r.essentialTotal)}
@@ -448,7 +448,7 @@ export function BudgetSummaryTable({
                 </td>
                 {allColumnResults.map((r, i) => (
                   <td
-                    key={i}
+                    key={cols[i]}
                     className="text-right py-1 px-2 tabular-nums text-purple-500"
                   >
                     −{formatCurrency(r.discretionaryTotal)}
@@ -491,7 +491,7 @@ export function BudgetSummaryTable({
                           r.totalMonthly;
                         return (
                           <td
-                            key={i}
+                            key={cols[i]}
                             className={`text-right py-1.5 px-2 tabular-nums ${totalSavings >= 0 ? "text-emerald-700" : "text-red-600"}`}
                           >
                             {formatCurrency(totalSavings)}
@@ -511,7 +511,7 @@ export function BudgetSummaryTable({
                             </td>
                             {allColumnResults.map((_, i) => (
                               <td
-                                key={i}
+                                key={cols[i]}
                                 className="text-right py-0.5 px-2 tabular-nums text-amber-500 text-[10px]"
                               >
                                 {formatCurrency(fund.monthlyContribution)}
@@ -530,7 +530,7 @@ export function BudgetSummaryTable({
                               totalSinking;
                             return (
                               <td
-                                key={i}
+                                key={cols[i]}
                                 className={`text-right py-0.5 px-2 tabular-nums text-[10px] ${unallocated >= 0 ? "text-emerald-600" : "text-red-500"}`}
                               >
                                 {formatCurrency(unallocated)}

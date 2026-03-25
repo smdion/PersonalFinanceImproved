@@ -17,6 +17,8 @@ next-env.d.ts
 # test artifacts
 test-results/
 playwright-report/
+coverage/
+tests/.tmp/
 
 # artifacts
 *.db

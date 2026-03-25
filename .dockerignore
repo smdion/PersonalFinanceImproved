@@ -10,4 +10,7 @@ node_modules
 .vscode
 .idea
 coverage
+tests
+test-results
+playwright-report
 .turbo

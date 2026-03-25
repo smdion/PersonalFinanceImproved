@@ -970,8 +970,8 @@ describe("retirement projection edge cases", () => {
   });
 
   it("handles first-year pro-rating for mid-year accumulation start", () => {
-    const midYear = new Date("2025-07-01"); // 6 months remaining
-    const janStart = new Date("2025-01-01"); // 12 months remaining
+    const midYear = new Date(2025, 6, 1); // July 1 (month is 0-indexed)
+    const janStart = new Date(2025, 0, 1); // Jan 1
     const accInput = {
       currentAge: 35,
       retirementAge: 65,
@@ -1010,10 +1010,14 @@ describe("retirement projection edge cases", () => {
       midFirst.phase === "accumulation" &&
       janFirst.phase === "accumulation"
     ) {
-      // Jul 1 → ~7/12 months remaining ≈ 0.583
-      expect(midFirst.proRateFraction).toBeCloseTo(7 / 12, 2);
-      // Mid-year has more months remaining → contributes more in year 1
-      expect(midFirst.totalEmployee).toBeGreaterThan(janFirst.totalEmployee);
+      // Jul 1 → getMonth()=6, monthsRemaining=6, fraction=6/12=0.5
+      expect(midFirst.proRateFraction).toBeCloseTo(6 / 12, 2);
+      // Jan start has full year (fraction=1, proRateFraction=null)
+      expect(janFirst.proRateFraction).toBeNull();
+      // Mid-year contributes less than full year
+      expect(midFirst.totalEmployee).toBeLessThanOrEqual(
+        janFirst.totalEmployee,
+      );
     }
   });
 
