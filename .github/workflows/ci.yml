@@ -97,79 +97,14 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-      # --- Non-blocking steps (tracked, don't fail the pipeline) ---
-
       - name: Audit production dependencies (high/critical)
-        if: success()
-        id: audit
         run: pnpm audit --prod --audit-level=high
-        continue-on-error: true
 
       - name: Check migrations
-        if: success()
-        id: check_migrations
         run: pnpm check:migrations
-        continue-on-error: true
 
       - name: Verify docs freshness
-        if: success()
-        id: docs_verify
         run: pnpm docs:verify
-        continue-on-error: true
 
       - name: Docker build smoke test
-        if: success()
-        id: docker_build
         run: docker build --build-arg APP_VERSION=ci-${{ github.sha }} -t ledgr:ci-test .
-        continue-on-error: true
-
-      # --- Summary of non-blocking issues ---
-
-      - name: CI health summary
-        if: always()
-        run: |
-          {
-            echo "## CI Health Summary"
-            echo ""
-            echo "| Check | Status | Details |"
-            echo "|-------|--------|---------|"
-
-            # Audit
-            if [ "${{ steps.audit.outcome }}" = "success" ]; then
-              echo "| Dependency audit | :white_check_mark: | Passed |"
-            elif [ "${{ steps.audit.outcome }}" = "skipped" ]; then
-              echo "| Dependency audit | :fast_forward: | Skipped (prior failure) |"
-            else
-              echo "| Dependency audit | :warning: | Vulnerabilities found |"
-            fi
-
-            # Migrations
-            if [ "${{ steps.check_migrations.outcome }}" = "success" ]; then
-              echo "| Migration check | :white_check_mark: | Passed |"
-            elif [ "${{ steps.check_migrations.outcome }}" = "skipped" ]; then
-              echo "| Migration check | :fast_forward: | Skipped (prior failure) |"
-            else
-              echo "| Migration check | :warning: | Needs attention |"
-            fi
-
-            # Docs
-            if [ "${{ steps.docs_verify.outcome }}" = "success" ]; then
-              echo "| Docs freshness | :white_check_mark: | Up to date |"
-            elif [ "${{ steps.docs_verify.outcome }}" = "skipped" ]; then
-              echo "| Docs freshness | :fast_forward: | Skipped (prior failure) |"
-            else
-              echo "| Docs freshness | :warning: | Stale docs detected |"
-            fi
-
-            # Docker build
-            if [ "${{ steps.docker_build.outcome }}" = "success" ]; then
-              echo "| Docker build | :white_check_mark: | Image builds |"
-            elif [ "${{ steps.docker_build.outcome }}" = "skipped" ]; then
-              echo "| Docker build | :fast_forward: | Skipped (prior failure) |"
-            else
-              echo "| Docker build | :warning: | Build failed |"
-            fi
-
-            echo ""
-            echo "*Non-blocking issues are tracked in TODO.md and reviewed quarterly.*"
-          } >> "$GITHUB_STEP_SUMMARY"
