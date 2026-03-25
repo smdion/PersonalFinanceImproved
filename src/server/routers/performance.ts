@@ -1,9 +1,8 @@
 /** Performance router for portfolio time-weighted return tracking, snapshot ingestion, account-level performance history, and category rollup calculations. */
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
-import { asc, eq, and, sql } from "drizzle-orm";
+import { asc, eq, and } from "drizzle-orm";
 import { log } from "@/lib/logger";
-import { isPostgres } from "@/lib/db/dialect";
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -146,7 +145,8 @@ const accountCreateInput = z.object({
 // --- Shared helpers (used by getSummary and finalizeYear) ---
 
 /** Modified Dietz return: gainLoss / (beginBal + (contribs + rollovers + employer - distributions - fees) / 2) */
-function computeReturn(
+/** Modified Dietz return: gainLoss / (beginBal + net-flows/2). Exported for testing. */
+export function computeReturn(
   beginBal: number,
   contribs: number,
   gainLoss: number,
@@ -161,7 +161,7 @@ function computeReturn(
   return gainLoss / denominator;
 }
 
-type AccountLike = {
+export type AccountLike = {
   beginningBalance: string | null;
   totalContributions: string | null;
   yearlyGainLoss: string | null;
@@ -172,8 +172,8 @@ type AccountLike = {
   rollovers: string | null;
 };
 
-/** Sum a set of account rows into a rollup */
-function sumAccounts(accts: AccountLike[]) {
+/** Sum a set of account rows into a rollup. Exported for testing. */
+export function sumAccounts(accts: AccountLike[]) {
   let beginBal = 0,
     contribs = 0,
     gainLoss = 0,
@@ -204,7 +204,7 @@ function sumAccounts(accts: AccountLike[]) {
   };
 }
 
-type AnnualRowLike = {
+export type AnnualRowLike = {
   beginningBalance: number;
   totalContributions: number;
   yearlyGainLoss: number;
@@ -218,8 +218,8 @@ type AnnualRowLike = {
   lifetimeMatch: number;
 };
 
-/** Sum a set of annual rows (numeric) into a Portfolio rollup */
-function sumAnnualRows(rows: AnnualRowLike[]) {
+/** Sum a set of annual rows (numeric) into a Portfolio rollup. Exported for testing. */
+export function sumAnnualRows(rows: AnnualRowLike[]) {
   let beginBal = 0,
     contribs = 0,
     gainLoss = 0,
@@ -916,18 +916,13 @@ export const performanceRouter = createTRPCRouter({
       const nextYear = year + 1;
 
       return await ctx.db.transaction(async (tx) => {
-        // Guard: reject if year is already finalized — PG uses FOR UPDATE row lock,
-        // SQLite relies on its single-writer transaction model for serialization.
-        const existingAnnualRows: (typeof schema.annualPerformance.$inferSelect)[] =
-          await tx
-            .execute(
-              isPostgres()
-                ? sql`SELECT * FROM annual_performance WHERE year = ${year} FOR UPDATE`
-                : sql`SELECT * FROM annual_performance WHERE year = ${year}`,
-            )
-            .then(
-              (r) => r.rows as (typeof schema.annualPerformance.$inferSelect)[],
-            );
+        // Guard: reject if year is already finalized.
+        // SQLite's single-writer model provides serialization; PG relies on
+        // the SERIALIZABLE transaction isolation already set on the pool.
+        const existingAnnualRows = await tx
+          .select()
+          .from(schema.annualPerformance)
+          .where(eq(schema.annualPerformance.year, year));
 
         if (existingAnnualRows.some((r) => r.isFinalized)) {
           throw new TRPCError({

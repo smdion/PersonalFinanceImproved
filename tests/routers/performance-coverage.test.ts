@@ -1,8 +1,9 @@
 /**
  * Performance router coverage tests — targets uncovered lines 386-588 and 915-1424.
  *
- * Lines 915-1424 (finalizeYear) use db.execute() / db.transaction() with raw SQL
- * which is incompatible with better-sqlite3 in tests — skipped per convention.
+ * Lines 915-1424 (finalizeYear) use db.transaction(async ...) which is incompatible
+ * with better-sqlite3. Core computation logic (computeReturn, sumAccounts, sumAnnualRows)
+ * is extracted and tested directly as pure functions.
  *
  * Lines 386-588 are in computeSummary and cover:
  * - Synthesizing missing annual rows from account data (lines 371-401)
@@ -653,12 +654,203 @@ describe("performance.computeSummary — enriched accountRows", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// finalizeYear — SKIPPED (uses db.execute() with raw SQL / transactions)
+// finalizeYear — pure function unit tests
+//
+// The finalizeYear procedure uses db.transaction(async ...) which is
+// incompatible with better-sqlite3 (same limitation as settings/admin).
+// Instead of testing through tRPC, we test the extracted pure computation
+// functions that contain the core business logic.
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("performance.finalizeYear", () => {
-  it.skip("skipped — uses db.execute() / db.transaction() incompatible with better-sqlite3 test harness", () => {
-    // Lines 915-1424 use tx.execute(sql`...`) with FOR UPDATE locks
-    // and complex transaction callbacks that don't work in SQLite test DB.
+import {
+  computeReturn,
+  sumAccounts,
+  sumAnnualRows,
+  type AccountLike,
+  type AnnualRowLike,
+} from "@/server/routers/performance";
+
+describe("finalizeYear — pure computation logic", () => {
+  describe("computeReturn (Modified Dietz)", () => {
+    it("computes return for typical account data", () => {
+      // gainLoss / (beginBal + (contribs + rollovers + employer - distributions - fees) / 2)
+      // = 12000 / (100000 + (20000 + 0 + 5000 - 0 - 200) / 2) = 12000 / 112400 ≈ 0.106762
+      const result = computeReturn(100000, 20000, 12000, 5000, 0, 200, 0);
+      expect(result).toBeCloseTo(12000 / 112400, 6);
+    });
+
+    it("returns null when denominator is zero (no beginning balance, no flows)", () => {
+      expect(computeReturn(0, 0, 0, 0, 0, 0, 0)).toBeNull();
+    });
+
+    it("handles negative returns (loss year)", () => {
+      const result = computeReturn(100000, 10000, -15000, 0, 0, 100, 0);
+      expect(result).not.toBeNull();
+      expect(result!).toBeLessThan(0);
+      // -15000 / (100000 + (10000 - 100) / 2) = -15000 / 104950
+      expect(result).toBeCloseTo(-15000 / 104950, 6);
+    });
+
+    it("handles distributions and rollovers in denominator", () => {
+      // Distributions reduce denominator, rollovers increase it
+      const result = computeReturn(50000, 5000, 3000, 2000, 1000, 50, 8000);
+      // denom = 50000 + (5000 + 8000 + 2000 - 1000 - 50) / 2 = 50000 + 6975 = 56975
+      expect(result).toBeCloseTo(3000 / 56975, 6);
+    });
+
+    it("works with zero beginning balance but nonzero flows", () => {
+      // New account: no starting balance, received rollover
+      const result = computeReturn(0, 0, 500, 0, 0, 0, 50000);
+      // denom = 0 + 50000/2 = 25000
+      expect(result).toBeCloseTo(500 / 25000, 6);
+    });
+  });
+
+  describe("sumAccounts (account row aggregation)", () => {
+    it("sums multiple account rows into a single rollup", () => {
+      const accounts: AccountLike[] = [
+        {
+          beginningBalance: "100000",
+          totalContributions: "20000",
+          yearlyGainLoss: "12000",
+          endingBalance: "135000",
+          employerContributions: "5000",
+          distributions: "0",
+          fees: "200",
+          rollovers: "0",
+        },
+        {
+          beginningBalance: "50000",
+          totalContributions: "10000",
+          yearlyGainLoss: "-3000",
+          endingBalance: "57000",
+          employerContributions: "2500",
+          distributions: "1000",
+          fees: "100",
+          rollovers: "0",
+        },
+      ];
+
+      const sums = sumAccounts(accounts);
+      expect(sums.beginBal).toBe(150000);
+      expect(sums.contribs).toBe(30000);
+      expect(sums.gainLoss).toBe(9000);
+      expect(sums.endBal).toBe(192000);
+      expect(sums.employer).toBe(7500);
+      expect(sums.distributions).toBe(1000);
+      expect(sums.fees).toBe(300);
+      expect(sums.rollovers).toBe(0);
+    });
+
+    it("handles null values in account fields", () => {
+      const accounts: AccountLike[] = [
+        {
+          beginningBalance: null,
+          totalContributions: "5000",
+          yearlyGainLoss: null,
+          endingBalance: "5000",
+          employerContributions: null,
+          distributions: null,
+          fees: null,
+          rollovers: null,
+        },
+      ];
+
+      const sums = sumAccounts(accounts);
+      expect(sums.beginBal).toBe(0);
+      expect(sums.contribs).toBe(5000);
+      expect(sums.gainLoss).toBe(0);
+    });
+
+    it("returns zeros for empty array", () => {
+      const sums = sumAccounts([]);
+      expect(sums.beginBal).toBe(0);
+      expect(sums.endBal).toBe(0);
+      expect(sums.contribs).toBe(0);
+    });
+  });
+
+  describe("sumAnnualRows (Portfolio rollup from categories)", () => {
+    it("sums category rows into Portfolio totals with lifetime carry-forward", () => {
+      const rows: AnnualRowLike[] = [
+        {
+          beginningBalance: 100000,
+          totalContributions: 20000,
+          yearlyGainLoss: 12000,
+          endingBalance: 135000,
+          employerContributions: 5000,
+          distributions: 0,
+          fees: 200,
+          rollovers: 0,
+          lifetimeGains: 45000,
+          lifetimeContributions: 80000,
+          lifetimeMatch: 20000,
+        },
+        {
+          beginningBalance: 30000,
+          totalContributions: 3000,
+          yearlyGainLoss: 2000,
+          endingBalance: 35000,
+          employerContributions: 0,
+          distributions: 500,
+          fees: 50,
+          rollovers: 0,
+          lifetimeGains: 8000,
+          lifetimeContributions: 15000,
+          lifetimeMatch: 0,
+        },
+      ];
+
+      const sums = sumAnnualRows(rows);
+      expect(sums.beginBal).toBe(130000);
+      expect(sums.contribs).toBe(23000);
+      expect(sums.gainLoss).toBe(14000);
+      expect(sums.endBal).toBe(170000);
+      expect(sums.employer).toBe(5000);
+      expect(sums.distributions).toBe(500);
+      expect(sums.fees).toBe(250);
+      // Lifetime fields summed across categories
+      expect(sums.lifetimeGains).toBe(53000);
+      expect(sums.lifetimeContribs).toBe(95000);
+      expect(sums.lifetimeMatch).toBe(20000);
+    });
+
+    it("returns zeros for empty array", () => {
+      const sums = sumAnnualRows([]);
+      expect(sums.beginBal).toBe(0);
+      expect(sums.lifetimeGains).toBe(0);
+    });
+  });
+
+  describe("computeReturn + sumAccounts integration", () => {
+    it("computes correct return from summed account data", () => {
+      // Simulates the finalizeYear flow: sum accounts → compute return
+      const accounts: AccountLike[] = [
+        {
+          beginningBalance: "100000",
+          totalContributions: "20000",
+          yearlyGainLoss: "12000",
+          endingBalance: "135000",
+          employerContributions: "5000",
+          distributions: "0",
+          fees: "200",
+          rollovers: "0",
+        },
+      ];
+
+      const sums = sumAccounts(accounts);
+      const returnPct = computeReturn(
+        sums.beginBal,
+        sums.contribs,
+        sums.gainLoss,
+        sums.employer,
+        sums.distributions,
+        sums.fees,
+        sums.rollovers,
+      );
+
+      // 12000 / (100000 + (20000 + 5000 - 200) / 2) = 12000 / 112400
+      expect(returnPct).toBeCloseTo(0.106762, 4);
+    });
   });
 });
