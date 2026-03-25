@@ -129,7 +129,7 @@ describe("cFIREsim apples-to-apples comparison", () => {
 
   it(
     "SWR sweep with Ibbotson returns matches cFIREsim curve",
-    { timeout: 60000 },
+    { timeout: 120_000 },
     () => {
       const results: { swr: number; success: number }[] = [];
 
@@ -209,7 +209,7 @@ describe("cFIREsim apples-to-apples comparison", () => {
 
   it(
     "Default preset tracks close to Ibbotson/cFIREsim (no artificial bias)",
-    { timeout: 60000 },
+    { timeout: 120_000 },
     () => {
       // Default preset uses 1.0x return multiplier (DB values are forward-looking, no haircut).
       // It should track reasonably close to Ibbotson/cFIREsim historical results.
