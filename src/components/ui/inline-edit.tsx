@@ -41,9 +41,12 @@ export function InlineEdit({
     }
   }, [editing]);
 
-  // Sync external value changes
+  // Sync external value changes to draft state
   useEffect(() => {
-    if (!editing) setDraft(value);
+    if (!editing) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync external data to local state
+      setDraft(value);
+    }
   }, [value, editing]);
 
   const save = () => {

@@ -66,6 +66,9 @@ jobs:
           NEXTAUTH_URL: http://localhost:3000
           AUTH_TRUST_HOST: "true"
 
+      - name: Audit production dependencies (high/critical)
+        run: pnpm audit --prod --audit-level=high
+
       # --- Non-blocking steps (tracked, don't fail the pipeline) ---
 
       - name: Check migrations
@@ -76,16 +79,6 @@ jobs:
       - name: Verify docs freshness
         id: docs_verify
         run: pnpm docs:verify
-        continue-on-error: true
-
-      - name: Audit dependencies (high/critical)
-        id: audit
-        run: |
-          OUTPUT=$(pnpm audit --audit-level=high 2>&1) || true
-          echo "$OUTPUT"
-          COUNT=$(echo "$OUTPUT" | grep -c "vulnerabilities found" || true)
-          VULN_LINE=$(echo "$OUTPUT" | grep "vulnerabilities found" || echo "0 vulnerabilities found")
-          echo "summary=$VULN_LINE" >> "$GITHUB_OUTPUT"
         continue-on-error: true
 
       # --- Summary of non-blocking issues ---
@@ -111,14 +104,6 @@ jobs:
               echo "| Docs freshness | :white_check_mark: | Up to date |"
             else
               echo "| Docs freshness | :warning: | Stale docs detected |"
-            fi
-
-            # Audit
-            AUDIT_SUMMARY="${{ steps.audit.outputs.summary }}"
-            if [ "${{ steps.audit.outcome }}" = "success" ]; then
-              echo "| Dependency audit | :white_check_mark: | Clean |"
-            else
-              echo "| Dependency audit | :warning: | ${AUDIT_SUMMARY:-Vulnerabilities found} |"
             fi
 
             echo ""

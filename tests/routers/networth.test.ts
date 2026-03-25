@@ -34,7 +34,6 @@ async function seedFullData(
   const personId = await seedPerson(db, "Test Person", "1990-01-01");
 
   // Mark as primary user
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (db as any)
     .update(schema.people)
     .set({ isPrimaryUser: true })
@@ -43,7 +42,6 @@ async function seedFullData(
 
   seedJob(db, personId);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (db as any)
     .insert(schema.retirementSettings)
     .values({
@@ -81,7 +79,6 @@ async function seedFullData(
   ]);
 
   const profileId = await seedBudgetProfile(db);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (db as any)
     .insert(schema.budgetItems)
     .values({
@@ -91,7 +88,6 @@ async function seedFullData(
       amounts: [2000],
     })
     .run();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (db as any)
     .insert(schema.budgetItems)
     .values({
