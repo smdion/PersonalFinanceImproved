@@ -114,7 +114,7 @@ const config = [
     },
   },
   {
-    ignores: [".next/", "node_modules/", ".scratch/"],
+    ignores: [".next/", "node_modules/", ".scratch/", "coverage/"],
   },
 ];
 export default config;

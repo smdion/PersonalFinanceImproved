@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.3.3] - 2026-03-25
+
+### Architecture
+
+- Extracted all business logic from DB transactions and API handlers into 7 pure function modules (`src/lib/pure/`) — performance, contributions, portfolio, tax, historical, projection, profiles
+- Added 105 unit tests for pure functions (`tests/pure/`) — run without DB or environment setup
+- Refactored 6 routers to use extracted pure functions as thin wrappers over I/O
+- Fixed timezone bug in salary temporal resolution (date string parsing vs `new Date()`)
+- Moved `computeReturn`, `sumAccounts`, `sumAnnualRows` canonical implementations from performance router to pure module
+
+### ESLint
+
+- Added import boundary rule: pure modules cannot import DB/ORM code or the helpers barrel
+- Added `no-console` rule for `src/` (exempts logger, error boundaries, env validation)
+- Added `no-restricted-syntax` rule: no direct `ACCOUNT_TYPE_CONFIG[]` access in server/calculators/pure (use helper functions)
+
+### Docs
+
+- Added "Pure Business Logic Boundary" section to CONTRIBUTING.md with enforcement guidelines and module inventory
+
+---
+
 ## [0.3.2] - 2026-03-25
 
 ### CI/CD
