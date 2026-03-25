@@ -8,6 +8,25 @@ export default defineConfig({
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000",
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
+    // In demo-only mode, pre-set a demo profile cookie so dashboard pages
+    // render content instead of redirecting to the profile selector.
+    ...(process.env.DEMO_ONLY === "true" && {
+      storageState: {
+        cookies: [
+          {
+            name: "demo_active_profile",
+            value: "single-income",
+            domain: "localhost",
+            path: "/",
+            expires: -1,
+            httpOnly: false,
+            secure: false,
+            sameSite: "Lax" as const,
+          },
+        ],
+        origins: [],
+      },
+    }),
   },
   projects: [
     {
