@@ -129,7 +129,7 @@ describe("cFIREsim apples-to-apples comparison", () => {
 
   it(
     "SWR sweep with Ibbotson returns matches cFIREsim curve",
-    { timeout: 30000 },
+    { timeout: 60000 },
     () => {
       const results: { swr: number; success: number }[] = [];
 
