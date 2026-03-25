@@ -1,30 +1,176 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * TAILWIND 4 — CSS-FIRST CONFIGURATION
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Dark mode: class-based (.dark on <html>)
+ * Content detection: automatic (Tailwind 4 scans project files)
+ * Theme: @theme block below replaces tailwind.config.ts
+ */
+
+/* Class-based dark mode — matches the .dark toggle on <html> */
+@variant dark (&:where(.dark, .dark *));
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * THEME — replaces tailwind.config.ts theme.extend
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * @theme inline allows CSS custom properties that resolve at runtime,
+ * enabling light/dark mode to work via :root/.dark overrides.
+ */
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+@theme inline {
+  /* ── Semantic colors ── */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-surface-primary: var(--surface-primary);
+  --color-surface-secondary: var(--surface-secondary);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-strong: var(--surface-strong);
+
+  --color-input: var(--input-bg);
+  --color-input-border: var(--input-border);
+  --color-input-text: var(--input-text);
+  --color-input-placeholder: var(--input-placeholder);
+
+  /* ── Semantic text colors ──
+   * text-primary, text-secondary, text-muted, text-faint utilities
+   * (TW4 maps text-X to --color-X, so short names are needed) */
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+
+  /* ── Semantic border colors ──
+   * border-default, border-subtle, border-strong utilities */
+  --color-default: var(--border-default);
+  --color-subtle: var(--border-subtle);
+  --color-strong: var(--border-strong);
+
+  /* ── Color palette (with alpha support via RGB triplets) ── */
+  --color-gray-50: rgb(var(--c-gray-50));
+  --color-gray-100: rgb(var(--c-gray-100));
+  --color-gray-200: rgb(var(--c-gray-200));
+  --color-gray-300: rgb(var(--c-gray-300));
+  --color-gray-400: rgb(var(--c-gray-400));
+  --color-gray-500: rgb(var(--c-gray-500));
+  --color-gray-600: rgb(var(--c-gray-600));
+  --color-gray-700: rgb(var(--c-gray-700));
+  --color-gray-800: rgb(var(--c-gray-800));
+  --color-gray-900: rgb(var(--c-gray-900));
+
+  --color-blue-50: rgb(var(--c-blue-50));
+  --color-blue-100: rgb(var(--c-blue-100));
+  --color-blue-200: rgb(var(--c-blue-200));
+  --color-blue-300: rgb(var(--c-blue-300));
+  --color-blue-500: rgb(var(--c-blue-500));
+  --color-blue-600: rgb(var(--c-blue-600));
+  --color-blue-700: rgb(var(--c-blue-700));
+  --color-blue-800: rgb(var(--c-blue-800));
+
+  --color-indigo-50: rgb(var(--c-indigo-50));
+  --color-indigo-100: rgb(var(--c-indigo-100));
+  --color-indigo-400: rgb(var(--c-indigo-400));
+  --color-indigo-500: rgb(var(--c-indigo-500));
+  --color-indigo-600: rgb(var(--c-indigo-600));
+  --color-indigo-700: rgb(var(--c-indigo-700));
+  --color-indigo-800: rgb(var(--c-indigo-800));
+
+  --color-amber-50: rgb(var(--c-amber-50));
+  --color-amber-100: rgb(var(--c-amber-100));
+  --color-amber-200: rgb(var(--c-amber-200));
+  --color-amber-300: rgb(var(--c-amber-300));
+  --color-amber-500: rgb(var(--c-amber-500));
+  --color-amber-600: rgb(var(--c-amber-600));
+  --color-amber-700: rgb(var(--c-amber-700));
+  --color-amber-800: rgb(var(--c-amber-800));
+
+  --color-yellow-50: rgb(var(--c-yellow-50));
+  --color-yellow-100: rgb(var(--c-yellow-100));
+  --color-yellow-200: rgb(var(--c-yellow-200));
+  --color-yellow-600: rgb(var(--c-yellow-600));
+  --color-yellow-700: rgb(var(--c-yellow-700));
+  --color-yellow-800: rgb(var(--c-yellow-800));
+
+  --color-green-50: rgb(var(--c-green-50));
+  --color-green-100: rgb(var(--c-green-100));
+  --color-green-200: rgb(var(--c-green-200));
+  --color-green-300: rgb(var(--c-green-300));
+  --color-green-600: rgb(var(--c-green-600));
+  --color-green-700: rgb(var(--c-green-700));
+  --color-green-800: rgb(var(--c-green-800));
+
+  --color-emerald-50: rgb(var(--c-emerald-50));
+  --color-emerald-100: rgb(var(--c-emerald-100));
+  --color-emerald-200: rgb(var(--c-emerald-200));
+  --color-emerald-400: rgb(var(--c-emerald-400));
+  --color-emerald-500: rgb(var(--c-emerald-500));
+  --color-emerald-600: rgb(var(--c-emerald-600));
+  --color-emerald-700: rgb(var(--c-emerald-700));
+  --color-emerald-800: rgb(var(--c-emerald-800));
+
+  --color-red-50: rgb(var(--c-red-50));
+  --color-red-100: rgb(var(--c-red-100));
+  --color-red-200: rgb(var(--c-red-200));
+  --color-red-300: rgb(var(--c-red-300));
+  --color-red-400: rgb(var(--c-red-400));
+  --color-red-500: rgb(var(--c-red-500));
+  --color-red-600: rgb(var(--c-red-600));
+  --color-red-700: rgb(var(--c-red-700));
+  --color-red-800: rgb(var(--c-red-800));
+
+  --color-purple-50: rgb(var(--c-purple-50));
+  --color-purple-100: rgb(var(--c-purple-100));
+  --color-purple-200: rgb(var(--c-purple-200));
+  --color-purple-400: rgb(var(--c-purple-400));
+  --color-purple-600: rgb(var(--c-purple-600));
+  --color-purple-700: rgb(var(--c-purple-700));
+
+  --color-orange-50: rgb(var(--c-orange-50));
+  --color-orange-100: rgb(var(--c-orange-100));
+  --color-orange-200: rgb(var(--c-orange-200));
+  --color-orange-600: rgb(var(--c-orange-600));
+  --color-orange-700: rgb(var(--c-orange-700));
+  --color-orange-800: rgb(var(--c-orange-800));
+
+  --color-violet-50: rgb(var(--c-violet-50));
+  --color-violet-100: rgb(var(--c-violet-100));
+  --color-violet-500: rgb(var(--c-violet-500));
+  --color-violet-600: rgb(var(--c-violet-600));
+  --color-violet-700: rgb(var(--c-violet-700));
+
+  --color-teal-100: rgb(var(--c-teal-100));
+  --color-teal-700: rgb(var(--c-teal-700));
+
+  --color-cyan-50: rgb(var(--c-cyan-50));
+  --color-cyan-200: rgb(var(--c-cyan-200));
+  --color-cyan-600: rgb(var(--c-cyan-600));
+}
 
 /*
  * ═══════════════════════════════════════════════════════════════════════════
  * CENTRALIZED THEME SYSTEM
  * ═══════════════════════════════════════════════════════════════════════════
  *
- * All theme-aware colors are defined here as CSS custom properties (RGB
- * triplets) and mapped to Tailwind utilities in tailwind.config.ts.
+ * All theme-aware colors are defined here as CSS custom properties.
+ * :root defines light-mode values; .dark overrides them for dark mode.
  *
- * HOW IT WORKS:
- *   :root defines light-mode values; .dark overrides them for dark mode.
- *   Tailwind config references them as rgb(var(--c-<color>-<shade>) / <alpha>)
- *   so opacity modifiers (bg-blue-50/30) work automatically.
+ * The @theme block above maps these to Tailwind utilities so classes
+ * like bg-blue-50, text-red-600, border-green-200 work automatically.
  *
  * ADDING A NEW COLOR SHADE:
  *   1. Add --c-<color>-<shade> to both :root and .dark below
- *   2. Add the shade to the matching color object in tailwind.config.ts
+ *   2. Add --color-<color>-<shade>: rgb(var(--c-<color>-<shade>)) to @theme
  *   3. Use it normally: bg-blue-50, text-red-600, border-green-200, etc.
- *
- * WHAT'S CENTRALIZED vs NOT:
- *   - Semantic surfaces/text/borders → --surface-*, --text-*, --border-*
- *   - Color palette shades → --c-<color>-<shade> (ALL theme-aware shades)
- *   - Mid-range shades (300-500) that work in both modes → Tailwind defaults
- *   - Status/category colors at low opacity (bg-blue-900/20) → Tailwind defaults
  *
  * NEVER add .dark .bg-<class> { ... !important } overrides — use variables.
  * ═══════════════════════════════════════════════════════════════════════════
@@ -63,7 +209,7 @@
   --input-placeholder: #9ca3af;
   --slider-track: #d1d5db;
 
-  /* ═══ Color Palette (RGB triplets for <alpha-value> support) ═══ */
+  /* ═══ Color Palette (RGB triplets for alpha support) ═══ */
 
   /* ── Gray ── */
   --c-gray-50: 249 250 251;
@@ -327,8 +473,6 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family:
-    var(--font-sans), "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Keyboard focus rings for accessibility */
