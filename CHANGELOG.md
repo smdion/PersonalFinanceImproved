@@ -148,6 +148,28 @@ auto-transformed to the current schema.
 - **GK spending strategy layout** — Guyton-Klinger guardrail parameters
   now render in paired groups using data-driven metadata
 
+### Testing & CI
+
+- **2,300+ unit/integration tests** — comprehensive test suite covering
+  calculators (88% statement coverage), all tRPC routers, helpers, and
+  backup transforms
+- **26 E2E tests** — Playwright (Chromium) smoke tests for all dashboard
+  pages, navigation, settings, sync flows, and health endpoint
+- **CI pipeline hardened** — type-check, lint, file-size check, build,
+  Vitest with coverage thresholds (85% statements, 70% branches), and
+  E2E tests all run as blocking steps on every PR
+- **SQLite E2E in CI** — E2E tests run against a standalone Next.js
+  server with SQLite (not Postgres), validating the zero-config deployment
+  path end-to-end
+- **Coverage thresholds enforced** — `pnpm test:coverage` fails if
+  statements < 85%, branches < 70%, functions < 80%, or lines < 85%
+- **Non-blocking health checks** — migration freshness, docs freshness,
+  and dependency audit tracked in CI summary without failing the build
+- **Dependabot auto-merge** — minor/patch dependency updates auto-merge
+  after CI passes; major updates require manual review
+- **Quarterly review workflow** — scheduled GitHub Action for periodic
+  dependency and maintenance audits
+
 ### Security
 
 - **Column name validation** — backup import/restore validates all column
