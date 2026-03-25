@@ -696,7 +696,6 @@ export default function VersionsPage() {
                     <tbody>
                       {previewData.rows.map((row, i) => (
                         <tr
-                          // eslint-disable-next-line react/no-array-index-key
                           key={String((row as Record<string, unknown>).id ?? i)}
                           className="border-b border-subtle hover:bg-surface-sunken"
                         >

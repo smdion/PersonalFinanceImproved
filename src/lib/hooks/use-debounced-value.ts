@@ -9,9 +9,9 @@ export function useDebouncedValue<T>(value: T, delay: number): T {
   const isFirst = useRef(true);
 
   useEffect(() => {
+    // Skip debounce on the very first value — useState(value) already has it.
     if (isFirst.current) {
       isFirst.current = false;
-      setDebounced(value);
       return;
     }
     const id = setTimeout(() => setDebounced(value), delay);

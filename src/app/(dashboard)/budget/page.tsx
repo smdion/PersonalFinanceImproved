@@ -283,6 +283,7 @@ export default function BudgetPage() {
   useEffect(() => {
     if (categoryCount !== prevCatLenRef.current) {
       prevCatLenRef.current = categoryCount;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync external data to local state
       setVisibleCount(INITIAL_VISIBLE);
     }
   }, [categoryCount]);
@@ -334,12 +335,20 @@ export default function BudgetPage() {
     [editDrafts],
   );
 
-  const saveAllDrafts = useCallback(async () => {
-    if (editDrafts.size === 0) {
+  const editDraftsRef = useRef(editDrafts);
+  const updateBatchRef = useRef(updateBatch);
+  useEffect(() => {
+    editDraftsRef.current = editDrafts;
+    updateBatchRef.current = updateBatch;
+  });
+
+  const saveAllDrafts = async () => {
+    const drafts = editDraftsRef.current;
+    if (drafts.size === 0) {
       setEditMode(false);
       return;
     }
-    const updates = Array.from(editDrafts.entries()).map(([key, amount]) => {
+    const updates = Array.from(drafts.entries()).map(([key, amount]) => {
       const [idStr, colStr] = key.split(":");
       return {
         id: parseInt(idStr!, 10),
@@ -347,19 +356,22 @@ export default function BudgetPage() {
         amount,
       };
     });
-    await updateBatch.mutateAsync({ updates });
+    await updateBatchRef.current.mutateAsync({ updates });
     setEditDrafts(new Map());
     setEditMode(false);
-  }, [editDrafts, updateBatch]);
+  };
 
-  const toggleEditMode = useCallback(() => {
-    if (editMode) {
-      saveAllDrafts();
-    } else {
-      setEditDrafts(new Map());
-      setEditMode(true);
-    }
-  }, [editMode, saveAllDrafts]);
+  const toggleEditMode = () => {
+    setEditMode((prev) => {
+      if (prev) {
+        saveAllDrafts();
+        return prev; // saveAllDrafts will set editMode to false
+      } else {
+        setEditDrafts(new Map());
+        return true;
+      }
+    });
+  };
 
   // --- Name column resize ---
   const [dragWidth, setDragWidth] = useState<number | null>(null);
