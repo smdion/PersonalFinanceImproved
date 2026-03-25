@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.2.1] - 2026-03-24
+
+### Infrastructure
+
+- Migrated to Node.js 24 LTS (from Node 20) across Dockerfile, CI, and dev tooling
+- Updated `@types/node` from v20 to v24
+- Node 20 reaches EOL April 30, 2026 — this upgrade provides LTS support through April 2028
+
+---
+
 ## [0.2.0] - 2026-03-24
 
 ### Upgrading from v0.1.x
