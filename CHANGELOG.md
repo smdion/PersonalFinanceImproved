@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.3.1] - 2026-03-25
+
+### Framework
+
+- Migrated to Next.js 16.2.1 (from 15.5.14) with Turbopack bundler
+- Migrated to ESLint 9 flat config (from ESLint 8 / `.eslintrc.json`)
+- Moved `xlsx` to devDependencies (only used for seed scripts)
+- Added pnpm override for `flatted >= 3.4.2` to resolve transitive CVE
+- Made `pnpm audit --prod` blocking in CI (zero production vulnerabilities)
+- Split instrumentation into Node.js-only dynamic import for Edge Runtime compatibility
+
+### Code Quality
+
+- Fixed side effect inside `setEditMode` state updater (StrictMode double-fire risk)
+- Narrowed ESLint `no-restricted-imports` rule to `src/components/**` only — API routes and server components no longer incorrectly blocked
+- Added missing dependency arrays to useEffect hooks in confirm-dialog and budget page
+- Removed 7 unnecessary `eslint-disable` directives and 6 unused directives from tests
+- Fixed all React Compiler lint errors without disabling rules
+
+---
+
 ## [0.3.0] - 2026-03-24
 
 ### Framework
