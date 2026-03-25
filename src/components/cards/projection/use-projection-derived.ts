@@ -208,7 +208,7 @@ export function useProjectionDerived(
     [isPersonFiltered, personFilter],
   );
 
-  const personDepletionInfo = useMemo(() => {
+  const personDepletionInfo = (() => {
     if (!isPersonFiltered || !result) return null;
     for (const yr of result.projectionByYear) {
       if (yr.phase !== "decumulation") continue;
@@ -218,7 +218,7 @@ export function useProjectionDerived(
       if (balance <= 0) return { year: yr.year, age: yr.age };
     }
     return null;
-  }, [isPersonFiltered, personFilter, result]);
+  })();
 
   // --- Account breakdown ---
   const accountBreakdown = useMemo<Record<string, AcctBreakdown[]>>(

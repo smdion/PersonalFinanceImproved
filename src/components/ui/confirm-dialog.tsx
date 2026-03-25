@@ -76,6 +76,24 @@ export function ConfirmDialog() {
     };
   }, []);
 
+  const handleCancel = useCallback(() => {
+    if (!state) return;
+    if (state.mode === "confirm") state.resolve(false);
+    else state.resolve(null);
+    setState(null);
+  }, [state]);
+
+  const handleConfirm = useCallback(() => {
+    if (!state) return;
+    if (state.mode === "confirm") {
+      state.resolve(true);
+    } else {
+      const val = inputRef.current?.value.trim() ?? "";
+      state.resolve(val || null);
+    }
+    setState(null);
+  }, [state]);
+
   // Focus on open
   useEffect(() => {
     if (!state) return;
@@ -98,25 +116,7 @@ export function ConfirmDialog() {
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  });
-
-  const handleCancel = useCallback(() => {
-    if (!state) return;
-    if (state.mode === "confirm") state.resolve(false);
-    else state.resolve(null);
-    setState(null);
-  }, [state]);
-
-  const handleConfirm = useCallback(() => {
-    if (!state) return;
-    if (state.mode === "confirm") {
-      state.resolve(true);
-    } else {
-      const val = inputRef.current?.value.trim() ?? "";
-      state.resolve(val || null);
-    }
-    setState(null);
-  }, [state]);
+  }, [state, handleCancel]);
 
   if (!state) return null;
 

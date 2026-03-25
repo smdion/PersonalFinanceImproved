@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { FundCardGrid } from "./fund-card-grid";
 import { FundCard } from "./fund-card";
@@ -292,11 +292,15 @@ export function FundManagementSection({
     );
   };
 
-  // Expose goal update callbacks to parent via ref
-  callbacksRef.current = {
-    onGoalUpdate: handleGoalUpdate,
-    onGoalUpdateMulti: handleGoalUpdateMulti,
-  };
+  // Expose goal update callbacks to parent via ref (in useEffect to avoid ref write during render).
+  // No dependency array: handlers close over query data that changes frequently,
+  // and ref assignment is trivially cheap.
+  useEffect(() => {
+    callbacksRef.current = {
+      onGoalUpdate: handleGoalUpdate,
+      onGoalUpdateMulti: handleGoalUpdateMulti,
+    };
+  });
 
   const handleAddTx = (form: PlannedTxForm) => {
     if (!form.transactionDate || !form.amount || !form.description) return;

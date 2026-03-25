@@ -25,16 +25,17 @@ export function RbacGroupsSettings() {
   const [permGroups, setPermGroups] = useState<Record<string, string>>({});
   const [dirty, setDirty] = useState(false);
 
+  // Sync local state when query data changes
   useEffect(() => {
-    if (data) {
-      setAdminGroup(data.adminGroup);
-      const groups: Record<string, string> = {};
-      for (const p of data.permissions) {
-        groups[p.permission] = p.group;
-      }
-      setPermGroups(groups);
-      setDirty(false);
+    if (!data) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync external data to local state
+    setAdminGroup(data.adminGroup);
+    const groups: Record<string, string> = {};
+    for (const p of data.permissions) {
+      groups[p.permission] = p.group;
     }
+    setPermGroups(groups);
+    setDirty(false);
   }, [data]);
 
   if (isLoading || !data) {

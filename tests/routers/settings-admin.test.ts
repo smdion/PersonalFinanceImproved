@@ -1269,10 +1269,7 @@ describe("settings.performanceAccounts delete", () => {
       accountType: "401k",
     });
     // Seed an account_performance row referencing this account
-    db.insert(
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      (await import("@/lib/db/schema-sqlite")).accountPerformance,
-    )
+    db.insert((await import("@/lib/db/schema-sqlite")).accountPerformance)
       .values({
         year: 2025,
         institution: "LinkedBank",

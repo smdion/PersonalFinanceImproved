@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 
 /**
@@ -44,11 +44,12 @@ export function usePersistedSetting<T extends string | number | boolean | null>(
   // Track whether the user has made a local change that hasn't been confirmed by the query yet
   const pendingWrite = useRef(false);
 
-  // Once DB settings load (or refresh), adopt DB value — unless we have a pending optimistic write
+  // Once DB settings load (or refresh), adopt DB value — unless we have a pending optimistic write.
   useEffect(() => {
     if (!settings || pendingWrite.current) return;
     const found = settings.find((s) => s.key === key);
     if (found !== undefined) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync external data to local state
       setLocalValue(found.value as T);
       localStorage.setItem(`setting:${key}`, JSON.stringify(found.value));
     }
