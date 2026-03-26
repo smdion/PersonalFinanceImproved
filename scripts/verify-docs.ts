@@ -192,7 +192,7 @@ function readDoc(relPath: string): string {
  *   - Tree comments like "# 21 shared components"
  */
 function parseDesignClaims(): Record<string, number> {
-  const doc = readDoc("docs/DESIGN.md");
+  const doc = readDoc(".scratch/docs/DESIGN.md");
   if (!doc) return {};
 
   const claims: Record<string, number> = {};
@@ -216,7 +216,7 @@ function parseDesignClaims(): Record<string, number> {
  * Key pattern: "Total: **672 tests** across **40 vitest files** + **7 Playwright E2E tests** (3 files)."
  */
 function parseTestingClaims(): Record<string, number> {
-  const doc = readDoc("docs/TESTING.md");
+  const doc = readDoc(".scratch/docs/TESTING.md");
   if (!doc) return {};
 
   const claims: Record<string, number> = {};
@@ -336,7 +336,7 @@ function main(): void {
     console.log(
       "Mode: --update (replacing AUTO-GEN markers with actual counts)\n",
     );
-    const docs = ["docs/DESIGN.md", "docs/TESTING.md"];
+    const docs = [".scratch/docs/DESIGN.md", ".scratch/docs/TESTING.md"];
     let totalUpdated = 0;
     for (const doc of docs) {
       const { updated, path: docPath } = updateAutoGenMarkers(doc, actual);
