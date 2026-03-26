@@ -213,12 +213,8 @@ export default function ExpensesPage() {
       for (const c of g.categories) {
         const actual = Math.abs(c.activity);
         const linkedItem = itemMap.get(c.id);
-        // Monthly budgeted from our budget profile, or from API budgeted
-        const budgetedMonthly = linkedItem
-          ? (linkedItem.amounts[activeColumn] ?? 0) / 12
-          : c.budgeted > 0
-            ? c.budgeted
-            : 0;
+        // Use API budgeted (same source as activity) for apples-to-apples comparison
+        const budgetedMonthly = c.budgeted > 0 ? c.budgeted : 0;
         if (actual === 0 && budgetedMonthly === 0) continue;
         rows.push({
           group: g.name,
@@ -232,7 +228,7 @@ export default function ExpensesPage() {
     }
 
     return rows;
-  }, [apiCategories, budgetData, activeColumn]);
+  }, [apiCategories, budgetData]);
 
   // Group-level summary for chart
   const groupSummary = useMemo(() => {
