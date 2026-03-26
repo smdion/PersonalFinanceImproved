@@ -112,7 +112,7 @@ All configuration is done through environment variables. Copy `.env.example` to 
 └──────────────┬───────────────────────────────┘
                │ tRPC (type-safe RPC)
 ┌──────────────▼───────────────────────────────┐
-│              Next.js 14                      │
+│              Next.js 16                      │
 │         App Router + API Routes              │
 │    NextAuth.js (Authentik OIDC / Dev Mode)   │
 ├──────────────────────────────────────────────┤
@@ -138,8 +138,8 @@ All configuration is done through environment variables. Copy `.env.example` to 
 
 ### Prerequisites
 
-- Node.js 20+
-- pnpm (via corepack: `corepack enable`)
+- Node.js 25+
+- pnpm (`npm install -g pnpm`)
 - PostgreSQL 16+ _(optional — SQLite is used by default)_
 
 ### Setup
@@ -243,16 +243,18 @@ Both integrations are optional. Budget features work without them — you can ma
 
 ## Testing
 
-830+ tests across 57 files covering calculators, retirement benchmarks, tRPC routers, UI components, and database operations.
+2,700+ tests across 130 files covering calculators, retirement benchmarks, tRPC routers, UI components, database operations, and end-to-end browser flows.
 
 ```bash
 pnpm test          # Run once
 pnpm test:watch    # Watch mode
+pnpm test:e2e      # End-to-end browser tests (Playwright)
+pnpm test:coverage # Run with coverage thresholds
 ```
 
 ## Tech Stack
 
-- [Next.js 14](https://nextjs.org/) (App Router, standalone output)
+- [Next.js 16](https://nextjs.org/) (App Router, Turbopack, standalone output)
 - [TypeScript](https://www.typescriptlang.org/) (strict mode)
 - [tRPC](https://trpc.io/) (end-to-end type-safe API)
 - [Drizzle ORM](https://orm.drizzle.team/) + SQLite / PostgreSQL 16
