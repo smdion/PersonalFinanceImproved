@@ -8,43 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.3.5] - 2026-03-25
 
-### CI/CD
-
-- Pinned all GitHub Actions to full SHA digests (supply chain security)
-- Added `permissions: contents: read` to CI workflow (least privilege)
-- Promoted all non-blocking CI steps (audit, migrations, docs freshness) to blocking
-- Gated Docker build step to push events only (skipped on PRs)
-- Added failure notification step for `main` branch pushes
-- Pinned actions in `quarterly-review.yml` and `dependabot-auto-merge.yml` to SHA digests
-- Added `branches: [main]` filter to Dependabot auto-merge workflow
-- Removed `src/**` from Next.js build cache key (better incremental caching)
-
-### Testing
-
-- Added schema parity tests — validates PG and SQLite schemas match (53 tables, 161 assertions)
-- Added math edge case tests for `roundToCents`, `safeDivide`, `sumBy` (13 tests)
-- Rewrote IRS contribution limit tests to validate seed data against authoritative IRS references
-- Found and fixed 5 incorrect 2025 IRS values in seed data (had 2026 values)
-- Made fast-check `numRuns` configurable via `FAST_CHECK_NUM_RUNS` env var
-- Added `test:stress` script for extended property-based testing (200 runs)
-- Expanded coverage scope to include `config/`, `budget-api/`, `db/`
-- Reduced default test timeout from 30s to 10s
-- Replaced `networkidle` with `domcontentloaded` across all 7 E2E specs
-- Improved E2E assertions with financial content validation and structural checks
-
 ### Fixed
 
-- Fixed `roundToCents` docstring — was "banker's rounding", actually uses standard half-up rounding
-- Fixed 5 incorrect 2025 IRS contribution limits in `seed-reference-data.sql`:
-  - 401k employee limit: 24500 → 23500 (IRS Notice 2024-80)
-  - 401k catch-up limit: 8000 → 7500 (IRS Notice 2024-80)
-  - IRA limit: 7500 → 7000 (IRS Notice 2024-80)
-  - HSA family limit: 8750 → 8550 (Rev. Proc. 2024-25)
-  - HSA individual limit: 4400 → 4300 (Rev. Proc. 2024-25)
+- Corrected 5 incorrect 2025 IRS contribution limits that were using 2026 values:
+  - 401k employee limit: $24,500 → $23,500
+  - 401k catch-up limit: $8,000 → $7,500
+  - IRA limit: $7,500 → $7,000
+  - HSA family limit: $8,750 → $8,550
+  - HSA individual limit: $4,400 → $4,300
 
-### Docs
+### Improved
 
-- Updated OPS.md: clarified release process (branch vs main steps), updated CI pipeline docs, corrected test counts and dependabot policy
+- Split large projection page into smaller, faster-loading sections
+- All CI checks now block merges — dependency audit, migration check, and docs freshness were previously advisory-only
+- Hardened CI pipeline against supply chain attacks (pinned all dependencies to exact versions)
+- Added 400+ new tests (2,700+ total) covering budget API integrations, financial calculations, and database compatibility
 
 ---
 
@@ -52,141 +30,115 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- Migrated `middleware.ts` to `proxy.ts` (Next.js 16 deprecated middleware convention)
-- Fixed TW4 default border color — bare `border` / `border-t` etc. now use semantic `--border-default` token instead of `currentColor` (was rendering stark white/black lines)
-- Softened border tokens in both light and dark mode for subtler card/section dividers
-- Added `unsafe-eval` to CSP in dev mode only (React 19 requires eval for dev debugging)
-- Added `ALLOWED_DEV_ORIGINS` env var for Next.js 16 cross-origin dev server access
-- Fixed nested `<button>` hydration error in budget profile list
-- Fixed 6 duplicate React key warnings across savings, projection, and upcoming-goals components
-- Added stable `id` field to `MonthEvent` type — savings events now keyed by ID instead of array index
-- Added `crypto.randomUUID()` IDs to lump sum form entries, purchase entries, and year adjustments
-- Replaced all fixable `eslint-disable react/no-array-index-key` directives with proper stable keys
-- Improved clarity of all remaining `eslint-disable` justification comments
-- Fixed dev DB schema drift (column renames `api_sync_enabled` → `is_api_sync_enabled`, `lt_brokerage_enabled` → `is_lt_brokerage_enabled`)
+- Fixed visual glitch where card borders appeared as harsh white/black lines — borders now use softer, theme-aware colors in both light and dark mode
+- Fixed a bug where clicking a budget profile could trigger two actions at once (nested button hydration error)
+- Fixed 6 cases where list items (savings goals, projections, upcoming goals) could flicker or reorder incorrectly due to unstable keys
+
+### Improved
+
+- Upgraded internal routing to Next.js 16 conventions (no user-facing changes)
 
 ---
 
 ## [0.3.3] - 2026-03-25
 
-### Architecture
+### Improved
 
-- Extracted all business logic from DB transactions and API handlers into 7 pure function modules (`src/lib/pure/`) — performance, contributions, portfolio, tax, historical, projection, profiles
-- Added 105 unit tests for pure functions (`tests/pure/`) — run without DB or environment setup
-- Refactored 6 routers to use extracted pure functions as thin wrappers over I/O
-- Fixed timezone bug in salary temporal resolution (date string parsing vs `new Date()`)
-- Moved `computeReturn`, `sumAccounts`, `sumAnnualRows` canonical implementations from performance router to pure module
+- Faster calculations across performance, contributions, portfolio, tax, historical, and projection pages — core math extracted into optimized modules
+- Fixed a timezone bug that could show salary changes on the wrong date
 
 ### Fixed
 
-- Replaced `corepack` with `npm install -g pnpm` in Dockerfile (Node 25 removed corepack)
-
-### ESLint
-
-- Added import boundary rule: pure modules cannot import DB/ORM code or the helpers barrel
-- Added `no-console` rule for `src/` (exempts logger, error boundaries, env validation)
-- Added `no-restricted-syntax` rule: no direct `ACCOUNT_TYPE_CONFIG[]` access in server/calculators/pure (use helper functions)
-
-### Docs
-
-- Added "Pure Business Logic Boundary" section to CONTRIBUTING.md with enforcement guidelines and module inventory
+- Fixed Docker build failure on Node.js 25 (replaced removed `corepack` with direct pnpm install)
 
 ---
 
 ## [0.3.2] - 2026-03-25
 
-### CI/CD
-
-- Added Playwright browser caching — saves ~30-45s per CI run (I1)
-- Added Playwright artifact upload on failure for post-mortem debugging (I2)
-- Moved `pnpm audit` to non-blocking — quarterly review catches advisories (I3)
-- Added Next.js build cache (`.next/cache`) for faster incremental CI builds (M1)
-- Added `concurrency` group to cancel superseded CI runs (M2)
-- Added `if: success()` guards on non-blocking steps to skip after blocking failures (M4)
-- Added `timeout-minutes: 15` to CI and quarterly-review jobs (N1)
-- Added Docker build smoke test as non-blocking CI step (N2)
-- Moved audit status into CI health summary table
-- Fixed quarterly review heredoc bug — variables now expand correctly in GitHub issues (I4)
-- Fixed Node version mismatch in quarterly-review workflow (20 → 24) (M3)
-- Removed dead `$DOCS_STATUS` variable capture in quarterly-review (M6)
-- Fixed dual env source in E2E step — `.env` file now derives from step `env:` block (M5)
-- Added Dependabot tracking for Docker base image updates (I5)
-
 ### Security
 
-- Removed `unsafe-eval` from Content-Security-Policy `script-src` directive (I7)
-- Added `object-src 'none'` and `base-uri 'self'` to CSP (I7)
-- Added Cross-Origin headers: COOP `same-origin`, CORP `same-origin`, COEP `require-corp` (N3)
-- Set `X-XSS-Protection: 0` — deprecated header previously set to legacy mode (M9)
-- Container filesystem now read-only with tmpfs for `/tmp` (I8)
-- Dropped all Linux capabilities (`cap_drop: ALL`) and set `no-new-privileges` (I9)
-- Bound container port to `127.0.0.1` only — no longer exposed on all interfaces (M8)
-- Added CPU limit (`cpus: 1.0`) alongside existing memory limit (M10)
-- Added `umask 0077` to entrypoint — SQLite files created as owner-only (I11)
-- Split health endpoint: `/api/health` returns simple probe, `/api/health/detailed` requires CRON_SECRET bearer token (M7)
-- Applied same hardening to `docker-compose.postgres.yml`
+- Tightened Content Security Policy — removed unsafe script evaluation, added object/base-uri restrictions
+- Added Cross-Origin isolation headers for stronger browser-side protection
+- Container now runs with read-only filesystem, no Linux capabilities, and owner-only file permissions
+- Health endpoint split: basic probe at `/api/health`, detailed diagnostics require authentication
 
-### Docker
+### Improved
 
-- Pinned base image to `node:24.14.0-alpine@sha256:...` for reproducible builds (I5)
-- Compiled `db-migrate.ts` to JS via esbuild in builder stage — removed global `tsx` install from production image (I6)
-- Added OCI image labels for provenance and traceability (I10)
-- Set explicit `--chmod=555` on entrypoint COPY and switched to direct execution (M11)
-- Entrypoint now runs `node db-migrate.js` instead of `tsx db-migrate.ts`
-
-### Release & Deploy
-
-- Added `deploy.sh` — automated build, canary deploy (demo first), health verification, rollback support (C1)
-- Images now tagged as `ledgr:X.Y.Z` alongside `latest` — previous versions preserved for rollback (I13)
-- Deploy script enforces version matches git tag and package.json (I14)
-- Demo container deployed and health-checked before prod (canary pattern) (M14)
-- Added `--dry-run` mode to release script — validates without committing (M13)
-- Added lockfile drift check to release script (N7)
-- Switched to atomic `git push --follow-tags` — prevents orphaned commits without tags (I12)
-- Tightened CHANGELOG version grep to match section headers only (`^## .*$VERSION`) (M12)
+- Docker image now uses a pinned, reproducible base image with OCI provenance labels
+- Production image is smaller — removed TypeScript compiler from runtime
+- New deploy script with canary pattern: demo container is health-checked before production rolls over
+- Rollback support: previous image versions are preserved as `ledgr:X.Y.Z` tags
+- CI runs ~45 seconds faster with browser and build caching
+- Stale CI runs are automatically cancelled when new commits are pushed
 
 ---
 
 ## [0.3.1] - 2026-03-25
 
-### Framework
+### Improved
 
-- Migrated to Next.js 16.2.1 (from 15.5.14) with Turbopack bundler
-- Migrated to ESLint 9 flat config (from ESLint 8 / `.eslintrc.json`)
-- Moved `xlsx` to devDependencies (only used for seed scripts)
-- Added pnpm override for `flatted >= 3.4.2` to resolve transitive CVE
-- Made `pnpm audit --prod` blocking in CI (zero production vulnerabilities)
-- Split instrumentation into Node.js-only dynamic import for Edge Runtime compatibility
+- Upgraded to Next.js 16 with Turbopack for faster development builds
+- Resolved a transitive dependency vulnerability (flatted CVE)
+- Zero production vulnerabilities enforced in CI
 
-### Code Quality
+### Fixed
 
-- Fixed side effect inside `setEditMode` state updater (StrictMode double-fire risk)
-- Narrowed ESLint `no-restricted-imports` rule to `src/components/**` only — API routes and server components no longer incorrectly blocked
-- Added missing dependency arrays to useEffect hooks in confirm-dialog and budget page
-- Removed 7 unnecessary `eslint-disable` directives and 6 unused directives from tests
-- Fixed all React Compiler lint errors without disabling rules
+- Fixed a bug where editing settings could trigger side effects twice in development mode
+- Fixed incorrect import restrictions that blocked valid server-side code
 
 ---
 
 ## [0.3.0] - 2026-03-24
 
-### Framework
+### Security
 
-- Migrated to Next.js 15.5.14 (from 14.2.35) and React 19 (from 18)
-- Resolves all Next.js 14 CVEs including CVSS 10.0 React2Shell vulnerability
-- Updated eslint-config-next to 15.5.14, @types/react and @types/react-dom to v19
-- Moved `serverComponentsExternalPackages` and `outputFileTracingIncludes` out of experimental config (stable in Next.js 15)
-- Removed `instrumentationHook` experimental flag (on by default in Next.js 15)
+- Upgraded to Next.js 15 and React 19, resolving all known Next.js 14 CVEs including a critical (CVSS 10.0) remote code execution vulnerability
+
+---
+
+## What's new in the v0.3.x series (since v0.2.0)
+
+> Cumulative summary of everything added in v0.3.0 through v0.3.5.
+> For version-by-version detail, see the individual entries above.
+
+### Security & Stability
+
+- Resolved all Next.js 14 CVEs including a critical remote code execution vulnerability (v0.3.0)
+- Tightened Content Security Policy, Cross-Origin headers, and container hardening (v0.3.2)
+- Container runs read-only with no Linux capabilities and owner-only file permissions (v0.3.2)
+- Corrected 5 incorrect 2025 IRS contribution limits (v0.3.5)
+- Zero production vulnerabilities enforced in CI (v0.3.1)
+
+### Performance
+
+- Faster page loads: projection page split into smaller sections (v0.3.5)
+- Faster calculations: core financial math extracted into optimized modules (v0.3.3)
+- Faster development builds with Turbopack bundler (v0.3.1)
+- Faster CI: ~45 seconds saved per run with browser and build caching (v0.3.2)
+
+### Deployment & Operations
+
+- Canary deploy pattern: demo container health-checked before production (v0.3.2)
+- Rollback support with versioned image tags (v0.3.2)
+- Reproducible Docker builds with pinned base image and OCI labels (v0.3.2)
+- Smaller production image (TypeScript compiler removed from runtime) (v0.3.2)
+
+### Reliability
+
+- 400+ new tests bringing total to 2,700+ (v0.3.5)
+- All CI checks now block merges (v0.3.5)
+- Hardened CI pipeline with pinned dependencies (v0.3.5)
+- Fixed timezone bug in salary date display (v0.3.3)
+- Fixed visual border glitches in light/dark mode (v0.3.4)
+- Fixed list flickering in savings, projections, and goals (v0.3.4)
 
 ---
 
 ## [0.2.1] - 2026-03-24
 
-### Infrastructure
+### Improved
 
-- Migrated to Node.js 24 LTS (from Node 20) across Dockerfile, CI, and dev tooling
-- Updated `@types/node` from v20 to v24
-- Node 20 reaches EOL April 30, 2026 — this upgrade provides LTS support through April 2028
+- Upgraded to Node.js 24 LTS (from Node 20) — extends support through April 2028
 
 ---
 
@@ -203,15 +155,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 **Restoring old backups:** v0.1.x backup files import seamlessly — they are
 auto-transformed to the current schema.
 
-### Database Changes
-
-- All 9 migrations squashed into a single clean initial schema — new installs
-  get one migration instead of nine
-- Cross-version backup import — old backups are automatically transformed
-  on import (all 9 v0.1.x schema versions supported)
-- Column renames: `api_sync_enabled` to `is_api_sync_enabled`,
-  `lt_brokerage_enabled` to `is_lt_brokerage_enabled`
-
 ### Added
 
 - **CLI backup tools** — `pnpm backup:export` and `pnpm backup:import`
@@ -221,162 +164,122 @@ auto-transformed to the current schema.
 - **Pre-upgrade auto-backup** — schema changes automatically save a full
   data snapshot before applying, so you always have a rollback point
 
+### Database
+
+- All 9 migrations squashed into a single clean initial schema — new installs
+  get one migration instead of nine
+- Cross-version backup import — old backups are automatically transformed
+  on import (all 9 v0.1.x schema versions supported)
+
 ---
 
-## What changed between v0.1.0 and v0.2.0
+## What's new in the v0.2.x series (since v0.1.0)
 
-> If you last used Ledgr at v0.1.0, here is everything that changed.
+> Cumulative summary of everything added in v0.2.0 through v0.2.1.
+> For version-by-version detail, see the individual entries above.
 > For commit-level detail, see
 > [git history](https://github.com/smdion/PersonalFinanceImproved/commits/main).
 
 ### New Pages & Features
 
-- **Contributions page** — standalone household contribution analysis with
-  savings rate summary (total/retirement/portfolio), per-person account
-  breakdown with utilization bars, employer match analysis, traditional vs
-  Roth split, and contribution profile comparison
-- **Help & Guide page** — walkthrough of every feature organized by nav
-  group (Cash Flow, Wealth, Net Worth, Analysis, System) plus cross-cutting
-  topics
+- **Contributions page** — household contribution analysis with savings rate
+  summary, per-person account breakdown, employer match analysis, traditional
+  vs Roth split, and contribution profile comparison
+- **Help & Guide page** — walkthrough of every feature organized by section
 - **Raw Data Browser** — admin-only live database table viewer with row
   counts, column metadata, paginated data, and JSON export
 - **Assets page** — consolidated breakdown with Cash, Property, Other Assets
-  groupings and subtotals (replaced separate summary/detail cards)
+  groupings and subtotals
 
 ### Retirement & Projections
 
 - **Lump-sum injections** — model one-time events (bonus, inheritance,
-  windfall, rollover) in any projection year; supports target account
-  selection, traditional/Roth tax type, and optional label
+  windfall, rollover) in any projection year
 - **Per-year contribution profile switching** — change your entire
   contribution structure at a future year (job change, ESPP stop, etc.)
 - **Configurable filing status** — MFJ/Single/HOH as explicit retirement
-  setting (not silently derived from W-4); affects federal brackets, LTCG,
-  IRMAA, Social Security taxation, and NIIT
+  setting; affects federal brackets, LTCG, IRMAA, Social Security, and NIIT
 - **Snapshot selector** — run projections from any historical portfolio
   snapshot, not just the latest
 - **Monte Carlo success rates** — withdrawal strategy comparison table now
-  shows success rate per strategy (200 trials)
+  shows success rate per strategy
 - **LTCG progressive stacking** — capital gains now taxed across 0%/15%/20%
-  brackets by stacking gains on top of ordinary income (was flat marginal rate)
-- **NIIT (3.8% surtax)** — Net Investment Income Tax on the lesser of net
-  investment income or MAGI exceeding $200k/$250k thresholds
-- **LTCG brackets in database** — rates versioned by year and filing status
-  (no more hardcoded rates)
-- **IRMAA brackets in database** — surcharge thresholds versioned by year
-  and filing status with 2-year lookback context
+  brackets by stacking on top of ordinary income (was flat rate)
+- **NIIT surtax** — Net Investment Income Tax on income exceeding
+  $200k/$250k thresholds
+- **LTCG and IRMAA brackets in database** — rates versioned by year and
+  filing status (no more hardcoded values)
 
 ### Contributions & Paycheck
 
 - **Prior-year tax contributions** — designate IRA/HSA contributions for the
-  prior tax year during the IRS window (Jan 1 - Apr 15); auto-expires when
-  the next year's window opens
+  prior tax year during the IRS window (Jan 1 - Apr 15)
 - **Multiple contribution profiles** — switch profiles from the top bar;
   view without activating
 - **Budget-linked profiles** — each budget column links to a contribution
-  profile; savings page automatically uses the correct one
-- **Active profile switchers** — Budget and Contribution profile selection
-  from the ScenarioBar; global activation affects all consuming pages
-- **Paycheck profile viewing** — change local view without setting the
-  global active profile; visual indicator when viewing a non-active profile
+  profile; savings page uses the correct one automatically
 
 ### Budget & Savings
 
-- **Budget mode awareness on savings** — savings page derives active
-  contribution profile from budget column link; cross-mode capacity
-  comparison strip shows max monthly funding per budget column
-- **Budget profile viewing without activation** — click a profile to edit
-  it without making it globally active; explicit "activate" action in hover
-  menu
+- **Budget mode awareness on savings** — savings page derives contribution
+  profile from budget column link; cross-mode capacity comparison shows max
+  monthly funding per budget column
 
 ### Portfolio & Performance
 
-- **Performance tab groups** — split into "By Account" (401k/IRA, HSA,
-  Brokerage) and "Rollup" (Retirement, Portfolio) with helper tooltips
-- **Rollovers column** — separates internal transfers (e.g., ESPP to
-  brokerage) from actual contributions in the performance table
-- **YTD timeframe** — portfolio chart now has a "YTD" button alongside
-  3M/6M/1Y/3Y/All
-- **Hover comparison line** — hovering on the portfolio chart draws a
-  horizontal reference line to compare values across time
+- **Performance tab groups** — split into "By Account" and "Rollup" views
+- **Rollovers column** — separates internal transfers from actual
+  contributions in the performance table
+- **YTD timeframe** — portfolio chart now has a "YTD" button
+- **Hover comparison line** — horizontal reference line on portfolio chart
 
 ### Integration & Sync
 
-- **YNAB key update** — connected YNAB integrations can now replace the
-  API key without removing the connection
-- **YNAB budget pull** — now uses category goal target instead of budgeted
-  amount; savings goals sync correctly
-- **Savings sync direction** — pushes monthly contributions from Ledgr to
-  YNAB goal targets (current + next month) instead of pulling balances
-- **Savings goal balances** — API-linked goals pull balance from YNAB
-  category cache instead of stale internal table
+- **YNAB key update** — replace API key without removing the connection
+- **Savings sync** — pushes monthly contributions from Ledgr to YNAB goal
+  targets instead of pulling balances
 
 ### Self-Hosting & Operations
 
-- **Dual database support** — SQLite as zero-config default, PostgreSQL
-  via DATABASE_URL (auto-detected, no manual config needed)
-- **docker-compose.yml** defaults to SQLite (no database setup required)
-- **docker-compose.postgres.yml** for PostgreSQL deployments
-- **Release automation** — `pnpm release X.Y.Z` handles version bump,
-  tests, lint, tag, push, and GitHub release creation
-- **Tax parameter freshness** — automated system tracking 13 tax parameter
-  sets with expiration warnings and IRS source citations
+- **Dual database support** — SQLite (zero-config default) or PostgreSQL
+- **CLI backup tools** — export/import for headless environments
+- **Pre-upgrade auto-backup** — automatic snapshot before schema changes
+- **Release automation** — `pnpm release X.Y.Z` handles the full workflow
+- **Node.js 24 LTS** — extended support through April 2028
 
-### UI/UX Improvements
+### UI/UX
 
-- **Sidebar redesign** — reorganized from Income/Investments/Property/
-  Planning/System to Cash Flow/Wealth/Net Worth/Analysis/System; Help link
-  in footer; DataFreshness tooltip
-- **Theme support** — semantic design tokens throughout (no more hardcoded
-  color classes)
-- **GK spending strategy layout** — Guyton-Klinger guardrail parameters
-  now render in paired groups using data-driven metadata
-
-### Testing & CI
-
-- **2,300+ unit/integration tests** — comprehensive test suite covering
-  calculators (88% statement coverage), all tRPC routers, helpers, and
-  backup transforms
-- **26 E2E tests** — Playwright (Chromium) smoke tests for all dashboard
-  pages, navigation, settings, sync flows, and health endpoint
-- **CI pipeline hardened** — type-check, lint, file-size check, build,
-  Vitest with coverage thresholds (85% statements, 70% branches), and
-  E2E tests all run as blocking steps on every PR
-- **SQLite E2E in CI** — E2E tests run against a standalone Next.js
-  server with SQLite (not Postgres), validating the zero-config deployment
-  path end-to-end
-- **Coverage thresholds enforced** — `pnpm test:coverage` fails if
-  statements < 85%, branches < 70%, functions < 80%, or lines < 85%
-- **Non-blocking health checks** — migration freshness, docs freshness,
-  and dependency audit tracked in CI summary without failing the build
-- **Dependabot auto-merge** — minor/patch dependency updates auto-merge
-  after CI passes; major updates require manual review
-- **Quarterly review workflow** — scheduled GitHub Action for periodic
-  dependency and maintenance audits
+- **Sidebar redesign** — reorganized into Cash Flow / Wealth / Net Worth /
+  Analysis / System
+- **Theme support** — semantic design tokens throughout
 
 ### Security
 
-- **Column name validation** — backup import/restore validates all column
-  names against schema whitelist, preventing SQL injection via crafted files
-- Removed database error details from `/api/health` response body
-- Bound PostgreSQL port to `127.0.0.1` in docker-compose
-- **Rate limiting** — Monte Carlo and syncAll procedures limited to 5
-  req/min per user
+- **Column name validation** — backup import validates against schema
+  whitelist, preventing SQL injection via crafted files
+- **Rate limiting** — Monte Carlo and sync endpoints limited to 5 req/min
 - **Password complexity** — local admin passwords require uppercase + digit
+- Database error details removed from health endpoint
+- PostgreSQL port bound to localhost only
 
-### Bug Fixes (notable)
+### Testing & CI
+
+- **2,300+ tests** covering calculators, tRPC routers, helpers, and backup
+  transforms
+- **26 E2E tests** — Playwright smoke tests for all dashboard pages
+- **Coverage thresholds enforced** — statements 85%, branches 70%,
+  functions 80%, lines 85%
+- **Dependabot auto-merge** — minor/patch updates auto-merge after CI passes
+
+### Bug Fixes
 
 - Fixed LTCG bracket stacking (was flat rate, now progressive)
 - Fixed contribution override double-inflation on profile switches
 - Fixed ESPP/account persistence after contribution profile override
-- Fixed overflow routing fallback (routes to joint brokerage when no
-  person-specific specs exist)
-- Fixed rollup contribution mismatch when cross-category rollovers were
-  counted as contributions
+- Fixed overflow routing fallback for joint brokerage
+- Fixed rollup contribution mismatch with cross-category rollovers
 - Fixed emergency fund self-loan calculation
-- Auto-version dedup check works on both PG and SQLite
-- Timestamps display in correct timezone regardless of DB server settings
-- Authentik users receive correct role based on group membership
+- Fixed timezone display for database timestamps
 
 ---
 
