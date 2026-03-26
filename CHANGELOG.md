@@ -6,6 +6,48 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.3.5] - 2026-03-25
+
+### CI/CD
+
+- Pinned all GitHub Actions to full SHA digests (supply chain security)
+- Added `permissions: contents: read` to CI workflow (least privilege)
+- Promoted all non-blocking CI steps (audit, migrations, docs freshness) to blocking
+- Gated Docker build step to push events only (skipped on PRs)
+- Added failure notification step for `main` branch pushes
+- Pinned actions in `quarterly-review.yml` and `dependabot-auto-merge.yml` to SHA digests
+- Added `branches: [main]` filter to Dependabot auto-merge workflow
+- Removed `src/**` from Next.js build cache key (better incremental caching)
+
+### Testing
+
+- Added schema parity tests — validates PG and SQLite schemas match (53 tables, 161 assertions)
+- Added math edge case tests for `roundToCents`, `safeDivide`, `sumBy` (13 tests)
+- Rewrote IRS contribution limit tests to validate seed data against authoritative IRS references
+- Found and fixed 5 incorrect 2025 IRS values in seed data (had 2026 values)
+- Made fast-check `numRuns` configurable via `FAST_CHECK_NUM_RUNS` env var
+- Added `test:stress` script for extended property-based testing (200 runs)
+- Expanded coverage scope to include `config/`, `budget-api/`, `db/`
+- Reduced default test timeout from 30s to 10s
+- Replaced `networkidle` with `domcontentloaded` across all 7 E2E specs
+- Improved E2E assertions with financial content validation and structural checks
+
+### Fixed
+
+- Fixed `roundToCents` docstring — was "banker's rounding", actually uses standard half-up rounding
+- Fixed 5 incorrect 2025 IRS contribution limits in `seed-reference-data.sql`:
+  - 401k employee limit: 24500 → 23500 (IRS Notice 2024-80)
+  - 401k catch-up limit: 8000 → 7500 (IRS Notice 2024-80)
+  - IRA limit: 7500 → 7000 (IRS Notice 2024-80)
+  - HSA family limit: 8750 → 8550 (Rev. Proc. 2024-25)
+  - HSA individual limit: 4400 → 4300 (Rev. Proc. 2024-25)
+
+### Docs
+
+- Updated OPS.md: clarified release process (branch vs main steps), updated CI pipeline docs, corrected test counts and dependabot policy
+
+---
+
 ## [0.3.4] - 2026-03-25
 
 ### Fixed
