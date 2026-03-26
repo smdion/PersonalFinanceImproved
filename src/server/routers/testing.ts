@@ -1,6 +1,6 @@
 /** Admin testing router that executes Vitest test suites on-demand and returns structured pass/fail results. */
 import { z } from "zod/v4";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import { createTRPCRouter, adminProcedure } from "../trpc";
 
 type TestResult = {
@@ -36,13 +36,13 @@ export const testingRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }): Promise<RunTestsOutput> => {
-      const args = ["npx", "vitest", "run", "--reporter=json"];
+      const vitestArgs = ["vitest", "run", "--reporter=json"];
       if (input.fileFilter) {
-        args.push(input.fileFilter);
+        vitestArgs.push(input.fileFilter);
       }
 
       try {
-        const stdout = execSync(args.join(" "), {
+        const stdout = execFileSync("npx", vitestArgs, {
           cwd: process.cwd(),
           timeout: 60_000,
           encoding: "utf-8",

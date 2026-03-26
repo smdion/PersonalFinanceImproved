@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useId, type ReactNode, isValidElement, cloneElement } from "react";
 
 type FormFieldProps = {
   /** Field label text. */
@@ -17,6 +17,8 @@ type FormFieldProps = {
  * Form field wrapper: label + input + optional help text + optional error.
  *
  * Standardizes the label → input → error layout used across settings pages.
+ * Automatically injects `aria-invalid` and `aria-describedby` on the child
+ * input element when an error is present.
  *
  * @example
  * <FormField label="Name" error={errors.name}>
@@ -30,15 +32,33 @@ export function FormField({
   children,
   className = "",
 }: FormFieldProps) {
+  const errorId = useId();
+  const hasError = !!error;
+
+  // Inject aria attributes onto the child input element when an error is present.
+  // Preserves any existing aria-describedby on the child by appending the error ID.
+  const enhancedChildren =
+    hasError && isValidElement(children)
+      ? cloneElement(children as React.ReactElement<Record<string, unknown>>, {
+          "aria-invalid": true,
+          "aria-describedby": [
+            (children.props as Record<string, unknown>)["aria-describedby"],
+            errorId,
+          ]
+            .filter(Boolean)
+            .join(" "),
+        })
+      : children;
+
   return (
     <label className={`flex flex-col text-sm ${className}`}>
       <span className="font-medium text-secondary">{label}</span>
-      <div className="mt-1">{children}</div>
+      <div className="mt-1">{enhancedChildren}</div>
       {help && !error && (
         <span className="text-xs text-faint mt-1">{help}</span>
       )}
       {error && (
-        <span role="alert" className="text-xs text-red-600 mt-1">
+        <span id={errorId} role="alert" className="text-xs text-red-600 mt-1">
           {error}
         </span>
       )}

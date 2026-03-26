@@ -164,24 +164,53 @@ export function DataTable<T extends { id: number | string }>({
                 {columns.map((col) => {
                   const isSortable = !!col.sortable;
                   const isActive = sortKey === col.key;
+                  const ariaSort:
+                    | "ascending"
+                    | "descending"
+                    | "none"
+                    | undefined = isSortable
+                    ? isActive
+                      ? sortDir === "asc"
+                        ? "ascending"
+                        : "descending"
+                      : "none"
+                    : undefined;
+                  const headerContent = (
+                    <span className="inline-flex items-center gap-1">
+                      {col.label}
+                      {isActive && (
+                        <>
+                          <span className="text-[10px]" aria-hidden="true">
+                            {sortDir === "asc" ? "▲" : "▼"}
+                          </span>
+                          <span className="sr-only">
+                            {sortDir === "asc"
+                              ? ", sorted ascending"
+                              : ", sorted descending"}
+                          </span>
+                        </>
+                      )}
+                    </span>
+                  );
                   return (
                     <th
                       key={col.key}
+                      aria-sort={ariaSort}
                       className={`text-left ${cellPad} font-medium text-secondary ${
                         col.sticky ? "sticky left-0 z-10 bg-surface-sunken" : ""
-                      } ${isSortable ? "cursor-pointer select-none hover:text-primary" : ""} ${col.className ?? ""}`}
-                      onClick={
-                        isSortable ? () => handleSort(col.key) : undefined
-                      }
+                      } ${col.className ?? ""}`}
                     >
-                      <span className="inline-flex items-center gap-1">
-                        {col.label}
-                        {isActive && (
-                          <span className="text-[10px]">
-                            {sortDir === "asc" ? "▲" : "▼"}
-                          </span>
-                        )}
-                      </span>
+                      {isSortable ? (
+                        <button
+                          type="button"
+                          onClick={() => handleSort(col.key)}
+                          className="cursor-pointer select-none hover:text-primary w-full text-left"
+                        >
+                          {headerContent}
+                        </button>
+                      ) : (
+                        headerContent
+                      )}
                     </th>
                   );
                 })}

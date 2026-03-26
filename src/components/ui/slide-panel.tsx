@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
+import { useFocusTrap } from "@/lib/hooks/use-focus-trap";
 
 export function SlidePanel({
   open,
@@ -14,6 +15,7 @@ export function SlidePanel({
   children: React.ReactNode;
 }) {
   const backdropRef = useRef<HTMLDivElement>(null);
+  const trapRef = useFocusTrap<HTMLDivElement>(open);
 
   const handleClose = useCallback(() => onClose(), [onClose]);
 
@@ -28,6 +30,13 @@ export function SlidePanel({
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [open, handleClose]);
+
+  // Move focus into the panel when it opens
+  useEffect(() => {
+    if (open && trapRef.current) {
+      trapRef.current.focus();
+    }
+  }, [open, trapRef]);
 
   // Prevent body scroll when open
   useEffect(() => {
@@ -51,10 +60,12 @@ export function SlidePanel({
       role="presentation"
     >
       <div
+        ref={trapRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="bg-surface-primary w-full max-w-2xl h-full shadow-xl flex flex-col animate-in slide-in-from-right duration-200"
+        tabIndex={-1}
+        className="bg-surface-primary w-full max-w-2xl h-full shadow-xl flex flex-col animate-in slide-in-from-right duration-200 outline-none"
       >
         <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
           <h2 className="text-lg font-semibold text-primary">{title}</h2>

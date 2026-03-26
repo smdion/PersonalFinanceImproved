@@ -111,6 +111,9 @@ jobs:
       - name: Check migrations
         run: pnpm check:migrations
 
+      - name: Check tax parameter freshness
+        run: pnpm check:tax-params
+
       - name: Verify docs freshness
         run: pnpm docs:verify
 

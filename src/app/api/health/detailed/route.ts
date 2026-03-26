@@ -11,10 +11,7 @@ import { log } from "@/lib/logger";
 export async function GET(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret || cronSecret.length < 32) {
-    return NextResponse.json(
-      { error: "Health detail endpoint requires CRON_SECRET to be configured" },
-      { status: 501 },
-    );
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const auth = request.headers.get("authorization");

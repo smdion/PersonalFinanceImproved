@@ -224,7 +224,10 @@ export function estimateWithdrawalTaxCost(
   for (let ssIter = 0; ssIter < ssIterations; ssIter++) {
     estTax = 0;
     let iterEstTradTotal = 0; // track Traditional estimate for SS convergence
-    // LTCG rate: use graduated brackets when filingStatus available, else flat rate
+    // LTCG rate seed: marginal rate at estimated income level. This is a convergence
+    // seed only — final brokerage tax uses computeLtcgTax() with graduated brackets.
+    // Marginal-only is acceptable here because it slightly overestimates, causing the
+    // loop to converge conservatively (within 1 extra iteration for high-gain scenarios).
     const estLtcgRate = filingStatus
       ? getLtcgRate(
           taxableSS + afterTaxNeed * estTraditionalPortion,

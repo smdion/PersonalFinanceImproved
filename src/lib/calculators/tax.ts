@@ -7,8 +7,11 @@
  * Flow: Annual Gross → AGI → Taxable Income → Federal Tax (brackets) → FICA → Total
  *
  * Known limitation: Tax-exempt interest (e.g. municipal bond interest) is not included
- * in provisional income for Social Security benefit taxation. Retirees with significant
- * muni bond portfolios may see underestimated SS tax liability. (Review item M9)
+ * in provisional income for Social Security benefit taxation. The engine's computeTaxableSS()
+ * already accepts a taxExemptInterest param (defaults to 0), but no data model exists to
+ * capture projected muni bond income. If muni bond tracking is added, wire the annual
+ * tax-exempt income through to computeTaxableSS() callers. Only affects retirees with
+ * significant muni portfolios — underestimates SS tax liability by up to ~4% of SS income.
  *
  * Key differences from the paycheck calculator:
  *   - Uses actual annual income (not annualized per-period)
