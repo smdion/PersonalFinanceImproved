@@ -90,88 +90,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.3.0] - 2026-03-24
 
-> Everything that changed since v0.1.0. For patch-level detail, see the
-> v0.2.x entries above.
+> What changed since v0.2.0.
 
 ### Security
 
 - Upgraded to Next.js 15 and React 19, resolving all known Next.js 14 CVEs including a critical (CVSS 10.0) remote code execution vulnerability
-- Column name validation on backup import prevents SQL injection via crafted files
-- Rate limiting on Monte Carlo and sync endpoints (5 req/min)
-- Password complexity enforced for local admin accounts
-- Database error details removed from health endpoint; PostgreSQL port bound to localhost
-
-### New Pages & Features
-
-- **Contributions page** — household contribution analysis with savings rate summary, per-person account breakdown, employer match analysis, and contribution profile comparison
-- **Help & Guide page** — walkthrough of every feature organized by section
-- **Raw Data Browser** — admin-only live database table viewer with row counts, column metadata, paginated data, and JSON export
-- **Assets page** — consolidated breakdown with Cash, Property, Other Assets groupings and subtotals
-
-### Retirement & Projections
-
-- **Lump-sum injections** — model one-time events (bonus, inheritance, windfall, rollover) in any projection year
-- **Per-year contribution profile switching** — change your contribution structure at a future year (job change, ESPP stop, etc.)
-- **Configurable filing status** — MFJ/Single/HOH as explicit retirement setting; affects federal brackets, LTCG, IRMAA, Social Security, and NIIT
-- **Snapshot selector** — run projections from any historical portfolio snapshot, not just the latest
-- **Monte Carlo success rates** — withdrawal strategy comparison table now shows success rate per strategy
-- **LTCG progressive stacking** — capital gains now taxed across 0%/15%/20% brackets by stacking on top of ordinary income (was flat rate)
-- **NIIT surtax** — Net Investment Income Tax on income exceeding $200k/$250k thresholds
-- **LTCG and IRMAA brackets in database** — rates versioned by year and filing status (no more hardcoded values)
-
-### Contributions & Paycheck
-
-- **Prior-year tax contributions** — designate IRA/HSA contributions for the prior tax year during the IRS window (Jan 1 - Apr 15)
-- **Multiple contribution profiles** — switch profiles from the top bar; view without activating
-- **Budget-linked profiles** — each budget column links to a contribution profile; savings page uses the correct one automatically
-
-### Budget & Savings
-
-- **Budget mode awareness on savings** — savings page derives contribution profile from budget column link; cross-mode capacity comparison shows max monthly funding per budget column
-
-### Portfolio & Performance
-
-- **Performance tab groups** — split into "By Account" and "Rollup" views
-- **Rollovers column** — separates internal transfers from actual contributions in the performance table
-- **YTD timeframe** — portfolio chart now has a "YTD" button
-- **Hover comparison line** — horizontal reference line on portfolio chart
-
-### Integration & Sync
-
-- **YNAB key update** — replace API key without removing the connection
-- **Savings sync** — pushes monthly contributions from Ledgr to YNAB goal targets instead of pulling balances
-
-### Self-Hosting & Operations
-
-- **Dual database support** — SQLite (zero-config default) or PostgreSQL
-- **CLI backup tools** — `pnpm backup:export` and `pnpm backup:import` for headless environments
-- **Pre-upgrade auto-backup** — automatic snapshot before schema changes
-- **Cross-version backup import** — old v0.1.x backups auto-transform on import
-- All 9 migrations squashed into a single clean schema — new installs get one migration instead of nine
-- Release automation via `pnpm release X.Y.Z`
-- Node.js 24 LTS — extended support through April 2028
-
-### UI/UX
-
-- **Sidebar redesign** — reorganized into Cash Flow / Wealth / Net Worth / Analysis / System
-- **Theme support** — semantic design tokens throughout
-
-### Testing & CI
-
-- 2,300+ tests covering calculators, tRPC routers, helpers, and backup transforms
-- 26 E2E Playwright smoke tests for all dashboard pages
-- Coverage thresholds enforced (statements 85%, branches 70%, functions 80%, lines 85%)
-- Dependabot auto-merge for minor/patch updates after CI passes
-
-### Bug Fixes
-
-- Fixed LTCG bracket stacking (was flat rate, now progressive)
-- Fixed contribution override double-inflation on profile switches
-- Fixed ESPP/account persistence after contribution profile override
-- Fixed overflow routing fallback for joint brokerage
-- Fixed rollup contribution mismatch with cross-category rollovers
-- Fixed emergency fund self-loan calculation
-- Fixed timezone display for database timestamps
 
 ---
 
