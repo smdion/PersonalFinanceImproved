@@ -58,6 +58,18 @@ export const YNAB_INTERNAL_GROUPS = new Set([
   "Hidden Categories",
 ]);
 
+/** YNAB category names excluded from expense comparisons (system/non-expense categories). */
+export const YNAB_EXPENSE_EXCLUDED_CATEGORIES = new Set([
+  "Split", // parent of split txns — children carry real categories
+  "Inflow: Ready to Assign", // income inflows, not expenses
+  "Uncategorized", // unassigned noise until categorized
+]);
+
+/** YNAB category groups excluded from expense views (not real spending). */
+export const YNAB_EXPENSE_EXCLUDED_GROUPS = new Set([
+  "Credit Card Payments", // internal transfers between accounts
+]);
+
 type YnabMonth = {
   month: string;
   income: number;
