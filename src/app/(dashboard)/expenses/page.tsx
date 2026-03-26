@@ -217,15 +217,15 @@ export default function ExpensesPage() {
         const budgetedMonthly = linkedItem
           ? (linkedItem.amounts[activeColumn] ?? 0) / 12
           : c.budgeted > 0
-            ? c.budgeted / 1000
-            : 0; // API amounts in milliunits
+            ? c.budgeted
+            : 0;
         if (actual === 0 && budgetedMonthly === 0) continue;
         rows.push({
           group: g.name,
           category: c.name,
           budgeted: budgetedMonthly,
-          actual: actual / 1000, // YNAB milliunits → dollars
-          diff: actual / 1000 - budgetedMonthly,
+          actual,
+          diff: actual - budgetedMonthly,
           isEssential: linkedItem?.isEssential ?? true,
         });
       }

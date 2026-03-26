@@ -36,6 +36,11 @@ vi.mock("@/lib/budget-api", () => ({
   getApiConnection: (...args: unknown[]) => mockGetApiConnection(...args),
   cacheGet: (...args: unknown[]) => mockCacheGet(...args),
   cacheSet: (...args: unknown[]) => mockCacheSet(...args),
+  YNAB_EXPENSE_EXCLUDED_CATEGORIES: new Set([
+    "Split",
+    "Inflow: Ready to Assign",
+    "Uncategorized",
+  ]),
 }));
 
 // ── syncAll ──────────────────────────────────────────────────────────

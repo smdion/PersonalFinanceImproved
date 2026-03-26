@@ -28,4 +28,7 @@ export {
   fromCents,
   toCents,
 } from "./conversions";
-export { YNAB_INTERNAL_GROUPS } from "./ynab-client";
+export {
+  YNAB_INTERNAL_GROUPS,
+  YNAB_EXPENSE_EXCLUDED_CATEGORIES,
+} from "./ynab-client";
