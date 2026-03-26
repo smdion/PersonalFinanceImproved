@@ -277,8 +277,8 @@ export const savingsGoals = pgTable(
     id: serial("id").primaryKey(),
     name: text("name").notNull().unique(),
     parentGoalId: integer("parent_goal_id"),
-    // Self-referential FK enforced via DB migration (ALTER TABLE ADD CONSTRAINT),
-    // not inline — Drizzle cannot self-reference in the same table definition.
+    // Self-referential FK enforced via migration 0001_add_parent_goal_fk.sql
+    // (ALTER TABLE ADD CONSTRAINT) — Drizzle cannot self-reference inline.
     targetAmount: decimal("target_amount", { precision: 12, scale: 2 }),
     targetMonths: integer("target_months"),
     targetDate: date("target_date"),

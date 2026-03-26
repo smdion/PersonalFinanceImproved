@@ -19,7 +19,7 @@
 
 | Phase                                 | Status          | Notes                                                                                                                                                                                                                                                                     |
 | ------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Phase 1: Skeleton + Data Model + Seed | **COMPLETE**    | Schema (<!-- AUTO-GEN:migrations -->1<!-- /AUTO-GEN --> migration, <!-- AUTO-GEN:tables -->53<!-- /AUTO-GEN -->+ tables), seed script, <!-- AUTO-GEN:settingsComponents -->17<!-- /AUTO-GEN --> settings tabs                                                             |
+| Phase 1: Skeleton + Data Model + Seed | **COMPLETE**    | Schema (<!-- AUTO-GEN:migrations -->3<!-- /AUTO-GEN --> migration, <!-- AUTO-GEN:tables -->53<!-- /AUTO-GEN -->+ tables), seed script, <!-- AUTO-GEN:settingsComponents -->17<!-- /AUTO-GEN --> settings tabs                                                             |
 | Phase 2: Calculation Engine           | **COMPLETE**    | <!-- AUTO-GEN:calculators -->14<!-- /AUTO-GEN --> calculators + modular engine (<!-- AUTO-GEN:engineModules -->20<!-- /AUTO-GEN --> modules)                                                                                                                              |
 | Phase 3: Dashboard + Core Pages       | **COMPLETE**    | Dashboard (<!-- AUTO-GEN:dashboardCards -->18<!-- /AUTO-GEN --> dashboard card components), Paycheck, Budget, Portfolio                                                                                                                                                   |
 | Phase 4: Budget API Integration       | **COMPLETE**    | YNAB + Actual Budget clients, sync router, cache, factory. Cash integration (API owns cash when active), budget 2-way sync, savings category sync, portfolio auto-push on snapshot, asset pull on sync, account mappings, expense YoY comparison, API category picker UI. |
@@ -63,7 +63,7 @@ See RULES.md § Engine Modularity for the full module list (<!-- AUTO-GEN:engine
 
 ```
 ledgr/
-├── drizzle/                    # <!-- AUTO-GEN:migrations -->1<!-- /AUTO-GEN --> migration (squashed in v0.2.0)
+├── drizzle/                    # <!-- AUTO-GEN:migrations -->3<!-- /AUTO-GEN --> migrations (initial schema + parent goal FK)
 ├── scripts/
 │   ├── seed.ts                 # xlsx parser + database seeder
 │   ├── validate.ts             # Post-seed validation
