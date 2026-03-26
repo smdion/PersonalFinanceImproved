@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+# v0.3
+
 ## [0.3.5] - 2026-03-25
 
 ### Fixed
@@ -97,6 +99,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Upgraded to Next.js 15 and React 19, resolving all known Next.js 14 CVEs including a critical (CVSS 10.0) remote code execution vulnerability
 
 ---
+
+# v0.2
 
 ## [0.2.1] - 2026-03-24
 
@@ -198,6 +202,8 @@ auto-transformed to the current schema.
 - Fixed timezone display for database timestamps
 
 ---
+
+# v0.1
 
 ## [0.1.0] - 2026-03-18
 
