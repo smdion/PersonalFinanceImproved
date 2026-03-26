@@ -4,8 +4,8 @@
  * These 29 invariants must hold for ANY valid input. Uses fast-check to
  * generate random inputs and assert mathematical/logical correctness.
  *
- * Run time is bounded with { numRuns: 20 } since each run calls the full
- * engine which is computationally expensive.
+ * Run time defaults to 20 runs per invariant (CI-friendly). Override with
+ * FAST_CHECK_NUM_RUNS=200 for deeper stress testing (see `pnpm test:stress`).
  */
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
@@ -25,6 +25,7 @@ import {
 // Shared helpers
 // ---------------------------------------------------------------------------
 
+const NUM_RUNS = parseInt(process.env.FAST_CHECK_NUM_RUNS ?? "20", 10);
 const AS_OF = new Date("2025-03-07");
 const EPSILON = 0.011; // $0.011 rounding tolerance (cent + tiny float)
 
@@ -381,7 +382,7 @@ describe("engine invariants", () => {
             expect(btx.hsa).toBeGreaterThanOrEqual(-EPSILON);
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
 
@@ -398,7 +399,7 @@ describe("engine invariants", () => {
             }
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
 
@@ -428,7 +429,7 @@ describe("engine invariants", () => {
             }
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
 
@@ -455,7 +456,7 @@ describe("engine invariants", () => {
             }
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
   });
@@ -487,7 +488,7 @@ describe("engine invariants", () => {
             );
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
 
@@ -504,7 +505,7 @@ describe("engine invariants", () => {
             }
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
 
@@ -565,7 +566,7 @@ describe("engine invariants", () => {
             }
           },
         ),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
   });
@@ -587,7 +588,7 @@ describe("engine invariants", () => {
             expect(year.endBalance).toBeGreaterThanOrEqual(-EPSILON);
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
 
@@ -603,7 +604,7 @@ describe("engine invariants", () => {
             );
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
 
@@ -630,7 +631,7 @@ describe("engine invariants", () => {
             }
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
 
@@ -662,7 +663,7 @@ describe("engine invariants", () => {
             }
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
 
@@ -680,7 +681,7 @@ describe("engine invariants", () => {
             );
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
   });
@@ -703,7 +704,7 @@ describe("engine invariants", () => {
             );
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
 
@@ -719,7 +720,7 @@ describe("engine invariants", () => {
             );
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
 
@@ -735,7 +736,7 @@ describe("engine invariants", () => {
             expect(validRates.has(rate)).toBe(true);
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
 
@@ -753,7 +754,7 @@ describe("engine invariants", () => {
             expect(year.ssIncome).toBeGreaterThanOrEqual(-EPSILON);
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
 
@@ -780,7 +781,7 @@ describe("engine invariants", () => {
             }
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
   });
@@ -813,7 +814,7 @@ describe("engine invariants", () => {
             }
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
 
@@ -845,7 +846,7 @@ describe("engine invariants", () => {
             );
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
   });
@@ -973,7 +974,7 @@ describe("engine invariants", () => {
             }
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
 
@@ -992,7 +993,7 @@ describe("engine invariants", () => {
             }
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
 
@@ -1179,7 +1180,7 @@ describe("engine invariants", () => {
             );
           }
         }),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
   });
@@ -1257,7 +1258,7 @@ describe("engine invariants", () => {
             }
           },
         ),
-        { numRuns: 20 },
+        { numRuns: NUM_RUNS },
       );
     });
   });

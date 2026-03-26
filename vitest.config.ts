@@ -10,10 +10,16 @@ export default defineConfig({
     include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
     environment: "jsdom",
     setupFiles: ["tests/setup-component.ts"],
-    testTimeout: 30000,
+    testTimeout: 10000,
     coverage: {
       provider: "v8",
-      include: ["src/lib/calculators/**", "src/server/**"],
+      include: [
+        "src/lib/calculators/**",
+        "src/lib/config/**",
+        "src/lib/budget-api/**",
+        "src/lib/db/**",
+        "src/server/**",
+      ],
       exclude: [
         // Pure type definitions — no runtime code to test
         "src/lib/calculators/types/**",
@@ -36,10 +42,22 @@ export default defineConfig({
         "src/server/routers/api-docs.ts",
         // Data browser — all procedures use db.execute() (Postgres raw SQL)
         "src/server/routers/data-browser.ts",
-        // Budget API types — pure type definitions
+        // Budget API — types and barrel re-exports
         "src/lib/budget-api/types.ts",
+        "src/lib/budget-api/index.ts",
+        "src/lib/budget-api/interface.ts",
+        // Budget API cache — requires DB runtime for upsert/delete
+        "src/lib/budget-api/cache.ts",
         // DB connection barrel — runtime pool/connection setup
         "src/lib/db/index.ts",
+        // DB schema files — declarative definitions, not logic
+        "src/lib/db/schema-pg.ts",
+        "src/lib/db/schema-sqlite.ts",
+        "src/lib/db/schema.ts",
+        // DB runtime — requires live database for transactions/queries
+        "src/lib/db/version-logic.ts",
+        "src/lib/db/backfill-local-ids.ts",
+        "src/lib/db/backfill-perf-ids.ts",
       ],
       thresholds: {
         statements: 85,

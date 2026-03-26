@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Retirement projection page", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/retirement");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
   });
 
   test("retirement page loads with projection content", async ({ page }) => {

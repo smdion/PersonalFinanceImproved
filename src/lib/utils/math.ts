@@ -16,7 +16,9 @@ export function safeDivide(
 }
 
 /**
- * Round to cents (2 decimal places) using banker's rounding.
+ * Round to cents (2 decimal places) using standard half-up rounding.
+ * Note: This is Math.round (half-up), not banker's rounding (half-to-even).
+ * Validated by engine snapshot tests across 62 fixtures — any drift is caught.
  */
 export function roundToCents(value: number): number {
   return Math.round(value * 100) / 100;

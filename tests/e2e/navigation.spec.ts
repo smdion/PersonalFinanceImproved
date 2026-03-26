@@ -12,11 +12,11 @@ test.describe("Dashboard navigation", () => {
     page,
   }) => {
     await page.goto("/");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     for (const { path } of dashboardPages) {
       await page.goto(path);
-      await page.waitForLoadState("networkidle");
+      await page.waitForLoadState("domcontentloaded");
 
       // Page should not error out (no 500-level failures)
       await expect(page.locator("body")).toBeVisible();
@@ -32,7 +32,7 @@ test.describe("Dashboard navigation", () => {
     // (collapsible groups only render child links when open)
     for (const { path } of dashboardPages) {
       await page.goto(path);
-      await page.waitForLoadState("networkidle");
+      await page.waitForLoadState("domcontentloaded");
 
       const sidebar = page.locator("nav");
       if ((await sidebar.count()) > 0) {

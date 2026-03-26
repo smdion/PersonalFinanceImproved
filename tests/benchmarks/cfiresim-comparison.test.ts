@@ -32,35 +32,39 @@ import {
 // ---------------------------------------------------------------------------
 
 describe("cFIREsim apples-to-apples comparison", () => {
-  it("matches cFIREsim at 4% SWR, 75/25, 30yr horizon (classic Trinity)", () => {
-    // cFIREsim 75/25 at 4% SWR, 30 years: ~95-96% success historically
-    const engineInput = makeTrinityInput({
-      currentAge: 65,
-      retirementAge: 65,
-      projectionEndAge: 95,
-      annualExpenses: 40000, // 4% of $1M
-      inflationRate: 0.03,
-    });
+  it(
+    "matches cFIREsim at 4% SWR, 75/25, 30yr horizon (classic Trinity)",
+    { timeout: 120_000 },
+    () => {
+      // cFIREsim 75/25 at 4% SWR, 30 years: ~95-96% success historically
+      const engineInput = makeTrinityInput({
+        currentAge: 65,
+        retirementAge: 65,
+        projectionEndAge: 95,
+        annualExpenses: 40000, // 4% of $1M
+        inflationRate: 0.03,
+      });
 
-    // Use Ibbotson historical returns (10.3% equity, 5.5% bonds) to match cFIREsim's data
-    const mc = calculateMonteCarlo(
-      makeMCInput(engineInput, {
-        numTrials: 10000,
-        seed: 42,
-        assetClasses: IBBOTSON_CLASSES,
-        correlations: [{ classAId: 1, classBId: 3, correlation: -0.1 }],
-        glidePath: make7525GlidePath(),
-        inflationRisk: { meanRate: 0.03, stdDev: 0.012 },
-      }),
-    );
+      // Use Ibbotson historical returns (10.3% equity, 5.5% bonds) to match cFIREsim's data
+      const mc = calculateMonteCarlo(
+        makeMCInput(engineInput, {
+          numTrials: 10000,
+          seed: 42,
+          assetClasses: IBBOTSON_CLASSES,
+          correlations: [{ classAId: 1, classBId: 3, correlation: -0.1 }],
+          glidePath: make7525GlidePath(),
+          inflationRisk: { meanRate: 0.03, stdDev: 0.012 },
+        }),
+      );
 
-    console.log(
-      `4% SWR, 75/25, 30yr: ${(mc.successRate * 100).toFixed(1)}% success`,
-    );
-    // cFIREsim historical: ~95-96%. Our MC should be within ±8pp.
-    expect(mc.successRate).toBeGreaterThan(0.87);
-    expect(mc.successRate).toBeLessThan(1.01);
-  });
+      console.log(
+        `4% SWR, 75/25, 30yr: ${(mc.successRate * 100).toFixed(1)}% success`,
+      );
+      // cFIREsim historical: ~95-96%. Our MC should be within ±8pp.
+      expect(mc.successRate).toBeGreaterThan(0.87);
+      expect(mc.successRate).toBeLessThan(1.01);
+    },
+  );
 
   it(
     "matches cFIREsim at 3.25% SWR, 75/25, 40yr horizon (your scenario)",

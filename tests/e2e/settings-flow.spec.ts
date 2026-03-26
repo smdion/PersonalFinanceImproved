@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Settings page flow", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/settings");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
   });
 
   test("settings page loads and shows configuration sections", async ({
