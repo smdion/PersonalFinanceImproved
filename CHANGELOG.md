@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.7] - 2026-03-26
+
+### Fixed
+
+- Expense chart and table showed wildly incorrect actual spending amounts (values were 1,000× too small due to a double unit conversion)
+- Expense budgeted column now uses the same YNAB data source as actuals — budget-vs-actual comparisons are apples-to-apples
+- Year-over-year comparison no longer shows $0 for the prior year — transaction sync now fetches enough history
+- Credit card payment transfers no longer appear as spending in the expense breakdown
+- Chart tooltip no longer labels both bars as "Actual" — budgeted and actual are now correctly distinguished
+- YNAB system categories (Split, Inflow, Uncategorized) no longer inflate expense totals in the year-over-year table
+
+---
+
 ## [0.3.6] - 2026-03-26
 
 ### Security
