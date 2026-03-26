@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
+import { useFocusTrap } from "@/lib/hooks/use-focus-trap";
 
 export function SlidePanel({
   open,
@@ -14,6 +15,7 @@ export function SlidePanel({
   children: React.ReactNode;
 }) {
   const backdropRef = useRef<HTMLDivElement>(null);
+  const trapRef = useFocusTrap<HTMLDivElement>(open);
 
   const handleClose = useCallback(() => onClose(), [onClose]);
 
@@ -51,6 +53,7 @@ export function SlidePanel({
       role="presentation"
     >
       <div
+        ref={trapRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}

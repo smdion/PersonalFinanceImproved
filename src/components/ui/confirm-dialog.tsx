@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useFocusTrap } from "@/lib/hooks/use-focus-trap";
 
 // ---------------------------------------------------------------------------
 // State types
@@ -67,6 +68,7 @@ export function ConfirmDialog() {
   const actionRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
+  const trapRef = useFocusTrap<HTMLDivElement>(state !== null);
 
   // Register global setter
   useEffect(() => {
@@ -130,6 +132,7 @@ export function ConfirmDialog() {
       role="presentation"
     >
       <div
+        ref={trapRef}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-message"

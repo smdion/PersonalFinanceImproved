@@ -16,6 +16,12 @@ export function DashboardLayout({
   const [collapsed, setCollapsed] = useState(false);
   return (
     <div className="flex min-h-screen">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-1/2 focus:-translate-x-1/2 focus:z-50 focus:px-4 focus:py-2 focus:rounded-md focus:bg-blue-600 focus:text-white focus:text-sm focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
       <button
         onClick={() => setMobileOpen(true)}
         className="fixed top-2 left-2 z-30 p-2 rounded-lg bg-surface-primary text-primary shadow-lg md:hidden"

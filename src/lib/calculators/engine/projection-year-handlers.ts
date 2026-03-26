@@ -1412,7 +1412,8 @@ export function runDecumulationYear(
   totalWithdrawal = rmdResult.totalWithdrawal;
   routeWarnings.push(...rmdResult.warnings);
 
-  // Recompute taxableSS with actual Traditional withdrawal (post-RMD) for final tax cost
+  // Recompute taxableSS with actual Traditional withdrawal (post-RMD) for final tax cost.
+  // TODO(F2): If muni bond income tracking is added, pass taxExemptInterest as 4th arg.
   if (filingStatus && ssIncome > 0) {
     taxableSS = computeTaxableSS(
       ssIncome,
@@ -1575,6 +1576,8 @@ export function runDecumulationYear(
         brokerageTaxCost,
     );
   } else {
+    // When no brokerage gains exist, use marginal LTCG rate as a display fallback
+    // for post-withdrawal optimizer. No tax is actually computed from this value.
     postConversionLtcgRate =
       brokerageGainsPortion > 0
         ? brokerageTaxCost / brokerageGainsPortion

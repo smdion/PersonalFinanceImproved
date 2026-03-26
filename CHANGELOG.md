@@ -8,6 +8,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.6] - 2026-03-26
+
+### Security
+
+- Hardened admin test runner against shell injection
+- Health detail endpoint no longer reveals whether authentication is configured — all auth failures return the same response
+
+### Fixed
+
+- Savings goals with a parent can no longer reference a non-existent goal (database constraint added)
+- Financial amount fields now reject invalid values like "NaN" or empty strings on save
+
+### Improved
+
+- Keyboard users can skip directly to page content without tabbing through the sidebar
+- Focus stays trapped inside slide panels and confirmation dialogs — Tab no longer escapes to background content
+- Screen readers now announce which input has an error and read the error message
+- Sortable table columns announce their current sort direction to screen readers
+
+---
+
 ## [0.3.5] - 2026-03-25
 
 ### Fixed
@@ -92,11 +113,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.3.0] - 2026-03-24
 
-> What changed since v0.2.0.
+> What changed since v0.2.0. For patch-level detail, see the entries above.
 
 ### Security
 
 - Upgraded to Next.js 15 and React 19, resolving all known Next.js 14 CVEs including a critical (CVSS 10.0) remote code execution vulnerability
+
+### Improved
+
+- Upgraded to Node.js 24 LTS — extends support through April 2028
 
 ---
 

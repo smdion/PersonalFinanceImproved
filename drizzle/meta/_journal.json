@@ -8,6 +8,13 @@
       "when": 1774319331526,
       "tag": "0000_v2_initial_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774750800000,
+      "tag": "0001_add_parent_goal_fk",
+      "breakpoints": true
     }
   ]
 }

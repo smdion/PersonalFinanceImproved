@@ -81,10 +81,15 @@ const performanceAccountInput = z.object({
   displayOrder: z.number().int().default(0),
 });
 
+/** Zod schema for numeric strings stored as TEXT in SQLite (e.g. financial amounts). */
+const numericText = z
+  .string()
+  .refine((v) => !Number.isNaN(Number(v)), "Must be a valid number");
+
 const savingsGoalInput = z.object({
   name: z.string().min(1),
   parentGoalId: z.number().int().nullable().optional(),
-  targetAmount: z.string().nullable().optional(),
+  targetAmount: numericText.nullable().optional(),
   targetMonths: z.number().int().nullable().optional(),
   targetDate: z
     .string()
@@ -95,8 +100,8 @@ const savingsGoalInput = z.object({
   isActive: z.boolean().default(true),
   isEmergencyFund: z.boolean().default(false),
   targetMode: z.enum(["fixed", "ongoing"]).default("fixed"),
-  monthlyContribution: z.string().default("0"),
-  allocationPercent: z.string().nullable().optional(), // % of budget leftover
+  monthlyContribution: numericText.default("0"),
+  allocationPercent: numericText.nullable().optional(), // % of budget leftover
 });
 
 // --- Procedures ---
@@ -1013,7 +1018,7 @@ export const adminProcedures = {
           snapshotId: z.number().int(),
           institution: z.string().trim().min(1),
           taxType: z.enum(PORTFOLIO_TAX_TYPE_VALUES),
-          amount: z.string(),
+          amount: numericText,
           accountType: z.string().min(1),
           subType: z.string().nullable().optional(),
           label: z.string().trim().nullable().optional(),
