@@ -91,19 +91,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.3.0] - 2026-03-24
 
 > Everything that changed since v0.1.0. For patch-level detail, see the
-> individual v0.2.x and v0.3.x entries above.
+> v0.2.x entries above.
 
 ### Security
 
-- Upgraded to Next.js 15/16 and React 19, resolving all known Next.js 14 CVEs including a critical (CVSS 10.0) remote code execution vulnerability
-- Tightened Content Security Policy, Cross-Origin headers, and container hardening
-- Container runs read-only with no Linux capabilities and owner-only file permissions
-- Zero production vulnerabilities enforced in CI
+- Upgraded to Next.js 15 and React 19, resolving all known Next.js 14 CVEs including a critical (CVSS 10.0) remote code execution vulnerability
 - Column name validation on backup import prevents SQL injection via crafted files
 - Rate limiting on Monte Carlo and sync endpoints (5 req/min)
 - Password complexity enforced for local admin accounts
 - Database error details removed from health endpoint; PostgreSQL port bound to localhost
-- Corrected 5 incorrect 2025 IRS contribution limits
 
 ### New Pages & Features
 
@@ -122,7 +118,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **LTCG progressive stacking** — capital gains now taxed across 0%/15%/20% brackets by stacking on top of ordinary income (was flat rate)
 - **NIIT surtax** — Net Investment Income Tax on income exceeding $200k/$250k thresholds
 - **LTCG and IRMAA brackets in database** — rates versioned by year and filing status (no more hardcoded values)
-- Projection page split into smaller, faster-loading sections
 
 ### Contributions & Paycheck
 
@@ -152,28 +147,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **CLI backup tools** — `pnpm backup:export` and `pnpm backup:import` for headless environments
 - **Pre-upgrade auto-backup** — automatic snapshot before schema changes
 - **Cross-version backup import** — old v0.1.x backups auto-transform on import
-- **Canary deploy pattern** — demo container health-checked before production rolls over
-- **Rollback support** — previous image versions preserved as `ledgr:X.Y.Z` tags
-- Reproducible Docker builds with pinned base image and OCI labels
-- Smaller production image (TypeScript compiler removed from runtime)
-- Node.js 25 with Turbopack for faster builds
+- All 9 migrations squashed into a single clean schema — new installs get one migration instead of nine
 - Release automation via `pnpm release X.Y.Z`
+- Node.js 24 LTS — extended support through April 2028
 
 ### UI/UX
 
 - **Sidebar redesign** — reorganized into Cash Flow / Wealth / Net Worth / Analysis / System
 - **Theme support** — semantic design tokens throughout
-- Fixed visual border glitches in light/dark mode
-- Fixed list flickering in savings, projections, and goals
 
 ### Testing & CI
 
-- 2,700+ tests covering calculators, tRPC routers, helpers, budget API integrations, and database compatibility
+- 2,300+ tests covering calculators, tRPC routers, helpers, and backup transforms
 - 26 E2E Playwright smoke tests for all dashboard pages
 - Coverage thresholds enforced (statements 85%, branches 70%, functions 80%, lines 85%)
-- All CI checks block merges; pipeline hardened with pinned dependencies
 - Dependabot auto-merge for minor/patch updates after CI passes
-- CI runs ~45 seconds faster with browser and build caching
 
 ### Bug Fixes
 
@@ -183,7 +171,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Fixed overflow routing fallback for joint brokerage
 - Fixed rollup contribution mismatch with cross-category rollovers
 - Fixed emergency fund self-loan calculation
-- Fixed timezone bugs in salary dates and database timestamps
+- Fixed timezone display for database timestamps
 
 ---
 
