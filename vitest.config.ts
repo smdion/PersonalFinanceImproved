@@ -10,10 +10,16 @@ export default defineConfig({
     include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
     environment: "jsdom",
     setupFiles: ["tests/setup-component.ts"],
-    testTimeout: 30000,
+    testTimeout: 10000,
     coverage: {
       provider: "v8",
-      include: ["src/lib/calculators/**", "src/server/**"],
+      include: [
+        "src/lib/calculators/**",
+        "src/lib/config/**",
+        "src/lib/budget-api/**",
+        "src/lib/db/**",
+        "src/server/**",
+      ],
       exclude: [
         // Pure type definitions — no runtime code to test
         "src/lib/calculators/types/**",
@@ -40,6 +46,10 @@ export default defineConfig({
         "src/lib/budget-api/types.ts",
         // DB connection barrel — runtime pool/connection setup
         "src/lib/db/index.ts",
+        // DB schema files — declarative definitions, not logic
+        "src/lib/db/schema-pg.ts",
+        "src/lib/db/schema-sqlite.ts",
+        "src/lib/db/schema.ts",
       ],
       thresholds: {
         statements: 85,

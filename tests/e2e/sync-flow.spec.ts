@@ -5,7 +5,7 @@ test.describe("Data pages and sync-related flows", () => {
     page,
   }) => {
     await page.goto("/portfolio");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const bodyText = await page.locator("body").innerText();
     expect(bodyText.length).toBeGreaterThan(50);
@@ -20,7 +20,7 @@ test.describe("Data pages and sync-related flows", () => {
 
   test("contributions page loads without errors", async ({ page }) => {
     await page.goto("/contributions");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const bodyText = await page.locator("body").innerText();
     expect(bodyText.length).toBeGreaterThan(50);
@@ -29,7 +29,7 @@ test.describe("Data pages and sync-related flows", () => {
 
   test("expenses page loads without errors", async ({ page }) => {
     await page.goto("/expenses");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const bodyText = await page.locator("body").innerText();
     expect(bodyText.length).toBeGreaterThan(50);
@@ -38,7 +38,7 @@ test.describe("Data pages and sync-related flows", () => {
 
   test("historical page loads without errors", async ({ page }) => {
     await page.goto("/historical");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const bodyText = await page.locator("body").innerText();
     expect(bodyText.length).toBeGreaterThan(50);
@@ -47,7 +47,7 @@ test.describe("Data pages and sync-related flows", () => {
 
   test("data browser page loads without errors", async ({ page }) => {
     await page.goto("/data-browser");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const bodyText = await page.locator("body").innerText();
     expect(bodyText.length).toBeGreaterThan(50);

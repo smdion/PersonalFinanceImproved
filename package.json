@@ -17,6 +17,7 @@
     "seed": "tsx .scratch/seed/seed.ts",
     "validate": "tsx .scratch/seed/validate.ts",
     "test:coverage": "vitest run --coverage",
+    "test:stress": "FAST_CHECK_NUM_RUNS=200 vitest run tests/calculators/engine-invariants.test.ts tests/benchmarks/monte-carlo-properties.test.ts",
     "test:e2e": "playwright test",
     "compare": "tsx .scratch/compare/compare-xlsx-to-live.ts",
     "seed:safe": "pnpm validate && pnpm seed && pnpm validate",
