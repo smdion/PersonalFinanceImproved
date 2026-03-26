@@ -35,12 +35,18 @@ export function FormField({
   const errorId = useId();
   const hasError = !!error;
 
-  // Inject aria attributes onto the child input element when an error is present
+  // Inject aria attributes onto the child input element when an error is present.
+  // Preserves any existing aria-describedby on the child by appending the error ID.
   const enhancedChildren =
     hasError && isValidElement(children)
       ? cloneElement(children as React.ReactElement<Record<string, unknown>>, {
           "aria-invalid": true,
-          "aria-describedby": errorId,
+          "aria-describedby": [
+            (children.props as Record<string, unknown>)["aria-describedby"],
+            errorId,
+          ]
+            .filter(Boolean)
+            .join(" "),
         })
       : children;
 

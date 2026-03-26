@@ -11,7 +11,7 @@
  *   - Transform regressions (backup-transforms.ts breaking on current schema)
  *   - Row count or value drift through the pipeline
  */
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import Database from "better-sqlite3";
 import * as fs from "fs";
 import * as path from "path";
@@ -268,9 +268,10 @@ describe("Backup Round-Trip", () => {
         .map((r) => r as Record<string, unknown>)
         .sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
 
+      expect(sortedOriginal.length).toBe(sortedRestored.length);
       for (let i = 0; i < sortedOriginal.length; i++) {
-        const orig = sortedOriginal[i]!;
-        const rest = sortedRestored[i]!;
+        const orig = sortedOriginal[i] as Record<string, unknown>;
+        const rest = sortedRestored[i] as Record<string, unknown>;
 
         // Compare all non-id columns (id may differ due to autoincrement)
         for (const col of Object.keys(orig)) {

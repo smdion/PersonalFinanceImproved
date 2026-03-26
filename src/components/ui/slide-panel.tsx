@@ -31,6 +31,13 @@ export function SlidePanel({
     return () => document.removeEventListener("keydown", handler);
   }, [open, handleClose]);
 
+  // Move focus into the panel when it opens
+  useEffect(() => {
+    if (open && trapRef.current) {
+      trapRef.current.focus();
+    }
+  }, [open, trapRef]);
+
   // Prevent body scroll when open
   useEffect(() => {
     if (open) {
@@ -57,7 +64,8 @@ export function SlidePanel({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="bg-surface-primary w-full max-w-2xl h-full shadow-xl flex flex-col animate-in slide-in-from-right duration-200"
+        tabIndex={-1}
+        className="bg-surface-primary w-full max-w-2xl h-full shadow-xl flex flex-col animate-in slide-in-from-right duration-200 outline-none"
       >
         <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
           <h2 className="text-lg font-semibold text-primary">{title}</h2>

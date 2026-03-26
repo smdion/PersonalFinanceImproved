@@ -84,6 +84,7 @@ const performanceAccountInput = z.object({
 /** Zod schema for numeric strings stored as TEXT in SQLite (e.g. financial amounts). */
 const numericText = z
   .string()
+  .min(1, "Must not be empty")
   .refine((v) => !Number.isNaN(Number(v)), "Must be a valid number");
 
 const savingsGoalInput = z.object({

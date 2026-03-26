@@ -24,12 +24,16 @@ const ROOT = path.resolve(__dirname, "..");
 // Configuration: when each parameter set is expected to be available
 // ---------------------------------------------------------------------------
 
-/** Month (1-indexed) after which the current tax year's data should exist. */
-const EXPECTED_AVAILABILITY: Record<string, number> = {
-  contribution_limits: 10, // October — IRS Rev. Proc.
-  tax_brackets: 10, // October — IRS Pub 15-T
-  ltcg_brackets: 10, // October — IRS Rev. Proc.
-  irmaa_brackets: 11, // November — CMS announcement
+/**
+ * Cutoff date (month, day) after which each parameter set should be available
+ * for the next tax year. Uses mid-month dates to avoid false failures on the
+ * 1st when IRS/CMS data may not yet be published.
+ */
+const EXPECTED_AVAILABILITY: Record<string, { month: number; day: number }> = {
+  contribution_limits: { month: 10, day: 15 }, // Mid-October — IRS Rev. Proc.
+  tax_brackets: { month: 10, day: 15 }, // Mid-October — IRS Pub 15-T
+  ltcg_brackets: { month: 10, day: 15 }, // Mid-October — IRS Rev. Proc.
+  irmaa_brackets: { month: 11, day: 15 }, // Mid-November — CMS announcement
 };
 
 // ---------------------------------------------------------------------------
@@ -40,8 +44,9 @@ function getCurrentTaxYear(): number {
   const now = new Date();
   const month = now.getMonth() + 1; // 1-indexed
   const year = now.getFullYear();
-  // After October, next year's data should be seeded for the *next* tax year
-  return month >= 10 ? year + 1 : year;
+  // After October 15, next year's data should be seeded for the *next* tax year.
+  // Uses the earliest cutoff date to determine the tax year boundary.
+  return month > 10 || (month === 10 && now.getDate() >= 15) ? year + 1 : year;
 }
 
 function readFile(relativePath: string): string {
@@ -57,14 +62,14 @@ interface SeedCheck {
   expectedYear: number;
   found: boolean;
   maxYear: number;
-  availableAfterMonth: number;
+  cutoff: { month: number; day: number };
 }
 
 function checkSeedFile(expectedTaxYear: number): SeedCheck[] {
   const sql = readFile("seed-reference-data.sql");
   const results: SeedCheck[] = [];
 
-  for (const [table, availMonth] of Object.entries(EXPECTED_AVAILABILITY)) {
+  for (const [table, cutoff] of Object.entries(EXPECTED_AVAILABILITY)) {
     // Find all tax_year values for this table's INSERT
     const pattern = new RegExp(
       `INSERT INTO ${table}[\\s\\S]*?ON CONFLICT`,
@@ -91,7 +96,7 @@ function checkSeedFile(expectedTaxYear: number): SeedCheck[] {
       expectedYear: expectedTaxYear,
       found: foundExpected,
       maxYear,
-      availableAfterMonth: availMonth,
+      cutoff,
     });
   }
 
@@ -185,8 +190,14 @@ function run() {
 
   console.log("=== Seed Data (seed-reference-data.sql) ===\n");
 
+  const now = new Date();
   for (const check of seedChecks) {
-    const isPastDeadline = currentMonth >= check.availableAfterMonth;
+    const cutoffDate = new Date(
+      now.getFullYear(),
+      check.cutoff.month - 1,
+      check.cutoff.day,
+    );
+    const isPastDeadline = now >= cutoffDate;
 
     if (check.found) {
       console.log(
@@ -194,12 +205,12 @@ function run() {
       );
     } else if (isPastDeadline) {
       console.log(
-        `  ✗ ${check.table}: MISSING ${check.expectedYear} data (max year: ${check.maxYear}, expected after month ${check.availableAfterMonth})`,
+        `  ✗ ${check.table}: MISSING ${check.expectedYear} data (max year: ${check.maxYear}, expected after ${check.cutoff.month}/${check.cutoff.day})`,
       );
       seedErrors++;
     } else {
       console.log(
-        `  ○ ${check.table}: ${check.expectedYear} data not yet expected (available after month ${check.availableAfterMonth}, max year: ${check.maxYear})`,
+        `  ○ ${check.table}: ${check.expectedYear} data not yet expected (available after ${check.cutoff.month}/${check.cutoff.day}, max year: ${check.maxYear})`,
       );
       seedWarnings++;
     }

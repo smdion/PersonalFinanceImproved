@@ -15,6 +15,13 @@
       "when": 1774750800000,
       "tag": "0001_add_parent_goal_fk",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774750800001,
+      "tag": "0002_add_parent_goal_id_index",
+      "breakpoints": true
     }
   ]
 }
