@@ -17,6 +17,7 @@ import {
   getApiConnection,
   cacheGet,
   cacheSet,
+  YNAB_EXPENSE_EXCLUDED_CATEGORIES,
 } from "@/lib/budget-api";
 import type {
   BudgetApiService,
@@ -60,7 +61,7 @@ export const syncCoreRouter = createTRPCRouter({
         const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
         const monthDetail = await client.getMonthDetail(currentMonth);
 
-        const sinceDate = `${now.getFullYear()}-01-01`;
+        const sinceDate = `${now.getFullYear() - 1}-01-01`;
         const transactions = await client.getTransactions(sinceDate);
 
         await Promise.all([
@@ -779,7 +780,10 @@ export const syncCoreRouter = createTRPCRouter({
       if (!txCache) return { categories: [], service: active };
 
       const transactions = txCache.data.filter(
-        (t) => !t.deleted && t.categoryName,
+        (t) =>
+          !t.deleted &&
+          t.categoryName &&
+          !YNAB_EXPENSE_EXCLUDED_CATEGORIES.has(t.categoryName),
       );
 
       // Group by category, split into current vs prior
