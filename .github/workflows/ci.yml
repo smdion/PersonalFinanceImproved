@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -16,11 +19,11 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
-      - uses: pnpm/action-setup@v5
+      - uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288 # v5
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: 25
           cache: pnpm
@@ -39,12 +42,11 @@ jobs:
         run: bash scripts/check-file-size.sh
 
       - name: Cache Next.js build
-        uses: actions/cache@v5
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
         with:
           path: .next/cache
-          key: nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('src/**') }}
+          key: nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
-            nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
             nextjs-${{ runner.os }}-
 
       - name: Build
@@ -62,13 +64,18 @@ jobs:
         run: pnpm test:coverage
 
       - name: Cache Playwright browsers
-        uses: actions/cache@v5
+        id: pw-cache
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
+      - name: Install Playwright system deps
+        run: npx playwright install-deps chromium
+
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install chromium
 
       - name: E2E tests (SQLite + demo mode)
         run: |
@@ -91,85 +98,27 @@ jobs:
 
       - name: Upload Playwright report
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: playwright-report
           path: playwright-report/
+          if-no-files-found: ignore
           retention-days: 7
 
-      # --- Non-blocking steps (tracked, don't fail the pipeline) ---
-
       - name: Audit production dependencies (high/critical)
-        if: success()
-        id: audit
         run: pnpm audit --prod --audit-level=high
-        continue-on-error: true
 
       - name: Check migrations
-        if: success()
-        id: check_migrations
         run: pnpm check:migrations
-        continue-on-error: true
 
       - name: Verify docs freshness
-        if: success()
-        id: docs_verify
         run: pnpm docs:verify
-        continue-on-error: true
 
       - name: Docker build smoke test
-        if: success()
-        id: docker_build
+        if: github.event_name == 'push'
         run: docker build --build-arg APP_VERSION=ci-${{ github.sha }} -t ledgr:ci-test .
-        continue-on-error: true
 
-      # --- Summary of non-blocking issues ---
-
-      - name: CI health summary
-        if: always()
+      - name: Notify on failure
+        if: failure() && github.ref == 'refs/heads/main'
         run: |
-          {
-            echo "## CI Health Summary"
-            echo ""
-            echo "| Check | Status | Details |"
-            echo "|-------|--------|---------|"
-
-            # Audit
-            if [ "${{ steps.audit.outcome }}" = "success" ]; then
-              echo "| Dependency audit | :white_check_mark: | Passed |"
-            elif [ "${{ steps.audit.outcome }}" = "skipped" ]; then
-              echo "| Dependency audit | :fast_forward: | Skipped (prior failure) |"
-            else
-              echo "| Dependency audit | :warning: | Vulnerabilities found |"
-            fi
-
-            # Migrations
-            if [ "${{ steps.check_migrations.outcome }}" = "success" ]; then
-              echo "| Migration check | :white_check_mark: | Passed |"
-            elif [ "${{ steps.check_migrations.outcome }}" = "skipped" ]; then
-              echo "| Migration check | :fast_forward: | Skipped (prior failure) |"
-            else
-              echo "| Migration check | :warning: | Needs attention |"
-            fi
-
-            # Docs
-            if [ "${{ steps.docs_verify.outcome }}" = "success" ]; then
-              echo "| Docs freshness | :white_check_mark: | Up to date |"
-            elif [ "${{ steps.docs_verify.outcome }}" = "skipped" ]; then
-              echo "| Docs freshness | :fast_forward: | Skipped (prior failure) |"
-            else
-              echo "| Docs freshness | :warning: | Stale docs detected |"
-            fi
-
-            # Docker build
-            if [ "${{ steps.docker_build.outcome }}" = "success" ]; then
-              echo "| Docker build | :white_check_mark: | Image builds |"
-            elif [ "${{ steps.docker_build.outcome }}" = "skipped" ]; then
-              echo "| Docker build | :fast_forward: | Skipped (prior failure) |"
-            else
-              echo "| Docker build | :warning: | Build failed |"
-            fi
-
-            echo ""
-            echo "*Non-blocking issues are tracked in TODO.md and reviewed quarterly.*"
-          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::warning::CI failed on main — check ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

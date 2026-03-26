@@ -3,13 +3,13 @@
 -- Update yearly when IRS publishes new limits.
 
 INSERT INTO contribution_limits (tax_year, limit_type, value, notes) VALUES
-  (2025, '401k_employee_limit', 24500.000000, 'Annual 401k employee contribution max'),
-  (2025, '401k_catchup_limit', 8000.000000, 'Additional if age 50+'),
+  (2025, '401k_employee_limit', 23500.000000, 'IRS Notice 2024-80'),
+  (2025, '401k_catchup_limit', 7500.000000, 'IRS Notice 2024-80'),
   (2025, '401k_super_catchup_limit', 11250.000000, 'SECURE 2.0 enhanced catch-up ages 60-63'),
-  (2025, 'ira_limit', 7500.000000, 'Annual IRA contribution max'),
+  (2025, 'ira_limit', 7000.000000, 'IRS Notice 2024-80'),
   (2025, 'ira_catchup_limit', 1000.000000, 'Additional if age 50+'),
-  (2025, 'hsa_family_limit', 8750.000000, 'Annual HSA max (family)'),
-  (2025, 'hsa_individual_limit', 4400.000000, 'Annual HSA max (individual)'),
+  (2025, 'hsa_family_limit', 8550.000000, 'IRS Rev. Proc. 2024-25'),
+  (2025, 'hsa_individual_limit', 4300.000000, 'IRS Rev. Proc. 2024-25'),
   (2025, 'hsa_catchup_limit', 1000.000000, 'Additional if age 55+'),
   (2025, 'ss_wage_base', 176100.000000, 'FICA SS wage base'),
   (2025, 'fica_ss_rate', 0.062000, 'SS tax rate (employee)'),
