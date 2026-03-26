@@ -90,47 +90,100 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.3.0] - 2026-03-24
 
+> Everything that changed since v0.1.0. For patch-level detail, see the
+> individual v0.2.x and v0.3.x entries above.
+
 ### Security
 
-- Upgraded to Next.js 15 and React 19, resolving all known Next.js 14 CVEs including a critical (CVSS 10.0) remote code execution vulnerability
+- Upgraded to Next.js 15/16 and React 19, resolving all known Next.js 14 CVEs including a critical (CVSS 10.0) remote code execution vulnerability
+- Tightened Content Security Policy, Cross-Origin headers, and container hardening
+- Container runs read-only with no Linux capabilities and owner-only file permissions
+- Zero production vulnerabilities enforced in CI
+- Column name validation on backup import prevents SQL injection via crafted files
+- Rate limiting on Monte Carlo and sync endpoints (5 req/min)
+- Password complexity enforced for local admin accounts
+- Database error details removed from health endpoint; PostgreSQL port bound to localhost
+- Corrected 5 incorrect 2025 IRS contribution limits
 
----
+### New Pages & Features
 
-## What's new in the v0.3.x series (since v0.2.0)
+- **Contributions page** — household contribution analysis with savings rate summary, per-person account breakdown, employer match analysis, and contribution profile comparison
+- **Help & Guide page** — walkthrough of every feature organized by section
+- **Raw Data Browser** — admin-only live database table viewer with row counts, column metadata, paginated data, and JSON export
+- **Assets page** — consolidated breakdown with Cash, Property, Other Assets groupings and subtotals
 
-> Cumulative summary of everything added in v0.3.0 through v0.3.5.
-> For version-by-version detail, see the individual entries above.
+### Retirement & Projections
 
-### Security & Stability
+- **Lump-sum injections** — model one-time events (bonus, inheritance, windfall, rollover) in any projection year
+- **Per-year contribution profile switching** — change your contribution structure at a future year (job change, ESPP stop, etc.)
+- **Configurable filing status** — MFJ/Single/HOH as explicit retirement setting; affects federal brackets, LTCG, IRMAA, Social Security, and NIIT
+- **Snapshot selector** — run projections from any historical portfolio snapshot, not just the latest
+- **Monte Carlo success rates** — withdrawal strategy comparison table now shows success rate per strategy
+- **LTCG progressive stacking** — capital gains now taxed across 0%/15%/20% brackets by stacking on top of ordinary income (was flat rate)
+- **NIIT surtax** — Net Investment Income Tax on income exceeding $200k/$250k thresholds
+- **LTCG and IRMAA brackets in database** — rates versioned by year and filing status (no more hardcoded values)
+- Projection page split into smaller, faster-loading sections
 
-- Resolved all Next.js 14 CVEs including a critical remote code execution vulnerability (v0.3.0)
-- Tightened Content Security Policy, Cross-Origin headers, and container hardening (v0.3.2)
-- Container runs read-only with no Linux capabilities and owner-only file permissions (v0.3.2)
-- Corrected 5 incorrect 2025 IRS contribution limits (v0.3.5)
-- Zero production vulnerabilities enforced in CI (v0.3.1)
+### Contributions & Paycheck
 
-### Performance
+- **Prior-year tax contributions** — designate IRA/HSA contributions for the prior tax year during the IRS window (Jan 1 - Apr 15)
+- **Multiple contribution profiles** — switch profiles from the top bar; view without activating
+- **Budget-linked profiles** — each budget column links to a contribution profile; savings page uses the correct one automatically
 
-- Faster page loads: projection page split into smaller sections (v0.3.5)
-- Faster calculations: core financial math extracted into optimized modules (v0.3.3)
-- Faster development builds with Turbopack bundler (v0.3.1)
-- Faster CI: ~45 seconds saved per run with browser and build caching (v0.3.2)
+### Budget & Savings
 
-### Deployment & Operations
+- **Budget mode awareness on savings** — savings page derives contribution profile from budget column link; cross-mode capacity comparison shows max monthly funding per budget column
 
-- Canary deploy pattern: demo container health-checked before production (v0.3.2)
-- Rollback support with versioned image tags (v0.3.2)
-- Reproducible Docker builds with pinned base image and OCI labels (v0.3.2)
-- Smaller production image (TypeScript compiler removed from runtime) (v0.3.2)
+### Portfolio & Performance
 
-### Reliability
+- **Performance tab groups** — split into "By Account" and "Rollup" views
+- **Rollovers column** — separates internal transfers from actual contributions in the performance table
+- **YTD timeframe** — portfolio chart now has a "YTD" button
+- **Hover comparison line** — horizontal reference line on portfolio chart
 
-- 400+ new tests bringing total to 2,700+ (v0.3.5)
-- All CI checks now block merges (v0.3.5)
-- Hardened CI pipeline with pinned dependencies (v0.3.5)
-- Fixed timezone bug in salary date display (v0.3.3)
-- Fixed visual border glitches in light/dark mode (v0.3.4)
-- Fixed list flickering in savings, projections, and goals (v0.3.4)
+### Integration & Sync
+
+- **YNAB key update** — replace API key without removing the connection
+- **Savings sync** — pushes monthly contributions from Ledgr to YNAB goal targets instead of pulling balances
+
+### Self-Hosting & Operations
+
+- **Dual database support** — SQLite (zero-config default) or PostgreSQL
+- **CLI backup tools** — `pnpm backup:export` and `pnpm backup:import` for headless environments
+- **Pre-upgrade auto-backup** — automatic snapshot before schema changes
+- **Cross-version backup import** — old v0.1.x backups auto-transform on import
+- **Canary deploy pattern** — demo container health-checked before production rolls over
+- **Rollback support** — previous image versions preserved as `ledgr:X.Y.Z` tags
+- Reproducible Docker builds with pinned base image and OCI labels
+- Smaller production image (TypeScript compiler removed from runtime)
+- Node.js 25 with Turbopack for faster builds
+- Release automation via `pnpm release X.Y.Z`
+
+### UI/UX
+
+- **Sidebar redesign** — reorganized into Cash Flow / Wealth / Net Worth / Analysis / System
+- **Theme support** — semantic design tokens throughout
+- Fixed visual border glitches in light/dark mode
+- Fixed list flickering in savings, projections, and goals
+
+### Testing & CI
+
+- 2,700+ tests covering calculators, tRPC routers, helpers, budget API integrations, and database compatibility
+- 26 E2E Playwright smoke tests for all dashboard pages
+- Coverage thresholds enforced (statements 85%, branches 70%, functions 80%, lines 85%)
+- All CI checks block merges; pipeline hardened with pinned dependencies
+- Dependabot auto-merge for minor/patch updates after CI passes
+- CI runs ~45 seconds faster with browser and build caching
+
+### Bug Fixes
+
+- Fixed LTCG bracket stacking (was flat rate, now progressive)
+- Fixed contribution override double-inflation on profile switches
+- Fixed ESPP/account persistence after contribution profile override
+- Fixed overflow routing fallback for joint brokerage
+- Fixed rollup contribution mismatch with cross-category rollovers
+- Fixed emergency fund self-loan calculation
+- Fixed timezone bugs in salary dates and database timestamps
 
 ---
 
@@ -144,132 +197,84 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.2.0] - 2026-03-24
 
+> Everything that changed since v0.1.0. For patch-level detail, see the
+> v0.2.1 entry above.
+
 ### Upgrading from v0.1.x
 
-> If you're running any v0.1.x version, your data migrates automatically.
-> A backup is created before any changes are made.
-
-**Docker users:** Pull the new image and restart. Done.
+**Docker users:** Pull the new image and restart — data migrates automatically.
 **Self-hosted:** Run `pnpm db:migrate`. Your data is preserved.
-**Manual backup:** `pnpm backup:export --out ./backup.json` before upgrading.
 **Restoring old backups:** v0.1.x backup files import seamlessly — they are
 auto-transformed to the current schema.
 
-### Added
-
-- **CLI backup tools** — `pnpm backup:export` and `pnpm backup:import`
-  for headless environments and scripted workflows (supports `--dry-run`)
-- **Upgrade wizard** — after upgrading from v0.1.x, the Versions page
-  shows a banner confirming migration success with a link to the auto-backup
-- **Pre-upgrade auto-backup** — schema changes automatically save a full
-  data snapshot before applying, so you always have a rollback point
-
-### Database
-
-- All 9 migrations squashed into a single clean initial schema — new installs
-  get one migration instead of nine
-- Cross-version backup import — old backups are automatically transformed
-  on import (all 9 v0.1.x schema versions supported)
-
----
-
-## What's new in the v0.2.x series (since v0.1.0)
-
-> Cumulative summary of everything added in v0.2.0 through v0.2.1.
-> For version-by-version detail, see the individual entries above.
-> For commit-level detail, see
-> [git history](https://github.com/smdion/PersonalFinanceImproved/commits/main).
-
 ### New Pages & Features
 
-- **Contributions page** — household contribution analysis with savings rate
-  summary, per-person account breakdown, employer match analysis, traditional
-  vs Roth split, and contribution profile comparison
+- **Contributions page** — household contribution analysis with savings rate summary, per-person account breakdown, employer match analysis, traditional vs Roth split, and contribution profile comparison
 - **Help & Guide page** — walkthrough of every feature organized by section
-- **Raw Data Browser** — admin-only live database table viewer with row
-  counts, column metadata, paginated data, and JSON export
-- **Assets page** — consolidated breakdown with Cash, Property, Other Assets
-  groupings and subtotals
+- **Raw Data Browser** — admin-only live database table viewer with row counts, column metadata, paginated data, and JSON export
+- **Assets page** — consolidated breakdown with Cash, Property, Other Assets groupings and subtotals
 
 ### Retirement & Projections
 
-- **Lump-sum injections** — model one-time events (bonus, inheritance,
-  windfall, rollover) in any projection year
-- **Per-year contribution profile switching** — change your entire
-  contribution structure at a future year (job change, ESPP stop, etc.)
-- **Configurable filing status** — MFJ/Single/HOH as explicit retirement
-  setting; affects federal brackets, LTCG, IRMAA, Social Security, and NIIT
-- **Snapshot selector** — run projections from any historical portfolio
-  snapshot, not just the latest
-- **Monte Carlo success rates** — withdrawal strategy comparison table now
-  shows success rate per strategy
-- **LTCG progressive stacking** — capital gains now taxed across 0%/15%/20%
-  brackets by stacking on top of ordinary income (was flat rate)
-- **NIIT surtax** — Net Investment Income Tax on income exceeding
-  $200k/$250k thresholds
-- **LTCG and IRMAA brackets in database** — rates versioned by year and
-  filing status (no more hardcoded values)
+- **Lump-sum injections** — model one-time events (bonus, inheritance, windfall, rollover) in any projection year
+- **Per-year contribution profile switching** — change your contribution structure at a future year (job change, ESPP stop, etc.)
+- **Configurable filing status** — MFJ/Single/HOH as explicit retirement setting; affects federal brackets, LTCG, IRMAA, Social Security, and NIIT
+- **Snapshot selector** — run projections from any historical portfolio snapshot, not just the latest
+- **Monte Carlo success rates** — withdrawal strategy comparison table now shows success rate per strategy
+- **LTCG progressive stacking** — capital gains now taxed across 0%/15%/20% brackets by stacking on top of ordinary income (was flat rate)
+- **NIIT surtax** — Net Investment Income Tax on income exceeding $200k/$250k thresholds
+- **LTCG and IRMAA brackets in database** — rates versioned by year and filing status (no more hardcoded values)
 
 ### Contributions & Paycheck
 
-- **Prior-year tax contributions** — designate IRA/HSA contributions for the
-  prior tax year during the IRS window (Jan 1 - Apr 15)
-- **Multiple contribution profiles** — switch profiles from the top bar;
-  view without activating
-- **Budget-linked profiles** — each budget column links to a contribution
-  profile; savings page uses the correct one automatically
+- **Prior-year tax contributions** — designate IRA/HSA contributions for the prior tax year during the IRS window (Jan 1 - Apr 15)
+- **Multiple contribution profiles** — switch profiles from the top bar; view without activating
+- **Budget-linked profiles** — each budget column links to a contribution profile; savings page uses the correct one automatically
 
 ### Budget & Savings
 
-- **Budget mode awareness on savings** — savings page derives contribution
-  profile from budget column link; cross-mode capacity comparison shows max
-  monthly funding per budget column
+- **Budget mode awareness on savings** — savings page derives contribution profile from budget column link; cross-mode capacity comparison shows max monthly funding per budget column
 
 ### Portfolio & Performance
 
 - **Performance tab groups** — split into "By Account" and "Rollup" views
-- **Rollovers column** — separates internal transfers from actual
-  contributions in the performance table
+- **Rollovers column** — separates internal transfers from actual contributions in the performance table
 - **YTD timeframe** — portfolio chart now has a "YTD" button
 - **Hover comparison line** — horizontal reference line on portfolio chart
 
 ### Integration & Sync
 
 - **YNAB key update** — replace API key without removing the connection
-- **Savings sync** — pushes monthly contributions from Ledgr to YNAB goal
-  targets instead of pulling balances
+- **Savings sync** — pushes monthly contributions from Ledgr to YNAB goal targets instead of pulling balances
 
 ### Self-Hosting & Operations
 
 - **Dual database support** — SQLite (zero-config default) or PostgreSQL
-- **CLI backup tools** — export/import for headless environments
+- **CLI backup tools** — `pnpm backup:export` and `pnpm backup:import` for headless environments
 - **Pre-upgrade auto-backup** — automatic snapshot before schema changes
-- **Release automation** — `pnpm release X.Y.Z` handles the full workflow
-- **Node.js 24 LTS** — extended support through April 2028
+- **Cross-version backup import** — old v0.1.x backups auto-transform on import
+- All 9 migrations squashed into a single clean schema — new installs get one migration instead of nine
+- Release automation via `pnpm release X.Y.Z`
+- Node.js 24 LTS — extended support through April 2028
 
 ### UI/UX
 
-- **Sidebar redesign** — reorganized into Cash Flow / Wealth / Net Worth /
-  Analysis / System
+- **Sidebar redesign** — reorganized into Cash Flow / Wealth / Net Worth / Analysis / System
 - **Theme support** — semantic design tokens throughout
 
 ### Security
 
-- **Column name validation** — backup import validates against schema
-  whitelist, preventing SQL injection via crafted files
-- **Rate limiting** — Monte Carlo and sync endpoints limited to 5 req/min
-- **Password complexity** — local admin passwords require uppercase + digit
-- Database error details removed from health endpoint
-- PostgreSQL port bound to localhost only
+- Column name validation on backup import prevents SQL injection via crafted files
+- Rate limiting on Monte Carlo and sync endpoints (5 req/min)
+- Password complexity enforced for local admin accounts
+- Database error details removed from health endpoint; PostgreSQL port bound to localhost
 
 ### Testing & CI
 
-- **2,300+ tests** covering calculators, tRPC routers, helpers, and backup
-  transforms
-- **26 E2E tests** — Playwright smoke tests for all dashboard pages
-- **Coverage thresholds enforced** — statements 85%, branches 70%,
-  functions 80%, lines 85%
-- **Dependabot auto-merge** — minor/patch updates auto-merge after CI passes
+- 2,300+ tests covering calculators, tRPC routers, helpers, and backup transforms
+- 26 E2E Playwright smoke tests for all dashboard pages
+- Coverage thresholds enforced (statements 85%, branches 70%, functions 80%, lines 85%)
+- Dependabot auto-merge for minor/patch updates after CI passes
 
 ### Bug Fixes
 
