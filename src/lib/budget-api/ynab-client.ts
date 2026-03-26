@@ -65,6 +65,11 @@ export const YNAB_EXPENSE_EXCLUDED_CATEGORIES = new Set([
   "Uncategorized", // unassigned noise until categorized
 ]);
 
+/** YNAB category groups excluded from expense views (not real spending). */
+export const YNAB_EXPENSE_EXCLUDED_GROUPS = new Set([
+  "Credit Card Payments", // internal transfers between accounts
+]);
+
 type YnabMonth = {
   month: string;
   income: number;

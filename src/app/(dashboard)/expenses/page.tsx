@@ -13,6 +13,7 @@ import {
 } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
+import { YNAB_EXPENSE_EXCLUDED_GROUPS } from "@/lib/budget-api";
 import {
   BarChart,
   Bar,
@@ -210,6 +211,7 @@ export default function ExpensesPage() {
     }[] = [];
 
     for (const g of groups) {
+      if (YNAB_EXPENSE_EXCLUDED_GROUPS.has(g.name)) continue;
       for (const c of g.categories) {
         const actual = Math.abs(c.activity);
         const linkedItem = itemMap.get(c.id);
@@ -400,7 +402,7 @@ export default function ExpensesPage() {
                   <RechartsTooltip
                     formatter={(value: unknown, name: unknown) => [
                       formatCurrency(Number(value)),
-                      name === "budgeted" ? "Budgeted" : "Actual",
+                      String(name),
                     ]}
                     labelStyle={{ fontSize: 11, fontWeight: 600 }}
                     contentStyle={{ fontSize: 11 }}
