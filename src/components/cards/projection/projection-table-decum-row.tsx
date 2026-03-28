@@ -352,10 +352,20 @@ export function DecumulationRow({
           // SS/RMD context for withdrawal tooltip
           const hasSs = dyr.ssIncome > 0;
           const hasRmd = dyr.rmdAmount > 0;
+          const ssBreakdown = dyr.ssIncomeByPerson?.filter((e) => e.amount > 0);
+          const ssDetail =
+            ssBreakdown && ssBreakdown.length > 1
+              ? ssBreakdown
+                  .map(
+                    (e) =>
+                      `${e.personName}: ${formatCurrency(deflate(e.amount, yr.year))}`,
+                  )
+                  .join(", ")
+              : null;
           const ssMeta = isSsStartRow
-            ? `Social Security begins — ${formatCurrency(deflate(dyr.ssIncome, yr.year))}/yr`
+            ? `Social Security begins — ${formatCurrency(deflate(dyr.ssIncome, yr.year))}/yr${ssDetail ? ` (${ssDetail})` : ""}`
             : hasSs
-              ? `Incl. SS income — ${formatCurrency(deflate(dyr.ssIncome, yr.year))}/yr`
+              ? `Incl. SS income — ${formatCurrency(deflate(dyr.ssIncome, yr.year))}/yr${ssDetail ? ` (${ssDetail})` : ""}`
               : undefined;
           const rmdMeta = isRmdStartRow
             ? `RMDs begin — ${formatCurrency(deflate(dyr.rmdAmount, yr.year))} required`

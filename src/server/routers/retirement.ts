@@ -1008,6 +1008,16 @@ export async function buildEnginePayload(
     returnRates: relevantReturnRates,
     socialSecurityAnnual: toNumber(settings.socialSecurityMonthly) * 12,
     ssStartAge: settings.ssStartAge,
+    socialSecurityEntries:
+      perPersonSettings.length > 1
+        ? perPersonSettings.map((ps) => ({
+            personId: ps.personId,
+            personName: ps.name,
+            annualAmount: toNumber(ps.socialSecurityMonthly) * 12,
+            startAge: ps.ssStartAge,
+            birthYear: ps.birthYear,
+          }))
+        : undefined,
     birthYear: new Date(primaryPerson.dateOfBirth).getFullYear(),
     filingStatus,
     enableIrmaaAwareness: settings.enableIrmaaAwareness,

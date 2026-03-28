@@ -1281,7 +1281,24 @@ export function runDecumulationYear(
       : null;
 
   // Social Security income reduces withdrawal need
-  const ssIncome = age >= ssStartAge ? socialSecurityAnnual : 0;
+  // Per-person SS: each person's SS kicks in at their own age
+  let ssIncome: number;
+  let ssIncomeByPerson:
+    | { personId: number; personName: string; amount: number }[]
+    | undefined;
+  if (input.socialSecurityEntries && input.socialSecurityEntries.length > 0) {
+    ssIncomeByPerson = input.socialSecurityEntries.map((entry) => {
+      const personAge = year - entry.birthYear;
+      return {
+        personId: entry.personId,
+        personName: entry.personName,
+        amount: personAge >= entry.startAge ? entry.annualAmount : 0,
+      };
+    });
+    ssIncome = ssIncomeByPerson.reduce((sum, e) => sum + e.amount, 0);
+  } else {
+    ssIncome = age >= ssStartAge ? socialSecurityAnnual : 0;
+  }
   const afterTaxNeed = roundToCents(
     Math.max(0, state.projectedExpenses - ssIncome),
   );
@@ -1696,6 +1713,7 @@ export function runDecumulationYear(
     taxCost,
     effectiveTaxRate: totalWithdrawal > 0 ? taxCost / totalWithdrawal : 0,
     ssIncome,
+    ssIncomeByPerson,
     afterTaxNeed,
     grossUpFactor,
     estTraditionalPortion,

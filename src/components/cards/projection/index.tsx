@@ -199,11 +199,14 @@ export function ProjectionCard(props: {
                     mcPrefetchQuery.data?.result?.distributions
                       ?.sustainableWithdrawalPV?.median;
                   const hasMc = mcMedianPV != null && mcMedianPV > 0;
+                  const currentAge = result.projectionByYear[0]?.age ?? 0;
+                  const isRetired =
+                    currentAge >= (engineSettings!.retirementAge ?? 999);
                   const detValue = deflate(
                     result.sustainableWithdrawal,
-                    baseYear +
-                      (engineSettings!.retirementAge -
-                        (result.projectionByYear[0]?.age ?? 0)),
+                    isRetired
+                      ? baseYear
+                      : baseYear + (engineSettings!.retirementAge - currentAge),
                   );
                   return (
                     <div>

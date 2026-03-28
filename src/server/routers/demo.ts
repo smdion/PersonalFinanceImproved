@@ -227,6 +227,27 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
     ssStartAge: rs.ssStartAge,
   });
 
+  // 12b. Per-person retirement settings overrides
+  if (profile.perPersonRetirementSettings) {
+    for (const prs of profile.perPersonRetirementSettings) {
+      const prsPersonId = personIdByName.get(prs.personName);
+      if (prsPersonId && prsPersonId !== personId) {
+        await db.insert(schema.retirementSettings).values({
+          personId: prsPersonId,
+          retirementAge: prs.retirementAge ?? rs.retirementAge,
+          endAge: prs.endAge ?? rs.endAge,
+          returnAfterRetirement: rs.returnAfterRetirement,
+          annualInflation: rs.annualInflation,
+          salaryAnnualIncrease: rs.salaryAnnualIncrease,
+          withdrawalRate: prs.withdrawalRate ?? rs.withdrawalRate,
+          withdrawalStrategy: rs.withdrawalStrategy,
+          socialSecurityMonthly: prs.socialSecurityMonthly,
+          ssStartAge: prs.ssStartAge,
+        });
+      }
+    }
+  }
+
   // 13. Return rate table
   for (const rr of profile.returnRates) {
     await db.insert(schema.returnRateTable).values({

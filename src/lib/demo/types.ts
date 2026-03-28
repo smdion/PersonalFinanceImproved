@@ -144,6 +144,18 @@ export type DemoProfile = {
     ssStartAge: number;
   };
 
+  /** Per-person retirement overrides (for multi-person households).
+   *  Each entry creates a separate retirement_settings row.
+   *  Fields not specified fall back to the primary retirementSettings. */
+  perPersonRetirementSettings?: {
+    personName: string;
+    retirementAge?: number;
+    endAge?: number;
+    withdrawalRate?: string;
+    socialSecurityMonthly: string;
+    ssStartAge: number;
+  }[];
+
   returnRates: {
     age: number;
     rateOfReturn: string;
