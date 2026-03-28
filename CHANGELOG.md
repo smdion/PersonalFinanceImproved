@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.9] - 2026-03-28
+
+### Improved
+
+- Retirement projection chart now explains why withdrawal amounts change at key ages — tooltip shows when Social Security begins and when RMDs kick in
+- Dashed reference lines on the chart mark Social Security and RMD start ages for at-a-glance context
+- "Recently Retired" demo profile now shows a realistic mix of account types (401k, 403b, IRA, Roth, brokerage) instead of IRAs only
+
+---
+
 ## [0.3.8] - 2026-03-27
 
 ### Added

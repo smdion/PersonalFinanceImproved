@@ -13,6 +13,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
+  ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
 import {
@@ -81,6 +82,11 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
   // MC fan bands + median line overlay on top via mcBandsByYear.
   const years = result.projectionByYear;
   const retAge = engineSettings!.retirementAge;
+  const ssStartAge = engineSettings!.ssStartAge;
+  // Detect RMD start age from first decumulation year with rmdAmount > 0
+  const rmdStartAge =
+    years.find((y) => y.phase === "decumulation" && y.rmdAmount > 0)?.age ??
+    null;
   const retIdx = years.findIndex((y) => y.age === retAge);
   const filtered = years.filter((_, i) => i % 2 === 0 || i === retIdx);
 
@@ -155,6 +161,18 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
         datum.mc_base = dp25;
         datum.mc_25_75 = dp75 - dp25;
       }
+    }
+
+    // Milestone event annotations (decumulation only)
+    if (yr.phase === "decumulation") {
+      datum._ssStart = yr.age === ssStartAge && yr.ssIncome > 0 ? 1 : 0;
+      datum._rmdStart =
+        rmdStartAge != null && yr.age === rmdStartAge && yr.rmdAmount > 0
+          ? 1
+          : 0;
+      datum._ssIncome = yr.ssIncome;
+      datum._rmdAmount = yr.rmdAmount;
+      datum._totalWithdrawal = yr.totalWithdrawal;
     }
 
     return datum;
@@ -275,6 +293,48 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
                         </div>
                       </div>
                     )}
+                    {/* Milestone events */}
+                    {(Number(d._ssStart) === 1 ||
+                      Number(d._rmdStart) === 1 ||
+                      Number(d._ssIncome) > 0 ||
+                      Number(d._rmdAmount) > 0) && (
+                      <div className="border-t mt-1 pt-1 space-y-0.5">
+                        {Number(d._ssStart) === 1 && (
+                          <div className="flex justify-between gap-4 text-teal-400 font-medium">
+                            <span>Social Security begins</span>
+                            <span className="tabular-nums">
+                              {formatCurrency(Number(d._ssIncome))}/yr
+                            </span>
+                          </div>
+                        )}
+                        {Number(d._rmdStart) === 1 && (
+                          <div className="flex justify-between gap-4 text-amber-400 font-medium">
+                            <span>RMDs begin</span>
+                            <span className="tabular-nums">
+                              {formatCurrency(Number(d._rmdAmount))}
+                            </span>
+                          </div>
+                        )}
+                        {Number(d._ssStart) !== 1 &&
+                          Number(d._ssIncome) > 0 && (
+                            <div className="flex justify-between gap-4 text-teal-400/70 text-[10px]">
+                              <span>Incl. SS income</span>
+                              <span className="tabular-nums">
+                                {formatCurrency(Number(d._ssIncome))}/yr
+                              </span>
+                            </div>
+                          )}
+                        {Number(d._rmdStart) !== 1 &&
+                          Number(d._rmdAmount) > 0 && (
+                            <div className="flex justify-between gap-4 text-amber-400/70 text-[10px]">
+                              <span>RMD</span>
+                              <span className="tabular-nums">
+                                {formatCurrency(Number(d._rmdAmount))}
+                              </span>
+                            </div>
+                          )}
+                      </div>
+                    )}
                   </div>
                 );
               }}
@@ -390,6 +450,39 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
                 />
               );
             })()}
+
+            {/* Social Security start age marker */}
+            {chartData.some((d) => Number(d.age) === ssStartAge) && (
+              <ReferenceLine
+                x={ssStartAge}
+                stroke="#2dd4bf"
+                strokeDasharray="6 3"
+                strokeWidth={1}
+                label={{
+                  value: "SS",
+                  position: "top",
+                  fontSize: 9,
+                  fill: "#2dd4bf",
+                }}
+              />
+            )}
+
+            {/* RMD start age marker */}
+            {rmdStartAge != null &&
+              chartData.some((d) => Number(d.age) === rmdStartAge) && (
+                <ReferenceLine
+                  x={rmdStartAge}
+                  stroke="#f59e0b"
+                  strokeDasharray="6 3"
+                  strokeWidth={1}
+                  label={{
+                    value: "RMD",
+                    position: "top",
+                    fontSize: 9,
+                    fill: "#f59e0b",
+                  }}
+                />
+              )}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
@@ -445,6 +538,25 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
             )}
           </>
         )}
+        {chartData.some((d) => Number(d._ssIncome) > 0) && (
+          <span className="flex items-center gap-1">
+            <span
+              className="w-3 h-0.5 rounded"
+              style={{ backgroundColor: "#2dd4bf" }}
+            />
+            SS Start
+          </span>
+        )}
+        {rmdStartAge != null &&
+          chartData.some((d) => Number(d._rmdAmount) > 0) && (
+            <span className="flex items-center gap-1">
+              <span
+                className="w-3 h-0.5 rounded"
+                style={{ backgroundColor: "#f59e0b" }}
+              />
+              RMD Start
+            </span>
+          )}
       </div>
     </div>
   );
