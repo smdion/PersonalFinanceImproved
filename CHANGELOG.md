@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.13] - 2026-03-28
+
+### Fixed
+
+- IRMAA Medicare surcharge now correctly applies per-person — when both spouses are 65+, each pays their own surcharge instead of charging only once
+
+---
+
 ## [0.3.12] - 2026-03-28
 
 ### Added
