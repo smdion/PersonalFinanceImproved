@@ -139,7 +139,7 @@ exports[`engine snapshot parity > fixture 4: retirement phase only (age > retire
     "projectedExpenses": 60000,
     "totalWithdrawal": 29280,
   },
-  "sustainableWithdrawal": 0,
+  "sustainableWithdrawal": 37266.82,
   "totalYears": 23,
   "warningCount": 1,
   "year0": {
@@ -601,7 +601,7 @@ exports[`engine snapshot parity > fixture 14: RMDs — birth year 1955 (RMD star
     "projectedExpenses": 60000,
     "totalWithdrawal": 29280,
   },
-  "sustainableWithdrawal": 0,
+  "sustainableWithdrawal": 40262.82,
   "totalYears": 22,
   "warningCount": 1,
   "year0": {
@@ -731,7 +731,7 @@ exports[`engine snapshot parity > fixture 16: RMD forces withdrawal above bracke
     "projectedExpenses": 50000,
     "totalWithdrawal": 17080,
   },
-  "sustainableWithdrawal": 0,
+  "sustainableWithdrawal": 54480.98,
   "totalYears": 20,
   "warningCount": 1,
   "year0": {
@@ -780,7 +780,7 @@ exports[`engine snapshot parity > fixture 17: RMD + Roth conversion targeting 1`
     "projectedExpenses": 55000,
     "totalWithdrawal": 30500,
   },
-  "sustainableWithdrawal": 0,
+  "sustainableWithdrawal": 43206.6,
   "totalYears": 20,
   "warningCount": 1,
   "year0": {
@@ -1574,7 +1574,7 @@ exports[`engine snapshot parity > fixture 31: RMD + Roth conversion + IRMAA — 
     "projectedExpenses": 70000,
     "totalWithdrawal": 28000,
   },
-  "sustainableWithdrawal": 0,
+  "sustainableWithdrawal": 65442.83,
   "totalYears": 23,
   "warningCount": 1,
   "year0": {
@@ -1629,7 +1629,7 @@ exports[`engine snapshot parity > fixture 32: Guyton-Klinger — upper guardrail
     "projectedExpenses": 60000,
     "totalWithdrawal": 63600,
   },
-  "sustainableWithdrawal": 0,
+  "sustainableWithdrawal": 55721.6,
   "totalYears": 29,
   "warningCount": 1,
   "year0": {
@@ -1684,7 +1684,7 @@ exports[`engine snapshot parity > fixture 33: Guyton-Klinger — lower guardrail
     "projectedExpenses": 80000,
     "totalWithdrawal": 84800,
   },
-  "sustainableWithdrawal": 0,
+  "sustainableWithdrawal": 37495.2,
   "totalYears": 29,
   "warningCount": 1,
   "year0": {
@@ -1733,7 +1733,7 @@ exports[`engine snapshot parity > fixture 34: Guyton-Klinger — prosperity rule
     "projectedExpenses": 55000,
     "totalWithdrawal": 20068.75,
   },
-  "sustainableWithdrawal": 0,
+  "sustainableWithdrawal": 27469.22,
   "totalYears": 23,
   "warningCount": 1,
   "year0": {
@@ -1788,7 +1788,7 @@ exports[`engine snapshot parity > fixture 35: G-K with budget override in a loss
     "projectedExpenses": 60000,
     "totalWithdrawal": 25350,
   },
-  "sustainableWithdrawal": 0,
+  "sustainableWithdrawal": 23469.58,
   "totalYears": 22,
   "warningCount": 1,
   "year0": {
@@ -2029,7 +2029,7 @@ exports[`engine snapshot parity > fixture 41: rothConversionTarget override via 
     "projectedExpenses": 60000,
     "totalWithdrawal": 60000,
   },
-  "sustainableWithdrawal": 0,
+  "sustainableWithdrawal": 40837.53,
   "totalYears": 24,
   "warningCount": 1,
   "year0": {
@@ -2111,7 +2111,7 @@ exports[`engine snapshot parity > fixture 43: High-income: RMD + SS + LTCG + Rot
     "projectedExpenses": 120000,
     "totalWithdrawal": 94339.62,
   },
-  "sustainableWithdrawal": 0,
+  "sustainableWithdrawal": 161769.1,
   "totalYears": 22,
   "warningCount": 1,
   "year0": {
@@ -2312,7 +2312,7 @@ exports[`engine snapshot parity > fixture 47: Waterfall withdrawal with rothBrac
     "projectedExpenses": 70000,
     "totalWithdrawal": 70000,
   },
-  "sustainableWithdrawal": 0,
+  "sustainableWithdrawal": 38948,
   "totalYears": 24,
   "warningCount": 1,
   "year0": {
@@ -2488,7 +2488,7 @@ exports[`engine snapshot parity > fixture 51: Zero-balance account category with
     "projectedExpenses": 50000,
     "totalWithdrawal": 17080,
   },
-  "sustainableWithdrawal": 0,
+  "sustainableWithdrawal": 16388.98,
   "totalYears": 23,
   "warningCount": 1,
   "year0": {
@@ -2587,7 +2587,7 @@ exports[`engine snapshot parity > fixture 53: Waterfall withdrawal with explicit
     "projectedExpenses": 65000,
     "totalWithdrawal": 65000,
   },
-  "sustainableWithdrawal": 0,
+  "sustainableWithdrawal": 32528,
   "totalYears": 24,
   "warningCount": 1,
   "year0": {
@@ -2648,7 +2648,7 @@ exports[`engine snapshot parity > fixture 54: IRMAA awareness enabled, income ne
     "projectedExpenses": 90000,
     "totalWithdrawal": 46000,
   },
-  "sustainableWithdrawal": 0,
+  "sustainableWithdrawal": 58320.22,
   "totalYears": 24,
   "warningCount": 1,
   "year0": {
@@ -2709,7 +2709,7 @@ exports[`engine snapshot parity > fixture 55: IRMAA awareness disabled, income n
     "projectedExpenses": 90000,
     "totalWithdrawal": 46000,
   },
-  "sustainableWithdrawal": 0,
+  "sustainableWithdrawal": 58193.58,
   "totalYears": 24,
   "warningCount": 1,
   "year0": {
@@ -2758,7 +2758,7 @@ exports[`engine snapshot parity > fixture 56: RMD excess above G-K spending (hig
     "projectedExpenses": 40000,
     "totalWithdrawal": 91900.81,
   },
-  "sustainableWithdrawal": 0,
+  "sustainableWithdrawal": 89017.66,
   "totalYears": 20,
   "warningCount": 1,
   "year0": {
@@ -2807,7 +2807,7 @@ exports[`engine snapshot parity > fixture 57: RMD forces large withdrawal with G
     "projectedExpenses": 35000,
     "totalWithdrawal": 73853.64,
   },
-  "sustainableWithdrawal": 0,
+  "sustainableWithdrawal": 57090.46,
   "totalYears": 19,
   "warningCount": 1,
   "year0": {
@@ -2868,7 +2868,7 @@ exports[`engine snapshot parity > fixture 58: Convergence loop with withdrawalAc
     "projectedExpenses": 80000,
     "totalWithdrawal": 46640,
   },
-  "sustainableWithdrawal": 0,
+  "sustainableWithdrawal": 37807.81,
   "totalYears": 23,
   "warningCount": 1,
   "year0": {
