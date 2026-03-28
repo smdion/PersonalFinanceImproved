@@ -174,10 +174,24 @@ export type ProjectionInput = {
   postRetirementInflationRate?: number;
   /** Age-indexed return rates (from return_rate_table). */
   returnRates: { label: string; rate: number }[];
-  /** Social Security annual income (kicks in at ssStartAge). */
+  /** Social Security annual income (kicks in at ssStartAge).
+   *  When socialSecurityEntries is provided, this is ignored. */
   socialSecurityAnnual: number;
-  /** Age at which Social Security income begins (default 67). */
+  /** Age at which Social Security income begins (default 67).
+   *  When socialSecurityEntries is provided, this is ignored. */
   ssStartAge: number;
+  /** Per-person Social Security entries. Each person can have a different
+   *  annual amount and start age. When provided, overrides the scalar
+   *  socialSecurityAnnual and ssStartAge fields. */
+  socialSecurityEntries?: {
+    personId: number;
+    personName: string;
+    annualAmount: number;
+    /** Age of THIS person (not household avg) when SS begins. */
+    startAge: number;
+    /** Birth year of this person — used to compute their age each projection year. */
+    birthYear: number;
+  }[];
   /** Birth year of primary person — used for RMD start age (SECURE 2.0).
    *  When omitted, RMDs are not enforced (backward-compatible). */
   birthYear?: number;
@@ -297,6 +311,8 @@ export type EngineDecumulationYear = {
   // --- Diagnostic fields (for debugging withdrawal calculations) ---
   /** Social Security income for this year (0 if not yet started). */
   ssIncome: number;
+  /** Per-person SS income breakdown (populated when socialSecurityEntries is provided). */
+  ssIncomeByPerson?: { personId: number; personName: string; amount: number }[];
   /** After-tax expense need (projectedExpenses - ssIncome). */
   afterTaxNeed: number;
   /** Gross-up multiplier: 1 / (1 - effectiveTaxRate). */
