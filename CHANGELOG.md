@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.10] - 2026-03-28
+
+### Improved
+
+- Retirement table rows now highlight the year Social Security begins (teal) and when RMDs start (amber)
+- Hovering over withdrawal amounts shows SS income and RMD context directly in the table tooltip
+
+---
+
 ## [0.3.9] - 2026-03-28
 
 ### Improved

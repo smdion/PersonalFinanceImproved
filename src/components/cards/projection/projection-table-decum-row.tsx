@@ -85,7 +85,7 @@ export function DecumulationRow({
     displayAge,
     renderTooltip,
     enginePeople,
-    engineSettings: _engineSettings,
+    engineSettings,
     withdrawalRoutingMode: _withdrawalRoutingMode,
     budgetProfileSummaries,
     result,
@@ -100,6 +100,15 @@ export function DecumulationRow({
   );
   const dpt = getPersonYearTotals(yr);
 
+  // Detect milestone years for row highlighting
+  const ssAge = engineSettings?.ssStartAge;
+  const isSsStartRow = ssAge != null && yr.age === ssAge && dyr.ssIncome > 0;
+  const firstRmdAge = result.projectionByYear.find(
+    (y) => y.phase === "decumulation" && y.rmdAmount > 0,
+  )?.age;
+  const isRmdStartRow =
+    firstRmdAge != null && yr.age === firstRmdAge && dyr.rmdAmount > 0;
+
   return (
     <tr
       key={yr.year}
@@ -110,7 +119,11 @@ export function DecumulationRow({
             ? "bg-amber-50"
             : yr.endBalance < 1
               ? "bg-red-50"
-              : ""
+              : isSsStartRow
+                ? "bg-teal-50"
+                : isRmdStartRow
+                  ? "bg-amber-50"
+                  : ""
       }`}
     >
       <td className="py-1.5 pr-2">{yr.year}</td>
@@ -336,9 +349,24 @@ export function DecumulationRow({
               : decBudgetProfile
                 ? `${decBudgetProfile.name}${decumulationBudgetColumn != null && decBudgetProfile.columnLabels[decumulationBudgetColumn] ? ` (${decBudgetProfile.columnLabels[decumulationBudgetColumn]})` : ""}${dyr.hasBudgetOverride && budgetOverrideNotes ? ` (${budgetOverrideNotes})` : ""}`
                 : undefined;
+          // SS/RMD context for withdrawal tooltip
+          const hasSs = dyr.ssIncome > 0;
+          const hasRmd = dyr.rmdAmount > 0;
+          const ssMeta = isSsStartRow
+            ? `Social Security begins — ${formatCurrency(deflate(dyr.ssIncome, yr.year))}/yr`
+            : hasSs
+              ? `Incl. SS income — ${formatCurrency(deflate(dyr.ssIncome, yr.year))}/yr`
+              : undefined;
+          const rmdMeta = isRmdStartRow
+            ? `RMDs begin — ${formatCurrency(deflate(dyr.rmdAmount, yr.year))} required`
+            : hasRmd
+              ? `RMD: ${formatCurrency(deflate(dyr.rmdAmount, yr.year))}`
+              : undefined;
           return renderTooltip({
             kind: "money",
             header: "Total Withdrawals",
+            meta: ssMeta,
+            meta2: rmdMeta,
             items: items.length > 0 ? items : undefined,
             growth:
               Math.abs(totalGrowth) > 1
