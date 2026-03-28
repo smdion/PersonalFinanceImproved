@@ -140,9 +140,11 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
   }
 
   // Compute sustainable withdrawal at retirement
-  const retirementYear = state.projectionByYear.find(
-    (p) => p.age === input.retirementAge,
-  );
+  // When already retired (currentAge >= retirementAge), use the first year's balance
+  const retirementYear =
+    input.currentAge >= input.retirementAge
+      ? state.projectionByYear[0]
+      : state.projectionByYear.find((p) => p.age === input.retirementAge);
   const retirementBalance = retirementYear?.endBalance ?? 0;
   const retirementConfig = resolveDecumulationConfig(
     input.asOfDate.getFullYear() + (input.retirementAge - input.currentAge),

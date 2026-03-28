@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.11] - 2026-03-28
+
+### Fixed
+
+- "Nest Egg at Retirement" now shows current portfolio value for already-retired users instead of $0
+- Sustainable withdrawal amount now correctly uses current balance when already retired
+
+### Added
+
+- Social Security income is now modeled per-person — each spouse's SS kicks in at their own claiming age instead of using only the primary person's values
+- Withdrawal tooltips show per-person SS breakdown (e.g., "James: $42,000, Patricia: $21,600")
+
+---
+
 ## [0.3.10] - 2026-03-28
 
 ### Improved

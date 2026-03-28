@@ -23,9 +23,13 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
 
   if (!result) return null;
 
-  const retYear = result.projectionByYear.find(
-    (yr) => yr.age === engineSettings?.retirementAge,
-  );
+  const currentAge = result.projectionByYear[0]?.age ?? 0;
+  const alreadyRetired = currentAge >= (engineSettings?.retirementAge ?? 999);
+  const retYear = alreadyRetired
+    ? result.projectionByYear[0]
+    : result.projectionByYear.find(
+        (yr) => yr.age === engineSettings?.retirementAge,
+      );
   const retPt = retYear ? getPersonYearTotals(retYear) : null;
   const nestEgg = retYear
     ? deflate(retPt ? retPt.balance : retYear.endBalance, retYear.year)
@@ -42,8 +46,10 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
   );
   const mc = mcQuery.data?.result && !mcLoading ? mcQuery.data.result : null;
   const mcBands = mc?.percentileBands ?? null;
-  const mcRetBand = mcBands?.find(
-    (b) => b.age === engineSettings?.retirementAge,
+  const mcRetBand = mcBands?.find((b) =>
+    alreadyRetired
+      ? b.age === currentAge
+      : b.age === engineSettings?.retirementAge,
   );
   const terminalYear =
     baseYear +
@@ -133,7 +139,9 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
           <div className="text-xs text-purple-600 uppercase font-medium">
             {isPersonFiltered
               ? `${personFilterName}'s Nest Egg`
-              : "Nest Egg at Retirement"}
+              : alreadyRetired
+                ? "Current Portfolio"
+                : "Nest Egg at Retirement"}
           </div>
           <div className="text-2xl font-bold text-purple-700">
             {mcRetBand
@@ -184,13 +192,17 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
         <div className="text-xs text-emerald-600 uppercase font-medium">
           {isPersonFiltered
             ? `${personFilterName}'s Nest Egg`
-            : "Nest Egg at Retirement"}
+            : alreadyRetired
+              ? "Current Portfolio"
+              : "Nest Egg at Retirement"}
         </div>
         <div className="text-2xl font-bold text-emerald-700">
           {formatCurrency(nestEgg)}
         </div>
         <div className="text-[10px] text-emerald-500">
-          Avg age {engineSettings?.retirementAge ?? "?"}
+          {alreadyRetired
+            ? `Age ${currentAge} (today's $)`
+            : `Avg age ${engineSettings?.retirementAge ?? "?"}`}
         </div>
       </div>
       <div className="bg-blue-50 rounded-lg p-4 text-center">

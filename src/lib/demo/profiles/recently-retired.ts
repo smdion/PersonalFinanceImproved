@@ -576,6 +576,15 @@ export const recentlyRetiredProfile: DemoProfile = {
     ssStartAge: 70,
   },
 
+  perPersonRetirementSettings: [
+    {
+      personName: "Patricia",
+      retirementAge: 63,
+      socialSecurityMonthly: "1800",
+      ssStartAge: 70,
+    },
+  ],
+
   returnRates: [
     { age: 65, rateOfReturn: "0.06" },
     { age: 70, rateOfReturn: "0.055" },
