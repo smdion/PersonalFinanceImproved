@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.8] - 2026-03-27
+
+### Added
+
+- New "Recently Retired" demo profile — a couple in their late 60s with $5M portfolio, RMD-based withdrawals, and Social Security delayed to age 70
+- Automated tax parameter staleness check in CI — flags outdated seed data after IRS publication dates
+- Backup round-trip integration test — validates data survives the full export → import cycle without loss
+
+---
+
 ## [0.3.7] - 2026-03-26
 
 ### Fixed
