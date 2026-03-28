@@ -27,6 +27,8 @@ export interface RmdEnforcementInput {
   totalTraditionalWithdrawal: number;
   totalWithdrawal: number;
   acctBal: AccountBalances;
+  /** When provided, overrides the internal RMD calculation (used for per-person RMD). */
+  overrideRmdRequired?: number;
 }
 
 export interface RmdEnforcementResult {
@@ -56,13 +58,14 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
   let rmdOverrodeRouting = false;
 
   if (
-    rmdStartAge != null &&
-    age >= rmdStartAge &&
-    priorYearEndTradBalance > 0
+    (input.overrideRmdRequired != null && input.overrideRmdRequired > 0) ||
+    (rmdStartAge != null && age >= rmdStartAge && priorYearEndTradBalance > 0)
   ) {
     const factor = getRmdFactor(age);
-    if (factor != null && factor > 0) {
-      const rmdRequired = roundToCents(priorYearEndTradBalance / factor);
+    if (input.overrideRmdRequired != null || (factor != null && factor > 0)) {
+      const rmdRequired =
+        input.overrideRmdRequired ??
+        roundToCents(priorYearEndTradBalance / factor!);
       rmdAmount = rmdRequired;
       if (totalTraditionalWithdrawal < rmdRequired) {
         const rmdShortfall = roundToCents(

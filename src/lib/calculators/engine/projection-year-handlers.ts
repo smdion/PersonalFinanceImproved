@@ -108,7 +108,7 @@ import {
   trackDepletions,
   cleanupDust,
 } from "./balance-deduction";
-import { getRmdStartAge } from "../../config/rmd-tables";
+import { getRmdStartAge, getRmdFactor } from "../../config/rmd-tables";
 
 // ---------------------------------------------------------------------------
 // Local type used by brokerage goals (defined locally in projection.ts)
@@ -131,6 +131,8 @@ export type ProjectionLoopState = {
   balances: TaxBuckets;
   acctBal: AccountBalances;
   priorYearEndTradBalance: number;
+  /** Per-person prior-year Traditional balance for per-person RMD. */
+  priorYearEndTradByPerson: Map<number, number>;
 
   // Salary/expense tracking
   projectedSalary: number;
@@ -206,6 +208,7 @@ export type ProjectionContext = {
   // Engine config
   firstYearFraction: number;
   rmdStartAge: number | null;
+  rmdStartAgeByPerson: Map<number, { startAge: number; birthYear: number }>;
   yearsToProject: number;
 
   // Constants
@@ -307,6 +310,20 @@ export function buildProjectionContext(
   const rmdStartAge =
     input.birthYear != null ? getRmdStartAge(input.birthYear) : null;
 
+  // Per-person RMD start ages (from SS entries or individual accounts with ownerPersonId)
+  const rmdStartAgeByPerson = new Map<
+    number,
+    { startAge: number; birthYear: number }
+  >();
+  if (input.socialSecurityEntries) {
+    for (const entry of input.socialSecurityEntries) {
+      rmdStartAgeByPerson.set(entry.personId, {
+        startAge: getRmdStartAge(entry.birthYear),
+        birthYear: entry.birthYear,
+      });
+    }
+  }
+
   // Individual account tracking
   const indAccts = input.individualAccounts ?? [];
   const hasIndividualAccounts = indAccts.length > 0;
@@ -346,6 +363,7 @@ export function buildProjectionContext(
     activeStrategyParams,
     firstYearFraction,
     rmdStartAge,
+    rmdStartAgeByPerson,
     yearsToProject,
     ACCOUNT_CATEGORIES,
     OVERFLOW_CATEGORY,
@@ -383,6 +401,20 @@ export function buildProjectionState(
   // Initialized from starting balances -- sum of all Traditional (pre-tax) across accounts.
   const priorYearEndTradBalance = balances.preTax;
 
+  // Per-person Traditional balance for per-person RMD (from individual accounts)
+  const priorYearEndTradByPerson = new Map<number, number>();
+  if (ctx.rmdStartAgeByPerson.size > 0 && ctx.hasIndividualAccounts) {
+    for (const ia of ctx.indAccts) {
+      if (ia.ownerPersonId != null && ia.taxType === "preTax") {
+        const prev = priorYearEndTradByPerson.get(ia.ownerPersonId) ?? 0;
+        priorYearEndTradByPerson.set(
+          ia.ownerPersonId,
+          prev + ia.startingBalance,
+        );
+      }
+    }
+  }
+
   // Spending strategy cross-year state
   const spendingState = initialCrossYearState();
 
@@ -418,6 +450,7 @@ export function buildProjectionState(
     balances,
     acctBal,
     priorYearEndTradBalance,
+    priorYearEndTradByPerson,
     projectedSalary: input.currentSalary,
     projectedExpenses: input.annualExpenses,
     projectedSalaryByPerson,
@@ -1211,6 +1244,7 @@ export function runAccumulationYear(
 
   // Update RMD tracking at end of accumulation year
   state.priorYearEndTradBalance = balances.preTax;
+  updatePerPersonTradBalance(ctx, state);
 
   state.projectionByYear.push(yearProjection);
 }
@@ -1241,11 +1275,13 @@ export function runDecumulationYear(
     indKey,
     indParentCat,
     rmdStartAge,
+    rmdStartAgeByPerson,
   } = ctx;
   const {
     balances,
     acctBal,
     priorYearEndTradBalance,
+    priorYearEndTradByPerson,
     indBal,
     spendingState,
     magiHistory,
@@ -1414,6 +1450,35 @@ export function runDecumulationYear(
   );
 
   // --- RMD enforcement (Phase 1) ---
+  // Per-person RMD: compute each person's RMD from their own Traditional balance and age.
+  let perPersonRmdTotal: number | undefined;
+  let rmdByPerson:
+    | { personId: number; personName: string; amount: number }[]
+    | undefined;
+  if (rmdStartAgeByPerson.size > 0 && priorYearEndTradByPerson.size > 0) {
+    rmdByPerson = [];
+    let total = 0;
+    for (const [personId, { startAge, birthYear }] of rmdStartAgeByPerson) {
+      const personAge = year - birthYear;
+      const personTrad = priorYearEndTradByPerson.get(personId) ?? 0;
+      if (personAge >= startAge && personTrad > 0) {
+        const factor = getRmdFactor(personAge);
+        if (factor != null && factor > 0) {
+          const amt = roundToCents(personTrad / factor);
+          rmdByPerson.push({
+            personId,
+            personName:
+              input.socialSecurityEntries?.find((e) => e.personId === personId)
+                ?.personName ?? `Person ${personId}`,
+            amount: amt,
+          });
+          total += amt;
+        }
+      }
+    }
+    if (total > 0) perPersonRmdTotal = roundToCents(total);
+  }
+
   // Extracted to rmd-enforcement.ts -- enforces minimum Traditional withdrawals per IRS rules.
   const rmdResult = enforceRmd({
     age,
@@ -1423,6 +1488,7 @@ export function runDecumulationYear(
     totalTraditionalWithdrawal,
     totalWithdrawal,
     acctBal,
+    overrideRmdRequired: perPersonRmdTotal,
   });
   const { rmdAmount, rmdOverrodeRouting } = rmdResult;
   totalTraditionalWithdrawal = rmdResult.totalTraditionalWithdrawal;
@@ -1662,6 +1728,7 @@ export function runDecumulationYear(
 
   // Update RMD tracking: year-end Traditional balance (after growth) for next year's RMD
   state.priorYearEndTradBalance = balances.preTax;
+  updatePerPersonTradBalance(ctx, state);
   // Update spending strategy state: prior year return + spending
   spendingState.priorYearReturn = returnRate;
   spendingState.priorYearSpending = state.projectedExpenses;
@@ -1727,6 +1794,7 @@ export function runDecumulationYear(
     returnRate,
     annualizedReturnRate: returnRate,
     rmdAmount,
+    rmdByPerson,
     rmdOverrodeRouting,
     taxableSS,
     ltcgRate: postConversionLtcgRate,
@@ -1741,4 +1809,23 @@ export function runDecumulationYear(
   };
 
   state.projectionByYear.push(yearProjection);
+}
+
+// ---------------------------------------------------------------------------
+// Per-person Traditional balance update (for per-person RMD tracking)
+// ---------------------------------------------------------------------------
+
+function updatePerPersonTradBalance(
+  ctx: ProjectionContext,
+  state: ProjectionLoopState,
+): void {
+  if (ctx.rmdStartAgeByPerson.size === 0 || !ctx.hasIndividualAccounts) return;
+  state.priorYearEndTradByPerson.clear();
+  for (const ia of ctx.indAccts) {
+    if (ia.ownerPersonId != null && ia.taxType === "preTax") {
+      const bal = state.indBal.get(ctx.indKey(ia)) ?? 0;
+      const prev = state.priorYearEndTradByPerson.get(ia.ownerPersonId) ?? 0;
+      state.priorYearEndTradByPerson.set(ia.ownerPersonId, prev + bal);
+    }
+  }
 }

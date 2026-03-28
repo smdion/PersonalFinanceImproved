@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.12] - 2026-03-28
+
+### Added
+
+- RMDs are now computed per-person based on each spouse's birth year and individual Traditional account balances
+- James (born 1959) starts RMDs at age 73; Patricia (born 1961) starts at age 75 — each correctly follows SECURE 2.0 rules
+- Per-person RMD breakdown available in engine output for tooltip display
+
+---
+
 ## [0.3.11] - 2026-03-28
 
 ### Fixed
