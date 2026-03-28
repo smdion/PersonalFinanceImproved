@@ -3,6 +3,7 @@ import { singleIncomeProfile } from "./profiles/single-income";
 import { dualIncomeFamilyProfile } from "./profiles/dual-income-family";
 import { earlyRetirementProfile } from "./profiles/early-retirement";
 import { debtPayoffProfile } from "./profiles/debt-payoff";
+import { recentlyRetiredProfile } from "./profiles/recently-retired";
 
 export type { DemoProfile } from "./types";
 
@@ -12,6 +13,7 @@ export const DEMO_PROFILES: Record<string, DemoProfile> = {
   "dual-income-family": dualIncomeFamilyProfile,
   "early-retirement": earlyRetirementProfile,
   "debt-payoff": debtPayoffProfile,
+  "recently-retired": recentlyRetiredProfile,
 };
 
 /** Ordered list of profile slugs for display. */
@@ -20,6 +22,7 @@ export const DEMO_PROFILE_ORDER = [
   "dual-income-family",
   "early-retirement",
   "debt-payoff",
+  "recently-retired",
 ] as const;
 
 /** Get profile metadata for listing (without full dataset). */
