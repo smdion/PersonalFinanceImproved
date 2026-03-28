@@ -1692,10 +1692,13 @@ export function runDecumulationYear(
     magiHistory.length > 2
       ? magiHistory[magiHistory.length - 3]!
       : currentYearMagi;
-  const anyPersonAge65 =
+  const personsAge65Plus =
     perPersonBirthYears && perPersonBirthYears.length > 0
-      ? perPersonBirthYears.some((by) => year - by >= 65)
-      : age >= 65;
+      ? perPersonBirthYears.filter((by) => year - by >= 65).length
+      : age >= 65
+        ? 1
+        : 0;
+  const anyPersonAge65 = personsAge65Plus > 0;
   const irmaaResult = checkIrmaa({
     enableIrmaaAwareness,
     filingStatus,
@@ -1703,7 +1706,8 @@ export function runDecumulationYear(
     projectedMagi: irmaaLookbackMagi,
     rothConversionAmount,
   });
-  const { irmaaCost } = irmaaResult;
+  // IRMAA surcharge is per-person — each Medicare-eligible person pays separately
+  const irmaaCost = irmaaResult.irmaaCost * personsAge65Plus;
   routeWarnings.push(...irmaaResult.warnings);
 
   // --- ACA Subsidy Awareness (Phase 7) ---
