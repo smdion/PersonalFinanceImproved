@@ -340,6 +340,8 @@ export type EngineDecumulationYear = {
   // --- RMD fields (Phase 1) ---
   /** Required Minimum Distribution amount for this year (0 if not applicable). */
   rmdAmount: number;
+  /** Per-person RMD breakdown (populated when per-person RMD tracking is active). */
+  rmdByPerson?: { personId: number; personName: string; amount: number }[];
   /** True if the RMD forced additional Traditional withdrawals beyond what routing chose. */
   rmdOverrodeRouting: boolean;
   // --- SS Tax fields (Phase 2) ---
