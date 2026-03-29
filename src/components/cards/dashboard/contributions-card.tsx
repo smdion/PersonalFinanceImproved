@@ -263,7 +263,7 @@ export function ContributionsCard() {
                                     : "text-muted"
                               }
                             >
-                              {formatPercent(at.fundingPct)} of{""}
+                              {formatPercent(at.fundingPct)} of{" "}
                               {formatCurrency(at.limit)}
                               {at.fundingPct > 1 && (
                                 <span className="ml-1 bg-red-100 text-red-700 px-1 rounded">
@@ -315,13 +315,13 @@ export function ContributionsCard() {
                               <div className="flex gap-2 text-[10px] text-faint mt-0.5">
                                 {at.tradContrib > 0 && (
                                   <span>
-                                    {taxTypeLabel("preTax")}:{""}
+                                    {taxTypeLabel("preTax")}:{" "}
                                     {formatCurrency(at.tradContrib * mult)}
                                   </span>
                                 )}
                                 {at.taxFreeContrib > 0 && (
                                   <span>
-                                    {taxTypeLabel("taxFree")}:{""}
+                                    {taxTypeLabel("taxFree")}:{" "}
                                     {formatCurrency(at.taxFreeContrib * mult)}
                                   </span>
                                 )}
@@ -354,7 +354,7 @@ export function ContributionsCard() {
                             </div>
                             <div className="flex justify-between text-[10px] mt-0.5">
                               <span className={accountTextColor(at.colorKey)}>
-                                Value:{""}
+                                Value:{" "}
                                 {formatCurrency(
                                   (at.employeeContrib + at.employerMatch) *
                                     mult,
@@ -367,8 +367,7 @@ export function ContributionsCard() {
                                 +
                                 {formatPercent(
                                   at.employerMatch / at.employeeContrib,
-                                )}
-                                {""}
+                                )}{" "}
                                 {at.employerMatchLabel}
                               </span>
                             </div>
@@ -465,7 +464,7 @@ export function ContributionsCard() {
                       </div>
                       <div className="flex justify-between text-[10px] mt-0.5">
                         <span className={accountTextColor(at.colorKey)}>
-                          Value:{""}
+                          Value:{" "}
                           {formatCurrency(
                             (at.employeeContrib + at.employerMatch) *
                               householdMult,
@@ -476,8 +475,7 @@ export function ContributionsCard() {
                           className={`${accountTextColor(at.colorKey)} font-medium`}
                         >
                           +
-                          {formatPercent(at.employerMatch / at.employeeContrib)}
-                          {""}
+                          {formatPercent(at.employerMatch / at.employeeContrib)}{" "}
                           {at.employerMatchLabel}
                         </span>
                       </div>
@@ -544,8 +542,7 @@ export function ContributionsCard() {
                 <span className="text-muted ml-1">
                   {formatCurrency(
                     householdRetWithMatch * householdMult * ytdScale,
-                  )}
-                  {""}
+                  )}{" "}
                   w/ match
                 </span>
               )}
@@ -565,8 +562,7 @@ export function ContributionsCard() {
                 <span className="text-muted ml-1">
                   {formatCurrency(
                     householdPortWithMatch * householdMult * ytdScale,
-                  )}
-                  {""}
+                  )}{" "}
                   w/ match
                 </span>
               )}
@@ -586,8 +582,7 @@ export function ContributionsCard() {
                 <span className="text-muted ml-1">
                   {formatCurrency(
                     householdTotalWithMatch * householdMult * ytdScale,
-                  )}
-                  {""}
+                  )}{" "}
                   w/ match
                 </span>
               )}

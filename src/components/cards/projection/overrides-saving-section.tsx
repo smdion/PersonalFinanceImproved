@@ -83,7 +83,7 @@ export function SavingOverridesSection({ state: s }: OverridesSectionProps) {
                     )}
                     {o.accountCaps && (
                       <span className="text-emerald-700">
-                        Caps:{""}
+                        Caps:{" "}
                         {Object.entries(o.accountCaps)
                           .map(
                             ([k, v]) =>
@@ -94,7 +94,7 @@ export function SavingOverridesSection({ state: s }: OverridesSectionProps) {
                     )}
                     {o.taxSplits && (
                       <span className="text-emerald-700">
-                        Tax:{""}
+                        Tax:{" "}
                         {Object.entries(o.taxSplits)
                           .map(
                             ([k, v]) =>
@@ -105,7 +105,7 @@ export function SavingOverridesSection({ state: s }: OverridesSectionProps) {
                     )}
                     {o.taxTypeCaps && (
                       <span className="text-emerald-700">
-                        TaxCaps:{""}
+                        TaxCaps:{" "}
                         {Object.entries(o.taxTypeCaps)
                           .map(
                             ([k, v]) =>
@@ -258,8 +258,7 @@ export function SavingOverridesSection({ state: s }: OverridesSectionProps) {
                   {accumForm.accountOrder.map((cat, idx) => (
                     <div key={cat} className="flex items-center gap-0.5">
                       <span className="text-xs bg-surface-elevated rounded px-2 py-1 font-medium">
-                        {idx + 1}.{""}
-                        {getAccountTypeConfig(cat).displayLabel}
+                        {idx + 1}. {getAccountTypeConfig(cat).displayLabel}
                       </span>
                       {idx > 0 && (
                         <button

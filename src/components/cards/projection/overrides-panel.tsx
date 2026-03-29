@@ -56,23 +56,20 @@ export function OverridesPanel({
         <span>
           <span className="font-medium text-emerald-700">
             {s.accumOverrides.length}
-          </span>
-          {""}
+          </span>{" "}
           saving
         </span>
         <span>
           <span className="font-medium text-amber-700">
             {s.decumOverrides.length}
-          </span>
-          {""}
+          </span>{" "}
           withdrawal
         </span>
         <span>
           <span className="font-medium text-secondary">
             {(s.dbSalaryOverrides?.length ?? 0) +
               (s.dbBudgetOverrides?.length ?? 0)}
-          </span>
-          {""}
+          </span>{" "}
           life change
         </span>
       </div>

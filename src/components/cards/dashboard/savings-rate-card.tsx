@@ -165,7 +165,7 @@ export function SavingsRateCard() {
       )}
       {!excludeMatch && highIncome && (
         <p className="text-xs text-amber-600 mt-1">
-          Including employer match — not meaningful above{""}
+          Including employer match — not meaningful above{" "}
           {formatCurrency(highIncomeThreshold)} income
         </p>
       )}
