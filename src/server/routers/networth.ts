@@ -362,7 +362,11 @@ export const networthRouter = createTRPCRouter({
       );
       const deltaMap = new Map<
         number,
-        { delta: number | null; deltaPct: number | null }
+        {
+          delta: number | null;
+          deltaPct: number | null;
+          daysSincePrev: number | null;
+        }
       >();
       for (let i = 0; i < byDate.length; i++) {
         const curr = toNumber(byDate[i]!.total);
@@ -370,7 +374,15 @@ export const networthRouter = createTRPCRouter({
         const delta = prev != null ? curr - prev : null;
         const deltaPct =
           prev != null && prev > 0 ? ((curr - prev) / prev) * 100 : null;
-        deltaMap.set(byDate[i]!.id, { delta, deltaPct });
+        const daysSincePrev =
+          i > 0
+            ? Math.round(
+                (new Date(byDate[i]!.snapshotDate).getTime() -
+                  new Date(byDate[i - 1]!.snapshotDate).getTime()) /
+                  86400000,
+              )
+            : null;
+        deltaMap.set(byDate[i]!.id, { delta, deltaPct, daysSincePrev });
       }
 
       // 3. Build sortable items and sort by requested column
@@ -378,11 +390,16 @@ export const networthRouter = createTRPCRouter({
         totalNum: number;
         delta: number | null;
         deltaPct: number | null;
+        daysSincePrev: number | null;
       };
       const sortable: SnapItem[] = allSnaps.map((s) => ({
         ...s,
         totalNum: toNumber(s.total),
-        ...(deltaMap.get(s.id) ?? { delta: null, deltaPct: null }),
+        ...(deltaMap.get(s.id) ?? {
+          delta: null,
+          deltaPct: null,
+          daysSincePrev: null,
+        }),
       }));
 
       const dir = sortDir === "asc" ? 1 : -1;
@@ -475,6 +492,7 @@ export const networthRouter = createTRPCRouter({
           accountCount: Number(s.accountCount),
           delta: s.delta,
           deltaPct: s.deltaPct,
+          daysSincePrev: s.daysSincePrev,
           accounts: accounts.map((a) => ({
             institution: a.institution,
             taxType: a.taxType,
