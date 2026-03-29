@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.14] - 2026-03-28
+
+### Added
+
+- Staggered retirement ages: each spouse can retire at a different age — the still-working spouse continues contributing while the retired spouse's contributions automatically stop
+- Household transitions to full decumulation only when the last person retires
+
+---
+
 ## [0.3.13] - 2026-03-28
 
 ### Fixed

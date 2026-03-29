@@ -275,6 +275,37 @@ export function buildProjectionContext(
   const hasPerPersonSalary =
     input.salaryByPerson && Object.keys(input.salaryByPerson).length > 0;
 
+  // Auto-inject $0 salary overrides at each person's individual retirement age.
+  // This makes partial retirement work: the accumulation handler sees reduced
+  // salary for the retired person, their contribution specs produce $0 via
+  // salaryFraction = 0, while the still-working person continues contributing.
+  if (input.retirementAgeByPerson && hasPerPersonSalary) {
+    const baseYear = input.asOfDate.getFullYear();
+    for (const [pidStr, retAge] of Object.entries(
+      input.retirementAgeByPerson,
+    )) {
+      const pid = Number(pidStr);
+      // Find this person's birth year from SS entries or perPersonBirthYears
+      const personBirthYear = input.socialSecurityEntries?.find(
+        (e) => e.personId === pid,
+      )?.birthYear;
+      if (personBirthYear == null) continue;
+      const retirementYear = personBirthYear + retAge;
+      // Only inject if this person retires before the household retirement age
+      const householdRetYear =
+        baseYear + (input.retirementAge - input.currentAge);
+      if (retirementYear >= householdRetYear) continue;
+      // Inject $0 salary starting at their retirement year (don't overwrite user overrides)
+      if (!perPersonSalaryOverrides.has(retirementYear)) {
+        perPersonSalaryOverrides.set(retirementYear, new Map());
+      }
+      const yearMap = perPersonSalaryOverrides.get(retirementYear)!;
+      if (!yearMap.has(pid)) {
+        yearMap.set(pid, 0);
+      }
+    }
+  }
+
   // Build budget override map (monthly budget -> annual; sticky-forward)
   const budgetOverrideMap = new Map<number, number>();
   for (const o of input.budgetOverrides)

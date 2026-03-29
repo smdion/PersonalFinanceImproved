@@ -61,6 +61,13 @@ export type ProjectionInput = {
   // --- Person / salary ---
   currentAge: number;
   retirementAge: number;
+  /** Per-person retirement ages (personId → age). When provided, salary for
+   *  each person is automatically overridden to $0 at their retirement age.
+   *  The scalar `retirementAge` should be the household retirement age
+   *  (max of all values) — full decumulation starts when the last person retires.
+   *  During the gap between first and last retirement, the accumulation handler
+   *  runs with reduced contributions (retired person's specs produce $0). */
+  retirementAgeByPerson?: Record<number, number>;
   /** End of projection (e.g. age 95). */
   projectionEndAge: number;
   currentSalary: number;
