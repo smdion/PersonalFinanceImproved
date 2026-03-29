@@ -30,6 +30,9 @@ export type ParamField = {
 // Strategy config shape
 // ---------------------------------------------------------------------------
 
+/** How the strategy determines annual spending — drives UI visibility of budget/rate controls. */
+export type IncomeSource = "budget" | "rate" | "formula";
+
 export type WithdrawalStrategyConfig = {
   /** Display name for UI dropdown. */
   label: string;
@@ -39,6 +42,11 @@ export type WithdrawalStrategyConfig = {
   description: string;
   /** Morningstar paper citation. */
   morningstarRef: string | null;
+  /** How spending is determined:
+   *  - "budget": retirement budget is the primary input (rate is informational)
+   *  - "rate": withdrawal rate × portfolio drives spending (budget is starting point)
+   *  - "formula": spending computed from portfolio via IRS/endowment formula (budget and rate not used) */
+  incomeSource: IncomeSource;
   /** Default parameter values keyed by param name. */
   defaultParams: Readonly<Record<string, number | boolean>>;
   /** UI-renderable parameter field descriptors. */
@@ -58,6 +66,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     description:
       "Inflation-adjusted constant withdrawal — the classic safe withdrawal rate approach",
     morningstarRef: "Base Case",
+    incomeSource: "budget",
     defaultParams: {},
     paramFields: [],
     crossYearStateKeys: [],
@@ -69,6 +78,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     description:
       "Skip inflation adjustment in years following a portfolio loss — cumulative real cuts",
     morningstarRef: "Method 1",
+    incomeSource: "budget",
     defaultParams: {},
     paramFields: [],
     crossYearStateKeys: ["priorYearReturn", "initialWithdrawalAmount"],
@@ -80,6 +90,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     description:
       "Withdraw based on IRS Required Minimum Distribution factor, scaled by a multiplier",
     morningstarRef: "Method 2",
+    incomeSource: "formula",
     defaultParams: {
       rmdMultiplier: 1.0,
     },
@@ -105,6 +116,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     description:
       "Dynamic spending guardrails that increase or decrease withdrawals based on portfolio performance",
     morningstarRef: "Method 3",
+    incomeSource: "rate",
     defaultParams: {
       upperGuardrail: 0.8,
       lowerGuardrail: 1.2,
@@ -181,6 +193,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     description:
       "Annual real spending decline reflecting reduced consumption in later retirement (per EBRI data)",
     morningstarRef: "Method 4",
+    incomeSource: "budget",
     defaultParams: {
       annualDeclineRate: 0.02,
     },
@@ -206,6 +219,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     description:
       "Fixed percentage of current portfolio balance each year, with a floor to prevent severe cuts",
     morningstarRef: "Method 5",
+    incomeSource: "rate",
     defaultParams: {
       withdrawalPercent: 0.05,
       floorPercent: 0.9,
@@ -242,6 +256,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     description:
       "Fixed percentage of N-year rolling average balance — smooths volatility like an endowment fund",
     morningstarRef: "Method 6",
+    incomeSource: "rate",
     defaultParams: {
       withdrawalPercent: 0.05,
       rollingYears: 10,
@@ -290,6 +305,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     description:
       "Base percentage of balance with ceiling and floor on year-over-year spending changes",
     morningstarRef: "Method 8",
+    incomeSource: "rate",
     defaultParams: {
       basePercent: 0.05,
       ceilingPercent: 0.05,

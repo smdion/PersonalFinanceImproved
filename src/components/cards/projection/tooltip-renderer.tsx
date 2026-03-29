@@ -127,21 +127,18 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       {d.total && (
         <div className="border-t pt-1">
           <div className="font-medium">
-            {d.total.label}:{""}
+            {d.total.label}:{" "}
             {d.total.prefix === "+" ? "+" : d.total.prefix === "-" ? "-" : ""}
             {formatCurrency(d.total.amount)}
           </div>
           {d.total.match != null && d.total.match > 0 && (
             <div className="pl-2 text-green-400">
-              + {formatCurrency(d.total.match)}
-              {""}
-              {d.total.matchLabel ?? "match"}
+              + {formatCurrency(d.total.match)} {d.total.matchLabel ?? "match"}
             </div>
           )}
           {d.total.associatedMatch != null && d.total.associatedMatch > 0 && (
             <div className="pl-2 text-green-400">
-              + {formatCurrency(d.total.associatedMatch)}
-              {""}
+              + {formatCurrency(d.total.associatedMatch)}{" "}
               {d.total.matchLabel ?? "match"} (→ {taxTypeLabel("preTax")})
             </div>
           )}
@@ -186,7 +183,7 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       {/* 11. YEAR CHANGE */}
       {d.yearChange && (
         <div className="border-t pt-1 text-[11px] font-medium">
-          Total: {formatCurrency(d.yearChange.total)} · Change:{""}
+          Total: {formatCurrency(d.yearChange.total)} · Change:{" "}
           <span
             className={
               d.yearChange.change >= 0 ? "text-green-300" : "text-red-300"
@@ -215,7 +212,7 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       {/* 12. RATE CEILING */}
       {d.rateCeiling && (
         <div className="text-[10px] text-amber-300">
-          Rate ceiling: {formatCurrency(d.rateCeiling.uncapped)} →{""}
+          Rate ceiling: {formatCurrency(d.rateCeiling.uncapped)} →{" "}
           {formatCurrency(d.rateCeiling.capped)} (
           {formatPercent(d.rateCeiling.pct, 1)} reduction)
         </div>
@@ -233,8 +230,7 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       {/* 15. IRS LIMIT */}
       {d.irsLimit && (
         <div className="text-faint text-[10px]">
-          {d.irsLimit.category} limit: {formatCurrency(d.irsLimit.used)} of
-          {""}
+          {d.irsLimit.category} limit: {formatCurrency(d.irsLimit.used)} of{" "}
           {formatCurrency(d.irsLimit.limit)}
           {d.irsLimit.used >= d.irsLimit.limit && (
             <span className="text-amber-300 ml-1">(maxed)</span>
@@ -244,8 +240,8 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       {/* 16. PRO-RATE */}
       {d.proRate && (
         <div className="text-faint text-[10px]">
-          Pro-rated: {d.proRate.months}/12 mo ·{""}
-          {formatCurrency(d.proRate.annualAmount)}/yr →{""}
+          Pro-rated: {d.proRate.months}/12 mo ·{" "}
+          {formatCurrency(d.proRate.annualAmount)}/yr →{" "}
           {formatCurrency(d.proRate.proRatedAmount)}
         </div>
       )}

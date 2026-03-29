@@ -493,8 +493,7 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
             <span
               className="w-2 h-2 rounded"
               style={{ backgroundColor: seg.hex }}
-            />
-            {""}
+            />{" "}
             {seg.label}
           </span>
         ))}
@@ -504,8 +503,7 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
               <span
                 className="w-3 h-0.5 rounded"
                 style={{ backgroundColor: "#7c3aed" }}
-              />
-              {""}
+              />{" "}
               MC p50
               {mcIsPrefetch && (
                 <span className="text-faint ml-0.5">(preview)</span>
@@ -518,8 +516,7 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
                   backgroundColor: "#8b5cf6",
                   opacity: 0.3,
                 }}
-              />
-              {""}
+              />{" "}
               p25–p75
             </span>
             {fanBandRange !== "p25-p75" && (
@@ -531,8 +528,7 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
                       fanBandRange === "p5-p95" ? "#ede9fe" : "#c4b5fd",
                     opacity: fanBandRange === "p5-p95" ? 0.6 : 0.5,
                   }}
-                />
-                {""}
+                />{" "}
                 {fanBandRange === "p10-p90" ? "p10–p90" : "p5–p95"}
               </span>
             )}

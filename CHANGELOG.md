@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.20] - 2026-03-29
+
+### Improved
+
+- Restructured retirement page: spending strategy, budget, and withdrawal rate are now grouped together in a "Decumulation Plan" section instead of scattered across the page
+- Budget and withdrawal rate controls are visually dimmed with an explanation when the selected strategy doesn't use them (e.g., RMD-Based computes spending from portfolio, not budget)
+- Withdrawal Rate label changes contextually: "Initial Withdrawal Rate" for dynamic strategies, "Withdrawal Rate" for fixed
+- Withdrawal-related labels across 6 locations now explain how dynamic strategies override the base rate
+- Fixed 148 instances of missing spaces between variables and text across 32 files
+
+### Added
+
+- "Quick Look" stats panel on the Portfolio page — toggle button reveals all-time high, distance from ATH, YTD and 52-week change, biggest gain/loss, current streak, average change, best/worst month, volatility, and all-time growth
+
+---
+
 ## [0.3.19] - 2026-03-29
 
 ### Added

@@ -183,8 +183,7 @@ export function LivingCostsCard() {
                   }`}
                 >
                   {formatPercent(r.pct, 0)}
-                </span>
-                {""}
+                </span>{" "}
                 <span className="text-faint">
                   / {formatPercent(r.low, 0)}-{formatPercent(r.high, 0)}
                 </span>
@@ -225,8 +224,7 @@ export function LivingCostsCard() {
           <span className="w-2 h-2 rounded-full bg-red-400" /> Above
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-green-100 border border-green-200" />
-          {""}
+          <span className="w-2 h-2 rounded-full bg-green-100 border border-green-200" />{" "}
           Target
         </span>
       </div>

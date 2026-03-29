@@ -724,11 +724,8 @@ export function DecumulationRow({
             maxWidth={240}
           >
             <span className="text-red-400">
-              ~{formatCurrency(deflate(dyr.taxCost, yr.year))}
-              {""}
-              tax ({formatPercent(dyr.effectiveTaxRate, 1)}
-              {""}
-              eff.)
+              ~{formatCurrency(deflate(dyr.taxCost, yr.year))} tax (
+              {formatPercent(dyr.effectiveTaxRate, 1)} eff.)
             </span>
           </Tooltip>
         )}

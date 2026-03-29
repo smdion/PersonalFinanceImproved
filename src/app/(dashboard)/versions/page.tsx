@@ -266,7 +266,7 @@ export default function VersionsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-secondary mb-1">
-                  Description{""}
+                  Description{" "}
                   <span className="text-faint font-normal">(optional)</span>
                 </label>
                 <textarea
@@ -674,7 +674,7 @@ export default function VersionsPage() {
             {previewTable && previewData && (
               <div className="overflow-x-auto">
                 <div className="text-xs text-faint mb-1">
-                  Showing {Math.min(previewData.rows.length, 50)} of{""}
+                  Showing {Math.min(previewData.rows.length, 50)} of{" "}
                   {previewData.rowCount} rows
                 </div>
                 {previewData.rows.length > 0 ? (

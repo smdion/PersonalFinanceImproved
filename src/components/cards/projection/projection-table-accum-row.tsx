@@ -1353,9 +1353,7 @@ export function AccumulationRow({
             maxWidth={240}
           >
             <span className="text-amber-600">
-              ↗{""}
-              {formatCurrency(deflate(yr.overflowToBrokerage, yr.year))}
-              {""}
+              ↗ {formatCurrency(deflate(yr.overflowToBrokerage, yr.year))}{" "}
               overflow
             </span>
           </Tooltip>

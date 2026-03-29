@@ -150,9 +150,7 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
           </div>
           {mcRetBand && (
             <div className="text-[10px] text-purple-400">
-              Range{""}
-              {formatCurrency(deflate(mcRetBand.p25, mcRetBand.year))}
-              {""}–{""}
+              Range {formatCurrency(deflate(mcRetBand.p25, mcRetBand.year))} –{" "}
               {formatCurrency(deflate(mcRetBand.p75, mcRetBand.year))}
             </div>
           )}
@@ -177,7 +175,7 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
               : `Money lasts in ${pct}% of futures`}
           </div>
           <div className="text-[10px] text-faint mt-0.5">
-            MC end bal:{""}
+            MC end bal:{" "}
             {formatCurrency(deflate(mc.medianEndBalance, terminalYear))}
           </div>
         </div>

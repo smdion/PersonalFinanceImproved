@@ -218,10 +218,13 @@ export function ProjectionCard(props: {
                           text={
                             hasMc
                               ? "The median annual withdrawal across thousands of simulated market scenarios, in today's dollars. Half of simulations supported more than this amount, half supported less. Accounts for market volatility, tax impacts, and sequence-of-returns risk."
-                              : "Estimated annual withdrawal calculated as your projected nest egg × withdrawal rate, assuming constant average returns. Does not account for market volatility or taxes."
+                              : engineSettings?.withdrawalStrategy &&
+                                  engineSettings.withdrawalStrategy !== "fixed"
+                                ? "Estimated first-year withdrawal based on your spending strategy. Actual withdrawals adjust yearly based on portfolio performance and strategy rules."
+                                : "Estimated annual withdrawal calculated as your projected nest egg × withdrawal rate, assuming constant average returns. Does not account for market volatility or taxes."
                           }
                         />
-                        :{""}
+                        :{" "}
                       </span>
                       <span className="font-semibold text-green-700">
                         {formatCurrency(hasMc ? mcMedianPV : detValue)}
@@ -274,7 +277,7 @@ export function ProjectionCard(props: {
                     })()}
                   </span>
                   <span className="text-faint ml-1">
-                    age{""}
+                    age{" "}
                     {result.projectionByYear.length > 0
                       ? result.projectionByYear[
                           result.projectionByYear.length - 1
@@ -346,40 +349,40 @@ export function ProjectionCard(props: {
                               <span key="det">
                                 <strong className="text-blue-300">
                                   Deterministic
-                                </strong>
-                                {""}— Single fixed-rate projection using your
+                                </strong>{" "}
+                                — Single fixed-rate projection using your
                                 configured return rates. Shows one possible
                                 future, no randomness.
                               </span>,
                               <span key="agg">
                                 <strong className="text-red-300">
                                   Aggressive
-                                </strong>
-                                {""}— Full historical returns, 0.9× vol, high
-                                equity (95%→35%). Money Guy / Bogleheads
-                                &quot;age - 20&quot; bonds rule.
+                                </strong>{" "}
+                                — Full historical returns, 0.9× vol, high equity
+                                (95%→35%). Money Guy / Bogleheads &quot;age -
+                                20&quot; bonds rule.
                               </span>,
                               <span key="def">
                                 <strong className="text-green-300">
                                   Default
-                                </strong>
-                                {""}— Historical returns, standard vol, hybrid
-                                FIRE glide path (90%→50% floor). Vanguard TDF
+                                </strong>{" "}
+                                — Historical returns, standard vol, hybrid FIRE
+                                glide path (90%→50% floor). Vanguard TDF
                                 accumulation + Kitces rising equity.
                               </span>,
                               <span key="con">
                                 <strong className="text-amber-300">
                                   Conservative
-                                </strong>
-                                {""}— Forward-looking returns (~5% equity), +15%
+                                </strong>{" "}
+                                — Forward-looking returns (~5% equity), +15%
                                 vol, heavy bonds (75%→15%). Vanguard VCMM / JP
                                 Morgan LTCMA.
                               </span>,
                               <span key="cus">
                                 <strong className="text-purple-300">
                                   Custom
-                                </strong>
-                                {""}— Raw DB values for returns, volatility, and
+                                </strong>{" "}
+                                — Raw DB values for returns, volatility, and
                                 glide path. No preset adjustments — edit
                                 asset_class_params and glide_path_allocations
                                 directly.
@@ -445,16 +448,16 @@ export function ProjectionCard(props: {
                                 <span key="simple">
                                   <strong className="text-blue-300">
                                     Simple
-                                  </strong>
-                                  {""}— Single portfolio, no tax. Comparable to
+                                  </strong>{" "}
+                                  — Single portfolio, no tax. Comparable to
                                   cFIREsim/FireCalc.
                                 </span>,
                                 <span key="advanced">
                                   <strong className="text-orange-300">
                                     Advanced
-                                  </strong>
-                                  {""}— Full multi-account tax-aware simulation
-                                  with gross-up and bracket filling.
+                                  </strong>{" "}
+                                  — Full multi-account tax-aware simulation with
+                                  gross-up and bracket filling.
                                 </span>,
                               ]}
                             />
@@ -480,8 +483,7 @@ export function ProjectionCard(props: {
                                 <div>
                                   <strong className="text-blue-300">
                                     Today&apos;s $
-                                  </strong>
-                                  {""}
+                                  </strong>{" "}
                                   <span className="text-faint">(default)</span>
                                 </div>
                                 <div className="text-faint text-xs">
@@ -503,7 +505,7 @@ export function ProjectionCard(props: {
                                     </span>
                                   </li>
                                   <li>
-                                    Comparing your nest egg to your{""}
+                                    Comparing your nest egg to your{" "}
                                     <em>current</em> salary
                                   </li>
                                   <li>
@@ -545,21 +547,20 @@ export function ProjectionCard(props: {
                                   style={{ listStyleType: "'▸ '" }}
                                 >
                                   <li>
-                                    Checking if you&apos;ll hit{""}
+                                    Checking if you&apos;ll hit{" "}
                                     <span className="text-green-300/80">
                                       401k/IRA contribution limits
                                     </span>
                                   </li>
                                   <li>
-                                    Planning{""}
+                                    Planning{" "}
                                     <span className="text-green-300/80">
                                       Roth conversions
-                                    </span>
-                                    {""}
+                                    </span>{" "}
                                     against tax brackets
                                   </li>
                                   <li>
-                                    Estimating{""}
+                                    Estimating{" "}
                                     <span className="text-green-300/80">
                                       RMD amounts
                                     </span>
@@ -569,7 +570,7 @@ export function ProjectionCard(props: {
                                     actually read
                                   </li>
                                   <li>
-                                    Modeling{""}
+                                    Modeling{" "}
                                     <span className="text-green-300/80">
                                       IRMAA thresholds
                                     </span>
@@ -581,19 +582,17 @@ export function ProjectionCard(props: {
                                 key="tip"
                                 className="border-t pt-1.5 text-xs text-faint italic"
                               >
-                                Same projection, different lens.{""}
+                                Same projection, different lens.{" "}
                                 <span className="text-blue-300">
                                   Today&apos;s $
-                                </span>
-                                {""}
-                                answers{""}
+                                </span>{" "}
+                                answers{" "}
                                 <strong className="text-faint">
                                   &quot;is this enough?&quot;
-                                </strong>
-                                {""}—{""}
-                                <span className="text-green-300">Future $</span>
-                                {""}
-                                answers{""}
+                                </strong>{" "}
+                                —{" "}
+                                <span className="text-green-300">Future $</span>{" "}
+                                answers{" "}
                                 <strong className="text-faint">
                                   &quot;what will the statement say?&quot;
                                 </strong>
@@ -665,23 +664,23 @@ export function ProjectionCard(props: {
                                   <span key="p25">
                                     <strong className="text-purple-300">
                                       p25-p75
-                                    </strong>
-                                    {""}— Middle 50% of outcomes. Tightest view,
+                                    </strong>{" "}
+                                    — Middle 50% of outcomes. Tightest view,
                                     shows the most likely range.
                                   </span>,
                                   <span key="p10">
                                     <strong className="text-purple-300">
                                       p10-p90
-                                    </strong>
-                                    {""}— Middle 80% of outcomes. Wider view,
+                                    </strong>{" "}
+                                    — Middle 80% of outcomes. Wider view,
                                     includes moderately good and bad luck.
                                   </span>,
                                   <span key="p5">
                                     <strong className="text-purple-300">
                                       p5-p95
-                                    </strong>
-                                    {""}— Middle 90% of outcomes. Widest view,
-                                    can stretch the Y-axis significantly.
+                                    </strong>{" "}
+                                    — Middle 90% of outcomes. Widest view, can
+                                    stretch the Y-axis significantly.
                                   </span>,
                                 ]}
                               />

@@ -74,7 +74,7 @@ export function WithdrawalOverridesSection({
                     )}
                     {o.withdrawalAccountCaps && (
                       <span className="text-amber-700">
-                        Caps:{""}
+                        Caps:{" "}
                         {Object.entries(o.withdrawalAccountCaps)
                           .map(
                             ([k, v]) =>
@@ -85,7 +85,7 @@ export function WithdrawalOverridesSection({
                     )}
                     {o.rothConversionTarget !== undefined && (
                       <span className="text-amber-700">
-                        Roth Conv:{""}
+                        Roth Conv:{" "}
                         {o.rothConversionTarget === 0
                           ? "Off"
                           : `${Math.round(o.rothConversionTarget * 100)}%`}
@@ -184,7 +184,7 @@ export function WithdrawalOverridesSection({
                 <label className="block">
                   <span className="text-xs text-muted">
                     Withdrawal Rate %
-                    <HelpTip text="Annual withdrawal as a percentage of portfolio balance. Leave blank to keep current rate." />
+                    <HelpTip text="Override the base withdrawal rate from this year forward. For dynamic strategies (Guyton-Klinger, RMD-Based, etc.), this changes the starting rate that the strategy adjusts from. Leave blank to keep current rate." />
                   </span>
                   <input
                     type="number"

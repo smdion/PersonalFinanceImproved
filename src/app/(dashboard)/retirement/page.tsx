@@ -433,7 +433,7 @@ export default function RetirementPage() {
               </div>
             </div>
 
-            {/* Row 2: Income & Retirement Budget */}
+            {/* Row 2: Income & Decumulation Plan */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Income */}
               <div className="bg-surface-sunken rounded-lg p-3">
@@ -547,11 +547,11 @@ export default function RetirementPage() {
                 </div>
               </div>
 
-              {/* Retirement Budget */}
+              {/* Decumulation Plan */}
               <div className="bg-surface-sunken rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
-                    Retirement Budget
+                    Decumulation Plan
                   </h4>
                   <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
                     Deterministic + MC Simple + MC Advanced
@@ -559,8 +559,62 @@ export default function RetirementPage() {
                   <div className="flex-1 border-t" />
                 </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 text-sm">
+                  <div className="col-span-2">
+                    <span className="text-muted">
+                      Strategy
+                      <HelpTip text="How annual spending is determined during retirement. Fixed Real: perfectly predictable income that never changes based on market performance. Dynamic strategies (all others) automatically adjust spending when your portfolio rises or falls — this protects against depletion (higher success rates) but means your income varies year to year. The more a strategy self-corrects, the higher its success rate but the less stable your income. See Full Methodology for detailed guidance on when to use each strategy." />
+                    </span>
+                    <div className="font-medium">
+                      <select
+                        value={settings?.withdrawalStrategy ?? "fixed"}
+                        onChange={(e) => {
+                          if (!settings) return;
+                          upsertSettings.mutate({
+                            personId: settings.personId,
+                            retirementAge: settings.retirementAge,
+                            endAge: settings.endAge,
+                            returnAfterRetirement:
+                              settings.returnAfterRetirement,
+                            annualInflation: settings.annualInflation,
+                            salaryAnnualIncrease: settings.salaryAnnualIncrease,
+                            withdrawalStrategy: e.target
+                              .value as WithdrawalStrategyType,
+                          });
+                        }}
+                        className="text-sm border rounded px-1.5 py-0.5 w-full"
+                      >
+                        {getAllStrategyKeys().map((key) => {
+                          const meta = getStrategyMeta(key);
+                          return (
+                            <option key={key} value={key}>
+                              {meta.label}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-muted text-[10px]">
+                      {(() => {
+                        const key = (settings?.withdrawalStrategy ??
+                          "fixed") as WithdrawalStrategyType;
+                        const meta = getStrategyMeta(key);
+                        return meta.description;
+                      })()}
+                    </span>
+                  </div>
+                </div>
+
                 {/* Per-phase budget profile + column selection */}
                 {(() => {
+                  const activeStrategy = (settings?.withdrawalStrategy ??
+                    "fixed") as WithdrawalStrategyType;
+                  const strategyMeta = getStrategyMeta(activeStrategy);
+                  const { incomeSource } = strategyMeta;
+                  const budgetNotUsed =
+                    incomeSource === "formula" || incomeSource === "rate";
                   const profiles = data.budgetProfileSummaries ?? [];
                   if (profiles.length === 0) return null;
 
@@ -576,110 +630,121 @@ export default function RetirementPage() {
                     (decProfile?.weightedAnnualTotal as number | null) ?? null;
 
                   return (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                      {/* Retirement Budget source */}
-                      <div>
-                        <span className="text-muted">
-                          Budget Source
-                          <HelpTip text="Your starting retirement 'salary' — what you pay yourself from your portfolio each year. Grows by the Post-Retirement Raise rate. Set a manual override or use a budget profile." />
-                        </span>
-                        <div className="font-medium flex flex-col gap-1">
-                          {decExpenseOverride ? (
-                            <span className="text-faint text-xs italic">
-                              Using manual override
-                            </span>
-                          ) : (
-                            <>
-                              <select
-                                className="text-sm border rounded px-2 py-1 bg-surface-primary"
-                                value={data.decumulationBudgetProfileId ?? ""}
-                                onChange={(e) => {
-                                  setDecBudgetProfileId(
-                                    e.target.value
-                                      ? Number(e.target.value)
-                                      : null,
-                                  );
-                                  setDecBudgetCol(null);
-                                }}
-                              >
-                                {profiles.map((p) => (
-                                  <option key={p.id} value={p.id}>
-                                    {p.name}
-                                    {p.isActive ? " (active)" : ""}
-                                  </option>
-                                ))}
-                              </select>
-                              {decMonths ? (
-                                <span className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-1">
-                                  Weighted: {formatCurrency(decWeighted ?? 0)}
-                                  /yr
-                                  <span className="text-[10px] text-faint ml-1">
-                                    (
-                                    {decMonths
-                                      .map(
-                                        (m, i) =>
-                                          `${m}mo ${decLabels[i] ?? ""}`,
-                                      )
-                                      .join(" +")}
-                                    )
-                                  </span>
-                                </span>
-                              ) : decLabels.length >= 2 ? (
+                    <div>
+                      {budgetNotUsed && (
+                        <div className="text-xs text-amber-600 bg-amber-50 rounded px-2 py-1.5 mb-2">
+                          {incomeSource === "formula"
+                            ? `${strategyMeta.label} computes spending from your portfolio balance — budget and withdrawal rate are not used.`
+                            : `${strategyMeta.label} computes spending from withdrawal rate × portfolio — budget is used as a pre-strategy fallback only.`}
+                        </div>
+                      )}
+                      <div
+                        className={`grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm ${budgetNotUsed ? "opacity-40" : ""}`}
+                      >
+                        {/* Retirement Budget source */}
+                        <div>
+                          <span className="text-muted">
+                            Budget Source
+                            <HelpTip text="Your starting retirement 'salary' — what you pay yourself from your portfolio each year. Grows by the Post-Retirement Raise rate. Set a manual override or use a budget profile." />
+                          </span>
+                          <div className="font-medium flex flex-col gap-1">
+                            {decExpenseOverride ? (
+                              <span className="text-faint text-xs italic">
+                                Using manual override
+                              </span>
+                            ) : (
+                              <>
                                 <select
                                   className="text-sm border rounded px-2 py-1 bg-surface-primary"
-                                  value={data.decumulationBudgetColumn}
-                                  onChange={(e) =>
-                                    setDecBudgetCol(Number(e.target.value))
-                                  }
+                                  value={data.decumulationBudgetProfileId ?? ""}
+                                  onChange={(e) => {
+                                    setDecBudgetProfileId(
+                                      e.target.value
+                                        ? Number(e.target.value)
+                                        : null,
+                                    );
+                                    setDecBudgetCol(null);
+                                  }}
                                 >
-                                  {decLabels.map(
-                                    (label: string, idx: number) => (
-                                      <option key={label} value={idx}>
-                                        {label} (
-                                        {formatCurrency(
-                                          (decTotals[idx] ?? 0) * 12,
-                                        )}
-                                        /yr)
-                                      </option>
-                                    ),
-                                  )}
+                                  {profiles.map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                      {p.name}
+                                      {p.isActive ? " (active)" : ""}
+                                    </option>
+                                  ))}
                                 </select>
-                              ) : null}
-                            </>
-                          )}
+                                {decMonths ? (
+                                  <span className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-1">
+                                    Weighted: {formatCurrency(decWeighted ?? 0)}
+                                    /yr
+                                    <span className="text-[10px] text-faint ml-1">
+                                      (
+                                      {decMonths
+                                        .map(
+                                          (m, i) =>
+                                            `${m}mo ${decLabels[i] ?? ""}`,
+                                        )
+                                        .join(" +")}
+                                      )
+                                    </span>
+                                  </span>
+                                ) : decLabels.length >= 2 ? (
+                                  <select
+                                    className="text-sm border rounded px-2 py-1 bg-surface-primary"
+                                    value={data.decumulationBudgetColumn}
+                                    onChange={(e) =>
+                                      setDecBudgetCol(Number(e.target.value))
+                                    }
+                                  >
+                                    {decLabels.map(
+                                      (label: string, idx: number) => (
+                                        <option key={label} value={idx}>
+                                          {label} (
+                                          {formatCurrency(
+                                            (decTotals[idx] ?? 0) * 12,
+                                          )}
+                                          /yr)
+                                        </option>
+                                      ),
+                                    )}
+                                  </select>
+                                ) : null}
+                              </>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      {/* Retirement salary override */}
-                      <div>
-                        <span className="text-muted">
-                          Salary Override
-                          <HelpTip text="Set a flat annual amount as your starting retirement salary. Overrides the budget profile. Grows by the Post-Retirement Raise rate each year." />
-                        </span>
-                        <div className="font-medium flex items-center gap-1">
-                          <InlineEdit
-                            value={decExpenseOverride ?? ""}
-                            onSave={(v) => {
-                              const cleaned = v.replace(/[^0-9]/g, "");
-                              setDecExpenseOverride(cleaned || null);
-                            }}
-                            formatDisplay={(v) =>
-                              v
-                                ? `${formatCurrency(Number(v))}/yr`
-                                : "None (using budget)"
-                            }
-                            parseInput={(v) => v.replace(/[^0-9]/g, "")}
-                            type="number"
-                            className="text-sm"
-                            editable={!!settings}
-                          />
-                          {decExpenseOverride && (
-                            <button
-                              className="text-[10px] text-red-400 hover:text-red-600"
-                              onClick={() => setDecExpenseOverride(null)}
-                            >
-                              clear
-                            </button>
-                          )}
+                        {/* Retirement salary override */}
+                        <div>
+                          <span className="text-muted">
+                            Salary Override
+                            <HelpTip text="Set a flat annual amount as your starting retirement salary. Overrides the budget profile. Grows by the Post-Retirement Raise rate each year." />
+                          </span>
+                          <div className="font-medium flex items-center gap-1">
+                            <InlineEdit
+                              value={decExpenseOverride ?? ""}
+                              onSave={(v) => {
+                                const cleaned = v.replace(/[^0-9]/g, "");
+                                setDecExpenseOverride(cleaned || null);
+                              }}
+                              formatDisplay={(v) =>
+                                v
+                                  ? `${formatCurrency(Number(v))}/yr`
+                                  : "None (using budget)"
+                              }
+                              parseInput={(v) => v.replace(/[^0-9]/g, "")}
+                              type="number"
+                              className="text-sm"
+                              editable={!!settings}
+                            />
+                            {decExpenseOverride && (
+                              <button
+                                className="text-[10px] text-red-400 hover:text-red-600"
+                                onClick={() => setDecExpenseOverride(null)}
+                              >
+                                clear
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -716,6 +781,366 @@ export default function RetirementPage() {
                     </div>
                   </div>
                 </div>
+
+                <div
+                  className={(() => {
+                    const s = (settings?.withdrawalStrategy ??
+                      "fixed") as WithdrawalStrategyType;
+                    return getStrategyMeta(s).incomeSource === "formula"
+                      ? "opacity-40"
+                      : "";
+                  })()}
+                >
+                  <span className="text-muted">
+                    {(() => {
+                      const s = (settings?.withdrawalStrategy ??
+                        "fixed") as WithdrawalStrategyType;
+                      const src = getStrategyMeta(s).incomeSource;
+                      return src === "budget"
+                        ? "Withdrawal Rate"
+                        : "Initial Withdrawal Rate";
+                    })()}
+                    <HelpTip
+                      text={(() => {
+                        const s = (settings?.withdrawalStrategy ??
+                          "fixed") as WithdrawalStrategyType;
+                        const meta = getStrategyMeta(s);
+                        if (meta.incomeSource === "formula")
+                          return `Not used by ${meta.label} — spending is computed from your portfolio balance using IRS factors.`;
+                        if (meta.incomeSource === "rate")
+                          return `Starting withdrawal rate for ${meta.label}. Sets the initial withdrawal amount, which the strategy then adjusts yearly based on portfolio performance.`;
+                        return "A 'what-if' rate applied to your projected retirement balance. Used to calculate the sustainable withdrawal shown on the projection card and FI Progress (deterministic: balance × rate, Monte Carlo: median across thousands of simulated paths). Does not control actual spending — your Retirement Budget sets what you withdraw.";
+                      })()}
+                    />
+                  </span>
+                  <div className="font-medium">
+                    <InlineEdit
+                      value={decToWhole(settings.withdrawalRate)}
+                      onSave={(v) =>
+                        handleSettingPercentUpdate("withdrawalRate", v)
+                      }
+                      formatDisplay={(v) =>
+                        `${parseFloat(Number(v).toFixed(2))}%`
+                      }
+                      parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+                      type="number"
+                      className="text-sm"
+                      editable={!!settings}
+                    />
+                  </div>
+                </div>
+
+                {/* Strategy-specific parameters — data-driven from registry */}
+                {(() => {
+                  const strategyKey = (settings?.withdrawalStrategy ??
+                    "fixed") as WithdrawalStrategyType;
+                  const meta = getStrategyMeta(strategyKey);
+                  if (meta.paramFields.length === 0) return null;
+
+                  // Map registry param keys to DB column names for reading/writing
+                  const paramToDbColumn: Record<string, string> = {
+                    // GK
+                    upperGuardrail: "gkUpperGuardrail",
+                    lowerGuardrail: "gkLowerGuardrail",
+                    increasePercent: "gkIncreasePct",
+                    decreasePercent: "gkDecreasePct",
+                    skipInflationAfterLoss: "gkSkipInflationAfterLoss",
+                    // Spending Decline
+                    annualDeclineRate: "sdAnnualDeclineRate",
+                    // Constant Percentage
+                    withdrawalPercent:
+                      strategyKey === "constant_percentage"
+                        ? "cpWithdrawalPercent"
+                        : strategyKey === "endowment"
+                          ? "enWithdrawalPercent"
+                          : "cpWithdrawalPercent",
+                    floorPercent:
+                      strategyKey === "constant_percentage"
+                        ? "cpFloorPercent"
+                        : strategyKey === "endowment"
+                          ? "enFloorPercent"
+                          : strategyKey === "vanguard_dynamic"
+                            ? "vdFloorPercent"
+                            : "cpFloorPercent",
+                    // Endowment
+                    rollingYears: "enRollingYears",
+                    // Vanguard Dynamic
+                    basePercent: "vdBasePercent",
+                    ceilingPercent: "vdCeilingPercent",
+                    // RMD
+                    rmdMultiplier: "rmdMultiplier",
+                  };
+
+                  // Partition fields into layout items: grouped pairs or standalone
+                  type LayoutItem =
+                    | {
+                        kind: "standalone";
+                        field: (typeof meta.paramFields)[number];
+                      }
+                    | {
+                        kind: "group";
+                        groupName: string;
+                        fields: (typeof meta.paramFields)[number][];
+                      };
+                  const layoutItems: LayoutItem[] = [];
+                  const seenGroups = new Set<string>();
+                  for (const field of meta.paramFields) {
+                    if (field.group) {
+                      if (seenGroups.has(field.group)) continue;
+                      seenGroups.add(field.group);
+                      const grouped = meta.paramFields.filter(
+                        (f) => f.group === field.group,
+                      );
+                      layoutItems.push({
+                        kind: "group",
+                        groupName: field.group,
+                        fields: grouped,
+                      });
+                    } else {
+                      layoutItems.push({ kind: "standalone", field });
+                    }
+                  }
+
+                  const renderField = (
+                    field: (typeof meta.paramFields)[number],
+                  ) => {
+                    const dbCol = paramToDbColumn[field.key];
+                    if (!dbCol || !settings) return null;
+                    const currentVal = (settings as Record<string, unknown>)[
+                      dbCol
+                    ];
+
+                    if (field.type === "boolean") {
+                      const boolVal =
+                        currentVal != null
+                          ? Boolean(currentVal)
+                          : Boolean(field.default);
+                      return (
+                        <div key={field.key}>
+                          <span className="text-muted">
+                            {field.label}
+                            {field.tooltip && <HelpTip text={field.tooltip} />}
+                          </span>
+                          <div className="font-medium">
+                            <button
+                              onClick={() => {
+                                upsertSettings.mutate({
+                                  personId: settings.personId,
+                                  retirementAge: settings.retirementAge,
+                                  endAge: settings.endAge,
+                                  returnAfterRetirement:
+                                    settings.returnAfterRetirement,
+                                  annualInflation: settings.annualInflation,
+                                  salaryAnnualIncrease:
+                                    settings.salaryAnnualIncrease,
+                                  [dbCol]: !boolVal,
+                                });
+                              }}
+                              className={`text-sm px-2 py-0.5 rounded ${
+                                boolVal
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-surface-elevated text-muted"
+                              }`}
+                            >
+                              {boolVal ? "On" : "Off"}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    if (
+                      field.type === "number" &&
+                      field.key === "rollingYears"
+                    ) {
+                      const numVal =
+                        currentVal != null
+                          ? Number(currentVal)
+                          : Number(field.default);
+                      return (
+                        <div key={field.key}>
+                          <span className="text-muted">
+                            {field.label}
+                            {field.tooltip && <HelpTip text={field.tooltip} />}
+                          </span>
+                          <div className="font-medium">
+                            <select
+                              value={String(numVal)}
+                              onChange={(e) => {
+                                upsertSettings.mutate({
+                                  personId: settings.personId,
+                                  retirementAge: settings.retirementAge,
+                                  endAge: settings.endAge,
+                                  returnAfterRetirement:
+                                    settings.returnAfterRetirement,
+                                  annualInflation: settings.annualInflation,
+                                  salaryAnnualIncrease:
+                                    settings.salaryAnnualIncrease,
+                                  [dbCol]: Number(e.target.value),
+                                });
+                              }}
+                              className="text-sm border rounded px-1.5 py-0.5"
+                            >
+                              {Array.from(
+                                {
+                                  length:
+                                    ((field.max ?? 20) - (field.min ?? 3)) /
+                                      (field.step ?? 1) +
+                                    1,
+                                },
+                                (_, i) => {
+                                  const v =
+                                    (field.min ?? 3) + i * (field.step ?? 1);
+                                  return (
+                                    <option key={v} value={String(v)}>
+                                      {v} years
+                                    </option>
+                                  );
+                                },
+                              )}
+                            </select>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    if (field.type === "number") {
+                      const numVal =
+                        currentVal != null
+                          ? Number(currentVal)
+                          : Number(field.default);
+                      return (
+                        <div key={field.key}>
+                          <span className="text-muted">
+                            {field.label}
+                            {field.tooltip && <HelpTip text={field.tooltip} />}
+                          </span>
+                          <div className="font-medium">
+                            <select
+                              value={String(numVal)}
+                              onChange={(e) => {
+                                upsertSettings.mutate({
+                                  personId: settings.personId,
+                                  retirementAge: settings.retirementAge,
+                                  endAge: settings.endAge,
+                                  returnAfterRetirement:
+                                    settings.returnAfterRetirement,
+                                  annualInflation: settings.annualInflation,
+                                  salaryAnnualIncrease:
+                                    settings.salaryAnnualIncrease,
+                                  [dbCol]: e.target.value,
+                                });
+                              }}
+                              className="text-sm border rounded px-1.5 py-0.5"
+                            >
+                              {Array.from(
+                                {
+                                  length:
+                                    Math.round(
+                                      ((field.max ?? 3) - (field.min ?? 0.5)) /
+                                        (field.step ?? 0.1),
+                                    ) + 1,
+                                },
+                                (_, i) => {
+                                  const v =
+                                    (field.min ?? 0.5) +
+                                    i * (field.step ?? 0.1);
+                                  const rounded = Math.round(v * 100) / 100;
+                                  return (
+                                    <option
+                                      key={rounded}
+                                      value={String(rounded)}
+                                    >
+                                      {rounded}x
+                                    </option>
+                                  );
+                                },
+                              )}
+                            </select>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // type === 'percent'
+                    const pctVal =
+                      currentVal != null
+                        ? Number(currentVal)
+                        : Number(field.default);
+                    return (
+                      <div key={field.key}>
+                        <span className="text-muted">
+                          {field.label}
+                          {field.tooltip && <HelpTip text={field.tooltip} />}
+                        </span>
+                        <div className="font-medium">
+                          <select
+                            value={String(pctVal)}
+                            onChange={(e) => {
+                              upsertSettings.mutate({
+                                personId: settings.personId,
+                                retirementAge: settings.retirementAge,
+                                endAge: settings.endAge,
+                                returnAfterRetirement:
+                                  settings.returnAfterRetirement,
+                                annualInflation: settings.annualInflation,
+                                salaryAnnualIncrease:
+                                  settings.salaryAnnualIncrease,
+                                [dbCol]: e.target.value,
+                              });
+                            }}
+                            className="text-sm border rounded px-1.5 py-0.5"
+                          >
+                            {Array.from(
+                              {
+                                length:
+                                  Math.round(
+                                    ((field.max ?? 1) - (field.min ?? 0)) /
+                                      (field.step ?? 0.01),
+                                  ) + 1,
+                              },
+                              (_, i) => {
+                                const v =
+                                  (field.min ?? 0) + i * (field.step ?? 0.01);
+                                const rounded = Math.round(v * 1000) / 1000;
+                                return (
+                                  <option key={rounded} value={String(rounded)}>
+                                    {(rounded * 100).toFixed(1)}%
+                                  </option>
+                                );
+                              },
+                            )}
+                          </select>
+                        </div>
+                      </div>
+                    );
+                  };
+
+                  return (
+                    <div className="space-y-1 text-sm mt-2">
+                      {layoutItems.map((item) => {
+                        if (item.kind === "group") {
+                          return (
+                            <div
+                              key={item.groupName}
+                              className="grid grid-cols-2 gap-x-4 gap-y-1"
+                            >
+                              {item.fields.map((f) => renderField(f))}
+                            </div>
+                          );
+                        }
+                        return (
+                          <div
+                            key={item.field.key}
+                            className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1"
+                          >
+                            {renderField(item.field)}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
@@ -730,7 +1155,7 @@ export default function RetirementPage() {
                 </span>
                 <div className="flex-1 border-t" />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
                 <div>
                   <span className="text-muted">
                     Inflation
@@ -759,30 +1184,8 @@ export default function RetirementPage() {
                   </span>
                   <div className="font-medium text-muted">~2%/yr</div>
                 </div>
-                <div>
-                  <span className="text-muted">
-                    Withdrawal Rate
-                    <HelpTip text="A 'what-if' rate applied to your projected retirement balance. Used to calculate the sustainable withdrawal shown on the projection card and FI Progress (deterministic: balance × rate, Monte Carlo: median across thousands of simulated paths). Does not control actual spending — your Retirement Budget sets what you withdraw." />
-                  </span>
-                  <div className="font-medium">
-                    <InlineEdit
-                      value={decToWhole(settings.withdrawalRate)}
-                      onSave={(v) =>
-                        handleSettingPercentUpdate("withdrawalRate", v)
-                      }
-                      formatDisplay={(v) =>
-                        `${parseFloat(Number(v).toFixed(2))}%`
-                      }
-                      parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-                      type="number"
-                      className="text-sm"
-                      editable={!!settings}
-                    />
-                  </div>
-                </div>
               </div>
             </div>
-
             {/* Advanced settings */}
             <>
               {/* Social Security */}
@@ -1268,377 +1671,6 @@ export default function RetirementPage() {
                     </div>
                   )}
                 </div>
-              </div>
-
-              {/* Withdrawal Strategy */}
-              <div className="bg-surface-sunken rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
-                    Spending Strategy
-                  </h4>
-                  <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
-                    Deterministic + MC Simple + MC Advanced
-                  </span>
-                  <div className="flex-1 border-t" />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 text-sm">
-                  <div className="col-span-2">
-                    <span className="text-muted">
-                      Strategy
-                      <HelpTip text="How annual spending is determined during retirement. Fixed Real: perfectly predictable income that never changes based on market performance. Dynamic strategies (all others) automatically adjust spending when your portfolio rises or falls — this protects against depletion (higher success rates) but means your income varies year to year. The more a strategy self-corrects, the higher its success rate but the less stable your income. See Full Methodology for detailed guidance on when to use each strategy." />
-                    </span>
-                    <div className="font-medium">
-                      <select
-                        value={settings?.withdrawalStrategy ?? "fixed"}
-                        onChange={(e) => {
-                          if (!settings) return;
-                          upsertSettings.mutate({
-                            personId: settings.personId,
-                            retirementAge: settings.retirementAge,
-                            endAge: settings.endAge,
-                            returnAfterRetirement:
-                              settings.returnAfterRetirement,
-                            annualInflation: settings.annualInflation,
-                            salaryAnnualIncrease: settings.salaryAnnualIncrease,
-                            withdrawalStrategy: e.target
-                              .value as WithdrawalStrategyType,
-                          });
-                        }}
-                        className="text-sm border rounded px-1.5 py-0.5 w-full"
-                      >
-                        {getAllStrategyKeys().map((key) => {
-                          const meta = getStrategyMeta(key);
-                          return (
-                            <option key={key} value={key}>
-                              {meta.label}
-                            </option>
-                          );
-                        })}
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <span className="text-muted text-[10px]">
-                      {(() => {
-                        const key = (settings?.withdrawalStrategy ??
-                          "fixed") as WithdrawalStrategyType;
-                        const meta = getStrategyMeta(key);
-                        return meta.description;
-                      })()}
-                    </span>
-                  </div>
-                </div>
-                {/* Strategy-specific parameters — data-driven from registry */}
-                {(() => {
-                  const strategyKey = (settings?.withdrawalStrategy ??
-                    "fixed") as WithdrawalStrategyType;
-                  const meta = getStrategyMeta(strategyKey);
-                  if (meta.paramFields.length === 0) return null;
-
-                  // Map registry param keys to DB column names for reading/writing
-                  const paramToDbColumn: Record<string, string> = {
-                    // GK
-                    upperGuardrail: "gkUpperGuardrail",
-                    lowerGuardrail: "gkLowerGuardrail",
-                    increasePercent: "gkIncreasePct",
-                    decreasePercent: "gkDecreasePct",
-                    skipInflationAfterLoss: "gkSkipInflationAfterLoss",
-                    // Spending Decline
-                    annualDeclineRate: "sdAnnualDeclineRate",
-                    // Constant Percentage
-                    withdrawalPercent:
-                      strategyKey === "constant_percentage"
-                        ? "cpWithdrawalPercent"
-                        : strategyKey === "endowment"
-                          ? "enWithdrawalPercent"
-                          : "cpWithdrawalPercent",
-                    floorPercent:
-                      strategyKey === "constant_percentage"
-                        ? "cpFloorPercent"
-                        : strategyKey === "endowment"
-                          ? "enFloorPercent"
-                          : strategyKey === "vanguard_dynamic"
-                            ? "vdFloorPercent"
-                            : "cpFloorPercent",
-                    // Endowment
-                    rollingYears: "enRollingYears",
-                    // Vanguard Dynamic
-                    basePercent: "vdBasePercent",
-                    ceilingPercent: "vdCeilingPercent",
-                    // RMD
-                    rmdMultiplier: "rmdMultiplier",
-                  };
-
-                  // Partition fields into layout items: grouped pairs or standalone
-                  type LayoutItem =
-                    | {
-                        kind: "standalone";
-                        field: (typeof meta.paramFields)[number];
-                      }
-                    | {
-                        kind: "group";
-                        groupName: string;
-                        fields: (typeof meta.paramFields)[number][];
-                      };
-                  const layoutItems: LayoutItem[] = [];
-                  const seenGroups = new Set<string>();
-                  for (const field of meta.paramFields) {
-                    if (field.group) {
-                      if (seenGroups.has(field.group)) continue;
-                      seenGroups.add(field.group);
-                      const grouped = meta.paramFields.filter(
-                        (f) => f.group === field.group,
-                      );
-                      layoutItems.push({
-                        kind: "group",
-                        groupName: field.group,
-                        fields: grouped,
-                      });
-                    } else {
-                      layoutItems.push({ kind: "standalone", field });
-                    }
-                  }
-
-                  const renderField = (
-                    field: (typeof meta.paramFields)[number],
-                  ) => {
-                    const dbCol = paramToDbColumn[field.key];
-                    if (!dbCol || !settings) return null;
-                    const currentVal = (settings as Record<string, unknown>)[
-                      dbCol
-                    ];
-
-                    if (field.type === "boolean") {
-                      const boolVal =
-                        currentVal != null
-                          ? Boolean(currentVal)
-                          : Boolean(field.default);
-                      return (
-                        <div key={field.key}>
-                          <span className="text-muted">
-                            {field.label}
-                            {field.tooltip && <HelpTip text={field.tooltip} />}
-                          </span>
-                          <div className="font-medium">
-                            <button
-                              onClick={() => {
-                                upsertSettings.mutate({
-                                  personId: settings.personId,
-                                  retirementAge: settings.retirementAge,
-                                  endAge: settings.endAge,
-                                  returnAfterRetirement:
-                                    settings.returnAfterRetirement,
-                                  annualInflation: settings.annualInflation,
-                                  salaryAnnualIncrease:
-                                    settings.salaryAnnualIncrease,
-                                  [dbCol]: !boolVal,
-                                });
-                              }}
-                              className={`text-sm px-2 py-0.5 rounded ${
-                                boolVal
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-surface-elevated text-muted"
-                              }`}
-                            >
-                              {boolVal ? "On" : "Off"}
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    if (
-                      field.type === "number" &&
-                      field.key === "rollingYears"
-                    ) {
-                      const numVal =
-                        currentVal != null
-                          ? Number(currentVal)
-                          : Number(field.default);
-                      return (
-                        <div key={field.key}>
-                          <span className="text-muted">
-                            {field.label}
-                            {field.tooltip && <HelpTip text={field.tooltip} />}
-                          </span>
-                          <div className="font-medium">
-                            <select
-                              value={String(numVal)}
-                              onChange={(e) => {
-                                upsertSettings.mutate({
-                                  personId: settings.personId,
-                                  retirementAge: settings.retirementAge,
-                                  endAge: settings.endAge,
-                                  returnAfterRetirement:
-                                    settings.returnAfterRetirement,
-                                  annualInflation: settings.annualInflation,
-                                  salaryAnnualIncrease:
-                                    settings.salaryAnnualIncrease,
-                                  [dbCol]: Number(e.target.value),
-                                });
-                              }}
-                              className="text-sm border rounded px-1.5 py-0.5"
-                            >
-                              {Array.from(
-                                {
-                                  length:
-                                    ((field.max ?? 20) - (field.min ?? 3)) /
-                                      (field.step ?? 1) +
-                                    1,
-                                },
-                                (_, i) => {
-                                  const v =
-                                    (field.min ?? 3) + i * (field.step ?? 1);
-                                  return (
-                                    <option key={v} value={String(v)}>
-                                      {v} years
-                                    </option>
-                                  );
-                                },
-                              )}
-                            </select>
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    if (field.type === "number") {
-                      const numVal =
-                        currentVal != null
-                          ? Number(currentVal)
-                          : Number(field.default);
-                      return (
-                        <div key={field.key}>
-                          <span className="text-muted">
-                            {field.label}
-                            {field.tooltip && <HelpTip text={field.tooltip} />}
-                          </span>
-                          <div className="font-medium">
-                            <select
-                              value={String(numVal)}
-                              onChange={(e) => {
-                                upsertSettings.mutate({
-                                  personId: settings.personId,
-                                  retirementAge: settings.retirementAge,
-                                  endAge: settings.endAge,
-                                  returnAfterRetirement:
-                                    settings.returnAfterRetirement,
-                                  annualInflation: settings.annualInflation,
-                                  salaryAnnualIncrease:
-                                    settings.salaryAnnualIncrease,
-                                  [dbCol]: e.target.value,
-                                });
-                              }}
-                              className="text-sm border rounded px-1.5 py-0.5"
-                            >
-                              {Array.from(
-                                {
-                                  length:
-                                    Math.round(
-                                      ((field.max ?? 3) - (field.min ?? 0.5)) /
-                                        (field.step ?? 0.1),
-                                    ) + 1,
-                                },
-                                (_, i) => {
-                                  const v =
-                                    (field.min ?? 0.5) +
-                                    i * (field.step ?? 0.1);
-                                  const rounded = Math.round(v * 100) / 100;
-                                  return (
-                                    <option
-                                      key={rounded}
-                                      value={String(rounded)}
-                                    >
-                                      {rounded}x
-                                    </option>
-                                  );
-                                },
-                              )}
-                            </select>
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    // type === 'percent'
-                    const pctVal =
-                      currentVal != null
-                        ? Number(currentVal)
-                        : Number(field.default);
-                    return (
-                      <div key={field.key}>
-                        <span className="text-muted">
-                          {field.label}
-                          {field.tooltip && <HelpTip text={field.tooltip} />}
-                        </span>
-                        <div className="font-medium">
-                          <select
-                            value={String(pctVal)}
-                            onChange={(e) => {
-                              upsertSettings.mutate({
-                                personId: settings.personId,
-                                retirementAge: settings.retirementAge,
-                                endAge: settings.endAge,
-                                returnAfterRetirement:
-                                  settings.returnAfterRetirement,
-                                annualInflation: settings.annualInflation,
-                                salaryAnnualIncrease:
-                                  settings.salaryAnnualIncrease,
-                                [dbCol]: e.target.value,
-                              });
-                            }}
-                            className="text-sm border rounded px-1.5 py-0.5"
-                          >
-                            {Array.from(
-                              {
-                                length:
-                                  Math.round(
-                                    ((field.max ?? 1) - (field.min ?? 0)) /
-                                      (field.step ?? 0.01),
-                                  ) + 1,
-                              },
-                              (_, i) => {
-                                const v =
-                                  (field.min ?? 0) + i * (field.step ?? 0.01);
-                                const rounded = Math.round(v * 1000) / 1000;
-                                return (
-                                  <option key={rounded} value={String(rounded)}>
-                                    {(rounded * 100).toFixed(1)}%
-                                  </option>
-                                );
-                              },
-                            )}
-                          </select>
-                        </div>
-                      </div>
-                    );
-                  };
-
-                  return (
-                    <div className="space-y-1 text-sm mt-2">
-                      {layoutItems.map((item) => {
-                        if (item.kind === "group") {
-                          return (
-                            <div
-                              key={item.groupName}
-                              className="grid grid-cols-2 gap-x-4 gap-y-1"
-                            >
-                              {item.fields.map((f) => renderField(f))}
-                            </div>
-                          );
-                        }
-                        return (
-                          <div
-                            key={item.field.key}
-                            className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1"
-                          >
-                            {renderField(item.field)}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
               </div>
 
               {/* Investment Returns Glide Path */}

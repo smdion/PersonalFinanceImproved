@@ -69,12 +69,11 @@ export function DollarMultiplierCard() {
         </span>
       </div>
       <p className="text-xs text-faint mb-3">
-        {yearsToRetirement} yrs to retirement (age {settings.retirementAge}) at
-        {""}
+        {yearsToRetirement} yrs to retirement (age {settings.retirementAge}) at{" "}
         {formatPercent(avgReturn, 1)} avg return
         {people.length > 1 && (
           <span className="block">
-            Based on avg age {currentAge} across{""}
+            Based on avg age {currentAge} across{" "}
             {people.map((p) => p.name).join(" &")}
           </span>
         )}
@@ -121,8 +120,7 @@ export function DollarMultiplierCard() {
               {formatNumber(
                 Math.pow(1 + avgReturn, Math.max(0, yearsToRetirement - 5)),
                 2,
-              )}
-              {""}
+              )}{" "}
               per $1
             </span>
           </div>
@@ -135,8 +133,7 @@ export function DollarMultiplierCard() {
               {formatNumber(
                 Math.pow(1 + avgReturn, Math.max(0, yearsToRetirement - 10)),
                 2,
-              )}
-              {""}
+              )}{" "}
               per $1
             </span>
           </div>

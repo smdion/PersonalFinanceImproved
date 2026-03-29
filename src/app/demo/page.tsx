@@ -46,15 +46,15 @@ export default function DemoPage() {
               <p className="text-sm text-faint mb-3">{p.description}</p>
               <div className="flex gap-4 text-xs text-muted mb-4">
                 <span>
-                  Income:{""}
+                  Income:{" "}
                   <span className="text-faint">{p.keyStats.income}</span>
                 </span>
                 <span>
-                  Portfolio:{""}
+                  Portfolio:{" "}
                   <span className="text-faint">{p.keyStats.portfolioSize}</span>
                 </span>
                 <span>
-                  Savings:{""}
+                  Savings:{" "}
                   <span className="text-faint">{p.keyStats.savingsRate}</span>
                 </span>
               </div>

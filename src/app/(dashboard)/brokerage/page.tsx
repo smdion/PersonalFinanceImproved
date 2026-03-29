@@ -553,7 +553,7 @@ function ByAccountSummary({
                 />
               </div>
               <p className="text-[10px] text-faint mt-0.5">
-                {Math.round((at.totalContrib / at.targetAnnual) * 100)}% of{""}
+                {Math.round((at.totalContrib / at.targetAnnual) * 100)}% of{" "}
                 {formatCurrency(at.targetAnnual)} target
               </p>
             </div>

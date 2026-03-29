@@ -119,9 +119,9 @@ export default function LiabilitiesPage() {
             key={loan.name}
             className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800"
           >
-            <strong>{loan.name}</strong>: YNAB balance{""}
-            {formatCurrency(loan.apiBalance!)} vs. Calculated{""}
-            {formatCurrency(loan.calculatedBalance!)} — Difference:{""}
+            <strong>{loan.name}</strong>: YNAB balance{" "}
+            {formatCurrency(loan.apiBalance!)} vs. Calculated{" "}
+            {formatCurrency(loan.calculatedBalance!)} — Difference:{" "}
             {formatCurrency(
               Math.abs(loan.apiBalance! - loan.calculatedBalance!),
             )}

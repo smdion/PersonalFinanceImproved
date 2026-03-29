@@ -73,8 +73,7 @@ export function ContribMethodologySection({
             {contribSpecs && contribSpecs.length > 0 && (
               <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-3 text-xs">
                 <h5 className="font-medium text-secondary uppercase mb-2">
-                  How {isPersonFiltered ? `${personFilterName}'s` : ""}
-                  {""}
+                  How {isPersonFiltered ? `${personFilterName}'s` : ""}{" "}
                   Contributions Are Projected
                   <HelpTip
                     text={
@@ -171,17 +170,16 @@ export function ContribMethodologySection({
                     if (totalMatch <= 0) return null;
                     return (
                       <div className="mt-2 pt-1.5 border-t border-blue-100 text-[10px] text-faint">
-                        Match grows with salary. Look for{""}
-                        <span className="font-bold text-green-600">+m</span>
-                        {""}
-                        in the table and hover for breakdown.
+                        Match grows with salary. Look for{" "}
+                        <span className="font-bold text-green-600">+m</span> in
+                        the table and hover for breakdown.
                       </div>
                     );
                   })()}
                 {result.firstOverflowYear && (
                   <div className="mt-1.5 pt-1.5 border-t border-blue-100 text-amber-600 font-medium">
-                    Contributions exceed IRS limits starting age{""}
-                    {result.firstOverflowAge} ({result.firstOverflowYear}) —{""}
+                    Contributions exceed IRS limits starting age{" "}
+                    {result.firstOverflowAge} ({result.firstOverflowYear}) —{" "}
                     {formatCurrency(
                       deflate(
                         result.firstOverflowAmount ?? 0,
@@ -223,7 +221,7 @@ export function ContribMethodologySection({
                 <p className="text-muted mb-2">
                   Computes annual need (budget × inflation &minus; Social
                   Security at age {engineSettings?.ssStartAge ?? "?"}), grosses
-                  up for taxes, and routes withdrawals via{""}
+                  up for taxes, and routes withdrawals via{" "}
                   {withdrawalRoutingMode === "bracket_filling"
                     ? "bracket filling (Traditional → Roth → Brokerage → HSA)"
                     : withdrawalRoutingMode === "waterfall"

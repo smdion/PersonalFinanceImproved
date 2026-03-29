@@ -1061,6 +1061,7 @@ export const projectionRouter = createTRPCRouter({
           blendedVol,
           inflationRisk: effectiveInflationRisk,
           withdrawalRate: toNumber(settings.withdrawalRate),
+          withdrawalStrategy: settings.withdrawalStrategy ?? "fixed",
           decumulationExpenseOverride: input.decumulationExpenseOverride,
           accumulationExpenseOverride: input.accumulationExpenseOverride,
           taxMode: input.taxMode,

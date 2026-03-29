@@ -166,7 +166,7 @@ export default function HousePage() {
         <Card
           title={
             <>
-              Home Value{""}
+              Home Value{" "}
               {current?.houseValueSynced && <SyncBadge source="ynab" />}
             </>
           }
@@ -293,7 +293,7 @@ export default function HousePage() {
               <div className="mt-3 p-2 bg-blue-50 rounded text-xs text-blue-700">
                 YNAB balance: {formatCurrency(loanResult.apiBalance)} |
                 Calculated: {formatCurrency(loanResult.calculatedBalance)} |
-                Diff:{""}
+                Diff:{" "}
                 {formatCurrency(
                   Math.abs(
                     loanResult.apiBalance - loanResult.calculatedBalance,
@@ -519,7 +519,7 @@ export default function HousePage() {
       <Card
         title={
           <>
-            Home Improvements{""}
+            Home Improvements{" "}
             <span className="text-xs font-normal text-faint ml-1">
               ({formatCurrency(hiTotal)} total)
             </span>

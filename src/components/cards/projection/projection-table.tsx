@@ -115,7 +115,7 @@ export function ProjectionTable({
                   }
                   className="text-center py-1 text-[10px] text-faint font-semibold uppercase tracking-wider border-l border-subtle"
                 >
-                  Contributions{""}
+                  Contributions{" "}
                   {contribView === "taxType" ? "(by Tax Type)" : ""}
                 </th>
                 <th
@@ -133,7 +133,7 @@ export function ProjectionTable({
                   }
                   className="text-center py-1 text-[10px] text-faint font-semibold uppercase tracking-wider border-l border-subtle"
                 >
-                  Balances{""}
+                  Balances{" "}
                   {balanceView === "account" ? "(by Account)" : "(by Tax Type)"}
                 </th>
                 {mcBandsByYear && (

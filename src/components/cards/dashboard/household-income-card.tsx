@@ -81,9 +81,8 @@ export function HouseholdIncomeCard() {
                   <tr>
                     <td className="pb-1 pl-2 text-xs text-faint">Bonus</td>
                     <td className="pb-1 text-right text-xs text-faint tabular-nums">
-                      {formatCurrency(d.paycheck!.bonusEstimate.bonusGross)}
-                      {""}
-                      gross /{""}
+                      {formatCurrency(d.paycheck!.bonusEstimate.bonusGross)}{" "}
+                      gross /{" "}
                       {formatCurrency(d.paycheck!.bonusEstimate.bonusNet)} net
                     </td>
                   </tr>
