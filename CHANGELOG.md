@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.17] - 2026-03-29
+
+### Added
+
+- Sortable "Change %" column in Snapshot History showing week-over-week percentage change with color-coded positive/negative values
+
+---
+
 ## [0.3.16] - 2026-03-29
 
 ### Fixed
