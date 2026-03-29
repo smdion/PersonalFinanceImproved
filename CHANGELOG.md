@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.15] - 2026-03-29
+
+### Fixed
+
+- RMD-based spending strategy now uses the primary person's actual age for the IRS factor lookup instead of the household average — eliminates a gap year with $0 withdrawals in multi-person households
+
+---
+
 ## [0.3.14] - 2026-03-28
 
 ### Added

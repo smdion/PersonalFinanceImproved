@@ -18,10 +18,11 @@ export function applyRmdSpending(
   params: RmdSpendingParams | Record<string, number | boolean>,
   input: SpendingStrategyInput,
 ): SpendingStrategyResult {
-  const { portfolioBalance, age } = input;
+  const { portfolioBalance, age, primaryPersonAge } = input;
   const rmdMultiplier = (params as RmdSpendingParams).rmdMultiplier ?? 1.0;
 
-  const factor = getRmdFactor(age);
+  // Use primary person's age for RMD factor lookup (not household average)
+  const factor = getRmdFactor(primaryPersonAge ?? age);
 
   // Pre-RMD age: fall back to fixed-real spending (orchestrator already inflated)
   if (factor === null) {
