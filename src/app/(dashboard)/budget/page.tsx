@@ -640,7 +640,7 @@ export default function BudgetPage() {
                 )}
                 {apiService && apiLinkedProfileId === profile?.id && (
                   <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-600 font-semibold">
-                    ⇄ {apiService.toUpperCase()} →{""}
+                    ⇄ {apiService.toUpperCase()} →{" "}
                     {cols[apiLinkedColumnIndex] ?? "Unknown"}
                   </span>
                 )}
@@ -648,7 +648,7 @@ export default function BudgetPage() {
               <div className="flex items-center gap-4 text-xs">
                 {cols.length > 0 && !isWeighted && (
                   <span className="text-faint">
-                    Mode:{""}
+                    Mode:{" "}
                     <span className="font-medium text-secondary">
                       {cols[activeColumn] ?? cols[0]}
                     </span>
@@ -656,7 +656,7 @@ export default function BudgetPage() {
                 )}
                 {isWeighted && (
                   <span className="text-faint">
-                    Weighted{""}
+                    Weighted{" "}
                     <span className="text-[10px]">
                       (
                       {columnMonths
@@ -882,7 +882,7 @@ export default function BudgetPage() {
                         )}
                         {apiService && apiLinkedProfileId === p.id && (
                           <span className="text-[8px] px-1 py-0.5 rounded bg-blue-100 text-blue-700 font-semibold shrink-0">
-                            ⇄ {apiService.toUpperCase()} →{""}
+                            ⇄ {apiService.toUpperCase()} →{" "}
                             {(p.columnLabels as string[])?.[
                               apiLinkedColumnIndex
                             ] ?? "Mode" + apiLinkedColumnIndex}

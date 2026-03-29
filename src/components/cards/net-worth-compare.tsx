@@ -111,7 +111,7 @@ export function NetWorthCompare({
     <Card
       title={
         <>
-          Net Worth Comparison{""}
+          Net Worth Comparison{" "}
           <HelpTip text="Compare your net worth between two dates. Portfolio values come from the nearest weekly snapshot. Home value, cash, and other items use current values for both dates." />
         </>
       }

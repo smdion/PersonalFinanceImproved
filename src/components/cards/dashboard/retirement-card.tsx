@@ -142,7 +142,7 @@ export function RetirementCard() {
         <div className="flex justify-between">
           <span className="text-muted">Years to retirement</span>
           <span className="text-primary">
-            {yearsToRet} yrs{""}
+            {yearsToRet} yrs{" "}
             <span className="text-[10px] text-faint">
               (age {currentAge} → {retAge})
             </span>
@@ -158,7 +158,7 @@ export function RetirementCard() {
             {formatCurrency(totalWithMatch)}/yr
             {employerContributions > 0 && (
               <span className="text-[10px] text-faint ml-1">
-                ({formatCurrency(annualContributions)} +{""}
+                ({formatCurrency(annualContributions)} +{" "}
                 {formatCurrency(employerContributions)} match)
               </span>
             )}

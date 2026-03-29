@@ -146,7 +146,7 @@ export function DecumulationConfig({
       {!showDecumConfig ? (
         <div className="flex flex-wrap gap-4 text-xs text-muted">
           <span>
-            Strategy:{""}
+            Strategy:{" "}
             {withdrawalRoutingMode === "bracket_filling"
               ? "Bracket Filling"
               : withdrawalRoutingMode === "waterfall"
@@ -161,13 +161,13 @@ export function DecumulationConfig({
           ) : withdrawalRoutingMode === "waterfall" ? (
             <>
               <span>
-                Order:{""}
+                Order:{" "}
                 {withdrawalOrder
                   .map((c) => getAccountTypeConfig(c).displayLabel)
                   .join(" →")}
               </span>
               <span>
-                Tax pref:{""}
+                Tax pref:{" "}
                 {Object.entries(withdrawalTaxPref)
                   .filter(([, v]) => v)
                   .map(([k, v]) => `${k}=${v}`)
@@ -176,7 +176,7 @@ export function DecumulationConfig({
             </>
           ) : (
             <span>
-              Splits:{""}
+              Splits:{" "}
               {ALL_CATEGORIES.map(
                 (c) =>
                   `${getAccountTypeConfig(c).displayLabel} ${Math.round(withdrawalSplits[c] * 100)}%`,
@@ -245,14 +245,12 @@ export function DecumulationConfig({
               </p>
               <ol className="list-decimal list-inside space-y-0.5 text-emerald-700">
                 <li>
-                  <span className="font-medium">{taxTypeLabel("preTax")}</span>
-                  {""}
+                  <span className="font-medium">{taxTypeLabel("preTax")}</span>{" "}
                   (401k/IRA) up to the bracket ceiling — uses IRS provisional
                   income formula for SS taxation
                 </li>
                 <li>
-                  <span className="font-medium">{taxTypeLabel("taxFree")}</span>
-                  {""}
+                  <span className="font-medium">{taxTypeLabel("taxFree")}</span>{" "}
                   (401k/IRA Roth) for the remainder — no tax impact
                 </li>
                 <li>
@@ -266,24 +264,24 @@ export function DecumulationConfig({
               </ol>
               <div className="border-t border-emerald-200 pt-1.5 mt-1.5 space-y-0.5 text-emerald-600">
                 <p>
-                  <span className="font-medium text-emerald-700">RMDs</span>
-                  {""}— Required Minimum Distributions enforced at the IRS start
-                  age (SECURE 2.0: 73 or 75). Traditional withdrawals are forced
+                  <span className="font-medium text-emerald-700">RMDs</span> —
+                  Required Minimum Distributions enforced at the IRS start age
+                  (SECURE 2.0: 73 or 75). Traditional withdrawals are forced
                   above your bracket target when needed.
                 </p>
                 <p>
                   <span className="font-medium text-emerald-700">
                     Roth conversions
-                  </span>
-                  {""}— When enabled, automatically converts Traditional → Roth
-                  to fill the target bracket. Most valuable pre-RMD age.
+                  </span>{" "}
+                  — When enabled, automatically converts Traditional → Roth to
+                  fill the target bracket. Most valuable pre-RMD age.
                 </p>
                 <p>
                   <span className="font-medium text-emerald-700">
                     IRMAA / ACA
-                  </span>
-                  {""}— When enabled, constrains withdrawals and conversions
-                  near Medicare surcharge cliffs (65+) or ACA subsidy cliffs
+                  </span>{" "}
+                  — When enabled, constrains withdrawals and conversions near
+                  Medicare surcharge cliffs (65+) or ACA subsidy cliffs
                   (pre-65).
                 </p>
               </div>

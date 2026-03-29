@@ -453,7 +453,7 @@ export default function ToolsPage() {
                           </select>
                           {currentMonths ? (
                             <span className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-1">
-                              Weighted:{""}
+                              Weighted:{" "}
                               {formatCurrency((currentWeighted ?? 0) / 12)}/mo
                               <span className="text-[10px] text-faint ml-1">
                                 (
@@ -538,7 +538,7 @@ export default function ToolsPage() {
                           </select>
                           {targetMonths ? (
                             <span className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-1">
-                              Weighted:{""}
+                              Weighted:{" "}
                               {formatCurrency((targetWeighted ?? 0) / 12)}/mo
                               <span className="text-[10px] text-faint ml-1">
                                 (
@@ -627,14 +627,14 @@ export default function ToolsPage() {
                       {relocQuery.data?.currentContribProfile && (
                         <div className="mt-1 text-[10px] text-faint flex gap-3">
                           <span>
-                            Salary:{""}
+                            Salary:{" "}
                             {formatCurrency(
                               relocQuery.data.currentContribProfile
                                 .combinedSalary,
                             )}
                           </span>
                           <span>
-                            Contrib:{""}
+                            Contrib:{" "}
                             {formatCurrency(
                               relocQuery.data.currentContribProfile
                                 .annualContributions,
@@ -642,7 +642,7 @@ export default function ToolsPage() {
                             /yr
                           </span>
                           <span>
-                            Match:{""}
+                            Match:{" "}
                             {formatCurrency(
                               relocQuery.data.currentContribProfile
                                 .employerMatch,
@@ -674,14 +674,14 @@ export default function ToolsPage() {
                       {relocQuery.data?.relocationContribProfile && (
                         <div className="mt-1 text-[10px] text-faint flex gap-3">
                           <span>
-                            Salary:{""}
+                            Salary:{" "}
                             {formatCurrency(
                               relocQuery.data.relocationContribProfile
                                 .combinedSalary,
                             )}
                           </span>
                           <span>
-                            Contrib:{""}
+                            Contrib:{" "}
                             {formatCurrency(
                               relocQuery.data.relocationContribProfile
                                 .annualContributions,
@@ -689,7 +689,7 @@ export default function ToolsPage() {
                             /yr
                           </span>
                           <span>
-                            Match:{""}
+                            Match:{" "}
                             {formatCurrency(
                               relocQuery.data.relocationContribProfile
                                 .employerMatch,
@@ -717,7 +717,7 @@ export default function ToolsPage() {
                     </div>
                     <div className="text-xs text-faint">
                       {r.percentExpenseIncrease > 0 ? "+" : ""}
-                      {r.percentExpenseIncrease}%{""}
+                      {r.percentExpenseIncrease}%{" "}
                       {r.percentExpenseIncrease > 0
                         ? "increase"
                         : r.percentExpenseIncrease < 0
@@ -738,7 +738,7 @@ export default function ToolsPage() {
                       {formatCurrency(r.additionalNestEggNeeded)}
                     </div>
                     <div className="text-xs text-faint">
-                      FI: {formatCurrency(r.currentFiTarget)} →{""}
+                      FI: {formatCurrency(r.currentFiTarget)} →{" "}
                       {formatCurrency(r.relocationFiTarget)}
                     </div>
                   </div>
@@ -755,7 +755,7 @@ export default function ToolsPage() {
                       {formatPercent(Math.abs(r.savingsRateDrop))}
                     </div>
                     <div className="text-xs text-faint">
-                      {formatPercent(r.currentSavingsRate)} →{""}
+                      {formatPercent(r.currentSavingsRate)} →{" "}
                       {formatPercent(r.relocationSavingsRate)}
                     </div>
                   </div>
@@ -775,8 +775,8 @@ export default function ToolsPage() {
                     <div className="text-xs text-faint">
                       {r.currentFiAge !== null
                         ? `Age ${r.currentFiAge}`
-                        : "N/A"}
-                      {""}→{""}
+                        : "N/A"}{" "}
+                      →{" "}
                       {r.relocationFiAge !== null
                         ? `Age ${r.relocationFiAge}`
                         : "N/A"}
@@ -789,14 +789,12 @@ export default function ToolsPage() {
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
                     <span className="font-semibold text-blue-800">
                       Recommendation:
-                    </span>
-                    {""}
+                    </span>{" "}
                     <span className="text-blue-700">
-                      Target a portfolio of at least{""}
+                      Target a portfolio of at least{" "}
                       <strong>
                         {formatCurrency(r.recommendedPortfolioToRelocate)}
-                      </strong>
-                      {""}
+                      </strong>{" "}
                       before relocating.
                       {r.earliestRelocateAge <= (r.currentFiAge ?? 999)
                         ? ` You can relocate as early as age ${r.earliestRelocateAge} and still reach FI by retirement.`
@@ -807,8 +805,7 @@ export default function ToolsPage() {
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
                     <span className="font-semibold text-amber-800">
                       Warning:
-                    </span>
-                    {""}
+                    </span>{" "}
                     <span className="text-amber-700">
                       With the relocation budget, your portfolio may not reach
                       the FI target ({formatCurrency(r.relocationFiTarget)}) by
@@ -901,7 +898,7 @@ export default function ToolsPage() {
                           >
                             <span className="font-medium">{p.name}</span>
                             <span>
-                              {formatCurrency(p.purchasePrice)} in{""}
+                              {formatCurrency(p.purchasePrice)} in{" "}
                               {p.purchaseYear}
                             </span>
                             {isFinanced && (
@@ -1329,7 +1326,7 @@ export default function ToolsPage() {
                               if (months) {
                                 return (
                                   <span className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-1 self-end">
-                                    Weighted:{""}
+                                    Weighted:{" "}
                                     {formatCurrency(
                                       ((selectedProf?.weightedAnnualTotal as number) ??
                                         0) / 12,

@@ -26,15 +26,13 @@ export function McDepletionCallout({ s }: { s: ProjectionState }) {
       className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${isLowRisk ? "bg-surface-elevated text-muted" : "bg-red-50 text-red-700"}`}
     >
       <span className="font-medium shrink-0">
-        {isLowRisk ? "\u2139\uFE0F" : "\u26A0"}
-        {""}
+        {isLowRisk ? "\u2139\uFE0F" : "\u26A0"}{" "}
         {isLowRisk
           ? `In rare scenarios (${deplPct}%), money runs out around age ${Math.round(mc.distributions.depletionAge!.median)}.`
           : `In ${deplPct}% of futures, money runs out around age ${Math.round(mc.distributions.depletionAge!.median)}.`}
       </span>
       <span className={isLowRisk ? "text-muted" : "text-red-600"}>
-        Typical end balance:{""}
-        {formatCurrency(deflate(tb.median, terminalYear))}
+        Typical end balance: {formatCurrency(deflate(tb.median, terminalYear))}
       </span>
       <HelpTip
         maxWidth={400}
@@ -177,29 +175,27 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
                         `Percentage of simulated futures where your money lasted from age ${si.retirementAge} through age ${si.endAge} — a ${si.endAge - si.retirementAge}-year retirement.`,
                         <span key="ranges" className="space-y-0.5">
                           <div>
-                            <strong className="text-green-400">90%+</strong>
-                            {""}— Strong. Most planners consider this the
-                            target. You can likely sustain your spending.
+                            <strong className="text-green-400">90%+</strong> —
+                            Strong. Most planners consider this the target. You
+                            can likely sustain your spending.
                           </div>
                           <div>
-                            <strong className="text-amber-400">75–89%</strong>
-                            {""}— Moderate. Workable but with meaningful risk.
+                            <strong className="text-amber-400">75–89%</strong> —
+                            Moderate. Workable but with meaningful risk.
                             Consider reducing spending or working longer.
                           </div>
                           <div>
-                            <strong className="text-red-400">Below 75%</strong>
-                            {""}— Elevated risk. A significant portion of
-                            futures run out of money. Review assumptions.
+                            <strong className="text-red-400">Below 75%</strong>{" "}
+                            — Elevated risk. A significant portion of futures
+                            run out of money. Review assumptions.
                           </div>
                         </span>,
                         <span key="timeframe">
                           <strong className="text-blue-300">
                             Time horizon matters:
-                          </strong>
-                          {""}
+                          </strong>{" "}
                           The classic 4% rule was tested on 30-year retirements.
-                          Your plan spans{""}
-                          {si.endAge - si.retirementAge} years
+                          Your plan spans {si.endAge - si.retirementAge} years
                           {si.endAge - si.retirementAge > 30
                             ? " — longer than 30 years, which gives bad market sequences more time to compound. Early retirees often need a lower withdrawal rate (3-3.5%) or higher savings to compensate."
                             : si.endAge - si.retirementAge < 25
@@ -230,7 +226,12 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
                       <div className="font-semibold tabular-nums">
                         {formatPercent(si.withdrawalRate, 2)}
                       </div>
-                      <div className="text-[9px] text-faint">withdrawal</div>
+                      <div className="text-[9px] text-faint">
+                        {si.withdrawalStrategy &&
+                        si.withdrawalStrategy !== "fixed"
+                          ? "initial rate"
+                          : "withdrawal"}
+                      </div>
                       <div className="text-[8px] text-faint">3–4%</div>
                     </div>
                     <div className="text-center">

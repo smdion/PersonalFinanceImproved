@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
+import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -39,6 +41,7 @@ export type SimulationInputs = {
   blendedVol: number;
   inflationRisk: { meanRate: number; stdDev: number };
   withdrawalRate: number;
+  withdrawalStrategy?: string;
   decumulationExpenseOverride?: number;
   accumulationExpenseOverride?: number;
   taxMode: "simple" | "advanced";
@@ -256,34 +259,29 @@ export function SimulationAssumptions({
 
           {/* ELI5 explanation */}
           <div className="text-[11px] text-muted leading-relaxed bg-surface-primary rounded px-2.5 py-2 border border-subtle">
-            This runs{""}
+            This runs{" "}
             <span className="font-semibold text-secondary">
               {numTrials.toLocaleString()}
-            </span>
-            {""}
+            </span>{" "}
             simulated futures. Each trial randomizes annual investment returns
             (correlated log-normal draws per asset class) and inflation (
-            {formatPercent(inputs.inflationRisk.meanRate, 1)} mean &plusmn;{""}
+            {formatPercent(inputs.inflationRisk.meanRate, 1)} mean &plusmn;{" "}
             {formatPercent(inputs.inflationRisk.stdDev, 1)} std dev). Your
             portfolio follows a glide path that shifts from stocks to bonds as
-            you age. At your current allocation, the blended expected return is
-            {""}
+            you age. At your current allocation, the blended expected return is{" "}
             <span className="font-semibold text-secondary">
               {formatPercent(inputs.blendedReturn, 1)}
-            </span>
-            {""}
-            with{""}
+            </span>{" "}
+            with{" "}
             <span className="font-semibold text-secondary">
               {formatPercent(inputs.blendedVol, 1)}
-            </span>
-            {""}
-            volatility. The fan chart shows the{""}
+            </span>{" "}
+            volatility. The fan chart shows the{" "}
             {fanBandRange === "p5-p95"
               ? "5th–95th"
               : fanBandRange === "p10-p90"
                 ? "10th–90th"
-                : "25th–75th"}
-            {""}
+                : "25th–75th"}{" "}
             percentile range across all trials.
           </div>
 
@@ -423,18 +421,53 @@ export function SimulationAssumptions({
                 value={formatPercent(inputs.blendedVol, 1)}
                 tip="Weighted average standard deviation of returns. Higher = wider range of outcomes. Typical range: 8-16% (diversified to all-equity)."
               />
-              <AssumptionRow
-                label="Withdrawal Rate"
-                value={formatPercent(inputs.withdrawalRate, 1)}
-                tip="Percentage of your portfolio withdrawn annually in retirement to cover expenses. The '4% rule' (Bengen, 1994) is the classic safe withdrawal benchmark. Lower = safer but less spending. Typical range: 3-4%."
-              />
-              {inputs.decumulationExpenseOverride != null && (
-                <AssumptionRow
-                  label="Retirement Expenses"
-                  value={`${formatCurrency(inputs.decumulationExpenseOverride)}/yr`}
-                  highlight
-                />
-              )}
+              {(() => {
+                const strategy = (inputs.withdrawalStrategy ??
+                  "fixed") as WithdrawalStrategyType;
+                const cfg = WITHDRAWAL_STRATEGY_CONFIG[strategy];
+                const isDynamic = strategy !== "fixed";
+                return (
+                  <>
+                    <AssumptionRow
+                      label={
+                        isDynamic
+                          ? "Initial Withdrawal Rate"
+                          : "Withdrawal Rate"
+                      }
+                      value={formatPercent(inputs.withdrawalRate, 1)}
+                      tip={
+                        isDynamic
+                          ? `Starting withdrawal rate — your ${cfg?.label ?? strategy} strategy adjusts this yearly based on portfolio performance. The actual withdrawal each year may be higher or lower.`
+                          : "Percentage of your portfolio withdrawn annually in retirement to cover expenses. The '4% rule' (Bengen, 1994) is the classic safe withdrawal benchmark. Lower = safer but less spending. Typical range: 3-4%."
+                      }
+                    />
+                    {isDynamic && (
+                      <AssumptionRow
+                        label="Spending Strategy"
+                        value={cfg?.label ?? strategy}
+                        tip={`${cfg?.label ?? strategy}: withdrawal amount adjusts each year based on portfolio performance, guardrails, or IRS factors. The rate above is the starting point, not a fixed annual amount.`}
+                        highlight
+                      />
+                    )}
+                    {inputs.decumulationExpenseOverride != null && (
+                      <AssumptionRow
+                        label={
+                          isDynamic
+                            ? "Year-1 Retirement Expenses"
+                            : "Retirement Expenses"
+                        }
+                        value={`${formatCurrency(inputs.decumulationExpenseOverride)}/yr`}
+                        tip={
+                          isDynamic
+                            ? `Starting retirement budget — your ${cfg?.label ?? strategy} strategy may adjust actual spending up or down each year.`
+                            : undefined
+                        }
+                        highlight
+                      />
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
 

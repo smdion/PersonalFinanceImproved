@@ -156,7 +156,7 @@ export default function HistoricalPage() {
         <Card
           title={
             <>
-              Current Net Worth{""}
+              Current Net Worth{" "}
               <HelpTip text="Your most recent year-end or year-to-date net worth figure" />
             </>
           }
@@ -169,7 +169,7 @@ export default function HistoricalPage() {
         <Card
           title={
             <>
-              Total Growth{""}
+              Total Growth{" "}
               <HelpTip text="The dollar change in net worth from the earliest year tracked to now" />
             </>
           }
@@ -186,7 +186,7 @@ export default function HistoricalPage() {
         <Card
           title={
             <>
-              Years Tracked{""}
+              Years Tracked{" "}
               <HelpTip text="Number of year-end snapshots recorded, including the current year if in progress" />
             </>
           }

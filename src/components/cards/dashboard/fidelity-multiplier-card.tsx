@@ -229,7 +229,7 @@ export function FidelityMultiplierCard() {
           <div className="flex justify-between text-xs text-faint">
             <span>Next milestone (age {target.nextAge})</span>
             <span>
-              {formatNumber(target.nextMultiplier, 0)}x ={""}
+              {formatNumber(target.nextMultiplier, 0)}x ={" "}
               {formatCurrency(salary * target.nextMultiplier)}
             </span>
           </div>
