@@ -813,7 +813,7 @@ export default function PortfolioPage() {
   const [showChart, setShowChart] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [sortCol, setSortCol] = useState<
-    "date" | "total" | "accounts" | "change" | null
+    "date" | "total" | "accounts" | "change" | "changePct" | null
   >(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const snapshotPageSize = showAll ? 1000 : 52;
@@ -841,7 +841,7 @@ export default function PortfolioPage() {
 
   // Memoize snapshot delta computation and sorting — must be before early returns
   const toggleSort = useCallback(
-    (col: "date" | "total" | "accounts" | "change") => {
+    (col: "date" | "total" | "accounts" | "change" | "changePct") => {
       if (sortCol === col) {
         setSortDir((d) => (d === "asc" ? "desc" : "asc"));
       } else {
@@ -864,6 +864,10 @@ export default function PortfolioPage() {
         return {
           ...snap,
           delta: prev ? snap.total - prev.total : (null as number | null),
+          deltaPct:
+            prev && prev.total > 0
+              ? ((snap.total - prev.total) / prev.total) * 100
+              : (null as number | null),
         };
       }),
     [rawSnapshots],
@@ -885,6 +889,9 @@ export default function PortfolioPage() {
           break;
         case "change":
           cmp = (a.delta ?? 0) - (b.delta ?? 0);
+          break;
+        case "changePct":
+          cmp = (a.deltaPct ?? 0) - (b.deltaPct ?? 0);
           break;
       }
       return sortDir === "asc" ? cmp : -cmp;
@@ -1103,6 +1110,12 @@ export default function PortfolioPage() {
                         >
                           Change{sortIndicator("change")}
                         </th>
+                        <th
+                          className="text-right py-2 px-4 text-muted font-medium cursor-pointer select-none hover:text-primary"
+                          onClick={() => toggleSort("changePct")}
+                        >
+                          Change %{sortIndicator("changePct")}
+                        </th>
                         <th className="text-left py-2 px-4 text-muted font-medium">
                           Notes
                         </th>
@@ -1148,6 +1161,13 @@ export default function PortfolioPage() {
                               >
                                 {delta !== null
                                   ? `${delta >= 0 ? "+" : ""}${formatCurrency(delta)}`
+                                  : "\u2014"}
+                              </td>
+                              <td
+                                className={`text-right py-2 px-4 text-xs ${snap.deltaPct !== null ? (snap.deltaPct >= 0 ? "text-green-600" : "text-red-600") : "text-faint"}`}
+                              >
+                                {snap.deltaPct !== null
+                                  ? `${snap.deltaPct >= 0 ? "+" : ""}${snap.deltaPct.toFixed(2)}%`
                                   : "\u2014"}
                               </td>
                               <td className="py-2 px-4 text-muted text-xs truncate max-w-[200px]">
