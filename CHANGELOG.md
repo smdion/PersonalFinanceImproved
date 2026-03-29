@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.18] - 2026-03-29
+
+### Fixed
+
+- Snapshot History sorting and change calculations now work across all data, not just the current page — sorting by Change or Change % produces correct global results
+- First snapshot on each page no longer shows "—" for Change — delta is computed against the chronologically previous snapshot regardless of pagination
+
+---
+
 ## [0.3.17] - 2026-03-29
 
 ### Added
