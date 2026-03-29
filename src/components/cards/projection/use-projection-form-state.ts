@@ -1,6 +1,7 @@
-/** Pure local form and UI state for the projection card — withdrawal config, override forms, view toggles, and MC settings with no external dependencies. */
+/** Form and UI state for the projection card — withdrawal config, override forms, view toggles, and MC settings. Overrides are loaded from DB on mount. */
 import { useState } from "react";
 import type { AccountCategory } from "@/lib/calculators/types";
+import { trpc } from "@/lib/trpc";
 import { type AssetClassOverride } from "@/components/cards/mc-simulation-assumptions";
 import {
   getAllCategories,
@@ -44,9 +45,45 @@ export function useProjectionFormState() {
     ),
   );
 
-  // --- Overrides ---
-  const [accumOverrides, setAccumOverrides] = useState<AccumOverride[]>([]);
-  const [decumOverrides, setDecumOverrides] = useState<DecumOverride[]>([]);
+  // --- Overrides (persisted to DB, loaded on mount) ---
+  const accumQuery = trpc.settings.projectionOverrides.get.useQuery({
+    overrideType: "accumulation",
+  });
+  const decumQuery = trpc.settings.projectionOverrides.get.useQuery({
+    overrideType: "decumulation",
+  });
+  // Track whether local state has been touched (add/delete) — once touched, local state wins over DB
+  const [accumTouched, setAccumTouched] = useState(false);
+  const [decumTouched, setDecumTouched] = useState(false);
+  const [accumOverridesLocal, setAccumOverridesRaw] = useState<AccumOverride[]>(
+    [],
+  );
+  const [decumOverridesLocal, setDecumOverridesRaw] = useState<DecumOverride[]>(
+    [],
+  );
+  // Use DB data until local state is touched
+  const accumOverrides = accumTouched
+    ? accumOverridesLocal
+    : accumQuery.data && accumQuery.data.length > 0
+      ? (accumQuery.data as AccumOverride[])
+      : accumOverridesLocal;
+  const decumOverrides = decumTouched
+    ? decumOverridesLocal
+    : decumQuery.data && decumQuery.data.length > 0
+      ? (decumQuery.data as DecumOverride[])
+      : decumOverridesLocal;
+  const setAccumOverrides: React.Dispatch<
+    React.SetStateAction<AccumOverride[]>
+  > = (updater) => {
+    setAccumTouched(true);
+    setAccumOverridesRaw(updater);
+  };
+  const setDecumOverrides: React.Dispatch<
+    React.SetStateAction<DecumOverride[]>
+  > = (updater) => {
+    setDecumTouched(true);
+    setDecumOverridesRaw(updater);
+  };
 
   // --- Override form UI state ---
   const [showAccumForm, setShowAccumForm] = useState(false);

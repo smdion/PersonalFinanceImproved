@@ -878,6 +878,22 @@ export const retirementBudgetOverrides = sqliteTable(
   ],
 );
 
+export const projectionOverrides = sqliteTable(
+  "projection_overrides",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    overrideType: text("override_type").notNull(),
+    overrides: text("overrides", { mode: "json" })
+      .$type<Record<string, unknown>[]>()
+      .notNull(),
+    createdBy: text("created_by"),
+    updatedBy: text("updated_by"),
+  },
+  (table) => [
+    uniqueIndex("projection_overrides_type_idx").on(table.overrideType),
+  ],
+);
+
 export const retirementScenarios = sqliteTable("retirement_scenarios", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),

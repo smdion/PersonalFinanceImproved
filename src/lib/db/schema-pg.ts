@@ -1063,6 +1063,20 @@ export const retirementBudgetOverrides = pgTable(
   ],
 );
 
+export const projectionOverrides = pgTable(
+  "projection_overrides",
+  {
+    id: serial("id").primaryKey(),
+    overrideType: text("override_type").notNull(),
+    overrides: jsonb("overrides").$type<Record<string, unknown>[]>().notNull(),
+    createdBy: text("created_by"),
+    updatedBy: text("updated_by"),
+  },
+  (table) => [
+    uniqueIndex("projection_overrides_type_idx").on(table.overrideType),
+  ],
+);
+
 export const retirementScenarios = pgTable("retirement_scenarios", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
