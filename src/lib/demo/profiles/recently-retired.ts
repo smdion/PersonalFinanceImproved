@@ -572,7 +572,7 @@ export const recentlyRetiredProfile: DemoProfile = {
     salaryAnnualIncrease: "0",
     withdrawalRate: "0.035",
     withdrawalStrategy: "rmd_spending",
-    socialSecurityMonthly: "3500",
+    socialSecurityMonthly: "2000",
     ssStartAge: 70,
   },
 
@@ -580,7 +580,7 @@ export const recentlyRetiredProfile: DemoProfile = {
     {
       personName: "Patricia",
       retirementAge: 63,
-      socialSecurityMonthly: "1800",
+      socialSecurityMonthly: "2000",
       ssStartAge: 70,
     },
   ],

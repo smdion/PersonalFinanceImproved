@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.16] - 2026-03-29
+
+### Fixed
+
+- Corrected Social Security amounts in recently-retired demo profile from $3,500/$1,800 to $2,000/$2,000 per month
+
+---
+
 ## [0.3.15] - 2026-03-29
 
 ### Fixed
