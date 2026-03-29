@@ -62,6 +62,7 @@ export const propertyTaxes = active.propertyTaxes;
 export const retirementSettings = active.retirementSettings;
 export const retirementSalaryOverrides = active.retirementSalaryOverrides;
 export const retirementBudgetOverrides = active.retirementBudgetOverrides;
+export const projectionOverrides = active.projectionOverrides;
 export const retirementScenarios = active.retirementScenarios;
 export const returnRateTable = active.returnRateTable;
 export const taxBrackets = active.taxBrackets;

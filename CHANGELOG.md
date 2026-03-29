@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.21] - 2026-03-29
+
+### Added
+
+- Projection overrides (withdrawal rate changes, routing mode, account caps, Roth conversion targets, lump sums) now persist to the database — no longer lost on page refresh
+
+---
+
 ## [0.3.20] - 2026-03-29
 
 ### Improved

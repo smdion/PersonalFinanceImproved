@@ -216,6 +216,62 @@ export const retirementProcedures = {
       ),
   }),
 
+  projectionOverrides: createTRPCRouter({
+    get: protectedProcedure
+      .input(
+        z.object({
+          overrideType: z.enum(["accumulation", "decumulation"]),
+        }),
+      )
+      .query(({ ctx, input }) =>
+        ctx.db
+          .select()
+          .from(schema.projectionOverrides)
+          .where(
+            eq(schema.projectionOverrides.overrideType, input.overrideType),
+          )
+          .then((r) => (r[0]?.overrides as Record<string, unknown>[]) ?? []),
+      ),
+    save: adminProcedure
+      .input(
+        z.object({
+          overrideType: z.enum(["accumulation", "decumulation"]),
+          overrides: z.array(z.record(z.string(), z.unknown())),
+        }),
+      )
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .insert(schema.projectionOverrides)
+          .values({
+            overrideType: input.overrideType,
+            overrides: input.overrides,
+            createdBy: getSessionUserLabel(ctx.session),
+          })
+          .onConflictDoUpdate({
+            target: schema.projectionOverrides.overrideType,
+            set: {
+              overrides: input.overrides,
+              updatedBy: getSessionUserLabel(ctx.session),
+            },
+          })
+          .returning()
+          .then((r) => r[0]),
+      ),
+    clear: adminProcedure
+      .input(
+        z.object({
+          overrideType: z.enum(["accumulation", "decumulation"]),
+        }),
+      )
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .delete(schema.projectionOverrides)
+          .where(
+            eq(schema.projectionOverrides.overrideType, input.overrideType),
+          ),
+      ),
+  }),
+
   retirementScenarios: createTRPCRouter({
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
