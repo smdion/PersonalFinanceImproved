@@ -1079,6 +1079,9 @@ export default function PortfolioPage() {
                         >
                           Change %{sortIndicator("changePct")}
                         </th>
+                        <th className="text-right py-2 px-4 text-muted font-medium">
+                          Gap
+                        </th>
                         <th className="text-left py-2 px-4 text-muted font-medium">
                           Notes
                         </th>
@@ -1131,6 +1134,11 @@ export default function PortfolioPage() {
                               >
                                 {snap.deltaPct !== null
                                   ? `${snap.deltaPct >= 0 ? "+" : ""}${snap.deltaPct.toFixed(2)}%`
+                                  : "\u2014"}
+                              </td>
+                              <td className="text-right py-2 px-4 text-xs text-faint">
+                                {snap.daysSincePrev != null
+                                  ? `${snap.daysSincePrev}d`
                                   : "\u2014"}
                               </td>
                               <td className="py-2 px-4 text-muted text-xs truncate max-w-[200px]">

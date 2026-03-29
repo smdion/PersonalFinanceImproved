@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.19] - 2026-03-29
+
+### Added
+
+- "Gap" column in Snapshot History showing days since the previous snapshot — provides context when sorting by Change or Change %
+
+---
+
 ## [0.3.18] - 2026-03-29
 
 ### Fixed
