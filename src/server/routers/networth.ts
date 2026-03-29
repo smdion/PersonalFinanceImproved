@@ -298,7 +298,7 @@ export const networthRouter = createTRPCRouter({
     return { years: history, primaryBirthYear };
   }),
 
-  /** Paginated snapshot list with optional date range filter. */
+  /** Paginated snapshot list with optional date range filter and sorting. */
   listSnapshots: protectedProcedure
     .input(
       z.object({
@@ -306,11 +306,14 @@ export const networthRouter = createTRPCRouter({
         pageSize: z.number().int().min(1).max(1000).default(52),
         dateFrom: z.string().optional(),
         dateTo: z.string().optional(),
+        sortCol: z
+          .enum(["date", "total", "accounts", "change", "changePct"])
+          .optional(),
+        sortDir: z.enum(["asc", "desc"]).optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { page, pageSize, dateFrom, dateTo } = input;
-      const offset = (page - 1) * pageSize;
+      const { page, pageSize, dateFrom, dateTo, sortCol, sortDir } = input;
 
       // Build WHERE conditions for date range
       const conditions = [];
@@ -323,24 +326,97 @@ export const networthRouter = createTRPCRouter({
       const whereClause =
         conditions.length > 0 ? and(...conditions) : undefined;
 
-      // Count total matching snapshots
-      const countQuery = ctx.db
-        .select({ count: sql<number>`count(*)` })
-        .from(schema.portfolioSnapshots);
-      const countResult = whereClause
-        ? await countQuery.where(whereClause)
-        : await countQuery;
-      const totalCount = Number(countResult[0]?.count ?? 0);
+      // 1. Fetch ALL matching snapshots with totals (lightweight — for delta + sort)
+      const allSnapsQuery = ctx.db
+        .select({
+          id: schema.portfolioSnapshots.id,
+          snapshotDate: schema.portfolioSnapshots.snapshotDate,
+          notes: schema.portfolioSnapshots.notes,
+          total: sql<string>`coalesce(sum(${schema.portfolioAccounts.amount}), 0)`,
+          accountCount: sql<number>`count(${schema.portfolioAccounts.id})`,
+        })
+        .from(schema.portfolioSnapshots)
+        .leftJoin(
+          schema.portfolioAccounts,
+          eq(schema.portfolioSnapshots.id, schema.portfolioAccounts.snapshotId),
+        )
+        .groupBy(schema.portfolioSnapshots.id);
+      const allSnaps = whereClause
+        ? await allSnapsQuery.where(whereClause)
+        : await allSnapsQuery;
 
-      // Fetch the page of snapshots
-      const baseQuery = ctx.db.select().from(schema.portfolioSnapshots);
-      const filtered = whereClause ? baseQuery.where(whereClause) : baseQuery;
-      const snapshots = await filtered
-        .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
-        .limit(pageSize)
-        .offset(offset);
+      const totalCount = allSnaps.length;
+      if (totalCount === 0) {
+        return {
+          snapshots: [],
+          totalCount: 0,
+          page,
+          pageSize,
+          totalPages: 0,
+        };
+      }
 
-      if (snapshots.length === 0) {
+      // 2. Compute delta and deltaPct across the full sorted-by-date dataset
+      const byDate = [...allSnaps].sort((a, b) =>
+        a.snapshotDate.localeCompare(b.snapshotDate),
+      );
+      const deltaMap = new Map<
+        number,
+        { delta: number | null; deltaPct: number | null }
+      >();
+      for (let i = 0; i < byDate.length; i++) {
+        const curr = toNumber(byDate[i]!.total);
+        const prev = i > 0 ? toNumber(byDate[i - 1]!.total) : null;
+        const delta = prev != null ? curr - prev : null;
+        const deltaPct =
+          prev != null && prev > 0 ? ((curr - prev) / prev) * 100 : null;
+        deltaMap.set(byDate[i]!.id, { delta, deltaPct });
+      }
+
+      // 3. Build sortable items and sort by requested column
+      type SnapItem = (typeof allSnaps)[number] & {
+        totalNum: number;
+        delta: number | null;
+        deltaPct: number | null;
+      };
+      const sortable: SnapItem[] = allSnaps.map((s) => ({
+        ...s,
+        totalNum: toNumber(s.total),
+        ...(deltaMap.get(s.id) ?? { delta: null, deltaPct: null }),
+      }));
+
+      const dir = sortDir === "asc" ? 1 : -1;
+      if (sortCol) {
+        sortable.sort((a, b) => {
+          let cmp = 0;
+          switch (sortCol) {
+            case "date":
+              cmp = a.snapshotDate.localeCompare(b.snapshotDate);
+              break;
+            case "total":
+              cmp = a.totalNum - b.totalNum;
+              break;
+            case "accounts":
+              cmp = Number(a.accountCount) - Number(b.accountCount);
+              break;
+            case "change":
+              cmp = (a.delta ?? 0) - (b.delta ?? 0);
+              break;
+            case "changePct":
+              cmp = (a.deltaPct ?? 0) - (b.deltaPct ?? 0);
+              break;
+          }
+          return cmp * dir;
+        });
+      } else {
+        // Default: newest first
+        sortable.sort((a, b) => b.snapshotDate.localeCompare(a.snapshotDate));
+      }
+
+      // 4. Paginate
+      const offset = (page - 1) * pageSize;
+      const pageSnaps = sortable.slice(offset, offset + pageSize);
+      if (pageSnaps.length === 0) {
         return {
           snapshots: [],
           totalCount,
@@ -350,8 +426,8 @@ export const networthRouter = createTRPCRouter({
         };
       }
 
-      // Batch-load accounts for these snapshots, joined with performance accounts + people
-      const snapshotIds = snapshots.map((s) => s.id);
+      // 5. Batch-load detailed accounts only for the page
+      const snapshotIds = pageSnaps.map((s) => s.id);
       const allAccounts = await ctx.db
         .select({
           snapshotId: schema.portfolioAccounts.snapshotId,
@@ -389,15 +465,16 @@ export const networthRouter = createTRPCRouter({
 
       const accountsBySnapshot = groupSnapshotAccounts(allAccounts);
 
-      const items = snapshots.map((s) => {
+      const items = pageSnaps.map((s) => {
         const accounts = accountsBySnapshot.get(s.id) ?? [];
-        const total = accounts.reduce((sum, a) => sum + toNumber(a.amount), 0);
         return {
           id: s.id,
           snapshotDate: s.snapshotDate,
           notes: s.notes,
-          total,
-          accountCount: accounts.length,
+          total: s.totalNum,
+          accountCount: Number(s.accountCount),
+          delta: s.delta,
+          deltaPct: s.deltaPct,
           accounts: accounts.map((a) => ({
             institution: a.institution,
             taxType: a.taxType,

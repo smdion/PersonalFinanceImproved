@@ -828,6 +828,8 @@ export default function PortfolioPage() {
     pageSize: snapshotPageSize,
     dateFrom: snapshotDateFrom || undefined,
     dateTo: snapshotDateTo || undefined,
+    sortCol: sortCol ?? undefined,
+    sortDir: sortDir,
   });
   const deleteMutation = trpc.settings.portfolioSnapshots.delete.useMutation({
     onSuccess: () => {
@@ -852,51 +854,12 @@ export default function PortfolioPage() {
     [sortCol],
   );
 
+  // Server computes delta/deltaPct and handles sorting — client just reads the result
   const rawSnapshots = useMemo(
     () => paginatedSnapshots?.snapshots ?? [],
     [paginatedSnapshots?.snapshots],
   );
-
-  const snapshotsWithDelta = useMemo(
-    () =>
-      rawSnapshots.map((snap, i) => {
-        const prev = rawSnapshots[i + 1];
-        return {
-          ...snap,
-          delta: prev ? snap.total - prev.total : (null as number | null),
-          deltaPct:
-            prev && prev.total > 0
-              ? ((snap.total - prev.total) / prev.total) * 100
-              : (null as number | null),
-        };
-      }),
-    [rawSnapshots],
-  );
-
-  const sortedSnapshots = useMemo(() => {
-    if (!sortCol) return snapshotsWithDelta;
-    return [...snapshotsWithDelta].sort((a, b) => {
-      let cmp = 0;
-      switch (sortCol) {
-        case "date":
-          cmp = a.snapshotDate.localeCompare(b.snapshotDate);
-          break;
-        case "total":
-          cmp = a.total - b.total;
-          break;
-        case "accounts":
-          cmp = a.accountCount - b.accountCount;
-          break;
-        case "change":
-          cmp = (a.delta ?? 0) - (b.delta ?? 0);
-          break;
-        case "changePct":
-          cmp = (a.deltaPct ?? 0) - (b.deltaPct ?? 0);
-          break;
-      }
-      return sortDir === "asc" ? cmp : -cmp;
-    });
-  }, [snapshotsWithDelta, sortCol, sortDir]);
+  const sortedSnapshots = rawSnapshots;
 
   const sortIndicator = useCallback(
     (col: string) => {
