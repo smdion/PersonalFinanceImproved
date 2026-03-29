@@ -690,6 +690,9 @@ export function runPreYearSetup(
   let strategyAction: string | null = null;
 
   if (!isAccumulation && activeStrategy !== "fixed") {
+    // Use primary person's actual age for RMD factor lookup (not household average)
+    const primaryAge =
+      input.birthYear != null ? year - input.birthYear : undefined;
     const result = applySpendingStrategy(activeStrategy, activeStrategyParams, {
       projectedExpenses: state.projectedExpenses,
       portfolioBalance: preTotalBalance,
@@ -697,6 +700,7 @@ export function runPreYearSetup(
       hasBudgetOverride: budgetOverrideMap.has(year),
       yearIndex: y,
       age,
+      primaryPersonAge: primaryAge,
       crossYearState: state.spendingState,
     });
     state.projectedExpenses = result.projectedExpenses;
