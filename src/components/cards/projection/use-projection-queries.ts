@@ -120,6 +120,14 @@ export function useProjectionQueries(
     trpc.settings.retirementBudgetOverrides.delete.useMutation({
       onSuccess: invalidateEngine,
     });
+  const saveProjectionOverrides =
+    trpc.settings.projectionOverrides.save.useMutation({
+      onSuccess: invalidateEngine,
+    });
+  const clearProjectionOverrides =
+    trpc.settings.projectionOverrides.clear.useMutation({
+      onSuccess: invalidateEngine,
+    });
   const invalidateMc = () =>
     utils.projection.computeMonteCarloProjection.invalidate();
   const updateGlidePath =
@@ -263,6 +271,8 @@ export function useProjectionQueries(
     deleteSalaryOverride,
     createBudgetOverride,
     deleteBudgetOverride,
+    saveProjectionOverrides,
+    clearProjectionOverrides,
     updateGlidePath,
     updateInflationRisk,
     updateClampBounds,

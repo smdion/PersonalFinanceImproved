@@ -15,6 +15,13 @@
       "when": 1742774400000,
       "tag": "0001_add_mc_user_presets",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1774825576914,
+      "tag": "0002_watery_dazzler",
+      "breakpoints": true
     }
   ]
 }

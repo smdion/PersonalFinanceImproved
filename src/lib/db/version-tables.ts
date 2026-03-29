@@ -54,6 +54,7 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "retirement_settings", tier: 1 },
   { name: "retirement_salary_overrides", tier: 1 },
   { name: "retirement_budget_overrides", tier: 1 },
+  { name: "projection_overrides", tier: 1 },
   { name: "asset_class_correlations", tier: 1 },
   { name: "glide_path_allocations", tier: 1 },
   { name: "brokerage_planned_transactions", tier: 1 },

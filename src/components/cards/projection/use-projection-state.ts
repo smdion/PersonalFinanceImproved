@@ -120,7 +120,13 @@ export function useProjectionState(props: UseProjectionStateProps) {
 
     form.setAccumOverrides((prev) => {
       const filtered = prev.filter((x) => x.year !== year);
-      return [...filtered, o].sort((a, b) => a.year - b.year);
+      const next = [...filtered, o].sort((a, b) => a.year - b.year);
+      queries.saveProjectionOverrides.mutate({
+        overrideType: "accumulation",
+        // eslint-disable-next-line no-restricted-syntax -- Drizzle JSONB requires Record<string, unknown>[]
+        overrides: next as unknown as Record<string, unknown>[],
+      });
+      return next;
     });
     form.setAccumForm({
       ...emptyAccumForm,
@@ -128,7 +134,7 @@ export function useProjectionState(props: UseProjectionStateProps) {
       personName: form.isPersonFiltered ? derived.personFilterName : "",
     });
     form.setShowAccumForm(false);
-  }, [form, derived.personFilterName]);
+  }, [form, derived.personFilterName, queries]);
 
   const handleAddDecumOverride = useCallback(() => {
     const year = parseInt(form.decumForm.year);
@@ -210,7 +216,13 @@ export function useProjectionState(props: UseProjectionStateProps) {
 
     form.setDecumOverrides((prev) => {
       const filtered = prev.filter((x) => x.year !== year);
-      return [...filtered, o].sort((a, b) => a.year - b.year);
+      const next = [...filtered, o].sort((a, b) => a.year - b.year);
+      queries.saveProjectionOverrides.mutate({
+        overrideType: "decumulation",
+        // eslint-disable-next-line no-restricted-syntax -- Drizzle JSONB requires Record<string, unknown>[]
+        overrides: next as unknown as Record<string, unknown>[],
+      });
+      return next;
     });
     form.setDecumForm({
       ...emptyDecumForm,
@@ -218,12 +230,61 @@ export function useProjectionState(props: UseProjectionStateProps) {
       personName: form.isPersonFiltered ? derived.personFilterName : "",
     });
     form.setShowDecumForm(false);
-  }, [form, derived.personFilterName]);
+  }, [form, derived.personFilterName, queries]);
+
+  // Persistent override setters — update state AND save to DB
+  const setAccumOverrides = useCallback(
+    (
+      updater: AccumOverride[] | ((prev: AccumOverride[]) => AccumOverride[]),
+    ) => {
+      form.setAccumOverrides((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater;
+        if (next.length > 0) {
+          queries.saveProjectionOverrides.mutate({
+            overrideType: "accumulation",
+            // eslint-disable-next-line no-restricted-syntax -- Drizzle JSONB requires Record<string, unknown>[]
+            overrides: next as unknown as Record<string, unknown>[],
+          });
+        } else {
+          queries.clearProjectionOverrides.mutate({
+            overrideType: "accumulation",
+          });
+        }
+        return next;
+      });
+    },
+    [form, queries],
+  );
+
+  const setDecumOverrides = useCallback(
+    (
+      updater: DecumOverride[] | ((prev: DecumOverride[]) => DecumOverride[]),
+    ) => {
+      form.setDecumOverrides((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater;
+        if (next.length > 0) {
+          queries.saveProjectionOverrides.mutate({
+            overrideType: "decumulation",
+            // eslint-disable-next-line no-restricted-syntax -- Drizzle JSONB requires Record<string, unknown>[]
+            overrides: next as unknown as Record<string, unknown>[],
+          });
+        } else {
+          queries.clearProjectionOverrides.mutate({
+            overrideType: "decumulation",
+          });
+        }
+        return next;
+      });
+    },
+    [form, queries],
+  );
 
   // Flat return — preserves the existing API surface for all consumers
   return {
-    // Form state
+    // Form state (override setAccumOverrides/setDecumOverrides with persistent versions)
     ...form,
+    setAccumOverrides,
+    setDecumOverrides,
 
     // Queries + mutations
     ...queries,
