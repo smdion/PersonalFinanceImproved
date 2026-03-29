@@ -31,8 +31,10 @@ export interface SpendingStrategyInput {
   hasBudgetOverride: boolean;
   /** Year index (0-based from projection start). */
   yearIndex: number;
-  /** Current age of the retiree. */
+  /** Current age of the retiree (household average). */
   age: number;
+  /** Primary person's age (for RMD factor lookup). Falls back to `age` if not provided. */
+  primaryPersonAge?: number;
   /** Cross-year state from the orchestrator. */
   crossYearState: SpendingCrossYearState;
 }
