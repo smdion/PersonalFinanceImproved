@@ -260,6 +260,11 @@ export async function buildEnginePayload(
     perPersonSettings.reduce((s, p) => s + p.retirementAge, 0) /
       perPersonSettings.length,
   );
+  // Household retirement age: when the last person retires (full decumulation)
+  const householdRetirementAge =
+    perPersonSettings.length > 1
+      ? Math.max(...perPersonSettings.map((p) => p.retirementAge))
+      : avgRetirementAge;
   const maxEndAge = Math.max(...perPersonSettings.map((p) => p.endAge));
 
   // Budget profile summaries (for budget override "from profile" UI)
@@ -935,7 +940,14 @@ export async function buildEnginePayload(
   const baseEngineInput = {
     accumulationDefaults: derivedAccumulationDefaults,
     currentAge: age,
-    retirementAge: avgRetirementAge,
+    retirementAge: hasMultiplePeople
+      ? householdRetirementAge
+      : avgRetirementAge,
+    retirementAgeByPerson: hasMultiplePeople
+      ? Object.fromEntries(
+          perPersonSettings.map((ps) => [ps.personId, ps.retirementAge]),
+        )
+      : undefined,
     projectionEndAge: maxEndAge,
     currentSalary: totalCompensation,
     salaryGrowthRate: toNumber(settings.salaryAnnualIncrease),
