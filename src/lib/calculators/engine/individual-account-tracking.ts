@@ -694,7 +694,7 @@ export function buildIndividualYearBalances(
       ownerPersonId: ia.ownerPersonId,
       parentCategory: indParentCat.get(k),
       balance,
-      contribution: 0,
+      contribution: maps.contribs?.get(k) ?? 0,
       employerMatch: 0,
       growth: maps.growth?.get(k) ?? 0,
       withdrawal: maps.withdrawal?.get(k) ?? 0,
