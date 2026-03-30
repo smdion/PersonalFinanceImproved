@@ -46,6 +46,9 @@ export default function PerformancePage() {
   const deleteAccount = trpc.performance.deleteAccount.useMutation({
     onSuccess: () => utils.performance.computeSummary.invalidate(),
   });
+  const updateCostBasis = trpc.performance.updateCostBasis.useMutation({
+    onSuccess: () => utils.performance.computeSummary.invalidate(),
+  });
   const finalizeYear = trpc.performance.finalizeYear.useMutation({
     onSuccess: () => utils.performance.computeSummary.invalidate(),
   });
@@ -90,7 +93,7 @@ export default function PerformancePage() {
   const filtered = annualRows.filter((r) => r.category === activeCategory);
 
   function startEdit(
-    type: "annual" | "account",
+    type: "annual" | "account" | "master",
     id: number,
     field: string,
     currentValue: number,
@@ -110,6 +113,8 @@ export default function PerformancePage() {
     }
     if (type === "annual") {
       updateAnnual.mutate({ id, [field]: value });
+    } else if (type === "master") {
+      updateCostBasis.mutate({ performanceAccountId: id, costBasis: value });
     } else {
       updateAccount.mutate({ id, [field]: value });
     }

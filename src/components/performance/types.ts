@@ -1,7 +1,7 @@
 import React from "react";
 
 export type EditingCell = {
-  type: "annual" | "account";
+  type: "annual" | "account" | "master";
   id: number;
   field: string;
 } | null;
@@ -61,6 +61,7 @@ export type MasterAccount = {
   accountType: string;
   isActive: boolean;
   displayOrder: number;
+  costBasis?: string;
 };
 
 export type CreateAccountData = {
@@ -99,7 +100,7 @@ export type YearRowProps = {
   editingCell: EditingCell;
   editValue: string;
   onStartEdit: (
-    type: "annual" | "account",
+    type: "annual" | "account" | "master",
     id: number,
     field: string,
     currentValue: number,
