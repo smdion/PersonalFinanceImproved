@@ -455,8 +455,8 @@ function FundingSources({
       </div>
       <div className="flex justify-between items-center">
         <span className="text-muted">
-          Starting cost basis
-          <HelpTip text="Sum of cost basis across your brokerage accounts. Set per-account on the Portfolio page under Account Settings. Only gains above basis are taxable on withdrawal." />
+          Cost basis
+          <HelpTip text="Total cost basis across brokerage accounts — your original contributions. Set per-account on the Portfolio page. Only gains above basis are taxable on withdrawal." />
         </span>
         <span className="font-medium text-primary">
           {formatCurrency(costBasis)}
