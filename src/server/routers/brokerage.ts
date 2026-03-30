@@ -99,7 +99,7 @@ export const brokerageRouter = createTRPCRouter({
   // ══ SUMMARY (goals + API-resolved balances for brokerage page) ══
 
   computeSummary: protectedProcedure.query(async ({ ctx }) => {
-    const [goals, budgetLinkRows] = await Promise.all([
+    const [goals, budgetLinkRows, costBasisSetting] = await Promise.all([
       ctx.db
         .select()
         .from(schema.brokerageGoals)
@@ -124,6 +124,12 @@ export const brokerageRouter = createTRPCRouter({
             schema.contributionAccounts.id,
           ),
         ),
+      // Cost basis setting for brokerage page display
+      ctx.db
+        .select({ value: schema.appSettings.value })
+        .from(schema.appSettings)
+        .where(eq(schema.appSettings.key, "brokerage_cost_basis"))
+        .then((r) => r[0]?.value ?? null),
     ]);
 
     // Resolve API balances for linked portfolio accounts
@@ -224,6 +230,10 @@ export const brokerageRouter = createTRPCRouter({
           budgetItemName: r.budgetItemName,
           budgetCategory: r.budgetCategory,
         })),
+      costBasis:
+        costBasisSetting != null
+          ? Number(String(costBasisSetting).replace(/"/g, ""))
+          : 0,
     };
   }),
 });

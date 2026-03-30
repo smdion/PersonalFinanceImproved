@@ -234,10 +234,17 @@ export default function BrokeragePage() {
             directContrib={totalDirectContrib}
             overflow={totalOverflow}
             ramp={brokerageRamp}
+            costBasis={brokerageData?.costBasis ?? 0}
             canEdit={canEdit}
             onRampChange={(value) =>
               upsertSetting.mutate({
                 key: "brokerage_contribution_increase",
+                value: String(value),
+              })
+            }
+            onCostBasisChange={(value) =>
+              upsertSetting.mutate({
+                key: "brokerage_cost_basis",
                 value: String(value),
               })
             }
@@ -387,14 +394,18 @@ function FundingSources({
   directContrib,
   overflow,
   ramp,
+  costBasis,
   canEdit,
   onRampChange,
+  onCostBasisChange,
 }: {
   directContrib: number;
   overflow: number;
   ramp: number;
+  costBasis: number;
   canEdit: boolean;
   onRampChange: (value: number) => void;
+  onCostBasisChange: (value: number) => void;
 }) {
   const total = directContrib + overflow + ramp;
   const rows = [
@@ -447,6 +458,32 @@ function FundingSources({
         ) : (
           <span className="font-medium text-primary">
             {formatCurrency(ramp)}/yr
+          </span>
+        )}
+      </div>
+      <div className="flex justify-between items-center">
+        <span className="text-muted">
+          Starting cost basis
+          <HelpTip text="Your total contributions to brokerage accounts before this app started tracking. Only gains above the cost basis are taxable on withdrawal. Default $0 treats the entire balance as gains (conservative)." />
+        </span>
+        {canEdit ? (
+          <span className="flex items-center gap-1">
+            <span className="text-faint">$</span>
+            <input
+              type="number"
+              min={0}
+              step={100}
+              defaultValue={costBasis}
+              className="w-24 text-right border rounded px-1.5 py-0.5 text-sm"
+              onBlur={(e) => {
+                const value = parseFloat(e.target.value) || 0;
+                if (value !== costBasis) onCostBasisChange(value);
+              }}
+            />
+          </span>
+        ) : (
+          <span className="font-medium text-primary">
+            {formatCurrency(costBasis)}
           </span>
         )}
       </div>
