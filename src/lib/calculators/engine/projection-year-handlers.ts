@@ -1810,6 +1810,7 @@ export function runDecumulationYear(
   const { brokerageContributionRamp, limitGrowthRate } = input;
   const lgf = Math.pow(1 + limitGrowthRate, y);
   let decumBrokerageContrib = 0;
+  const decumContribByAccount = new Map<string, number>();
   if (state.contributionSpecs) {
     const portfolioSpecs = state.contributionSpecs.filter(
       (s) =>
@@ -1824,10 +1825,20 @@ export function runDecumulationYear(
       balances.afterTaxBasis += amount;
       addBalance(acctBal[overflowCat], amount);
       addBasis(acctBal[overflowCat], amount);
-      // Update individual account tracking
+      // Update individual account tracking using proper indKey
       if (hasIndividualAccounts && spec.accountName) {
-        const k = spec.accountName;
-        indBal.set(k, (indBal.get(k) ?? 0) + amount);
+        // Find matching individual account to get proper key
+        const matchingAccount = ctx.indAccts.find(
+          (ia) => ia.name === spec.accountName,
+        );
+        if (matchingAccount) {
+          const k = indKey(matchingAccount);
+          indBal.set(k, (indBal.get(k) ?? 0) + amount);
+          decumContribByAccount.set(
+            k,
+            (decumContribByAccount.get(k) ?? 0) + amount,
+          );
+        }
       }
     }
   }
@@ -1859,30 +1870,9 @@ export function runDecumulationYear(
     ? applyIndividualGrowth(indAccts, indKey, indBal, returnRate, true)
     : new Map<string, number>();
 
-  // Build individual account contribution map for brokerage post-retirement contributions
+  // Use the contribution map built during the brokerage contribution block above
   const decIndContribs =
-    decumBrokerageContrib > 0 && hasIndividualAccounts
-      ? (() => {
-          const m = new Map<string, number>();
-          if (state.contributionSpecs) {
-            for (const spec of state.contributionSpecs) {
-              if (
-                spec.parentCategory === "Portfolio" &&
-                spec.method !== "percent_of_salary" &&
-                spec.accountName &&
-                spec.baseAnnual > 0
-              ) {
-                m.set(
-                  spec.accountName,
-                  (m.get(spec.accountName) ?? 0) +
-                    roundToCents(spec.baseAnnual),
-                );
-              }
-            }
-          }
-          return m;
-        })()
-      : undefined;
+    decumContribByAccount.size > 0 ? decumContribByAccount : undefined;
 
   // Build individual account year balances (decumulation) -- extracted to individual-account-tracking.ts
   const decIndYearBalances: IndividualAccountYearBalance[] =
