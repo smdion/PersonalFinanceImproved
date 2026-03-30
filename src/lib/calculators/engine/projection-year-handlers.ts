@@ -1804,6 +1804,45 @@ export function runDecumulationYear(
   const { acaSubsidyPreserved, acaMagiHeadroom } = acaResult;
   routeWarnings.push(...acaResult.warnings);
 
+  // Portfolio-category (brokerage) contributions continue post-retirement.
+  // Fixed-dollar only — salary-based specs are skipped since salary stops at retirement.
+  const overflowCat = ctx.OVERFLOW_CATEGORY;
+  const { brokerageContributionRamp } = input;
+  let decumBrokerageContrib = 0;
+  if (state.contributionSpecs) {
+    const portfolioSpecs = state.contributionSpecs.filter(
+      (s) =>
+        s.parentCategory === "Portfolio" && s.method !== "percent_of_salary",
+    );
+    for (const spec of portfolioSpecs) {
+      const amount = roundToCents(spec.baseAnnual);
+      if (amount <= 0) continue;
+      decumBrokerageContrib += amount;
+      balances.afterTax += amount;
+      balances.afterTaxBasis += amount;
+      addBalance(acctBal[overflowCat], amount);
+      addBasis(acctBal[overflowCat], amount);
+      // Update individual account tracking
+      if (hasIndividualAccounts && spec.accountName) {
+        const k = spec.accountName;
+        indBal.set(k, (indBal.get(k) ?? 0) + amount);
+      }
+    }
+  }
+  // Brokerage ramp (continues post-retirement)
+  const rampYear = Math.min(y, MAX_BROKERAGE_RAMP_YEARS);
+  const decumRampAmount =
+    (brokerageContributionRamp ?? 0) > 0 && y > 0
+      ? roundToCents(brokerageContributionRamp! * rampYear)
+      : 0;
+  if (decumRampAmount > 0) {
+    decumBrokerageContrib += decumRampAmount;
+    balances.afterTax += decumRampAmount;
+    balances.afterTaxBasis += decumRampAmount;
+    addBalance(acctBal[overflowCat], decumRampAmount);
+    addBasis(acctBal[overflowCat], decumRampAmount);
+  }
+
   // Apply growth -- extracted to growth-application.ts
   applyGrowth({ effectiveReturn: returnRate, balances, acctBal });
 
@@ -1818,6 +1857,31 @@ export function runDecumulationYear(
     ? applyIndividualGrowth(indAccts, indKey, indBal, returnRate, true)
     : new Map<string, number>();
 
+  // Build individual account contribution map for brokerage post-retirement contributions
+  const decIndContribs =
+    decumBrokerageContrib > 0 && hasIndividualAccounts
+      ? (() => {
+          const m = new Map<string, number>();
+          if (state.contributionSpecs) {
+            for (const spec of state.contributionSpecs) {
+              if (
+                spec.parentCategory === "Portfolio" &&
+                spec.method !== "percent_of_salary" &&
+                spec.accountName &&
+                spec.baseAnnual > 0
+              ) {
+                m.set(
+                  spec.accountName,
+                  (m.get(spec.accountName) ?? 0) +
+                    roundToCents(spec.baseAnnual),
+                );
+              }
+            }
+          }
+          return m;
+        })()
+      : undefined;
+
   // Build individual account year balances (decumulation) -- extracted to individual-account-tracking.ts
   const decIndYearBalances: IndividualAccountYearBalance[] =
     hasIndividualAccounts
@@ -1828,6 +1892,7 @@ export function runDecumulationYear(
           indParentCat,
           "decumulation",
           {
+            contribs: decIndContribs,
             growth: decIndGrowth,
             withdrawal: decIndWithdrawal,
           },
@@ -1852,6 +1917,8 @@ export function runDecumulationYear(
     phase: "decumulation",
     projectedExpenses: roundToCents(state.projectedExpenses),
     hasBudgetOverride: budgetOverrideMap.has(year),
+    brokerageContribution: decumBrokerageContrib,
+    brokerageRampContribution: decumRampAmount,
     targetWithdrawal,
     config,
     slots,

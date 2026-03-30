@@ -8,7 +8,11 @@
 import { roundToCents } from "@/lib/utils/math";
 import { isOverflowTarget } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
-import type { EngineAccumulationYear, EngineYearProjection } from "./types";
+import type {
+  EngineAccumulationYear,
+  EngineDecumulationYear,
+  EngineYearProjection,
+} from "./types";
 
 // --- Input ---
 
@@ -229,8 +233,19 @@ export function calculateBrokerageGoals(
         status.funded = status.shortfall === 0;
         status.taxCost = gw.taxCost;
       }
+    } else if (yr.phase === "decumulation") {
+      // Brokerage contributions continue post-retirement (fixed-dollar only)
+      const decYr = yr as EngineDecumulationYear;
+      contribution = roundToCents(decYr.brokerageContribution);
+      if (parentCategoryFilter && yr.individualAccountBalances.length > 0) {
+        const filtered = yr.individualAccountBalances.filter(
+          (ia) => ia.parentCategory === parentCategoryFilter,
+        );
+        employerMatch = roundToCents(
+          filtered.reduce((s, ia) => s + ia.employerMatch, 0),
+        );
+      }
     }
-    // Decumulation years: no brokerage contributions or goal withdrawals
 
     // Growth: when filtering by parentCategory, use individual accounts' growth field directly
     let growth: number;
