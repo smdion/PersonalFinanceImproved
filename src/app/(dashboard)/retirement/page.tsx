@@ -379,16 +379,13 @@ export default function RetirementPage() {
                       </div>
                     ))}
                     <div>
-                      <span className="text-muted">Avg Retirement Age</span>
+                      <span className="text-muted">Household Retirement</span>
                       <div className="font-medium text-blue-600">
-                        {Math.round(
-                          perPersonSettings.reduce(
-                            (s, p) => s + p.retirementAge,
-                            0,
-                          ) / perPersonSettings.length,
+                        {Math.max(
+                          ...perPersonSettings.map((p) => p.retirementAge),
                         )}
                         <span className="text-[10px] text-faint font-normal ml-1">
-                          used in projection
+                          when last person retires
                         </span>
                       </div>
                     </div>
