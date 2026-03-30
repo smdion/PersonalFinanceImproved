@@ -429,6 +429,7 @@ export const performanceAccounts = sqliteTable(
       .$type<ContributionScaling>()
       .notNull()
       .default("scales_with_salary"),
+    costBasis: text("cost_basis").notNull().default("0"),
     parentCategory: text("parent_category").notNull(),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
     displayOrder: integer("display_order").notNull().default(0),

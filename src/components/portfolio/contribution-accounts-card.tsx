@@ -51,6 +51,7 @@ export function AccountCard({
     ownershipType: string;
     retirementBehavior?: string;
     contributionScaling?: string;
+    costBasis?: string;
     parentCategory: string;
     isActive: boolean;
     displayOrder: number;
@@ -276,6 +277,12 @@ export function AccountCard({
                       onChange={(val) =>
                         onPerfUpdate({ contributionScaling: val })
                       }
+                    />
+                    <InlineText
+                      label="Cost basis"
+                      value={pa.costBasis ?? "0"}
+                      placeholder="0"
+                      onSave={(val) => onPerfUpdate({ costBasis: val || "0" })}
                     />
                     <InlineText
                       label="Display Name"
