@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.22] - 2026-03-29
+
+### Fixed
+
+- Lump sums added for post-retirement years now correctly route to the decumulation engine instead of silently being ignored
+- Overrides are now editable — click the pencil icon on any override badge to populate the form for editing
+
+---
+
 ## [0.3.21] - 2026-03-29
 
 ### Added
