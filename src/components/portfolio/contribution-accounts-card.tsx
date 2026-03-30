@@ -50,6 +50,7 @@ export function AccountCard({
     ownerPersonId: number | null;
     ownershipType: string;
     retirementBehavior?: string;
+    contributionScaling?: string;
     parentCategory: string;
     isActive: boolean;
     displayOrder: number;
@@ -257,6 +258,23 @@ export function AccountCard({
                       ]}
                       onChange={(val) =>
                         onPerfUpdate({ retirementBehavior: val })
+                      }
+                    />
+                    <InlineSelect
+                      label="Contribution scaling"
+                      value={pa.contributionScaling ?? "scales_with_salary"}
+                      options={[
+                        {
+                          value: "scales_with_salary",
+                          label: "Scales with salary",
+                        },
+                        {
+                          value: "fixed_amount",
+                          label: "Fixed amount",
+                        },
+                      ]}
+                      onChange={(val) =>
+                        onPerfUpdate({ contributionScaling: val })
                       }
                     />
                     <InlineText

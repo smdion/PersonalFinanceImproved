@@ -517,6 +517,8 @@ export type ContributionSpec = {
     | "stops_at_owner_retirement"
     | "stops_when_last_retires"
     | "continues_after_retirement";
+  /** How this contribution scales during accumulation (from performance_accounts). */
+  contributionScaling?: "scales_with_salary" | "fixed_amount";
 };
 
 // --- Engine Output Slots ---

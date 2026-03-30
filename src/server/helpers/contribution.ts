@@ -629,6 +629,7 @@ export async function loadAndApplyContribProfile(
 export type ProfileContribContext = {
   perfCategoryMap: Map<number, string>;
   perfRetirementBehaviorMap: Map<number, string>;
+  perfContributionScalingMap: Map<number, string>;
   personNameById: Map<number, string>;
   accountBreakdownByCategory: Record<
     string,
@@ -847,6 +848,9 @@ export function buildProfileContribData(
         retirementBehavior: (c.performanceAccountId
           ? ctx.perfRetirementBehaviorMap.get(c.performanceAccountId)
           : undefined) as ContributionSpec["retirementBehavior"],
+        contributionScaling: (c.performanceAccountId
+          ? ctx.perfContributionScalingMap.get(c.performanceAccountId)
+          : undefined) as ContributionSpec["contributionScaling"],
       };
     });
 
