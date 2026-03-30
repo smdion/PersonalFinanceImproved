@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.23] - 2026-03-30
+
+### Added
+
+- Lump sums now target specific individual accounts (e.g., "Retirement Brokerage (Vanguard)") instead of account categories
+- Shared lump sum form and badge components used by both retirement and brokerage pages
+- Brokerage page lump sums now persist to database and support both injections and withdrawals
+- Lump sums appear in the retirement projection table: In/Out column (net), contribution columns, and balance tooltips
+
+### Improved
+
+- Override sections renamed from "Saving/Withdrawal" to "Pre-Retirement/Post-Retirement" for clarity
+
+---
+
 ## [0.3.22] - 2026-03-29
 
 ### Fixed

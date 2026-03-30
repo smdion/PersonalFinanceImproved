@@ -41,6 +41,7 @@ const lumpSumSchema = z
       amount: z.number().positive(),
       targetAccount: z.enum(accountCategoryEnum()),
       taxType: z.enum(["traditional", "roth"]).optional(),
+      targetAccountName: z.string().max(200).optional(),
       label: z.string().max(100).optional(),
     }),
   )
