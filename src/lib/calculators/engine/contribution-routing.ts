@@ -401,6 +401,9 @@ export function routeFromSpecs(
       projected = roundToCents(
         projectedSalary * spec.salaryFraction * spec.value,
       );
+    } else if (spec.contributionScaling === "fixed_amount") {
+      // Fixed-amount specs use limit growth only — independent of salary changes
+      projected = roundToCents(spec.baseAnnual * limitGrowthFactor);
     } else if (
       getAccountTypeConfig(spec.category).fixedContribScalesWithSalary
     ) {
