@@ -1,7 +1,7 @@
 /**
  * Brokerage router integration tests.
  *
- * Tests goal CRUD, planned transaction CRUD, and computeSummary
+ * Tests goal CRUD and computeSummary (with API balance resolution)
  * using an isolated SQLite database per test suite.
  */
 import "./setup-mocks";
@@ -97,74 +97,15 @@ describe("brokerage router", () => {
     });
   });
 
-  // ── PLANNED TRANSACTIONS ──
-
-  describe("plannedTransactions", () => {
-    let goalId: number;
-
-    beforeAll(async () => {
-      const goals = await caller.brokerage.listGoals();
-      goalId = goals[0]!.id;
-    });
-
-    it("creates a planned transaction", async () => {
-      const tx = await caller.brokerage.plannedTransactions.create({
-        goalId,
-        transactionDate: "2026-06-15",
-        amount: "5000",
-        description: "Initial deposit",
-        isRecurring: false,
-      });
-      expect(tx).toBeDefined();
-      expect(tx!.description).toBe("Initial deposit");
-    });
-
-    it("creates a recurring transaction", async () => {
-      const tx = await caller.brokerage.plannedTransactions.create({
-        goalId,
-        transactionDate: "2026-01-01",
-        amount: "500",
-        description: "Monthly savings",
-        isRecurring: true,
-        recurrenceMonths: 1,
-      });
-      expect(tx).toBeDefined();
-      expect(tx!.isRecurring).toBe(true);
-    });
-
-    it("updates a transaction", async () => {
-      const summary = await caller.brokerage.computeSummary();
-      const txId = summary.plannedTransactions[0]!.id;
-      const updated = await caller.brokerage.plannedTransactions.update({
-        id: txId,
-        goalId,
-        transactionDate: "2026-07-01",
-        amount: "6000",
-        description: "Updated deposit",
-        isRecurring: false,
-      });
-      expect(updated).toBeDefined();
-    });
-
-    it("deletes a transaction", async () => {
-      const summary = await caller.brokerage.computeSummary();
-      const count = summary.plannedTransactions.length;
-      const txId = summary.plannedTransactions[0]!.id;
-      await caller.brokerage.plannedTransactions.delete({ id: txId });
-      const after = await caller.brokerage.computeSummary();
-      expect(after.plannedTransactions.length).toBe(count - 1);
-    });
-  });
-
   // ── COMPUTE SUMMARY ──
 
   describe("computeSummary", () => {
-    it("returns goals and planned transactions", async () => {
+    it("returns goals and apiBalances", async () => {
       const summary = await caller.brokerage.computeSummary();
       expect(summary).toHaveProperty("goals");
-      expect(summary).toHaveProperty("plannedTransactions");
+      expect(summary).toHaveProperty("apiBalances");
       expect(Array.isArray(summary.goals)).toBe(true);
-      expect(Array.isArray(summary.plannedTransactions)).toBe(true);
+      expect(Array.isArray(summary.apiBalances)).toBe(true);
     });
 
     it("goals have numeric targetAmount", async () => {
@@ -174,11 +115,9 @@ describe("brokerage router", () => {
       }
     });
 
-    it("planned transactions have numeric amount", async () => {
+    it("apiBalances is empty when no budget API is configured", async () => {
       const summary = await caller.brokerage.computeSummary();
-      for (const t of summary.plannedTransactions) {
-        expect(typeof t.amount).toBe("number");
-      }
+      expect(summary.apiBalances).toEqual([]);
     });
   });
 });

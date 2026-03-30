@@ -3,7 +3,6 @@
 /** Displays taxable brokerage account balances, goals, and projection charts with permission-gated editing. */
 
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { Card } from "@/components/ui/card";
@@ -13,7 +12,6 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency } from "@/lib/utils/format";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { PlannedEventsTab } from "@/components/savings/planned-events-tab";
 import { BrokerageGoalsSection } from "@/components/cards/brokerage-goals";
 import {
   calculateBrokerageGoals,
@@ -29,7 +27,7 @@ import {
   LumpSumBadge,
 } from "@/components/cards/projection/lump-sum-form";
 
-type BrokerageTab = "projection" | "goals" | "transactions";
+type BrokerageTab = "projection" | "goals";
 
 export default function BrokeragePage() {
   const user = useUser();
@@ -40,7 +38,7 @@ export default function BrokeragePage() {
     "active_contrib_profile_id",
     null,
   );
-  // Brokerage lump sum overrides (persisted to DB)
+  // Brokerage planned events (persisted to DB)
   const brokerageLumpQuery = trpc.settings.projectionOverrides.get.useQuery({
     overrideType: "brokerage",
   });
@@ -123,21 +121,20 @@ export default function BrokeragePage() {
   const { data: contribData } =
     trpc.contribution.computeSummary.useQuery(contribInput);
   const { data: brokerageData } = trpc.brokerage.computeSummary.useQuery();
-
-  const createTx = trpc.brokerage.plannedTransactions.create.useMutation({
+  const { data: trackingData } =
+    trpc.brokerage.availableTrackingAccounts.useQuery();
+  const linkAccount = trpc.brokerage.linkAccount.useMutation({
     onSuccess: () => {
-      utils.brokerage.computeSummary.invalidate();
-      setAddingTx(false);
-      setTxForm(emptyTxForm);
+      utils.brokerage.invalidate();
     },
   });
-  const deleteTx = trpc.brokerage.plannedTransactions.delete.useMutation({
-    onSuccess: () => utils.brokerage.computeSummary.invalidate(),
+  const unlinkAccount = trpc.brokerage.unlinkAccount.useMutation({
+    onSuccess: () => {
+      utils.brokerage.invalidate();
+    },
   });
 
   const [activeTab, setActiveTab] = useState<BrokerageTab>("projection");
-  const [addingTx, setAddingTx] = useState(false);
-  const [txForm, setTxForm] = useState(emptyTxForm);
 
   if (isLoading) {
     return (
@@ -181,7 +178,6 @@ export default function BrokeragePage() {
     goals: data.brokerageGoals ?? [],
     engineYears: data.result.projectionByYear,
     parentCategoryFilter: "Portfolio",
-    plannedTransactions: brokerageData?.plannedTransactions,
   };
   const brokerageResult = calculateBrokerageGoals(brokerageGoalsInput);
 
@@ -196,6 +192,12 @@ export default function BrokeragePage() {
         ),
       ]
     : [];
+
+  // API balance overlay from brokerage router
+  const apiBalances = brokerageData?.apiBalances ?? [];
+  const apiBalanceByPerfId = new Map(
+    apiBalances.map((ab) => [ab.performanceAccountId, ab]),
+  );
 
   // Funding sources — fully separated from retirement engine data.
   // Direct contributions: sum of Portfolio-category accounts only (from contribution summary)
@@ -217,35 +219,9 @@ export default function BrokeragePage() {
     | undefined;
   const brokerageRamp = firstAccYear?.brokerageRampContribution ?? 0;
 
-  // Build goalById map for PlannedEventsTab
-  const goalById = new Map(
-    (brokerageData?.goals ?? []).map((g) => [g.id, { name: g.name }]),
-  );
-
-  const handleAddTx = () => {
-    if (
-      !txForm.goalId ||
-      !txForm.transactionDate ||
-      !txForm.amount ||
-      !txForm.description
-    )
-      return;
-    createTx.mutate({
-      goalId: txForm.goalId,
-      transactionDate: txForm.transactionDate,
-      amount: txForm.amount,
-      description: txForm.description,
-      isRecurring: txForm.isRecurring,
-      recurrenceMonths: txForm.isRecurring
-        ? parseInt(txForm.recurrenceMonths) || null
-        : null,
-    });
-  };
-
   const tabs: { key: BrokerageTab; label: string }[] = [
     { key: "projection", label: "Projection" },
     { key: "goals", label: "Goals" },
-    { key: "transactions", label: "Transactions" },
   ];
 
   return (
@@ -285,9 +261,42 @@ export default function BrokeragePage() {
 
             {/* By Account */}
             <Card title="By Account" className="lg:col-span-2">
-              <ByAccountSummary accounts={portfolioAccounts} />
+              <ByAccountSummary
+                accounts={portfolioAccounts}
+                apiBalanceByPerfId={apiBalanceByPerfId}
+              />
             </Card>
           </div>
+
+          {/* API Linking — only show when budget API is active */}
+          {canEdit && trackingData?.service && (
+            <Card title="Account Linking" className="mt-6">
+              <p className="text-xs text-muted mb-3">
+                Link brokerage accounts to YNAB tracking accounts. Linked
+                accounts use YNAB as the balance source of truth.
+                <HelpTip text="When linked, portfolio snapshots automatically pull the YNAB balance instead of the spreadsheet value. The snapshot is updated on import." />
+              </p>
+              <AccountLinkingSection
+                trackingAccounts={trackingData.accounts}
+                currentMappings={trackingData.mappings ?? []}
+                individualAccounts={
+                  data?.result?.projectionByYear?.[0]
+                    ?.individualAccountBalances ?? []
+                }
+                onLink={(perfId, remoteId) =>
+                  linkAccount.mutate({
+                    performanceAccountId: perfId,
+                    remoteAccountId: remoteId,
+                    syncDirection: "pull",
+                  })
+                }
+                onUnlink={(perfId) =>
+                  unlinkAccount.mutate({ performanceAccountId: perfId })
+                }
+                isLinking={linkAccount.isPending || unlinkAccount.isPending}
+              />
+            </Card>
+          )}
 
           {/* Goal Status */}
           {brokerageResult.goals.length > 0 && (
@@ -296,13 +305,13 @@ export default function BrokeragePage() {
             </Card>
           )}
 
-          {/* Lump Sum Overrides */}
+          {/* Planned Events (lump sum injections/withdrawals) */}
           {canEdit && (
-            <Card title="Lump Sum Events" className="mt-6">
+            <Card title="Planned Events" className="mt-6">
               <p className="text-xs text-muted mb-2">
                 One-time dollar injections or withdrawals (bonus, inheritance,
                 down payment).
-                <HelpTip text="Lump sums bypass IRS contribution limits and are only applied in the specified year. Negative amounts model withdrawals." />
+                <HelpTip text="Planned events bypass IRS contribution limits and are applied in the specified year. They feed directly into the projection engine. Negative amounts model withdrawals." />
               </p>
               {brokerageLumpSums.length > 0 && (
                 <div className="space-y-1 mb-3">
@@ -344,127 +353,6 @@ export default function BrokeragePage() {
 
       {activeTab === "goals" && <BrokerageGoalsSection />}
 
-      {activeTab === "transactions" && (
-        <div className="space-y-4">
-          {/* Add transaction form */}
-          {canEdit &&
-            (addingTx ? (
-              <Card title="New Planned Transaction">
-                <div className="space-y-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <select
-                      className="border rounded px-2 py-1 text-sm"
-                      value={txForm.goalId ?? ""}
-                      onChange={(e) =>
-                        setTxForm({
-                          ...txForm,
-                          goalId: Number(e.target.value) || null,
-                        })
-                      }
-                    >
-                      <option value="">Select goal...</option>
-                      {(brokerageData?.goals ?? []).map((g) => (
-                        <option key={g.id} value={g.id}>
-                          {g.name}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      className="border rounded px-2 py-1 text-sm"
-                      type="date"
-                      value={txForm.transactionDate}
-                      onChange={(e) =>
-                        setTxForm({
-                          ...txForm,
-                          transactionDate: e.target.value,
-                        })
-                      }
-                    />
-                    <input
-                      className="border rounded px-2 py-1 text-sm"
-                      placeholder="Amount (+ deposit, - withdrawal)"
-                      value={txForm.amount}
-                      onChange={(e) =>
-                        setTxForm({ ...txForm, amount: e.target.value })
-                      }
-                    />
-                    <input
-                      className="border rounded px-2 py-1 text-sm"
-                      placeholder="Description"
-                      value={txForm.description}
-                      onChange={(e) =>
-                        setTxForm({ ...txForm, description: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-1 text-sm text-muted">
-                      <input
-                        type="checkbox"
-                        checked={txForm.isRecurring}
-                        onChange={(e) =>
-                          setTxForm({
-                            ...txForm,
-                            isRecurring: e.target.checked,
-                          })
-                        }
-                      />
-                      Recurring
-                    </label>
-                    {txForm.isRecurring && (
-                      <input
-                        className="border rounded px-2 py-1 text-sm w-32"
-                        placeholder="Every N months"
-                        type="number"
-                        value={txForm.recurrenceMonths}
-                        onChange={(e) =>
-                          setTxForm({
-                            ...txForm,
-                            recurrenceMonths: e.target.value,
-                          })
-                        }
-                      />
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={handleAddTx}
-                      disabled={createTx.isPending}
-                    >
-                      {createTx.isPending ? "Adding..." : "Add Transaction"}
-                    </Button>
-                    <button
-                      className="text-xs text-muted hover:text-secondary"
-                      onClick={() => {
-                        setAddingTx(false);
-                        setTxForm(emptyTxForm);
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </Card>
-            ) : (
-              <button
-                className="text-sm text-blue-600 hover:text-blue-800"
-                onClick={() => setAddingTx(true)}
-              >
-                + Add Planned Transaction
-              </button>
-            ))}
-
-          <PlannedEventsTab
-            plannedTransactions={brokerageData?.plannedTransactions ?? []}
-            goalById={goalById}
-            onDeleteTx={(p) => deleteTx.mutate(p)}
-            entityLabel="Goal"
-            canEdit={canEdit}
-          />
-        </div>
-      )}
-
       {/* Warnings */}
       {brokerageResult.warnings.length > 0 && (
         <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3">
@@ -478,17 +366,6 @@ export default function BrokeragePage() {
     </div>
   );
 }
-
-// --- Form state ---
-
-const emptyTxForm = {
-  goalId: null as number | null,
-  transactionDate: "",
-  amount: "",
-  description: "",
-  isRecurring: false,
-  recurrenceMonths: "",
-};
 
 // --- Sub-components ---
 
@@ -541,8 +418,16 @@ function FundingSources({
   );
 }
 
+type ApiBalanceInfo = {
+  performanceAccountId: number;
+  resolvedBalance: number;
+  snapshotBalance: number;
+  source: "api" | "snapshot";
+};
+
 function ByAccountSummary({
   accounts,
+  apiBalanceByPerfId,
 }: {
   accounts: {
     accountType: string;
@@ -553,7 +438,9 @@ function ByAccountSummary({
     fundingPct: number;
     hasDiscountBar: boolean;
     employerMatchLabel: string;
+    performanceAccountId?: number;
   }[];
+  apiBalanceByPerfId: Map<number, ApiBalanceInfo>;
 }) {
   if (accounts.length === 0) {
     return (
@@ -565,40 +452,60 @@ function ByAccountSummary({
 
   return (
     <div className="space-y-3">
-      {accounts.map((at) => (
-        <div key={at.accountType}>
-          <div className="flex items-baseline justify-between text-sm">
-            <span className="text-secondary font-medium">{at.accountType}</span>
-            <span className="text-primary font-semibold">
-              {formatCurrency(at.totalContrib)}/yr
-            </span>
-          </div>
-          {at.targetAnnual != null && at.targetAnnual > 0 && (
-            <div className="mt-1">
-              <div className="w-full bg-surface-strong rounded-full h-2">
-                <div
-                  className="bg-emerald-500 h-2 rounded-full transition-all"
-                  style={{
-                    width: `${Math.min(100, (at.totalContrib / at.targetAnnual) * 100)}%`,
-                  }}
-                />
-              </div>
-              <p className="text-[10px] text-faint mt-0.5">
-                {Math.round((at.totalContrib / at.targetAnnual) * 100)}% of{" "}
-                {formatCurrency(at.targetAnnual)} target
-              </p>
+      {accounts.map((at) => {
+        const apiInfo = at.performanceAccountId
+          ? apiBalanceByPerfId.get(at.performanceAccountId)
+          : undefined;
+        return (
+          <div key={at.accountType}>
+            <div className="flex items-baseline justify-between text-sm">
+              <span className="text-secondary font-medium">
+                {at.accountType}
+                {apiInfo?.source === "api" && (
+                  <span className="ml-1.5 inline-block px-1.5 py-0.5 text-[9px] font-semibold uppercase rounded bg-blue-100 text-blue-700">
+                    YNAB
+                  </span>
+                )}
+              </span>
+              <span className="text-primary font-semibold">
+                {apiInfo?.source === "api"
+                  ? formatCurrency(apiInfo.resolvedBalance)
+                  : `${formatCurrency(at.totalContrib)}/yr`}
+              </span>
             </div>
-          )}
-          {at.targetAnnual == null && (
-            <p className="text-[10px] text-faint mt-0.5">No target set</p>
-          )}
-          {at.employerMatch > 0 && (
-            <p className="text-[10px] text-muted mt-0.5">
-              +{formatCurrency(at.employerMatch)}/yr {at.employerMatchLabel}
-            </p>
-          )}
-        </div>
-      ))}
+            {apiInfo?.source === "api" && (
+              <p className="text-[10px] text-blue-600 mt-0.5">
+                Balance from YNAB (snapshot:{" "}
+                {formatCurrency(apiInfo.snapshotBalance)})
+              </p>
+            )}
+            {at.targetAnnual != null && at.targetAnnual > 0 && (
+              <div className="mt-1">
+                <div className="w-full bg-surface-strong rounded-full h-2">
+                  <div
+                    className="bg-emerald-500 h-2 rounded-full transition-all"
+                    style={{
+                      width: `${Math.min(100, (at.totalContrib / at.targetAnnual) * 100)}%`,
+                    }}
+                  />
+                </div>
+                <p className="text-[10px] text-faint mt-0.5">
+                  {Math.round((at.totalContrib / at.targetAnnual) * 100)}% of{" "}
+                  {formatCurrency(at.targetAnnual)} target
+                </p>
+              </div>
+            )}
+            {at.targetAnnual == null && (
+              <p className="text-[10px] text-faint mt-0.5">No target set</p>
+            )}
+            {at.employerMatch > 0 && (
+              <p className="text-[10px] text-muted mt-0.5">
+                +{formatCurrency(at.employerMatch)}/yr {at.employerMatchLabel}
+              </p>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -662,12 +569,128 @@ function GoalStatusTable({ goals }: { goals: BrokerageGoalStatus[] }) {
   );
 }
 
+function AccountLinkingSection({
+  trackingAccounts,
+  currentMappings,
+  individualAccounts,
+  onLink,
+  onUnlink,
+  isLinking,
+}: {
+  trackingAccounts: Array<{
+    id: string;
+    name: string;
+    balance: number;
+    type: string;
+  }>;
+  currentMappings: Array<{
+    performanceAccountId: number;
+    remoteAccountId: string;
+    syncDirection: string;
+    localName: string;
+  }>;
+  individualAccounts: Array<{
+    name: string;
+    category: string;
+    performanceAccountId?: number;
+    parentCategory?: string;
+  }>;
+  onLink: (perfId: number, remoteId: string) => void;
+  onUnlink: (perfId: number) => void;
+  isLinking: boolean;
+}) {
+  // Get portfolio accounts that can be linked
+  const linkableAccounts = individualAccounts.filter(
+    (ia) => ia.parentCategory === "Portfolio" && ia.performanceAccountId,
+  );
+
+  if (linkableAccounts.length === 0) {
+    return (
+      <p className="text-sm text-faint">
+        No portfolio accounts available to link.
+      </p>
+    );
+  }
+
+  // Build lookup for current mappings
+  const mappingByPerfId = new Map(
+    currentMappings.map((m) => [m.performanceAccountId, m]),
+  );
+
+  // Build set of already-mapped remote account IDs
+  const usedRemoteIds = new Set(currentMappings.map((m) => m.remoteAccountId));
+
+  return (
+    <div className="space-y-2">
+      {linkableAccounts.map((acct) => {
+        const perfId = acct.performanceAccountId!;
+        const mapping = mappingByPerfId.get(perfId);
+        const linkedRemote = mapping
+          ? trackingAccounts.find((ta) => ta.id === mapping.remoteAccountId)
+          : undefined;
+
+        return (
+          <div
+            key={perfId}
+            className="flex items-center justify-between py-2 border-b border-subtle last:border-0"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-secondary">
+                {acct.name}
+              </span>
+              {linkedRemote && (
+                <span className="inline-block px-1.5 py-0.5 text-[9px] font-semibold uppercase rounded bg-blue-100 text-blue-700">
+                  YNAB
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {linkedRemote ? (
+                <>
+                  <span className="text-xs text-muted">
+                    → {linkedRemote.name} (
+                    {formatCurrency(linkedRemote.balance)})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onUnlink(perfId)}
+                    disabled={isLinking}
+                    className="text-xs text-red-600 hover:text-red-800 disabled:opacity-50"
+                  >
+                    Unlink
+                  </button>
+                </>
+              ) : (
+                <select
+                  className="text-xs border rounded px-2 py-1"
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) onLink(perfId, e.target.value);
+                  }}
+                  disabled={isLinking}
+                >
+                  <option value="">Link to YNAB account...</option>
+                  {trackingAccounts
+                    .filter((ta) => !usedRemoteIds.has(ta.id))
+                    .map((ta) => (
+                      <option key={ta.id} value={ta.id}>
+                        {ta.name} ({formatCurrency(ta.balance)})
+                      </option>
+                    ))}
+                </select>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
   if (years.length === 0) {
     return <p className="text-sm text-faint">No projection data.</p>;
   }
-
-  const hasAnyPlanned = years.some((yr) => yr.plannedTransactionTotal !== 0);
 
   return (
     <div className="overflow-x-auto">
@@ -683,12 +706,6 @@ function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
               Overflow
               <HelpTip text="Excess from retirement accounts that exceed IRS limits, redirected to brokerage" />
             </th>
-            {hasAnyPlanned && (
-              <th className="py-2 pr-3 text-right">
-                Planned
-                <HelpTip text="Manual planned deposits or withdrawals from the Transactions tab" />
-              </th>
-            )}
             <th className="py-2 pr-3 text-right">
               Growth
               <HelpTip text="Investment returns — balance change minus net contributions and withdrawals" />
@@ -736,15 +753,6 @@ function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
                 <td className="py-1.5 pr-3 text-right text-amber-600">
                   {yr.overflow > 0 ? formatCurrency(yr.overflow) : "\u2014"}
                 </td>
-                {hasAnyPlanned && (
-                  <td
-                    className={`py-1.5 pr-3 text-right ${yr.plannedTransactionTotal >= 0 ? "text-blue-600" : "text-red-600"}`}
-                  >
-                    {yr.plannedTransactionTotal !== 0
-                      ? `${yr.plannedTransactionTotal >= 0 ? "+" : ""}${formatCurrency(yr.plannedTransactionTotal)}`
-                      : "\u2014"}
-                  </td>
-                )}
                 <td className="py-1.5 pr-3 text-right text-emerald-600">
                   {yr.growth !== 0 ? formatCurrency(yr.growth) : "\u2014"}
                 </td>
@@ -775,7 +783,3 @@ function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
     </div>
   );
 }
-
-// BrokerageLumpSumEntry and BrokerageLumpSumForm removed — now uses
-// shared LumpSumEvent type and LumpSumForm/LumpSumBadge components
-// from @/components/cards/projection/lump-sum-form

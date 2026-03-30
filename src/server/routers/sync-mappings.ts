@@ -9,11 +9,10 @@ import {
   getClientForService,
   getActiveBudgetApi,
   getApiConnection,
-  cacheGet,
 } from "@/lib/budget-api";
-import type { BudgetAccount } from "@/lib/budget-api";
 import { accountDisplayName } from "@/lib/utils/format";
 import { accountMappingSchema } from "@/lib/db/json-schemas";
+import { getApiAccountBalanceMap } from "@/server/helpers/api-balance-resolution";
 
 const serviceEnum = z.enum(["ynab", "actual"]);
 
@@ -177,17 +176,9 @@ export const syncMappingsRouter = createTRPCRouter({
       }
 
       // Get current API account balances
-      const apiAccounts = await cacheGet<BudgetAccount[]>(
-        ctx.db,
-        active,
-        "accounts",
-      );
-      const apiBalanceMap = new Map<string, number>();
-      if (apiAccounts) {
-        for (const a of apiAccounts.data) {
-          apiBalanceMap.set(a.id, a.balance);
-        }
-      }
+      const apiBalanceMap =
+        (await getApiAccountBalanceMap(ctx.db, active)) ??
+        new Map<string, number>();
 
       // Aggregate local balances by remote account via localId (many-to-one support)
       const remoteAggregated = new Map<
@@ -263,22 +254,13 @@ export const syncMappingsRouter = createTRPCRouter({
       return { pulled: 0, message: "No pull mappings configured" };
     }
 
-    // Get cached API accounts
-    const apiAccounts = await cacheGet<BudgetAccount[]>(
-      ctx.db,
-      active,
-      "accounts",
-    );
-    if (!apiAccounts) {
+    // Get cached API account balances
+    const apiBalanceMap = await getApiAccountBalanceMap(ctx.db, active);
+    if (!apiBalanceMap) {
       throw new TRPCError({
         code: "PRECONDITION_FAILED",
         message: "No cached accounts. Run Sync first.",
       });
-    }
-
-    const apiBalanceMap = new Map<string, number>();
-    for (const a of apiAccounts.data) {
-      apiBalanceMap.set(a.id, a.balance);
     }
 
     const currentYear = new Date().getFullYear();
@@ -484,4 +466,104 @@ export const syncMappingsRouter = createTRPCRouter({
 
     return { report };
   }),
+
+  /** Pull portfolio balances from budget API tracking accounts into the latest snapshot. */
+  pullPortfolioFromApi: adminProcedure
+    .input(z.object({ snapshotId: z.number().int().optional() }).optional())
+    .mutation(async ({ ctx, input }) => {
+      const active = await getActiveBudgetApi(ctx.db);
+      if (active === "none") {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "No budget API active",
+        });
+      }
+
+      const conn = await getApiConnection(ctx.db, active);
+      const mappings = conn?.accountMappings ?? [];
+      const pullMappings = mappings.filter(
+        (m) =>
+          m.performanceAccountId != null &&
+          (m.syncDirection === "pull" || m.syncDirection === "both"),
+      );
+      if (pullMappings.length === 0) {
+        return { pulled: 0, message: "No portfolio pull mappings configured" };
+      }
+
+      const apiBalanceMap = await getApiAccountBalanceMap(ctx.db, active);
+      if (!apiBalanceMap) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "No cached accounts. Run Sync first.",
+        });
+      }
+
+      // Get the snapshot — latest if not specified
+      let snapshot;
+      if (input?.snapshotId) {
+        snapshot = await ctx.db
+          .select()
+          .from(schema.portfolioSnapshots)
+          .where(eq(schema.portfolioSnapshots.id, input.snapshotId))
+          .then((r) => r[0]);
+      } else {
+        snapshot = await ctx.db
+          .select()
+          .from(schema.portfolioSnapshots)
+          .orderBy(sql`${schema.portfolioSnapshots.snapshotDate} DESC`)
+          .limit(1)
+          .then((r) => r[0]);
+      }
+      if (!snapshot) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No portfolio snapshot found",
+        });
+      }
+
+      // Get all snapshot accounts for this snapshot
+      const snapshotAccounts = await ctx.db
+        .select()
+        .from(schema.portfolioAccounts)
+        .where(eq(schema.portfolioAccounts.snapshotId, snapshot.id));
+
+      let pulled = 0;
+      for (const mapping of pullMappings) {
+        const apiBalance = apiBalanceMap.get(mapping.remoteAccountId);
+        if (apiBalance === undefined) continue;
+
+        // Find all rows in this snapshot matching the performanceAccountId
+        const matchingRows = snapshotAccounts.filter(
+          (a) => a.performanceAccountId === mapping.performanceAccountId,
+        );
+        if (matchingRows.length === 0) continue;
+
+        // Calculate current total for this performanceAccountId
+        const currentTotal = matchingRows.reduce(
+          (s, a) => s + Number(a.amount),
+          0,
+        );
+
+        if (matchingRows.length === 1) {
+          // Single row — set directly
+          await ctx.db
+            .update(schema.portfolioAccounts)
+            .set({ amount: String(apiBalance) })
+            .where(eq(schema.portfolioAccounts.id, matchingRows[0]!.id));
+        } else {
+          // Multiple rows — scale proportionally to preserve sub-account ratios
+          const ratio = currentTotal > 0 ? apiBalance / currentTotal : 0;
+          for (const row of matchingRows) {
+            const scaled = Number(row.amount) * ratio;
+            await ctx.db
+              .update(schema.portfolioAccounts)
+              .set({ amount: String(Math.round(scaled * 100) / 100) })
+              .where(eq(schema.portfolioAccounts.id, row.id));
+          }
+        }
+        pulled++;
+      }
+
+      return { pulled, snapshotId: snapshot.id };
+    }),
 });

@@ -8,6 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.27] - 2026-03-30
+
+### Added
+
+- Brokerage accounts can now be linked to YNAB tracking accounts — linked accounts use YNAB as the balance source of truth
+- New "Account Linking" section on brokerage page with link/unlink controls and YNAB badges
+- Portfolio snapshot import automatically pulls YNAB balances for linked accounts before pushing
+- New `pullPortfolioFromApi` endpoint updates snapshot balances from YNAB tracking accounts
+
+### Improved
+
+- Extracted shared `getApiAccountBalanceMap()` helper — replaces 4 duplicated inline patterns across admin, sync-mappings, and sync-core routers
+- Consolidated brokerage page from 3 tabs to 2: removed "Transactions" tab (planned transactions), renamed "Lump Sum Events" to "Planned Events"
+- Planned Events use the shared engine-integrated lump sum system (shared with retirement page) instead of the separate goal-linked transaction system
+
+---
+
 ## [0.3.26] - 2026-03-30
 
 ### Fixed
