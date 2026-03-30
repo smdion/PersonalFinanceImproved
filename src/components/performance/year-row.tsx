@@ -218,6 +218,29 @@ export function YearRow({
             {formatCurrency(row.endingBalance)}
           </td>
         )}
+        {activeCategory === "Brokerage" && (
+          <>
+            <td className="text-right px-4 py-3 text-muted">
+              {formatCurrency(row.lifetimeContributions + row.lifetimeMatch)}
+            </td>
+            <td
+              className={`text-right px-4 py-3 font-medium ${
+                row.endingBalance -
+                  row.lifetimeContributions -
+                  row.lifetimeMatch >=
+                0
+                  ? "text-green-600"
+                  : "text-red-600"
+              }`}
+            >
+              {formatCurrency(
+                row.endingBalance -
+                  row.lifetimeContributions -
+                  row.lifetimeMatch,
+              )}
+            </td>
+          </>
+        )}
         <td
           className={`text-right px-4 py-3 font-medium ${row.annualReturnPct !== null ? (row.annualReturnPct >= 0 ? "text-green-600" : "text-red-600") : ""}`}
         >
@@ -451,6 +474,53 @@ export function YearRow({
                     {formatCurrency(a.endingBalance)}
                   </td>
                 )}
+                {activeCategory === "Brokerage" &&
+                  (() => {
+                    const master = masterAccounts?.find(
+                      (m) => m.id === a.performanceAccountId,
+                    );
+                    const basis = Number(master?.costBasis ?? 0);
+                    const unrealized = a.endingBalance - basis;
+                    return (
+                      <>
+                        {acctEditable && master ? (
+                          <EditableCell
+                            value={basis}
+                            formatter={formatCurrency}
+                            isEditing={
+                              editingCell?.type === "master" &&
+                              editingCell?.id === master.id &&
+                              editingCell?.field === "costBasis"
+                            }
+                            editValue={editValue}
+                            onStartEdit={() =>
+                              onStartEdit(
+                                "master",
+                                master.id,
+                                "costBasis",
+                                basis,
+                              )
+                            }
+                            onEditValueChange={onEditValueChange}
+                            onSaveEdit={onSaveEdit}
+                            onKeyDown={onKeyDown}
+                            className="text-muted"
+                          />
+                        ) : (
+                          <td className="text-right px-4 py-2 text-muted">
+                            {formatCurrency(basis)}
+                          </td>
+                        )}
+                        <td
+                          className={`text-right px-4 py-2 font-medium ${
+                            unrealized >= 0 ? "text-green-600" : "text-red-600"
+                          }`}
+                        >
+                          {formatCurrency(unrealized)}
+                        </td>
+                      </>
+                    );
+                  })()}
                 <td
                   className={`text-right px-4 py-2 font-medium ${a.annualReturnPct !== null ? (a.annualReturnPct >= 0 ? "text-green-600" : "text-red-600") : "text-muted"}`}
                 >

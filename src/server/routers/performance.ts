@@ -663,6 +663,7 @@ export const performanceRouter = createTRPCRouter({
       accountType: pa.accountType,
       isActive: pa.isActive,
       displayOrder: pa.displayOrder,
+      costBasis: String(pa.costBasis ?? "0"),
     }));
 
     // Compute lifetime fees and distributions from all Portfolio annual rows
@@ -737,6 +738,21 @@ export const performanceRouter = createTRPCRouter({
         .set(updates)
         .where(eq(schema.accountPerformance.id, id));
       await stampPerformanceUpdated(ctx.db);
+      return { success: true };
+    }),
+
+  updateCostBasis: performanceProcedure
+    .input(
+      z.object({
+        performanceAccountId: z.number().int(),
+        costBasis: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .update(schema.performanceAccounts)
+        .set({ costBasis: input.costBasis })
+        .where(eq(schema.performanceAccounts.id, input.performanceAccountId));
       return { success: true };
     }),
 

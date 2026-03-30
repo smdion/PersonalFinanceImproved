@@ -42,7 +42,7 @@ export function PerformanceTable({
   editingCell: EditingCell;
   editValue: string;
   onStartEdit: (
-    type: "annual" | "account",
+    type: "annual" | "account" | "master",
     id: number,
     field: string,
     currentValue: number,
@@ -95,6 +95,18 @@ export function PerformanceTable({
               Ending
               <HelpTip text="Balance based on tracked performance data. For in-progress years this may lag behind the Portfolio Value (which uses the latest snapshot)." />
             </th>
+            {activeCategory === "Brokerage" && (
+              <>
+                <th className="text-right px-4 py-3 text-muted font-medium">
+                  Cost Basis
+                  <HelpTip text="Cumulative contributions — your original invested dollars. Only gains above basis are taxable on withdrawal." />
+                </th>
+                <th className="text-right px-4 py-3 text-muted font-medium">
+                  Unrealized
+                  <HelpTip text="Ending balance minus cost basis — the portion subject to capital gains tax if sold." />
+                </th>
+              </>
+            )}
             <th className="text-right px-4 py-3 text-muted font-medium">
               Return
               <HelpTip text="Annual rate of return calculated from gains relative to average invested balance" />

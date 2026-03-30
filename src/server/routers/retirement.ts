@@ -481,7 +481,7 @@ export async function buildEnginePayload(
     ownershipByPerson[name]._overall =
       portfolioTotal > 0 ? personTotal / portfolioTotal : 0;
   }
-  // Cost basis from performance_accounts (per-account, summed for brokerage accounts)
+  // Cost basis from performance_accounts (per-account, user-maintained alongside portfolio updates)
   const settingsMap = new Map(
     allAppSettings.map((s: { key: string; value: unknown }) => [
       s.key,

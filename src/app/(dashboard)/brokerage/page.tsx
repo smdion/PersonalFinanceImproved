@@ -173,7 +173,7 @@ export default function BrokeragePage() {
   };
   const brokerageResult = calculateBrokerageGoals(brokerageGoalsInput);
 
-  // Portfolio-category accounts from contribution summary (parentCategory filter)
+  // Portfolio-category accounts from contribution summary
   const portfolioAccounts = contribData
     ? [
         ...contribData.people.flatMap((p) =>
@@ -234,7 +234,6 @@ export default function BrokeragePage() {
             directContrib={totalDirectContrib}
             overflow={totalOverflow}
             ramp={brokerageRamp}
-            costBasis={brokerageData?.costBasis ?? 0}
             canEdit={canEdit}
             onRampChange={(value) =>
               upsertSetting.mutate({
@@ -388,14 +387,12 @@ function FundingSources({
   directContrib,
   overflow,
   ramp,
-  costBasis,
   canEdit,
   onRampChange,
 }: {
   directContrib: number;
   overflow: number;
   ramp: number;
-  costBasis: number;
   canEdit: boolean;
   onRampChange: (value: number) => void;
 }) {
@@ -452,15 +449,6 @@ function FundingSources({
             {formatCurrency(ramp)}/yr
           </span>
         )}
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-muted">
-          Cost basis
-          <HelpTip text="Total cost basis across brokerage accounts — your original contributions. Set per-account on the Portfolio page. Only gains above basis are taxable on withdrawal." />
-        </span>
-        <span className="font-medium text-primary">
-          {formatCurrency(costBasis)}
-        </span>
       </div>
       <div className="border-t pt-2 flex justify-between font-semibold">
         <span className="text-secondary">Total inflow</span>
@@ -818,14 +806,6 @@ function YearByYearTable({
               End Balance
               <HelpTip text="Total brokerage account value at year end — hover for breakdown" />
             </th>
-            <th className="py-2 pr-3 text-right">
-              Cost Basis
-              <HelpTip text="Cumulative contributions — the tax-free portion of the balance" />
-            </th>
-            <th className="py-2 text-right">
-              Unrealized Gain
-              <HelpTip text="Balance minus cost basis — the portion subject to capital gains tax if withdrawn" />
-            </th>
           </tr>
         </thead>
         <tbody>
@@ -934,12 +914,6 @@ function YearByYearTable({
                   ) : (
                     fmt(yr.endBalance, yr.year)
                   )}
-                </td>
-                <td className="py-1.5 pr-3 text-right text-muted">
-                  {fmt(yr.endBasis, yr.year)}
-                </td>
-                <td className="py-1.5 text-right text-muted">
-                  {fmt(yr.unrealizedGain, yr.year)}
                 </td>
               </tr>
             );
