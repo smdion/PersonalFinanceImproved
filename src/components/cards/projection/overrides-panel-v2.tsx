@@ -12,7 +12,6 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import type { useProjectionState } from "./use-projection-state";
 import type { AccumOverride, DecumOverride } from "./types";
-import { accumOverrideToForm, decumOverrideToForm } from "./types";
 import { catDisplayLabel } from "./utils";
 import { LumpSumForm } from "./lump-sum-form";
 import {
@@ -67,8 +66,8 @@ const OVERRIDE_OPTIONS: {
   },
   {
     key: "salary_change",
-    label: "Salary Change",
-    description: "Change income at a specific year",
+    label: "Contribution / Salary",
+    description: "Switch contribution profile or change salary",
     icon: "💼",
     phase: "pre",
   },
@@ -114,6 +113,13 @@ export function OverridesPanelV2({
     String(new Date().getFullYear() + 1),
   );
   const [selectedType, setSelectedType] = useState<OverrideType | null>(null);
+  // Edit mode: tracks which override is being edited so we can delete-then-add on save
+  const [editingOverride, setEditingOverride] = useState<{
+    phase: "pre" | "post" | "life";
+    index: number;
+    deleteFirst: () => void;
+    initialValue?: string;
+  } | null>(null);
 
   // Determine if selected year is pre or post retirement
   const retAge = s.engineSettings?.retirementAge;
@@ -171,8 +177,30 @@ export function OverridesPanelV2({
         onDelete: () =>
           s.setAccumOverrides((prev) => prev.filter((_, j) => j !== idx)),
         onEdit: () => {
-          s.setAccumForm(accumOverrideToForm(o));
-          s.setShowAccumForm(true);
+          setSelectedYear(String(o.year));
+          setSelectedType(
+            o.reset
+              ? "reset"
+              : o.lumpSums?.length
+                ? "lump_sum"
+                : o.contributionRate != null
+                  ? "contribution_rate"
+                  : o.routingMode
+                    ? "routing"
+                    : "contribution_rate",
+          );
+          setEditingOverride({
+            phase: "pre",
+            index: idx,
+            deleteFirst: () =>
+              s.setAccumOverrides((prev) => prev.filter((_, j) => j !== idx)),
+            initialValue:
+              o.contributionRate != null
+                ? String(o.contributionRate * 100)
+                : undefined,
+          });
+          setWizardStep("fields");
+          setShowWizard(true);
         },
       });
     }
@@ -215,8 +243,34 @@ export function OverridesPanelV2({
         onDelete: () =>
           s.setDecumOverrides((prev) => prev.filter((_, j) => j !== idx)),
         onEdit: () => {
-          s.setDecumForm(decumOverrideToForm(o));
-          s.setShowDecumForm(true);
+          setSelectedYear(String(o.year));
+          setSelectedType(
+            o.reset
+              ? "reset"
+              : o.lumpSums?.length
+                ? "lump_sum"
+                : o.withdrawalRate != null
+                  ? "withdrawal_rate"
+                  : o.rothConversionTarget != null
+                    ? "roth_conversion"
+                    : o.withdrawalRoutingMode
+                      ? "routing"
+                      : "withdrawal_rate",
+          );
+          setEditingOverride({
+            phase: "post",
+            index: idx,
+            deleteFirst: () =>
+              s.setDecumOverrides((prev) => prev.filter((_, j) => j !== idx)),
+            initialValue:
+              o.withdrawalRate != null
+                ? String(o.withdrawalRate * 100)
+                : o.rothConversionTarget != null
+                  ? String(o.rothConversionTarget * 100)
+                  : undefined,
+          });
+          setWizardStep("fields");
+          setShowWizard(true);
         },
       });
     }
@@ -227,7 +281,7 @@ export function OverridesPanelV2({
         id: `salary-${o.id}`,
         year: o.projectionYear,
         phase: "life",
-        type: "Salary",
+        type: o.contributionProfileId ? "Contribution" : "Salary",
         summary: `${formatCurrency(o.overrideSalary)}/yr${o.notes ? ` (${o.notes})` : ""}`,
         color: "blue",
         onDelete: () => s.deleteSalaryOverride.mutate({ id: o.id }),
@@ -256,6 +310,7 @@ export function OverridesPanelV2({
     setShowWizard(false);
     setWizardStep("year");
     setSelectedType(null);
+    setEditingOverride(null);
   };
 
   // Simple field forms for each override type
@@ -270,6 +325,7 @@ export function OverridesPanelV2({
           <SimpleNumberForm
             label="New Contribution Rate (%)"
             placeholder="15"
+            initialValue={editingOverride?.initialValue}
             onSubmit={(val, notes) => {
               const o: AccumOverride = {
                 year,
@@ -311,6 +367,7 @@ export function OverridesPanelV2({
               }
               placeholder="3.5"
               step={0.1}
+              initialValue={editingOverride?.initialValue}
               onSubmit={(val, notes) => {
                 const o: DecumOverride = {
                   year,
@@ -373,15 +430,17 @@ export function OverridesPanelV2({
 
       case "salary_change":
         return (
-          <SimpleNumberForm
-            label="New Annual Salary ($)"
-            placeholder="150000"
-            isDollar
-            onSubmit={(val, notes) => {
+          <SalaryOverrideForm
+            year={year}
+            contribProfiles={s.contribProfileSummaries ?? []}
+            personId={s.salaryOverridePersonId ?? 1}
+            initialValue={editingOverride?.initialValue}
+            onSubmit={(salary, profileId, notes) => {
               s.createSalaryOverride.mutate({
                 personId: s.salaryOverridePersonId ?? 1,
                 projectionYear: year,
-                overrideSalary: String(val),
+                overrideSalary: String(salary),
+                contributionProfileId: profileId,
                 notes: notes || null,
               });
               resetWizard();
@@ -391,16 +450,17 @@ export function OverridesPanelV2({
 
       case "budget_change":
         return (
-          <SimpleNumberForm
-            label="New Annual Budget ($)"
-            placeholder="90000"
-            isDollar
-            onSubmit={(val, notes) => {
+          <BudgetOverrideForm
+            year={year}
+            budgetProfiles={s.budgetProfileSummaries ?? []}
+            personId={s.salaryOverridePersonId ?? 1}
+            initialValue={editingOverride?.initialValue}
+            onSubmit={(annualBudget, notes) => {
               s.createBudgetOverride.mutate({
                 personId: s.salaryOverridePersonId ?? 1,
                 projectionYear: year,
                 overrideMonthlyBudget: String(
-                  Math.round((val / 12) * 100) / 100,
+                  Math.round((annualBudget / 12) * 100) / 100,
                 ),
                 notes: notes || null,
               });
@@ -414,6 +474,7 @@ export function OverridesPanelV2({
           <SimpleNumberForm
             label="Roth Conversion Target Bracket (%)"
             placeholder="22"
+            initialValue={editingOverride?.initialValue}
             onSubmit={(val, notes) => {
               const o: DecumOverride = {
                 year,
@@ -564,6 +625,11 @@ export function OverridesPanelV2({
       {showWizard && (
         <div className="bg-surface-sunken rounded-lg p-3 space-y-3">
           {/* Step indicator */}
+          {editingOverride && (
+            <div className="text-[10px] text-indigo-600 font-medium">
+              Editing override for {selectedYear}
+            </div>
+          )}
           <div className="flex items-center gap-2 text-[10px] text-muted">
             <span
               className={
@@ -753,15 +819,17 @@ function SimpleNumberForm({
   placeholder,
   step,
   isDollar: _isDollar,
+  initialValue,
   onSubmit,
 }: {
   label: string;
   placeholder: string;
   step?: number;
   isDollar?: boolean;
+  initialValue?: string;
   onSubmit: (value: number, notes: string) => void;
 }) {
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(initialValue ?? "");
   const [notes, setNotes] = useState("");
 
   return (
@@ -851,6 +919,273 @@ function RoutingForm({
       >
         Save
       </button>
+    </div>
+  );
+}
+
+/** Salary override form — "From contribution profile" or custom salary amount. */
+function SalaryOverrideForm({
+  contribProfiles,
+  initialValue,
+  onSubmit,
+}: {
+  year: number;
+  contribProfiles: {
+    id: number;
+    name: string;
+    isDefault?: boolean;
+    summary?: { combinedSalary: number };
+  }[];
+  personId: number;
+  initialValue?: string;
+  onSubmit: (salary: number, profileId: number | null, notes: string) => void;
+}) {
+  const [source, setSource] = useState<"custom" | "profile">(
+    contribProfiles.length > 0 ? "profile" : "custom",
+  );
+  const [profileId, setProfileId] = useState(
+    contribProfiles.find((p) => p.isDefault)?.id ?? contribProfiles[0]?.id ?? 0,
+  );
+  const [customValue, setCustomValue] = useState(initialValue ?? "");
+  const [notes, setNotes] = useState("");
+
+  const selectedProfile = contribProfiles.find((p) => p.id === profileId);
+  const resolvedSalary =
+    source === "profile" && selectedProfile?.summary
+      ? selectedProfile.summary.combinedSalary
+      : parseFloat(customValue) || 0;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-end gap-3 flex-wrap">
+        {contribProfiles.length > 0 && (
+          <label className="block">
+            <span className="text-xs text-muted">Source</span>
+            <select
+              value={source}
+              onChange={(e) =>
+                setSource(e.target.value as "custom" | "profile")
+              }
+              className="mt-0.5 block w-48 rounded border border-strong px-2 py-1.5 text-sm"
+            >
+              <option value="profile">From contribution profile</option>
+              <option value="custom">Custom salary amount</option>
+            </select>
+          </label>
+        )}
+        {source === "profile" ? (
+          <label className="block flex-1 min-w-[200px]">
+            <span className="text-xs text-muted">Contribution Profile</span>
+            <select
+              value={String(profileId)}
+              onChange={(e) => setProfileId(Number(e.target.value))}
+              className="mt-0.5 block w-full rounded border border-strong px-2 py-1.5 text-sm"
+            >
+              {contribProfiles.map((cp) => (
+                <option key={cp.id} value={String(cp.id)}>
+                  {cp.isDefault ? "\u2713 " : ""}
+                  {cp.name}
+                  {cp.summary
+                    ? ` (${formatCurrency(cp.summary.combinedSalary)}/yr)`
+                    : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <label className="block">
+            <span className="text-xs text-muted">Annual Salary ($)</span>
+            <input
+              type="number"
+              min={0}
+              placeholder="150000"
+              value={customValue}
+              onChange={(e) => setCustomValue(e.target.value)}
+              className="mt-0.5 block w-40 rounded border border-strong px-2 py-1.5 text-sm"
+            />
+          </label>
+        )}
+        <label className="block flex-1 min-w-[120px]">
+          <span className="text-xs text-muted">Notes (optional)</span>
+          <input
+            type="text"
+            placeholder="New job, promotion, etc."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="mt-0.5 block w-full rounded border border-strong px-2 py-1.5 text-sm"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => {
+            if (resolvedSalary <= 0) return;
+            const profileNote =
+              source === "profile" && selectedProfile
+                ? `Profile: ${selectedProfile.name}${notes ? ` — ${notes}` : ""}`
+                : notes;
+            onSubmit(
+              resolvedSalary,
+              source === "profile" ? profileId : null,
+              profileNote,
+            );
+          }}
+          className="px-4 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700"
+        >
+          Save
+        </button>
+      </div>
+      {source === "profile" && selectedProfile?.summary && (
+        <p className="text-[10px] text-faint">
+          Switches to {selectedProfile.name} contribution structure with{" "}
+          {formatCurrency(selectedProfile.summary.combinedSalary)}/yr salary. To
+          edit salary independently, use &quot;Custom salary amount&quot;
+          instead.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Budget override form — "From budget profile" or custom amount. */
+function BudgetOverrideForm({
+  budgetProfiles,
+  initialValue,
+  onSubmit,
+}: {
+  year: number;
+  budgetProfiles: {
+    id: number;
+    name: string;
+    isActive?: boolean;
+    columnTotals: number[];
+    columnLabels: string[];
+  }[];
+  personId: number;
+  initialValue?: string;
+  onSubmit: (annualBudget: number, notes: string) => void;
+}) {
+  const [source, setSource] = useState<"custom" | "profile">(
+    budgetProfiles.length > 0 ? "profile" : "custom",
+  );
+  const [profileId, setProfileId] = useState(
+    budgetProfiles.find((p) => p.isActive)?.id ?? budgetProfiles[0]?.id ?? 0,
+  );
+  const [columnIdx, setColumnIdx] = useState(0);
+  const [customValue, setCustomValue] = useState(initialValue ?? "");
+  const [notes, setNotes] = useState("");
+
+  const selectedProfile = budgetProfiles.find((p) => p.id === profileId);
+  const monthlyBudget =
+    source === "profile" && selectedProfile
+      ? (selectedProfile.columnTotals[columnIdx] ?? 0)
+      : (parseFloat(customValue) || 0) / 12;
+  const annualBudget = monthlyBudget * 12;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-end gap-3 flex-wrap">
+        {budgetProfiles.length > 0 && (
+          <label className="block">
+            <span className="text-xs text-muted">Source</span>
+            <select
+              value={source}
+              onChange={(e) =>
+                setSource(e.target.value as "custom" | "profile")
+              }
+              className="mt-0.5 block w-40 rounded border border-strong px-2 py-1.5 text-sm"
+            >
+              <option value="profile">From budget profile</option>
+              <option value="custom">Custom amount</option>
+            </select>
+          </label>
+        )}
+        {source === "profile" ? (
+          <>
+            <label className="block flex-1 min-w-[180px]">
+              <span className="text-xs text-muted">Budget Profile</span>
+              <select
+                value={String(profileId)}
+                onChange={(e) => {
+                  setProfileId(Number(e.target.value));
+                  setColumnIdx(0);
+                }}
+                className="mt-0.5 block w-full rounded border border-strong px-2 py-1.5 text-sm"
+              >
+                {budgetProfiles.map((bp) => (
+                  <option key={bp.id} value={String(bp.id)}>
+                    {bp.isActive ? "\u2713 " : ""}
+                    {bp.name} ({formatCurrency(bp.columnTotals[0] ?? 0)}/mo)
+                  </option>
+                ))}
+              </select>
+            </label>
+            {selectedProfile && selectedProfile.columnLabels.length > 1 && (
+              <label className="block">
+                <span className="text-xs text-muted">Column</span>
+                <select
+                  value={String(columnIdx)}
+                  onChange={(e) => setColumnIdx(Number(e.target.value))}
+                  className="mt-0.5 block w-32 rounded border border-strong px-2 py-1.5 text-sm"
+                >
+                  {selectedProfile.columnLabels.map((label, colIndex) => (
+                    // eslint-disable-next-line react/no-array-index-key -- column labels can repeat; index is the only stable key
+                    <option key={colIndex} value={String(colIndex)}>
+                      {label} (
+                      {formatCurrency(
+                        selectedProfile.columnTotals[colIndex] ?? 0,
+                      )}
+                      /mo)
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </>
+        ) : (
+          <label className="block">
+            <span className="text-xs text-muted">Annual Budget ($)</span>
+            <input
+              type="number"
+              min={0}
+              placeholder="90000"
+              value={customValue}
+              onChange={(e) => setCustomValue(e.target.value)}
+              className="mt-0.5 block w-40 rounded border border-strong px-2 py-1.5 text-sm"
+            />
+          </label>
+        )}
+        <label className="block flex-1 min-w-[120px]">
+          <span className="text-xs text-muted">Notes (optional)</span>
+          <input
+            type="text"
+            placeholder="Reason for change"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="mt-0.5 block w-full rounded border border-strong px-2 py-1.5 text-sm"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => {
+            if (annualBudget <= 0) return;
+            const profileNote =
+              source === "profile" && selectedProfile
+                ? `Budget: ${selectedProfile.name} (${selectedProfile.columnLabels[columnIdx] ?? "Standard"}) — ${formatCurrency(monthlyBudget)}/mo${notes ? ` — ${notes}` : ""}`
+                : notes;
+            onSubmit(annualBudget, profileNote);
+          }}
+          className="px-4 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700"
+        >
+          Save
+        </button>
+      </div>
+      {source === "profile" && selectedProfile && (
+        <p className="text-[10px] text-faint">
+          {selectedProfile.name} (
+          {selectedProfile.columnLabels[columnIdx] ?? "Standard"}):{" "}
+          {formatCurrency(monthlyBudget)}/mo · {formatCurrency(annualBudget)}/yr
+        </p>
+      )}
     </div>
   );
 }
