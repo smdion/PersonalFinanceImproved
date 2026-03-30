@@ -1127,10 +1127,14 @@ function BudgetOverrideForm({
                   onChange={(e) => setColumnIdx(Number(e.target.value))}
                   className="mt-0.5 block w-32 rounded border border-strong px-2 py-1.5 text-sm"
                 >
-                  {selectedProfile.columnLabels.map((label, i) => (
-                    <option key={`${label}-${i}`} value={String(i)}>
+                  {selectedProfile.columnLabels.map((label, colIndex) => (
+                    // eslint-disable-next-line react/no-array-index-key -- column labels can repeat; index is the only stable key
+                    <option key={colIndex} value={String(colIndex)}>
                       {label} (
-                      {formatCurrency(selectedProfile.columnTotals[i] ?? 0)}/mo)
+                      {formatCurrency(
+                        selectedProfile.columnTotals[colIndex] ?? 0,
+                      )}
+                      /mo)
                     </option>
                   ))}
                 </select>
