@@ -8,6 +8,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.28] - 2026-03-30
+
+### Added
+
+- Brokerage page redesigned as single-page layout — Goals section collapsed inline, "Planned Events" replaces separate Transactions tab
+- Year-by-Year brokerage table now has detailed tooltips on all columns (contribution breakdown, growth, withdrawal tax cost, balance change) using shared retirement tooltip infrastructure
+- Today's $ / Future $ toggle on brokerage page with inflation-adjusted deflation
+- Editable annual contribution increase control on brokerage Funding Sources card
+- Budget linking badge ("Linked to budget: LT Brokerage") on brokerage By Account section
+- Per-account "After retirement" setting on Portfolio page: stop contributions, continue until last person retires, or continue indefinitely
+- Per-account "Contribution scaling" setting: scales with salary (default) or fixed amount — prevents fixed-dollar contributions from dropping during staggered retirement
+- Per-account cost basis on Performance page Brokerage tab — editable field updated alongside other performance data, with computed unrealized gain column
+- Brokerage contributions now continue after retirement for accounts set to "Continue indefinitely"
+
+### Fixed
+
+- First-year pro-rating now excludes the current month after mid-month (day > 15) — March 30 shows 9 months remaining, not 10
+- Fixed-dollar brokerage contributions no longer drop during staggered retirement when one person retires
+- Post-retirement brokerage contributions grow with limit growth rate (inflation) instead of staying flat
+- Budget badge matching uses raw category key instead of display label (was never matching)
+- YNAB badge matching uses account category instead of missing performanceAccountId
+- Contribution account linking dropdown no longer hides budget items that are already linked to API categories
+- Planned Events tooltip no longer incorrectly references IRS contribution limits (brokerage has none)
+- Renamed `colorKey` to `categoryKey` across contribution summary and all consumers for clarity
+
+---
+
 ## [0.3.27] - 2026-03-30
 
 ### Added
