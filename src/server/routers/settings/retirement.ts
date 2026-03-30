@@ -220,7 +220,7 @@ export const retirementProcedures = {
     get: protectedProcedure
       .input(
         z.object({
-          overrideType: z.enum(["accumulation", "decumulation"]),
+          overrideType: z.enum(["accumulation", "decumulation", "brokerage"]),
         }),
       )
       .query(({ ctx, input }) =>
@@ -235,7 +235,7 @@ export const retirementProcedures = {
     save: adminProcedure
       .input(
         z.object({
-          overrideType: z.enum(["accumulation", "decumulation"]),
+          overrideType: z.enum(["accumulation", "decumulation", "brokerage"]),
           overrides: z.array(z.record(z.string(), z.unknown())),
         }),
       )
@@ -260,7 +260,7 @@ export const retirementProcedures = {
     clear: adminProcedure
       .input(
         z.object({
-          overrideType: z.enum(["accumulation", "decumulation"]),
+          overrideType: z.enum(["accumulation", "decumulation", "brokerage"]),
         }),
       )
       .mutation(({ ctx, input }) =>

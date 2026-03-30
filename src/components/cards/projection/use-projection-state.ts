@@ -166,6 +166,9 @@ export function useProjectionState(props: UseProjectionStateProps) {
           id: e.id,
           amount: parseFloat(e.amount),
           targetAccount: e.targetAccount,
+          ...(e.targetAccountName
+            ? { targetAccountName: e.targetAccountName }
+            : {}),
           ...(e.taxType !== ""
             ? { taxType: e.taxType as "traditional" | "roth" }
             : {}),
@@ -277,6 +280,9 @@ export function useProjectionState(props: UseProjectionStateProps) {
           id: e.id,
           amount: parseFloat(e.amount),
           targetAccount: e.targetAccount,
+          ...(e.targetAccountName
+            ? { targetAccountName: e.targetAccountName }
+            : {}),
           ...(e.taxType !== ""
             ? { taxType: e.taxType as "traditional" | "roth" }
             : {}),
