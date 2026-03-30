@@ -172,6 +172,7 @@ export function ContributionAccountsSettings() {
       parentCategory: "Retirement" | "Portfolio";
       ownerPersonId: number | null;
       ownershipType: "individual" | "joint";
+      retirementBehavior: string;
       isActive: boolean;
     }>,
   ) => {
@@ -200,6 +201,12 @@ export function ContributionAccountsSettings() {
           : (pa.parentCategory as "Retirement" | "Portfolio"),
       isActive: updates.isActive !== undefined ? updates.isActive : pa.isActive,
       displayOrder: pa.displayOrder,
+      retirementBehavior: (updates.retirementBehavior !== undefined
+        ? updates.retirementBehavior
+        : (pa.retirementBehavior ?? "stops_at_owner_retirement")) as
+        | "stops_at_owner_retirement"
+        | "stops_when_last_retires"
+        | "continues_after_retirement",
     });
   };
 
