@@ -1,6 +1,6 @@
 {
   "name": "ledgr",
-  "version": "0.3.20",
+  "version": "0.3.21",
   "private": true,
   "packageManager": "pnpm@10.32.1",
   "scripts": {
