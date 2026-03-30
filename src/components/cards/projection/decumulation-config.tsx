@@ -13,6 +13,10 @@ import {
   ACCOUNT_TYPE_CONFIG,
 } from "@/lib/config/account-types";
 import { ALL_CATEGORIES } from "./utils";
+import {
+  WITHDRAWAL_STRATEGY_CONFIG,
+  type WithdrawalStrategyType,
+} from "@/lib/config/withdrawal-strategies";
 
 // Re-use SectionHeader and OrderEditor from index — import them
 // For now we define a lightweight SectionHeader inline to avoid circular deps.
@@ -103,6 +107,8 @@ type DecumulationConfigProps = {
       Partial<Record<AccountCategory, "traditional" | "roth">>
     >
   >;
+  /** Active spending strategy key (from retirement settings). */
+  activeSpendingStrategy?: string;
 };
 
 /**
@@ -122,7 +128,12 @@ export function DecumulationConfig({
   setWithdrawalSplits,
   withdrawalTaxPref,
   setWithdrawalTaxPref,
+  activeSpendingStrategy,
 }: DecumulationConfigProps) {
+  const strategyKey = (activeSpendingStrategy ??
+    "fixed") as WithdrawalStrategyType;
+  const strategyCfg = WITHDRAWAL_STRATEGY_CONFIG[strategyKey];
+  const isDynamic = strategyKey !== "fixed";
   return (
     <div className="border rounded-lg p-4 space-y-4">
       <div className="flex items-center justify-between">
@@ -236,6 +247,18 @@ export function DecumulationConfig({
               />
             </div>
           </div>
+
+          {/* Spending strategy context */}
+          {isDynamic && (
+            <div className="bg-indigo-50 rounded-lg p-2.5 text-xs text-indigo-800">
+              <span className="font-medium">{strategyCfg?.label}</span>
+              {strategyCfg?.incomeSource === "formula"
+                ? " computes your annual spending from portfolio balance (IRS tables). The routing below determines which accounts fund that spending."
+                : strategyCfg?.incomeSource === "rate"
+                  ? " adjusts your withdrawal amount yearly based on portfolio performance. The routing below determines which accounts fund those adjusted withdrawals."
+                  : " adjusts your spending from the base budget. The routing below determines which accounts fund that spending."}
+            </div>
+          )}
 
           {/* Bracket filling description */}
           {withdrawalRoutingMode === "bracket_filling" && (
