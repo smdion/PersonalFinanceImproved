@@ -121,18 +121,6 @@ export default function BrokeragePage() {
   const { data: contribData } =
     trpc.contribution.computeSummary.useQuery(contribInput);
   const { data: brokerageData } = trpc.brokerage.computeSummary.useQuery();
-  const { data: trackingData } =
-    trpc.brokerage.availableTrackingAccounts.useQuery();
-  const linkAccount = trpc.brokerage.linkAccount.useMutation({
-    onSuccess: () => {
-      utils.brokerage.invalidate();
-    },
-  });
-  const unlinkAccount = trpc.brokerage.unlinkAccount.useMutation({
-    onSuccess: () => {
-      utils.brokerage.invalidate();
-    },
-  });
 
   const [activeTab, setActiveTab] = useState<BrokerageTab>("projection");
 
@@ -267,36 +255,6 @@ export default function BrokeragePage() {
               />
             </Card>
           </div>
-
-          {/* API Linking — only show when budget API is active */}
-          {canEdit && trackingData?.service && (
-            <Card title="Account Linking" className="mt-6">
-              <p className="text-xs text-muted mb-3">
-                Link brokerage accounts to YNAB tracking accounts. Linked
-                accounts use YNAB as the balance source of truth.
-                <HelpTip text="When linked, portfolio snapshots automatically pull the YNAB balance instead of the spreadsheet value. The snapshot is updated on import." />
-              </p>
-              <AccountLinkingSection
-                trackingAccounts={trackingData.accounts}
-                currentMappings={trackingData.mappings ?? []}
-                individualAccounts={
-                  data?.result?.projectionByYear?.[0]
-                    ?.individualAccountBalances ?? []
-                }
-                onLink={(perfId, remoteId) =>
-                  linkAccount.mutate({
-                    performanceAccountId: perfId,
-                    remoteAccountId: remoteId,
-                    syncDirection: "pull",
-                  })
-                }
-                onUnlink={(perfId) =>
-                  unlinkAccount.mutate({ performanceAccountId: perfId })
-                }
-                isLinking={linkAccount.isPending || unlinkAccount.isPending}
-              />
-            </Card>
-          )}
 
           {/* Goal Status */}
           {brokerageResult.goals.length > 0 && (
@@ -565,124 +523,6 @@ function GoalStatusTable({ goals }: { goals: BrokerageGoalStatus[] }) {
           ))}
         </tbody>
       </table>
-    </div>
-  );
-}
-
-function AccountLinkingSection({
-  trackingAccounts,
-  currentMappings,
-  individualAccounts,
-  onLink,
-  onUnlink,
-  isLinking,
-}: {
-  trackingAccounts: Array<{
-    id: string;
-    name: string;
-    balance: number;
-    type: string;
-  }>;
-  currentMappings: Array<{
-    performanceAccountId: number;
-    remoteAccountId: string;
-    syncDirection: string;
-    localName: string;
-  }>;
-  individualAccounts: Array<{
-    name: string;
-    category: string;
-    performanceAccountId?: number;
-    parentCategory?: string;
-  }>;
-  onLink: (perfId: number, remoteId: string) => void;
-  onUnlink: (perfId: number) => void;
-  isLinking: boolean;
-}) {
-  // Get portfolio accounts that can be linked
-  const linkableAccounts = individualAccounts.filter(
-    (ia) => ia.parentCategory === "Portfolio" && ia.performanceAccountId,
-  );
-
-  if (linkableAccounts.length === 0) {
-    return (
-      <p className="text-sm text-faint">
-        No portfolio accounts available to link.
-      </p>
-    );
-  }
-
-  // Build lookup for current mappings
-  const mappingByPerfId = new Map(
-    currentMappings.map((m) => [m.performanceAccountId, m]),
-  );
-
-  // Build set of already-mapped remote account IDs
-  const usedRemoteIds = new Set(currentMappings.map((m) => m.remoteAccountId));
-
-  return (
-    <div className="space-y-2">
-      {linkableAccounts.map((acct) => {
-        const perfId = acct.performanceAccountId!;
-        const mapping = mappingByPerfId.get(perfId);
-        const linkedRemote = mapping
-          ? trackingAccounts.find((ta) => ta.id === mapping.remoteAccountId)
-          : undefined;
-
-        return (
-          <div
-            key={perfId}
-            className="flex items-center justify-between py-2 border-b border-subtle last:border-0"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-secondary">
-                {acct.name}
-              </span>
-              {linkedRemote && (
-                <span className="inline-block px-1.5 py-0.5 text-[9px] font-semibold uppercase rounded bg-blue-100 text-blue-700">
-                  YNAB
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {linkedRemote ? (
-                <>
-                  <span className="text-xs text-muted">
-                    → {linkedRemote.name} (
-                    {formatCurrency(linkedRemote.balance)})
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => onUnlink(perfId)}
-                    disabled={isLinking}
-                    className="text-xs text-red-600 hover:text-red-800 disabled:opacity-50"
-                  >
-                    Unlink
-                  </button>
-                </>
-              ) : (
-                <select
-                  className="text-xs border rounded px-2 py-1"
-                  value=""
-                  onChange={(e) => {
-                    if (e.target.value) onLink(perfId, e.target.value);
-                  }}
-                  disabled={isLinking}
-                >
-                  <option value="">Link to YNAB account...</option>
-                  {trackingAccounts
-                    .filter((ta) => !usedRemoteIds.has(ta.id))
-                    .map((ta) => (
-                      <option key={ta.id} value={ta.id}>
-                        {ta.name} ({formatCurrency(ta.balance)})
-                      </option>
-                    ))}
-                </select>
-              )}
-            </div>
-          </div>
-        );
-      })}
     </div>
   );
 }

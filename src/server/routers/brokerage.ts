@@ -5,7 +5,6 @@ import {
   createTRPCRouter,
   protectedProcedure,
   brokerageProcedure,
-  adminProcedure,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { toNumber } from "@/server/helpers";
@@ -13,12 +12,7 @@ import {
   getApiAccountBalanceMap,
   resolveAccountBalance,
 } from "@/server/helpers/api-balance-resolution";
-import {
-  getActiveBudgetApi,
-  getApiConnection,
-  cacheGet,
-} from "@/lib/budget-api";
-import type { BudgetAccount } from "@/lib/budget-api";
+import { getActiveBudgetApi, getApiConnection } from "@/lib/budget-api";
 
 export const brokerageRouter = createTRPCRouter({
   // ══ GOALS ══
@@ -200,111 +194,4 @@ export const brokerageRouter = createTRPCRouter({
       apiBalances,
     };
   }),
-
-  // ══ API LINKING ══
-
-  /** Get available YNAB tracking accounts for linking. */
-  availableTrackingAccounts: protectedProcedure.query(async ({ ctx }) => {
-    const active = await getActiveBudgetApi(ctx.db);
-    if (active === "none") return { accounts: [], mappings: [], service: null };
-
-    const cached = await cacheGet<BudgetAccount[]>(ctx.db, active, "accounts");
-    if (!cached) return { accounts: [], mappings: [], service: active };
-
-    // Return tracking (off-budget) accounts — these are investment/asset accounts in YNAB
-    const tracking = cached.data.filter((a) => !a.onBudget && !a.closed);
-
-    // Also return current mappings so the UI knows which are already linked
-    const conn = await getApiConnection(ctx.db, active);
-    const mappings = (conn?.accountMappings ?? []).filter(
-      (m) => m.performanceAccountId != null,
-    );
-
-    return {
-      accounts: tracking.map((a) => ({
-        id: a.id,
-        name: a.name,
-        balance: a.balance,
-        type: a.type,
-      })),
-      mappings: mappings.map((m) => ({
-        performanceAccountId: m.performanceAccountId!,
-        remoteAccountId: m.remoteAccountId,
-        syncDirection: m.syncDirection,
-        localName: m.localName,
-      })),
-      service: active,
-    };
-  }),
-
-  /** Link a performance account to a YNAB tracking account. */
-  linkAccount: adminProcedure
-    .input(
-      z.object({
-        performanceAccountId: z.number().int(),
-        remoteAccountId: z.string().min(1),
-        syncDirection: z.enum(["pull", "push", "both"]).default("pull"),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const active = await getActiveBudgetApi(ctx.db);
-      if (active === "none") {
-        throw new Error("No budget API active");
-      }
-
-      const conn = await getApiConnection(ctx.db, active);
-      const mappings = conn?.accountMappings ?? [];
-
-      // Get the performance account for the display name
-      const perfAcct = await ctx.db
-        .select()
-        .from(schema.performanceAccounts)
-        .where(eq(schema.performanceAccounts.id, input.performanceAccountId))
-        .then((r) => r[0]);
-
-      // Remove any existing mapping for this performanceAccountId
-      const updated = mappings.filter(
-        (m) => m.performanceAccountId !== input.performanceAccountId,
-      );
-
-      // Add the new mapping
-      updated.push({
-        localId: `performance:${input.performanceAccountId}`,
-        localName:
-          perfAcct?.accountLabel ?? `Account ${input.performanceAccountId}`,
-        remoteAccountId: input.remoteAccountId,
-        syncDirection: input.syncDirection,
-        performanceAccountId: input.performanceAccountId,
-      });
-
-      await ctx.db
-        .update(schema.apiConnections)
-        .set({ accountMappings: updated })
-        .where(eq(schema.apiConnections.service, active));
-
-      return { ok: true };
-    }),
-
-  /** Unlink a performance account from its YNAB tracking account. */
-  unlinkAccount: adminProcedure
-    .input(z.object({ performanceAccountId: z.number().int() }))
-    .mutation(async ({ ctx, input }) => {
-      const active = await getActiveBudgetApi(ctx.db);
-      if (active === "none") {
-        throw new Error("No budget API active");
-      }
-
-      const conn = await getApiConnection(ctx.db, active);
-      const mappings = conn?.accountMappings ?? [];
-      const updated = mappings.filter(
-        (m) => m.performanceAccountId !== input.performanceAccountId,
-      );
-
-      await ctx.db
-        .update(schema.apiConnections)
-        .set({ accountMappings: updated })
-        .where(eq(schema.apiConnections.service, active));
-
-      return { ok: true };
-    }),
 });
