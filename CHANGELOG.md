@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.26] - 2026-03-30
+
+### Fixed
+
+- Timeline now shows "Household Retirement: X when last person retires" instead of misleading "Avg Retirement Age" — matches the engine's actual per-person retirement behavior
+
+---
+
 ## [0.3.25] - 2026-03-30
 
 ### Improved
