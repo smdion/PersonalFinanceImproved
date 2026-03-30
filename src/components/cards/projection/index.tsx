@@ -11,7 +11,7 @@ import { ValidationContent } from "@/components/validation-content";
 import { formatCurrency } from "@/lib/utils/format";
 import { SimulationAssumptions } from "@/components/cards/mc-simulation-assumptions";
 import { DecumulationConfig } from "./decumulation-config";
-import { OverridesPanel } from "./overrides-panel";
+import { OverridesPanelV2 as OverridesPanel } from "./overrides-panel-v2";
 import { ProjectionTable } from "./projection-table";
 import { ProjectionHeroKpis } from "./projection-hero-kpis";
 import { ProjectionChart, ProjectionChartSkeleton } from "./projection-chart";
@@ -753,6 +753,7 @@ export function ProjectionCard(props: {
             setWithdrawalSplits={setWithdrawalSplits}
             withdrawalTaxPref={withdrawalTaxPref}
             setWithdrawalTaxPref={setWithdrawalTaxPref}
+            activeSpendingStrategy={engineSettings?.withdrawalStrategy}
           />
 
           {/* UNIFIED OVERRIDES */}
