@@ -134,186 +134,103 @@ export function DecumulationConfig({
     "fixed") as WithdrawalStrategyType;
   const strategyCfg = WITHDRAWAL_STRATEGY_CONFIG[strategyKey];
   const isDynamic = strategyKey !== "fixed";
-  return (
-    <div className="border rounded-lg p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <SectionHeader
-          title={
-            isPersonFiltered
-              ? `Withdrawal Strategy — ${personFilterName}`
-              : "Withdrawal Strategy"
-          }
-          help="How retirement withdrawals are routed across accounts. Bracket Filling (default) is tax-optimal — it fills cheap tax brackets with Traditional, then uses Roth and brokerage, with graduated LTCG rates, accurate SS taxation, RMD enforcement, optional Roth conversions, and IRMAA/ACA cliff awareness. Waterfall and Percentage are manual alternatives. Use spending strategies (in retirement settings) for dynamic spending adjustments — 8 methods from Morningstar research."
-        />
-        <button
-          type="button"
-          onClick={() => setShowDecumConfig(!showDecumConfig)}
-          className="text-xs text-blue-600 hover:underline"
-        >
-          {showDecumConfig ? "Hide" : "Configure"}
-        </button>
-      </div>
+  const modeLabel =
+    withdrawalRoutingMode === "bracket_filling"
+      ? "Bracket Filling"
+      : withdrawalRoutingMode === "waterfall"
+        ? "Waterfall"
+        : "Percentage";
 
-      {!showDecumConfig ? (
-        <div className="flex flex-wrap gap-4 text-xs text-muted">
-          <span>
-            Strategy:{" "}
-            {withdrawalRoutingMode === "bracket_filling"
-              ? "Bracket Filling"
-              : withdrawalRoutingMode === "waterfall"
-                ? "Waterfall"
-                : "Percentage"}
-          </span>
-          {withdrawalRoutingMode === "bracket_filling" ? (
-            <span>
-              Bracket fill (Traditional → Roth → Brokerage → HSA) with RMDs, SS
-              tax torpedo, graduated LTCG
-            </span>
-          ) : withdrawalRoutingMode === "waterfall" ? (
-            <>
-              <span>
-                Order:{" "}
-                {withdrawalOrder
-                  .map((c) => getAccountTypeConfig(c).displayLabel)
-                  .join(" →")}
-              </span>
-              <span>
-                Tax pref:{" "}
-                {Object.entries(withdrawalTaxPref)
-                  .filter(([, v]) => v)
-                  .map(([k, v]) => `${k}=${v}`)
-                  .join(",") || "default"}
-              </span>
-            </>
-          ) : (
-            <span>
-              Splits:{" "}
-              {ALL_CATEGORIES.map(
-                (c) =>
-                  `${getAccountTypeConfig(c).displayLabel} ${Math.round(withdrawalSplits[c] * 100)}%`,
-              ).join(",")}
+  const modeDescription =
+    withdrawalRoutingMode === "bracket_filling"
+      ? "Tax-optimal: Traditional up to bracket ceiling → Roth → Brokerage (graduated LTCG) → HSA. Includes RMDs, SS taxation, Roth conversions, and IRMAA/ACA awareness."
+      : withdrawalRoutingMode === "waterfall"
+        ? "Drain accounts in priority order. Customize the order below."
+        : "Split withdrawals by fixed percentages across accounts.";
+
+  // Compact order display for collapsed view
+  const orderSummary =
+    withdrawalRoutingMode === "bracket_filling"
+      ? `${taxTypeLabel("preTax")} → ${taxTypeLabel("taxFree")} → Brokerage → HSA`
+      : withdrawalRoutingMode === "waterfall"
+        ? withdrawalOrder
+            .map((c) => getAccountTypeConfig(c).displayLabel)
+            .join(" → ")
+        : ALL_CATEGORIES.map(
+            (c) =>
+              `${getAccountTypeConfig(c).displayLabel} ${Math.round(withdrawalSplits[c] * 100)}%`,
+          ).join(", ");
+
+  return (
+    <div className="border rounded-lg p-4 space-y-3">
+      {/* Header — matches overrides panel style */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+            {isPersonFiltered
+              ? `Withdrawal Routing — ${personFilterName}`
+              : "Withdrawal Routing"}
+          </h4>
+          <HelpTip text="Determines WHICH accounts fund your spending. The spending amount comes from your strategy in Decumulation Plan above." />
+          {!showDecumConfig && (
+            <span className="text-[10px] text-faint">
+              {modeLabel} · {orderSummary}
             </span>
           )}
         </div>
-      ) : (
-        <div className="space-y-3">
-          {/* Routing mode */}
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted">Strategy:</span>
-              <div className="inline-flex rounded-md border bg-surface-sunken p-0.5">
+        <button
+          type="button"
+          onClick={() => setShowDecumConfig(!showDecumConfig)}
+          className={`text-xs font-medium px-3 py-1 rounded transition-colors ${
+            showDecumConfig
+              ? "bg-surface-strong text-muted hover:text-primary"
+              : "bg-indigo-600 text-white hover:bg-indigo-700"
+          }`}
+        >
+          {showDecumConfig ? "Done" : "Configure"}
+        </button>
+      </div>
+
+      {/* Spending strategy context — always visible when dynamic */}
+      {isDynamic && (
+        <div className="text-[10px] text-indigo-700 bg-indigo-50 rounded px-2.5 py-1.5">
+          <span className="font-medium">{strategyCfg?.label}</span>
+          {strategyCfg?.incomeSource === "formula"
+            ? " determines HOW MUCH to withdraw. This section determines FROM WHICH accounts."
+            : strategyCfg?.incomeSource === "rate"
+              ? " adjusts HOW MUCH to withdraw each year. This section determines FROM WHICH accounts."
+              : " sets HOW MUCH to withdraw from your budget. This section determines FROM WHICH accounts."}
+        </div>
+      )}
+
+      {showDecumConfig && (
+        <div className="bg-surface-sunken rounded-lg p-3 space-y-3">
+          {/* Mode toggle */}
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-md border bg-surface-primary p-0.5">
+              {(
+                [
+                  ["bracket_filling", "Bracket Filling"],
+                  ["waterfall", "Waterfall"],
+                  ["percentage", "Percentage"],
+                ] as const
+              ).map(([key, label]) => (
                 <button
+                  key={key}
                   type="button"
-                  onClick={() => setWithdrawalRoutingMode("bracket_filling")}
-                  className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
-                    withdrawalRoutingMode === "bracket_filling"
-                      ? "bg-surface-primary text-primary shadow-sm border"
+                  onClick={() => setWithdrawalRoutingMode(key)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                    withdrawalRoutingMode === key
+                      ? "bg-indigo-600 text-white shadow-sm"
                       : "text-muted hover:text-secondary"
                   }`}
                 >
-                  Bracket Filling
+                  {label}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setWithdrawalRoutingMode("waterfall")}
-                  className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
-                    withdrawalRoutingMode === "waterfall"
-                      ? "bg-surface-primary text-primary shadow-sm border"
-                      : "text-muted hover:text-secondary"
-                  }`}
-                >
-                  Waterfall
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setWithdrawalRoutingMode("percentage")}
-                  className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
-                    withdrawalRoutingMode === "percentage"
-                      ? "bg-surface-primary text-primary shadow-sm border"
-                      : "text-muted hover:text-secondary"
-                  }`}
-                >
-                  Percentage
-                </button>
-              </div>
-              <HelpTip
-                text={
-                  withdrawalRoutingMode === "bracket_filling"
-                    ? "Bracket Filling: Fill Traditional withdrawals up to a target tax bracket (using IRS provisional income for SS), then Roth, then brokerage (graduated LTCG rates), HSA last. Enforces RMDs, supports automatic Roth conversions, and respects IRMAA/ACA cliffs when enabled."
-                    : withdrawalRoutingMode === "waterfall"
-                      ? "Waterfall: Drain accounts in priority order. Empty the first account before moving to the next. RMDs still enforced; Roth conversions and cliff awareness still apply when enabled."
-                      : "Percentage: Split withdrawals by a fixed % across accounts. If an account runs dry, its share redistributes proportionally. RMDs still enforced when applicable."
-                }
-              />
+              ))}
             </div>
+            <HelpTip text={modeDescription} />
           </div>
-
-          {/* Spending strategy context */}
-          {isDynamic && (
-            <div className="bg-indigo-50 rounded-lg p-2.5 text-xs text-indigo-800">
-              <span className="font-medium">{strategyCfg?.label}</span>
-              {strategyCfg?.incomeSource === "formula"
-                ? " computes your annual spending from portfolio balance (IRS tables). The routing below determines which accounts fund that spending."
-                : strategyCfg?.incomeSource === "rate"
-                  ? " adjusts your withdrawal amount yearly based on portfolio performance. The routing below determines which accounts fund those adjusted withdrawals."
-                  : " adjusts your spending from the base budget. The routing below determines which accounts fund that spending."}
-            </div>
-          )}
-
-          {/* Bracket filling description */}
-          {withdrawalRoutingMode === "bracket_filling" && (
-            <div className="bg-emerald-50 rounded-lg p-3 text-xs text-emerald-800 space-y-2">
-              <p className="font-medium">
-                Tax-optimal withdrawal order each year:
-              </p>
-              <ol className="list-decimal list-inside space-y-0.5 text-emerald-700">
-                <li>
-                  <span className="font-medium">{taxTypeLabel("preTax")}</span>{" "}
-                  (401k/IRA) up to the bracket ceiling — uses IRS provisional
-                  income formula for SS taxation
-                </li>
-                <li>
-                  <span className="font-medium">{taxTypeLabel("taxFree")}</span>{" "}
-                  (401k/IRA Roth) for the remainder — no tax impact
-                </li>
-                <li>
-                  <span className="font-medium">Brokerage</span> as overflow —
-                  taxed at graduated LTCG rates (0%/15%/20%)
-                </li>
-                <li>
-                  <span className="font-medium">HSA</span> last resort — most
-                  tax-advantaged, compounds longest
-                </li>
-              </ol>
-              <div className="border-t border-emerald-200 pt-1.5 mt-1.5 space-y-0.5 text-emerald-600">
-                <p>
-                  <span className="font-medium text-emerald-700">RMDs</span> —
-                  Required Minimum Distributions enforced at the IRS start age
-                  (SECURE 2.0: 73 or 75). Traditional withdrawals are forced
-                  above your bracket target when needed.
-                </p>
-                <p>
-                  <span className="font-medium text-emerald-700">
-                    Roth conversions
-                  </span>{" "}
-                  — When enabled, automatically converts Traditional → Roth to
-                  fill the target bracket. Most valuable pre-RMD age.
-                </p>
-                <p>
-                  <span className="font-medium text-emerald-700">
-                    IRMAA / ACA
-                  </span>{" "}
-                  — When enabled, constrains withdrawals and conversions near
-                  Medicare surcharge cliffs (65+) or ACA subsidy cliffs
-                  (pre-65).
-                </p>
-              </div>
-              <p className="text-emerald-600">
-                Configure bracket targets, Roth conversions, and healthcare
-                awareness in retirement settings above.
-              </p>
-            </div>
-          )}
 
           {/* Order (waterfall) */}
           {withdrawalRoutingMode === "waterfall" && (
