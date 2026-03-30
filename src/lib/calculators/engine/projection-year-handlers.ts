@@ -334,8 +334,12 @@ export function buildProjectionContext(
 
   const yearsToProject = Math.max(0, input.projectionEndAge - input.currentAge);
 
-  // First-year pro-rating: fraction of the year remaining (e.g. March -> 10/12)
-  const monthsRemaining = 12 - input.asOfDate.getMonth();
+  // First-year pro-rating: remaining contributable months.
+  // If past mid-month (day > 15), current month's contribution is assumed done → exclude it.
+  // Otherwise include it (e.g., Jan 1 → 12 months, Jul 1 → 6 months, Mar 30 → 9 months).
+  const pastMidMonth = input.asOfDate.getDate() > 15;
+  const monthsRemaining =
+    12 - input.asOfDate.getMonth() - (pastMidMonth ? 1 : 0);
   const firstYearFraction = monthsRemaining / MONTHS_PER_YEAR;
 
   const rmdStartAge =

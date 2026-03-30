@@ -122,7 +122,11 @@ export default function BrokeragePage() {
   const { data: contribData } =
     trpc.contribution.computeSummary.useQuery(contribInput);
   const { data: brokerageData } = trpc.brokerage.computeSummary.useQuery();
+  const upsertSetting = trpc.settings.appSettings.upsert.useMutation({
+    onSuccess: () => utils.invalidate(),
+  });
   const [showGoals, setShowGoals] = useState(false);
+  const [dollarMode, setDollarMode] = useState<"nominal" | "real">("nominal");
 
   if (isLoading) {
     return (
@@ -181,12 +185,25 @@ export default function BrokeragePage() {
       ]
     : [];
 
-  // API balance overlay from brokerage router
+  // API balance overlay — match by accountCategory (raw DB type) against categoryKey
   const apiBalances = brokerageData?.apiBalances ?? [];
-  const apiBalanceByPerfId = new Map(
-    apiBalances.map((ab) => [ab.performanceAccountId, ab]),
-  );
+  const apiBalanceByCategory = new Map<string, (typeof apiBalances)[0]>();
+  for (const ab of apiBalances) {
+    if (ab.source === "api") apiBalanceByCategory.set(ab.accountCategory, ab);
+  }
   const budgetLinks = brokerageData?.budgetLinks ?? [];
+
+  // Deflation (Today's $ / Future $) — same pattern as retirement
+  const inflationRate = data.settings?.annualInflation
+    ? Number(data.settings.annualInflation)
+    : 0.03;
+  const baseYear = new Date().getFullYear();
+  const deflate = (value: number, year: number) => {
+    if (dollarMode === "nominal") return value;
+    const years = year - baseYear;
+    if (years <= 0) return value;
+    return value / Math.pow(1 + inflationRate, years);
+  };
 
   // Funding sources
   const totalDirectContrib = portfolioAccounts.reduce(
@@ -217,6 +234,13 @@ export default function BrokeragePage() {
             directContrib={totalDirectContrib}
             overflow={totalOverflow}
             ramp={brokerageRamp}
+            canEdit={canEdit}
+            onRampChange={(value) =>
+              upsertSetting.mutate({
+                key: "brokerage_contribution_increase",
+                value: String(value),
+              })
+            }
           />
         </Card>
 
@@ -224,7 +248,7 @@ export default function BrokeragePage() {
         <Card title="By Account" className="lg:col-span-2">
           <ByAccountSummary
             accounts={portfolioAccounts}
-            apiBalanceByPerfId={apiBalanceByPerfId}
+            apiBalanceByCategory={apiBalanceByCategory}
             budgetLinks={budgetLinks}
           />
         </Card>
@@ -313,7 +337,34 @@ export default function BrokeragePage() {
 
       {/* Year-by-Year Projection */}
       <Card title="Year-by-Year Projection" className="mt-6">
-        <YearByYearTable years={brokerageResult.projectionByYear} />
+        <div className="flex items-center justify-end mb-3">
+          <div className="inline-flex rounded-md border bg-surface-primary p-0.5">
+            {(
+              [
+                ["nominal", "Future $"],
+                ["real", "Today's $"],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setDollarMode(key)}
+                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                  dollarMode === key
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-muted hover:text-secondary"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <HelpTip text="Future $ shows projected nominal values. Today's $ adjusts for inflation so you can compare in current purchasing power." />
+        </div>
+        <YearByYearTable
+          years={brokerageResult.projectionByYear}
+          deflate={deflate}
+        />
       </Card>
 
       {/* Warnings */}
@@ -336,10 +387,14 @@ function FundingSources({
   directContrib,
   overflow,
   ramp,
+  canEdit,
+  onRampChange,
 }: {
   directContrib: number;
   overflow: number;
   ramp: number;
+  canEdit: boolean;
+  onRampChange: (value: number) => void;
 }) {
   const total = directContrib + overflow + ramp;
   const rows = [
@@ -352,11 +407,6 @@ function FundingSources({
       label: "Retirement overflow",
       amount: overflow,
       help: "Excess contributions that exceed IRS limits on retirement accounts, redirected here",
-    },
-    {
-      label: "Brokerage ramp",
-      amount: ramp,
-      help: "Annual increase from Settings — same value used on Retirement page",
     },
   ];
 
@@ -373,6 +423,33 @@ function FundingSources({
           </span>
         </div>
       ))}
+      <div className="flex justify-between items-center">
+        <span className="text-muted">
+          Annual increase
+          <HelpTip text="Additional fixed-dollar contribution added each year (e.g., $50/yr means year 1 adds $50, year 2 adds $100, etc.)" />
+        </span>
+        {canEdit ? (
+          <span className="flex items-center gap-1">
+            <span className="text-faint">$</span>
+            <input
+              type="number"
+              min={0}
+              step={10}
+              defaultValue={ramp}
+              className="w-20 text-right border rounded px-1.5 py-0.5 text-sm"
+              onBlur={(e) => {
+                const value = parseFloat(e.target.value) || 0;
+                if (value !== ramp) onRampChange(value);
+              }}
+            />
+            <span className="text-faint text-xs">/yr</span>
+          </span>
+        ) : (
+          <span className="font-medium text-primary">
+            {formatCurrency(ramp)}/yr
+          </span>
+        )}
+      </div>
       <div className="border-t pt-2 flex justify-between font-semibold">
         <span className="text-secondary">Total inflow</span>
         <span className="text-primary">{formatCurrency(total)}/yr</span>
@@ -383,6 +460,7 @@ function FundingSources({
 
 type ApiBalanceInfo = {
   performanceAccountId: number;
+  accountCategory: string;
   resolvedBalance: number;
   snapshotBalance: number;
   source: "api" | "snapshot";
@@ -390,11 +468,12 @@ type ApiBalanceInfo = {
 
 function ByAccountSummary({
   accounts,
-  apiBalanceByPerfId,
+  apiBalanceByCategory,
   budgetLinks,
 }: {
   accounts: {
     accountType: string;
+    categoryKey: string;
     employeeContrib: number;
     employerMatch: number;
     totalContrib: number;
@@ -402,9 +481,8 @@ function ByAccountSummary({
     fundingPct: number;
     hasDiscountBar: boolean;
     employerMatchLabel: string;
-    performanceAccountId?: number;
   }[];
-  apiBalanceByPerfId: Map<number, ApiBalanceInfo>;
+  apiBalanceByCategory: Map<string, ApiBalanceInfo>;
   budgetLinks: Array<{
     accountType: string;
     budgetItemName: string;
@@ -419,7 +497,7 @@ function ByAccountSummary({
     );
   }
 
-  // Build budget link lookup by accountType
+  // Match by categoryKey (raw DB category) — both budgetLinks.accountType and categoryKey are the raw DB value
   const budgetLinkByType = new Map(
     budgetLinks.map((bl) => [bl.accountType, bl]),
   );
@@ -427,10 +505,8 @@ function ByAccountSummary({
   return (
     <div className="space-y-3">
       {accounts.map((at) => {
-        const apiInfo = at.performanceAccountId
-          ? apiBalanceByPerfId.get(at.performanceAccountId)
-          : undefined;
-        const budgetLink = budgetLinkByType.get(at.accountType);
+        const apiInfo = apiBalanceByCategory.get(at.categoryKey);
+        const budgetLink = budgetLinkByType.get(at.categoryKey);
         return (
           <div key={at.accountType}>
             <div className="flex items-baseline justify-between text-sm">
@@ -685,10 +761,20 @@ function balanceTooltip(
 
 // --- Year-by-Year Table ---
 
-function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
+function YearByYearTable({
+  years,
+  deflate,
+}: {
+  years: BrokerageGoalYear[];
+  deflate: (value: number, year: number) => number;
+}) {
   if (years.length === 0) {
     return <p className="text-sm text-faint">No projection data.</p>;
   }
+
+  // Currency formatting with optional deflation
+  const fmt = (amount: number, year: number) =>
+    formatCurrency(deflate(amount, year));
 
   return (
     <div className="overflow-x-auto">
@@ -758,11 +844,11 @@ function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
                         side="top"
                       >
                         <span className="cursor-help border-b border-dotted border-current">
-                          {formatCurrency(yr.contribution)}
+                          {fmt(yr.contribution, yr.year)}
                         </span>
                       </Tooltip>
                     ) : (
-                      formatCurrency(yr.contribution)
+                      fmt(yr.contribution, yr.year)
                     )
                   ) : (
                     "\u2014"
@@ -776,11 +862,11 @@ function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
                         side="top"
                       >
                         <span className="cursor-help border-b border-dotted border-current">
-                          {formatCurrency(yr.overflow)}
+                          {fmt(yr.overflow, yr.year)}
                         </span>
                       </Tooltip>
                     ) : (
-                      formatCurrency(yr.overflow)
+                      fmt(yr.overflow, yr.year)
                     )
                   ) : (
                     "\u2014"
@@ -794,11 +880,11 @@ function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
                         side="top"
                       >
                         <span className="cursor-help border-b border-dotted border-current">
-                          {formatCurrency(yr.growth)}
+                          {fmt(yr.growth, yr.year)}
                         </span>
                       </Tooltip>
                     ) : (
-                      formatCurrency(yr.growth)
+                      fmt(yr.growth, yr.year)
                     )
                   ) : (
                     "\u2014"
@@ -811,7 +897,7 @@ function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
                       side="top"
                     >
                       <span className="cursor-help border-b border-dotted border-current">
-                        -{formatCurrency(yr.totalWithdrawal)}
+                        -{fmt(yr.totalWithdrawal, yr.year)}
                       </span>
                     </Tooltip>
                   ) : (
@@ -820,7 +906,7 @@ function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
                 </td>
                 <td className="py-1.5 pr-3 text-right text-muted">
                   {yr.totalTaxCost > 0
-                    ? formatCurrency(yr.totalTaxCost)
+                    ? fmt(yr.totalTaxCost, yr.year)
                     : "\u2014"}
                 </td>
                 <td className="py-1.5 pr-3 text-right font-medium text-primary">
@@ -830,18 +916,18 @@ function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
                       side="top"
                     >
                       <span className="cursor-help border-b border-dotted border-current">
-                        {formatCurrency(yr.endBalance)}
+                        {fmt(yr.endBalance, yr.year)}
                       </span>
                     </Tooltip>
                   ) : (
-                    formatCurrency(yr.endBalance)
+                    fmt(yr.endBalance, yr.year)
                   )}
                 </td>
                 <td className="py-1.5 pr-3 text-right text-muted">
-                  {formatCurrency(yr.endBasis)}
+                  {fmt(yr.endBasis, yr.year)}
                 </td>
                 <td className="py-1.5 text-right text-muted">
-                  {formatCurrency(yr.unrealizedGain)}
+                  {fmt(yr.unrealizedGain, yr.year)}
                 </td>
               </tr>
             );
