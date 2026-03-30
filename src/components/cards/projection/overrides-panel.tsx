@@ -57,13 +57,13 @@ export function OverridesPanel({
           <span className="font-medium text-emerald-700">
             {s.accumOverrides.length}
           </span>{" "}
-          saving
+          pre-retirement
         </span>
         <span>
           <span className="font-medium text-amber-700">
             {s.decumOverrides.length}
           </span>{" "}
-          withdrawal
+          post-retirement
         </span>
         <span>
           <span className="font-medium text-secondary">

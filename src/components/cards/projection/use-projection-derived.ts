@@ -503,5 +503,18 @@ export function useProjectionDerived(
     avgBirthYear,
     displayAge,
     getFilteredYears,
+    // Individual account names for lump sum targeting
+    individualAccountNames: useMemo(() => {
+      const first = result?.projectionByYear?.[0];
+      if (!first) return [];
+      return first.individualAccountBalances
+        .filter((ia) => ia.parentCategory === "Retirement")
+        .map((ia) => ({
+          name: ia.name,
+          category: ia.category,
+          taxType: ia.taxType,
+          ownerName: ia.ownerName,
+        }));
+    }, [result]),
   };
 }

@@ -21,14 +21,15 @@ export function WithdrawalOverridesSection({
     enginePeople,
     rothBracketPresets,
     handleAddDecumOverride,
+    individualAccountNames,
   } = s;
 
   return (
     <div className="border-t border-subtle pt-3">
       <div className="flex items-center justify-between mb-2">
         <h5 className="text-[11px] font-medium text-muted uppercase tracking-wide">
-          Withdrawal
-          <HelpTip text="Change withdrawal rate, routing mode, account caps, tax preferences, or Roth conversion target at a specific retirement year. RMDs are always enforced regardless of overrides." />
+          Post-Retirement
+          <HelpTip text="Overrides during retirement — change withdrawal rate, routing mode, account caps, tax preferences, Roth conversion target, or add lump sums (windfalls, house sale, inheritance). RMDs are always enforced regardless of overrides." />
         </h5>
         <button
           type="button"
@@ -550,6 +551,7 @@ export function WithdrawalOverridesSection({
                         id: crypto.randomUUID(),
                         amount: "",
                         targetAccount: ALL_CATEGORIES[0]!,
+                        targetAccountName: "",
                         taxType: "" as const,
                         label: "",
                       },
@@ -587,28 +589,40 @@ export function WithdrawalOverridesSection({
                 <label className="block">
                   <span className="text-[10px] text-muted">Account</span>
                   <select
-                    value={ls.targetAccount}
-                    onChange={(e) =>
+                    value={ls.targetAccountName || ls.targetAccount}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const acct = individualAccountNames.find(
+                        (a) => a.name === val,
+                      );
                       setDecumForm((f) => ({
                         ...f,
                         lumpSums: f.lumpSums.map((x, j) =>
                           j === li
                             ? {
                                 ...x,
-                                targetAccount: e.target
-                                  .value as typeof ls.targetAccount,
+                                targetAccountName: acct ? val : "",
+                                targetAccount: acct
+                                  ? (acct.category as typeof ls.targetAccount)
+                                  : (val as typeof ls.targetAccount),
                               }
                             : x,
                         ),
-                      }))
-                    }
+                      }));
+                    }}
                     className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-sm"
                   >
-                    {ALL_CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {catDisplayLabel[cat] ?? cat}
-                      </option>
-                    ))}
+                    {individualAccountNames.length > 0
+                      ? individualAccountNames.map((a) => (
+                          <option key={a.name} value={a.name}>
+                            {a.name}
+                          </option>
+                        ))
+                      : ALL_CATEGORIES.map((cat) => (
+                          <option key={cat} value={cat}>
+                            {catDisplayLabel[cat] ?? cat}
+                          </option>
+                        ))}
                   </select>
                 </label>
                 <label className="block">

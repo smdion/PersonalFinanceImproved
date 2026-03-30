@@ -23,14 +23,15 @@ export function SavingOverridesSection({ state: s }: OverridesSectionProps) {
     setAccumForm,
     enginePeople,
     handleAddAccumOverride,
+    individualAccountNames,
   } = s;
 
   return (
     <div className="border-t border-subtle pt-3">
       <div className="flex items-center justify-between mb-2">
         <h5 className="text-[11px] font-medium text-muted uppercase tracking-wide">
-          Saving
-          <HelpTip text="Change contribution rate, routing mode, account order, tax splits, or caps at a specific future year. Changes carry forward until the next override." />
+          Pre-Retirement
+          <HelpTip text="Overrides during the saving phase — change contribution rate, routing mode, account order, tax splits, caps, or add lump sums. Changes carry forward until the next override." />
         </h5>
         <button
           type="button"
@@ -460,6 +461,7 @@ export function SavingOverridesSection({ state: s }: OverridesSectionProps) {
                         id: crypto.randomUUID(),
                         amount: "",
                         targetAccount: ALL_CATEGORIES[0]!,
+                        targetAccountName: "",
                         taxType: "" as const,
                         label: "",
                       },
@@ -497,28 +499,40 @@ export function SavingOverridesSection({ state: s }: OverridesSectionProps) {
                 <label className="block">
                   <span className="text-[10px] text-muted">Account</span>
                   <select
-                    value={ls.targetAccount}
-                    onChange={(e) =>
+                    value={ls.targetAccountName || ls.targetAccount}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const acct = individualAccountNames.find(
+                        (a) => a.name === val,
+                      );
                       setAccumForm((f) => ({
                         ...f,
                         lumpSums: f.lumpSums.map((x, j) =>
                           j === li
                             ? {
                                 ...x,
-                                targetAccount: e.target
-                                  .value as typeof ls.targetAccount,
+                                targetAccountName: acct ? val : "",
+                                targetAccount: acct
+                                  ? (acct.category as typeof ls.targetAccount)
+                                  : (val as typeof ls.targetAccount),
                               }
                             : x,
                         ),
-                      }))
-                    }
+                      }));
+                    }}
                     className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-sm"
                   >
-                    {ALL_CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {catDisplayLabel[cat] ?? cat}
-                      </option>
-                    ))}
+                    {individualAccountNames.length > 0
+                      ? individualAccountNames.map((a) => (
+                          <option key={a.name} value={a.name}>
+                            {a.name}
+                          </option>
+                        ))
+                      : ALL_CATEGORIES.map((cat) => (
+                          <option key={cat} value={cat}>
+                            {catDisplayLabel[cat] ?? cat}
+                          </option>
+                        ))}
                   </select>
                 </label>
                 <label className="block">

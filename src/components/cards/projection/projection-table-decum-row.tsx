@@ -33,6 +33,9 @@ import {
   slotBucketWithdrawal,
   iaBelongsToBucket,
   pctOf,
+  lumpSumsForBucket,
+  lumpSumsForCategory,
+  lumpSumTotal,
 } from "./utils";
 import type { ProjectionState } from "./projection-table-types";
 import {
@@ -99,6 +102,8 @@ export function DecumulationRow({
     dyr.slots.map((s) => [s.category, s]),
   );
   const dpt = getPersonYearTotals(yr);
+  const yearLumpSums = dyr.config.lumpSums;
+  const totalLumpSum = lumpSumTotal(yearLumpSums);
 
   // Detect milestone years for row highlighting
   const ssAge = engineSettings?.ssStartAge;
@@ -199,9 +204,20 @@ export function DecumulationRow({
                           color: "red",
                         });
                     }
+                    // Add lump sum items for this category
+                    const catLumps = lumpSumsForCategory(yearLumpSums, cat);
+                    for (const ls of catLumps) {
+                      items.push({
+                        label: ls.label ?? "Lump sum",
+                        amount: deflate(ls.amount, yr.year),
+                        prefix: "+",
+                        color: "emerald",
+                      });
+                    }
+                    const catLumpTotal = lumpSumTotal(catLumps);
                     return renderTooltip({
                       kind: "money",
-                      header: `${catDisplayLabel[cat] ?? cat} Withdrawals`,
+                      header: `${catDisplayLabel[cat] ?? cat}${catLumpTotal > 0 ? " Activity" : " Withdrawals"}`,
                       items: items.length > 0 ? items : undefined,
                       withdrawals:
                         wd > 0 && items.length === 0
@@ -221,11 +237,29 @@ export function DecumulationRow({
                   side="top"
                 >
                   <td
-                    className={`text-right py-1.5 px-2 ${accountTextColor(cat)}`}
+                    className={`text-right py-1.5 px-2 ${(() => {
+                      const catLumps = lumpSumsForCategory(yearLumpSums, cat);
+                      const catLumpTotal = lumpSumTotal(catLumps);
+                      if (catLumpTotal > 0 && catLumpTotal > wd)
+                        return "text-green-600";
+                      return accountTextColor(cat);
+                    })()}`}
                   >
-                    {wd > 0
-                      ? `-${formatCurrency(deflate(wd, yr.year))}`
-                      : "---"}
+                    {(() => {
+                      const catLumps = lumpSumsForCategory(yearLumpSums, cat);
+                      const catLumpTotal = lumpSumTotal(catLumps);
+                      if (catLumpTotal > 0 && wd > 0) {
+                        const net = catLumpTotal - wd;
+                        return net >= 0
+                          ? `+${formatCurrency(deflate(net, yr.year))}`
+                          : `-${formatCurrency(deflate(Math.abs(net), yr.year))}`;
+                      }
+                      if (catLumpTotal > 0)
+                        return `+${formatCurrency(deflate(catLumpTotal, yr.year))}`;
+                      if (wd > 0)
+                        return `-${formatCurrency(deflate(wd, yr.year))}`;
+                      return "---";
+                    })()}
                   </td>
                 </Tooltip>
               );
@@ -262,36 +296,94 @@ export function DecumulationRow({
                                 bucketSlotMap[bucket]!.taxField,
                               )
                             : undefined;
-                          return renderTooltip({
-                            kind: "money",
-                            header: `${taxTypeLabel(bucket)} Withdrawals`,
-                            items: parts.map((p) => ({
+                          const bucketLumps = lumpSumsForBucket(
+                            yearLumpSums,
+                            bucket,
+                          );
+                          const allItems = [
+                            ...parts.map((p) => ({
                               label: catDisplayLabel[p.cat] ?? p.cat,
                               amount: deflate(p.wd, yr.year),
                               prefix: "-" as const,
                               taxType: itemTaxType(p.cat, wdTaxType),
                               color: "red" as TipColor,
                             })),
+                            ...bucketLumps.map((ls) => ({
+                              label: ls.label ?? "Lump sum",
+                              amount: deflate(ls.amount, yr.year),
+                              prefix: "+" as const,
+                              color: "emerald" as TipColor,
+                            })),
+                          ];
+                          const bucketLumpTotal = lumpSumTotal(bucketLumps);
+                          return renderTooltip({
+                            kind: "money",
+                            header: `${taxTypeLabel(bucket)}${bucketLumpTotal > 0 ? " Activity" : " Withdrawals"}`,
+                            items: allItems,
                             total:
-                              parts.length > 1
+                              allItems.length > 1
                                 ? {
-                                    label: "Total",
-                                    amount: deflate(bucketWd, yr.year),
-                                    prefix: "-",
+                                    label: "Net",
+                                    amount: deflate(
+                                      bucketLumpTotal - bucketWd,
+                                      yr.year,
+                                    ),
+                                    prefix:
+                                      bucketLumpTotal >= bucketWd ? "+" : "-",
                                   }
                                 : undefined,
                           });
                         })()
-                      : undefined
+                      : (() => {
+                          const bucketLumps = lumpSumsForBucket(
+                            yearLumpSums,
+                            bucket,
+                          );
+                          if (bucketLumps.length === 0) return undefined;
+                          return renderTooltip({
+                            kind: "money",
+                            header: `${taxTypeLabel(bucket)} Lump Sum`,
+                            items: bucketLumps.map((ls) => ({
+                              label: ls.label ?? "Lump sum",
+                              amount: deflate(ls.amount, yr.year),
+                              prefix: "+" as const,
+                              color: "emerald" as TipColor,
+                            })),
+                          });
+                        })()
                   }
                   side="top"
                 >
                   <td
-                    className={`text-right py-1.5 px-2 ${taxTypeTextColor(bucket)}`}
+                    className={`text-right py-1.5 px-2 ${(() => {
+                      const bucketLumps = lumpSumsForBucket(
+                        yearLumpSums,
+                        bucket,
+                      );
+                      const bucketLumpTotal = lumpSumTotal(bucketLumps);
+                      if (bucketLumpTotal > 0 && bucketLumpTotal > bucketWd)
+                        return "text-green-600";
+                      return taxTypeTextColor(bucket);
+                    })()}`}
                   >
-                    {bucketWd > 0
-                      ? `-${formatCurrency(deflate(bucketWd, yr.year))}`
-                      : "---"}
+                    {(() => {
+                      const bucketLumps = lumpSumsForBucket(
+                        yearLumpSums,
+                        bucket,
+                      );
+                      const bucketLumpTotal = lumpSumTotal(bucketLumps);
+                      if (bucketLumpTotal > 0 && bucketWd > 0) {
+                        const net = bucketLumpTotal - bucketWd;
+                        return net >= 0
+                          ? `+${formatCurrency(deflate(net, yr.year))}`
+                          : `-${formatCurrency(deflate(Math.abs(net), yr.year))}`;
+                      }
+                      if (bucketLumpTotal > 0)
+                        return `+${formatCurrency(deflate(bucketLumpTotal, yr.year))}`;
+                      if (bucketWd > 0)
+                        return `-${formatCurrency(deflate(bucketWd, yr.year))}`;
+                      return "---";
+                    })()}
                   </td>
                 </Tooltip>
               );
@@ -332,6 +424,17 @@ export function DecumulationRow({
                       : "emerald",
                 });
             }
+          }
+          // Add lump sum items
+          for (const ls of yearLumpSums) {
+            items.push({
+              label: ls.label
+                ? `${ls.label} → ${ls.targetAccountName ?? catDisplayLabel[ls.targetAccount] ?? ls.targetAccount}`
+                : `Lump sum → ${ls.targetAccountName ?? catDisplayLabel[ls.targetAccount] ?? ls.targetAccount}`,
+              amount: deflate(ls.amount, yr.year),
+              prefix: "+",
+              color: "emerald",
+            });
           }
           const iabs = yr.individualAccountBalances ?? [];
           const totalGrowth = (
@@ -406,21 +509,35 @@ export function DecumulationRow({
       >
         <td
           className={`text-right py-1.5 px-2 font-medium ${
-            dyr.totalWithdrawal > 0 &&
-            dyr.totalWithdrawal < dyr.targetWithdrawal
-              ? "text-amber-500"
-              : dyr.totalWithdrawal > 0
-                ? "text-red-600"
-                : dyr.endBalance < 1 && dyr.projectedExpenses > 0
-                  ? "text-red-400 italic"
-                  : "text-muted"
+            totalLumpSum > 0 && totalLumpSum > dyr.totalWithdrawal
+              ? "text-green-600"
+              : dyr.totalWithdrawal > 0 &&
+                  dyr.totalWithdrawal < dyr.targetWithdrawal
+                ? "text-amber-500"
+                : dyr.totalWithdrawal > 0
+                  ? "text-red-600"
+                  : dyr.endBalance < 1 && dyr.projectedExpenses > 0
+                    ? "text-red-400 italic"
+                    : "text-muted"
           }`}
         >
-          {dyr.totalWithdrawal > 0
-            ? `-${formatCurrency(deflate(dyr.totalWithdrawal, yr.year))}`
-            : dyr.endBalance < 1 && dyr.projectedExpenses > 0
+          {(() => {
+            const net = deflate(totalLumpSum - dyr.totalWithdrawal, yr.year);
+            if (totalLumpSum > 0 && dyr.totalWithdrawal > 0) {
+              return net >= 0
+                ? `+${formatCurrency(net)}`
+                : `-${formatCurrency(Math.abs(net))}`;
+            }
+            if (totalLumpSum > 0) {
+              return `+${formatCurrency(deflate(totalLumpSum, yr.year))}`;
+            }
+            if (dyr.totalWithdrawal > 0) {
+              return `-${formatCurrency(deflate(dyr.totalWithdrawal, yr.year))}`;
+            }
+            return dyr.endBalance < 1 && dyr.projectedExpenses > 0
               ? "depleted"
-              : "---"}
+              : "---";
+          })()}
         </td>
       </Tooltip>
       {balanceView === "taxType" ? (
@@ -478,6 +595,16 @@ export function DecumulationRow({
                         });
                       }
                     }
+                  }
+                  // Add lump sum items for this bucket
+                  const bucketLumps = lumpSumsForBucket(yearLumpSums, bucket);
+                  for (const ls of bucketLumps) {
+                    wdLineItems.push({
+                      label: ls.label ?? "Lump sum",
+                      amount: deflate(ls.amount, yr.year),
+                      prefix: "+",
+                      color: "emerald",
+                    });
                   }
                   return renderTooltip({
                     kind: "money",

@@ -89,6 +89,19 @@ export type LumpSumFormEntry = {
   id: string;
   amount: string;
   targetAccount: AccountCategory;
+  /** Specific individual account name. When set, overrides targetAccount for routing. */
+  targetAccountName: string;
+  taxType: "traditional" | "roth" | "";
+  label: string;
+};
+
+/** Standalone lump sum entry with year — used by shared LumpSumForm and DB persistence. */
+export type LumpSumEvent = {
+  id: string;
+  year: string;
+  amount: string; // negative for withdrawals
+  targetAccount: AccountCategory;
+  targetAccountName: string;
   taxType: "traditional" | "roth" | "";
   label: string;
 };
@@ -190,6 +203,7 @@ export type AccumOverride = {
     id: string;
     amount: number;
     targetAccount: AccountCategory;
+    targetAccountName?: string;
     taxType?: "traditional" | "roth";
     label?: string;
   }>;
@@ -212,6 +226,7 @@ export type DecumOverride = {
     id: string;
     amount: number;
     targetAccount: AccountCategory;
+    targetAccountName?: string;
     taxType?: "traditional" | "roth";
     label?: string;
   }>;
@@ -271,6 +286,7 @@ export function accumOverrideToForm(o: AccumOverride): AccumOverrideForm {
       id: ls.id,
       amount: String(ls.amount),
       targetAccount: ls.targetAccount,
+      targetAccountName: ls.targetAccountName ?? "",
       taxType: ls.taxType ?? "",
       label: ls.label ?? "",
     })),
@@ -326,6 +342,7 @@ export function decumOverrideToForm(o: DecumOverride): DecumOverrideForm {
       id: ls.id,
       amount: String(ls.amount),
       targetAccount: ls.targetAccount,
+      targetAccountName: ls.targetAccountName ?? "",
       taxType: ls.taxType ?? "",
       label: ls.label ?? "",
     })),

@@ -1096,6 +1096,25 @@ export function runAccumulationYear(
       addBalance(acctBal[ls.targetAccount], ls.amount);
       addBasis(acctBal[ls.targetAccount], ls.amount);
     }
+    // Update individual account tracking for the lump sum
+    if (hasIndividualAccounts) {
+      const taxType =
+        ls.taxType ??
+        (bs === "single_bucket"
+          ? "hsa"
+          : bs === "roth_traditional"
+            ? "preTax"
+            : "afterTax");
+      const target = ls.targetAccountName
+        ? indAccts.find((ia) => ia.name === ls.targetAccountName)
+        : (indAccts.find(
+            (ia) => ia.category === ls.targetAccount && ia.taxType === taxType,
+          ) ?? indAccts.find((ia) => ia.category === ls.targetAccount));
+      if (target) {
+        const key = indKey(target);
+        indBal.set(key, (indBal.get(key) ?? 0) + ls.amount);
+      }
+    }
   }
 
   // Route contributions, match, overflow, and ramp to individual accounts
@@ -1631,6 +1650,25 @@ export function runDecumulationYear(
       balances.afterTaxBasis += ls.amount;
       addBalance(acctBal[ls.targetAccount], ls.amount);
       addBasis(acctBal[ls.targetAccount], ls.amount);
+    }
+    // Update individual account tracking for the lump sum
+    if (hasIndividualAccounts) {
+      const taxType =
+        ls.taxType ??
+        (bs === "single_bucket"
+          ? "hsa"
+          : bs === "roth_traditional"
+            ? "preTax"
+            : "afterTax");
+      const target = ls.targetAccountName
+        ? indAccts.find((ia) => ia.name === ls.targetAccountName)
+        : (indAccts.find(
+            (ia) => ia.category === ls.targetAccount && ia.taxType === taxType,
+          ) ?? indAccts.find((ia) => ia.category === ls.targetAccount));
+      if (target) {
+        const key = indKey(target);
+        indBal.set(key, (indBal.get(key) ?? 0) + ls.amount);
+      }
     }
   }
 

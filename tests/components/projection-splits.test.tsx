@@ -299,8 +299,8 @@ describe("OverridesPanel", () => {
     const { OverridesPanel } =
       await import("@/components/cards/projection/overrides-panel");
     render(<OverridesPanel state={baseMockState()} />);
-    expect(screen.getByText("Saving")).toBeInTheDocument();
-    expect(screen.getByText("Withdrawal")).toBeInTheDocument();
+    expect(screen.getByText("Pre-Retirement")).toBeInTheDocument();
+    expect(screen.getByText("Post-Retirement")).toBeInTheDocument();
     expect(screen.getByText(/Contribution/)).toBeInTheDocument();
   });
 });
