@@ -628,6 +628,7 @@ export async function loadAndApplyContribProfile(
 /** Context needed from the main buildEnginePayload for spec building. */
 export type ProfileContribContext = {
   perfCategoryMap: Map<number, string>;
+  perfRetirementBehaviorMap: Map<number, string>;
   personNameById: Map<number, string>;
   accountBreakdownByCategory: Record<
     string,
@@ -670,6 +671,7 @@ export type ContribInputRow = {
   performanceAccountId?: number | null;
   targetAnnual?: string | number | null;
   allocationPriority?: number | null;
+  ownership?: string | null;
 };
 
 /**
@@ -841,6 +843,10 @@ export function buildProfileContribData(
           (c.performanceAccountId
             ? ctx.perfCategoryMap.get(c.performanceAccountId)
             : undefined),
+        ownership: (c.ownership ?? "individual") as "individual" | "joint",
+        retirementBehavior: (c.performanceAccountId
+          ? ctx.perfRetirementBehaviorMap.get(c.performanceAccountId)
+          : undefined) as ContributionSpec["retirementBehavior"],
       };
     });
 

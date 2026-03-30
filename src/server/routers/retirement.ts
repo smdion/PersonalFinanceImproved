@@ -698,8 +698,15 @@ export async function buildEnginePayload(
   const perfAccountMap = new Map(perfAccounts.map((p) => [p.id, p]));
 
   // Shared context for spec building (used by both default profile and profile switches)
+  const perfRetirementBehaviorMap = new Map(
+    perfAccounts.map((p) => [
+      p.id,
+      p.retirementBehavior ?? "stops_at_owner_retirement",
+    ]),
+  );
   const profileContribCtx = {
     perfCategoryMap,
+    perfRetirementBehaviorMap,
     personNameById,
     accountBreakdownByCategory,
   };
@@ -1092,6 +1099,7 @@ export async function buildEnginePayload(
     decCol,
     limitByGroup,
     perfCategoryMap,
+    perfRetirementBehaviorMap,
     perfAccountMap,
     dbSalaryOverrides,
     dbBudgetOverrides,

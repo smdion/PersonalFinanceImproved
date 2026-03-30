@@ -49,6 +49,7 @@ export function AccountCard({
     displayName: string | null;
     ownerPersonId: number | null;
     ownershipType: string;
+    retirementBehavior?: string;
     parentCategory: string;
     isActive: boolean;
     displayOrder: number;
@@ -234,6 +235,29 @@ export function AccountCard({
                       value={pa.parentCategory}
                       options={categoryOptions}
                       onChange={(val) => onPerfUpdate({ parentCategory: val })}
+                    />
+                    <InlineSelect
+                      label="After retirement"
+                      value={
+                        pa.retirementBehavior ?? "stops_at_owner_retirement"
+                      }
+                      options={[
+                        {
+                          value: "stops_at_owner_retirement",
+                          label: "Stop contributions",
+                        },
+                        {
+                          value: "stops_when_last_retires",
+                          label: "Continue until last person retires",
+                        },
+                        {
+                          value: "continues_after_retirement",
+                          label: "Continue indefinitely",
+                        },
+                      ]}
+                      onChange={(val) =>
+                        onPerfUpdate({ retirementBehavior: val })
+                      }
                     />
                     <InlineText
                       label="Display Name"

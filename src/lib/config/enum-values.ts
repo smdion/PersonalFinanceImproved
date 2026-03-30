@@ -98,6 +98,18 @@ export const apiSyncDirectionSchema = z.enum(API_SYNC_DIRECTION_VALUES);
 
 // ── Portfolio Tax Type ──
 
+// ── Retirement Behavior ──
+
+export const RETIREMENT_BEHAVIOR_VALUES = [
+  "stops_at_owner_retirement",
+  "stops_when_last_retires",
+  "continues_after_retirement",
+] as const;
+export type RetirementBehavior = (typeof RETIREMENT_BEHAVIOR_VALUES)[number];
+export const retirementBehaviorSchema = z.enum(RETIREMENT_BEHAVIOR_VALUES);
+
+// ── Portfolio Tax Type ──
+
 export const PORTFOLIO_TAX_TYPE_VALUES = [
   "preTax",
   "taxFree",
