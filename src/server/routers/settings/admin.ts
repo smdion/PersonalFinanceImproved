@@ -84,6 +84,7 @@ const performanceAccountInput = z.object({
   contributionScaling: z
     .enum(CONTRIBUTION_SCALING_VALUES)
     .default("scales_with_salary"),
+  costBasis: z.string().default("0"),
   parentCategory: z.enum(parentCategoryEnum()),
   isActive: z.boolean().default(true),
   displayOrder: z.number().int().default(0),

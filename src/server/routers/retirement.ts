@@ -481,18 +481,16 @@ export async function buildEnginePayload(
     ownershipByPerson[name]._overall =
       portfolioTotal > 0 ? personTotal / portfolioTotal : 0;
   }
-  // Cost basis from app_settings (default 0 = conservative, treats all as gain)
+  // Cost basis from performance_accounts (per-account, summed for brokerage accounts)
   const settingsMap = new Map(
     allAppSettings.map((s: { key: string; value: unknown }) => [
       s.key,
       s.value,
     ]),
   );
-  const costBasisRaw = settingsMap.get("brokerage_cost_basis");
-  const costBasisVal =
-    costBasisRaw != null && costBasisRaw !== "null"
-      ? toNumber(String(costBasisRaw))
-      : 0;
+  const costBasisVal = perfAccounts
+    .filter((p) => p.isActive && p.accountType === "brokerage")
+    .reduce((sum, p) => sum + toNumber(String(p.costBasis ?? "0")), 0);
   portfolioByTaxType.afterTaxBasis = costBasisVal;
   // Distribute cost basis to per-parentCategory buckets proportionally by afterTax balance
   const totalAfterTax = portfolioByTaxType.afterTax;

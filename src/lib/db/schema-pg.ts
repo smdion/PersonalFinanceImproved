@@ -456,6 +456,9 @@ export const performanceAccounts = pgTable(
       .$type<ContributionScaling>()
       .notNull()
       .default("scales_with_salary"),
+    costBasis: decimal("cost_basis", { precision: 12, scale: 2 })
+      .notNull()
+      .default("0"),
     parentCategory: text("parent_category").notNull(),
     isActive: boolean("is_active").notNull().default(true),
     displayOrder: integer("display_order").notNull().default(0),

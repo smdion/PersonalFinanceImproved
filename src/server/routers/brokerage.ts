@@ -124,12 +124,15 @@ export const brokerageRouter = createTRPCRouter({
             schema.contributionAccounts.id,
           ),
         ),
-      // Cost basis setting for brokerage page display
+      // Cost basis from performance accounts (per-account, summed for Portfolio category)
       ctx.db
-        .select({ value: schema.appSettings.value })
-        .from(schema.appSettings)
-        .where(eq(schema.appSettings.key, "brokerage_cost_basis"))
-        .then((r) => r[0]?.value ?? null),
+        .select()
+        .from(schema.performanceAccounts)
+        .then((rows) =>
+          rows
+            .filter((p) => p.isActive && p.parentCategory === "Portfolio")
+            .reduce((sum, p) => sum + Number(p.costBasis ?? 0), 0),
+        ),
     ]);
 
     // Resolve API balances for linked portfolio accounts
@@ -230,10 +233,7 @@ export const brokerageRouter = createTRPCRouter({
           budgetItemName: r.budgetItemName,
           budgetCategory: r.budgetCategory,
         })),
-      costBasis:
-        costBasisSetting != null
-          ? Number(String(costBasisSetting).replace(/"/g, ""))
-          : 0,
+      costBasis: costBasisSetting ?? 0,
     };
   }),
 });
