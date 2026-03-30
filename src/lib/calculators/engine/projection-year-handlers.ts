@@ -1807,7 +1807,8 @@ export function runDecumulationYear(
   // Portfolio-category (brokerage) contributions continue post-retirement.
   // Fixed-dollar only — salary-based specs are skipped since salary stops at retirement.
   const overflowCat = ctx.OVERFLOW_CATEGORY;
-  const { brokerageContributionRamp } = input;
+  const { brokerageContributionRamp, limitGrowthRate } = input;
+  const lgf = Math.pow(1 + limitGrowthRate, y);
   let decumBrokerageContrib = 0;
   if (state.contributionSpecs) {
     const portfolioSpecs = state.contributionSpecs.filter(
@@ -1815,7 +1816,8 @@ export function runDecumulationYear(
         s.parentCategory === "Portfolio" && s.method !== "percent_of_salary",
     );
     for (const spec of portfolioSpecs) {
-      const amount = roundToCents(spec.baseAnnual);
+      // Apply same limit growth factor as accumulation so contributions keep pace with inflation
+      const amount = roundToCents(spec.baseAnnual * lgf);
       if (amount <= 0) continue;
       decumBrokerageContrib += amount;
       balances.afterTax += amount;
