@@ -11,6 +11,7 @@ import {
 } from "@/lib/config/account-types";
 import { ALL_CATEGORIES, catDisplayLabel } from "./utils";
 import type { OverridesSectionProps } from "./overrides-panel";
+import { accumOverrideToForm } from "./types";
 
 export function SavingOverridesSection({ state: s }: OverridesSectionProps) {
   const {
@@ -131,16 +132,29 @@ export function SavingOverridesSection({ state: s }: OverridesSectionProps) {
                   <span className="text-emerald-400">({o.notes})</span>
                 )}
               </div>
-              <button
-                type="button"
-                className="text-emerald-400 hover:text-red-500 ml-2"
-                onClick={() =>
-                  setAccumOverrides((prev) => prev.filter((_, j) => j !== i))
-                }
-                aria-label="Remove override"
-              >
-                ×
-              </button>
+              <span className="flex items-center gap-1 ml-2">
+                <button
+                  type="button"
+                  className="text-emerald-400 hover:text-emerald-600"
+                  onClick={() => {
+                    setAccumForm(accumOverrideToForm(o));
+                    setShowAccumForm(true);
+                  }}
+                  aria-label="Edit override"
+                >
+                  &#9998;
+                </button>
+                <button
+                  type="button"
+                  className="text-emerald-400 hover:text-red-500"
+                  onClick={() =>
+                    setAccumOverrides((prev) => prev.filter((_, j) => j !== i))
+                  }
+                  aria-label="Remove override"
+                >
+                  ×
+                </button>
+              </span>
             </div>
           ))}
         </div>

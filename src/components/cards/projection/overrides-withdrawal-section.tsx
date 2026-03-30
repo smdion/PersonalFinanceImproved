@@ -6,6 +6,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { taxTypeLabel, accountTextColor } from "@/lib/utils/colors";
 import { ALL_CATEGORIES, catDisplayLabel } from "./utils";
 import type { OverridesSectionProps } from "./overrides-panel";
+import { decumOverrideToForm } from "./types";
 
 export function WithdrawalOverridesSection({
   state: s,
@@ -106,16 +107,29 @@ export function WithdrawalOverridesSection({
                 )}
                 {o.notes && <span className="text-amber-400">({o.notes})</span>}
               </div>
-              <button
-                type="button"
-                className="text-amber-400 hover:text-red-500 ml-2"
-                onClick={() =>
-                  setDecumOverrides((prev) => prev.filter((_, j) => j !== i))
-                }
-                aria-label="Remove override"
-              >
-                ×
-              </button>
+              <span className="flex items-center gap-1 ml-2">
+                <button
+                  type="button"
+                  className="text-amber-400 hover:text-amber-600"
+                  onClick={() => {
+                    setDecumForm(decumOverrideToForm(o));
+                    setShowDecumForm(true);
+                  }}
+                  aria-label="Edit override"
+                >
+                  &#9998;
+                </button>
+                <button
+                  type="button"
+                  className="text-amber-400 hover:text-red-500"
+                  onClick={() =>
+                    setDecumOverrides((prev) => prev.filter((_, j) => j !== i))
+                  }
+                  aria-label="Remove override"
+                >
+                  ×
+                </button>
+              </span>
             </div>
           ))}
         </div>
