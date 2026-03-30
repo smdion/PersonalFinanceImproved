@@ -202,6 +202,9 @@ export function distributeContributions(
       projected = roundToCents(
         projectedSalary * spec.salaryFraction * spec.value * proRate,
       );
+    } else if (spec.contributionScaling === "fixed_amount") {
+      // Fixed-amount specs use limit growth only — independent of salary changes
+      projected = roundToCents(spec.baseAnnual * lgf * proRate);
     } else if (
       getAccountTypeConfig(spec.category).fixedContribScalesWithSalary
     ) {
@@ -454,6 +457,9 @@ export function distributeContributions(
       projected = roundToCents(
         projectedSalary * spec.salaryFraction * spec.value * proRate,
       );
+    } else if (spec.contributionScaling === "fixed_amount") {
+      // Fixed-amount specs use limit growth only — independent of salary changes
+      projected = roundToCents(spec.baseAnnual * lgf * proRate);
     } else if (
       getAccountTypeConfig(spec.category).fixedContribScalesWithSalary
     ) {
