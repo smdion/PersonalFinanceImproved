@@ -299,6 +299,10 @@ export type EngineDecumulationYear = {
   /** Projected annual expenses (inflated or budget-overridden). */
   projectedExpenses: number;
   hasBudgetOverride: boolean;
+  /** Brokerage (Portfolio-category) contributions that continue post-retirement. */
+  brokerageContribution: number;
+  /** Brokerage ramp amount continuing post-retirement. */
+  brokerageRampContribution: number;
   /** Target annual withdrawal (portfolio × withdrawal rate). */
   targetWithdrawal: number;
   /** The fully resolved config that was used for this year. */

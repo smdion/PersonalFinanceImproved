@@ -302,7 +302,7 @@ export default function BrokeragePage() {
           <p className="text-xs text-muted mb-2">
             One-time injections or withdrawals that modify the projection
             (bonus, inheritance, down payment).
-            <HelpTip text="Unlike goals (which set a target and let the engine decide if it's funded), planned events directly add or remove dollars in a specific year. They bypass IRS contribution limits." />
+            <HelpTip text="Unlike goals (which set a target and let the engine decide if it's funded), planned events directly add or remove dollars in a specific year." />
           </p>
           {brokerageLumpSums.length > 0 && (
             <div className="space-y-1 mb-3">
