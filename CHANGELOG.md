@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.25] - 2026-03-30
+
+### Improved
+
+- Override edit now works: pencil icon opens wizard at step 3 with value pre-filled
+- Salary/contribution overrides support "From contribution profile" with profile selector
+- Budget overrides support "From budget profile" with profile + column selector
+- "Salary Change" renamed to "Contribution / Salary" to reflect full scope
+- Override badges show "Contribution" when from a profile, "Salary" when custom
+
+---
+
 ## [0.3.24] - 2026-03-30
 
 ### Improved
