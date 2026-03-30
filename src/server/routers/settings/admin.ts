@@ -27,6 +27,7 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import {
   PORTFOLIO_TAX_TYPE_VALUES,
   ACCOUNT_OWNERSHIP_VALUES,
+  RETIREMENT_BEHAVIOR_VALUES,
 } from "@/lib/config/enum-values";
 import { zDecimal, settingValue, recomputeAnnualRollups } from "./_shared";
 import {
@@ -76,6 +77,9 @@ const performanceAccountInput = z.object({
   displayName: z.string().trim().nullable().optional(),
   ownerPersonId: z.number().int().nullable().optional(),
   ownershipType: z.enum(ACCOUNT_OWNERSHIP_VALUES),
+  retirementBehavior: z
+    .enum(RETIREMENT_BEHAVIOR_VALUES)
+    .default("stops_at_owner_retirement"),
   parentCategory: z.enum(parentCategoryEnum()),
   isActive: z.boolean().default(true),
   displayOrder: z.number().int().default(0),

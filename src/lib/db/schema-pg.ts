@@ -33,6 +33,7 @@ import type {
   EmployerMatchType,
   HsaCoverageType,
   AccountOwnership,
+  RetirementBehavior,
   W4FilingStatus,
   BudgetApiService,
   ApiSyncDirection,
@@ -446,6 +447,10 @@ export const performanceAccounts = pgTable(
       onDelete: "restrict",
     }),
     ownershipType: text("ownership_type").$type<AccountOwnership>().notNull(),
+    retirementBehavior: text("retirement_behavior")
+      .$type<RetirementBehavior>()
+      .notNull()
+      .default("stops_at_owner_retirement"),
     parentCategory: text("parent_category").notNull(),
     isActive: boolean("is_active").notNull().default(true),
     displayOrder: integer("display_order").notNull().default(0),

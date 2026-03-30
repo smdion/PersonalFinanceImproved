@@ -26,6 +26,7 @@ import type {
   EmployerMatchType,
   HsaCoverageType,
   AccountOwnership,
+  RetirementBehavior,
   W4FilingStatus,
   BudgetApiService,
   ApiSyncDirection,
@@ -419,6 +420,10 @@ export const performanceAccounts = sqliteTable(
       onDelete: "restrict",
     }),
     ownershipType: text("ownership_type").$type<AccountOwnership>().notNull(),
+    retirementBehavior: text("retirement_behavior")
+      .$type<RetirementBehavior>()
+      .notNull()
+      .default("stops_at_owner_retirement"),
     parentCategory: text("parent_category").notNull(),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
     displayOrder: integer("display_order").notNull().default(0),

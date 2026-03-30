@@ -1814,7 +1814,8 @@ export function runDecumulationYear(
   if (state.contributionSpecs) {
     const portfolioSpecs = state.contributionSpecs.filter(
       (s) =>
-        s.parentCategory === "Portfolio" && s.method !== "percent_of_salary",
+        s.retirementBehavior === "continues_after_retirement" &&
+        s.method !== "percent_of_salary",
     );
     for (const spec of portfolioSpecs) {
       // Apply same limit growth factor as accumulation so contributions keep pace with inflation

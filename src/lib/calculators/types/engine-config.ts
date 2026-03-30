@@ -510,6 +510,13 @@ export type ContributionSpec = {
   allocationPriority?: number;
   /** Parent category from contribution account config (e.g. "Retirement", "Portfolio"). */
   parentCategory?: string;
+  /** Account ownership type (from contribution_accounts). */
+  ownership?: "individual" | "joint";
+  /** Post-retirement contribution behavior (from performance_accounts). */
+  retirementBehavior?:
+    | "stops_at_owner_retirement"
+    | "stops_when_last_retires"
+    | "continues_after_retirement";
 };
 
 // --- Engine Output Slots ---
