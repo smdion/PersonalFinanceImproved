@@ -209,9 +209,9 @@ export function ContributionsCard() {
                   const hasLimit = at.limit > 0;
                   const isKnownCategory = (
                     getAllCategories() as string[]
-                  ).includes(at.colorKey);
+                  ).includes(at.categoryKey);
                   const matchCountsTowardLimit = isKnownCategory
-                    ? getAccountTypeConfig(at.colorKey as AccountCategory)
+                    ? getAccountTypeConfig(at.categoryKey as AccountCategory)
                         .matchCountsTowardLimit
                     : false;
                   const matchPctOfLimit =
@@ -251,7 +251,7 @@ export function ContributionsCard() {
                             pct={at.fundingPct}
                             matchPct={matchPctOfLimit}
                             matchCountsTowardLimit={matchCountsTowardLimit}
-                            accountType={at.colorKey}
+                            accountType={at.categoryKey}
                           />
                           <div className="flex justify-between text-[10px] mt-0.5">
                             <span
@@ -337,14 +337,14 @@ export function ContributionsCard() {
                           <div className="mt-1">
                             <div className="w-full bg-surface-strong rounded-full h-2 relative">
                               <div
-                                className={`${accountColor(at.colorKey)} h-2 rounded-l-full transition-all absolute left-0 top-0`}
+                                className={`${accountColor(at.categoryKey)} h-2 rounded-l-full transition-all absolute left-0 top-0`}
                                 style={{
                                   width: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                 }}
                                 title={`Your cost: ${formatCurrency(at.employeeContrib * mult)}${suffix}`}
                               />
                               <div
-                                className={`${accountMatchColor(at.colorKey)} h-2 rounded-r-full transition-all absolute top-0`}
+                                className={`${accountMatchColor(at.categoryKey)} h-2 rounded-r-full transition-all absolute top-0`}
                                 style={{
                                   left: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                   width: `${(at.employerMatch / (at.employeeContrib + at.employerMatch)) * 100}%`,
@@ -353,7 +353,9 @@ export function ContributionsCard() {
                               />
                             </div>
                             <div className="flex justify-between text-[10px] mt-0.5">
-                              <span className={accountTextColor(at.colorKey)}>
+                              <span
+                                className={accountTextColor(at.categoryKey)}
+                              >
                                 Value:{" "}
                                 {formatCurrency(
                                   (at.employeeContrib + at.employerMatch) *
@@ -362,7 +364,7 @@ export function ContributionsCard() {
                                 {suffix}
                               </span>
                               <span
-                                className={`${accountTextColor(at.colorKey)} font-medium`}
+                                className={`${accountTextColor(at.categoryKey)} font-medium`}
                               >
                                 +
                                 {formatPercent(
@@ -381,14 +383,14 @@ export function ContributionsCard() {
                             {at.employerMatch > 0 ? (
                               <>
                                 <div
-                                  className={`${accountColor(at.colorKey)} h-2 rounded-l-full absolute left-0 top-0`}
+                                  className={`${accountColor(at.categoryKey)} h-2 rounded-l-full absolute left-0 top-0`}
                                   style={{
                                     width: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                   }}
                                   title={`You: ${formatCurrency(at.employeeContrib * mult)}${suffix}`}
                                 />
                                 <div
-                                  className={`${accountMatchColor(at.colorKey)} h-2 rounded-r-full absolute top-0`}
+                                  className={`${accountMatchColor(at.categoryKey)} h-2 rounded-r-full absolute top-0`}
                                   style={{
                                     left: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                     width: `${(at.employerMatch / (at.employeeContrib + at.employerMatch)) * 100}%`,
@@ -398,7 +400,7 @@ export function ContributionsCard() {
                               </>
                             ) : (
                               <div
-                                className={`${accountColor(at.colorKey)} h-2 rounded-full`}
+                                className={`${accountColor(at.categoryKey)} h-2 rounded-full`}
                                 style={{ width: "100%" }}
                                 title={`${formatCurrency(at.employeeContrib * mult)}${suffix}`}
                               />
@@ -408,7 +410,7 @@ export function ContributionsCard() {
                             <span className="text-faint">No IRS limit</span>
                             {at.employerMatch > 0 && (
                               <span
-                                className={`${accountTextColor(at.colorKey)} font-medium`}
+                                className={`${accountTextColor(at.categoryKey)} font-medium`}
                               >
                                 +{formatCurrency(at.employerMatch * mult)}
                                 {suffix} {at.employerMatchLabel}
@@ -447,14 +449,14 @@ export function ContributionsCard() {
                     <div className="mt-1">
                       <div className="w-full bg-surface-strong rounded-full h-2 relative">
                         <div
-                          className={`${accountColor(at.colorKey)} h-2 rounded-l-full absolute left-0 top-0`}
+                          className={`${accountColor(at.categoryKey)} h-2 rounded-l-full absolute left-0 top-0`}
                           style={{
                             width: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                           }}
                           title={`You: ${formatCurrency(at.employeeContrib * householdMult)}${suffix}`}
                         />
                         <div
-                          className={`${accountMatchColor(at.colorKey)} h-2 rounded-r-full absolute top-0`}
+                          className={`${accountMatchColor(at.categoryKey)} h-2 rounded-r-full absolute top-0`}
                           style={{
                             left: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                             width: `${(at.employerMatch / (at.employeeContrib + at.employerMatch)) * 100}%`,
@@ -463,7 +465,7 @@ export function ContributionsCard() {
                         />
                       </div>
                       <div className="flex justify-between text-[10px] mt-0.5">
-                        <span className={accountTextColor(at.colorKey)}>
+                        <span className={accountTextColor(at.categoryKey)}>
                           Value:{" "}
                           {formatCurrency(
                             (at.employeeContrib + at.employerMatch) *
@@ -472,7 +474,7 @@ export function ContributionsCard() {
                           {suffix}
                         </span>
                         <span
-                          className={`${accountTextColor(at.colorKey)} font-medium`}
+                          className={`${accountTextColor(at.categoryKey)} font-medium`}
                         >
                           +
                           {formatPercent(at.employerMatch / at.employeeContrib)}{" "}
@@ -486,14 +488,14 @@ export function ContributionsCard() {
                         {at.employerMatch > 0 ? (
                           <>
                             <div
-                              className={`${accountColor(at.colorKey)} h-2 rounded-l-full absolute left-0 top-0`}
+                              className={`${accountColor(at.categoryKey)} h-2 rounded-l-full absolute left-0 top-0`}
                               style={{
                                 width: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                               }}
                               title={`You: ${formatCurrency(at.employeeContrib * householdMult)}${suffix}`}
                             />
                             <div
-                              className={`${accountMatchColor(at.colorKey)} h-2 rounded-r-full absolute top-0`}
+                              className={`${accountMatchColor(at.categoryKey)} h-2 rounded-r-full absolute top-0`}
                               style={{
                                 left: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                 width: `${(at.employerMatch / (at.employeeContrib + at.employerMatch)) * 100}%`,
@@ -503,7 +505,7 @@ export function ContributionsCard() {
                           </>
                         ) : (
                           <div
-                            className={`${accountColor(at.colorKey)} h-2 rounded-full`}
+                            className={`${accountColor(at.categoryKey)} h-2 rounded-full`}
                             style={{ width: "100%" }}
                             title={`${formatCurrency(at.employeeContrib * householdMult)}${suffix}`}
                           />
@@ -513,7 +515,7 @@ export function ContributionsCard() {
                         <span className="text-faint">No IRS limit</span>
                         {at.employerMatch > 0 && (
                           <span
-                            className={`${accountTextColor(at.colorKey)} font-medium`}
+                            className={`${accountTextColor(at.categoryKey)} font-medium`}
                           >
                             +{formatCurrency(at.employerMatch * householdMult)}
                             {suffix} {at.employerMatchLabel}

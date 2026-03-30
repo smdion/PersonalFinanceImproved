@@ -256,7 +256,7 @@ export default function ContributionsPage() {
                           <span
                             className="w-2 h-2 rounded-full shrink-0"
                             style={{
-                              backgroundColor: accountColor(a.colorKey),
+                              backgroundColor: accountColor(a.categoryKey),
                             }}
                           />
                           {a.accountType}
@@ -343,7 +343,7 @@ export default function ContributionsPage() {
                           <span
                             className="w-2 h-2 rounded-full shrink-0"
                             style={{
-                              backgroundColor: accountColor(a.colorKey),
+                              backgroundColor: accountColor(a.categoryKey),
                             }}
                           />
                           <span>{a.accountType}</span>

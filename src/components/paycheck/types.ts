@@ -62,7 +62,7 @@ export type DeductionRowData =
 
 export type AccountTypeSnapshot = {
   accountType: string;
-  colorKey: string;
+  categoryKey: string;
   parentCategory: string;
   limit: number;
   employeeContrib: number;

@@ -45,7 +45,7 @@ function getAgeFromDob(dob: string, asOf: Date): number {
 
 type AccountTypeSnapshot = {
   accountType: string; // display label (e.g. '401k', 'ESPP', 'Long Term Brokerage')
-  colorKey: string; // base config key for color lookup (e.g. 'brokerage' for all brokerage sub-types, 'espp' for ESPP)
+  categoryKey: string; // base config key for color lookup (e.g. 'brokerage' for all brokerage sub-types, 'espp' for ESPP)
   parentCategory: string; // 'Retirement' or 'Portfolio' — from DB parentCategory column
   limit: number;
   employeeContrib: number;
@@ -379,7 +379,7 @@ export const contributionRouter = createTRPCRouter({
               parentCategory: string;
               hasDiscountBar: boolean;
               employerMatchLabel: string;
-              colorKey: string;
+              categoryKey: string;
               targetAnnual: number | null;
               allocationPriority: number;
               priorYearAmount: number;
@@ -425,7 +425,7 @@ export const contributionRouter = createTRPCRouter({
             }
 
             // Color key: sub-type key (e.g. 'espp') if sub-type display matched, otherwise base accountType
-            const colorKey =
+            const categoryKey =
               rawContrib.subType &&
               display.displayLabel.toLowerCase() !==
                 rawContrib.accountType.toLowerCase()
@@ -441,7 +441,7 @@ export const contributionRouter = createTRPCRouter({
               parentCategory: rawContrib.parentCategory,
               hasDiscountBar: display.hasDiscountBar,
               employerMatchLabel: display.employerMatchLabel,
-              colorKey,
+              categoryKey,
               targetAnnual: rawContrib.targetAnnual
                 ? Number(rawContrib.targetAnnual)
                 : null,
@@ -465,7 +465,7 @@ export const contributionRouter = createTRPCRouter({
           }
 
           // Determine limits per category — uses resolveContribLimit with HSA coverage from raw data
-          // Takes the raw DB category key (colorKey), not the display label
+          // Takes the raw DB category key (categoryKey), not the display label
           const getLimitForCategory = (rawCat: string): number => {
             const hsaAcct = rawContribs.find((c) => c.accountType === rawCat);
             return resolveContribLimit(
@@ -476,16 +476,16 @@ export const contributionRouter = createTRPCRouter({
 
           const accountTypes: AccountTypeSnapshot[] = [];
           for (const [cat, data] of Array.from(categoryMap)) {
-            const limit = getLimitForCategory(data.colorKey);
+            const limit = getLimitForCategory(data.categoryKey);
             const employeeContrib = roundToCents(data.employee);
             const employerMatch = roundToCents(data.match);
             const bonusAdd =
-              getLimitGroup(data.colorKey) === "401k" ? bonus401k : 0;
+              getLimitGroup(data.categoryKey) === "401k" ? bonus401k : 0;
             const totalEmployee = employeeContrib + bonusAdd;
             const cfg = categoriesWithIrsLimit().includes(
-              data.colorKey as AccountCategory,
+              data.categoryKey as AccountCategory,
             )
-              ? getAccountTypeConfig(data.colorKey as AccountCategory)
+              ? getAccountTypeConfig(data.categoryKey as AccountCategory)
               : null;
             const towardLimit = cfg?.matchCountsTowardLimit
               ? totalEmployee + employerMatch
@@ -507,10 +507,10 @@ export const contributionRouter = createTRPCRouter({
             let priorYearSnapshot: AccountTypeSnapshot["priorYear"];
             if (inPriorYearWindow && cfg?.supportsPriorYearContrib) {
               const hsaAcct = rawContribs.find(
-                (c) => c.accountType === data.colorKey,
+                (c) => c.accountType === data.categoryKey,
               );
               const pyLimit = resolveContribPriorYearLimit(
-                data.colorKey,
+                data.categoryKey,
                 hsaAcct?.hsaCoverageType ?? null,
               );
               if (pyLimit > 0) {
@@ -528,7 +528,7 @@ export const contributionRouter = createTRPCRouter({
 
             accountTypes.push({
               accountType: cat,
-              colorKey: data.colorKey,
+              categoryKey: data.categoryKey,
               parentCategory: data.parentCategory,
               limit,
               employeeContrib: totalEmployee,
@@ -550,16 +550,16 @@ export const contributionRouter = createTRPCRouter({
             });
           }
 
-          // Sort: config-defined accumulation order (using colorKey for lookup), then others
+          // Sort: config-defined accumulation order (using categoryKey for lookup), then others
           const order = getDefaultAccumulationOrder() as string[];
           accountTypes.sort((a, b) => {
-            const ai = order.indexOf(a.colorKey);
-            const bi = order.indexOf(b.colorKey);
+            const ai = order.indexOf(a.categoryKey);
+            const bi = order.indexOf(b.categoryKey);
             return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
           });
 
           // Compute totals — use DB parentCategory (not config lookup) so sub-types
-          // like ESPP (colorKey "espp") are correctly grouped by their stored category
+          // like ESPP (categoryKey "espp") are correctly grouped by their stored category
           const retirement = accountTypes.filter(
             (a) => a.parentCategory === "Retirement",
           );
@@ -663,7 +663,7 @@ export const contributionRouter = createTRPCRouter({
 
         jointAccountTypes.push({
           accountType: displayCat,
-          colorKey: jColorKey,
+          categoryKey: jColorKey,
           parentCategory: c.parentCategory,
           limit: 0,
           employeeContrib: roundToCents(annual),

@@ -129,6 +129,7 @@ export const brokerageRouter = createTRPCRouter({
     // Resolve API balances for linked portfolio accounts
     const apiBalances: Array<{
       performanceAccountId: number;
+      accountCategory: string;
       resolvedBalance: number;
       snapshotBalance: number;
       source: "api" | "snapshot";
@@ -152,12 +153,16 @@ export const brokerageRouter = createTRPCRouter({
             .then((r) => r[0]);
 
           if (latestSnapshot) {
-            const snapshotAccounts = await ctx.db
-              .select()
-              .from(schema.portfolioAccounts)
-              .where(
-                eq(schema.portfolioAccounts.snapshotId, latestSnapshot.id),
-              );
+            const [snapshotAccounts, perfAccounts] = await Promise.all([
+              ctx.db
+                .select()
+                .from(schema.portfolioAccounts)
+                .where(
+                  eq(schema.portfolioAccounts.snapshotId, latestSnapshot.id),
+                ),
+              ctx.db.select().from(schema.performanceAccounts),
+            ]);
+            const perfAccountMap = new Map(perfAccounts.map((p) => [p.id, p]));
 
             const apiBalanceMap = await getApiAccountBalanceMap(ctx.db, active);
 
@@ -187,6 +192,8 @@ export const brokerageRouter = createTRPCRouter({
               );
               apiBalances.push({
                 performanceAccountId: perfId,
+                accountCategory:
+                  perfAccountMap.get(perfId)?.accountType ?? "brokerage",
                 resolvedBalance: resolved.balance,
                 snapshotBalance: snapshotBal,
                 source: resolved.source,

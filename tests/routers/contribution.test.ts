@@ -155,7 +155,9 @@ describe("contribution router", () => {
       const person = result.people.find((p) => p.person.id === personId);
       expect(person).toBeDefined();
       // 10% of 120000 = 12000
-      const acctType = person!.accountTypes.find((a) => a.colorKey === "401k");
+      const acctType = person!.accountTypes.find(
+        (a) => a.categoryKey === "401k",
+      );
       expect(acctType).toBeDefined();
       expect(acctType!.employeeContrib).toBe(12000);
       expect(acctType!.parentCategory).toBe("Retirement");
@@ -166,7 +168,9 @@ describe("contribution router", () => {
     it("computes IRS limit and funding percentage", async () => {
       const result = await caller.contribution.computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
-      const acctType = person!.accountTypes.find((a) => a.colorKey === "401k");
+      const acctType = person!.accountTypes.find(
+        (a) => a.categoryKey === "401k",
+      );
       expect(acctType).toBeDefined();
       // 2026 limit is 24500
       expect(acctType!.limit).toBe(24500);
@@ -178,7 +182,9 @@ describe("contribution router", () => {
     it("computes pctOfSalaryToMax", async () => {
       const result = await caller.contribution.computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
-      const acctType = person!.accountTypes.find((a) => a.colorKey === "401k");
+      const acctType = person!.accountTypes.find(
+        (a) => a.categoryKey === "401k",
+      );
       expect(acctType).toBeDefined();
       // missing = 24500 - 12000 = 12500
       // pctOfSalaryToMax = (12500 / 120000) * 100 = 10.42 (rounded)
@@ -231,7 +237,9 @@ describe("contribution router", () => {
       const result = await caller.contribution.computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       expect(person).toBeDefined();
-      const acctType = person!.accountTypes.find((a) => a.colorKey === "401k");
+      const acctType = person!.accountTypes.find(
+        (a) => a.categoryKey === "401k",
+      );
       expect(acctType).toBeDefined();
       // 6% of 100000 = 6000 employee
       expect(acctType!.employeeContrib).toBe(6000);
@@ -270,7 +278,9 @@ describe("contribution router", () => {
     it("classifies Roth contribution as taxFreeContrib", async () => {
       const result = await caller.contribution.computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
-      const acctType = person!.accountTypes.find((a) => a.colorKey === "401k");
+      const acctType = person!.accountTypes.find(
+        (a) => a.categoryKey === "401k",
+      );
       expect(acctType).toBeDefined();
       // 5% of 80000 = 4000
       expect(acctType!.taxFreeContrib).toBe(4000);
@@ -302,7 +312,9 @@ describe("contribution router", () => {
     it("computes annual contribution as value * periodsPerYear", async () => {
       const result = await caller.contribution.computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
-      const acctType = person!.accountTypes.find((a) => a.colorKey === "401k");
+      const acctType = person!.accountTypes.find(
+        (a) => a.categoryKey === "401k",
+      );
       expect(acctType).toBeDefined();
       // 500 per period * 26 periods = 13000
       expect(acctType!.employeeContrib).toBe(13000);
@@ -330,7 +342,9 @@ describe("contribution router", () => {
     it("uses fixed annual value directly", async () => {
       const result = await caller.contribution.computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
-      const acctType = person!.accountTypes.find((a) => a.colorKey === "401k");
+      const acctType = person!.accountTypes.find(
+        (a) => a.categoryKey === "401k",
+      );
       expect(acctType).toBeDefined();
       expect(acctType!.employeeContrib).toBe(20000);
     });
@@ -358,7 +372,7 @@ describe("contribution router", () => {
     it("includes IRA in account types with IRS limit", async () => {
       const result = await caller.contribution.computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
-      const iraAcct = person!.accountTypes.find((a) => a.colorKey === "ira");
+      const iraAcct = person!.accountTypes.find((a) => a.categoryKey === "ira");
       expect(iraAcct).toBeDefined();
       expect(iraAcct!.employeeContrib).toBe(7000);
       // 2026 IRA limit = 7500
@@ -401,7 +415,7 @@ describe("contribution router", () => {
     it("resolves family HSA limit", async () => {
       const result = await caller.contribution.computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
-      const hsaAcct = person!.accountTypes.find((a) => a.colorKey === "hsa");
+      const hsaAcct = person!.accountTypes.find((a) => a.categoryKey === "hsa");
       expect(hsaAcct).toBeDefined();
       // 2026 family HSA limit = 8750
       expect(hsaAcct!.limit).toBe(8750);
@@ -548,7 +562,9 @@ describe("contribution router", () => {
     it("applies catchup limit for age 50+", async () => {
       const result = await caller.contribution.computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
-      const acctType = person!.accountTypes.find((a) => a.colorKey === "401k");
+      const acctType = person!.accountTypes.find(
+        (a) => a.categoryKey === "401k",
+      );
       expect(acctType).toBeDefined();
       // 2026: base 24500 + catchup 8000 = 32500
       expect(acctType!.limit).toBe(24500 + 8000);
@@ -577,7 +593,9 @@ describe("contribution router", () => {
     it("applies super catchup limit for age 60-63", async () => {
       const result = await caller.contribution.computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
-      const acctType = person!.accountTypes.find((a) => a.colorKey === "401k");
+      const acctType = person!.accountTypes.find(
+        (a) => a.categoryKey === "401k",
+      );
       expect(acctType).toBeDefined();
       // 2026: base 24500 + super catchup 11250 = 35750
       expect(acctType!.limit).toBe(24500 + 11250);
@@ -608,7 +626,9 @@ describe("contribution router", () => {
       });
       const person = result.people.find((p) => p.person.id === personId);
       expect(person!.salary).toBe(200000);
-      const acctType = person!.accountTypes.find((a) => a.colorKey === "401k");
+      const acctType = person!.accountTypes.find(
+        (a) => a.categoryKey === "401k",
+      );
       // 10% of 200000 = 20000
       expect(acctType!.employeeContrib).toBe(20000);
     });
@@ -674,7 +694,7 @@ describe("contribution router", () => {
       expect(person).toBeDefined();
       // Person should have no active contribution accounts
       const _acctTypes401k = person!.accountTypes.filter(
-        (a) => a.colorKey === "401k",
+        (a) => a.categoryKey === "401k",
       );
       // The person's own 401k should not show because isActive=false
       // (there may be other people's 401k accounts, so check this person's totals)
@@ -710,7 +730,9 @@ describe("contribution router", () => {
       const person = result.people.find((p) => p.person.id === personId);
       expect(person).toBeDefined();
       expect(person!.bonusGross).toBeGreaterThan(0);
-      const acctType = person!.accountTypes.find((a) => a.colorKey === "401k");
+      const acctType = person!.accountTypes.find(
+        (a) => a.categoryKey === "401k",
+      );
       expect(acctType).toBeDefined();
       // bonusContrib should be > 0 when include401kInBonus is set
       expect(acctType!.bonusContrib).toBeGreaterThan(0);
@@ -814,7 +836,9 @@ describe("contribution router", () => {
       expect(person).toBeDefined();
       // Profile overrides salary to 180000 and contribution to 15%
       expect(person!.salary).toBe(180000);
-      const acctType = person!.accountTypes.find((a) => a.colorKey === "401k");
+      const acctType = person!.accountTypes.find(
+        (a) => a.categoryKey === "401k",
+      );
       expect(acctType).toBeDefined();
       // 15% of 180000 = 27000
       expect(acctType!.employeeContrib).toBe(27000);
@@ -878,7 +902,9 @@ describe("contribution router", () => {
     it("includes fixed annual employer match", async () => {
       const result = await caller.contribution.computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
-      const acctType = person!.accountTypes.find((a) => a.colorKey === "401k");
+      const acctType = person!.accountTypes.find(
+        (a) => a.categoryKey === "401k",
+      );
       expect(acctType).toBeDefined();
       expect(acctType!.employerMatch).toBe(2500);
       expect(acctType!.totalContrib).toBe(5000 + 2500);
@@ -934,7 +960,7 @@ describe("contribution router", () => {
       const result = await caller.contribution.computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       const acctTypes401k = person!.accountTypes.filter(
-        (a) => a.colorKey === "401k",
+        (a) => a.categoryKey === "401k",
       );
       // They should be grouped into a single entry
       expect(acctTypes401k.length).toBe(1);
@@ -964,7 +990,9 @@ describe("contribution router", () => {
       const result = await caller.contribution.computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       expect(person!.periodsPerYear).toBe(24);
-      const acctType = person!.accountTypes.find((a) => a.colorKey === "401k");
+      const acctType = person!.accountTypes.find(
+        (a) => a.categoryKey === "401k",
+      );
       // 500 * 24 = 12000
       expect(acctType!.employeeContrib).toBe(12000);
     });
@@ -1007,7 +1035,7 @@ describe("contribution router", () => {
       const result = await caller.contribution.computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       const acctType = person!.accountTypes.find(
-        (a) => a.colorKey === "401k" && a.targetAnnual === 20000,
+        (a) => a.categoryKey === "401k" && a.targetAnnual === 20000,
       );
       expect(acctType).toBeDefined();
       expect(acctType!.targetAnnual).toBe(20000);

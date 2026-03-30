@@ -1010,7 +1010,7 @@ describe("retirement projection edge cases", () => {
       midFirst.phase === "accumulation" &&
       janFirst.phase === "accumulation"
     ) {
-      // Jul 1 → getMonth()=6, monthsRemaining=6, fraction=6/12=0.5
+      // Jul 1 (day=1, before mid-month) → includes July, 6 remaining (Jul-Dec), fraction=6/12
       expect(midFirst.proRateFraction).toBeCloseTo(6 / 12, 2);
       // Jan start has full year (fraction=1, proRateFraction=null)
       expect(janFirst.proRateFraction).toBeNull();

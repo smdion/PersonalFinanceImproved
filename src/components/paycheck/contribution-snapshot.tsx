@@ -165,10 +165,10 @@ export function ContributionSnapshot() {
             jointAccountTypes.find((a) => a.accountType === type);
           const hasDiscountBar = firstAt?.hasDiscountBar ?? false;
           const employerMatchLabel = firstAt?.employerMatchLabel ?? "match";
-          const colorKey = firstAt?.colorKey ?? type;
-          // Use colorKey (raw DB category) for config lookups, accountType is display label
+          const categoryKey = firstAt?.categoryKey ?? type;
+          // Use categoryKey (raw DB category) for config lookups, accountType is display label
           const hasLimit = categoriesWithIrsLimit().includes(
-            colorKey as AccountCategory,
+            categoryKey as AccountCategory,
           );
           const isJoint =
             activePeople.some(
@@ -177,14 +177,14 @@ export function ContributionSnapshot() {
             ) || jointAccountTypes.some((a) => a.accountType === type);
           // Whether employer match counts toward IRS limit (config-driven, e.g. HSA = true)
           const matchCountsTowardLimit = hasLimit
-            ? getAccountTypeConfig(colorKey as AccountCategory)
+            ? getAccountTypeConfig(categoryKey as AccountCategory)
                 .matchCountsTowardLimit
             : false;
 
           return (
             <div
               key={type}
-              className={`bg-surface-primary border rounded-xl p-4 shadow-sm border-l-4 ${accountBorderColor(colorKey)}`}
+              className={`bg-surface-primary border rounded-xl p-4 shadow-sm border-l-4 ${accountBorderColor(categoryKey)}`}
             >
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-primary">
@@ -196,7 +196,7 @@ export function ContributionSnapshot() {
                   )}
                   {(() => {
                     const cfg = hasLimit
-                      ? getAccountTypeConfig(colorKey as AccountCategory)
+                      ? getAccountTypeConfig(categoryKey as AccountCategory)
                       : null;
                     const famKey = cfg?.irsLimitKeys?.coverageVariant;
                     return famKey &&
@@ -246,14 +246,14 @@ export function ContributionSnapshot() {
                         <div className="mt-1.5">
                           <div className="w-full bg-surface-strong rounded-full h-2 relative">
                             <div
-                              className={`${accountColor(colorKey)} h-2 rounded-l-full transition-all absolute left-0 top-0`}
+                              className={`${accountColor(categoryKey)} h-2 rounded-l-full transition-all absolute left-0 top-0`}
                               style={{
                                 width: `${(jat.employeeContrib / (jat.employeeContrib + jat.employerMatch)) * 100}%`,
                               }}
                               title={`Your cost: ${formatCurrency(totalEmployee)}${periodSuffix}`}
                             />
                             <div
-                              className={`${accountMatchColor(colorKey)} h-2 rounded-r-full transition-all absolute top-0`}
+                              className={`${accountMatchColor(categoryKey)} h-2 rounded-r-full transition-all absolute top-0`}
                               style={{
                                 left: `${(jat.employeeContrib / (jat.employeeContrib + jat.employerMatch)) * 100}%`,
                                 width: `${(jat.employerMatch / (jat.employeeContrib + jat.employerMatch)) * 100}%`,
@@ -262,7 +262,7 @@ export function ContributionSnapshot() {
                             />
                           </div>
                           <div className="flex justify-between text-[10px] mt-0.5">
-                            <span className={accountTextColor(colorKey)}>
+                            <span className={accountTextColor(categoryKey)}>
                               Total value:{" "}
                               {formatCurrency(
                                 (jat.employeeContrib + jat.employerMatch) *
@@ -271,7 +271,7 @@ export function ContributionSnapshot() {
                               {periodSuffix}
                             </span>
                             <span
-                              className={`${accountTextColor(colorKey)} font-medium`}
+                              className={`${accountTextColor(categoryKey)} font-medium`}
                             >
                               +
                               {formatPercent(
@@ -287,14 +287,14 @@ export function ContributionSnapshot() {
                             {jat.employerMatch > 0 ? (
                               <>
                                 <div
-                                  className={`${accountColor(colorKey)} h-2 rounded-l-full absolute left-0 top-0`}
+                                  className={`${accountColor(categoryKey)} h-2 rounded-l-full absolute left-0 top-0`}
                                   style={{
                                     width: `${(jat.employeeContrib / (jat.employeeContrib + jat.employerMatch)) * 100}%`,
                                   }}
                                   title={`You: ${formatCurrency(totalEmployee)}${periodSuffix}`}
                                 />
                                 <div
-                                  className={`${accountMatchColor(colorKey)} h-2 rounded-r-full absolute top-0`}
+                                  className={`${accountMatchColor(categoryKey)} h-2 rounded-r-full absolute top-0`}
                                   style={{
                                     left: `${(jat.employeeContrib / (jat.employeeContrib + jat.employerMatch)) * 100}%`,
                                     width: `${(jat.employerMatch / (jat.employeeContrib + jat.employerMatch)) * 100}%`,
@@ -304,7 +304,7 @@ export function ContributionSnapshot() {
                               </>
                             ) : (
                               <div
-                                className={`${accountColor(colorKey)} h-2 rounded-full`}
+                                className={`${accountColor(categoryKey)} h-2 rounded-full`}
                                 style={{ width: "100%" }}
                                 title={`${formatCurrency(totalEmployee)}${periodSuffix}`}
                               />
@@ -314,7 +314,7 @@ export function ContributionSnapshot() {
                             <span className="text-faint">No IRS limit</span>
                             {jat.employerMatch > 0 && (
                               <span
-                                className={`${accountTextColor(colorKey)} font-medium`}
+                                className={`${accountTextColor(categoryKey)} font-medium`}
                               >
                                 +{formatCurrency(totalMatch)}
                                 {periodSuffix} {employerMatchLabel}
@@ -337,7 +337,7 @@ export function ContributionSnapshot() {
                   if (!at) {
                     // Show "Covered via X" note for household-limit categories when this person doesn't contribute directly
                     const typeCfg = hasLimit
-                      ? getAccountTypeConfig(colorKey as AccountCategory)
+                      ? getAccountTypeConfig(categoryKey as AccountCategory)
                       : null;
                     if (typeCfg?.isHouseholdLimit) {
                       const hsaContributor = activePeople.find((op) =>
@@ -413,7 +413,7 @@ export function ContributionSnapshot() {
                             pct={at.fundingPct}
                             matchPct={matchPctOfLimit}
                             matchCountsTowardLimit={matchCountsTowardLimit}
-                            accountType={colorKey}
+                            accountType={categoryKey}
                           />
                           <div className="flex justify-between text-xs mt-0.5">
                             <span
@@ -512,14 +512,14 @@ export function ContributionSnapshot() {
                               <>
                                 <div className="w-full bg-surface-strong rounded-full h-2 relative">
                                   <div
-                                    className={`${accountColor(colorKey)} h-2 rounded-l-full transition-all absolute left-0 top-0`}
+                                    className={`${accountColor(categoryKey)} h-2 rounded-l-full transition-all absolute left-0 top-0`}
                                     style={{
                                       width: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                     }}
                                     title={`Your cost: ${formatCurrency(at.employeeContrib * mult)}${periodSuffix}`}
                                   />
                                   <div
-                                    className={`${accountMatchColor(colorKey)} h-2 rounded-r-full transition-all absolute top-0`}
+                                    className={`${accountMatchColor(categoryKey)} h-2 rounded-r-full transition-all absolute top-0`}
                                     style={{
                                       left: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                       width: `${(at.employerMatch / (at.employeeContrib + at.employerMatch)) * 100}%`,
@@ -528,7 +528,9 @@ export function ContributionSnapshot() {
                                   />
                                 </div>
                                 <div className="flex justify-between text-[10px] mt-0.5">
-                                  <span className={accountTextColor(colorKey)}>
+                                  <span
+                                    className={accountTextColor(categoryKey)}
+                                  >
                                     Total value:{" "}
                                     {formatCurrency(
                                       (at.employeeContrib + at.employerMatch) *
@@ -537,7 +539,7 @@ export function ContributionSnapshot() {
                                     {periodSuffix}
                                   </span>
                                   <span
-                                    className={`${accountTextColor(colorKey)} font-medium`}
+                                    className={`${accountTextColor(categoryKey)} font-medium`}
                                   >
                                     +
                                     {formatPercent(
@@ -554,14 +556,14 @@ export function ContributionSnapshot() {
                               {at.employerMatch > 0 ? (
                                 <>
                                   <div
-                                    className={`${accountColor(colorKey)} h-2 rounded-l-full absolute left-0 top-0`}
+                                    className={`${accountColor(categoryKey)} h-2 rounded-l-full absolute left-0 top-0`}
                                     style={{
                                       width: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                     }}
                                     title={`You: ${formatCurrency(at.employeeContrib * mult)}${periodSuffix}`}
                                   />
                                   <div
-                                    className={`${accountMatchColor(colorKey)} h-2 rounded-r-full absolute top-0`}
+                                    className={`${accountMatchColor(categoryKey)} h-2 rounded-r-full absolute top-0`}
                                     style={{
                                       left: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                       width: `${(at.employerMatch / (at.employeeContrib + at.employerMatch)) * 100}%`,
@@ -571,7 +573,7 @@ export function ContributionSnapshot() {
                                 </>
                               ) : (
                                 <div
-                                  className={`${accountColor(colorKey)} h-2 rounded-full`}
+                                  className={`${accountColor(categoryKey)} h-2 rounded-full`}
                                   style={{ width: "100%" }}
                                   title={`${formatCurrency(at.employeeContrib * mult)}${periodSuffix}`}
                                 />
@@ -583,7 +585,7 @@ export function ContributionSnapshot() {
                             <span className="text-faint">No IRS limit</span>
                             {at.employerMatch > 0 && (
                               <span
-                                className={`${accountTextColor(colorKey)} font-medium`}
+                                className={`${accountTextColor(categoryKey)} font-medium`}
                               >
                                 +{formatCurrency(at.employerMatch * mult)}
                                 {periodSuffix} {employerMatchLabel}

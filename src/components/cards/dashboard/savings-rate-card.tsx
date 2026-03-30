@@ -108,7 +108,9 @@ export function SavingsRateCard() {
   for (const d of people) {
     for (const at of d.accountTypes) {
       if (
-        !categoriesWithTaxPreference().includes(at.colorKey as AccountCategory)
+        !categoriesWithTaxPreference().includes(
+          at.categoryKey as AccountCategory,
+        )
       )
         continue;
       totalTrad += at.tradContrib;
