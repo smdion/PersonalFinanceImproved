@@ -855,6 +855,80 @@ export const adminProcedures = {
           return snap;
         });
 
+        // Auto-pull portfolio balances from budget API for linked accounts (before push)
+        let apiPullResult: { pulled: number; error?: string } = { pulled: 0 };
+        try {
+          const {
+            getActiveBudgetApi: getActiveForPull,
+            getApiConnection: getConnForPull,
+          } = await import("@/lib/budget-api");
+          const { getApiAccountBalanceMap: getMapForPull } =
+            await import("@/server/helpers/api-balance-resolution");
+          const activeForPull = await getActiveForPull(ctx.db);
+          if (activeForPull !== "none") {
+            const connForPull = await getConnForPull(ctx.db, activeForPull);
+            const pullMappings = (connForPull?.accountMappings ?? []).filter(
+              (m: { syncDirection: string; performanceAccountId?: number }) =>
+                m.performanceAccountId != null &&
+                (m.syncDirection === "pull" || m.syncDirection === "both"),
+            );
+            if (pullMappings.length > 0) {
+              const pullBalanceMap = await getMapForPull(ctx.db, activeForPull);
+              if (pullBalanceMap) {
+                const pullSnapshotAccounts = await ctx.db
+                  .select()
+                  .from(schema.portfolioAccounts)
+                  .where(eq(schema.portfolioAccounts.snapshotId, snapshot.id));
+                let pulled = 0;
+                for (const mapping of pullMappings) {
+                  const m = mapping as {
+                    remoteAccountId: string;
+                    performanceAccountId?: number;
+                  };
+                  const apiBalance = pullBalanceMap.get(m.remoteAccountId);
+                  if (apiBalance === undefined || !m.performanceAccountId)
+                    continue;
+                  const matchingRows = pullSnapshotAccounts.filter(
+                    (a) => a.performanceAccountId === m.performanceAccountId,
+                  );
+                  if (matchingRows.length === 0) continue;
+                  const currentTotal = matchingRows.reduce(
+                    (s, a) => s + Number(a.amount),
+                    0,
+                  );
+                  if (matchingRows.length === 1) {
+                    await ctx.db
+                      .update(schema.portfolioAccounts)
+                      .set({ amount: String(apiBalance) })
+                      .where(
+                        eq(schema.portfolioAccounts.id, matchingRows[0]!.id),
+                      );
+                  } else {
+                    const ratio =
+                      currentTotal > 0 ? apiBalance / currentTotal : 0;
+                    for (const row of matchingRows) {
+                      const scaled = Number(row.amount) * ratio;
+                      await ctx.db
+                        .update(schema.portfolioAccounts)
+                        .set({
+                          amount: String(Math.round(scaled * 100) / 100),
+                        })
+                        .where(eq(schema.portfolioAccounts.id, row.id));
+                    }
+                  }
+                  pulled++;
+                }
+                apiPullResult = { pulled };
+              }
+            }
+          }
+        } catch (e) {
+          apiPullResult = {
+            pulled: 0,
+            error: e instanceof Error ? e.message : "Unknown error",
+          };
+        }
+
         // Auto-push to budget API tracking accounts if configured
         let apiSyncResult: {
           pushed: boolean;
@@ -862,12 +936,8 @@ export const adminProcedures = {
           error?: string;
         } = { pushed: false, accountsPushed: 0 };
         try {
-          const {
-            getActiveBudgetApi,
-            getClientForService,
-            getApiConnection,
-            cacheGet,
-          } = await import("@/lib/budget-api");
+          const { getActiveBudgetApi, getClientForService, getApiConnection } =
+            await import("@/lib/budget-api");
           const active = await getActiveBudgetApi(ctx.db);
           if (active !== "none") {
             const conn = await getApiConnection(ctx.db, active);
@@ -879,17 +949,11 @@ export const adminProcedures = {
             if (pushMappings.length > 0) {
               const client = await getClientForService(ctx.db, active);
               if (client) {
-                type BA = import("@/lib/budget-api/types").BudgetAccount;
-                const apiAccounts = await cacheGet<BA[]>(
-                  ctx.db,
-                  active,
-                  "accounts",
-                );
-                const apiBalanceMap = new Map<string, number>();
-                if (apiAccounts) {
-                  for (const a of apiAccounts.data)
-                    apiBalanceMap.set(a.id, a.balance);
-                }
+                const { getApiAccountBalanceMap } =
+                  await import("@/server/helpers/api-balance-resolution");
+                const apiBalanceMap =
+                  (await getApiAccountBalanceMap(ctx.db, active)) ??
+                  new Map<string, number>();
                 // Build local balances for portfolio push
                 const [snapshotAccounts, autoPushPeople, autoPushPerfAccounts] =
                   await Promise.all([
@@ -987,7 +1051,7 @@ export const adminProcedures = {
           };
         }
 
-        return { ...snapshot, apiSyncResult };
+        return { ...snapshot, apiSyncResult, apiPullResult };
       }),
 
     /** Update a single portfolio account row (e.g. change owner or toggle active). */

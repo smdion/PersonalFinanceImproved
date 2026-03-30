@@ -20,14 +20,6 @@ export type BrokerageGoalInput = {
   priority: number;
 };
 
-export type BrokeragePlannedTransactionInput = {
-  goalId: number;
-  transactionDate: string;
-  amount: number;
-  isRecurring: boolean;
-  recurrenceMonths: number | null;
-};
-
 export type BrokerageGoalsInput = {
   asOfDate: Date;
   goals: BrokerageGoalInput[];
@@ -36,8 +28,6 @@ export type BrokerageGoalsInput = {
   /** When set, derive afterTax balance from individual accounts matching this parentCategory
    *  instead of the aggregate balanceByTaxType.afterTax (which mixes all parentCategories). */
   parentCategoryFilter?: string;
-  /** Manual planned deposits/withdrawals layered on top of engine projections. */
-  plannedTransactions?: BrokeragePlannedTransactionInput[];
 };
 
 // --- Output ---
@@ -63,8 +53,6 @@ export type BrokerageGoalYear = {
   goalWithdrawals: BrokerageGoalWithdrawal[];
   totalWithdrawal: number;
   totalTaxCost: number;
-  /** Net planned transaction amount for this year (deposits positive, withdrawals negative). */
-  plannedTransactionTotal: number;
   endBalance: number;
   endBasis: number;
   unrealizedGain: number;
@@ -98,34 +86,8 @@ export type BrokerageGoalsResult = {
 export function calculateBrokerageGoals(
   input: BrokerageGoalsInput,
 ): BrokerageGoalsResult {
-  const { goals, engineYears, parentCategoryFilter, plannedTransactions } =
-    input;
+  const { goals, engineYears, parentCategoryFilter } = input;
   const warnings: string[] = [];
-
-  // Expand planned transactions into year -> net amount map
-  const plannedTxByYear = new Map<number, number>();
-  if (plannedTransactions) {
-    const lastYear =
-      engineYears.length > 0 ? engineYears[engineYears.length - 1]!.year : 0;
-    for (const tx of plannedTransactions) {
-      const txDate = new Date(tx.transactionDate + "T00:00:00");
-      const addToYear = (year: number, amount: number) => {
-        plannedTxByYear.set(year, (plannedTxByYear.get(year) ?? 0) + amount);
-      };
-      addToYear(txDate.getFullYear(), tx.amount);
-      if (tx.isRecurring && tx.recurrenceMonths && tx.recurrenceMonths > 0) {
-        let d = new Date(
-          txDate.getFullYear(),
-          txDate.getMonth() + tx.recurrenceMonths,
-          1,
-        );
-        while (d.getFullYear() <= lastYear) {
-          addToYear(d.getFullYear(), tx.amount);
-          d = new Date(d.getFullYear(), d.getMonth() + tx.recurrenceMonths, 1);
-        }
-      }
-    }
-  }
 
   // Build goal status map from engine's accumulation years
   const goalStatusMap = new Map<number, BrokerageGoalStatus>();
@@ -184,8 +146,6 @@ export function calculateBrokerageGoals(
 
       if (parentCategoryFilter && yr.individualAccountBalances.length > 0) {
         // Derive contribution/overflow from filtered individual accounts' breakdown fields.
-        // ia.contribution is the aggregate (intentional + overflow + ramp); use the breakdown
-        // fields so each column shows only its portion.
         const filtered = yr.individualAccountBalances.filter(
           (ia) => ia.parentCategory === parentCategoryFilter,
         );
@@ -229,15 +189,11 @@ export function calculateBrokerageGoals(
         goalWithdrawals.reduce((s, gw) => s + gw.taxCost, 0),
       );
 
-      // Update goal statuses (include planned transaction adjustments for accurate projection)
-      const yearPlannedTx = roundToCents(plannedTxByYear.get(yr.year) ?? 0);
+      // Update goal statuses
       for (const gw of accYr.brokerageGoalWithdrawals) {
         const status = goalStatusMap.get(gw.goalId);
         if (!status) continue;
-        // projectedBalance = balance before this withdrawal (approx: end balance + withdrawal + planned tx)
-        status.projectedBalance = roundToCents(
-          afterTax + yearPlannedTx + gw.amount,
-        );
+        status.projectedBalance = roundToCents(afterTax + gw.amount);
         status.actualWithdrawal = gw.amount;
         status.shortfall = roundToCents(
           Math.max(0, status.targetAmount - gw.amount),
@@ -247,11 +203,8 @@ export function calculateBrokerageGoals(
       }
     }
     // Decumulation years: no brokerage contributions or goal withdrawals
-    // (retirement withdrawals from brokerage are tracked by the engine separately)
 
     // Growth: when filtering by parentCategory, use individual accounts' growth field directly
-    // (avoids needing the starting balance which prevBalance=0 doesn't capture).
-    // Otherwise fall back to balance-delta formula.
     let growth: number;
     if (parentCategoryFilter && yr.individualAccountBalances.length > 0) {
       const filtered = yr.individualAccountBalances.filter(
@@ -263,14 +216,6 @@ export function calculateBrokerageGoals(
       growth = roundToCents(afterTax - prevBalance - netInflow);
     }
 
-    const plannedTxAmount = roundToCents(plannedTxByYear.get(yr.year) ?? 0);
-    // Adjust balance by cumulative planned transactions (manual deposits/withdrawals
-    // layered on top of the engine projection).
-    const adjustedBalance = roundToCents(afterTax + plannedTxAmount);
-    const adjustedBasis = roundToCents(
-      afterTaxBasis + Math.max(0, plannedTxAmount),
-    );
-
     projectionByYear.push({
       year: yr.year,
       contribution,
@@ -279,10 +224,9 @@ export function calculateBrokerageGoals(
       goalWithdrawals,
       totalWithdrawal,
       totalTaxCost,
-      plannedTransactionTotal: plannedTxAmount,
-      endBalance: adjustedBalance,
-      endBasis: adjustedBasis,
-      unrealizedGain: roundToCents(adjustedBalance - adjustedBasis),
+      endBalance: roundToCents(afterTax),
+      endBasis: roundToCents(afterTaxBasis),
+      unrealizedGain: roundToCents(afterTax - afterTaxBasis),
     });
 
     prevBalance = afterTax;

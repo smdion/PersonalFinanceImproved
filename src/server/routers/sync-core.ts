@@ -85,8 +85,9 @@ export const syncCoreRouter = createTRPCRouter({
             (m) => m.syncDirection === "pull" || m.syncDirection === "both",
           );
           if (pullMappings.length > 0) {
-            const apiBalanceMap = new Map<string, number>();
-            for (const a of accounts) apiBalanceMap.set(a.id, a.balance);
+            const { getApiAccountBalanceMapFromAccounts } =
+              await import("@/server/helpers/api-balance-resolution");
+            const apiBalanceMap = getApiAccountBalanceMapFromAccounts(accounts);
 
             const currentYear = new Date().getFullYear();
             for (const mapping of pullMappings) {

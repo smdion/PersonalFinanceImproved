@@ -8,10 +8,7 @@ import { describe, it, expect } from "vitest";
 import { calculateProjection } from "@/lib/calculators/engine";
 import { calculateBrokerageGoals } from "@/lib/calculators/brokerage-goals";
 import type { ProjectionInput } from "@/lib/calculators/types";
-import type {
-  BrokerageGoalInput,
-  BrokeragePlannedTransactionInput,
-} from "@/lib/calculators/brokerage-goals";
+import type { BrokerageGoalInput } from "@/lib/calculators/brokerage-goals";
 
 const AS_OF = new Date("2025-03-07");
 
@@ -303,67 +300,6 @@ describe("brokerage goals integration", () => {
     });
 
     expect(bgResult.goals).toHaveLength(1);
-    expect(roundDeep(bgResult)).toMatchSnapshot();
-  });
-
-  it("fixture 5: goals with planned transactions — manual deposits layered on", () => {
-    const goals: BrokerageGoalInput[] = [
-      {
-        id: 1,
-        name: "Down payment",
-        targetAmount: 50000,
-        targetYear: 2030,
-        priority: 1,
-      },
-      {
-        id: 2,
-        name: "Car fund",
-        targetAmount: 25000,
-        targetYear: 2028,
-        priority: 2,
-      },
-    ];
-
-    const plannedTransactions: BrokeragePlannedTransactionInput[] = [
-      {
-        goalId: 1,
-        transactionDate: "2025-06-01",
-        amount: 5000,
-        isRecurring: true,
-        recurrenceMonths: 12,
-      },
-      {
-        goalId: 2,
-        transactionDate: "2026-01-15",
-        amount: 3000,
-        isRecurring: false,
-        recurrenceMonths: null,
-      },
-    ];
-
-    const input = makeInput({
-      brokerageGoals: goals.map((g) => ({
-        id: g.id,
-        name: g.name,
-        targetAmount: g.targetAmount,
-        targetYear: g.targetYear,
-        priority: g.priority,
-      })),
-    });
-    const engineResult = calculateProjection(input);
-
-    const bgResult = calculateBrokerageGoals({
-      asOfDate: AS_OF,
-      goals,
-      engineYears: engineResult.projectionByYear,
-      plannedTransactions,
-    });
-
-    // Planned transactions should affect at least some years
-    const hasPlannedTx = bgResult.projectionByYear.some(
-      (y) => y.plannedTransactionTotal !== 0,
-    );
-    expect(hasPlannedTx).toBe(true);
     expect(roundDeep(bgResult)).toMatchSnapshot();
   });
 });
