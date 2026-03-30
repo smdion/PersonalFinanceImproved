@@ -216,11 +216,74 @@ export function distributeContributions(
   }
 
   // --- Step 2: Distribute slot totals to individual accounts using spec weights ---
+  // Fixed-amount specs are pre-allocated directly; remaining slot total is distributed
+  // proportionally among scales-with-salary specs.
   for (const slot of slots) {
     const bs = getAccountTypeConfig(slot.category).balanceStructure;
     const catSpecs = contributionSpecs.filter(
       (s) => s.category === slot.category,
     );
+
+    const distributeSpecs = (specs: typeof catSpecs, slotAmount: number) => {
+      // Separate fixed-amount specs from scaling specs
+      const fixedSpecs = specs.filter(
+        (s) => s.contributionScaling === "fixed_amount",
+      );
+      const scalingSpecs = specs.filter(
+        (s) => s.contributionScaling !== "fixed_amount",
+      );
+
+      // Pre-allocate fixed specs their raw amount (capped at slot total)
+      let remaining = slotAmount;
+      for (const sp of fixedSpecs) {
+        const sk = specKeyOf(sp);
+        const acctName = specAcct.get(sk);
+        if (!acctName) continue;
+        const rawAmount = specRaw.get(sk) ?? 0;
+        const portion = roundToCents(Math.min(rawAmount, remaining));
+        if (portion <= 0) continue;
+        indContribs.set(acctName, (indContribs.get(acctName) ?? 0) + portion);
+        indBal.set(acctName, (indBal.get(acctName) ?? 0) + portion);
+        remaining -= portion;
+      }
+
+      // Distribute remaining proportionally among scaling specs
+      if (scalingSpecs.length > 0 && remaining > 0) {
+        const rawTotal = scalingSpecs.reduce(
+          (s, sp) => s + (specRaw.get(specKeyOf(sp)) ?? 0),
+          0,
+        );
+        for (const sp of scalingSpecs) {
+          const sk = specKeyOf(sp);
+          const acctName = specAcct.get(sk);
+          if (!acctName) continue;
+          const weight =
+            rawTotal > 0
+              ? (specRaw.get(sk) ?? 0) / rawTotal
+              : 1 / scalingSpecs.length;
+          const portion = roundToCents(remaining * weight);
+          indContribs.set(acctName, (indContribs.get(acctName) ?? 0) + portion);
+          indBal.set(acctName, (indBal.get(acctName) ?? 0) + portion);
+        }
+      } else if (fixedSpecs.length === 0) {
+        // All specs are scaling (original behavior) — fallback for no fixed specs
+        const rawTotal = specs.reduce(
+          (s, sp) => s + (specRaw.get(specKeyOf(sp)) ?? 0),
+          0,
+        );
+        for (const sp of specs) {
+          const sk = specKeyOf(sp);
+          const acctName = specAcct.get(sk);
+          if (!acctName) continue;
+          const weight =
+            rawTotal > 0 ? (specRaw.get(sk) ?? 0) / rawTotal : 1 / specs.length;
+          const portion = roundToCents(slotAmount * weight);
+          indContribs.set(acctName, (indContribs.get(acctName) ?? 0) + portion);
+          indBal.set(acctName, (indBal.get(acctName) ?? 0) + portion);
+        }
+      }
+    };
+
     if (bs === "roth_traditional") {
       for (const [taxTreatment, slotAmount] of [
         ["pre_tax", slot.traditionalContrib],
@@ -229,40 +292,10 @@ export function distributeContributions(
         const typeSpecs = catSpecs.filter(
           (s) => s.taxTreatment === taxTreatment,
         );
-        const rawTotal = typeSpecs.reduce(
-          (s, sp) => s + (specRaw.get(specKeyOf(sp)) ?? 0),
-          0,
-        );
-        for (const sp of typeSpecs) {
-          const sk = specKeyOf(sp);
-          const acctName = specAcct.get(sk);
-          if (!acctName) continue;
-          const weight =
-            rawTotal > 0
-              ? (specRaw.get(sk) ?? 0) / rawTotal
-              : 1 / typeSpecs.length;
-          const portion = roundToCents(slotAmount * weight);
-          indContribs.set(acctName, (indContribs.get(acctName) ?? 0) + portion);
-          indBal.set(acctName, (indBal.get(acctName) ?? 0) + portion);
-        }
+        distributeSpecs(typeSpecs, slotAmount);
       }
     } else {
-      const rawTotal = catSpecs.reduce(
-        (s, sp) => s + (specRaw.get(specKeyOf(sp)) ?? 0),
-        0,
-      );
-      for (const sp of catSpecs) {
-        const sk = specKeyOf(sp);
-        const acctName = specAcct.get(sk);
-        if (!acctName) continue;
-        const weight =
-          rawTotal > 0
-            ? (specRaw.get(sk) ?? 0) / rawTotal
-            : 1 / catSpecs.length;
-        const portion = roundToCents(slot.employeeContrib * weight);
-        indContribs.set(acctName, (indContribs.get(acctName) ?? 0) + portion);
-        indBal.set(acctName, (indBal.get(acctName) ?? 0) + portion);
-      }
+      distributeSpecs(catSpecs, slot.employeeContrib);
     }
   }
 

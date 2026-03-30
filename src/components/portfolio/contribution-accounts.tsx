@@ -173,6 +173,7 @@ export function ContributionAccountsSettings() {
       ownerPersonId: number | null;
       ownershipType: "individual" | "joint";
       retirementBehavior: string;
+      contributionScaling: string;
       isActive: boolean;
     }>,
   ) => {
@@ -207,6 +208,11 @@ export function ContributionAccountsSettings() {
         | "stops_at_owner_retirement"
         | "stops_when_last_retires"
         | "continues_after_retirement",
+      contributionScaling: (updates.contributionScaling !== undefined
+        ? updates.contributionScaling
+        : (pa.contributionScaling ?? "scales_with_salary")) as
+        | "scales_with_salary"
+        | "fixed_amount",
     });
   };
 

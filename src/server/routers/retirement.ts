@@ -704,9 +704,16 @@ export async function buildEnginePayload(
       p.retirementBehavior ?? "stops_at_owner_retirement",
     ]),
   );
+  const perfContributionScalingMap = new Map(
+    perfAccounts.map((p) => [
+      p.id,
+      p.contributionScaling ?? "scales_with_salary",
+    ]),
+  );
   const profileContribCtx = {
     perfCategoryMap,
     perfRetirementBehaviorMap,
+    perfContributionScalingMap,
     personNameById,
     accountBreakdownByCategory,
   };

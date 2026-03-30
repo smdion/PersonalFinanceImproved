@@ -34,6 +34,7 @@ import type {
   HsaCoverageType,
   AccountOwnership,
   RetirementBehavior,
+  ContributionScaling,
   W4FilingStatus,
   BudgetApiService,
   ApiSyncDirection,
@@ -451,6 +452,10 @@ export const performanceAccounts = pgTable(
       .$type<RetirementBehavior>()
       .notNull()
       .default("stops_at_owner_retirement"),
+    contributionScaling: text("contribution_scaling")
+      .$type<ContributionScaling>()
+      .notNull()
+      .default("scales_with_salary"),
     parentCategory: text("parent_category").notNull(),
     isActive: boolean("is_active").notNull().default(true),
     displayOrder: integer("display_order").notNull().default(0),

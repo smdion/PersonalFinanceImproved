@@ -1,0 +1,1 @@
+ALTER TABLE `performance_accounts` ADD `contribution_scaling` text DEFAULT 'scales_with_salary' NOT NULL;

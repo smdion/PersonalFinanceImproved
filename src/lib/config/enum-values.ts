@@ -108,6 +108,15 @@ export const RETIREMENT_BEHAVIOR_VALUES = [
 export type RetirementBehavior = (typeof RETIREMENT_BEHAVIOR_VALUES)[number];
 export const retirementBehaviorSchema = z.enum(RETIREMENT_BEHAVIOR_VALUES);
 
+// ── Contribution Scaling ──
+
+export const CONTRIBUTION_SCALING_VALUES = [
+  "scales_with_salary",
+  "fixed_amount",
+] as const;
+export type ContributionScaling = (typeof CONTRIBUTION_SCALING_VALUES)[number];
+export const contributionScalingSchema = z.enum(CONTRIBUTION_SCALING_VALUES);
+
 // ── Portfolio Tax Type ──
 
 export const PORTFOLIO_TAX_TYPE_VALUES = [
