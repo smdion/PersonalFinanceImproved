@@ -1059,7 +1059,7 @@ export function PreviewPanel({
             (ca) => !usedContribIds.has(ca.id),
           );
           const unlinkedBudgetItems = budget.matches.filter(
-            (m) => m.contributionAccountId == null && m.status !== "linked",
+            (m) => m.contributionAccountId == null,
           );
 
           if (linkedItems.length === 0 && unlinkedContribs.length === 0)
