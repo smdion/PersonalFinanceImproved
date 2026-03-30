@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.3
 
+## [0.3.24] - 2026-03-30
+
+### Improved
+
+- Redesigned overrides panel: wizard-style "Add Override" flow replaces three dense forms — pick year, pick what to change, fill 1-3 fields
+- Saved overrides display as clean scannable cards with year, type badge, and summary
+- Withdrawal Routing section redesigned to match: indigo buttons, compact collapsed view, sunken expanded panel
+- Strategy-aware context banners explain how the active spending strategy interacts with withdrawal routing and overrides
+- Removed verbose "Deterministic + MC" badges from all Projection Assumptions sections — cleaner headers
+
+---
+
 ## [0.3.23] - 2026-03-30
 
 ### Added
