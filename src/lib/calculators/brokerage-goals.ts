@@ -41,10 +41,23 @@ export type BrokerageGoalWithdrawal = {
   taxCost: number;
 };
 
+export type BrokerageIndividualAccount = {
+  name: string;
+  category: string;
+  balance: number;
+  contribution: number;
+  employerMatch: number;
+  growth: number;
+  intentionalContribution?: number;
+  overflowContribution?: number;
+};
+
 export type BrokerageGoalYear = {
   year: number;
   /** Intentional brokerage contribution from engine (employee + match). */
   contribution: number;
+  /** Employer match total (subset of contribution, shown separately in tooltips). */
+  employerMatch: number;
   /** IRS limit overflow routed to brokerage by the engine. */
   overflow: number;
   /** Investment growth (balance change minus net contributions/withdrawals). */
@@ -56,6 +69,12 @@ export type BrokerageGoalYear = {
   endBalance: number;
   endBasis: number;
   unrealizedGain: number;
+  /** Pro-rate fraction for first year (e.g. 0.833 = 10/12 months). null for full years. */
+  proRateFraction: number | null;
+  /** Return rate applied this year. */
+  returnRate: number;
+  /** Per-account breakdown for Portfolio-filtered accounts. */
+  individualAccounts: BrokerageIndividualAccount[];
 };
 
 export type BrokerageGoalStatus = {
@@ -136,13 +155,16 @@ export function calculateBrokerageGoals(
     }
 
     let contribution = 0;
+    let employerMatch = 0;
     let overflow = 0;
     let goalWithdrawals: BrokerageGoalWithdrawal[] = [];
     let totalWithdrawal = 0;
     let totalTaxCost = 0;
+    let proRateFraction: number | null = null;
 
     if (yr.phase === "accumulation") {
       const accYr = yr as EngineAccumulationYear;
+      proRateFraction = accYr.proRateFraction;
 
       if (parentCategoryFilter && yr.individualAccountBalances.length > 0) {
         // Derive contribution/overflow from filtered individual accounts' breakdown fields.
@@ -154,6 +176,9 @@ export function calculateBrokerageGoals(
             (s, ia) => s + (ia.intentionalContribution ?? ia.contribution),
             0,
           ),
+        );
+        employerMatch = roundToCents(
+          filtered.reduce((s, ia) => s + ia.employerMatch, 0),
         );
         overflow = roundToCents(
           filtered.reduce((s, ia) => s + (ia.overflowContribution ?? 0), 0),
@@ -170,6 +195,9 @@ export function calculateBrokerageGoals(
                 accYr.brokerageRampContribution,
             )
           : roundToCents(accYr.brokerageRampContribution);
+        employerMatch = brokerageSlot
+          ? roundToCents(brokerageSlot.employerMatch)
+          : 0;
         overflow = accYr.overflowToBrokerage;
       }
 
@@ -216,9 +244,18 @@ export function calculateBrokerageGoals(
       growth = roundToCents(afterTax - prevBalance - netInflow);
     }
 
+    // Build per-account breakdown for tooltips
+    const filteredAccounts =
+      parentCategoryFilter && yr.individualAccountBalances.length > 0
+        ? yr.individualAccountBalances.filter(
+            (ia) => ia.parentCategory === parentCategoryFilter,
+          )
+        : yr.individualAccountBalances;
+
     projectionByYear.push({
       year: yr.year,
       contribution,
+      employerMatch,
       overflow,
       growth,
       goalWithdrawals,
@@ -227,6 +264,18 @@ export function calculateBrokerageGoals(
       endBalance: roundToCents(afterTax),
       endBasis: roundToCents(afterTaxBasis),
       unrealizedGain: roundToCents(afterTax - afterTaxBasis),
+      proRateFraction,
+      returnRate: yr.returnRate,
+      individualAccounts: filteredAccounts.map((ia) => ({
+        name: ia.name,
+        category: ia.category,
+        balance: ia.balance,
+        contribution: ia.contribution,
+        employerMatch: ia.employerMatch,
+        growth: ia.growth,
+        intentionalContribution: ia.intentionalContribution,
+        overflowContribution: ia.overflowContribution,
+      })),
     });
 
     prevBalance = afterTax;

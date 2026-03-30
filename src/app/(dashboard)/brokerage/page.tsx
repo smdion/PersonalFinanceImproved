@@ -9,7 +9,8 @@ import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
-import { formatCurrency } from "@/lib/utils/format";
+import { Tooltip } from "@/components/ui/tooltip";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { BrokerageGoalsSection } from "@/components/cards/brokerage-goals";
@@ -21,13 +22,13 @@ import {
 import type {
   AccumOverride,
   LumpSumEvent,
+  TooltipData,
 } from "@/components/cards/projection/types";
+import { renderTooltip } from "@/components/cards/projection/tooltip-renderer";
 import {
   LumpSumForm,
   LumpSumBadge,
 } from "@/components/cards/projection/lump-sum-form";
-
-type BrokerageTab = "projection" | "goals";
 
 export default function BrokeragePage() {
   const user = useUser();
@@ -92,7 +93,7 @@ export default function BrokeragePage() {
       }
       ov.lumpSums!.push({
         id: ls.id,
-        amount: Math.abs(amt), // engine handles positive amounts; withdrawals are modeled separately
+        amount: Math.abs(amt),
         targetAccount: ls.targetAccount,
         ...(ls.targetAccountName
           ? { targetAccountName: ls.targetAccountName }
@@ -121,8 +122,7 @@ export default function BrokeragePage() {
   const { data: contribData } =
     trpc.contribution.computeSummary.useQuery(contribInput);
   const { data: brokerageData } = trpc.brokerage.computeSummary.useQuery();
-
-  const [activeTab, setActiveTab] = useState<BrokerageTab>("projection");
+  const [showGoals, setShowGoals] = useState(false);
 
   if (isLoading) {
     return (
@@ -186,19 +186,15 @@ export default function BrokeragePage() {
   const apiBalanceByPerfId = new Map(
     apiBalances.map((ab) => [ab.performanceAccountId, ab]),
   );
+  const budgetLinks = brokerageData?.budgetLinks ?? [];
 
-  // Funding sources — fully separated from retirement engine data.
-  // Direct contributions: sum of Portfolio-category accounts only (from contribution summary)
+  // Funding sources
   const totalDirectContrib = portfolioAccounts.reduce(
     (s, at) => s + at.totalContrib,
     0,
   );
-
-  // Overflow from retirement: the only thing that crosses from the engine
   const firstYear = brokerageResult.projectionByYear[0];
   const totalOverflow = firstYear?.overflow ?? 0;
-
-  // Brokerage ramp from engine settings (shared global setting)
   const accYears = data.result.projectionByYear.filter(
     (yr) => yr.phase === "accumulation",
   );
@@ -207,11 +203,6 @@ export default function BrokeragePage() {
     | undefined;
   const brokerageRamp = firstAccYear?.brokerageRampContribution ?? 0;
 
-  const tabs: { key: BrokerageTab; label: string }[] = [
-    { key: "projection", label: "Projection" },
-    { key: "goals", label: "Goals" },
-  ];
-
   return (
     <div>
       <PageHeader
@@ -219,97 +210,111 @@ export default function BrokeragePage() {
         subtitle="Non-retirement investment accounts"
       />
 
-      <div className="flex border-b mb-4 mt-4">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setActiveTab(t.key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === t.key
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-muted hover:text-secondary hover:border-strong"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+        {/* Funding Sources */}
+        <Card title="Funding Sources" className="lg:col-span-1">
+          <FundingSources
+            directContrib={totalDirectContrib}
+            overflow={totalOverflow}
+            ramp={brokerageRamp}
+          />
+        </Card>
+
+        {/* By Account */}
+        <Card title="By Account" className="lg:col-span-2">
+          <ByAccountSummary
+            accounts={portfolioAccounts}
+            apiBalanceByPerfId={apiBalanceByPerfId}
+            budgetLinks={budgetLinks}
+          />
+        </Card>
       </div>
 
-      {activeTab === "projection" && (
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Funding Sources */}
-            <Card title="Funding Sources" className="lg:col-span-1">
-              <FundingSources
-                directContrib={totalDirectContrib}
-                overflow={totalOverflow}
-                ramp={brokerageRamp}
-              />
-            </Card>
-
-            {/* By Account */}
-            <Card title="By Account" className="lg:col-span-2">
-              <ByAccountSummary
-                accounts={portfolioAccounts}
-                apiBalanceByPerfId={apiBalanceByPerfId}
-              />
-            </Card>
-          </div>
-
-          {/* Goal Status */}
-          {brokerageResult.goals.length > 0 && (
-            <Card title="Brokerage Goals" className="mt-6">
-              <GoalStatusTable goals={brokerageResult.goals} />
-            </Card>
-          )}
-
-          {/* Planned Events (lump sum injections/withdrawals) */}
-          {canEdit && (
-            <Card title="Planned Events" className="mt-6">
-              <p className="text-xs text-muted mb-2">
-                One-time dollar injections or withdrawals (bonus, inheritance,
-                down payment).
-                <HelpTip text="Planned events bypass IRS contribution limits and are applied in the specified year. They feed directly into the projection engine. Negative amounts model withdrawals." />
-              </p>
-              {brokerageLumpSums.length > 0 && (
-                <div className="space-y-1 mb-3">
-                  {brokerageLumpSums.map((ls) => (
-                    <LumpSumBadge
-                      key={ls.id}
-                      event={ls}
-                      onDelete={() =>
-                        setBrokerageLumpSums((prev) =>
-                          prev.filter((x) => x.id !== ls.id),
-                        )
-                      }
-                    />
-                  ))}
-                </div>
-              )}
-              <LumpSumForm
-                accounts={
-                  data?.result?.projectionByYear?.[0]?.individualAccountBalances
-                    ?.filter((ia) => ia.parentCategory === "Portfolio")
-                    ?.map((ia) => ({
-                      name: ia.name,
-                      category: ia.category,
-                      taxType: ia.taxType,
-                    })) ?? []
-                }
-                onAdd={(ls) => setBrokerageLumpSums((prev) => [...prev, ls])}
-                allowWithdrawals
-              />
-            </Card>
-          )}
-
-          {/* Year-by-Year Projection */}
-          <Card title="Year-by-Year Projection" className="mt-6">
-            <YearByYearTable years={brokerageResult.projectionByYear} />
-          </Card>
-        </>
+      {/* Goal Funding Status */}
+      {brokerageResult.goals.length > 0 && (
+        <Card title="Goal Funding Status" className="mt-6">
+          <p className="text-xs text-muted mb-2">
+            Set a target amount and year — the engine withdraws from brokerage
+            when the target year arrives and shows whether you are on track.
+            <HelpTip text="Goals are automatic: the projection engine deducts the target amount from your brokerage balance in the target year. If the balance is insufficient, the shortfall is shown." />
+          </p>
+          <GoalStatusTable goals={brokerageResult.goals} />
+        </Card>
       )}
 
-      {activeTab === "goals" && <BrokerageGoalsSection />}
+      {/* Manage Goals (collapsible) */}
+      {canEdit && (
+        <div className="border rounded-lg p-4 mt-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+                Manage Goals
+              </h4>
+              <HelpTip text="Create, edit, or delete brokerage goals. Each goal defines a target amount and year — the engine automatically withdraws from your brokerage in that year." />
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowGoals(!showGoals)}
+              className={`text-xs font-medium px-3 py-1 rounded transition-colors ${
+                showGoals
+                  ? "bg-surface-strong text-muted hover:text-primary"
+                  : "bg-indigo-600 text-white hover:bg-indigo-700"
+              }`}
+            >
+              {showGoals ? "Done" : "Edit Goals"}
+            </button>
+          </div>
+          {showGoals && (
+            <div className="mt-3">
+              <BrokerageGoalsSection />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Planned Events */}
+      {canEdit && (
+        <Card title="Planned Events" className="mt-6">
+          <p className="text-xs text-muted mb-2">
+            One-time injections or withdrawals that modify the projection
+            (bonus, inheritance, down payment).
+            <HelpTip text="Unlike goals (which set a target and let the engine decide if it's funded), planned events directly add or remove dollars in a specific year. They bypass IRS contribution limits." />
+          </p>
+          {brokerageLumpSums.length > 0 && (
+            <div className="space-y-1 mb-3">
+              {brokerageLumpSums.map((ls) => (
+                <LumpSumBadge
+                  key={ls.id}
+                  event={ls}
+                  onDelete={() =>
+                    setBrokerageLumpSums((prev) =>
+                      prev.filter((x) => x.id !== ls.id),
+                    )
+                  }
+                />
+              ))}
+            </div>
+          )}
+          <LumpSumForm
+            accounts={
+              data?.result?.projectionByYear?.[0]?.individualAccountBalances
+                ?.filter((ia) => ia.parentCategory === "Portfolio")
+                ?.map((ia) => ({
+                  name: ia.name,
+                  category: ia.category,
+                  taxType: ia.taxType,
+                })) ?? []
+            }
+            onAdd={(ls) => setBrokerageLumpSums((prev) => [...prev, ls])}
+            allowWithdrawals
+          />
+        </Card>
+      )}
+
+      {/* Year-by-Year Projection */}
+      <Card title="Year-by-Year Projection" className="mt-6">
+        <YearByYearTable years={brokerageResult.projectionByYear} />
+      </Card>
 
       {/* Warnings */}
       {brokerageResult.warnings.length > 0 && (
@@ -386,6 +391,7 @@ type ApiBalanceInfo = {
 function ByAccountSummary({
   accounts,
   apiBalanceByPerfId,
+  budgetLinks,
 }: {
   accounts: {
     accountType: string;
@@ -399,6 +405,11 @@ function ByAccountSummary({
     performanceAccountId?: number;
   }[];
   apiBalanceByPerfId: Map<number, ApiBalanceInfo>;
+  budgetLinks: Array<{
+    accountType: string;
+    budgetItemName: string;
+    budgetCategory: string;
+  }>;
 }) {
   if (accounts.length === 0) {
     return (
@@ -408,12 +419,18 @@ function ByAccountSummary({
     );
   }
 
+  // Build budget link lookup by accountType
+  const budgetLinkByType = new Map(
+    budgetLinks.map((bl) => [bl.accountType, bl]),
+  );
+
   return (
     <div className="space-y-3">
       {accounts.map((at) => {
         const apiInfo = at.performanceAccountId
           ? apiBalanceByPerfId.get(at.performanceAccountId)
           : undefined;
+        const budgetLink = budgetLinkByType.get(at.accountType);
         return (
           <div key={at.accountType}>
             <div className="flex items-baseline justify-between text-sm">
@@ -431,6 +448,11 @@ function ByAccountSummary({
                   : `${formatCurrency(at.totalContrib)}/yr`}
               </span>
             </div>
+            {budgetLink && (
+              <p className="text-[10px] text-emerald-600 mt-0.5">
+                Linked to budget: {budgetLink.budgetItemName}
+              </p>
+            )}
             {apiInfo?.source === "api" && (
               <p className="text-[10px] text-blue-600 mt-0.5">
                 Balance from YNAB (snapshot:{" "}
@@ -527,6 +549,142 @@ function GoalStatusTable({ goals }: { goals: BrokerageGoalStatus[] }) {
   );
 }
 
+// --- Tooltip builders ---
+
+function contributionTooltip(yr: BrokerageGoalYear): TooltipData {
+  const items = yr.individualAccounts.map((ia) => ({
+    label: ia.name,
+    amount: ia.intentionalContribution ?? ia.contribution,
+    match: ia.employerMatch > 0 ? ia.employerMatch : undefined,
+    matchLabel: "employer match",
+    color: "blue" as const,
+  }));
+  return {
+    kind: "money",
+    header: "Brokerage Contributions",
+    items,
+    total: {
+      label: "Total",
+      amount: yr.contribution,
+      match: yr.employerMatch > 0 ? yr.employerMatch : undefined,
+      matchLabel: "match",
+    },
+    ...(yr.proRateFraction != null
+      ? {
+          proRate: {
+            months: Math.round(yr.proRateFraction * 12),
+            annualAmount:
+              yr.proRateFraction > 0
+                ? Math.round(yr.contribution / yr.proRateFraction)
+                : yr.contribution,
+            proRatedAmount: yr.contribution,
+          },
+        }
+      : {}),
+  };
+}
+
+function overflowTooltip(yr: BrokerageGoalYear): TooltipData {
+  const items = yr.individualAccounts
+    .filter((ia) => (ia.overflowContribution ?? 0) > 0)
+    .map((ia) => ({
+      label: ia.name,
+      amount: ia.overflowContribution ?? 0,
+      color: "amber" as const,
+    }));
+  return {
+    kind: "money",
+    header: "IRS Limit Overflow",
+    meta: "Excess contributions redirected from retirement accounts",
+    items: items.length > 0 ? items : undefined,
+  };
+}
+
+function growthTooltip(yr: BrokerageGoalYear): TooltipData {
+  const items = yr.individualAccounts.map((ia) => ({
+    label: ia.name,
+    amount: ia.growth,
+    prefix: (ia.growth >= 0 ? "+" : "-") as "+" | "-",
+    color: "emerald" as const,
+  }));
+  return {
+    kind: "money",
+    header: "Investment Growth",
+    meta: `Return rate: ${formatPercent(yr.returnRate)}`,
+    items,
+    growth: { amount: yr.growth },
+  };
+}
+
+function withdrawalTooltip(yr: BrokerageGoalYear): TooltipData {
+  const items = yr.goalWithdrawals.map((gw) => ({
+    label: gw.name,
+    amount: gw.amount,
+    prefix: "-" as const,
+    color: "red" as const,
+    sub: [
+      {
+        label: "Basis (tax-free)",
+        amount: gw.basisPortion,
+        color: "gray" as const,
+      },
+      {
+        label: "Gains (taxable)",
+        amount: gw.gainsPortion,
+        color: "amber" as const,
+      },
+      { label: "Tax cost", amount: gw.taxCost, color: "red" as const },
+    ],
+  }));
+  return {
+    kind: "money",
+    header: "Goal Withdrawals",
+    items,
+    withdrawals: { amount: yr.totalWithdrawal, taxCost: yr.totalTaxCost },
+  };
+}
+
+function balanceTooltip(
+  yr: BrokerageGoalYear,
+  prevBalance: number,
+): TooltipData {
+  const items = yr.individualAccounts.map((ia) => ({
+    label: ia.name,
+    amount: ia.balance,
+    color: "blue" as const,
+  }));
+  const change = yr.endBalance - prevBalance;
+  return {
+    kind: "money",
+    header: "End Balance",
+    meta: `Return rate: ${formatPercent(yr.returnRate)}`,
+    items,
+    yearChange: {
+      total: yr.endBalance,
+      change,
+      parts: [
+        {
+          label: "Contributions",
+          amount: yr.contribution + yr.overflow,
+          color: "blue",
+        },
+        { label: "Growth", amount: yr.growth, color: "emerald" },
+        ...(yr.totalWithdrawal > 0
+          ? [
+              {
+                label: "Withdrawals",
+                amount: -yr.totalWithdrawal,
+                color: "red" as const,
+              },
+            ]
+          : []),
+      ],
+    },
+  };
+}
+
+// --- Year-by-Year Table ---
+
 function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
   if (years.length === 0) {
     return <p className="text-sm text-faint">No projection data.</p>;
@@ -540,7 +698,7 @@ function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
             <th className="py-2 pr-3">Year</th>
             <th className="py-2 pr-3 text-right">
               Contribution
-              <HelpTip text="Intentional brokerage contributions (employee + employer match)" />
+              <HelpTip text="Intentional brokerage contributions (employee + employer match). Hover for per-account breakdown." />
             </th>
             <th className="py-2 pr-3 text-right">
               Overflow
@@ -548,11 +706,11 @@ function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
             </th>
             <th className="py-2 pr-3 text-right">
               Growth
-              <HelpTip text="Investment returns — balance change minus net contributions and withdrawals" />
+              <HelpTip text="Investment returns — hover for return rate and per-account breakdown" />
             </th>
             <th className="py-2 pr-3 text-right">
               Withdrawals
-              <HelpTip text="Goal withdrawals processed by the engine in target year" />
+              <HelpTip text="Goal withdrawals — hover for per-goal breakdown with tax cost" />
             </th>
             <th className="py-2 pr-3 text-right">
               Tax Cost
@@ -560,7 +718,7 @@ function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
             </th>
             <th className="py-2 pr-3 text-right">
               End Balance
-              <HelpTip text="Total brokerage account value at year end" />
+              <HelpTip text="Total brokerage account value at year end — hover for breakdown" />
             </th>
             <th className="py-2 pr-3 text-right">
               Cost Basis
@@ -573,8 +731,10 @@ function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
           </tr>
         </thead>
         <tbody>
-          {years.map((yr) => {
+          {years.map((yr, index) => {
             const hasWithdrawals = yr.totalWithdrawal > 0;
+            const prevBalance = index > 0 ? years[index - 1]!.endBalance : 0;
+            const hasAccounts = yr.individualAccounts.length > 0;
             return (
               <tr
                 key={yr.year}
@@ -584,22 +744,79 @@ function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
               >
                 <td className="py-1.5 pr-3 font-medium text-secondary">
                   {yr.year}
+                  {yr.proRateFraction != null && (
+                    <span className="ml-1 text-[9px] text-faint">
+                      ({Math.round(yr.proRateFraction * 12)} mo)
+                    </span>
+                  )}
                 </td>
                 <td className="py-1.5 pr-3 text-right text-muted">
-                  {yr.contribution > 0
-                    ? formatCurrency(yr.contribution)
-                    : "\u2014"}
+                  {yr.contribution > 0 ? (
+                    hasAccounts ? (
+                      <Tooltip
+                        content={renderTooltip(contributionTooltip(yr))}
+                        side="top"
+                      >
+                        <span className="cursor-help border-b border-dotted border-current">
+                          {formatCurrency(yr.contribution)}
+                        </span>
+                      </Tooltip>
+                    ) : (
+                      formatCurrency(yr.contribution)
+                    )
+                  ) : (
+                    "\u2014"
+                  )}
                 </td>
                 <td className="py-1.5 pr-3 text-right text-amber-600">
-                  {yr.overflow > 0 ? formatCurrency(yr.overflow) : "\u2014"}
+                  {yr.overflow > 0 ? (
+                    hasAccounts ? (
+                      <Tooltip
+                        content={renderTooltip(overflowTooltip(yr))}
+                        side="top"
+                      >
+                        <span className="cursor-help border-b border-dotted border-current">
+                          {formatCurrency(yr.overflow)}
+                        </span>
+                      </Tooltip>
+                    ) : (
+                      formatCurrency(yr.overflow)
+                    )
+                  ) : (
+                    "\u2014"
+                  )}
                 </td>
                 <td className="py-1.5 pr-3 text-right text-emerald-600">
-                  {yr.growth !== 0 ? formatCurrency(yr.growth) : "\u2014"}
+                  {yr.growth !== 0 ? (
+                    hasAccounts ? (
+                      <Tooltip
+                        content={renderTooltip(growthTooltip(yr))}
+                        side="top"
+                      >
+                        <span className="cursor-help border-b border-dotted border-current">
+                          {formatCurrency(yr.growth)}
+                        </span>
+                      </Tooltip>
+                    ) : (
+                      formatCurrency(yr.growth)
+                    )
+                  ) : (
+                    "\u2014"
+                  )}
                 </td>
                 <td className="py-1.5 pr-3 text-right text-red-600">
-                  {yr.totalWithdrawal > 0
-                    ? `-${formatCurrency(yr.totalWithdrawal)}`
-                    : "\u2014"}
+                  {yr.totalWithdrawal > 0 ? (
+                    <Tooltip
+                      content={renderTooltip(withdrawalTooltip(yr))}
+                      side="top"
+                    >
+                      <span className="cursor-help border-b border-dotted border-current">
+                        -{formatCurrency(yr.totalWithdrawal)}
+                      </span>
+                    </Tooltip>
+                  ) : (
+                    "\u2014"
+                  )}
                 </td>
                 <td className="py-1.5 pr-3 text-right text-muted">
                   {yr.totalTaxCost > 0
@@ -607,7 +824,18 @@ function YearByYearTable({ years }: { years: BrokerageGoalYear[] }) {
                     : "\u2014"}
                 </td>
                 <td className="py-1.5 pr-3 text-right font-medium text-primary">
-                  {formatCurrency(yr.endBalance)}
+                  {hasAccounts ? (
+                    <Tooltip
+                      content={renderTooltip(balanceTooltip(yr, prevBalance))}
+                      side="top"
+                    >
+                      <span className="cursor-help border-b border-dotted border-current">
+                        {formatCurrency(yr.endBalance)}
+                      </span>
+                    </Tooltip>
+                  ) : (
+                    formatCurrency(yr.endBalance)
+                  )}
                 </td>
                 <td className="py-1.5 pr-3 text-right text-muted">
                   {formatCurrency(yr.endBasis)}

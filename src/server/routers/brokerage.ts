@@ -99,14 +99,32 @@ export const brokerageRouter = createTRPCRouter({
   // ══ SUMMARY (goals + API-resolved balances for brokerage page) ══
 
   computeSummary: protectedProcedure.query(async ({ ctx }) => {
-    const goals = await ctx.db
-      .select()
-      .from(schema.brokerageGoals)
-      .where(eq(schema.brokerageGoals.isActive, true))
-      .orderBy(
-        asc(schema.brokerageGoals.targetYear),
-        asc(schema.brokerageGoals.priority),
-      );
+    const [goals, budgetLinkRows] = await Promise.all([
+      ctx.db
+        .select()
+        .from(schema.brokerageGoals)
+        .where(eq(schema.brokerageGoals.isActive, true))
+        .orderBy(
+          asc(schema.brokerageGoals.targetYear),
+          asc(schema.brokerageGoals.priority),
+        ),
+      // Budget links: which contribution accounts have a linked budget item?
+      ctx.db
+        .select({
+          contributionAccountId: schema.budgetItems.contributionAccountId,
+          budgetItemName: schema.budgetItems.subcategory,
+          budgetCategory: schema.budgetItems.category,
+          accountType: schema.contributionAccounts.accountType,
+        })
+        .from(schema.budgetItems)
+        .innerJoin(
+          schema.contributionAccounts,
+          eq(
+            schema.budgetItems.contributionAccountId,
+            schema.contributionAccounts.id,
+          ),
+        ),
+    ]);
 
     // Resolve API balances for linked portfolio accounts
     const apiBalances: Array<{
@@ -192,6 +210,13 @@ export const brokerageRouter = createTRPCRouter({
         notes: g.notes,
       })),
       apiBalances,
+      budgetLinks: budgetLinkRows
+        .filter((r) => r.contributionAccountId != null)
+        .map((r) => ({
+          accountType: r.accountType,
+          budgetItemName: r.budgetItemName,
+          budgetCategory: r.budgetCategory,
+        })),
     };
   }),
 });
