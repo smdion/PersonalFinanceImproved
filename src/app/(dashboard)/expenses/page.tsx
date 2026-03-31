@@ -213,7 +213,9 @@ export default function ExpensesPage() {
     for (const g of groups) {
       if (YNAB_EXPENSE_EXCLUDED_GROUPS.has(g.name)) continue;
       for (const c of g.categories) {
-        const actual = Math.abs(c.activity);
+        // YNAB: negative activity = outflow (spending), positive = inflow (savings allocation).
+        // Only count outflows as actual spending.
+        const actual = c.activity < 0 ? Math.abs(c.activity) : 0;
         const linkedItem = itemMap.get(c.id);
         // Use API budgeted (same source as activity) for apples-to-apples comparison
         const budgetedMonthly = c.budgeted > 0 ? c.budgeted : 0;
