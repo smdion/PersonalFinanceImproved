@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.3] - 2026-03-31
+
+### Fixed
+
+- Expense page was counting YNAB savings allocations and reimbursements (positive activity) as spending — only outflows (negative activity) are now included in actual amounts
+
+---
+
 ## [0.4.2] - 2026-03-31
 
 ### Fixed
