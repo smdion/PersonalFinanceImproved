@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.2] - 2026-03-31
+
+### Fixed
+
+- Post-retirement contributions for Portfolio-category accounts now appear in the brokerage page Year-by-Year table — values are computed for display without inflating retirement engine balances
+- Clarified parentCategory as the controlling boundary for retirement vs portfolio routing (not account type)
+
+---
+
 ## [0.4.1] - 2026-03-30
 
 ### Fixed
