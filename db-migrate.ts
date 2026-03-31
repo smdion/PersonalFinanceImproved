@@ -180,21 +180,29 @@ async function handleSquashUpgrade(
       tables,
     };
 
-    const backupDir = fs.existsSync("/app/data") ? "/app/data" : ".";
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const backupPath = path.join(
-      backupDir,
-      `pre-upgrade-backup-${timestamp}.json`,
-    );
-    fs.writeFileSync(backupPath, JSON.stringify(backup));
-    log("info", "pre_migration_backup_complete", {
-      path: backupPath,
-      tableCount: Object.keys(tables).length,
-      totalRows: Object.values(tables).reduce(
-        (sum, rows) => sum + rows.length,
-        0,
-      ),
-    });
+    let backupPath: string | null = null;
+    try {
+      const backupDir = fs.existsSync("/app/data") ? "/app/data" : ".";
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      backupPath = path.join(backupDir, `pre-upgrade-backup-${timestamp}.json`);
+      fs.writeFileSync(backupPath, JSON.stringify(backup));
+      log("info", "pre_migration_backup_complete", {
+        path: backupPath,
+        tableCount: Object.keys(tables).length,
+        totalRows: Object.values(tables).reduce(
+          (sum, rows) => sum + rows.length,
+          0,
+        ),
+      });
+    } catch (backupErr) {
+      // Non-fatal: read-only filesystem or other write failure.
+      // The squash upgrade must still proceed to fix the migration journal.
+      log("warn", "pre_migration_backup_write_failed", {
+        error:
+          backupErr instanceof Error ? backupErr.message : String(backupErr),
+      });
+      backupPath = null;
+    }
 
     // 2. Clear old migration journal
     await client.query("DELETE FROM __drizzle_migrations");
@@ -510,21 +518,26 @@ function handleSQLiteSquashUpgrade(
     tables,
   };
 
-  const backupDir = fs.existsSync("/app/data") ? "/app/data" : ".";
-  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const backupPath = path.join(
-    backupDir,
-    `pre-upgrade-backup-${timestamp}.json`,
-  );
-  fs.writeFileSync(backupPath, JSON.stringify(backup));
-  log("info", "pre_migration_backup_complete", {
-    path: backupPath,
-    tableCount: Object.keys(tables).length,
-    totalRows: Object.values(tables).reduce(
-      (sum, rows) => sum + rows.length,
-      0,
-    ),
-  });
+  let backupPath: string | null = null;
+  try {
+    const backupDir = fs.existsSync("/app/data") ? "/app/data" : ".";
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    backupPath = path.join(backupDir, `pre-upgrade-backup-${timestamp}.json`);
+    fs.writeFileSync(backupPath, JSON.stringify(backup));
+    log("info", "pre_migration_backup_complete", {
+      path: backupPath,
+      tableCount: Object.keys(tables).length,
+      totalRows: Object.values(tables).reduce(
+        (sum, rows) => sum + rows.length,
+        0,
+      ),
+    });
+  } catch (backupErr) {
+    log("warn", "pre_migration_backup_write_failed", {
+      error: backupErr instanceof Error ? backupErr.message : String(backupErr),
+    });
+    backupPath = null;
+  }
 
   // 2. Clear old journal
   sqlite.prepare("DELETE FROM __drizzle_migrations").run();
