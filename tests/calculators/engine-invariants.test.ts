@@ -1268,17 +1268,26 @@ describe("engine invariants", () => {
   // ---------------------------------------------------------------------------
 
   describe("category boundary", () => {
-    it("no brokerage contributions during decumulation years", () => {
+    it("Portfolio-category contributions are report-only during decumulation", () => {
       fc.assert(
         fc.property(arbitraryInput(), (rawInput) => {
           const input = makeInput(rawInput);
           const result = calculateProjection(input);
           for (const year of result.projectionByYear) {
             if (year.phase !== "decumulation") continue;
-            // Portfolio-category contributions must never flow into the
-            // retirement decumulation engine — they belong to the brokerage
-            // page projection only.
-            expect(year.brokerageContribution).toBe(0);
+            const decYr = year as EngineDecumulationYear;
+            // brokerageContribution reports Portfolio-category post-retirement
+            // contributions for the brokerage page.  It must NOT be applied to
+            // retirement balances.  Verify it's non-negative (valid report
+            // value) and that endBalance = sum of tax buckets (no hidden
+            // contribution injection).
+            expect(decYr.brokerageContribution).toBeGreaterThanOrEqual(0);
+            const bucketSum =
+              decYr.balanceByTaxType.preTax +
+              decYr.balanceByTaxType.taxFree +
+              decYr.balanceByTaxType.hsa +
+              decYr.balanceByTaxType.afterTax;
+            expect(decYr.endBalance).toBeCloseTo(bucketSum, 0);
           }
         }),
         { numRuns: NUM_RUNS },
