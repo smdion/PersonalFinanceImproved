@@ -40,6 +40,7 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "other_asset_items", tier: 0 },
   { name: "historical_notes", tier: 0 },
   { name: "relocation_scenarios", tier: 0 },
+  { name: "mc_user_presets", tier: 0 },
 
   // Tier 1 — depends on tier 0
   { name: "jobs", tier: 1 },

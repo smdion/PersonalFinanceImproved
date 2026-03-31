@@ -1,1 +1,0 @@
-ALTER TABLE `performance_accounts` ADD `cost_basis` text DEFAULT '0' NOT NULL;

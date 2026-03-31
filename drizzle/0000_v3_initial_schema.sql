@@ -295,6 +295,18 @@ CREATE TABLE "mc_presets" (
 	CONSTRAINT "mc_presets_key_unique" UNIQUE("key")
 );
 --> statement-breakpoint
+CREATE TABLE "mc_user_presets" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"name" text NOT NULL,
+	"simulations" integer DEFAULT 1000 NOT NULL,
+	"return_mean" numeric(12, 6) NOT NULL,
+	"return_std_dev" numeric(12, 6) NOT NULL,
+	"inflation_mean" numeric(12, 6) NOT NULL,
+	"inflation_std_dev" numeric(12, 6) NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "mortgage_extra_payments" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"loan_id" integer NOT NULL,
@@ -399,6 +411,9 @@ CREATE TABLE "performance_accounts" (
 	"display_name" text,
 	"owner_person_id" integer,
 	"ownership_type" text NOT NULL,
+	"retirement_behavior" text DEFAULT 'stops_at_owner_retirement' NOT NULL,
+	"contribution_scaling" text DEFAULT 'scales_with_salary' NOT NULL,
+	"cost_basis" numeric(12, 2) DEFAULT '0' NOT NULL,
 	"parent_category" text NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"display_order" integer DEFAULT 0 NOT NULL,
@@ -428,6 +443,14 @@ CREATE TABLE "portfolio_snapshots" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"notes" text,
 	CONSTRAINT "portfolio_snapshots_snapshot_date_unique" UNIQUE("snapshot_date")
+);
+--> statement-breakpoint
+CREATE TABLE "projection_overrides" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"override_type" text NOT NULL,
+	"overrides" jsonb NOT NULL,
+	"created_by" text,
+	"updated_by" text
 );
 --> statement-breakpoint
 CREATE TABLE "property_taxes" (
@@ -724,6 +747,7 @@ CREATE INDEX "portfolio_accounts_acct_type_idx" ON "portfolio_accounts" USING bt
 CREATE INDEX "portfolio_accounts_parent_cat_idx" ON "portfolio_accounts" USING btree ("parent_category");--> statement-breakpoint
 CREATE INDEX "portfolio_accounts_is_active_idx" ON "portfolio_accounts" USING btree ("is_active");--> statement-breakpoint
 CREATE INDEX "portfolio_snapshots_date_idx" ON "portfolio_snapshots" USING btree ("snapshot_date");--> statement-breakpoint
+CREATE UNIQUE INDEX "projection_overrides_type_idx" ON "projection_overrides" USING btree ("override_type");--> statement-breakpoint
 CREATE UNIQUE INDEX "property_taxes_loan_year_idx" ON "property_taxes" USING btree ("loan_id","year");--> statement-breakpoint
 CREATE UNIQUE INDEX "retirement_budget_overrides_person_year_idx" ON "retirement_budget_overrides" USING btree ("person_id","projection_year");--> statement-breakpoint
 CREATE INDEX "retirement_budget_overrides_person_id_idx" ON "retirement_budget_overrides" USING btree ("person_id");--> statement-breakpoint

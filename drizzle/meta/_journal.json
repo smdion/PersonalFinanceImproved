@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1774319331526,
-      "tag": "0000_v2_initial_schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1774750800000,
-      "tag": "0001_add_parent_goal_fk",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1774750800001,
-      "tag": "0002_add_parent_goal_id_index",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1774825569462,
-      "tag": "0003_flaky_betty_brant",
+      "when": 1774916519167,
+      "tag": "0000_v3_initial_schema",
       "breakpoints": true
     }
   ]

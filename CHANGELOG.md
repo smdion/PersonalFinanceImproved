@@ -6,6 +6,107 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+# v0.4
+
+## [0.4.0] - 2026-03-30
+
+> What changed since v0.3.0. For patch-level detail, see the v0.3.x entries below.
+
+### Upgrading from v0.3.x (or earlier)
+
+**Docker users:** Pull the new image and restart — data migrates automatically. A pre-upgrade backup is saved to `/data/pre-upgrade-backup-{timestamp}.json`.
+**Self-hosted:** Run `pnpm db:migrate`. Your data is preserved.
+**Restoring old backups:** v0.1.x, v0.2.x, and v0.3.x backup files all import seamlessly — they are auto-transformed to the current schema.
+
+All v0.3.x migrations have been squashed into a single initial schema. The migration runner detects the squash automatically and handles the transition.
+
+### Per-Person Retirement Engine
+
+- **Staggered retirement ages** — each spouse can retire at a different age; the still-working spouse continues contributing while the retired spouse stops
+- **Per-person Social Security** — each spouse's SS kicks in at their own claiming age with per-person breakdown in tooltips
+- **Per-person RMDs** — computed from each spouse's birth year and individual Traditional account balances, following SECURE 2.0 rules
+- **Per-person IRMAA** — Medicare surcharge correctly applies to each spouse independently when both are 65+
+- RMD-based spending strategy now uses the primary person's actual age for the IRS factor lookup instead of the household average
+- Timeline shows "Household Retirement" based on when the last person retires instead of a misleading average
+
+### Brokerage Page Redesign
+
+- **Single-page layout** — Goals section collapsed inline, "Planned Events" replaces separate Transactions tab
+- **Detailed tooltips** on all Year-by-Year columns (contribution breakdown, growth, withdrawal tax cost, balance change)
+- **Today's $ / Future $ toggle** with inflation-adjusted deflation
+- **Budget linking badge** showing which budget item funds each brokerage account
+- **YNAB account linking** — link brokerage accounts to YNAB tracking accounts; linked accounts use YNAB as the balance source of truth
+- Portfolio snapshot import automatically pulls YNAB balances for linked accounts
+
+### Post-Retirement Brokerage & Contribution Controls
+
+- **Per-account "After retirement" setting** — stop contributions, continue until last person retires, or continue indefinitely
+- **Per-account contribution scaling** — scales with salary (default) or fixed amount; prevents fixed-dollar contributions from dropping during staggered retirement
+- Post-retirement brokerage contributions grow with limit growth rate (inflation) instead of staying flat
+
+### Cost Basis Tracking
+
+- **Per-account cost basis** on the Performance page Brokerage tab — editable field with computed unrealized gain column
+
+### Override System
+
+- **Wizard-style "Add Override" flow** — pick year, pick what to change, fill 1-3 fields; replaces three dense forms
+- **Database persistence** — projection overrides (withdrawal rate, routing mode, account caps, Roth conversion targets, lump sums) survive page refresh
+- **Lump sums target specific accounts** with shared form and badge components used by both retirement and brokerage pages
+- Lump sums appear in the retirement projection table with In/Out column, contribution columns, and balance tooltips
+- Override badges show type context ("Contribution" when from a profile, "Salary" when custom)
+- Strategy-aware context banners explain how the active spending strategy interacts with withdrawal routing and overrides
+
+### Portfolio Enhancements
+
+- **Quick Look stats panel** — all-time high, distance from ATH, YTD and 52-week change, biggest gain/loss, current streak, volatility, and all-time growth
+- **Change % column** in Snapshot History with color-coded positive/negative values and gap-since-last-snapshot context
+- Snapshot History sorting now works across all data, not just the current page
+
+### UI/UX
+
+- Restructured retirement page: spending strategy, budget, and withdrawal rate grouped in a "Decumulation Plan" section
+- Withdrawal Routing redesigned with compact collapsed view and sunken expanded panel
+- Budget and withdrawal rate controls visually dimmed when the selected strategy doesn't use them
+- Fixed 148 instances of missing spacing between variables and text across the app
+- Softer, theme-aware card borders in both light and dark mode
+- Upgraded to Next.js 16 with Turbopack for faster development builds
+- "Recently Retired" demo profile with realistic account mix (401k, 403b, IRA, Roth, brokerage)
+
+### Security & CI
+
+- Hardened admin test runner against shell injection
+- Health detail endpoint no longer reveals whether authentication is configured
+- All CI checks now block merges — dependency audit, migration check, and docs freshness were previously advisory-only
+- Hardened CI pipeline against supply chain attacks (pinned all dependencies to exact versions)
+- Keyboard skip-to-content, focus trapping in dialogs, and screen reader error announcements
+- Tightened Content Security Policy with Cross-Origin isolation headers
+- Container runs with read-only filesystem, no Linux capabilities, and owner-only file permissions
+- Docker image uses pinned, reproducible base image with canary deploy pattern
+
+### Self-Hosting & Operations
+
+- All v0.3.x migrations squashed into a single clean schema — new installs get one migration instead of seven
+- Pre-upgrade auto-backup handles v0.1.x, v0.2.x, and v0.3.x databases
+- Cross-version backup import supports all previous schema versions with auto-transforms
+- SQLite squash upgrade support (same seamless upgrade path as PostgreSQL)
+
+### Testing
+
+- 2,750+ tests (up from 2,300+) covering budget API integrations, financial calculations, database compatibility, and backup round-trips
+- Automated tax parameter staleness check in CI
+
+### Bug Fixes
+
+- First-year pro-rating now excludes the current month after mid-month
+- Expense chart and table showed incorrect actual spending amounts (double unit conversion)
+- Year-over-year comparison no longer shows $0 for the prior year
+- Credit card payment transfers no longer appear as spending
+- Corrected 5 incorrect 2025 IRS contribution limits that were using 2026 values
+- Fixed Docker build failure on Node.js 25
+
+---
+
 # v0.3
 
 ## [0.3.28] - 2026-03-30

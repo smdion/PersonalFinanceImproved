@@ -5,43 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1774319523547,
-      "tag": "0000_v2_initial_schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1742774400000,
-      "tag": "0001_add_mc_user_presets",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1774825576914,
-      "tag": "0002_watery_dazzler",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1774825577000,
-      "tag": "0003_cynical_taskmaster",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1774825578000,
-      "tag": "0004_rapid_juggernaut",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1774825579000,
-      "tag": "0005_chemical_sage",
+      "when": 1774916660323,
+      "tag": "0000_v3_initial_schema",
       "breakpoints": true
     }
   ]

@@ -4,7 +4,7 @@ import {
   KNOWN_SCHEMA_VERSIONS,
 } from "@/lib/db/backup-transforms";
 
-const CURRENT_VERSION = "0000_v2_initial_schema"; // v0.2.0 squashed
+const CURRENT_VERSION = "0000_v3_initial_schema"; // v0.4.0 squashed
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -362,15 +362,20 @@ describe("KNOWN_SCHEMA_VERSIONS completeness", () => {
     }
   });
 
-  it("known versions list contains the expected v0.1.x tags", () => {
-    // PG tags
+  it("known versions list contains the expected tags", () => {
+    // v0.1.x PG tags
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0000_initial_schema");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0008_prior_year_contrib");
-    // SQLite tags
+    // v0.1.x SQLite tags
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0003_reflective_stardust");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0004_prior_year_contrib");
-    // 9 PG + 4 SQLite-specific
-    expect(KNOWN_SCHEMA_VERSIONS.length).toBe(13);
+    // v0.2.x/v0.3.x tags
+    expect(KNOWN_SCHEMA_VERSIONS).toContain("0000_v2_initial_schema");
+    expect(KNOWN_SCHEMA_VERSIONS).toContain("0006_light_lady_deathstrike");
+    // Synthetic tags
+    expect(KNOWN_SCHEMA_VERSIONS).toContain("v0.2_final");
+    expect(KNOWN_SCHEMA_VERSIONS).toContain("v0.3_final");
+    expect(KNOWN_SCHEMA_VERSIONS.length).toBe(27);
   });
 
   it("SQLite tags transform correctly (same as PG equivalents)", () => {
@@ -427,7 +432,9 @@ describe("edge cases", () => {
       CURRENT_VERSION,
     );
     expect(result.transformed).toBe(true);
-    expect(Object.keys(result.tables)).toHaveLength(0);
+    // v0.4 transform adds missing tables as empty arrays
+    expect(result.tables["projection_overrides"]).toEqual([]);
+    expect(result.tables["mc_user_presets"]).toEqual([]);
   });
 
   it("handles tables with empty arrays", () => {

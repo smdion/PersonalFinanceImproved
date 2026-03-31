@@ -1,1 +1,0 @@
-ALTER TABLE `performance_accounts` ADD `retirement_behavior` text DEFAULT 'stops_at_owner_retirement' NOT NULL;
