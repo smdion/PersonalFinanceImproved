@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.1] - 2026-03-30
+
+### Fixed
+
+- Portfolio-category (brokerage) contributions no longer inflate retirement projection balances — post-retirement brokerage contributions are modeled on the brokerage page only, restoring correct Monte Carlo success rates
+- Added engine invariant test enforcing category boundary: no brokerage contributions during decumulation years
+
+---
+
 ## [0.4.0] - 2026-03-30
 
 > What changed since v0.3.0. For patch-level detail, see the v0.3.x entries below.

@@ -2135,7 +2135,7 @@ exports[`engine snapshot parity > fixture 44: Brokerage ramp contribution across
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 47323780.43,
+    "endBalance": 39930601.75,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2144,11 +2144,11 @@ exports[`engine snapshot parity > fixture 44: Brokerage ramp contribution across
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 60,
-    "endBalance": 8484464.14,
+    "endBalance": 8420264.14,
     "projectedExpenses": 151024.87,
     "totalWithdrawal": 184250.34,
   },
-  "sustainableWithdrawal": 339378.57,
+  "sustainableWithdrawal": 336810.57,
   "totalYears": 60,
   "warningCount": 0,
   "year0": {

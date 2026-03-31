@@ -1262,4 +1262,27 @@ describe("engine invariants", () => {
       );
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // 30. Category boundary: retirement vs portfolio
+  // ---------------------------------------------------------------------------
+
+  describe("category boundary", () => {
+    it("no brokerage contributions during decumulation years", () => {
+      fc.assert(
+        fc.property(arbitraryInput(), (rawInput) => {
+          const input = makeInput(rawInput);
+          const result = calculateProjection(input);
+          for (const year of result.projectionByYear) {
+            if (year.phase !== "decumulation") continue;
+            // Portfolio-category contributions must never flow into the
+            // retirement decumulation engine — they belong to the brokerage
+            // page projection only.
+            expect(year.brokerageContribution).toBe(0);
+          }
+        }),
+        { numRuns: NUM_RUNS },
+      );
+    });
+  });
 });
