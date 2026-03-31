@@ -1,5 +1,5 @@
 {
-  "id": "63e0797a-a2ad-4656-9ecb-22be5e028fbe",
+  "id": "34253d35-7ac6-4527-b55b-d4a238b5b3d3",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -2482,6 +2482,76 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.mc_user_presets": {
+      "name": "mc_user_presets",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "simulations": {
+          "name": "simulations",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1000
+        },
+        "return_mean": {
+          "name": "return_mean",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "return_std_dev": {
+          "name": "return_std_dev",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "inflation_mean": {
+          "name": "inflation_mean",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "inflation_std_dev": {
+          "name": "inflation_std_dev",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.mortgage_extra_payments": {
       "name": "mortgage_extra_payments",
       "schema": "",
@@ -3210,6 +3280,27 @@
           "primaryKey": false,
           "notNull": true
         },
+        "retirement_behavior": {
+          "name": "retirement_behavior",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'stops_at_owner_retirement'"
+        },
+        "contribution_scaling": {
+          "name": "contribution_scaling",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'scales_with_salary'"
+        },
+        "cost_basis": {
+          "name": "cost_basis",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
         "parent_category": {
           "name": "parent_category",
           "type": "text",
@@ -3634,6 +3725,65 @@
           "columns": ["snapshot_date"]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.projection_overrides": {
+      "name": "projection_overrides",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "override_type": {
+          "name": "override_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "overrides": {
+          "name": "overrides",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "projection_overrides_type_idx": {
+          "name": "projection_overrides_type_idx",
+          "columns": [
+            {
+              "expression": "override_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

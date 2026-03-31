@@ -344,6 +344,18 @@ CREATE TABLE `mc_presets` (
 --> statement-breakpoint
 CREATE UNIQUE INDEX `mc_presets_key_unique` ON `mc_presets` (`key`);--> statement-breakpoint
 CREATE INDEX `mc_presets_is_active_idx` ON `mc_presets` (`is_active`);--> statement-breakpoint
+CREATE TABLE `mc_user_presets` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`name` text NOT NULL,
+	`simulations` integer DEFAULT 1000 NOT NULL,
+	`return_mean` text NOT NULL,
+	`return_std_dev` text NOT NULL,
+	`inflation_mean` text NOT NULL,
+	`inflation_std_dev` text NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE `mortgage_extra_payments` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`loan_id` integer NOT NULL,
@@ -456,6 +468,9 @@ CREATE TABLE `performance_accounts` (
 	`display_name` text,
 	`owner_person_id` integer,
 	`ownership_type` text NOT NULL,
+	`retirement_behavior` text DEFAULT 'stops_at_owner_retirement' NOT NULL,
+	`contribution_scaling` text DEFAULT 'scales_with_salary' NOT NULL,
+	`cost_basis` text DEFAULT '0' NOT NULL,
 	`parent_category` text NOT NULL,
 	`is_active` integer DEFAULT true NOT NULL,
 	`display_order` integer DEFAULT 0 NOT NULL,
@@ -503,6 +518,15 @@ CREATE TABLE `portfolio_snapshots` (
 --> statement-breakpoint
 CREATE UNIQUE INDEX `portfolio_snapshots_snapshot_date_unique` ON `portfolio_snapshots` (`snapshot_date`);--> statement-breakpoint
 CREATE INDEX `portfolio_snapshots_date_idx` ON `portfolio_snapshots` (`snapshot_date`);--> statement-breakpoint
+CREATE TABLE `projection_overrides` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`override_type` text NOT NULL,
+	`overrides` text NOT NULL,
+	`created_by` text,
+	`updated_by` text
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `projection_overrides_type_idx` ON `projection_overrides` (`override_type`);--> statement-breakpoint
 CREATE TABLE `property_taxes` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`loan_id` integer NOT NULL,

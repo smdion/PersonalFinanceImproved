@@ -12,7 +12,7 @@
 import { log } from "@/lib/logger";
 
 // ---------------------------------------------------------------------------
-// Known schema versions from v0.1.x
+// Known schema versions
 // ---------------------------------------------------------------------------
 
 /** All schema version tags that we know how to import from. */
@@ -32,6 +32,23 @@ export const KNOWN_SCHEMA_VERSIONS = [
   "0002_add_rollovers_column", // SQLite 0002 = PG 0003
   "0003_reflective_stardust", // SQLite 0003 = PG 0004-0007 combined
   "0004_prior_year_contrib", // SQLite 0004 = PG 0008
+  // v0.2.x series — squashed schema (single migration) + incremental
+  "0000_v2_initial_schema",
+  "0001_add_parent_goal_fk",
+  "0002_add_parent_goal_id_index",
+  "0003_flaky_betty_brant",
+  "0004_tired_magik",
+  "0005_bizarre_sprite",
+  "0006_light_lady_deathstrike",
+  // v0.2.x SQLite tags
+  "0001_add_mc_user_presets",
+  "0002_watery_dazzler",
+  "0003_cynical_taskmaster",
+  "0004_rapid_juggernaut",
+  "0005_chemical_sage",
+  // Synthetic tags used by pre-upgrade backup (db-migrate.ts schema probing)
+  "v0.2_final",
+  "v0.3_final",
 ] as const;
 
 export type KnownSchemaVersion = (typeof KNOWN_SCHEMA_VERSIONS)[number];
@@ -111,7 +128,7 @@ function renameValue(
 // ---------------------------------------------------------------------------
 
 /** PG tags in canonical order — used for cumulative "at least version X" checks. */
-const PG_TAGS = KNOWN_SCHEMA_VERSIONS.slice(0, 9); // First 9 entries are PG
+const PG_TAGS = KNOWN_SCHEMA_VERSIONS.slice(0, 9); // First 9 entries are v0.1.x PG
 const VERSION_ORDER: Map<string, number> = new Map(
   PG_TAGS.map((tag, index) => [tag, index]),
 );
@@ -120,6 +137,51 @@ const VERSION_ORDER: Map<string, number> = new Map(
 function versionIndex(tag: string): number {
   const normalized = SQLITE_TO_PG_TAG[tag] ?? tag;
   return VERSION_ORDER.get(normalized) ?? -1;
+}
+
+// ---------------------------------------------------------------------------
+// Schema era classification
+// ---------------------------------------------------------------------------
+
+/** Returns "v0.1" | "v0.2" | "v0.3" based on the schema version tag. */
+function schemaEra(tag: string): "v0.1" | "v0.2" | "v0.3" {
+  if (tag === "v0.3_final") return "v0.3";
+  if (tag === "v0.2_final") return "v0.2";
+
+  // v0.2.x PG tags
+  const v02PgTags = new Set([
+    "0000_v2_initial_schema",
+    "0001_add_parent_goal_fk",
+    "0002_add_parent_goal_id_index",
+    "0003_flaky_betty_brant",
+  ]);
+  if (v02PgTags.has(tag)) return "v0.2";
+
+  // v0.3.x PG tags (added retirement_behavior, contribution_scaling, cost_basis)
+  const v03PgTags = new Set([
+    "0004_tired_magik",
+    "0005_bizarre_sprite",
+    "0006_light_lady_deathstrike",
+  ]);
+  if (v03PgTags.has(tag)) return "v0.3";
+
+  // v0.2.x SQLite tags
+  const v02SqliteTags = new Set([
+    "0001_add_mc_user_presets",
+    "0002_watery_dazzler",
+  ]);
+  if (v02SqliteTags.has(tag)) return "v0.2";
+
+  // v0.3.x SQLite tags
+  const v03SqliteTags = new Set([
+    "0003_cynical_taskmaster",
+    "0004_rapid_juggernaut",
+    "0005_chemical_sage",
+  ]);
+  if (v03SqliteTags.has(tag)) return "v0.3";
+
+  // Everything else is v0.1.x
+  return "v0.1";
 }
 
 // ---------------------------------------------------------------------------
@@ -222,6 +284,51 @@ function transformV01xToV020(
 }
 
 // ---------------------------------------------------------------------------
+// The v0.2.x / v0.3.x → v0.4.0 transformer
+// ---------------------------------------------------------------------------
+
+/**
+ * Transform a v0.2.x or v0.3.x backup to match the v0.4.0 (current) schema.
+ *
+ * v0.3.x added these on top of v0.2.0:
+ *  - `retirement_behavior` on performance_accounts (default "stops_at_owner_retirement")
+ *  - `contribution_scaling` on performance_accounts (default "scales_with_salary")
+ *  - `cost_basis` on performance_accounts (default "0")
+ *  - `projection_overrides` table (new)
+ *  - `mc_user_presets` table (new)
+ *
+ * A v0.2.x backup is missing all five. A v0.3.x backup may have some or all
+ * depending on which patch it came from. We use addColumnDefault which is
+ * idempotent (only adds if the column is missing).
+ */
+function transformV02xV03xToV040(tables: TableData): TableData {
+  // performance_accounts columns added in v0.3.x
+  addColumnDefault(
+    tables,
+    "performance_accounts",
+    "retirement_behavior",
+    "stops_at_owner_retirement",
+  );
+  addColumnDefault(
+    tables,
+    "performance_accounts",
+    "contribution_scaling",
+    "scales_with_salary",
+  );
+  addColumnDefault(tables, "performance_accounts", "cost_basis", "0");
+
+  // New tables — ensure they exist as empty arrays if missing
+  if (!tables["projection_overrides"]) {
+    tables["projection_overrides"] = [];
+  }
+  if (!tables["mc_user_presets"]) {
+    tables["mc_user_presets"] = [];
+  }
+
+  return tables;
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -269,16 +376,25 @@ export function transformBackupToCurrentSchema(
     cloned[key] = rows.map((row) => ({ ...(row as Record<string, unknown>) }));
   }
 
-  const transformed = transformV01xToV020(cloned, schemaVersion);
+  const era = schemaEra(schemaVersion);
+
+  // v0.1.x → apply v0.1 → v0.2 transforms first, then v0.2/v0.3 → v0.4
+  if (era === "v0.1") {
+    transformV01xToV020(cloned, schemaVersion);
+  }
+
+  // v0.1.x and v0.2.x both need the v0.2/v0.3 → v0.4 transforms
+  // v0.3.x also needs it (idempotent — fills in any missing columns)
+  transformV02xV03xToV040(cloned);
 
   log("info", "backup_transform_complete", {
     from: schemaVersion,
     to: currentVersion,
-    tableCount: Object.keys(transformed).length,
+    tableCount: Object.keys(cloned).length,
   });
 
   return {
-    tables: transformed,
+    tables: cloned,
     transformed: true,
     sourceVersion: schemaVersion,
   };
