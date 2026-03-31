@@ -150,11 +150,34 @@ async function handleSquashUpgrade(
     );
     const journalCount = journal.entries?.length ?? 0;
 
+    // Squash detection: appliedCount > journalCount means a squash occurred.
+    // Recovery: appliedCount == 0 with existing tables means a previous squash
+    // attempt cleared the journal but failed before recording the new hash.
+    let isPartialRecovery = false;
     if (appliedCount <= journalCount) {
-      return { backupPath: null, schemaVersion: null, wasSquash: false };
+      if (appliedCount === 0) {
+        // Check if any application tables exist (partial squash recovery)
+        const { rows: tableProbe } = await client.query(
+          `SELECT EXISTS (
+            SELECT 1 FROM information_schema.tables
+            WHERE table_name = 'people'
+          ) AS exists`,
+        );
+        if (tableProbe[0]?.exists) {
+          isPartialRecovery = true;
+          log("info", "partial_squash_recovery_detected", {
+            reason:
+              "Migration journal empty but application tables exist — recovering from failed squash",
+          });
+        } else {
+          return { backupPath: null, schemaVersion: null, wasSquash: false };
+        }
+      } else {
+        return { backupPath: null, schemaVersion: null, wasSquash: false };
+      }
     }
 
-    // --- Squash detected ---
+    // --- Squash detected (or partial recovery) ---
     const schemaVersion = await detectSchemaEra(client);
     log("info", "squash_upgrade_start", {
       appliedMigrations: appliedCount,
@@ -162,51 +185,56 @@ async function handleSquashUpgrade(
       schemaVersion,
     });
 
-    // 1. Export all versioned tables as backup
-    const tables: Record<string, unknown[]> = {};
-    for (const tableName of VERSION_TABLE_NAMES) {
-      try {
-        const { rows } = await client.query(`SELECT * FROM "${tableName}"`);
-        tables[tableName] = rows;
-      } catch {
-        tables[tableName] = [];
-      }
-    }
-
-    const backup = {
-      schemaVersion,
-      exportedAt: new Date().toISOString(),
-      preUpgradeBackup: true,
-      tables,
-    };
-
+    // 1. Export backup + clear journal (skip for partial recovery — already empty)
     let backupPath: string | null = null;
-    try {
-      const backupDir = fs.existsSync("/app/data") ? "/app/data" : ".";
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      backupPath = path.join(backupDir, `pre-upgrade-backup-${timestamp}.json`);
-      fs.writeFileSync(backupPath, JSON.stringify(backup));
-      log("info", "pre_migration_backup_complete", {
-        path: backupPath,
-        tableCount: Object.keys(tables).length,
-        totalRows: Object.values(tables).reduce(
-          (sum, rows) => sum + rows.length,
-          0,
-        ),
-      });
-    } catch (backupErr) {
-      // Non-fatal: read-only filesystem or other write failure.
-      // The squash upgrade must still proceed to fix the migration journal.
-      log("warn", "pre_migration_backup_write_failed", {
-        error:
-          backupErr instanceof Error ? backupErr.message : String(backupErr),
-      });
-      backupPath = null;
-    }
+    if (!isPartialRecovery) {
+      const tables: Record<string, unknown[]> = {};
+      for (const tableName of VERSION_TABLE_NAMES) {
+        try {
+          const { rows } = await client.query(`SELECT * FROM "${tableName}"`);
+          tables[tableName] = rows;
+        } catch {
+          tables[tableName] = [];
+        }
+      }
 
-    // 2. Clear old migration journal
-    await client.query("DELETE FROM __drizzle_migrations");
-    log("info", "migration_journal_cleared", { removedEntries: appliedCount });
+      const backup = {
+        schemaVersion,
+        exportedAt: new Date().toISOString(),
+        preUpgradeBackup: true,
+        tables,
+      };
+
+      try {
+        const backupDir = fs.existsSync("/app/data") ? "/app/data" : ".";
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        backupPath = path.join(
+          backupDir,
+          `pre-upgrade-backup-${timestamp}.json`,
+        );
+        fs.writeFileSync(backupPath, JSON.stringify(backup));
+        log("info", "pre_migration_backup_complete", {
+          path: backupPath,
+          tableCount: Object.keys(tables).length,
+          totalRows: Object.values(tables).reduce(
+            (sum, rows) => sum + rows.length,
+            0,
+          ),
+        });
+      } catch (backupErr) {
+        log("warn", "pre_migration_backup_write_failed", {
+          error:
+            backupErr instanceof Error ? backupErr.message : String(backupErr),
+        });
+        backupPath = null;
+      }
+
+      // 2. Clear old migration journal
+      await client.query("DELETE FROM __drizzle_migrations");
+      log("info", "migration_journal_cleared", {
+        removedEntries: appliedCount,
+      });
+    }
 
     // 3. Apply each new journal migration idempotently and record its hash
     const crypto = await import("crypto");
