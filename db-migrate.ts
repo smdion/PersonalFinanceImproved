@@ -130,18 +130,19 @@ async function handleSquashUpgrade(
 ): Promise<SquashResult> {
   const client = await pool.connect();
   try {
-    // Check if __drizzle_migrations table exists
+    // Drizzle ORM stores migrations in the "drizzle" schema.
+    // Check if drizzle.__drizzle_migrations table exists.
     const { rows: tableCheck } = await client.query(
       `SELECT EXISTS (
         SELECT 1 FROM information_schema.tables
-        WHERE table_name = '__drizzle_migrations'
+        WHERE table_schema = 'drizzle' AND table_name = '__drizzle_migrations'
       ) AS exists`,
     );
     if (!tableCheck[0]?.exists)
       return { backupPath: null, schemaVersion: null, wasSquash: false };
 
     const { rows: migrationRows } = await client.query(
-      "SELECT count(*)::int AS count FROM __drizzle_migrations",
+      "SELECT count(*)::int AS count FROM drizzle.__drizzle_migrations",
     );
     const appliedCount = migrationRows[0]?.count ?? 0;
 
@@ -230,7 +231,7 @@ async function handleSquashUpgrade(
       }
 
       // 2. Clear old migration journal
-      await client.query("DELETE FROM __drizzle_migrations");
+      await client.query("DELETE FROM drizzle.__drizzle_migrations");
       log("info", "migration_journal_cleared", {
         removedEntries: appliedCount,
       });
@@ -273,7 +274,7 @@ async function handleSquashUpgrade(
           }
         }
         await client.query(
-          "INSERT INTO __drizzle_migrations (hash, created_at) VALUES ($1, $2)",
+          "INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)",
           [hash, String(Date.now())],
         );
         await client.query("COMMIT");
@@ -375,7 +376,7 @@ async function runPostgres() {
     const client = await pool.connect();
     try {
       const { rows: recorded } = await client.query(
-        "SELECT hash FROM __drizzle_migrations",
+        "SELECT hash FROM drizzle.__drizzle_migrations",
       );
       const recordedHashes = new Set(
         recorded.map((r: { hash: string }) => r.hash),
@@ -414,7 +415,7 @@ async function runPostgres() {
             }
           }
           await client.query(
-            "INSERT INTO __drizzle_migrations (hash, created_at) VALUES ($1, $2)",
+            "INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)",
             [hash, String(Date.now())],
           );
           await client.query("COMMIT");
