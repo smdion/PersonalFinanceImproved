@@ -8,14 +8,15 @@ import { MethodologyContent } from "@/components/methodology-content";
 import { AccumulationMethodologyContent } from "@/components/accumulation-methodology-content";
 import { DecumulationMethodologyContent } from "@/components/decumulation-methodology-content";
 import { ValidationContent } from "@/components/validation-content";
-import { formatCurrency } from "@/lib/utils/format";
+// formatCurrency import removed — no longer used inline
 import { SimulationAssumptions } from "@/components/cards/mc-simulation-assumptions";
 import { DecumulationConfig } from "./decumulation-config";
 import { OverridesPanelV2 as OverridesPanel } from "./overrides-panel-v2";
 import { ProjectionTable } from "./projection-table";
 import { ProjectionHeroKpis } from "./projection-hero-kpis";
 import { ProjectionChart, ProjectionChartSkeleton } from "./projection-chart";
-import { McDepletionCallout, McResultsSection } from "./projection-mc-results";
+import { SpendingStabilityChart } from "./spending-stability-chart";
+import { McResultsSection } from "./projection-mc-results";
 import {
   useProjectionState,
   type EngineContribRate,
@@ -82,6 +83,8 @@ export function ProjectionCard(props: {
     setBalanceView,
     contribView,
     setContribView,
+    chartView,
+    setChartView,
     showAllYears,
     setShowAllYears,
     fanBandRange,
@@ -110,14 +113,11 @@ export function ProjectionCard(props: {
     mcPrefetchQuery,
     mcQuery,
     personFilterName,
-    mcLoading,
     mcBandsByYear,
     mcChartPending,
     result,
     enginePeople,
     engineSettings,
-    getPersonYearTotals,
-    personDepletionInfo,
     baseYear,
     deflate,
   } = s;
@@ -183,109 +183,8 @@ export function ProjectionCard(props: {
               {/* Hero KPIs */}
               <ProjectionHeroKpis s={s} />
 
-              {/* MC depletion callout */}
-              <McDepletionCallout s={s} />
-
-              {/* Compact deterministic stats row */}
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-1 rounded-lg px-4 py-2.5 bg-surface-sunken text-xs">
-                {mcQuery.data?.result && !mcLoading && (
-                  <span className="text-[10px] font-medium text-faint uppercase tracking-wide mr-1">
-                    Deterministic
-                    <HelpTip text="Single-path projection using fixed average returns. Compare with Monte Carlo which simulates thousands of randomized return sequences." />
-                  </span>
-                )}
-                {(() => {
-                  const mcMedianPV =
-                    mcPrefetchQuery.data?.result?.distributions
-                      ?.sustainableWithdrawalPV?.median;
-                  const hasMc = mcMedianPV != null && mcMedianPV > 0;
-                  const currentAge = result.projectionByYear[0]?.age ?? 0;
-                  const isRetired =
-                    currentAge >= (engineSettings!.retirementAge ?? 999);
-                  const detValue = deflate(
-                    result.sustainableWithdrawal,
-                    isRetired
-                      ? baseYear
-                      : baseYear + (engineSettings!.retirementAge - currentAge),
-                  );
-                  return (
-                    <div>
-                      <span className="text-muted">
-                        {isPersonFiltered
-                          ? `${personFilterName}'s Withdrawal`
-                          : "Withdrawal"}
-                        <HelpTip
-                          text={
-                            hasMc
-                              ? "The median annual withdrawal across thousands of simulated market scenarios, in today's dollars. Half of simulations supported more than this amount, half supported less. Accounts for market volatility, tax impacts, and sequence-of-returns risk."
-                              : engineSettings?.withdrawalStrategy &&
-                                  engineSettings.withdrawalStrategy !== "fixed"
-                                ? "Estimated first-year withdrawal based on your spending strategy. Actual withdrawals adjust yearly based on portfolio performance and strategy rules."
-                                : "Estimated annual withdrawal calculated as your projected nest egg × withdrawal rate, assuming constant average returns. Does not account for market volatility or taxes."
-                          }
-                        />
-                        :{" "}
-                      </span>
-                      <span className="font-semibold text-green-700">
-                        {formatCurrency(hasMc ? mcMedianPV : detValue)}
-                      </span>
-                      <span className="text-faint">/yr</span>
-                    </div>
-                  );
-                })()}
-                <div className="w-px h-4 bg-surface-strong" />
-                <div>
-                  <span className="text-muted">Depletion: </span>
-                  <span className="font-semibold">
-                    {(() => {
-                      const depl = isPersonFiltered
-                        ? personDepletionInfo
-                        : result.portfolioDepletionAge
-                          ? { age: result.portfolioDepletionAge }
-                          : null;
-                      return depl ? `Age ${depl.age}` : "Never";
-                    })()}
-                  </span>
-                </div>
-                <div className="w-px h-4 bg-surface-strong" />
-                <div>
-                  <span className="text-muted">Overflow: </span>
-                  <span className="font-semibold">
-                    {result.firstOverflowAge
-                      ? `Age ${result.firstOverflowAge}`
-                      : "None"}
-                  </span>
-                  <HelpTip text="The first year your contributions exceed IRS limits for tax-advantaged accounts (401k, HSA, IRA). The excess spills into your taxable brokerage account." />
-                </div>
-                <div className="w-px h-4 bg-surface-strong" />
-                <div>
-                  <span className="text-muted">End Balance: </span>
-                  <span className="font-semibold">
-                    {(() => {
-                      if (result.projectionByYear.length === 0) return "$0";
-                      const last =
-                        result.projectionByYear[
-                          result.projectionByYear.length - 1
-                        ]!;
-                      const lastPt = getPersonYearTotals(last);
-                      return formatCurrency(
-                        deflate(
-                          lastPt ? lastPt.balance : last.endBalance,
-                          last.year,
-                        ),
-                      );
-                    })()}
-                  </span>
-                  <span className="text-faint ml-1">
-                    age{" "}
-                    {result.projectionByYear.length > 0
-                      ? result.projectionByYear[
-                          result.projectionByYear.length - 1
-                        ]!.age
-                      : "?"}
-                  </span>
-                </div>
-              </div>
+              {/* MC assumptions summary — below hero, above controls */}
+              <McResultsSection s={s} />
 
               {/* Unified toolbar — two rows */}
               {(() => {
@@ -602,8 +501,32 @@ export function ProjectionCard(props: {
                         </div>
                       </div>
                     </div>
-                    {/* Row 2: CONTRIBUTIONS | BALANCES | FAN BANDS | ALL YEARS */}
+                    {/* Row 2: CHART | CONTRIBUTIONS | BALANCES | FAN BANDS | ALL YEARS */}
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t pt-1.5">
+                      {/* Chart view toggle */}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-faint font-medium uppercase">
+                          Chart
+                        </span>
+                        <div className="inline-flex rounded-md border bg-surface-primary/60 p-0.5">
+                          {pillBtn(
+                            chartView === "balance",
+                            () => setChartView("balance"),
+                            "Balance",
+                          )}
+                          {pillBtn(
+                            chartView === "spending",
+                            () => setChartView("spending"),
+                            "Spending",
+                          )}
+                          {pillBtn(
+                            chartView === "deterministic",
+                            () => setChartView("deterministic"),
+                            "Deterministic",
+                          )}
+                        </div>
+                      </div>
+                      <div className="w-px h-4 bg-surface-strong" />
                       <div className="flex items-center gap-1.5">
                         <span className="text-[10px] text-faint font-medium uppercase">
                           Contributions
@@ -705,16 +628,60 @@ export function ProjectionCard(props: {
                 );
               })()}
 
-              {/* Visual Balance Projection — ComposedChart */}
-              {mcChartPending && <ProjectionChartSkeleton />}
-              {!mcChartPending && <ProjectionChart s={s} />}
+              {/* Chart area — toggleable between Balance, Spending Stability, Deterministic */}
+              {chartView === "spending" ? (
+                <SpendingStabilityChart s={s} />
+              ) : mcChartPending && chartView === "balance" ? (
+                <ProjectionChartSkeleton />
+              ) : (
+                <ProjectionChart
+                  s={s}
+                  hideMcBands={chartView === "deterministic"}
+                />
+              )}
 
-              {/* Monte Carlo results */}
-              <McResultsSection s={s} />
+              {/* MC results moved to below hero cards */}
             </div>
           )}
 
-          {/* UNIFIED TABLE */}
+          {/* Table mode toggle + UNIFIED TABLE */}
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] text-faint font-medium uppercase">
+              Table
+            </span>
+            <div className="inline-flex rounded-md border bg-surface-primary/60 p-0.5">
+              <button
+                type="button"
+                onClick={() =>
+                  (
+                    s as { setTableMode: (m: "compact" | "expanded") => void }
+                  ).setTableMode("compact")
+                }
+                className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${
+                  (s as { tableMode: string }).tableMode === "compact"
+                    ? "bg-surface-primary text-primary shadow-sm border"
+                    : "text-muted hover:text-secondary"
+                }`}
+              >
+                Compact
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  (
+                    s as { setTableMode: (m: "compact" | "expanded") => void }
+                  ).setTableMode("expanded")
+                }
+                className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${
+                  (s as { tableMode: string }).tableMode === "expanded"
+                    ? "bg-surface-primary text-primary shadow-sm border"
+                    : "text-muted hover:text-secondary"
+                }`}
+              >
+                Expanded
+              </button>
+            </div>
+          </div>
           <ProjectionTable
             state={s}
             people={people}

@@ -56,7 +56,7 @@ export function WithdrawalComparisonCard({
   activeStrategy,
   retirementAge,
 }: Props) {
-  const [view, setView] = useState<"table" | "chart">("table");
+  // Table and chart shown together (no toggle needed)
   const [chartMetric, setChartMetric] = useState<ChartMetric>("endBalance");
 
   if (strategies.length === 0) return null;
@@ -82,25 +82,11 @@ export function WithdrawalComparisonCard({
       subtitle={`Comparing ${strategies.length} strategies from age ${retirementAge} · Success % via Monte Carlo`}
       className="mb-6"
       collapsible
-      defaultOpen={false}
-      headerRight={
-        <div className="flex gap-1">
-          <button
-            onClick={() => setView("table")}
-            className={`px-2 py-0.5 text-[10px] rounded ${view === "table" ? "bg-blue-600 text-white" : "bg-surface-elevated text-faint"}`}
-          >
-            Table
-          </button>
-          <button
-            onClick={() => setView("chart")}
-            className={`px-2 py-0.5 text-[10px] rounded ${view === "chart" ? "bg-blue-600 text-white" : "bg-surface-elevated text-faint"}`}
-          >
-            Chart
-          </button>
-        </div>
-      }
+      defaultOpen={true}
+      headerRight={null}
     >
-      {view === "table" && (
+      {/* Table */}
+      {
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
@@ -215,11 +201,12 @@ export function WithdrawalComparisonCard({
             </tbody>
           </table>
         </div>
-      )}
+      }
 
-      {view === "chart" && (
-        <div>
-          <div className="flex justify-end gap-1 mb-2">
+      {/* Chart */}
+      {
+        <div className="mt-6 pt-4 border-t">
+          <div className="flex justify-end gap-1 mb-3">
             <button
               onClick={() => setChartMetric("endBalance")}
               className={`px-2 py-0.5 text-[10px] rounded ${chartMetric === "endBalance" ? "bg-blue-600 text-white" : "bg-surface-elevated text-faint"}`}
@@ -264,7 +251,7 @@ export function WithdrawalComparisonCard({
                 formatter={(value) => formatCurrency(Number(value))}
                 labelFormatter={(age) => `Age ${age}`}
               />
-              <Legend wrapperStyle={{ fontSize: 10 }} />
+              <Legend wrapperStyle={{ fontSize: 10, paddingTop: 16 }} />
               {strategies.map((s, i) => (
                 <Line
                   key={s.strategy}
@@ -282,7 +269,7 @@ export function WithdrawalComparisonCard({
             </LineChart>
           </ResponsiveContainer>
         </div>
-      )}
+      }
     </Card>
   );
 }

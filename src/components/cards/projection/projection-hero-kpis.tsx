@@ -170,10 +170,22 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
           </div>
           <div className="text-xs text-muted mt-1 text-center">
             Success Rate
-            <HelpTip text="Percentage of simulated scenarios where your portfolio balance stays above $0 through the full plan. This is the industry-standard metric (Trinity Study, cFIREsim). For dynamic strategies that reduce spending, see Spending Stability." />
+            <HelpTip
+              maxWidth={420}
+              lines={[
+                `Percentage of simulated futures where your portfolio balance stays above $0 through age ${engineSettings?.endAge ?? "?"} — a ${(engineSettings?.endAge ?? 95) - (engineSettings?.retirementAge ?? 65)}-year retirement. This is the industry-standard metric (Trinity Study, cFIREsim).`,
+                "90%+ — Strong. Most planners consider this the target.",
+                "75–89% — Moderate. Workable but with meaningful risk.",
+                "Below 75% — Elevated risk. Review your assumptions.",
+                `${(engineSettings?.endAge ?? 95) - (engineSettings?.retirementAge ?? 65) > 30 ? "Your plan spans 40 years — longer than the classic 30-year 4% rule. Early retirees often need a lower withdrawal rate (3-3.5%)." : ""}`,
+                "For dynamic strategies that reduce spending, see Spending Stability for the full picture.",
+              ].filter(Boolean)}
+            />
           </div>
           <div className="text-[10px] text-faint mt-0.5">
-            Det: {depl ? `Age ${depl.age}` : "Lasts \u2713"}
+            {mc.distributions.depletionAge
+              ? `Depletes ~age ${Math.round(mc.distributions.depletionAge.median)}`
+              : "Det: Lasts \u2713"}
           </div>
         </div>
 
@@ -211,7 +223,15 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
           </div>
           <div className="text-xs text-muted mt-1 text-center">
             Spending Stability
-            <HelpTip text="Percentage of simulated futures where your withdrawals stayed at or above 75% of your initial year-1 withdrawal (adjusted for inflation). Dynamic strategies can cut spending to preserve the portfolio — this shows how often your planned income level holds up." />
+            <HelpTip
+              maxWidth={420}
+              lines={[
+                "Percentage of simulated futures where your withdrawals stayed at or above 75% of your initial year-1 withdrawal, adjusted for inflation each year.",
+                "Dynamic strategies (Guyton-Klinger, Vanguard Dynamic) can reduce withdrawals to preserve the portfolio. Success Rate says your money lasts — Spending Stability says your income holds up.",
+                "Example: 95% success with 60% stability means your money lasts in 95% of futures, but in 40% of them your income drops below 75% of what you started with.",
+                "For fixed withdrawal strategies (Fixed Real, Forgo Inflation), spending stability and success rate will be similar — the strategy withdraws the full amount or the portfolio is depleted.",
+              ]}
+            />
           </div>
         </div>
 
@@ -240,24 +260,25 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
           </div>
         </div>
 
-        {/* Card 3: Funding Outlook */}
+        {/* Card 3: End Balance */}
         <div className="bg-surface-sunken rounded-lg p-4 text-center">
           <div className="text-xs text-muted uppercase font-medium">
-            Funding Outlook
+            End Balance
           </div>
           <div className="text-lg font-bold text-primary">
-            {mc.distributions.depletionAge
-              ? `${Math.round((1 - mc.successRate) * 100)}% risk`
-              : "Fully Funded"}
+            {formatCurrency(deflate(mc.medianEndBalance, terminalYear))}
           </div>
           <div className="text-[10px] text-muted">
-            {mc.distributions.depletionAge
-              ? `Median depletion age ${Math.round(mc.distributions.depletionAge.median)}`
-              : `Money lasts in ${pct}% of futures`}
+            MC median at age {engineSettings?.endAge ?? "?"}
           </div>
           <div className="text-[10px] text-faint mt-0.5">
-            MC end bal:{" "}
-            {formatCurrency(deflate(mc.medianEndBalance, terminalYear))}
+            {(() => {
+              if (!result || result.projectionByYear.length === 0)
+                return "Det: $0";
+              const last =
+                result.projectionByYear[result.projectionByYear.length - 1]!;
+              return `Det: ${formatCurrency(deflate(last.endBalance, last.year))}`;
+            })()}
           </div>
         </div>
       </div>

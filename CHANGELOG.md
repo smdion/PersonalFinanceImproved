@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.8] - 2026-04-01
+
+### Improved
+
+- Retirement page redesign: removed redundant deterministic stats row and depletion warning banner (info moved to hero card subtitles)
+- Three-way chart toggle: Balance | Spending Stability | Deterministic — spending stability shows withdrawal trajectory as % of initial plan with 75% threshold line
+- MC assumptions bar relocated from below chart to below hero cards — assumptions before evidence
+- Chart view toggle and table compact/expanded toggle in control bar
+- Strategy Comparison moved to page-level tab with table and chart shown together (no toggle needed)
+- Hero cards standardized: "Funding Outlook" replaced with "End Balance" showing MC median
+- Rich tooltips for Success Rate and Spending Stability donuts with threshold explanations and time horizon context
+- MC summary bar shows only assumptions (preset, return, volatility, rate, inflation, trials) — no longer duplicates hero card metrics
+- Strategy comparison refreshes automatically when MC settings change
+
+---
+
 ## [0.4.7] - 2026-03-31
 
 ### Improved

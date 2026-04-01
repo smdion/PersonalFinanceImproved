@@ -529,8 +529,7 @@ describe("ProjectionHeroKpis", () => {
     render(<ProjectionHeroKpis s={s} />);
     expect(screen.getByText("92%")).toBeInTheDocument();
     expect(screen.getByText("Success Rate")).toBeInTheDocument();
-    expect(screen.getByText("Funding Outlook")).toBeInTheDocument();
-    expect(screen.getByText("Fully Funded")).toBeInTheDocument();
+    expect(screen.getByText("End Balance")).toBeInTheDocument();
   });
 });
 
