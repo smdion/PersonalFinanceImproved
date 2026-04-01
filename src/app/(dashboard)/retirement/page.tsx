@@ -349,6 +349,9 @@ export default function RetirementPage() {
                 <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
                   Timeline
                 </h4>
+                <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
+                  Deterministic + MC Simple + MC Advanced
+                </span>
                 <div className="flex-1 border-t" />
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-sm">
@@ -435,6 +438,9 @@ export default function RetirementPage() {
                   <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
                     Income
                   </h4>
+                  <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
+                    Deterministic + MC Simple + MC Advanced
+                  </span>
                   <div className="flex-1 border-t" />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
@@ -544,6 +550,9 @@ export default function RetirementPage() {
                   <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
                     Decumulation Plan
                   </h4>
+                  <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
+                    Deterministic + MC Simple + MC Advanced
+                  </span>
                   <div className="flex-1 border-t" />
                 </div>
 
@@ -1138,6 +1147,9 @@ export default function RetirementPage() {
                 <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
                   Plan Assumptions
                 </h4>
+                <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
+                  Deterministic + MC Simple + MC Advanced
+                </span>
                 <div className="flex-1 border-t" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
@@ -1179,6 +1191,9 @@ export default function RetirementPage() {
                   <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
                     Social Security
                   </h4>
+                  <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
+                    Deterministic + MC Simple + MC Advanced
+                  </span>
                   <div className="flex-1 border-t" />
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-sm">
@@ -1335,6 +1350,9 @@ export default function RetirementPage() {
                   </select>
                   <span className="text-[10px] text-faint">brackets</span>
                   <HelpTip text="Tax filing status used for retirement tax estimates — affects federal brackets, LTCG rates, IRMAA thresholds, and Social Security taxation. 'Auto' inherits from your primary job's W-4. Override it here if your filing status will change in retirement." />
+                  <span className="text-[9px] text-purple-400 bg-purple-50 px-1.5 py-0.5 rounded">
+                    Deterministic + MC Advanced
+                  </span>
                   <div className="flex-1 border-t" />
                 </div>
                 {/* Tax rates by account type — compact row */}
@@ -1545,6 +1563,9 @@ export default function RetirementPage() {
                   <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
                     Healthcare
                   </h4>
+                  <span className="text-[9px] text-purple-400 bg-purple-50 px-1.5 py-0.5 rounded">
+                    Deterministic + MC Advanced
+                  </span>
                   <div className="flex-1 border-t" />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 text-sm">
@@ -1660,6 +1681,9 @@ export default function RetirementPage() {
                       age-based glide path
                     </span>
                     <HelpTip text="Your portfolio return rate shifts with age based on the glide path configured in Settings. Deterministic mode uses these rates directly as fixed annual returns. Monte Carlo (Simple + Advanced) uses them as the mean of a probability distribution — each trial samples random returns around these rates, capturing real-world volatility and sequence-of-returns risk. Darker segments in the bar below indicate higher return rates (younger, more aggressive allocation)." />
+                    <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
+                      Deterministic + MC Simple + MC Advanced
+                    </span>
                     <div className="flex-1 border-t" />
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 text-sm mb-2">
