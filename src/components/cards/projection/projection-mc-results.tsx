@@ -108,6 +108,7 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
               const si = mcQuery.data.simulationInputs;
               const mcr = mcQuery.data.result!;
               const successPct = Math.round(mcr.successRate * 100);
+              const spendingPct = Math.round(mcr.spendingAdequacyRate * 100);
               const presetBar: Record<
                 string,
                 {
@@ -149,6 +150,12 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
                   : successPct >= 75
                     ? "text-amber-700"
                     : "text-red-700";
+              const spendingColor =
+                spendingPct >= 90
+                  ? "text-green-700"
+                  : spendingPct >= 75
+                    ? "text-amber-700"
+                    : "text-red-700";
               return (
                 <div
                   className={`flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border px-4 py-2.5 ${ps.bg} ${ps.border}`}
@@ -172,7 +179,7 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
                     <HelpTip
                       maxWidth={420}
                       lines={[
-                        `Percentage of simulated futures where your money lasted from age ${si.retirementAge} through age ${si.endAge} — a ${si.endAge - si.retirementAge}-year retirement.`,
+                        `Percentage of simulated futures where your portfolio balance stayed above $0 from age ${si.retirementAge} through age ${si.endAge} — a ${si.endAge - si.retirementAge}-year retirement. This is the industry-standard metric (Trinity Study, cFIREsim). For dynamic strategies that reduce spending, see Spending Adequacy for the full picture.`,
                         <span key="ranges" className="space-y-0.5">
                           <div>
                             <strong className="text-green-400">90%+</strong> —
@@ -203,6 +210,37 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
                               : " — a typical horizon. The 4% rule research applies well to this range."}
                         </span>,
                         `100% is not necessarily the goal — it often means you're underspending or using overly optimistic assumptions. Most financial planners target 85-95% as a realistic sweet spot.`,
+                      ]}
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`text-lg font-bold tabular-nums leading-none ${spendingColor}`}
+                    >
+                      {spendingPct}%
+                    </span>
+                    <span className="text-[10px] text-muted leading-tight">
+                      spending
+                      <br />
+                      adequacy
+                    </span>
+                    <HelpTip
+                      maxWidth={420}
+                      lines={[
+                        `Percentage of simulated futures where your withdrawals stayed at or above 75% of target spending in every retirement year.`,
+                        `Dynamic strategies (Guyton-Klinger, Vanguard Dynamic) can reduce withdrawals to preserve the portfolio. The portfolio "survives" but your income may not cover expenses. This metric captures that risk.`,
+                        <span key="example">
+                          <strong className="text-blue-300">Example:</strong>{" "}
+                          95% success with 60% spending adequacy means your
+                          money lasts in 95% of futures, but in 40% of them your
+                          income drops below 75% of what you planned.
+                        </span>,
+                        <span key="fixed">
+                          For fixed withdrawal strategies (Fixed Real, Forgo
+                          Inflation), spending adequacy and success rate will be
+                          similar — the strategy withdraws the full target or
+                          the portfolio is depleted.
+                        </span>,
                       ]}
                     />
                   </div>

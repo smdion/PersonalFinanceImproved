@@ -39,6 +39,7 @@ type StrategyResult = {
   endBalance: number;
   legacyAmount: number;
   successRate: number | null;
+  spendingAdequacyRate: number | null;
   yearByYear: { age: number; withdrawal: number; endBalance: number }[];
 };
 
@@ -109,8 +110,13 @@ export function WithdrawalComparisonCard({
                   Depletion Age
                 </th>
                 <th className="text-right py-1.5 px-2 font-medium">
-                  <span title="Monte Carlo success rate (200 trials)">
+                  <span title="Portfolio survives to end of plan — balance stays above $0 in every year (200 MC trials)">
                     Success
+                  </span>
+                </th>
+                <th className="text-right py-1.5 px-2 font-medium">
+                  <span title="Withdrawals stay at or above 75% of target spending in every retirement year (200 MC trials). Dynamic strategies can cut spending to preserve the portfolio — this shows how often your income holds up.">
+                    Spending
                   </span>
                 </th>
                 <th className="text-right py-1.5 px-2 font-medium">Year 1</th>
@@ -166,6 +172,23 @@ export function WithdrawalComparisonCard({
                           }
                         >
                           {Math.round(s.successRate * 100)}%
+                        </span>
+                      ) : (
+                        <span className="text-faint">—</span>
+                      )}
+                    </td>
+                    <td className="text-right py-1.5 px-2 tabular-nums">
+                      {s.spendingAdequacyRate !== null ? (
+                        <span
+                          className={
+                            s.spendingAdequacyRate >= 0.9
+                              ? "text-green-400"
+                              : s.spendingAdequacyRate >= 0.7
+                                ? "text-yellow-400"
+                                : "text-red-400"
+                          }
+                        >
+                          {Math.round(s.spendingAdequacyRate * 100)}%
                         </span>
                       ) : (
                         <span className="text-faint">—</span>
