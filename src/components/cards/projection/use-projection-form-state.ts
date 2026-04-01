@@ -98,7 +98,7 @@ export function useProjectionFormState() {
   // --- View state ---
   const [projectionMode, setProjectionMode] = useState<
     "deterministic" | "monteCarlo"
-  >("deterministic");
+  >("monteCarlo");
   const [mcTrials, setMcTrials] = useState(1000);
   const [mcPreset, setMcPreset] = useState<
     "aggressive" | "default" | "conservative" | "custom"
