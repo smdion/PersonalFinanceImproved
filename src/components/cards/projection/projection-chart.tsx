@@ -1,7 +1,8 @@
 "use client";
 
-/** Balance projection chart — stacked bar (deterministic) + MC fan bands + median line. */
+/** Balance projection chart — stacked bar (deterministic) + confidence bands + median line. */
 import { taxTypeLabel, categoryChartHex } from "@/lib/utils/colors";
+import { ChartControls } from "./chart-controls";
 import { formatCurrency } from "@/lib/utils/format";
 import type { EngineYearProjection } from "@/lib/calculators/types";
 import {
@@ -199,24 +200,27 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
 
   return (
     <div className="bg-surface-sunken rounded-lg p-3 chart-fade-in">
-      <h5 className="text-xs font-medium text-muted uppercase mb-2">
-        Balance Projection
-        {isPersonFiltered && (
-          <span className="text-[10px] text-faint font-normal normal-case ml-2">
-            {personFilterName}
-          </span>
-        )}
-        {!mcBandsByYear && mcPrefetchQuery.isFetching && (
-          <span className="text-[9px] text-purple-400 animate-pulse ml-2 normal-case font-normal">
-            MC loading...
-          </span>
-        )}
-        {hasMc && mcIsPrefetch && (
-          <span className="text-[9px] text-purple-400 ml-2 normal-case font-normal">
-            MC preview
-          </span>
-        )}
-      </h5>
+      <div className="flex items-start justify-between mb-2 gap-2">
+        <h5 className="text-xs font-medium text-muted uppercase">
+          Balance Projection
+          {isPersonFiltered && (
+            <span className="text-[10px] text-faint font-normal normal-case ml-2">
+              {personFilterName}
+            </span>
+          )}
+          {!mcBandsByYear && mcPrefetchQuery.isFetching && (
+            <span className="text-[9px] text-purple-400 animate-pulse ml-2 normal-case font-normal">
+              Simulating...
+            </span>
+          )}
+          {hasMc && mcIsPrefetch && (
+            <span className="text-[9px] text-purple-400 ml-2 normal-case font-normal">
+              Sim. preview
+            </span>
+          )}
+        </h5>
+        <ChartControls s={s} />
+      </div>
       <div className="h-[320px]">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
@@ -282,13 +286,13 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
                     {hasMc && d.mc_p50 != null && (
                       <div className="border-t mt-1 pt-1">
                         <div className="flex justify-between text-purple-300">
-                          <span>MC Median</span>
+                          <span>Sim. Median</span>
                           <span className="tabular-nums">
                             {formatCurrency(Number(d.mc_p50))}
                           </span>
                         </div>
                         <div className="flex justify-between text-purple-400/70">
-                          <span>p25–p75</span>
+                          <span>50%</span>
                           <span className="tabular-nums">
                             {formatCurrency(Number(d.mc_dp25))}
                             {" –"}
@@ -511,7 +515,7 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
                 className="w-3 h-0.5 rounded"
                 style={{ backgroundColor: "#7c3aed" }}
               />{" "}
-              MC p50
+              Sim. median
               {mcIsPrefetch && (
                 <span className="text-faint ml-0.5">(preview)</span>
               )}
@@ -524,7 +528,7 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
                   opacity: 0.3,
                 }}
               />{" "}
-              p25–p75
+              50% band
             </span>
             {fanBandRange !== "p25-p75" && (
               <span className="flex items-center gap-1">
@@ -536,7 +540,7 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
                     opacity: fanBandRange === "p5-p95" ? 0.6 : 0.5,
                   }}
                 />{" "}
-                {fanBandRange === "p10-p90" ? "p10–p90" : "p5–p95"}
+                {fanBandRange === "p10-p90" ? "80% band" : "90% band"}
               </span>
             )}
           </>

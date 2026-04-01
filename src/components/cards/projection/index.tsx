@@ -1,7 +1,7 @@
 "use client";
 
 /** Top-level ProjectionCard component — orchestrates the projection state hook and delegates to sub-components. */
-import { Toggle } from "@/components/ui/toggle";
+import { useEffect } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import { MethodologyContent } from "@/components/methodology-content";
@@ -82,18 +82,8 @@ export function ProjectionCard(props: {
     setMcAssetClassOverrides,
     dollarMode: internalDollarMode,
     setDollarMode: internalSetDollarMode,
-    balanceView,
-    setBalanceView,
-    contribView,
-    setContribView,
     chartView,
-    setChartView,
-    showAllYears,
-    setShowAllYears,
-    showBars,
-    setShowBars,
     fanBandRange,
-    setFanBandRange,
     showMethodology,
     setShowMethodology,
     showAccumMethodology,
@@ -118,7 +108,6 @@ export function ProjectionCard(props: {
     mcPrefetchQuery,
     mcQuery,
     personFilterName,
-    mcBandsByYear,
     mcChartPending,
     result,
     enginePeople,
@@ -127,9 +116,18 @@ export function ProjectionCard(props: {
     deflate,
   } = s;
 
-  // Allow page-level dollarMode override (for shared toggle across tabs)
+  // Allow page-level dollarMode override (for shared toggle across tabs).
+  // Sync the prop into internal state so derived data (deflate) reads the correct value.
   const dollarMode = props.dollarMode ?? internalDollarMode;
   const setDollarMode = props.onDollarModeChange ?? internalSetDollarMode;
+  useEffect(() => {
+    if (
+      props.dollarMode !== undefined &&
+      props.dollarMode !== internalDollarMode
+    ) {
+      internalSetDollarMode(props.dollarMode);
+    }
+  }, [props.dollarMode, internalDollarMode, internalSetDollarMode]);
 
   const {
     parentCategoryFilter,
@@ -306,7 +304,7 @@ export function ProjectionCard(props: {
                                 setMcPreset(e.target.value as typeof mcPreset)
                               }
                               className="text-[10px] h-6 px-1.5 rounded border bg-surface-primary text-muted cursor-pointer"
-                              title="MC preset scenario"
+                              title="Simulation preset"
                             >
                               <option value="aggressive">Aggressive</option>
                               <option value="default">Default</option>
@@ -509,141 +507,6 @@ export function ProjectionCard(props: {
                           )}
                         </div>
                       </div>
-                    </div>
-                    {/* Row 2: CHART | CONTRIBUTIONS | BALANCES | FAN BANDS | ALL YEARS */}
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t pt-1.5">
-                      {/* Chart view toggle */}
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] text-faint font-medium uppercase">
-                          Chart
-                        </span>
-                        <div className="inline-flex rounded-md border bg-surface-primary/60 p-0.5">
-                          {pillBtn(
-                            chartView === "balance",
-                            () => setChartView("balance"),
-                            "Balance",
-                          )}
-                          {pillBtn(
-                            chartView === "strategy",
-                            () => setChartView("strategy"),
-                            "Strategy",
-                          )}
-                          {pillBtn(
-                            chartView === "budget",
-                            () => setChartView("budget"),
-                            "Budget",
-                          )}
-                        </div>
-                      </div>
-                      <div className="w-px h-4 bg-surface-strong" />
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] text-faint font-medium uppercase">
-                          Contributions
-                        </span>
-                        <div className="inline-flex rounded-md border bg-surface-primary/60 p-0.5">
-                          {pillBtn(
-                            contribView === "account",
-                            () => setContribView("account"),
-                            "Account",
-                          )}
-                          {pillBtn(
-                            contribView === "taxType",
-                            () => setContribView("taxType"),
-                            "Tax Type",
-                          )}
-                        </div>
-                      </div>
-                      <div className="w-px h-4 bg-surface-strong" />
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] text-faint font-medium uppercase">
-                          Balances
-                        </span>
-                        <div className="inline-flex rounded-md border bg-surface-primary/60 p-0.5">
-                          {pillBtn(
-                            balanceView === "taxType",
-                            () => setBalanceView("taxType"),
-                            "Tax Type",
-                          )}
-                          {pillBtn(
-                            balanceView === "account",
-                            () => setBalanceView("account"),
-                            "Account",
-                          )}
-                        </div>
-                      </div>
-                      <div className="w-px h-4 bg-surface-strong" />
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] text-faint font-medium uppercase">
-                          Det
-                        </span>
-                        <div className="inline-flex rounded-md border bg-surface-primary/60 p-0.5">
-                          {pillBtn(showBars, () => setShowBars(true), "On")}
-                          {pillBtn(!showBars, () => setShowBars(false), "Off")}
-                        </div>
-                      </div>
-                      {mcBandsByYear != null && (
-                        <>
-                          <div className="w-px h-4 bg-surface-strong" />
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] text-faint font-medium uppercase">
-                              MC Bands
-                              <HelpTip
-                                maxWidth={360}
-                                lines={[
-                                  "Monte Carlo fan bands show the spread of simulated outcomes across all charts.",
-                                  <span key="p25">
-                                    <strong className="text-purple-300">
-                                      p25-p75
-                                    </strong>{" "}
-                                    — Middle 50% of outcomes. Tightest view.
-                                  </span>,
-                                  <span key="p10">
-                                    <strong className="text-purple-300">
-                                      p10-p90
-                                    </strong>{" "}
-                                    — Middle 80% of outcomes.
-                                  </span>,
-                                  <span key="p5">
-                                    <strong className="text-purple-300">
-                                      p5-p95
-                                    </strong>{" "}
-                                    — Middle 90% of outcomes. Widest view.
-                                  </span>,
-                                ]}
-                              />
-                            </span>
-                            <div className="inline-flex rounded-md border bg-surface-primary/60 p-0.5">
-                              {pillBtn(
-                                fanBandRange === "off",
-                                () => setFanBandRange("off"),
-                                "Off",
-                              )}
-                              {pillBtn(
-                                fanBandRange === "p25-p75",
-                                () => setFanBandRange("p25-p75"),
-                                "p25–p75",
-                              )}
-                              {pillBtn(
-                                fanBandRange === "p10-p90",
-                                () => setFanBandRange("p10-p90"),
-                                "p10–p90",
-                              )}
-                              {pillBtn(
-                                fanBandRange === "p5-p95",
-                                () => setFanBandRange("p5-p95"),
-                                "p5–p95",
-                              )}
-                            </div>
-                          </div>
-                        </>
-                      )}
-                      <div className="w-px h-4 bg-surface-strong" />
-                      <Toggle
-                        label="All years"
-                        checked={showAllYears}
-                        onChange={setShowAllYears}
-                        size="xs"
-                      />
                     </div>
                   </div>
                 );
