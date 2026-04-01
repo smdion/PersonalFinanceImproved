@@ -107,8 +107,6 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
             (() => {
               const si = mcQuery.data.simulationInputs;
               const mcr = mcQuery.data.result!;
-              const successPct = Math.round(mcr.successRate * 100);
-              const spendingPct = Math.round(mcr.spendingStabilityRate * 100);
               const presetBar: Record<
                 string,
                 {
@@ -144,18 +142,6 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
                 },
               };
               const ps = presetBar[si.preset] ?? presetBar["default"]!;
-              const successColor =
-                successPct >= 90
-                  ? "text-green-700"
-                  : successPct >= 75
-                    ? "text-amber-700"
-                    : "text-red-700";
-              const spendingColor =
-                spendingPct >= 90
-                  ? "text-green-700"
-                  : spendingPct >= 75
-                    ? "text-amber-700"
-                    : "text-red-700";
               return (
                 <div
                   className={`flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border px-4 py-2.5 ${ps.bg} ${ps.border}`}
@@ -165,86 +151,6 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
                   >
                     {si.presetLabel}
                   </span>
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`text-lg font-bold tabular-nums leading-none ${successColor}`}
-                    >
-                      {successPct}%
-                    </span>
-                    <span className="text-[10px] text-muted leading-tight">
-                      success
-                      <br />
-                      rate
-                    </span>
-                    <HelpTip
-                      maxWidth={420}
-                      lines={[
-                        `Percentage of simulated futures where your portfolio balance stayed above $0 from age ${si.retirementAge} through age ${si.endAge} — a ${si.endAge - si.retirementAge}-year retirement. This is the industry-standard metric (Trinity Study, cFIREsim). For dynamic strategies that reduce spending, see Spending Stability for the full picture.`,
-                        <span key="ranges" className="space-y-0.5">
-                          <div>
-                            <strong className="text-green-400">90%+</strong> —
-                            Strong. Most planners consider this the target. You
-                            can likely sustain your spending.
-                          </div>
-                          <div>
-                            <strong className="text-amber-400">75–89%</strong> —
-                            Moderate. Workable but with meaningful risk.
-                            Consider reducing spending or working longer.
-                          </div>
-                          <div>
-                            <strong className="text-red-400">Below 75%</strong>{" "}
-                            — Elevated risk. A significant portion of futures
-                            run out of money. Review assumptions.
-                          </div>
-                        </span>,
-                        <span key="timeframe">
-                          <strong className="text-blue-300">
-                            Time horizon matters:
-                          </strong>{" "}
-                          The classic 4% rule was tested on 30-year retirements.
-                          Your plan spans {si.endAge - si.retirementAge} years
-                          {si.endAge - si.retirementAge > 30
-                            ? " — longer than 30 years, which gives bad market sequences more time to compound. Early retirees often need a lower withdrawal rate (3-3.5%) or higher savings to compensate."
-                            : si.endAge - si.retirementAge < 25
-                              ? " — shorter than typical, which works in your favor. Fewer years of withdrawals means less exposure to prolonged downturns."
-                              : " — a typical horizon. The 4% rule research applies well to this range."}
-                        </span>,
-                        `100% is not necessarily the goal — it often means you're underspending or using overly optimistic assumptions. Most financial planners target 85-95% as a realistic sweet spot.`,
-                      ]}
-                    />
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`text-lg font-bold tabular-nums leading-none ${spendingColor}`}
-                    >
-                      {spendingPct}%
-                    </span>
-                    <span className="text-[10px] text-muted leading-tight">
-                      spending
-                      <br />
-                      stability
-                    </span>
-                    <HelpTip
-                      maxWidth={420}
-                      lines={[
-                        `Percentage of simulated futures where your withdrawals stayed at or above 75% of your initial year-1 withdrawal, adjusted for inflation each year.`,
-                        `Dynamic strategies (Guyton-Klinger, Vanguard Dynamic) can reduce withdrawals to preserve the portfolio. Success Rate says your money lasts — Spending Stability says your income holds up.`,
-                        <span key="example">
-                          <strong className="text-blue-300">Example:</strong>{" "}
-                          95% success with 60% stability means your money lasts
-                          in 95% of futures, but in 40% of them your income
-                          drops below 75% of what you started with.
-                        </span>,
-                        <span key="fixed">
-                          For fixed withdrawal strategies (Fixed Real, Forgo
-                          Inflation), spending stability and success rate will
-                          be similar — the strategy withdraws the full amount or
-                          the portfolio is depleted.
-                        </span>,
-                      ]}
-                    />
-                  </div>
-                  <div className="w-px h-6 bg-gray-300/60" />
                   <div className="flex items-center gap-3 text-xs text-muted">
                     <div className="text-center">
                       <div className="font-semibold tabular-nums">

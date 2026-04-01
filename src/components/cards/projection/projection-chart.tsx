@@ -59,7 +59,13 @@ export function ProjectionChartSkeleton() {
   );
 }
 
-export function ProjectionChart({ s }: { s: ProjectionState }) {
+export function ProjectionChart({
+  s,
+  hideMcBands = false,
+}: {
+  s: ProjectionState;
+  hideMcBands?: boolean;
+}) {
   const {
     result,
     engineSettings,
@@ -67,7 +73,7 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
     personFilterName,
     getPersonYearTotals,
     deflate,
-    mcBandsByYear,
+    mcBandsByYear: mcBandsRaw,
     mcPrefetchQuery,
     mcIsPrefetch,
     visibleColumns,
@@ -77,6 +83,9 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
   } = s;
 
   if (!result) return null;
+
+  // When hideMcBands is true (Deterministic chart view), suppress MC overlays
+  const mcBandsByYear = hideMcBands ? null : mcBandsRaw;
 
   // Bars always show standalone deterministic projection.
   // MC fan bands + median line overlay on top via mcBandsByYear.
