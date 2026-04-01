@@ -1327,9 +1327,9 @@ export const projectionRouter = createTRPCRouter({
             ? withdrawals.reduce((s, w) => s + w, 0) / withdrawals.length
             : 0;
 
-        // Run lightweight MC (200 trials) for success rate + spending adequacy
+        // Run lightweight MC (200 trials) for success rate + spending stability
         let successRate: number | null = null;
-        let spendingAdequacyRate: number | null = null;
+        let spendingStabilityRate: number | null = null;
         if (hasMcData) {
           const mcResult = calculateMonteCarlo({
             engineInput: {
@@ -1346,7 +1346,7 @@ export const projectionRouter = createTRPCRouter({
             inflationRisk: effectiveInflationRisk,
           });
           successRate = mcResult.successRate;
-          spendingAdequacyRate = mcResult.spendingAdequacyRate;
+          spendingStabilityRate = mcResult.spendingStabilityRate;
         }
 
         return {
@@ -1366,7 +1366,7 @@ export const projectionRouter = createTRPCRouter({
           legacyAmount:
             decYears.length > 0 ? decYears[decYears.length - 1]!.endBalance : 0,
           successRate,
-          spendingAdequacyRate,
+          spendingStabilityRate,
           yearByYear: decYears.map((y) => ({
             age: y.age,
             withdrawal: roundToCents(y.totalWithdrawal),

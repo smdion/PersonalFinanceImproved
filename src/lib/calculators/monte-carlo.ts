@@ -29,8 +29,9 @@ import type {
 import { roundToCents } from "../utils/math";
 import type { EngineDecumulationYear } from "./types";
 
-/** A trial is "spending adequate" if withdrawals stay ≥ this fraction of target every year. */
-const SPENDING_ADEQUACY_THRESHOLD = 0.75;
+/** A trial is "spending stable" if withdrawals stay ≥ this fraction of the initial
+ *  inflation-adjusted withdrawal in every decumulation year. */
+const SPENDING_STABILITY_THRESHOLD = 0.75;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -154,7 +155,7 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
   const depletionAges: number[] = [];
   const sustainableWithdrawals: number[] = [];
   const sustainableWithdrawalsPV: number[] = [];
-  let spendingAdequateCount = 0;
+  let spendingStableCount = 0;
 
   // Deflator for converting nominal retirement-year dollars to today's dollars
   const yearsToRetirement = engineInput.retirementAge - startAge;
@@ -251,18 +252,26 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
       depletionAges.push(result.portfolioDepletionAge);
     }
 
-    // Spending adequacy: did withdrawals stay ≥75% of target every decumulation year?
+    // Spending stability: did withdrawals stay ≥75% of the INITIAL withdrawal
+    // (inflation-adjusted) every decumulation year?  This compares to the year-1
+    // plan, not the strategy's own target — so dynamic strategies that cut spending
+    // to preserve the portfolio are measured against what the retiree expected.
     const decYears = result.projectionByYear.filter(
       (y): y is EngineDecumulationYear => y.phase === "decumulation",
     );
-    const isSpendingAdequate =
-      decYears.length === 0 ||
-      decYears.every(
-        (y) =>
-          y.targetWithdrawal === 0 ||
-          y.totalWithdrawal >= SPENDING_ADEQUACY_THRESHOLD * y.targetWithdrawal,
-      );
-    if (isSpendingAdequate) spendingAdequateCount++;
+    if (decYears.length > 0) {
+      const year1Withdrawal = decYears[0]!.totalWithdrawal;
+      const isStable =
+        year1Withdrawal === 0 ||
+        decYears.every((y, i) => {
+          const inflationFactor = Math.pow(1 + trialInflationRate, i);
+          const baseline = year1Withdrawal * inflationFactor;
+          return y.totalWithdrawal >= SPENDING_STABILITY_THRESHOLD * baseline;
+        });
+      if (isStable) spendingStableCount++;
+    } else {
+      spendingStableCount++; // no decumulation = vacuously stable
+    }
 
     // Sustainable withdrawal (nominal and present value)
     sustainableWithdrawals.push(result.sustainableWithdrawal);
@@ -297,9 +306,9 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
   const successCount = terminalBalances.filter((b) => b > 0).length;
   const successRate = numTrials > 0 ? successCount / numTrials : 0;
 
-  // Spending adequacy: % of trials where withdrawals met ≥75% of target every year
-  const spendingAdequacyRate =
-    numTrials > 0 ? spendingAdequateCount / numTrials : 0;
+  // Spending stability: % of trials where withdrawals met ≥75% of initial (inflation-adjusted)
+  const spendingStabilityRate =
+    numTrials > 0 ? spendingStableCount / numTrials : 0;
 
   // Terminal balance stats
   const sortedTerminal = [...terminalBalances].sort((a, b) => a - b);
@@ -324,7 +333,7 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
 
   return {
     successRate,
-    spendingAdequacyRate,
+    spendingStabilityRate,
     medianEndBalance,
     meanEndBalance,
     percentileBands,

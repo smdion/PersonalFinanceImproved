@@ -83,7 +83,7 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
   if (mc) {
     // MC-primary hero
     const pct = Math.round(mc.successRate * 100);
-    const spendPct = Math.round(mc.spendingAdequacyRate * 100);
+    const spendPct = Math.round(mc.spendingStabilityRate * 100);
     const spendColor =
       spendPct >= 90
         ? "text-green-600"
@@ -134,7 +134,7 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
             : "stroke-red-500";
     const circumference = 2 * Math.PI * 40;
     const dashOffset = circumference * (1 - mc.successRate);
-    const spendDashOffset = circumference * (1 - mc.spendingAdequacyRate);
+    const spendDashOffset = circumference * (1 - mc.spendingStabilityRate);
 
     return (
       <div className="grid grid-cols-4 gap-4">
@@ -170,14 +170,14 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
           </div>
           <div className="text-xs text-muted mt-1 text-center">
             Success Rate
-            <HelpTip text="Percentage of simulated scenarios where your portfolio balance stays above $0 through the full plan. This is the industry-standard metric (Trinity Study, cFIREsim). For dynamic strategies that reduce spending, see Spending Adequacy." />
+            <HelpTip text="Percentage of simulated scenarios where your portfolio balance stays above $0 through the full plan. This is the industry-standard metric (Trinity Study, cFIREsim). For dynamic strategies that reduce spending, see Spending Stability." />
           </div>
           <div className="text-[10px] text-faint mt-0.5">
             Det: {depl ? `Age ${depl.age}` : "Lasts \u2713"}
           </div>
         </div>
 
-        {/* Card 2: Spending Adequacy gauge */}
+        {/* Card 2: Spending Stability gauge */}
         <div
           className={`${spendGaugeBg} rounded-lg p-4 flex flex-col items-center justify-center`}
         >
@@ -210,8 +210,8 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
             </div>
           </div>
           <div className="text-xs text-muted mt-1 text-center">
-            Spending Adequacy
-            <HelpTip text="Percentage of simulated futures where withdrawals stayed at or above 75% of target spending in every retirement year. Dynamic strategies (Guyton-Klinger, Vanguard Dynamic) can cut spending to preserve the portfolio — this shows how often your income holds up." />
+            Spending Stability
+            <HelpTip text="Percentage of simulated futures where your withdrawals stayed at or above 75% of your initial year-1 withdrawal (adjusted for inflation). Dynamic strategies can cut spending to preserve the portfolio — this shows how often your planned income level holds up." />
           </div>
         </div>
 
