@@ -26,6 +26,7 @@ function makeInput(
     projectedExpenses: 50000,
     portfolioBalance: 1000000,
     effectiveInflation: 0.03,
+    cpiInflation: 0.025,
     hasBudgetOverride: false,
     yearIndex: 1,
     age: 66,
@@ -106,12 +107,14 @@ describe("spending_decline", () => {
     );
     expect(result.projectedExpenses).toBe(50000);
     expect(result.updatedState.initialWithdrawalAmount).toBe(50000);
-    expect(result.updatedState.decumulationYearCount).toBe(1);
+    // decumulationYearCount is now orchestrator-managed, not strategy-managed
+    expect(result.updatedState.decumulationYearCount).toBeUndefined();
   });
 
-  it("5-year compound decline matches formula", () => {
+  it("5-year real decline matches formula (CPI-adjusted)", () => {
     const initial = 50000;
     const rate = 0.02;
+    const cpi = 0.025; // from makeInput default
     const yearCount = 5;
     const input = makeInput({
       crossYearState: stateWith({
@@ -120,12 +123,14 @@ describe("spending_decline", () => {
       }),
     });
     const result = applySpendingDecline({ annualDeclineRate: rate }, input);
-    const expected = initial * Math.pow(1 - rate, yearCount);
+    // Real decline: spending grows with CPI but declines by the decline rate
+    const realDeclineFactor = (1 + cpi) * (1 - rate);
+    const expected = initial * Math.pow(realDeclineFactor, yearCount);
     expect(result.projectedExpenses).toBeCloseTo(expected, 2);
     expect(result.action).toBe("decline");
   });
 
-  it("increments year count", () => {
+  it("does not manage year count (orchestrator-managed)", () => {
     const input = makeInput({
       crossYearState: stateWith({
         initialWithdrawalAmount: 50000,
@@ -133,7 +138,13 @@ describe("spending_decline", () => {
       }),
     });
     const result = applySpendingDecline({ annualDeclineRate: 0.02 }, input);
-    expect(result.updatedState.decumulationYearCount).toBe(4);
+    // decumulationYearCount is orchestrator-managed; strategy reads but doesn't write
+    expect(result.updatedState.decumulationYearCount).toBeUndefined();
+    // Verify it still reads the count correctly for the real decline formula
+    const cpi = 0.025;
+    const realDeclineFactor = (1 + cpi) * (1 - 0.02);
+    const expected = 50000 * Math.pow(realDeclineFactor, 3);
+    expect(result.projectedExpenses).toBeCloseTo(expected, 2);
   });
 });
 

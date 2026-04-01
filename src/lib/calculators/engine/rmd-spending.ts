@@ -24,10 +24,18 @@ export function applyRmdSpending(
   // Use primary person's age for RMD factor lookup (not household average)
   const factor = getRmdFactor(primaryPersonAge ?? age);
 
-  // Pre-RMD age: fall back to fixed-real spending (orchestrator already inflated)
+  // Pre-RMD age: fall back to inflation-adjusted budget spending.
+  // The orchestrator skips inflation for usesPostRetirementRaise=false strategies,
+  // so we apply one year of CPI growth to maintain real purchasing power.
+  // (Only one year because projectedExpenses carries forward prior years' output.)
   if (factor === null) {
+    const yearCount = input.crossYearState.decumulationYearCount;
+    const inflated =
+      yearCount > 0
+        ? roundToCents(input.projectedExpenses * (1 + input.cpiInflation))
+        : input.projectedExpenses;
     return {
-      projectedExpenses: input.projectedExpenses,
+      projectedExpenses: inflated,
       action: null,
       updatedState: {},
     };

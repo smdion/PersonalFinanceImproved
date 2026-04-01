@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
+import { StrategyGuideButton } from "@/components/cards/strategy-guide-panel";
 import { formatCurrency } from "@/lib/utils/format";
 import {
   LineChart,
@@ -83,7 +84,7 @@ export function WithdrawalComparisonCard({
       className="mb-6"
       collapsible
       defaultOpen={true}
-      headerRight={null}
+      headerRight={<StrategyGuideButton />}
     >
       {/* Table */}
       {
@@ -101,7 +102,7 @@ export function WithdrawalComparisonCard({
                   </span>
                 </th>
                 <th className="text-right py-1.5 px-2 font-medium">
-                  <span title="Withdrawals stay at or above 75% of the initial year-1 withdrawal (inflation-adjusted) in every retirement year (200 MC trials). Shows how often the strategy maintains your planned income level.">
+                  <span title="% of scenarios where spending never drops below 75% of your initial plan (inflation-adjusted) in any retirement year. Budget-based strategies (Fixed, Forgo, G-K) score higher. Portfolio-linked strategies (Const %, Endow, Vanguard) naturally score lower because spending tracks market performance. Decline always reads 0% because it intentionally reduces real spending.">
                     Stability
                   </span>
                 </th>

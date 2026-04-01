@@ -8,6 +8,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.9] - 2026-04-01
+
+### Fixed
+
+- Withdrawal engine now correctly skips post-retirement inflation for strategies that don't use it (Vanguard, Const %, Endowment, RMD) — dimmed UI settings no longer silently affect projections
+- RMD pre-RMD fallback spending now grows with CPI to maintain purchasing power during the 10–18 year gap before RMD age
+- Spending Decline now produces a true real decline (spending grows nominally with CPI minus the decline rate) instead of a steeper nominal decline that over-cut by the full inflation rate
+- Guyton-Klinger guardrail parameter grouping corrected — Upper Guardrail now pairs with Increase % (prosperity) and Lower Guardrail with Decrease % (capital preservation)
+
+### Improved
+
+- Endowment rolling window default changed from 10 to 5 years, matching standard university endowment practice (Yale/Stanford use 3–5 years)
+- Strategy Guide flyout added to both Projection and Strategy Comparison tabs — explains each strategy's mechanics, strengths, weaknesses, and what to expect from the Stability metric
+- Stability column tooltip now explains why budget-based strategies score higher and portfolio-linked strategies naturally score lower
+- Decumulation settings layout compacted: Post-Retirement Raise and Withdrawal Rate shown side by side; strategy parameters flow in a 2-column grid
+- Timeline and Income sections merged into a single left-column box in Projection Assumptions, reducing whitespace
+
+---
+
 ## [0.4.8] - 2026-04-01
 
 ### Improved
