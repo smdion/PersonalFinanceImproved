@@ -99,11 +99,28 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
           : pct >= 50
             ? "stroke-orange-500"
             : "stroke-red-500";
+    const spendGaugeBg =
+      spendPct >= 90
+        ? "bg-green-50"
+        : spendPct >= 75
+          ? "bg-yellow-50"
+          : spendPct >= 50
+            ? "bg-orange-50"
+            : "bg-red-50";
+    const spendGaugeRing =
+      spendPct >= 90
+        ? "stroke-green-500"
+        : spendPct >= 75
+          ? "stroke-yellow-500"
+          : spendPct >= 50
+            ? "stroke-orange-500"
+            : "stroke-red-500";
     const circumference = 2 * Math.PI * 40;
     const dashOffset = circumference * (1 - mc.successRate);
+    const spendDashOffset = circumference * (1 - mc.spendingAdequacyRate);
 
     return (
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         {/* Card 1: Success Rate gauge */}
         <div
           className={`${gaugeBg} rounded-lg p-4 flex flex-col items-center justify-center`}
@@ -136,20 +153,50 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
           </div>
           <div className="text-xs text-muted mt-1 text-center">
             Success Rate
-            <HelpTip text="Percentage of simulated scenarios where your portfolio balance stays above $0 through the full plan. This is the industry-standard metric (Trinity Study, cFIREsim). For dynamic strategies that reduce spending, see Spending Adequacy below." />
+            <HelpTip text="Percentage of simulated scenarios where your portfolio balance stays above $0 through the full plan. This is the industry-standard metric (Trinity Study, cFIREsim). For dynamic strategies that reduce spending, see Spending Adequacy." />
           </div>
           <div className="text-[10px] text-faint mt-0.5">
             Det: {depl ? `Age ${depl.age}` : "Lasts \u2713"}
           </div>
-          <div className="mt-1.5 pt-1.5 border-t border-gray-200/50 text-center w-full">
-            <div className="text-[10px] text-muted">
-              Spending Adequacy
-              <HelpTip text="Percentage of simulated futures where withdrawals stayed at or above 75% of target spending in every retirement year. Dynamic strategies can cut spending to preserve the portfolio — this shows how often your income holds up." />
+        </div>
+
+        {/* Card 2: Spending Adequacy gauge */}
+        <div
+          className={`${spendGaugeBg} rounded-lg p-4 flex flex-col items-center justify-center`}
+        >
+          <div className="relative w-20 h-20">
+            <svg className="w-20 h-20 -rotate-90" viewBox="0 0 100 100">
+              <circle
+                cx="50"
+                cy="50"
+                r="40"
+                fill="none"
+                strokeWidth="8"
+                className="stroke-gray-200"
+              />
+              <circle
+                cx="50"
+                cy="50"
+                r="40"
+                fill="none"
+                strokeWidth="8"
+                className={spendGaugeRing}
+                strokeLinecap="round"
+                strokeDasharray={circumference}
+                strokeDashoffset={spendDashOffset}
+              />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className={`text-xl font-bold ${spendColor}`}>
+                {spendPct}%
+              </span>
             </div>
-            <span className={`text-sm font-bold ${spendColor}`}>
-              {spendPct}%
-            </span>
           </div>
+          <div className="text-xs text-muted mt-1 text-center">
+            Spending
+            <HelpTip text="Percentage of simulated futures where withdrawals stayed at or above 75% of target spending in every retirement year. Dynamic strategies (Guyton-Klinger, Vanguard Dynamic) can cut spending to preserve the portfolio — this shows how often your income holds up." />
+          </div>
+          <div className="text-[10px] text-faint mt-0.5">Adequacy</div>
         </div>
 
         {/* Card 2: Nest Egg (MC primary) */}
