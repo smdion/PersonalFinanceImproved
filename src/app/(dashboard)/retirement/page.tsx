@@ -99,6 +99,24 @@ export default function RetirementPage() {
       placeholderData: (prev) => prev,
     });
   const upsertSettings = trpc.settings.retirementSettings.upsert.useMutation({
+    onMutate: async (newSettings) => {
+      // Optimistic update: immediately reflect the changed setting in the UI
+      // so dropdowns/inputs update without waiting for the server round-trip.
+      await utils.projection.computeProjection.cancel();
+      const defined = Object.fromEntries(
+        Object.entries(newSettings).filter(([, v]) => v !== undefined),
+      );
+      utils.projection.computeProjection.setData(
+        debouncedEngineInput,
+        (old) => {
+          if (!old || !("settings" in old) || !old.settings) return old;
+          return {
+            ...old,
+            settings: { ...old.settings, ...defined },
+          } as typeof old;
+        },
+      );
+    },
     onSuccess: () => {
       utils.retirement.invalidate();
       utils.projection.invalidate();
