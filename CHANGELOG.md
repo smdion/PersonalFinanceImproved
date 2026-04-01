@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.5] - 2026-03-31
+
+### Added
+
+- Spending Adequacy metric — shows what percentage of Monte Carlo trials maintained at least 75% of target withdrawals in every retirement year, surfaced alongside success rate in both the MC results summary and strategy comparison table
+- Clear tooltips distinguishing success rate (portfolio survives — industry standard) from spending adequacy (income holds up — catches dynamic strategy spending cuts)
+
+### Fixed
+
+- Strategy comparison now uses saved MC inflation overrides instead of hardcoded 2.5% — results match the main retirement page
+- Plan Assumptions "Inflation" badge corrected from "Deterministic + MC" to "Deterministic" with updated tooltip explaining that MC uses stochastic inflation from the preset
+
+---
+
 ## [0.4.4] - 2026-03-31
 
 ### Fixed

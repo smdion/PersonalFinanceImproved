@@ -1147,8 +1147,8 @@ export default function RetirementPage() {
                 <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
                   Plan Assumptions
                 </h4>
-                <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
-                  Deterministic + MC Simple + MC Advanced
+                <span className="text-[9px] text-purple-400 bg-purple-50 px-1.5 py-0.5 rounded">
+                  Deterministic
                 </span>
                 <div className="flex-1 border-t" />
               </div>
@@ -1156,7 +1156,7 @@ export default function RetirementPage() {
                 <div>
                   <span className="text-muted">
                     Inflation
-                    <HelpTip text="Constant CPI rate applied across the entire plan. Used for real-dollar conversions, IRS limit growth, and Monte Carlo simulations." />
+                    <HelpTip text="Constant CPI rate used for the deterministic projection — expense growth, real-dollar conversions, and IRS limit growth. In Monte Carlo mode, this is replaced by the Stochastic Inflation setting from your MC preset (View Assumptions)." />
                   </span>
                   <div className="font-medium">
                     <InlineEdit

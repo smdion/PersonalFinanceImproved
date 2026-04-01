@@ -27,6 +27,10 @@ import type {
   ProjectionInput,
 } from "./types";
 import { roundToCents } from "../utils/math";
+import type { EngineDecumulationYear } from "./types";
+
+/** A trial is "spending adequate" if withdrawals stay ≥ this fraction of target every year. */
+const SPENDING_ADEQUACY_THRESHOLD = 0.75;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -150,6 +154,7 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
   const depletionAges: number[] = [];
   const sustainableWithdrawals: number[] = [];
   const sustainableWithdrawalsPV: number[] = [];
+  let spendingAdequateCount = 0;
 
   // Deflator for converting nominal retirement-year dollars to today's dollars
   const yearsToRetirement = engineInput.retirementAge - startAge;
@@ -246,6 +251,19 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
       depletionAges.push(result.portfolioDepletionAge);
     }
 
+    // Spending adequacy: did withdrawals stay ≥75% of target every decumulation year?
+    const decYears = result.projectionByYear.filter(
+      (y): y is EngineDecumulationYear => y.phase === "decumulation",
+    );
+    const isSpendingAdequate =
+      decYears.length === 0 ||
+      decYears.every(
+        (y) =>
+          y.targetWithdrawal === 0 ||
+          y.totalWithdrawal >= SPENDING_ADEQUACY_THRESHOLD * y.targetWithdrawal,
+      );
+    if (isSpendingAdequate) spendingAdequateCount++;
+
     // Sustainable withdrawal (nominal and present value)
     sustainableWithdrawals.push(result.sustainableWithdrawal);
     sustainableWithdrawalsPV.push(
@@ -275,9 +293,13 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
     });
   }
 
-  // Success rate: % of trials where money lasts through projection end
+  // Success rate: % of trials where portfolio balance stays above $0
   const successCount = terminalBalances.filter((b) => b > 0).length;
   const successRate = numTrials > 0 ? successCount / numTrials : 0;
+
+  // Spending adequacy: % of trials where withdrawals met ≥75% of target every year
+  const spendingAdequacyRate =
+    numTrials > 0 ? spendingAdequateCount / numTrials : 0;
 
   // Terminal balance stats
   const sortedTerminal = [...terminalBalances].sort((a, b) => a - b);
@@ -302,6 +324,7 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
 
   return {
     successRate,
+    spendingAdequacyRate,
     medianEndBalance,
     meanEndBalance,
     percentileBands,
