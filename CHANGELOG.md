@@ -8,6 +8,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.12] - 2026-04-01
+
+### New
+
+- Spending stability charts with Monte Carlo confidence bands — Balance, Strategy, and Budget views all show simulated outcome ranges
+- Toolbar restructured: chart controls co-located with chart header, table controls co-located with table header, main toolbar reduced to global controls only
+- Independent Baseline (On/Off) and Confidence Band (Off/50%/80%/90%) controls across all chart views
+- Strategy Analyzer with opt-in "Analyze My Strategy" button running what-if Monte Carlo scenarios
+
+### Improved
+
+- All user-facing jargon renamed: "Det" to "Baseline", "MC Bands" to "Confidence Band", percentile notation to confidence percentages, "MC median" to "Sim. median"
+- "Deterministic + MC Simple + MC Advanced" badges simplified to "Baseline + Simulation"
+- Strategy param dropdowns now update instantly via optimistic cache updates (previously waited 7-30s for full projection recompute)
+- Spending stability chart uses bar chart matching Balance view visual pattern (same colors, opacities, fan band layers)
+
+### Fixed
+
+- Strategy param dropdowns (Base Withdrawal %, Ceiling, Floor, etc.) not persisting — settings return object was missing all strategy param fields, causing dropdowns to always show defaults
+- Dollar mode (Today's $/Future $) now syncs correctly between Projection and Strategy Comparison tabs
+- Removed dead Deterministic chart tab (Fan Bands selector already provided this functionality)
+
+---
+
 ## [0.4.11] - 2026-04-01
 
 ### New
