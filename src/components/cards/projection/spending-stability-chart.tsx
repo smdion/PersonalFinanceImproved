@@ -1,26 +1,43 @@
 "use client";
 
-/** Spending Stability chart — shows withdrawal as % of initial plan over time.
- *  Deterministic trajectory with 75% stability threshold line. */
-import { formatPercent } from "@/lib/utils/format";
+/** Spending Stability chart — shows withdrawal as % of baseline over time.
+ *  Bar chart matching the Balance chart visual pattern.
+ *  "strategy" view: bars show ratio vs year-1 withdrawal.
+ *  "budget" view: bars show ratio vs retirement budget.
+ *  MC fan bands + median line overlay when available. */
 import type { EngineDecumulationYear } from "@/lib/calculators/types";
 import {
   ComposedChart,
-  Line,
+  Bar,
   Area,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ReferenceLine,
   ResponsiveContainer,
+  Legend,
 } from "recharts";
 import type { useProjectionState } from "./use-projection-state";
 
 type ProjectionState = ReturnType<typeof useProjectionState>;
 
-export function SpendingStabilityChart({ s }: { s: ProjectionState }) {
-  const { result, engineSettings } = s;
+export function SpendingStabilityChart({
+  s,
+  view,
+}: {
+  s: ProjectionState;
+  view: "strategy" | "budget";
+}) {
+  const {
+    result,
+    engineSettings,
+    annualExpenses,
+    decumulationExpenses,
+    mcStabilityBands,
+    fanBandRange,
+  } = s;
 
   if (!result) return null;
 
@@ -48,30 +65,87 @@ export function SpendingStabilityChart({ s }: { s: ProjectionState }) {
     ? parseFloat(engineSettings.annualInflation)
     : 0.03;
 
+  // Budget baseline
+  const retirementAge = engineSettings?.retirementAge ?? 65;
+  const currentAge = decYears[0]!.age;
+  const yearsToRetirement = Math.max(0, retirementAge - currentAge);
+  const budgetToday = decumulationExpenses ?? annualExpenses;
+  const budgetAtRetirement =
+    budgetToday * Math.pow(1 + inflationRate, yearsToRetirement);
+
+  const isStrategy = view === "strategy";
+  const baselineLabel = isStrategy ? "Strategy" : "Budget";
+
+  const hasMcData = !!mcStabilityBands;
+  const mcBandMap = isStrategy
+    ? mcStabilityBands?.stratRatio
+    : mcStabilityBands?.budgetRatio;
+  const showMc = hasMcData && !!mcBandMap && fanBandRange !== "off";
+  const { showBars } = s;
+
+  // Fan band range — same selector as Balance chart
+  const bandKeys =
+    fanBandRange === "p5-p95"
+      ? { lo: "p5" as const, hi: "p95" as const }
+      : fanBandRange === "p10-p90"
+        ? { lo: "p10" as const, hi: "p90" as const }
+        : { lo: "p25" as const, hi: "p75" as const };
+
   const chartData = decYears
     .filter((_, i) => i % 2 === 0 || i === decYears.length - 1)
     .map((yr) => {
       const decIdx = yr.age - decYears[0]!.age;
       const inflationFactor = Math.pow(1 + inflationRate, decIdx);
-      const baseline = year1Withdrawal * inflationFactor;
+
+      const baseline = isStrategy
+        ? year1Withdrawal * inflationFactor
+        : budgetAtRetirement * inflationFactor;
       const ratio = baseline > 0 ? yr.totalWithdrawal / baseline : 1;
 
-      return {
+      const band = mcBandMap?.get(yr.age);
+
+      // MC band data — match Balance chart's stacked area pattern
+      const pct = (v: number) => Math.round(v * 1000) / 10;
+      const datum: Record<string, number | undefined> = {
         age: yr.age,
-        year: yr.year,
-        ratio: Math.round(ratio * 1000) / 10, // as percentage (e.g., 85.0)
-        threshold: 75,
-        withdrawal: yr.totalWithdrawal,
-        baseline,
+        ratio: pct(ratio),
       };
+
+      if (band) {
+        datum.mc_p50 = pct(band.p50);
+
+        if (fanBandRange === "p5-p95") {
+          datum.mc_base = pct(band.p5);
+          datum.mc_5_10 = pct(band.p10 - band.p5);
+          datum.mc_10_25 = pct(band.p25 - band.p10);
+          datum.mc_25_75 = pct(band.p75 - band.p25);
+          datum.mc_75_90 = pct(band.p90 - band.p75);
+          datum.mc_90_95 = pct(band.p95 - band.p90);
+        } else if (fanBandRange === "p10-p90") {
+          datum.mc_base = pct(band.p10);
+          datum.mc_10_25 = pct(band.p25 - band.p10);
+          datum.mc_25_75 = pct(band.p75 - band.p25);
+          datum.mc_75_90 = pct(band.p90 - band.p75);
+        } else {
+          datum.mc_base = pct(band.p25);
+          datum.mc_25_75 = pct(band.p75 - band.p25);
+        }
+
+        // For tooltip
+        datum.mc_lo = pct(band[bandKeys.lo]);
+        datum.mc_hi = pct(band[bandKeys.hi]);
+      }
+
+      return datum;
     });
 
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
       <h5 className="text-xs font-medium text-muted uppercase mb-2">
-        Spending Stability
+        Spending Stability — vs {baselineLabel}
         <span className="text-[9px] text-faint font-normal ml-2 normal-case">
-          Withdrawal as % of initial plan (inflation-adjusted)
+          Withdrawal as % of {isStrategy ? "year-1 plan" : "retirement budget"}{" "}
+          (inflation-adjusted)
         </span>
       </h5>
       <ResponsiveContainer width="100%" height={320}>
@@ -96,35 +170,49 @@ export function SpendingStabilityChart({ s }: { s: ProjectionState }) {
           <RechartsTooltip
             content={({ active, payload }) => {
               if (!active || !payload?.[0]) return null;
-              const d = payload[0].payload as (typeof chartData)[0];
+              const d = payload[0].payload as Record<
+                string,
+                number | undefined
+              >;
+              const ratio = d.ratio ?? 0;
               return (
                 <div className="bg-surface-primary border rounded-lg shadow-lg p-2 text-xs">
-                  <div className="font-medium mb-1">
-                    Age {d.age} · {d.year}
-                  </div>
+                  <div className="font-medium mb-1">Age {d.age}</div>
                   <div className="flex justify-between gap-4">
-                    <span className="text-muted">Spending ratio:</span>
+                    <span className="text-muted">vs {baselineLabel}:</span>
                     <span
                       className={
-                        d.ratio >= 75
-                          ? "text-green-600 font-medium"
+                        ratio >= 75
+                          ? "text-blue-400 font-medium"
                           : "text-red-500 font-medium"
                       }
                     >
-                      {d.ratio.toFixed(1)}%
+                      {ratio.toFixed(1)}%
                     </span>
                   </div>
-                  <div className="flex justify-between gap-4">
-                    <span className="text-muted">Actual withdrawal:</span>
-                    <span>
-                      {formatPercent(d.withdrawal / d.baseline, 1)} of plan
-                    </span>
-                  </div>
+                  {d.mc_p50 !== undefined && (
+                    <div className="flex justify-between gap-4">
+                      <span className="text-muted">MC median:</span>
+                      <span className="text-purple-400">
+                        {d.mc_p50.toFixed(1)}%
+                      </span>
+                    </div>
+                  )}
+                  {d.mc_lo !== undefined && (
+                    <div className="flex justify-between gap-4">
+                      <span className="text-muted">MC {fanBandRange}:</span>
+                      <span className="text-faint">
+                        {d.mc_lo.toFixed(1)}% – {d.mc_hi!.toFixed(1)}%
+                      </span>
+                    </div>
+                  )}
                 </div>
               );
             }}
           />
-          {/* 75% stability threshold line */}
+          <Legend wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
+
+          {/* 75% stability threshold */}
           <ReferenceLine
             y={75}
             stroke="var(--text-red-500, #ef4444)"
@@ -144,23 +232,106 @@ export function SpendingStabilityChart({ s }: { s: ProjectionState }) {
             strokeDasharray="3 3"
             strokeWidth={1}
           />
-          {/* Area fill below the line for visual weight */}
-          <Area
-            type="monotone"
-            dataKey="ratio"
-            stroke="none"
-            fill="var(--color-indigo-500, #6366f1)"
-            fillOpacity={0.15}
-          />
-          {/* Main spending ratio line */}
-          <Line
-            type="monotone"
-            dataKey="ratio"
-            stroke="var(--color-indigo-500, #6366f1)"
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 4 }}
-          />
+
+          {/* MC fan bands — same colors/pattern as Balance chart */}
+          {showMc && (
+            <>
+              <Area
+                type="monotone"
+                dataKey="mc_base"
+                stackId="mc"
+                fill="transparent"
+                stroke="none"
+                isAnimationActive={false}
+                legendType="none"
+              />
+              {fanBandRange === "p5-p95" && (
+                <Area
+                  type="monotone"
+                  dataKey="mc_5_10"
+                  stackId="mc"
+                  fill="#ede9fe"
+                  fillOpacity={0.4}
+                  stroke="none"
+                  isAnimationActive={false}
+                  legendType="none"
+                />
+              )}
+              {fanBandRange !== "p25-p75" && (
+                <Area
+                  type="monotone"
+                  dataKey="mc_10_25"
+                  stackId="mc"
+                  fill="#c4b5fd"
+                  fillOpacity={0.35}
+                  stroke="none"
+                  isAnimationActive={false}
+                  legendType="none"
+                />
+              )}
+              <Area
+                type="monotone"
+                dataKey="mc_25_75"
+                stackId="mc"
+                name={`MC ${fanBandRange}`}
+                fill="#8b5cf6"
+                fillOpacity={0.2}
+                stroke="none"
+                isAnimationActive={false}
+              />
+              {fanBandRange !== "p25-p75" && (
+                <Area
+                  type="monotone"
+                  dataKey="mc_75_90"
+                  stackId="mc"
+                  fill="#c4b5fd"
+                  fillOpacity={0.35}
+                  stroke="none"
+                  isAnimationActive={false}
+                  legendType="none"
+                />
+              )}
+              {fanBandRange === "p5-p95" && (
+                <Area
+                  type="monotone"
+                  dataKey="mc_90_95"
+                  stackId="mc"
+                  fill="#ede9fe"
+                  fillOpacity={0.4}
+                  stroke="none"
+                  isAnimationActive={false}
+                  legendType="none"
+                />
+              )}
+            </>
+          )}
+
+          {/* Deterministic bars — same style as Balance chart */}
+          {showBars && (
+            <Bar
+              dataKey="ratio"
+              stackId="det"
+              name={`vs ${baselineLabel}`}
+              fill="#3b82f6"
+              fillOpacity={0.85}
+              isAnimationActive={false}
+              radius={[2, 2, 0, 0]}
+            />
+          )}
+
+          {/* MC median line — same as Balance chart */}
+          {showMc && (
+            <Line
+              type="monotone"
+              dataKey="mc_p50"
+              name="MC median"
+              stroke="#7c3aed"
+              strokeWidth={2}
+              strokeDasharray="6 3"
+              dot={false}
+              isAnimationActive={false}
+            />
+          )}
         </ComposedChart>
       </ResponsiveContainer>
     </div>

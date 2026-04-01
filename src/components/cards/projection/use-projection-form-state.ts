@@ -114,12 +114,13 @@ export function useProjectionFormState() {
   const [contribView, setContribView] = useState<"account" | "taxType">(
     "account",
   );
-  const [chartView, setChartView] = useState<
-    "balance" | "spending" | "deterministic"
-  >("balance");
+  const [chartView, setChartView] = useState<"balance" | "strategy" | "budget">(
+    "balance",
+  );
   const [showAllYears, setShowAllYears] = useState(false);
+  const [showBars, setShowBars] = useState(true);
   const [fanBandRange, setFanBandRange] = useState<
-    "p25-p75" | "p10-p90" | "p5-p95"
+    "off" | "p25-p75" | "p10-p90" | "p5-p95"
   >("p25-p75");
   const [diagMode] = usePersistedToggle("diag_mode", false);
   const [showMethodology, setShowMethodology] = useState(false);
@@ -198,6 +199,8 @@ export function useProjectionFormState() {
     setChartView,
     showAllYears,
     setShowAllYears,
+    showBars,
+    setShowBars,
     fanBandRange,
     setFanBandRange,
     diagMode,

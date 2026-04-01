@@ -96,7 +96,7 @@ export function SimulationAssumptions({
   numTrials: number;
   onAssetClassOverridesChange?: (overrides: AssetClassOverride[]) => void;
   assetClassOverrides?: AssetClassOverride[];
-  fanBandRange?: "p25-p75" | "p10-p90" | "p5-p95";
+  fanBandRange?: "off" | "p25-p75" | "p10-p90" | "p5-p95";
   onGlidePathChange?: (
     entries: { age: number; allocations: Record<number, number> }[],
   ) => void;

@@ -223,6 +223,28 @@ export function useProjectionQueries(
     mcPrefetchQuery.data?.result?.percentileBands,
   ]);
 
+  const mcStabilityBands = useMemo(() => {
+    if (projectionMode === "monteCarlo" && mcQuery.isFetching) return null;
+    const bands =
+      (projectionMode === "monteCarlo"
+        ? mcQuery.data?.result?.spendingStabilityBands
+        : null) ??
+      mcPrefetchQuery.data?.result?.spendingStabilityBands ??
+      null;
+    if (!bands) return null;
+    return {
+      stratRatio: new Map(bands.stratRatio.map((b) => [b.age, b])),
+      budgetRatio: bands.budgetRatio
+        ? new Map(bands.budgetRatio.map((b) => [b.age, b]))
+        : null,
+    };
+  }, [
+    projectionMode,
+    mcQuery.isFetching,
+    mcQuery.data?.result?.spendingStabilityBands,
+    mcPrefetchQuery.data?.result?.spendingStabilityBands,
+  ]);
+
   const mcIsPrefetch =
     projectionMode !== "monteCarlo" || !mcQuery.data?.result?.percentileBands;
 
@@ -266,6 +288,7 @@ export function useProjectionQueries(
     mcQuery,
     mcLoading,
     mcBandsByYear,
+    mcStabilityBands,
     mcIsPrefetch,
     mcChartPending,
     mcDetByYear,

@@ -90,6 +90,8 @@ export function ProjectionCard(props: {
     setChartView,
     showAllYears,
     setShowAllYears,
+    showBars,
+    setShowBars,
     fanBandRange,
     setFanBandRange,
     showMethodology,
@@ -522,14 +524,14 @@ export function ProjectionCard(props: {
                             "Balance",
                           )}
                           {pillBtn(
-                            chartView === "spending",
-                            () => setChartView("spending"),
-                            "Spending",
+                            chartView === "strategy",
+                            () => setChartView("strategy"),
+                            "Strategy",
                           )}
                           {pillBtn(
-                            chartView === "deterministic",
-                            () => setChartView("deterministic"),
-                            "Deterministic",
+                            chartView === "budget",
+                            () => setChartView("budget"),
+                            "Budget",
                           )}
                         </div>
                       </div>
@@ -569,41 +571,53 @@ export function ProjectionCard(props: {
                           )}
                         </div>
                       </div>
+                      <div className="w-px h-4 bg-surface-strong" />
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-faint font-medium uppercase">
+                          Det
+                        </span>
+                        <div className="inline-flex rounded-md border bg-surface-primary/60 p-0.5">
+                          {pillBtn(showBars, () => setShowBars(true), "On")}
+                          {pillBtn(!showBars, () => setShowBars(false), "Off")}
+                        </div>
+                      </div>
                       {mcBandsByYear != null && (
                         <>
                           <div className="w-px h-4 bg-surface-strong" />
                           <div className="flex items-center gap-1.5">
                             <span className="text-[10px] text-faint font-medium uppercase">
-                              Fan Bands
+                              MC Bands
                               <HelpTip
                                 maxWidth={360}
                                 lines={[
-                                  "The shaded fan on the chart shows the spread of Monte Carlo outcomes across all simulated trials.",
+                                  "Monte Carlo fan bands show the spread of simulated outcomes across all charts.",
                                   <span key="p25">
                                     <strong className="text-purple-300">
                                       p25-p75
                                     </strong>{" "}
-                                    — Middle 50% of outcomes. Tightest view,
-                                    shows the most likely range.
+                                    — Middle 50% of outcomes. Tightest view.
                                   </span>,
                                   <span key="p10">
                                     <strong className="text-purple-300">
                                       p10-p90
                                     </strong>{" "}
-                                    — Middle 80% of outcomes. Wider view,
-                                    includes moderately good and bad luck.
+                                    — Middle 80% of outcomes.
                                   </span>,
                                   <span key="p5">
                                     <strong className="text-purple-300">
                                       p5-p95
                                     </strong>{" "}
-                                    — Middle 90% of outcomes. Widest view, can
-                                    stretch the Y-axis significantly.
+                                    — Middle 90% of outcomes. Widest view.
                                   </span>,
                                 ]}
                               />
                             </span>
                             <div className="inline-flex rounded-md border bg-surface-primary/60 p-0.5">
+                              {pillBtn(
+                                fanBandRange === "off",
+                                () => setFanBandRange("off"),
+                                "Off",
+                              )}
                               {pillBtn(
                                 fanBandRange === "p25-p75",
                                 () => setFanBandRange("p25-p75"),
@@ -635,16 +649,13 @@ export function ProjectionCard(props: {
                 );
               })()}
 
-              {/* Chart area — toggleable between Balance, Spending Stability, Deterministic */}
-              {chartView === "spending" ? (
-                <SpendingStabilityChart s={s} />
+              {/* Chart area — toggleable between Balance, Strategy, Budget */}
+              {chartView === "strategy" || chartView === "budget" ? (
+                <SpendingStabilityChart s={s} view={chartView} />
               ) : mcChartPending && chartView === "balance" ? (
                 <ProjectionChartSkeleton />
               ) : (
-                <ProjectionChart
-                  s={s}
-                  hideMcBands={chartView === "deterministic"}
-                />
+                <ProjectionChart s={s} />
               )}
 
               {/* MC results moved to below hero cards */}

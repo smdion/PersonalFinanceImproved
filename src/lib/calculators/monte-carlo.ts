@@ -150,6 +150,18 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
   // Storage for per-year balances across trials (year index → array of end balances)
   const balancesByYear: number[][] = Array.from({ length: numYears }, () => []);
 
+  // Storage for per-decumulation-year spending ratios across trials
+  // Index 0 = first decumulation year, not first projection year
+  const numDecYears = Math.max(0, endAge - engineInput.retirementAge + 1);
+  const stratRatiosByDecYear: number[][] = Array.from(
+    { length: numDecYears },
+    () => [],
+  );
+  const budgetRatiosByDecYear: number[][] = Array.from(
+    { length: numDecYears },
+    () => [],
+  );
+
   // Per-trial outcome tracking
   const terminalBalances: number[] = [];
   const depletionAges: number[] = [];
@@ -290,6 +302,26 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
           });
         if (isBudgetStable) budgetStableCount++;
       }
+      // Per-year spending ratios for stability chart bands
+      const budgetAtRet =
+        retirementBudget !== null
+          ? retirementBudget *
+            Math.pow(1 + engineInput.inflationRate, yearsToRetirement)
+          : null;
+      for (let di = 0; di < decYears.length && di < numDecYears; di++) {
+        const yr = decYears[di]!;
+        const inflFactor = Math.pow(1 + trialInflationRate, di);
+        const stratBase = year1Withdrawal * inflFactor;
+        stratRatiosByDecYear[di]!.push(
+          stratBase > 0 ? yr.totalWithdrawal / stratBase : 0,
+        );
+        if (budgetAtRet !== null) {
+          const budgetBase = budgetAtRet * inflFactor;
+          budgetRatiosByDecYear[di]!.push(
+            budgetBase > 0 ? yr.totalWithdrawal / budgetBase : 0,
+          );
+        }
+      }
     } else {
       spendingStableCount++; // no decumulation = vacuously stable
       if (retirementBudget !== null) budgetStableCount++;
@@ -323,6 +355,60 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
       mean,
     });
   }
+
+  // Spending stability ratio bands (per decumulation year)
+  const retirementStartAge = engineInput.retirementAge;
+  const retirementStartYear =
+    engineInput.asOfDate.getFullYear() + (retirementStartAge - startAge);
+
+  const stratRatioBands: MonteCarloPercentileBand[] = [];
+  const budgetRatioBands: MonteCarloPercentileBand[] = [];
+  for (let di = 0; di < numDecYears; di++) {
+    const stratRatios = stratRatiosByDecYear[di]!;
+    if (stratRatios.length === 0) continue;
+    const sortedStrat = [...stratRatios].sort((a, b) => a - b);
+    const stratMean =
+      stratRatios.reduce((s, v) => s + v, 0) / stratRatios.length;
+    stratRatioBands.push({
+      year: retirementStartYear + di,
+      age: retirementStartAge + di,
+      p5: percentile(sortedStrat, 5),
+      p10: percentile(sortedStrat, 10),
+      p25: percentile(sortedStrat, 25),
+      p50: percentile(sortedStrat, 50),
+      p75: percentile(sortedStrat, 75),
+      p90: percentile(sortedStrat, 90),
+      p95: percentile(sortedStrat, 95),
+      mean: stratMean,
+    });
+
+    const budgetRatios = budgetRatiosByDecYear[di]!;
+    if (budgetRatios.length > 0) {
+      const sortedBudget = [...budgetRatios].sort((a, b) => a - b);
+      const budgetMean =
+        budgetRatios.reduce((s, v) => s + v, 0) / budgetRatios.length;
+      budgetRatioBands.push({
+        year: retirementStartYear + di,
+        age: retirementStartAge + di,
+        p5: percentile(sortedBudget, 5),
+        p10: percentile(sortedBudget, 10),
+        p25: percentile(sortedBudget, 25),
+        p50: percentile(sortedBudget, 50),
+        p75: percentile(sortedBudget, 75),
+        p90: percentile(sortedBudget, 90),
+        p95: percentile(sortedBudget, 95),
+        mean: budgetMean,
+      });
+    }
+  }
+
+  const spendingStabilityBands =
+    stratRatioBands.length > 0
+      ? {
+          stratRatio: stratRatioBands,
+          budgetRatio: budgetRatioBands.length > 0 ? budgetRatioBands : null,
+        }
+      : null;
 
   // Success rate: % of trials where portfolio balance stays above $0
   const successCount = terminalBalances.filter((b) => b > 0).length;
@@ -363,6 +449,7 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
     successRate,
     spendingStabilityRate,
     budgetStabilityRate,
+    spendingStabilityBands,
     medianEndBalance,
     meanEndBalance,
     percentileBands,
