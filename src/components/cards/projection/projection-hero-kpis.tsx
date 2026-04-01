@@ -66,6 +66,15 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
   if (mc) {
     // MC-primary hero
     const pct = Math.round(mc.successRate * 100);
+    const spendPct = Math.round(mc.spendingAdequacyRate * 100);
+    const spendColor =
+      spendPct >= 90
+        ? "text-green-600"
+        : spendPct >= 75
+          ? "text-yellow-600"
+          : spendPct >= 50
+            ? "text-orange-500"
+            : "text-red-600";
     const gaugeColor =
       pct >= 90
         ? "text-green-600"
@@ -127,10 +136,19 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
           </div>
           <div className="text-xs text-muted mt-1 text-center">
             Success Rate
-            <HelpTip text="Percentage of simulated scenarios where your money lasts through your full projection." />
+            <HelpTip text="Percentage of simulated scenarios where your portfolio balance stays above $0 through the full plan. This is the industry-standard metric (Trinity Study, cFIREsim). For dynamic strategies that reduce spending, see Spending Adequacy below." />
           </div>
           <div className="text-[10px] text-faint mt-0.5">
             Det: {depl ? `Age ${depl.age}` : "Lasts \u2713"}
+          </div>
+          <div className="mt-1.5 pt-1.5 border-t border-gray-200/50 text-center w-full">
+            <div className="text-[10px] text-muted">
+              Spending Adequacy
+              <HelpTip text="Percentage of simulated futures where withdrawals stayed at or above 75% of target spending in every retirement year. Dynamic strategies can cut spending to preserve the portfolio — this shows how often your income holds up." />
+            </div>
+            <span className={`text-sm font-bold ${spendColor}`}>
+              {spendPct}%
+            </span>
           </div>
         </div>
 
