@@ -211,11 +211,15 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
       trialInflationRate = Math.exp(logInflationSum / numYears) - 1;
     }
 
-    // Build modified engine input for this trial
+    // Build modified engine input for this trial.
+    // Both inflationRate (accumulation) and postRetirementInflationRate (decumulation)
+    // must use the trial's randomized inflation so the stochastic inflation control
+    // affects portfolio longevity during retirement.
     const trialInput: ProjectionInput = {
       ...engineInput,
       returnRates: trialReturnRates,
       inflationRate: trialInflationRate,
+      postRetirementInflationRate: trialInflationRate,
     };
 
     // Run the engine
