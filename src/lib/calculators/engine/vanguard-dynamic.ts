@@ -37,7 +37,7 @@ export function applyVanguardDynamic(
 
   const prior = crossYearState.priorYearSpending;
   const ceiling = prior * (1 + ceilingPercent);
-  const floor = prior * (1 - floorPercent);
+  const yoyFloor = prior * (1 - floorPercent);
 
   let action: string | null = null;
   let spending = raw;
@@ -45,8 +45,8 @@ export function applyVanguardDynamic(
   if (raw > ceiling) {
     spending = ceiling;
     action = "ceiling_applied";
-  } else if (raw < floor) {
-    spending = floor;
+  } else if (raw < yoyFloor) {
+    spending = yoyFloor;
     action = "floor_applied";
   }
 

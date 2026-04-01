@@ -89,7 +89,10 @@ import {
 } from "./spending-strategy";
 import type { SpendingCrossYearState } from "./spending-strategy";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
-import { getStrategyDefaults } from "@/lib/config/withdrawal-strategies";
+import {
+  getStrategyDefaults,
+  WITHDRAWAL_STRATEGY_CONFIG,
+} from "@/lib/config/withdrawal-strategies";
 import { applyGrowth } from "./growth-application";
 import {
   makeIndKey,
@@ -671,18 +674,23 @@ export function runPreYearSetup(
   }
 
   // Apply budget override (sticky-forward) or inflate expenses
-  // Use post-retirement raise rate for expense growth after retirement
+  // Use post-retirement raise rate for expense growth after retirement.
+  // Skip inflation entirely for strategies that don't use post-retirement raise
+  // (their spending is computed from portfolio balance, not inflated expenses).
+  const strategyUsesRaise =
+    WITHDRAWAL_STRATEGY_CONFIG[activeStrategy].usesPostRetirementRaise;
   const effectiveInflation = isAccumulation
     ? inflationRate
     : validatedPostRetirementInflation;
+  const expenseInflation =
+    !isAccumulation && !strategyUsesRaise ? 0 : effectiveInflation;
   if (budgetOverrideMap.has(year)) {
     state.projectedExpenses = budgetOverrideMap.get(year)!;
   } else if (
     y > 0 &&
     !(age === input.retirementAge && input.decumulationAnnualExpenses != null)
   ) {
-    state.projectedExpenses =
-      state.projectedExpenses * (1 + effectiveInflation);
+    state.projectedExpenses = state.projectedExpenses * (1 + expenseInflation);
   }
 
   // --- Spending Strategy Dispatch ---
@@ -701,6 +709,7 @@ export function runPreYearSetup(
       projectedExpenses: state.projectedExpenses,
       portfolioBalance: preTotalBalance,
       effectiveInflation,
+      cpiInflation: inflationRate,
       hasBudgetOverride: budgetOverrideMap.has(year),
       yearIndex: y,
       age,
@@ -710,6 +719,12 @@ export function runPreYearSetup(
     state.projectedExpenses = result.projectedExpenses;
     strategyAction = result.action;
     Object.assign(state.spendingState, result.updatedState);
+  }
+
+  // Always track decumulation year count (0-indexed: first decumulation year = 0).
+  // Strategies use this for inflation-adjusted floors without each needing to track it.
+  if (!isAccumulation) {
+    state.spendingState.decumulationYearCount++;
   }
 
   const totalBalance = preTotalBalance;
