@@ -349,6 +349,7 @@ export default function RetirementPage() {
                   )
                 : settings.retirementAge - 20
             }
+            analyzerInput={comparisonInput ?? undefined}
           />
         ) : (
           <div className="text-xs text-muted p-4 text-center">

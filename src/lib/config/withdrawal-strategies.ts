@@ -13,6 +13,17 @@
 
 export type ParamFieldType = "percent" | "number" | "boolean";
 
+/** Analyzer lever — how adjusting this param affects retirement outcomes. */
+export type ParamLever = {
+  /** Change to apply. Relative: -0.5 = halve current value.
+   *  Absolute: -0.005 = subtract 0.5 percentage points. */
+  delta: number;
+  /** Whether delta is relative to current value or an absolute offset. */
+  unit: "relative" | "absolute";
+  /** Which outcome metric this lever primarily improves. */
+  targets: readonly ("survival" | "smoothness")[];
+};
+
 export type ParamField = {
   key: string;
   label: string;
@@ -24,6 +35,8 @@ export type ParamField = {
   tooltip?: string;
   /** Fields sharing the same group render side-by-side as a visual pair. */
   group?: string;
+  /** Analyzer lever config — when present, the analyzer tests adjusting this param. */
+  lever?: ParamLever;
 };
 
 // ---------------------------------------------------------------------------
@@ -165,6 +178,11 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         default: 1.0,
         tooltip:
           "Multiplier applied to the IRS RMD amount. 1.0 = standard RMD.",
+        lever: {
+          delta: -0.2,
+          unit: "relative",
+          targets: ["survival", "smoothness"],
+        },
       },
     ],
     crossYearStateKeys: [],
@@ -227,6 +245,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         tooltip:
           "Spending increase when upper guardrail triggers (portfolio outperforming).",
         group: "prosperity",
+        lever: { delta: -0.5, unit: "relative", targets: ["survival"] },
       },
       {
         key: "lowerGuardrail",
@@ -251,6 +270,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         tooltip:
           "Spending decrease when lower guardrail triggers (portfolio underperforming).",
         group: "preservation",
+        lever: { delta: -0.5, unit: "relative", targets: ["smoothness"] },
       },
       {
         key: "skipInflationAfterLoss",
@@ -309,6 +329,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         default: 0.02,
         tooltip:
           "Annual real spending decline rate. 2% matches EBRI actual spending data.",
+        lever: { delta: 0.5, unit: "relative", targets: ["survival"] },
       },
     ],
     crossYearStateKeys: ["initialWithdrawalAmount", "decumulationYearCount"],
@@ -354,6 +375,11 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         step: 0.005,
         default: 0.05,
         tooltip: "Percentage of current portfolio balance withdrawn each year.",
+        lever: {
+          delta: -0.2,
+          unit: "relative",
+          targets: ["survival", "smoothness"],
+        },
       },
       {
         key: "floorPercent",
@@ -365,6 +391,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         default: 0.9,
         tooltip:
           "Minimum withdrawal as a percentage of the initial withdrawal amount.",
+        lever: { delta: -0.1, unit: "relative", targets: ["survival"] },
       },
     ],
     crossYearStateKeys: ["initialWithdrawalAmount"],
@@ -412,6 +439,11 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         default: 0.05,
         tooltip:
           "Percentage of the rolling average balance withdrawn each year.",
+        lever: {
+          delta: -0.2,
+          unit: "relative",
+          targets: ["survival", "smoothness"],
+        },
       },
       {
         key: "rollingYears",
@@ -423,6 +455,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         default: 5,
         tooltip:
           "Number of years for the rolling average balance calculation. Standard endowment practice is 3–5 years.",
+        lever: { delta: 0.5, unit: "relative", targets: ["smoothness"] },
       },
       {
         key: "floorPercent",
@@ -480,6 +513,11 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         step: 0.005,
         default: 0.05,
         tooltip: "Base percentage of current portfolio balance.",
+        lever: {
+          delta: -0.2,
+          unit: "relative",
+          targets: ["survival", "smoothness"],
+        },
       },
       {
         key: "ceilingPercent",
@@ -502,6 +540,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         default: 0.025,
         tooltip:
           "Maximum year-over-year spending decrease (e.g. 2.5% = spending can fall at most 2.5% per year).",
+        lever: { delta: -0.4, unit: "relative", targets: ["smoothness"] },
       },
     ],
     crossYearStateKeys: ["priorYearSpending"],

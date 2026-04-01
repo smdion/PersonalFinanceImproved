@@ -80,6 +80,9 @@ export type MonteCarloResult = {
   successRate: number;
   /** % of trials where withdrawals stayed ≥75% of initial inflation-adjusted withdrawal in every decumulation year. */
   spendingStabilityRate: number;
+  /** % of trials where withdrawals stayed ≥75% of the user's retirement budget (inflation-adjusted) in every decumulation year.
+   *  Null when no retirement budget is set (decumulationAnnualExpenses not provided). */
+  budgetStabilityRate: number | null;
   /** 50th percentile terminal balance. */
   medianEndBalance: number;
   /** Average terminal balance. */
