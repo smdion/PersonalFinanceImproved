@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.4] - 2026-03-31
+
+### Fixed
+
+- Monte Carlo stochastic inflation now affects post-retirement expense growth — previously only pre-retirement inflation was randomized, leaving decumulation expenses at a fixed rate across all trials
+- Restored projection scope badges on retirement page section headers showing which settings affect Deterministic, MC Simple, and MC Advanced modes (removed in v0.3.24)
+
+---
+
 ## [0.4.3] - 2026-03-31
 
 ### Fixed
