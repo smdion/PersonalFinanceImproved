@@ -193,10 +193,9 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
             </div>
           </div>
           <div className="text-xs text-muted mt-1 text-center">
-            Spending
+            Spending Adequacy
             <HelpTip text="Percentage of simulated futures where withdrawals stayed at or above 75% of target spending in every retirement year. Dynamic strategies (Guyton-Klinger, Vanguard Dynamic) can cut spending to preserve the portfolio — this shows how often your income holds up." />
           </div>
-          <div className="text-[10px] text-faint mt-0.5">Adequacy</div>
         </div>
 
         {/* Card 2: Nest Egg (MC primary) */}
