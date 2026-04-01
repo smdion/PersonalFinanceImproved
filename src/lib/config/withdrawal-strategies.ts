@@ -51,6 +51,10 @@ export type WithdrawalStrategyConfig = {
   defaultParams: Readonly<Record<string, number | boolean>>;
   /** UI-renderable parameter field descriptors. */
   paramFields: readonly ParamField[];
+  /** Whether the strategy uses the user's Initial Withdrawal Rate setting. */
+  usesWithdrawalRate: boolean;
+  /** Whether the strategy uses the Post-Retirement Raise to grow expenses. */
+  usesPostRetirementRaise: boolean;
   /** Which SpendingCrossYearState fields this strategy reads/writes. */
   crossYearStateKeys: readonly string[];
 };
@@ -67,6 +71,8 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       "Inflation-adjusted constant withdrawal — the classic safe withdrawal rate approach",
     morningstarRef: "Base Case",
     incomeSource: "budget",
+    usesWithdrawalRate: true,
+    usesPostRetirementRaise: true,
     defaultParams: {},
     paramFields: [],
     crossYearStateKeys: [],
@@ -79,6 +85,8 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       "Skip inflation adjustment in years following a portfolio loss — cumulative real cuts",
     morningstarRef: "Method 1",
     incomeSource: "budget",
+    usesWithdrawalRate: true,
+    usesPostRetirementRaise: true,
     defaultParams: {},
     paramFields: [],
     crossYearStateKeys: ["priorYearReturn", "initialWithdrawalAmount"],
@@ -91,6 +99,8 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       "Withdraw based on IRS Required Minimum Distribution factor, scaled by a multiplier",
     morningstarRef: "Method 2",
     incomeSource: "formula",
+    usesWithdrawalRate: false,
+    usesPostRetirementRaise: false,
     defaultParams: {
       rmdMultiplier: 1.0,
     },
@@ -117,6 +127,8 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       "Dynamic spending guardrails that increase or decrease withdrawals based on portfolio performance",
     morningstarRef: "Method 3",
     incomeSource: "rate",
+    usesWithdrawalRate: true,
+    usesPostRetirementRaise: true,
     defaultParams: {
       upperGuardrail: 0.8,
       lowerGuardrail: 1.2,
@@ -134,19 +146,20 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         step: 0.01,
         default: 0.8,
         tooltip:
-          "If current withdrawal rate drops below initial rate × this factor, increase spending.",
-        group: "upper",
+          "If current withdrawal rate drops below initial rate × this factor, increase spending (prosperity rule).",
+        group: "prosperity",
       },
       {
-        key: "decreasePercent",
-        label: "Decrease %",
+        key: "increasePercent",
+        label: "Increase %",
         type: "percent",
         min: 0.01,
         max: 0.3,
         step: 0.01,
         default: 0.1,
-        tooltip: "Spending decrease when upper guardrail triggers.",
-        group: "upper",
+        tooltip:
+          "Spending increase when upper guardrail triggers (portfolio outperforming).",
+        group: "prosperity",
       },
       {
         key: "lowerGuardrail",
@@ -157,19 +170,20 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         step: 0.01,
         default: 1.2,
         tooltip:
-          "If current withdrawal rate exceeds initial rate × this factor, decrease spending.",
-        group: "lower",
+          "If current withdrawal rate exceeds initial rate × this factor, decrease spending (capital preservation rule).",
+        group: "preservation",
       },
       {
-        key: "increasePercent",
-        label: "Increase %",
+        key: "decreasePercent",
+        label: "Decrease %",
         type: "percent",
         min: 0.01,
         max: 0.3,
         step: 0.01,
         default: 0.1,
-        tooltip: "Spending increase when lower guardrail triggers.",
-        group: "lower",
+        tooltip:
+          "Spending decrease when lower guardrail triggers (portfolio underperforming).",
+        group: "preservation",
       },
       {
         key: "skipInflationAfterLoss",
@@ -194,6 +208,8 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       "Annual real spending decline reflecting reduced consumption in later retirement (per EBRI data)",
     morningstarRef: "Method 4",
     incomeSource: "budget",
+    usesWithdrawalRate: true,
+    usesPostRetirementRaise: false,
     defaultParams: {
       annualDeclineRate: 0.02,
     },
@@ -220,6 +236,8 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       "Fixed percentage of current portfolio balance each year, with a floor to prevent severe cuts",
     morningstarRef: "Method 5",
     incomeSource: "rate",
+    usesWithdrawalRate: false,
+    usesPostRetirementRaise: false,
     defaultParams: {
       withdrawalPercent: 0.05,
       floorPercent: 0.9,
@@ -257,9 +275,11 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       "Fixed percentage of N-year rolling average balance — smooths volatility like an endowment fund",
     morningstarRef: "Method 6",
     incomeSource: "rate",
+    usesWithdrawalRate: false,
+    usesPostRetirementRaise: false,
     defaultParams: {
       withdrawalPercent: 0.05,
-      rollingYears: 10,
+      rollingYears: 5,
       floorPercent: 0.9,
     },
     paramFields: [
@@ -281,8 +301,9 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         min: 3,
         max: 20,
         step: 1,
-        default: 10,
-        tooltip: "Number of years for the rolling average balance calculation.",
+        default: 5,
+        tooltip:
+          "Number of years for the rolling average balance calculation. Standard endowment practice is 3–5 years.",
       },
       {
         key: "floorPercent",
@@ -306,6 +327,8 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       "Base percentage of balance with ceiling and floor on year-over-year spending changes",
     morningstarRef: "Method 8",
     incomeSource: "rate",
+    usesWithdrawalRate: false,
+    usesPostRetirementRaise: false,
     defaultParams: {
       basePercent: 0.05,
       ceilingPercent: 0.05,

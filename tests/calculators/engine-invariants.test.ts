@@ -1267,6 +1267,105 @@ describe("engine invariants", () => {
   // 30. Category boundary: retirement vs portfolio
   // ---------------------------------------------------------------------------
 
+  // -------------------------------------------------------------------------
+  // 30. Dimmed settings produce identical output
+  // -------------------------------------------------------------------------
+
+  describe("dimmed settings invariance", () => {
+    it("Post-retirement raise has zero effect on strategies with usesPostRetirementRaise=false", () => {
+      // Strategies that compute spending independently (from portfolio balance or
+      // initial amount with real decline), not from orchestrator-inflated expenses
+      const noRaiseStrategies = [
+        "vanguard_dynamic",
+        "constant_percentage",
+        "endowment",
+        "rmd_spending",
+        "spending_decline",
+      ] as const;
+
+      for (const strategy of noRaiseStrategies) {
+        const base = makeInput({
+          postRetirementInflationRate: 0.0,
+          decumulationDefaults: {
+            ...makeInput().decumulationDefaults,
+            withdrawalStrategy: strategy,
+          },
+        });
+        const withRaise = makeInput({
+          postRetirementInflationRate: 0.05,
+          decumulationDefaults: {
+            ...makeInput().decumulationDefaults,
+            withdrawalStrategy: strategy,
+          },
+        });
+
+        const resultA = calculateProjection(base);
+        const resultB = calculateProjection(withRaise);
+
+        const decA = resultA.projectionByYear.filter(
+          (y) => y.phase === "decumulation",
+        ) as EngineDecumulationYear[];
+        const decB = resultB.projectionByYear.filter(
+          (y) => y.phase === "decumulation",
+        ) as EngineDecumulationYear[];
+
+        expect(decA.length).toBe(decB.length);
+        for (let i = 0; i < decA.length; i++) {
+          expect(
+            decA[i].projectedExpenses,
+            `${strategy} year ${decA[i].year}: projectedExpenses should be identical regardless of post-retirement raise`,
+          ).toBeCloseTo(decB[i].projectedExpenses, 2);
+          expect(
+            decA[i].endBalance,
+            `${strategy} year ${decA[i].year}: endBalance should be identical regardless of post-retirement raise`,
+          ).toBeCloseTo(decB[i].endBalance, 0);
+        }
+      }
+    });
+
+    it("Post-retirement raise DOES affect strategies with usesPostRetirementRaise=true", () => {
+      // Sanity check: strategies that use raise should produce different output
+      const raiseStrategies = ["fixed", "forgo_inflation_after_loss"] as const;
+
+      for (const strategy of raiseStrategies) {
+        const base = makeInput({
+          postRetirementInflationRate: 0.0,
+          decumulationDefaults: {
+            ...makeInput().decumulationDefaults,
+            withdrawalStrategy: strategy,
+          },
+        });
+        const withRaise = makeInput({
+          postRetirementInflationRate: 0.05,
+          decumulationDefaults: {
+            ...makeInput().decumulationDefaults,
+            withdrawalStrategy: strategy,
+          },
+        });
+
+        const resultA = calculateProjection(base);
+        const resultB = calculateProjection(withRaise);
+
+        const decA = resultA.projectionByYear.filter(
+          (y) => y.phase === "decumulation",
+        ) as EngineDecumulationYear[];
+        const decB = resultB.projectionByYear.filter(
+          (y) => y.phase === "decumulation",
+        ) as EngineDecumulationYear[];
+
+        // At least one year should differ (the raise compounds over time)
+        const anyDifferent = decA.some(
+          (a, i) =>
+            Math.abs(a.projectedExpenses - decB[i].projectedExpenses) > 1,
+        );
+        expect(
+          anyDifferent,
+          `${strategy}: post-retirement raise should affect projectedExpenses`,
+        ).toBe(true);
+      }
+    });
+  });
+
   describe("category boundary", () => {
     it("Portfolio-category contributions are report-only during decumulation", () => {
       fc.assert(

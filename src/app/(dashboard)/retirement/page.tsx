@@ -23,6 +23,7 @@ import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { ProjectionCard } from "@/components/cards/projection";
 import { WithdrawalComparisonCard } from "@/components/cards/withdrawal-comparison";
+import { StrategyGuideButton } from "@/components/cards/strategy-guide-panel";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 
 /** Convert a decimal string (e.g. '0.04') to a whole-number string for display ('4'). */
@@ -365,218 +366,228 @@ export default function RetirementPage() {
           <CardBoundary title="Projection Assumptions">
             <Card title="Projection Assumptions" className="mb-6">
               <div className="space-y-4">
-                {/* Row 1: Timeline & Ages */}
-                <div className="bg-surface-sunken rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
-                      Timeline
-                    </h4>
-                    <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
-                      Deterministic + MC Simple + MC Advanced
-                    </span>
-                    <div className="flex-1 border-t" />
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-sm">
-                    {perPersonSettings && perPersonSettings.length > 1 ? (
-                      <>
-                        {perPersonSettings.map((ps) => (
-                          <div key={ps.personId}>
+                {/* Two-column layout: Timeline+Income (left) | Decumulation Plan (right) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Left column: Timeline + Income */}
+                  <div className="bg-surface-sunken rounded-lg p-3 space-y-4">
+                    {/* Timeline */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+                          Timeline
+                        </h4>
+                        <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
+                          Deterministic + MC Simple + MC Advanced
+                        </span>
+                        <div className="flex-1 border-t" />
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-sm">
+                        {perPersonSettings && perPersonSettings.length > 1 ? (
+                          <>
+                            {perPersonSettings.map((ps) => (
+                              <div key={ps.personId}>
+                                <span className="text-muted">
+                                  {ps.name}&apos;s Retirement Age
+                                </span>
+                                <div className="font-medium flex items-baseline gap-1">
+                                  <InlineEdit
+                                    value={String(ps.retirementAge)}
+                                    onSave={(v) =>
+                                      handlePerPersonRetirementAge(
+                                        ps.personId,
+                                        parseInt(v, 10),
+                                      )
+                                    }
+                                    type="number"
+                                    className="text-sm"
+                                    editable={!!settings}
+                                  />
+                                  <span className="text-[10px] text-faint">
+                                    (now{" "}
+                                    {new Date().getFullYear() - ps.birthYear})
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                            <div>
+                              <span className="text-muted">
+                                Household Retirement
+                              </span>
+                              <div className="font-medium text-blue-600">
+                                {Math.max(
+                                  ...perPersonSettings.map(
+                                    (p) => p.retirementAge,
+                                  ),
+                                )}
+                                <span className="text-[10px] text-faint font-normal ml-1">
+                                  when last person retires
+                                </span>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <div>
                             <span className="text-muted">
-                              {ps.name}&apos;s Retirement Age
+                              Retirement Age
+                              <HelpTip text="When contributions stop and withdrawals begin." />
                             </span>
-                            <div className="font-medium flex items-baseline gap-1">
+                            <div className="font-medium">
                               <InlineEdit
-                                value={String(ps.retirementAge)}
+                                value={String(settings.retirementAge)}
                                 onSave={(v) =>
-                                  handlePerPersonRetirementAge(
-                                    ps.personId,
-                                    parseInt(v, 10),
+                                  handleRetirementSettingUpdate(
+                                    "retirementAge",
+                                    v,
                                   )
                                 }
                                 type="number"
                                 className="text-sm"
                                 editable={!!settings}
                               />
-                              <span className="text-[10px] text-faint">
-                                (now {new Date().getFullYear() - ps.birthYear})
-                              </span>
                             </div>
                           </div>
-                        ))}
+                        )}
                         <div>
                           <span className="text-muted">
-                            Household Retirement
+                            Plan Through
+                            <HelpTip text="How long your money needs to last. Higher = more safety margin." />
                           </span>
-                          <div className="font-medium text-blue-600">
-                            {Math.max(
-                              ...perPersonSettings.map((p) => p.retirementAge),
-                            )}
+                          <div className="font-medium flex items-baseline gap-1">
+                            <InlineEdit
+                              value={String(settings.endAge)}
+                              onSave={(v) =>
+                                handleRetirementSettingUpdate("endAge", v)
+                              }
+                              type="number"
+                              className="text-sm"
+                              editable={!!settings}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Income (same box as Timeline) */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+                          Income
+                        </h4>
+                        <div className="flex-1 border-t" />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                        <div>
+                          <span className="text-muted">
+                            Household Salary
+                            <HelpTip text="Combined annual salary from your jobs. This is your starting income — grows each year by the Pre-Retirement Raise rate until retirement." />
+                          </span>
+                          <div className="font-medium">
+                            {data.combinedSalary != null
+                              ? formatCurrency(data.combinedSalary)
+                              : "—"}
                             <span className="text-[10px] text-faint font-normal ml-1">
-                              when last person retires
+                              from jobs
                             </span>
                           </div>
                         </div>
-                      </>
-                    ) : (
-                      <div>
-                        <span className="text-muted">
-                          Retirement Age
-                          <HelpTip text="When contributions stop and withdrawals begin." />
-                        </span>
-                        <div className="font-medium">
-                          <InlineEdit
-                            value={String(settings.retirementAge)}
-                            onSave={(v) =>
-                              handleRetirementSettingUpdate("retirementAge", v)
-                            }
-                            type="number"
-                            className="text-sm"
-                            editable={!!settings}
-                          />
-                        </div>
-                      </div>
-                    )}
-                    <div>
-                      <span className="text-muted">
-                        Plan Through
-                        <HelpTip text="How long your money needs to last. Higher = more safety margin." />
-                      </span>
-                      <div className="font-medium flex items-baseline gap-1">
-                        <InlineEdit
-                          value={String(settings.endAge)}
-                          onSave={(v) =>
-                            handleRetirementSettingUpdate("endAge", v)
-                          }
-                          type="number"
-                          className="text-sm"
-                          editable={!!settings}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Row 2: Income & Decumulation Plan */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Income */}
-                  <div className="bg-surface-sunken rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
-                        Income
-                      </h4>
-                      <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
-                        Deterministic + MC Simple + MC Advanced
-                      </span>
-                      <div className="flex-1 border-t" />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                      <div>
-                        <span className="text-muted">
-                          Household Salary
-                          <HelpTip text="Combined annual salary from your jobs. This is your starting income — grows each year by the Pre-Retirement Raise rate until retirement." />
-                        </span>
-                        <div className="font-medium">
-                          {data.combinedSalary != null
-                            ? formatCurrency(data.combinedSalary)
-                            : "—"}
-                          <span className="text-[10px] text-faint font-normal ml-1">
-                            from jobs
+                        <div>
+                          <span className="text-muted">
+                            Pre-Retirement Raise
+                            <HelpTip text="Annual salary raise % during working years. Affects future contributions and employer match." />
                           </span>
+                          <div className="font-medium">
+                            <InlineEdit
+                              value={decToWhole(settings.salaryAnnualIncrease)}
+                              onSave={(v) =>
+                                handleSettingPercentUpdate(
+                                  "salaryAnnualIncrease",
+                                  v,
+                                )
+                              }
+                              formatDisplay={(v) =>
+                                `${parseFloat(Number(v).toFixed(2))}%`
+                              }
+                              parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+                              type="number"
+                              className="text-sm"
+                              editable={!!settings}
+                            />
+                          </div>
                         </div>
-                      </div>
-                      <div>
-                        <span className="text-muted">
-                          Pre-Retirement Raise
-                          <HelpTip text="Annual salary raise % during working years. Affects future contributions and employer match." />
-                        </span>
-                        <div className="font-medium">
-                          <InlineEdit
-                            value={decToWhole(settings.salaryAnnualIncrease)}
-                            onSave={(v) =>
-                              handleSettingPercentUpdate(
-                                "salaryAnnualIncrease",
-                                v,
-                              )
-                            }
-                            formatDisplay={(v) =>
-                              `${parseFloat(Number(v).toFixed(2))}%`
-                            }
-                            parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-                            type="number"
-                            className="text-sm"
-                            editable={!!settings}
-                          />
+                        <div>
+                          <span className="text-muted">
+                            Salary Cap
+                            <HelpTip text="Growth stops at this amount. Leave blank for no cap." />
+                          </span>
+                          <div className="font-medium">
+                            <InlineEdit
+                              value={
+                                settings.salaryCap
+                                  ? String(
+                                      Math.round(
+                                        parseFloat(settings.salaryCap),
+                                      ),
+                                    )
+                                  : ""
+                              }
+                              onSave={(v) => {
+                                if (!settings) return;
+                                const val = v.replace(/[^0-9]/g, "");
+                                upsertSettings.mutate({
+                                  personId: settings.personId,
+                                  retirementAge: settings.retirementAge,
+                                  endAge: settings.endAge,
+                                  returnAfterRetirement:
+                                    settings.returnAfterRetirement,
+                                  annualInflation: settings.annualInflation,
+                                  salaryAnnualIncrease:
+                                    settings.salaryAnnualIncrease,
+                                  salaryCap: val === "" ? null : val,
+                                });
+                              }}
+                              formatDisplay={(v) =>
+                                v ? formatCurrency(Number(v)) : "None"
+                              }
+                              parseInput={(v) => v.replace(/[^0-9]/g, "")}
+                              type="number"
+                              className="text-sm"
+                              editable={!!settings}
+                            />
+                          </div>
                         </div>
-                      </div>
-                      <div>
-                        <span className="text-muted">
-                          Salary Cap
-                          <HelpTip text="Growth stops at this amount. Leave blank for no cap." />
-                        </span>
-                        <div className="font-medium">
-                          <InlineEdit
-                            value={
-                              settings.salaryCap
-                                ? String(
-                                    Math.round(parseFloat(settings.salaryCap)),
-                                  )
-                                : ""
-                            }
-                            onSave={(v) => {
-                              if (!settings) return;
-                              const val = v.replace(/[^0-9]/g, "");
-                              upsertSettings.mutate({
-                                personId: settings.personId,
-                                retirementAge: settings.retirementAge,
-                                endAge: settings.endAge,
-                                returnAfterRetirement:
-                                  settings.returnAfterRetirement,
-                                annualInflation: settings.annualInflation,
-                                salaryAnnualIncrease:
-                                  settings.salaryAnnualIncrease,
-                                salaryCap: val === "" ? null : val,
-                              });
-                            }}
-                            formatDisplay={(v) =>
-                              v ? formatCurrency(Number(v)) : "None"
-                            }
-                            parseInput={(v) => v.replace(/[^0-9]/g, "")}
-                            type="number"
-                            className="text-sm"
-                            editable={!!settings}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-muted">
-                          Contribution Profile
-                          <HelpTip text="Select a contribution profile to override salary and contribution assumptions in the projection. 'Live' uses your current paycheck/contribution settings." />
-                        </span>
-                        <div className="font-medium">
-                          <select
-                            className="text-sm border rounded px-2 py-1 bg-surface-primary w-full"
-                            value={contribProfileId ?? ""}
-                            onChange={(e) =>
-                              setContribProfileId(
-                                e.target.value ? Number(e.target.value) : null,
-                              )
-                            }
-                          >
-                            {contribProfiles.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.name}
-                                {!p.name.includes("(Live)") && p.isDefault
-                                  ? " (Live)"
-                                  : ""}
-                              </option>
-                            ))}
-                          </select>
+                        <div>
+                          <span className="text-muted">
+                            Contribution Profile
+                            <HelpTip text="Select a contribution profile to override salary and contribution assumptions in the projection. 'Live' uses your current paycheck/contribution settings." />
+                          </span>
+                          <div className="font-medium">
+                            <select
+                              className="text-sm border rounded px-2 py-1 bg-surface-primary w-full"
+                              value={contribProfileId ?? ""}
+                              onChange={(e) =>
+                                setContribProfileId(
+                                  e.target.value
+                                    ? Number(e.target.value)
+                                    : null,
+                                )
+                              }
+                            >
+                              {contribProfiles.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {p.name}
+                                  {!p.name.includes("(Live)") && p.isDefault
+                                    ? " (Live)"
+                                    : ""}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Decumulation Plan */}
+                  {/* Right column: Decumulation Plan */}
                   <div className="bg-surface-sunken rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-2">
                       <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
@@ -586,6 +597,7 @@ export default function RetirementPage() {
                         Deterministic + MC Simple + MC Advanced
                       </span>
                       <div className="flex-1 border-t" />
+                      <StrategyGuideButton />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 text-sm">
@@ -645,6 +657,8 @@ export default function RetirementPage() {
                       const { incomeSource } = strategyMeta;
                       const budgetNotUsed =
                         incomeSource === "formula" || incomeSource === "rate";
+                      const { usesWithdrawalRate, usesPostRetirementRaise } =
+                        strategyMeta;
                       const profiles = data.budgetProfileSummaries ?? [];
                       if (profiles.length === 0) return null;
 
@@ -662,11 +676,28 @@ export default function RetirementPage() {
 
                       return (
                         <div>
-                          {budgetNotUsed && (
+                          {(budgetNotUsed ||
+                            !usesWithdrawalRate ||
+                            !usesPostRetirementRaise) && (
                             <div className="text-xs text-amber-600 bg-amber-50 rounded px-2 py-1.5 mb-2">
-                              {incomeSource === "formula"
-                                ? `${strategyMeta.label} computes spending from your portfolio balance — budget and withdrawal rate are not used.`
-                                : `${strategyMeta.label} computes spending from withdrawal rate × portfolio — budget is used as a pre-strategy fallback only.`}
+                              {`${strategyMeta.label} computes spending from ${
+                                incomeSource === "formula"
+                                  ? "your portfolio balance using IRS/endowment formulas"
+                                  : incomeSource === "rate"
+                                    ? "withdrawal rate × portfolio"
+                                    : "your retirement budget"
+                              }.`}
+                              {(() => {
+                                const dimmed: string[] = [];
+                                if (budgetNotUsed) dimmed.push("budget source");
+                                if (!usesWithdrawalRate)
+                                  dimmed.push("initial withdrawal rate");
+                                if (!usesPostRetirementRaise)
+                                  dimmed.push("post-retirement raise");
+                                return dimmed.length > 0
+                                  ? ` Dimmed settings (${dimmed.join(", ")}) are not used by this strategy.`
+                                  : "";
+                              })()}
                             </div>
                           )}
                           <div
@@ -787,84 +818,85 @@ export default function RetirementPage() {
                       );
                     })()}
 
-                    {/* Post-Retirement Raise */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm mt-2">
-                      <div>
-                        <span className="text-muted">
-                          Post-Retirement Raise
-                          <HelpTip text="Your annual 'raise' in retirement. The base is set by your Retirement Budget — this rate grows it each year, like a cost-of-living adjustment. Independent of the Inflation rate." />
-                        </span>
-                        <div className="font-medium">
-                          <InlineEdit
-                            value={decToWhole(
-                              settings.postRetirementInflation ??
-                                settings.annualInflation,
-                            )}
-                            onSave={(v) =>
-                              handleSettingPercentUpdate(
-                                "postRetirementInflation",
-                                v,
-                              )
+                    {/* Post-Retirement Raise + Withdrawal Rate side by side */}
+                    {(() => {
+                      const s = (settings?.withdrawalStrategy ??
+                        "fixed") as WithdrawalStrategyType;
+                      const meta = getStrategyMeta(s);
+                      return (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm mt-2">
+                          <div
+                            className={
+                              !meta.usesPostRetirementRaise ? "opacity-40" : ""
                             }
-                            formatDisplay={(v) =>
-                              `${parseFloat(Number(v).toFixed(2))}%`
+                          >
+                            <span className="text-muted">
+                              Post-Retirement Raise
+                              <HelpTip text="Your annual 'raise' in retirement. The base is set by your Retirement Budget — this rate grows it each year, like a cost-of-living adjustment. Independent of the Inflation rate." />
+                            </span>
+                            <div className="font-medium">
+                              <InlineEdit
+                                value={decToWhole(
+                                  settings.postRetirementInflation ??
+                                    settings.annualInflation,
+                                )}
+                                onSave={(v) =>
+                                  handleSettingPercentUpdate(
+                                    "postRetirementInflation",
+                                    v,
+                                  )
+                                }
+                                formatDisplay={(v) =>
+                                  `${parseFloat(Number(v).toFixed(2))}%`
+                                }
+                                parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+                                type="number"
+                                className="text-sm"
+                                editable={!!settings}
+                              />
+                            </div>
+                          </div>
+                          <div
+                            className={
+                              !meta.usesWithdrawalRate ? "opacity-40" : ""
                             }
-                            parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-                            type="number"
-                            className="text-sm"
-                            editable={!!settings}
-                          />
+                          >
+                            <span className="text-muted">
+                              {meta.incomeSource === "budget"
+                                ? "Withdrawal Rate"
+                                : "Initial Withdrawal Rate"}
+                              <HelpTip
+                                text={
+                                  !meta.usesWithdrawalRate
+                                    ? `Not used by ${meta.label} — this strategy computes spending from its own formula (${meta.incomeSource === "formula" ? "IRS factors" : "base percentage of portfolio"}).`
+                                    : meta.incomeSource === "rate"
+                                      ? `Starting withdrawal rate for ${meta.label}. Sets the initial withdrawal amount, which the strategy then adjusts yearly based on portfolio performance.`
+                                      : "Your withdrawal rate applied to the projected retirement balance. Determines the annual withdrawal amount, which grows by the Post-Retirement Raise rate each year."
+                                }
+                              />
+                            </span>
+                            <div className="font-medium">
+                              <InlineEdit
+                                value={decToWhole(settings.withdrawalRate)}
+                                onSave={(v) =>
+                                  handleSettingPercentUpdate(
+                                    "withdrawalRate",
+                                    v,
+                                  )
+                                }
+                                formatDisplay={(v) =>
+                                  `${parseFloat(Number(v).toFixed(2))}%`
+                                }
+                                parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+                                type="number"
+                                className="text-sm"
+                                editable={!!settings}
+                              />
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-
-                    <div
-                      className={(() => {
-                        const s = (settings?.withdrawalStrategy ??
-                          "fixed") as WithdrawalStrategyType;
-                        return getStrategyMeta(s).incomeSource === "formula"
-                          ? "opacity-40"
-                          : "";
-                      })()}
-                    >
-                      <span className="text-muted">
-                        {(() => {
-                          const s = (settings?.withdrawalStrategy ??
-                            "fixed") as WithdrawalStrategyType;
-                          const src = getStrategyMeta(s).incomeSource;
-                          return src === "budget"
-                            ? "Withdrawal Rate"
-                            : "Initial Withdrawal Rate";
-                        })()}
-                        <HelpTip
-                          text={(() => {
-                            const s = (settings?.withdrawalStrategy ??
-                              "fixed") as WithdrawalStrategyType;
-                            const meta = getStrategyMeta(s);
-                            if (meta.incomeSource === "formula")
-                              return `Not used by ${meta.label} — spending is computed from your portfolio balance using IRS factors.`;
-                            if (meta.incomeSource === "rate")
-                              return `Starting withdrawal rate for ${meta.label}. Sets the initial withdrawal amount, which the strategy then adjusts yearly based on portfolio performance.`;
-                            return "A 'what-if' rate applied to your projected retirement balance. Used to calculate the sustainable withdrawal shown on the projection card and FI Progress (deterministic: balance × rate, Monte Carlo: median across thousands of simulated paths). Does not control actual spending — your Retirement Budget sets what you withdraw.";
-                          })()}
-                        />
-                      </span>
-                      <div className="font-medium">
-                        <InlineEdit
-                          value={decToWhole(settings.withdrawalRate)}
-                          onSave={(v) =>
-                            handleSettingPercentUpdate("withdrawalRate", v)
-                          }
-                          formatDisplay={(v) =>
-                            `${parseFloat(Number(v).toFixed(2))}%`
-                          }
-                          parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-                          type="number"
-                          className="text-sm"
-                          editable={!!settings}
-                        />
-                      </div>
-                    </div>
+                      );
+                    })()}
 
                     {/* Strategy-specific parameters — data-driven from registry */}
                     {(() => {
@@ -1167,26 +1199,12 @@ export default function RetirementPage() {
                       };
 
                       return (
-                        <div className="space-y-1 text-sm mt-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm mt-2">
                           {layoutItems.map((item) => {
                             if (item.kind === "group") {
-                              return (
-                                <div
-                                  key={item.groupName}
-                                  className="grid grid-cols-2 gap-x-4 gap-y-1"
-                                >
-                                  {item.fields.map((f) => renderField(f))}
-                                </div>
-                              );
+                              return item.fields.map((f) => renderField(f));
                             }
-                            return (
-                              <div
-                                key={item.field.key}
-                                className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1"
-                              >
-                                {renderField(item.field)}
-                              </div>
-                            );
+                            return renderField(item.field);
                           })}
                         </div>
                       );

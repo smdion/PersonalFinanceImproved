@@ -43,6 +43,8 @@ export function applyEndowment(
   const window = history.slice(-rollingYears);
   const avg = window.reduce((sum, b) => sum + b, 0) / window.length;
   const raw = avg * withdrawalPercent;
+  // Nominal floor: prevents severe spending cuts relative to initial withdrawal.
+  // Kept nominal to preserve the self-correcting property of rate-based strategies.
   const floor = crossYearState.initialWithdrawalAmount * floorPercent;
   const floorApplied = raw < floor;
   const spending = roundToCents(Math.max(raw, floor));

@@ -33,6 +33,9 @@ export function applyConstantPercentage(
   }
 
   const raw = portfolioBalance * withdrawalPercent;
+  // Nominal floor: prevents severe spending cuts relative to initial withdrawal.
+  // Kept nominal (not inflation-adjusted) to preserve the self-correcting property
+  // — rate-based strategies must never force withdrawals above what the portfolio sustains.
   const floor = crossYearState.initialWithdrawalAmount * floorPercent;
   const floorApplied = raw < floor;
   const spending = roundToCents(Math.max(raw, floor));
