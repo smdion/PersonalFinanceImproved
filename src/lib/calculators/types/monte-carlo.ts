@@ -109,6 +109,17 @@ export type MonteCarloResult = {
     p5EndBalance: number;
   };
 
+  /** Percentile bands for spending stability chart (ratio values, not dollars).
+   *  Each band's p-values represent withdrawal/baseline ratios (e.g., p25=0.82
+   *  means 25th percentile of trials had spending at 82% of baseline).
+   *  Null when there are no decumulation years. */
+  spendingStabilityBands: {
+    /** Bands for vs-Strategy ratio (withdrawal / year-1 inflation-adjusted withdrawal). */
+    stratRatio: MonteCarloPercentileBand[];
+    /** Bands for vs-Budget ratio (withdrawal / retirement budget inflation-adjusted). Null when no budget set. */
+    budgetRatio: MonteCarloPercentileBand[] | null;
+  } | null;
+
   /** Metadata. */
   numTrials: number;
   computeTimeMs: number;

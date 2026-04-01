@@ -59,13 +59,7 @@ export function ProjectionChartSkeleton() {
   );
 }
 
-export function ProjectionChart({
-  s,
-  hideMcBands = false,
-}: {
-  s: ProjectionState;
-  hideMcBands?: boolean;
-}) {
+export function ProjectionChart({ s }: { s: ProjectionState }) {
   const {
     result,
     engineSettings,
@@ -73,7 +67,7 @@ export function ProjectionChart({
     personFilterName,
     getPersonYearTotals,
     deflate,
-    mcBandsByYear: mcBandsRaw,
+    mcBandsByYear,
     mcPrefetchQuery,
     mcIsPrefetch,
     visibleColumns,
@@ -83,9 +77,6 @@ export function ProjectionChart({
   } = s;
 
   if (!result) return null;
-
-  // When hideMcBands is true (Deterministic chart view), suppress MC overlays
-  const mcBandsByYear = hideMcBands ? null : mcBandsRaw;
 
   // Bars always show standalone deterministic projection.
   // MC fan bands + median line overlay on top via mcBandsByYear.
@@ -200,7 +191,11 @@ export function ProjectionChart({
           label: s.label,
         }));
 
-  const hasMc = mcBandsByYear != null;
+  const hasMcData = mcBandsByYear != null;
+  const showMc = hasMcData && fanBandRange !== "off";
+  const { showBars } = s;
+  // Keep hasMc for backward compat in data building (always build MC data points)
+  const hasMc = hasMcData;
 
   return (
     <div className="bg-surface-sunken rounded-lg p-3 chart-fade-in">
@@ -350,7 +345,7 @@ export function ProjectionChart({
             />
 
             {/* MC percentile fan — behind bars */}
-            {hasMc && (
+            {showMc && (
               <>
                 <Area
                   type="monotone"
@@ -417,20 +412,23 @@ export function ProjectionChart({
             )}
 
             {/* Stacked bars — deterministic breakdown */}
-            {segmentKeys.map((seg, i) => (
-              <Bar
-                key={seg.key}
-                dataKey={seg.key}
-                stackId="det"
-                fill={seg.hex}
-                fillOpacity={0.85}
-                isAnimationActive={false}
-                radius={i === segmentKeys.length - 1 ? [2, 2, 0, 0] : undefined}
-              />
-            ))}
+            {showBars &&
+              segmentKeys.map((seg, i) => (
+                <Bar
+                  key={seg.key}
+                  dataKey={seg.key}
+                  stackId="det"
+                  fill={seg.hex}
+                  fillOpacity={0.85}
+                  isAnimationActive={false}
+                  radius={
+                    i === segmentKeys.length - 1 ? [2, 2, 0, 0] : undefined
+                  }
+                />
+              ))}
 
             {/* MC median line */}
-            {hasMc && (
+            {showMc && (
               <Line
                 type="monotone"
                 dataKey="mc_p50"

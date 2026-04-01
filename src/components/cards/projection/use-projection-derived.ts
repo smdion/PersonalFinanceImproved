@@ -95,6 +95,10 @@ export function useProjectionDerived(
     engineData && engineData.result ? engineData.settings : undefined;
   const annualExpenses =
     engineData && engineData.result ? engineData.annualExpenses : 0;
+  const decumulationExpenses =
+    engineData && engineData.result
+      ? ((engineData.decumulationExpenses as number | undefined) ?? null)
+      : null;
   const budgetProfileSummaries =
     engineData && engineData.result
       ? engineData.budgetProfileSummaries
@@ -483,6 +487,7 @@ export function useProjectionDerived(
     salaryOverridePersonId,
     engineSettings,
     annualExpenses,
+    decumulationExpenses,
     budgetProfileSummaries,
     contribProfileSummaries,
     contribSpecs,
