@@ -63,6 +63,23 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
         }
       : null;
 
+  // MC loading — show skeleton instead of flashing deterministic cards
+  if (!mc && mcLoading) {
+    return (
+      <div className="grid grid-cols-4 gap-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="bg-surface-sunken rounded-lg p-4 flex flex-col items-center justify-center animate-pulse"
+          >
+            <div className="w-20 h-20 rounded-full bg-gray-200/20" />
+            <div className="h-3 w-20 bg-gray-200/20 rounded mt-2" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   if (mc) {
     // MC-primary hero
     const pct = Math.round(mc.successRate * 100);
