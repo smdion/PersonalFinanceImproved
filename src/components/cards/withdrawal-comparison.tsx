@@ -48,6 +48,10 @@ type Props = {
   strategies: StrategyResult[];
   activeStrategy: string | null;
   retirementAge: number;
+  dollarMode: "nominal" | "real";
+  onDollarModeChange: (mode: "nominal" | "real") => void;
+  inflationRate: number;
+  currentAge: number;
 };
 
 type ChartMetric = "endBalance" | "withdrawal";
@@ -56,11 +60,25 @@ export function WithdrawalComparisonCard({
   strategies,
   activeStrategy,
   retirementAge,
+  dollarMode,
+  onDollarModeChange,
+  inflationRate,
+  currentAge,
 }: Props) {
   // Table and chart shown together (no toggle needed)
   const [chartMetric, setChartMetric] = useState<ChartMetric>("endBalance");
 
   if (strategies.length === 0) return null;
+
+  // Deflate a future-dollar value to today's dollars
+  const deflate = (value: number, age: number) => {
+    if (dollarMode === "nominal") return value;
+    const yearsOut = age - currentAge;
+    return yearsOut > 0 ? value / Math.pow(1 + inflationRate, yearsOut) : value;
+  };
+
+  // For summary stats (Year 1, Avg, Min, Max, Legacy), use retirement age as baseline
+  const deflateSummary = (value: number) => deflate(value, retirementAge);
 
   // Build chart data: merge all strategies into age-indexed rows
   const chartData = (() => {
@@ -68,8 +86,9 @@ export function WithdrawalComparisonCard({
     for (const s of strategies) {
       for (const pt of s.yearByYear) {
         if (!ageMap.has(pt.age)) ageMap.set(pt.age, { age: pt.age });
-        ageMap.get(pt.age)![s.strategy] =
+        const raw =
           chartMetric === "endBalance" ? pt.endBalance : pt.withdrawal;
+        ageMap.get(pt.age)![s.strategy] = deflate(raw, pt.age);
       }
     }
     return Array.from(ageMap.values()).sort(
@@ -84,7 +103,35 @@ export function WithdrawalComparisonCard({
       className="mb-6"
       collapsible
       defaultOpen={true}
-      headerRight={<StrategyGuideButton />}
+      headerRight={
+        <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-md border bg-surface-primary/60 p-0.5">
+            <button
+              type="button"
+              onClick={() => onDollarModeChange("real")}
+              className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors ${
+                dollarMode === "real"
+                  ? "bg-surface-primary text-primary shadow-sm border"
+                  : "text-muted hover:text-secondary"
+              }`}
+            >
+              Today&apos;s $
+            </button>
+            <button
+              type="button"
+              onClick={() => onDollarModeChange("nominal")}
+              className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors ${
+                dollarMode === "nominal"
+                  ? "bg-surface-primary text-primary shadow-sm border"
+                  : "text-muted hover:text-secondary"
+              }`}
+            >
+              Future $
+            </button>
+          </div>
+          <StrategyGuideButton />
+        </div>
+      }
     >
       {/* Table */}
       {
@@ -182,19 +229,19 @@ export function WithdrawalComparisonCard({
                       )}
                     </td>
                     <td className="text-right py-1.5 px-2 tabular-nums text-faint">
-                      {formatCurrency(s.year1Withdrawal)}
+                      {formatCurrency(deflateSummary(s.year1Withdrawal))}
                     </td>
                     <td className="text-right py-1.5 px-2 tabular-nums text-faint">
-                      {formatCurrency(s.avgAnnualWithdrawal)}
+                      {formatCurrency(deflateSummary(s.avgAnnualWithdrawal))}
                     </td>
                     <td className="text-right py-1.5 px-2 tabular-nums text-faint">
-                      {formatCurrency(s.minAnnualWithdrawal)}
+                      {formatCurrency(deflateSummary(s.minAnnualWithdrawal))}
                     </td>
                     <td className="text-right py-1.5 px-2 tabular-nums text-faint">
-                      {formatCurrency(s.maxAnnualWithdrawal)}
+                      {formatCurrency(deflateSummary(s.maxAnnualWithdrawal))}
                     </td>
                     <td className="text-right py-1.5 pl-2 tabular-nums text-faint">
-                      {formatCurrency(s.legacyAmount)}
+                      {formatCurrency(deflateSummary(s.legacyAmount))}
                     </td>
                   </tr>
                 );

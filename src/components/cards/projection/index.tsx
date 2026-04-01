@@ -41,6 +41,9 @@ export function ProjectionCard(props: {
   parentCategoryFilter?: string;
   contributionProfileId?: number;
   snapshotId?: number;
+  /** When provided, overrides the internal dollarMode state (for shared page-level toggle). */
+  dollarMode?: "nominal" | "real";
+  onDollarModeChange?: (mode: "nominal" | "real") => void;
 }) {
   const s = useProjectionState({
     people: props.people,
@@ -77,8 +80,8 @@ export function ProjectionCard(props: {
     setMcTaxMode,
     mcAssetClassOverrides,
     setMcAssetClassOverrides,
-    dollarMode,
-    setDollarMode,
+    dollarMode: internalDollarMode,
+    setDollarMode: internalSetDollarMode,
     balanceView,
     setBalanceView,
     contribView,
@@ -121,6 +124,10 @@ export function ProjectionCard(props: {
     baseYear,
     deflate,
   } = s;
+
+  // Allow page-level dollarMode override (for shared toggle across tabs)
+  const dollarMode = props.dollarMode ?? internalDollarMode;
+  const setDollarMode = props.onDollarModeChange ?? internalSetDollarMode;
 
   const {
     parentCategoryFilter,
@@ -644,44 +651,7 @@ export function ProjectionCard(props: {
             </div>
           )}
 
-          {/* Table mode toggle + UNIFIED TABLE */}
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] text-faint font-medium uppercase">
-              Table
-            </span>
-            <div className="inline-flex rounded-md border bg-surface-primary/60 p-0.5">
-              <button
-                type="button"
-                onClick={() =>
-                  (
-                    s as { setTableMode: (m: "compact" | "expanded") => void }
-                  ).setTableMode("compact")
-                }
-                className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${
-                  (s as { tableMode: string }).tableMode === "compact"
-                    ? "bg-surface-primary text-primary shadow-sm border"
-                    : "text-muted hover:text-secondary"
-                }`}
-              >
-                Compact
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  (
-                    s as { setTableMode: (m: "compact" | "expanded") => void }
-                  ).setTableMode("expanded")
-                }
-                className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${
-                  (s as { tableMode: string }).tableMode === "expanded"
-                    ? "bg-surface-primary text-primary shadow-sm border"
-                    : "text-muted hover:text-secondary"
-                }`}
-              >
-                Expanded
-              </button>
-            </div>
-          </div>
+          {/* UNIFIED TABLE */}
           <ProjectionTable
             state={s}
             people={people}

@@ -117,7 +117,6 @@ export function useProjectionFormState() {
   const [chartView, setChartView] = useState<
     "balance" | "spending" | "deterministic"
   >("balance");
-  const [tableMode, setTableMode] = useState<"compact" | "expanded">("compact");
   const [showAllYears, setShowAllYears] = useState(false);
   const [fanBandRange, setFanBandRange] = useState<
     "p25-p75" | "p10-p90" | "p5-p95"
@@ -197,8 +196,6 @@ export function useProjectionFormState() {
     setContribView,
     chartView,
     setChartView,
-    tableMode,
-    setTableMode,
     showAllYears,
     setShowAllYears,
     fanBandRange,
