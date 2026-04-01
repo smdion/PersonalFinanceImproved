@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.6] - 2026-03-31
+
+### Improved
+
+- Retirement page now defaults to Monte Carlo view — the Deterministic/Monte Carlo toggle has been removed since MC overlays on top of the deterministic projection with no unique deterministic-only content
+- Spending adequacy now visible in the hero success rate card, below the donut
+
+---
+
 ## [0.4.5] - 2026-03-31
 
 ### Added
