@@ -1186,17 +1186,27 @@ export const projectionRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       // Load retirement data + MC config in parallel
-      const [data, assetClasses, assetCorrelations, glidePathRows] =
-        await Promise.all([
-          fetchRetirementData(ctx.db, { snapshotId: input?.snapshotId }),
-          ctx.db
-            .select()
-            .from(schema.assetClassParams)
-            .where(eq(schema.assetClassParams.isActive, true))
-            .orderBy(asc(schema.assetClassParams.sortOrder)),
-          ctx.db.select().from(schema.assetClassCorrelations),
-          ctx.db.select().from(schema.glidePathAllocations),
-        ]);
+      const [
+        data,
+        assetClasses,
+        assetCorrelations,
+        glidePathRows,
+        savedInflationOverridesRow,
+      ] = await Promise.all([
+        fetchRetirementData(ctx.db, { snapshotId: input?.snapshotId }),
+        ctx.db
+          .select()
+          .from(schema.assetClassParams)
+          .where(eq(schema.assetClassParams.isActive, true))
+          .orderBy(asc(schema.assetClassParams.sortOrder)),
+        ctx.db.select().from(schema.assetClassCorrelations),
+        ctx.db.select().from(schema.glidePathAllocations),
+        ctx.db
+          .select({ value: schema.appSettings.value })
+          .from(schema.appSettings)
+          .where(eq(schema.appSettings.key, "mc_inflation_overrides"))
+          .then((r) => r[0] ?? null),
+      ]);
 
       const payload = await buildEnginePayload(ctx.db, data, {
         salaryOverrides: input?.salaryOverrides,
@@ -1216,6 +1226,18 @@ export const projectionRouter = createTRPCRouter({
         baseEngineInput,
         avgRetirementAge,
       } = payload;
+
+      // Resolve effective inflation risk (same logic as computeMonteCarlo)
+      const savedInflationOverrides = (savedInflationOverridesRow?.value ??
+        null) as { meanRate?: number; stdDev?: number } | null;
+      const baseInflationRisk = { meanRate: 0.025, stdDev: 0.012 };
+      const effectiveInflationRisk = savedInflationOverrides
+        ? {
+            meanRate:
+              savedInflationOverrides.meanRate ?? baseInflationRisk.meanRate,
+            stdDev: savedInflationOverrides.stdDev ?? baseInflationRisk.stdDev,
+          }
+        : baseInflationRisk;
 
       // Build MC inputs for success rate computation (200 trials per strategy)
       const mcAssetClasses = assetClasses.map((ac) => ({
@@ -1305,8 +1327,9 @@ export const projectionRouter = createTRPCRouter({
             ? withdrawals.reduce((s, w) => s + w, 0) / withdrawals.length
             : 0;
 
-        // Run lightweight MC (200 trials) for success rate
+        // Run lightweight MC (200 trials) for success rate + spending adequacy
         let successRate: number | null = null;
+        let spendingAdequacyRate: number | null = null;
         if (hasMcData) {
           const mcResult = calculateMonteCarlo({
             engineInput: {
@@ -1316,13 +1339,14 @@ export const projectionRouter = createTRPCRouter({
               decumulationOverrides: [],
             },
             numTrials: 200,
-            seed: 42, // deterministic seed for consistent results
+            seed: 42,
             assetClasses: mcAssetClasses,
             correlations: mcCorrelations,
             glidePath: mcGlidePath,
-            inflationRisk: { meanRate: 0.025, stdDev: 0.012 },
+            inflationRisk: effectiveInflationRisk,
           });
           successRate = mcResult.successRate;
+          spendingAdequacyRate = mcResult.spendingAdequacyRate;
         }
 
         return {
@@ -1342,6 +1366,7 @@ export const projectionRouter = createTRPCRouter({
           legacyAmount:
             decYears.length > 0 ? decYears[decYears.length - 1]!.endBalance : 0,
           successRate,
+          spendingAdequacyRate,
           yearByYear: decYears.map((y) => ({
             age: y.age,
             withdrawal: roundToCents(y.totalWithdrawal),

@@ -76,8 +76,10 @@ export type MonteCarloInput = {
 
 /** Full result from a Monte Carlo simulation. */
 export type MonteCarloResult = {
-  /** % of trials where money lasts through projection end. */
+  /** % of trials where portfolio balance stays above $0 through projection end. */
   successRate: number;
+  /** % of trials where withdrawals stayed ≥75% of target in every decumulation year. */
+  spendingAdequacyRate: number;
   /** 50th percentile terminal balance. */
   medianEndBalance: number;
   /** Average terminal balance. */
