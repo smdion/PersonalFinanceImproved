@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.10] - 2026-04-01
+
+### Improved
+
+- Today's $/Future $ toggle on Strategy Comparison tab, shared with Projection tab — toggling one updates both
+- Strategy guide content moved into withdrawal strategy config (data-driven) — guide panel reads the config shape with no per-strategy knowledge
+- Removed dead Compact/Expanded table toggle (All Years toggle already provides this)
+- Decumulation settings layout further compacted with 2-column strategy param grid
+
+---
+
 ## [0.4.9] - 2026-04-01
 
 ### Fixed
