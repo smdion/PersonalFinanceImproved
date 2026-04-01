@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.7] - 2026-03-31
+
+### Improved
+
+- Renamed "Spending Adequacy" to "Spending Stability" — compares withdrawals to the initial year-1 withdrawal (inflation-adjusted) instead of the strategy's own target, properly measuring whether dynamic strategies maintain the planned income level
+- Strategy comparison now refreshes when MC settings change (inflation, glide path, asset classes)
+- Loading skeleton shown for hero cards while MC simulation runs instead of flashing deterministic cards
+
+---
+
 ## [0.4.6] - 2026-03-31
 
 ### Improved

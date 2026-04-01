@@ -108,7 +108,7 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
               const si = mcQuery.data.simulationInputs;
               const mcr = mcQuery.data.result!;
               const successPct = Math.round(mcr.successRate * 100);
-              const spendingPct = Math.round(mcr.spendingAdequacyRate * 100);
+              const spendingPct = Math.round(mcr.spendingStabilityRate * 100);
               const presetBar: Record<
                 string,
                 {
@@ -179,7 +179,7 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
                     <HelpTip
                       maxWidth={420}
                       lines={[
-                        `Percentage of simulated futures where your portfolio balance stayed above $0 from age ${si.retirementAge} through age ${si.endAge} — a ${si.endAge - si.retirementAge}-year retirement. This is the industry-standard metric (Trinity Study, cFIREsim). For dynamic strategies that reduce spending, see Spending Adequacy for the full picture.`,
+                        `Percentage of simulated futures where your portfolio balance stayed above $0 from age ${si.retirementAge} through age ${si.endAge} — a ${si.endAge - si.retirementAge}-year retirement. This is the industry-standard metric (Trinity Study, cFIREsim). For dynamic strategies that reduce spending, see Spending Stability for the full picture.`,
                         <span key="ranges" className="space-y-0.5">
                           <div>
                             <strong className="text-green-400">90%+</strong> —
@@ -222,23 +222,23 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
                     <span className="text-[10px] text-muted leading-tight">
                       spending
                       <br />
-                      adequacy
+                      stability
                     </span>
                     <HelpTip
                       maxWidth={420}
                       lines={[
-                        `Percentage of simulated futures where your withdrawals stayed at or above 75% of target spending in every retirement year.`,
-                        `Dynamic strategies (Guyton-Klinger, Vanguard Dynamic) can reduce withdrawals to preserve the portfolio. The portfolio "survives" but your income may not cover expenses. This metric captures that risk.`,
+                        `Percentage of simulated futures where your withdrawals stayed at or above 75% of your initial year-1 withdrawal, adjusted for inflation each year.`,
+                        `Dynamic strategies (Guyton-Klinger, Vanguard Dynamic) can reduce withdrawals to preserve the portfolio. Success Rate says your money lasts — Spending Stability says your income holds up.`,
                         <span key="example">
                           <strong className="text-blue-300">Example:</strong>{" "}
-                          95% success with 60% spending adequacy means your
-                          money lasts in 95% of futures, but in 40% of them your
-                          income drops below 75% of what you planned.
+                          95% success with 60% stability means your money lasts
+                          in 95% of futures, but in 40% of them your income
+                          drops below 75% of what you started with.
                         </span>,
                         <span key="fixed">
                           For fixed withdrawal strategies (Fixed Real, Forgo
-                          Inflation), spending adequacy and success rate will be
-                          similar — the strategy withdraws the full target or
+                          Inflation), spending stability and success rate will
+                          be similar — the strategy withdraws the full amount or
                           the portfolio is depleted.
                         </span>,
                       ]}

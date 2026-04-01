@@ -78,8 +78,8 @@ export type MonteCarloInput = {
 export type MonteCarloResult = {
   /** % of trials where portfolio balance stays above $0 through projection end. */
   successRate: number;
-  /** % of trials where withdrawals stayed ≥75% of target in every decumulation year. */
-  spendingAdequacyRate: number;
+  /** % of trials where withdrawals stayed ≥75% of initial inflation-adjusted withdrawal in every decumulation year. */
+  spendingStabilityRate: number;
   /** 50th percentile terminal balance. */
   medianEndBalance: number;
   /** Average terminal balance. */
