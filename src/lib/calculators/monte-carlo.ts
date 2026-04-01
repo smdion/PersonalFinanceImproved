@@ -156,6 +156,11 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
   const sustainableWithdrawals: number[] = [];
   const sustainableWithdrawalsPV: number[] = [];
   let spendingStableCount = 0;
+  let budgetStableCount = 0;
+
+  // Budget baseline for budget stability metric (user's stated retirement expenses).
+  // Inflated from today's dollars to retirement-year dollars the same way the engine does.
+  const retirementBudget = engineInput.decumulationAnnualExpenses ?? null;
 
   // Deflator for converting nominal retirement-year dollars to today's dollars
   const yearsToRetirement = engineInput.retirementAge - startAge;
@@ -269,8 +274,25 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
           return y.totalWithdrawal >= SPENDING_STABILITY_THRESHOLD * baseline;
         });
       if (isStable) spendingStableCount++;
+
+      // Budget stability: same check but against the user's retirement budget
+      // (inflation-adjusted from today's dollars to each year's nominal dollars)
+      if (retirementBudget !== null) {
+        const budgetAtRetirement =
+          retirementBudget *
+          Math.pow(1 + engineInput.inflationRate, yearsToRetirement);
+        const isBudgetStable =
+          budgetAtRetirement === 0 ||
+          decYears.every((y, i) => {
+            const inflationFactor = Math.pow(1 + trialInflationRate, i);
+            const baseline = budgetAtRetirement * inflationFactor;
+            return y.totalWithdrawal >= SPENDING_STABILITY_THRESHOLD * baseline;
+          });
+        if (isBudgetStable) budgetStableCount++;
+      }
     } else {
       spendingStableCount++; // no decumulation = vacuously stable
+      if (retirementBudget !== null) budgetStableCount++;
     }
 
     // Sustainable withdrawal (nominal and present value)
@@ -310,6 +332,12 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
   const spendingStabilityRate =
     numTrials > 0 ? spendingStableCount / numTrials : 0;
 
+  // Budget stability: same metric but against user's retirement budget
+  const budgetStabilityRate =
+    retirementBudget !== null && numTrials > 0
+      ? budgetStableCount / numTrials
+      : null;
+
   // Terminal balance stats
   const sortedTerminal = [...terminalBalances].sort((a, b) => a - b);
   const medianEndBalance = percentile(sortedTerminal, 50);
@@ -334,6 +362,7 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
   return {
     successRate,
     spendingStabilityRate,
+    budgetStabilityRate,
     medianEndBalance,
     meanEndBalance,
     percentileBands,
