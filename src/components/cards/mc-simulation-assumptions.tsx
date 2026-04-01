@@ -278,11 +278,11 @@ export function SimulationAssumptions({
             </span>{" "}
             volatility. The fan chart shows the{" "}
             {fanBandRange === "p5-p95"
-              ? "5th–95th"
+              ? "90%"
               : fanBandRange === "p10-p90"
-                ? "10th–90th"
-                : "25th–75th"}{" "}
-            percentile range across all trials.
+                ? "80%"
+                : "50%"}{" "}
+            confidence range across all trials.
           </div>
 
           {/* Active overrides callout */}

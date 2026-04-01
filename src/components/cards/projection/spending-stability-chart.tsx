@@ -19,6 +19,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { ChartControls } from "./chart-controls";
 import type { useProjectionState } from "./use-projection-state";
 
 type ProjectionState = ReturnType<typeof useProjectionState>;
@@ -141,13 +142,17 @@ export function SpendingStabilityChart({
 
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
-      <h5 className="text-xs font-medium text-muted uppercase mb-2">
-        Spending Stability — vs {baselineLabel}
-        <span className="text-[9px] text-faint font-normal ml-2 normal-case">
-          Withdrawal as % of {isStrategy ? "year-1 plan" : "retirement budget"}{" "}
-          (inflation-adjusted)
-        </span>
-      </h5>
+      <div className="flex items-start justify-between mb-2 gap-2">
+        <h5 className="text-xs font-medium text-muted uppercase">
+          Spending Stability — vs {baselineLabel}
+          <span className="text-[9px] text-faint font-normal ml-2 normal-case">
+            Withdrawal as % of{" "}
+            {isStrategy ? "year-1 plan" : "retirement budget"}{" "}
+            (inflation-adjusted)
+          </span>
+        </h5>
+        <ChartControls s={s} />
+      </div>
       <ResponsiveContainer width="100%" height={320}>
         <ComposedChart
           data={chartData}
@@ -192,7 +197,7 @@ export function SpendingStabilityChart({
                   </div>
                   {d.mc_p50 !== undefined && (
                     <div className="flex justify-between gap-4">
-                      <span className="text-muted">MC median:</span>
+                      <span className="text-muted">Sim. median:</span>
                       <span className="text-purple-400">
                         {d.mc_p50.toFixed(1)}%
                       </span>
@@ -200,7 +205,7 @@ export function SpendingStabilityChart({
                   )}
                   {d.mc_lo !== undefined && (
                     <div className="flex justify-between gap-4">
-                      <span className="text-muted">MC {fanBandRange}:</span>
+                      <span className="text-muted">Confidence band:</span>
                       <span className="text-faint">
                         {d.mc_lo.toFixed(1)}% – {d.mc_hi!.toFixed(1)}%
                       </span>
@@ -273,7 +278,7 @@ export function SpendingStabilityChart({
                 type="monotone"
                 dataKey="mc_25_75"
                 stackId="mc"
-                name={`MC ${fanBandRange}`}
+                name="Confidence band"
                 fill="#8b5cf6"
                 fillOpacity={0.2}
                 stroke="none"
@@ -324,7 +329,7 @@ export function SpendingStabilityChart({
             <Line
               type="monotone"
               dataKey="mc_p50"
-              name="MC median"
+              name="Sim. median"
               stroke="#7c3aed"
               strokeWidth={2}
               strokeDasharray="6 3"

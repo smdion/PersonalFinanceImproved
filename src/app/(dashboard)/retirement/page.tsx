@@ -393,7 +393,7 @@ export default function RetirementPage() {
                           Timeline
                         </h4>
                         <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
-                          Deterministic + MC Simple + MC Advanced
+                          Baseline + Simulation
                         </span>
                         <div className="flex-1 border-t" />
                       </div>
@@ -610,7 +610,7 @@ export default function RetirementPage() {
                         Decumulation Plan
                       </h4>
                       <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
-                        Deterministic + MC Simple + MC Advanced
+                        Baseline + Simulation
                       </span>
                       <div className="flex-1 border-t" />
                       <StrategyGuideButton />
@@ -1235,7 +1235,7 @@ export default function RetirementPage() {
                       Plan Assumptions
                     </h4>
                     <span className="text-[9px] text-purple-400 bg-purple-50 px-1.5 py-0.5 rounded">
-                      Deterministic
+                      Baseline
                     </span>
                     <div className="flex-1 border-t" />
                   </div>
@@ -1279,7 +1279,7 @@ export default function RetirementPage() {
                         Social Security
                       </h4>
                       <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
-                        Deterministic + MC Simple + MC Advanced
+                        Baseline + Simulation
                       </span>
                       <div className="flex-1 border-t" />
                     </div>
@@ -1444,7 +1444,7 @@ export default function RetirementPage() {
                       <span className="text-[10px] text-faint">brackets</span>
                       <HelpTip text="Tax filing status used for retirement tax estimates — affects federal brackets, LTCG rates, IRMAA thresholds, and Social Security taxation. 'Auto' inherits from your primary job's W-4. Override it here if your filing status will change in retirement." />
                       <span className="text-[9px] text-purple-400 bg-purple-50 px-1.5 py-0.5 rounded">
-                        Deterministic + MC Advanced
+                        Baseline + Simulation
                       </span>
                       <div className="flex-1 border-t" />
                     </div>
@@ -1663,7 +1663,7 @@ export default function RetirementPage() {
                         Healthcare
                       </h4>
                       <span className="text-[9px] text-purple-400 bg-purple-50 px-1.5 py-0.5 rounded">
-                        Deterministic + MC Advanced
+                        Baseline + Simulation
                       </span>
                       <div className="flex-1 border-t" />
                     </div>
@@ -1785,7 +1785,7 @@ export default function RetirementPage() {
                         </span>
                         <HelpTip text="Your portfolio return rate shifts with age based on the glide path configured in Settings. Deterministic mode uses these rates directly as fixed annual returns. Monte Carlo (Simple + Advanced) uses them as the mean of a probability distribution — each trial samples random returns around these rates, capturing real-world volatility and sequence-of-returns risk. Darker segments in the bar below indicate higher return rates (younger, more aggressive allocation)." />
                         <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
-                          Deterministic + MC Simple + MC Advanced
+                          Baseline + Simulation
                         </span>
                         <div className="flex-1 border-t" />
                       </div>

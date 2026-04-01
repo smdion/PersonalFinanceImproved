@@ -166,7 +166,7 @@ export function WithdrawalComparisonCard({
                   Depletion Age
                 </th>
                 <th className="text-right py-1.5 px-2 font-medium">
-                  <span title="Portfolio survives to end of plan — balance stays above $0 in every year (200 MC trials)">
+                  <span title="Portfolio survives to end of plan — balance stays above $0 in every year (200 Monte Carlo simulations)">
                     Success
                   </span>
                 </th>
@@ -458,8 +458,8 @@ export function WithdrawalComparisonCard({
             </div>
 
             <p className="text-[10px] text-faint mt-3">
-              Full engine assumptions used with only the stated change. 200 MC
-              trials each.
+              Full engine assumptions used with only the stated change. 200
+              Monte Carlo simulations each.
             </p>
           </div>
         ) : analyzerQuery.data?.diagnosis === "healthy" ? (

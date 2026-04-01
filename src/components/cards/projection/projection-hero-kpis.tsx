@@ -184,7 +184,7 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
           subtitle={
             mc.distributions.depletionAge
               ? `Depletes ~age ${Math.round(mc.distributions.depletionAge.median)}`
-              : "Det: Lasts \u2713"
+              : "Baseline: Lasts \u2713"
           }
           tooltip={[
             `Percentage of simulated futures where your portfolio balance stays above $0 through age ${engineSettings?.endAge ?? "?"} — a ${retSpan}-year retirement. This is the industry-standard metric (Trinity Study, cFIREsim).`,
@@ -269,7 +269,7 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
             </div>
           )}
           <div className="text-[10px] text-faint mt-0.5">
-            Det: {formatCurrency(nestEgg)}
+            Baseline: {formatCurrency(nestEgg)}
           </div>
         </div>
 
@@ -282,15 +282,15 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
             {formatCurrency(deflate(mc.medianEndBalance, terminalYear))}
           </div>
           <div className="text-[10px] text-muted">
-            MC median at age {engineSettings?.endAge ?? "?"}
+            Sim. median at age {engineSettings?.endAge ?? "?"}
           </div>
           <div className="text-[10px] text-faint mt-0.5">
             {(() => {
               if (!result || result.projectionByYear.length === 0)
-                return "Det: $0";
+                return "Baseline: $0";
               const last =
                 result.projectionByYear[result.projectionByYear.length - 1]!;
-              return `Det: ${formatCurrency(deflate(last.endBalance, last.year))}`;
+              return `Baseline: ${formatCurrency(deflate(last.endBalance, last.year))}`;
             })()}
           </div>
         </div>

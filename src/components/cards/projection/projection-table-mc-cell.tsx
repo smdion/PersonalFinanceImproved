@@ -78,7 +78,7 @@ export function renderMcCell(
     <Tooltip
       content={renderTooltip({
         kind: "money",
-        header: "MC Percentiles",
+        header: "Simulation Range",
         items: [
           {
             label: "95th",
@@ -101,7 +101,9 @@ export function renderMcCell(
         ...(isPersonFiltered || proofNote
           ? {
               overrideNote: [
-                isPersonFiltered ? "MC values are household aggregate" : "",
+                isPersonFiltered
+                  ? "Simulation values are household aggregate"
+                  : "",
                 proofNote ?? "",
               ]
                 .filter(Boolean)
