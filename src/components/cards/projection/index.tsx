@@ -67,7 +67,7 @@ export function ProjectionCard(props: {
     withdrawalTaxPref,
     setWithdrawalTaxPref,
     projectionMode,
-    setProjectionMode,
+    // setProjectionMode removed — MC is always active
     mcTrials,
     setMcTrials,
     mcPreset,
@@ -390,18 +390,6 @@ export function ProjectionCard(props: {
                             ]}
                           />
                         </span>
-                        <div className="inline-flex rounded-md border bg-surface-primary/60 p-0.5">
-                          {pillBtn(
-                            !isMc,
-                            () => setProjectionMode("deterministic"),
-                            "Deterministic",
-                          )}
-                          {pillBtn(
-                            isMc,
-                            () => setProjectionMode("monteCarlo"),
-                            "Monte Carlo",
-                          )}
-                        </div>
                         {isMc && (
                           <>
                             <select
