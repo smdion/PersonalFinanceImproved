@@ -257,9 +257,9 @@ export function StrategyGuidePanel({
                     Strengths
                   </h4>
                   <ul className="space-y-0.5">
-                    {guide.strengths.map((s, i) => (
+                    {guide.strengths.map((s) => (
                       <li
-                        key={i}
+                        key={s}
                         className="text-[11px] text-secondary flex gap-1"
                       >
                         <span className="text-green-500 shrink-0">+</span>
@@ -273,9 +273,9 @@ export function StrategyGuidePanel({
                     Weaknesses
                   </h4>
                   <ul className="space-y-0.5">
-                    {guide.weaknesses.map((w, i) => (
+                    {guide.weaknesses.map((w) => (
                       <li
-                        key={i}
+                        key={w}
                         className="text-[11px] text-secondary flex gap-1"
                       >
                         <span className="text-red-500 shrink-0">-</span>
