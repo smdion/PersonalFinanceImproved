@@ -7,6 +7,95 @@ import type { useProjectionState } from "./use-projection-state";
 
 type ProjectionState = ReturnType<typeof useProjectionState>;
 
+// ---------------------------------------------------------------------------
+// Reusable gauge donut — data-driven, no per-metric knowledge
+// ---------------------------------------------------------------------------
+
+function GaugeDonut({
+  rate,
+  label,
+  subtitle,
+  tooltip,
+  size = "normal",
+}: {
+  rate: number;
+  label: string;
+  subtitle?: string;
+  tooltip?: (string | React.ReactNode)[];
+  size?: "normal" | "small";
+}) {
+  const pct = Math.round(rate * 100);
+  const textColor =
+    pct >= 90
+      ? "text-green-600"
+      : pct >= 75
+        ? "text-yellow-600"
+        : pct >= 50
+          ? "text-orange-500"
+          : "text-red-600";
+  const bg =
+    pct >= 90
+      ? "bg-green-50"
+      : pct >= 75
+        ? "bg-yellow-50"
+        : pct >= 50
+          ? "bg-orange-50"
+          : "bg-red-50";
+  const ring =
+    pct >= 90
+      ? "stroke-green-500"
+      : pct >= 75
+        ? "stroke-yellow-500"
+        : pct >= 50
+          ? "stroke-orange-500"
+          : "stroke-red-500";
+  const r = 40;
+  const circumference = 2 * Math.PI * r;
+  const dashOffset = circumference * (1 - rate);
+  const svgSize = size === "small" ? "w-14 h-14" : "w-20 h-20";
+  const textSize = size === "small" ? "text-base" : "text-xl";
+
+  return (
+    <div
+      className={`${bg} rounded-lg p-3 flex flex-col items-center justify-center`}
+    >
+      <div className={`relative ${svgSize}`}>
+        <svg className={`${svgSize} -rotate-90`} viewBox="0 0 100 100">
+          <circle
+            cx="50"
+            cy="50"
+            r={r}
+            fill="none"
+            strokeWidth="8"
+            className="stroke-gray-200"
+          />
+          <circle
+            cx="50"
+            cy="50"
+            r={r}
+            fill="none"
+            strokeWidth="8"
+            className={ring}
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={dashOffset}
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className={`${textSize} font-bold ${textColor}`}>{pct}%</span>
+        </div>
+      </div>
+      <div className="text-xs text-muted mt-1 text-center">
+        {label}
+        {tooltip && <HelpTip maxWidth={420} lines={tooltip} />}
+      </div>
+      {subtitle && (
+        <div className="text-[10px] text-faint mt-0.5">{subtitle}</div>
+      )}
+    </div>
+  );
+}
+
 export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
   const {
     result,
@@ -82,154 +171,78 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
 
   if (mc) {
     // MC-primary hero
-    const pct = Math.round(mc.successRate * 100);
-    const spendPct = Math.round(mc.spendingStabilityRate * 100);
-    const spendColor =
-      spendPct >= 90
-        ? "text-green-600"
-        : spendPct >= 75
-          ? "text-yellow-600"
-          : spendPct >= 50
-            ? "text-orange-500"
-            : "text-red-600";
-    const gaugeColor =
-      pct >= 90
-        ? "text-green-600"
-        : pct >= 75
-          ? "text-yellow-600"
-          : pct >= 50
-            ? "text-orange-500"
-            : "text-red-600";
-    const gaugeBg =
-      pct >= 90
-        ? "bg-green-50"
-        : pct >= 75
-          ? "bg-yellow-50"
-          : pct >= 50
-            ? "bg-orange-50"
-            : "bg-red-50";
-    const gaugeRing =
-      pct >= 90
-        ? "stroke-green-500"
-        : pct >= 75
-          ? "stroke-yellow-500"
-          : pct >= 50
-            ? "stroke-orange-500"
-            : "stroke-red-500";
-    const spendGaugeBg =
-      spendPct >= 90
-        ? "bg-green-50"
-        : spendPct >= 75
-          ? "bg-yellow-50"
-          : spendPct >= 50
-            ? "bg-orange-50"
-            : "bg-red-50";
-    const spendGaugeRing =
-      spendPct >= 90
-        ? "stroke-green-500"
-        : spendPct >= 75
-          ? "stroke-yellow-500"
-          : spendPct >= 50
-            ? "stroke-orange-500"
-            : "stroke-red-500";
-    const circumference = 2 * Math.PI * 40;
-    const dashOffset = circumference * (1 - mc.successRate);
-    const spendDashOffset = circumference * (1 - mc.spendingStabilityRate);
+    const hasBudgetStability = mc.budgetStabilityRate !== null;
+    const retSpan =
+      (engineSettings?.endAge ?? 95) - (engineSettings?.retirementAge ?? 65);
 
     return (
       <div className="grid grid-cols-4 gap-4">
-        {/* Card 1: Success Rate gauge */}
-        <div
-          className={`${gaugeBg} rounded-lg p-4 flex flex-col items-center justify-center`}
-        >
-          <div className="relative w-20 h-20">
-            <svg className="w-20 h-20 -rotate-90" viewBox="0 0 100 100">
-              <circle
-                cx="50"
-                cy="50"
-                r="40"
-                fill="none"
-                strokeWidth="8"
-                className="stroke-gray-200"
-              />
-              <circle
-                cx="50"
-                cy="50"
-                r="40"
-                fill="none"
-                strokeWidth="8"
-                className={gaugeRing}
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                strokeDashoffset={dashOffset}
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className={`text-xl font-bold ${gaugeColor}`}>{pct}%</span>
-            </div>
-          </div>
-          <div className="text-xs text-muted mt-1 text-center">
-            Success Rate
-            <HelpTip
-              maxWidth={420}
-              lines={[
-                `Percentage of simulated futures where your portfolio balance stays above $0 through age ${engineSettings?.endAge ?? "?"} — a ${(engineSettings?.endAge ?? 95) - (engineSettings?.retirementAge ?? 65)}-year retirement. This is the industry-standard metric (Trinity Study, cFIREsim).`,
-                "90%+ — Strong. Most planners consider this the target.",
-                "75–89% — Moderate. Workable but with meaningful risk.",
-                "Below 75% — Elevated risk. Review your assumptions.",
-                `${(engineSettings?.endAge ?? 95) - (engineSettings?.retirementAge ?? 65) > 30 ? "Your plan spans 40 years — longer than the classic 30-year 4% rule. Early retirees often need a lower withdrawal rate (3-3.5%)." : ""}`,
-                "For dynamic strategies that reduce spending, see Spending Stability for the full picture.",
-              ].filter(Boolean)}
-            />
-          </div>
-          <div className="text-[10px] text-faint mt-0.5">
-            {mc.distributions.depletionAge
+        {/* Card 1: Success Rate */}
+        <GaugeDonut
+          rate={mc.successRate}
+          label="Success Rate"
+          subtitle={
+            mc.distributions.depletionAge
               ? `Depletes ~age ${Math.round(mc.distributions.depletionAge.median)}`
-              : "Det: Lasts \u2713"}
-          </div>
-        </div>
+              : "Det: Lasts \u2713"
+          }
+          tooltip={[
+            `Percentage of simulated futures where your portfolio balance stays above $0 through age ${engineSettings?.endAge ?? "?"} — a ${retSpan}-year retirement. This is the industry-standard metric (Trinity Study, cFIREsim).`,
+            "90%+ — Strong. Most planners consider this the target.",
+            "75–89% — Moderate. Workable but with meaningful risk.",
+            "Below 75% — Elevated risk. Review your assumptions.",
+            ...(retSpan > 30
+              ? [
+                  "Your plan spans 40 years — longer than the classic 30-year 4% rule. Early retirees often need a lower withdrawal rate (3-3.5%).",
+                ]
+              : []),
+            "For dynamic strategies that reduce spending, see Spending Stability for the full picture.",
+          ]}
+        />
 
-        {/* Card 2: Spending Stability gauge */}
-        <div
-          className={`${spendGaugeBg} rounded-lg p-4 flex flex-col items-center justify-center`}
-        >
-          <div className="relative w-20 h-20">
-            <svg className="w-20 h-20 -rotate-90" viewBox="0 0 100 100">
-              <circle
-                cx="50"
-                cy="50"
-                r="40"
-                fill="none"
-                strokeWidth="8"
-                className="stroke-gray-200"
+        {/* Card 2: Spending Stability — two mini donuts side by side */}
+        <div className="bg-surface-primary rounded-lg p-3 flex flex-col items-center justify-center">
+          <div className="flex gap-2">
+            <GaugeDonut
+              rate={mc.spendingStabilityRate}
+              label="vs Strategy"
+              size="small"
+              tooltip={[
+                "Percentage of futures where withdrawals stayed at or above 75% of the strategy's initial year-1 withdrawal, adjusted for inflation.",
+                "Measures whether the strategy maintains its own planned income level. For portfolio-linked strategies (Const %, Endowment, Vanguard), this is naturally low because spending tracks portfolio volatility.",
+              ]}
+            />
+            {hasBudgetStability ? (
+              <GaugeDonut
+                rate={mc.budgetStabilityRate!}
+                label="vs Budget"
+                size="small"
+                tooltip={[
+                  "Percentage of futures where withdrawals stayed at or above 75% of your stated retirement budget, adjusted for inflation.",
+                  'Measures whether the strategy covers what you actually need. For strategies that withdraw more than your budget, this will be higher than "vs Strategy" — meaning your needs are met even when the strategy\'s own spending dips.',
+                ]}
               />
-              <circle
-                cx="50"
-                cy="50"
-                r="40"
-                fill="none"
-                strokeWidth="8"
-                className={spendGaugeRing}
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                strokeDashoffset={spendDashOffset}
+            ) : (
+              <GaugeDonut
+                rate={mc.spendingStabilityRate}
+                label="vs Budget"
+                size="small"
+                tooltip={[
+                  'No separate retirement budget set — using strategy year-1 withdrawal as the baseline (same as "vs Strategy").',
+                  "Set a retirement budget in Decumulation Plan to see how often the strategy covers your actual needs.",
+                ]}
               />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className={`text-xl font-bold ${spendColor}`}>
-                {spendPct}%
-              </span>
-            </div>
+            )}
           </div>
           <div className="text-xs text-muted mt-1 text-center">
             Spending Stability
             <HelpTip
               maxWidth={420}
               lines={[
-                "Percentage of simulated futures where your withdrawals stayed at or above 75% of your initial year-1 withdrawal, adjusted for inflation each year.",
-                "Dynamic strategies (Guyton-Klinger, Vanguard Dynamic) can reduce withdrawals to preserve the portfolio. Success Rate says your money lasts — Spending Stability says your income holds up.",
-                "Example: 95% success with 60% stability means your money lasts in 95% of futures, but in 40% of them your income drops below 75% of what you started with.",
-                "For fixed withdrawal strategies (Fixed Real, Forgo Inflation), spending stability and success rate will be similar — the strategy withdraws the full amount or the portfolio is depleted.",
+                "Two views of spending stability — how often your income holds up across simulated futures.",
+                '"vs Strategy": compares against the strategy\'s own year-1 withdrawal. Measures self-consistency.',
+                '"vs Budget": compares against your stated retirement budget. Measures whether your actual needs are met.',
+                "For budget-based strategies (Fixed, Forgo, G-K), both donuts converge — spending IS the budget. For portfolio-linked strategies (Const %, Vanguard), the gap tells the story.",
               ]}
             />
           </div>

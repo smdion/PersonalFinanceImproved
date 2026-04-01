@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.11] - 2026-04-01
+
+### New
+
+- Dual spending stability donuts: "vs Strategy" measures against year-1 withdrawal, "vs Budget" measures against your stated retirement budget — shows whether the strategy covers what you actually need
+- Strategy Analyzer: opt-in "Analyze My Strategy" button on the comparison tab runs what-if MC scenarios and shows the top 3 parameter changes that would improve your success rate or spending stability
+
+### Improved
+
+- Both stability columns (strategy + budget) shown in strategy comparison table
+- Lever metadata added to strategy config — the analyzer reads paramField.lever to know which knobs to test, no parallel registry
+- Budget stability metric added to MC engine: compares withdrawals against user's retirement budget (inflation-adjusted) instead of year-1 withdrawal
+
+---
+
 ## [0.4.10] - 2026-04-01
 
 ### Improved

@@ -748,6 +748,7 @@ describe("projection router — computeStrategyComparison", () => {
         expect(strat).toHaveProperty("endBalance");
         expect(strat).toHaveProperty("legacyAmount");
         expect(strat).toHaveProperty("successRate");
+        expect(strat).toHaveProperty("budgetStabilityRate");
         expect(strat).toHaveProperty("yearByYear");
         // Without MC data, successRate should be null
         expect(strat.successRate).toBeNull();
@@ -1191,6 +1192,94 @@ describe("projection router — MC edge cases", () => {
         );
         expect(stockClass?.meanReturn).toBeCloseTo(0.15);
       }
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// analyzeStrategy
+// ---------------------------------------------------------------------------
+
+describe("projection router — analyzeStrategy", () => {
+  it("returns empty recommendations when no retirement data exists", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const response = await caller.projection.analyzeStrategy();
+      expect(response.baseline).toBeNull();
+      expect(response.recommendations).toEqual([]);
+      expect(response.strategyLabel).toBe("");
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("returns empty when no MC data (no asset classes/glide path)", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      // No asset classes or glide path seeded
+      const response = await caller.projection.analyzeStrategy();
+      expect(response.baseline).toBeNull();
+      expect(response.recommendations).toEqual([]);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("runs analysis with MC data and returns recommendations", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedGlidePath(db);
+      seedCorrelations(db);
+
+      const response = await caller.projection.analyzeStrategy();
+
+      expect(response.baseline).not.toBeNull();
+      expect(response.baseline!.successRate).toBeGreaterThanOrEqual(0);
+      expect(response.baseline!.successRate).toBeLessThanOrEqual(1);
+      expect(response.baseline!.stabilityRate).toBeGreaterThanOrEqual(0);
+      expect(response.baseline!.stabilityRate).toBeLessThanOrEqual(1);
+      expect(response.diagnosis).toBeTruthy();
+      expect(response.strategyLabel).toBeTruthy();
+
+      // Recommendations shape (may be empty if plan is already optimal)
+      for (const rec of response.recommendations) {
+        expect(rec).toHaveProperty("label");
+        expect(rec).toHaveProperty("currentValue");
+        expect(rec).toHaveProperty("adjustedValue");
+        expect(rec).toHaveProperty("successRate");
+        expect(rec).toHaveProperty("stabilityRate");
+        expect(rec).toHaveProperty("successDelta");
+        expect(rec).toHaveProperty("stabilityDelta");
+      }
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("runs analysis for a dynamic strategy with lever params", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedGlidePath(db);
+      seedCorrelations(db);
+
+      // Switch strategy to guyton_klinger
+      db.update(schema.retirementSettings)
+        .set({ withdrawalStrategy: "guyton_klinger" })
+        .run();
+
+      const response = await caller.projection.analyzeStrategy();
+
+      expect(response.baseline).not.toBeNull();
+      expect(response.strategyLabel).toBe("Guardrails (Guyton-Klinger)");
+      // G-K has levers on decreasePercent/increasePercent — analyzer should find applicable levers
+      expect(response.diagnosis).toBeTruthy();
     } finally {
       cleanup();
     }

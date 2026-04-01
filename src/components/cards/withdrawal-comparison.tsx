@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { StrategyGuideButton } from "@/components/cards/strategy-guide-panel";
+import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
 import {
   LineChart,
@@ -41,7 +42,20 @@ type StrategyResult = {
   legacyAmount: number;
   successRate: number | null;
   spendingStabilityRate: number | null;
+  budgetStabilityRate: number | null;
   yearByYear: { age: number; withdrawal: number; endBalance: number }[];
+};
+
+type AnalyzerInput = {
+  salaryOverrides?: { personId: number; salary: number }[];
+  contributionProfileId?: number;
+  accumulationBudgetProfileId?: number;
+  accumulationBudgetColumn?: number;
+  accumulationExpenseOverride?: number;
+  decumulationBudgetProfileId?: number;
+  decumulationBudgetColumn?: number;
+  decumulationExpenseOverride?: number;
+  snapshotId?: number;
 };
 
 type Props = {
@@ -52,6 +66,7 @@ type Props = {
   onDollarModeChange: (mode: "nominal" | "real") => void;
   inflationRate: number;
   currentAge: number;
+  analyzerInput?: AnalyzerInput;
 };
 
 type ChartMetric = "endBalance" | "withdrawal";
@@ -64,9 +79,16 @@ export function WithdrawalComparisonCard({
   onDollarModeChange,
   inflationRate,
   currentAge,
+  analyzerInput,
 }: Props) {
-  // Table and chart shown together (no toggle needed)
   const [chartMetric, setChartMetric] = useState<ChartMetric>("endBalance");
+  const [analyzerEnabled, setAnalyzerEnabled] = useState(false);
+
+  // Analyzer query — only runs when user opts in
+  const analyzerQuery = trpc.projection.analyzeStrategy.useQuery(
+    analyzerInput ?? {},
+    { enabled: analyzerEnabled && !!analyzerInput },
+  );
 
   if (strategies.length === 0) return null;
 
@@ -149,8 +171,13 @@ export function WithdrawalComparisonCard({
                   </span>
                 </th>
                 <th className="text-right py-1.5 px-2 font-medium">
-                  <span title="% of scenarios where spending never drops below 75% of your initial plan (inflation-adjusted) in any retirement year. Budget-based strategies (Fixed, Forgo, G-K) score higher. Portfolio-linked strategies (Const %, Endow, Vanguard) naturally score lower because spending tracks market performance. Decline always reads 0% because it intentionally reduces real spending.">
-                    Stability
+                  <span title="% of scenarios where spending never drops below 75% of the strategy's own year-1 withdrawal (inflation-adjusted). Measures self-consistency.">
+                    Stab. (Strat)
+                  </span>
+                </th>
+                <th className="text-right py-1.5 px-2 font-medium">
+                  <span title="% of scenarios where spending never drops below 75% of your stated retirement budget (inflation-adjusted). Measures whether your actual needs are met.">
+                    Stab. (Budget)
                   </span>
                 </th>
                 <th className="text-right py-1.5 px-2 font-medium">Year 1</th>
@@ -223,6 +250,23 @@ export function WithdrawalComparisonCard({
                           }
                         >
                           {Math.round(s.spendingStabilityRate * 100)}%
+                        </span>
+                      ) : (
+                        <span className="text-faint">—</span>
+                      )}
+                    </td>
+                    <td className="text-right py-1.5 px-2 tabular-nums">
+                      {s.budgetStabilityRate !== null ? (
+                        <span
+                          className={
+                            s.budgetStabilityRate >= 0.9
+                              ? "text-green-400"
+                              : s.budgetStabilityRate >= 0.7
+                                ? "text-yellow-400"
+                                : "text-red-400"
+                          }
+                        >
+                          {Math.round(s.budgetStabilityRate * 100)}%
                         </span>
                       ) : (
                         <span className="text-faint">—</span>
@@ -318,6 +362,134 @@ export function WithdrawalComparisonCard({
           </ResponsiveContainer>
         </div>
       }
+      {/* Strategy Analyzer — opt-in */}
+      <div className="mt-4 pt-3 border-t">
+        {!analyzerEnabled ? (
+          <div className="flex justify-end">
+            <button
+              onClick={() => setAnalyzerEnabled(true)}
+              className="text-[11px] text-sky-400 hover:text-sky-300 border border-sky-400/30 hover:border-sky-400/60 rounded px-2 py-0.5 transition-colors"
+            >
+              Analyze My Strategy →
+            </button>
+          </div>
+        ) : analyzerQuery.isLoading ? (
+          <div className="text-xs text-faint animate-pulse text-center py-3">
+            Running scenario analysis...
+          </div>
+        ) : analyzerQuery.data?.recommendations &&
+          analyzerQuery.data.recommendations.length > 0 ? (
+          <div className="rounded-lg border border-sky-500/20 bg-sky-950/20 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h4 className="text-sm font-semibold text-primary">
+                  Strategy Analysis — {analyzerQuery.data.strategyLabel}
+                </h4>
+                <p className="text-[11px] text-faint">
+                  Current plan:{" "}
+                  {Math.round(
+                    (analyzerQuery.data.baseline?.successRate ?? 0) * 100,
+                  )}
+                  % success ·{" "}
+                  {Math.round(
+                    (analyzerQuery.data.baseline?.stabilityRate ?? 0) * 100,
+                  )}
+                  % stability
+                </p>
+              </div>
+              <button
+                onClick={() => setAnalyzerEnabled(false)}
+                className="text-[10px] text-faint hover:text-secondary"
+              >
+                Dismiss
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {analyzerQuery.data.recommendations.map((rec, i) => {
+                const successDeltaPp = Math.round(rec.successDelta * 100);
+                const stabilityDeltaPp = Math.round(rec.stabilityDelta * 100);
+                return (
+                  <div
+                    key={rec.label}
+                    className="flex items-start gap-2 text-xs"
+                  >
+                    <span className="text-sky-400 font-bold shrink-0">
+                      {i + 1}.
+                    </span>
+                    <div>
+                      <span className="text-secondary">
+                        {rec.label}: {rec.currentValue} → {rec.adjustedValue}
+                      </span>
+                      <div className="text-faint mt-0.5">
+                        Success: {Math.round(rec.successRate * 100)}%
+                        {successDeltaPp !== 0 && (
+                          <span
+                            className={
+                              successDeltaPp > 0
+                                ? "text-green-400"
+                                : "text-red-400"
+                            }
+                          >
+                            {" "}
+                            ({successDeltaPp > 0 ? "+" : ""}
+                            {successDeltaPp}pp)
+                          </span>
+                        )}
+                        {" · "}Stability: {Math.round(rec.stabilityRate * 100)}%
+                        {stabilityDeltaPp !== 0 && (
+                          <span
+                            className={
+                              stabilityDeltaPp > 0
+                                ? "text-green-400"
+                                : "text-red-400"
+                            }
+                          >
+                            {" "}
+                            ({stabilityDeltaPp > 0 ? "+" : ""}
+                            {stabilityDeltaPp}pp)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className="text-[10px] text-faint mt-3">
+              Full engine assumptions used with only the stated change. 200 MC
+              trials each.
+            </p>
+          </div>
+        ) : analyzerQuery.data?.diagnosis === "healthy" ? (
+          <div className="rounded-lg border border-green-500/20 bg-green-950/20 p-3 text-xs text-faint">
+            Your strategy is well-optimized — no single parameter change
+            produces a meaningful improvement (&gt;2pp). Consider broader
+            changes like increasing guaranteed income or adjusting your
+            timeline.
+            <button
+              onClick={() => setAnalyzerEnabled(false)}
+              className="ml-2 text-[10px] text-faint hover:text-secondary"
+            >
+              Dismiss
+            </button>
+          </div>
+        ) : analyzerQuery.data ? (
+          <div className="rounded-lg border border-amber-500/20 bg-amber-950/20 p-3 text-xs text-faint">
+            No parameter changes produce a meaningful improvement (&gt;2pp) for
+            your current configuration. The biggest gains would come from
+            changes outside strategy parameters (saving more, delaying
+            retirement, increasing guaranteed income).
+            <button
+              onClick={() => setAnalyzerEnabled(false)}
+              className="ml-2 text-[10px] text-faint hover:text-secondary"
+            >
+              Dismiss
+            </button>
+          </div>
+        ) : null}
+      </div>
     </Card>
   );
 }
