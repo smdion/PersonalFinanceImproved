@@ -44,6 +44,7 @@ export default function RetirementPage() {
   const [pageTab, setPageTab] = useState<"projection" | "comparison">(
     "projection",
   );
+  const [dollarMode, setDollarMode] = useState<"nominal" | "real">("real");
   const utils = trpc.useUtils();
   const salaryOverrides = useSalaryOverrides();
   const [decBudgetProfileId, setDecBudgetProfileId] = usePersistedSetting<
@@ -336,6 +337,18 @@ export default function RetirementPage() {
             strategies={comparisonData.strategies}
             activeStrategy={comparisonData.activeStrategy}
             retirementAge={comparisonData.retirementAge}
+            dollarMode={dollarMode}
+            onDollarModeChange={setDollarMode}
+            inflationRate={parseFloat(settings.annualInflation)}
+            currentAge={
+              perPersonSettings && perPersonSettings.length > 0
+                ? Math.min(
+                    ...perPersonSettings.map(
+                      (p) => new Date().getFullYear() - p.birthYear,
+                    ),
+                  )
+                : settings.retirementAge - 20
+            }
           />
         ) : (
           <div className="text-xs text-muted p-4 text-center">
@@ -357,6 +370,8 @@ export default function RetirementPage() {
               parentCategoryFilter="Retirement"
               contributionProfileId={contribProfileId ?? undefined}
               snapshotId={snapshotId ?? undefined}
+              dollarMode={dollarMode}
+              onDollarModeChange={setDollarMode}
             />
           </CardBoundary>
 
