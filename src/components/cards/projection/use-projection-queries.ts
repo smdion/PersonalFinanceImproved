@@ -128,8 +128,10 @@ export function useProjectionQueries(
     trpc.settings.projectionOverrides.clear.useMutation({
       onSuccess: invalidateEngine,
     });
-  const invalidateMc = () =>
+  const invalidateMc = () => {
     utils.projection.computeMonteCarloProjection.invalidate();
+    utils.projection.computeStrategyComparison.invalidate();
+  };
   const updateGlidePath =
     trpc.projection.updateGlidePathAllocations.useMutation({
       onSuccess: invalidateMc,
