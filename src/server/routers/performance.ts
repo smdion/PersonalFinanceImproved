@@ -805,6 +805,50 @@ export const performanceRouter = createTRPCRouter({
     }),
 
   /**
+   * Batch-update account_performance rows for the current year.
+   * Used by the Update Performance form to save all flow fields in one pass.
+   * Annual rollups are recomputed automatically by computeSummary on next query.
+   */
+  batchUpdateAccounts: performanceProcedure
+    .input(
+      z.object({
+        accounts: z.array(
+          z.object({
+            id: z.number().int(),
+            totalContributions: z.string(),
+            employerContributions: z.string(),
+            distributions: z.string(),
+            rollovers: z.string(),
+            fees: z.string(),
+            endingBalance: z.string(),
+            yearlyGainLoss: z.string(),
+          }),
+        ),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (input.accounts.length === 0) return { success: true };
+      await ctx.db.transaction(async (tx) => {
+        for (const acct of input.accounts) {
+          await tx
+            .update(schema.accountPerformance)
+            .set({
+              totalContributions: acct.totalContributions,
+              employerContributions: acct.employerContributions,
+              distributions: acct.distributions,
+              rollovers: acct.rollovers,
+              fees: acct.fees,
+              endingBalance: acct.endingBalance,
+              yearlyGainLoss: acct.yearlyGainLoss,
+            })
+            .where(eq(schema.accountPerformance.id, acct.id));
+        }
+        await stampPerformanceUpdated(tx);
+      });
+      return { success: true };
+    }),
+
+  /**
    * Finalize a year: marks all account_performance and annual_performance rows
    * for that year as finalized, then auto-creates next year's rows for active accounts.
    */

@@ -133,6 +133,40 @@ export type YoYComparisonProps = {
   data: AnnualRow[];
 };
 
+export type UpdateFormRow = {
+  accountPerformanceId: number;
+  performanceAccountId: number | null;
+  displayName: string;
+  parentCategory: string;
+  beginningBalance: number;
+  totalContributions: string;
+  employerContributions: string;
+  distributions: string;
+  rollovers: string;
+  fees: string;
+  endingBalance: string;
+  yearlyGainLoss: string;
+  gainLossOverride: boolean;
+  /** Snapshot ending balance for this account (null if no snapshot match). */
+  snapshotEndingBalance: number | null;
+  /** Original DB values at form open, for "was" hints. */
+  original: {
+    totalContributions: number;
+    employerContributions: number;
+    distributions: number;
+    rollovers: number;
+    fees: number;
+    endingBalance: number;
+  };
+};
+
+export type UpdatePerformanceFormProps = {
+  currentYear: number;
+  accountRows: AccountRow[];
+  onClose: () => void;
+  onSaved: () => void;
+};
+
 export type LifetimeTotals = {
   endingBalance: number;
   gains: number;

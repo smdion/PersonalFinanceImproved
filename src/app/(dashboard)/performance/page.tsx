@@ -16,6 +16,7 @@ import {
   CategoryTabs,
   PerformanceTable,
   FinalizeYearModal,
+  UpdatePerformanceForm,
 } from "@/components/performance";
 import type { EditingCell } from "@/components/performance";
 
@@ -30,6 +31,7 @@ export default function PerformancePage() {
   const [editValue, setEditValue] = useState("");
   const [showAddAccount, setShowAddAccount] = useState<number | null>(null);
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
+  const [showUpdatePerformance, setShowUpdatePerformance] = useState(false);
 
   const updateAnnual = trpc.performance.updateAnnual.useMutation({
     onSuccess: () => utils.performance.computeSummary.invalidate(),
@@ -159,17 +161,25 @@ export default function PerformancePage() {
         }
       >
         {canEdit && currentYear && (
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-2">
             <button
-              onClick={() => setShowFinalizeModal(true)}
-              disabled={finalizeYear.isPending}
-              className="px-3 py-1.5 text-sm bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:opacity-50 transition-colors"
+              onClick={() => setShowUpdatePerformance(true)}
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors"
             >
-              {finalizeYear.isPending
-                ? "Finalizing..."
-                : `Finalize ${currentYear}`}
+              Update Performance
             </button>
-            <HelpTip text="Locks in this year's performance data as the source of truth, computes lifetime totals, and creates next year's rows for all active accounts with beginning balances carried forward. Finalized values can still be manually edited afterward." />
+            <span className="inline-flex items-center gap-1">
+              <button
+                onClick={() => setShowFinalizeModal(true)}
+                disabled={finalizeYear.isPending}
+                className="px-3 py-1.5 text-sm bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:opacity-50 transition-colors"
+              >
+                {finalizeYear.isPending
+                  ? "Finalizing..."
+                  : `Finalize ${currentYear}`}
+              </button>
+              <HelpTip text="Locks in this year's performance data as the source of truth, computes lifetime totals, and creates next year's rows for all active accounts with beginning balances carried forward. Finalized values can still be manually edited afterward." />
+            </span>
           </span>
         )}
       </PageHeader>
@@ -178,6 +188,18 @@ export default function PerformancePage() {
         <LifetimeSummaryCards
           totals={lifetimeTotals}
           snapshotDate={lastSnapshotDate}
+        />
+      )}
+
+      {canEdit && showUpdatePerformance && currentYear && (
+        <UpdatePerformanceForm
+          currentYear={currentYear}
+          accountRows={accountRows}
+          onClose={() => setShowUpdatePerformance(false)}
+          onSaved={() => {
+            setShowUpdatePerformance(false);
+            utils.performance.computeSummary.invalidate();
+          }}
         />
       )}
 
