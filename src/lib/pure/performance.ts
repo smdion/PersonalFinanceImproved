@@ -252,6 +252,31 @@ export function resolvePortfolioValues(
   };
 }
 
+/**
+ * Compute gain/loss from flow fields.
+ * gainLoss = endingBalance - beginningBalance - contributions - employer
+ *            + distributions - rollovers + fees
+ */
+export function computeGainLoss(input: {
+  endingBalance: number;
+  beginningBalance: number;
+  totalContributions: number;
+  employerContributions: number;
+  distributions: number;
+  rollovers: number;
+  fees: number;
+}): number {
+  return (
+    input.endingBalance -
+    input.beginningBalance -
+    input.totalContributions -
+    input.employerContributions +
+    input.distributions -
+    input.rollovers +
+    input.fees
+  );
+}
+
 /** Minimal account shape for next-year seeding decisions. */
 export type SeedableAccount = {
   isActive: boolean;
