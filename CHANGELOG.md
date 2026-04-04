@@ -8,6 +8,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.13] - 2026-04-03
+
+### New
+
+- Update Performance form — batch-edit all current-year account flow data (contributions, employer match, distributions, rollovers, fees) from a single form instead of clicking individual cells
+- Ending balance source toggle: pull from latest portfolio snapshot (default) or enter manually
+- Gain/loss auto-calculated live with manual override option
+
+### Improved
+
+- Savings rates now use total compensation (includes bonus) as the denominator across all pages — contributions, dashboard financial checkup, and savings rate card all show consistent rates
+- High-income households ($200K+) see employee-only savings rate as the headline, with match rate shown as secondary
+- Spending stability chart now shows a dollar Y-axis alongside the percentage axis, with withdrawal and plan amounts in tooltips
+- Spending stability baseline uses the strategy's own target (with post-retirement raise) for strategies that track it, and MC-inflated year-1 withdrawal for dynamic strategies
+- Monte Carlo fan bands no longer glitch when switching between confidence band ranges
+
+---
+
 ## [0.4.12] - 2026-04-01
 
 ### New
