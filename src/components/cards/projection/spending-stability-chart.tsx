@@ -5,6 +5,7 @@
  *  "strategy" view: bars show ratio vs year-1 withdrawal.
  *  "budget" view: bars show ratio vs retirement budget.
  *  MC fan bands + median line overlay when available. */
+import { formatCurrency } from "@/lib/utils/format";
 import type { EngineDecumulationYear } from "@/lib/calculators/types";
 import {
   ComposedChart,
@@ -110,11 +111,15 @@ export function SpendingStabilityChart({
       const datum: Record<string, number | undefined> = {
         age: yr.age,
         ratio: pct(ratio),
+        withdrawal: Math.round(yr.totalWithdrawal),
+        baseline: Math.round(baseline),
       };
 
       if (band) {
         datum.mc_p50 = pct(band.p50);
 
+        // Always include all band keys (0 for unused) so Recharts
+        // re-stacks correctly when switching band ranges.
         if (fanBandRange === "p5-p95") {
           datum.mc_base = pct(band.p5);
           datum.mc_5_10 = pct(band.p10 - band.p5);
@@ -124,12 +129,18 @@ export function SpendingStabilityChart({
           datum.mc_90_95 = pct(band.p95 - band.p90);
         } else if (fanBandRange === "p10-p90") {
           datum.mc_base = pct(band.p10);
+          datum.mc_5_10 = 0;
           datum.mc_10_25 = pct(band.p25 - band.p10);
           datum.mc_25_75 = pct(band.p75 - band.p25);
           datum.mc_75_90 = pct(band.p90 - band.p75);
+          datum.mc_90_95 = 0;
         } else {
           datum.mc_base = pct(band.p25);
+          datum.mc_5_10 = 0;
+          datum.mc_10_25 = 0;
           datum.mc_25_75 = pct(band.p75 - band.p25);
+          datum.mc_75_90 = 0;
+          datum.mc_90_95 = 0;
         }
 
         // For tooltip
@@ -139,6 +150,9 @@ export function SpendingStabilityChart({
 
       return datum;
     });
+
+  // Year-1 baseline for right axis dollar conversion (100% = this amount)
+  const year1Baseline = isStrategy ? year1Withdrawal : budgetAtRetirement;
 
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
@@ -165,6 +179,22 @@ export function SpendingStabilityChart({
             tickFormatter={(v: number) => String(v)}
           />
           <YAxis
+            yAxisId="left"
+            tick={{ fontSize: 9, fill: "var(--text-faint)" }}
+            tickFormatter={(v: number) => {
+              const dollars = (v / 100) * year1Baseline;
+              return dollars >= 1000
+                ? `$${Math.round(dollars / 1000)}k`
+                : formatCurrency(dollars);
+            }}
+            domain={[
+              0,
+              (max: number) => Math.max(150, Math.ceil(max / 10) * 10),
+            ]}
+          />
+          <YAxis
+            yAxisId="right"
+            orientation="right"
             tick={{ fontSize: 10, fill: "var(--text-faint)" }}
             tickFormatter={(v: number) => `${v}%`}
             domain={[
@@ -195,6 +225,16 @@ export function SpendingStabilityChart({
                       {ratio.toFixed(1)}%
                     </span>
                   </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted">Withdrawal:</span>
+                    <span>{formatCurrency(d.withdrawal ?? 0)}</span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted">Plan ({baselineLabel}):</span>
+                    <span className="text-faint">
+                      {formatCurrency(d.baseline ?? 0)}
+                    </span>
+                  </div>
                   {d.mc_p50 !== undefined && (
                     <div className="flex justify-between gap-4">
                       <span className="text-muted">Sim. median:</span>
@@ -219,6 +259,7 @@ export function SpendingStabilityChart({
 
           {/* 75% stability threshold */}
           <ReferenceLine
+            yAxisId="left"
             y={75}
             stroke="var(--text-red-500, #ef4444)"
             strokeDasharray="6 3"
@@ -232,16 +273,29 @@ export function SpendingStabilityChart({
           />
           {/* 100% baseline reference */}
           <ReferenceLine
+            yAxisId="left"
             y={100}
             stroke="var(--text-faint)"
             strokeDasharray="3 3"
             strokeWidth={1}
           />
 
-          {/* MC fan bands — same colors/pattern as Balance chart */}
+          {/* Invisible line bound to right axis to force percentage axis to render */}
+          <Line
+            yAxisId="right"
+            type="monotone"
+            dataKey="ratio"
+            stroke="transparent"
+            dot={false}
+            isAnimationActive={false}
+            legendType="none"
+          />
+
+          {/* MC fan bands — always render all 6 layers (unused ones have height 0) */}
           {showMc && (
             <>
               <Area
+                yAxisId="left"
                 type="monotone"
                 dataKey="mc_base"
                 stackId="mc"
@@ -250,31 +304,30 @@ export function SpendingStabilityChart({
                 isAnimationActive={false}
                 legendType="none"
               />
-              {fanBandRange === "p5-p95" && (
-                <Area
-                  type="monotone"
-                  dataKey="mc_5_10"
-                  stackId="mc"
-                  fill="#ede9fe"
-                  fillOpacity={0.4}
-                  stroke="none"
-                  isAnimationActive={false}
-                  legendType="none"
-                />
-              )}
-              {fanBandRange !== "p25-p75" && (
-                <Area
-                  type="monotone"
-                  dataKey="mc_10_25"
-                  stackId="mc"
-                  fill="#c4b5fd"
-                  fillOpacity={0.35}
-                  stroke="none"
-                  isAnimationActive={false}
-                  legendType="none"
-                />
-              )}
               <Area
+                yAxisId="left"
+                type="monotone"
+                dataKey="mc_5_10"
+                stackId="mc"
+                fill="#ede9fe"
+                fillOpacity={0.4}
+                stroke="none"
+                isAnimationActive={false}
+                legendType="none"
+              />
+              <Area
+                yAxisId="left"
+                type="monotone"
+                dataKey="mc_10_25"
+                stackId="mc"
+                fill="#c4b5fd"
+                fillOpacity={0.35}
+                stroke="none"
+                isAnimationActive={false}
+                legendType="none"
+              />
+              <Area
+                yAxisId="left"
                 type="monotone"
                 dataKey="mc_25_75"
                 stackId="mc"
@@ -284,36 +337,35 @@ export function SpendingStabilityChart({
                 stroke="none"
                 isAnimationActive={false}
               />
-              {fanBandRange !== "p25-p75" && (
-                <Area
-                  type="monotone"
-                  dataKey="mc_75_90"
-                  stackId="mc"
-                  fill="#c4b5fd"
-                  fillOpacity={0.35}
-                  stroke="none"
-                  isAnimationActive={false}
-                  legendType="none"
-                />
-              )}
-              {fanBandRange === "p5-p95" && (
-                <Area
-                  type="monotone"
-                  dataKey="mc_90_95"
-                  stackId="mc"
-                  fill="#ede9fe"
-                  fillOpacity={0.4}
-                  stroke="none"
-                  isAnimationActive={false}
-                  legendType="none"
-                />
-              )}
+              <Area
+                yAxisId="left"
+                type="monotone"
+                dataKey="mc_75_90"
+                stackId="mc"
+                fill="#c4b5fd"
+                fillOpacity={0.35}
+                stroke="none"
+                isAnimationActive={false}
+                legendType="none"
+              />
+              <Area
+                yAxisId="left"
+                type="monotone"
+                dataKey="mc_90_95"
+                stackId="mc"
+                fill="#ede9fe"
+                fillOpacity={0.4}
+                stroke="none"
+                isAnimationActive={false}
+                legendType="none"
+              />
             </>
           )}
 
           {/* Deterministic bars — same style as Balance chart */}
           {showBars && (
             <Bar
+              yAxisId="left"
               dataKey="ratio"
               stackId="det"
               name={`vs ${baselineLabel}`}
@@ -327,6 +379,7 @@ export function SpendingStabilityChart({
           {/* MC median line — same as Balance chart */}
           {showMc && (
             <Line
+              yAxisId="left"
               type="monotone"
               dataKey="mc_p50"
               name="Sim. median"

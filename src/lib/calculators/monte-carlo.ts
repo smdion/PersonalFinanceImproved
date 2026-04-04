@@ -28,6 +28,8 @@ import type {
 } from "./types";
 import { roundToCents } from "../utils/math";
 import type { EngineDecumulationYear } from "./types";
+import { WITHDRAWAL_STRATEGY_CONFIG } from "../config/withdrawal-strategies";
+import type { WithdrawalStrategyType } from "../config/withdrawal-strategies";
 
 /** A trial is "spending stable" if withdrawals stay ≥ this fraction of the initial
  *  inflation-adjusted withdrawal in every decumulation year. */
@@ -113,6 +115,13 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
   const seed = input.seed ?? Date.now();
   const clampMin = input.returnClampMin ?? -0.5;
   const clampMax = input.returnClampMax ?? 1.0;
+
+  // Strategy config — determines whether stability baseline uses post-retirement
+  // raise (from engine's projectedExpenses) or MC inflation (computed baseline).
+  const activeStrategy = (engineInput.decumulationDefaults
+    ?.withdrawalStrategy ?? "fixed") as WithdrawalStrategyType;
+  const strategyUsesRaise =
+    WITHDRAWAL_STRATEGY_CONFIG[activeStrategy]?.usesPostRetirementRaise ?? true;
 
   // Validate inputs
   if (assetClasses.length === 0) {
@@ -269,10 +278,11 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
       depletionAges.push(result.portfolioDepletionAge);
     }
 
-    // Spending stability: did withdrawals stay ≥75% of the INITIAL withdrawal
-    // (inflation-adjusted) every decumulation year?  This compares to the year-1
-    // plan, not the strategy's own target — so dynamic strategies that cut spending
-    // to preserve the portfolio are measured against what the retiree expected.
+    // Spending stability: did withdrawals stay ≥75% of baseline every decumulation year?
+    // For strategies that use post-retirement raise (Fixed, Forgo, G-K, Decline),
+    // use the engine's projectedExpenses as baseline — it already has the correct
+    // inflation applied. For dynamic strategies (Vanguard, Const%, Endowment, RMD),
+    // use year-1 withdrawal grown by MC inflation.
     const decYears = result.projectionByYear.filter(
       (y): y is EngineDecumulationYear => y.phase === "decumulation",
     );
@@ -281,9 +291,15 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
       const isStable =
         year1Withdrawal === 0 ||
         decYears.every((y, i) => {
-          const inflationFactor = Math.pow(1 + trialInflationRate, i);
-          const baseline = year1Withdrawal * inflationFactor;
-          return y.totalWithdrawal >= SPENDING_STABILITY_THRESHOLD * baseline;
+          const baseline = strategyUsesRaise
+            ? y.targetWithdrawal
+            : year1Withdrawal * Math.pow(1 + trialInflationRate, i);
+          // A depleted portfolio (both target and actual = 0) is NOT stable
+          if (baseline === 0 && y.totalWithdrawal === 0 && i > 0) return false;
+          return (
+            baseline === 0 ||
+            y.totalWithdrawal >= SPENDING_STABILITY_THRESHOLD * baseline
+          );
         });
       if (isStable) spendingStableCount++;
 
@@ -310,13 +326,15 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
           : null;
       for (let di = 0; di < decYears.length && di < numDecYears; di++) {
         const yr = decYears[di]!;
-        const inflFactor = Math.pow(1 + trialInflationRate, di);
-        const stratBase = year1Withdrawal * inflFactor;
+        const stratBase = strategyUsesRaise
+          ? yr.targetWithdrawal
+          : year1Withdrawal * Math.pow(1 + trialInflationRate, di);
         stratRatiosByDecYear[di]!.push(
           stratBase > 0 ? yr.totalWithdrawal / stratBase : 0,
         );
         if (budgetAtRet !== null) {
-          const budgetBase = budgetAtRet * inflFactor;
+          const budgetInflFactor = Math.pow(1 + trialInflationRate, di);
+          const budgetBase = budgetAtRet * budgetInflFactor;
           budgetRatiosByDecYear[di]!.push(
             budgetBase > 0 ? yr.totalWithdrawal / budgetBase : 0,
           );
