@@ -24,6 +24,8 @@ export function calculateContributions(
 ): ContributionResult {
   const warnings: string[] = [];
   const { annualSalary, contributionAccounts } = input;
+  // Savings rate denominator: total comp (includes bonus) — falls back to annualSalary
+  const rateDenominator = input.totalCompensation ?? annualSalary;
 
   // Map each account to its summary: annual contribution, employer match, and % of salary
   const accounts = contributionAccounts.map((ca) => ({
@@ -56,14 +58,14 @@ export function calculateContributions(
     );
   }
 
-  // Convert group totals to rates (as fraction of salary)
+  // Convert group totals to rates (as fraction of total compensation)
   const groupRates: Record<string, number> = {};
   const groupRatesExMatch: Record<string, number> = {};
   groupMap.forEach((total, group) => {
-    groupRates[group] = Number(safeDivide(total, annualSalary) ?? 0);
+    groupRates[group] = Number(safeDivide(total, rateDenominator) ?? 0);
   });
   groupMapExMatch.forEach((total, group) => {
-    groupRatesExMatch[group] = Number(safeDivide(total, annualSalary) ?? 0);
+    groupRatesExMatch[group] = Number(safeDivide(total, rateDenominator) ?? 0);
   });
 
   // "total" is the combined savings rate across ALL groups
@@ -72,9 +74,9 @@ export function calculateContributions(
     (s, v) => s + v,
     0,
   );
-  groupRates["total"] = Number(safeDivide(allTotal, annualSalary) ?? 0);
+  groupRates["total"] = Number(safeDivide(allTotal, rateDenominator) ?? 0);
   groupRatesExMatch["total"] = Number(
-    safeDivide(allTotalExMatch, annualSalary) ?? 0,
+    safeDivide(allTotalExMatch, rateDenominator) ?? 0,
   );
 
   const totalEmployeeOnly = roundToCents(

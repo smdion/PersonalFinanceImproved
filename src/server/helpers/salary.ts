@@ -83,6 +83,22 @@ export function getEffectiveIncome(
 }
 
 /**
+ * Compute savings rate: contributions / total compensation.
+ * Always uses total compensation (includes bonus) as denominator — this is
+ * what you actually earn, regardless of whether bonus is included in
+ * percent-of-salary contribution calculations.
+ *
+ * Single source of truth for savings rate denominator across all pages
+ * (dashboard checkup, contributions page, projection page, retirement router).
+ */
+export function computeSavingsRate(
+  totalContributions: number,
+  totalCompensation: number,
+): number {
+  return totalCompensation > 0 ? totalContributions / totalCompensation : 0;
+}
+
+/**
  * Compute total compensation (salary + bonus) regardless of the
  * includeBonusInContributions flag. Used for display and projection
  * purposes where total comp is always the relevant number.

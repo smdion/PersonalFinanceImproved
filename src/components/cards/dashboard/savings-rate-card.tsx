@@ -43,14 +43,11 @@ export function SavingsRateCard() {
     d.periodsPerYear > 0 ? d.periodsElapsedYtd / d.periodsPerYear : 0;
   const scale = (d: (typeof people)[0], annual: number) =>
     isYtd ? annual * ytdRatio(d) : annual;
-  const householdSalary = people.reduce(
-    (s, d) => s + scale(d, d.salary ?? 0),
+  // Use totalCompensation (always includes bonus) — shared logic across all pages
+  const householdTotalComp = people.reduce(
+    (s, d) => s + scale(d, d.totalCompensation ?? d.salary ?? 0),
     0,
   );
-  const householdBonus = isYtd
-    ? 0
-    : people.reduce((s, d) => s + (d.bonusGross ?? 0), 0);
-  const householdTotalComp = householdSalary + householdBonus;
   const highIncome = householdTotalComp >= highIncomeThreshold;
 
   // Default: exclude match for high income, include for lower income
@@ -77,9 +74,27 @@ export function SavingsRateCard() {
       jointScaled
     : totalContribsAnnual;
 
-  // Household savings rate = total contributions / total comp (salary + bonus)
-  const totalRate =
-    householdTotalComp > 0 ? totalContribs / householdTotalComp : 0;
+  // Household savings rate — use server-computed rates (single source of truth)
+  // For annual: weighted average of per-person server rates
+  // For YTD: scale annual rate by YTD fraction (same rate, different dollar amounts)
+  const rateKey2 = excludeMatch
+    ? "savingsRateWithoutMatch"
+    : "savingsRateWithMatch";
+  const annualRate =
+    householdTotalComp > 0
+      ? people.reduce(
+          (s, d) =>
+            s +
+            (d.totals?.[rateKey2 as keyof typeof d.totals] ?? 0) *
+              (d.totalCompensation ?? d.salary ?? 0),
+          0,
+        ) / householdTotalComp
+      : 0;
+  const totalRate = isYtd
+    ? householdTotalComp > 0
+      ? totalContribs / householdTotalComp
+      : 0
+    : annualRate;
 
   // Collect group totals in dollars, then compute rates against total comp
   const groupTotals: Record<string, number> = {};
@@ -89,8 +104,9 @@ export function SavingsRateCard() {
     const salary = d.salary ?? 0;
     for (const [group, rate] of Object.entries(d.result[rateKey])) {
       if (group === "total") continue;
-      // Convert per-person rate back to dollars, then sum
-      groupTotals[group] = (groupTotals[group] ?? 0) + rate * salary;
+      // Convert per-person rate back to dollars using totalCompensation (same denominator used to compute the rate)
+      const comp = d.totalCompensation ?? salary;
+      groupTotals[group] = (groupTotals[group] ?? 0) + rate * comp;
     }
   }
   // Add joint account contributions to group totals
@@ -134,7 +150,7 @@ export function SavingsRateCard() {
     >
       <div className="flex items-center gap-2">
         <Metric
-          value={formatPercent(totalRate)}
+          value={formatPercent(totalRate, 1)}
           label={`Household savings rate${excludeMatch ? "" : " (incl. match)"}`}
         />
         <button

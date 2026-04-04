@@ -220,28 +220,26 @@ export function FinancialCheckupCard() {
 
   // 4. Savings Rate
   const contribPeople = contribs.data?.people?.filter((d) => d.result) ?? [];
-  const householdSalary = contribPeople.reduce(
-    (s, d) => s + (d.salary ?? 0),
+  // Use totalCompensation (always includes bonus) — shared logic with contributions page
+  const householdTotalComp = contribPeople.reduce(
+    (s, d) => s + (d.totalCompensation ?? d.salary ?? 0),
     0,
   );
-  const householdBonus = contribPeople.reduce(
-    (s, d) => s + (d.bonusGross ?? 0),
-    0,
-  );
-  const householdTotalComp = householdSalary + householdBonus;
   const highIncome = householdTotalComp >= highIncomeThreshold;
-  const contribTotalKey = highIncome
-    ? "totalEmployeeOnly"
-    : "totalAnnualContributions";
-  const totalContribsDollars = contribPeople.reduce(
-    (s, d) =>
-      s +
-      // eslint-disable-next-line no-restricted-syntax -- type narrowing for untyped API response
-      ((d.result as unknown as Record<string, number>)[contribTotalKey] ?? 0),
-    0,
-  );
+  // Use server-computed savings rates (single source of truth)
+  const rateKey = highIncome
+    ? "savingsRateWithoutMatch"
+    : "savingsRateWithMatch";
   const savingsRate =
-    householdTotalComp > 0 ? totalContribsDollars / householdTotalComp : 0;
+    householdTotalComp > 0
+      ? contribPeople.reduce(
+          (s, d) =>
+            s +
+            (d.totals?.[rateKey as keyof typeof d.totals] ?? 0) *
+              (d.totalCompensation ?? d.salary ?? 0),
+          0,
+        ) / householdTotalComp
+      : 0;
   const parsedThresholds = (() => {
     try {
       const arr = JSON.parse(

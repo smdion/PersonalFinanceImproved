@@ -89,7 +89,15 @@ export default function ContributionsPage() {
   }
 
   const activePeople = people.filter((p) => p.salary > 0);
-  const combinedSalary = activePeople.reduce((s, p) => s + p.salary, 0);
+  // Use totalCompensation (always includes bonus) for savings rate — matches projection page
+  const combinedSalary = activePeople.reduce(
+    (s, p) => s + (p.totalCompensation ?? p.salary),
+    0,
+  );
+  // High income: show employee-only rate as headline (match is "free money", not savings effort)
+  // Same threshold as dashboard Financial Checkup ($200K default)
+  const HIGH_INCOME_THRESHOLD = 200000;
+  const highIncome = combinedSalary >= HIGH_INCOME_THRESHOLD;
   const avgPeriodsPerYear =
     activePeople.length > 0
       ? activePeople.reduce((s, p) => s + p.periodsPerYear, 0) /
@@ -186,36 +194,79 @@ export default function ContributionsPage() {
         </div>
       )}
 
-      {/* Household summary */}
+      {/* Household summary — rates from server (single source of truth) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <SummaryCard
-          label="Total Savings"
-          rate={combinedSalary > 0 ? totalWith / combinedSalary : 0}
-          rateWithout={combinedSalary > 0 ? totalWithout / combinedSalary : 0}
-          amount={toDisplay(totalWith, avgPeriodsPerYear, period)}
-          pl={pl}
-          color="bg-blue-500"
-        />
-        <SummaryCard
-          label="Retirement"
-          rate={combinedSalary > 0 ? totalRetirementWith / combinedSalary : 0}
-          rateWithout={
-            combinedSalary > 0 ? totalRetirementWithout / combinedSalary : 0
-          }
-          amount={toDisplay(totalRetirementWith, avgPeriodsPerYear, period)}
-          pl={pl}
-          color="bg-emerald-500"
-        />
-        <SummaryCard
-          label="Portfolio"
-          rate={combinedSalary > 0 ? totalPortfolioWith / combinedSalary : 0}
-          rateWithout={
-            combinedSalary > 0 ? totalPortfolioWithout / combinedSalary : 0
-          }
-          amount={toDisplay(totalPortfolioWith, avgPeriodsPerYear, period)}
-          pl={pl}
-          color="bg-purple-500"
-        />
+        {(() => {
+          // Aggregate server-computed per-person rates weighted by compensation
+          const hhRateWith =
+            activePeople.reduce(
+              (s, p) =>
+                s +
+                p.totals.savingsRateWithMatch *
+                  (p.totalCompensation ?? p.salary),
+              0,
+            ) / (combinedSalary || 1);
+          const hhRateWithout =
+            activePeople.reduce(
+              (s, p) =>
+                s +
+                p.totals.savingsRateWithoutMatch *
+                  (p.totalCompensation ?? p.salary),
+              0,
+            ) / (combinedSalary || 1);
+          const retRateWith =
+            combinedSalary > 0 ? totalRetirementWith / combinedSalary : 0;
+          const retRateWithout =
+            combinedSalary > 0 ? totalRetirementWithout / combinedSalary : 0;
+          const portRateWith =
+            combinedSalary > 0 ? totalPortfolioWith / combinedSalary : 0;
+          const portRateWithout =
+            combinedSalary > 0 ? totalPortfolioWithout / combinedSalary : 0;
+          const primary = highIncome ? "without" : "with";
+          return (
+            <>
+              <SummaryCard
+                label="Total Savings"
+                rate={primary === "without" ? hhRateWithout : hhRateWith}
+                rateAlt={primary === "without" ? hhRateWith : hhRateWithout}
+                altLabel={highIncome ? "w/ match" : "w/o match"}
+                amount={toDisplay(
+                  highIncome ? totalWithout : totalWith,
+                  avgPeriodsPerYear,
+                  period,
+                )}
+                pl={pl}
+                color="bg-blue-500"
+              />
+              <SummaryCard
+                label="Retirement"
+                rate={primary === "without" ? retRateWithout : retRateWith}
+                rateAlt={primary === "without" ? retRateWith : retRateWithout}
+                altLabel={highIncome ? "w/ match" : "w/o match"}
+                amount={toDisplay(
+                  highIncome ? totalRetirementWithout : totalRetirementWith,
+                  avgPeriodsPerYear,
+                  period,
+                )}
+                pl={pl}
+                color="bg-emerald-500"
+              />
+              <SummaryCard
+                label="Portfolio"
+                rate={primary === "without" ? portRateWithout : portRateWith}
+                rateAlt={primary === "without" ? portRateWith : portRateWithout}
+                altLabel={highIncome ? "w/ match" : "w/o match"}
+                amount={toDisplay(
+                  highIncome ? totalPortfolioWithout : totalPortfolioWith,
+                  avgPeriodsPerYear,
+                  period,
+                )}
+                pl={pl}
+                color="bg-purple-500"
+              />
+            </>
+          );
+        })()}
       </div>
 
       {/* Employer match summary */}
@@ -514,7 +565,8 @@ export default function ContributionsPage() {
                     <>
                       Savings rate:{" "}
                       {formatPercent(
-                        person.totals.totalWithMatch / person.salary,
+                        person.totals.totalWithMatch /
+                          (person.totalCompensation ?? person.salary),
                         1,
                       )}{" "}
                       (with match)
@@ -608,14 +660,16 @@ export default function ContributionsPage() {
 function SummaryCard({
   label,
   rate,
-  rateWithout,
+  rateAlt,
+  altLabel,
   amount,
   pl,
   color,
 }: {
   label: string;
   rate: number;
-  rateWithout: number;
+  rateAlt: number;
+  altLabel: string;
   amount: number;
   pl: string;
   color: string;
@@ -630,9 +684,9 @@ function SummaryCard({
         <div className="text-sm text-muted">
           {formatCurrency(amount)}
           {pl}
-          {rate !== rateWithout && (
+          {rate !== rateAlt && (
             <span className="ml-2 text-xs">
-              ({formatPercent(rateWithout, 1)} w/o match)
+              ({formatPercent(rateAlt, 1)} {altLabel})
             </span>
           )}
         </div>

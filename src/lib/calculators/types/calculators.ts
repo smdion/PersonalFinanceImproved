@@ -129,6 +129,9 @@ export type BudgetResult = {
 
 export type ContributionInput = {
   annualSalary: number;
+  /** Total compensation (always includes bonus) — used as denominator for savings rates.
+   *  Falls back to annualSalary if not provided. */
+  totalCompensation?: number;
   contributionAccounts: ContributionAccountInput[];
   limits: Record<string, number>;
   asOfDate: Date;
