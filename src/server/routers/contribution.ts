@@ -11,6 +11,7 @@ import {
   getPeriodsPerYear,
   getCurrentSalary,
   getEffectiveIncome,
+  getTotalCompensation,
   buildContribAccounts,
   computeBonusGross,
   loadAndApplyContribProfile,
@@ -90,6 +91,8 @@ type PerContribData = {
 type PersonSnapshot = {
   person: { id: number; name: string };
   salary: number;
+  /** Total compensation (always includes bonus) — used for savings rate denominator. */
+  totalCompensation: number;
   bonusGross: number;
   periodsPerYear: number;
   periodsElapsedYtd: number;
@@ -102,6 +105,10 @@ type PersonSnapshot = {
     portfolioWithMatch: number;
     totalWithoutMatch: number;
     totalWithMatch: number;
+    /** Savings rate (with match) — totalWithMatch / totalCompensation. Single source of truth. */
+    savingsRateWithMatch: number;
+    /** Savings rate (without match) — totalWithoutMatch / totalCompensation. Single source of truth. */
+    savingsRateWithoutMatch: number;
   };
   result: ReturnType<typeof calculateContributions> | null;
 };
@@ -201,6 +208,7 @@ export const contributionRouter = createTRPCRouter({
             return {
               person,
               salary: 0,
+              totalCompensation: 0,
               bonusGross: 0,
               periodsPerYear: 26,
               periodsElapsedYtd: 0,
@@ -213,6 +221,8 @@ export const contributionRouter = createTRPCRouter({
                 portfolioWithMatch: 0,
                 totalWithoutMatch: 0,
                 totalWithMatch: 0,
+                savingsRateWithMatch: 0,
+                savingsRateWithoutMatch: 0,
               },
               result: null,
             };
@@ -227,6 +237,8 @@ export const contributionRouter = createTRPCRouter({
           const salary =
             effectiveSalaryMap.get(person.id) ??
             getEffectiveIncome(activeJob, dbSalary);
+          // Total compensation (always includes bonus) — used for savings rate denominator
+          const totalCompensation = getTotalCompensation(activeJob, dbSalary);
           const periodsPerYear = getPeriodsPerYear(activeJob.payPeriod);
           const periodsElapsedYtd = activeJob.anchorPayDate
             ? countPeriodsElapsed(
@@ -257,6 +269,7 @@ export const contributionRouter = createTRPCRouter({
 
           const input: ContributionInput = {
             annualSalary: salary,
+            totalCompensation,
             contributionAccounts: accounts,
             limits: limitsRecord,
             asOfDate,
@@ -586,6 +599,7 @@ export const contributionRouter = createTRPCRouter({
           return {
             person,
             salary,
+            totalCompensation,
             bonusGross,
             periodsPerYear,
             periodsElapsedYtd,
@@ -602,6 +616,23 @@ export const contributionRouter = createTRPCRouter({
               totalWithMatch: roundToCents(
                 retirementWithMatch + portfolioWithMatch,
               ),
+              // Savings rates: single source of truth — computed here, displayed everywhere
+              savingsRateWithMatch:
+                totalCompensation > 0
+                  ? roundToCents(
+                      ((retirementWithMatch + portfolioWithMatch) /
+                        totalCompensation) *
+                        10000,
+                    ) / 10000
+                  : 0,
+              savingsRateWithoutMatch:
+                totalCompensation > 0
+                  ? roundToCents(
+                      ((retirementWithoutMatch + portfolioWithoutMatch) /
+                        totalCompensation) *
+                        10000,
+                    ) / 10000
+                  : 0,
             },
             result,
           };
