@@ -16,12 +16,14 @@ import type { DetailedHistoryRow } from "./types";
 type Props = {
   yearA: DetailedHistoryRow;
   yearB: DetailedHistoryRow;
+  /** When true, annualize current-year contribution rates (Projected Year mode). */
+  annualize: boolean;
 };
 
 type RowDef = {
   label: string;
   format: (value: number) => string;
-  accessor: (row: DetailedHistoryRow) => number;
+  accessor: (row: DetailedHistoryRow, annualize: boolean) => number;
   isFlowMetric: boolean;
 };
 
@@ -29,47 +31,60 @@ const STAT_ROWS: RowDef[] = [
   {
     label: "Wealth Score",
     format: (v) => `${(v * 100).toFixed(0)}%`,
-    accessor: (r) => r.wealthScore,
+    accessor: (r, _ann) => r.wealthScore,
     isFlowMetric: false,
   },
   {
     label: "AAW Score",
     format: (v) => v.toFixed(1),
-    accessor: (r) => r.aawScore,
+    accessor: (r, _ann) => r.aawScore,
     isFlowMetric: false,
   },
   {
     label: "Brokerage/ESPP Contribution Rate",
     format: (v) => formatPercent(v, 1),
-    accessor: (r) => {
+    accessor: (r, ann) => {
       const cat = r.performanceByCategory["Brokerage"];
       if (!cat || r.grossIncome <= 0) return 0;
-      return cat.contributions / r.grossIncome;
+      const contribs =
+        ann && r.isCurrent && r.ytdRatio > 0 && r.ytdRatio < 1
+          ? cat.contributions / r.ytdRatio
+          : cat.contributions;
+      return contribs / r.grossIncome;
     },
     isFlowMetric: true,
   },
   {
     label: "Retirement Contribution Rate",
     format: (v) => formatPercent(v, 1),
-    accessor: (r) => {
+    accessor: (r, ann) => {
       const cat = r.performanceByCategory["401k/IRA"];
       if (!cat || r.grossIncome <= 0) return 0;
-      return (cat.contributions + cat.employerMatch) / r.grossIncome;
+      const total = cat.contributions + cat.employerMatch;
+      const contribs =
+        ann && r.isCurrent && r.ytdRatio > 0 && r.ytdRatio < 1
+          ? total / r.ytdRatio
+          : total;
+      return contribs / r.grossIncome;
     },
     isFlowMetric: true,
   },
   {
     label: "Portfolio Contribution Rate",
     format: (v) => formatPercent(v, 1),
-    accessor: (r) => {
+    accessor: (r, ann) => {
       if (!r.perfContributions || r.grossIncome <= 0) return 0;
-      return r.perfContributions / r.grossIncome;
+      const contribs =
+        ann && r.isCurrent && r.ytdRatio > 0 && r.ytdRatio < 1
+          ? r.perfContributions / r.ytdRatio
+          : r.perfContributions;
+      return contribs / r.grossIncome;
     },
     isFlowMetric: true,
   },
 ];
 
-export function SpreadsheetHealthStats({ yearA, yearB }: Props) {
+export function SpreadsheetHealthStats({ yearA, yearB, annualize }: Props) {
   const fiProjection = useMemo(
     () =>
       projectFIYear(yearA.fiProgress, yearB.fiProgress, yearA.year, yearB.year),
@@ -107,8 +122,8 @@ export function SpreadsheetHealthStats({ yearA, yearB }: Props) {
           </thead>
           <tbody>
             {STAT_ROWS.map((row) => {
-              const valA = row.accessor(yearA);
-              const valB = row.accessor(yearB);
+              const valA = row.accessor(yearA, annualize);
+              const valB = row.accessor(yearB, annualize);
               return (
                 <tr key={row.label} className="border-b border-subtle">
                   <td className="py-1.5 pr-2 font-medium text-secondary">

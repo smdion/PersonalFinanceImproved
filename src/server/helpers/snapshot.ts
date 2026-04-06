@@ -17,7 +17,9 @@ import {
 } from "./budget";
 import { computeMortgageBalance } from "./mortgage";
 import { calculateNetWorth } from "@/lib/calculators/net-worth";
+import { countPeriodsElapsed } from "@/lib/calculators/paycheck";
 import type { NetWorthInput } from "@/lib/calculators/types";
+import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
 import { accountTypeToPerformanceCategory } from "@/lib/config/display-labels";
 
 // ---------------------------------------------------------------------------
@@ -208,6 +210,9 @@ export type YearEndRow = {
   /** Portfolio broken down by parentCategory × taxType. Available from snapshot for current year;
    *  approximated from portfolioByType + account config for prior years. */
   portfolioByTaxLocation: TaxLocationBreakdown | null;
+  /** Fraction of year elapsed (periodsElapsed / periodsPerYear). 1.0 for finalized years.
+   *  Used to annualize YTD flow metrics for meaningful year-over-year comparisons. */
+  ytdRatio: number;
   // Computed wealth metrics (single computation path — all consumers read these)
   /** Net worth / lifetime earnings (savings efficiency %). */
   wealthScore: number;
@@ -581,6 +586,7 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
             afterTax: toNumber(r.ltBrokerage) + toNumber(r.espp),
           },
         },
+      ytdRatio: 1, // finalized year — full year
       // Placeholders — computed in final pass after all rows are built
       wealthScore: 0,
       aawScore: 0,
@@ -802,6 +808,32 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
           bucket[taxType] = (bucket[taxType] ?? 0) + a.amount;
         }
         return breakdown;
+      })(),
+      // YTD ratio from paycheck schedule (salary-weighted average across jobs).
+      // Uses perfLastUpdated as the reference date — annualization should match
+      // the point in time when performance data was recorded, not today.
+      ytdRatio: (() => {
+        const perfUpdated = settings.find(
+          (s) => s.key === "performance_last_updated",
+        )?.value as string | undefined;
+        const asOf = perfUpdated ? new Date(perfUpdated) : new Date();
+        let totalSalary = 0;
+        let weightedRatio = 0;
+        for (const js of jobSalaries) {
+          const ppy = PAY_PERIOD_CONFIG[js.job.payPeriod]?.periodsPerYear ?? 12;
+          const elapsed = js.job.anchorPayDate
+            ? countPeriodsElapsed(
+                asOf,
+                js.job.payPeriod,
+                new Date(js.job.anchorPayDate),
+              )
+            : Math.round((asOf.getMonth() / 12) * ppy);
+          const ratio = ppy > 0 ? elapsed / ppy : 0;
+          const salary = getTotalCompensation(js.job, js.baseSalary);
+          weightedRatio += ratio * salary;
+          totalSalary += salary;
+        }
+        return totalSalary > 0 ? weightedRatio / totalSalary : 0;
       })(),
       // Placeholders — computed in final pass
       wealthScore: 0,

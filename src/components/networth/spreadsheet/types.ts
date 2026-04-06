@@ -38,6 +38,8 @@ export type DetailedHistoryRow = {
   perfGainLoss: number | null;
   performanceByCategory: Record<string, CategoryPerformance>;
   portfolioByTaxLocation: TaxLocationBreakdown | null;
+  /** Fraction of year elapsed. 1.0 for finalized years. Used to annualize YTD flow metrics. */
+  ytdRatio: number;
   // Pre-computed metrics (from buildYearEndHistory — single computation path)
   wealthScore: number;
   aawScore: number;

@@ -105,9 +105,15 @@ function buildRowConfigs(categoryKeys: string[]): RowConfig[] {
 type Props = {
   yearA: DetailedHistoryRow;
   yearB: DetailedHistoryRow;
+  /** When true, annualize current-year flow metrics (Projected Year mode). */
+  annualize: boolean;
 };
 
-export function SpreadsheetYearOverYearTable({ yearA, yearB }: Props) {
+export function SpreadsheetYearOverYearTable({
+  yearA,
+  yearB,
+  annualize,
+}: Props) {
   // Derive category keys from both years' data (union of all categories present)
   const categoryKeys = useMemo(() => {
     const keys = new Set<string>();
@@ -150,8 +156,30 @@ export function SpreadsheetYearOverYearTable({ yearA, yearB }: Props) {
           </thead>
           <tbody>
             {rowConfigs.map((config) => {
-              const valueA = config.accessor(yearA);
-              const valueB = config.accessor(yearB);
+              const rawA = config.accessor(yearA);
+              const rawB = config.accessor(yearB);
+
+              // In "Projected Year" mode, annualize current-year flow metrics
+              const shouldAnnualizeA =
+                annualize &&
+                config.isFlowMetric &&
+                yearA.isCurrent &&
+                yearA.ytdRatio > 0 &&
+                yearA.ytdRatio < 1;
+              const shouldAnnualizeB =
+                annualize &&
+                config.isFlowMetric &&
+                yearB.isCurrent &&
+                yearB.ytdRatio > 0 &&
+                yearB.ytdRatio < 1;
+              const valueA =
+                shouldAnnualizeA && rawA !== null
+                  ? rawA / yearA.ytdRatio
+                  : rawA;
+              const valueB =
+                shouldAnnualizeB && rawB !== null
+                  ? rawB / yearB.ytdRatio
+                  : rawB;
 
               // "Outdated" on value cells when performance data is stale (>14 days)
               const showOutdatedA =

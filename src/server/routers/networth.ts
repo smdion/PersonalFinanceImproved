@@ -296,6 +296,7 @@ export const networthRouter = createTRPCRouter({
       perfGainLoss: row.perfGainLoss,
       performanceByCategory: row.performanceByCategory,
       portfolioByTaxLocation: row.portfolioByTaxLocation,
+      ytdRatio: row.ytdRatio,
       // Pre-computed metrics (single computation path)
       wealthScore: row.wealthScore,
       aawScore: row.aawScore,

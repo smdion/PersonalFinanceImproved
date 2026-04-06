@@ -7,6 +7,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { SpreadsheetControls } from "./spreadsheet-controls";
+import { useScenario } from "@/lib/context/scenario-context";
 import { SpreadsheetYearOverYearTable } from "./spreadsheet-year-over-year-table";
 import { SpreadsheetHealthStats } from "./spreadsheet-health-stats";
 import { SpreadsheetTaxLocation } from "./spreadsheet-tax-location";
@@ -85,6 +86,9 @@ export function SpreadsheetView({
     [detailedData],
   );
 
+  // Global view mode from scenario context (Projected Year vs Actual YTD)
+  const { viewMode } = useScenario();
+
   // Year selection state — default to two most recent years
   const [yearA, setYearA] = useState<number | null>(null);
   const [yearB, setYearB] = useState<number | null>(null);
@@ -141,9 +145,17 @@ export function SpreadsheetView({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left column: tables */}
         <div className="space-y-0">
-          <SpreadsheetYearOverYearTable yearA={yearARow} yearB={yearBRow} />
+          <SpreadsheetYearOverYearTable
+            yearA={yearARow}
+            yearB={yearBRow}
+            annualize={viewMode === "projected"}
+          />
 
-          <SpreadsheetHealthStats yearA={yearARow} yearB={yearBRow} />
+          <SpreadsheetHealthStats
+            yearA={yearARow}
+            yearB={yearBRow}
+            annualize={viewMode === "projected"}
+          />
 
           <SpreadsheetTaxLocation
             yearA={yearARow.portfolioByTaxLocation}
