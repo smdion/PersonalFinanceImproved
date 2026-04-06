@@ -5,6 +5,7 @@ import { eq, desc, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { AccountCategory } from "@/lib/calculators/types";
 import { toNumber } from "./transforms";
+import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 import type { Db } from "./transforms";
 import { parseAppSettings } from "./settings";
 import { stripInstitutionSuffix } from "@/lib/utils/format";
@@ -938,7 +939,7 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
     : retirementSettingsRows[0];
   const withdrawalRate = primaryRetSettings
     ? toNumber(primaryRetSettings.withdrawalRate)
-    : 0.04;
+    : DEFAULT_WITHDRAWAL_RATE;
 
   // Purchase price for cost basis
   const activeMortgageForCostBasis =

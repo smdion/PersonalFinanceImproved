@@ -1,6 +1,7 @@
 /** Retirement router for readiness analysis including savings rates, employer matches, tax bucket projections, relocation comparisons, and profile-switching scenarios. */
 import { eq, asc, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
+import { DEFAULT_RETURN_RATE } from "@/lib/constants";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateRelocation } from "@/lib/calculators/relocation";
@@ -1476,7 +1477,7 @@ export const retirementRouter = createTRPCRouter({
       const avgReturnRate =
         relevantRates.length > 0
           ? relevantRates.reduce((s, r) => s + r, 0) / relevantRates.length
-          : 0.07;
+          : DEFAULT_RETURN_RATE;
 
       const selectedScenario = retScenarios.find((s) => s.isSelected);
       const salaryGrowthRate = toNumber(settings.salaryAnnualIncrease);

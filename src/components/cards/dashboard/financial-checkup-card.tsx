@@ -6,7 +6,11 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
-import { FI_COMPLETE_THRESHOLD, FI_ON_TRACK_THRESHOLD } from "@/lib/constants";
+import {
+  FI_COMPLETE_THRESHOLD,
+  FI_ON_TRACK_THRESHOLD,
+  DEFAULT_HIGH_INCOME_THRESHOLD,
+} from "@/lib/constants";
 import { wealthScoreTier } from "@/lib/config/display-labels";
 import { LoadingCard, ErrorCard } from "./utils";
 
@@ -125,7 +129,7 @@ export function FinancialCheckupCard() {
   );
   const [highIncomeThreshold] = usePersistedSetting<number>(
     "high_income_threshold",
-    200000,
+    DEFAULT_HIGH_INCOME_THRESHOLD,
   );
   const [savingsRateThresholds] = usePersistedSetting<string>(
     "savings_rate_thresholds",

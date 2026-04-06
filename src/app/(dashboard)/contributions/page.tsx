@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { accountColor } from "@/lib/utils/colors";
 import { useUser, hasPermission } from "@/lib/context/user-context";
+import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
 
 type PeriodMode = "annual" | "monthly" | "per-period";
 
@@ -95,9 +96,7 @@ export default function ContributionsPage() {
     0,
   );
   // High income: show employee-only rate as headline (match is "free money", not savings effort)
-  // Same threshold as dashboard Financial Checkup ($200K default)
-  const HIGH_INCOME_THRESHOLD = 200000;
-  const highIncome = combinedSalary >= HIGH_INCOME_THRESHOLD;
+  const highIncome = combinedSalary >= DEFAULT_HIGH_INCOME_THRESHOLD;
   const avgPeriodsPerYear =
     activePeople.length > 0
       ? activePeople.reduce((s, p) => s + p.periodsPerYear, 0) /
