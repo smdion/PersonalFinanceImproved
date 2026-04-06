@@ -265,7 +265,10 @@ export type YearEndRow = {
  */
 let _yearEndCache: { data: YearEndRow[]; expiresAt: number } | null = null;
 
-export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
+export async function buildYearEndHistory(
+  db: Db,
+  asOfDate: Date = new Date(),
+): Promise<YearEndRow[]> {
   if (_yearEndCache && Date.now() < _yearEndCache.expiresAt) {
     return _yearEndCache.data;
   }
@@ -668,7 +671,7 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
   });
 
   // Append current year from live data if not already in history
-  const currentYear = new Date().getFullYear();
+  const currentYear = asOfDate.getFullYear();
   const hasCurrentYear = history.some((h) => h.year === currentYear);
   if (!hasCurrentYear) {
     const portfolioTotal = snapshotData?.total ?? 0;
@@ -775,7 +778,7 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
 
     history.push({
       year: currentYear,
-      yearEndDate: new Date().toISOString().slice(0, 10),
+      yearEndDate: asOfDate.toISOString().slice(0, 10),
       isCurrent: true,
       netWorth,
       portfolioTotal,
@@ -885,7 +888,7 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
         const perfUpdated = settings.find(
           (s) => s.key === "performance_last_updated",
         )?.value as string | undefined;
-        const asOf = perfUpdated ? new Date(perfUpdated) : new Date();
+        const asOf = perfUpdated ? new Date(perfUpdated) : asOfDate;
         let totalSalary = 0;
         let weightedRatio = 0;
         for (const js of jobSalaries) {
