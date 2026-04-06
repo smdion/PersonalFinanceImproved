@@ -13,6 +13,7 @@ export type HistoryRow = {
   totalLiabilities: number;
   grossIncome: number;
   effectiveIncome: number;
+  averageAge: number;
   isCurrent: boolean;
   [key: string]: unknown;
 };

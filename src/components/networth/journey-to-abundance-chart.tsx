@@ -33,16 +33,21 @@ export function JourneyToAbundanceChart({
     // Compute benchmark per year using the same formula as AAW score
     // (single computation path — age-adjusted denominator, per-year effectiveIncome)
     return history.map((h) => {
-      const age = h.year - primaryBirthYear;
-      const yearsUntil40 = Math.max(0, WEALTH_FORMULA_AGE_CUTOFF - age);
+      const displayAge = h.year - primaryBirthYear; // X-axis: primary person's age
+      // Benchmark uses averageAge from YearEndRow (matches AAW score — single computation path)
+      const benchmarkAge = h.averageAge > 0 ? h.averageAge : displayAge;
+      const yearsUntil40 = Math.max(
+        0,
+        WEALTH_FORMULA_AGE_CUTOFF - benchmarkAge,
+      );
       const avgWealth =
         h.effectiveIncome > 0
-          ? (age * h.effectiveIncome) /
+          ? (benchmarkAge * h.effectiveIncome) /
             (WEALTH_FORMULA_BASE_DENOMINATOR + yearsUntil40)
           : 0;
       return {
         year: h.year,
-        age,
+        age: displayAge,
         netWorth: h.netWorth,
         portfolio: h.portfolioTotal,
         avgWealth,
