@@ -155,14 +155,14 @@ export function SpreadsheetYearOverYearTable({
     return Array.from(keys).sort();
   }, [yearA, yearB]);
 
-  // Derive parent category keys from both years' data
+  // Derive parent category keys — exclude "Portfolio" (shown as the total row)
   const parentCategoryKeys = useMemo(() => {
     const keys = new Set<string>();
     for (const key of Object.keys(yearA.performanceByParentCategory))
       keys.add(key);
     for (const key of Object.keys(yearB.performanceByParentCategory))
       keys.add(key);
-    // Sort: Retirement first, then Portfolio
+    keys.delete("Portfolio");
     return Array.from(keys).sort();
   }, [yearA, yearB]);
 
