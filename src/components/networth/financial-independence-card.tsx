@@ -18,6 +18,7 @@ export function FinancialIndependenceCard({
   currentExpenseColumn,
   onExpenseColumnChange,
   fiProjection,
+  fiProjectionFinalized,
 }: {
   fiTarget: number;
   fiProgress: number;
@@ -28,6 +29,10 @@ export function FinancialIndependenceCard({
   currentExpenseColumn: number;
   onExpenseColumnChange: (idx: number) => void;
   fiProjection?: FIProjectionResult;
+  fiProjectionFinalized?: {
+    projection: FIProjectionResult;
+    asOfYear: number;
+  };
 }) {
   return (
     <Card
@@ -96,15 +101,27 @@ export function FinancialIndependenceCard({
             {formatPercent(fiProgress)}
           </span>
         </div>
-        {fiProjection && (
-          <div className="flex justify-between py-2 border-t border-subtle text-xs text-muted">
-            <span>
-              Projected FI Year{" "}
-              <HelpTip text="Linear projection based on year-over-year FI progress. Assumes current savings rate continues." />
-            </span>
-            <span className="font-medium text-primary">
-              {formatFIProjection(fiProjection)}
-            </span>
+        {(fiProjectionFinalized || fiProjection) && (
+          <div className="py-2 border-t border-subtle text-xs text-muted">
+            <div className="flex justify-between">
+              <span>
+                Projected FI Year{" "}
+                <HelpTip text="Linear projection based on year-over-year FI progress from finalized data." />
+              </span>
+              <span className="font-medium text-primary">
+                {fiProjectionFinalized
+                  ? formatFIProjection(fiProjectionFinalized.projection)
+                  : fiProjection
+                    ? formatFIProjection(fiProjection)
+                    : ""}
+              </span>
+            </div>
+            {fiProjectionFinalized && (
+              <div className="text-[10px] text-faint text-right mt-0.5">
+                Based on {fiProjectionFinalized.asOfYear} data
+                {fiProjection && ` · YTD: ${formatFIProjection(fiProjection)}`}
+              </div>
+            )}
           </div>
         )}
       </div>

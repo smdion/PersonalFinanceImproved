@@ -22,12 +22,16 @@ import {
 } from "@/lib/constants";
 import { compactCurrency, type HistoryRow } from "./types";
 
+import type { ChartXAxisMode } from "./net-worth-line-chart";
+
 export function JourneyToAbundanceChart({
   history,
   primaryBirthYear,
+  xAxisMode = "age",
 }: {
   history: HistoryRow[];
   primaryBirthYear: number;
+  xAxisMode?: ChartXAxisMode;
 }) {
   const chartData = useMemo(() => {
     // Compute benchmark per year using the same formula as AAW score
@@ -78,14 +82,18 @@ export function JourneyToAbundanceChart({
         >
           <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.mcGrid} />
           <XAxis
-            dataKey="age"
+            dataKey={xAxisMode === "year" ? "year" : "age"}
             tick={{ fontSize: 12, fill: CHART_COLORS.mcAxis }}
-            label={{
-              value: "Age",
-              position: "insideBottom",
-              offset: -2,
-              fontSize: 12,
-            }}
+            label={
+              xAxisMode === "age"
+                ? {
+                    value: "Age",
+                    position: "insideBottom",
+                    offset: -2,
+                    fontSize: 12,
+                  }
+                : undefined
+            }
           />
           <YAxis
             tick={{ fontSize: 11, fill: CHART_COLORS.mcAxis }}
@@ -97,7 +105,9 @@ export function JourneyToAbundanceChart({
               formatCurrency(Number(value)),
               undefined,
             ]}
-            labelFormatter={(label: unknown) => `Age ${label}`}
+            labelFormatter={(label: unknown) =>
+              xAxisMode === "year" ? String(label) : `Age ${label}`
+            }
             contentStyle={{ fontSize: 12 }}
           />
           <Legend

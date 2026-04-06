@@ -16,12 +16,17 @@ import type { DetailedHistoryRow } from "./types";
 type Props = {
   yearA: DetailedHistoryRow;
   yearB: DetailedHistoryRow;
-  /** All history rows (for prior-year FI projection reference). */
+  /** All history rows (for prior-year references). */
   allYears: DetailedHistoryRow[];
   /** When true, annualize current-year contribution rates (Projected Year mode). */
   annualize: boolean;
   /** When true, use market value scores; when false, use cost basis scores. */
   useMarketValue: boolean;
+  /** Finalized-only FI projection (computed once in parent — single computation path). */
+  fiProjectionFinalized?: {
+    projection: import("@/lib/calculators/fi-projection").FIProjectionResult;
+    asOfYear: number;
+  };
 };
 
 type RowDef = {
@@ -94,6 +99,7 @@ export function SpreadsheetHealthStats({
   allYears,
   annualize,
   useMarketValue,
+  fiProjectionFinalized,
 }: Props) {
   const fiProjection = useMemo(
     () =>
@@ -103,25 +109,13 @@ export function SpreadsheetHealthStats({
 
   const hasCurrentYear = yearA.isCurrent || yearB.isCurrent;
 
-  // Prior-year projection: what was the trajectory as of the end of the previous finalized year?
-  const priorProjection = useMemo(() => {
+  // Most recent finalized year for trajectory context ("was X at year-end YYYY")
+  const priorFinalized = useMemo(() => {
     if (!hasCurrentYear) return null;
-    const sorted = [...allYears]
+    const finalized = allYears
       .filter((h) => !h.isCurrent)
       .sort((a, b) => b.year - a.year);
-    if (sorted.length < 2) return null;
-    const prev = sorted[0]!;
-    const prevPrev = sorted[1]!;
-    return {
-      result: projectFIYear(
-        prev.fiProgress,
-        prevPrev.fiProgress,
-        prev.year,
-        prevPrev.year,
-      ),
-      fromYear: prevPrev.year,
-      toYear: prev.year,
-    };
+    return finalized[0] ?? null;
   }, [allYears, hasCurrentYear]);
 
   const staleCutoff = useMemo(() => {
@@ -171,6 +165,20 @@ export function SpreadsheetHealthStats({
                   ? yearB.aawScoreMarket
                   : yearB.aawScoreCostBasis;
               }
+              // Trajectory context for current year: show prior finalized value
+              const isWealthOrAAW =
+                row.label === "Wealth Score" || row.label === "AAW Score";
+              const priorRefValue =
+                isWealthOrAAW && priorFinalized
+                  ? row.label === "Wealth Score"
+                    ? useMarketValue
+                      ? priorFinalized.wealthScoreMarket
+                      : priorFinalized.wealthScoreCostBasis
+                    : useMarketValue
+                      ? priorFinalized.aawScoreMarket
+                      : priorFinalized.aawScoreCostBasis
+                  : null;
+
               return (
                 <tr
                   key={row.label}
@@ -188,7 +196,15 @@ export function SpreadsheetHealthStats({
                         Outdated
                       </span>
                     ) : (
-                      row.format(valA)
+                      <div>
+                        {row.format(valA)}
+                        {yearA.isCurrent && priorRefValue !== null && (
+                          <div className="text-[10px] text-faint">
+                            was {row.format(priorRefValue)} at year-end{" "}
+                            {priorFinalized!.year}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </td>
                   <td className="text-right py-1.5 pl-2">
@@ -197,7 +213,15 @@ export function SpreadsheetHealthStats({
                         Outdated
                       </span>
                     ) : (
-                      row.format(valB)
+                      <div>
+                        {row.format(valB)}
+                        {yearB.isCurrent && priorRefValue !== null && (
+                          <div className="text-[10px] text-faint">
+                            was {row.format(priorRefValue)} at year-end{" "}
+                            {priorFinalized!.year}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -219,6 +243,12 @@ export function SpreadsheetHealthStats({
                   {formatCurrency(yearA.portfolioTotal + yearA.cash)} /{" "}
                   {formatCurrency(yearA.fiTarget)}
                 </div>
+                {yearA.isCurrent && priorFinalized && (
+                  <div className="text-[10px] text-faint">
+                    was {formatPercent(priorFinalized.fiProgress, 1)} at
+                    year-end {priorFinalized.year}
+                  </div>
+                )}
               </td>
               <td className="text-right py-1.5 pl-2">
                 <div>{formatPercent(yearB.fiProgress, 1)}</div>
@@ -226,6 +256,12 @@ export function SpreadsheetHealthStats({
                   {formatCurrency(yearB.portfolioTotal + yearB.cash)} /{" "}
                   {formatCurrency(yearB.fiTarget)}
                 </div>
+                {yearB.isCurrent && priorFinalized && (
+                  <div className="text-[10px] text-faint">
+                    was {formatPercent(priorFinalized.fiProgress, 1)} at
+                    year-end {priorFinalized.year}
+                  </div>
+                )}
               </td>
             </tr>
             {/* Projected FI Year row */}
@@ -239,23 +275,33 @@ export function SpreadsheetHealthStats({
                 )}
               </td>
               <td colSpan={2} className="text-right py-1.5 pl-2">
-                <div className="font-medium">
-                  {formatFIProjection(fiProjection)}
-                </div>
-                <div className="text-[10px] text-faint">
-                  {fiProjection.status === "stalled" && hasCurrentYear
-                    ? `FI% YTD ${formatPercent(yearA.fiProgress, 1)} vs ${formatPercent(yearB.fiProgress, 1)} — partial year, may recover`
-                    : fiProjection.status === "stalled"
-                      ? `FI% declined: ${formatPercent(yearB.fiProgress, 1)} \u2192 ${formatPercent(yearA.fiProgress, 1)}`
-                      : fiProjection.status === "projected"
-                        ? `${formatPercent((yearA.fiProgress - yearB.fiProgress) / (yearA.year - yearB.year), 1)}/yr pace`
-                        : ""}
-                </div>
-                {priorProjection && (
-                  <div className="text-[10px] text-faint">
-                    As of {priorProjection.toYear}:{" "}
-                    {formatFIProjection(priorProjection.result)}
-                  </div>
+                {hasCurrentYear && fiProjectionFinalized ? (
+                  <>
+                    <div className="font-medium">
+                      {formatFIProjection(fiProjectionFinalized.projection)}
+                    </div>
+                    <div className="text-[10px] text-faint">
+                      Based on finalized {fiProjectionFinalized.asOfYear} data
+                    </div>
+                    <div className="text-[10px] text-faint">
+                      YTD: {formatFIProjection(fiProjection)}
+                      {fiProjection.status === "stalled" &&
+                        " — partial year, may recover"}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="font-medium">
+                      {formatFIProjection(fiProjection)}
+                    </div>
+                    <div className="text-[10px] text-faint">
+                      {fiProjection.status === "stalled"
+                        ? `FI% declined: ${formatPercent(yearB.fiProgress, 1)} \u2192 ${formatPercent(yearA.fiProgress, 1)}`
+                        : fiProjection.status === "projected"
+                          ? `${formatPercent((yearA.fiProgress - yearB.fiProgress) / (yearA.year - yearB.year), 1)}/yr pace`
+                          : ""}
+                    </div>
+                  </>
                 )}
               </td>
             </tr>

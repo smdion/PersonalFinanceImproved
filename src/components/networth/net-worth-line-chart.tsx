@@ -16,7 +16,26 @@ import {
 import { CHART_COLORS } from "@/lib/utils/colors";
 import { compactCurrency, type HistoryRow } from "./types";
 
-export function NetWorthLineChart({ history }: { history: HistoryRow[] }) {
+export type ChartXAxisMode = "year" | "age";
+
+export function NetWorthLineChart({
+  history,
+  xAxisMode = "year",
+  primaryBirthYear,
+}: {
+  history: HistoryRow[];
+  xAxisMode?: ChartXAxisMode;
+  primaryBirthYear?: number | null;
+}) {
+  const useAge = xAxisMode === "age";
+  // Add displayAge for X-axis when in age mode
+  const chartData = useAge
+    ? history.map((h) => ({
+        ...h,
+        displayAge: primaryBirthYear ? h.year - primaryBirthYear : h.averageAge,
+      }))
+    : history;
+
   return (
     <Card
       title={
@@ -29,17 +48,28 @@ export function NetWorthLineChart({ history }: { history: HistoryRow[] }) {
     >
       <ResponsiveContainer width="100%" height={350}>
         <LineChart
-          data={history}
+          data={chartData}
           margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.mcGrid} />
           <XAxis
-            dataKey="year"
+            dataKey={useAge ? "displayAge" : "year"}
             tick={{ fontSize: 12, fill: CHART_COLORS.mcAxis }}
-            tickFormatter={(y: number) => {
-              const row = history.find((h) => h.year === y);
-              return row?.isCurrent ? `${y}*` : String(y);
+            tickFormatter={(v: number) => {
+              if (useAge) return String(v);
+              const row = history.find((h) => h.year === v);
+              return row?.isCurrent ? `${v}*` : String(v);
             }}
+            label={
+              useAge
+                ? {
+                    value: "Age",
+                    position: "insideBottom",
+                    offset: -2,
+                    fontSize: 12,
+                  }
+                : undefined
+            }
           />
           <YAxis
             tick={{ fontSize: 11, fill: CHART_COLORS.mcAxis }}
@@ -52,9 +82,10 @@ export function NetWorthLineChart({ history }: { history: HistoryRow[] }) {
               String(name),
             ]}
             labelFormatter={(label: unknown) => {
-              const yr = Number(label);
-              const row = history.find((h) => h.year === yr);
-              return row?.isCurrent ? `${yr} (YTD)` : String(yr);
+              const num = Number(label);
+              if (useAge) return `Age ${num}`;
+              const row = history.find((h) => h.year === num);
+              return row?.isCurrent ? `${num} (YTD)` : String(num);
             }}
             contentStyle={{ fontSize: 12 }}
           />
