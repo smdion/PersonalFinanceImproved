@@ -5,7 +5,7 @@
 
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
-import { formatPercent } from "@/lib/utils/format";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { PERFORMANCE_STALE_DAYS } from "@/lib/constants";
 import {
   projectFIYear,
@@ -157,7 +157,9 @@ export function SpreadsheetHealthStats({ yearA, yearB, annualize }: Props) {
               );
             })}
             {/* FI Progress row */}
-            <tr className="border-b border-subtle">
+            <tr
+              className={`border-b border-subtle ${STAT_ROWS.length % 2 === 0 ? "bg-surface-sunken/50" : ""}`}
+            >
               <td className="py-1.5 pr-2 font-medium text-secondary">
                 FI Progress (Budget)
                 {hasCurrentYear && (
@@ -165,22 +167,43 @@ export function SpreadsheetHealthStats({ yearA, yearB, annualize }: Props) {
                 )}
               </td>
               <td className="text-right py-1.5 px-2">
-                {formatPercent(yearA.fiProgress, 1)}
+                <div>{formatPercent(yearA.fiProgress, 1)}</div>
+                <div className="text-[10px] text-faint">
+                  {formatCurrency(yearA.portfolioTotal + yearA.cash)} /{" "}
+                  {formatCurrency(yearA.fiTarget)}
+                </div>
               </td>
               <td className="text-right py-1.5 pl-2">
-                {formatPercent(yearB.fiProgress, 1)}
+                <div>{formatPercent(yearB.fiProgress, 1)}</div>
+                <div className="text-[10px] text-faint">
+                  {formatCurrency(yearB.portfolioTotal + yearB.cash)} /{" "}
+                  {formatCurrency(yearB.fiTarget)}
+                </div>
               </td>
             </tr>
             {/* Projected FI Year row */}
-            <tr className="border-b border-subtle">
+            <tr
+              className={`border-b border-subtle ${(STAT_ROWS.length + 1) % 2 === 0 ? "bg-surface-sunken/50" : ""}`}
+            >
               <td className="py-1.5 pr-2 font-medium text-secondary">
                 Projected FI Year (Budget)
                 {hasCurrentYear && (
                   <span className="text-faint font-normal"> - YTD</span>
                 )}
               </td>
-              <td colSpan={2} className="text-right py-1.5 pl-2 font-medium">
-                {formatFIProjection(fiProjection)}
+              <td colSpan={2} className="text-right py-1.5 pl-2">
+                <div className="font-medium">
+                  {formatFIProjection(fiProjection)}
+                </div>
+                <div className="text-[10px] text-faint">
+                  {fiProjection.status === "stalled" && hasCurrentYear
+                    ? `FI% YTD ${formatPercent(yearA.fiProgress, 1)} vs ${formatPercent(yearB.fiProgress, 1)} — partial year, may recover`
+                    : fiProjection.status === "stalled"
+                      ? `FI% declined: ${formatPercent(yearB.fiProgress, 1)} \u2192 ${formatPercent(yearA.fiProgress, 1)}`
+                      : fiProjection.status === "projected"
+                        ? `${formatPercent((yearA.fiProgress - yearB.fiProgress) / (yearA.year - yearB.year), 1)}/yr pace`
+                        : ""}
+                </div>
               </td>
             </tr>
           </tbody>
