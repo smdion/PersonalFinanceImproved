@@ -12,6 +12,7 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
+import { invalidateYearEndCache } from "@/server/helpers";
 import {
   ALL_PERMISSIONS,
   RBAC_SETTINGS_PREFIX,
@@ -198,7 +199,7 @@ export const adminProcedures = {
             .where(eq(schema.appSettings.key, input.key));
           return null;
         }
-        return ctx.db
+        const result = await ctx.db
           .insert(schema.appSettings)
           .values(input)
           .onConflictDoUpdate({
@@ -207,6 +208,9 @@ export const adminProcedures = {
           })
           .returning()
           .then((r) => r[0]);
+        // Invalidate year-end cache when settings change (e.g. salary averaging toggle)
+        invalidateYearEndCache();
+        return result;
       }),
     delete: adminProcedure
       .input(z.object({ key: z.string() }))

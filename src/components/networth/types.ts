@@ -12,6 +12,7 @@ export type HistoryRow = {
   mortgageBalance: number;
   totalLiabilities: number;
   grossIncome: number;
+  effectiveIncome: number;
   isCurrent: boolean;
   [key: string]: unknown;
 };

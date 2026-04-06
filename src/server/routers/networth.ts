@@ -256,6 +256,7 @@ export const networthRouter = createTRPCRouter({
         totalAssets,
         totalLiabilities,
         grossIncome: row.grossIncome,
+        effectiveIncome: row.effectiveIncome,
         combinedAgi: row.combinedAgi,
         effectiveTaxRate: row.effectiveTaxRate ?? 0,
         taxesPaid: row.taxesPaid ?? 0,

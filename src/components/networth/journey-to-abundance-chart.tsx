@@ -29,11 +29,11 @@ export function JourneyToAbundanceChart({
   primaryBirthYear: number;
 }) {
   const chartData = useMemo(() => {
-    // Compute average gross income across years that have income data
-    const yearsWithIncome = history.filter((h) => h.grossIncome > 0);
+    // Use effectiveIncome from YearEndRow (respects salary averaging toggle — single computation path)
+    const yearsWithIncome = history.filter((h) => h.effectiveIncome > 0);
     const avgIncome =
       yearsWithIncome.length > 0
-        ? yearsWithIncome.reduce((s, h) => s + h.grossIncome, 0) /
+        ? yearsWithIncome.reduce((s, h) => s + h.effectiveIncome, 0) /
           yearsWithIncome.length
         : 0;
 
