@@ -660,7 +660,7 @@ export default function ExpensesPage() {
                         className={`text-right py-1.5 px-3 tabular-nums ${(cat.pctChange ?? 0) < 0 ? "text-green-600" : (cat.pctChange ?? 0) > 0 ? "text-red-600" : ""}`}
                       >
                         {cat.pctChange !== null
-                          ? `${cat.pctChange > 0 ? "+" : ""}${cat.pctChange.toFixed(1)}%`
+                          ? `${cat.pctChange > 0 ? "+" : ""}${formatPercent(cat.pctChange / 100, 1)}`
                           : "—"}
                       </td>
                     </tr>

@@ -5,7 +5,11 @@
  *  "strategy" view: bars show ratio vs year-1 withdrawal.
  *  "budget" view: bars show ratio vs retirement budget.
  *  MC fan bands + median line overlay when available. */
-import { formatCurrency } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  compactCurrency,
+} from "@/lib/utils/format";
 import type { EngineDecumulationYear } from "@/lib/calculators/types";
 import {
   ComposedChart,
@@ -183,9 +187,7 @@ export function SpendingStabilityChart({
             tick={{ fontSize: 9, fill: "var(--text-faint)" }}
             tickFormatter={(v: number) => {
               const dollars = (v / 100) * year1Baseline;
-              return dollars >= 1000
-                ? `$${Math.round(dollars / 1000)}k`
-                : formatCurrency(dollars);
+              return compactCurrency(dollars);
             }}
             domain={[
               0,
@@ -196,7 +198,7 @@ export function SpendingStabilityChart({
             yAxisId="right"
             orientation="right"
             tick={{ fontSize: 10, fill: "var(--text-faint)" }}
-            tickFormatter={(v: number) => `${v}%`}
+            tickFormatter={(v: number) => formatPercent(v / 100)}
             domain={[
               0,
               (max: number) => Math.max(150, Math.ceil(max / 10) * 10),
@@ -222,7 +224,7 @@ export function SpendingStabilityChart({
                           : "text-red-500 font-medium"
                       }
                     >
-                      {ratio.toFixed(1)}%
+                      {formatPercent(ratio / 100, 1)}
                     </span>
                   </div>
                   <div className="flex justify-between gap-4">
@@ -239,7 +241,7 @@ export function SpendingStabilityChart({
                     <div className="flex justify-between gap-4">
                       <span className="text-muted">Sim. median:</span>
                       <span className="text-purple-400">
-                        {d.mc_p50.toFixed(1)}%
+                        {formatPercent(d.mc_p50 / 100, 1)}
                       </span>
                     </div>
                   )}
@@ -247,7 +249,8 @@ export function SpendingStabilityChart({
                     <div className="flex justify-between gap-4">
                       <span className="text-muted">Confidence band:</span>
                       <span className="text-faint">
-                        {d.mc_lo.toFixed(1)}% – {d.mc_hi!.toFixed(1)}%
+                        {formatPercent(d.mc_lo / 100, 1)} –{" "}
+                        {formatPercent(d.mc_hi! / 100, 1)}
                       </span>
                     </div>
                   )}

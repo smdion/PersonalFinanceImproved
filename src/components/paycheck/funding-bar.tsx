@@ -1,6 +1,7 @@
 "use client";
 
 import { accountColor, accountMatchColor } from "@/lib/utils/colors";
+import { formatPercent } from "@/lib/utils/format";
 
 export function FundingBar({
   pct,
@@ -36,7 +37,7 @@ export function FundingBar({
     return (
       <div
         className="w-full bg-surface-strong rounded-full h-2"
-        title={`Employee contribution: ${(pct * 100).toFixed(0)}% of IRS limit`}
+        title={`Employee contribution: ${formatPercent(pct)} of IRS limit`}
       >
         <div
           className={`${color} h-2 rounded-full transition-all`}
@@ -58,7 +59,7 @@ export function FundingBar({
       <div
         className={`${color} h-2 rounded-l-full transition-all absolute left-0 top-0`}
         style={{ width: `${employeeWidth}%` }}
-        title={`Employee contribution: ${(pct * 100).toFixed(0)}% of IRS limit`}
+        title={`Employee contribution: ${formatPercent(pct)} of IRS limit`}
       />
       {/* Employer match bar (shown separately, does not count toward IRS limit) */}
       <div

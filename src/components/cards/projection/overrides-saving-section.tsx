@@ -4,6 +4,7 @@
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";
+import { taxTreatmentToShortLabel } from "@/lib/config/display-labels";
 import {
   getAccountTypeConfig,
   categoriesWithTaxPreference,
@@ -111,7 +112,7 @@ export function SavingOverridesSection({ state: s }: OverridesSectionProps) {
                         {Object.entries(o.taxTypeCaps)
                           .map(
                             ([k, v]) =>
-                              `${k === "traditional" ? "Trad" : k === "roth" ? "Roth" : k}=${formatCurrency(v as number)}`,
+                              `${taxTreatmentToShortLabel(k)}=${formatCurrency(v as number)}`,
                           )
                           .join(",")}
                       </span>

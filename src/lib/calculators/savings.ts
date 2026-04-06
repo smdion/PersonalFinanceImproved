@@ -21,6 +21,7 @@
  * can all be changed and the calculator re-runs with the new values.
  */
 import type { SavingsInput, SavingsResult } from "./types";
+import { formatPercent } from "../utils/format";
 import { safeDivide, sumBy, roundToCents } from "../utils/math";
 import { ALLOCATION_TOLERANCE } from "../constants";
 
@@ -39,7 +40,7 @@ export function calculateSavings(input: SavingsInput): SavingsResult {
     Math.abs(totalAllocation - 1) > ALLOCATION_TOLERANCE
   ) {
     warnings.push(
-      `Allocation percentages sum to ${(totalAllocation * 100).toFixed(1)}%, expected 100%`,
+      `Allocation percentages sum to ${formatPercent(totalAllocation, 1)}, expected 100%`,
     );
   }
 

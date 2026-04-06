@@ -903,10 +903,9 @@ export default function ToolsPage() {
                             </span>
                             {isFinanced && (
                               <span className="text-orange-400">
-                                (
-                                {((p.downPaymentPercent ?? 0) * 100).toFixed(0)}
-                                % down, {p.loanTermYears}yr @
-                                {((p.loanRate ?? 0) * 100).toFixed(1)}%)
+                                ({formatPercent(p.downPaymentPercent ?? 0)}{" "}
+                                down, {p.loanTermYears}yr @
+                                {formatPercent(p.loanRate ?? 0, 1)})
                               </span>
                             )}
                             {(p.ongoingMonthlyCost ?? 0) > 0 && (

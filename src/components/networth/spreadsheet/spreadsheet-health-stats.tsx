@@ -39,7 +39,7 @@ type RowDef = {
 const STAT_ROWS: RowDef[] = [
   {
     label: "Wealth Score",
-    format: (v) => `${(v * 100).toFixed(0)}%`,
+    format: (v) => formatPercent(v),
     accessor: (r, _ann) => r.wealthScoreMarket, // toggled in render
     isFlowMetric: false,
   },

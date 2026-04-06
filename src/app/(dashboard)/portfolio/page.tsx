@@ -1001,10 +1001,10 @@ function PortfolioQuickLook({
   const fmtPrimary = (dollars: number, percent: number) =>
     isDollar
       ? `${sign(dollars)}${formatCurrency(dollars)}`
-      : `${sign(percent)}${percent.toFixed(2)}%`;
+      : `${sign(percent)}${formatPercent(percent / 100, 2)}`;
   const fmtSecondary = (dollars: number, percent: number) =>
     isDollar
-      ? `${sign(percent)}${percent.toFixed(1)}%`
+      ? `${sign(percent)}${formatPercent(percent / 100, 1)}`
       : `${sign(dollars)}${formatCurrency(dollars)}`;
   const biggestGain = isDollar ? stats.biggestGainDollar : stats.biggestGainPct;
   const biggestLoss = isDollar ? stats.biggestLossDollar : stats.biggestLossPct;
@@ -1149,7 +1149,7 @@ function PortfolioQuickLook({
               <div className="font-medium text-green-500">
                 {isDollar
                   ? `+${formatCurrency(sharpestGain.delta / sharpestGain.days)}/day`
-                  : `+${(sharpestGain.deltaPct / sharpestGain.days).toFixed(2)}%/day`}
+                  : `+${formatPercent(sharpestGain.deltaPct / sharpestGain.days / 100, 2)}/day`}
               </div>
               <div className="text-xs text-faint">
                 {formatDate(sharpestGain.date, "medium")} ·{" "}
@@ -1162,7 +1162,7 @@ function PortfolioQuickLook({
               <div className="font-medium text-red-500">
                 {isDollar
                   ? `${formatCurrency(sharpestLoss.delta / sharpestLoss.days)}/day`
-                  : `${(sharpestLoss.deltaPct / sharpestLoss.days).toFixed(2)}%/day`}
+                  : `${formatPercent(sharpestLoss.deltaPct / sharpestLoss.days / 100, 2)}/day`}
               </div>
               <div className="text-xs text-faint">
                 {formatDate(sharpestLoss.date, "medium")} ·{" "}
@@ -1204,7 +1204,7 @@ function PortfolioQuickLook({
               <div className="font-medium text-green-500">
                 {isDollar
                   ? `+${formatCurrency(bestMonth[1] as number)}`
-                  : `+${(bestMonth[1] as number).toFixed(2)}%`}
+                  : `+${formatPercent((bestMonth[1] as number) / 100, 2)}`}
               </div>
               <div className="text-xs text-faint">
                 {fmtMonth(bestMonth[0] as string)}
@@ -1215,7 +1215,7 @@ function PortfolioQuickLook({
               <div className="font-medium text-red-500">
                 {isDollar
                   ? formatCurrency(worstMonth[1] as number)
-                  : `${(worstMonth[1] as number).toFixed(2)}%`}
+                  : formatPercent((worstMonth[1] as number) / 100, 2)}
               </div>
               <div className="text-xs text-faint">
                 {fmtMonth(worstMonth[0] as string)}
@@ -1233,7 +1233,7 @@ function PortfolioQuickLook({
             <div>
               <div className="text-xs text-muted">Volatility</div>
               <div className="font-medium">
-                {stats.volatility.toFixed(2)}% per snapshot
+                {formatPercent(stats.volatility / 100, 2)} per snapshot
               </div>
               <div className="text-xs text-faint">
                 Std dev of % changes (~{Math.round(stats.avgDays)}d avg gap)
@@ -1607,7 +1607,7 @@ export default function PortfolioPage() {
                                 className={`text-right py-2 px-4 text-xs ${snap.deltaPct !== null ? (snap.deltaPct >= 0 ? "text-green-600" : "text-red-600") : "text-faint"}`}
                               >
                                 {snap.deltaPct !== null
-                                  ? `${snap.deltaPct >= 0 ? "+" : ""}${snap.deltaPct.toFixed(2)}%`
+                                  ? `${snap.deltaPct >= 0 ? "+" : ""}${formatPercent(snap.deltaPct / 100, 2)}`
                                   : "\u2014"}
                               </td>
                               <td className="text-right py-2 px-4 text-xs text-faint">

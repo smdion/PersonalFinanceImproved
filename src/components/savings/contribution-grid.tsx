@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { GoalProjection, monthKey } from "./types";
 import { FUND_COLORS } from "./fund-colors";
 
@@ -160,7 +160,7 @@ function DefaultContributionCell({
         }`}
         title="Click to set by percentage of pool"
       >
-        {pct.toFixed(0)}%
+        {formatPercent(pct / 100)}
       </button>
     </div>
   );
@@ -242,7 +242,7 @@ export function ContributionGrid({
                       className={`text-center py-1 px-0.5 text-muted font-normal ${
                         isYearStart ? "border-l border-strong" : ""
                       }`}
-                      title={`${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()} — Total: ${formatCurrency(monthTotal)} (${monthPool > 0 ? ((monthTotal / monthPool) * 100).toFixed(0) : 0}% of pool ${formatCurrency(monthPool)})`}
+                      title={`${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()} — Total: ${formatCurrency(monthTotal)} (${monthPool > 0 ? formatPercent(monthTotal / monthPool) : "0%"} of pool ${formatCurrency(monthPool)})`}
                     >
                       <div className="text-[9px]">
                         {MONTH_NAMES[d.getMonth()]}
@@ -316,7 +316,7 @@ export function ContributionGrid({
                               ? "text-blue-600 font-semibold"
                               : "text-faint"
                           }`}
-                          title={`${(monthlyPools[monthIndex]! > 0 ? (allocation / monthlyPools[monthIndex]!) * 100 : 0).toFixed(1)}% of pool — Balance: ${formatCurrency(balance)}${canEdit !== false ? " — Click to edit month" : ""}`}
+                          title={`${formatPercent(monthlyPools[monthIndex]! > 0 ? allocation / monthlyPools[monthIndex]! : 0, 1)} of pool — Balance: ${formatCurrency(balance)}${canEdit !== false ? " — Click to edit month" : ""}`}
                         >
                           {Math.round(allocation).toLocaleString()}
                         </button>
@@ -378,7 +378,7 @@ export function ContributionGrid({
                   </div>
                   <div className="text-[10px] text-muted">
                     {pool > 0
-                      ? `${((totalMonthlyAllocation / pool) * 100).toFixed(0)}%`
+                      ? formatPercent(totalMonthlyAllocation / pool)
                       : "—"}
                   </div>
                 </td>

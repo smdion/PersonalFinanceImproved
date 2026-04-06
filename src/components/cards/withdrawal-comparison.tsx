@@ -4,7 +4,11 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { StrategyGuideButton } from "@/components/cards/strategy-guide-panel";
 import { trpc } from "@/lib/trpc";
-import { formatCurrency } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  compactCurrency,
+  formatPercent,
+} from "@/lib/utils/format";
 import {
   LineChart,
   Line,
@@ -232,7 +236,7 @@ export function WithdrawalComparisonCard({
                                 : "text-red-400"
                           }
                         >
-                          {Math.round(s.successRate * 100)}%
+                          {formatPercent(s.successRate)}
                         </span>
                       ) : (
                         <span className="text-faint">—</span>
@@ -249,7 +253,7 @@ export function WithdrawalComparisonCard({
                                 : "text-red-400"
                           }
                         >
-                          {Math.round(s.spendingStabilityRate * 100)}%
+                          {formatPercent(s.spendingStabilityRate)}
                         </span>
                       ) : (
                         <span className="text-faint">—</span>
@@ -266,7 +270,7 @@ export function WithdrawalComparisonCard({
                                 : "text-red-400"
                           }
                         >
-                          {Math.round(s.budgetStabilityRate * 100)}%
+                          {formatPercent(s.budgetStabilityRate)}
                         </span>
                       ) : (
                         <span className="text-faint">—</span>
@@ -330,7 +334,7 @@ export function WithdrawalComparisonCard({
               <YAxis
                 stroke="#9ca3af"
                 tick={{ fontSize: 10 }}
-                tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+                tickFormatter={(v: number) => compactCurrency(v)}
               />
               <Tooltip
                 contentStyle={{
@@ -387,14 +391,12 @@ export function WithdrawalComparisonCard({
                 </h4>
                 <p className="text-[11px] text-faint">
                   Current plan:{" "}
-                  {Math.round(
-                    (analyzerQuery.data.baseline?.successRate ?? 0) * 100,
-                  )}
-                  % success ·{" "}
-                  {Math.round(
-                    (analyzerQuery.data.baseline?.stabilityRate ?? 0) * 100,
-                  )}
-                  % stability
+                  {formatPercent(analyzerQuery.data.baseline?.successRate ?? 0)}{" "}
+                  success ·{" "}
+                  {formatPercent(
+                    analyzerQuery.data.baseline?.stabilityRate ?? 0,
+                  )}{" "}
+                  stability
                 </p>
               </div>
               <button
@@ -422,7 +424,7 @@ export function WithdrawalComparisonCard({
                         {rec.label}: {rec.currentValue} → {rec.adjustedValue}
                       </span>
                       <div className="text-faint mt-0.5">
-                        Success: {Math.round(rec.successRate * 100)}%
+                        Success: {formatPercent(rec.successRate)}
                         {successDeltaPp !== 0 && (
                           <span
                             className={
@@ -436,7 +438,7 @@ export function WithdrawalComparisonCard({
                             {successDeltaPp}pp)
                           </span>
                         )}
-                        {" · "}Stability: {Math.round(rec.stabilityRate * 100)}%
+                        {" · "}Stability: {formatPercent(rec.stabilityRate)}
                         {stabilityDeltaPp !== 0 && (
                           <span
                             className={

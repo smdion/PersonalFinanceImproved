@@ -8,6 +8,7 @@ import { useUser, isAdmin } from "@/lib/context/user-context";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { TAX_TREATMENT_LABELS as TAX_LABELS } from "@/lib/config/display-labels";
+import { formatPercent } from "@/lib/utils/format";
 import {
   ACCOUNT_TYPE_CONFIG,
   getAllCategories,
@@ -401,7 +402,7 @@ export function ContributionAccountsSettings() {
                             : `$${c.contributionValue}`;
                   const matchDetail =
                     c.employerMatchType !== "none" && c.employerMatchValue
-                      ? `, ${c.employerMatchValue}% match${c.employerMaxMatchPct ? ` up to ${(parseFloat(c.employerMaxMatchPct) * 100).toFixed(0)}%` : ""}`
+                      ? `, ${c.employerMatchValue}% match${c.employerMaxMatchPct ? ` up to ${formatPercent(parseFloat(c.employerMaxMatchPct))}` : ""}`
                       : "";
                   const employer = jobLabel(c.jobId);
                   const compatibleAccounts = activeAccounts.filter(

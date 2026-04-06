@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { InlineEdit } from "@/components/ui/inline-edit";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { PctAllocator } from "./pct-allocator";
 import {
   GoalProjection,
@@ -672,7 +672,7 @@ export function ProjectionsTab({
                               totalMonthlyAllocation > 0
                                 ? (amt / totalMonthlyAllocation) * 100
                                 : 0;
-                            return `${formatCurrency(amt)}/mo (${pct.toFixed(0)}%)`;
+                            return `${formatCurrency(amt)}/mo (${formatPercent(pct / 100)})`;
                           }}
                           parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                           type="number"
@@ -682,7 +682,7 @@ export function ProjectionsTab({
                         <span className="text-xs">
                           {formatCurrency(gp.monthlyAllocation)}/mo
                           {totalMonthlyAllocation > 0 &&
-                            ` (${((gp.monthlyAllocation / totalMonthlyAllocation) * 100).toFixed(0)}%)`}
+                            ` (${formatPercent(gp.monthlyAllocation / totalMonthlyAllocation)})`}
                         </span>
                       )}
                     </div>

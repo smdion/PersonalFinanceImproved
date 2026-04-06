@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
 
 export function PctAllocator({
   goals,
@@ -72,9 +72,9 @@ export function PctAllocator({
         <span
           className={`text-xs ${Math.abs(totalPct - 100) < 0.01 ? "text-green-600" : "text-red-500"}`}
         >
-          Total: {totalPct.toFixed(0)}%
+          Total: {formatPercent(totalPct / 100)}
           {Math.abs(totalPct - 100) >= 0.01 &&
-            ` (${totalPct > 100 ? "over" : "under"} by ${Math.abs(totalPct - 100).toFixed(0)}%)`}
+            ` (${totalPct > 100 ? "over" : "under"} by ${formatPercent(Math.abs(totalPct - 100) / 100)})`}
         </span>
         <button
           onClick={() => {
