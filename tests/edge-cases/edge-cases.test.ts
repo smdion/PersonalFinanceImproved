@@ -497,7 +497,7 @@ describe("net worth edge cases", () => {
   it("handles zero everything", () => {
     const result = calculateNetWorth(baseNW);
     expect(result.netWorth).toBe(0);
-    expect(result.wealthScore).toBe(0);
+    expect(result.wealthScoreMarket).toBe(0);
     expect(result.fiProgress).toBe(0);
   });
 
@@ -510,7 +510,7 @@ describe("net worth edge cases", () => {
       averageAge: 25,
     });
     expect(result.netWorth).toBe(-50000);
-    expect(result.wealthScore).toBeLessThan(0);
+    expect(result.wealthScoreMarket).toBeLessThan(0);
   });
 
   it("handles very young age (under 25)", () => {
@@ -523,7 +523,7 @@ describe("net worth edge cases", () => {
     });
     // AAW: (22 × 40000) / (10 + 18) = 31428.57
     // aawScore = 5000 / 31428.57 ≈ 0.159
-    expect(result.aawScore).toBeCloseTo(0.159, 2);
+    expect(result.aawScoreMarket).toBeCloseTo(0.159, 2);
     expect(result.netWorth).toBe(5000);
   });
 

@@ -282,8 +282,10 @@ export type NetWorthResult = {
   netWorth: number; // alias for netWorthMarket (primary display)
   totalAssets: number;
   totalLiabilities: number;
-  wealthScore: number; // netWorth / lifetimeEarnings (savings efficiency %)
-  aawScore: number; // Money Guy: netWorth / ((avgAge × income) / (10 + yearsUntil40))
+  wealthScoreMarket: number; // netWorthMarket / lifetimeEarnings
+  wealthScoreCostBasis: number; // netWorthCostBasis / lifetimeEarnings
+  aawScoreMarket: number; // Money Guy formula using market NW
+  aawScoreCostBasis: number; // Money Guy formula using cost basis NW
   fiProgress: number;
   fiTarget: number;
   warnings: string[];

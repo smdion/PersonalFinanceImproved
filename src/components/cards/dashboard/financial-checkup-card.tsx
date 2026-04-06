@@ -266,7 +266,7 @@ export function FinancialCheckupCard() {
   });
 
   // 5. Wealth Score (uses AAW score — Money Guy formula — for PAW/AAW/UAW tier)
-  const aawScore = networth.data?.result.aawScore ?? 0;
+  const aawScore = networth.data?.result.aawScoreMarket ?? 0;
   const wealthTier = wealthScoreTier(aawScore);
   steps.push({
     label: "Wealth Score",

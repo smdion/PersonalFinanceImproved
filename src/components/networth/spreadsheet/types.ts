@@ -43,8 +43,10 @@ export type DetailedHistoryRow = {
   /** Fraction of year elapsed. 1.0 for finalized years. Used to annualize YTD flow metrics. */
   ytdRatio: number;
   // Pre-computed metrics (from buildYearEndHistory — single computation path)
-  wealthScore: number;
-  aawScore: number;
+  wealthScoreMarket: number;
+  wealthScoreCostBasis: number;
+  aawScoreMarket: number;
+  aawScoreCostBasis: number;
   fiProgress: number;
   fiTarget: number;
   averageAge: number;

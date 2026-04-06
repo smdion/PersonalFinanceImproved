@@ -217,10 +217,14 @@ export type YearEndRow = {
    *  Used to annualize YTD flow metrics for meaningful year-over-year comparisons. */
   ytdRatio: number;
   // Computed wealth metrics (single computation path — all consumers read these)
-  /** Net worth / lifetime earnings (savings efficiency %). */
-  wealthScore: number;
-  /** Money Guy Wealth Accumulator: netWorth / ((avgAge × income) / (10 + yearsUntil40)). */
-  aawScore: number;
+  /** Net worth / lifetime earnings (savings efficiency %) — market value. */
+  wealthScoreMarket: number;
+  /** Net worth / lifetime earnings (savings efficiency %) — cost basis. */
+  wealthScoreCostBasis: number;
+  /** Money Guy Wealth Accumulator — market value. */
+  aawScoreMarket: number;
+  /** Money Guy Wealth Accumulator — cost basis. */
+  aawScoreCostBasis: number;
   /** (portfolioTotal + cash) / fiTarget. */
   fiProgress: number;
   /** annualExpenses / withdrawalRate. */
@@ -645,8 +649,10 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
         },
       ytdRatio: 1, // finalized year — full year
       // Placeholders — computed in final pass after all rows are built
-      wealthScore: 0,
-      aawScore: 0,
+      wealthScoreMarket: 0,
+      wealthScoreCostBasis: 0,
+      aawScoreMarket: 0,
+      aawScoreCostBasis: 0,
       fiProgress: 0,
       fiTarget: 0,
       netWorthMarket: netWorth,
@@ -898,8 +904,10 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
         return totalSalary > 0 ? weightedRatio / totalSalary : 0;
       })(),
       // Placeholders — computed in final pass
-      wealthScore: 0,
-      aawScore: 0,
+      wealthScoreMarket: 0,
+      wealthScoreCostBasis: 0,
+      aawScoreMarket: 0,
+      aawScoreCostBasis: 0,
       fiProgress: 0,
       fiTarget: 0,
       netWorthMarket: netWorth,
@@ -1005,8 +1013,10 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
     const result = calculateNetWorth(nwInput);
 
     // Write computed values back to the row
-    row.wealthScore = result.wealthScore;
-    row.aawScore = result.aawScore;
+    row.wealthScoreMarket = result.wealthScoreMarket;
+    row.wealthScoreCostBasis = result.wealthScoreCostBasis;
+    row.aawScoreMarket = result.aawScoreMarket;
+    row.aawScoreCostBasis = result.aawScoreCostBasis;
     row.fiProgress = result.fiProgress;
     row.fiTarget = result.fiTarget;
     row.netWorthMarket = result.netWorthMarket;

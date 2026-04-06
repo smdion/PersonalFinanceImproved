@@ -321,8 +321,16 @@ export default function NetWorthPage() {
           {/* Metrics row */}
           <CardBoundary title="Key Metrics">
             <MetricsRow
-              wealthScore={result.wealthScore}
-              aawScore={result.aawScore}
+              wealthScore={
+                useMarketValue
+                  ? result.wealthScoreMarket
+                  : result.wealthScoreCostBasis
+              }
+              aawScore={
+                useMarketValue
+                  ? result.aawScoreMarket
+                  : result.aawScoreCostBasis
+              }
               fiProgress={result.fiProgress}
               fiTarget={result.fiTarget}
               netWorthMarket={result.netWorthMarket}

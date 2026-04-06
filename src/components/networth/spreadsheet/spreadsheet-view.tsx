@@ -157,6 +157,7 @@ export function SpreadsheetView({
             yearB={yearBRow}
             allYears={detailedData.years as DetailedHistoryRow[]}
             annualize={viewMode === "projected"}
+            useMarketValue={useMarketValue}
           />
 
           <SpreadsheetTaxLocation

@@ -36,7 +36,7 @@ describe("calculateNetWorth", () => {
   it("computes wealth score as net worth / lifetime earnings", () => {
     const result = calculateNetWorth(input);
     // 960000 / 1700000 ≈ 0.565
-    expect(result.wealthScore).toBeCloseTo(0.565, 2);
+    expect(result.wealthScoreMarket).toBeCloseTo(0.565, 2);
   });
 
   it("computes AAW score using Money Guy formula (no x2)", () => {
@@ -44,7 +44,7 @@ describe("calculateNetWorth", () => {
     // Expected NW = (35 × 230000) / (10 + max(0, 40-35))
     // = 8050000 / 15 = 536666.67
     // AAW = 960000 / 536666.67 ≈ 1.789
-    expect(result.aawScore).toBeCloseTo(1.789, 1);
+    expect(result.aawScoreMarket).toBeCloseTo(1.789, 1);
   });
 
   it("computes FI progress from portfolio + cash only", () => {
@@ -61,7 +61,7 @@ describe("calculateNetWorth", () => {
       const result = calculateNetWorth(older);
       // Expected NW = (45 × 230000) / 10 = 1,035,000
       // AAW = 960000 / 1035000 ≈ 0.928
-      expect(result.aawScore).toBeCloseTo(0.928, 2);
+      expect(result.aawScoreMarket).toBeCloseTo(0.928, 2);
     });
   });
 
@@ -72,8 +72,8 @@ describe("calculateNetWorth", () => {
         effectiveIncome: 0,
         lifetimeEarnings: 0,
       });
-      expect(result.wealthScore).toBe(0);
-      expect(result.aawScore).toBe(0);
+      expect(result.wealthScoreMarket).toBe(0);
+      expect(result.aawScoreMarket).toBe(0);
     });
 
     it("handles zero expenses without error", () => {

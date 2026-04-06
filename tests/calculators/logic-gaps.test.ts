@@ -507,34 +507,34 @@ describe("net worth AAW formula age transition", () => {
     // = 7,000,000 / 15 = 466,666.67
     const expected = (35 * 200000) / (10 + 5);
     // AAW = 750000 / 466666.67 ≈ 1.607
-    expect(result.aawScore).toBeCloseTo(netWorth / expected, 2);
+    expect(result.aawScoreMarket).toBeCloseTo(netWorth / expected, 2);
   });
 
   it("age 40+ uses base denominator of 10 for AAW", () => {
     const result = calculateNetWorth({ ...baseInput, averageAge: 45 });
     // Expected NW = (45 × 200000) / 10 = 900,000
     const expected = (45 * 200000) / 10;
-    expect(result.aawScore).toBeCloseTo(netWorth / expected, 2);
+    expect(result.aawScoreMarket).toBeCloseTo(netWorth / expected, 2);
   });
 
   it("age exactly 40 transitions to base denominator", () => {
     const result = calculateNetWorth({ ...baseInput, averageAge: 40 });
     // At 40: max(0, 40-40) = 0, so denominator = 10
     const expected = (40 * 200000) / 10;
-    expect(result.aawScore).toBeCloseTo(netWorth / expected, 2);
+    expect(result.aawScoreMarket).toBeCloseTo(netWorth / expected, 2);
   });
 
   it("wealth score is net worth / lifetime earnings", () => {
     const result = calculateNetWorth(baseInput);
     // 750000 / 2000000 = 0.375
-    expect(result.wealthScore).toBeCloseTo(0.375, 3);
+    expect(result.wealthScoreMarket).toBeCloseTo(0.375, 3);
   });
 
   it("AAW score decreases as age increases with same NW", () => {
     const young = calculateNetWorth({ ...baseInput, averageAge: 30 });
     const old = calculateNetWorth({ ...baseInput, averageAge: 50 });
     // Expected NW increases with age, so AAW score decreases
-    expect(old.aawScore).toBeLessThan(young.aawScore);
+    expect(old.aawScoreMarket).toBeLessThan(young.aawScoreMarket);
   });
 });
 

@@ -20,6 +20,8 @@ type Props = {
   allYears: DetailedHistoryRow[];
   /** When true, annualize current-year contribution rates (Projected Year mode). */
   annualize: boolean;
+  /** When true, use market value scores; when false, use cost basis scores. */
+  useMarketValue: boolean;
 };
 
 type RowDef = {
@@ -33,13 +35,13 @@ const STAT_ROWS: RowDef[] = [
   {
     label: "Wealth Score",
     format: (v) => `${(v * 100).toFixed(0)}%`,
-    accessor: (r, _ann) => r.wealthScore,
+    accessor: (r, _ann) => r.wealthScoreMarket, // toggled in render
     isFlowMetric: false,
   },
   {
     label: "AAW Score",
     format: (v) => v.toFixed(1),
-    accessor: (r, _ann) => r.aawScore,
+    accessor: (r, _ann) => r.aawScoreMarket, // toggled in render
     isFlowMetric: false,
   },
   {
@@ -91,6 +93,7 @@ export function SpreadsheetHealthStats({
   yearB,
   allYears,
   annualize,
+  useMarketValue,
 }: Props) {
   const fiProjection = useMemo(
     () =>
@@ -150,8 +153,24 @@ export function SpreadsheetHealthStats({
           </thead>
           <tbody>
             {STAT_ROWS.map((row, index) => {
-              const valA = row.accessor(yearA, annualize);
-              const valB = row.accessor(yearB, annualize);
+              let valA = row.accessor(yearA, annualize);
+              let valB = row.accessor(yearB, annualize);
+              // Pick market or cost basis for wealth/AAW scores
+              if (row.label === "Wealth Score") {
+                valA = useMarketValue
+                  ? yearA.wealthScoreMarket
+                  : yearA.wealthScoreCostBasis;
+                valB = useMarketValue
+                  ? yearB.wealthScoreMarket
+                  : yearB.wealthScoreCostBasis;
+              } else if (row.label === "AAW Score") {
+                valA = useMarketValue
+                  ? yearA.aawScoreMarket
+                  : yearA.aawScoreCostBasis;
+                valB = useMarketValue
+                  ? yearB.aawScoreMarket
+                  : yearB.aawScoreCostBasis;
+              }
               return (
                 <tr
                   key={row.label}
