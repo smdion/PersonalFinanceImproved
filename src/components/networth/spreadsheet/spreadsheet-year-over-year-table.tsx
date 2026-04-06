@@ -156,30 +156,9 @@ export function SpreadsheetYearOverYearTable({
           </thead>
           <tbody>
             {rowConfigs.map((config) => {
-              const rawA = config.accessor(yearA);
-              const rawB = config.accessor(yearB);
-
-              // In "Projected Year" mode, annualize current-year flow metrics
-              const shouldAnnualizeA =
-                annualize &&
-                config.isFlowMetric &&
-                yearA.isCurrent &&
-                yearA.ytdRatio > 0 &&
-                yearA.ytdRatio < 1;
-              const shouldAnnualizeB =
-                annualize &&
-                config.isFlowMetric &&
-                yearB.isCurrent &&
-                yearB.ytdRatio > 0 &&
-                yearB.ytdRatio < 1;
-              const valueA =
-                shouldAnnualizeA && rawA !== null
-                  ? rawA / yearA.ytdRatio
-                  : rawA;
-              const valueB =
-                shouldAnnualizeB && rawB !== null
-                  ? rawB / yearB.ytdRatio
-                  : rawB;
+              // Always show actual values (no annualization)
+              const valueA = config.accessor(yearA);
+              const valueB = config.accessor(yearB);
 
               // "Outdated" on value cells when performance data is stale (>14 days)
               const showOutdatedA =
@@ -190,12 +169,47 @@ export function SpreadsheetYearOverYearTable({
               // "In Progress" on change columns only when either value is outdated
               const showInProgress = showOutdatedA || showOutdatedB;
 
-              const dollarChange =
-                valueA !== null && valueB !== null ? valueA - valueB : null;
-              const percentChange =
-                dollarChange !== null && valueB !== null && valueB !== 0
-                  ? dollarChange / Math.abs(valueB)
-                  : null;
+              // For flow metrics with a current year: prorate the comparison year
+              // to the same time fraction so % Change is apples-to-apples.
+              // In "Projected Year" mode, prorate the full-year value down.
+              // In "Actual YTD" mode, show raw comparison (full year vs YTD).
+              let dollarChange: number | null = null;
+              let percentChange: number | null = null;
+
+              if (valueA !== null && valueB !== null) {
+                if (
+                  annualize &&
+                  config.isFlowMetric &&
+                  yearA.isCurrent &&
+                  yearA.ytdRatio > 0 &&
+                  yearA.ytdRatio < 1 &&
+                  !yearB.isCurrent
+                ) {
+                  // Year A is current, Year B is finalized — prorate B to match A's timeframe
+                  const proratedB = valueB * yearA.ytdRatio;
+                  dollarChange = valueA - proratedB;
+                  percentChange =
+                    proratedB !== 0 ? dollarChange / Math.abs(proratedB) : null;
+                } else if (
+                  annualize &&
+                  config.isFlowMetric &&
+                  yearB.isCurrent &&
+                  yearB.ytdRatio > 0 &&
+                  yearB.ytdRatio < 1 &&
+                  !yearA.isCurrent
+                ) {
+                  // Year B is current, Year A is finalized — prorate A to match B's timeframe
+                  const proratedA = valueA * yearB.ytdRatio;
+                  dollarChange = proratedA - valueB;
+                  percentChange =
+                    valueB !== 0 ? dollarChange / Math.abs(valueB) : null;
+                } else {
+                  // Both finalized or both current or actual YTD mode — straight comparison
+                  dollarChange = valueA - valueB;
+                  percentChange =
+                    valueB !== 0 ? dollarChange / Math.abs(valueB) : null;
+                }
+              }
 
               return (
                 <tr key={config.label} className="border-b border-subtle">
