@@ -25,7 +25,10 @@ function isPerformanceOutdated(row: DetailedHistoryRow): boolean {
   return daysSince > PERFORMANCE_STALE_DAYS;
 }
 
-function buildRowConfigs(categoryKeys: string[]): RowConfig[] {
+function buildRowConfigs(
+  categoryKeys: string[],
+  parentCategoryKeys: string[],
+): RowConfig[] {
   const rows: RowConfig[] = [
     {
       label: "Gross",
@@ -76,12 +79,39 @@ function buildRowConfigs(categoryKeys: string[]): RowConfig[] {
     }
   }
 
-  rows.push(
-    {
-      label: "Cash",
-      accessor: (r) => r.cash,
+  rows.push({
+    label: "Cash",
+    accessor: (r) => r.cash,
+    isFlowMetric: false,
+  });
+
+  // Parent category rollup rows (Retirement, Portfolio parent) — data-driven from parentCategory
+  for (const parentCat of parentCategoryKeys) {
+    rows.push({
+      label: `${parentCat} Value`,
+      accessor: (r) =>
+        r.performanceByParentCategory[parentCat]?.endingBalance ?? null,
       isFlowMetric: false,
-    },
+    });
+    rows.push({
+      label: `${parentCat} - Contributions`,
+      accessor: (r) => {
+        const cat = r.performanceByParentCategory[parentCat];
+        if (!cat) return null;
+        return cat.contributions + cat.employerMatch;
+      },
+      isFlowMetric: true,
+    });
+    rows.push({
+      label: `${parentCat} - Gains/Losses`,
+      accessor: (r) =>
+        r.performanceByParentCategory[parentCat]?.gainLoss ?? null,
+      isFlowMetric: true,
+    });
+  }
+
+  // Portfolio total (all accounts combined)
+  rows.push(
     {
       label: "Portfolio Value",
       accessor: (r) => r.portfolioTotal,
@@ -125,9 +155,20 @@ export function SpreadsheetYearOverYearTable({
     return Array.from(keys).sort();
   }, [yearA, yearB]);
 
+  // Derive parent category keys from both years' data
+  const parentCategoryKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const key of Object.keys(yearA.performanceByParentCategory))
+      keys.add(key);
+    for (const key of Object.keys(yearB.performanceByParentCategory))
+      keys.add(key);
+    // Sort: Retirement first, then Portfolio
+    return Array.from(keys).sort();
+  }, [yearA, yearB]);
+
   const rowConfigs = useMemo(
-    () => buildRowConfigs(categoryKeys),
-    [categoryKeys],
+    () => buildRowConfigs(categoryKeys, parentCategoryKeys),
+    [categoryKeys, parentCategoryKeys],
   );
 
   const yearAOutdated = isPerformanceOutdated(yearA);

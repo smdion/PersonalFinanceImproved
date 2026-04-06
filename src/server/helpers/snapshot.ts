@@ -210,6 +210,9 @@ export type YearEndRow = {
   /** Portfolio broken down by parentCategory × taxType. Available from snapshot for current year;
    *  approximated from portfolioByType + account config for prior years. */
   portfolioByTaxLocation: TaxLocationBreakdown | null;
+  /** Performance breakdown by parentCategory (Retirement / Portfolio).
+   *  Derived from account_performance rows grouped by their parentCategory field. */
+  performanceByParentCategory: Record<string, CategoryPerformance>;
   /** Fraction of year elapsed (periodsElapsed / periodsPerYear). 1.0 for finalized years.
    *  Used to annualize YTD flow metrics for meaningful year-over-year comparisons. */
   ytdRatio: number;
@@ -424,6 +427,36 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
     perfByCategoryByYear.set(year, yearMap);
   }
 
+  // Build performance breakdown by parentCategory (Retirement / Portfolio) per year.
+  // Uses parentCategory directly from account_performance rows — not derived from config.
+  const perfByParentCategoryByYear = new Map<
+    number,
+    Record<string, CategoryPerformance>
+  >();
+  for (const year of Array.from(allPerfAccountYears)) {
+    const yearAccounts = accountPerfRows.filter((a) => a.year === year);
+    const yearMap: Record<string, CategoryPerformance> = {};
+    for (const acct of yearAccounts) {
+      const master = resolveHistoryMaster(acct);
+      const parentCategory =
+        master?.parentCategory ?? acct.parentCategory ?? "Retirement";
+      const existing = yearMap[parentCategory] ?? {
+        endingBalance: 0,
+        contributions: 0,
+        employerMatch: 0,
+        gainLoss: 0,
+        distributions: 0,
+      };
+      existing.endingBalance += toNumber(acct.endingBalance);
+      existing.contributions += toNumber(acct.totalContributions);
+      existing.employerMatch += toNumber(acct.employerContributions);
+      existing.gainLoss += toNumber(acct.yearlyGainLoss);
+      existing.distributions += toNumber(acct.distributions);
+      yearMap[parentCategory] = existing;
+    }
+    perfByParentCategoryByYear.set(year, yearMap);
+  }
+
   // Build annual_performance summary by year — prefer finalized "Portfolio" category,
   // fall back to computing from account_performance data (same as performance page getSummary)
   type PerfSummary = {
@@ -573,6 +606,7 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
       snapshotDate: null,
       snapshotAgeDays: null,
       performanceByCategory: perfByCategoryByYear.get(year) ?? {},
+      performanceByParentCategory: perfByParentCategoryByYear.get(year) ?? {},
       // JSONB column from net_worth_annual; fall back to legacy columns if null
       portfolioByTaxLocation:
         (r.portfolioByTaxLocation as TaxLocationBreakdown | null) ?? {
@@ -791,6 +825,8 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
         }
         return catMap;
       })(),
+      performanceByParentCategory:
+        perfByParentCategoryByYear.get(currentYear) ?? {},
       portfolioByTaxLocation: (() => {
         // For current year, use actual snapshot accounts with real taxType + parentCategory
         if (!snapshotData) return null;
