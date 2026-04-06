@@ -19,9 +19,9 @@
 
 | Phase                                 | Status          | Notes                                                                                                                                                                                                                                                                     |
 | ------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Phase 1: Skeleton + Data Model + Seed | **COMPLETE**    | Schema (<!-- AUTO-GEN:migrations -->1<!-- /AUTO-GEN --> migration, <!-- AUTO-GEN:tables -->54<!-- /AUTO-GEN -->+ tables), seed script, <!-- AUTO-GEN:settingsComponents -->17<!-- /AUTO-GEN --> settings tabs                                                             |
-| Phase 2: Calculation Engine           | **COMPLETE**    | <!-- AUTO-GEN:calculators -->14<!-- /AUTO-GEN --> calculators + modular engine (<!-- AUTO-GEN:engineModules -->20<!-- /AUTO-GEN --> modules)                                                                                                                              |
-| Phase 3: Dashboard + Core Pages       | **COMPLETE**    | Dashboard (<!-- AUTO-GEN:dashboardCards -->18<!-- /AUTO-GEN --> dashboard card components), Paycheck, Budget, Portfolio                                                                                                                                                   |
+| Phase 1: Skeleton + Data Model + Seed | **COMPLETE**    | Schema (<!-- AUTO-GEN:migrations -->2<!-- /AUTO-GEN --> migration, <!-- AUTO-GEN:tables -->54<!-- /AUTO-GEN -->+ tables), seed script, <!-- AUTO-GEN:settingsComponents -->17<!-- /AUTO-GEN --> settings tabs                                                             |
+| Phase 2: Calculation Engine           | **COMPLETE**    | <!-- AUTO-GEN:calculators -->15<!-- /AUTO-GEN --> calculators + modular engine (<!-- AUTO-GEN:engineModules -->20<!-- /AUTO-GEN --> modules)                                                                                                                              |
+| Phase 3: Dashboard + Core Pages       | **COMPLETE**    | Dashboard (<!-- AUTO-GEN:dashboardCards -->19<!-- /AUTO-GEN --> dashboard card components), Paycheck, Budget, Portfolio                                                                                                                                                   |
 | Phase 4: Budget API Integration       | **COMPLETE**    | YNAB + Actual Budget clients, sync router, cache, factory. Cash integration (API owns cash when active), budget 2-way sync, savings category sync, portfolio auto-push on snapshot, asset pull on sync, account mappings, expense YoY comparison, API category picker UI. |
 | Phase 5: Remaining Pages              | **COMPLETE**    | Performance, Net Worth, Retirement (+ 3 methodology sub-pages), Mortgage, Savings, Historical, Settings, Tools                                                                                                                                                            |
 | Phase 6: Polish + Deployment          | **IN PROGRESS** | UI review complete: shared primitives (Button, Badge, Skeleton, EmptyState), projection decomposition (8.3K→1.8K lines), responsive grids, Button adoption, Skeleton adoption, color standardization, design system docs. Remaining: Docker, SWAG, monitoring.            |
@@ -29,11 +29,11 @@
 ### What's Built
 
 - **<!-- AUTO-GEN:pages -->26<!-- /AUTO-GEN --> pages:** Dashboard, Paycheck, Budget, Portfolio, Performance, Net Worth, Retirement (+ Methodology, Accumulation Methodology, Decumulation Methodology), Mortgage, Assets, Savings, Historical, Settings, Tools (ESPP calculator, Relocation calculator), Contributions, Data Browser, Expenses, Help, House, Liabilities, Versions, Brokerage
-- **<!-- AUTO-GEN:calculators -->14<!-- /AUTO-GEN --> calculators:** paycheck, tax, budget, contribution, mortgage, net-worth, savings, efund, expense-yoy, brokerage-goals, monte-carlo, random (distributions), relocation
+- **<!-- AUTO-GEN:calculators -->15<!-- /AUTO-GEN --> calculators:** paycheck, tax, budget, contribution, mortgage, net-worth, savings, efund, expense-yoy, brokerage-goals, monte-carlo, random (distributions), relocation
 - **Modular engine:** `lib/calculators/engine/` — <!-- AUTO-GEN:engineModules -->20<!-- /AUTO-GEN --> modules (projection orchestrator, year handlers, contribution routing, withdrawal routing, tax estimation, override resolution, balance utils/deduction, individual account tracking, growth application, RMD enforcement, post-withdrawal optimizer, spending strategies: Guyton-Klinger, Vanguard Dynamic, Constant Percentage, Endowment, Spending Decline, Forgo Inflation, RMD Spending)
 - **<!-- AUTO-GEN:primaryRouters -->25<!-- /AUTO-GEN --> primary tRPC routers + <!-- AUTO-GEN:settingsSubRouters -->6<!-- /AUTO-GEN --> settings sub-routers** + shared helpers
 - **<!-- AUTO-GEN:settingsComponents -->17<!-- /AUTO-GEN --> settings components**
-- **<!-- AUTO-GEN:dashboardCards -->18<!-- /AUTO-GEN --> dashboard card components**
+- **<!-- AUTO-GEN:dashboardCards -->19<!-- /AUTO-GEN --> dashboard card components**
 
 ---
 
@@ -63,7 +63,7 @@ See RULES.md § Engine Modularity for the full module list (<!-- AUTO-GEN:engine
 
 ```
 ledgr/
-├── drizzle/                    # <!-- AUTO-GEN:migrations -->1<!-- /AUTO-GEN --> migration (v0.3 squashed schema)
+├── drizzle/                    # <!-- AUTO-GEN:migrations -->2<!-- /AUTO-GEN --> migration (v0.3 squashed schema)
 ├── scripts/
 │   ├── seed.ts                 # xlsx parser + database seeder
 │   ├── validate.ts             # Post-seed validation
@@ -97,7 +97,7 @@ ledgr/
 │   │   ├── mortgage/           # <!-- AUTO-GEN:mortgageComponents -->8<!-- /AUTO-GEN --> mortgage domain components
 │   │   ├── savings/            # <!-- AUTO-GEN:savingsComponents -->25<!-- /AUTO-GEN --> savings domain components
 │   │   ├── networth/           # <!-- AUTO-GEN:networthComponents -->9<!-- /AUTO-GEN --> net worth visualization components
-│   │   ├── performance/        # <!-- AUTO-GEN:performanceComponents -->8<!-- /AUTO-GEN --> performance tracking components
+│   │   ├── performance/        # <!-- AUTO-GEN:performanceComponents -->9<!-- /AUTO-GEN --> performance tracking components
 │   │   ├── settings/           # <!-- AUTO-GEN:settingsComponents -->17<!-- /AUTO-GEN --> settings sub-components
 │   │   └── *-methodology-content.tsx  # 3 methodology content components
 │   ├── lib/
@@ -118,7 +118,7 @@ ledgr/
 │   │   │   │   ├── rmd-enforcement.ts
 │   │   │   │   ├── post-withdrawal-optimizer.ts  # Roth conversions, IRMAA, ACA
 │   │   │   │   └── guyton-klinger.ts
-│   │   │   └── *.ts            # <!-- AUTO-GEN:calculators -->14<!-- /AUTO-GEN --> domain calculators
+│   │   │   └── *.ts            # <!-- AUTO-GEN:calculators -->15<!-- /AUTO-GEN --> domain calculators
 │   │   ├── config/
 │   │   │   ├── account-types.ts    # Central account type config + all derived helpers
 │   │   │   ├── display-labels.ts   # Consolidated label maps
