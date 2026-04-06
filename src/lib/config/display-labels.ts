@@ -70,7 +70,30 @@ const PERF_CATEGORY_MAP: Record<string, string> = {
   brokerage: "Brokerage",
   hsa: "HSA",
 };
-const PERF_CATEGORY_DEFAULT = "401k/IRA";
+
+/** Default performance category for account types not in PERF_CATEGORY_MAP. */
+export const PERF_CATEGORY_DEFAULT = "401k/IRA";
+
+/** Performance category for brokerage accounts. */
+export const PERF_CATEGORY_BROKERAGE = "Brokerage";
+
+/** Performance category for HSA accounts. */
+export const PERF_CATEGORY_HSA = "HSA";
+
+/** Performance category for the combined Portfolio view. */
+export const PERF_CATEGORY_PORTFOLIO = "Portfolio";
+
+/** Performance category for the combined Retirement rollup. */
+export const PERF_CATEGORY_RETIREMENT = "Retirement";
+
+/** Canonical display order for performance categories (tabs, finalize modal, etc.). */
+export const PERF_CATEGORY_DISPLAY_ORDER = [
+  PERF_CATEGORY_PORTFOLIO,
+  PERF_CATEGORY_RETIREMENT,
+  PERF_CATEGORY_DEFAULT,
+  PERF_CATEGORY_BROKERAGE,
+  PERF_CATEGORY_HSA,
+] as const;
 
 /** Derive performance page display category from accountType string. */
 export function accountTypeToPerformanceCategory(
@@ -86,8 +109,8 @@ export function accountTypeToPerformanceCategory(
  * Brokerage is excluded because it spans both Retirement and Portfolio goals.
  */
 export const FULLY_RETIREMENT_PERF_CATEGORIES = [
-  PERF_CATEGORY_DEFAULT, // "401k/IRA"
-  "HSA",
+  PERF_CATEGORY_DEFAULT,
+  PERF_CATEGORY_HSA,
 ] as const;
 
 /** Parent-category rollup names used in performance data. */

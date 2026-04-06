@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import {
   ACCOUNT_TYPE_CONFIG,
   getAllCategories,
+  type AccountCategory,
 } from "@/lib/config/account-types";
 
 export function CreateAccountForm({
@@ -31,7 +32,7 @@ export function CreateAccountForm({
   isPending: boolean;
 }) {
   const [institution, setInstitution] = useState("");
-  const [accountType, setAccountType] = useState("401k");
+  const [accountType, setAccountType] = useState(getAllCategories()[0]!);
   const [subType, setSubType] = useState("");
   const [label, setLabel] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -67,7 +68,7 @@ export function CreateAccountForm({
           <span className="text-xs text-muted">Account Type</span>
           <select
             value={accountType}
-            onChange={(e) => setAccountType(e.target.value)}
+            onChange={(e) => setAccountType(e.target.value as AccountCategory)}
             className="mt-1 block w-full text-sm border border-strong rounded px-2 py-1.5"
           >
             {typeOptions.map((o) => (

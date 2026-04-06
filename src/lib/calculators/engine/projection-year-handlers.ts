@@ -44,6 +44,9 @@ import {
   addBalance,
   addBasis,
   setBasis,
+  isPreTaxType,
+  isRothType,
+  isPortfolioParent,
 } from "../../config/account-types";
 import {
   OVERFLOW_TOLERANCE,
@@ -83,6 +86,7 @@ import {
   checkIrmaa,
   checkAca,
 } from "./post-withdrawal-optimizer";
+import { MEDICARE_START_AGE } from "../../config/irmaa-tables";
 import {
   applySpendingStrategy,
   initialCrossYearState,
@@ -443,7 +447,7 @@ export function buildProjectionState(
   const priorYearEndTradByPerson = new Map<number, number>();
   if (ctx.rmdStartAgeByPerson.size > 0 && ctx.hasIndividualAccounts) {
     for (const ia of ctx.indAccts) {
-      if (ia.ownerPersonId != null && ia.taxType === "preTax") {
+      if (ia.ownerPersonId != null && isPreTaxType(ia.taxType)) {
         const prev = priorYearEndTradByPerson.get(ia.ownerPersonId) ?? 0;
         priorYearEndTradByPerson.set(
           ia.ownerPersonId,
@@ -1098,7 +1102,7 @@ export function runAccumulationYear(
   for (const ls of config.lumpSums) {
     const bs = getAccountTypeConfig(ls.targetAccount).balanceStructure;
     if (bs === "roth_traditional") {
-      if (ls.taxType === "roth") {
+      if (isRothType(ls.taxType ?? "")) {
         balances.taxFree += ls.amount;
         addRoth(acctBal[ls.targetAccount], ls.amount);
       } else {
@@ -1654,7 +1658,7 @@ export function runDecumulationYear(
   for (const ls of config.lumpSums) {
     const bs = getAccountTypeConfig(ls.targetAccount).balanceStructure;
     if (bs === "roth_traditional") {
-      if (ls.taxType === "roth") {
+      if (isRothType(ls.taxType ?? "")) {
         balances.taxFree += ls.amount;
         addRoth(acctBal[ls.targetAccount], ls.amount);
       } else {
@@ -1786,8 +1790,9 @@ export function runDecumulationYear(
       : currentYearMagi;
   const personsAge65Plus =
     perPersonBirthYears && perPersonBirthYears.length > 0
-      ? perPersonBirthYears.filter((by) => year - by >= 65).length
-      : age >= 65
+      ? perPersonBirthYears.filter((by) => year - by >= MEDICARE_START_AGE)
+          .length
+      : age >= MEDICARE_START_AGE
         ? 1
         : 0;
   const anyPersonAge65 = personsAge65Plus > 0;
@@ -1831,7 +1836,7 @@ export function runDecumulationYear(
   if (state.contributionSpecs) {
     const portfolioSpecs = state.contributionSpecs.filter(
       (s) =>
-        s.parentCategory === "Portfolio" &&
+        isPortfolioParent(s.parentCategory) &&
         s.retirementBehavior === "continues_after_retirement" &&
         s.method !== "percent_of_salary",
     );
@@ -1969,7 +1974,7 @@ function updatePerPersonTradBalance(
   if (ctx.rmdStartAgeByPerson.size === 0 || !ctx.hasIndividualAccounts) return;
   state.priorYearEndTradByPerson.clear();
   for (const ia of ctx.indAccts) {
-    if (ia.ownerPersonId != null && ia.taxType === "preTax") {
+    if (ia.ownerPersonId != null && isPreTaxType(ia.taxType)) {
       const bal = state.indBal.get(ctx.indKey(ia)) ?? 0;
       const prev = state.priorYearEndTradByPerson.get(ia.ownerPersonId) ?? 0;
       state.priorYearEndTradByPerson.set(ia.ownerPersonId, prev + bal);

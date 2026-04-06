@@ -1,6 +1,7 @@
 /** Data-driven tooltip renderer with a fixed 17-section visual order — call sites supply a TooltipData shape and this module handles all layout, formatting, and recursive line-item rendering. */
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";
+import { isRothType } from "@/lib/config/account-types";
 import type { TooltipLineItem, TooltipData } from "./types";
 import { tipColorClass } from "./utils";
 
@@ -16,9 +17,9 @@ export function renderLineItem(
   const colorCls = item.color ? tipColorClass[item.color] : "";
   const prefixStr = item.prefix === "+" ? "+" : item.prefix === "-" ? "-" : "";
   const taxLabel =
-    item.taxType === "roth"
+    item.taxType != null && isRothType(item.taxType)
       ? " (Roth)"
-      : item.taxType === "traditional"
+      : item.taxType != null && !isRothType(item.taxType)
         ? " (Trad)"
         : "";
   // Collect all supplementary details as sub-items (match, associatedMatch, explicit sub[])

@@ -11,6 +11,7 @@ import type {
   CreateAccountData,
 } from "./types";
 import { accountTypeToPerformanceCategory } from "@/lib/config/display-labels";
+import { isRetirementParent } from "@/lib/config/account-types";
 
 export function PerformanceTable({
   filtered,
@@ -123,7 +124,7 @@ export function PerformanceTable({
                 if (a.year !== year) return false;
                 if (activeCategory === "Portfolio") return true;
                 if (activeCategory === "Retirement")
-                  return a.parentCategory === "Retirement";
+                  return isRetirementParent(a.parentCategory);
                 return (
                   accountTypeToPerformanceCategory(a.accountType) ===
                   activeCategory

@@ -21,6 +21,8 @@ import { FundingBar } from "./funding-bar";
 import {
   categoriesWithIrsLimit,
   getAccountTypeConfig,
+  isRetirementParent,
+  isPortfolioParent,
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 
@@ -75,16 +77,16 @@ export function ContributionSnapshot() {
   // Household totals (apply multiplier) — include joint, non-overlapping groups by parentCategory
   const jt = jointTotals ?? { totalWithoutMatch: 0, totalWithMatch: 0 };
   const jointRetNoMatch = jointAccountTypes
-    .filter((a) => a.parentCategory === "Retirement")
+    .filter((a) => isRetirementParent(a.parentCategory))
     .reduce((s, a) => s + a.employeeContrib, 0);
   const jointRetWithMatch = jointAccountTypes
-    .filter((a) => a.parentCategory === "Retirement")
+    .filter((a) => isRetirementParent(a.parentCategory))
     .reduce((s, a) => s + a.totalContrib, 0);
   const jointPortNoMatch = jointAccountTypes
-    .filter((a) => a.parentCategory === "Portfolio")
+    .filter((a) => isPortfolioParent(a.parentCategory))
     .reduce((s, a) => s + a.employeeContrib, 0);
   const jointPortWithMatch = jointAccountTypes
-    .filter((a) => a.parentCategory === "Portfolio")
+    .filter((a) => isPortfolioParent(a.parentCategory))
     .reduce((s, a) => s + a.totalContrib, 0);
 
   const householdRetNoMatch =

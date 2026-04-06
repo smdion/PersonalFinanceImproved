@@ -6,6 +6,9 @@
 
 import type { FilingStatusType } from "../calculators/types";
 
+/** Medicare eligibility age — IRMAA surcharges apply from this age onward. */
+export const MEDICARE_START_AGE = 65;
+
 type IrmaaBracket = {
   magiThreshold: number;
   /** Annual surcharge per person (Part B + Part D combined, above standard premium). */
