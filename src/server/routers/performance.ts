@@ -33,6 +33,7 @@ import {
   sumAnnualRows,
   computeReturn,
   type AnnualRowLike,
+  recomputeLifetimeFields,
 } from "@/lib/pure/performance";
 import { accountDisplayName, stripInstitutionSuffix } from "@/lib/utils/format";
 import { isRetirementParent } from "@/lib/config/account-types";
@@ -100,6 +101,49 @@ function getEffectiveCategory(
   return master
     ? accountTypeToPerformanceCategory(master.accountType)
     : a.parentCategory;
+}
+
+/** Cascade-recompute lifetime fields on all annual_performance rows.
+ *  Called after edits to account_performance on finalized years. */
+async function cascadeLifetimeFields(db: DbType) {
+  const allAnnual = await db
+    .select({
+      id: schema.annualPerformance.id,
+      year: schema.annualPerformance.year,
+      category: schema.annualPerformance.category,
+      yearlyGainLoss: schema.annualPerformance.yearlyGainLoss,
+      totalContributions: schema.annualPerformance.totalContributions,
+      employerContributions: schema.annualPerformance.employerContributions,
+      lifetimeGains: schema.annualPerformance.lifetimeGains,
+      lifetimeContributions: schema.annualPerformance.lifetimeContributions,
+      lifetimeMatch: schema.annualPerformance.lifetimeMatch,
+    })
+    .from(schema.annualPerformance)
+    .orderBy(asc(schema.annualPerformance.year));
+
+  const rows = allAnnual.map((r) => ({
+    id: r.id,
+    year: r.year,
+    category: r.category,
+    yearlyGainLoss: toNumber(r.yearlyGainLoss),
+    totalContributions: toNumber(r.totalContributions),
+    employerContributions: toNumber(r.employerContributions),
+    lifetimeGains: toNumber(r.lifetimeGains),
+    lifetimeContributions: toNumber(r.lifetimeContributions),
+    lifetimeMatch: toNumber(r.lifetimeMatch),
+  }));
+
+  const updates = recomputeLifetimeFields(rows);
+  for (const u of updates) {
+    await db
+      .update(schema.annualPerformance)
+      .set({
+        lifetimeGains: u.lifetimeGains.toFixed(2),
+        lifetimeContributions: u.lifetimeContributions.toFixed(2),
+        lifetimeMatch: u.lifetimeMatch.toFixed(2),
+      })
+      .where(eq(schema.annualPerformance.id, u.id));
+  }
 }
 
 /** Stamp performance_last_updated in app_settings */
@@ -743,6 +787,21 @@ export const performanceRouter = createTRPCRouter({
         .update(schema.accountPerformance)
         .set(updates)
         .where(eq(schema.accountPerformance.id, id));
+      // If the edited account is on a finalized year, cascade lifetime fields
+      const [acctRow] = await ctx.db
+        .select({ year: schema.accountPerformance.year })
+        .from(schema.accountPerformance)
+        .where(eq(schema.accountPerformance.id, id));
+      if (acctRow) {
+        const [annual] = await ctx.db
+          .select({ isFinalized: schema.annualPerformance.isFinalized })
+          .from(schema.annualPerformance)
+          .where(eq(schema.annualPerformance.year, acctRow.year))
+          .limit(1);
+        if (annual?.isFinalized) {
+          await cascadeLifetimeFields(ctx.db);
+        }
+      }
       await stampPerformanceUpdated(ctx.db);
       return { success: true };
     }),
@@ -848,6 +907,23 @@ export const performanceRouter = createTRPCRouter({
               yearlyGainLoss: acct.yearlyGainLoss,
             })
             .where(eq(schema.accountPerformance.id, acct.id));
+        }
+        // If any edited account is on a finalized year, cascade lifetime fields
+        if (input.accounts.length > 0) {
+          const [sample] = await tx
+            .select({ year: schema.accountPerformance.year })
+            .from(schema.accountPerformance)
+            .where(eq(schema.accountPerformance.id, input.accounts[0]!.id));
+          if (sample) {
+            const [annual] = await tx
+              .select({ isFinalized: schema.annualPerformance.isFinalized })
+              .from(schema.annualPerformance)
+              .where(eq(schema.annualPerformance.year, sample.year))
+              .limit(1);
+            if (annual?.isFinalized) {
+              await cascadeLifetimeFields(tx);
+            }
+          }
         }
         await stampPerformanceUpdated(tx);
       });

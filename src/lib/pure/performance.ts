@@ -277,6 +277,78 @@ export function computeGainLoss(input: {
   );
 }
 
+/** Row shape for lifetime cascade recomputation. */
+export type LifetimeCascadeRow = {
+  id: number;
+  year: number;
+  category: string;
+  yearlyGainLoss: number;
+  totalContributions: number;
+  employerContributions: number;
+  lifetimeGains: number;
+  lifetimeContributions: number;
+  lifetimeMatch: number;
+};
+
+/**
+ * Recompute lifetime fields for annual_performance rows by walking forward
+ * through years and accumulating gains/contributions/match.
+ *
+ * Returns only the rows whose lifetime fields changed (for efficient DB updates).
+ */
+export function recomputeLifetimeFields(
+  rows: LifetimeCascadeRow[],
+): {
+  id: number;
+  lifetimeGains: number;
+  lifetimeContributions: number;
+  lifetimeMatch: number;
+}[] {
+  const updates: {
+    id: number;
+    lifetimeGains: number;
+    lifetimeContributions: number;
+    lifetimeMatch: number;
+  }[] = [];
+
+  // Group by category
+  const byCategory = new Map<string, LifetimeCascadeRow[]>();
+  for (const r of rows) {
+    const arr = byCategory.get(r.category) ?? [];
+    arr.push(r);
+    byCategory.set(r.category, arr);
+  }
+
+  for (const catRows of byCategory.values()) {
+    const sorted = [...catRows].sort((a, b) => a.year - b.year);
+    let runningGains = 0;
+    let runningContributions = 0;
+    let runningMatch = 0;
+
+    for (const row of sorted) {
+      runningGains += row.yearlyGainLoss;
+      runningContributions += row.totalContributions;
+      runningMatch += row.employerContributions;
+
+      // Only emit update if the stored value differs
+      if (
+        Math.abs(row.lifetimeGains - runningGains) > 0.005 ||
+        Math.abs(row.lifetimeContributions - runningContributions) > 0.005 ||
+        Math.abs(row.lifetimeMatch - runningMatch) > 0.005
+      ) {
+        updates.push({
+          id: row.id,
+          lifetimeGains: runningGains,
+          lifetimeContributions: runningContributions,
+          lifetimeMatch: runningMatch,
+        });
+      }
+    }
+  }
+
+  return updates;
+}
+
 /** Minimal account shape for next-year seeding decisions. */
 export type SeedableAccount = {
   isActive: boolean;
