@@ -296,9 +296,7 @@ export type LifetimeCascadeRow = {
  *
  * Returns only the rows whose lifetime fields changed (for efficient DB updates).
  */
-export function recomputeLifetimeFields(
-  rows: LifetimeCascadeRow[],
-): {
+export function recomputeLifetimeFields(rows: LifetimeCascadeRow[]): {
   id: number;
   lifetimeGains: number;
   lifetimeContributions: number;
