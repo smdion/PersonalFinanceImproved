@@ -8,6 +8,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.16] - 2026-04-06
+
+### New
+
+- Update Performance form — batch-edit current-year flow data (contributions, employer match, distributions, fees) from a single form with auto-calculated gain/loss
+- Lifetime field cascade — editing account data on finalized years now recomputes lifetime totals through all subsequent years
+
+### Improved
+
+- Numeric defaults (withdrawal rate, return rate, high income threshold) extracted to shared constants — no more scattered magic numbers
+- Financial amount inputs on performance mutations validated with zDecimal (rejects non-numeric strings)
+- Account type fields validated against config enum everywhere (previously accepted arbitrary strings on some mutations)
+- Projection overrides permission aligned — brokerage permission now sufficient (was incorrectly admin-only)
+- Demo mode blocks data import/export API routes (previously bypassed tRPC demo guard)
+- Time resolution: buildYearEndHistory and retirement router use passed-in dates instead of independent new Date() calls
+- 17 hardcoded parentCategory checks replaced with isRetirementParent/isPortfolioParent predicates
+- 11 hardcoded tax type checks replaced with isPreTaxType/isRothType predicates
+- Performance category display order centralized in config (tabs and finalize modal now share one definition)
+- Form account type defaults driven from config instead of hardcoded "401k"
+- IRMAA age threshold extracted to MEDICARE_START_AGE config constant
+- 30+ inline percent formatters replaced with formatPercent(); compact currency formatters unified
+
+---
+
 ## [0.4.15] - 2026-04-06
 
 ### New
