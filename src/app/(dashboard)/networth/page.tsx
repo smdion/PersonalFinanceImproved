@@ -41,6 +41,7 @@ export default function NetWorthPage() {
     "networth_view_mode",
     "cards",
   );
+  const [chartXAxis, setChartXAxis] = useState<"year" | "age">("year");
   const upsertSetting = trpc.settings.appSettings.upsert.useMutation({
     onSuccess: () => {
       utils.networth.invalidate();
@@ -109,6 +110,30 @@ export default function NetWorthPage() {
       safeDivide(prior.portfolioTotal + prior.cash, fiTarget) ?? 0,
     );
     return projectFIYear(currentFI, priorFI, current.year, prior.year);
+  }, [displayHistory, data]);
+
+  // Finalized-only FI projection (from two most recent finalized years — excludes current partial year)
+  // Single computation, passed to both FI Card and SpreadsheetView health stats
+  const fiProjectionFinalized = useMemo(() => {
+    if (!displayHistory || !data) return undefined;
+    const finalized = displayHistory
+      .filter((h) => !h.isCurrent)
+      .sort((a, b) => b.year - a.year);
+    if (finalized.length < 2) return undefined;
+    const recent = finalized[0]!;
+    const prior = finalized[1]!;
+    const fiTarget = data.result?.fiTarget ?? 0;
+    if (fiTarget <= 0) return undefined;
+    const recentFI = Number(
+      safeDivide(recent.portfolioTotal + recent.cash, fiTarget) ?? 0,
+    );
+    const priorFI = Number(
+      safeDivide(prior.portfolioTotal + prior.cash, fiTarget) ?? 0,
+    );
+    return {
+      projection: projectFIYear(recentFI, priorFI, recent.year, prior.year),
+      asOfYear: recent.year,
+    };
   }, [displayHistory, data]);
 
   const handleExpenseColumnChange = useCallback(
@@ -240,13 +265,38 @@ export default function NetWorthPage() {
           byTaxType={byTaxType}
           useMarketValue={useMarketValue}
           onToggleMarketValue={() => setUseMarketValue(!useMarketValue)}
+          fiProjectionFinalized={fiProjectionFinalized}
+          chartXAxis={chartXAxis}
+          onChartXAxisChange={setChartXAxis}
         />
       ) : (
         <>
           {/* Net Worth Over Time */}
           <CardBoundary title="Net Worth Charts">
+            {/* Chart X-axis toggle */}
+            <div className="flex justify-end mb-2">
+              <div className="flex items-center gap-1 text-xs">
+                <span className="text-muted">X-Axis:</span>
+                <button
+                  onClick={() => setChartXAxis("year")}
+                  className={`px-2 py-0.5 rounded-full transition-colors ${chartXAxis === "year" ? "bg-blue-600 text-white" : "bg-surface-elevated text-muted hover:bg-surface-strong"}`}
+                >
+                  Year
+                </button>
+                <button
+                  onClick={() => setChartXAxis("age")}
+                  className={`px-2 py-0.5 rounded-full transition-colors ${chartXAxis === "age" ? "bg-blue-600 text-white" : "bg-surface-elevated text-muted hover:bg-surface-strong"}`}
+                >
+                  Age
+                </button>
+              </div>
+            </div>
             {displayHistory && displayHistory.length > 1 && (
-              <NetWorthLineChart history={displayHistory} />
+              <NetWorthLineChart
+                history={displayHistory}
+                xAxisMode={chartXAxis}
+                primaryBirthYear={primaryBirthYear}
+              />
             )}
 
             {/* Journey to Abundance */}
@@ -256,6 +306,7 @@ export default function NetWorthPage() {
                 <JourneyToAbundanceChart
                   history={displayHistory}
                   primaryBirthYear={primaryBirthYear}
+                  xAxisMode={chartXAxis}
                 />
               )}
           </CardBoundary>
@@ -357,6 +408,7 @@ export default function NetWorthPage() {
               currentExpenseColumn={currentExpenseColumn}
               onExpenseColumnChange={handleExpenseColumnChange}
               fiProjection={fiProjection}
+              fiProjectionFinalized={fiProjectionFinalized}
             />
           </CardBoundary>
         </>

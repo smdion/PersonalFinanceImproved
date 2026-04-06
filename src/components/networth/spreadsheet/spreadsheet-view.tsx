@@ -40,6 +40,15 @@ type Props = {
   useMarketValue: boolean;
   /** Toggle market value. */
   onToggleMarketValue: () => void;
+  /** Finalized-only FI projection (from two most recent finalized years). */
+  fiProjectionFinalized?: {
+    projection: import("@/lib/calculators/fi-projection").FIProjectionResult;
+    asOfYear: number;
+  };
+  /** Chart X-axis mode. */
+  chartXAxis: "year" | "age";
+  /** Chart X-axis toggle callback. */
+  onChartXAxisChange: (mode: "year" | "age") => void;
 };
 
 export function SpreadsheetView({
@@ -52,6 +61,9 @@ export function SpreadsheetView({
   byTaxType,
   useMarketValue,
   onToggleMarketValue,
+  fiProjectionFinalized,
+  chartXAxis,
+  onChartXAxisChange,
 }: Props) {
   const utils = trpc.useUtils();
   const { data: detailedData } =
@@ -158,6 +170,7 @@ export function SpreadsheetView({
             allYears={detailedData.years as DetailedHistoryRow[]}
             annualize={viewMode === "projected"}
             useMarketValue={useMarketValue}
+            fiProjectionFinalized={fiProjectionFinalized}
           />
 
           <SpreadsheetTaxLocation
@@ -176,14 +189,38 @@ export function SpreadsheetView({
 
         {/* Right column: charts (reusing existing components) */}
         <div className="space-y-4">
+          {/* Chart X-axis toggle */}
+          <div className="flex justify-end">
+            <div className="flex items-center gap-1 text-xs">
+              <span className="text-muted">X-Axis:</span>
+              <button
+                onClick={() => onChartXAxisChange("year")}
+                className={`px-2 py-0.5 rounded-full transition-colors ${chartXAxis === "year" ? "bg-blue-600 text-white" : "bg-surface-elevated text-muted hover:bg-surface-strong"}`}
+              >
+                Year
+              </button>
+              <button
+                onClick={() => onChartXAxisChange("age")}
+                className={`px-2 py-0.5 rounded-full transition-colors ${chartXAxis === "age" ? "bg-blue-600 text-white" : "bg-surface-elevated text-muted hover:bg-surface-strong"}`}
+              >
+                Age
+              </button>
+            </div>
+          </div>
+
           {displayHistory && displayHistory.length > 1 && (
-            <NetWorthLineChart history={displayHistory} />
+            <NetWorthLineChart
+              history={displayHistory}
+              xAxisMode={chartXAxis}
+              primaryBirthYear={primaryBirthYear}
+            />
           )}
 
           {displayHistory && displayHistory.length > 1 && primaryBirthYear && (
             <JourneyToAbundanceChart
               history={displayHistory}
               primaryBirthYear={primaryBirthYear}
+              xAxisMode={chartXAxis}
             />
           )}
 
