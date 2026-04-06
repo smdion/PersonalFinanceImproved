@@ -111,6 +111,30 @@ export default function NetWorthPage() {
     return projectFIYear(currentFI, priorFI, current.year, prior.year);
   }, [displayHistory, data]);
 
+  // Finalized-only FI projection (from two most recent finalized years — excludes current partial year)
+  // Single computation, passed to both FI Card and SpreadsheetView health stats
+  const fiProjectionFinalized = useMemo(() => {
+    if (!displayHistory || !data) return undefined;
+    const finalized = displayHistory
+      .filter((h) => !h.isCurrent)
+      .sort((a, b) => b.year - a.year);
+    if (finalized.length < 2) return undefined;
+    const recent = finalized[0]!;
+    const prior = finalized[1]!;
+    const fiTarget = data.result?.fiTarget ?? 0;
+    if (fiTarget <= 0) return undefined;
+    const recentFI = Number(
+      safeDivide(recent.portfolioTotal + recent.cash, fiTarget) ?? 0,
+    );
+    const priorFI = Number(
+      safeDivide(prior.portfolioTotal + prior.cash, fiTarget) ?? 0,
+    );
+    return {
+      projection: projectFIYear(recentFI, priorFI, recent.year, prior.year),
+      asOfYear: recent.year,
+    };
+  }, [displayHistory, data]);
+
   const handleExpenseColumnChange = useCallback(
     (idx: number) => {
       upsertSetting.mutate({ key: "expenses_budget_column", value: idx });
@@ -240,6 +264,7 @@ export default function NetWorthPage() {
           byTaxType={byTaxType}
           useMarketValue={useMarketValue}
           onToggleMarketValue={() => setUseMarketValue(!useMarketValue)}
+          fiProjectionFinalized={fiProjectionFinalized}
         />
       ) : (
         <>
@@ -357,6 +382,7 @@ export default function NetWorthPage() {
               currentExpenseColumn={currentExpenseColumn}
               onExpenseColumnChange={handleExpenseColumnChange}
               fiProjection={fiProjection}
+              fiProjectionFinalized={fiProjectionFinalized}
             />
           </CardBoundary>
         </>

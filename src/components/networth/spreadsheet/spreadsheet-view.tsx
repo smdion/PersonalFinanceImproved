@@ -40,6 +40,11 @@ type Props = {
   useMarketValue: boolean;
   /** Toggle market value. */
   onToggleMarketValue: () => void;
+  /** Finalized-only FI projection (from two most recent finalized years). */
+  fiProjectionFinalized?: {
+    projection: import("@/lib/calculators/fi-projection").FIProjectionResult;
+    asOfYear: number;
+  };
 };
 
 export function SpreadsheetView({
@@ -52,6 +57,7 @@ export function SpreadsheetView({
   byTaxType,
   useMarketValue,
   onToggleMarketValue,
+  fiProjectionFinalized,
 }: Props) {
   const utils = trpc.useUtils();
   const { data: detailedData } =
@@ -158,6 +164,7 @@ export function SpreadsheetView({
             allYears={detailedData.years as DetailedHistoryRow[]}
             annualize={viewMode === "projected"}
             useMarketValue={useMarketValue}
+            fiProjectionFinalized={fiProjectionFinalized}
           />
 
           <SpreadsheetTaxLocation
