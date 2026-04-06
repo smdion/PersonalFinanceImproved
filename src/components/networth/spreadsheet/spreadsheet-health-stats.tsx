@@ -16,6 +16,8 @@ import type { DetailedHistoryRow } from "./types";
 type Props = {
   yearA: DetailedHistoryRow;
   yearB: DetailedHistoryRow;
+  /** All history rows (for prior-year FI projection reference). */
+  allYears: DetailedHistoryRow[];
   /** When true, annualize current-year contribution rates (Projected Year mode). */
   annualize: boolean;
 };
@@ -84,7 +86,12 @@ const STAT_ROWS: RowDef[] = [
   },
 ];
 
-export function SpreadsheetHealthStats({ yearA, yearB, annualize }: Props) {
+export function SpreadsheetHealthStats({
+  yearA,
+  yearB,
+  allYears,
+  annualize,
+}: Props) {
   const fiProjection = useMemo(
     () =>
       projectFIYear(yearA.fiProgress, yearB.fiProgress, yearA.year, yearB.year),
@@ -92,6 +99,27 @@ export function SpreadsheetHealthStats({ yearA, yearB, annualize }: Props) {
   );
 
   const hasCurrentYear = yearA.isCurrent || yearB.isCurrent;
+
+  // Prior-year projection: what was the trajectory as of the end of the previous finalized year?
+  const priorProjection = useMemo(() => {
+    if (!hasCurrentYear) return null;
+    const sorted = [...allYears]
+      .filter((h) => !h.isCurrent)
+      .sort((a, b) => b.year - a.year);
+    if (sorted.length < 2) return null;
+    const prev = sorted[0]!;
+    const prevPrev = sorted[1]!;
+    return {
+      result: projectFIYear(
+        prev.fiProgress,
+        prevPrev.fiProgress,
+        prev.year,
+        prevPrev.year,
+      ),
+      fromYear: prevPrev.year,
+      toYear: prev.year,
+    };
+  }, [allYears, hasCurrentYear]);
 
   const staleCutoff = useMemo(() => {
     const d = new Date();
@@ -204,6 +232,12 @@ export function SpreadsheetHealthStats({ yearA, yearB, annualize }: Props) {
                         ? `${formatPercent((yearA.fiProgress - yearB.fiProgress) / (yearA.year - yearB.year), 1)}/yr pace`
                         : ""}
                 </div>
+                {priorProjection && (
+                  <div className="text-[10px] text-faint">
+                    As of {priorProjection.toYear}:{" "}
+                    {formatFIProjection(priorProjection.result)}
+                  </div>
+                )}
               </td>
             </tr>
           </tbody>

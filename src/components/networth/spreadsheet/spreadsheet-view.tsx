@@ -155,6 +155,7 @@ export function SpreadsheetView({
           <SpreadsheetHealthStats
             yearA={yearARow}
             yearB={yearBRow}
+            allYears={detailedData.years as DetailedHistoryRow[]}
             annualize={viewMode === "projected"}
           />
 
