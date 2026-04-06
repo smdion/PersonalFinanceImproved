@@ -2,6 +2,7 @@
 
 /** Net Worth Location YTD — percentages of total assets by category. */
 
+import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { formatPercent, formatCurrency } from "@/lib/utils/format";
 import type { DetailedHistoryRow } from "./types";
@@ -9,6 +10,7 @@ import type { DetailedHistoryRow } from "./types";
 type Props = {
   yearA: DetailedHistoryRow;
   yearB: DetailedHistoryRow;
+  useMarketValue: boolean;
 };
 
 type LocationRow = {
@@ -16,19 +18,35 @@ type LocationRow = {
   accessor: (row: DetailedHistoryRow) => number;
 };
 
-const LOCATION_ROWS: LocationRow[] = [
-  { label: "House", accessor: (r) => r.houseValue },
-  { label: "Portfolio", accessor: (r) => r.portfolioTotal },
-  { label: "Cash", accessor: (r) => r.cash },
-  { label: "Other Assets", accessor: (r) => r.otherAssets },
-  { label: "Other Liabilities", accessor: (r) => r.otherLiabilities },
-];
+function buildLocationRows(useMarketValue: boolean): LocationRow[] {
+  return [
+    {
+      label: "House",
+      accessor: (r) => (useMarketValue ? r.houseValue : r.houseValueCostBasis),
+    },
+    { label: "Portfolio", accessor: (r) => r.portfolioTotal },
+    { label: "Cash", accessor: (r) => r.cash },
+    { label: "Other Assets", accessor: (r) => r.otherAssets },
+    { label: "Other Liabilities", accessor: (r) => r.otherLiabilities },
+  ];
+}
 
-export function SpreadsheetNetWorthLocation({ yearA, yearB }: Props) {
+export function SpreadsheetNetWorthLocation({
+  yearA,
+  yearB,
+  useMarketValue,
+}: Props) {
+  const locationRows = useMemo(
+    () => buildLocationRows(useMarketValue),
+    [useMarketValue],
+  );
+
+  const houseA = useMarketValue ? yearA.houseValue : yearA.houseValueCostBasis;
+  const houseB = useMarketValue ? yearB.houseValue : yearB.houseValueCostBasis;
   const grossAssetsA =
-    yearA.portfolioTotal + yearA.houseValue + yearA.cash + yearA.otherAssets;
+    yearA.portfolioTotal + houseA + yearA.cash + yearA.otherAssets;
   const grossAssetsB =
-    yearB.portfolioTotal + yearB.houseValue + yearB.cash + yearB.otherAssets;
+    yearB.portfolioTotal + houseB + yearB.cash + yearB.otherAssets;
 
   return (
     <Card title="Net Worth Location - YTD" className="mb-4">
@@ -46,7 +64,7 @@ export function SpreadsheetNetWorthLocation({ yearA, yearB }: Props) {
             </tr>
           </thead>
           <tbody>
-            {LOCATION_ROWS.map((row, index) => {
+            {locationRows.map((row, index) => {
               const valA = row.accessor(yearA);
               const valB = row.accessor(yearB);
               // Skip rows where both years have zero

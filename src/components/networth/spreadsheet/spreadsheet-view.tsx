@@ -165,7 +165,11 @@ export function SpreadsheetView({
             yearBLabel={yearBRow.year}
           />
 
-          <SpreadsheetNetWorthLocation yearA={yearARow} yearB={yearBRow} />
+          <SpreadsheetNetWorthLocation
+            yearA={yearARow}
+            yearB={yearBRow}
+            useMarketValue={useMarketValue}
+          />
         </div>
 
         {/* Right column: charts (reusing existing components) */}
