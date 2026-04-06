@@ -149,6 +149,7 @@ export function SpreadsheetView({
             yearA={yearARow}
             yearB={yearBRow}
             annualize={viewMode === "projected"}
+            useMarketValue={useMarketValue}
           />
 
           <SpreadsheetHealthStats

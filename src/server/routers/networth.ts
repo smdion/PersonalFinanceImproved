@@ -281,6 +281,7 @@ export const networthRouter = createTRPCRouter({
       netWorth: row.netWorth,
       netWorthCostBasis: row.netWorthCostBasis,
       netWorthMarket: row.netWorthMarket,
+      houseValueCostBasis: row.houseValueCostBasis,
       portfolioTotal: row.portfolioTotal,
       portfolioByType: row.portfolioByType,
       cash: row.cash,

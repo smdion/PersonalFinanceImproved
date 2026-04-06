@@ -33,6 +33,7 @@ function isPerformanceOutdated(row: DetailedHistoryRow): boolean {
 function buildRowConfigs(
   categoryKeys: string[],
   parentCategoryKeys: string[],
+  useMarketValue: boolean,
 ): RowConfig[] {
   const rows: RowConfig[] = [
     {
@@ -42,12 +43,13 @@ function buildRowConfigs(
     },
     {
       label: "Net Worth",
-      accessor: (r) => r.netWorth,
+      accessor: (r) =>
+        useMarketValue ? r.netWorthMarket : r.netWorthCostBasis,
       flowType: "balance",
     },
     {
       label: "House",
-      accessor: (r) => r.houseValue,
+      accessor: (r) => (useMarketValue ? r.houseValue : r.houseValueCostBasis),
       flowType: "balance",
     },
   ];
@@ -142,12 +144,15 @@ type Props = {
   yearB: DetailedHistoryRow;
   /** When true, prorate contribution comparisons for current year (Projected Year mode). */
   annualize: boolean;
+  /** When true, use market value for house/net worth; when false, use cost basis. */
+  useMarketValue: boolean;
 };
 
 export function SpreadsheetYearOverYearTable({
   yearA,
   yearB,
   annualize,
+  useMarketValue,
 }: Props) {
   // Derive category keys from both years' data (union of all categories present)
   const categoryKeys = useMemo(() => {
@@ -172,8 +177,8 @@ export function SpreadsheetYearOverYearTable({
   }, [yearA, yearB]);
 
   const rowConfigs = useMemo(
-    () => buildRowConfigs(categoryKeys, parentCategoryKeys),
-    [categoryKeys, parentCategoryKeys],
+    () => buildRowConfigs(categoryKeys, parentCategoryKeys, useMarketValue),
+    [categoryKeys, parentCategoryKeys, useMarketValue],
   );
 
   const yearAOutdated = isPerformanceOutdated(yearA);

@@ -27,6 +27,7 @@ export type DetailedHistoryRow = {
   portfolioByType: Record<string, number>;
   cash: number;
   houseValue: number;
+  houseValueCostBasis: number;
   mortgageBalance: number;
   otherAssets: number;
   otherLiabilities: number;

@@ -229,6 +229,8 @@ export type YearEndRow = {
   netWorthMarket: number;
   /** Cost-basis net worth (home at purchase + improvements). */
   netWorthCostBasis: number;
+  /** Home value at cost basis (purchase price + cumulative improvements). */
+  houseValueCostBasis: number;
   // Inputs used for computed metrics (for display / debugging)
   /** Average age across all household members for this year. */
   averageAge: number;
@@ -628,6 +630,7 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
       fiTarget: 0,
       netWorthMarket: netWorth,
       netWorthCostBasis: netWorth, // overwritten in final pass
+      houseValueCostBasis: 0, // overwritten in final pass
       averageAge: 0,
       effectiveIncome: 0,
       lifetimeEarnings: 0,
@@ -878,6 +881,7 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
       fiTarget: 0,
       netWorthMarket: netWorth,
       netWorthCostBasis: netWorth, // overwritten in final pass
+      houseValueCostBasis: 0, // overwritten in final pass
       averageAge: 0,
       effectiveIncome: 0,
       lifetimeEarnings: 0,
@@ -984,6 +988,7 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
     row.fiTarget = result.fiTarget;
     row.netWorthMarket = result.netWorthMarket;
     row.netWorthCostBasis = netWorthCostBasis;
+    row.houseValueCostBasis = houseValueCostBasis;
     row.averageAge = avgAge;
     row.effectiveIncome = effectiveIncome;
     row.lifetimeEarnings = cumulativeEarnings;
