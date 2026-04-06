@@ -8,7 +8,8 @@ import Database from "better-sqlite3";
 import * as fs from "fs";
 import * as path from "path";
 
-const migrationsDir = path.join(process.cwd(), "drizzle");
+// Use SQLite migrations for validation (CI runs against fresh SQLite DB)
+const migrationsDir = path.join(process.cwd(), "drizzle-sqlite");
 const metaDir = path.join(migrationsDir, "meta");
 
 if (!fs.existsSync(migrationsDir) || !fs.existsSync(metaDir)) {
@@ -76,9 +77,10 @@ for (const entry of entries) {
   }
 
   try {
-    // SQLite: execute each statement individually (split on ;)
+    // SQLite: execute each statement individually
+    // Drizzle uses "--> statement-breakpoint" as separator in generated migrations
     const statements = sql
-      .split(/;\s*\n/)
+      .split(/-->\s*statement-breakpoint\s*|;\s*\n/)
       .map((s) => s.trim())
       .filter((s) => s.length > 0 && !s.startsWith("--"));
 
