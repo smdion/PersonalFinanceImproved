@@ -115,44 +115,49 @@ async function stampPerformanceUpdated(db: DbType) {
 
 // --- Zod schemas for input validation ---
 
+import { zDecimal } from "@/server/routers/settings/_shared";
+
+/** Optional decimal — for partial-update mutations. */
+const zDecimalOpt = zDecimal.optional();
+
 const annualUpdateInput = z.object({
   id: z.number().int(),
-  beginningBalance: z.string().optional(),
-  totalContributions: z.string().optional(),
-  yearlyGainLoss: z.string().optional(),
-  endingBalance: z.string().optional(),
+  beginningBalance: zDecimalOpt,
+  totalContributions: zDecimalOpt,
+  yearlyGainLoss: zDecimalOpt,
+  endingBalance: zDecimalOpt,
   annualReturnPct: z.string().nullable().optional(),
-  employerContributions: z.string().optional(),
-  fees: z.string().optional(),
-  distributions: z.string().optional(),
-  rollovers: z.string().optional(),
+  employerContributions: zDecimalOpt,
+  fees: zDecimalOpt,
+  distributions: zDecimalOpt,
+  rollovers: zDecimalOpt,
 });
 
 const accountUpdateInput = z.object({
   id: z.number().int(),
-  beginningBalance: z.string().optional(),
-  totalContributions: z.string().optional(),
-  yearlyGainLoss: z.string().optional(),
-  endingBalance: z.string().optional(),
+  beginningBalance: zDecimalOpt,
+  totalContributions: zDecimalOpt,
+  yearlyGainLoss: zDecimalOpt,
+  endingBalance: zDecimalOpt,
   annualReturnPct: z.string().nullable().optional(),
-  employerContributions: z.string().optional(),
-  fees: z.string().optional(),
-  distributions: z.string().optional(),
-  rollovers: z.string().optional(),
+  employerContributions: zDecimalOpt,
+  fees: zDecimalOpt,
+  distributions: zDecimalOpt,
+  rollovers: zDecimalOpt,
 });
 
 const accountCreateInput = z.object({
   year: z.number().int(),
   performanceAccountId: z.number().int(),
-  beginningBalance: z.string(),
-  totalContributions: z.string(),
-  yearlyGainLoss: z.string(),
-  endingBalance: z.string(),
+  beginningBalance: zDecimal,
+  totalContributions: zDecimal,
+  yearlyGainLoss: zDecimal,
+  endingBalance: zDecimal,
   annualReturnPct: z.string().nullable().optional(),
-  employerContributions: z.string().default("0"),
-  fees: z.string().default("0"),
-  distributions: z.string().default("0"),
-  rollovers: z.string().default("0"),
+  employerContributions: zDecimal.default("0"),
+  fees: zDecimal.default("0"),
+  distributions: zDecimal.default("0"),
+  rollovers: zDecimal.default("0"),
   isActive: z.boolean().default(true),
 });
 
@@ -815,13 +820,13 @@ export const performanceRouter = createTRPCRouter({
         accounts: z.array(
           z.object({
             id: z.number().int(),
-            totalContributions: z.string(),
-            employerContributions: z.string(),
-            distributions: z.string(),
-            rollovers: z.string(),
-            fees: z.string(),
-            endingBalance: z.string(),
-            yearlyGainLoss: z.string(),
+            totalContributions: zDecimal,
+            employerContributions: zDecimal,
+            distributions: zDecimal,
+            rollovers: zDecimal,
+            fees: zDecimal,
+            endingBalance: zDecimal,
+            yearlyGainLoss: zDecimal,
           }),
         ),
       }),

@@ -73,7 +73,7 @@ const portfolioSnapshotInput = z.object({
 
 const performanceAccountInput = z.object({
   institution: z.string().trim().min(1),
-  accountType: z.string().min(1),
+  accountType: z.enum(accountCategoryEnum()),
   subType: z.string().nullable().optional(),
   label: z.string().trim().nullable().optional(),
   displayName: z.string().trim().nullable().optional(),
@@ -1097,7 +1097,7 @@ export const adminProcedures = {
           institution: z.string().trim().min(1),
           taxType: z.enum(PORTFOLIO_TAX_TYPE_VALUES),
           amount: numericText,
-          accountType: z.string().min(1),
+          accountType: z.enum(accountCategoryEnum()),
           subType: z.string().nullable().optional(),
           label: z.string().trim().nullable().optional(),
           parentCategory: z.enum(parentCategoryEnum()).default("Retirement"),

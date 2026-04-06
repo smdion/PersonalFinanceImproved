@@ -180,7 +180,8 @@ export function ContributionAccountsSettings() {
     updatePerfMut.mutate({
       id: pa.id,
       institution: updates.institution ?? pa.institution,
-      accountType: updates.accountType ?? pa.accountType,
+      accountType: (updates.accountType ??
+        pa.accountType) as import("@/lib/config/account-types").AccountCategory,
       subType:
         updates.subType !== undefined ? updates.subType : (pa.subType ?? null),
       label: updates.label !== undefined ? updates.label : (pa.label ?? null),
@@ -516,7 +517,13 @@ export function ContributionAccountsSettings() {
               <div className="mb-4 border border-blue-200 rounded-lg p-4 bg-blue-50/50">
                 <CreateAccountForm
                   people={peopleList}
-                  onSubmit={(vals) => createPerfMut.mutate(vals)}
+                  onSubmit={(vals) =>
+                    createPerfMut.mutate({
+                      ...vals,
+                      accountType:
+                        vals.accountType as import("@/lib/config/account-types").AccountCategory,
+                    })
+                  }
                   onCancel={() => setCreatingAccount(false)}
                   isPending={createPerfMut.isPending}
                 />
@@ -583,6 +590,8 @@ export function ContributionAccountsSettings() {
                       ? (data) =>
                           createPortfolioAccountMut.mutate({
                             ...data,
+                            accountType:
+                              data.accountType as import("@/lib/config/account-types").AccountCategory,
                             taxType: data.taxType as
                               | "preTax"
                               | "taxFree"
