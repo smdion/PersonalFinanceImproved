@@ -3,43 +3,52 @@
 import { Card, Metric, ProgressBar } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { wealthScoreTier } from "@/lib/config/display-labels";
 
 export function MetricsRow({
   wealthScore,
-  wealthTarget,
+  aawScore,
   fiProgress,
   fiTarget,
   netWorthMarket,
   netWorthCostBasis,
 }: {
   wealthScore: number;
-  wealthTarget: number;
+  aawScore: number;
   fiProgress: number;
   fiTarget: number;
   netWorthMarket: number;
   netWorthCostBasis: number;
 }) {
+  const tier = wealthScoreTier(aawScore);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
       <Card
         title={
           <>
-            Wealth Score{" "}
-            <HelpTip text="From The Millionaire Next Door -- compares your net worth to what's expected for your age and income. 1x or above means you're a prodigious accumulator of wealth." />
+            Wealth Metrics{" "}
+            <HelpTip text="Wealth Score = net worth as % of lifetime earnings. AAW Score = Money Guy Wealth Accumulator (2.0+ = PAW, 1.0 = AAW, <0.5 = UAW)." />
           </>
         }
       >
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold">{wealthScore.toFixed(2)}x</span>
+        <div className="space-y-2">
+          <div className="flex justify-between items-baseline">
+            <span className="text-sm text-muted">Wealth Score</span>
+            <span className="text-2xl font-bold">
+              {formatPercent(wealthScore)}
+            </span>
+          </div>
+          <div className="flex justify-between items-baseline">
+            <span className="text-sm text-muted">AAW Score</span>
+            <span className="text-2xl font-bold">{aawScore.toFixed(1)}x</span>
+          </div>
         </div>
-        <p className="text-sm text-muted mt-1">
-          Target: {formatCurrency(wealthTarget)}
-        </p>
         <div className="mt-2">
           <ProgressBar
-            value={Math.min(wealthScore, 2) / 2}
-            label={wealthScore >= 1 ? "Prodigious Accumulator" : "Building"}
-            color={wealthScore >= 1 ? "bg-green-500" : "bg-blue-600"}
+            value={Math.min(aawScore, 4) / 4}
+            label={tier.label}
+            color={tier.tier === "uaw" ? "bg-red-500" : "bg-green-500"}
           />
         </div>
       </Card>

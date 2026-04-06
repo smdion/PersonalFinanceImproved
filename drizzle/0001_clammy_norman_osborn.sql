@@ -1,0 +1,1 @@
+ALTER TABLE "net_worth_annual" ADD COLUMN "portfolio_by_tax_location" jsonb;

@@ -15,6 +15,11 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { CHART_COLORS } from "@/lib/utils/colors";
+import {
+  WEALTH_FORMULA_AGE_CUTOFF,
+  WEALTH_FORMULA_BASE_DENOMINATOR,
+  WEALTH_FORMULA_MULTIPLIER,
+} from "@/lib/constants";
 import { compactCurrency, type HistoryRow } from "./types";
 
 export function JourneyToAbundanceChart({
@@ -25,24 +30,28 @@ export function JourneyToAbundanceChart({
   primaryBirthYear: number;
 }) {
   const chartData = useMemo(() => {
-    // Compute average gross income across years that have income data
-    const yearsWithIncome = history.filter((h) => h.grossIncome > 0);
-    const avgIncome =
-      yearsWithIncome.length > 0
-        ? yearsWithIncome.reduce((s, h) => s + h.grossIncome, 0) /
-          yearsWithIncome.length
-        : 0;
-
+    // Compute benchmark per year using the same formula as AAW score
+    // (single computation path — age-adjusted denominator, per-year effectiveIncome)
     return history.map((h) => {
-      const age = h.year - primaryBirthYear;
-      const avgWealth = avgIncome > 0 ? (age * avgIncome) / 10 : 0;
+      const displayAge = h.year - primaryBirthYear; // X-axis: primary person's age
+      // Benchmark uses averageAge from YearEndRow (matches AAW score — single computation path)
+      const benchmarkAge = h.averageAge > 0 ? h.averageAge : displayAge;
+      const yearsUntil40 = Math.max(
+        0,
+        WEALTH_FORMULA_AGE_CUTOFF - benchmarkAge,
+      );
+      const avgWealth =
+        h.effectiveIncome > 0
+          ? (benchmarkAge * h.effectiveIncome) /
+            (WEALTH_FORMULA_BASE_DENOMINATOR + yearsUntil40)
+          : 0;
       return {
         year: h.year,
-        age,
+        age: displayAge,
         netWorth: h.netWorth,
         portfolio: h.portfolioTotal,
         avgWealth,
-        prodigiousWealth: avgWealth * 2,
+        prodigiousWealth: avgWealth * WEALTH_FORMULA_MULTIPLIER,
       };
     });
   }, [history, primaryBirthYear]);

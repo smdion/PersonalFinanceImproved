@@ -8,6 +8,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.14] - 2026-04-06
+
+### New
+
+- Spreadsheet view for Trends page — dense year-over-year comparison table, financial health stats, tax location breakdown, and net worth location. Toggle between card and spreadsheet layouts
+- Projected FI Year — linear extrapolation of when financial independence will be reached, with prior-year reference when current year shows "Progress Stalled"
+- Retirement parent category rollup rows show combined retirement account totals alongside per-account-type detail
+- Year-over-year comparison with Projected Year / Actual YTD toggle — contributions are prorated for meaningful comparisons, gains/losses shown as-is (market-driven)
+- Prorated values marked with asterisk and footnote for transparency
+
+### Improved
+
+- All wealth metrics (Wealth Score, AAW Score, FI Progress) now computed once in buildYearEndHistory — single computation path eliminates inconsistencies across pages
+- Wealth Score changed to net worth / lifetime earnings (savings efficiency percentage)
+- AAW Score uses Money Guy formula with average household age and Combined AGI
+- Market value / cost basis toggle now affects all metrics: YoY table, health stats, net worth location, pie charts, and Journey to Abundance benchmarks
+- Salary averaging toggle impacts all consumers including Journey to Abundance benchmark lines
+- Journey to Abundance chart benchmark lines use same age-adjusted formula as AAW score
+- Tax location data from finalized JSONB column (point-in-time capture at year-end) instead of config-based derivation
+- Home value cost basis correctly computed from cumulative improvement items instead of broken per-year DB column
+- Current year gross income includes bonus via getTotalCompensation
+- FI Progress on dashboard now includes cash (consistent with Trends page)
+- Zebra striping on all spreadsheet tables for readability
+
+### Fixed
+
+- computeFIProgress was excluding cash from the calculation
+- Tax location keys normalized to camelCase (was mixing snake_case and camelCase producing duplicate rows)
+- Wealth score labels unified across MetricsRow and Financial Checkup via shared wealthScoreTier helper
+
+### Changed
+
+- calculateNetWorth inputs: age replaced with averageAge, annualSalary replaced with effectiveIncome, added lifetimeEarnings
+- Net worth calculator produces dual market/cost basis scores for wealth and AAW metrics
+- AAW thresholds updated: PAW >= 2.0, AAW >= 1.0 (was: PAW >= 1.0, AAW >= 0.5 with x2 baked in)
+- Schema: added portfolio_by_tax_location JSONB column to net_worth_annual
+- Finalization process now captures tax location breakdown at year-end
+- buildYearEndHistory is the single source of truth for all year-level financial data
+
+---
+
 ## [0.4.13] - 2026-04-03
 
 ### New

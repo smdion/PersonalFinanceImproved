@@ -12,11 +12,11 @@ describe("calculateNetWorth", () => {
     otherAssets: 15000,
     mortgageBalance: 260000,
     otherLiabilities: 0,
-    annualSalary: 230000, // combined household
+    averageAge: 35, // average of all people
+    effectiveIncome: 230000, // combinedAgi (optionally averaged)
+    lifetimeEarnings: 1700000, // cumulative AGI
     annualExpenses: 84000, // ~$7,000/month
     withdrawalRate: 0.04,
-    age: 35, // primary user
-    yearsWorking: 13,
     asOfDate: AS_OF_DATE,
   };
 
@@ -33,13 +33,18 @@ describe("calculateNetWorth", () => {
     expect(result.netWorthCostBasis).toBe(835000);
   });
 
-  it("computes wealth score using Millionaire Next Door formula", () => {
+  it("computes wealth score as net worth / lifetime earnings", () => {
     const result = calculateNetWorth(input);
-    // Expected NW = ((35 × 230000) / (10 + max(0, 40-35))) × 2
-    // = (8050000 / 15) × 2 = 1073333.33
-    // Score = 960000 / 1073333.33 ≈ 0.894
-    expect(result.wealthTarget).toBeCloseTo(1073333, 0);
-    expect(result.wealthScore).toBeCloseTo(0.894, 1);
+    // 960000 / 1700000 ≈ 0.565
+    expect(result.wealthScoreMarket).toBeCloseTo(0.565, 2);
+  });
+
+  it("computes AAW score using Money Guy formula (no x2)", () => {
+    const result = calculateNetWorth(input);
+    // Expected NW = (35 × 230000) / (10 + max(0, 40-35))
+    // = 8050000 / 15 = 536666.67
+    // AAW = 960000 / 536666.67 ≈ 1.789
+    expect(result.aawScoreMarket).toBeCloseTo(1.789, 1);
   });
 
   it("computes FI progress from portfolio + cash only", () => {
@@ -51,19 +56,24 @@ describe("calculateNetWorth", () => {
   });
 
   describe("age 40+ adjustment", () => {
-    it("uses denominator of 10 for age 40+", () => {
-      const older = { ...input, age: 45 };
+    it("uses denominator of 10 for age 40+ in AAW", () => {
+      const older = { ...input, averageAge: 45 };
       const result = calculateNetWorth(older);
-      // Expected NW = ((45 × 230000) / 10) × 2 = 2,070,000
-      expect(result.wealthTarget).toBeCloseTo(2070000, 0);
+      // Expected NW = (45 × 230000) / 10 = 1,035,000
+      // AAW = 960000 / 1035000 ≈ 0.928
+      expect(result.aawScoreMarket).toBeCloseTo(0.928, 2);
     });
   });
 
   describe("edge cases", () => {
     it("handles zero income without error", () => {
-      const result = calculateNetWorth({ ...input, annualSalary: 0 });
-      expect(result.wealthScore).toBe(0);
-      expect(result.wealthTarget).toBe(0);
+      const result = calculateNetWorth({
+        ...input,
+        effectiveIncome: 0,
+        lifetimeEarnings: 0,
+      });
+      expect(result.wealthScoreMarket).toBe(0);
+      expect(result.aawScoreMarket).toBe(0);
     });
 
     it("handles zero expenses without error", () => {

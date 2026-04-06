@@ -104,7 +104,49 @@ export const TAX_TREATMENT_TO_TAX_TYPE: Record<string, string> = {
   hsa: "hsa",
 };
 
+/** Tax type labels keyed by camelCase portfolio keys (preTax, taxFree, etc.). */
+export const TAX_TYPE_LABELS: Record<string, string> = {
+  preTax: "Tax-Deferred",
+  taxFree: "Tax-Free",
+  afterTax: "After-Tax",
+  hsa: "HSA",
+};
+
 /** Generic label lookup with fallback to key. */
 export function displayLabel(map: Record<string, string>, key: string): string {
   return map[key] ?? key;
+}
+
+// ---------------------------------------------------------------------------
+// Wealth score tier labels (shared by MetricsRow + Financial Checkup)
+// ---------------------------------------------------------------------------
+
+export type WealthTier = "paw" | "aaw" | "uaw";
+
+/** Derive the wealth tier and display label from an AAW score (Money Guy multiplier).
+ *  >= 2.0 = PAW, >= 1.0 = AAW, < 1.0 = UAW. */
+export function wealthScoreTier(aawScore: number): {
+  tier: WealthTier;
+  label: string;
+  shortLabel: string;
+} {
+  if (aawScore >= 2.0) {
+    return {
+      tier: "paw",
+      label: "PAW — Prodigious Accumulator",
+      shortLabel: "PAW — Excellent",
+    };
+  }
+  if (aawScore >= 1.0) {
+    return {
+      tier: "aaw",
+      label: "AAW — Average Accumulator",
+      shortLabel: "AAW — On Track",
+    };
+  }
+  return {
+    tier: "uaw",
+    label: "UAW — Under Accumulator",
+    shortLabel: "UAW — Behind",
+  };
 }
