@@ -81,6 +81,18 @@ function TaxLocationMiniTable({
   );
 }
 
+/** Merge two tax-type records (sum values for matching keys). */
+function mergeTaxBuckets(
+  a: Record<string, number>,
+  b: Record<string, number>,
+): Record<string, number> {
+  const merged: Record<string, number> = { ...a };
+  for (const [key, val] of Object.entries(b)) {
+    merged[key] = (merged[key] ?? 0) + val;
+  }
+  return merged;
+}
+
 export function SpreadsheetTaxLocation({
   yearA,
   yearB,
@@ -94,10 +106,7 @@ export function SpreadsheetTaxLocation({
   const hasRetirementData =
     Object.keys(a.retirement).length > 0 ||
     Object.keys(b.retirement).length > 0;
-  const hasPortfolioData =
-    Object.keys(a.portfolio).length > 0 || Object.keys(b.portfolio).length > 0;
-
-  if (!hasRetirementData && !hasPortfolioData) return null;
+  if (!hasRetirementData) return null;
 
   return (
     <Card title="Tax Location - YTD" className="mb-4">
@@ -111,15 +120,14 @@ export function SpreadsheetTaxLocation({
             yearBLabel={yearBLabel}
           />
         )}
-        {hasPortfolioData && (
-          <TaxLocationMiniTable
-            title="Portfolio"
-            yearAData={a.portfolio}
-            yearBData={b.portfolio}
-            yearALabel={yearALabel}
-            yearBLabel={yearBLabel}
-          />
-        )}
+        {/* Portfolio = total (all accounts = retirement + portfolio parent categories merged) */}
+        <TaxLocationMiniTable
+          title="Portfolio"
+          yearAData={mergeTaxBuckets(a.retirement, a.portfolio)}
+          yearBData={mergeTaxBuckets(b.retirement, b.portfolio)}
+          yearALabel={yearALabel}
+          yearBLabel={yearBLabel}
+        />
       </div>
     </Card>
   );
