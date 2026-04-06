@@ -55,7 +55,7 @@ function TaxLocationMiniTable({
           </tr>
         </thead>
         <tbody>
-          {taxTypes.map((taxType) => {
+          {taxTypes.map((taxType, index) => {
             const valA = yearAData[taxType] ?? 0;
             const valB = yearBData[taxType] ?? 0;
             const pctA = totalA > 0 ? valA / totalA : 0;
@@ -64,7 +64,10 @@ function TaxLocationMiniTable({
             const label = TAX_TYPE_LABELS[taxType] ?? taxType;
 
             return (
-              <tr key={taxType} className="border-b border-subtle">
+              <tr
+                key={taxType}
+                className={`border-b border-subtle ${index % 2 === 0 ? "bg-surface-sunken/50" : ""}`}
+              >
                 <td className="py-1 pr-2 text-secondary">{label}</td>
                 <td className="text-right py-1 px-2">
                   {formatPercent(pctA, 1)}

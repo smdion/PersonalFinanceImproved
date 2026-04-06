@@ -121,11 +121,14 @@ export function SpreadsheetHealthStats({ yearA, yearB, annualize }: Props) {
             </tr>
           </thead>
           <tbody>
-            {STAT_ROWS.map((row) => {
+            {STAT_ROWS.map((row, index) => {
               const valA = row.accessor(yearA, annualize);
               const valB = row.accessor(yearB, annualize);
               return (
-                <tr key={row.label} className="border-b border-subtle">
+                <tr
+                  key={row.label}
+                  className={`border-b border-subtle ${index % 2 === 0 ? "bg-surface-sunken/50" : ""}`}
+                >
                   <td className="py-1.5 pr-2 font-medium text-secondary">
                     {row.label}
                     {hasCurrentYear && (

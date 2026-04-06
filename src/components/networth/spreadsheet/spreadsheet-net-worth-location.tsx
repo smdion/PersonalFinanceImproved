@@ -46,7 +46,7 @@ export function SpreadsheetNetWorthLocation({ yearA, yearB }: Props) {
             </tr>
           </thead>
           <tbody>
-            {LOCATION_ROWS.map((row) => {
+            {LOCATION_ROWS.map((row, index) => {
               const valA = row.accessor(yearA);
               const valB = row.accessor(yearB);
               // Skip rows where both years have zero
@@ -55,7 +55,10 @@ export function SpreadsheetNetWorthLocation({ yearA, yearB }: Props) {
               const pctB = grossAssetsB > 0 ? valB / grossAssetsB : 0;
 
               return (
-                <tr key={row.label} className="border-b border-subtle">
+                <tr
+                  key={row.label}
+                  className={`border-b border-subtle ${index % 2 === 0 ? "bg-surface-sunken/50" : ""}`}
+                >
                   <td className="py-1.5 pr-2 text-secondary font-medium">
                     {row.label}
                   </td>

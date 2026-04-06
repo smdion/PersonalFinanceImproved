@@ -10,11 +10,16 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { PERFORMANCE_STALE_DAYS } from "@/lib/constants";
 import type { DetailedHistoryRow } from "./types";
 
+/** How a row's comparison should be handled for current-year data. */
+type FlowType =
+  | "balance" // point-in-time value — no proration
+  | "contribution" // scheduled flow — prorate in Projected mode
+  | "market"; // market-driven flow (gains/losses/distributions) — never prorate
+
 type RowConfig = {
   label: string;
   accessor: (row: DetailedHistoryRow) => number | null;
-  /** Flow metrics (contributions, gains, distributions) show "In Progress" for current year. */
-  isFlowMetric: boolean;
+  flowType: FlowType;
 };
 
 /** Check if performance data is stale (>14 days since last update). */
@@ -33,17 +38,17 @@ function buildRowConfigs(
     {
       label: "Gross",
       accessor: (r) => r.grossIncome,
-      isFlowMetric: false,
+      flowType: "balance",
     },
     {
       label: "Net Worth",
       accessor: (r) => r.netWorth,
-      isFlowMetric: false,
+      flowType: "balance",
     },
     {
       label: "House",
       accessor: (r) => r.houseValue,
-      isFlowMetric: false,
+      flowType: "balance",
     },
   ];
 
@@ -52,7 +57,7 @@ function buildRowConfigs(
     rows.push({
       label: `${category} Value`,
       accessor: (r) => r.performanceByCategory[category]?.endingBalance ?? null,
-      isFlowMetric: false,
+      flowType: "balance",
     });
     rows.push({
       label: `${category} - Contributions`,
@@ -61,12 +66,12 @@ function buildRowConfigs(
         if (!cat) return null;
         return cat.contributions + cat.employerMatch;
       },
-      isFlowMetric: true,
+      flowType: "contribution",
     });
     rows.push({
       label: `${category} - Gains/Losses`,
       accessor: (r) => r.performanceByCategory[category]?.gainLoss ?? null,
-      isFlowMetric: true,
+      flowType: "market",
     });
     // Add distributions row for categories that have them (e.g., HSA)
     if (category === "HSA") {
@@ -74,7 +79,7 @@ function buildRowConfigs(
         label: `${category} - Distributions`,
         accessor: (r) =>
           r.performanceByCategory[category]?.distributions ?? null,
-        isFlowMetric: true,
+        flowType: "market",
       });
     }
   }
@@ -82,16 +87,16 @@ function buildRowConfigs(
   rows.push({
     label: "Cash",
     accessor: (r) => r.cash,
-    isFlowMetric: false,
+    flowType: "balance",
   });
 
-  // Parent category rollup rows (Retirement, Portfolio parent) — data-driven from parentCategory
+  // Parent category rollup rows — data-driven from parentCategory
   for (const parentCat of parentCategoryKeys) {
     rows.push({
       label: `${parentCat} Value`,
       accessor: (r) =>
         r.performanceByParentCategory[parentCat]?.endingBalance ?? null,
-      isFlowMetric: false,
+      flowType: "balance",
     });
     rows.push({
       label: `${parentCat} - Contributions`,
@@ -100,13 +105,13 @@ function buildRowConfigs(
         if (!cat) return null;
         return cat.contributions + cat.employerMatch;
       },
-      isFlowMetric: true,
+      flowType: "contribution",
     });
     rows.push({
       label: `${parentCat} - Gains/Losses`,
       accessor: (r) =>
         r.performanceByParentCategory[parentCat]?.gainLoss ?? null,
-      isFlowMetric: true,
+      flowType: "market",
     });
   }
 
@@ -115,17 +120,17 @@ function buildRowConfigs(
     {
       label: "Portfolio Value",
       accessor: (r) => r.portfolioTotal,
-      isFlowMetric: false,
+      flowType: "balance",
     },
     {
       label: "Portfolio - Contributions",
       accessor: (r) => r.perfContributions,
-      isFlowMetric: true,
+      flowType: "contribution",
     },
     {
       label: "Portfolio - Gains/Losses",
       accessor: (r) => r.perfGainLoss,
-      isFlowMetric: true,
+      flowType: "market",
     },
   );
 
@@ -135,7 +140,7 @@ function buildRowConfigs(
 type Props = {
   yearA: DetailedHistoryRow;
   yearB: DetailedHistoryRow;
-  /** When true, annualize current-year flow metrics (Projected Year mode). */
+  /** When true, prorate contribution comparisons for current year (Projected Year mode). */
   annualize: boolean;
 };
 
@@ -173,6 +178,7 @@ export function SpreadsheetYearOverYearTable({
 
   const yearAOutdated = isPerformanceOutdated(yearA);
   const yearBOutdated = isPerformanceOutdated(yearB);
+  const hasProrated = annualize && (yearA.isCurrent || yearB.isCurrent);
 
   return (
     <Card title="Net Worth Year over Year" className="mb-4">
@@ -196,56 +202,57 @@ export function SpreadsheetYearOverYearTable({
             </tr>
           </thead>
           <tbody>
-            {rowConfigs.map((config) => {
-              // Always show actual values (no annualization)
+            {rowConfigs.map((config, index) => {
               const valueA = config.accessor(yearA);
               const valueB = config.accessor(yearB);
 
+              const isFlow =
+                config.flowType === "contribution" ||
+                config.flowType === "market";
+
               // "Outdated" on value cells when performance data is stale (>14 days)
-              const showOutdatedA =
-                config.isFlowMetric && yearA.isCurrent && yearAOutdated;
-              const showOutdatedB =
-                config.isFlowMetric && yearB.isCurrent && yearBOutdated;
+              const showOutdatedA = isFlow && yearA.isCurrent && yearAOutdated;
+              const showOutdatedB = isFlow && yearB.isCurrent && yearBOutdated;
 
               // "In Progress" on change columns only when either value is outdated
               const showInProgress = showOutdatedA || showOutdatedB;
 
-              // For flow metrics with a current year: prorate the comparison year
-              // to the same time fraction so % Change is apples-to-apples.
-              // In "Projected Year" mode, prorate the full-year value down.
-              // In "Actual YTD" mode, show raw comparison (full year vs YTD).
+              // Compute comparison — only prorate contributions, never gains/losses
               let dollarChange: number | null = null;
               let percentChange: number | null = null;
+              let isProrated = false;
 
               if (valueA !== null && valueB !== null) {
                 if (
                   annualize &&
-                  config.isFlowMetric &&
+                  config.flowType === "contribution" &&
                   yearA.isCurrent &&
                   yearA.ytdRatio > 0 &&
                   yearA.ytdRatio < 1 &&
                   !yearB.isCurrent
                 ) {
-                  // Year A is current, Year B is finalized — prorate B to match A's timeframe
+                  // Year A is current, Year B is finalized — prorate B down
                   const proratedB = valueB * yearA.ytdRatio;
                   dollarChange = valueA - proratedB;
                   percentChange =
                     proratedB !== 0 ? dollarChange / Math.abs(proratedB) : null;
+                  isProrated = true;
                 } else if (
                   annualize &&
-                  config.isFlowMetric &&
+                  config.flowType === "contribution" &&
                   yearB.isCurrent &&
                   yearB.ytdRatio > 0 &&
                   yearB.ytdRatio < 1 &&
                   !yearA.isCurrent
                 ) {
-                  // Year B is current, Year A is finalized — prorate A to match B's timeframe
+                  // Year B is current, Year A is finalized — prorate A down
                   const proratedA = valueA * yearB.ytdRatio;
                   dollarChange = proratedA - valueB;
                   percentChange =
                     valueB !== 0 ? dollarChange / Math.abs(valueB) : null;
+                  isProrated = true;
                 } else {
-                  // Both finalized or both current or actual YTD mode — straight comparison
+                  // Both finalized, both current, market flows, or Actual YTD mode
                   dollarChange = valueA - valueB;
                   percentChange =
                     valueB !== 0 ? dollarChange / Math.abs(valueB) : null;
@@ -253,7 +260,10 @@ export function SpreadsheetYearOverYearTable({
               }
 
               return (
-                <tr key={config.label} className="border-b border-subtle">
+                <tr
+                  key={config.label}
+                  className={`border-b border-subtle ${index % 2 === 0 ? "bg-surface-sunken/50" : ""}`}
+                >
                   <td className="py-1.5 pr-2 font-medium text-secondary">
                     {config.label}
                     {(yearA.isCurrent || yearB.isCurrent) && (
@@ -302,6 +312,7 @@ export function SpreadsheetYearOverYearTable({
                         }
                       >
                         {formatPercent(percentChange, 1)}
+                        {isProrated && "*"}
                       </span>
                     ) : (
                       <span className="text-faint">&mdash;</span>
@@ -320,6 +331,7 @@ export function SpreadsheetYearOverYearTable({
                       >
                         {dollarChange >= 0 ? "+" : ""}
                         {formatCurrency(dollarChange)}
+                        {isProrated && "*"}
                       </span>
                     ) : (
                       <span className="text-faint">&mdash;</span>
@@ -330,6 +342,12 @@ export function SpreadsheetYearOverYearTable({
             })}
           </tbody>
         </table>
+        {hasProrated && (
+          <p className="text-[10px] text-faint mt-2">
+            * Prorated — comparison year scaled to match YTD period for
+            contributions
+          </p>
+        )}
       </div>
     </Card>
   );
