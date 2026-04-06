@@ -268,11 +268,11 @@ export type NetWorthInput = {
   otherAssets: number;
   mortgageBalance: number; // current amortized balance
   otherLiabilities: number;
-  annualSalary: number;
+  averageAge: number; // average of all people's ages (was: primary person only)
+  effectiveIncome: number; // combinedAgi, optionally 3yr averaged (was: annualSalary)
+  lifetimeEarnings: number; // cumulative AGI through this year
   annualExpenses: number;
   withdrawalRate: number; // e.g. 0.04 for the 4% rule — from retirement settings
-  age: number;
-  yearsWorking: number;
   asOfDate: Date;
 };
 
@@ -282,9 +282,8 @@ export type NetWorthResult = {
   netWorth: number; // alias for netWorthMarket (primary display)
   totalAssets: number;
   totalLiabilities: number;
-  wealthScore: number; // modified MND formula with age-40 adjustment
-  wealthTarget: number;
-  aawScore: number; // classic MND: netWorth / (age × salary / 10)
+  wealthScore: number; // netWorth / lifetimeEarnings (savings efficiency %)
+  aawScore: number; // Money Guy: netWorth / ((avgAge × income) / (10 + yearsUntil40))
   fiProgress: number;
   fiTarget: number;
   warnings: string[];

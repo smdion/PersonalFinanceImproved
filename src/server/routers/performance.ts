@@ -1,7 +1,7 @@
 /** Performance router for portfolio time-weighted return tracking, snapshot ingestion, account-level performance history, and category rollup calculations. */
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
-import { asc, eq, and } from "drizzle-orm";
+import { asc, eq, and, sql } from "drizzle-orm";
 import { log } from "@/lib/logger";
 import {
   createTRPCRouter,
@@ -1235,17 +1235,57 @@ export const performanceRouter = createTRPCRouter({
           propertyTaxes,
         });
 
+        // Build portfolio_by_tax_location from nearest snapshot at finalization time.
+        // This captures the point-in-time tax location breakdown that may not be
+        // reconstructible later (snapshots can be pruned/restructured).
+        const nearestSnapshot = await tx
+          .select()
+          .from(schema.portfolioSnapshots)
+          .orderBy(
+            sql`ABS(EXTRACT(EPOCH FROM (${schema.portfolioSnapshots.snapshotDate}::timestamp - ${yearEndDate}::timestamp)))`,
+          )
+          .limit(1);
+
+        let portfolioByTaxLocation: {
+          retirement: Record<string, number>;
+          portfolio: Record<string, number>;
+        } | null = null;
+
+        if (nearestSnapshot.length > 0) {
+          const snapAccounts = await tx
+            .select()
+            .from(schema.portfolioAccounts)
+            .where(
+              eq(schema.portfolioAccounts.snapshotId, nearestSnapshot[0]!.id),
+            );
+          const breakdown: {
+            retirement: Record<string, number>;
+            portfolio: Record<string, number>;
+          } = { retirement: {}, portfolio: {} };
+          for (const a of snapAccounts) {
+            const parentCat = a.parentCategory ?? "Retirement";
+            const taxType = a.taxType ?? "preTax";
+            const bucket =
+              parentCat === "Portfolio"
+                ? breakdown.portfolio
+                : breakdown.retirement;
+            bucket[taxType] = (bucket[taxType] ?? 0) + toNumber(a.amount);
+          }
+          portfolioByTaxLocation = breakdown;
+        }
+
         if (existingRow) {
           // Update existing row — preserve manual fields (AGI, taxes, etc.), update auto fields
           await tx
             .update(schema.netWorthAnnual)
-            .set(nwValues)
+            .set({ ...nwValues, portfolioByTaxLocation })
             .where(eq(schema.netWorthAnnual.id, existingRow.id));
         } else {
           // Create new row — manual fields start as null/zero
           await tx.insert(schema.netWorthAnnual).values({
             ...nwValues,
             combinedAgi: "0",
+            portfolioByTaxLocation,
           });
         }
 

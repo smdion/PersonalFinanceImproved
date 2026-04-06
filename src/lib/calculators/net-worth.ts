@@ -10,17 +10,16 @@
  *
  * **Benchmarks:**
  *
- * 1. **Wealth Score** (modified Millionaire Next Door formula):
- *    Expected Net Worth = ((Age × Income) ÷ (10 + max(0, 40 - Age))) × 2
- *    - For ages 40+, denominator is 10, so expected NW = (Age × Income) / 5
- *    - For ages under 40, denominator increases (penalizes less for being young)
- *    - Score > 1.0 = "Prodigious Accumulator of Wealth" (PAW)
- *    - Score < 0.5 = "Under Accumulator of Wealth" (UAW)
+ * 1. **Wealth Score** (savings efficiency):
+ *    Wealth Score = Net Worth / Lifetime Earnings
+ *    - Measures what fraction of cumulative earnings you've retained
+ *    - Displayed as a percentage (e.g. 56% = kept 56% of everything earned)
  *
- * 2. **AAW Score** (classic Millionaire Next Door, no age adjustment):
- *    Expected Net Worth = Age × Income / 10
- *    - >= 2.0 = PAW, 1.0 = AAW, <= 0.5 = UAW
- *    - Simpler formula; the raw accumulation multiplier
+ * 2. **AAW Score** (Money Guy Show "Wealth Accumulator" formula):
+ *    Expected Net Worth = (Average Age × Effective Income) / (10 + max(0, 40 - Age))
+ *    - Uses average age across all household members
+ *    - Uses combinedAgi (optionally 3-year averaged) as income
+ *    - >= 2.0 = PAW (Prodigious), 1.0 = AAW (Average), <= 0.5 = UAW (Under)
  *
  * 3. **FI Progress** (Financial Independence progress):
  *    FI Target = Annual Expenses ÷ Withdrawal Rate
@@ -34,7 +33,6 @@ import { safeDivide } from "../utils/math";
 import {
   WEALTH_FORMULA_AGE_CUTOFF,
   WEALTH_FORMULA_BASE_DENOMINATOR,
-  WEALTH_FORMULA_MULTIPLIER,
 } from "../constants";
 
 export function calculateNetWorth(input: NetWorthInput): NetWorthResult {
@@ -47,10 +45,11 @@ export function calculateNetWorth(input: NetWorthInput): NetWorthResult {
     otherAssets,
     mortgageBalance,
     otherLiabilities,
-    annualSalary,
+    averageAge,
+    effectiveIncome,
+    lifetimeEarnings,
     annualExpenses,
     withdrawalRate,
-    age,
   } = input;
 
   // Warn if mortgage exists but no home value — net worth appears artificially negative
@@ -80,18 +79,15 @@ export function calculateNetWorth(input: NetWorthInput): NetWorthResult {
   const netWorth = netWorthMarket;
   const totalAssets = liquidAssets + homeValueEstimated;
 
-  // Wealth Score uses NW+ for the optimistic view
-  // Note: Uses gross income (Millionaire Next Door formula). Dave Ramsey's variant uses take-home pay.
-  const yearsUntil40 = Math.max(0, WEALTH_FORMULA_AGE_CUTOFF - age);
-  const wealthTarget =
-    ((age * annualSalary) / (WEALTH_FORMULA_BASE_DENOMINATOR + yearsUntil40)) *
-    WEALTH_FORMULA_MULTIPLIER;
-  const wealthScore = Number(safeDivide(netWorth, wealthTarget) ?? 0);
+  // Wealth Score: net worth as % of lifetime earnings (savings efficiency)
+  const wealthScore = Number(safeDivide(netWorth, lifetimeEarnings) ?? 0);
 
-  // AAW Score: classic Millionaire Next Door (no age adjustment)
-  // Expected Net Worth = Age × Annual Income / 10
+  // AAW Score: Money Guy formula — (avgAge × income) / (10 + yearsUntil40)
+  // Score >= 2.0 = PAW, 1.0 = AAW, <= 0.5 = UAW (thresholds, not in formula)
+  const yearsUntil40 = Math.max(0, WEALTH_FORMULA_AGE_CUTOFF - averageAge);
   const expectedNetWorth =
-    (age * annualSalary) / WEALTH_FORMULA_BASE_DENOMINATOR;
+    (averageAge * effectiveIncome) /
+    (WEALTH_FORMULA_BASE_DENOMINATOR + yearsUntil40);
   const aawScore = Number(safeDivide(netWorth, expectedNetWorth) ?? 0);
 
   // FI Progress uses portfolio (investable assets, not home equity)
@@ -105,7 +101,6 @@ export function calculateNetWorth(input: NetWorthInput): NetWorthResult {
     totalAssets,
     totalLiabilities,
     wealthScore,
-    wealthTarget,
     aawScore,
     fiProgress,
     fiTarget,

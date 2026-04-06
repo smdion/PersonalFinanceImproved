@@ -322,7 +322,6 @@ export default function NetWorthPage() {
           <CardBoundary title="Key Metrics">
             <MetricsRow
               wealthScore={result.wealthScore}
-              wealthTarget={result.wealthTarget}
               aawScore={result.aawScore}
               fiProgress={result.fiProgress}
               fiTarget={result.fiTarget}

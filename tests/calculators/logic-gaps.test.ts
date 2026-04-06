@@ -483,7 +483,8 @@ describe("mortgage refinance chain", () => {
 // 7. NET WORTH AGE-40 FORMULA TRANSITION
 // ════════════════════════════════════════
 
-describe("net worth wealth formula age transition", () => {
+describe("net worth AAW formula age transition", () => {
+  const netWorth = 500000 + 50000 + 400000 - 200000; // 750000
   const baseInput: NetWorthInput = {
     portfolioTotal: 500000,
     cash: 50000,
@@ -492,45 +493,48 @@ describe("net worth wealth formula age transition", () => {
     otherAssets: 0,
     mortgageBalance: 200000,
     otherLiabilities: 0,
-    annualSalary: 200000,
+    averageAge: 38,
+    effectiveIncome: 200000,
+    lifetimeEarnings: 2000000,
     annualExpenses: 60000,
     withdrawalRate: 0.04,
-    age: 38,
-    yearsWorking: 16,
     asOfDate: AS_OF_DATE,
   };
 
-  it("ages under 40 use adjusted denominator", () => {
-    const result = calculateNetWorth({ ...baseInput, age: 35 });
-    // Expected NW = ((35 × 200000) / (10 + max(0, 40-35))) × 2
-    // = (7,000,000 / 15) × 2 = 933,333
-    const expected = ((35 * 200000) / (10 + 5)) * 2;
-    expect(result.wealthTarget).toBeCloseTo(expected, 0);
+  it("ages under 40 use adjusted denominator for AAW", () => {
+    const result = calculateNetWorth({ ...baseInput, averageAge: 35 });
+    // Expected NW = (35 × 200000) / (10 + max(0, 40-35))
+    // = 7,000,000 / 15 = 466,666.67
+    const expected = (35 * 200000) / (10 + 5);
+    // AAW = 750000 / 466666.67 ≈ 1.607
+    expect(result.aawScore).toBeCloseTo(netWorth / expected, 2);
   });
 
-  it("age 40+ uses base denominator of 10", () => {
-    const result = calculateNetWorth({ ...baseInput, age: 45 });
-    // Expected NW = ((45 × 200000) / (10 + 0)) × 2 = 1,800,000
-    const expected = ((45 * 200000) / 10) * 2;
-    expect(result.wealthTarget).toBeCloseTo(expected, 0);
+  it("age 40+ uses base denominator of 10 for AAW", () => {
+    const result = calculateNetWorth({ ...baseInput, averageAge: 45 });
+    // Expected NW = (45 × 200000) / 10 = 900,000
+    const expected = (45 * 200000) / 10;
+    expect(result.aawScore).toBeCloseTo(netWorth / expected, 2);
   });
 
   it("age exactly 40 transitions to base denominator", () => {
-    const result = calculateNetWorth({ ...baseInput, age: 40 });
+    const result = calculateNetWorth({ ...baseInput, averageAge: 40 });
     // At 40: max(0, 40-40) = 0, so denominator = 10
-    const expected = ((40 * 200000) / 10) * 2;
-    expect(result.wealthTarget).toBeCloseTo(expected, 0);
+    const expected = (40 * 200000) / 10;
+    expect(result.aawScore).toBeCloseTo(netWorth / expected, 2);
   });
 
-  it("wealth score increases as age increases with same NW", () => {
-    // Older person with same NW → lower expected NW relative to age/income → higher score
-    // Wait — actually expected NW increases with age, so score decreases
-    const young = calculateNetWorth({ ...baseInput, age: 30 });
-    const old = calculateNetWorth({ ...baseInput, age: 50 });
-    // Expected NW at 50 > expected NW at 30
-    expect(old.wealthTarget).toBeGreaterThan(young.wealthTarget);
-    // So wealth score at 50 < score at 30 (same actual NW, higher target)
-    expect(old.wealthScore).toBeLessThan(young.wealthScore);
+  it("wealth score is net worth / lifetime earnings", () => {
+    const result = calculateNetWorth(baseInput);
+    // 750000 / 2000000 = 0.375
+    expect(result.wealthScore).toBeCloseTo(0.375, 3);
+  });
+
+  it("AAW score decreases as age increases with same NW", () => {
+    const young = calculateNetWorth({ ...baseInput, averageAge: 30 });
+    const old = calculateNetWorth({ ...baseInput, averageAge: 50 });
+    // Expected NW increases with age, so AAW score decreases
+    expect(old.aawScore).toBeLessThan(young.aawScore);
   });
 });
 

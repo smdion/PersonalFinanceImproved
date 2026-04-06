@@ -123,20 +123,21 @@ export function displayLabel(map: Record<string, string>, key: string): string {
 
 export type WealthTier = "paw" | "aaw" | "uaw";
 
-/** Derive the wealth tier and display label from a wealth score. */
-export function wealthScoreTier(score: number): {
+/** Derive the wealth tier and display label from an AAW score (Money Guy multiplier).
+ *  >= 2.0 = PAW, >= 1.0 = AAW, < 1.0 = UAW. */
+export function wealthScoreTier(aawScore: number): {
   tier: WealthTier;
   label: string;
   shortLabel: string;
 } {
-  if (score >= 1.0) {
+  if (aawScore >= 2.0) {
     return {
       tier: "paw",
       label: "PAW — Prodigious Accumulator",
       shortLabel: "PAW — Excellent",
     };
   }
-  if (score >= 0.5) {
+  if (aawScore >= 1.0) {
     return {
       tier: "aaw",
       label: "AAW — Average Accumulator",

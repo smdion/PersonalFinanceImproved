@@ -717,6 +717,12 @@ export const netWorthAnnual = pgTable("net_worth_annual", {
     .notNull()
     .default("0"),
   propertyTaxes: decimal("property_taxes", { precision: 12, scale: 2 }),
+  // Point-in-time tax location breakdown captured at finalization.
+  // Shape: { retirement: { taxFree: N, preTax: N, hsa: N, afterTax: N }, portfolio: { afterTax: N } }
+  portfolioByTaxLocation: jsonb("portfolio_by_tax_location").$type<{
+    retirement: Record<string, number>;
+    portfolio: Record<string, number>;
+  }>(),
 });
 
 // Home improvement individual items — cumulative sum per year

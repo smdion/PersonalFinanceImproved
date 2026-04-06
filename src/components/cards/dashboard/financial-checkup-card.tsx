@@ -265,13 +265,13 @@ export function FinancialCheckupCard() {
     href: "/paycheck",
   });
 
-  // 5. Wealth Score
-  const wealthScore = networth.data?.result.wealthScore ?? 0;
-  const wealthTier = wealthScoreTier(wealthScore);
+  // 5. Wealth Score (uses AAW score — Money Guy formula — for PAW/AAW/UAW tier)
+  const aawScore = networth.data?.result.aawScore ?? 0;
+  const wealthTier = wealthScoreTier(aawScore);
   steps.push({
     label: "Wealth Score",
     helpTip:
-      'From "The Millionaire Next Door." PAW = Prodigious Accumulator of Wealth (net worth > expected), AAW = Average, UAW = Under Accumulator.',
+      "Money Guy Wealth Accumulator. PAW (2x+) = Prodigious, AAW (1x) = Average, UAW (<0.5x) = Under Accumulator.",
     status: wealthTier.tier === "uaw" ? "red" : "green",
     text: wealthTier.shortLabel,
     href: "/networth",

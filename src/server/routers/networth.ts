@@ -19,7 +19,7 @@ import {
   groupSnapshotAccounts,
   buildYearEndHistory,
 } from "@/server/helpers";
-import { MS_PER_YEAR } from "@/lib/constants";
+// MS_PER_YEAR removed — yearsWorking no longer computed here (TODO: phase 5 cleanup)
 import { getAge } from "@/lib/utils/date";
 import type { NetWorthInput } from "@/lib/calculators/types";
 
@@ -164,14 +164,6 @@ export const networthRouter = createTRPCRouter({
       ? getAge(new Date(primaryPerson.dateOfBirth), asOfDate)
       : 0;
 
-    // Years working (from earliest active job start date)
-    const earliestStart = activeJobs
-      .map((j) => new Date(j.startDate).getTime())
-      .sort()[0];
-    const yearsWorking = earliestStart
-      ? Math.floor((Date.now() - earliestStart) / MS_PER_YEAR)
-      : 0;
-
     // Home values: market (estimated) and cost basis (purchase + improvements)
     const activeLoans = mortgageLoans.filter((m) => m.isActive);
     const activeMortgage = activeLoans[0];
@@ -203,6 +195,7 @@ export const networthRouter = createTRPCRouter({
     }
     const withdrawalRate = toNumber(primaryRetSettings.withdrawalRate);
 
+    // TODO(phase5): Replace with buildYearEndHistory() read
     const input: NetWorthInput = {
       portfolioTotal,
       cash,
@@ -211,11 +204,11 @@ export const networthRouter = createTRPCRouter({
       otherAssets,
       mortgageBalance,
       otherLiabilities,
-      annualSalary: combinedSalary,
+      averageAge: age,
+      effectiveIncome: combinedSalary,
+      lifetimeEarnings: combinedSalary * age, // approximate until phase 5
       annualExpenses,
       withdrawalRate,
-      age,
-      yearsWorking,
       asOfDate,
     };
 
@@ -646,6 +639,7 @@ export const networthRouter = createTRPCRouter({
       );
     }
 
+    // TODO(phase6): Replace with buildYearEndHistory() read
     const input: NetWorthInput = {
       portfolioTotal,
       cash,
@@ -654,11 +648,11 @@ export const networthRouter = createTRPCRouter({
       otherAssets: 0,
       mortgageBalance: 0,
       otherLiabilities: 0,
-      annualSalary: 0,
+      averageAge: 0,
+      effectiveIncome: 0,
+      lifetimeEarnings: 0,
       annualExpenses,
       withdrawalRate: toNumber(retSettings.withdrawalRate),
-      age: 0,
-      yearsWorking: 0,
       asOfDate: new Date(),
     };
 
