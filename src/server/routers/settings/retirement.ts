@@ -4,6 +4,7 @@ import {
   createTRPCRouter,
   protectedProcedure,
   adminProcedure,
+  brokerageProcedure,
   getSessionUserLabel,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
@@ -232,7 +233,7 @@ export const retirementProcedures = {
           )
           .then((r) => (r[0]?.overrides as Record<string, unknown>[]) ?? []),
       ),
-    save: adminProcedure
+    save: brokerageProcedure
       .input(
         z.object({
           overrideType: z.enum(["accumulation", "decumulation", "brokerage"]),
@@ -257,7 +258,7 @@ export const retirementProcedures = {
           .returning()
           .then((r) => r[0]),
       ),
-    clear: adminProcedure
+    clear: brokerageProcedure
       .input(
         z.object({
           overrideType: z.enum(["accumulation", "decumulation", "brokerage"]),
