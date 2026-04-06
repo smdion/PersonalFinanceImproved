@@ -16,6 +16,7 @@ import {
 } from "recharts";
 import { CHART_COLORS } from "@/lib/utils/colors";
 import {
+  WEALTH_FORMULA_AGE_CUTOFF,
   WEALTH_FORMULA_BASE_DENOMINATOR,
   WEALTH_FORMULA_MULTIPLIER,
 } from "@/lib/constants";
@@ -29,18 +30,16 @@ export function JourneyToAbundanceChart({
   primaryBirthYear: number;
 }) {
   const chartData = useMemo(() => {
-    // Use effectiveIncome from YearEndRow (respects salary averaging toggle — single computation path)
-    const yearsWithIncome = history.filter((h) => h.effectiveIncome > 0);
-    const avgIncome =
-      yearsWithIncome.length > 0
-        ? yearsWithIncome.reduce((s, h) => s + h.effectiveIncome, 0) /
-          yearsWithIncome.length
-        : 0;
-
+    // Compute benchmark per year using the same formula as AAW score
+    // (single computation path — age-adjusted denominator, per-year effectiveIncome)
     return history.map((h) => {
       const age = h.year - primaryBirthYear;
+      const yearsUntil40 = Math.max(0, WEALTH_FORMULA_AGE_CUTOFF - age);
       const avgWealth =
-        avgIncome > 0 ? (age * avgIncome) / WEALTH_FORMULA_BASE_DENOMINATOR : 0;
+        h.effectiveIncome > 0
+          ? (age * h.effectiveIncome) /
+            (WEALTH_FORMULA_BASE_DENOMINATOR + yearsUntil40)
+          : 0;
       return {
         year: h.year,
         age,
