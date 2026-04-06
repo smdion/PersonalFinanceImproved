@@ -1316,8 +1316,12 @@ export const retirementRouter = createTRPCRouter({
       });
 
       // Age
-      // Age as of today (calendar-accurate via getAge)
-      const age = getAge(new Date(primaryPerson.dateOfBirth), new Date());
+      // When a historical snapshot is selected, use its date as the reference point
+      const referenceDate = snapshotData?.snapshot.snapshotDate
+        ? new Date(snapshotData.snapshot.snapshotDate)
+        : new Date();
+      // Age as of reference date (calendar-accurate via getAge)
+      const age = getAge(new Date(primaryPerson.dateOfBirth), referenceDate);
 
       // Portfolio — only retirement-category accounts from latest balance snapshot
       let portfolioTotal = 0;
@@ -1329,7 +1333,7 @@ export const retirementRouter = createTRPCRouter({
       }
 
       // Salary
-      const asOfDate = new Date();
+      const asOfDate = referenceDate;
       const activeJobs = allJobs.filter((j) => !j.endDate);
       const jobSalaries = await Promise.all(
         activeJobs.map(async (j) => {

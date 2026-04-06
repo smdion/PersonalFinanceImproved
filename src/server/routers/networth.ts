@@ -144,7 +144,7 @@ export const networthRouter = createTRPCRouter({
     );
 
     // Read computed metrics from buildYearEndHistory (single computation path)
-    const yearEndHistory = await buildYearEndHistory(ctx.db);
+    const yearEndHistory = await buildYearEndHistory(ctx.db, asOfDate);
     const currentRow =
       yearEndHistory.find((h) => h.isCurrent) ??
       yearEndHistory[yearEndHistory.length - 1];
