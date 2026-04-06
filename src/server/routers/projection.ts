@@ -1,6 +1,7 @@
 /** Projection router for long-term financial forecasting including accumulation/decumulation phases, Monte Carlo simulations, and lump-sum scenario modeling. */
 import { eq, asc, sql } from "drizzle-orm";
 import { z } from "zod/v4";
+import { DEFAULT_RETURN_RATE } from "@/lib/constants";
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -247,7 +248,7 @@ export const projectionRouter = createTRPCRouter({
               .default({}),
           })
           .default({
-            withdrawalRate: 0.04,
+            withdrawalRate: DEFAULT_WITHDRAWAL_RATE,
             withdrawalRoutingMode: "bracket_filling",
             withdrawalOrder: getDefaultDecumulationOrder(),
             withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS },
@@ -519,7 +520,7 @@ export const projectionRouter = createTRPCRouter({
             avgAccumulation:
               accRates.length > 0
                 ? accRates.reduce((s, r) => s + r.rate, 0) / accRates.length
-                : 0.07,
+                : DEFAULT_RETURN_RATE,
             schedule,
           };
         })(),

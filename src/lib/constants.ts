@@ -25,6 +25,20 @@ export const MONTHS_PER_YEAR = 12;
 /** Default safe withdrawal rate (the "4% rule"). */
 export const DEFAULT_WITHDRAWAL_RATE = 0.04;
 
+// ---------------------------------------------------------------------------
+// Return Rates
+// ---------------------------------------------------------------------------
+
+/** Default nominal return rate fallback when no user-configured rate is available. */
+export const DEFAULT_RETURN_RATE = 0.07;
+
+// ---------------------------------------------------------------------------
+// Income Thresholds
+// ---------------------------------------------------------------------------
+
+/** High income threshold for savings rate display (show employee-only rate as headline). */
+export const DEFAULT_HIGH_INCOME_THRESHOLD = 200_000;
+
 // Default withdrawal splits are defined in src/lib/config/account-types.ts
 // (derived from each account type's defaultWithdrawalSplit config property)
 

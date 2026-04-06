@@ -8,6 +8,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
 import { useScenario } from "@/lib/context/scenario-context";
 import { categoriesWithTaxPreference } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
@@ -31,7 +32,7 @@ export function SavingsRateCard() {
     trpc.contribution.computeSummary.useQuery(contribInput);
   const [highIncomeThreshold] = usePersistedSetting<number>(
     "high_income_threshold",
-    200000,
+    DEFAULT_HIGH_INCOME_THRESHOLD,
   );
   const [matchOverride, setMatchOverride] = useState<boolean | null>(null);
   if (isLoading) return <LoadingCard title="Savings Rate" />;

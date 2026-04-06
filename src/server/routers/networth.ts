@@ -1,6 +1,7 @@
 /** Net worth router that aggregates account snapshots, mortgage balances, cash, and other assets into a current and projected net worth summary. */
 import { eq, asc, desc, sql, gte, lte, and } from "drizzle-orm";
 import { z } from "zod/v4";
+import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { accountDisplayName } from "@/lib/utils/format";
@@ -208,7 +209,7 @@ export const networthRouter = createTRPCRouter({
       otherAssetItems,
       otherAssetsSyncSource,
       otherLiabilities,
-      withdrawalRate: currentRow?.withdrawalRate ?? 0.04,
+      withdrawalRate: currentRow?.withdrawalRate ?? DEFAULT_WITHDRAWAL_RATE,
     };
   }),
 

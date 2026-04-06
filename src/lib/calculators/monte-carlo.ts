@@ -27,6 +27,7 @@ import type {
   ProjectionInput,
 } from "./types";
 import { roundToCents } from "../utils/math";
+import { DEFAULT_RETURN_RATE } from "../constants";
 import type { EngineDecumulationYear } from "./types";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "../config/withdrawal-strategies";
 import type { WithdrawalStrategyType } from "../config/withdrawal-strategies";
@@ -212,7 +213,7 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
           const ageMatch = r.label.match(/(\d+)/);
           return ageMatch && Number(ageMatch[1]) === age;
         });
-        annualReturn = detRate?.rate ?? 0.07;
+        annualReturn = detRate?.rate ?? DEFAULT_RETURN_RATE;
       }
 
       // Clamp extreme returns (prevent unrealistic scenarios)
