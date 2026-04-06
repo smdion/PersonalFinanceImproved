@@ -7,6 +7,10 @@ import { log } from "@/lib/logger";
 const allowDev = process.env.ALLOW_DEV_MODE === "true";
 
 export async function GET() {
+  if (process.env.DEMO_ONLY === "true") {
+    return new Response("Forbidden: demo mode is read-only", { status: 403 });
+  }
+
   try {
     // Check auth — require session with version permission or admin
     const session = await auth();

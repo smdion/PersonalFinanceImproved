@@ -42,6 +42,10 @@ function validateImportDepthAndSize(value: unknown, depth = 0): string | null {
 }
 
 export async function POST(request: Request) {
+  if (process.env.DEMO_ONLY === "true") {
+    return new Response("Forbidden: demo mode is read-only", { status: 403 });
+  }
+
   try {
     // Check auth — require session with version permission or admin
     const session = await auth();
