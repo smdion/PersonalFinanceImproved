@@ -39,10 +39,6 @@ type Props = {
   useMarketValue: boolean;
   /** Toggle market value. */
   onToggleMarketValue: () => void;
-  /** Annual expenses for FI calculation. */
-  annualExpenses: number;
-  /** Withdrawal rate for FI target. */
-  withdrawalRate: number;
 };
 
 export function SpreadsheetView({
@@ -55,8 +51,6 @@ export function SpreadsheetView({
   byTaxType,
   useMarketValue,
   onToggleMarketValue,
-  annualExpenses,
-  withdrawalRate,
 }: Props) {
   const utils = trpc.useUtils();
   const { data: detailedData } =
@@ -149,16 +143,7 @@ export function SpreadsheetView({
         <div className="space-y-0">
           <SpreadsheetYearOverYearTable yearA={yearARow} yearB={yearBRow} />
 
-          <SpreadsheetHealthStats
-            yearA={yearARow}
-            yearB={yearBRow}
-            allYears={detailedData.years as DetailedHistoryRow[]}
-            useSalaryAverage={useSalaryAverage}
-            birthYears={detailedData.birthYears}
-            useMarketValue={useMarketValue}
-            annualExpenses={annualExpenses}
-            withdrawalRate={withdrawalRate}
-          />
+          <SpreadsheetHealthStats yearA={yearARow} yearB={yearBRow} />
 
           <SpreadsheetTaxLocation
             yearA={yearARow.portfolioByTaxLocation}

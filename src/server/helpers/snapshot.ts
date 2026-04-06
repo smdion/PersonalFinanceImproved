@@ -10,16 +10,15 @@ import { parseAppSettings } from "./settings";
 import { stripInstitutionSuffix } from "@/lib/utils/format";
 import { log } from "@/lib/logger";
 import { getSalariesForJobs, getTotalCompensation } from "./salary";
-import { getEffectiveCash, getEffectiveOtherAssets } from "./budget";
+import {
+  getEffectiveCash,
+  getEffectiveOtherAssets,
+  getAnnualExpensesFromBudget,
+} from "./budget";
 import { computeMortgageBalance } from "./mortgage";
-import {
-  accountTypeToPerformanceCategory,
-  TAX_TREATMENT_TO_TAX_TYPE,
-} from "@/lib/config/display-labels";
-import {
-  getAllCategories,
-  getDefaultTaxTreatment,
-} from "@/lib/config/account-types";
+import { calculateNetWorth } from "@/lib/calculators/net-worth";
+import type { NetWorthInput } from "@/lib/calculators/types";
+import { accountTypeToPerformanceCategory } from "@/lib/config/display-labels";
 
 // ---------------------------------------------------------------------------
 // Snapshot account grouping
@@ -209,6 +208,30 @@ export type YearEndRow = {
   /** Portfolio broken down by parentCategory × taxType. Available from snapshot for current year;
    *  approximated from portfolioByType + account config for prior years. */
   portfolioByTaxLocation: TaxLocationBreakdown | null;
+  // Computed wealth metrics (single computation path — all consumers read these)
+  /** Net worth / lifetime earnings (savings efficiency %). */
+  wealthScore: number;
+  /** Money Guy Wealth Accumulator: netWorth / ((avgAge × income) / (10 + yearsUntil40)). */
+  aawScore: number;
+  /** (portfolioTotal + cash) / fiTarget. */
+  fiProgress: number;
+  /** annualExpenses / withdrawalRate. */
+  fiTarget: number;
+  /** Market-value net worth (home at estimated value). */
+  netWorthMarket: number;
+  /** Cost-basis net worth (home at purchase + improvements). */
+  netWorthCostBasis: number;
+  // Inputs used for computed metrics (for display / debugging)
+  /** Average age across all household members for this year. */
+  averageAge: number;
+  /** CombinedAGI (or grossIncome fallback), optionally 3yr averaged. */
+  effectiveIncome: number;
+  /** Cumulative AGI through this year. */
+  lifetimeEarnings: number;
+  /** Annual expenses from budget. */
+  annualExpenses: number;
+  /** Withdrawal rate from retirement settings. */
+  withdrawalRate: number;
 };
 
 /**
@@ -242,6 +265,9 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
     jobs,
     snapshotData,
     propTaxRows,
+    people,
+    retirementSettingsRows,
+    annualExpensesBudget,
   ] = await Promise.all([
     db
       .select()
@@ -259,6 +285,9 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
     db.select().from(schema.jobs).orderBy(asc(schema.jobs.startDate)),
     getLatestSnapshot(db),
     db.select().from(schema.propertyTaxes),
+    db.select().from(schema.people).orderBy(asc(schema.people.id)),
+    db.select().from(schema.retirementSettings),
+    getAnnualExpensesFromBudget(db),
   ]);
 
   // Build property tax lookup by year (sum across all loans for a given year)
@@ -388,36 +417,6 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
       yearMap[category] = existing;
     }
     perfByCategoryByYear.set(year, yearMap);
-  }
-
-  // Build tax location breakdown by year from account_performance + master account data.
-  // Groups ending balances by parentCategory (Retirement/Portfolio) × derived taxType.
-  const validCategories = new Set<string>(getAllCategories());
-  const taxLocationByYear = new Map<number, TaxLocationBreakdown>();
-  for (const year of Array.from(allPerfAccountYears)) {
-    const yearAccounts = accountPerfRows.filter((a) => a.year === year);
-    const breakdown: TaxLocationBreakdown = {
-      retirement: {},
-      portfolio: {},
-    };
-    for (const acct of yearAccounts) {
-      const master = resolveHistoryMaster(acct);
-      const parentCategory =
-        master?.parentCategory ?? acct.parentCategory ?? "Retirement";
-      const accountType = master?.accountType ?? "unknown";
-      // Derive tax type from account type config, normalized to camelCase
-      // (config stores snake_case like "pre_tax"; portfolio layer uses "preTax")
-      const dbTaxType = validCategories.has(accountType)
-        ? getDefaultTaxTreatment(accountType as AccountCategory)
-        : "pre_tax";
-      const taxType = TAX_TREATMENT_TO_TAX_TYPE[dbTaxType] ?? "preTax";
-      const bucket =
-        parentCategory === "Portfolio"
-          ? breakdown.portfolio
-          : breakdown.retirement;
-      bucket[taxType] = (bucket[taxType] ?? 0) + toNumber(acct.endingBalance);
-    }
-    taxLocationByYear.set(year, breakdown);
   }
 
   // Build annual_performance summary by year — prefer finalized "Portfolio" category,
@@ -569,7 +568,31 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
       snapshotDate: null,
       snapshotAgeDays: null,
       performanceByCategory: perfByCategoryByYear.get(year) ?? {},
-      portfolioByTaxLocation: taxLocationByYear.get(year) ?? null,
+      // JSONB column from net_worth_annual; fall back to legacy columns if null
+      portfolioByTaxLocation:
+        (r.portfolioByTaxLocation as TaxLocationBreakdown | null) ?? {
+          retirement: {
+            taxFree: toNumber(r.taxFreeTotal),
+            preTax: toNumber(r.taxDeferredTotal),
+            hsa: toNumber(r.hsa),
+            afterTax: toNumber(r.rBrokerage),
+          },
+          portfolio: {
+            afterTax: toNumber(r.ltBrokerage) + toNumber(r.espp),
+          },
+        },
+      // Placeholders — computed in final pass after all rows are built
+      wealthScore: 0,
+      aawScore: 0,
+      fiProgress: 0,
+      fiTarget: 0,
+      netWorthMarket: netWorth,
+      netWorthCostBasis: netWorth, // overwritten in final pass
+      averageAge: 0,
+      effectiveIncome: 0,
+      lifetimeEarnings: 0,
+      annualExpenses: 0,
+      withdrawalRate: 0,
     };
   });
 
@@ -764,7 +787,7 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
       })(),
       portfolioByTaxLocation: (() => {
         // For current year, use actual snapshot accounts with real taxType + parentCategory
-        if (!snapshotData) return taxLocationByYear.get(currentYear) ?? null;
+        if (!snapshotData) return null;
         const breakdown: TaxLocationBreakdown = {
           retirement: {},
           portfolio: {},
@@ -780,7 +803,124 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
         }
         return breakdown;
       })(),
+      // Placeholders — computed in final pass
+      wealthScore: 0,
+      aawScore: 0,
+      fiProgress: 0,
+      fiTarget: 0,
+      netWorthMarket: netWorth,
+      netWorthCostBasis: netWorth, // overwritten in final pass
+      averageAge: 0,
+      effectiveIncome: 0,
+      lifetimeEarnings: 0,
+      annualExpenses: 0,
+      withdrawalRate: 0,
     });
+  }
+
+  // =========================================================================
+  // Final pass: compute wealth metrics for every row (single computation path)
+  // =========================================================================
+
+  const setting = parseAppSettings(settings);
+  const useSalaryAverage = setting("use_salary_average_3_year", 0) === 1;
+
+  // Birth years for average age
+  const birthYears = people.map((p) => new Date(p.dateOfBirth).getFullYear());
+
+  // Withdrawal rate from primary person's retirement settings
+  const primaryPerson = people.find((p) => p.isPrimaryUser) ?? people[0];
+  const primaryRetSettings = primaryPerson
+    ? retirementSettingsRows.find((rs) => rs.personId === primaryPerson.id)
+    : retirementSettingsRows[0];
+  const withdrawalRate = primaryRetSettings
+    ? toNumber(primaryRetSettings.withdrawalRate)
+    : 0.04;
+
+  // Purchase price for cost basis
+  const activeMortgageForCostBasis =
+    mortgageLoans.find((m) => m.isActive) ?? mortgageLoans[0];
+  const purchasePrice = activeMortgageForCostBasis
+    ? toNumber(activeMortgageForCostBasis.propertyValuePurchase)
+    : 0;
+
+  // Sort by year for cumulative lifetime earnings
+  history.sort((a, b) => a.year - b.year);
+  let cumulativeEarnings = 0;
+
+  for (const row of history) {
+    // Average age for this year
+    const avgAge =
+      birthYears.length > 0
+        ? birthYears.reduce((s, by) => s + (row.year - by), 0) /
+          birthYears.length
+        : 0;
+
+    // Effective income: combinedAgi with grossIncome fallback for current year
+    const yearIncome = row.combinedAgi > 0 ? row.combinedAgi : row.grossIncome;
+
+    // Optionally average over 3 most recent years
+    let effectiveIncome = yearIncome;
+    if (useSalaryAverage) {
+      const recent = history
+        .filter(
+          (h) => h.year <= row.year && (h.combinedAgi > 0 || h.grossIncome > 0),
+        )
+        .sort((a, b) => b.year - a.year)
+        .slice(0, 3);
+      if (recent.length > 0) {
+        effectiveIncome =
+          recent.reduce(
+            (s, h) => s + (h.combinedAgi > 0 ? h.combinedAgi : h.grossIncome),
+            0,
+          ) / recent.length;
+      }
+    }
+
+    // Cumulative lifetime earnings
+    cumulativeEarnings += yearIncome;
+
+    // Cost basis net worth
+    const houseValueCostBasis =
+      row.houseValue > 0 ? purchasePrice + row.homeImprovements : 0;
+    const netWorthCostBasis =
+      row.portfolioTotal +
+      row.cash +
+      houseValueCostBasis +
+      row.otherAssets -
+      row.mortgageBalance -
+      row.otherLiabilities;
+
+    // Call calculateNetWorth — single computation path for all metrics
+    const nwInput: NetWorthInput = {
+      portfolioTotal: row.portfolioTotal,
+      cash: row.cash,
+      homeValueEstimated: row.houseValue,
+      homeValueConservative: houseValueCostBasis,
+      otherAssets: row.otherAssets,
+      mortgageBalance: row.mortgageBalance,
+      otherLiabilities: row.otherLiabilities,
+      averageAge: avgAge,
+      effectiveIncome,
+      lifetimeEarnings: cumulativeEarnings,
+      annualExpenses: annualExpensesBudget,
+      withdrawalRate,
+      asOfDate: new Date(row.yearEndDate),
+    };
+    const result = calculateNetWorth(nwInput);
+
+    // Write computed values back to the row
+    row.wealthScore = result.wealthScore;
+    row.aawScore = result.aawScore;
+    row.fiProgress = result.fiProgress;
+    row.fiTarget = result.fiTarget;
+    row.netWorthMarket = result.netWorthMarket;
+    row.netWorthCostBasis = netWorthCostBasis;
+    row.averageAge = avgAge;
+    row.effectiveIncome = effectiveIncome;
+    row.lifetimeEarnings = cumulativeEarnings;
+    row.annualExpenses = annualExpensesBudget;
+    row.withdrawalRate = withdrawalRate;
   }
 
   _yearEndCache = { data: history, expiresAt: Date.now() + 5_000 };

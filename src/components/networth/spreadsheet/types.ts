@@ -22,16 +22,14 @@ export type DetailedHistoryRow = {
   year: number;
   netWorth: number;
   netWorthCostBasis: number;
+  netWorthMarket: number;
   portfolioTotal: number;
   portfolioByType: Record<string, number>;
   cash: number;
   houseValue: number;
-  houseValueCostBasis: number;
   mortgageBalance: number;
   otherAssets: number;
   otherLiabilities: number;
-  totalAssets: number;
-  totalLiabilities: number;
   grossIncome: number;
   combinedAgi: number;
   isCurrent: boolean;
@@ -40,4 +38,12 @@ export type DetailedHistoryRow = {
   perfGainLoss: number | null;
   performanceByCategory: Record<string, CategoryPerformance>;
   portfolioByTaxLocation: TaxLocationBreakdown | null;
+  // Pre-computed metrics (from buildYearEndHistory — single computation path)
+  wealthScore: number;
+  aawScore: number;
+  fiProgress: number;
+  fiTarget: number;
+  averageAge: number;
+  effectiveIncome: number;
+  lifetimeEarnings: number;
 };

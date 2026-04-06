@@ -69,16 +69,18 @@ export default function NetWorthPage() {
     [upsertSetting],
   );
 
-  // Memoize derived values — must be before early returns to preserve hook order
+  // Derive flat byTaxType from portfolioByTaxLocation (single source — no duplicate computation)
   const byTaxType = useMemo(() => {
-    const accts = data?.portfolioAccounts;
-    if (!accts) return new Map<string, number>();
+    const loc = data?.portfolioByTaxLocation;
+    if (!loc) return new Map<string, number>();
     const map = new Map<string, number>();
-    for (const a of accts) {
-      map.set(a.taxType, (map.get(a.taxType) ?? 0) + a.amount);
+    for (const bucket of [loc.retirement, loc.portfolio]) {
+      for (const [key, val] of Object.entries(bucket)) {
+        map.set(key, (map.get(key) ?? 0) + val);
+      }
     }
     return map;
-  }, [data?.portfolioAccounts]);
+  }, [data?.portfolioByTaxLocation]);
 
   const currentExpenseColumn = useMemo(() => {
     const setting = appSettings?.find(
@@ -238,8 +240,6 @@ export default function NetWorthPage() {
           byTaxType={byTaxType}
           useMarketValue={useMarketValue}
           onToggleMarketValue={() => setUseMarketValue(!useMarketValue)}
-          annualExpenses={result.fiTarget * data.withdrawalRate}
-          withdrawalRate={data.withdrawalRate}
         />
       ) : (
         <>
