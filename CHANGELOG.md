@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.15] - 2026-04-06
+
+### New
+
+- Chart X-axis toggle — switch between Year and Age on both Net Worth Over Time and Journey to Abundance charts
+
+### Improved
+
+- Health stats show trajectory context when current year is selected: Wealth Score, AAW Score, and FI Progress display "was X at year-end YYYY" reference from the most recent finalized year
+- Projected FI Year uses finalized data as primary projection when current year is involved, with YTD shown as secondary context
+- FI Card on card view follows same finalized-primary pattern for consistency
+
+---
+
 ## [0.4.14] - 2026-04-06
 
 ### New
