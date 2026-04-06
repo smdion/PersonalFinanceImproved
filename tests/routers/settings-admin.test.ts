@@ -749,7 +749,7 @@ describe("settings.performanceAccounts", () => {
       });
       seedPerformanceAccount(db, {
         institution: "Vanguard",
-        accountType: "IRA",
+        accountType: "ira",
         displayOrder: 1,
       });
       const rows = await caller.settings.performanceAccounts.list();
@@ -800,7 +800,7 @@ describe("settings.performanceAccounts", () => {
     it("auto-generates accountLabel from institution + accountType + owner", async () => {
       const result = await caller.settings.performanceAccounts.create({
         institution: "Vanguard",
-        accountType: "IRA",
+        accountType: "ira",
         ownerPersonId: personId,
         ownershipType: "individual",
         parentCategory: "Retirement",
@@ -839,7 +839,7 @@ describe("settings.performanceAccounts", () => {
     it("creates an inactive account", async () => {
       const result = await caller.settings.performanceAccounts.create({
         institution: "OldBank",
-        accountType: "savings",
+        accountType: "brokerage",
         ownerPersonId: null,
         ownershipType: "individual",
         parentCategory: "Portfolio",
@@ -900,7 +900,7 @@ describe("settings.portfolioSnapshots.getLatest", () => {
   it("returns the most recent snapshot when multiple exist", async () => {
     const perfAcctId = seedPerformanceAccount(db, {
       institution: "Vanguard",
-      accountType: "IRA",
+      accountType: "ira",
     });
     seedSnapshot(db, "2025-12-31", [
       {
