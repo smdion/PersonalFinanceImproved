@@ -278,6 +278,7 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
     people,
     retirementSettingsRows,
     annualExpensesBudget,
+    homeImprovementItems,
   ] = await Promise.all([
     db
       .select()
@@ -298,7 +299,27 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
     db.select().from(schema.people).orderBy(asc(schema.people.id)),
     db.select().from(schema.retirementSettings),
     getAnnualExpensesFromBudget(db),
+    db
+      .select()
+      .from(schema.homeImprovementItems)
+      .orderBy(asc(schema.homeImprovementItems.year)),
   ]);
+
+  // Build cumulative home improvements by year from items table (source of truth).
+  // The net_worth_annual.home_improvements_cumulative column is per-year, not cumulative — ignore it.
+  const homeImprovementsCumulativeByYear = new Map<number, number>();
+  {
+    let cumulative = 0;
+    const allYears = new Set([
+      ...homeImprovementItems.map((i) => i.year),
+      ...nwRows.map((r) => new Date(r.yearEndDate).getFullYear()),
+    ]);
+    for (const year of Array.from(allYears).sort()) {
+      const yearItems = homeImprovementItems.filter((i) => i.year <= year);
+      cumulative = yearItems.reduce((s, i) => s + toNumber(i.cost), 0);
+      homeImprovementsCumulativeByYear.set(year, cumulative);
+    }
+  }
 
   // Build property tax lookup by year (sum across all loans for a given year)
   const propTaxByYear = new Map<number, number>();
@@ -584,7 +605,7 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
       cash,
       houseValue,
       otherAssets,
-      homeImprovements: toNumber(r.homeImprovementsCumulative),
+      homeImprovements: homeImprovementsCumulativeByYear.get(year) ?? 0,
       mortgageBalance,
       otherLiabilities,
       grossIncome: toNumber(r.grossIncome),
@@ -755,7 +776,9 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
       cash,
       houseValue,
       otherAssets,
-      homeImprovements: setting("current_home_improvements", 0),
+      homeImprovements:
+        homeImprovementsCumulativeByYear.get(currentYear) ??
+        setting("current_home_improvements", 0),
       mortgageBalance,
       otherLiabilities,
       grossIncome: combinedGross,
