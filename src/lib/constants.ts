@@ -65,6 +65,9 @@ export const FI_COMPLETE_THRESHOLD = 1.0;
 /** FI progress ≥ 0.5 shown as yellow (on track). */
 export const FI_ON_TRACK_THRESHOLD = 0.5;
 
+/** Performance data older than this many days is considered "Outdated". */
+export const PERFORMANCE_STALE_DAYS = 14;
+
 // ---------------------------------------------------------------------------
 // IRS Limit Growth
 // ---------------------------------------------------------------------------

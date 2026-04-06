@@ -9,9 +9,17 @@ import type { Db } from "./transforms";
 import { parseAppSettings } from "./settings";
 import { stripInstitutionSuffix } from "@/lib/utils/format";
 import { log } from "@/lib/logger";
-import { getSalariesForJobs } from "./salary";
+import { getSalariesForJobs, getTotalCompensation } from "./salary";
 import { getEffectiveCash, getEffectiveOtherAssets } from "./budget";
 import { computeMortgageBalance } from "./mortgage";
+import {
+  accountTypeToPerformanceCategory,
+  TAX_TREATMENT_TO_TAX_TYPE,
+} from "@/lib/config/display-labels";
+import {
+  getAllCategories,
+  getDefaultTaxTreatment,
+} from "@/lib/config/account-types";
 
 // ---------------------------------------------------------------------------
 // Snapshot account grouping
@@ -133,6 +141,21 @@ export async function getLatestSnapshot(
 // Year-end history rows (used by historical + networth routers)
 // ---------------------------------------------------------------------------
 
+/** Per-category performance breakdown (contributions, gains, distributions). */
+export type CategoryPerformance = {
+  endingBalance: number;
+  contributions: number;
+  employerMatch: number;
+  gainLoss: number;
+  distributions: number;
+};
+
+/** Tax-type distribution within a parent category. */
+export type TaxLocationBreakdown = {
+  retirement: Record<string, number>; // taxType → amount
+  portfolio: Record<string, number>; // taxType → amount
+};
+
 /** Unified year-end row returned by buildYearEndHistory. */
 export type YearEndRow = {
   year: number;
@@ -181,6 +204,11 @@ export type YearEndRow = {
   snapshotDate: string | null;
   /** How many days old the snapshot is (current-year row only). Null for prior years. */
   snapshotAgeDays: number | null;
+  /** Performance breakdown by display category (keys from accountTypeToPerformanceCategory). */
+  performanceByCategory: Record<string, CategoryPerformance>;
+  /** Portfolio broken down by parentCategory × taxType. Available from snapshot for current year;
+   *  approximated from portfolioByType + account config for prior years. */
+  portfolioByTaxLocation: TaxLocationBreakdown | null;
 };
 
 /**
@@ -311,6 +339,85 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
       endingBalance: toNumber(acct.endingBalance),
     }));
     perfByAccountByYear.set(year, accounts);
+  }
+
+  // Build performance breakdown by display category per year (for spreadsheet view).
+  // Uses annualPerformance for finalized non-Portfolio categories, falls back to
+  // aggregating accountPerformance rows by accountTypeToPerformanceCategory().
+  const perfByCategoryByYear = new Map<
+    number,
+    Record<string, CategoryPerformance>
+  >();
+
+  // 1. Populate from finalized annual_performance rows (non-Portfolio categories)
+  for (const row of annualPerfRows) {
+    if (!row.isFinalized || row.category === "Portfolio") continue;
+    const yearMap = perfByCategoryByYear.get(row.year) ?? {};
+    yearMap[row.category] = {
+      endingBalance: toNumber(row.endingBalance),
+      contributions: toNumber(row.totalContributions),
+      employerMatch: toNumber(row.employerContributions),
+      gainLoss: toNumber(row.yearlyGainLoss),
+      distributions: toNumber(row.distributions),
+    };
+    perfByCategoryByYear.set(row.year, yearMap);
+  }
+
+  // 2. For years without finalized annual rows, compute from account_performance
+  for (const year of Array.from(allPerfAccountYears)) {
+    if (perfByCategoryByYear.has(year)) continue;
+    const yearAccounts = accountPerfRows.filter((a) => a.year === year);
+    const yearMap: Record<string, CategoryPerformance> = {};
+    for (const acct of yearAccounts) {
+      const master = resolveHistoryMaster(acct);
+      const category = accountTypeToPerformanceCategory(
+        master?.accountType ?? null,
+      );
+      const existing = yearMap[category] ?? {
+        endingBalance: 0,
+        contributions: 0,
+        employerMatch: 0,
+        gainLoss: 0,
+        distributions: 0,
+      };
+      existing.endingBalance += toNumber(acct.endingBalance);
+      existing.contributions += toNumber(acct.totalContributions);
+      existing.employerMatch += toNumber(acct.employerContributions);
+      existing.gainLoss += toNumber(acct.yearlyGainLoss);
+      existing.distributions += toNumber(acct.distributions);
+      yearMap[category] = existing;
+    }
+    perfByCategoryByYear.set(year, yearMap);
+  }
+
+  // Build tax location breakdown by year from account_performance + master account data.
+  // Groups ending balances by parentCategory (Retirement/Portfolio) × derived taxType.
+  const validCategories = new Set<string>(getAllCategories());
+  const taxLocationByYear = new Map<number, TaxLocationBreakdown>();
+  for (const year of Array.from(allPerfAccountYears)) {
+    const yearAccounts = accountPerfRows.filter((a) => a.year === year);
+    const breakdown: TaxLocationBreakdown = {
+      retirement: {},
+      portfolio: {},
+    };
+    for (const acct of yearAccounts) {
+      const master = resolveHistoryMaster(acct);
+      const parentCategory =
+        master?.parentCategory ?? acct.parentCategory ?? "Retirement";
+      const accountType = master?.accountType ?? "unknown";
+      // Derive tax type from account type config, normalized to camelCase
+      // (config stores snake_case like "pre_tax"; portfolio layer uses "preTax")
+      const dbTaxType = validCategories.has(accountType)
+        ? getDefaultTaxTreatment(accountType as AccountCategory)
+        : "pre_tax";
+      const taxType = TAX_TREATMENT_TO_TAX_TYPE[dbTaxType] ?? "preTax";
+      const bucket =
+        parentCategory === "Portfolio"
+          ? breakdown.portfolio
+          : breakdown.retirement;
+      bucket[taxType] = (bucket[taxType] ?? 0) + toNumber(acct.endingBalance);
+    }
+    taxLocationByYear.set(year, breakdown);
   }
 
   // Build annual_performance summary by year — prefer finalized "Portfolio" category,
@@ -461,6 +568,8 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
       perfLastUpdated: null,
       snapshotDate: null,
       snapshotAgeDays: null,
+      performanceByCategory: perfByCategoryByYear.get(year) ?? {},
+      portfolioByTaxLocation: taxLocationByYear.get(year) ?? null,
     };
   });
 
@@ -495,11 +604,11 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
         )
       : 0;
 
-    // Gross income from active jobs
+    // Gross income from active jobs (includes bonus — matches finalized year-end data)
     const activeJobs = jobs.filter((j) => !j.endDate);
     const jobSalaries = await getSalariesForJobs(db, activeJobs);
     const combinedGross = jobSalaries.reduce(
-      (s, js) => s + js.effectiveIncome,
+      (s, js) => s + getTotalCompensation(js.job, js.baseSalary),
       0,
     );
 
@@ -607,6 +716,70 @@ export async function buildYearEndHistory(db: Db): Promise<YearEndRow[]> {
               86_400_000,
           )
         : null,
+      performanceByCategory: (() => {
+        // Prefer pre-computed data from account_performance rows
+        const preComputed = perfByCategoryByYear.get(currentYear);
+        if (preComputed && Object.keys(preComputed).length > 0)
+          return preComputed;
+        // Build from current year account_performance rows if available
+        if (currentYearAcctPerf.length > 0) {
+          const catMap: Record<string, CategoryPerformance> = {};
+          for (const acct of currentYearAcctPerf) {
+            const master = resolveHistoryMaster(acct);
+            const category = accountTypeToPerformanceCategory(
+              master?.accountType ?? null,
+            );
+            const existing = catMap[category] ?? {
+              endingBalance: 0,
+              contributions: 0,
+              employerMatch: 0,
+              gainLoss: 0,
+              distributions: 0,
+            };
+            existing.endingBalance += toNumber(acct.endingBalance);
+            existing.contributions += toNumber(acct.totalContributions);
+            existing.employerMatch += toNumber(acct.employerContributions);
+            existing.gainLoss += toNumber(acct.yearlyGainLoss);
+            existing.distributions += toNumber(acct.distributions);
+            catMap[category] = existing;
+          }
+          return catMap;
+        }
+        // Final fallback: derive ending balances from snapshot portfolioByType
+        // (no contribution/gain data available — only balances)
+        const catMap: Record<string, CategoryPerformance> = {};
+        for (const [accountType, amount] of Object.entries(portfolioByType)) {
+          const category = accountTypeToPerformanceCategory(accountType);
+          const existing = catMap[category] ?? {
+            endingBalance: 0,
+            contributions: 0,
+            employerMatch: 0,
+            gainLoss: 0,
+            distributions: 0,
+          };
+          existing.endingBalance += amount;
+          catMap[category] = existing;
+        }
+        return catMap;
+      })(),
+      portfolioByTaxLocation: (() => {
+        // For current year, use actual snapshot accounts with real taxType + parentCategory
+        if (!snapshotData) return taxLocationByYear.get(currentYear) ?? null;
+        const breakdown: TaxLocationBreakdown = {
+          retirement: {},
+          portfolio: {},
+        };
+        for (const a of snapshotData.accounts) {
+          const parentCat = a.parentCategory ?? "Retirement";
+          const taxType = a.taxType ?? "preTax";
+          const bucket =
+            parentCat === "Portfolio"
+              ? breakdown.portfolio
+              : breakdown.retirement;
+          bucket[taxType] = (bucket[taxType] ?? 0) + a.amount;
+        }
+        return breakdown;
+      })(),
     });
   }
 

@@ -10,14 +10,19 @@
  *
  * **Benchmarks:**
  *
- * 1. **Wealth Score** (Millionaire Next Door "Wealth Accumulator" formula):
+ * 1. **Wealth Score** (modified Millionaire Next Door formula):
  *    Expected Net Worth = ((Age × Income) ÷ (10 + max(0, 40 - Age))) × 2
  *    - For ages 40+, denominator is 10, so expected NW = (Age × Income) / 5
  *    - For ages under 40, denominator increases (penalizes less for being young)
  *    - Score > 1.0 = "Prodigious Accumulator of Wealth" (PAW)
  *    - Score < 0.5 = "Under Accumulator of Wealth" (UAW)
  *
- * 2. **FI Progress** (Financial Independence progress):
+ * 2. **AAW Score** (classic Millionaire Next Door, no age adjustment):
+ *    Expected Net Worth = Age × Income / 10
+ *    - >= 2.0 = PAW, 1.0 = AAW, <= 0.5 = UAW
+ *    - Simpler formula; the raw accumulation multiplier
+ *
+ * 3. **FI Progress** (Financial Independence progress):
  *    FI Target = Annual Expenses ÷ Withdrawal Rate
  *    - Withdrawal rate is a decimal (e.g. 0.04 for the 4% rule)
  *    - FI Progress = Net Worth ÷ FI Target (1.0 = financially independent)
@@ -83,6 +88,12 @@ export function calculateNetWorth(input: NetWorthInput): NetWorthResult {
     WEALTH_FORMULA_MULTIPLIER;
   const wealthScore = Number(safeDivide(netWorth, wealthTarget) ?? 0);
 
+  // AAW Score: classic Millionaire Next Door (no age adjustment)
+  // Expected Net Worth = Age × Annual Income / 10
+  const expectedNetWorth =
+    (age * annualSalary) / WEALTH_FORMULA_BASE_DENOMINATOR;
+  const aawScore = Number(safeDivide(netWorth, expectedNetWorth) ?? 0);
+
   // FI Progress uses portfolio (investable assets, not home equity)
   const fiTarget = Number(safeDivide(annualExpenses, withdrawalRate) ?? 0);
   const fiProgress = Number(safeDivide(portfolioTotal + cash, fiTarget) ?? 0);
@@ -95,6 +106,7 @@ export function calculateNetWorth(input: NetWorthInput): NetWorthResult {
     totalLiabilities,
     wealthScore,
     wealthTarget,
+    aawScore,
     fiProgress,
     fiTarget,
     warnings,

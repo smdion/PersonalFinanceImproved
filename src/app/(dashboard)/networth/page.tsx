@@ -21,7 +21,10 @@ import {
   YoYTable,
   FinancialIndependenceCard,
 } from "@/components/networth";
+import { SpreadsheetView } from "@/components/networth/spreadsheet";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
+import { projectFIYear } from "@/lib/calculators/fi-projection";
+import { safeDivide } from "@/lib/utils/math";
 
 export default function NetWorthPage() {
   const utils = trpc.useUtils();
@@ -34,6 +37,10 @@ export default function NetWorthPage() {
   });
   const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
   const [useMarketValue, setUseMarketValue] = useState(true);
+  const [viewMode, setViewMode] = usePersistedSetting<"cards" | "spreadsheet">(
+    "networth_view_mode",
+    "cards",
+  );
   const upsertSetting = trpc.settings.appSettings.upsert.useMutation({
     onSuccess: () => {
       utils.networth.invalidate();
@@ -84,6 +91,23 @@ export default function NetWorthPage() {
     () => displayHistory?.map((h) => h.year),
     [displayHistory],
   );
+
+  // Projected FI year from two most recent history years
+  const fiProjection = useMemo(() => {
+    if (!displayHistory || displayHistory.length < 2 || !data) return undefined;
+    const sorted = [...displayHistory].sort((a, b) => b.year - a.year);
+    const current = sorted[0]!;
+    const prior = sorted[1]!;
+    const fiTarget = data.result?.fiTarget ?? 0;
+    if (fiTarget <= 0) return undefined;
+    const currentFI = Number(
+      safeDivide(current.portfolioTotal + current.cash, fiTarget) ?? 0,
+    );
+    const priorFI = Number(
+      safeDivide(prior.portfolioTotal + prior.cash, fiTarget) ?? 0,
+    );
+    return projectFIYear(currentFI, priorFI, current.year, prior.year);
+  }, [displayHistory, data]);
 
   const handleExpenseColumnChange = useCallback(
     (idx: number) => {
@@ -152,16 +176,33 @@ export default function NetWorthPage() {
       <PageHeader
         title="Trends"
         subtitle={
-          <div className="space-y-0.5">
-            {snapshotDate && <p>Balance updated: {formatDate(snapshotDate)}</p>}
-            {performanceLastUpdated && (
-              <p>Performance updated: {formatDate(performanceLastUpdated)}</p>
-            )}
+          <div className="flex items-center gap-4">
+            <div className="space-y-0.5">
+              {snapshotDate && (
+                <p>Balance updated: {formatDate(snapshotDate)}</p>
+              )}
+              {performanceLastUpdated && (
+                <p>Performance updated: {formatDate(performanceLastUpdated)}</p>
+              )}
+            </div>
+            <button
+              onClick={() =>
+                setViewMode(viewMode === "cards" ? "spreadsheet" : "cards")
+              }
+              className="ml-auto text-xs bg-surface-elevated hover:bg-surface-strong border rounded-full px-3 py-1 transition-colors text-muted"
+              title={
+                viewMode === "cards"
+                  ? "Switch to spreadsheet view"
+                  : "Switch to card view"
+              }
+            >
+              {viewMode === "cards" ? "Spreadsheet View" : "Card View"}
+            </button>
           </div>
         }
       />
 
-      {/* Hero: Net Worth with toggle */}
+      {/* Hero: Net Worth with toggle — always shown */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-6 text-white mb-8">
         <div className="flex items-center justify-between mb-2">
           <p className="text-sm opacity-80 uppercase tracking-wide">
@@ -186,111 +227,133 @@ export default function NetWorthPage() {
         )}
       </div>
 
-      {/* Net Worth Over Time */}
-      <CardBoundary title="Net Worth Charts">
-        {displayHistory && displayHistory.length > 1 && (
-          <NetWorthLineChart history={displayHistory} />
-        )}
-
-        {/* Journey to Abundance */}
-        {displayHistory && displayHistory.length > 1 && primaryBirthYear && (
-          <JourneyToAbundanceChart
-            history={displayHistory}
-            primaryBirthYear={primaryBirthYear}
-          />
-        )}
-      </CardBoundary>
-
-      {/* Net Worth Comparison */}
-      <CardBoundary title="Net Worth Comparison">
-        <NetWorthCompare
-          availableYears={availableYears}
-          useMarketValue={useMarketValue}
-        />
-      </CardBoundary>
-
-      {/* Pie Charts: Net Worth Location + Tax Location */}
-      <CardBoundary title="Net Worth Allocation">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <NetWorthLocationPie
-            portfolioTotal={portfolioTotal}
-            houseValue={displayHomeValue}
-            cash={cash}
-            otherAssets={otherAssets}
-          />
-          <TaxLocationPie
-            byTaxType={byTaxType}
-            portfolioTotal={portfolioTotal}
-          />
-        </div>
-      </CardBoundary>
-
-      {/* Net Worth Composition */}
-      <CardBoundary title="Net Worth Composition">
-        <NetWorthComposition
+      {viewMode === "spreadsheet" ? (
+        <SpreadsheetView
+          displayHistory={displayHistory}
+          primaryBirthYear={primaryBirthYear ?? null}
           portfolioTotal={portfolioTotal}
           displayHomeValue={displayHomeValue}
           cash={cash}
           otherAssets={otherAssets}
-          totalLiabilities={result.totalLiabilities}
-          displayNetWorth={displayNetWorth}
-          hasHouse={hasHouse}
-        />
-      </CardBoundary>
-
-      {/* Asset & Liability breakdown */}
-      <CardBoundary title="Assets & Liabilities">
-        <AssetsLiabilitiesCards
-          portfolioTotal={portfolioTotal}
-          portfolioAccounts={portfolioAccounts}
           byTaxType={byTaxType}
-          cash={cash}
-          cashSource={cashSource}
-          displayHomeValue={displayHomeValue}
-          otherAssets={otherAssets}
-          otherAssetItems={otherAssetItems}
-          otherAssetsSyncSource={otherAssetsSyncSource}
-          mortgageBalance={mortgageBalance}
-          otherLiabilities={otherLiabilities}
-          totalLiabilities={result.totalLiabilities}
           useMarketValue={useMarketValue}
-          hasHouse={hasHouse}
-          onSettingUpdate={handleSettingUpdate}
-        />
-      </CardBoundary>
-
-      {/* Metrics row */}
-      <CardBoundary title="Key Metrics">
-        <MetricsRow
-          wealthScore={result.wealthScore}
-          wealthTarget={result.wealthTarget}
-          fiProgress={result.fiProgress}
-          fiTarget={result.fiTarget}
-          netWorthMarket={result.netWorthMarket}
-          netWorthCostBasis={result.netWorthCostBasis}
-        />
-      </CardBoundary>
-
-      {/* YoY History Table */}
-      <CardBoundary title="Year-over-Year History">
-        {displayHistory && displayHistory.length > 1 && (
-          <YoYTable history={displayHistory} hasHouse={hasHouse} />
-        )}
-      </CardBoundary>
-
-      {/* FI target explanation */}
-      <CardBoundary title="Financial Independence">
-        <FinancialIndependenceCard
-          fiTarget={result.fiTarget}
-          fiProgress={result.fiProgress}
-          portfolioTotal={portfolioTotal}
-          cash={cash}
+          onToggleMarketValue={() => setUseMarketValue(!useMarketValue)}
+          annualExpenses={result.fiTarget * data.withdrawalRate}
           withdrawalRate={data.withdrawalRate}
-          budgetColumnLabels={budgetData?.columnLabels}
-          currentExpenseColumn={currentExpenseColumn}
-          onExpenseColumnChange={handleExpenseColumnChange}
         />
-      </CardBoundary>
+      ) : (
+        <>
+          {/* Net Worth Over Time */}
+          <CardBoundary title="Net Worth Charts">
+            {displayHistory && displayHistory.length > 1 && (
+              <NetWorthLineChart history={displayHistory} />
+            )}
+
+            {/* Journey to Abundance */}
+            {displayHistory &&
+              displayHistory.length > 1 &&
+              primaryBirthYear && (
+                <JourneyToAbundanceChart
+                  history={displayHistory}
+                  primaryBirthYear={primaryBirthYear}
+                />
+              )}
+          </CardBoundary>
+
+          {/* Net Worth Comparison */}
+          <CardBoundary title="Net Worth Comparison">
+            <NetWorthCompare
+              availableYears={availableYears}
+              useMarketValue={useMarketValue}
+            />
+          </CardBoundary>
+
+          {/* Pie Charts: Net Worth Location + Tax Location */}
+          <CardBoundary title="Net Worth Allocation">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              <NetWorthLocationPie
+                portfolioTotal={portfolioTotal}
+                houseValue={displayHomeValue}
+                cash={cash}
+                otherAssets={otherAssets}
+              />
+              <TaxLocationPie
+                byTaxType={byTaxType}
+                portfolioTotal={portfolioTotal}
+              />
+            </div>
+          </CardBoundary>
+
+          {/* Net Worth Composition */}
+          <CardBoundary title="Net Worth Composition">
+            <NetWorthComposition
+              portfolioTotal={portfolioTotal}
+              displayHomeValue={displayHomeValue}
+              cash={cash}
+              otherAssets={otherAssets}
+              totalLiabilities={result.totalLiabilities}
+              displayNetWorth={displayNetWorth}
+              hasHouse={hasHouse}
+            />
+          </CardBoundary>
+
+          {/* Asset & Liability breakdown */}
+          <CardBoundary title="Assets & Liabilities">
+            <AssetsLiabilitiesCards
+              portfolioTotal={portfolioTotal}
+              portfolioAccounts={portfolioAccounts}
+              byTaxType={byTaxType}
+              cash={cash}
+              cashSource={cashSource}
+              displayHomeValue={displayHomeValue}
+              otherAssets={otherAssets}
+              otherAssetItems={otherAssetItems}
+              otherAssetsSyncSource={otherAssetsSyncSource}
+              mortgageBalance={mortgageBalance}
+              otherLiabilities={otherLiabilities}
+              totalLiabilities={result.totalLiabilities}
+              useMarketValue={useMarketValue}
+              hasHouse={hasHouse}
+              onSettingUpdate={handleSettingUpdate}
+            />
+          </CardBoundary>
+
+          {/* Metrics row */}
+          <CardBoundary title="Key Metrics">
+            <MetricsRow
+              wealthScore={result.wealthScore}
+              wealthTarget={result.wealthTarget}
+              aawScore={result.aawScore}
+              fiProgress={result.fiProgress}
+              fiTarget={result.fiTarget}
+              netWorthMarket={result.netWorthMarket}
+              netWorthCostBasis={result.netWorthCostBasis}
+            />
+          </CardBoundary>
+
+          {/* YoY History Table */}
+          <CardBoundary title="Year-over-Year History">
+            {displayHistory && displayHistory.length > 1 && (
+              <YoYTable history={displayHistory} hasHouse={hasHouse} />
+            )}
+          </CardBoundary>
+
+          {/* FI target explanation */}
+          <CardBoundary title="Financial Independence">
+            <FinancialIndependenceCard
+              fiTarget={result.fiTarget}
+              fiProgress={result.fiProgress}
+              portfolioTotal={portfolioTotal}
+              cash={cash}
+              withdrawalRate={data.withdrawalRate}
+              budgetColumnLabels={budgetData?.columnLabels}
+              currentExpenseColumn={currentExpenseColumn}
+              onExpenseColumnChange={handleExpenseColumnChange}
+              fiProjection={fiProjection}
+            />
+          </CardBoundary>
+        </>
+      )}
 
       {result.warnings.length > 0 && (
         <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">

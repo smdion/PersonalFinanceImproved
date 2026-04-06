@@ -15,6 +15,10 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { CHART_COLORS } from "@/lib/utils/colors";
+import {
+  WEALTH_FORMULA_BASE_DENOMINATOR,
+  WEALTH_FORMULA_MULTIPLIER,
+} from "@/lib/constants";
 import { compactCurrency, type HistoryRow } from "./types";
 
 export function JourneyToAbundanceChart({
@@ -35,14 +39,15 @@ export function JourneyToAbundanceChart({
 
     return history.map((h) => {
       const age = h.year - primaryBirthYear;
-      const avgWealth = avgIncome > 0 ? (age * avgIncome) / 10 : 0;
+      const avgWealth =
+        avgIncome > 0 ? (age * avgIncome) / WEALTH_FORMULA_BASE_DENOMINATOR : 0;
       return {
         year: h.year,
         age,
         netWorth: h.netWorth,
         portfolio: h.portfolioTotal,
         avgWealth,
-        prodigiousWealth: avgWealth * 2,
+        prodigiousWealth: avgWealth * WEALTH_FORMULA_MULTIPLIER,
       };
     });
   }, [history, primaryBirthYear]);

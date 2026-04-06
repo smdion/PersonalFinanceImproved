@@ -282,8 +282,9 @@ export type NetWorthResult = {
   netWorth: number; // alias for netWorthMarket (primary display)
   totalAssets: number;
   totalLiabilities: number;
-  wealthScore: number;
+  wealthScore: number; // modified MND formula with age-40 adjustment
   wealthTarget: number;
+  aawScore: number; // classic MND: netWorth / (age × salary / 10)
   fiProgress: number;
   fiTarget: number;
   warnings: string[];

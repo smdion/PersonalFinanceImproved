@@ -137,10 +137,26 @@ export const networthRouter = createTRPCRouter({
     const activeJobs = allJobs.filter((j) => !j.endDate);
     const asOfDate = new Date();
     const jobSalaries = await getSalariesForJobs(ctx.db, activeJobs, asOfDate);
-    const combinedSalary = jobSalaries.reduce(
+    const currentSalary = jobSalaries.reduce(
       (s, js) => s + js.effectiveIncome,
       0,
     );
+
+    // Optionally average salary over past 3 years for wealth metrics
+    const useSalaryAverage = setting("use_salary_average_3_year", 0) === 1;
+    let combinedSalary = currentSalary;
+    if (useSalaryAverage) {
+      const yearEndHistory = await buildYearEndHistory(ctx.db);
+      const recentYears = yearEndHistory
+        .filter((h) => h.grossIncome > 0)
+        .sort((a, b) => b.year - a.year)
+        .slice(0, 3);
+      if (recentYears.length > 0) {
+        combinedSalary =
+          recentYears.reduce((s, h) => s + h.grossIncome, 0) /
+          recentYears.length;
+      }
+    }
 
     // Primary user for age calculation
     const primaryPerson = getPrimaryPerson(people);
@@ -296,6 +312,66 @@ export const networthRouter = createTRPCRouter({
     });
 
     return { years: history, primaryBirthYear };
+  }),
+
+  /** Extended history with per-category performance breakdowns and tax location data.
+   *  Used by the spreadsheet view; heavier than listHistory (which feeds charts). */
+  computeDetailedHistory: protectedProcedure.query(async ({ ctx }) => {
+    const [yearEndHistory, people, mortgageLoansAll] = await Promise.all([
+      buildYearEndHistory(ctx.db),
+      ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
+      ctx.db.select().from(schema.mortgageLoans),
+    ]);
+
+    const primaryPerson = getPrimaryPerson(people);
+    const primaryBirthYear = primaryPerson
+      ? new Date(primaryPerson.dateOfBirth).getFullYear()
+      : null;
+
+    const activeMortgageForHistory =
+      mortgageLoansAll.find((m) => m.isActive) ?? mortgageLoansAll[0];
+    const purchasePrice = activeMortgageForHistory
+      ? toNumber(activeMortgageForHistory.propertyValuePurchase)
+      : 0;
+
+    const history = yearEndHistory.map((row) => {
+      const totalLiabilities = row.mortgageBalance + row.otherLiabilities;
+      const totalAssets =
+        row.portfolioTotal + row.cash + row.houseValue + row.otherAssets;
+      const houseValueCostBasis =
+        row.houseValue > 0 ? purchasePrice + row.homeImprovements : 0;
+      const totalAssetsCB =
+        row.portfolioTotal + row.cash + houseValueCostBasis + row.otherAssets;
+
+      return {
+        year: row.year,
+        netWorth: row.netWorth,
+        netWorthCostBasis: totalAssetsCB - totalLiabilities,
+        portfolioTotal: row.portfolioTotal,
+        portfolioByType: row.portfolioByType,
+        cash: row.cash,
+        houseValue: row.houseValue,
+        houseValueCostBasis,
+        mortgageBalance: row.mortgageBalance,
+        otherAssets: row.otherAssets,
+        otherLiabilities: row.otherLiabilities,
+        totalAssets,
+        totalLiabilities,
+        grossIncome: row.grossIncome,
+        isCurrent: row.isCurrent,
+        combinedAgi: row.combinedAgi,
+        perfLastUpdated: row.perfLastUpdated,
+        perfContributions: row.perfContributions,
+        perfGainLoss: row.perfGainLoss,
+        performanceByCategory: row.performanceByCategory,
+        portfolioByTaxLocation: row.portfolioByTaxLocation,
+      };
+    });
+
+    // All people's birth years for average age computation (spreadsheet uses avg of all)
+    const birthYears = people.map((p) => new Date(p.dateOfBirth).getFullYear());
+
+    return { years: history, primaryBirthYear, birthYears };
   }),
 
   /** Paginated snapshot list with optional date range filter and sorting. */
@@ -552,14 +628,16 @@ export const networthRouter = createTRPCRouter({
   }),
 
   computeFIProgress: protectedProcedure.query(async ({ ctx }) => {
-    const [snapshotData, annualExpenses, retirementSettingsRows] =
+    const [snapshotData, annualExpenses, retirementSettingsRows, settings] =
       await Promise.all([
         getLatestSnapshot(ctx.db),
         getAnnualExpensesFromBudget(ctx.db),
         ctx.db.select().from(schema.retirementSettings),
+        ctx.db.select().from(schema.appSettings),
       ]);
 
     const portfolioTotal = snapshotData?.total ?? 0;
+    const { cash } = await getEffectiveCash(ctx.db, settings);
 
     const retSettings = retirementSettingsRows[0];
     if (!retSettings) {
@@ -570,7 +648,7 @@ export const networthRouter = createTRPCRouter({
 
     const input: NetWorthInput = {
       portfolioTotal,
-      cash: 0,
+      cash,
       homeValueEstimated: 0,
       homeValueConservative: 0,
       otherAssets: 0,
@@ -589,6 +667,7 @@ export const networthRouter = createTRPCRouter({
       fiProgress: result.fiProgress,
       fiTarget: result.fiTarget,
       currentPortfolio: portfolioTotal,
+      cash,
     };
   }),
 

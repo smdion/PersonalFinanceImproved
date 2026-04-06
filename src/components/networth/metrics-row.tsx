@@ -3,10 +3,12 @@
 import { Card, Metric, ProgressBar } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { wealthScoreTier } from "@/lib/config/display-labels";
 
 export function MetricsRow({
   wealthScore,
   wealthTarget,
+  aawScore,
   fiProgress,
   fiTarget,
   netWorthMarket,
@@ -14,6 +16,7 @@ export function MetricsRow({
 }: {
   wealthScore: number;
   wealthTarget: number;
+  aawScore: number;
   fiProgress: number;
   fiTarget: number;
   netWorthMarket: number;
@@ -35,11 +38,18 @@ export function MetricsRow({
         <p className="text-sm text-muted mt-1">
           Target: {formatCurrency(wealthTarget)}
         </p>
+        <p className="text-xs text-faint mt-0.5">
+          AAW Score: {aawScore.toFixed(1)}x
+        </p>
         <div className="mt-2">
           <ProgressBar
             value={Math.min(wealthScore, 2) / 2}
-            label={wealthScore >= 1 ? "Prodigious Accumulator" : "Building"}
-            color={wealthScore >= 1 ? "bg-green-500" : "bg-blue-600"}
+            label={wealthScoreTier(wealthScore).label}
+            color={
+              wealthScoreTier(wealthScore).tier === "uaw"
+                ? "bg-red-500"
+                : "bg-green-500"
+            }
           />
         </div>
       </Card>
