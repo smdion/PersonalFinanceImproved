@@ -325,6 +325,15 @@ function transformV02xV03xToV040(tables: TableData): TableData {
     tables["mc_user_presets"] = [];
   }
 
+  // v0.4.14+: portfolio_by_tax_location JSONB on net_worth_annual
+  // Nullable — buildYearEndHistory falls back to legacy columns when null
+  addColumnDefault(
+    tables,
+    "net_worth_annual",
+    "portfolio_by_tax_location",
+    null,
+  );
+
   return tables;
 }
 

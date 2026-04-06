@@ -6,12 +6,8 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
-import {
-  PAW_THRESHOLD,
-  AAW_THRESHOLD,
-  FI_COMPLETE_THRESHOLD,
-  FI_ON_TRACK_THRESHOLD,
-} from "@/lib/constants";
+import { FI_COMPLETE_THRESHOLD, FI_ON_TRACK_THRESHOLD } from "@/lib/constants";
+import { wealthScoreTier } from "@/lib/config/display-labels";
 import { LoadingCard, ErrorCard } from "./utils";
 
 type CheckupStep = {
@@ -269,24 +265,15 @@ export function FinancialCheckupCard() {
     href: "/paycheck",
   });
 
-  // 5. Wealth Score
-  const wealthScore = networth.data?.result.wealthScore ?? 0;
+  // 5. Wealth Score (uses AAW score — Money Guy formula — for PAW/AAW/UAW tier)
+  const aawScore = networth.data?.result.aawScoreMarket ?? 0;
+  const wealthTier = wealthScoreTier(aawScore);
   steps.push({
     label: "Wealth Score",
     helpTip:
-      'From"The Millionaire Next Door." PAW = Prodigious Accumulator of Wealth (net worth > expected), AAW = Average, UAW = Under Accumulator.',
-    status:
-      wealthScore >= PAW_THRESHOLD
-        ? "green"
-        : wealthScore >= AAW_THRESHOLD
-          ? "green"
-          : "red",
-    text:
-      wealthScore >= PAW_THRESHOLD
-        ? "PAW — Excellent"
-        : wealthScore >= AAW_THRESHOLD
-          ? "AAW — On Track"
-          : "UAW — Behind",
+      "Money Guy Wealth Accumulator. PAW (2x+) = Prodigious, AAW (1x) = Average, UAW (<0.5x) = Under Accumulator.",
+    status: wealthTier.tier === "uaw" ? "red" : "green",
+    text: wealthTier.shortLabel,
     href: "/networth",
   });
 

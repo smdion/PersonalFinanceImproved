@@ -486,18 +486,18 @@ describe("net worth edge cases", () => {
     otherAssets: 0,
     mortgageBalance: 0,
     otherLiabilities: 0,
-    annualSalary: 0,
+    averageAge: 25,
+    effectiveIncome: 0,
+    lifetimeEarnings: 0,
     annualExpenses: 0,
     withdrawalRate: 0.04,
-    age: 25,
-    yearsWorking: 0,
     asOfDate: JAN_1,
   };
 
   it("handles zero everything", () => {
     const result = calculateNetWorth(baseNW);
     expect(result.netWorth).toBe(0);
-    expect(result.wealthScore).toBe(0);
+    expect(result.wealthScoreMarket).toBe(0);
     expect(result.fiProgress).toBe(0);
   });
 
@@ -505,22 +505,25 @@ describe("net worth edge cases", () => {
     const result = calculateNetWorth({
       ...baseNW,
       mortgageBalance: 50000,
-      annualSalary: 50000,
-      age: 25,
+      effectiveIncome: 50000,
+      lifetimeEarnings: 100000,
+      averageAge: 25,
     });
     expect(result.netWorth).toBe(-50000);
-    expect(result.wealthScore).toBeLessThan(0);
+    expect(result.wealthScoreMarket).toBeLessThan(0);
   });
 
   it("handles very young age (under 25)", () => {
     const result = calculateNetWorth({
       ...baseNW,
-      age: 22,
-      annualSalary: 40000,
+      averageAge: 22,
+      effectiveIncome: 40000,
+      lifetimeEarnings: 80000,
       portfolioTotal: 5000,
     });
-    // (22 × 40000) / (10 + 18) × 2 = 62857.14
-    expect(result.wealthTarget).toBeCloseTo(62857, 0);
+    // AAW: (22 × 40000) / (10 + 18) = 31428.57
+    // aawScore = 5000 / 31428.57 ≈ 0.159
+    expect(result.aawScoreMarket).toBeCloseTo(0.159, 2);
     expect(result.netWorth).toBe(5000);
   });
 
@@ -541,8 +544,9 @@ describe("net worth edge cases", () => {
       homeValueEstimated: 300000,
       homeValueConservative: 300000,
       mortgageBalance: 200000,
-      annualSalary: 100000,
-      age: 35,
+      effectiveIncome: 100000,
+      lifetimeEarnings: 500000,
+      averageAge: 35,
     });
     expect(result.netWorth).toBe(100000);
   });

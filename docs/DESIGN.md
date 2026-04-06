@@ -337,7 +337,12 @@ Stored values trusted. Null values computed. Division-by-zero returns null.
 1. Review all data
 2. Click "Finalize [year]"
 3. Set `is_finalized = true`, `is_current_year = false`
-4. Auto-create next year's rows with `beginning_balance = ending_balance`
+4. Write point-in-time derived data to `net_worth_annual` (e.g., `portfolio_by_tax_location` from the snapshot's `portfolio_accounts` grouped by `parent_category` + `tax_type`)
+5. Auto-create next year's rows with `beginning_balance = ending_balance`
+
+**Finalization captures point-in-time state.** `net_worth_annual` is the authoritative source for all historical year-level financial data. Portfolio snapshots and performance records are the raw inputs; `net_worth_annual` is the finalized output. Data that cannot be reconstructed from current state (e.g., tax location from a snapshot that may later be pruned) must be stored at finalization time.
+
+**`buildYearEndHistory()` is the single reader.** All year-level financial data flows through this helper. Finalized years read from `net_worth_annual`. The current year is built from live snapshot/performance/settings. No procedure should independently assemble year-level financial data — read from `buildYearEndHistory()` instead.
 
 ---
 

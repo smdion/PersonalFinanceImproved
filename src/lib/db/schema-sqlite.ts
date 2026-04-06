@@ -620,6 +620,14 @@ export const netWorthAnnual = sqliteTable("net_worth_annual", {
     .notNull()
     .default("0"),
   propertyTaxes: text("property_taxes"),
+  // Point-in-time tax location breakdown captured at finalization (JSON string).
+  // Shape: { retirement: { taxFree: N, preTax: N, hsa: N, afterTax: N }, portfolio: { afterTax: N } }
+  portfolioByTaxLocation: text("portfolio_by_tax_location", {
+    mode: "json",
+  }).$type<{
+    retirement: Record<string, number>;
+    portfolio: Record<string, number>;
+  }>(),
 });
 
 // Home improvement individual items — cumulative sum per year

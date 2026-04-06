@@ -3,6 +3,10 @@
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  formatFIProjection,
+  type FIProjectionResult,
+} from "@/lib/calculators/fi-projection";
 
 export function FinancialIndependenceCard({
   fiTarget,
@@ -13,6 +17,7 @@ export function FinancialIndependenceCard({
   budgetColumnLabels,
   currentExpenseColumn,
   onExpenseColumnChange,
+  fiProjection,
 }: {
   fiTarget: number;
   fiProgress: number;
@@ -22,6 +27,7 @@ export function FinancialIndependenceCard({
   budgetColumnLabels?: string[];
   currentExpenseColumn: number;
   onExpenseColumnChange: (idx: number) => void;
+  fiProjection?: FIProjectionResult;
 }) {
   return (
     <Card
@@ -90,6 +96,17 @@ export function FinancialIndependenceCard({
             {formatPercent(fiProgress)}
           </span>
         </div>
+        {fiProjection && (
+          <div className="flex justify-between py-2 border-t border-subtle text-xs text-muted">
+            <span>
+              Projected FI Year{" "}
+              <HelpTip text="Linear projection based on year-over-year FI progress. Assumes current savings rate continues." />
+            </span>
+            <span className="font-medium text-primary">
+              {formatFIProjection(fiProjection)}
+            </span>
+          </div>
+        )}
       </div>
     </Card>
   );

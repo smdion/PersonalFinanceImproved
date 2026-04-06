@@ -10,14 +10,18 @@
  *
  * **Benchmarks:**
  *
- * 1. **Wealth Score** (Millionaire Next Door "Wealth Accumulator" formula):
- *    Expected Net Worth = ((Age × Income) ÷ (10 + max(0, 40 - Age))) × 2
- *    - For ages 40+, denominator is 10, so expected NW = (Age × Income) / 5
- *    - For ages under 40, denominator increases (penalizes less for being young)
- *    - Score > 1.0 = "Prodigious Accumulator of Wealth" (PAW)
- *    - Score < 0.5 = "Under Accumulator of Wealth" (UAW)
+ * 1. **Wealth Score** (savings efficiency):
+ *    Wealth Score = Net Worth / Lifetime Earnings
+ *    - Measures what fraction of cumulative earnings you've retained
+ *    - Displayed as a percentage (e.g. 56% = kept 56% of everything earned)
  *
- * 2. **FI Progress** (Financial Independence progress):
+ * 2. **AAW Score** (Money Guy Show "Wealth Accumulator" formula):
+ *    Expected Net Worth = (Average Age × Effective Income) / (10 + max(0, 40 - Age))
+ *    - Uses average age across all household members
+ *    - Uses combinedAgi (optionally 3-year averaged) as income
+ *    - >= 2.0 = PAW (Prodigious), 1.0 = AAW (Average), <= 0.5 = UAW (Under)
+ *
+ * 3. **FI Progress** (Financial Independence progress):
  *    FI Target = Annual Expenses ÷ Withdrawal Rate
  *    - Withdrawal rate is a decimal (e.g. 0.04 for the 4% rule)
  *    - FI Progress = Net Worth ÷ FI Target (1.0 = financially independent)
@@ -29,7 +33,6 @@ import { safeDivide } from "../utils/math";
 import {
   WEALTH_FORMULA_AGE_CUTOFF,
   WEALTH_FORMULA_BASE_DENOMINATOR,
-  WEALTH_FORMULA_MULTIPLIER,
 } from "../constants";
 
 export function calculateNetWorth(input: NetWorthInput): NetWorthResult {
@@ -42,10 +45,11 @@ export function calculateNetWorth(input: NetWorthInput): NetWorthResult {
     otherAssets,
     mortgageBalance,
     otherLiabilities,
-    annualSalary,
+    averageAge,
+    effectiveIncome,
+    lifetimeEarnings,
     annualExpenses,
     withdrawalRate,
-    age,
   } = input;
 
   // Warn if mortgage exists but no home value — net worth appears artificially negative
@@ -75,13 +79,28 @@ export function calculateNetWorth(input: NetWorthInput): NetWorthResult {
   const netWorth = netWorthMarket;
   const totalAssets = liquidAssets + homeValueEstimated;
 
-  // Wealth Score uses NW+ for the optimistic view
-  // Note: Uses gross income (Millionaire Next Door formula). Dave Ramsey's variant uses take-home pay.
-  const yearsUntil40 = Math.max(0, WEALTH_FORMULA_AGE_CUTOFF - age);
-  const wealthTarget =
-    ((age * annualSalary) / (WEALTH_FORMULA_BASE_DENOMINATOR + yearsUntil40)) *
-    WEALTH_FORMULA_MULTIPLIER;
-  const wealthScore = Number(safeDivide(netWorth, wealthTarget) ?? 0);
+  // Wealth Score: net worth as % of lifetime earnings (savings efficiency)
+  // Computed for both market and cost basis views
+  const wealthScoreMarket = Number(
+    safeDivide(netWorthMarket, lifetimeEarnings) ?? 0,
+  );
+  const wealthScoreCostBasis = Number(
+    safeDivide(netWorthCostBasis, lifetimeEarnings) ?? 0,
+  );
+
+  // AAW Score: Money Guy formula — (avgAge × income) / (10 + yearsUntil40)
+  // Score >= 2.0 = PAW, 1.0 = AAW, <= 0.5 = UAW (thresholds, not in formula)
+  // Computed for both market and cost basis views
+  const yearsUntil40 = Math.max(0, WEALTH_FORMULA_AGE_CUTOFF - averageAge);
+  const expectedNetWorth =
+    (averageAge * effectiveIncome) /
+    (WEALTH_FORMULA_BASE_DENOMINATOR + yearsUntil40);
+  const aawScoreMarket = Number(
+    safeDivide(netWorthMarket, expectedNetWorth) ?? 0,
+  );
+  const aawScoreCostBasis = Number(
+    safeDivide(netWorthCostBasis, expectedNetWorth) ?? 0,
+  );
 
   // FI Progress uses portfolio (investable assets, not home equity)
   const fiTarget = Number(safeDivide(annualExpenses, withdrawalRate) ?? 0);
@@ -93,8 +112,10 @@ export function calculateNetWorth(input: NetWorthInput): NetWorthResult {
     netWorth,
     totalAssets,
     totalLiabilities,
-    wealthScore,
-    wealthTarget,
+    wealthScoreMarket,
+    wealthScoreCostBasis,
+    aawScoreMarket,
+    aawScoreCostBasis,
     fiProgress,
     fiTarget,
     warnings,

@@ -1,0 +1,1 @@
+ALTER TABLE `net_worth_annual` ADD `portfolio_by_tax_location` text;

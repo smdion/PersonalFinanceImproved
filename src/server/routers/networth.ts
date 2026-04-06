@@ -3,12 +3,9 @@ import { eq, asc, desc, sql, gte, lte, and } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { calculateNetWorth } from "@/lib/calculators/net-worth";
 import { accountDisplayName } from "@/lib/utils/format";
 import {
   toNumber,
-  getSalariesForJobs,
-  getAnnualExpensesFromBudget,
   computeMortgageBalance,
   getLatestSnapshot,
   parseAppSettings,
@@ -19,25 +16,18 @@ import {
   groupSnapshotAccounts,
   buildYearEndHistory,
 } from "@/server/helpers";
-import { MS_PER_YEAR } from "@/lib/constants";
-import { getAge } from "@/lib/utils/date";
-import type { NetWorthInput } from "@/lib/calculators/types";
 
 export const networthRouter = createTRPCRouter({
   computeSummary: protectedProcedure.query(async ({ ctx }) => {
     const [
       people,
-      allJobs,
       mortgageLoans,
       extraPayments,
       settings,
       snapshotData,
-      annualExpenses,
-      retirementSettingsRows,
       apiConnections,
     ] = await Promise.all([
       ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
-      ctx.db.select().from(schema.jobs),
       ctx.db.select().from(schema.mortgageLoans),
       ctx.db
         .select()
@@ -45,8 +35,6 @@ export const networthRouter = createTRPCRouter({
         .orderBy(asc(schema.mortgageExtraPayments.paymentDate)),
       ctx.db.select().from(schema.appSettings),
       getLatestSnapshot(ctx.db),
-      getAnnualExpensesFromBudget(ctx.db),
-      ctx.db.select().from(schema.retirementSettings),
       ctx.db.select().from(schema.apiConnections),
     ]);
 
@@ -133,30 +121,8 @@ export const networthRouter = createTRPCRouter({
     const otherLiabilities = setting("current_other_liabilities", 0);
     const homeImprovements = setting("current_home_improvements", 0);
 
-    // Combined salary from all active jobs (using salary_changes)
-    const activeJobs = allJobs.filter((j) => !j.endDate);
-    const asOfDate = new Date();
-    const jobSalaries = await getSalariesForJobs(ctx.db, activeJobs, asOfDate);
-    const combinedSalary = jobSalaries.reduce(
-      (s, js) => s + js.effectiveIncome,
-      0,
-    );
-
-    // Primary user for age calculation
-    const primaryPerson = getPrimaryPerson(people);
-    const age = primaryPerson
-      ? getAge(new Date(primaryPerson.dateOfBirth), asOfDate)
-      : 0;
-
-    // Years working (from earliest active job start date)
-    const earliestStart = activeJobs
-      .map((j) => new Date(j.startDate).getTime())
-      .sort()[0];
-    const yearsWorking = earliestStart
-      ? Math.floor((Date.now() - earliestStart) / MS_PER_YEAR)
-      : 0;
-
     // Home values: market (estimated) and cost basis (purchase + improvements)
+    const asOfDate = new Date();
     const activeLoans = mortgageLoans.filter((m) => m.isActive);
     const activeMortgage = activeLoans[0];
     const homeValueEstimated = activeMortgage
@@ -176,42 +142,43 @@ export const networthRouter = createTRPCRouter({
       asOfDate,
     );
 
-    // Withdrawal rate from retirement_settings (primary user's settings)
-    const primaryRetSettings =
-      retirementSettingsRows.find((rs) => rs.personId === primaryPerson?.id) ??
-      retirementSettingsRows[0];
-    if (!primaryRetSettings) {
-      throw new Error(
-        "No retirement settings found. Configure withdrawal rate in retirement settings.",
-      );
-    }
-    const withdrawalRate = toNumber(primaryRetSettings.withdrawalRate);
+    // Read computed metrics from buildYearEndHistory (single computation path)
+    const yearEndHistory = await buildYearEndHistory(ctx.db);
+    const currentRow =
+      yearEndHistory.find((h) => h.isCurrent) ??
+      yearEndHistory[yearEndHistory.length - 1];
 
-    const input: NetWorthInput = {
-      portfolioTotal,
-      cash,
-      homeValueEstimated,
-      homeValueConservative,
-      otherAssets,
-      mortgageBalance,
-      otherLiabilities,
-      annualSalary: combinedSalary,
-      annualExpenses,
-      withdrawalRate,
-      age,
-      yearsWorking,
-      asOfDate,
-    };
+    const result = currentRow
+      ? {
+          netWorthMarket: currentRow.netWorthMarket,
+          netWorthCostBasis: currentRow.netWorthCostBasis,
+          netWorth: currentRow.netWorthMarket,
+          totalAssets: portfolioTotal + cash + homeValueEstimated + otherAssets,
+          totalLiabilities: mortgageBalance + otherLiabilities,
+          wealthScoreMarket: currentRow.wealthScoreMarket,
+          wealthScoreCostBasis: currentRow.wealthScoreCostBasis,
+          aawScoreMarket: currentRow.aawScoreMarket,
+          aawScoreCostBasis: currentRow.aawScoreCostBasis,
+          fiProgress: currentRow.fiProgress,
+          fiTarget: currentRow.fiTarget,
+          warnings: [] as string[],
+        }
+      : {
+          netWorthMarket: 0,
+          netWorthCostBasis: 0,
+          netWorth: 0,
+          totalAssets: 0,
+          totalLiabilities: 0,
+          wealthScoreMarket: 0,
+          wealthScoreCostBasis: 0,
+          aawScoreMarket: 0,
+          aawScoreCostBasis: 0,
+          fiProgress: 0,
+          fiTarget: 0,
+          warnings: [] as string[],
+        };
 
-    const result = calculateNetWorth(input);
-
-    // Performance last-updated timestamp from app_settings
-    const perfUpdatedSetting = await ctx.db
-      .select()
-      .from(schema.appSettings)
-      .where(eq(schema.appSettings.key, "performance_last_updated"));
-    const performanceLastUpdated =
-      (perfUpdatedSetting[0]?.value as string) ?? null;
+    const performanceLastUpdated = currentRow?.perfLastUpdated ?? null;
 
     // Latest annual performance year (most recent year with data)
     const latestAnnualRow = await ctx.db
@@ -227,6 +194,7 @@ export const networthRouter = createTRPCRouter({
       performanceLastUpdated,
       latestPerformanceYear,
       portfolioTotal,
+      portfolioByTaxLocation: currentRow?.portfolioByTaxLocation ?? null,
       portfolioAccounts: portfolioAccountDetails,
       people: people.map((p) => ({ id: p.id, name: p.name })),
       hasHouse: !!activeMortgage,
@@ -240,7 +208,7 @@ export const networthRouter = createTRPCRouter({
       otherAssetItems,
       otherAssetsSyncSource,
       otherLiabilities,
-      withdrawalRate,
+      withdrawalRate: currentRow?.withdrawalRate ?? 0.04,
     };
   }),
 
@@ -288,12 +256,66 @@ export const networthRouter = createTRPCRouter({
         totalAssets,
         totalLiabilities,
         grossIncome: row.grossIncome,
+        effectiveIncome: row.effectiveIncome,
+        averageAge: row.averageAge,
         combinedAgi: row.combinedAgi,
         effectiveTaxRate: row.effectiveTaxRate ?? 0,
         taxesPaid: row.taxesPaid ?? 0,
         isCurrent: row.isCurrent,
       };
     });
+
+    return { years: history, primaryBirthYear };
+  }),
+
+  /** Extended history with per-category performance breakdowns and tax location data.
+   *  Used by the spreadsheet view; heavier than listHistory (which feeds charts). */
+  computeDetailedHistory: protectedProcedure.query(async ({ ctx }) => {
+    const [yearEndHistory, people] = await Promise.all([
+      buildYearEndHistory(ctx.db),
+      ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
+    ]);
+
+    const primaryPerson = getPrimaryPerson(people);
+    const primaryBirthYear = primaryPerson
+      ? new Date(primaryPerson.dateOfBirth).getFullYear()
+      : null;
+
+    // Pass through YearEndRow data — all metrics already computed by buildYearEndHistory
+    const history = yearEndHistory.map((row) => ({
+      year: row.year,
+      netWorth: row.netWorth,
+      netWorthCostBasis: row.netWorthCostBasis,
+      netWorthMarket: row.netWorthMarket,
+      houseValueCostBasis: row.houseValueCostBasis,
+      portfolioTotal: row.portfolioTotal,
+      portfolioByType: row.portfolioByType,
+      cash: row.cash,
+      houseValue: row.houseValue,
+      mortgageBalance: row.mortgageBalance,
+      otherAssets: row.otherAssets,
+      otherLiabilities: row.otherLiabilities,
+      grossIncome: row.grossIncome,
+      combinedAgi: row.combinedAgi,
+      isCurrent: row.isCurrent,
+      perfLastUpdated: row.perfLastUpdated,
+      perfContributions: row.perfContributions,
+      perfGainLoss: row.perfGainLoss,
+      performanceByCategory: row.performanceByCategory,
+      performanceByParentCategory: row.performanceByParentCategory,
+      portfolioByTaxLocation: row.portfolioByTaxLocation,
+      ytdRatio: row.ytdRatio,
+      // Pre-computed metrics (single computation path)
+      wealthScoreMarket: row.wealthScoreMarket,
+      wealthScoreCostBasis: row.wealthScoreCostBasis,
+      aawScoreMarket: row.aawScoreMarket,
+      aawScoreCostBasis: row.aawScoreCostBasis,
+      fiProgress: row.fiProgress,
+      fiTarget: row.fiTarget,
+      averageAge: row.averageAge,
+      effectiveIncome: row.effectiveIncome,
+      lifetimeEarnings: row.lifetimeEarnings,
+    }));
 
     return { years: history, primaryBirthYear };
   }),
@@ -552,43 +574,17 @@ export const networthRouter = createTRPCRouter({
   }),
 
   computeFIProgress: protectedProcedure.query(async ({ ctx }) => {
-    const [snapshotData, annualExpenses, retirementSettingsRows] =
-      await Promise.all([
-        getLatestSnapshot(ctx.db),
-        getAnnualExpensesFromBudget(ctx.db),
-        ctx.db.select().from(schema.retirementSettings),
-      ]);
+    // Read from buildYearEndHistory (single computation path)
+    const yearEndHistory = await buildYearEndHistory(ctx.db);
+    const currentRow =
+      yearEndHistory.find((h) => h.isCurrent) ??
+      yearEndHistory[yearEndHistory.length - 1];
 
-    const portfolioTotal = snapshotData?.total ?? 0;
-
-    const retSettings = retirementSettingsRows[0];
-    if (!retSettings) {
-      throw new Error(
-        "No retirement settings found. Configure withdrawal rate in retirement settings.",
-      );
-    }
-
-    const input: NetWorthInput = {
-      portfolioTotal,
-      cash: 0,
-      homeValueEstimated: 0,
-      homeValueConservative: 0,
-      otherAssets: 0,
-      mortgageBalance: 0,
-      otherLiabilities: 0,
-      annualSalary: 0,
-      annualExpenses,
-      withdrawalRate: toNumber(retSettings.withdrawalRate),
-      age: 0,
-      yearsWorking: 0,
-      asOfDate: new Date(),
-    };
-
-    const result = calculateNetWorth(input);
     return {
-      fiProgress: result.fiProgress,
-      fiTarget: result.fiTarget,
-      currentPortfolio: portfolioTotal,
+      fiProgress: currentRow?.fiProgress ?? 0,
+      fiTarget: currentRow?.fiTarget ?? 0,
+      currentPortfolio: currentRow?.portfolioTotal ?? 0,
+      cash: currentRow?.cash ?? 0,
     };
   }),
 

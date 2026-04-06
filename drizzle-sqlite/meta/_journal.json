@@ -8,6 +8,13 @@
       "when": 1774916660323,
       "tag": "0000_v3_initial_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1775494479594,
+      "tag": "0001_fixed_shiva",
+      "breakpoints": true
     }
   ]
 }

@@ -251,6 +251,16 @@ describe("buildYearEndHistory", () => {
       })
       .run();
 
+    // Home improvement items — source of truth for cumulative improvements
+    ctx.db
+      .insert(ctx.schema.homeImprovementItems)
+      .values({
+        year: 2023,
+        description: "Kitchen remodel",
+        cost: "15000",
+      })
+      .run();
+
     const rows = await buildYearEndHistory(ctx.rawDb);
     const row2023 = rows.find((r) => r.year === 2023);
     expect(row2023).toBeDefined();
