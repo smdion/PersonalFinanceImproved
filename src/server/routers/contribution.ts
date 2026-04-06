@@ -38,6 +38,8 @@ import {
   categoriesWithIrsLimit,
   isRetirementCategory,
   isTaxFree,
+  isRetirementParent,
+  isPortfolioParent,
 } from "@/lib/config/account-types";
 
 function getAgeFromDob(dob: string, asOf: Date): number {
@@ -573,11 +575,11 @@ export const contributionRouter = createTRPCRouter({
 
           // Compute totals — use DB parentCategory (not config lookup) so sub-types
           // like ESPP (categoryKey "espp") are correctly grouped by their stored category
-          const retirement = accountTypes.filter(
-            (a) => a.parentCategory === "Retirement",
+          const retirement = accountTypes.filter((a) =>
+            isRetirementParent(a.parentCategory),
           );
-          const portfolio = accountTypes.filter(
-            (a) => a.parentCategory === "Portfolio",
+          const portfolio = accountTypes.filter((a) =>
+            isPortfolioParent(a.parentCategory),
           );
           const retirementWithoutMatch = retirement.reduce(
             (s, a) => s + a.employeeContrib,

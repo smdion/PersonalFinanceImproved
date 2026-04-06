@@ -14,6 +14,7 @@ import {
   getAccountTypeConfig,
   parseColumnKey,
   ACCOUNT_TYPE_CONFIG,
+  isRothType,
 } from "@/lib/config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
 import type {
@@ -516,7 +517,7 @@ type PortfolioTaxBucket = "preTax" | "taxFree" | "hsa" | "afterTax";
 export function lumpSumTaxBucket(ls: LumpSum): PortfolioTaxBucket {
   const bs = getAccountTypeConfig(ls.targetAccount).balanceStructure;
   if (bs === "roth_traditional")
-    return ls.taxType === "roth" ? "taxFree" : "preTax";
+    return isRothType(ls.taxType ?? "") ? "taxFree" : "preTax";
   if (bs === "single_bucket") return "hsa";
   return "afterTax";
 }

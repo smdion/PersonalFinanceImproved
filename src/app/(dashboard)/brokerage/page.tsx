@@ -29,6 +29,7 @@ import {
   LumpSumForm,
   LumpSumBadge,
 } from "@/components/cards/projection/lump-sum-form";
+import { isPortfolioParent } from "@/lib/config/account-types";
 
 export default function BrokeragePage() {
   const user = useUser();
@@ -177,10 +178,10 @@ export default function BrokeragePage() {
   const portfolioAccounts = contribData
     ? [
         ...contribData.people.flatMap((p) =>
-          p.accountTypes.filter((at) => at.parentCategory === "Portfolio"),
+          p.accountTypes.filter((at) => isPortfolioParent(at.parentCategory)),
         ),
-        ...(contribData.jointAccountTypes ?? []).filter(
-          (at) => at.parentCategory === "Portfolio",
+        ...(contribData.jointAccountTypes ?? []).filter((at) =>
+          isPortfolioParent(at.parentCategory),
         ),
       ]
     : [];
@@ -322,7 +323,7 @@ export default function BrokeragePage() {
           <LumpSumForm
             accounts={
               data?.result?.projectionByYear?.[0]?.individualAccountBalances
-                ?.filter((ia) => ia.parentCategory === "Portfolio")
+                ?.filter((ia) => isPortfolioParent(ia.parentCategory))
                 ?.map((ia) => ({
                   name: ia.name,
                   category: ia.category,

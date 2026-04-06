@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { accountDisplayName } from "@/lib/utils/format";
 import { accountTypeToPerformanceCategory } from "@/lib/config/display-labels";
+import { isPortfolioParent } from "@/lib/config/account-types";
 import type { AddAccountFormProps } from "./types";
 
 export function AddAccountForm({
@@ -15,7 +16,7 @@ export function AddAccountForm({
 }: AddAccountFormProps) {
   // Filter master accounts to the active category by account type group (or show all for Portfolio tab)
   const available = masterAccounts.filter((ma) => {
-    if (parentCategory === "Portfolio") return true;
+    if (isPortfolioParent(parentCategory)) return true;
     return accountTypeToPerformanceCategory(ma.accountType) === parentCategory;
   });
   const [selectedId, setSelectedId] = useState<string>("");

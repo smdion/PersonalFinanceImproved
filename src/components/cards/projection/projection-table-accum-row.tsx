@@ -20,6 +20,7 @@ import {
   getAccountTypeConfig,
   getDisplayConfig,
   ACCOUNT_TYPE_CONFIG,
+  isPreTaxType,
 } from "@/lib/config/account-types";
 import type { TipColor, TooltipLineItem } from "./types";
 import {
@@ -897,7 +898,7 @@ export function AccumulationRow({
             for (const ia of mine) {
               const cfg = ACCOUNT_TYPE_CONFIG[ia.category];
               if (cfg?.supportsRothSplit) {
-                if (ia.taxType === "preTax") ptTrad += ia.contribution;
+                if (isPreTaxType(ia.taxType)) ptTrad += ia.contribution;
                 else ptRoth += ia.contribution;
               } else {
                 ptSingleBucket.set(

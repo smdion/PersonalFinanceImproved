@@ -12,6 +12,7 @@ import {
   getAccountTypeConfig,
   taxTypeToSubKey,
   ACCOUNT_TYPE_CONFIG,
+  isRetirementParent,
 } from "@/lib/config/account-types";
 import type { ProjectionFormState } from "./use-projection-form-state";
 import type { ProjectionQueries } from "./use-projection-queries";
@@ -513,7 +514,7 @@ export function useProjectionDerived(
       const first = result?.projectionByYear?.[0];
       if (!first) return [];
       return first.individualAccountBalances
-        .filter((ia) => ia.parentCategory === "Retirement")
+        .filter((ia) => isRetirementParent(ia.parentCategory))
         .map((ia) => ({
           name: ia.name,
           category: ia.category,

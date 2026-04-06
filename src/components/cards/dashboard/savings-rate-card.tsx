@@ -10,7 +10,10 @@ import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
 import { useScenario } from "@/lib/context/scenario-context";
-import { categoriesWithTaxPreference } from "@/lib/config/account-types";
+import {
+  categoriesWithTaxPreference,
+  isRetirementParent,
+} from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { LoadingCard, ErrorCard } from "./utils";
 
@@ -112,8 +115,9 @@ export function SavingsRateCard() {
   }
   // Add joint account contributions to group totals
   for (const jat of data?.jointAccountTypes ?? []) {
-    const group =
-      jat.parentCategory === "Retirement" ? "retirement" : "taxable";
+    const group = isRetirementParent(jat.parentCategory)
+      ? "retirement"
+      : "taxable";
     groupTotals[group] =
       (groupTotals[group] ?? 0) +
       (excludeMatch ? jat.employeeContrib : jat.totalContrib);

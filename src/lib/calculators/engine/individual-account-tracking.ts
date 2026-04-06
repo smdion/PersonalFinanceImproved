@@ -21,6 +21,7 @@ import {
   getAccountTypeConfig,
   isOverflowTarget,
   getAllCategories,
+  isPreTaxType,
 } from "../../config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "../../config/display-labels";
 
@@ -318,8 +319,8 @@ export function distributeContributions(
           (ia) => ia.category === cat && indParentCat.get(indKey(ia)) === pCat,
         );
         if (allPCatAccts.length === 0) return;
-        const preTaxPCatAccts = allPCatAccts.filter(
-          (ia) => ia.taxType === "preTax",
+        const preTaxPCatAccts = allPCatAccts.filter((ia) =>
+          isPreTaxType(ia.taxType),
         );
         const matchCandidates =
           preTaxPCatAccts.length > 0 ? preTaxPCatAccts : allPCatAccts;
@@ -345,7 +346,7 @@ export function distributeContributions(
       });
     } else {
       const catAll = indAccts.filter((ia) => ia.category === cat);
-      const catPreTax = catAll.filter((ia) => ia.taxType === "preTax");
+      const catPreTax = catAll.filter((ia) => isPreTaxType(ia.taxType));
       const catMatchPool = catPreTax.length > 0 ? catPreTax : catAll;
       const catWithSpecs = catMatchPool.filter((ia) =>
         accountsWithSpecs.has(indKey(ia)),
@@ -558,7 +559,7 @@ export function distributeWithdrawals(
       bs === "roth_traditional" &&
       (slot.traditionalWithdrawal > 0 || slot.rothWithdrawal > 0)
     ) {
-      const tradAccts = catAccts.filter((ia) => ia.taxType === "preTax");
+      const tradAccts = catAccts.filter((ia) => isPreTaxType(ia.taxType));
       const rothAccts = catAccts.filter((ia) => ia.taxType === "taxFree");
 
       // Distribute traditional withdrawal to preTax accounts (#33/#35)

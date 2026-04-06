@@ -22,6 +22,8 @@ import {
 import {
   getAllCategories,
   getAccountTypeConfig,
+  isRetirementParent,
+  isPortfolioParent,
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { LoadingCard, ErrorCard } from "./utils";
@@ -134,11 +136,11 @@ export function ContributionsCard() {
   const jointAts = data?.jointAccountTypes ?? [];
   // Retirement vs portfolio vs total (from tRPC response, plus joint) — non-overlapping by parentCategory
   const jt = data?.jointTotals ?? { totalWithoutMatch: 0, totalWithMatch: 0 };
-  const jointRetirement = jointAts.filter(
-    (a) => a.parentCategory === "Retirement",
+  const jointRetirement = jointAts.filter((a) =>
+    isRetirementParent(a.parentCategory),
   );
-  const jointPortfolio = jointAts.filter(
-    (a) => a.parentCategory === "Portfolio",
+  const jointPortfolio = jointAts.filter((a) =>
+    isPortfolioParent(a.parentCategory),
   );
   const jointRetNoMatch = jointRetirement.reduce(
     (s, a) => s + a.employeeContrib,

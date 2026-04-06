@@ -521,21 +521,43 @@ export function getDisplayGroup(category: AccountCategory): DisplayGroup {
 // Classification predicates — config-driven, no string knowledge
 // ---------------------------------------------------------------------------
 
-/** Check if an account category belongs to the Retirement parent category. */
+/** Check if an account category belongs to the Retirement parent category (by account type config). */
 export function isRetirementCategory(category: string): boolean {
   const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
   return cfg ? cfg.parentCategory === "Retirement" : false;
 }
 
-/** Check if an account category belongs to the Portfolio parent category. */
+/** Check if an account category belongs to the Portfolio parent category (by account type config). */
 export function isPortfolioCategory(category: string): boolean {
   const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
   return cfg ? cfg.parentCategory === "Portfolio" : false;
 }
 
+/** Check if a parentCategory DB column value is Retirement. Use this when checking the stored/user-editable field, not account type config. */
+export function isRetirementParent(
+  parentCategory: string | undefined,
+): boolean {
+  return parentCategory === "Retirement";
+}
+
+/** Check if a parentCategory DB column value is Portfolio. Use this when checking the stored/user-editable field, not account type config. */
+export function isPortfolioParent(parentCategory: string | undefined): boolean {
+  return parentCategory === "Portfolio";
+}
+
 /** Check if a tax treatment value represents tax-free (Roth) contributions. */
 export function isTaxFree(taxTreatment: string): boolean {
   return taxTreatment === "tax_free";
+}
+
+/** Check if an engine-internal taxType key is pre-tax (traditional). */
+export function isPreTaxType(taxType: string): boolean {
+  return taxType === "preTax";
+}
+
+/** Check if an engine-internal taxType key is tax-free (Roth). */
+export function isRothType(taxType: string): boolean {
+  return taxType === "roth";
 }
 
 /** Map engine-internal tax type keys to sub-keys used for balance columns. */

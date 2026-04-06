@@ -35,6 +35,7 @@ import {
   type AnnualRowLike,
 } from "@/lib/pure/performance";
 import { accountDisplayName, stripInstitutionSuffix } from "@/lib/utils/format";
+import { isRetirementParent } from "@/lib/config/account-types";
 import {
   accountTypeToPerformanceCategory,
   FULLY_RETIREMENT_PERF_CATEGORIES,
@@ -490,7 +491,7 @@ export const performanceRouter = createTRPCRouter({
     const retBrokerageByYear = new Map<string, typeof accounts>();
     for (const a of accounts) {
       if (
-        a.parentCategory === "Retirement" &&
+        isRetirementParent(a.parentCategory) &&
         getEffectiveCategory(a, perfLookups) === "Brokerage"
       ) {
         const arr = retBrokerageByYear.get(String(a.year)) ?? [];
@@ -504,7 +505,7 @@ export const performanceRouter = createTRPCRouter({
       if (fullyRetirementCats.includes(r.category)) retYearsSet.add(r.year);
     }
     for (const a of accounts) {
-      if (a.parentCategory === "Retirement") retYearsSet.add(a.year);
+      if (isRetirementParent(a.parentCategory)) retYearsSet.add(a.year);
     }
     const retYears = Array.from(retYearsSet).sort((a, b) => a - b);
 

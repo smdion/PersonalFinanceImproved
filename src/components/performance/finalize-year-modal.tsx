@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { formatCurrency } from "@/lib/utils/format";
+import { PERF_CATEGORY_DISPLAY_ORDER } from "@/lib/config/display-labels";
 import type { AnnualRow } from "./types";
 
 type CategoryOverride = {
@@ -81,7 +82,7 @@ export function FinalizeYearModal({
   const categories = rows
     .map((r) => r.category)
     .sort((a, b) => {
-      const order = ["Portfolio", "Retirement", "401k/IRA", "Brokerage", "HSA"];
+      const order: readonly string[] = PERF_CATEGORY_DISPLAY_ORDER;
       return order.indexOf(a) - order.indexOf(b);
     });
 

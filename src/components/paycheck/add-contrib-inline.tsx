@@ -18,7 +18,9 @@ export function AddContribInline({
   onCreateContrib: (data: CreateContribData) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [accountType, setAccountType] = useState<AccountCategory>("401k");
+  const [accountType, setAccountType] = useState<AccountCategory>(
+    getAllCategories()[0]!,
+  );
   const [taxTreatment, setTaxTreatment] = useState<
     "pre_tax" | "tax_free" | "after_tax" | "hsa"
   >("pre_tax");
@@ -28,7 +30,7 @@ export function AddContribInline({
   const [value, setValue] = useState("");
 
   const reset = () => {
-    setAccountType("401k");
+    setAccountType(getAllCategories()[0]!);
     setTaxTreatment("pre_tax");
     setMethod("percent_of_salary");
     setValue("");
