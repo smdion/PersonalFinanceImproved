@@ -69,7 +69,7 @@ export function BonusSection({
               const pct = Number(v.replace(/[^0-9.]/g, "")) / 100;
               onUpdateJob("bonusPercent", String(pct));
             }}
-            formatDisplay={(v) => `${Number(v).toFixed(1)}%`}
+            formatDisplay={(v) => formatPercent(Number(v) / 100, 1)}
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}
             type="number"
             className="font-medium"

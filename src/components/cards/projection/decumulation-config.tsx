@@ -158,7 +158,7 @@ export function DecumulationConfig({
             .join(" → ")
         : ALL_CATEGORIES.map(
             (c) =>
-              `${getAccountTypeConfig(c).displayLabel} ${Math.round(withdrawalSplits[c] * 100)}%`,
+              `${getAccountTypeConfig(c).displayLabel} ${formatPercent(withdrawalSplits[c])}`,
           ).join(", ");
 
   return (

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Card, Metric, ProgressBar } from "@/components/ui/card";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 
 interface SavingsGoalSummary {
@@ -96,7 +96,9 @@ export function SummaryCards({
                   <span className="text-muted">{g.name}</span>
                   <span className="text-secondary tabular-nums">
                     {formatCurrency(g.monthlyAllocation)}{" "}
-                    <span className="text-muted">({pct.toFixed(0)}%)</span>
+                    <span className="text-muted">
+                      ({formatPercent(pct / 100)})
+                    </span>
                   </span>
                 </div>
               );

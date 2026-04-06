@@ -338,7 +338,7 @@ export function SimulationAssumptions({
               />
               <AssumptionRow
                 label="Deterministic Inflation"
-                value={`${(inputs.inflationRate * 100).toFixed(1)}%`}
+                value={formatPercent(inputs.inflationRate, 1)}
                 tip="Fixed annual inflation rate used in the deterministic projection. The Fed targets 2%; historical US average is ~3%."
               />
               {editingInflation ? (
@@ -389,7 +389,7 @@ export function SimulationAssumptions({
                 <div className="flex items-center gap-1">
                   <AssumptionRow
                     label="Stochastic Inflation"
-                    value={`${(inputs.inflationRisk.meanRate * 100).toFixed(1)}% \u00B1 ${(inputs.inflationRisk.stdDev * 100).toFixed(1)}%`}
+                    value={`${formatPercent(inputs.inflationRisk.meanRate, 1)} \u00B1 ${formatPercent(inputs.inflationRisk.stdDev, 1)}`}
                     tip="Monte Carlo inflation: each simulated year draws a random rate from a normal distribution with this mean and standard deviation. Models inflation uncertainty — some futures have low inflation, others high. Typical mean: 2-3%."
                   />
                   {onInflationRiskChange && (
@@ -568,22 +568,20 @@ export function SimulationAssumptions({
                         <td
                           className={`text-right py-0.5 px-1.5 font-medium tabular-nums ${isOverridden ? "text-amber-800" : "text-primary"}`}
                         >
-                          {(ac.meanReturn * 100).toFixed(1)}%
+                          {formatPercent(ac.meanReturn, 1)}
                         </td>
                         <td
                           className={`text-right py-0.5 px-1.5 font-medium tabular-nums ${isOverridden ? "text-amber-800" : "text-primary"}`}
                         >
-                          {(ac.stdDev * 100).toFixed(1)}%
+                          {formatPercent(ac.stdDev, 1)}
                         </td>
                         <td
                           className={`text-right py-0.5 px-1.5 tabular-nums ${dbDiff ? "text-faint line-through" : "text-faint"}`}
                         >
-                          {dbAc
-                            ? `${(dbAc.meanReturn * 100).toFixed(1)}%`
-                            : "—"}
+                          {dbAc ? formatPercent(dbAc.meanReturn, 1) : "—"}
                         </td>
                         <td className="text-right py-0.5 px-1.5 text-muted tabular-nums">
-                          {allocPct > 0 ? `${allocPct.toFixed(0)}%` : "—"}
+                          {allocPct > 0 ? formatPercent(allocPct / 100) : "—"}
                         </td>
                       </tr>
                     );
@@ -777,7 +775,7 @@ export function SimulationAssumptions({
                                     key={ac.id}
                                     className="text-right py-0.5 px-1.5 text-secondary tabular-nums"
                                   >
-                                    {pct > 0 ? `${pct.toFixed(0)}%` : "—"}
+                                    {pct > 0 ? formatPercent(pct / 100) : "—"}
                                   </td>
                                 );
                               })}

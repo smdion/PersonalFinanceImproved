@@ -17,6 +17,7 @@
  * maintainability. This file owns validation, orchestration, and result building.
  */
 import type { ProjectionInput, ProjectionResult } from "../types";
+import { formatPercent } from "../../utils/format";
 import { roundToCents } from "../../utils/math";
 import { MAX_INFLATION_RATE, MIN_INFLATION_RATE } from "../../constants";
 import { resolveDecumulationConfig } from "./override-resolution";
@@ -50,31 +51,31 @@ function validateEngineInputs(
 
   if (salaryGrowthRate < -1) {
     warnings.push(
-      `Salary growth rate clamped from ${(salaryGrowthRate * 100).toFixed(1)}% to -100%`,
+      `Salary growth rate clamped from ${formatPercent(salaryGrowthRate, 1)} to -100%`,
     );
     salaryGrowthRate = -1;
   }
 
   if (inflationRate > MAX_INFLATION_RATE) {
     warnings.push(
-      `Inflation rate clamped from ${(inflationRate * 100).toFixed(1)}% to ${(MAX_INFLATION_RATE * 100).toFixed(0)}%`,
+      `Inflation rate clamped from ${formatPercent(inflationRate, 1)} to ${formatPercent(MAX_INFLATION_RATE)}`,
     );
     inflationRate = MAX_INFLATION_RATE;
   } else if (inflationRate < MIN_INFLATION_RATE) {
     warnings.push(
-      `Inflation rate clamped from ${(inflationRate * 100).toFixed(1)}% to ${(MIN_INFLATION_RATE * 100).toFixed(0)}%`,
+      `Inflation rate clamped from ${formatPercent(inflationRate, 1)} to ${formatPercent(MIN_INFLATION_RATE)}`,
     );
     inflationRate = MIN_INFLATION_RATE;
   }
 
   if (postRetirementInflationRate > MAX_INFLATION_RATE) {
     warnings.push(
-      `Post-retirement raise rate clamped to ${(MAX_INFLATION_RATE * 100).toFixed(0)}%`,
+      `Post-retirement raise rate clamped to ${formatPercent(MAX_INFLATION_RATE)}`,
     );
     postRetirementInflationRate = MAX_INFLATION_RATE;
   } else if (postRetirementInflationRate < MIN_INFLATION_RATE) {
     warnings.push(
-      `Post-retirement raise rate clamped to ${(MIN_INFLATION_RATE * 100).toFixed(0)}%`,
+      `Post-retirement raise rate clamped to ${formatPercent(MIN_INFLATION_RATE)}`,
     );
     postRetirementInflationRate = MIN_INFLATION_RATE;
   }

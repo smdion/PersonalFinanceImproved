@@ -539,7 +539,7 @@ export default function RetirementPage() {
                                 )
                               }
                               formatDisplay={(v) =>
-                                `${parseFloat(Number(v).toFixed(2))}%`
+                                formatPercent(Number(v) / 100, 2)
                               }
                               parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                               type="number"
@@ -881,7 +881,7 @@ export default function RetirementPage() {
                                   )
                                 }
                                 formatDisplay={(v) =>
-                                  `${parseFloat(Number(v).toFixed(2))}%`
+                                  formatPercent(Number(v) / 100, 2)
                                 }
                                 parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                                 type="number"
@@ -919,7 +919,7 @@ export default function RetirementPage() {
                                   )
                                 }
                                 formatDisplay={(v) =>
-                                  `${parseFloat(Number(v).toFixed(2))}%`
+                                  formatPercent(Number(v) / 100, 2)
                                 }
                                 parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                                 type="number"
@@ -1221,7 +1221,7 @@ export default function RetirementPage() {
                                         key={rounded}
                                         value={String(rounded)}
                                       >
-                                        {(rounded * 100).toFixed(1)}%
+                                        {formatPercent(rounded, 1)}
                                       </option>
                                     );
                                   },
@@ -1270,7 +1270,7 @@ export default function RetirementPage() {
                             handleSettingPercentUpdate("annualInflation", v)
                           }
                           formatDisplay={(v) =>
-                            `${parseFloat(Number(v).toFixed(2))}%`
+                            formatPercent(Number(v) / 100, 2)
                           }
                           parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                           type="number"

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { FUND_COLORS } from "./fund-colors";
 
 export interface FundAllocation {
@@ -243,7 +243,7 @@ export function PoolDistributionEditor({
                     }}
                     className="text-sm tabular-nums text-muted hover:text-secondary cursor-pointer"
                   >
-                    {pct.toFixed(1)}%
+                    {formatPercent(pct / 100, 1)}
                   </button>
                 )}
 

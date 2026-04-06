@@ -28,6 +28,7 @@ import type {
   PeriodBreakdown,
   BonusEstimate,
 } from "./types";
+import { formatPercent } from "../utils/format";
 import { roundToCents, safeDivide } from "../utils/math";
 import { MS_PER_DAY } from "../constants";
 
@@ -124,7 +125,7 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   }
   if (input.bonusPercent < 0 || input.bonusPercent > 5) {
     warnings.push(
-      `Bonus percent ${(input.bonusPercent * 100).toFixed(0)}% is outside expected range (0-500%).`,
+      `Bonus percent ${formatPercent(input.bonusPercent)} is outside expected range (0-500%).`,
     );
   }
   if (input.bonusMultiplier < 0 || input.bonusMultiplier > 10) {

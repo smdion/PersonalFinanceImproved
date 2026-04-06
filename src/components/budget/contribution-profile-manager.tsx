@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { FormError } from "@/components/ui/form-error";
 
@@ -519,7 +519,7 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                         {parseFloat(ad.liveMatchValue ?? "0")}%
                         {ad.liveMaxMatchPct &&
                         parseFloat(ad.liveMaxMatchPct) > 0
-                          ? ` to ${parseFloat((parseFloat(ad.liveMaxMatchPct) * 100).toFixed(2))}%`
+                          ? ` to ${formatPercent(parseFloat(ad.liveMaxMatchPct), 2)}`
                           : ""}
                       </span>
                     ) : (

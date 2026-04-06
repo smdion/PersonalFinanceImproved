@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
+import { formatPercent } from "@/lib/utils/format";
 
 type CardProps = {
   title?: ReactNode;
@@ -138,12 +139,14 @@ export function ProgressBar({
   tooltip,
 }: ProgressBarProps) {
   const pct = Math.min(100, Math.max(0, value * 100));
-  const defaultTooltip = `${pct.toFixed(0)}% progress`;
+  const defaultTooltip = `${formatPercent(pct / 100)} progress`;
   return (
     <div title={tooltip ?? defaultTooltip}>
       <div className="flex justify-between text-sm mb-1">
         {label && <span className="text-secondary">{label}</span>}
-        <span className="text-muted font-medium">{pct.toFixed(0)}%</span>
+        <span className="text-muted font-medium">
+          {formatPercent(pct / 100)}
+        </span>
       </div>
       <div className="h-2 sm:h-3 bg-surface-sunken rounded-full overflow-hidden">
         <div

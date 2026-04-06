@@ -31,6 +31,7 @@ import type {
   AmortizationEntry,
   MortgageExtraPayment,
 } from "./types";
+import { formatPercent } from "../utils/format";
 import { roundToCents, safeDivide } from "../utils/math";
 import { MONTHS_PER_YEAR, AMORTIZATION_BALANCE_TOLERANCE } from "../constants";
 
@@ -42,7 +43,7 @@ export function calculateMortgage(input: MortgageInput): MortgageResult {
   for (const loan of loans) {
     if (loan.interestRate > 0 && loan.interestRate < 0.01) {
       warnings.push(
-        `${loan.name}: interest rate ${(loan.interestRate * 100).toFixed(3)}% looks like a monthly rate. ` +
+        `${loan.name}: interest rate ${formatPercent(loan.interestRate, 3)} looks like a monthly rate. ` +
           `This calculator expects an annual rate (e.g. 0.065 for 6.5%).`,
       );
     }

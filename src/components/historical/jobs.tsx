@@ -4,7 +4,11 @@ import { useState, useMemo, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { DataTable } from "@/components/settings/data-table";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  compactCurrency,
+} from "@/lib/utils/format";
 import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
 import {
   AreaChart,
@@ -217,7 +221,7 @@ export function JobsSettings() {
               />
               <YAxis
                 fontSize={10}
-                tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+                tickFormatter={(v: number) => compactCurrency(v)}
               />
               <RechartsTooltip
                 labelFormatter={(d: unknown) => formatDate(String(d))}

@@ -90,7 +90,7 @@ export function WithdrawalOverridesSection({
                         Roth Conv:{" "}
                         {o.rothConversionTarget === 0
                           ? "Off"
-                          : `${Math.round(o.rothConversionTarget * 100)}%`}
+                          : formatPercent(o.rothConversionTarget)}
                       </span>
                     )}
                   </>
@@ -253,7 +253,7 @@ export function WithdrawalOverridesSection({
                       <option key={p} value={p}>
                         {p === "0"
                           ? "Off (disable conversions)"
-                          : `${Math.round(Number(p) * 100)}% bracket`}
+                          : `${formatPercent(Number(p))} bracket`}
                       </option>
                     ))}
                     <option value="custom">Custom rate...</option>
@@ -378,7 +378,8 @@ export function WithdrawalOverridesSection({
                     const off = total > 0 && Math.abs(total - 100) > 0.1;
                     return off ? (
                       <p className="text-xs text-amber-600 mt-1">
-                        Splits sum to {total.toFixed(0)}% — should be 100%
+                        Splits sum to {formatPercent(total / 100)} — should be
+                        100%
                       </p>
                     ) : null;
                   })()}

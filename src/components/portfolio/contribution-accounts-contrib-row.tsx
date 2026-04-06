@@ -17,6 +17,7 @@ import {
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { ContribRow } from "./contribution-accounts-types";
+import { formatPercent } from "@/lib/utils/format";
 import { InlineText, InlineSelect } from "./contribution-accounts-inline";
 
 export function ContributionRow({
@@ -44,7 +45,7 @@ export function ContributionRow({
 
   // Format match cap from decimal to percentage for display
   const matchCapDisplay = c.employerMaxMatchPct
-    ? `${(parseFloat(c.employerMaxMatchPct) * 100).toFixed(0)}%`
+    ? formatPercent(parseFloat(c.employerMaxMatchPct))
     : "";
   return (
     <div

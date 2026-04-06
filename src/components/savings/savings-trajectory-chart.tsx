@@ -12,7 +12,7 @@ import {
   ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, compactCurrency } from "@/lib/utils/format";
 import { useTheme } from "@/lib/hooks/use-theme";
 import { GoalProjection, monthKey } from "./types";
 import { FUND_COLORS } from "./fund-colors";
@@ -127,11 +127,7 @@ export function SavingsTrajectoryChart({
             tick={{ fontSize: 10, fill: p.axis }}
             tickLine={false}
             axisLine={{ stroke: p.axisLine }}
-            tickFormatter={(v) => {
-              const n = Number(v);
-              if (Math.abs(n) >= 1000) return `$${(n / 1000).toFixed(0)}k`;
-              return `$${n.toFixed(0)}`;
-            }}
+            tickFormatter={(v) => compactCurrency(Number(v))}
             width={55}
           />
 

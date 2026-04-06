@@ -55,6 +55,9 @@ export const TAX_TREATMENT_SHORT_LABELS: Record<string, string> = {
   tax_free: "Roth",
   after_tax: "After-Tax",
   hsa: "HSA",
+  // Engine-internal keys (used in projection overrides taxTypeCaps)
+  traditional: "Trad",
+  roth: "Roth",
 };
 
 /** Get short label for a tax treatment value. */

@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
   Tooltip as RechartsTooltip,
 } from "recharts";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, compactCurrency } from "@/lib/utils/format";
 import { CHART_COLORS } from "@/lib/utils/colors";
 import { monthKey } from "./types";
 
@@ -119,11 +119,7 @@ export function FundMiniChart({
             tick={{ fontSize: 9, fill: CHART_COLORS.mcAxis }}
             tickLine={false}
             axisLine={false}
-            tickFormatter={(v) => {
-              const n = Number(v);
-              if (Math.abs(n) >= 1000) return `$${(n / 1000).toFixed(0)}k`;
-              return `$${n.toFixed(0)}`;
-            }}
+            tickFormatter={(v) => compactCurrency(Number(v))}
             width={45}
           />
 

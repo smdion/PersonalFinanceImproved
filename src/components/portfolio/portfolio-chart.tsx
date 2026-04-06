@@ -14,7 +14,11 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Card } from "@/components/ui/card";
-import { formatCurrency, compactCurrency } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  compactCurrency,
+} from "@/lib/utils/format";
 import { CHART_COLORS } from "@/lib/utils/colors";
 
 type TimeFrame = "YTD" | "3M" | "6M" | "1Y" | "3Y" | "All";
@@ -104,7 +108,7 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
             {formatCurrency(totalChange)}
             <span className="text-xs ml-1">
               ({isPositive ? "+" : ""}
-              {totalChangePct.toFixed(1)}%)
+              {formatPercent(totalChangePct / 100, 1)})
             </span>
           </span>
           <div className="flex gap-0.5 bg-surface-elevated rounded-md p-0.5">
@@ -188,7 +192,7 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
                       {p.changePct !== null && (
                         <span className="ml-1">
                           ({p.change >= 0 ? "+" : ""}
-                          {p.changePct.toFixed(1)}%)
+                          {formatPercent(p.changePct / 100, 1)})
                         </span>
                       )}
                     </div>

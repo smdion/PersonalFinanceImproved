@@ -14,6 +14,7 @@ import {
   interpolateAllocations,
   geometricMean,
 } from "@/lib/calculators/random";
+import { formatPercent } from "@/lib/utils/format";
 import { toNumber } from "@/server/helpers";
 import type {
   AccountBalance,
@@ -1746,12 +1747,12 @@ export const projectionRouter = createTRPCRouter({
           )
             return String(Math.round(v));
           if (l.kind === "global" && l.field === "withdrawalRate")
-            return `${(v * 100).toFixed(2)}%`;
+            return formatPercent(v, 2);
           // Strategy param — check field type
           const field = strategyMeta.paramFields.find(
             (f) => f.key === (l as { key: string }).key,
           );
-          if (field?.type === "percent") return `${(v * 100).toFixed(1)}%`;
+          if (field?.type === "percent") return formatPercent(v, 1);
           if (field?.type === "number") return String(Math.round(v));
           return String(v);
         };
