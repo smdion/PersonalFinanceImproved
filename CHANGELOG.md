@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.18] - 2026-04-06
+
+### Improved
+
+- Year-End Estimate mode now uses actual YTD contributions from performance data instead of projecting from current rates — shows what was really contributed plus projected remaining
+- IRS limit tracking in Year-End Estimate mode reflects actual contributions for accurate "room remaining" calculations
+- Contributions page and dashboard cards in Year-End Estimate mode show actual + projected breakdown
+
+---
+
 ## [0.4.17] - 2026-04-06
 
 ### New
