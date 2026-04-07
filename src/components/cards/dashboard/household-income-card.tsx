@@ -72,7 +72,7 @@ export function HouseholdIncomeCard() {
   const modeLabel = isYtd
     ? "Year-to-date"
     : isBlended
-      ? "Projected W-2"
+      ? "Year-end estimate"
       : "Projected annual";
 
   return (
@@ -121,8 +121,8 @@ export function HouseholdIncomeCard() {
       <div className="mt-2 pt-2 border-t border-subtle text-xs text-faint space-y-0.5">
         <div className="flex justify-between">
           <span>
-            Net {isYtd ? "YTD" : isBlended ? "W-2" : "annual"} (after tax +
-            deductions)
+            Net {isYtd ? "YTD" : isBlended ? "year-end est." : "annual"} (after
+            tax + deductions)
           </span>
           <span>{formatCurrency(totalNetAnnual)}</span>
         </div>
