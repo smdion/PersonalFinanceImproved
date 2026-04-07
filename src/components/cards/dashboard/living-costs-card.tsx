@@ -17,6 +17,7 @@ import { LoadingCard } from "./utils";
 export function LivingCostsCard() {
   const { viewMode } = useScenario();
   const isYtd = viewMode === "ytd";
+  const isBlended = viewMode === "blended";
   const [budgetColumn] = usePersistedSetting<number>("budget_active_column", 0);
   const { data: budgetData, isLoading: bLoading } =
     trpc.budget.computeActiveSummary.useQuery({
@@ -43,9 +44,20 @@ export function LivingCostsCard() {
   if (bLoading || pLoading) return <LoadingCard title="Living Costs" />;
 
   const budget = budgetData?.result;
+  const blendedOf = (p: NonNullable<typeof paycheckData>["people"][0]) =>
+    (p as Record<string, unknown>).blendedAnnual as
+      | import("@/lib/calculators/types/calculators").BlendedAnnualTotals
+      | undefined;
+
   const netIncome =
     paycheckData?.people?.reduce((s, p) => {
       if (!p.paycheck) return s;
+      if (isBlended) {
+        const ba = blendedOf(p);
+        return (
+          s + (ba ? ba.netPay : p.paycheck.netPay * p.paycheck.periodsPerYear)
+        );
+      }
       const mult = isYtd
         ? p.paycheck.periodsElapsedYtd
         : p.paycheck.periodsPerYear;
@@ -57,7 +69,13 @@ export function LivingCostsCard() {
         if (!p.paycheck) return s;
         return s + p.paycheck.gross * p.paycheck.periodsElapsedYtd;
       }, 0) ?? 0)
-    : (paycheckData?.people?.reduce((s, p) => s + (p.salary ?? 0), 0) ?? 0);
+    : isBlended
+      ? (paycheckData?.people?.reduce((s, p) => {
+          if (!p.paycheck) return s;
+          const ba = blendedOf(p);
+          return s + (ba ? ba.gross : (p.salary ?? 0));
+        }, 0) ?? 0)
+      : (paycheckData?.people?.reduce((s, p) => s + (p.salary ?? 0), 0) ?? 0);
   const incomeBase = useGross ? grossIncome : netIncome;
   const incomeLabel = useGross ? "gross" : "net";
 

@@ -24,6 +24,7 @@
 import type {
   PaycheckInput,
   PaycheckResult,
+  BlendedAnnualTotals,
   DeductionLine,
   PeriodBreakdown,
   BonusEstimate,
@@ -757,4 +758,275 @@ function buildPayFrequencyLabel(
     return `${base} (${payWeek === "even" ? "Even" : "Odd"} Weeks)`;
   }
   return base;
+}
+
+// ---------------------------------------------------------------------------
+// Salary Timeline → Period Mapping
+// ---------------------------------------------------------------------------
+
+/**
+ * Map a salary timeline (date-based changes) to period-based segments.
+ * Returns which pay periods use which salary rate.
+ *
+ * Each salary change takes effect on the first pay period whose pay date
+ * falls on or after the change's effective date.
+ */
+export function mapSalaryTimelineToPeriods(
+  timeline: { salary: number; effectiveDate: string | null }[],
+  payPeriod: string,
+  anchorPayDate: Date,
+  year: number,
+): {
+  salary: number;
+  effectiveDate: string | null;
+  startPeriod: number;
+  endPeriod: number;
+}[] {
+  const periodsPerYear = getPeriodsPerYear(payPeriod);
+  if (timeline.length === 0) return [];
+  if (timeline.length === 1) {
+    return [
+      {
+        salary: timeline[0]!.salary,
+        effectiveDate: timeline[0]!.effectiveDate,
+        startPeriod: 1,
+        endPeriod: periodsPerYear,
+      },
+    ];
+  }
+
+  // Build a list of pay dates for the year
+  const payDates: Date[] = [];
+  const yearStart = new Date(`${year}-01-01T00:00:00`);
+  const yearEnd = new Date(`${year}-12-31T23:59:59`);
+
+  if (payPeriod === "monthly") {
+    for (let m = 0; m < 12; m++) {
+      payDates.push(new Date(year, m, 1));
+    }
+  } else if (payPeriod === "semimonthly") {
+    for (let m = 0; m < 12; m++) {
+      payDates.push(new Date(year, m, 1));
+      payDates.push(new Date(year, m, 15));
+    }
+  } else {
+    // Weekly or biweekly: walk from anchor
+    const interval = payPeriod === "weekly" ? 7 : 14;
+    const anchorMs = anchorPayDate.getTime();
+    const startMs = yearStart.getTime();
+    const endMs = yearEnd.getTime();
+
+    // Find the first pay date on or after Jan 1
+    let current = anchorMs;
+    if (current > startMs) {
+      while (current - interval * MS_PER_DAY >= startMs) {
+        current -= interval * MS_PER_DAY;
+      }
+    } else {
+      while (current < startMs) {
+        current += interval * MS_PER_DAY;
+      }
+    }
+
+    while (current <= endMs && payDates.length < periodsPerYear) {
+      payDates.push(new Date(current));
+      current += interval * MS_PER_DAY;
+    }
+  }
+
+  // Sort timeline changes by date (skip the first entry which has null effectiveDate = start of year)
+  const changes = timeline
+    .filter((t) => t.effectiveDate !== null)
+    .map((t) => ({
+      salary: t.salary,
+      date: new Date(t.effectiveDate + "T00:00:00"),
+    }))
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  // For each pay period, determine which salary is active
+  const periodSalaries: { salary: number; effectiveDate: string | null }[] = [];
+  let currentSalary = timeline[0]!.salary;
+  let currentEffDate = timeline[0]!.effectiveDate;
+  let changeIdx = 0;
+
+  for (const payDate of payDates) {
+    // Advance through changes that have taken effect by this pay date
+    while (changeIdx < changes.length && changes[changeIdx]!.date <= payDate) {
+      currentSalary = changes[changeIdx]!.salary;
+      currentEffDate = timeline[changeIdx + 1]?.effectiveDate ?? null;
+      changeIdx++;
+    }
+    periodSalaries.push({
+      salary: currentSalary,
+      effectiveDate: currentEffDate,
+    });
+  }
+
+  // Compress into segments (consecutive periods at the same salary)
+  const segments: {
+    salary: number;
+    effectiveDate: string | null;
+    startPeriod: number;
+    endPeriod: number;
+  }[] = [];
+  let segStart = 1;
+  let segSalary = periodSalaries[0]!.salary;
+  let segEffDate = periodSalaries[0]!.effectiveDate;
+
+  for (let i = 1; i < periodSalaries.length; i++) {
+    if (periodSalaries[i]!.salary !== segSalary) {
+      segments.push({
+        salary: segSalary,
+        effectiveDate: segEffDate,
+        startPeriod: segStart,
+        endPeriod: i,
+      });
+      segStart = i + 1;
+      segSalary = periodSalaries[i]!.salary;
+      segEffDate = periodSalaries[i]!.effectiveDate;
+    }
+  }
+  segments.push({
+    salary: segSalary,
+    effectiveDate: segEffDate,
+    startPeriod: segStart,
+    endPeriod: periodSalaries.length,
+  });
+
+  return segments;
+}
+
+// ---------------------------------------------------------------------------
+// Blended Annual Calculator
+// ---------------------------------------------------------------------------
+
+/** A salary segment with a pre-computed paycheck at that salary rate. */
+export type SalarySegment = {
+  salary: number;
+  effectiveDate: string | null;
+  /** 1-indexed first period at this salary. */
+  startPeriod: number;
+  /** 1-indexed last period at this salary (inclusive). */
+  endPeriod: number;
+  /** Full paycheck result computed at this salary rate. */
+  paycheck: PaycheckResult;
+};
+
+/**
+ * Compute blended annual totals from a salary timeline with mid-year changes.
+ *
+ * Each segment includes a full PaycheckResult computed at that salary rate (the router
+ * handles rebuilding contribution accounts per salary). This function walks periods
+ * sequentially, taking per-period values from the correct segment, and tracks cumulative
+ * FICA base for correct SS cap transitions across salary changes.
+ *
+ * Pure function — no DB, no side effects.
+ */
+export function calculateBlendedAnnual(
+  segments: SalarySegment[],
+  taxBrackets: {
+    socialSecurityWageBase: number;
+    socialSecurityRate: number;
+    medicareRate: number;
+  },
+): BlendedAnnualTotals {
+  if (segments.length === 0) {
+    return {
+      gross: 0,
+      federalWithholding: 0,
+      ficaSS: 0,
+      ficaMedicare: 0,
+      preTaxDeductions: 0,
+      postTaxDeductions: 0,
+      netPay: 0,
+      blendedSalary: 0,
+      segments: [],
+    };
+  }
+
+  const ssWageBase = taxBrackets.socialSecurityWageBase;
+  const ssRate = taxBrackets.socialSecurityRate;
+  const medRate = taxBrackets.medicareRate;
+
+  let totalGross = 0;
+  let totalFederalWithholding = 0;
+  let totalFicaSS = 0;
+  let totalFicaMedicare = 0;
+  let totalPreTax = 0;
+  let totalPostTax = 0;
+  let ytdFicaBase = 0;
+
+  for (const seg of segments) {
+    const pc = seg.paycheck;
+    // Per-period values from this segment's paycheck (at this salary rate)
+    const segGross = pc.gross;
+    const segFederal = pc.federalWithholding;
+    const segPreTax = pc.preTaxDeductions.reduce((s, d) => s + d.amount, 0);
+    const segPostTax = pc.postTaxDeductions.reduce((s, d) => s + d.amount, 0);
+    // FICA base: gross minus only FICA-exempt deductions (same logic as calculatePaycheck)
+    const ficaExempt = pc.preTaxDeductions
+      .filter((d) => d.ficaExempt)
+      .reduce((s, d) => s + d.amount, 0);
+    const segFicaBase = segGross - ficaExempt;
+
+    for (let p = seg.startPeriod; p <= seg.endPeriod; p++) {
+      totalGross += segGross;
+      totalFederalWithholding += segFederal;
+      totalPreTax += segPreTax;
+      totalPostTax += segPostTax;
+
+      // FICA: track cumulative base for SS cap
+      ytdFicaBase += segFicaBase;
+      let periodSS: number;
+      if (ytdFicaBase <= ssWageBase) {
+        periodSS = segFicaBase * ssRate;
+      } else if (ytdFicaBase - segFicaBase >= ssWageBase) {
+        periodSS = 0;
+      } else {
+        const remainingBase = ssWageBase - (ytdFicaBase - segFicaBase);
+        periodSS = remainingBase * ssRate;
+      }
+      const periodMed = segFicaBase * medRate;
+
+      totalFicaSS += periodSS;
+      totalFicaMedicare += periodMed;
+    }
+  }
+
+  const totalNet =
+    totalGross -
+    totalPreTax -
+    totalFederalWithholding -
+    totalFicaSS -
+    totalFicaMedicare -
+    totalPostTax;
+
+  // Weighted average salary
+  const totalPeriods = segments.reduce(
+    (s, seg) => s + (seg.endPeriod - seg.startPeriod + 1),
+    0,
+  );
+  const blendedSalary =
+    totalPeriods > 0
+      ? segments.reduce(
+          (s, seg) => s + seg.salary * (seg.endPeriod - seg.startPeriod + 1),
+          0,
+        ) / totalPeriods
+      : 0;
+
+  return {
+    gross: roundToCents(totalGross),
+    federalWithholding: roundToCents(totalFederalWithholding),
+    ficaSS: roundToCents(totalFicaSS),
+    ficaMedicare: roundToCents(totalFicaMedicare),
+    preTaxDeductions: roundToCents(totalPreTax),
+    postTaxDeductions: roundToCents(totalPostTax),
+    netPay: roundToCents(totalNet),
+    blendedSalary: roundToCents(blendedSalary),
+    segments: segments.map((seg) => ({
+      salary: seg.salary,
+      periods: seg.endPeriod - seg.startPeriod + 1,
+      effectiveDate: seg.effectiveDate,
+    })),
+  };
 }

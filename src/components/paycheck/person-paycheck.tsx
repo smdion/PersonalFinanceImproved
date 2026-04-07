@@ -22,6 +22,7 @@ import type {
   CreateContribData,
   JointContrib,
 } from "./types";
+import type { BlendedAnnualTotals } from "@/lib/calculators/types/calculators";
 
 export function PersonPaycheck({
   person,
@@ -30,6 +31,7 @@ export function PersonPaycheck({
   futureSalaryChanges,
   paycheck,
   mode,
+  blendedAnnual,
   activeSalaryOverride,
   onToggleSalary,
   onUpdateJob,
@@ -77,6 +79,7 @@ export function PersonPaycheck({
   futureSalaryChanges: { salary: number; effectiveDate: string }[];
   paycheck: PaycheckResult;
   mode: ViewMode;
+  blendedAnnual?: BlendedAnnualTotals;
   activeSalaryOverride: number | null;
   onToggleSalary: (salary: number) => void;
   onUpdateJob: (field: string, value: string) => void;
@@ -175,7 +178,11 @@ export function PersonPaycheck({
             onDeleteDeduction={onDeleteDeduction ?? undefined}
           />
           <div className="space-y-4">
-            <AnnualSummary paycheck={paycheck} mode={mode} />
+            <AnnualSummary
+              paycheck={paycheck}
+              mode={mode}
+              blendedAnnual={blendedAnnual}
+            />
             <BonusSection
               paycheck={paycheck}
               job={job}
