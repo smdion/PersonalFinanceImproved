@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { accountColor } from "@/lib/utils/colors";
 import { useUser, hasPermission } from "@/lib/context/user-context";
+import { useScenario } from "@/lib/context/scenario-context";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
 
 type PeriodMode = "annual" | "monthly" | "per-period";
@@ -32,6 +33,8 @@ function periodLabel(mode: PeriodMode): string {
 }
 
 export default function ContributionsPage() {
+  const { viewMode } = useScenario();
+  const isBlended = viewMode === "blended";
   const user = useUser();
   const canEdit = hasPermission(user, "portfolio");
   const utils = trpc.useUtils();
@@ -130,6 +133,63 @@ export default function ContributionsPage() {
   );
   const totalEmployerMatch = totalWith - totalWithout;
 
+  // Blended mode: actual YTD + projected remaining
+  const avgYtdRatio =
+    activePeople.length > 0
+      ? activePeople.reduce(
+          (s, p) =>
+            s +
+            (p.periodsPerYear > 0 ? p.periodsElapsedYtd / p.periodsPerYear : 0),
+          0,
+        ) / activePeople.length
+      : 0;
+  const remainingFraction = 1 - avgYtdRatio;
+  const hasYtdActuals =
+    isBlended &&
+    activePeople.some(
+      (p) =>
+        p.totals.ytdActualRetirement > 0 ||
+        p.totals.ytdActualPortfolio > 0 ||
+        p.totals.ytdActualMatch > 0,
+    );
+  const useBlended = isBlended && hasYtdActuals;
+
+  const ytdActualRet = activePeople.reduce(
+    (s, p) => s + p.totals.ytdActualRetirement,
+    0,
+  );
+  const ytdActualPort = activePeople.reduce(
+    (s, p) => s + p.totals.ytdActualPortfolio,
+    0,
+  );
+  const ytdActualMatch = activePeople.reduce(
+    (s, p) => s + p.totals.ytdActualMatch,
+    0,
+  );
+
+  // Blended totals for summary cards
+  const blendedRetWith = useBlended
+    ? ytdActualRet + ytdActualMatch + totalRetirementWith * remainingFraction
+    : totalRetirementWith;
+  const blendedRetWithout = useBlended
+    ? ytdActualRet + totalRetirementWithout * remainingFraction
+    : totalRetirementWithout;
+  const blendedPortWith = useBlended
+    ? ytdActualPort + totalPortfolioWith * remainingFraction
+    : totalPortfolioWith;
+  const blendedPortWithout = useBlended
+    ? ytdActualPort + totalPortfolioWithout * remainingFraction
+    : totalPortfolioWithout;
+  const blendedTotalWith = useBlended
+    ? ytdActualRet +
+      ytdActualPort +
+      ytdActualMatch +
+      totalWith * remainingFraction
+    : totalWith;
+  const blendedTotalWithout = useBlended
+    ? ytdActualRet + ytdActualPort + totalWithout * remainingFraction
+    : totalWithout;
+
   const pl = periodLabel(period);
 
   return (
@@ -197,40 +257,60 @@ export default function ContributionsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         {(() => {
           // Aggregate server-computed per-person rates weighted by compensation
-          const hhRateWith =
-            activePeople.reduce(
-              (s, p) =>
-                s +
-                p.totals.savingsRateWithMatch *
-                  (p.totalCompensation ?? p.salary),
-              0,
-            ) / (combinedSalary || 1);
-          const hhRateWithout =
-            activePeople.reduce(
-              (s, p) =>
-                s +
-                p.totals.savingsRateWithoutMatch *
-                  (p.totalCompensation ?? p.salary),
-              0,
-            ) / (combinedSalary || 1);
+          // Use blended totals for rates when in blended mode
+          const effRetWith = useBlended ? blendedRetWith : totalRetirementWith;
+          const effRetWithout = useBlended
+            ? blendedRetWithout
+            : totalRetirementWithout;
+          const effPortWith = useBlended ? blendedPortWith : totalPortfolioWith;
+          const effPortWithout = useBlended
+            ? blendedPortWithout
+            : totalPortfolioWithout;
+          const effTotalWith = useBlended ? blendedTotalWith : totalWith;
+          const effTotalWithout = useBlended
+            ? blendedTotalWithout
+            : totalWithout;
+
+          const hhRateWith = useBlended
+            ? combinedSalary > 0
+              ? effTotalWith / combinedSalary
+              : 0
+            : activePeople.reduce(
+                (s, p) =>
+                  s +
+                  p.totals.savingsRateWithMatch *
+                    (p.totalCompensation ?? p.salary),
+                0,
+              ) / (combinedSalary || 1);
+          const hhRateWithout = useBlended
+            ? combinedSalary > 0
+              ? effTotalWithout / combinedSalary
+              : 0
+            : activePeople.reduce(
+                (s, p) =>
+                  s +
+                  p.totals.savingsRateWithoutMatch *
+                    (p.totalCompensation ?? p.salary),
+                0,
+              ) / (combinedSalary || 1);
           const retRateWith =
-            combinedSalary > 0 ? totalRetirementWith / combinedSalary : 0;
+            combinedSalary > 0 ? effRetWith / combinedSalary : 0;
           const retRateWithout =
-            combinedSalary > 0 ? totalRetirementWithout / combinedSalary : 0;
+            combinedSalary > 0 ? effRetWithout / combinedSalary : 0;
           const portRateWith =
-            combinedSalary > 0 ? totalPortfolioWith / combinedSalary : 0;
+            combinedSalary > 0 ? effPortWith / combinedSalary : 0;
           const portRateWithout =
-            combinedSalary > 0 ? totalPortfolioWithout / combinedSalary : 0;
+            combinedSalary > 0 ? effPortWithout / combinedSalary : 0;
           const primary = highIncome ? "without" : "with";
           return (
             <>
               <SummaryCard
-                label="Total Savings"
+                label={useBlended ? "Total Savings (Est.)" : "Total Savings"}
                 rate={primary === "without" ? hhRateWithout : hhRateWith}
                 rateAlt={primary === "without" ? hhRateWith : hhRateWithout}
                 altLabel={highIncome ? "w/ match" : "w/o match"}
                 amount={toDisplay(
-                  highIncome ? totalWithout : totalWith,
+                  highIncome ? effTotalWithout : effTotalWith,
                   avgPeriodsPerYear,
                   period,
                 )}
@@ -238,12 +318,12 @@ export default function ContributionsPage() {
                 color="bg-blue-500"
               />
               <SummaryCard
-                label="Retirement"
+                label={useBlended ? "Retirement (Est.)" : "Retirement"}
                 rate={primary === "without" ? retRateWithout : retRateWith}
                 rateAlt={primary === "without" ? retRateWith : retRateWithout}
                 altLabel={highIncome ? "w/ match" : "w/o match"}
                 amount={toDisplay(
-                  highIncome ? totalRetirementWithout : totalRetirementWith,
+                  highIncome ? effRetWithout : effRetWith,
                   avgPeriodsPerYear,
                   period,
                 )}
@@ -251,12 +331,12 @@ export default function ContributionsPage() {
                 color="bg-emerald-500"
               />
               <SummaryCard
-                label="Portfolio"
+                label={useBlended ? "Portfolio (Est.)" : "Portfolio"}
                 rate={primary === "without" ? portRateWithout : portRateWith}
                 rateAlt={primary === "without" ? portRateWith : portRateWithout}
                 altLabel={highIncome ? "w/ match" : "w/o match"}
                 amount={toDisplay(
-                  highIncome ? totalPortfolioWithout : totalPortfolioWith,
+                  highIncome ? effPortWithout : effPortWith,
                   avgPeriodsPerYear,
                   period,
                 )}

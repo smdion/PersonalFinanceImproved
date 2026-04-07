@@ -20,7 +20,7 @@ import { LoadingCard, ErrorCard } from "./utils";
 export function SavingsRateCard() {
   const { viewMode } = useScenario();
   const isYtd = viewMode === "ytd";
-  // Blended mode uses same behavior as projected for savings rate (scale = 1)
+  const isBlended = viewMode === "blended";
   const salaryOverrides = useSalaryOverrides();
   const [activeProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",
@@ -48,6 +48,22 @@ export function SavingsRateCard() {
     d.periodsPerYear > 0 ? d.periodsElapsedYtd / d.periodsPerYear : 0;
   const scale = (d: (typeof people)[0], annual: number) =>
     isYtd ? annual * ytdRatio(d) : annual;
+  // Blended mode: actual YTD + projected remaining
+  const avgYtdRatio =
+    people.length > 0
+      ? people.reduce((s, d) => s + ytdRatio(d), 0) / people.length
+      : 0;
+  const remainingFraction = 1 - avgYtdRatio;
+  const hasYtdActuals =
+    isBlended &&
+    people.some(
+      (p) =>
+        p.totals.ytdActualRetirement > 0 ||
+        p.totals.ytdActualPortfolio > 0 ||
+        p.totals.ytdActualMatch > 0,
+    );
+  const useBlended = isBlended && hasYtdActuals;
+
   // Use totalCompensation (always includes bonus) — shared logic across all pages
   const householdTotalComp = people.reduce(
     (s, d) => s + scale(d, d.totalCompensation ?? d.salary ?? 0),
@@ -68,16 +84,29 @@ export function SavingsRateCard() {
   // Annual totals (for rate calculation)
   const totalContribsAnnual =
     people.reduce((s, d) => s + (d.result![totalKey] ?? 0), 0) + jointTotal;
-  // Household average YTD ratio for joint scaling
-  const avgYtdRatio =
-    people.length > 0
-      ? people.reduce((s, d) => s + ytdRatio(d), 0) / people.length
-      : 0;
   const jointScaled = isYtd ? jointTotal * avgYtdRatio : jointTotal;
-  const totalContribs = isYtd
-    ? people.reduce((s, d) => s + (d.result![totalKey] ?? 0) * ytdRatio(d), 0) +
-      jointScaled
-    : totalContribsAnnual;
+
+  // Blended year-end estimate for contributions
+  const ytdActualTotal = people.reduce(
+    (s, p) =>
+      s +
+      p.totals.ytdActualRetirement +
+      p.totals.ytdActualPortfolio +
+      (excludeMatch ? 0 : p.totals.ytdActualMatch),
+    0,
+  );
+  const blendedContribs = useBlended
+    ? ytdActualTotal + totalContribsAnnual * remainingFraction
+    : null;
+
+  const totalContribs = useBlended
+    ? blendedContribs!
+    : isYtd
+      ? people.reduce(
+          (s, d) => s + (d.result![totalKey] ?? 0) * ytdRatio(d),
+          0,
+        ) + jointScaled
+      : totalContribsAnnual;
 
   // Household savings rate — use server-computed rates (single source of truth)
   // For annual: weighted average of per-person server rates
@@ -95,11 +124,15 @@ export function SavingsRateCard() {
           0,
         ) / householdTotalComp
       : 0;
-  const totalRate = isYtd
+  const totalRate = useBlended
     ? householdTotalComp > 0
       ? totalContribs / householdTotalComp
       : 0
-    : annualRate;
+    : isYtd
+      ? householdTotalComp > 0
+        ? totalContribs / householdTotalComp
+        : 0
+      : annualRate;
 
   // Collect group totals in dollars, then compute rates against total comp
   const groupTotals: Record<string, number> = {};
@@ -176,8 +209,8 @@ export function SavingsRateCard() {
       </div>
       <p className="text-xs text-faint mt-1">
         {formatCurrency(totalContribs)}
-        {isYtd ? " YTD" : "/year"} of {formatCurrency(householdTotalComp)} total
-        comp
+        {isYtd ? " YTD" : useBlended ? " est." : "/year"} of{" "}
+        {formatCurrency(householdTotalComp)} total comp
       </p>
       {excludeMatch && (
         <p className="text-xs text-amber-600 mt-1">
