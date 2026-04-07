@@ -454,14 +454,14 @@ export function ScenarioBar() {
             role="tab"
             aria-selected={viewMode === "blended"}
             onClick={() => setViewMode("blended")}
-            title="Blended projection using actual salary changes throughout the year"
+            title="Year-end estimate using actual salary changes throughout the year"
             className={`px-3 py-1.5 rounded text-[11px] transition-colors ${
               viewMode === "blended"
                 ? "bg-surface-primary text-primary shadow-sm"
                 : "text-muted hover:text-secondary "
             }`}
           >
-            Projected W-2
+            Year-End Estimate
           </button>
           <button
             role="tab"

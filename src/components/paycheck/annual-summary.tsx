@@ -19,7 +19,7 @@ export function AnnualSummary({
   if (mode === "blended" && blendedAnnual) {
     return (
       <div className="space-y-2">
-        <SectionHeader>Projected W-2</SectionHeader>
+        <SectionHeader>Year-End Estimate</SectionHeader>
         <div className="bg-surface-sunken rounded-lg p-4 space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted">Gross</span>

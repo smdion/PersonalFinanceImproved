@@ -88,7 +88,7 @@ export function TaxesCard() {
           isYtd
             ? "Total taxes (YTD)"
             : isBlended
-              ? "Total annual taxes (W-2)"
+              ? "Total annual taxes (year-end est.)"
               : "Total annual taxes (projected)"
         }
       />

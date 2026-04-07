@@ -12,8 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### New
 
-- Three-mode paycheck view: "Current Salary" (forward planning at current rate), "Projected W-2" (blended annual using actual salary changes throughout the year), and "Actual YTD" (elapsed periods only)
-- Projected W-2 mode walks each pay period at its effective salary rate, correctly handling SS cap transitions and percent-of-salary contribution changes across mid-year raises
+- Three-mode paycheck view: "Current Salary" (forward planning at current rate), "Year-End Estimate" (blended annual using actual salary changes throughout the year), and "Actual YTD" (elapsed periods only)
+- Year-End Estimate mode walks each pay period at its effective salary rate, correctly handling SS cap transitions and percent-of-salary contribution changes across mid-year raises
 
 ---
 
