@@ -12,6 +12,7 @@ import { LoadingCard, ErrorCard } from "./utils";
 export function TaxesCard() {
   const { viewMode } = useScenario();
   const isYtd = viewMode === "ytd";
+  const isBlended = viewMode === "blended";
   const salaryOverrides = useSalaryOverrides();
   const [activeContribProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",
@@ -50,8 +51,9 @@ export function TaxesCard() {
   const householdTax = data?.householdTax;
   const taxResult = householdTax ?? people[0]?.tax;
 
-  // For annual projection: use the household-level tax calculation which correctly
-  // combines incomes, applies ONE standard deduction, and caps SS per-person.
+  // For annual projection (projected or blended): use the household-level tax calculation
+  // which correctly combines incomes, applies ONE standard deduction, and caps SS per-person.
+  // Blended household tax is a future enhancement — for now, projected tax is acceptable.
   // For YTD: use paycheck-based withholding since it reflects actual amounts withheld.
   let totalFederal: number;
   let totalFica: number;
@@ -82,7 +84,13 @@ export function TaxesCard() {
     <Card title="Taxes" href="/paycheck">
       <Metric
         value={formatCurrency(totalFederal + totalFica)}
-        label={isYtd ? "Total taxes (YTD)" : "Total annual taxes (projected)"}
+        label={
+          isYtd
+            ? "Total taxes (YTD)"
+            : isBlended
+              ? "Total annual taxes (W-2)"
+              : "Total annual taxes (projected)"
+        }
       />
       <div className="mt-3 space-y-1">
         <div className="flex justify-between text-sm">

@@ -105,6 +105,7 @@ function FundingBar({
 export function ContributionsCard() {
   const { viewMode } = useScenario();
   const isYtd = viewMode === "ytd";
+  // Blended mode uses same behavior as projected for contributions (scale = 1)
   const salaryOverrides = useSalaryOverrides();
   const [activeContribProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",
@@ -131,7 +132,7 @@ export function ContributionsCard() {
     people.length > 0
       ? people.reduce((s, d) => s + ytdRatio(d), 0) / people.length
       : 0;
-  const ytdScale = isYtd ? avgYtdRatio : 1;
+  const ytdScale = isYtd ? avgYtdRatio : 1; // blended uses scale=1 (same as projected)
 
   const jointAts = data?.jointAccountTypes ?? [];
   // Retirement vs portfolio vs total (from tRPC response, plus joint) — non-overlapping by parentCategory

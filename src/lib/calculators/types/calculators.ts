@@ -74,6 +74,25 @@ export type PaycheckResult = {
   warnings: string[];
 };
 
+/** Blended annual totals computed from a salary timeline with mid-year changes. */
+export type BlendedAnnualTotals = {
+  gross: number;
+  federalWithholding: number;
+  ficaSS: number;
+  ficaMedicare: number;
+  preTaxDeductions: number;
+  postTaxDeductions: number;
+  netPay: number;
+  /** Weighted average salary across all segments. */
+  blendedSalary: number;
+  /** Per-segment breakdown for UI transparency. */
+  segments: {
+    salary: number;
+    periods: number;
+    effectiveDate: string | null;
+  }[];
+};
+
 // --- Tax ---
 
 export type TaxInput = {

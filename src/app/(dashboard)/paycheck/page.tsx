@@ -532,6 +532,11 @@ export default function PaycheckPage() {
               futureSalaryChanges={d.futureSalaryChanges}
               paycheck={d.paycheck!}
               mode={mode}
+              blendedAnnual={
+                (d as Record<string, unknown>).blendedAnnual as
+                  | import("@/lib/calculators/types/calculators").BlendedAnnualTotals
+                  | undefined
+              }
               activeSalaryOverride={
                 scenarioSalaryOverrides.find((o) => o.personId === d.person.id)
                   ?.salary ?? null

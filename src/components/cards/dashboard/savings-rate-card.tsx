@@ -20,6 +20,7 @@ import { LoadingCard, ErrorCard } from "./utils";
 export function SavingsRateCard() {
   const { viewMode } = useScenario();
   const isYtd = viewMode === "ytd";
+  // Blended mode uses same behavior as projected for savings rate (scale = 1)
   const salaryOverrides = useSalaryOverrides();
   const [activeProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",

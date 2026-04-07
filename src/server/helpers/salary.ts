@@ -1,7 +1,7 @@
 /**
  * Salary lookup and compensation helpers.
  */
-import { eq, and, lte, gt, desc, asc } from "drizzle-orm";
+import { eq, and, lte, gte, gt, desc, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "./transforms";
@@ -164,4 +164,54 @@ export async function getFutureSalaryChanges(
     salary: toNumber(c.newSalary),
     effectiveDate: c.effectiveDate,
   }));
+}
+
+/**
+ * Get the full salary timeline for a job within a given year.
+ * Returns entries in date order, starting with the rate effective on Jan 1
+ * (from most recent change before the year, or job base salary as fallback),
+ * followed by all changes within the year (past + future).
+ */
+export async function getSalaryTimelineForYear(
+  db: Db,
+  jobId: number,
+  fallbackSalary: string,
+  year: number,
+): Promise<{ salary: number; effectiveDate: string | null }[]> {
+  const yearStart = `${year}-01-01`;
+  const yearEnd = `${year}-12-31`;
+
+  // Starting salary: most recent change before Jan 1 of the target year
+  const startingSalary = await getCurrentSalary(
+    db,
+    jobId,
+    fallbackSalary,
+    new Date(`${year}-01-01T00:00:00`),
+  );
+
+  // All changes within the target year (both past and future)
+  const changesInYear = await db
+    .select()
+    .from(schema.salaryChanges)
+    .where(
+      and(
+        eq(schema.salaryChanges.jobId, jobId),
+        gte(schema.salaryChanges.effectiveDate, yearStart),
+        lte(schema.salaryChanges.effectiveDate, yearEnd),
+      ),
+    )
+    .orderBy(asc(schema.salaryChanges.effectiveDate));
+
+  const timeline: { salary: number; effectiveDate: string | null }[] = [
+    { salary: startingSalary, effectiveDate: null },
+  ];
+
+  for (const c of changesInYear) {
+    timeline.push({
+      salary: toNumber(c.newSalary),
+      effectiveDate: c.effectiveDate,
+    });
+  }
+
+  return timeline;
 }

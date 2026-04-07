@@ -441,18 +441,33 @@ export function ScenarioBar() {
             role="tab"
             aria-selected={viewMode === "projected"}
             onClick={() => setViewMode("projected")}
+            title="Current rate applied to all pay periods"
             className={`px-3 py-1.5 rounded text-[11px] transition-colors ${
               viewMode === "projected"
                 ? "bg-surface-primary text-primary shadow-sm"
                 : "text-muted hover:text-secondary "
             }`}
           >
-            Projected Year
+            Current Salary
+          </button>
+          <button
+            role="tab"
+            aria-selected={viewMode === "blended"}
+            onClick={() => setViewMode("blended")}
+            title="Blended projection using actual salary changes throughout the year"
+            className={`px-3 py-1.5 rounded text-[11px] transition-colors ${
+              viewMode === "blended"
+                ? "bg-surface-primary text-primary shadow-sm"
+                : "text-muted hover:text-secondary "
+            }`}
+          >
+            Projected W-2
           </button>
           <button
             role="tab"
             aria-selected={viewMode === "ytd"}
             onClick={() => setViewMode("ytd")}
+            title="Amounts earned so far based on elapsed pay periods"
             className={`px-3 py-1.5 rounded text-[11px] transition-colors ${
               viewMode === "ytd"
                 ? "bg-surface-primary text-primary shadow-sm"

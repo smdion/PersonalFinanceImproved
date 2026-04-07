@@ -160,7 +160,7 @@ export function SpreadsheetView({
           <SpreadsheetYearOverYearTable
             yearA={yearARow}
             yearB={yearBRow}
-            annualize={viewMode === "projected"}
+            annualize={viewMode !== "ytd"}
             useMarketValue={useMarketValue}
           />
 
@@ -168,7 +168,7 @@ export function SpreadsheetView({
             yearA={yearARow}
             yearB={yearBRow}
             allYears={detailedData.years as DetailedHistoryRow[]}
-            annualize={viewMode === "projected"}
+            annualize={viewMode !== "ytd"}
             useMarketValue={useMarketValue}
             fiProjectionFinalized={fiProjectionFinalized}
           />

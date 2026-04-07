@@ -3,7 +3,12 @@ import { eq, asc } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { calculatePaycheck } from "@/lib/calculators/paycheck";
+import {
+  calculatePaycheck,
+  mapSalaryTimelineToPeriods,
+  calculateBlendedAnnual,
+} from "@/lib/calculators/paycheck";
+import type { SalarySegment } from "@/lib/calculators/paycheck";
 import { calculateTax } from "@/lib/calculators/tax";
 import {
   toNumber,
@@ -16,11 +21,13 @@ import {
   requireLimit,
   loadAndApplyContribProfile,
 } from "@/server/helpers";
+import { getSalaryTimelineForYear } from "@/server/helpers/salary";
 import type {
   PaycheckInput,
   DeductionLine,
   TaxBracketInput,
   TaxInput,
+  BlendedAnnualTotals,
 } from "@/lib/calculators/types";
 import { computeHouseholdTax } from "@/lib/pure/tax";
 import { findActiveJob } from "@/lib/pure/profiles";
@@ -230,6 +237,64 @@ export const paycheckRouter = createTRPCRouter({
 
           const paycheck = calculatePaycheck(paycheckInput);
 
+          // Blended annual computation — accounts for mid-year salary changes.
+          // Skip when a salary override is active (future salary preview toggle)
+          // since blended doesn't make sense with an overridden salary.
+          let blendedAnnual: BlendedAnnualTotals | null = null;
+          if (!overrideSalary) {
+            const currentYear = taxYear;
+            const anchorPayDate = new Date(
+              activeJob.anchorPayDate ?? activeJob.startDate,
+            );
+            const timeline = await getSalaryTimelineForYear(
+              ctx.db,
+              activeJob.id,
+              activeJob.annualSalary,
+              currentYear,
+            );
+            const periodSegments = mapSalaryTimelineToPeriods(
+              timeline,
+              activeJob.payPeriod,
+              anchorPayDate,
+              currentYear,
+            );
+
+            const salarySegments: SalarySegment[] = periodSegments.map(
+              (seg) => {
+                let segPaycheck: typeof paycheck;
+                if (seg.salary === salary) {
+                  // Same salary as current — reuse the already-computed paycheck
+                  segPaycheck = paycheck;
+                } else {
+                  // Different salary — rebuild contributions and recompute
+                  const segContribs = buildContribAccounts(
+                    jobContribs,
+                    personalContribs,
+                    seg.salary,
+                    periodsPerYear,
+                  );
+                  segPaycheck = calculatePaycheck({
+                    ...paycheckInput,
+                    annualSalary: seg.salary,
+                    contributionAccounts: segContribs,
+                  });
+                }
+                return {
+                  salary: seg.salary,
+                  effectiveDate: seg.effectiveDate,
+                  startPeriod: seg.startPeriod,
+                  endPeriod: seg.endPeriod,
+                  paycheck: segPaycheck,
+                };
+              },
+            );
+
+            blendedAnnual = calculateBlendedAnnual(
+              salarySegments,
+              taxBracketInput,
+            );
+          }
+
           // Annual tax estimate using non-checkbox brackets
           const annualBracketRow = allBrackets.find(
             (b) =>
@@ -268,6 +333,7 @@ export const paycheckRouter = createTRPCRouter({
             salary,
             futureSalaryChanges,
             paycheck,
+            blendedAnnual,
             tax,
             rawDeductions: jobDeductions,
             rawContribs,
