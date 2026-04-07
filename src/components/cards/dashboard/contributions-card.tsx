@@ -105,7 +105,7 @@ function FundingBar({
 export function ContributionsCard() {
   const { viewMode } = useScenario();
   const isYtd = viewMode === "ytd";
-  // Blended mode uses same behavior as projected for contributions (scale = 1)
+  const isBlended = viewMode === "blended";
   const salaryOverrides = useSalaryOverrides();
   const [activeContribProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",
@@ -132,7 +132,18 @@ export function ContributionsCard() {
     people.length > 0
       ? people.reduce((s, d) => s + ytdRatio(d), 0) / people.length
       : 0;
-  const ytdScale = isYtd ? avgYtdRatio : 1; // blended uses scale=1 (same as projected)
+  const ytdScale = isYtd ? avgYtdRatio : 1;
+
+  // Blended mode: actual YTD from performance + projected remaining
+  const hasYtdActuals =
+    isBlended &&
+    people.some(
+      (p) =>
+        p.totals.ytdActualRetirement > 0 ||
+        p.totals.ytdActualPortfolio > 0 ||
+        p.totals.ytdActualMatch > 0,
+    );
+  const remainingFraction = 1 - avgYtdRatio;
 
   const jointAts = data?.jointAccountTypes ?? [];
   // Retirement vs portfolio vs total (from tRPC response, plus joint) — non-overlapping by parentCategory
@@ -159,23 +170,61 @@ export function ContributionsCard() {
     (s, a) => s + a.totalContrib,
     0,
   );
-  const householdRetNoMatch =
+  // Projected annual household totals
+  const projRetNoMatch =
     people.reduce((s, p) => s + p.totals.retirementWithoutMatch, 0) +
     jointRetNoMatch;
-  const householdRetWithMatch =
+  const projRetWithMatch =
     people.reduce((s, p) => s + p.totals.retirementWithMatch, 0) +
     jointRetWithMatch;
-  const householdPortNoMatch =
+  const projPortNoMatch =
     people.reduce((s, p) => s + p.totals.portfolioWithoutMatch, 0) +
     jointPortNoMatch;
-  const householdPortWithMatch =
+  const projPortWithMatch =
     people.reduce((s, p) => s + p.totals.portfolioWithMatch, 0) +
     jointPortWithMatch;
-  const householdTotalNoMatch =
+  const projTotalNoMatch =
     people.reduce((s, p) => s + p.totals.totalWithoutMatch, 0) +
     jt.totalWithoutMatch;
-  const householdTotalWithMatch =
+  const projTotalWithMatch =
     people.reduce((s, p) => s + p.totals.totalWithMatch, 0) + jt.totalWithMatch;
+
+  // Blended year-end estimates: actual YTD + projected remaining
+  const ytdActualRet = people.reduce(
+    (s, p) => s + p.totals.ytdActualRetirement,
+    0,
+  );
+  const ytdActualPort = people.reduce(
+    (s, p) => s + p.totals.ytdActualPortfolio,
+    0,
+  );
+  const ytdActualMatch = people.reduce(
+    (s, p) => s + p.totals.ytdActualMatch,
+    0,
+  );
+  const useBlended = isBlended && hasYtdActuals;
+
+  const householdRetNoMatch = useBlended
+    ? ytdActualRet + projRetNoMatch * remainingFraction
+    : projRetNoMatch;
+  const householdRetWithMatch = useBlended
+    ? ytdActualRet + ytdActualMatch + projRetWithMatch * remainingFraction
+    : projRetWithMatch;
+  const householdPortNoMatch = useBlended
+    ? ytdActualPort + projPortNoMatch * remainingFraction
+    : projPortNoMatch;
+  const householdPortWithMatch = useBlended
+    ? ytdActualPort + projPortWithMatch * remainingFraction
+    : projPortWithMatch;
+  const householdTotalNoMatch = useBlended
+    ? ytdActualRet + ytdActualPort + projTotalNoMatch * remainingFraction
+    : projTotalNoMatch;
+  const householdTotalWithMatch = useBlended
+    ? ytdActualRet +
+      ytdActualPort +
+      ytdActualMatch +
+      projTotalWithMatch * remainingFraction
+    : projTotalWithMatch;
 
   // Use average periodsPerYear for household-level multiplier
   const avgPeriodsPerYear =
@@ -575,7 +624,7 @@ export function ContributionsCard() {
           </div>
           <div>
             <p className="text-[10px] text-faint uppercase tracking-wide mb-0.5">
-              Total Portfolio{isYtd ? " (YTD)" : ""}
+              Total Portfolio{isYtd ? " (YTD)" : useBlended ? " (Est.)" : ""}
             </p>
             <div className="text-xs">
               <span className="font-semibold text-primary">

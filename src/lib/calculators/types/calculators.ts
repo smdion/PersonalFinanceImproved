@@ -91,6 +91,10 @@ export type BlendedAnnualTotals = {
     periods: number;
     effectiveDate: string | null;
   }[];
+  /** Actual YTD contributions from performance data (null if no data). */
+  actualYtdContributions: number | null;
+  /** Actual YTD employer match from performance data (null if no data). */
+  actualYtdEmployerMatch: number | null;
 };
 
 // --- Tax ---

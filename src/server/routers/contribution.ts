@@ -83,6 +83,8 @@ type PerContribData = {
   limit: number; // resolved IRS limit (with coverage variant + catchup)
   siblingAnnualTotal: number; // sum of annual amounts for other contribs in same limit group
   limitGroup: string | null;
+  /** Actual YTD contributions from performance data (null if no performance account linked). */
+  ytdActual: { contributions: number; employerMatch: number } | null;
   priorYear?: {
     amount: number; // designated for prior tax year
     limit: number; // prior year's IRS limit
@@ -111,6 +113,12 @@ type PersonSnapshot = {
     savingsRateWithMatch: number;
     /** Savings rate (without match) — totalWithoutMatch / totalCompensation. Single source of truth. */
     savingsRateWithoutMatch: number;
+    /** Actual YTD retirement contributions from performance data. */
+    ytdActualRetirement: number;
+    /** Actual YTD portfolio contributions from performance data. */
+    ytdActualPortfolio: number;
+    /** Actual YTD employer match from performance data. */
+    ytdActualMatch: number;
   };
   result: ReturnType<typeof calculateContributions> | null;
 };
@@ -144,6 +152,7 @@ export const contributionRouter = createTRPCRouter({
         allLimits,
         priorYearLimitsRaw,
         perfAccounts,
+        currentYearPerfActuals,
       ] = await Promise.all([
         ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
         ctx.db.select().from(schema.jobs),
@@ -170,7 +179,36 @@ export const contributionRouter = createTRPCRouter({
             displayName: schema.performanceAccounts.displayName,
           })
           .from(schema.performanceAccounts),
+        ctx.db
+          .select({
+            performanceAccountId:
+              schema.accountPerformance.performanceAccountId,
+            totalContributions: schema.accountPerformance.totalContributions,
+            employerContributions:
+              schema.accountPerformance.employerContributions,
+          })
+          .from(schema.accountPerformance)
+          .where(eq(schema.accountPerformance.year, currentYear)),
       ]);
+
+      // Build YTD actuals lookup: performanceAccountId → { contributions, employerMatch }
+      const perfActualMap = new Map<
+        number,
+        { contributions: number; employerMatch: number }
+      >();
+      for (const row of currentYearPerfActuals) {
+        if (row.performanceAccountId == null) continue;
+        const existing = perfActualMap.get(row.performanceAccountId);
+        if (existing) {
+          existing.contributions += toNumber(row.totalContributions);
+          existing.employerMatch += toNumber(row.employerContributions);
+        } else {
+          perfActualMap.set(row.performanceAccountId, {
+            contributions: toNumber(row.totalContributions),
+            employerMatch: toNumber(row.employerContributions),
+          });
+        }
+      }
 
       // Build label map for performance accounts — strip institution suffix for category grouping
       // e.g. "Long Term Brokerage (Vanguard)" → "Long Term Brokerage"
@@ -225,6 +263,9 @@ export const contributionRouter = createTRPCRouter({
                 totalWithMatch: 0,
                 savingsRateWithMatch: 0,
                 savingsRateWithoutMatch: 0,
+                ytdActualRetirement: 0,
+                ytdActualPortfolio: 0,
+                ytdActualMatch: 0,
               },
               result: null,
             };
@@ -377,6 +418,9 @@ export const contributionRouter = createTRPCRouter({
               limit,
               siblingAnnualTotal: roundToCents(siblingAnnualTotal),
               limitGroup: group,
+              ytdActual: rc.performanceAccountId
+                ? (perfActualMap.get(rc.performanceAccountId) ?? null)
+                : null,
               priorYear: priorYearData,
             };
           });
@@ -635,6 +679,33 @@ export const contributionRouter = createTRPCRouter({
                         10000,
                     ) / 10000
                   : 0,
+              // YTD actuals from performance data — sum by parent category
+              ytdActualRetirement: roundToCents(
+                perContribData
+                  .filter((_pcd, idx) =>
+                    isRetirementParent(rawContribs[idx]?.parentCategory ?? ""),
+                  )
+                  .reduce(
+                    (s, pcd) => s + (pcd.ytdActual?.contributions ?? 0),
+                    0,
+                  ),
+              ),
+              ytdActualPortfolio: roundToCents(
+                perContribData
+                  .filter((_pcd, idx) =>
+                    isPortfolioParent(rawContribs[idx]?.parentCategory ?? ""),
+                  )
+                  .reduce(
+                    (s, pcd) => s + (pcd.ytdActual?.contributions ?? 0),
+                    0,
+                  ),
+              ),
+              ytdActualMatch: roundToCents(
+                perContribData.reduce(
+                  (s, pcd) => s + (pcd.ytdActual?.employerMatch ?? 0),
+                  0,
+                ),
+              ),
             },
             result,
           };

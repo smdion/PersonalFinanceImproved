@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useScenario } from "@/lib/context/scenario-context";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import {
@@ -27,6 +28,8 @@ import {
 import type { AccountCategory } from "@/lib/config/account-types";
 
 export function ContributionSnapshot() {
+  const { viewMode } = useScenario();
+  const isBlended = viewMode === "blended";
   const [activeProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",
     null,
@@ -89,30 +92,101 @@ export function ContributionSnapshot() {
     .filter((a) => isPortfolioParent(a.parentCategory))
     .reduce((s, a) => s + a.totalContrib, 0);
 
+  // Blended mode: compute year-end estimate using actual YTD + projected remaining
+  const avgYtdRatio =
+    activePeople.length > 0
+      ? activePeople.reduce(
+          (s, p) =>
+            s +
+            (p.periodsPerYear! > 0
+              ? p.periodsElapsedYtd / p.periodsPerYear!
+              : 0),
+          0,
+        ) / activePeople.length
+      : 0;
+  const remainingFraction = 1 - avgYtdRatio;
+
+  // Actual YTD totals from performance data
+  const hasYtdActuals =
+    isBlended &&
+    activePeople.some(
+      (p) =>
+        p.totals.ytdActualRetirement > 0 ||
+        p.totals.ytdActualPortfolio > 0 ||
+        p.totals.ytdActualMatch > 0,
+    );
+  const ytdActualRet = activePeople.reduce(
+    (s, p) => s + p.totals.ytdActualRetirement,
+    0,
+  );
+  const ytdActualPort = activePeople.reduce(
+    (s, p) => s + p.totals.ytdActualPortfolio,
+    0,
+  );
+  const ytdActualMatch = activePeople.reduce(
+    (s, p) => s + p.totals.ytdActualMatch,
+    0,
+  );
+
+  // Projected annual totals (without multiplier, for blended calculation)
+  const projRetNoMatch =
+    activePeople.reduce((s, p) => s + p.totals.retirementWithoutMatch, 0) +
+    jointRetNoMatch;
+  const projRetWithMatch =
+    activePeople.reduce((s, p) => s + p.totals.retirementWithMatch, 0) +
+    jointRetWithMatch;
+  const projPortNoMatch =
+    activePeople.reduce((s, p) => s + p.totals.portfolioWithoutMatch, 0) +
+    jointPortNoMatch;
+  const projPortWithMatch =
+    activePeople.reduce((s, p) => s + p.totals.portfolioWithMatch, 0) +
+    jointPortWithMatch;
+  const projTotalNoMatch =
+    activePeople.reduce((s, p) => s + p.totals.totalWithoutMatch, 0) +
+    jt.totalWithoutMatch;
+  const projTotalWithMatch =
+    activePeople.reduce((s, p) => s + p.totals.totalWithMatch, 0) +
+    jt.totalWithMatch;
+
+  // Blended year-end estimates: actual YTD + projected remaining
+  // For "no match" totals: use ytdActualRet/Port (employee only) + remaining projected
+  // For "with match" totals: add ytdActualMatch + remaining projected match
+  const blendedRetNoMatch = hasYtdActuals
+    ? ytdActualRet + projRetNoMatch * remainingFraction
+    : projRetNoMatch;
+  const blendedRetWithMatch = hasYtdActuals
+    ? ytdActualRet + ytdActualMatch + projRetWithMatch * remainingFraction
+    : projRetWithMatch;
+  const blendedPortNoMatch = hasYtdActuals
+    ? ytdActualPort + projPortNoMatch * remainingFraction
+    : projPortNoMatch;
+  const blendedPortWithMatch = hasYtdActuals
+    ? ytdActualPort + projPortWithMatch * remainingFraction
+    : projPortWithMatch;
+  const blendedTotalNoMatch = hasYtdActuals
+    ? ytdActualRet + ytdActualPort + projTotalNoMatch * remainingFraction
+    : projTotalNoMatch;
+  const blendedTotalWithMatch = hasYtdActuals
+    ? ytdActualRet +
+      ytdActualPort +
+      ytdActualMatch +
+      projTotalWithMatch * remainingFraction
+    : projTotalWithMatch;
+
+  // Select projected vs blended based on viewMode
+  const useBlended = isBlended && hasYtdActuals;
   const householdRetNoMatch =
-    (activePeople.reduce((s, p) => s + p.totals.retirementWithoutMatch, 0) +
-      jointRetNoMatch) *
-    householdMult;
+    (useBlended ? blendedRetNoMatch : projRetNoMatch) * householdMult;
   const householdRetWithMatch =
-    (activePeople.reduce((s, p) => s + p.totals.retirementWithMatch, 0) +
-      jointRetWithMatch) *
-    householdMult;
+    (useBlended ? blendedRetWithMatch : projRetWithMatch) * householdMult;
   const householdPortNoMatch =
-    (activePeople.reduce((s, p) => s + p.totals.portfolioWithoutMatch, 0) +
-      jointPortNoMatch) *
-    householdMult;
+    (useBlended ? blendedPortNoMatch : projPortNoMatch) * householdMult;
   const householdPortWithMatch =
-    (activePeople.reduce((s, p) => s + p.totals.portfolioWithMatch, 0) +
-      jointPortWithMatch) *
-    householdMult;
+    (useBlended ? blendedPortWithMatch : projPortWithMatch) * householdMult;
   const householdTotalNoMatch =
-    (activePeople.reduce((s, p) => s + p.totals.totalWithoutMatch, 0) +
-      jt.totalWithoutMatch) *
-    householdMult;
+    (useBlended ? blendedTotalNoMatch : projTotalNoMatch) * householdMult;
   const householdTotalWithMatch =
-    (activePeople.reduce((s, p) => s + p.totals.totalWithMatch, 0) +
-      jt.totalWithMatch) *
-    householdMult;
+    (useBlended ? blendedTotalWithMatch : projTotalWithMatch) * householdMult;
 
   const periodSuffix = getPeriodSuffix(contribPeriod);
 
@@ -605,6 +679,11 @@ export function ContributionSnapshot() {
       </div>
 
       {/* Household totals */}
+      {useBlended && (
+        <p className="text-xs text-amber-600 mb-2">
+          Year-End Estimate: actual YTD from performance + projected remaining
+        </p>
+      )}
       <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-xl p-5 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
         <div>
           <p className="text-xs text-faint uppercase tracking-wide mb-1">

@@ -941,6 +941,8 @@ export function calculateBlendedAnnual(
       netPay: 0,
       blendedSalary: 0,
       segments: [],
+      actualYtdContributions: null,
+      actualYtdEmployerMatch: null,
     };
   }
 
@@ -1028,5 +1030,7 @@ export function calculateBlendedAnnual(
       periods: seg.endPeriod - seg.startPeriod + 1,
       effectiveDate: seg.effectiveDate,
     })),
+    actualYtdContributions: null,
+    actualYtdEmployerMatch: null,
   };
 }

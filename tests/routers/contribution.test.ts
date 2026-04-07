@@ -102,6 +102,9 @@ describe("contribution router", () => {
         totalWithMatch: 0,
         savingsRateWithMatch: 0,
         savingsRateWithoutMatch: 0,
+        ytdActualRetirement: 0,
+        ytdActualPortfolio: 0,
+        ytdActualMatch: 0,
       });
     });
   });

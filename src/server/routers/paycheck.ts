@@ -293,6 +293,43 @@ export const paycheckRouter = createTRPCRouter({
               salarySegments,
               taxBracketInput,
             );
+
+            // Fetch actual YTD contribution data from account_performance
+            const perfActuals = await ctx.db
+              .select({
+                performanceAccountId:
+                  schema.accountPerformance.performanceAccountId,
+                totalContributions:
+                  schema.accountPerformance.totalContributions,
+                employerContributions:
+                  schema.accountPerformance.employerContributions,
+              })
+              .from(schema.accountPerformance)
+              .where(eq(schema.accountPerformance.year, currentYear));
+
+            // Sum actuals that link to this person's contribution accounts
+            const personPerfAccountIds = new Set(
+              jobContribs
+                .map((c) => c.performanceAccountId)
+                .filter(Boolean) as number[],
+            );
+            let actualContribs = 0;
+            let actualMatch = 0;
+            for (const row of perfActuals) {
+              if (
+                row.performanceAccountId &&
+                personPerfAccountIds.has(row.performanceAccountId)
+              ) {
+                actualContribs += toNumber(row.totalContributions);
+                actualMatch += toNumber(row.employerContributions);
+              }
+            }
+
+            // Attach actuals if any matching performance data was found
+            if (personPerfAccountIds.size > 0 && perfActuals.length > 0) {
+              blendedAnnual.actualYtdContributions = actualContribs;
+              blendedAnnual.actualYtdEmployerMatch = actualMatch;
+            }
           }
 
           // Annual tax estimate using non-checkbox brackets
