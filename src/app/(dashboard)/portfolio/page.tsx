@@ -18,6 +18,7 @@ import {
   formatPercent,
   formatDate,
   accountDisplayName,
+  personDisplayName,
 } from "@/lib/utils/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -199,11 +200,7 @@ function groupFormRows(
     for (const row of group.rows) {
       const parts: string[] = [];
       if (hasMultipleOwners) {
-        parts.push(
-          (row.ownerPersonId
-            ? (peopleMap.get(row.ownerPersonId) ?? "Unknown")
-            : "Joint") + " —",
-        );
+        parts.push(personDisplayName(row.ownerPersonId, peopleMap) + " —");
       }
       if (row.subType) {
         parts.push(`${row.subType} (${taxTypeLabel(row.taxType)})`);
@@ -637,9 +634,7 @@ function AccountBalanceOverview() {
     // --- Per Person (detail: person + taxType) ---
     const byPersonTaxType = new Map<string, number>();
     for (const a of accounts) {
-      const name = a.ownerPersonId
-        ? (peopleMap.get(a.ownerPersonId) ?? "Unknown")
-        : "Joint";
+      const name = personDisplayName(a.ownerPersonId, peopleMap);
       const taxLabel = taxTypeLabel(a.taxType);
       const key = `${name} ${taxLabel}`;
       byPersonTaxType.set(key, (byPersonTaxType.get(key) ?? 0) + a.amt);
@@ -651,9 +646,7 @@ function AccountBalanceOverview() {
     // --- Per Person (totals) ---
     const byPerson = new Map<string, number>();
     for (const a of accounts) {
-      const name = a.ownerPersonId
-        ? (peopleMap.get(a.ownerPersonId) ?? "Unknown")
-        : "Joint";
+      const name = personDisplayName(a.ownerPersonId, peopleMap);
       byPerson.set(name, (byPerson.get(name) ?? 0) + a.amt);
     }
     const personRows = Array.from(byPerson.entries())

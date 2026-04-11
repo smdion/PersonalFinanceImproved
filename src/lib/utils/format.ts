@@ -11,6 +11,24 @@ export function stripInstitutionSuffix(label: string): string {
 }
 
 /**
+ * Resolve an owner display name from a peopleMap.
+ * Returns "Joint" for null/undefined ownerPersonId (intentional joint account).
+ * Throws if the id is set but missing from the map — that's a data-integrity
+ * error (orphan FK), not a display problem.
+ */
+export function personDisplayName(
+  ownerPersonId: number | null | undefined,
+  peopleMap: Map<number, string>,
+): string {
+  if (ownerPersonId == null) return "Joint";
+  const name = peopleMap.get(ownerPersonId);
+  if (name == null) {
+    throw new Error(`people.id=${ownerPersonId} not found in peopleMap`);
+  }
+  return name;
+}
+
+/**
  * Format a number as USD currency.
  */
 export function formatCurrency(value: number): string {
