@@ -369,6 +369,55 @@ describe("sync mappings — pushPortfolioToApi", () => {
     );
   });
 
+  it("dedupes by performanceAccountId so two mappings sharing one perf account are counted once", async () => {
+    // Models the user's IRA case: two ledger-side mappings (Sean IRA, Joanna IRA)
+    // both reference the same performance account (one IRA perf row that
+    // aggregates both holders). The group total should equal one perf balance,
+    // not double it.
+    const sharedPerfId = seedPerformanceAccount(db, { name: "Joint IRA" });
+    const snapId = seedSnapshot(db, "2026-03-01", [
+      { performanceAccountId: sharedPerfId, amount: "30000" },
+    ]);
+
+    const mockCreateTransaction = vi.fn().mockResolvedValue("tx-dedup");
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetClientForService.mockResolvedValue({
+      createTransaction: mockCreateTransaction,
+      getAccountTransactions: vi.fn().mockResolvedValue([]),
+      getAccountBalance: vi.fn().mockResolvedValue(0),
+      deleteTransaction: vi.fn(),
+    });
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [
+        {
+          localId: `performance:${sharedPerfId}`,
+          localName: "Sean IRA",
+          remoteAccountId: "ynab-ira",
+          syncDirection: "push",
+          performanceAccountId: sharedPerfId,
+        },
+        {
+          localId: `performance:${sharedPerfId}`,
+          localName: "Joanna IRA",
+          remoteAccountId: "ynab-ira",
+          syncDirection: "push",
+          performanceAccountId: sharedPerfId,
+        },
+      ],
+    });
+
+    const result = await caller.sync.pushPortfolioToApi({ snapshotId: snapId });
+    expect(result.pushed).toBe(1);
+    // Posted amount must equal the perf account's balance (30000), not 2x
+    expect(mockCreateTransaction).toHaveBeenCalledTimes(1);
+    expect(mockCreateTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: "ynab-ira",
+        amount: 30000,
+      }),
+    );
+  });
+
   it("skips group on second sync (idempotency via snapshot tag)", async () => {
     const perfAcctId = seedPerformanceAccount(db, { name: "HSA" });
     const snapId = seedSnapshot(db, "2026-02-15", [

@@ -56,6 +56,16 @@ function buildMemo(
 
 /**
  * Aggregate snapshot balances into one entry per remoteAccountId.
+ *
+ * Dedupes by `(remoteAccountId, performanceAccountId)` so a perf account
+ * referenced by multiple mappings within the same group is counted once.
+ * This handles the legitimate case where two ledger-side accounts share a
+ * single performance account (e.g. two IRAs aggregated under one perf row).
+ *
+ * Requires `performanceAccountId` on every push mapping. Mappings missing
+ * the typed field are skipped — backfill via `sync.migrateAccountMappingsToIds`
+ * if you see them in prod.
+ *
  * Pure function — no I/O.
  */
 function aggregateMappings(
@@ -63,7 +73,10 @@ function aggregateMappings(
   balanceByPerformanceAccountId: Map<number, number>,
   labelByPerformanceAccountId: Map<number, string>,
 ): GroupAggregate[] {
-  const grouped = new Map<string, GroupAggregate>();
+  const grouped = new Map<
+    string,
+    GroupAggregate & { seenPerformanceAccountIds: Set<number> }
+  >();
   for (const mapping of mappings) {
     if (mapping.syncDirection !== "push" && mapping.syncDirection !== "both") {
       continue;
@@ -73,21 +86,42 @@ function aggregateMappings(
     const localBalance =
       balanceByPerformanceAccountId.get(performanceAccountId);
     if (localBalance === undefined) continue;
-    const label =
-      labelByPerformanceAccountId.get(performanceAccountId) ??
-      mapping.localName;
     const entry = grouped.get(mapping.remoteAccountId) ?? {
       remoteAccountId: mapping.remoteAccountId,
       total: 0,
       contributorLabels: [],
+      seenPerformanceAccountIds: new Set<number>(),
     };
+    if (entry.seenPerformanceAccountIds.has(performanceAccountId)) {
+      // Already counted this perf account in this group — multiple mappings
+      // pointing to the same perf+remote pair contribute their balance once.
+      // Still record the mapping's localName as a contributor for the memo.
+      const label =
+        labelByPerformanceAccountId.get(performanceAccountId) ??
+        mapping.localName;
+      if (!entry.contributorLabels.includes(label)) {
+        entry.contributorLabels.push(label);
+      }
+      grouped.set(mapping.remoteAccountId, entry);
+      continue;
+    }
+    entry.seenPerformanceAccountIds.add(performanceAccountId);
     entry.total += localBalance;
+    const label =
+      labelByPerformanceAccountId.get(performanceAccountId) ??
+      mapping.localName;
     if (!entry.contributorLabels.includes(label)) {
       entry.contributorLabels.push(label);
     }
     grouped.set(mapping.remoteAccountId, entry);
   }
-  return Array.from(grouped.values());
+  return Array.from(grouped.values()).map(
+    ({ remoteAccountId, total, contributorLabels }) => ({
+      remoteAccountId,
+      total,
+      contributorLabels,
+    }),
+  );
 }
 
 /** Build per-snapshot inputs from the DB: balances + display labels keyed by performanceAccountId. */
