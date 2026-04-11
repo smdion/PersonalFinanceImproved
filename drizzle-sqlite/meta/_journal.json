@@ -15,6 +15,13 @@
       "when": 1775494479594,
       "tag": "0001_fixed_shiva",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1775933146763,
+      "tag": "0002_stale_diamondback",
+      "breakpoints": true
     }
   ]
 }

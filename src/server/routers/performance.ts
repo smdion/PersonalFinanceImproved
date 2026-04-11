@@ -2,7 +2,6 @@
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { asc, eq, and, sql } from "drizzle-orm";
-import { log } from "@/lib/logger";
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -35,7 +34,7 @@ import {
   type AnnualRowLike,
   recomputeLifetimeFields,
 } from "@/lib/pure/performance";
-import { accountDisplayName, stripInstitutionSuffix } from "@/lib/utils/format";
+import { accountDisplayName } from "@/lib/utils/format";
 import { isRetirementParent } from "@/lib/config/account-types";
 import {
   accountTypeToPerformanceCategory,
@@ -49,58 +48,55 @@ type DbType =
   | Parameters<Parameters<typeof appDb.transaction>[0]>[0];
 type PerfAccount = typeof schema.performanceAccounts.$inferSelect;
 
-/** Build lookup maps for resolving account_performance → performance_accounts master.
- *  Returns { byId, byInstLabel } for direct ID lookup and fallback institution+label matching. */
 function buildPerfAcctLookups(perfAccounts: PerfAccount[]) {
-  const byId = new Map(perfAccounts.map((pa) => [pa.id, pa]));
-  // DEPRECATED: Fallback match by institution + stripped label (for rows without performanceAccountId).
-  // Will be removed once all rows are backfilled with performanceAccountId via backfillPerformanceAccountIds.
-  const byInstLabel = new Map<string, PerfAccount>();
-  for (const pa of perfAccounts) {
-    const labelBase = stripInstitutionSuffix(pa.accountLabel);
-    byInstLabel.set(`${pa.institution}:${labelBase}`, pa);
-  }
-  return { byId, byInstLabel };
+  return new Map(perfAccounts.map((pa) => [pa.id, pa]));
 }
 
-/** Resolve master performance_account for an account_performance row. */
+function resolveOwnerName(
+  ownerPersonId: number | null,
+  peopleMap: Map<number, string>,
+): string | null {
+  if (ownerPersonId == null) return null;
+  const name = peopleMap.get(ownerPersonId);
+  if (name == null) {
+    throw new Error(`people.id=${ownerPersonId} not found (orphan FK)`);
+  }
+  return name;
+}
+
 function resolveMaster(
   a: {
+    id: number;
     performanceAccountId: number | null;
     institution: string;
     accountLabel: string;
   },
-  lookups: ReturnType<typeof buildPerfAcctLookups>,
-): PerfAccount | null {
-  if (a.performanceAccountId)
-    return lookups.byId.get(a.performanceAccountId) ?? null;
-  // DEPRECATED: institution+label fallback — will be removed once all rows have performanceAccountId
-  const fallback =
-    lookups.byInstLabel.get(`${a.institution}:${a.accountLabel}`) ?? null;
-  if (fallback) {
-    log("warn", "perf_acct_fallback_match", {
-      institution: a.institution,
-      label: a.accountLabel,
-    });
+  byId: Map<number, PerfAccount>,
+): PerfAccount {
+  if (a.performanceAccountId == null) {
+    throw new Error(
+      `account_performance.id=${a.id} (${a.institution}:${a.accountLabel}) has null performanceAccountId`,
+    );
   }
-  return fallback;
+  const master = byId.get(a.performanceAccountId);
+  if (!master) {
+    throw new Error(
+      `account_performance.id=${a.id} references missing performance_account.id=${a.performanceAccountId}`,
+    );
+  }
+  return master;
 }
 
-/** Get the effective display category for an account_performance row.
- *  Uses accountType from master performance_account, falls back to parentCategory. */
 function getEffectiveCategory(
   a: {
+    id: number;
     performanceAccountId: number | null;
     institution: string;
     accountLabel: string;
-    parentCategory: string;
   },
-  lookups: ReturnType<typeof buildPerfAcctLookups>,
+  byId: Map<number, PerfAccount>,
 ): string {
-  const master = resolveMaster(a, lookups);
-  return master
-    ? accountTypeToPerformanceCategory(master.accountType)
-    : a.parentCategory;
+  return accountTypeToPerformanceCategory(resolveMaster(a, byId).accountType);
 }
 
 /** Cascade-recompute lifetime fields on all annual_performance rows.
@@ -278,8 +274,7 @@ export const performanceRouter = createTRPCRouter({
     // the canonical parentCategory on the master record (e.g. HSA/ESPP accounts
     // store "HSA"/"Brokerage" but master says "Retirement").
     for (const a of accounts) {
-      const master = resolveMaster(a, perfLookups);
-      if (master) a.parentCategory = master.parentCategory;
+      a.parentCategory = resolveMaster(a, perfLookups).parentCategory;
     }
 
     // Group account_performance by year → effective category (derived from account type)
@@ -646,12 +641,10 @@ export const performanceRouter = createTRPCRouter({
         id: r.id,
         year: r.year,
         institution: r.institution,
-        accountLabel: accountDisplayName(master ?? r),
-        ownerName: r.ownerPersonId
-          ? (peopleMap.get(r.ownerPersonId) ?? "Unknown")
-          : null,
+        accountLabel: accountDisplayName(master),
+        ownerName: resolveOwnerName(r.ownerPersonId, peopleMap),
         ownerPersonId: r.ownerPersonId,
-        ownershipType: master?.ownershipType ?? "individual",
+        ownershipType: master.ownershipType,
         beginningBalance: beginBal,
         totalContributions: contribs,
         yearlyGainLoss: gainLoss,
@@ -671,11 +664,11 @@ export const performanceRouter = createTRPCRouter({
         fees,
         distributions,
         rollovers,
-        parentCategory: master?.parentCategory ?? r.parentCategory,
-        accountType: master?.accountType ?? null,
+        parentCategory: master.parentCategory,
+        accountType: master.accountType,
         isActive: r.isActive,
         performanceAccountId: r.performanceAccountId,
-        displayOrder: master?.displayOrder ?? 999,
+        displayOrder: master.displayOrder,
       };
     });
 
@@ -704,9 +697,7 @@ export const performanceRouter = createTRPCRouter({
       id: pa.id,
       institution: pa.institution,
       accountLabel: accountDisplayName(pa),
-      ownerName: pa.ownerPersonId
-        ? (peopleMap.get(pa.ownerPersonId) ?? "Unknown")
-        : null,
+      ownerName: resolveOwnerName(pa.ownerPersonId, peopleMap),
       ownerPersonId: pa.ownerPersonId,
       ownershipType: pa.ownershipType,
       parentCategory: pa.parentCategory,
@@ -1328,10 +1319,10 @@ export const performanceRouter = createTRPCRouter({
           )
           .limit(1);
 
-        let portfolioByTaxLocation: {
+        const portfolioByTaxLocation: {
           retirement: Record<string, number>;
           portfolio: Record<string, number>;
-        } | null = null;
+        } = { retirement: {}, portfolio: {} };
 
         if (nearestSnapshot.length > 0) {
           const snapAccounts = await tx
@@ -1340,20 +1331,13 @@ export const performanceRouter = createTRPCRouter({
             .where(
               eq(schema.portfolioAccounts.snapshotId, nearestSnapshot[0]!.id),
             );
-          const breakdown: {
-            retirement: Record<string, number>;
-            portfolio: Record<string, number>;
-          } = { retirement: {}, portfolio: {} };
           for (const a of snapAccounts) {
-            const parentCat = a.parentCategory ?? "Retirement";
-            const taxType = a.taxType ?? "preTax";
             const bucket =
-              parentCat === "Portfolio"
-                ? breakdown.portfolio
-                : breakdown.retirement;
-            bucket[taxType] = (bucket[taxType] ?? 0) + toNumber(a.amount);
+              a.parentCategory === "Portfolio"
+                ? portfolioByTaxLocation.portfolio
+                : portfolioByTaxLocation.retirement;
+            bucket[a.taxType] = (bucket[a.taxType] ?? 0) + toNumber(a.amount);
           }
-          portfolioByTaxLocation = breakdown;
         }
 
         if (existingRow) {

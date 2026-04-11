@@ -248,6 +248,7 @@ describe("buildYearEndHistory", () => {
         grossIncome: "180000",
         combinedAgi: "160000",
         homeImprovementsCumulative: "15000",
+        portfolioByTaxLocation: { retirement: {}, portfolio: {} },
       })
       .run();
 
@@ -454,6 +455,7 @@ describe("buildYearEndHistory", () => {
         grossIncome: "170000",
         combinedAgi: "150000",
         homeImprovementsCumulative: "10000",
+        portfolioByTaxLocation: { retirement: {}, portfolio: {} },
       })
       .run();
 

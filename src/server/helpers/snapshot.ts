@@ -8,8 +8,6 @@ import { toNumber } from "./transforms";
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 import type { Db } from "./transforms";
 import { parseAppSettings } from "./settings";
-import { stripInstitutionSuffix } from "@/lib/utils/format";
-import { log } from "@/lib/logger";
 import { getSalariesForJobs, getTotalCompensation } from "./salary";
 import {
   getEffectiveCash,
@@ -124,6 +122,10 @@ export async function getLatestSnapshot(
     accountType: a.accountType as AccountCategory,
     subType: a.subType,
     label: a.label,
+    // Prefer the master performance_account's parentCategory (authoritative)
+    // over the snapshot row's denormalized copy. Falls back to the snapshot
+    // row only when the portfolio account has no linked performance account
+    // (LEFT JOIN miss — legitimate for accounts that aren't yet tracked).
     parentCategory: a.perfParentCategory ?? a.parentCategory,
     amount: toNumber(a.amount),
     ownerPersonId: a.ownerPersonId,
@@ -338,33 +340,26 @@ export async function buildYearEndHistory(
     );
   }
 
-  // Build performance account lookups (by ID + fallback by institution:label)
   const perfAcctMap = new Map(perfAccounts.map((pa) => [pa.id, pa]));
-  const perfAcctByInstLabel = new Map<string, (typeof perfAccounts)[0]>();
-  for (const pa of perfAccounts) {
-    const labelBase = stripInstitutionSuffix(pa.accountLabel);
-    perfAcctByInstLabel.set(`${pa.institution}:${labelBase}`, pa);
-  }
 
-  /** Resolve master performance_account with fallback for null performanceAccountId. */
   function resolveHistoryMaster(acct: {
+    id: number;
     performanceAccountId: number | null;
     institution: string;
     accountLabel: string;
-  }) {
-    if (acct.performanceAccountId)
-      return perfAcctMap.get(acct.performanceAccountId) ?? null;
-    // DEPRECATED: institution+label fallback — will be removed once all rows have performanceAccountId
-    const fallback =
-      perfAcctByInstLabel.get(`${acct.institution}:${acct.accountLabel}`) ??
-      null;
-    if (fallback) {
-      log("warn", "perf_acct_fallback_match", {
-        institution: acct.institution,
-        label: acct.accountLabel,
-      });
+  }): (typeof perfAccounts)[number] {
+    if (acct.performanceAccountId == null) {
+      throw new Error(
+        `account_performance.id=${acct.id} (${acct.institution}:${acct.accountLabel}) has null performanceAccountId`,
+      );
     }
-    return fallback;
+    const master = perfAcctMap.get(acct.performanceAccountId);
+    if (!master) {
+      throw new Error(
+        `account_performance.id=${acct.id} references missing performance_account.id=${acct.performanceAccountId}`,
+      );
+    }
+    return master;
   }
 
   // Build performance portfolio breakdown by year
@@ -385,10 +380,9 @@ export async function buildYearEndHistory(
     for (const acct of yearAccounts) {
       const endBal = toNumber(acct.endingBalance);
       const master = resolveHistoryMaster(acct);
-      const accountType = master?.accountType ?? "unknown";
 
       portfolioTotal += endBal;
-      byType[accountType] = (byType[accountType] ?? 0) + endBal;
+      byType[master.accountType] = (byType[master.accountType] ?? 0) + endBal;
     }
 
     perfPortfolioByYear.set(year, { portfolioTotal, byType });
@@ -438,9 +432,7 @@ export async function buildYearEndHistory(
     const yearMap: Record<string, CategoryPerformance> = {};
     for (const acct of yearAccounts) {
       const master = resolveHistoryMaster(acct);
-      const category = accountTypeToPerformanceCategory(
-        master?.accountType ?? null,
-      );
+      const category = accountTypeToPerformanceCategory(master.accountType);
       const existing = yearMap[category] ?? {
         endingBalance: 0,
         contributions: 0,
@@ -469,8 +461,7 @@ export async function buildYearEndHistory(
     const yearMap: Record<string, CategoryPerformance> = {};
     for (const acct of yearAccounts) {
       const master = resolveHistoryMaster(acct);
-      const parentCategory =
-        master?.parentCategory ?? acct.parentCategory ?? "Retirement";
+      const parentCategory = master.parentCategory;
       const existing = yearMap[parentCategory] ?? {
         endingBalance: 0,
         contributions: 0,
@@ -638,19 +629,7 @@ export async function buildYearEndHistory(
       snapshotAgeDays: null,
       performanceByCategory: perfByCategoryByYear.get(year) ?? {},
       performanceByParentCategory: perfByParentCategoryByYear.get(year) ?? {},
-      // JSONB column from net_worth_annual; fall back to legacy columns if null
-      portfolioByTaxLocation:
-        (r.portfolioByTaxLocation as TaxLocationBreakdown | null) ?? {
-          retirement: {
-            taxFree: toNumber(r.taxFreeTotal),
-            preTax: toNumber(r.taxDeferredTotal),
-            hsa: toNumber(r.hsa),
-            afterTax: toNumber(r.rBrokerage),
-          },
-          portfolio: {
-            afterTax: toNumber(r.ltBrokerage) + toNumber(r.espp),
-          },
-        },
+      portfolioByTaxLocation: r.portfolioByTaxLocation as TaxLocationBreakdown,
       ytdRatio: 1, // finalized year — full year
       // Placeholders — computed in final pass after all rows are built
       wealthScoreMarket: 0,
@@ -679,8 +658,8 @@ export async function buildYearEndHistory(
     const portfolioByType: Record<string, number> = {};
     if (snapshotData) {
       for (const a of snapshotData.accounts) {
-        const acctType = a.accountType ?? "unknown";
-        portfolioByType[acctType] = (portfolioByType[acctType] ?? 0) + a.amount;
+        portfolioByType[a.accountType] =
+          (portfolioByType[a.accountType] ?? 0) + a.amount;
       }
     }
 

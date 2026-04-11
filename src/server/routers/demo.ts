@@ -274,9 +274,23 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
   // 15. Account performance (per-account yearly breakdown)
   // Build a lookup from accountLabel → perfAccount.id for FK linking
   for (const ap of profile.accountPerformance) {
-    const perfId = ap.perfAccountLabel
-      ? (_perfIdByLabel.get(ap.perfAccountLabel) ?? null)
-      : null;
+    if (!ap.perfAccountLabel) {
+      throw new Error(
+        `demo profile: accountPerformance ${ap.institution}/${ap.accountLabel} (year ${ap.year}) missing perfAccountLabel`,
+      );
+    }
+    const perfId = _perfIdByLabel.get(ap.perfAccountLabel);
+    if (perfId == null) {
+      throw new Error(
+        `demo profile: perfAccountLabel="${ap.perfAccountLabel}" not found in seeded performance_accounts`,
+      );
+    }
+    const master = perfRows.find((p) => p.id === perfId);
+    if (!master) {
+      throw new Error(
+        `demo profile: performance_account id=${perfId} not found`,
+      );
+    }
     await db.insert(schema.accountPerformance).values({
       year: ap.year,
       institution: ap.institution,
@@ -291,10 +305,7 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
       annualReturnPct: ap.annualReturnPct,
       employerContributions: ap.employerContributions,
       fees: ap.fees,
-      parentCategory: perfId
-        ? (perfRows.find((p) => p.id === perfId)?.parentCategory ??
-          ap.parentCategory)
-        : ap.parentCategory,
+      parentCategory: master.parentCategory,
       performanceAccountId: perfId,
     });
   }
@@ -352,6 +363,7 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
       retirementTotal: nw.retirementTotal,
       portfolioTotal: nw.portfolioTotal,
       mortgageBalance: nw.mortgageBalance,
+      portfolioByTaxLocation: { retirement: {}, portfolio: {} },
     });
   }
 
