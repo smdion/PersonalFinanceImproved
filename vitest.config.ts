@@ -18,6 +18,11 @@ export default defineConfig({
         "src/lib/config/**",
         "src/lib/budget-api/**",
         "src/lib/db/**",
+        // src/lib/utils/** is intentionally excluded — many helpers (colors,
+        // format) lack direct tests; including the dir would surface
+        // pre-existing 0% files and drag the threshold down. Add specific
+        // utility files here when they have first-class tests.
+        "src/lib/utils/account-mapping.ts",
         "src/server/**",
       ],
       exclude: [
