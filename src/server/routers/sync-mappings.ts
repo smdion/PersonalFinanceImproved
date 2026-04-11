@@ -13,6 +13,7 @@ import {
 import { accountDisplayName } from "@/lib/utils/format";
 import { accountMappingSchema } from "@/lib/db/json-schemas";
 import { getApiAccountBalanceMap } from "@/server/helpers/api-balance-resolution";
+import { pushSnapshotToBudgetApi } from "@/server/helpers/budget-api-push";
 
 const serviceEnum = z.enum(["ynab", "actual"]);
 
@@ -108,6 +109,7 @@ export const syncMappingsRouter = createTRPCRouter({
   pushPortfolioToApi: adminProcedure
     .input(z.object({ snapshotId: z.number().int().optional() }).optional())
     .mutation(async ({ ctx, input }) => {
+      const asOfDate = new Date();
       const active = await getActiveBudgetApi(ctx.db);
       if (active === "none") {
         throw new TRPCError({
@@ -153,86 +155,113 @@ export const syncMappingsRouter = createTRPCRouter({
         });
       }
 
-      // Get snapshot accounts + people for owner-aware labels
-      const [snapshotAccounts] = await Promise.all([
-        ctx.db
-          .select()
-          .from(schema.portfolioAccounts)
-          .where(eq(schema.portfolioAccounts.snapshotId, snapshot.id)),
-      ]);
-      const _pushPerfAccounts = await ctx.db
-        .select()
-        .from(schema.performanceAccounts);
+      const result = await pushSnapshotToBudgetApi({
+        db: ctx.db,
+        snapshotId: snapshot.id,
+        snapshotDate: snapshot.snapshotDate,
+        mappings,
+        client,
+        mode: "create",
+        asOfDate,
+      });
 
-      // Build balances keyed by performanceAccountId for ID-based resolution
-      const balanceByPerfId = new Map<number, number>();
-      for (const acct of snapshotAccounts) {
-        if (!acct.performanceAccountId) continue;
-        balanceByPerfId.set(
-          acct.performanceAccountId,
-          (balanceByPerfId.get(acct.performanceAccountId) ?? 0) +
-            Number(acct.amount),
-        );
-      }
+      return {
+        pushed: result.groupsPosted,
+        skipped: result.groupsSkipped,
+      };
+    }),
 
-      // Get current API account balances
-      const apiBalanceMap =
-        (await getApiAccountBalanceMap(ctx.db, active)) ??
-        new Map<string, number>();
-
-      // Aggregate local balances by remote account via localId (many-to-one support)
-      const remoteAggregated = new Map<
-        string,
-        { total: number; localNames: string[] }
-      >();
-      for (const mapping of mappings) {
-        if (
-          mapping.syncDirection !== "push" &&
-          mapping.syncDirection !== "both"
-        )
-          continue;
-        // Parse localId to get performanceAccountId
-        let localBalance: number | undefined;
-        if (
-          mapping.performanceAccountId ||
-          mapping.localId?.startsWith("performance:")
-        ) {
-          const perfId =
-            mapping.performanceAccountId ??
-            parseInt(mapping.localId!.split(":")[1]!, 10);
-          localBalance = balanceByPerfId.get(perfId);
-        }
-        if (localBalance === undefined) continue;
-        const entry = remoteAggregated.get(mapping.remoteAccountId) ?? {
-          total: 0,
-          localNames: [],
-        };
-        entry.total += localBalance;
-        entry.localNames.push(mapping.localName);
-        remoteAggregated.set(mapping.remoteAccountId, entry);
-      }
-
-      let pushed = 0;
-      for (const [remoteId, { total, localNames }] of Array.from(
-        remoteAggregated.entries(),
-      )) {
-        const currentApiBalance = apiBalanceMap.get(remoteId) ?? 0;
-        const diff = total - currentApiBalance;
-        if (Math.abs(diff) < 0.01) continue;
-
-        await client.createTransaction({
-          accountId: remoteId,
-          date: snapshot.snapshotDate,
-          amount: diff,
-          payeeName: "Portfolio Sync",
-          memo: `Portfolio snapshot ${snapshot.snapshotDate} (${localNames.join(", ")})`,
-          cleared: true,
-          approved: true,
+  /**
+   * Re-push an existing snapshot to the budget API. Deletes any previously
+   * posted snapshot:{id}-tagged transactions on currently-mapped tracking
+   * accounts, then recomputes deltas against live YNAB balances and posts
+   * fresh tagged transactions.
+   *
+   * Resyncing a non-latest snapshot causes historical drift (later snapshot
+   * deltas were computed against the old state). Pass `confirmNonLatest`
+   * after warning the user.
+   */
+  resyncSnapshot: adminProcedure
+    .input(
+      z.object({
+        snapshotId: z.number().int().positive(),
+        confirmNonLatest: z.boolean().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const asOfDate = new Date();
+      const active = await getActiveBudgetApi(ctx.db);
+      if (active === "none") {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "No budget API active",
         });
-        pushed++;
       }
 
-      return { pushed };
+      const client = await getClientForService(ctx.db, active);
+      if (!client) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Budget API client not available",
+        });
+      }
+
+      const conn = await getApiConnection(ctx.db, active);
+      const mappings = conn?.accountMappings ?? [];
+      if (mappings.length === 0) {
+        return {
+          posted: 0,
+          skipped: 0,
+          cleaned: 0,
+          message: "No account mappings configured",
+        };
+      }
+
+      const snapshot = await ctx.db
+        .select()
+        .from(schema.portfolioSnapshots)
+        .where(eq(schema.portfolioSnapshots.id, input.snapshotId))
+        .then((r) => r[0]);
+      if (!snapshot) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Snapshot ${input.snapshotId} not found`,
+        });
+      }
+
+      // Block resync of non-latest snapshots unless explicitly confirmed —
+      // YNAB tracking-account deltas are cumulative, so resyncing an older
+      // snapshot leaves later snapshots in an inconsistent state.
+      const latest = await ctx.db
+        .select({ id: schema.portfolioSnapshots.id })
+        .from(schema.portfolioSnapshots)
+        .orderBy(sql`${schema.portfolioSnapshots.snapshotDate} DESC`)
+        .limit(1)
+        .then((r) => r[0]);
+      const isLatest = latest?.id === snapshot.id;
+      if (!isLatest && !input.confirmNonLatest) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message:
+            "Resyncing a non-latest snapshot causes historical drift in YNAB tracking-account balances. Confirm to proceed.",
+        });
+      }
+
+      const result = await pushSnapshotToBudgetApi({
+        db: ctx.db,
+        snapshotId: snapshot.id,
+        snapshotDate: snapshot.snapshotDate,
+        mappings,
+        client,
+        mode: "resync",
+        asOfDate,
+      });
+
+      return {
+        posted: result.groupsPosted,
+        skipped: result.groupsSkipped,
+        cleaned: result.groupsCleaned,
+      };
     }),
 
   /** Pull tracking account balances from budget API into Ledgr asset values. */

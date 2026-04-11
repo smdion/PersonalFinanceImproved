@@ -298,10 +298,15 @@ describe("sync mappings — pushPortfolioToApi", () => {
       { performanceAccountId: perfAcctId, amount: "100000", taxType: "preTax" },
     ]);
 
-    const mockCreateTransaction = vi.fn().mockResolvedValue({ id: "tx-new" });
+    const mockCreateTransaction = vi.fn().mockResolvedValue("tx-new");
+    const mockGetAccountTransactions = vi.fn().mockResolvedValue([]);
+    const mockGetAccountBalance = vi.fn().mockResolvedValue(90000);
     mockGetActiveBudgetApi.mockResolvedValue("ynab");
     mockGetClientForService.mockResolvedValue({
       createTransaction: mockCreateTransaction,
+      getAccountTransactions: mockGetAccountTransactions,
+      getAccountBalance: mockGetAccountBalance,
+      deleteTransaction: vi.fn(),
     });
     mockGetApiConnection.mockResolvedValue({
       accountMappings: [
@@ -313,11 +318,6 @@ describe("sync mappings — pushPortfolioToApi", () => {
           performanceAccountId: perfAcctId,
         },
       ],
-    });
-    // Current API balance is 90000, so diff = 100000 - 90000 = 10000
-    mockCacheGet.mockResolvedValue({
-      data: [{ id: "ynab-track-401k", name: "401k Track", balance: 90000 }],
-      fetchedAt: new Date(),
     });
 
     const result = await caller.sync.pushPortfolioToApi({ snapshotId: snapId });
@@ -331,16 +331,21 @@ describe("sync mappings — pushPortfolioToApi", () => {
     );
   });
 
-  it("skips push when balance diff is negligible", async () => {
+  it("posts a zero-diff transaction when balance already matches", async () => {
     const perfAcctId = seedPerformanceAccount(db, { name: "Roth IRA" });
     seedSnapshot(db, "2026-02-01", [
       { performanceAccountId: perfAcctId, amount: "50000" },
     ]);
 
-    const mockCreateTransaction = vi.fn();
+    const mockCreateTransaction = vi.fn().mockResolvedValue("tx-zero");
+    const mockGetAccountTransactions = vi.fn().mockResolvedValue([]);
+    const mockGetAccountBalance = vi.fn().mockResolvedValue(50000);
     mockGetActiveBudgetApi.mockResolvedValue("ynab");
     mockGetClientForService.mockResolvedValue({
       createTransaction: mockCreateTransaction,
+      getAccountTransactions: mockGetAccountTransactions,
+      getAccountBalance: mockGetAccountBalance,
+      deleteTransaction: vi.fn(),
     });
     mockGetApiConnection.mockResolvedValue({
       accountMappings: [
@@ -353,14 +358,64 @@ describe("sync mappings — pushPortfolioToApi", () => {
         },
       ],
     });
-    // Balance is already 50000 — diff < 0.01
-    mockCacheGet.mockResolvedValue({
-      data: [{ id: "ynab-roth", name: "Roth Track", balance: 50000 }],
-      fetchedAt: new Date(),
-    });
 
     const result = await caller.sync.pushPortfolioToApi();
+    expect(result.pushed).toBe(1);
+    expect(mockCreateTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: "ynab-roth",
+        amount: 0,
+      }),
+    );
+  });
+
+  it("skips group on second sync (idempotency via snapshot tag)", async () => {
+    const perfAcctId = seedPerformanceAccount(db, { name: "HSA" });
+    const snapId = seedSnapshot(db, "2026-02-15", [
+      { performanceAccountId: perfAcctId, amount: "25000" },
+    ]);
+
+    const mockCreateTransaction = vi.fn().mockResolvedValue("tx-1");
+    // Existing tagged transaction simulates a prior sync
+    const mockGetAccountTransactions = vi.fn().mockResolvedValue([
+      {
+        id: "prior-tx",
+        accountId: "ynab-hsa",
+        accountName: "HSA Track",
+        date: "2026-02-15",
+        amount: 1000,
+        payeeName: "Portfolio Sync",
+        categoryId: null,
+        categoryName: null,
+        memo: `Ledgr snapshot:${snapId} 2026-02-15 — HSA`,
+        cleared: true,
+        approved: true,
+        deleted: false,
+      },
+    ]);
+    const mockGetAccountBalance = vi.fn().mockResolvedValue(25000);
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetClientForService.mockResolvedValue({
+      createTransaction: mockCreateTransaction,
+      getAccountTransactions: mockGetAccountTransactions,
+      getAccountBalance: mockGetAccountBalance,
+      deleteTransaction: vi.fn(),
+    });
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [
+        {
+          localId: `performance:${perfAcctId}`,
+          localName: "HSA",
+          remoteAccountId: "ynab-hsa",
+          syncDirection: "push",
+          performanceAccountId: perfAcctId,
+        },
+      ],
+    });
+
+    const result = await caller.sync.pushPortfolioToApi({ snapshotId: snapId });
     expect(result.pushed).toBe(0);
+    expect(result.skipped).toBe(1);
     expect(mockCreateTransaction).not.toHaveBeenCalled();
   });
 

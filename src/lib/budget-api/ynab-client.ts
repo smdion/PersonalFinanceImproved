@@ -369,6 +369,20 @@ export class YnabClient implements BudgetAPIClient {
     return res.data.transaction.id;
   }
 
+  async deleteTransaction(transactionId: string): Promise<void> {
+    await this.request(`/transactions/${transactionId}`, { method: "DELETE" });
+  }
+
+  async getAccountTransactions(
+    accountId: string,
+    sinceDate: string,
+  ): Promise<BudgetTransaction[]> {
+    const res = await this.request<
+      YnabResponse<{ transactions: YnabTransaction[] }>
+    >(`/accounts/${accountId}/transactions?since_date=${sinceDate}`);
+    return res.data.transactions.filter((t) => !t.deleted).map(mapTransaction);
+  }
+
   async updateTransaction(
     txId: string,
     tx: Partial<NewBudgetTransaction>,
