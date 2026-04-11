@@ -8,6 +8,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.19] - 2026-04-11
+
+### Fixed
+
+- New portfolio snapshots now post one summed adjustment per YNAB tracking-account group instead of a separate transaction per mapping — totals match Ledgr's view of each tracking account
+- YNAB sync now matches Ledgr accounts by ID instead of by display label, so duplicate or renamed labels no longer cause missing or doubled adjustments
+
+### Added
+
+- Resync button on every snapshot row in the Portfolio history table — re-pushes that snapshot to YNAB by removing its previous tagged adjustments and posting fresh ones against the live tracking-account balances
+- Resyncing a non-latest snapshot prompts a confirmation warning, since later snapshot adjustments were computed against the old state
+
+### Improved
+
+- Snapshot-to-YNAB adjustments now carry a `snapshot:{id}` memo tag and contributor account names, so each YNAB entry is traceable back to the originating Ledgr snapshot
+- If a sync fails partway through, any adjustments already posted are rolled back automatically; if rollback can't complete, the failing transaction IDs are surfaced for manual reconciliation
+
+### Security
+
+- Bumped Next.js to 16.2.3 to patch a high-severity Server Components Denial of Service advisory ([GHSA-q4gf-8mx6-v5v3](https://github.com/advisories/GHSA-q4gf-8mx6-v5v3))
+
+---
+
 ## [0.4.18] - 2026-04-06
 
 ### Improved

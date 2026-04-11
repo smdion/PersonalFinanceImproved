@@ -190,6 +190,5 @@ fi
 
 echo -e "\n${GREEN}${BOLD}Release $TAG complete!${NC}"
 echo ""
-echo "Next steps:"
-echo "  1. Build container: see .scratch/docs/OPS.md § Container Build & Deploy"
-echo "  2. Verify: curl http://localhost:3000/api/health"
+echo "Prod should already be running $VERSION (deployed before tagging)."
+echo "Verify: curl http://localhost:3000/api/health"

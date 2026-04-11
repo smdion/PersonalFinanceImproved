@@ -12,13 +12,16 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
-import { invalidateYearEndCache } from "@/server/helpers";
+import {
+  invalidateYearEndCache,
+  pushSnapshotToBudgetApi,
+} from "@/server/helpers";
 import {
   ALL_PERMISSIONS,
   RBAC_SETTINGS_PREFIX,
   RBAC_ADMIN_GROUP_KEY,
 } from "@/server/auth";
-import { buildAccountLabel, accountDisplayName } from "@/lib/utils/format";
+import { buildAccountLabel } from "@/lib/utils/format";
 import {
   accountCategoryEnum,
   getAccountTypeConfig,
@@ -943,9 +946,11 @@ export const adminProcedures = {
         }
 
         // Auto-push to budget API tracking accounts if configured
+        const asOfDate = new Date();
         let apiSyncResult: {
           pushed: boolean;
           accountsPushed: number;
+          accountsSkipped?: number;
           error?: string;
         } = { pushed: false, accountsPushed: 0 };
         try {
@@ -955,105 +960,22 @@ export const adminProcedures = {
           if (active !== "none") {
             const conn = await getApiConnection(ctx.db, active);
             const mappings = conn?.accountMappings ?? [];
-            const pushMappings = mappings.filter(
-              (m: { syncDirection: string }) =>
-                m.syncDirection === "push" || m.syncDirection === "both",
-            );
-            if (pushMappings.length > 0) {
-              const client = await getClientForService(ctx.db, active);
-              if (client) {
-                const { getApiAccountBalanceMap } =
-                  await import("@/server/helpers/api-balance-resolution");
-                const apiBalanceMap =
-                  (await getApiAccountBalanceMap(ctx.db, active)) ??
-                  new Map<string, number>();
-                // Build local balances for portfolio push
-                const [snapshotAccounts, autoPushPeople, autoPushPerfAccounts] =
-                  await Promise.all([
-                    ctx.db
-                      .select()
-                      .from(schema.portfolioAccounts)
-                      .where(
-                        eq(schema.portfolioAccounts.snapshotId, snapshot.id),
-                      ),
-                    ctx.db.select().from(schema.people),
-                    ctx.db.select().from(schema.performanceAccounts),
-                  ]);
-                const autoPushPeopleMap = new Map(
-                  autoPushPeople.map((p) => [p.id, p.name]),
-                );
-                const autoPushPerfMap = new Map(
-                  autoPushPerfAccounts.map((p) => [p.id, p]),
-                );
-                // Build balances keyed by performanceAccountId
-                const balanceByPerfId = new Map<number, number>();
-                for (const acct of snapshotAccounts) {
-                  if (!acct.performanceAccountId) continue;
-                  balanceByPerfId.set(
-                    acct.performanceAccountId,
-                    (balanceByPerfId.get(acct.performanceAccountId) ?? 0) +
-                      Number(acct.amount),
-                  );
-                }
-                let accountsPushed = 0;
-                for (const mapping of pushMappings) {
-                  const m = mapping as {
-                    localId?: string;
-                    localName: string;
-                    remoteAccountId: string;
-                    syncDirection: string;
-                    performanceAccountId?: number;
-                  };
-                  // Resolve by typed field (preferred), legacy localId, or fall back to label matching
-                  let localBal: number | undefined;
-                  if (m.performanceAccountId != null) {
-                    localBal = balanceByPerfId.get(m.performanceAccountId);
-                  } else if (m.localId?.startsWith("performance:")) {
-                    const perfId = parseInt(m.localId.split(":")[1]!, 10);
-                    localBal = balanceByPerfId.get(perfId);
-                  } else {
-                    // Backward compat: fall back to label matching for unmigrated mappings
-                    const autoPushPeopleMap2 = autoPushPeopleMap;
-                    for (const acct of snapshotAccounts) {
-                      const perf = acct.performanceAccountId
-                        ? autoPushPerfMap.get(acct.performanceAccountId)
-                        : null;
-                      const ownerName = acct.ownerPersonId
-                        ? autoPushPeopleMap2.get(acct.ownerPersonId)
-                        : undefined;
-                      const label = accountDisplayName(
-                        {
-                          accountType: acct.accountType,
-                          subType: acct.subType,
-                          label: acct.label,
-                          institution: acct.institution,
-                          displayName: perf?.displayName,
-                          accountLabel: perf?.accountLabel,
-                        },
-                        ownerName ?? undefined,
-                      );
-                      if (label === m.localName) {
-                        localBal = (localBal ?? 0) + Number(acct.amount);
-                      }
-                    }
-                  }
-                  if (localBal === undefined) continue;
-                  const apiBal = apiBalanceMap.get(m.remoteAccountId) ?? 0;
-                  const diff = localBal - apiBal;
-                  if (Math.abs(diff) < 0.01) continue;
-                  await client.createTransaction({
-                    accountId: m.remoteAccountId,
-                    date: input.snapshotDate,
-                    amount: diff,
-                    payeeName: "Portfolio Sync",
-                    memo: `Portfolio snapshot ${input.snapshotDate}`,
-                    cleared: true,
-                    approved: true,
-                  });
-                  accountsPushed++;
-                }
-                apiSyncResult = { pushed: true, accountsPushed };
-              }
+            const client = await getClientForService(ctx.db, active);
+            if (client && mappings.length > 0) {
+              const result = await pushSnapshotToBudgetApi({
+                db: ctx.db,
+                snapshotId: snapshot.id,
+                snapshotDate: input.snapshotDate,
+                mappings,
+                client,
+                mode: "create",
+                asOfDate,
+              });
+              apiSyncResult = {
+                pushed: true,
+                accountsPushed: result.groupsPosted,
+                accountsSkipped: result.groupsSkipped,
+              };
             }
           }
         } catch (e) {

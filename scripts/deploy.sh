@@ -15,7 +15,8 @@
 #   DEPLOY_DEMO_CONTAINER=ledgrdemo
 #
 # Steps:
-#   1. Validate version matches git tag and package.json
+#   1. Validate version matches package.json (bump it on the feature branch
+#      before running this — the git tag does NOT need to exist yet)
 #   2. Build Docker image on host (tagged as ledgr:X.Y.Z + ledgr:latest)
 #   3. Restart demo container first (canary)
 #   4. Health-check demo
@@ -23,7 +24,11 @@
 #   6. Health-check prod
 #   7. Prune old images (keep N-1)
 #
-# Requires SSH access to the host VM. See OPS.md § Container Build & Deploy.
+# In the deploy-then-release flow, this script runs from the feature branch
+# BEFORE the release tag exists. After smoke-testing the deployed prod, merge
+# the PR to main and run `pnpm release X.Y.Z` to tag/publish.
+#
+# Requires SSH access to the host VM. See OPS.md § Release Process.
 
 set -euo pipefail
 
@@ -107,14 +112,9 @@ if [[ "$PKG_VERSION" != "$VERSION" ]]; then
   echo -e "${YELLOW}--force: continuing despite mismatch${NC}"
 fi
 
-# 3. Verify git tag exists
-if ! git rev-parse "$TAG" >/dev/null 2>&1; then
-  echo -e "${RED}Git tag $TAG does not exist. Run 'pnpm release $VERSION' first.${NC}"
-  if ! $FORCE; then
-    exit 1
-  fi
-  echo -e "${YELLOW}--force: continuing without tag${NC}"
-fi
+# 3. (Tag check removed — in the deploy-then-release flow, the tag is created
+#    AFTER deploy by `pnpm release`. The version is already in package.json,
+#    so the build will bake it in correctly.)
 
 # 4. Verify clean working directory (source on host is bind-mounted)
 if [[ -n "$(git status --porcelain)" ]]; then

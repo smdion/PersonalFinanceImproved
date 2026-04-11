@@ -345,6 +345,20 @@ export class ActualClient implements BudgetAPIClient {
     return res.data.id;
   }
 
+  async deleteTransaction(transactionId: string): Promise<void> {
+    await this.request(`/transactions/${transactionId}`, { method: "DELETE" });
+  }
+
+  async getAccountTransactions(
+    accountId: string,
+    sinceDate: string,
+  ): Promise<BudgetTransaction[]> {
+    const res = await this.request<{ data: ActualTransaction[] }>(
+      `/accounts/${accountId}/transactions?since_date=${sinceDate}`,
+    );
+    return res.data.map((t) => mapTransaction(t));
+  }
+
   async updateTransaction(
     txId: string,
     tx: Partial<NewBudgetTransaction>,

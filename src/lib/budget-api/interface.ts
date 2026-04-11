@@ -64,6 +64,15 @@ export interface BudgetAPIClient {
     tx: Partial<NewBudgetTransaction>,
   ): Promise<void>;
 
+  /** Delete a transaction by ID */
+  deleteTransaction(transactionId: string): Promise<void>;
+
+  /** List transactions for a single account since a date */
+  getAccountTransactions(
+    accountId: string,
+    sinceDate: string,
+  ): Promise<BudgetTransaction[]>;
+
   // -- Delta sync --
 
   /** Whether this client supports incremental delta sync */

@@ -1296,6 +1296,7 @@ export default function PortfolioPage() {
       utils.networth.listSnapshots.invalidate();
     },
   });
+  const resyncSnapshotMutation = trpc.sync.resyncSnapshot.useMutation();
 
   const snapshotDate = data?.snapshotDate;
 
@@ -1622,22 +1623,64 @@ export default function PortfolioPage() {
                                 className="py-2 pl-4"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                {canEdit && !isLatest && (
-                                  <button
-                                    onClick={async () => {
-                                      if (
-                                        await confirm(
-                                          `Delete snapshot from ${snap.snapshotDate}?`,
-                                        )
-                                      ) {
-                                        deleteMutation.mutate({ id: snap.id });
+                                <div className="flex items-center gap-3 justify-end">
+                                  {canEdit && (
+                                    <button
+                                      disabled={
+                                        resyncSnapshotMutation.isPending
                                       }
-                                    }}
-                                    className="text-xs text-red-400 hover:text-red-600"
-                                  >
-                                    Delete
-                                  </button>
-                                )}
+                                      onClick={async () => {
+                                        if (!isLatest) {
+                                          const confirmed = await confirm(
+                                            `Resync snapshot from ${snap.snapshotDate}? This is NOT the latest snapshot — resyncing it will leave later snapshots inconsistent in YNAB. Continue?`,
+                                          );
+                                          if (!confirmed) return;
+                                        }
+                                        try {
+                                          const result =
+                                            await resyncSnapshotMutation.mutateAsync(
+                                              {
+                                                snapshotId: snap.id,
+                                                confirmNonLatest: !isLatest,
+                                              },
+                                            );
+                                          alert(
+                                            `Resync complete: posted ${result.posted}, cleaned ${result.cleaned}.`,
+                                          );
+                                        } catch (e) {
+                                          alert(
+                                            `Resync failed: ${e instanceof Error ? e.message : "Unknown error"}`,
+                                          );
+                                        }
+                                      }}
+                                      className="text-xs text-muted hover:text-primary disabled:opacity-50"
+                                    >
+                                      {resyncSnapshotMutation.isPending &&
+                                      resyncSnapshotMutation.variables
+                                        ?.snapshotId === snap.id
+                                        ? "Resyncing…"
+                                        : "Resync"}
+                                    </button>
+                                  )}
+                                  {canEdit && !isLatest && (
+                                    <button
+                                      onClick={async () => {
+                                        if (
+                                          await confirm(
+                                            `Delete snapshot from ${snap.snapshotDate}?`,
+                                          )
+                                        ) {
+                                          deleteMutation.mutate({
+                                            id: snap.id,
+                                          });
+                                        }
+                                      }}
+                                      className="text-xs text-red-400 hover:text-red-600"
+                                    >
+                                      Delete
+                                    </button>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                             {isExpanded && snap.accounts && (

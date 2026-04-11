@@ -4,6 +4,7 @@
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
+import { mappingsWithTypedIds } from "@/lib/utils/account-mapping";
 import type { PreviewData, Service, BudgetMatch } from "./integrations-types";
 import { StatusBadge } from "./integrations-status-badge";
 import { ApiCategorySelect } from "./integrations-api-category-select";
@@ -1253,7 +1254,7 @@ export function PreviewPanel({
                           );
                           updateMappingsMut.mutate({
                             service,
-                            mappings: updated,
+                            mappings: mappingsWithTypedIds(updated),
                           });
                         }}
                         disabled={updateMappingsMut.isPending}
@@ -1284,7 +1285,7 @@ export function PreviewPanel({
                           );
                           updateMappingsMut.mutate({
                             service,
-                            mappings: updated,
+                            mappings: mappingsWithTypedIds(updated),
                           });
                         }}
                         className="text-red-400 hover:text-red-600 text-xs"
@@ -1425,7 +1426,7 @@ export function PreviewPanel({
                                 ];
                                 updateMappingsMut.mutate({
                                   service,
-                                  mappings: updated,
+                                  mappings: mappingsWithTypedIds(updated),
                                 });
                               }}
                               className="flex-1 px-1 py-0.5 text-[10px] border rounded bg-surface-primary"
@@ -1587,7 +1588,10 @@ export function PreviewPanel({
                       syncDirection: newPortfolioDirection,
                     },
                   ];
-                  updateMappingsMut.mutate({ service, mappings: updated });
+                  updateMappingsMut.mutate({
+                    service,
+                    mappings: mappingsWithTypedIds(updated),
+                  });
                   setNewPortfolioLocal("");
                   setNewPortfolioRemote("");
                 }}
