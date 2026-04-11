@@ -229,7 +229,7 @@ export const syncMappingsRouter = createTRPCRouter({
         });
       }
 
-      // Block resync of non-latest snapshots unless explicitly confirmed —
+      // Block resync of non-latest snapshots unless explicitly confirmed:
       // YNAB tracking-account deltas are cumulative, so resyncing an older
       // snapshot leaves later snapshots in an inconsistent state.
       const latest = await ctx.db

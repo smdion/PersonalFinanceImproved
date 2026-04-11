@@ -292,6 +292,85 @@ describe("sync mappings — pushPortfolioToApi", () => {
     expect(result.pushed).toBe(0);
   });
 
+  it("returns pushed:0 when all mappings are pull-only", async () => {
+    const perfId = seedPerformanceAccount(db, { name: "Pull Only Acct" });
+    seedSnapshot(db, "2026-03-30", [
+      { performanceAccountId: perfId, amount: "1234" },
+    ]);
+    const mockCreateTransaction = vi.fn();
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetClientForService.mockResolvedValue({
+      createTransaction: mockCreateTransaction,
+      getAccountTransactions: vi.fn(),
+      getAccountBalance: vi.fn(),
+      deleteTransaction: vi.fn(),
+    });
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [
+        {
+          localId: `performance:${perfId}`,
+          localName: "Pull Only Acct",
+          remoteAccountId: "ynab-pull",
+          syncDirection: "pull",
+          performanceAccountId: perfId,
+        },
+      ],
+    });
+    const result = await caller.sync.pushPortfolioToApi();
+    expect(result.pushed).toBe(0);
+    expect(mockCreateTransaction).not.toHaveBeenCalled();
+  });
+
+  it("dedupe contributor labels when same perf has different mapping labels", async () => {
+    // Same perf account, two mappings with different localNames pointing to
+    // the same remoteAccountId. Both labels should appear in the memo even
+    // though the balance is counted once.
+    const sharedPerfId = seedPerformanceAccount(db, { name: "Shared Perf" });
+    const snapId = seedSnapshot(db, "2026-03-31", [
+      { performanceAccountId: sharedPerfId, amount: "7777" },
+    ]);
+    const mockCreateTransaction = vi.fn().mockResolvedValue("tx-shared");
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetClientForService.mockResolvedValue({
+      createTransaction: mockCreateTransaction,
+      getAccountTransactions: vi.fn().mockResolvedValue([]),
+      getAccountBalance: vi.fn().mockResolvedValue(0),
+      deleteTransaction: vi.fn(),
+    });
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [
+        {
+          localId: `performance:${sharedPerfId}`,
+          localName: "First Label",
+          remoteAccountId: "ynab-shared",
+          syncDirection: "push",
+          performanceAccountId: sharedPerfId,
+        },
+        {
+          localId: `performance:${sharedPerfId}`,
+          localName: "Second Label",
+          remoteAccountId: "ynab-shared",
+          syncDirection: "push",
+          performanceAccountId: sharedPerfId,
+        },
+      ],
+    });
+    const result = await caller.sync.pushPortfolioToApi({
+      snapshotId: snapId,
+    });
+    expect(result.pushed).toBe(1);
+    // Memo should reference the snapshot tag (canonical contributor label
+    // wins from the first occurrence; the dedupe path also pushes any
+    // additional unique label).
+    expect(mockCreateTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: "ynab-shared",
+        amount: 7777,
+        memo: expect.stringContaining(`snapshot:${snapId}`),
+      }),
+    );
+  });
+
   it("pushes portfolio balances to API tracking accounts", async () => {
     const perfAcctId = seedPerformanceAccount(db);
     const snapId = seedSnapshot(db, "2026-01-15", [
@@ -333,7 +412,7 @@ describe("sync mappings — pushPortfolioToApi", () => {
 
   it("posts a zero-diff transaction when balance already matches", async () => {
     const perfAcctId = seedPerformanceAccount(db, { name: "Roth IRA" });
-    seedSnapshot(db, "2026-02-01", [
+    const snapId = seedSnapshot(db, "2026-02-01", [
       { performanceAccountId: perfAcctId, amount: "50000" },
     ]);
 
@@ -359,7 +438,7 @@ describe("sync mappings — pushPortfolioToApi", () => {
       ],
     });
 
-    const result = await caller.sync.pushPortfolioToApi();
+    const result = await caller.sync.pushPortfolioToApi({ snapshotId: snapId });
     expect(result.pushed).toBe(1);
     expect(mockCreateTransaction).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -436,7 +515,7 @@ describe("sync mappings — pushPortfolioToApi", () => {
         payeeName: "Portfolio Sync",
         categoryId: null,
         categoryName: null,
-        memo: `Ledgr snapshot:${snapId} 2026-02-15 — HSA`,
+        memo: `Ledgr snapshot:${snapId} - HSA`,
         cleared: true,
         approved: true,
         deleted: false,
@@ -468,6 +547,132 @@ describe("sync mappings — pushPortfolioToApi", () => {
     expect(mockCreateTransaction).not.toHaveBeenCalled();
   });
 
+  it("rolls back created transactions when a later post fails", async () => {
+    const perfA = seedPerformanceAccount(db, { name: "Acct A" });
+    const perfB = seedPerformanceAccount(db, { name: "Acct B" });
+    const snapId = seedSnapshot(db, "2026-03-15", [
+      { performanceAccountId: perfA, amount: "1000" },
+      { performanceAccountId: perfB, amount: "2000" },
+    ]);
+
+    // First createTransaction succeeds (returns id), second throws
+    const mockCreateTransaction = vi
+      .fn()
+      .mockResolvedValueOnce("tx-first")
+      .mockRejectedValueOnce(new Error("YNAB 500"));
+    const mockDeleteTransaction = vi.fn().mockResolvedValue(undefined);
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetClientForService.mockResolvedValue({
+      createTransaction: mockCreateTransaction,
+      getAccountTransactions: vi.fn().mockResolvedValue([]),
+      getAccountBalance: vi.fn().mockResolvedValue(0),
+      deleteTransaction: mockDeleteTransaction,
+    });
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [
+        {
+          localId: `performance:${perfA}`,
+          localName: "A",
+          remoteAccountId: "ynab-a",
+          syncDirection: "push",
+          performanceAccountId: perfA,
+        },
+        {
+          localId: `performance:${perfB}`,
+          localName: "B",
+          remoteAccountId: "ynab-b",
+          syncDirection: "push",
+          performanceAccountId: perfB,
+        },
+      ],
+    });
+
+    await expect(
+      caller.sync.pushPortfolioToApi({ snapshotId: snapId }),
+    ).rejects.toThrow(/YNAB 500/);
+    // The successfully-created first transaction must be rolled back
+    expect(mockDeleteTransaction).toHaveBeenCalledWith("tx-first");
+  });
+
+  it("surfaces rollback-failure detail when both create and rollback fail", async () => {
+    const perfA = seedPerformanceAccount(db, { name: "Rollback A" });
+    const perfB = seedPerformanceAccount(db, { name: "Rollback B" });
+    const snapId = seedSnapshot(db, "2026-03-25", [
+      { performanceAccountId: perfA, amount: "100" },
+      { performanceAccountId: perfB, amount: "200" },
+    ]);
+
+    const mockCreateTransaction = vi
+      .fn()
+      .mockResolvedValueOnce("tx-stuck")
+      .mockRejectedValueOnce(new Error("YNAB 500"));
+    const mockDeleteTransaction = vi
+      .fn()
+      .mockRejectedValue(new Error("delete also failed"));
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetClientForService.mockResolvedValue({
+      createTransaction: mockCreateTransaction,
+      getAccountTransactions: vi.fn().mockResolvedValue([]),
+      getAccountBalance: vi.fn().mockResolvedValue(0),
+      deleteTransaction: mockDeleteTransaction,
+    });
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [
+        {
+          localId: `performance:${perfA}`,
+          localName: "A",
+          remoteAccountId: "ynab-rba",
+          syncDirection: "push",
+          performanceAccountId: perfA,
+        },
+        {
+          localId: `performance:${perfB}`,
+          localName: "B",
+          remoteAccountId: "ynab-rbb",
+          syncDirection: "push",
+          performanceAccountId: perfB,
+        },
+      ],
+    });
+
+    await expect(
+      caller.sync.pushPortfolioToApi({ snapshotId: snapId }),
+    ).rejects.toThrow(/tx-stuck \(delete also failed\)/);
+  });
+
+  it("aborts with reconcile message when getAccountTransactions fails", async () => {
+    const perfId = seedPerformanceAccount(db, { name: "Fetch Fail" });
+    const snapId = seedSnapshot(db, "2026-03-20", [
+      { performanceAccountId: perfId, amount: "5000" },
+    ]);
+    const mockCreateTransaction = vi.fn();
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetClientForService.mockResolvedValue({
+      createTransaction: mockCreateTransaction,
+      getAccountTransactions: vi
+        .fn()
+        .mockRejectedValue(new Error("YNAB 503 unavailable")),
+      getAccountBalance: vi.fn(),
+      deleteTransaction: vi.fn(),
+    });
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [
+        {
+          localId: `performance:${perfId}`,
+          localName: "Fetch Fail",
+          remoteAccountId: "ynab-fail",
+          syncDirection: "push",
+          performanceAccountId: perfId,
+        },
+      ],
+    });
+
+    await expect(
+      caller.sync.pushPortfolioToApi({ snapshotId: snapId }),
+    ).rejects.toThrow(/Failed to list transactions/);
+    expect(mockCreateTransaction).not.toHaveBeenCalled();
+  });
+
   it("throws NOT_FOUND when no snapshot exists", async () => {
     mockGetActiveBudgetApi.mockResolvedValue("ynab");
     mockGetClientForService.mockResolvedValue({ createTransaction: vi.fn() });
@@ -487,6 +692,434 @@ describe("sync mappings — pushPortfolioToApi", () => {
     await expect(
       caller.sync.pushPortfolioToApi({ snapshotId: 99999 }),
     ).rejects.toThrow(/No portfolio snapshot found/);
+  });
+});
+
+// ── resyncSnapshot ─────────────────────────────────────────────────────
+
+describe("sync mappings — resyncSnapshot", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let db: Awaited<ReturnType<typeof createTestCaller>>["db"];
+  let cleanup: () => void;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    caller = ctx.caller;
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+  });
+
+  afterAll(() => cleanup());
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetActiveBudgetApi.mockResolvedValue("none");
+    mockGetClientForService.mockResolvedValue(null);
+    mockGetApiConnection.mockResolvedValue(null);
+  });
+
+  it("blocks non-latest snapshot resync without confirmNonLatest", async () => {
+    const perfId = seedPerformanceAccount(db, { name: "Resync Old" });
+    const olderSnap = seedSnapshot(db, "2026-01-01", [
+      { performanceAccountId: perfId, amount: "1000" },
+    ]);
+    seedSnapshot(db, "2026-02-01", [
+      { performanceAccountId: perfId, amount: "1100" },
+    ]);
+
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetClientForService.mockResolvedValue({
+      createTransaction: vi.fn(),
+      getAccountTransactions: vi.fn(),
+      getAccountBalance: vi.fn(),
+      deleteTransaction: vi.fn(),
+    });
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [
+        {
+          localId: `performance:${perfId}`,
+          localName: "Resync Old",
+          remoteAccountId: "ynab-old",
+          syncDirection: "push",
+          performanceAccountId: perfId,
+        },
+      ],
+    });
+
+    await expect(
+      caller.sync.resyncSnapshot({ snapshotId: olderSnap }),
+    ).rejects.toThrow(/non-latest snapshot causes historical drift/);
+  });
+
+  it("deletes prior tagged transactions and posts fresh ones in resync mode", async () => {
+    const perfId = seedPerformanceAccount(db, { name: "Resync Latest" });
+    const snapId = seedSnapshot(db, "2026-04-01", [
+      { performanceAccountId: perfId, amount: "10000" },
+    ]);
+
+    const mockCreateTransaction = vi.fn().mockResolvedValue("tx-fresh");
+    const mockDeleteTransaction = vi.fn().mockResolvedValue(undefined);
+    const mockGetAccountTransactions = vi.fn().mockResolvedValue([
+      {
+        id: "old-tagged-tx",
+        accountId: "ynab-resync",
+        accountName: "Resync Track",
+        date: "2026-04-01",
+        amount: 500,
+        payeeName: "Portfolio Sync",
+        categoryId: null,
+        categoryName: null,
+        memo: `Ledgr snapshot:${snapId} - Resync Latest`,
+        cleared: true,
+        approved: true,
+        deleted: false,
+      },
+    ]);
+
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetClientForService.mockResolvedValue({
+      createTransaction: mockCreateTransaction,
+      getAccountTransactions: mockGetAccountTransactions,
+      getAccountBalance: vi.fn().mockResolvedValue(9500),
+      deleteTransaction: mockDeleteTransaction,
+    });
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [
+        {
+          localId: `performance:${perfId}`,
+          localName: "Resync Latest",
+          remoteAccountId: "ynab-resync",
+          syncDirection: "push",
+          performanceAccountId: perfId,
+        },
+      ],
+    });
+
+    const result = await caller.sync.resyncSnapshot({ snapshotId: snapId });
+    expect(mockDeleteTransaction).toHaveBeenCalledWith("old-tagged-tx");
+    expect(result.cleaned).toBe(1);
+    expect(result.posted).toBe(1);
+    // After cleanup, the live balance is 9500. Snapshot is 10000.
+    // Diff = 500.
+    expect(mockCreateTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ accountId: "ynab-resync", amount: 500 }),
+    );
+  });
+
+  it("aborts before posting when cleanup delete fails partway", async () => {
+    const perfId = seedPerformanceAccount(db, { name: "Resync Cleanup Fail" });
+    const snapId = seedSnapshot(db, "2026-04-05", [
+      { performanceAccountId: perfId, amount: "5000" },
+    ]);
+
+    const mockCreateTransaction = vi.fn();
+    const mockDeleteTransaction = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("YNAB 403"));
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetClientForService.mockResolvedValue({
+      createTransaction: mockCreateTransaction,
+      getAccountTransactions: vi.fn().mockResolvedValue([
+        {
+          id: "stuck-tx",
+          accountId: "ynab-stuck",
+          accountName: "Stuck Track",
+          date: "2026-04-05",
+          amount: 100,
+          payeeName: "Portfolio Sync",
+          categoryId: null,
+          categoryName: null,
+          memo: `Ledgr snapshot:${snapId}`,
+          cleared: true,
+          approved: true,
+          deleted: false,
+        },
+      ]),
+      getAccountBalance: vi.fn(),
+      deleteTransaction: mockDeleteTransaction,
+    });
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [
+        {
+          localId: `performance:${perfId}`,
+          localName: "Stuck",
+          remoteAccountId: "ynab-stuck",
+          syncDirection: "push",
+          performanceAccountId: perfId,
+        },
+      ],
+    });
+
+    await expect(
+      caller.sync.resyncSnapshot({ snapshotId: snapId }),
+    ).rejects.toThrow(/Resync cleanup partially failed/);
+    expect(mockCreateTransaction).not.toHaveBeenCalled();
+  });
+
+  it("returns no-op when no mappings configured", async () => {
+    const perfId = seedPerformanceAccount(db, { name: "No Map" });
+    const snapId = seedSnapshot(db, "2026-04-09", [
+      { performanceAccountId: perfId, amount: "1" },
+    ]);
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetClientForService.mockResolvedValue({
+      createTransaction: vi.fn(),
+      getAccountTransactions: vi.fn(),
+      getAccountBalance: vi.fn(),
+      deleteTransaction: vi.fn(),
+    });
+    mockGetApiConnection.mockResolvedValue({ accountMappings: [] });
+    const result = await caller.sync.resyncSnapshot({ snapshotId: snapId });
+    expect(result.posted).toBe(0);
+    expect(result.cleaned).toBe(0);
+  });
+
+  it("throws PRECONDITION_FAILED when no API active", async () => {
+    await expect(caller.sync.resyncSnapshot({ snapshotId: 1 })).rejects.toThrow(
+      /No budget API active/,
+    );
+  });
+});
+
+// ── pullPortfolioFromApi ───────────────────────────────────────────────
+
+describe("sync mappings — pullPortfolioFromApi", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let db: Awaited<ReturnType<typeof createTestCaller>>["db"];
+  let cleanup: () => void;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    caller = ctx.caller;
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+  });
+
+  afterAll(() => cleanup());
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetActiveBudgetApi.mockResolvedValue("none");
+    mockGetClientForService.mockResolvedValue(null);
+    mockGetApiConnection.mockResolvedValue(null);
+    mockCacheGet.mockResolvedValue(null);
+  });
+
+  it("throws PRECONDITION_FAILED when no API active", async () => {
+    await expect(caller.sync.pullPortfolioFromApi()).rejects.toThrow(
+      /No budget API active/,
+    );
+  });
+
+  it("returns pulled:0 when no portfolio pull mappings configured", async () => {
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [
+        {
+          localId: "performance:1",
+          localName: "Push only",
+          remoteAccountId: "r-1",
+          syncDirection: "push",
+          performanceAccountId: 1,
+        },
+      ],
+    });
+    const result = await caller.sync.pullPortfolioFromApi();
+    expect(result.pulled).toBe(0);
+  });
+
+  it("throws PRECONDITION_FAILED when no cached accounts", async () => {
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [
+        {
+          localId: "performance:1",
+          localName: "Pulled",
+          remoteAccountId: "r-1",
+          syncDirection: "pull",
+          performanceAccountId: 1,
+        },
+      ],
+    });
+    mockCacheGet.mockResolvedValue(null);
+    await expect(caller.sync.pullPortfolioFromApi()).rejects.toThrow(
+      /No cached accounts/,
+    );
+  });
+
+  it("throws NOT_FOUND when snapshot doesn't exist", async () => {
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [
+        {
+          localId: "performance:1",
+          localName: "Pulled",
+          remoteAccountId: "r-pulled",
+          syncDirection: "pull",
+          performanceAccountId: 1,
+        },
+      ],
+    });
+    mockCacheGet.mockResolvedValue({
+      data: [{ id: "r-pulled", name: "x", balance: 100 }],
+      fetchedAt: new Date(),
+    });
+    await expect(
+      caller.sync.pullPortfolioFromApi({ snapshotId: 999999 }),
+    ).rejects.toThrow(/No portfolio snapshot found/);
+  });
+
+  it("updates a single matching snapshot row directly", async () => {
+    const perfId = seedPerformanceAccount(db, { name: "Pull Single" });
+    const snapId = seedSnapshot(db, "2026-04-02", [
+      { performanceAccountId: perfId, amount: "1000" },
+    ]);
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [
+        {
+          localId: `performance:${perfId}`,
+          localName: "Pull Single",
+          remoteAccountId: "r-single",
+          syncDirection: "pull",
+          performanceAccountId: perfId,
+        },
+      ],
+    });
+    mockCacheGet.mockResolvedValue({
+      data: [{ id: "r-single", name: "Pull Single Track", balance: 1234 }],
+      fetchedAt: new Date(),
+    });
+
+    const result = await caller.sync.pullPortfolioFromApi({
+      snapshotId: snapId,
+    });
+    expect(result.pulled).toBe(1);
+    const rows = db.select().from(schema.portfolioAccounts).all();
+    const row = rows.find(
+      (r) => r.snapshotId === snapId && r.performanceAccountId === perfId,
+    );
+    expect(row!.amount).toBe("1234");
+  });
+
+  it("scales proportionally when multiple snapshot rows share one perf account", async () => {
+    const perfId = seedPerformanceAccount(db, { name: "Pull Multi" });
+    const snapId = seedSnapshot(db, "2026-04-03", [
+      { performanceAccountId: perfId, amount: "600", taxType: "preTax" },
+      { performanceAccountId: perfId, amount: "400", taxType: "roth" },
+    ]);
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [
+        {
+          localId: `performance:${perfId}`,
+          localName: "Pull Multi",
+          remoteAccountId: "r-multi",
+          syncDirection: "pull",
+          performanceAccountId: perfId,
+        },
+      ],
+    });
+    mockCacheGet.mockResolvedValue({
+      data: [{ id: "r-multi", name: "Pull Multi Track", balance: 2000 }],
+      fetchedAt: new Date(),
+    });
+
+    const result = await caller.sync.pullPortfolioFromApi({
+      snapshotId: snapId,
+    });
+    expect(result.pulled).toBe(1);
+    const rows = db
+      .select()
+      .from(schema.portfolioAccounts)
+      .all()
+      .filter(
+        (r) => r.snapshotId === snapId && r.performanceAccountId === perfId,
+      );
+    const total = rows.reduce((s, r) => s + Number(r.amount), 0);
+    expect(total).toBe(2000);
+    const amounts = rows.map((r) => Number(r.amount)).sort((a, b) => a - b);
+    expect(amounts).toEqual([800, 1200]);
+  });
+
+  it("skips a mapping whose remote account is not in the cache", async () => {
+    const perfId = seedPerformanceAccount(db, { name: "Pull Missing" });
+    const snapId = seedSnapshot(db, "2026-04-04", [
+      { performanceAccountId: perfId, amount: "500" },
+    ]);
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [
+        {
+          localId: `performance:${perfId}`,
+          localName: "Pull Missing",
+          remoteAccountId: "not-in-cache",
+          syncDirection: "pull",
+          performanceAccountId: perfId,
+        },
+      ],
+    });
+    mockCacheGet.mockResolvedValue({
+      data: [{ id: "different-id", name: "x", balance: 1 }],
+      fetchedAt: new Date(),
+    });
+    const result = await caller.sync.pullPortfolioFromApi({
+      snapshotId: snapId,
+    });
+    expect(result.pulled).toBe(0);
+  });
+
+  it("skips when snapshot has no matching performance account rows", async () => {
+    const mappedPerfId = seedPerformanceAccount(db, { name: "Mapped" });
+    const otherPerfId = seedPerformanceAccount(db, { name: "Other" });
+    const snapId = seedSnapshot(db, "2026-04-05", [
+      { performanceAccountId: otherPerfId, amount: "100" },
+    ]);
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [
+        {
+          localId: `performance:${mappedPerfId}`,
+          localName: "Mapped",
+          remoteAccountId: "r-mapped",
+          syncDirection: "pull",
+          performanceAccountId: mappedPerfId,
+        },
+      ],
+    });
+    mockCacheGet.mockResolvedValue({
+      data: [{ id: "r-mapped", name: "x", balance: 999 }],
+      fetchedAt: new Date(),
+    });
+    const result = await caller.sync.pullPortfolioFromApi({
+      snapshotId: snapId,
+    });
+    expect(result.pulled).toBe(0);
+  });
+
+  it("uses latest snapshot when no snapshotId provided", async () => {
+    const perfId = seedPerformanceAccount(db, { name: "Latest Pull" });
+    seedSnapshot(db, "2099-01-01", [
+      { performanceAccountId: perfId, amount: "1" },
+    ]);
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [
+        {
+          localId: `performance:${perfId}`,
+          localName: "Latest Pull",
+          remoteAccountId: "r-latest",
+          syncDirection: "both",
+          performanceAccountId: perfId,
+        },
+      ],
+    });
+    mockCacheGet.mockResolvedValue({
+      data: [{ id: "r-latest", name: "x", balance: 42 }],
+      fetchedAt: new Date(),
+    });
+    const result = await caller.sync.pullPortfolioFromApi();
+    expect(result.pulled).toBe(1);
   });
 });
 

@@ -6,7 +6,7 @@
  * The schema's typed fields are canonical. The UI carries `localId` strings
  * for backwards compatibility with select-option values, so every write path
  * must run mappings through `mappingWithTypedIds()` before persisting them
- * — this guarantees the typed fields stay populated and `localId` is just
+ * to guarantee the typed fields stay populated and `localId` is just
  * a UI breadcrumb.
  */
 

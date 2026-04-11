@@ -5,12 +5,12 @@
  *   - sync.pushPortfolioToApi             (manual push of latest)
  *   - sync.resyncSnapshot                  (re-push an existing snapshot)
  *
- * Aggregates by remoteAccountId, computes (snapshotSum − liveYnabBalance) per
+ * Aggregates by remoteAccountId, computes (snapshotSum - liveYnabBalance) per
  * group, posts one transaction per group with a `snapshot:{id}` memo tag.
  *
  * Modes:
- *   create  — skip groups whose remoteAccountId already has a snapshot:{id} tag
- *   resync  — delete existing snapshot:{id} tags first, then recompute and post
+ *   create  - skip groups whose remoteAccountId already has a snapshot:{id} tag
+ *   resync  - delete existing snapshot:{id} tags first, then recompute and post
  *
  * Errors abort the run and trigger cleanup of any transactions created during
  * the run. Cleanup of pre-resync deletes is not possible (YNAB delete is final).
@@ -22,7 +22,6 @@ import * as schema from "@/lib/db/schema";
 import type { AccountMapping } from "@/lib/db/schema";
 import type { BudgetAPIClient } from "@/lib/budget-api";
 import type { Db } from "./transforms";
-import { accountDisplayName } from "@/lib/utils/format";
 import { log } from "@/lib/logger";
 
 export type PushSnapshotMode = "create" | "resync";
@@ -44,14 +43,15 @@ export function snapshotMemoTag(snapshotId: number): string {
   return `snapshot:${snapshotId}`;
 }
 
-/** Build the full memo posted on YNAB transactions. */
-function buildMemo(
-  snapshotId: number,
-  snapshotDate: string,
-  contributorLabels: string[],
-): string {
+/**
+ * Build the memo posted on YNAB transactions. The snapshot tag is the
+ * idempotency key; contributor labels list each ledger-side mapping that
+ * fed into this group's total. The transaction date carries snapshot
+ * timing - it does not need to be repeated in the memo.
+ */
+function buildMemo(snapshotId: number, contributorLabels: string[]): string {
   const tag = snapshotMemoTag(snapshotId);
-  return `Ledgr ${tag} ${snapshotDate} — ${contributorLabels.join(", ")}`;
+  return `Ledgr ${tag} - ${contributorLabels.join(", ")}`;
 }
 
 /**
@@ -63,15 +63,14 @@ function buildMemo(
  * single performance account (e.g. two IRAs aggregated under one perf row).
  *
  * Requires `performanceAccountId` on every push mapping. Mappings missing
- * the typed field are skipped — backfill via `sync.migrateAccountMappingsToIds`
+ * the typed field are skipped - backfill via `sync.migrateAccountMappingsToIds`
  * if you see them in prod.
  *
- * Pure function — no I/O.
+ * Pure function - no I/O.
  */
 function aggregateMappings(
   mappings: AccountMapping[],
   balanceByPerformanceAccountId: Map<number, number>,
-  labelByPerformanceAccountId: Map<number, string>,
 ): GroupAggregate[] {
   const grouped = new Map<
     string,
@@ -92,27 +91,20 @@ function aggregateMappings(
       contributorLabels: [],
       seenPerformanceAccountIds: new Set<number>(),
     };
+    // Use the mapping's own localName for the contributor label so each
+    // ledger-side mapping appears in the memo (e.g. "Sean IRA" + "Joanna IRA"
+    // when both reference the same shared perf account).
+    if (!entry.contributorLabels.includes(mapping.localName)) {
+      entry.contributorLabels.push(mapping.localName);
+    }
     if (entry.seenPerformanceAccountIds.has(performanceAccountId)) {
-      // Already counted this perf account in this group — multiple mappings
-      // pointing to the same perf+remote pair contribute their balance once.
-      // Still record the mapping's localName as a contributor for the memo.
-      const label =
-        labelByPerformanceAccountId.get(performanceAccountId) ??
-        mapping.localName;
-      if (!entry.contributorLabels.includes(label)) {
-        entry.contributorLabels.push(label);
-      }
+      // Already counted this perf account in this group; balance is summed
+      // once even though we record the additional mapping as a contributor.
       grouped.set(mapping.remoteAccountId, entry);
       continue;
     }
     entry.seenPerformanceAccountIds.add(performanceAccountId);
     entry.total += localBalance;
-    const label =
-      labelByPerformanceAccountId.get(performanceAccountId) ??
-      mapping.localName;
-    if (!entry.contributorLabels.includes(label)) {
-      entry.contributorLabels.push(label);
-    }
     grouped.set(mapping.remoteAccountId, entry);
   }
   return Array.from(grouped.values()).map(
@@ -124,22 +116,15 @@ function aggregateMappings(
   );
 }
 
-/** Build per-snapshot inputs from the DB: balances + display labels keyed by performanceAccountId. */
-async function loadSnapshotPushInputs(
+/** Sum snapshot account balances by performanceAccountId. */
+async function loadSnapshotBalancesByPerformanceAccountId(
   db: Db,
   snapshotId: number,
-): Promise<{
-  balanceByPerformanceAccountId: Map<number, number>;
-  labelByPerformanceAccountId: Map<number, string>;
-}> {
-  const [snapshotAccounts, performanceAccounts, people] = await Promise.all([
-    db
-      .select()
-      .from(schema.portfolioAccounts)
-      .where(eq(schema.portfolioAccounts.snapshotId, snapshotId)),
-    db.select().from(schema.performanceAccounts),
-    db.select().from(schema.people),
-  ]);
+): Promise<Map<number, number>> {
+  const snapshotAccounts = await db
+    .select()
+    .from(schema.portfolioAccounts)
+    .where(eq(schema.portfolioAccounts.snapshotId, snapshotId));
 
   const balanceByPerformanceAccountId = new Map<number, number>();
   for (const account of snapshotAccounts) {
@@ -150,38 +135,7 @@ async function loadSnapshotPushInputs(
         Number(account.amount),
     );
   }
-
-  const peopleById = new Map(people.map((p) => [p.id, p.name]));
-  const performanceById = new Map(performanceAccounts.map((p) => [p.id, p]));
-
-  // For label, pick the first matching snapshot row per performanceAccountId
-  // and use accountDisplayName per RULES §Data Model rule 10.
-  const labelByPerformanceAccountId = new Map<number, string>();
-  for (const account of snapshotAccounts) {
-    const performanceAccountId = account.performanceAccountId;
-    if (performanceAccountId == null) continue;
-    if (labelByPerformanceAccountId.has(performanceAccountId)) continue;
-    const performance = performanceById.get(performanceAccountId);
-    const ownerName = account.ownerPersonId
-      ? peopleById.get(account.ownerPersonId)
-      : undefined;
-    labelByPerformanceAccountId.set(
-      performanceAccountId,
-      accountDisplayName(
-        {
-          accountType: account.accountType,
-          subType: account.subType,
-          label: account.label,
-          institution: account.institution,
-          displayName: performance?.displayName,
-          accountLabel: performance?.accountLabel,
-        },
-        ownerName ?? undefined,
-      ),
-    );
-  }
-
-  return { balanceByPerformanceAccountId, labelByPerformanceAccountId };
+  return balanceByPerformanceAccountId;
 }
 
 /**
@@ -198,21 +152,17 @@ export async function pushSnapshotToBudgetApi(input: {
 }): Promise<PushSnapshotResult> {
   const { db, snapshotId, snapshotDate, mappings, client, mode } = input;
 
-  const { balanceByPerformanceAccountId, labelByPerformanceAccountId } =
-    await loadSnapshotPushInputs(db, snapshotId);
+  const balanceByPerformanceAccountId =
+    await loadSnapshotBalancesByPerformanceAccountId(db, snapshotId);
 
-  const groups = aggregateMappings(
-    mappings,
-    balanceByPerformanceAccountId,
-    labelByPerformanceAccountId,
-  );
+  const groups = aggregateMappings(mappings, balanceByPerformanceAccountId);
 
   if (groups.length === 0) {
     return { groupsPosted: 0, groupsSkipped: 0, groupsCleaned: 0 };
   }
 
   const tag = snapshotMemoTag(snapshotId);
-  // since_date for the transaction list query — broad enough to catch any
+  // since_date for the transaction list query - broad enough to catch any
   // previously-tagged transaction. Tracking accounts have low transaction
   // volume so a 10-year window is cheap.
   const sinceDate = `${asOfYear(input.asOfDate) - 10}-01-01`;
@@ -299,13 +249,13 @@ export async function pushSnapshotToBudgetApi(input: {
       ) {
         continue;
       }
-      // Always read the current YNAB balance live — for resync, the cache
+      // Always read the current YNAB balance live - for resync, the cache
       // is now stale because we just deleted transactions.
       const currentBalance = await client.getAccountBalance(
         group.remoteAccountId,
       );
       const difference = Math.round((group.total - currentBalance) * 100) / 100;
-      const memo = buildMemo(snapshotId, snapshotDate, group.contributorLabels);
+      const memo = buildMemo(snapshotId, group.contributorLabels);
       const transactionId = await client.createTransaction({
         accountId: group.remoteAccountId,
         date: snapshotDate,
