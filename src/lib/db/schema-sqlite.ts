@@ -574,10 +574,9 @@ export const accountPerformance = sqliteTable(
     isFinalized: integer("is_finalized", { mode: "boolean" })
       .notNull()
       .default(false),
-    performanceAccountId: integer("performance_account_id").references(
-      () => performanceAccounts.id,
-      { onDelete: "restrict" },
-    ),
+    performanceAccountId: integer("performance_account_id")
+      .notNull()
+      .references(() => performanceAccounts.id, { onDelete: "restrict" }),
   },
   (table) => [
     uniqueIndex("account_perf_year_inst_label_owner_idx").on(
@@ -624,10 +623,12 @@ export const netWorthAnnual = sqliteTable("net_worth_annual", {
   // Shape: { retirement: { taxFree: N, preTax: N, hsa: N, afterTax: N }, portfolio: { afterTax: N } }
   portfolioByTaxLocation: text("portfolio_by_tax_location", {
     mode: "json",
-  }).$type<{
-    retirement: Record<string, number>;
-    portfolio: Record<string, number>;
-  }>(),
+  })
+    .$type<{
+      retirement: Record<string, number>;
+      portfolio: Record<string, number>;
+    }>()
+    .notNull(),
 });
 
 // Home improvement individual items — cumulative sum per year

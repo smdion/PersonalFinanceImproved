@@ -644,10 +644,9 @@ export const accountPerformance = pgTable(
     parentCategory: text("parent_category").notNull(),
     isActive: boolean("is_active").notNull().default(true),
     isFinalized: boolean("is_finalized").notNull().default(false),
-    performanceAccountId: integer("performance_account_id").references(
-      () => performanceAccounts.id,
-      { onDelete: "restrict" },
-    ),
+    performanceAccountId: integer("performance_account_id")
+      .notNull()
+      .references(() => performanceAccounts.id, { onDelete: "restrict" }),
   },
   (table) => [
     uniqueIndex("account_perf_year_inst_label_owner_idx").on(
@@ -719,10 +718,12 @@ export const netWorthAnnual = pgTable("net_worth_annual", {
   propertyTaxes: decimal("property_taxes", { precision: 12, scale: 2 }),
   // Point-in-time tax location breakdown captured at finalization.
   // Shape: { retirement: { taxFree: N, preTax: N, hsa: N, afterTax: N }, portfolio: { afterTax: N } }
-  portfolioByTaxLocation: jsonb("portfolio_by_tax_location").$type<{
-    retirement: Record<string, number>;
-    portfolio: Record<string, number>;
-  }>(),
+  portfolioByTaxLocation: jsonb("portfolio_by_tax_location")
+    .$type<{
+      retirement: Record<string, number>;
+      portfolio: Record<string, number>;
+    }>()
+    .notNull(),
 });
 
 // Home improvement individual items — cumulative sum per year

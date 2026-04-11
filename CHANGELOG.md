@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.20] - 2026-04-11
+
+### Changed
+
+- Tightened internal data invariants so missing or orphan rows now surface as clear errors instead of silently substituting placeholder values like "Unknown" or zero — bad data is caught early instead of producing wrong-but-quiet numbers downstream
+- Historical net-worth records backfilled with correct portfolio tax-location breakdowns from existing legacy columns
+
+### Fixed
+
+- Eliminated several silent fallbacks across the performance, snapshot, and demo flows where missing performance-account links or owner records would default to placeholder text instead of being treated as a real error
+
+---
+
 ## [0.4.19] - 2026-04-11
 
 ### Fixed

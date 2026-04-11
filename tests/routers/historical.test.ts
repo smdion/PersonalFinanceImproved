@@ -241,6 +241,7 @@ describe("historical router — update", () => {
         taxDeferredTotal: "0",
         portfolioTotal: "0",
         homeImprovementsCumulative: "0",
+        portfolioByTaxLocation: { retirement: {}, portfolio: {} },
       })
       .run();
   });
@@ -515,6 +516,7 @@ describe("historical router — home improvement items", () => {
         taxDeferredTotal: "0",
         portfolioTotal: "0",
         homeImprovementsCumulative: "0",
+        portfolioByTaxLocation: { retirement: {}, portfolio: {} },
       })
       .run();
     db.insert(schema.netWorthAnnual)
@@ -536,6 +538,7 @@ describe("historical router — home improvement items", () => {
         taxDeferredTotal: "0",
         portfolioTotal: "0",
         homeImprovementsCumulative: "0",
+        portfolioByTaxLocation: { retirement: {}, portfolio: {} },
       })
       .run();
 
@@ -629,6 +632,7 @@ describe("historical router — other asset items", () => {
         taxDeferredTotal: "0",
         portfolioTotal: "0",
         homeImprovementsCumulative: "0",
+        portfolioByTaxLocation: { retirement: {}, portfolio: {} },
       })
       .run();
     db.insert(schema.netWorthAnnual)
@@ -650,6 +654,7 @@ describe("historical router — other asset items", () => {
         taxDeferredTotal: "0",
         portfolioTotal: "0",
         homeImprovementsCumulative: "0",
+        portfolioByTaxLocation: { retirement: {}, portfolio: {} },
       })
       .run();
 
@@ -745,6 +750,7 @@ describe("historical router — salaries in history rows", () => {
           taxDeferredTotal: "0",
           portfolioTotal: "0",
           homeImprovementsCumulative: "0",
+          portfolioByTaxLocation: { retirement: {}, portfolio: {} },
         })
         .run();
     }
