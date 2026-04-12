@@ -22,6 +22,7 @@ import {
   isOverflowTarget,
   getAllCategories,
   isPreTaxType,
+  isTaxFreeBucket,
 } from "../../config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "../../config/display-labels";
 
@@ -560,7 +561,7 @@ export function distributeWithdrawals(
       (slot.traditionalWithdrawal > 0 || slot.rothWithdrawal > 0)
     ) {
       const tradAccts = catAccts.filter((ia) => isPreTaxType(ia.taxType));
-      const rothAccts = catAccts.filter((ia) => ia.taxType === "taxFree");
+      const rothAccts = catAccts.filter((ia) => isTaxFreeBucket(ia.taxType));
 
       // Distribute traditional withdrawal to preTax accounts (#33/#35)
       if (slot.traditionalWithdrawal > 0 && tradAccts.length > 0) {

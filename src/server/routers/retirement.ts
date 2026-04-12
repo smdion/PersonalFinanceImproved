@@ -42,6 +42,8 @@ import {
   addBalance,
   addBasis,
   PARENT_CATEGORY_VALUES,
+  isTaxFreeBucket,
+  isRetirementParent,
 } from "@/lib/config/account-types";
 import { getAge } from "@/lib/utils/date";
 import { roundToCents } from "@/lib/utils/math";
@@ -408,7 +410,7 @@ export async function buildEnginePayload(
       const catAsBal = cat as AccountCategory;
       const bal = portfolioByAccount[catAsBal];
       if (bal.structure === "roth_traditional") {
-        if (a.taxType === "taxFree") addRoth(bal, a.amount);
+        if (isTaxFreeBucket(a.taxType)) addRoth(bal, a.amount);
         else addTraditional(bal, a.amount);
       } else if (bal.structure === "single_bucket") {
         addBalance(bal, a.amount);
@@ -1212,11 +1214,11 @@ export const retirementRouter = createTRPCRouter({
       const perfCatMap = new Map(
         perfAccounts.map((p) => [p.id, p.parentCategory]),
       );
-      const allContribs = allContribsRaw.filter(
-        (c) =>
-          c.performanceAccountId != null &&
-          perfCatMap.get(c.performanceAccountId) === "401k/IRA",
-      );
+      const allContribs = allContribsRaw.filter((c) => {
+        if (c.performanceAccountId == null) return false;
+        const cat = perfCatMap.get(c.performanceAccountId);
+        return cat != null && isRetirementParent(cat);
+      });
 
       const primaryPerson = people.find((p) => p.isPrimaryUser) ?? people[0];
       if (!primaryPerson) return { result: null, budgetInfo: null };

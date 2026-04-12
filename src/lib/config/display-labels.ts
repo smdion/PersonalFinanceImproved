@@ -49,6 +49,20 @@ export const TAX_BUCKET_DESCRIPTIONS: Record<string, string> = {
   afterTax: "After-tax brokerage contributions. Capital gains tax on growth.",
 };
 
+/** Canonical engine-internal tax bucket keys, in display order. */
+export const TAX_BUCKET_KEYS = [
+  "preTax",
+  "taxFree",
+  "hsa",
+  "afterTax",
+] as const;
+export type TaxBucketKey = (typeof TAX_BUCKET_KEYS)[number];
+
+/** Build a fresh zero-initialized tax-bucket counter map. */
+export function emptyTaxBucketMap(): Record<TaxBucketKey, number> {
+  return { preTax: 0, taxFree: 0, hsa: 0, afterTax: 0 };
+}
+
 /** Short tax treatment labels for compact display (contribution profiles, badges). */
 export const TAX_TREATMENT_SHORT_LABELS: Record<string, string> = {
   pre_tax: "Trad",

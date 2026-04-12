@@ -32,6 +32,9 @@ export const DEFAULT_WITHDRAWAL_RATE = 0.04;
 /** Default nominal return rate fallback when no user-configured rate is available. */
 export const DEFAULT_RETURN_RATE = 0.07;
 
+/** Default annual inflation rate fallback when no user-configured rate is available. */
+export const DEFAULT_INFLATION_RATE = 0.03;
+
 // ---------------------------------------------------------------------------
 // Income Thresholds
 // ---------------------------------------------------------------------------

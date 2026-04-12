@@ -40,6 +40,7 @@ import {
   accountTypeToPerformanceCategory,
   FULLY_RETIREMENT_PERF_CATEGORIES,
   PARENT_CATEGORY_ROLLUPS,
+  PERF_CATEGORY_BROKERAGE,
 } from "@/lib/config/display-labels";
 
 /** Accepts both the main db instance and transaction handles. */
@@ -531,7 +532,7 @@ export const performanceRouter = createTRPCRouter({
     for (const a of accounts) {
       if (
         isRetirementParent(a.parentCategory) &&
-        getEffectiveCategory(a, perfLookups) === "Brokerage"
+        getEffectiveCategory(a, perfLookups) === PERF_CATEGORY_BROKERAGE
       ) {
         const arr = retBrokerageByYear.get(String(a.year)) ?? [];
         arr.push(a);

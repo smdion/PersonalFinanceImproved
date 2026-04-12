@@ -8,6 +8,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.21] - 2026-04-11
+
+### Fixed
+
+- Relocation tool's retirement-only contribution filter no longer silently filtered out every contribution because it was comparing the wrong field — Retirement-account contributions now flow into the relocation calculator as intended
+- Mortgage current-balance detection no longer reads system time independently mid-request, so historical year-end balance queries are reliably classified as historical and don't accidentally pick up the latest API balance override
+
+### Security
+
+- Projection page write operations (return-rate table, glide-path allocations, Monte Carlo presets, asset-class overrides, inflation overrides) now require the scenario permission instead of accepting any signed-in user — viewer-role accounts can no longer modify projection assumptions
+
+### Changed
+
+- Several inline string-equality and number-formatting violations across the projection card, retirement router, performance router, brokerage page, and contribution-accounts panel were collapsed onto shared config helpers and formatters, so account-type and tax-bucket logic now lives in exactly one place
+- Inflation-rate fallback (3%) is now defined once in shared constants instead of being duplicated across three pages
+- Savings transaction amounts use the shared decimal validator, matching every other financial-amount mutation
+
+---
+
 ## [0.4.20] - 2026-04-11
 
 ### Changed

@@ -13,7 +13,10 @@ import {
   taxTypeToSubKey,
   ACCOUNT_TYPE_CONFIG,
   isRetirementParent,
+  isTaxFreeBucket,
 } from "@/lib/config/account-types";
+import { emptyTaxBucketMap } from "@/lib/config/display-labels";
+import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
 import type { ProjectionFormState } from "./use-projection-form-state";
 import type { ProjectionQueries } from "./use-projection-queries";
 import type {
@@ -158,9 +161,9 @@ export function useProjectionDerived(
         0,
       );
       const growth = mine.reduce((s, ia) => s + ia.growth, 0);
-      const byTaxType = { preTax: 0, taxFree: 0, hsa: 0, afterTax: 0 };
+      const byTaxType = emptyTaxBucketMap();
       for (const ia of mine) {
-        if (ia.taxType === "taxFree") {
+        if (isTaxFreeBucket(ia.taxType)) {
           byTaxType.taxFree += ia.balance;
         } else {
           const cfg =
@@ -387,7 +390,7 @@ export function useProjectionDerived(
         if (!byCol[colKey]) byCol[colKey] = [];
         byCol[colKey]!.push(a.name);
         const taxBucket = cfg ? cfg.taxBucketKey : "afterTax";
-        if (a.taxType === "taxFree") {
+        if (isTaxFreeBucket(a.taxType)) {
           byTaxType["taxFree"]!.push(a.name);
         } else if (taxBucket in byTaxType) {
           byTaxType[taxBucket]!.push(a.name);
@@ -410,7 +413,7 @@ export function useProjectionDerived(
   // --- Deflation ---
   const inflationRate = engineSettings?.annualInflation
     ? Number(engineSettings.annualInflation)
-    : 0.03;
+    : DEFAULT_INFLATION_RATE;
   const baseYear = new Date().getFullYear();
   const deflate = (value: number, year: number) => {
     if (dollarMode === "nominal") return value;
