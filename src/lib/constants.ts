@@ -32,6 +32,9 @@ export const DEFAULT_WITHDRAWAL_RATE = 0.04;
 /** Default nominal return rate fallback when no user-configured rate is available. */
 export const DEFAULT_RETURN_RATE = 0.07;
 
+/** Default annual inflation rate fallback when no user-configured rate is available. */
+export const DEFAULT_INFLATION_RATE = 0.03;
+
 // ---------------------------------------------------------------------------
 // Income Thresholds
 // ---------------------------------------------------------------------------
@@ -104,6 +107,9 @@ export const OVERFLOW_TOLERANCE = 1;
 
 /** Maximum sane effective tax rate (50%). */
 export const MAX_EFFECTIVE_TAX_RATE = 0.5;
+
+/** Funding ratio above which an account is considered over the IRS limit (filters rounding noise). */
+export const OVER_LIMIT_THRESHOLD = 1.005;
 
 /** Minimum bar width percentage for contribution visualization. */
 export const MIN_BAR_WIDTH_PCT = 0.005;

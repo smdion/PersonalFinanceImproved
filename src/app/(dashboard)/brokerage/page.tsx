@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Tooltip } from "@/components/ui/tooltip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { BrokerageGoalsSection } from "@/components/cards/brokerage-goals";
@@ -197,7 +198,7 @@ export default function BrokeragePage() {
   // Deflation (Today's $ / Future $) — same pattern as retirement
   const inflationRate = data.settings?.annualInflation
     ? Number(data.settings.annualInflation)
-    : 0.03;
+    : DEFAULT_INFLATION_RATE;
   const baseYear = new Date().getFullYear();
   const deflate = (value: number, year: number) => {
     if (dollarMode === "nominal") return value;
@@ -479,7 +480,14 @@ function ByAccountSummary({
     employerMatch: number;
     totalContrib: number;
     targetAnnual: number | null;
-    fundingPct: number;
+    views: Record<
+      string,
+      {
+        fundingPct: number;
+        fundingMissing: number;
+        pctOfSalaryToMax: number | null;
+      }
+    >;
     hasDiscountBar: boolean;
     employerMatchLabel: string;
   }[];

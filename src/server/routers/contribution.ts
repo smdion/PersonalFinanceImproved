@@ -4,7 +4,10 @@ import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateContributions } from "@/lib/calculators/contribution";
-import { countPeriodsElapsed } from "@/lib/calculators/paycheck";
+import {
+  countPeriodsElapsed,
+  mapSalaryTimelineToPeriods,
+} from "@/lib/calculators/paycheck";
 import { accountDisplayName, stripInstitutionSuffix } from "@/lib/utils/format";
 import {
   toNumber,
@@ -13,8 +16,10 @@ import {
   getEffectiveIncome,
   getTotalCompensation,
   buildContribAccounts,
+  computeAnnualContribution,
   computeBonusGross,
   loadAndApplyContribProfile,
+  getSalaryTimelineForYear,
 } from "@/server/helpers";
 import { roundToCents } from "@/lib/utils/math";
 import { getAge, isPriorYearContribWindow } from "@/lib/utils/date";
@@ -23,11 +28,18 @@ import {
   resolvePriorYearLimit,
   computeSiblingTotal,
   isEligibleForPriorYear,
+  computeViewAwareAccountMetrics,
+  computeViewAwareTotals,
+} from "@/lib/pure/contributions";
+import type {
+  AccountViewMetrics,
+  ViewAwareTotals,
 } from "@/lib/pure/contributions";
 import { findActiveJob } from "@/lib/pure/profiles";
 import type {
   ContributionInput,
   AccountCategory,
+  ViewMode,
 } from "@/lib/calculators/types";
 import {
   isOverflowTarget,
@@ -54,9 +66,8 @@ type AccountTypeSnapshot = {
   employeeContrib: number;
   employerMatch: number;
   totalContrib: number; // employee + employer (toward limit where applicable)
-  fundingPct: number; // totalContrib / limit (0-1+)
-  fundingMissing: number; // limit - employeeContrib (if positive)
-  pctOfSalaryToMax: number | null; // % of salary needed to hit limit (whole number, e.g. 14.5)
+  views: Record<ViewMode, AccountViewMetrics>;
+  ytdDataStale: boolean; // true when YTD actual < expected — performance data may be behind
   currentPctOfSalary: number | null; // current employee % of salary (whole number)
   tradContrib: number;
   taxFreeContrib: number;
@@ -103,22 +114,15 @@ type PersonSnapshot = {
   accountTypes: AccountTypeSnapshot[];
   perContribData: PerContribData[];
   totals: {
-    retirementWithoutMatch: number;
-    retirementWithMatch: number;
-    portfolioWithoutMatch: number;
-    portfolioWithMatch: number;
-    totalWithoutMatch: number;
-    totalWithMatch: number;
-    /** Savings rate (with match) — totalWithMatch / totalCompensation. Single source of truth. */
-    savingsRateWithMatch: number;
-    /** Savings rate (without match) — totalWithoutMatch / totalCompensation. Single source of truth. */
-    savingsRateWithoutMatch: number;
+    views: Record<ViewMode, ViewAwareTotals>;
     /** Actual YTD retirement contributions from performance data. */
     ytdActualRetirement: number;
     /** Actual YTD portfolio contributions from performance data. */
     ytdActualPortfolio: number;
-    /** Actual YTD employer match from performance data. */
-    ytdActualMatch: number;
+    /** Actual YTD retirement employer match from performance data. */
+    ytdActualRetirementMatch: number;
+    /** Actual YTD portfolio employer match from performance data. */
+    ytdActualPortfolioMatch: number;
   };
   result: ReturnType<typeof calculateContributions> | null;
 };
@@ -153,6 +157,7 @@ export const contributionRouter = createTRPCRouter({
         priorYearLimitsRaw,
         perfAccounts,
         currentYearPerfActuals,
+        perfLastUpdatedRows,
       ] = await Promise.all([
         ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
         ctx.db.select().from(schema.jobs),
@@ -189,23 +194,38 @@ export const contributionRouter = createTRPCRouter({
           })
           .from(schema.accountPerformance)
           .where(eq(schema.accountPerformance.year, currentYear)),
+        ctx.db
+          .select({
+            key: schema.appSettings.key,
+            value: schema.appSettings.value,
+          })
+          .from(schema.appSettings)
+          .where(eq(schema.appSettings.key, "performance_last_updated")),
       ]);
+
+      const perfLastUpdated = perfLastUpdatedRows[0]?.value
+        ? new Date(perfLastUpdatedRows[0].value as string)
+        : null;
 
       // Build YTD actuals lookup: performanceAccountId → { contributions, employerMatch }
       const perfActualMap = new Map<
         number,
         { contributions: number; employerMatch: number }
       >();
+      // total_contributions includes employer match — split into employee-only + match
       for (const row of currentYearPerfActuals) {
         if (row.performanceAccountId == null) continue;
+        const total = toNumber(row.totalContributions);
+        const match = toNumber(row.employerContributions);
+        const employeeOnly = total - match;
         const existing = perfActualMap.get(row.performanceAccountId);
         if (existing) {
-          existing.contributions += toNumber(row.totalContributions);
-          existing.employerMatch += toNumber(row.employerContributions);
+          existing.contributions += employeeOnly;
+          existing.employerMatch += match;
         } else {
           perfActualMap.set(row.performanceAccountId, {
-            contributions: toNumber(row.totalContributions),
-            employerMatch: toNumber(row.employerContributions),
+            contributions: employeeOnly,
+            employerMatch: match,
           });
         }
       }
@@ -241,6 +261,119 @@ export const contributionRouter = createTRPCRouter({
 
       const asOfDate = new Date();
 
+      // Split YTD actuals proportionally when multiple contribs share a perf account.
+      // Uses salary-timeline-aware expected YTD (not projected annual) so mid-year
+      // salary changes are reflected in the split ratio.
+      const activeContribs = effectiveContribs.filter((c) => c.isActive);
+
+      // Cache salary timelines and period data per job — used for proportional
+      // YTD split AND blended total compensation calculation
+      const jobCache = new Map<
+        number,
+        {
+          timeline: { salary: number; effectiveDate: string | null }[];
+          periodsPerYear: number;
+          periodsElapsed: number;
+          anchorPayDate: Date | null;
+          payPeriod: string;
+        }
+      >();
+      for (const c of activeContribs) {
+        if (c.performanceAccountId == null || !c.jobId) continue;
+        if (jobCache.has(c.jobId)) continue;
+        const job = effectiveJobs.find((j) => j.id === c.jobId);
+        if (!job) continue;
+        const timeline = await getSalaryTimelineForYear(
+          ctx.db,
+          job.id,
+          job.annualSalary,
+          currentYear,
+        );
+        const periodsPerYear = getPeriodsPerYear(job.payPeriod);
+        const anchor = job.anchorPayDate ? new Date(job.anchorPayDate) : null;
+        const periodsElapsed = anchor
+          ? countPeriodsElapsed(asOfDate, job.payPeriod, anchor)
+          : Math.round((asOfDate.getMonth() / 12) * periodsPerYear);
+        jobCache.set(c.jobId, {
+          timeline,
+          periodsPerYear,
+          periodsElapsed,
+          anchorPayDate: anchor,
+          payPeriod: job.payPeriod,
+        });
+      }
+
+      // Compute expected YTD for each contrib (salary-timeline-aware) and group by perf account.
+      // expectedYtdMap is also used in the categoryMap loop for data-lag detection.
+      const expectedYtdMap = new Map<number, number>();
+      const byPerfId = new Map<
+        number,
+        { contribId: number; expectedYtd: number }[]
+      >();
+      for (const c of activeContribs) {
+        const value = toNumber(c.contributionValue);
+        let expectedYtd = 0;
+
+        const jd = c.jobId ? jobCache.get(c.jobId) : null;
+        if (c.contributionMethod === "percent_of_salary" && jd) {
+          // Walk salary timeline periods to compute exact YTD
+          const segments = mapSalaryTimelineToPeriods(
+            jd.timeline,
+            jd.payPeriod,
+            jd.anchorPayDate ?? new Date(`${currentYear}-01-15T00:00:00`),
+            currentYear,
+          );
+          const pct = value / 100;
+          for (const seg of segments) {
+            const segPeriods =
+              Math.min(seg.endPeriod, jd.periodsElapsed) - seg.startPeriod + 1;
+            if (segPeriods <= 0) continue;
+            expectedYtd += seg.salary * pct * (segPeriods / jd.periodsPerYear);
+          }
+        } else {
+          // Fixed methods: scale by elapsed fraction
+          const periodsPerYear = jd?.periodsPerYear ?? 26;
+          const periodsElapsed = jd?.periodsElapsed ?? 0;
+          const annual = computeAnnualContribution(
+            c.contributionMethod,
+            value,
+            0,
+            periodsPerYear,
+          );
+          expectedYtd = annual * (periodsElapsed / periodsPerYear);
+        }
+
+        expectedYtdMap.set(c.id, expectedYtd);
+
+        if (c.performanceAccountId != null) {
+          const arr = byPerfId.get(c.performanceAccountId) ?? [];
+          arr.push({ contribId: c.id, expectedYtd });
+          byPerfId.set(c.performanceAccountId, arr);
+        }
+      }
+
+      const contribActualMap = new Map<
+        number,
+        { contributions: number; employerMatch: number }
+      >();
+
+      // Split perf account actuals proportionally by expected YTD
+      for (const [perfId, entries] of byPerfId) {
+        const actual = perfActualMap.get(perfId);
+        if (!actual) continue;
+        const totalExpected = entries.reduce((s, e) => s + e.expectedYtd, 0);
+        for (const entry of entries) {
+          const share =
+            totalExpected > 0
+              ? entry.expectedYtd / totalExpected
+              : 1 / entries.length;
+          contribActualMap.set(entry.contribId, {
+            contributions: roundToCents(actual.contributions * share),
+            employerMatch: roundToCents(actual.employerMatch * share),
+          });
+        }
+      }
+
       const results: PersonSnapshot[] = await Promise.all(
         people.map(async (person) => {
           const activeJob = findActiveJob(effectiveJobs, person.id);
@@ -255,17 +388,42 @@ export const contributionRouter = createTRPCRouter({
               accountTypes: [],
               perContribData: [],
               totals: {
-                retirementWithoutMatch: 0,
-                retirementWithMatch: 0,
-                portfolioWithoutMatch: 0,
-                portfolioWithMatch: 0,
-                totalWithoutMatch: 0,
-                totalWithMatch: 0,
-                savingsRateWithMatch: 0,
-                savingsRateWithoutMatch: 0,
+                views: {
+                  projected: {
+                    retirementWithoutMatch: 0,
+                    retirementWithMatch: 0,
+                    portfolioWithoutMatch: 0,
+                    portfolioWithMatch: 0,
+                    totalWithoutMatch: 0,
+                    totalWithMatch: 0,
+                    savingsRateWithMatch: 0,
+                    savingsRateWithoutMatch: 0,
+                  },
+                  blended: {
+                    retirementWithoutMatch: 0,
+                    retirementWithMatch: 0,
+                    portfolioWithoutMatch: 0,
+                    portfolioWithMatch: 0,
+                    totalWithoutMatch: 0,
+                    totalWithMatch: 0,
+                    savingsRateWithMatch: 0,
+                    savingsRateWithoutMatch: 0,
+                  },
+                  ytd: {
+                    retirementWithoutMatch: 0,
+                    retirementWithMatch: 0,
+                    portfolioWithoutMatch: 0,
+                    portfolioWithMatch: 0,
+                    totalWithoutMatch: 0,
+                    totalWithMatch: 0,
+                    savingsRateWithMatch: 0,
+                    savingsRateWithoutMatch: 0,
+                  },
+                },
                 ytdActualRetirement: 0,
                 ytdActualPortfolio: 0,
-                ytdActualMatch: 0,
+                ytdActualRetirementMatch: 0,
+                ytdActualPortfolioMatch: 0,
               },
               result: null,
             };
@@ -418,9 +576,7 @@ export const contributionRouter = createTRPCRouter({
               limit,
               siblingAnnualTotal: roundToCents(siblingAnnualTotal),
               limitGroup: group,
-              ytdActual: rc.performanceAccountId
-                ? (perfActualMap.get(rc.performanceAccountId) ?? null)
-                : null,
+              ytdActual: contribActualMap.get(rc.id) ?? null,
               priorYear: priorYearData,
             };
           });
@@ -443,8 +599,30 @@ export const contributionRouter = createTRPCRouter({
               allocationPriority: number;
               priorYearAmount: number;
               priorYearContribs: { id: number; amount: number }[];
+              ytdContributions: number;
+              ytdEmployerMatch: number;
+              blendedEmployee: number;
+              blendedMatch: number;
+              ytdDataStale: boolean;
             }
           >();
+
+          // Compute method-aware remaining fraction for blended estimates.
+          // Each contribution method has a different delivery cadence.
+          const monthsElapsed =
+            asOfDate.getMonth() + (asOfDate.getDate() >= 15 ? 1 : 0);
+          function methodRemainingFraction(method: string): number {
+            switch (method) {
+              case "fixed_monthly":
+                return (12 - monthsElapsed) / 12;
+              case "fixed_annual":
+                return 0;
+              default:
+                return periodsPerYear > 0
+                  ? (periodsPerYear - periodsElapsedYtd) / periodsPerYear
+                  : 1;
+            }
+          }
           for (let i = 0; i < accounts.length; i++) {
             const acct = accounts[i]!;
             const rawContrib = rawContribs[i]!;
@@ -507,7 +685,67 @@ export const contributionRouter = createTRPCRouter({
               allocationPriority: rawContrib.allocationPriority ?? 0,
               priorYearAmount: 0,
               priorYearContribs: [],
+              ytdContributions: 0,
+              ytdEmployerMatch: 0,
+              blendedEmployee: 0,
+              blendedMatch: 0,
+              ytdDataStale: false,
             };
+            // Accumulate YTD actuals from proportionally-split performance data
+            const contribActual = contribActualMap.get(rawContrib.id);
+            if (contribActual) {
+              entry.ytdContributions += contribActual.contributions;
+              entry.ytdEmployerMatch += contribActual.employerMatch;
+            }
+            // Blended = actual YTD + stale-gap fill + projected remaining.
+            // Stale gap: periods between last performance update and today,
+            // filled at current projected rate. Actuals are trusted (may
+            // reflect old contribution rates or salary changes).
+            const remaining = methodRemainingFraction(
+              rawContrib.contributionMethod,
+            );
+            const ytdEmp = contribActual?.contributions ?? 0;
+            const ytdMatch = contribActual?.employerMatch ?? 0;
+            if (ytdEmp > 0 || ytdMatch > 0) {
+              // Compute stale gap from performance freshness date.
+              // Only applies to payroll-cadence contributions (percent_of_salary,
+              // fixed_per_period). Monthly/annual contributions follow their own
+              // schedule — a biweekly payday gap doesn't mean they're stale.
+              let stalePeriods = 0;
+              const isPayrollCadence =
+                rawContrib.contributionMethod === "percent_of_salary" ||
+                rawContrib.contributionMethod === "fixed_per_period";
+              if (
+                isPayrollCadence &&
+                perfLastUpdated &&
+                activeJob.anchorPayDate
+              ) {
+                const anchor = new Date(activeJob.anchorPayDate);
+                const periodsAtPerfDate = countPeriodsElapsed(
+                  perfLastUpdated,
+                  activeJob.payPeriod,
+                  anchor,
+                );
+                stalePeriods = Math.max(
+                  0,
+                  periodsElapsedYtd - periodsAtPerfDate,
+                );
+              }
+              if (stalePeriods > 0) entry.ytdDataStale = true;
+              const perPeriodEmp = acct.annualContribution / periodsPerYear;
+              const perPeriodMatch = acct.employerMatch / periodsPerYear;
+              entry.blendedEmployee +=
+                ytdEmp +
+                perPeriodEmp * stalePeriods +
+                acct.annualContribution * remaining;
+              entry.blendedMatch +=
+                ytdMatch +
+                perPeriodMatch * stalePeriods +
+                acct.employerMatch * remaining;
+            } else {
+              entry.blendedEmployee += acct.annualContribution;
+              entry.blendedMatch += acct.employerMatch;
+            }
             const pyAmt =
               rawContrib.priorYearContribYear === priorYear
                 ? toNumber(rawContrib.priorYearContribAmount)
@@ -546,21 +784,36 @@ export const contributionRouter = createTRPCRouter({
             )
               ? getAccountTypeConfig(data.categoryKey as AccountCategory)
               : null;
-            const towardLimit = cfg?.matchCountsTowardLimit
-              ? totalEmployee + employerMatch
-              : totalEmployee;
-
-            let pctOfSalaryToMax: number | null = null;
             let currentPctOfSalary: number | null = null;
             if (limit > 0 && salary > 0) {
               currentPctOfSalary =
                 roundToCents((totalEmployee / salary) * 100 * 100) / 100;
-              const missing = Math.max(0, limit - towardLimit);
-              pctOfSalaryToMax =
-                missing > 0
-                  ? roundToCents((missing / salary) * 100 * 100) / 100
-                  : 0;
             }
+
+            const ytdActualForCategory =
+              data.ytdContributions > 0 || data.ytdEmployerMatch > 0
+                ? {
+                    contributions: data.ytdContributions,
+                    employerMatch: data.ytdEmployerMatch,
+                  }
+                : null;
+            const blendedEmployee =
+              roundToCents(data.blendedEmployee) + bonusAdd;
+            const blendedMatch = roundToCents(data.blendedMatch);
+            const views = computeViewAwareAccountMetrics({
+              projected: {
+                employeeContrib: totalEmployee,
+                employerMatch,
+              },
+              blended: {
+                employeeContrib: blendedEmployee,
+                employerMatch: blendedMatch,
+              },
+              ytdActual: ytdActualForCategory,
+              limit,
+              salary,
+              matchCountsTowardLimit: cfg?.matchCountsTowardLimit ?? false,
+            });
 
             // Prior-year contribution data (only during IRS window for eligible types)
             let priorYearSnapshot: AccountTypeSnapshot["priorYear"];
@@ -593,9 +846,8 @@ export const contributionRouter = createTRPCRouter({
               employeeContrib: totalEmployee,
               employerMatch,
               totalContrib: totalEmployee + employerMatch,
-              fundingPct: limit > 0 ? towardLimit / limit : 0,
-              fundingMissing: limit > 0 ? Math.max(0, limit - towardLimit) : 0,
-              pctOfSalaryToMax,
+              views,
+              ytdDataStale: data.ytdDataStale,
               currentPctOfSalary,
               tradContrib: roundToCents(data.trad),
               taxFreeContrib: roundToCents(data.taxFree),
@@ -625,22 +877,126 @@ export const contributionRouter = createTRPCRouter({
           const portfolio = accountTypes.filter((a) =>
             isPortfolioParent(a.parentCategory),
           );
-          const retirementWithoutMatch = retirement.reduce(
-            (s, a) => s + a.employeeContrib,
-            0,
+          const retirementWithoutMatch = roundToCents(
+            retirement.reduce((s, a) => s + a.employeeContrib, 0),
           );
-          const retirementWithMatch = retirement.reduce(
-            (s, a) => s + a.totalContrib,
-            0,
+          const retirementWithMatch = roundToCents(
+            retirement.reduce((s, a) => s + a.totalContrib, 0),
           );
-          const portfolioWithoutMatch = portfolio.reduce(
-            (s, a) => s + a.employeeContrib,
-            0,
+          const portfolioWithoutMatch = roundToCents(
+            portfolio.reduce((s, a) => s + a.employeeContrib, 0),
           );
-          const portfolioWithMatch = portfolio.reduce(
-            (s, a) => s + a.totalContrib,
-            0,
+          const portfolioWithMatch = roundToCents(
+            portfolio.reduce((s, a) => s + a.totalContrib, 0),
           );
+
+          // YTD actuals from performance data — sum by parent category
+          const ytdActualRetirement = roundToCents(
+            perContribData
+              .filter((_pcd, idx) =>
+                isRetirementParent(rawContribs[idx]?.parentCategory ?? ""),
+              )
+              .reduce((s, pcd) => s + (pcd.ytdActual?.contributions ?? 0), 0),
+          );
+          const ytdActualPortfolio = roundToCents(
+            perContribData
+              .filter((_pcd, idx) =>
+                isPortfolioParent(rawContribs[idx]?.parentCategory ?? ""),
+              )
+              .reduce((s, pcd) => s + (pcd.ytdActual?.contributions ?? 0), 0),
+          );
+          const ytdActualRetirementMatch = roundToCents(
+            perContribData
+              .filter((_pcd, idx) =>
+                isRetirementParent(rawContribs[idx]?.parentCategory ?? ""),
+              )
+              .reduce((s, pcd) => s + (pcd.ytdActual?.employerMatch ?? 0), 0),
+          );
+          const ytdActualPortfolioMatch = roundToCents(
+            perContribData
+              .filter((_pcd, idx) =>
+                isPortfolioParent(rawContribs[idx]?.parentCategory ?? ""),
+              )
+              .reduce((s, pcd) => s + (pcd.ytdActual?.employerMatch ?? 0), 0),
+          );
+
+          // Blended totals: sum per-category blended amounts (method-aware remaining fractions)
+          const catEntries = Array.from(categoryMap.entries());
+          const retCats = catEntries.filter(([, d]) =>
+            isRetirementParent(d.parentCategory),
+          );
+          const portCats = catEntries.filter(([, d]) =>
+            isPortfolioParent(d.parentCategory),
+          );
+          const blendedRetWithoutMatch = roundToCents(
+            retCats.reduce((s, [, d]) => s + d.blendedEmployee, 0) + bonus401k,
+          );
+          const blendedRetWithMatch = roundToCents(
+            retCats.reduce(
+              (s, [, d]) => s + d.blendedEmployee + d.blendedMatch,
+              0,
+            ) + bonus401k,
+          );
+          const blendedPortWithoutMatch = roundToCents(
+            portCats.reduce((s, [, d]) => s + d.blendedEmployee, 0),
+          );
+          const blendedPortWithMatch = roundToCents(
+            portCats.reduce(
+              (s, [, d]) => s + d.blendedEmployee + d.blendedMatch,
+              0,
+            ),
+          );
+
+          const ytdRatioForTotals =
+            periodsPerYear > 0 ? periodsElapsedYtd / periodsPerYear : 0;
+
+          // Blended total compensation: weighted by salary timeline segments
+          const jc = activeJob.id ? jobCache.get(activeJob.id) : null;
+          let blendedTotalCompensation = totalCompensation;
+          if (jc && jc.timeline.length > 1) {
+            const segments = mapSalaryTimelineToPeriods(
+              jc.timeline,
+              jc.payPeriod,
+              jc.anchorPayDate ??
+                new Date(`${asOfDate.getFullYear()}-01-15T00:00:00`),
+              asOfDate.getFullYear(),
+            );
+            const blendedSalary = segments.reduce(
+              (s, seg) =>
+                s +
+                getEffectiveIncome(activeJob, seg.salary) *
+                  ((seg.endPeriod - seg.startPeriod + 1) / periodsPerYear),
+              0,
+            );
+            blendedTotalCompensation = getTotalCompensation(
+              activeJob,
+              blendedSalary,
+            );
+          }
+
+          const totalsViews = computeViewAwareTotals({
+            projected: {
+              retirementWithoutMatch,
+              retirementWithMatch,
+              portfolioWithoutMatch,
+              portfolioWithMatch,
+            },
+            blended: {
+              retirementWithoutMatch: blendedRetWithoutMatch,
+              retirementWithMatch: blendedRetWithMatch,
+              portfolioWithoutMatch: blendedPortWithoutMatch,
+              portfolioWithMatch: blendedPortWithMatch,
+            },
+            ytdActuals: {
+              retirement: ytdActualRetirement,
+              portfolio: ytdActualPortfolio,
+              retirementMatch: ytdActualRetirementMatch,
+              portfolioMatch: ytdActualPortfolioMatch,
+            },
+            ytdRatio: ytdRatioForTotals,
+            totalCompensation,
+            blendedTotalCompensation,
+          });
 
           return {
             person,
@@ -652,60 +1008,11 @@ export const contributionRouter = createTRPCRouter({
             accountTypes,
             perContribData,
             totals: {
-              retirementWithoutMatch: roundToCents(retirementWithoutMatch),
-              retirementWithMatch: roundToCents(retirementWithMatch),
-              portfolioWithoutMatch: roundToCents(portfolioWithoutMatch),
-              portfolioWithMatch: roundToCents(portfolioWithMatch),
-              totalWithoutMatch: roundToCents(
-                retirementWithoutMatch + portfolioWithoutMatch,
-              ),
-              totalWithMatch: roundToCents(
-                retirementWithMatch + portfolioWithMatch,
-              ),
-              // Savings rates: single source of truth — computed here, displayed everywhere
-              savingsRateWithMatch:
-                totalCompensation > 0
-                  ? roundToCents(
-                      ((retirementWithMatch + portfolioWithMatch) /
-                        totalCompensation) *
-                        10000,
-                    ) / 10000
-                  : 0,
-              savingsRateWithoutMatch:
-                totalCompensation > 0
-                  ? roundToCents(
-                      ((retirementWithoutMatch + portfolioWithoutMatch) /
-                        totalCompensation) *
-                        10000,
-                    ) / 10000
-                  : 0,
-              // YTD actuals from performance data — sum by parent category
-              ytdActualRetirement: roundToCents(
-                perContribData
-                  .filter((_pcd, idx) =>
-                    isRetirementParent(rawContribs[idx]?.parentCategory ?? ""),
-                  )
-                  .reduce(
-                    (s, pcd) => s + (pcd.ytdActual?.contributions ?? 0),
-                    0,
-                  ),
-              ),
-              ytdActualPortfolio: roundToCents(
-                perContribData
-                  .filter((_pcd, idx) =>
-                    isPortfolioParent(rawContribs[idx]?.parentCategory ?? ""),
-                  )
-                  .reduce(
-                    (s, pcd) => s + (pcd.ytdActual?.contributions ?? 0),
-                    0,
-                  ),
-              ),
-              ytdActualMatch: roundToCents(
-                perContribData.reduce(
-                  (s, pcd) => s + (pcd.ytdActual?.employerMatch ?? 0),
-                  0,
-                ),
-              ),
+              views: totalsViews,
+              ytdActualRetirement,
+              ytdActualPortfolio,
+              ytdActualRetirementMatch,
+              ytdActualPortfolioMatch,
             },
             result,
           };
@@ -765,6 +1072,14 @@ export const contributionRouter = createTRPCRouter({
             ? c.subType.toLowerCase()
             : c.accountType;
 
+        const jointViewMetrics: AccountViewMetrics = {
+          employeeContrib: roundToCents(annual),
+          employerMatch: roundToCents(matchAnnual),
+          totalContrib: roundToCents(annual + matchAnnual),
+          fundingPct: 0,
+          fundingMissing: 0,
+          pctOfSalaryToMax: null,
+        };
         jointAccountTypes.push({
           accountType: displayCat,
           categoryKey: jColorKey,
@@ -773,9 +1088,12 @@ export const contributionRouter = createTRPCRouter({
           employeeContrib: roundToCents(annual),
           employerMatch: roundToCents(matchAnnual),
           totalContrib: roundToCents(annual + matchAnnual),
-          fundingPct: 0,
-          fundingMissing: 0,
-          pctOfSalaryToMax: null,
+          views: {
+            projected: jointViewMetrics,
+            blended: jointViewMetrics,
+            ytd: jointViewMetrics,
+          },
+          ytdDataStale: false,
           currentPctOfSalary: null,
           tradContrib: isTaxFree(c.taxTreatment) ? 0 : roundToCents(annual),
           taxFreeContrib: isTaxFree(c.taxTreatment) ? roundToCents(annual) : 0,

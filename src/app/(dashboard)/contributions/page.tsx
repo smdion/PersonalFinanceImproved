@@ -13,6 +13,7 @@ import { accountColor } from "@/lib/utils/colors";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { useScenario } from "@/lib/context/scenario-context";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
+import { safeDivide } from "@/lib/utils/math";
 
 type PeriodMode = "annual" | "monthly" | "per-period";
 
@@ -34,7 +35,6 @@ function periodLabel(mode: PeriodMode): string {
 
 export default function ContributionsPage() {
   const { viewMode } = useScenario();
-  const isBlended = viewMode === "blended";
   const user = useUser();
   const canEdit = hasPermission(user, "portfolio");
   const utils = trpc.useUtils();
@@ -106,89 +106,32 @@ export default function ContributionsPage() {
         activePeople.length
       : 26;
 
-  // Household totals
+  // Household totals (view-mode-aware)
   const totalRetirementWith = activePeople.reduce(
-    (s, p) => s + p.totals.retirementWithMatch,
+    (s, p) => s + p.totals.views[viewMode].retirementWithMatch,
     0,
   );
   const totalRetirementWithout = activePeople.reduce(
-    (s, p) => s + p.totals.retirementWithoutMatch,
+    (s, p) => s + p.totals.views[viewMode].retirementWithoutMatch,
     0,
   );
   const totalPortfolioWith = activePeople.reduce(
-    (s, p) => s + p.totals.portfolioWithMatch,
+    (s, p) => s + p.totals.views[viewMode].portfolioWithMatch,
     0,
   );
   const totalPortfolioWithout = activePeople.reduce(
-    (s, p) => s + p.totals.portfolioWithoutMatch,
+    (s, p) => s + p.totals.views[viewMode].portfolioWithoutMatch,
     0,
   );
   const totalWith = activePeople.reduce(
-    (s, p) => s + p.totals.totalWithMatch,
+    (s, p) => s + p.totals.views[viewMode].totalWithMatch,
     0,
   );
   const totalWithout = activePeople.reduce(
-    (s, p) => s + p.totals.totalWithoutMatch,
+    (s, p) => s + p.totals.views[viewMode].totalWithoutMatch,
     0,
   );
   const totalEmployerMatch = totalWith - totalWithout;
-
-  // Blended mode: actual YTD + projected remaining
-  const avgYtdRatio =
-    activePeople.length > 0
-      ? activePeople.reduce(
-          (s, p) =>
-            s +
-            (p.periodsPerYear > 0 ? p.periodsElapsedYtd / p.periodsPerYear : 0),
-          0,
-        ) / activePeople.length
-      : 0;
-  const remainingFraction = 1 - avgYtdRatio;
-  const hasYtdActuals =
-    isBlended &&
-    activePeople.some(
-      (p) =>
-        p.totals.ytdActualRetirement > 0 ||
-        p.totals.ytdActualPortfolio > 0 ||
-        p.totals.ytdActualMatch > 0,
-    );
-  const useBlended = isBlended && hasYtdActuals;
-
-  const ytdActualRet = activePeople.reduce(
-    (s, p) => s + p.totals.ytdActualRetirement,
-    0,
-  );
-  const ytdActualPort = activePeople.reduce(
-    (s, p) => s + p.totals.ytdActualPortfolio,
-    0,
-  );
-  const ytdActualMatch = activePeople.reduce(
-    (s, p) => s + p.totals.ytdActualMatch,
-    0,
-  );
-
-  // Blended totals for summary cards
-  const blendedRetWith = useBlended
-    ? ytdActualRet + ytdActualMatch + totalRetirementWith * remainingFraction
-    : totalRetirementWith;
-  const blendedRetWithout = useBlended
-    ? ytdActualRet + totalRetirementWithout * remainingFraction
-    : totalRetirementWithout;
-  const blendedPortWith = useBlended
-    ? ytdActualPort + totalPortfolioWith * remainingFraction
-    : totalPortfolioWith;
-  const blendedPortWithout = useBlended
-    ? ytdActualPort + totalPortfolioWithout * remainingFraction
-    : totalPortfolioWithout;
-  const blendedTotalWith = useBlended
-    ? ytdActualRet +
-      ytdActualPort +
-      ytdActualMatch +
-      totalWith * remainingFraction
-    : totalWith;
-  const blendedTotalWithout = useBlended
-    ? ytdActualRet + ytdActualPort + totalWithout * remainingFraction
-    : totalWithout;
 
   const pl = periodLabel(period);
 
@@ -257,60 +200,45 @@ export default function ContributionsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         {(() => {
           // Aggregate server-computed per-person rates weighted by compensation
-          // Use blended totals for rates when in blended mode
-          const effRetWith = useBlended ? blendedRetWith : totalRetirementWith;
-          const effRetWithout = useBlended
-            ? blendedRetWithout
-            : totalRetirementWithout;
-          const effPortWith = useBlended ? blendedPortWith : totalPortfolioWith;
-          const effPortWithout = useBlended
-            ? blendedPortWithout
-            : totalPortfolioWithout;
-          const effTotalWith = useBlended ? blendedTotalWith : totalWith;
-          const effTotalWithout = useBlended
-            ? blendedTotalWithout
-            : totalWithout;
-
-          const hhRateWith = useBlended
-            ? combinedSalary > 0
-              ? effTotalWith / combinedSalary
-              : 0
-            : activePeople.reduce(
-                (s, p) =>
-                  s +
-                  p.totals.savingsRateWithMatch *
-                    (p.totalCompensation ?? p.salary),
-                0,
-              ) / (combinedSalary || 1);
-          const hhRateWithout = useBlended
-            ? combinedSalary > 0
-              ? effTotalWithout / combinedSalary
-              : 0
-            : activePeople.reduce(
-                (s, p) =>
-                  s +
-                  p.totals.savingsRateWithoutMatch *
-                    (p.totalCompensation ?? p.salary),
-                0,
-              ) / (combinedSalary || 1);
+          const hhRateWith = (safeDivide(
+            activePeople.reduce(
+              (s, p) =>
+                s +
+                p.totals.views[viewMode].savingsRateWithMatch *
+                  (p.totalCompensation ?? p.salary),
+              0,
+            ),
+            combinedSalary,
+          ) ?? 0) as number;
+          const hhRateWithout = (safeDivide(
+            activePeople.reduce(
+              (s, p) =>
+                s +
+                p.totals.views[viewMode].savingsRateWithoutMatch *
+                  (p.totalCompensation ?? p.salary),
+              0,
+            ),
+            combinedSalary,
+          ) ?? 0) as number;
           const retRateWith =
-            combinedSalary > 0 ? effRetWith / combinedSalary : 0;
+            combinedSalary > 0 ? totalRetirementWith / combinedSalary : 0;
           const retRateWithout =
-            combinedSalary > 0 ? effRetWithout / combinedSalary : 0;
+            combinedSalary > 0 ? totalRetirementWithout / combinedSalary : 0;
           const portRateWith =
-            combinedSalary > 0 ? effPortWith / combinedSalary : 0;
+            combinedSalary > 0 ? totalPortfolioWith / combinedSalary : 0;
           const portRateWithout =
-            combinedSalary > 0 ? effPortWithout / combinedSalary : 0;
+            combinedSalary > 0 ? totalPortfolioWithout / combinedSalary : 0;
+          const isBlended = viewMode === "blended";
           const primary = highIncome ? "without" : "with";
           return (
             <>
               <SummaryCard
-                label={useBlended ? "Total Savings (Est.)" : "Total Savings"}
+                label={isBlended ? "Total Savings (Est.)" : "Total Savings"}
                 rate={primary === "without" ? hhRateWithout : hhRateWith}
                 rateAlt={primary === "without" ? hhRateWith : hhRateWithout}
                 altLabel={highIncome ? "w/ match" : "w/o match"}
                 amount={toDisplay(
-                  highIncome ? effTotalWithout : effTotalWith,
+                  highIncome ? totalWithout : totalWith,
                   avgPeriodsPerYear,
                   period,
                 )}
@@ -318,12 +246,12 @@ export default function ContributionsPage() {
                 color="bg-blue-500"
               />
               <SummaryCard
-                label={useBlended ? "Retirement (Est.)" : "Retirement"}
+                label={isBlended ? "Retirement (Est.)" : "Retirement"}
                 rate={primary === "without" ? retRateWithout : retRateWith}
                 rateAlt={primary === "without" ? retRateWith : retRateWithout}
                 altLabel={highIncome ? "w/ match" : "w/o match"}
                 amount={toDisplay(
-                  highIncome ? effRetWithout : effRetWith,
+                  highIncome ? totalRetirementWithout : totalRetirementWith,
                   avgPeriodsPerYear,
                   period,
                 )}
@@ -331,12 +259,12 @@ export default function ContributionsPage() {
                 color="bg-emerald-500"
               />
               <SummaryCard
-                label={useBlended ? "Portfolio (Est.)" : "Portfolio"}
+                label={isBlended ? "Portfolio (Est.)" : "Portfolio"}
                 rate={primary === "without" ? portRateWithout : portRateWith}
                 rateAlt={primary === "without" ? portRateWith : portRateWithout}
                 altLabel={highIncome ? "w/ match" : "w/o match"}
                 amount={toDisplay(
-                  highIncome ? effPortWithout : effPortWith,
+                  highIncome ? totalPortfolioWithout : totalPortfolioWith,
                   avgPeriodsPerYear,
                   period,
                 )}
@@ -400,7 +328,7 @@ export default function ContributionsPage() {
                       <td className="text-right py-1.5">
                         {formatCurrency(
                           toDisplay(
-                            a.employeeContrib,
+                            a.views[viewMode].employeeContrib,
                             person.periodsPerYear,
                             period,
                           ),
@@ -409,7 +337,7 @@ export default function ContributionsPage() {
                       <td className="text-right py-1.5 text-emerald-600">
                         {formatCurrency(
                           toDisplay(
-                            a.employerMatch,
+                            a.views[viewMode].employerMatch,
                             person.periodsPerYear,
                             period,
                           ),
@@ -418,7 +346,7 @@ export default function ContributionsPage() {
                       <td className="text-right py-1.5 font-medium">
                         {formatCurrency(
                           toDisplay(
-                            a.totalContrib,
+                            a.views[viewMode].totalContrib,
                             person.periodsPerYear,
                             period,
                           ),
@@ -457,7 +385,7 @@ export default function ContributionsPage() {
             </thead>
             <tbody>
               {person.accountTypes.map((a) => {
-                const utilPct = a.fundingPct * 100;
+                const utilPct = a.views[viewMode].fundingPct * 100;
                 const barColor =
                   utilPct >= 95
                     ? "bg-emerald-500"
@@ -498,7 +426,7 @@ export default function ContributionsPage() {
                       <td className="text-right py-2">
                         {formatCurrency(
                           toDisplay(
-                            a.employeeContrib,
+                            a.views[viewMode].employeeContrib,
                             person.periodsPerYear,
                             period,
                           ),
@@ -509,7 +437,7 @@ export default function ContributionsPage() {
                           <span className="text-emerald-600">
                             {formatCurrency(
                               toDisplay(
-                                a.employerMatch,
+                                a.views[viewMode].employerMatch,
                                 person.periodsPerYear,
                                 period,
                               ),
@@ -534,7 +462,7 @@ export default function ContributionsPage() {
                               />
                             </div>
                             <span className="text-xs text-muted w-10 text-right">
-                              {formatPercent(a.fundingPct, 0)}
+                              {formatPercent(a.views[viewMode].fundingPct, 0)}
                             </span>
                           </div>
                         ) : (
@@ -623,7 +551,7 @@ export default function ContributionsPage() {
                 <td className="text-right py-2 font-medium">
                   {formatCurrency(
                     toDisplay(
-                      person.totals.totalWithoutMatch,
+                      person.totals.views[viewMode].totalWithoutMatch,
                       person.periodsPerYear,
                       period,
                     ),
@@ -632,8 +560,8 @@ export default function ContributionsPage() {
                 <td className="text-right py-2 font-medium text-emerald-600">
                   {formatCurrency(
                     toDisplay(
-                      person.totals.totalWithMatch -
-                        person.totals.totalWithoutMatch,
+                      person.totals.views[viewMode].totalWithMatch -
+                        person.totals.views[viewMode].totalWithoutMatch,
                       person.periodsPerYear,
                       period,
                     ),
@@ -644,8 +572,7 @@ export default function ContributionsPage() {
                     <>
                       Savings rate:{" "}
                       {formatPercent(
-                        person.totals.totalWithMatch /
-                          (person.totalCompensation ?? person.salary),
+                        person.totals.views[viewMode].savingsRateWithMatch,
                         1,
                       )}{" "}
                       (with match)
@@ -676,7 +603,7 @@ export default function ContributionsPage() {
                   label: "Total (with match)",
                   current: totalWith,
                   profile: profileData.people.reduce(
-                    (s, p) => s + p.totals.totalWithMatch,
+                    (s, p) => s + p.totals.views[viewMode].totalWithMatch,
                     0,
                   ),
                 },
@@ -684,7 +611,7 @@ export default function ContributionsPage() {
                   label: "Retirement",
                   current: totalRetirementWith,
                   profile: profileData.people.reduce(
-                    (s, p) => s + p.totals.retirementWithMatch,
+                    (s, p) => s + p.totals.views[viewMode].retirementWithMatch,
                     0,
                   ),
                 },
@@ -692,7 +619,7 @@ export default function ContributionsPage() {
                   label: "Portfolio",
                   current: totalPortfolioWith,
                   profile: profileData.people.reduce(
-                    (s, p) => s + p.totals.portfolioWithMatch,
+                    (s, p) => s + p.totals.views[viewMode].portfolioWithMatch,
                     0,
                   ),
                 },

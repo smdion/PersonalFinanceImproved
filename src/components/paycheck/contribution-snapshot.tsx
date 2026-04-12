@@ -19,6 +19,7 @@ import {
   type ContribPeriod,
 } from "@/components/ui/contrib-period-toggle";
 import { FundingBar } from "./funding-bar";
+import { OVER_LIMIT_THRESHOLD } from "@/lib/constants";
 import {
   categoriesWithIrsLimit,
   getAccountTypeConfig,
@@ -29,7 +30,6 @@ import type { AccountCategory } from "@/lib/config/account-types";
 
 export function ContributionSnapshot() {
   const { viewMode } = useScenario();
-  const isBlended = viewMode === "blended";
   const [activeProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",
     null,
@@ -92,101 +92,49 @@ export function ContributionSnapshot() {
     .filter((a) => isPortfolioParent(a.parentCategory))
     .reduce((s, a) => s + a.totalContrib, 0);
 
-  // Blended mode: compute year-end estimate using actual YTD + projected remaining
-  const avgYtdRatio =
-    activePeople.length > 0
-      ? activePeople.reduce(
-          (s, p) =>
-            s +
-            (p.periodsPerYear! > 0
-              ? p.periodsElapsedYtd / p.periodsPerYear!
-              : 0),
-          0,
-        ) / activePeople.length
-      : 0;
-  const remainingFraction = 1 - avgYtdRatio;
-
-  // Actual YTD totals from performance data
-  const hasYtdActuals =
-    isBlended &&
-    activePeople.some(
-      (p) =>
-        p.totals.ytdActualRetirement > 0 ||
-        p.totals.ytdActualPortfolio > 0 ||
-        p.totals.ytdActualMatch > 0,
-    );
-  const ytdActualRet = activePeople.reduce(
-    (s, p) => s + p.totals.ytdActualRetirement,
-    0,
-  );
-  const ytdActualPort = activePeople.reduce(
-    (s, p) => s + p.totals.ytdActualPortfolio,
-    0,
-  );
-  const ytdActualMatch = activePeople.reduce(
-    (s, p) => s + p.totals.ytdActualMatch,
-    0,
-  );
-
-  // Projected annual totals (without multiplier, for blended calculation)
-  const projRetNoMatch =
-    activePeople.reduce((s, p) => s + p.totals.retirementWithoutMatch, 0) +
-    jointRetNoMatch;
-  const projRetWithMatch =
-    activePeople.reduce((s, p) => s + p.totals.retirementWithMatch, 0) +
-    jointRetWithMatch;
-  const projPortNoMatch =
-    activePeople.reduce((s, p) => s + p.totals.portfolioWithoutMatch, 0) +
-    jointPortNoMatch;
-  const projPortWithMatch =
-    activePeople.reduce((s, p) => s + p.totals.portfolioWithMatch, 0) +
-    jointPortWithMatch;
-  const projTotalNoMatch =
-    activePeople.reduce((s, p) => s + p.totals.totalWithoutMatch, 0) +
-    jt.totalWithoutMatch;
-  const projTotalWithMatch =
-    activePeople.reduce((s, p) => s + p.totals.totalWithMatch, 0) +
-    jt.totalWithMatch;
-
-  // Blended year-end estimates: actual YTD + projected remaining
-  // For "no match" totals: use ytdActualRet/Port (employee only) + remaining projected
-  // For "with match" totals: add ytdActualMatch + remaining projected match
-  const blendedRetNoMatch = hasYtdActuals
-    ? ytdActualRet + projRetNoMatch * remainingFraction
-    : projRetNoMatch;
-  const blendedRetWithMatch = hasYtdActuals
-    ? ytdActualRet + ytdActualMatch + projRetWithMatch * remainingFraction
-    : projRetWithMatch;
-  const blendedPortNoMatch = hasYtdActuals
-    ? ytdActualPort + projPortNoMatch * remainingFraction
-    : projPortNoMatch;
-  const blendedPortWithMatch = hasYtdActuals
-    ? ytdActualPort + projPortWithMatch * remainingFraction
-    : projPortWithMatch;
-  const blendedTotalNoMatch = hasYtdActuals
-    ? ytdActualRet + ytdActualPort + projTotalNoMatch * remainingFraction
-    : projTotalNoMatch;
-  const blendedTotalWithMatch = hasYtdActuals
-    ? ytdActualRet +
-      ytdActualPort +
-      ytdActualMatch +
-      projTotalWithMatch * remainingFraction
-    : projTotalWithMatch;
-
-  // Select projected vs blended based on viewMode
-  const useBlended = isBlended && hasYtdActuals;
+  // Household totals from server-computed view-mode values
   const householdRetNoMatch =
-    (useBlended ? blendedRetNoMatch : projRetNoMatch) * householdMult;
+    (activePeople.reduce(
+      (s, p) => s + p.totals.views[viewMode].retirementWithoutMatch,
+      0,
+    ) +
+      jointRetNoMatch) *
+    householdMult;
   const householdRetWithMatch =
-    (useBlended ? blendedRetWithMatch : projRetWithMatch) * householdMult;
+    (activePeople.reduce(
+      (s, p) => s + p.totals.views[viewMode].retirementWithMatch,
+      0,
+    ) +
+      jointRetWithMatch) *
+    householdMult;
   const householdPortNoMatch =
-    (useBlended ? blendedPortNoMatch : projPortNoMatch) * householdMult;
+    (activePeople.reduce(
+      (s, p) => s + p.totals.views[viewMode].portfolioWithoutMatch,
+      0,
+    ) +
+      jointPortNoMatch) *
+    householdMult;
   const householdPortWithMatch =
-    (useBlended ? blendedPortWithMatch : projPortWithMatch) * householdMult;
+    (activePeople.reduce(
+      (s, p) => s + p.totals.views[viewMode].portfolioWithMatch,
+      0,
+    ) +
+      jointPortWithMatch) *
+    householdMult;
   const householdTotalNoMatch =
-    (useBlended ? blendedTotalNoMatch : projTotalNoMatch) * householdMult;
+    (activePeople.reduce(
+      (s, p) => s + p.totals.views[viewMode].totalWithoutMatch,
+      0,
+    ) +
+      jt.totalWithoutMatch) *
+    householdMult;
   const householdTotalWithMatch =
-    (useBlended ? blendedTotalWithMatch : projTotalWithMatch) * householdMult;
+    (activePeople.reduce(
+      (s, p) => s + p.totals.views[viewMode].totalWithMatch,
+      0,
+    ) +
+      jt.totalWithMatch) *
+    householdMult;
 
   const periodSuffix = getPeriodSuffix(contribPeriod);
 
@@ -439,8 +387,10 @@ export function ContributionSnapshot() {
 
                   // Compute match percentage of the limit for the funding bar
                   const matchPctOfLimit =
-                    hasLimit && at.limit > 0 && at.employerMatch > 0
-                      ? at.employerMatch / at.limit
+                    hasLimit &&
+                    at.limit > 0 &&
+                    at.views[viewMode].employerMatch > 0
+                      ? at.views[viewMode].employerMatch / at.limit
                       : undefined;
 
                   return (
@@ -455,7 +405,9 @@ export function ContributionSnapshot() {
                       <div className="flex items-baseline justify-between text-sm">
                         <div>
                           <span className="font-medium">
-                            {formatCurrency(at.employeeContrib * mult)}
+                            {formatCurrency(
+                              at.views[viewMode].employeeContrib * mult,
+                            )}
                           </span>
                           {at.currentPctOfSalary !== null &&
                             contribPeriod === "annual" && (
@@ -474,7 +426,10 @@ export function ContributionSnapshot() {
                         </div>
                         {at.employerMatch > 0 && (
                           <span className="text-sm text-muted">
-                            +{formatCurrency(at.employerMatch * mult)}
+                            +
+                            {formatCurrency(
+                              at.views[viewMode].employerMatch * mult,
+                            )}
                             <span className="text-xs text-faint ml-0.5">
                               {employerMatchLabel}
                             </span>
@@ -486,7 +441,7 @@ export function ContributionSnapshot() {
                       {hasLimit && (
                         <div className="mt-1.5">
                           <FundingBar
-                            pct={at.fundingPct}
+                            pct={at.views[viewMode].fundingPct}
                             matchPct={matchPctOfLimit}
                             matchCountsTowardLimit={matchCountsTowardLimit}
                             accountType={categoryKey}
@@ -494,24 +449,29 @@ export function ContributionSnapshot() {
                           <div className="flex justify-between text-xs mt-0.5">
                             <span
                               className={
-                                at.fundingPct > 1
+                                at.views[viewMode].fundingPct >
+                                OVER_LIMIT_THRESHOLD
                                   ? "text-red-600 font-medium"
-                                  : at.fundingPct >= 1
+                                  : at.views[viewMode].fundingPct >= 1
                                     ? "text-green-600 font-medium"
                                     : "text-muted"
                               }
                             >
-                              {formatPercent(at.fundingPct)} of{" "}
+                              {formatPercent(at.views[viewMode].fundingPct)} of{" "}
                               {formatCurrency(at.limit)}
-                              {at.fundingPct > 1 && (
+                              {at.views[viewMode].fundingPct >
+                                OVER_LIMIT_THRESHOLD && (
                                 <span className="ml-1 text-[10px] bg-red-100 text-red-700 px-1 rounded">
                                   Over limit
                                 </span>
                               )}
                             </span>
-                            {at.fundingMissing > 0 && (
+                            {at.views[viewMode].fundingMissing > 0 && (
                               <span className="text-red-500">
-                                -{formatCurrency(at.fundingMissing * mult)}
+                                -
+                                {formatCurrency(
+                                  at.views[viewMode].fundingMissing * mult,
+                                )}
                               </span>
                             )}
                           </div>
@@ -524,26 +484,39 @@ export function ContributionSnapshot() {
                                 : " does not count toward IRS limit"}
                             </p>
                           )}
-                          {at.fundingPct > 1 && (
+                          {at.views[viewMode].fundingPct >
+                            OVER_LIMIT_THRESHOLD && (
                             <p className="text-[10px] text-red-600 mt-0.5">
                               Over by{" "}
                               {formatCurrency(
-                                (at.employeeContrib - at.limit) * mult,
+                                ((matchCountsTowardLimit
+                                  ? at.views[viewMode].totalContrib
+                                  : at.views[viewMode].employeeContrib) -
+                                  at.limit) *
+                                  mult,
                               )}
                               {periodSuffix} — reduce to avoid excess
                               contribution
                             </p>
                           )}
-                          {at.fundingPct <= 1 &&
-                            at.pctOfSalaryToMax !== null &&
-                            Math.floor(at.pctOfSalaryToMax) > 0 && (
+                          {at.views[viewMode].fundingPct <=
+                            OVER_LIMIT_THRESHOLD &&
+                            at.views[viewMode].pctOfSalaryToMax !== null &&
+                            Math.floor(at.views[viewMode].pctOfSalaryToMax) >
+                              0 && (
                               <p className="text-[10px] text-amber-600 mt-0.5">
-                                Need +{Math.floor(at.pctOfSalaryToMax)}% to max
+                                Need +
+                                {Math.floor(
+                                  at.views[viewMode].pctOfSalaryToMax,
+                                )}
+                                % to max
                               </p>
                             )}
-                          {at.fundingPct <= 1 &&
-                            at.pctOfSalaryToMax !== null &&
-                            Math.floor(at.pctOfSalaryToMax) === 0 && (
+                          {at.views[viewMode].fundingPct <=
+                            OVER_LIMIT_THRESHOLD &&
+                            at.views[viewMode].pctOfSalaryToMax !== null &&
+                            Math.floor(at.views[viewMode].pctOfSalaryToMax) ===
+                              0 && (
                               <p className="text-[10px] text-green-600 mt-0.5">
                                 Maxed out
                               </p>
@@ -592,7 +565,7 @@ export function ContributionSnapshot() {
                                     style={{
                                       width: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                     }}
-                                    title={`Your cost: ${formatCurrency(at.employeeContrib * mult)}${periodSuffix}`}
+                                    title={`Your cost: ${formatCurrency(at.views[viewMode].employeeContrib * mult)}${periodSuffix}`}
                                   />
                                   <div
                                     className={`${accountMatchColor(categoryKey)} h-2 rounded-r-full transition-all absolute top-0`}
@@ -600,7 +573,7 @@ export function ContributionSnapshot() {
                                       left: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                       width: `${(at.employerMatch / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                     }}
-                                    title={`${employerMatchLabel}: ${formatCurrency(at.employerMatch * mult)}${periodSuffix}`}
+                                    title={`${employerMatchLabel}: ${formatCurrency(at.views[viewMode].employerMatch * mult)}${periodSuffix}`}
                                   />
                                 </div>
                                 <div className="flex justify-between text-[10px] mt-0.5">
@@ -609,7 +582,8 @@ export function ContributionSnapshot() {
                                   >
                                     Total value:{" "}
                                     {formatCurrency(
-                                      (at.employeeContrib + at.employerMatch) *
+                                      (at.views[viewMode].employeeContrib +
+                                        at.views[viewMode].employerMatch) *
                                         mult,
                                     )}
                                     {periodSuffix}
@@ -636,7 +610,7 @@ export function ContributionSnapshot() {
                                     style={{
                                       width: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                     }}
-                                    title={`You: ${formatCurrency(at.employeeContrib * mult)}${periodSuffix}`}
+                                    title={`You: ${formatCurrency(at.views[viewMode].employeeContrib * mult)}${periodSuffix}`}
                                   />
                                   <div
                                     className={`${accountMatchColor(categoryKey)} h-2 rounded-r-full absolute top-0`}
@@ -644,14 +618,14 @@ export function ContributionSnapshot() {
                                       left: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                       width: `${(at.employerMatch / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                     }}
-                                    title={`${employerMatchLabel}: ${formatCurrency(at.employerMatch * mult)}${periodSuffix}`}
+                                    title={`${employerMatchLabel}: ${formatCurrency(at.views[viewMode].employerMatch * mult)}${periodSuffix}`}
                                   />
                                 </>
                               ) : (
                                 <div
                                   className={`${accountColor(categoryKey)} h-2 rounded-full`}
                                   style={{ width: "100%" }}
-                                  title={`${formatCurrency(at.employeeContrib * mult)}${periodSuffix}`}
+                                  title={`${formatCurrency(at.views[viewMode].employeeContrib * mult)}${periodSuffix}`}
                                 />
                               )}
                             </div>
@@ -663,7 +637,10 @@ export function ContributionSnapshot() {
                               <span
                                 className={`${accountTextColor(categoryKey)} font-medium`}
                               >
-                                +{formatCurrency(at.employerMatch * mult)}
+                                +
+                                {formatCurrency(
+                                  at.views[viewMode].employerMatch * mult,
+                                )}
                                 {periodSuffix} {employerMatchLabel}
                               </span>
                             )}
@@ -679,7 +656,7 @@ export function ContributionSnapshot() {
       </div>
 
       {/* Household totals */}
-      {useBlended && (
+      {viewMode === "blended" && (
         <p className="text-xs text-amber-600 mb-2">
           Year-End Estimate: actual YTD from performance + projected remaining
         </p>

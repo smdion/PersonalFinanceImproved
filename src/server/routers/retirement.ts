@@ -42,6 +42,7 @@ import {
   addBalance,
   addBasis,
   PARENT_CATEGORY_VALUES,
+  isTaxFreeBucket,
 } from "@/lib/config/account-types";
 import { getAge } from "@/lib/utils/date";
 import { roundToCents } from "@/lib/utils/math";
@@ -408,7 +409,7 @@ export async function buildEnginePayload(
       const catAsBal = cat as AccountCategory;
       const bal = portfolioByAccount[catAsBal];
       if (bal.structure === "roth_traditional") {
-        if (a.taxType === "taxFree") addRoth(bal, a.amount);
+        if (isTaxFreeBucket(a.taxType)) addRoth(bal, a.amount);
         else addTraditional(bal, a.amount);
       } else if (bal.structure === "single_bucket") {
         addBalance(bal, a.amount);
@@ -1208,7 +1209,10 @@ export const retirementRouter = createTRPCRouter({
         ctx.db.select().from(schema.budgetItems),
         ctx.db.select().from(schema.performanceAccounts),
       ]);
-      // Filter to Retirement-only contributions for the relocation tool
+      // Filter to Retirement-only contributions for the relocation tool.
+      // audit-exception: literal "401k/IRA" string compare is intentional here
+      // for visual filtering and is allowed to bypass the parent-category
+      // predicate rule.
       const perfCatMap = new Map(
         perfAccounts.map((p) => [p.id, p.parentCategory]),
       );

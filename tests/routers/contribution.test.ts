@@ -93,7 +93,7 @@ describe("contribution router", () => {
       expect(person!.accountTypes).toEqual([]);
       expect(person!.perContribData).toEqual([]);
       expect(person!.result).toBeNull();
-      expect(person!.totals).toEqual({
+      const zeroView = {
         retirementWithoutMatch: 0,
         retirementWithMatch: 0,
         portfolioWithoutMatch: 0,
@@ -102,9 +102,17 @@ describe("contribution router", () => {
         totalWithMatch: 0,
         savingsRateWithMatch: 0,
         savingsRateWithoutMatch: 0,
+      };
+      expect(person!.totals).toEqual({
+        views: {
+          projected: zeroView,
+          blended: zeroView,
+          ytd: zeroView,
+        },
         ytdActualRetirement: 0,
         ytdActualPortfolio: 0,
-        ytdActualMatch: 0,
+        ytdActualRetirementMatch: 0,
+        ytdActualPortfolioMatch: 0,
       });
     });
   });
@@ -124,8 +132,8 @@ describe("contribution router", () => {
       expect(person!.salary).toBe(100000);
       expect(person!.accountTypes).toEqual([]);
       expect(person!.perContribData).toEqual([]);
-      expect(person!.totals.totalWithoutMatch).toBe(0);
-      expect(person!.totals.totalWithMatch).toBe(0);
+      expect(person!.totals.views.projected.totalWithoutMatch).toBe(0);
+      expect(person!.totals.views.projected.totalWithMatch).toBe(0);
     });
 
     it("returns periodsPerYear based on pay period", async () => {
@@ -180,8 +188,11 @@ describe("contribution router", () => {
       // 2026 limit is 24500
       expect(acctType!.limit).toBe(24500);
       // fundingPct = 12000 / 24500
-      expect(acctType!.fundingPct).toBeCloseTo(12000 / 24500, 4);
-      expect(acctType!.fundingMissing).toBe(24500 - 12000);
+      expect(acctType!.views.projected.fundingPct).toBeCloseTo(
+        12000 / 24500,
+        4,
+      );
+      expect(acctType!.views.projected.fundingMissing).toBe(24500 - 12000);
     });
 
     it("computes pctOfSalaryToMax", async () => {
@@ -193,7 +204,7 @@ describe("contribution router", () => {
       expect(acctType).toBeDefined();
       // missing = 24500 - 12000 = 12500
       // pctOfSalaryToMax = (12500 / 120000) * 100 = 10.42 (rounded)
-      expect(acctType!.pctOfSalaryToMax).toBeGreaterThan(0);
+      expect(acctType!.views.projected.pctOfSalaryToMax).toBeGreaterThan(0);
       expect(acctType!.currentPctOfSalary).toBeCloseTo(10, 1);
     });
 
@@ -210,10 +221,10 @@ describe("contribution router", () => {
     it("computes retirement totals correctly", async () => {
       const result = await caller.contribution.computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
-      expect(person!.totals.retirementWithoutMatch).toBe(12000);
-      expect(person!.totals.retirementWithMatch).toBe(12000);
-      expect(person!.totals.portfolioWithoutMatch).toBe(0);
-      expect(person!.totals.totalWithoutMatch).toBe(12000);
+      expect(person!.totals.views.projected.retirementWithoutMatch).toBe(12000);
+      expect(person!.totals.views.projected.retirementWithMatch).toBe(12000);
+      expect(person!.totals.views.projected.portfolioWithoutMatch).toBe(0);
+      expect(person!.totals.views.projected.totalWithoutMatch).toBe(12000);
     });
   });
 
@@ -256,8 +267,8 @@ describe("contribution router", () => {
     it("includes match in retirementWithMatch total", async () => {
       const result = await caller.contribution.computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
-      expect(person!.totals.retirementWithoutMatch).toBe(6000);
-      expect(person!.totals.retirementWithMatch).toBe(9000);
+      expect(person!.totals.views.projected.retirementWithoutMatch).toBe(6000);
+      expect(person!.totals.views.projected.retirementWithMatch).toBe(9000);
     });
   });
 
@@ -472,8 +483,8 @@ describe("contribution router", () => {
     it("includes portfolio totals", async () => {
       const result = await caller.contribution.computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
-      expect(person!.totals.portfolioWithoutMatch).toBe(12000);
-      expect(person!.totals.portfolioWithMatch).toBe(12000);
+      expect(person!.totals.views.projected.portfolioWithoutMatch).toBe(12000);
+      expect(person!.totals.views.projected.portfolioWithMatch).toBe(12000);
     });
   });
 
@@ -532,10 +543,16 @@ describe("contribution router", () => {
       // 401k: 15% of 150000 = 22500 employee + 100% match on first 3% = 4500 match
       // IRA: 7000
       // Brokerage: 500 * 12 = 6000
-      expect(person!.totals.retirementWithoutMatch).toBe(22500 + 7000);
-      expect(person!.totals.retirementWithMatch).toBe(22500 + 4500 + 7000);
-      expect(person!.totals.portfolioWithoutMatch).toBe(6000);
-      expect(person!.totals.totalWithoutMatch).toBe(22500 + 7000 + 6000);
+      expect(person!.totals.views.projected.retirementWithoutMatch).toBe(
+        22500 + 7000,
+      );
+      expect(person!.totals.views.projected.retirementWithMatch).toBe(
+        22500 + 4500 + 7000,
+      );
+      expect(person!.totals.views.projected.portfolioWithoutMatch).toBe(6000);
+      expect(person!.totals.views.projected.totalWithoutMatch).toBe(
+        22500 + 7000 + 6000,
+      );
     });
 
     it("includes perContribData for all contributions", async () => {
@@ -703,7 +720,7 @@ describe("contribution router", () => {
       );
       // The person's own 401k should not show because isActive=false
       // (there may be other people's 401k accounts, so check this person's totals)
-      expect(person!.totals.retirementWithoutMatch).toBe(0);
+      expect(person!.totals.views.projected.retirementWithoutMatch).toBe(0);
     });
   });
 

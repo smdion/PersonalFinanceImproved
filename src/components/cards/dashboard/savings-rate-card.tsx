@@ -19,8 +19,6 @@ import { LoadingCard, ErrorCard } from "./utils";
 
 export function SavingsRateCard() {
   const { viewMode } = useScenario();
-  const isYtd = viewMode === "ytd";
-  const isBlended = viewMode === "blended";
   const salaryOverrides = useSalaryOverrides();
   const [activeProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",
@@ -43,30 +41,10 @@ export function SavingsRateCard() {
   if (error) return <ErrorCard title="Savings Rate" message="Failed to load" />;
 
   const people = data?.people?.filter((d) => d.result) ?? [];
-  // YTD ratio per person: scale annual amounts to elapsed periods
-  const ytdRatio = (d: (typeof people)[0]) =>
-    d.periodsPerYear > 0 ? d.periodsElapsedYtd / d.periodsPerYear : 0;
-  const scale = (d: (typeof people)[0], annual: number) =>
-    isYtd ? annual * ytdRatio(d) : annual;
-  // Blended mode: actual YTD + projected remaining
-  const avgYtdRatio =
-    people.length > 0
-      ? people.reduce((s, d) => s + ytdRatio(d), 0) / people.length
-      : 0;
-  const remainingFraction = 1 - avgYtdRatio;
-  const hasYtdActuals =
-    isBlended &&
-    people.some(
-      (p) =>
-        p.totals.ytdActualRetirement > 0 ||
-        p.totals.ytdActualPortfolio > 0 ||
-        p.totals.ytdActualMatch > 0,
-    );
-  const useBlended = isBlended && hasYtdActuals;
 
   // Use totalCompensation (always includes bonus) — shared logic across all pages
   const householdTotalComp = people.reduce(
-    (s, d) => s + scale(d, d.totalCompensation ?? d.salary ?? 0),
+    (s, d) => s + (d.totalCompensation ?? d.salary ?? 0),
     0,
   );
   const highIncome = householdTotalComp >= highIncomeThreshold;
@@ -75,77 +53,42 @@ export function SavingsRateCard() {
   // User can override via toggle (matchOverride)
   const excludeMatch = matchOverride !== null ? matchOverride : highIncome;
 
-  const totalKey = excludeMatch
-    ? "totalEmployeeOnly"
-    : "totalAnnualContributions";
-  const jointTotal = excludeMatch
-    ? (data?.jointTotals?.totalWithoutMatch ?? 0)
-    : (data?.jointTotals?.totalWithMatch ?? 0);
-  // Annual totals (for rate calculation)
-  const totalContribsAnnual =
-    people.reduce((s, d) => s + (d.result![totalKey] ?? 0), 0) + jointTotal;
-  const jointScaled = isYtd ? jointTotal * avgYtdRatio : jointTotal;
-
-  // Blended year-end estimate for contributions
-  const ytdActualTotal = people.reduce(
-    (s, p) =>
-      s +
-      p.totals.ytdActualRetirement +
-      p.totals.ytdActualPortfolio +
-      (excludeMatch ? 0 : p.totals.ytdActualMatch),
-    0,
-  );
-  const blendedContribs = useBlended
-    ? ytdActualTotal + totalContribsAnnual * remainingFraction
-    : null;
-
-  const totalContribs = useBlended
-    ? blendedContribs!
-    : isYtd
-      ? people.reduce(
-          (s, d) => s + (d.result![totalKey] ?? 0) * ytdRatio(d),
-          0,
-        ) + jointScaled
-      : totalContribsAnnual;
-
-  // Household savings rate — use server-computed rates (single source of truth)
-  // For annual: weighted average of per-person server rates
-  // For YTD: scale annual rate by YTD fraction (same rate, different dollar amounts)
+  // Server-computed view-aware savings rate (single source of truth)
   const rateKey2 = excludeMatch
     ? "savingsRateWithoutMatch"
-    : "savingsRateWithMatch";
-  const annualRate =
+    : ("savingsRateWithMatch" as const);
+  const totalRate =
     householdTotalComp > 0
       ? people.reduce(
           (s, d) =>
             s +
-            (d.totals?.[rateKey2 as keyof typeof d.totals] ?? 0) *
+            (d.totals.views[viewMode][rateKey2] ?? 0) *
               (d.totalCompensation ?? d.salary ?? 0),
           0,
         ) / householdTotalComp
       : 0;
-  const totalRate = useBlended
-    ? householdTotalComp > 0
-      ? totalContribs / householdTotalComp
-      : 0
-    : isYtd
-      ? householdTotalComp > 0
-        ? totalContribs / householdTotalComp
-        : 0
-      : annualRate;
 
-  // Collect group totals in dollars, then compute rates against total comp
+  // Total contributions from server view-aware totals
+  const totalKey = excludeMatch ? "totalWithoutMatch" : "totalWithMatch";
+  const jointTotal = excludeMatch
+    ? (data?.jointTotals?.totalWithoutMatch ?? 0)
+    : (data?.jointTotals?.totalWithMatch ?? 0);
+  const totalContribs =
+    people.reduce((s, d) => s + d.totals.views[viewMode][totalKey], 0) +
+    jointTotal;
+
+  // Derive group totals from view-aware per-person totals (single computation path)
+  const retKey = excludeMatch
+    ? "retirementWithoutMatch"
+    : ("retirementWithMatch" as const);
+  const portKey = excludeMatch
+    ? "portfolioWithoutMatch"
+    : ("portfolioWithMatch" as const);
   const groupTotals: Record<string, number> = {};
-  const rateKey = excludeMatch ? "groupRatesExMatch" : "groupRates";
   for (const d of people) {
-    if (!d.result) continue;
-    const salary = d.salary ?? 0;
-    for (const [group, rate] of Object.entries(d.result[rateKey])) {
-      if (group === "total") continue;
-      // Convert per-person rate back to dollars using totalCompensation (same denominator used to compute the rate)
-      const comp = d.totalCompensation ?? salary;
-      groupTotals[group] = (groupTotals[group] ?? 0) + rate * comp;
-    }
+    const vt = d.totals.views[viewMode];
+    groupTotals["retirement"] = (groupTotals["retirement"] ?? 0) + vt[retKey];
+    groupTotals["taxable"] = (groupTotals["taxable"] ?? 0) + vt[portKey];
   }
   // Add joint account contributions to group totals
   for (const jat of data?.jointAccountTypes ?? []) {
@@ -209,8 +152,12 @@ export function SavingsRateCard() {
       </div>
       <p className="text-xs text-faint mt-1">
         {formatCurrency(totalContribs)}
-        {isYtd ? " YTD" : useBlended ? " est." : "/year"} of{" "}
-        {formatCurrency(householdTotalComp)} total comp
+        {viewMode === "ytd"
+          ? " YTD"
+          : viewMode === "blended"
+            ? " est."
+            : "/year"}{" "}
+        of {formatCurrency(householdTotalComp)} total comp
       </p>
       {excludeMatch && (
         <p className="text-xs text-amber-600 mt-1">

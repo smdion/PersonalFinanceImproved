@@ -556,7 +556,7 @@ export async function buildYearEndHistory(
       const yearEnd = new Date(year, 11, 31); // Dec 31
       mortgageBalanceByYear.set(
         year,
-        computeMortgageBalance(mortgageLoans, extraPayments, yearEnd),
+        computeMortgageBalance(mortgageLoans, extraPayments, yearEnd, asOfDate),
       );
     }
   }

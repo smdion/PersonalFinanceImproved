@@ -10,6 +10,7 @@ import {
   formatPercent,
   compactCurrency,
 } from "@/lib/utils/format";
+import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
 import type { EngineDecumulationYear } from "@/lib/calculators/types";
 import {
   ComposedChart,
@@ -69,7 +70,7 @@ export function SpendingStabilityChart({
   const year1Withdrawal = decYears[0]!.totalWithdrawal;
   const inflationRate = engineSettings?.annualInflation
     ? parseFloat(engineSettings.annualInflation)
-    : 0.03;
+    : DEFAULT_INFLATION_RATE;
 
   // Budget baseline
   const retirementAge = engineSettings?.retirementAge ?? 65;
