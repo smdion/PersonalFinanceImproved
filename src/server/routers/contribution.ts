@@ -155,6 +155,7 @@ export const contributionRouter = createTRPCRouter({
         priorYearLimitsRaw,
         perfAccounts,
         currentYearPerfActuals,
+        perfLastUpdatedRows,
       ] = await Promise.all([
         ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
         ctx.db.select().from(schema.jobs),
@@ -191,7 +192,18 @@ export const contributionRouter = createTRPCRouter({
           })
           .from(schema.accountPerformance)
           .where(eq(schema.accountPerformance.year, currentYear)),
+        ctx.db
+          .select({
+            key: schema.appSettings.key,
+            value: schema.appSettings.value,
+          })
+          .from(schema.appSettings)
+          .where(eq(schema.appSettings.key, "performance_last_updated")),
       ]);
+
+      const perfLastUpdated = perfLastUpdatedRows[0]?.value
+        ? new Date(perfLastUpdatedRows[0].value as string)
+        : null;
 
       // Build YTD actuals lookup: performanceAccountId → { contributions, employerMatch }
       const perfActualMap = new Map<
@@ -682,26 +694,50 @@ export const contributionRouter = createTRPCRouter({
               entry.ytdContributions += contribActual.contributions;
               entry.ytdEmployerMatch += contribActual.employerMatch;
             }
-            // Per-contrib blended: max(ytdActual, expectedYtd) + annual * remaining.
-            // When actual < expected, assume data lag (not missed contributions)
-            // and fall back to projected. When actual > expected, use real pace.
+            // Blended = actual YTD + stale-gap fill + projected remaining.
+            // Stale gap: periods between last performance update and today,
+            // filled at current projected rate. Actuals are trusted (may
+            // reflect old contribution rates or salary changes).
             const remaining = methodRemainingFraction(
               rawContrib.contributionMethod,
             );
             const ytdEmp = contribActual?.contributions ?? 0;
             const ytdMatch = contribActual?.employerMatch ?? 0;
             if (ytdEmp > 0 || ytdMatch > 0) {
-              // Use salary-timeline-aware expected YTD for data-lag detection
-              const timelineExpected =
-                expectedYtdMap.get(rawContrib.id) ??
-                acct.annualContribution * (1 - remaining);
-              const expectedMatch = acct.employerMatch * (1 - remaining);
-              if (ytdEmp < timelineExpected * 0.95) entry.ytdDataStale = true;
+              // Compute stale gap from performance freshness date.
+              // Only applies to payroll-cadence contributions (percent_of_salary,
+              // fixed_per_period). Monthly/annual contributions follow their own
+              // schedule — a biweekly payday gap doesn't mean they're stale.
+              let stalePeriods = 0;
+              const isPayrollCadence =
+                rawContrib.contributionMethod === "percent_of_salary" ||
+                rawContrib.contributionMethod === "fixed_per_period";
+              if (
+                isPayrollCadence &&
+                perfLastUpdated &&
+                activeJob.anchorPayDate
+              ) {
+                const anchor = new Date(activeJob.anchorPayDate);
+                const periodsAtPerfDate = countPeriodsElapsed(
+                  perfLastUpdated,
+                  activeJob.payPeriod,
+                  anchor,
+                );
+                stalePeriods = Math.max(
+                  0,
+                  periodsElapsedYtd - periodsAtPerfDate,
+                );
+              }
+              if (stalePeriods > 0) entry.ytdDataStale = true;
+              const perPeriodEmp = acct.annualContribution / periodsPerYear;
+              const perPeriodMatch = acct.employerMatch / periodsPerYear;
               entry.blendedEmployee +=
-                Math.max(ytdEmp, timelineExpected) +
+                ytdEmp +
+                perPeriodEmp * stalePeriods +
                 acct.annualContribution * remaining;
               entry.blendedMatch +=
-                Math.max(ytdMatch, expectedMatch) +
+                ytdMatch +
+                perPeriodMatch * stalePeriods +
                 acct.employerMatch * remaining;
             } else {
               entry.blendedEmployee += acct.annualContribution;
