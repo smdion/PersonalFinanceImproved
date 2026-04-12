@@ -41,6 +41,45 @@ describe("resolveIrsLimit", () => {
     expect(limit).toBe(23500 + 11250);
   });
 
+  // SECURE 2.0 super catch-up boundary tests (v0.5 expert-review H2).
+  // The age range is [60, 63] inclusive on both ends. Verify each boundary.
+  describe("SECURE 2.0 super catch-up age boundaries (401k)", () => {
+    it("age 49: no catch-up (under 50)", () => {
+      expect(resolveIrsLimit("401k", 49, null, limits2025)).toBe(23500);
+    });
+    it("age 50: regular catch-up kicks in", () => {
+      expect(resolveIrsLimit("401k", 50, null, limits2025)).toBe(23500 + 7500);
+    });
+    it("age 59: regular catch-up only", () => {
+      expect(resolveIrsLimit("401k", 59, null, limits2025)).toBe(23500 + 7500);
+    });
+    it("age 60: super catch-up kicks in (lower bound, inclusive)", () => {
+      expect(resolveIrsLimit("401k", 60, null, limits2025)).toBe(23500 + 11250);
+    });
+    it("age 61: super catch-up", () => {
+      expect(resolveIrsLimit("401k", 61, null, limits2025)).toBe(23500 + 11250);
+    });
+    it("age 62: super catch-up", () => {
+      expect(resolveIrsLimit("401k", 62, null, limits2025)).toBe(23500 + 11250);
+    });
+    it("age 63: super catch-up (upper bound, inclusive)", () => {
+      expect(resolveIrsLimit("401k", 63, null, limits2025)).toBe(23500 + 11250);
+    });
+    it("age 64: drops back to regular catch-up", () => {
+      expect(resolveIrsLimit("401k", 64, null, limits2025)).toBe(23500 + 7500);
+    });
+    it("age 75: regular catch-up still applies (no upper bound on regular catch-up)", () => {
+      expect(resolveIrsLimit("401k", 75, null, limits2025)).toBe(23500 + 7500);
+    });
+    it("super catch-up does NOT double-count with regular catch-up at age 60-63", () => {
+      // Verify that 23500 + 11250 + 7500 is NOT the result.
+      // Per the IRS rule, super catch-up REPLACES regular catch-up, doesn't add.
+      const limit = resolveIrsLimit("401k", 62, null, limits2025);
+      expect(limit).toBe(23500 + 11250);
+      expect(limit).not.toBe(23500 + 11250 + 7500);
+    });
+  });
+
   it("returns 0 for non-IRS-limited category (brokerage)", () => {
     const limit = resolveIrsLimit("brokerage", 40, null, limits2025);
     expect(limit).toBe(0);
