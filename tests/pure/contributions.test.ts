@@ -8,6 +8,7 @@ import {
   resolvePriorYearLimit,
   computeSiblingTotal,
   isEligibleForPriorYear,
+  validateContributionOrder,
 } from "@/lib/pure/contributions";
 
 // These tests use the real account-type config, so they reflect actual IRS rules.
@@ -335,5 +336,69 @@ describe("computeViewAwareTotals", () => {
   it("totalCompensation=0 returns zero savings rate", () => {
     const v = computeViewAwareTotals({ ...base, totalCompensation: 0 });
     expect(v.projected.savingsRateWithMatch).toBe(0);
+  });
+});
+
+describe("validateContributionOrder (M1 — CFP heuristic)", () => {
+  it("returns no warnings for an empty order", () => {
+    expect(validateContributionOrder([])).toEqual([]);
+  });
+
+  it("returns no warnings for the recommended order (HSA first, brokerage last)", () => {
+    const result = validateContributionOrder([
+      "hsa",
+      "401k",
+      "ira",
+      "brokerage",
+    ]);
+    expect(result).toEqual([]);
+  });
+
+  it("warns when brokerage appears before tax-advantaged accounts", () => {
+    const result = validateContributionOrder(["brokerage", "401k", "hsa"]);
+    expect(result.length).toBeGreaterThanOrEqual(2);
+    // 401k after brokerage → warn
+    const warn401k = result.find((w) => w.category === "401k");
+    expect(warn401k).toBeDefined();
+    expect(warn401k?.severity).toBe("warn");
+    expect(warn401k?.message).toMatch(/tax-advantaged.*after.*brokerage/i);
+    // hsa after brokerage → warn
+    const warnHsa = result.find(
+      (w) => w.category === "hsa" && w.severity === "warn",
+    );
+    expect(warnHsa).toBeDefined();
+  });
+
+  it("infos when HSA is later than another tax-advantaged account", () => {
+    const result = validateContributionOrder(["401k", "hsa", "brokerage"]);
+    const hsaInfo = result.find(
+      (w) => w.category === "hsa" && w.severity === "info",
+    );
+    expect(hsaInfo).toBeDefined();
+    expect(hsaInfo?.message).toMatch(/triple/i);
+  });
+
+  it("does NOT warn when HSA comes first", () => {
+    const result = validateContributionOrder(["hsa", "401k", "ira"]);
+    expect(result.find((w) => w.severity === "info")).toBeUndefined();
+    expect(result).toEqual([]);
+  });
+
+  it("does NOT warn when no overflow / brokerage in order", () => {
+    expect(validateContributionOrder(["hsa", "401k", "ira"])).toEqual([]);
+  });
+
+  it("handles mixed: brokerage between 401k and ira (still warns ira)", () => {
+    const result = validateContributionOrder(["401k", "brokerage", "ira"]);
+    const warnIra = result.find(
+      (w) => w.category === "ira" && w.severity === "warn",
+    );
+    expect(warnIra).toBeDefined();
+  });
+
+  it("warning includes the category position for UI highlighting", () => {
+    const result = validateContributionOrder(["brokerage", "hsa"]);
+    const w = result.find((w) => w.category === "hsa" && w.severity === "warn");
+    expect(w?.position).toBe(1);
   });
 });
