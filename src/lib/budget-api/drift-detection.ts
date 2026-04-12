@@ -9,7 +9,7 @@
  */
 
 import type { BudgetAccount } from "./types";
-import type { AccountMapping } from "./types";
+import type { AccountMapping } from "@/lib/db/schema";
 
 export interface DriftReport {
   /** Mappings whose remote account no longer exists in the latest fetch. */

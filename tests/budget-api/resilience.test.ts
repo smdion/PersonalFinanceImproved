@@ -14,7 +14,8 @@ import {
 } from "@/lib/budget-api/errors";
 import { transactionIdempotencyKey } from "@/lib/budget-api/idempotency";
 import { detectDrift, hasDrift } from "@/lib/budget-api/drift-detection";
-import type { BudgetAccount, AccountMapping } from "@/lib/budget-api/types";
+import type { BudgetAccount } from "@/lib/budget-api/types";
+import type { AccountMapping } from "@/lib/db/schema";
 
 // ── Errors ──────────────────────────────────────────────────────────
 
