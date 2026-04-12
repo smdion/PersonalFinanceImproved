@@ -12,6 +12,7 @@ import {
   DEFAULT_HIGH_INCOME_THRESHOLD,
 } from "@/lib/constants";
 import { wealthScoreTier } from "@/lib/config/display-labels";
+import { useScenario } from "@/lib/context/scenario-context";
 import { LoadingCard, ErrorCard } from "./utils";
 
 type CheckupStep = {
@@ -112,6 +113,7 @@ function CheckupRow({ step }: { step: CheckupStep }) {
 }
 
 export function FinancialCheckupCard() {
+  const { viewMode } = useScenario();
   const salaryOverrides = useSalaryOverrides();
   const [activeContribProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",
@@ -226,16 +228,16 @@ export function FinancialCheckupCard() {
     0,
   );
   const highIncome = householdTotalComp >= highIncomeThreshold;
-  // Use server-computed savings rates (single source of truth)
+  // Use server-computed view-aware savings rates (single source of truth)
   const rateKey = highIncome
     ? "savingsRateWithoutMatch"
-    : "savingsRateWithMatch";
+    : ("savingsRateWithMatch" as const);
   const savingsRate =
     householdTotalComp > 0
       ? contribPeople.reduce(
           (s, d) =>
             s +
-            (d.totals?.[rateKey as keyof typeof d.totals] ?? 0) *
+            (d.totals.views[viewMode][rateKey] ?? 0) *
               (d.totalCompensation ?? d.salary ?? 0),
           0,
         ) / householdTotalComp

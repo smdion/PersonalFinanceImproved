@@ -156,3 +156,138 @@ describe("isEligibleForPriorYear", () => {
     expect(isEligibleForPriorYear(true, "brokerage", 500)).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// View-aware metrics
+// ---------------------------------------------------------------------------
+
+import {
+  computeViewAwareAccountMetrics,
+  computeViewAwareTotals,
+} from "@/lib/pure/contributions";
+
+describe("computeViewAwareAccountMetrics", () => {
+  const base = {
+    towardLimit: 12000,
+    limit: 24500,
+    salary: 120000,
+    ytdActual: { contributions: 5000, employerMatch: 2000 },
+    ytdRatio: 0.4,
+    matchCountsTowardLimit: false,
+  };
+
+  it("projected uses full annual values", () => {
+    const v = computeViewAwareAccountMetrics(base);
+    expect(v.projected.fundingPct).toBeCloseTo(12000 / 24500, 4);
+    expect(v.projected.fundingMissing).toBe(24500 - 12000);
+    expect(v.projected.pctOfSalaryToMax).toBeGreaterThan(0);
+  });
+
+  it("blended combines YTD actual + projected remaining", () => {
+    const v = computeViewAwareAccountMetrics(base);
+    const blendedToward = 5000 + 12000 * 0.6;
+    expect(v.blended.fundingPct).toBeCloseTo(blendedToward / 24500, 4);
+    expect(v.blended.fundingMissing).toBe(Math.max(0, 24500 - blendedToward));
+  });
+
+  it("ytd shows actual progress only", () => {
+    const v = computeViewAwareAccountMetrics(base);
+    expect(v.ytd.fundingPct).toBeCloseTo(5000 / 24500, 4);
+    expect(v.ytd.fundingMissing).toBe(24500 - 5000);
+    expect(v.ytd.pctOfSalaryToMax).toBeNull();
+  });
+
+  it("matchCountsTowardLimit includes employer match in ytd", () => {
+    const v = computeViewAwareAccountMetrics({
+      ...base,
+      matchCountsTowardLimit: true,
+    });
+    expect(v.ytd.fundingPct).toBeCloseTo(7000 / 24500, 4);
+  });
+
+  it("ytdRatio=0 falls back to projected for all views", () => {
+    const v = computeViewAwareAccountMetrics({ ...base, ytdRatio: 0 });
+    expect(v.blended).toEqual(v.projected);
+    expect(v.ytd).toEqual(v.projected);
+  });
+
+  it("ytdActual=null falls back to projected for all views", () => {
+    const v = computeViewAwareAccountMetrics({ ...base, ytdActual: null });
+    expect(v.blended).toEqual(v.projected);
+    expect(v.ytd).toEqual(v.projected);
+  });
+
+  it("limit=0 returns zero metrics for all views", () => {
+    const v = computeViewAwareAccountMetrics({ ...base, limit: 0 });
+    expect(v.projected.fundingPct).toBe(0);
+    expect(v.blended.fundingPct).toBe(0);
+    expect(v.ytd.fundingPct).toBe(0);
+  });
+
+  it("salary=0 returns null pctOfSalaryToMax", () => {
+    const v = computeViewAwareAccountMetrics({ ...base, salary: 0 });
+    expect(v.projected.pctOfSalaryToMax).toBeNull();
+  });
+});
+
+describe("computeViewAwareTotals", () => {
+  const base = {
+    projected: {
+      retirementWithoutMatch: 20000,
+      retirementWithMatch: 25000,
+      portfolioWithoutMatch: 5000,
+      portfolioWithMatch: 5000,
+    },
+    ytdActuals: { retirement: 8000, portfolio: 2000, match: 3000 },
+    ytdRatio: 0.5,
+    totalCompensation: 150000,
+  };
+
+  it("projected passes through annual values", () => {
+    const v = computeViewAwareTotals(base);
+    expect(v.projected.retirementWithoutMatch).toBe(20000);
+    expect(v.projected.totalWithMatch).toBe(30000);
+    expect(v.projected.savingsRateWithMatch).toBeCloseTo(30000 / 150000, 4);
+  });
+
+  it("blended combines YTD + projected remaining", () => {
+    const v = computeViewAwareTotals(base);
+    expect(v.blended.retirementWithoutMatch).toBeCloseTo(8000 + 20000 * 0.5, 0);
+    expect(v.blended.retirementWithMatch).toBeCloseTo(
+      8000 + 3000 + 25000 * 0.5,
+      0,
+    );
+  });
+
+  it("ytd shows actual amounts only", () => {
+    const v = computeViewAwareTotals(base);
+    expect(v.ytd.retirementWithoutMatch).toBeCloseTo(8000, 0);
+    expect(v.ytd.retirementWithMatch).toBeCloseTo(11000, 0);
+    expect(v.ytd.portfolioWithoutMatch).toBeCloseTo(2000, 0);
+  });
+
+  it("ytd savings rate uses prorated compensation", () => {
+    const v = computeViewAwareTotals(base);
+    // ytdRetWith=8000+3000=11000, ytdPortWith=2000, total=13000
+    expect(v.ytd.savingsRateWithMatch).toBeCloseTo(13000 / (150000 * 0.5), 4);
+  });
+
+  it("ytdRatio=0 falls back to projected", () => {
+    const v = computeViewAwareTotals({ ...base, ytdRatio: 0 });
+    expect(v.blended).toEqual(v.projected);
+    expect(v.ytd).toEqual(v.projected);
+  });
+
+  it("all ytdActuals=0 falls back to projected", () => {
+    const v = computeViewAwareTotals({
+      ...base,
+      ytdActuals: { retirement: 0, portfolio: 0, match: 0 },
+    });
+    expect(v.blended).toEqual(v.projected);
+  });
+
+  it("totalCompensation=0 returns zero savings rate", () => {
+    const v = computeViewAwareTotals({ ...base, totalCompensation: 0 });
+    expect(v.projected.savingsRateWithMatch).toBe(0);
+  });
+});

@@ -104,8 +104,6 @@ function FundingBar({
 
 export function ContributionsCard() {
   const { viewMode } = useScenario();
-  const isYtd = viewMode === "ytd";
-  const isBlended = viewMode === "blended";
   const salaryOverrides = useSalaryOverrides();
   const [activeContribProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",
@@ -125,25 +123,6 @@ export function ContributionsCard() {
     return <ErrorCard title="Contributions" message="Failed to load" />;
 
   const people = data?.people?.filter((d) => d.accountTypes.length > 0) ?? [];
-  // YTD scaling for household totals
-  const ytdRatio = (d: (typeof people)[0]) =>
-    d.periodsPerYear > 0 ? d.periodsElapsedYtd / d.periodsPerYear : 0;
-  const avgYtdRatio =
-    people.length > 0
-      ? people.reduce((s, d) => s + ytdRatio(d), 0) / people.length
-      : 0;
-  const ytdScale = isYtd ? avgYtdRatio : 1;
-
-  // Blended mode: actual YTD from performance + projected remaining
-  const hasYtdActuals =
-    isBlended &&
-    people.some(
-      (p) =>
-        p.totals.ytdActualRetirement > 0 ||
-        p.totals.ytdActualPortfolio > 0 ||
-        p.totals.ytdActualMatch > 0,
-    );
-  const remainingFraction = 1 - avgYtdRatio;
 
   const jointAts = data?.jointAccountTypes ?? [];
   // Retirement vs portfolio vs total (from tRPC response, plus joint) — non-overlapping by parentCategory
@@ -170,61 +149,33 @@ export function ContributionsCard() {
     (s, a) => s + a.totalContrib,
     0,
   );
-  // Projected annual household totals
-  const projRetNoMatch =
-    people.reduce((s, p) => s + p.totals.retirementWithoutMatch, 0) +
-    jointRetNoMatch;
-  const projRetWithMatch =
-    people.reduce((s, p) => s + p.totals.retirementWithMatch, 0) +
-    jointRetWithMatch;
-  const projPortNoMatch =
-    people.reduce((s, p) => s + p.totals.portfolioWithoutMatch, 0) +
-    jointPortNoMatch;
-  const projPortWithMatch =
-    people.reduce((s, p) => s + p.totals.portfolioWithMatch, 0) +
-    jointPortWithMatch;
-  const projTotalNoMatch =
-    people.reduce((s, p) => s + p.totals.totalWithoutMatch, 0) +
+  // Household totals from server-computed view-aware data
+  const householdRetNoMatch =
+    people.reduce(
+      (s, p) => s + p.totals.views[viewMode].retirementWithoutMatch,
+      0,
+    ) + jointRetNoMatch;
+  const householdRetWithMatch =
+    people.reduce(
+      (s, p) => s + p.totals.views[viewMode].retirementWithMatch,
+      0,
+    ) + jointRetWithMatch;
+  const householdPortNoMatch =
+    people.reduce(
+      (s, p) => s + p.totals.views[viewMode].portfolioWithoutMatch,
+      0,
+    ) + jointPortNoMatch;
+  const householdPortWithMatch =
+    people.reduce(
+      (s, p) => s + p.totals.views[viewMode].portfolioWithMatch,
+      0,
+    ) + jointPortWithMatch;
+  const householdTotalNoMatch =
+    people.reduce((s, p) => s + p.totals.views[viewMode].totalWithoutMatch, 0) +
     jt.totalWithoutMatch;
-  const projTotalWithMatch =
-    people.reduce((s, p) => s + p.totals.totalWithMatch, 0) + jt.totalWithMatch;
-
-  // Blended year-end estimates: actual YTD + projected remaining
-  const ytdActualRet = people.reduce(
-    (s, p) => s + p.totals.ytdActualRetirement,
-    0,
-  );
-  const ytdActualPort = people.reduce(
-    (s, p) => s + p.totals.ytdActualPortfolio,
-    0,
-  );
-  const ytdActualMatch = people.reduce(
-    (s, p) => s + p.totals.ytdActualMatch,
-    0,
-  );
-  const useBlended = isBlended && hasYtdActuals;
-
-  const householdRetNoMatch = useBlended
-    ? ytdActualRet + projRetNoMatch * remainingFraction
-    : projRetNoMatch;
-  const householdRetWithMatch = useBlended
-    ? ytdActualRet + ytdActualMatch + projRetWithMatch * remainingFraction
-    : projRetWithMatch;
-  const householdPortNoMatch = useBlended
-    ? ytdActualPort + projPortNoMatch * remainingFraction
-    : projPortNoMatch;
-  const householdPortWithMatch = useBlended
-    ? ytdActualPort + projPortWithMatch * remainingFraction
-    : projPortWithMatch;
-  const householdTotalNoMatch = useBlended
-    ? ytdActualRet + ytdActualPort + projTotalNoMatch * remainingFraction
-    : projTotalNoMatch;
-  const householdTotalWithMatch = useBlended
-    ? ytdActualRet +
-      ytdActualPort +
-      ytdActualMatch +
-      projTotalWithMatch * remainingFraction
-    : projTotalWithMatch;
+  const householdTotalWithMatch =
+    people.reduce((s, p) => s + p.totals.views[viewMode].totalWithMatch, 0) +
+    jt.totalWithMatch;
 
   // Use average periodsPerYear for household-level multiplier
   const avgPeriodsPerYear =
@@ -300,7 +251,7 @@ export function ContributionsCard() {
                       {hasLimit && (
                         <div className="mt-1">
                           <FundingBar
-                            pct={at.fundingPct}
+                            pct={at.views[viewMode].fundingPct}
                             matchPct={matchPctOfLimit}
                             matchCountsTowardLimit={matchCountsTowardLimit}
                             accountType={at.categoryKey}
@@ -308,24 +259,27 @@ export function ContributionsCard() {
                           <div className="flex justify-between text-[10px] mt-0.5">
                             <span
                               className={
-                                at.fundingPct > 1
+                                at.views[viewMode].fundingPct > 1
                                   ? "text-red-600 font-medium"
-                                  : at.fundingPct >= 1
+                                  : at.views[viewMode].fundingPct >= 1
                                     ? "text-green-600 font-medium"
                                     : "text-muted"
                               }
                             >
-                              {formatPercent(at.fundingPct)} of{" "}
+                              {formatPercent(at.views[viewMode].fundingPct)} of{" "}
                               {formatCurrency(at.limit)}
-                              {at.fundingPct > 1 && (
+                              {at.views[viewMode].fundingPct > 1 && (
                                 <span className="ml-1 bg-red-100 text-red-700 px-1 rounded">
                                   Over
                                 </span>
                               )}
                             </span>
-                            {at.fundingMissing > 0 && (
+                            {at.views[viewMode].fundingMissing > 0 && (
                               <span className="text-red-500">
-                                -{formatCurrency(at.fundingMissing * mult)}
+                                -
+                                {formatCurrency(
+                                  at.views[viewMode].fundingMissing * mult,
+                                )}
                               </span>
                             )}
                           </div>
@@ -339,16 +293,22 @@ export function ContributionsCard() {
                             </p>
                           )}
                           {/* Need +X% to max */}
-                          {at.fundingPct <= 1 &&
-                            at.pctOfSalaryToMax !== null &&
-                            Math.floor(at.pctOfSalaryToMax) > 0 && (
+                          {at.views[viewMode].fundingPct <= 1 &&
+                            at.views[viewMode].pctOfSalaryToMax !== null &&
+                            Math.floor(at.views[viewMode].pctOfSalaryToMax) >
+                              0 && (
                               <p className="text-[10px] text-amber-600 mt-0.5">
-                                Need +{Math.floor(at.pctOfSalaryToMax)}% to max
+                                Need +
+                                {Math.floor(
+                                  at.views[viewMode].pctOfSalaryToMax,
+                                )}
+                                % to max
                               </p>
                             )}
-                          {at.fundingPct <= 1 &&
-                            at.pctOfSalaryToMax !== null &&
-                            Math.floor(at.pctOfSalaryToMax) === 0 && (
+                          {at.views[viewMode].fundingPct <= 1 &&
+                            at.views[viewMode].pctOfSalaryToMax !== null &&
+                            Math.floor(at.views[viewMode].pctOfSalaryToMax) ===
+                              0 && (
                               <p className="text-[10px] text-green-600 mt-0.5">
                                 Maxed out
                               </p>
@@ -590,14 +550,12 @@ export function ContributionsCard() {
             </p>
             <div className="text-xs">
               <span className="font-semibold text-primary">
-                {formatCurrency(householdRetNoMatch * householdMult * ytdScale)}
+                {formatCurrency(householdRetNoMatch * householdMult)}
               </span>
               {householdRetWithMatch > householdRetNoMatch && (
                 <span className="text-muted ml-1">
-                  {formatCurrency(
-                    householdRetWithMatch * householdMult * ytdScale,
-                  )}{" "}
-                  w/ match
+                  {formatCurrency(householdRetWithMatch * householdMult)} w/
+                  match
                 </span>
               )}
             </div>
@@ -608,36 +566,33 @@ export function ContributionsCard() {
             </p>
             <div className="text-xs">
               <span className="font-semibold text-primary">
-                {formatCurrency(
-                  householdPortNoMatch * householdMult * ytdScale,
-                )}
+                {formatCurrency(householdPortNoMatch * householdMult)}
               </span>
               {householdPortWithMatch > householdPortNoMatch && (
                 <span className="text-muted ml-1">
-                  {formatCurrency(
-                    householdPortWithMatch * householdMult * ytdScale,
-                  )}{" "}
-                  w/ match
+                  {formatCurrency(householdPortWithMatch * householdMult)} w/
+                  match
                 </span>
               )}
             </div>
           </div>
           <div>
             <p className="text-[10px] text-faint uppercase tracking-wide mb-0.5">
-              Total Portfolio{isYtd ? " (YTD)" : useBlended ? " (Est.)" : ""}
+              Total Portfolio
+              {viewMode === "ytd"
+                ? " (YTD)"
+                : viewMode === "blended"
+                  ? " (Est.)"
+                  : ""}
             </p>
             <div className="text-xs">
               <span className="font-semibold text-primary">
-                {formatCurrency(
-                  householdTotalNoMatch * householdMult * ytdScale,
-                )}
+                {formatCurrency(householdTotalNoMatch * householdMult)}
               </span>
               {householdTotalWithMatch > householdTotalNoMatch && (
                 <span className="text-muted ml-1">
-                  {formatCurrency(
-                    householdTotalWithMatch * householdMult * ytdScale,
-                  )}{" "}
-                  w/ match
+                  {formatCurrency(householdTotalWithMatch * householdMult)} w/
+                  match
                 </span>
               )}
             </div>

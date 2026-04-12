@@ -480,7 +480,14 @@ function ByAccountSummary({
     employerMatch: number;
     totalContrib: number;
     targetAnnual: number | null;
-    fundingPct: number;
+    views: Record<
+      string,
+      {
+        fundingPct: number;
+        fundingMissing: number;
+        pctOfSalaryToMax: number | null;
+      }
+    >;
     hasDiscountBar: boolean;
     employerMatchLabel: string;
   }[];
