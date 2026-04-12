@@ -59,6 +59,20 @@ interface OptimisticMutationOptions<TInput, TPrevious> {
    * toast on error. Set to false if the call site renders its own error UI.
    */
   showErrorToast?: boolean;
+  /**
+   * Optional undo affordance shown as a toast.undo() after a successful
+   * mutation. undoFn receives the original input and should issue the
+   * inverse mutation (e.g., re-create what was deleted, restore previous
+   * value). v0.5 expert-review M27.
+   */
+  undo?: {
+    /** Toast body, e.g., "Removed item" or "Deleted scenario". */
+    label: string;
+    /** Called when the user clicks Undo within the window. */
+    undoFn: (input: TInput) => void;
+    /** Window before the toast auto-dismisses (default 5000ms). */
+    windowMs?: number;
+  };
 }
 
 interface GenericMutation<TInput, TOutput> {
@@ -100,6 +114,12 @@ export function useOptimisticMutation<TInput, TOutput, TPrevious>(
       setHasRolledBack(false);
 
       mutation.mutate(input, {
+        onSuccess: () => {
+          if (options.undo) {
+            const u = options.undo;
+            toast.undo(u.label, () => u.undoFn(input), u.windowMs ?? 5000);
+          }
+        },
         onError: () => {
           const prev = inflightRef.current.get(ordinal);
           if (prev !== undefined) {
