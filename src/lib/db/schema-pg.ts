@@ -61,7 +61,7 @@ export const jobs = pgTable(
     employerName: text("employer_name").notNull(),
     title: text("title"),
     annualSalary: decimal("annual_salary", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
     payPeriod: text("pay_period").$type<PayPeriod>().notNull(),
@@ -82,13 +82,13 @@ export const jobs = pgTable(
     includeBonusInContributions: boolean("include_bonus_in_contributions")
       .notNull()
       .default(true),
-    bonusOverride: decimal("bonus_override", { precision: 12, scale: 2 }),
+    bonusOverride: decimal("bonus_override", { precision: 14, scale: 2 }),
     bonusMonth: integer("bonus_month"), // 1-12, month when bonus is typically paid (null = unknown/spread)
     bonusDayOfMonth: integer("bonus_day_of_month"), // 1-31, day of month when bonus is paid (null = first period of month)
     w4FilingStatus: text("w4_filing_status").$type<W4FilingStatus>().notNull(),
     w4Box2cChecked: boolean("w4_box2c_checked").notNull().default(false),
     additionalFedWithholding: decimal("additional_fed_withholding", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     })
       .notNull()
@@ -109,7 +109,7 @@ export const salaryChanges = pgTable(
       .notNull()
       .references(() => jobs.id, { onDelete: "cascade" }),
     effectiveDate: date("effective_date").notNull(),
-    newSalary: decimal("new_salary", { precision: 12, scale: 2 }).notNull(),
+    newSalary: decimal("new_salary", { precision: 14, scale: 2 }).notNull(),
     raisePercent: decimal("raise_percent", { precision: 8, scale: 6 }),
     notes: text("notes"),
   },
@@ -133,14 +133,14 @@ export const contributionAccounts = pgTable(
       .$type<ContributionMethod>()
       .notNull(),
     contributionValue: decimal("contribution_value", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
     employerMatchType: text("employer_match_type")
       .$type<EmployerMatchType>()
       .notNull(),
     employerMatchValue: decimal("employer_match_value", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }),
     employerMaxMatchPct: decimal("employer_max_match_pct", {
@@ -162,12 +162,12 @@ export const contributionAccounts = pgTable(
       () => performanceAccounts.id,
       { onDelete: "set null" },
     ),
-    targetAnnual: decimal("target_annual", { precision: 12, scale: 2 }),
+    targetAnnual: decimal("target_annual", { precision: 14, scale: 2 }),
     allocationPriority: integer("allocation_priority").notNull().default(0),
     notes: text("notes"),
     isPayrollDeducted: boolean("is_payroll_deducted"),
     priorYearContribAmount: decimal("prior_year_contrib_amount", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     })
       .notNull()
@@ -213,7 +213,7 @@ export const paycheckDeductions = pgTable(
       .references(() => jobs.id, { onDelete: "cascade" }),
     deductionName: text("deduction_name").notNull(),
     amountPerPeriod: decimal("amount_per_period", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
     isPretax: boolean("is_pretax").notNull(),
@@ -266,6 +266,9 @@ export const budgetItems = pgTable(
   },
   (table) => [
     index("budget_items_profile_id_idx").on(table.profileId),
+    index("budget_items_contribution_account_id_idx").on(
+      table.contributionAccountId,
+    ),
     uniqueIndex("budget_items_profile_cat_sub_idx").on(
       table.profileId,
       table.category,
@@ -282,7 +285,7 @@ export const savingsGoals = pgTable(
     parentGoalId: integer("parent_goal_id"),
     // Self-referential FK enforced via migration 0001_add_parent_goal_fk.sql
     // (ALTER TABLE ADD CONSTRAINT) — Drizzle cannot self-reference inline.
-    targetAmount: decimal("target_amount", { precision: 12, scale: 2 }),
+    targetAmount: decimal("target_amount", { precision: 14, scale: 2 }),
     targetMonths: integer("target_months"),
     targetDate: date("target_date"),
     priority: integer("priority").notNull().default(0),
@@ -294,7 +297,7 @@ export const savingsGoals = pgTable(
     reimbursementApiCategoryId: text("reimbursement_api_category_id"),
     targetMode: text("target_mode").notNull().default("fixed"), // 'fixed' | 'ongoing'
     monthlyContribution: decimal("monthly_contribution", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     })
       .notNull()
@@ -321,9 +324,9 @@ export const savingsMonthly = pgTable(
       .notNull()
       .references(() => savingsGoals.id, { onDelete: "cascade" }),
     monthDate: date("month_date").notNull(),
-    balance: decimal("balance", { precision: 12, scale: 2 }).notNull(),
+    balance: decimal("balance", { precision: 14, scale: 2 }).notNull(),
     depositOrWithdrawal: decimal("deposit_or_withdrawal", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }),
     notes: text("notes"),
@@ -345,7 +348,7 @@ export const savingsPlannedTransactions = pgTable(
       .notNull()
       .references(() => savingsGoals.id, { onDelete: "cascade" }),
     transactionDate: date("transaction_date").notNull(),
-    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(), // positive = deposit, negative = withdrawal
+    amount: decimal("amount", { precision: 14, scale: 2 }).notNull(), // positive = deposit, negative = withdrawal
     description: text("description").notNull(),
     isRecurring: boolean("is_recurring").notNull().default(false),
     recurrenceMonths: integer("recurrence_months"), // if recurring, repeat every N months
@@ -364,7 +367,7 @@ export const savingsAllocationOverrides = pgTable(
       .notNull()
       .references(() => savingsGoals.id, { onDelete: "cascade" }),
     monthDate: date("month_date").notNull(),
-    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
   },
   (table) => [
     uniqueIndex("savings_alloc_override_goal_month_idx").on(
@@ -382,7 +385,7 @@ export const brokerageGoals = pgTable(
     id: serial("id").primaryKey(),
     name: text("name").notNull(),
     targetAmount: decimal("target_amount", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
     targetYear: integer("target_year").notNull(),
@@ -404,7 +407,7 @@ export const brokeragePlannedTransactions = pgTable(
       .notNull()
       .references(() => brokerageGoals.id, { onDelete: "cascade" }),
     transactionDate: date("transaction_date").notNull(),
-    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(), // positive = deposit, negative = withdrawal
+    amount: decimal("amount", { precision: 14, scale: 2 }).notNull(), // positive = deposit, negative = withdrawal
     description: text("description").notNull(),
     isRecurring: boolean("is_recurring").notNull().default(false),
     recurrenceMonths: integer("recurrence_months"), // if recurring, repeat every N months
@@ -422,9 +425,9 @@ export const selfLoans = pgTable(
     toGoalId: integer("to_goal_id").references(() => savingsGoals.id, {
       onDelete: "restrict",
     }),
-    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
     loanDate: date("loan_date").notNull(),
-    repaidAmount: decimal("repaid_amount", { precision: 12, scale: 2 })
+    repaidAmount: decimal("repaid_amount", { precision: 14, scale: 2 })
       .notNull()
       .default("0"),
     repaidDate: date("repaid_date"),
@@ -457,7 +460,7 @@ export const performanceAccounts = pgTable(
       .$type<ContributionScaling>()
       .notNull()
       .default("scales_with_salary"),
-    costBasis: decimal("cost_basis", { precision: 12, scale: 2 })
+    costBasis: decimal("cost_basis", { precision: 14, scale: 2 })
       .notNull()
       .default("0"),
     parentCategory: text("parent_category").notNull(),
@@ -510,7 +513,7 @@ export const portfolioAccounts = pgTable(
       .references(() => portfolioSnapshots.id, { onDelete: "cascade" }),
     institution: text("institution").notNull(),
     taxType: text("tax_type").$type<PortfolioTaxType>().notNull(),
-    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
     accountType: text("account_type").notNull(),
     subType: text("sub_type"),
     label: text("label"),
@@ -546,49 +549,55 @@ export const annualPerformance = pgTable(
     year: integer("year").notNull(),
     category: text("category").notNull(),
     beginningBalance: decimal("beginning_balance", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
     totalContributions: decimal("total_contributions", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
     yearlyGainLoss: decimal("yearly_gain_loss", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
     endingBalance: decimal("ending_balance", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
     annualReturnPct: decimal("annual_return_pct", { precision: 8, scale: 6 }),
     employerContributions: decimal("employer_contributions", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     })
       .notNull()
       .default("0"),
-    distributions: decimal("distributions", { precision: 12, scale: 2 })
+    distributions: decimal("distributions", { precision: 14, scale: 2 })
       .notNull()
       .default("0"),
-    fees: decimal("fees", { precision: 12, scale: 2 }).notNull().default("0"),
-    rollovers: decimal("rollovers", { precision: 12, scale: 2 })
+    fees: decimal("fees", { precision: 14, scale: 2 }).notNull().default("0"),
+    rollovers: decimal("rollovers", { precision: 14, scale: 2 })
       .notNull()
       .default("0"),
     lifetimeGains: decimal("lifetime_gains", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
     lifetimeContributions: decimal("lifetime_contributions", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
     lifetimeMatch: decimal("lifetime_match", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
     isCurrentYear: boolean("is_current_year").notNull().default(false),
     isFinalized: boolean("is_finalized").notNull().default(false),
+    /** When true, this row's lifetime_* fields are considered authoritative
+     *  and must not be edited via routers. Set on finalization. App-layer
+     *  enforcement guards against silent drift when account_performance
+     *  rows on a finalized year are edited (per RULES.md § Data Model
+     *  Principles point 4 cascade rule). */
+    isImmutable: boolean("is_immutable").notNull().default(false),
   },
   (table) => [
     uniqueIndex("annual_performance_year_cat_idx").on(
@@ -598,6 +607,18 @@ export const annualPerformance = pgTable(
     check(
       "annual_perf_finalized_not_current",
       sql`NOT (${table.isFinalized} AND ${table.isCurrentYear})`,
+    ),
+    check(
+      "annual_perf_lifetime_gains_nonneg",
+      sql`${table.lifetimeGains} >= 0`,
+    ),
+    check(
+      "annual_perf_lifetime_contributions_nonneg",
+      sql`${table.lifetimeContributions} >= 0`,
+    ),
+    check(
+      "annual_perf_lifetime_match_nonneg",
+      sql`${table.lifetimeMatch} >= 0`,
     ),
   ],
 );
@@ -613,33 +634,33 @@ export const accountPerformance = pgTable(
       onDelete: "restrict",
     }),
     beginningBalance: decimal("beginning_balance", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
     totalContributions: decimal("total_contributions", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
     yearlyGainLoss: decimal("yearly_gain_loss", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
     endingBalance: decimal("ending_balance", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
     annualReturnPct: decimal("annual_return_pct", { precision: 8, scale: 6 }),
     employerContributions: decimal("employer_contributions", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     })
       .notNull()
       .default("0"),
-    fees: decimal("fees", { precision: 12, scale: 2 }).notNull().default("0"),
-    distributions: decimal("distributions", { precision: 12, scale: 2 })
+    fees: decimal("fees", { precision: 14, scale: 2 }).notNull().default("0"),
+    distributions: decimal("distributions", { precision: 14, scale: 2 })
       .notNull()
       .default("0"),
-    rollovers: decimal("rollovers", { precision: 12, scale: 2 })
+    rollovers: decimal("rollovers", { precision: 14, scale: 2 })
       .notNull()
       .default("0"),
     parentCategory: text("parent_category").notNull(),
@@ -665,58 +686,58 @@ export const accountPerformance = pgTable(
 export const netWorthAnnual = pgTable("net_worth_annual", {
   id: serial("id").primaryKey(),
   yearEndDate: date("year_end_date").notNull().unique(),
-  grossIncome: decimal("gross_income", { precision: 12, scale: 2 })
+  grossIncome: decimal("gross_income", { precision: 14, scale: 2 })
     .notNull()
     .default("0"),
-  combinedAgi: decimal("combined_agi", { precision: 12, scale: 2 })
+  combinedAgi: decimal("combined_agi", { precision: 14, scale: 2 })
     .notNull()
     .default("0"),
-  ssaEarnings: decimal("ssa_earnings", { precision: 12, scale: 2 }),
+  ssaEarnings: decimal("ssa_earnings", { precision: 14, scale: 2 }),
   effectiveTaxRate: decimal("effective_tax_rate", { precision: 8, scale: 6 }),
-  taxesPaid: decimal("taxes_paid", { precision: 12, scale: 2 }),
+  taxesPaid: decimal("taxes_paid", { precision: 14, scale: 2 }),
   // Assets
-  cash: decimal("cash", { precision: 12, scale: 2 }).notNull().default("0"),
-  houseValue: decimal("house_value", { precision: 12, scale: 2 })
+  cash: decimal("cash", { precision: 14, scale: 2 }).notNull().default("0"),
+  houseValue: decimal("house_value", { precision: 14, scale: 2 })
     .notNull()
     .default("0"),
-  retirementTotal: decimal("retirement_total", { precision: 12, scale: 2 })
+  retirementTotal: decimal("retirement_total", { precision: 14, scale: 2 })
     .notNull()
     .default("0"),
-  hsa: decimal("hsa", { precision: 12, scale: 2 }).notNull().default("0"),
-  ltBrokerage: decimal("lt_brokerage", { precision: 12, scale: 2 })
+  hsa: decimal("hsa", { precision: 14, scale: 2 }).notNull().default("0"),
+  ltBrokerage: decimal("lt_brokerage", { precision: 14, scale: 2 })
     .notNull()
     .default("0"),
-  espp: decimal("espp", { precision: 12, scale: 2 }).notNull().default("0"),
-  rBrokerage: decimal("r_brokerage", { precision: 12, scale: 2 })
+  espp: decimal("espp", { precision: 14, scale: 2 }).notNull().default("0"),
+  rBrokerage: decimal("r_brokerage", { precision: 14, scale: 2 })
     .notNull()
     .default("0"),
-  otherAssets: decimal("other_assets", { precision: 12, scale: 2 })
+  otherAssets: decimal("other_assets", { precision: 14, scale: 2 })
     .notNull()
     .default("0"),
   // Liabilities
-  mortgageBalance: decimal("mortgage_balance", { precision: 12, scale: 2 })
+  mortgageBalance: decimal("mortgage_balance", { precision: 14, scale: 2 })
     .notNull()
     .default("0"),
-  otherLiabilities: decimal("other_liabilities", { precision: 12, scale: 2 })
+  otherLiabilities: decimal("other_liabilities", { precision: 14, scale: 2 })
     .notNull()
     .default("0"),
   // Breakdowns
-  taxFreeTotal: decimal("tax_free_total", { precision: 12, scale: 2 })
+  taxFreeTotal: decimal("tax_free_total", { precision: 14, scale: 2 })
     .notNull()
     .default("0"),
-  taxDeferredTotal: decimal("tax_deferred_total", { precision: 12, scale: 2 })
+  taxDeferredTotal: decimal("tax_deferred_total", { precision: 14, scale: 2 })
     .notNull()
     .default("0"),
-  portfolioTotal: decimal("portfolio_total", { precision: 12, scale: 2 })
+  portfolioTotal: decimal("portfolio_total", { precision: 14, scale: 2 })
     .notNull()
     .default("0"),
   homeImprovementsCumulative: decimal("home_improvements_cumulative", {
-    precision: 12,
+    precision: 14,
     scale: 2,
   })
     .notNull()
     .default("0"),
-  propertyTaxes: decimal("property_taxes", { precision: 12, scale: 2 }),
+  propertyTaxes: decimal("property_taxes", { precision: 14, scale: 2 }),
   // Point-in-time tax location breakdown captured at finalization.
   // Shape: { retirement: { taxFree: N, preTax: N, hsa: N, afterTax: N }, portfolio: { afterTax: N } }
   portfolioByTaxLocation: jsonb("portfolio_by_tax_location")
@@ -732,7 +753,7 @@ export const homeImprovementItems = pgTable("home_improvement_items", {
   id: serial("id").primaryKey(),
   year: integer("year").notNull(),
   description: text("description").notNull(),
-  cost: decimal("cost", { precision: 12, scale: 2 }).notNull(),
+  cost: decimal("cost", { precision: 14, scale: 2 }).notNull(),
   note: text("note"),
 });
 
@@ -743,7 +764,7 @@ export const otherAssetItems = pgTable(
     id: serial("id").primaryKey(),
     name: text("name").notNull(),
     year: integer("year").notNull(),
-    value: decimal("value", { precision: 12, scale: 2 }).notNull(),
+    value: decimal("value", { precision: 14, scale: 2 }).notNull(),
     note: text("note"),
   },
   (table) => [
@@ -774,17 +795,17 @@ export const mortgageLoans = pgTable(
     refinancedFromId: integer("refinanced_from_id"),
     paidOffDate: date("paid_off_date"),
     principalAndInterest: decimal("principal_and_interest", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
-    pmi: decimal("pmi", { precision: 12, scale: 2 }).notNull().default("0"),
+    pmi: decimal("pmi", { precision: 14, scale: 2 }).notNull().default("0"),
     insuranceAndTaxes: decimal("insurance_and_taxes", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     })
       .notNull()
       .default("0"),
-    totalEscrow: decimal("total_escrow", { precision: 12, scale: 2 })
+    totalEscrow: decimal("total_escrow", { precision: 14, scale: 2 })
       .notNull()
       .default("0"),
     interestRate: decimal("interest_rate", {
@@ -793,22 +814,22 @@ export const mortgageLoans = pgTable(
     }).notNull(),
     termYears: integer("term_years").notNull(),
     originalLoanAmount: decimal("original_loan_amount", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
     firstPaymentDate: date("first_payment_date").notNull(),
     propertyValuePurchase: decimal("property_value_purchase", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
     propertyValueEstimated: decimal("property_value_estimated", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }),
     usePurchaseOrEstimated: text("use_purchase_or_estimated")
       .notNull()
       .default("purchase"),
-    apiBalance: decimal("api_balance", { precision: 12, scale: 2 }),
+    apiBalance: decimal("api_balance", { precision: 14, scale: 2 }),
     apiBalanceDate: date("api_balance_date"),
   },
   (table) => [index("mortgage_loans_is_active_idx").on(table.isActive)],
@@ -823,11 +844,11 @@ export const mortgageWhatIfScenarios = pgTable(
     }),
     label: text("label").notNull(),
     extraMonthlyPrincipal: decimal("extra_monthly_principal", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
     extraOneTimePayment: decimal("extra_one_time_payment", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     })
       .notNull()
@@ -849,7 +870,7 @@ export const mortgageExtraPayments = pgTable(
     paymentDate: date("payment_date"),
     startDate: date("start_date"),
     endDate: date("end_date"),
-    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
     isActual: boolean("is_actual").notNull().default(false),
     notes: text("notes"),
   },
@@ -870,8 +891,8 @@ export const propertyTaxes = pgTable(
       .notNull()
       .references(() => mortgageLoans.id, { onDelete: "cascade" }),
     year: integer("year").notNull(),
-    assessedValue: decimal("assessed_value", { precision: 12, scale: 2 }),
-    taxAmount: decimal("tax_amount", { precision: 12, scale: 2 }).notNull(),
+    assessedValue: decimal("assessed_value", { precision: 14, scale: 2 }),
+    taxAmount: decimal("tax_amount", { precision: 14, scale: 2 }).notNull(),
     note: text("note"),
   },
   (table) => [
@@ -905,7 +926,7 @@ export const retirementSettings = pgTable(
       precision: 8,
       scale: 6,
     }).notNull(),
-    salaryCap: decimal("salary_cap", { precision: 12, scale: 2 }),
+    salaryCap: decimal("salary_cap", { precision: 14, scale: 2 }),
     raisesDuringRetirement: boolean("raises_during_retirement")
       .notNull()
       .default(false),
@@ -923,7 +944,7 @@ export const retirementSettings = pgTable(
     }).default("0.12"),
     /** Monthly Social Security benefit estimate in today's dollars. */
     socialSecurityMonthly: decimal("social_security_monthly", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     })
       .notNull()
@@ -1039,7 +1060,7 @@ export const retirementSalaryOverrides = pgTable(
       .references(() => people.id, { onDelete: "restrict" }),
     projectionYear: integer("projection_year").notNull(),
     overrideSalary: decimal("override_salary", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
     contributionProfileId: integer("contribution_profile_id").references(
@@ -1068,7 +1089,7 @@ export const retirementBudgetOverrides = pgTable(
       .references(() => people.id, { onDelete: "restrict" }),
     projectionYear: integer("projection_year").notNull(),
     overrideMonthlyBudget: decimal("override_monthly_budget", {
-      precision: 12,
+      precision: 14,
       scale: 2,
     }).notNull(),
     notes: text("notes"),
@@ -1106,7 +1127,7 @@ export const retirementScenarios = pgTable("retirement_scenarios", {
     scale: 6,
   }).notNull(),
   targetAnnualIncome: decimal("target_annual_income", {
-    precision: 12,
+    precision: 14,
     scale: 2,
   }).notNull(),
   annualInflation: decimal("annual_inflation", {
@@ -1141,7 +1162,7 @@ export const retirementScenarios = pgTable("retirement_scenarios", {
     .notNull()
     .default(true),
   ltBrokerageAnnualContribution: decimal("lt_brokerage_annual_contribution", {
-    precision: 12,
+    precision: 14,
     scale: 2,
   })
     .notNull()
@@ -1240,17 +1261,23 @@ export type AccountMapping = {
   performanceAccountId?: number; // Direct reference to performanceAccounts.id
 };
 
-export const apiConnections = pgTable("api_connections", {
-  id: serial("id").primaryKey(),
-  service: text("service").notNull().unique(),
-  config: jsonb("config").$type<ApiConfig>().notNull(),
-  accountMappings: jsonb("account_mappings").$type<AccountMapping[]>(),
-  skippedCategoryIds: jsonb("skipped_category_ids").$type<string[]>(),
-  linkedProfileId: integer("linked_profile_id"),
-  linkedColumnIndex: integer("linked_column_index"),
-  serverKnowledge: integer("server_knowledge"),
-  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
-});
+export const apiConnections = pgTable(
+  "api_connections",
+  {
+    id: serial("id").primaryKey(),
+    service: text("service").notNull().unique(),
+    config: jsonb("config").$type<ApiConfig>().notNull(),
+    accountMappings: jsonb("account_mappings").$type<AccountMapping[]>(),
+    skippedCategoryIds: jsonb("skipped_category_ids").$type<string[]>(),
+    linkedProfileId: integer("linked_profile_id"),
+    linkedColumnIndex: integer("linked_column_index"),
+    serverKnowledge: integer("server_knowledge"),
+    lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("api_connections_linked_profile_id_idx").on(table.linkedProfileId),
+  ],
+);
 
 export const budgetApiCache = pgTable(
   "budget_api_cache",

@@ -16,7 +16,7 @@ CREATE TABLE `account_performance` (
 	`parent_category` text NOT NULL,
 	`is_active` integer DEFAULT true NOT NULL,
 	`is_finalized` integer DEFAULT false NOT NULL,
-	`performance_account_id` integer,
+	`performance_account_id` integer NOT NULL,
 	FOREIGN KEY (`owner_person_id`) REFERENCES `people`(`id`) ON UPDATE no action ON DELETE restrict,
 	FOREIGN KEY (`performance_account_id`) REFERENCES `performance_accounts`(`id`) ON UPDATE no action ON DELETE restrict
 );
@@ -42,8 +42,7 @@ CREATE TABLE `annual_performance` (
 	`lifetime_contributions` text NOT NULL,
 	`lifetime_match` text NOT NULL,
 	`is_current_year` integer DEFAULT false NOT NULL,
-	`is_finalized` integer DEFAULT false NOT NULL,
-	CONSTRAINT "annual_perf_finalized_not_current" CHECK(NOT ("annual_performance"."is_finalized" AND "annual_performance"."is_current_year"))
+	`is_finalized` integer DEFAULT false NOT NULL
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `annual_performance_year_cat_idx` ON `annual_performance` (`year`,`category`);--> statement-breakpoint
@@ -197,8 +196,7 @@ CREATE TABLE `contribution_accounts` (
 	`prior_year_contrib_year` integer,
 	FOREIGN KEY (`job_id`) REFERENCES `jobs`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`person_id`) REFERENCES `people`(`id`) ON UPDATE no action ON DELETE restrict,
-	FOREIGN KEY (`performance_account_id`) REFERENCES `performance_accounts`(`id`) ON UPDATE no action ON DELETE set null,
-	CONSTRAINT "contribution_accounts_parent_cat_check" CHECK(parent_category IN ('Retirement', 'Portfolio'))
+	FOREIGN KEY (`performance_account_id`) REFERENCES `performance_accounts`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
 CREATE INDEX `contribution_accounts_job_id_idx` ON `contribution_accounts` (`job_id`);--> statement-breakpoint
@@ -365,8 +363,7 @@ CREATE TABLE `mortgage_extra_payments` (
 	`amount` text NOT NULL,
 	`is_actual` integer DEFAULT false NOT NULL,
 	`notes` text,
-	FOREIGN KEY (`loan_id`) REFERENCES `mortgage_loans`(`id`) ON UPDATE no action ON DELETE cascade,
-	CONSTRAINT "date_pattern_check" CHECK((payment_date IS NOT NULL AND start_date IS NULL AND end_date IS NULL) OR (payment_date IS NULL AND start_date IS NOT NULL AND end_date IS NOT NULL))
+	FOREIGN KEY (`loan_id`) REFERENCES `mortgage_loans`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE INDEX `mortgage_extra_payments_loan_id_idx` ON `mortgage_extra_payments` (`loan_id`);--> statement-breakpoint
@@ -427,7 +424,8 @@ CREATE TABLE `net_worth_annual` (
 	`tax_deferred_total` text DEFAULT '0' NOT NULL,
 	`portfolio_total` text DEFAULT '0' NOT NULL,
 	`home_improvements_cumulative` text DEFAULT '0' NOT NULL,
-	`property_taxes` text
+	`property_taxes` text,
+	`portfolio_by_tax_location` text NOT NULL
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `net_worth_annual_year_end_date_unique` ON `net_worth_annual` (`year_end_date`);--> statement-breakpoint
@@ -475,8 +473,7 @@ CREATE TABLE `performance_accounts` (
 	`is_active` integer DEFAULT true NOT NULL,
 	`display_order` integer DEFAULT 0 NOT NULL,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
-	FOREIGN KEY (`owner_person_id`) REFERENCES `people`(`id`) ON UPDATE no action ON DELETE restrict,
-	CONSTRAINT "performance_accounts_parent_cat_check" CHECK(parent_category IN ('Retirement', 'Portfolio'))
+	FOREIGN KEY (`owner_person_id`) REFERENCES `people`(`id`) ON UPDATE no action ON DELETE restrict
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `performance_accounts_inst_type_idx` ON `performance_accounts` (`institution`,`account_type`,`sub_type`,`label`,`owner_person_id`);--> statement-breakpoint
@@ -498,8 +495,7 @@ CREATE TABLE `portfolio_accounts` (
 	`is_active` integer DEFAULT true NOT NULL,
 	FOREIGN KEY (`snapshot_id`) REFERENCES `portfolio_snapshots`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`owner_person_id`) REFERENCES `people`(`id`) ON UPDATE no action ON DELETE restrict,
-	FOREIGN KEY (`performance_account_id`) REFERENCES `performance_accounts`(`id`) ON UPDATE no action ON DELETE set null,
-	CONSTRAINT "portfolio_accounts_parent_cat_check" CHECK(parent_category IN ('Retirement', 'Portfolio'))
+	FOREIGN KEY (`performance_account_id`) REFERENCES `performance_accounts`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
 CREATE INDEX `portfolio_accounts_snapshot_id_idx` ON `portfolio_accounts` (`snapshot_id`);--> statement-breakpoint
@@ -677,8 +673,7 @@ CREATE TABLE `savings_goals` (
 	`reimbursement_api_category_id` text,
 	`target_mode` text DEFAULT 'fixed' NOT NULL,
 	`monthly_contribution` text DEFAULT '0' NOT NULL,
-	`allocation_percent` text,
-	CONSTRAINT "savings_goals_target_mode_check" CHECK(target_mode IN ('fixed', 'ongoing'))
+	`allocation_percent` text
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `savings_goals_name_unique` ON `savings_goals` (`name`);--> statement-breakpoint

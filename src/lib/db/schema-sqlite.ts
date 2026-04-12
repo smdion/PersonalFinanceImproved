@@ -8,7 +8,6 @@ import {
   integer,
   uniqueIndex,
   index,
-  check,
 } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
@@ -156,10 +155,6 @@ export const contributionAccounts = sqliteTable(
     index("contribution_accounts_acct_type_idx").on(table.accountType),
     index("contribution_accounts_parent_cat_idx").on(table.parentCategory),
     index("contribution_accounts_is_active_idx").on(table.isActive),
-    check(
-      "contribution_accounts_parent_cat_check",
-      sql`parent_category IN ('Retirement', 'Portfolio')`,
-    ),
   ],
 );
 
@@ -247,6 +242,9 @@ export const budgetItems = sqliteTable(
   },
   (table) => [
     index("budget_items_profile_id_idx").on(table.profileId),
+    index("budget_items_contribution_account_id_idx").on(
+      table.contributionAccountId,
+    ),
     uniqueIndex("budget_items_profile_cat_sub_idx").on(
       table.profileId,
       table.category,
@@ -281,13 +279,7 @@ export const savingsGoals = sqliteTable(
     monthlyContribution: text("monthly_contribution").notNull().default("0"),
     allocationPercent: text("allocation_percent"), // % of budget leftover (e.g., 25.5 = 25.5%)
   },
-  (table) => [
-    index("savings_goals_is_active_idx").on(table.isActive),
-    check(
-      "savings_goals_target_mode_check",
-      sql`target_mode IN ('fixed', 'ongoing')`,
-    ),
-  ],
+  (table) => [index("savings_goals_is_active_idx").on(table.isActive)],
 );
 
 export const savingsMonthly = sqliteTable(
@@ -452,10 +444,6 @@ export const performanceAccounts = sqliteTable(
     ),
     index("performance_accounts_category_idx").on(table.parentCategory),
     index("performance_accounts_is_active_idx").on(table.isActive),
-    check(
-      "performance_accounts_parent_cat_check",
-      sql`parent_category IN ('Retirement', 'Portfolio')`,
-    ),
   ],
 );
 
@@ -503,10 +491,6 @@ export const portfolioAccounts = sqliteTable(
     index("portfolio_accounts_acct_type_idx").on(table.accountType),
     index("portfolio_accounts_parent_cat_idx").on(table.parentCategory),
     index("portfolio_accounts_is_active_idx").on(table.isActive),
-    check(
-      "portfolio_accounts_parent_cat_check",
-      sql`parent_category IN ('Retirement', 'Portfolio')`,
-    ),
   ],
 );
 
@@ -536,15 +520,19 @@ export const annualPerformance = sqliteTable(
     isFinalized: integer("is_finalized", { mode: "boolean" })
       .notNull()
       .default(false),
+    /** When true, this row's lifetime_* fields are considered authoritative
+     *  and must not be edited via routers. Set on finalization. App-layer
+     *  enforcement guards against silent drift when account_performance
+     *  rows on a finalized year are edited (per RULES.md § Data Model
+     *  Principles point 4 cascade rule). */
+    isImmutable: integer("is_immutable", { mode: "boolean" })
+      .notNull()
+      .default(false),
   },
   (table) => [
     uniqueIndex("annual_performance_year_cat_idx").on(
       table.year,
       table.category,
-    ),
-    check(
-      "annual_perf_finalized_not_current",
-      sql`NOT (${table.isFinalized} AND ${table.isCurrentYear})`,
     ),
   ],
 );
@@ -730,13 +718,7 @@ export const mortgageExtraPayments = sqliteTable(
       .default(false),
     notes: text("notes"),
   },
-  (table) => [
-    index("mortgage_extra_payments_loan_id_idx").on(table.loanId),
-    check(
-      "date_pattern_check",
-      sql`(payment_date IS NOT NULL AND start_date IS NULL AND end_date IS NULL) OR (payment_date IS NULL AND start_date IS NOT NULL AND end_date IS NOT NULL)`,
-    ),
-  ],
+  (table) => [index("mortgage_extra_payments_loan_id_idx").on(table.loanId)],
 );
 
 export const propertyTaxes = sqliteTable(
@@ -1041,21 +1023,27 @@ export type AccountMapping = {
   performanceAccountId?: number; // Direct reference to performanceAccounts.id
 };
 
-export const apiConnections = sqliteTable("api_connections", {
-  id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-  service: text("service").notNull().unique(),
-  config: text("config", { mode: "json" }).$type<ApiConfig>().notNull(),
-  accountMappings: text("account_mappings", { mode: "json" }).$type<
-    AccountMapping[]
-  >(),
-  skippedCategoryIds: text("skipped_category_ids", { mode: "json" }).$type<
-    string[]
-  >(),
-  linkedProfileId: integer("linked_profile_id"),
-  linkedColumnIndex: integer("linked_column_index"),
-  serverKnowledge: integer("server_knowledge"),
-  lastSyncedAt: integer("last_synced_at", { mode: "timestamp" }),
-});
+export const apiConnections = sqliteTable(
+  "api_connections",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    service: text("service").notNull().unique(),
+    config: text("config", { mode: "json" }).$type<ApiConfig>().notNull(),
+    accountMappings: text("account_mappings", { mode: "json" }).$type<
+      AccountMapping[]
+    >(),
+    skippedCategoryIds: text("skipped_category_ids", { mode: "json" }).$type<
+      string[]
+    >(),
+    linkedProfileId: integer("linked_profile_id"),
+    linkedColumnIndex: integer("linked_column_index"),
+    serverKnowledge: integer("server_knowledge"),
+    lastSyncedAt: integer("last_synced_at", { mode: "timestamp" }),
+  },
+  (table) => [
+    index("api_connections_linked_profile_id_idx").on(table.linkedProfileId),
+  ],
+);
 
 export const budgetApiCache = sqliteTable(
   "budget_api_cache",

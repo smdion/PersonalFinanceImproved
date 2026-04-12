@@ -759,6 +759,36 @@ export const performanceRouter = createTRPCRouter({
         }
       }
       if (Object.keys(updates).length === 0) return { success: true };
+
+      // Block edits to lifetime_* fields on immutable rows. Lifetime totals
+      // on finalized rows are authoritative and recomputed only via the
+      // cascadeLifetimeFields() helper after upstream account_performance
+      // edits — never directly via the user-facing updateAnnual mutation.
+      // RULES.md § Data Model Principles point 4 cascade rule.
+      const LIFETIME_FIELDS = new Set([
+        "lifetimeGains",
+        "lifetimeContributions",
+        "lifetimeMatch",
+      ]);
+      const touchesLifetime = Object.keys(updates).some((k) =>
+        LIFETIME_FIELDS.has(k),
+      );
+      if (touchesLifetime) {
+        const [row] = await ctx.db
+          .select({ isImmutable: schema.annualPerformance.isImmutable })
+          .from(schema.annualPerformance)
+          .where(eq(schema.annualPerformance.id, id))
+          .limit(1);
+        if (row?.isImmutable) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "Cannot edit lifetime fields on a finalized annual_performance row directly. " +
+              "Edit the underlying account_performance rows instead — the cascade will recompute lifetime totals.",
+          });
+        }
+      }
+
       await ctx.db
         .update(schema.annualPerformance)
         .set(updates)
@@ -1038,6 +1068,7 @@ export const performanceRouter = createTRPCRouter({
             .set({
               isFinalized: true,
               isCurrentYear: false,
+              isImmutable: true,
               beginningBalance: values.beginningBalance.toFixed(2),
               totalContributions: values.totalContributions.toFixed(2),
               yearlyGainLoss: values.yearlyGainLoss.toFixed(2),
@@ -1074,6 +1105,7 @@ export const performanceRouter = createTRPCRouter({
               .set({
                 isFinalized: true,
                 isCurrentYear: false,
+                isImmutable: true,
                 beginningBalance: pv.beginningBalance.toFixed(2),
                 totalContributions: pv.totalContributions.toFixed(2),
                 yearlyGainLoss: pv.yearlyGainLoss.toFixed(2),
