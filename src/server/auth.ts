@@ -180,12 +180,12 @@ const fullAuthConfig: NextAuthConfig = {
   providers: [...authConfig.providers, localAdminProvider],
   session: {
     strategy: "jwt",
-    // 24 hours — explicit expiry instead of NextAuth default (30 days).
-    // Known limitation: RBAC group changes in Authentik won't take effect until the
-    // user's JWT expires and they re-authenticate. The 24h maxAge bounds this window.
-    // A shorter maxAge (e.g. 1h) would reduce the stale-permissions window at the cost
-    // of more frequent re-logins. (Review item L4)
-    maxAge: 24 * 60 * 60,
+    // 4 hours — explicit expiry instead of NextAuth default (30 days).
+    // Authentik group changes (added/removed permissions) won't take effect until
+    // the user's JWT expires and they re-auth. 4h is a deliberate compromise:
+    // tighter than 24h (the previous value), looser than 1h (which would force
+    // constant re-login). Adjust if RBAC propagation lag matters more or less.
+    maxAge: 4 * 60 * 60,
   },
   callbacks: {
     async jwt({ token, user, account }) {

@@ -46,7 +46,29 @@ function validateEnv(): Env {
       "Missing or invalid environment variables. See above for details.",
     );
   }
-  return result.data as Env;
+  const env = result.data as Env;
+
+  // Production-only invariants — fail loud at startup so a misconfigured
+  // container is caught at boot, not after first request.
+  if (process.env.NODE_ENV === "production") {
+    if (!env.CRON_SECRET) {
+      throw new Error(
+        "CRON_SECRET is required in production (32+ chars). Without it, " +
+          "/api/health/detailed and other cron-authed endpoints accept " +
+          "unauthenticated requests. Set CRON_SECRET to a strong random value.",
+      );
+    }
+    if (process.env.ALLOW_DEV_MODE === "true") {
+      throw new Error(
+        "ALLOW_DEV_MODE=true is not permitted in production. The dev-mode " +
+          "auth bypass is already disabled at runtime by trpc.ts, but this " +
+          "check makes the misconfiguration loud instead of silently ignored. " +
+          "Remove ALLOW_DEV_MODE from the container env.",
+      );
+    }
+  }
+
+  return env;
 }
 
 export const env = validateEnv();

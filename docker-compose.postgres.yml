@@ -26,7 +26,8 @@ services:
           memory: 1G
           cpus: "1.0"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   db:
     image: postgres:16-alpine
@@ -40,6 +41,16 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-ledgr}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ledgr}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     security_opt:
       - no-new-privileges:true
     cap_drop:
