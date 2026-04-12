@@ -143,6 +143,9 @@ export function isEligibleForPriorYear(
 // ---------------------------------------------------------------------------
 
 export type AccountViewMetrics = {
+  employeeContrib: number;
+  employerMatch: number;
+  totalContrib: number;
   fundingPct: number;
   fundingMissing: number;
   pctOfSalaryToMax: number | null;
@@ -159,11 +162,15 @@ export type ViewAwareTotals = {
   savingsRateWithoutMatch: number;
 };
 
-function accountMetrics(
+function limitMetrics(
   towardLimit: number,
   limit: number,
   salary: number,
-): AccountViewMetrics {
+): {
+  fundingPct: number;
+  fundingMissing: number;
+  pctOfSalaryToMax: number | null;
+} {
   if (limit <= 0)
     return { fundingPct: 0, fundingMissing: 0, pctOfSalaryToMax: null };
   const missing = Math.max(0, limit - towardLimit);
@@ -181,36 +188,62 @@ function accountMetrics(
 }
 
 export function computeViewAwareAccountMetrics(input: {
-  towardLimit: number;
-  blendedTowardLimit: number;
+  projected: { employeeContrib: number; employerMatch: number };
+  blended: { employeeContrib: number; employerMatch: number };
+  ytdActual: { contributions: number; employerMatch: number } | null;
   limit: number;
   salary: number;
-  ytdActual: { contributions: number; employerMatch: number } | null;
   matchCountsTowardLimit: boolean;
 }): Record<ViewMode, AccountViewMetrics> {
   const {
-    towardLimit,
-    blendedTowardLimit,
+    projected,
+    blended,
+    ytdActual,
     limit,
     salary,
-    ytdActual,
     matchCountsTowardLimit,
   } = input;
-  const projected = accountMetrics(towardLimit, limit, salary);
 
-  if (!ytdActual) {
-    return { projected, blended: projected, ytd: projected };
+  function buildView(
+    emp: number,
+    match: number,
+    isYtd: boolean,
+  ): AccountViewMetrics {
+    const total = emp + match;
+    const toward = matchCountsTowardLimit ? total : emp;
+    const lm = limitMetrics(toward, limit, salary);
+    return {
+      employeeContrib: roundToCents(emp),
+      employerMatch: roundToCents(match),
+      totalContrib: roundToCents(total),
+      fundingPct: lm.fundingPct,
+      fundingMissing: lm.fundingMissing,
+      pctOfSalaryToMax: isYtd ? null : lm.pctOfSalaryToMax,
+    };
   }
 
-  const blended = accountMetrics(blendedTowardLimit, limit, salary);
+  const projView = buildView(
+    projected.employeeContrib,
+    projected.employerMatch,
+    false,
+  );
 
-  const ytdToward =
-    ytdActual.contributions +
-    (matchCountsTowardLimit ? ytdActual.employerMatch : 0);
-  const ytd = accountMetrics(ytdToward, limit, salary);
-  ytd.pctOfSalaryToMax = null;
+  if (!ytdActual) {
+    return { projected: projView, blended: projView, ytd: projView };
+  }
 
-  return { projected, blended, ytd };
+  const blendedView = buildView(
+    blended.employeeContrib,
+    blended.employerMatch,
+    false,
+  );
+  const ytdView = buildView(
+    ytdActual.contributions,
+    ytdActual.employerMatch,
+    true,
+  );
+
+  return { projected: projView, blended: blendedView, ytd: ytdView };
 }
 
 export function computeViewAwareTotals(input: {
@@ -229,8 +262,10 @@ export function computeViewAwareTotals(input: {
   ytdActuals: { retirement: number; portfolio: number; match: number };
   ytdRatio: number;
   totalCompensation: number;
+  blendedTotalCompensation?: number;
 }): Record<ViewMode, ViewAwareTotals> {
   const { projected, blended, ytdActuals, ytdRatio, totalCompensation } = input;
+  const blendedComp = input.blendedTotalCompensation ?? totalCompensation;
 
   function buildView(src: typeof projected, comp: number): ViewAwareTotals {
     const totalWithout = src.retirementWithoutMatch + src.portfolioWithoutMatch;
@@ -258,7 +293,7 @@ export function computeViewAwareTotals(input: {
     return { projected: projView, blended: projView, ytd: projView };
   }
 
-  const blendedView = buildView(blended, totalCompensation);
+  const blendedView = buildView(blended, blendedComp);
 
   const ytdRetWithout = roundToCents(ytdActuals.retirement);
   const ytdRetWith = roundToCents(ytdActuals.retirement + ytdActuals.match);

@@ -167,38 +167,41 @@ import {
 } from "@/lib/pure/contributions";
 
 describe("computeViewAwareAccountMetrics", () => {
-  // blendedTowardLimit = ytdActual.contributions + towardLimit * 0.6 = 5000 + 7200 = 12200
-  const blendedToward = 5000 + 12000 * 0.6;
   const base = {
-    towardLimit: 12000,
-    blendedTowardLimit: blendedToward,
+    projected: { employeeContrib: 12000, employerMatch: 3000 },
+    blended: { employeeContrib: 12200, employerMatch: 2800 },
     limit: 24500,
     salary: 120000,
     ytdActual: { contributions: 5000, employerMatch: 2000 },
     matchCountsTowardLimit: false,
   };
 
-  it("projected uses full annual values", () => {
+  it("projected uses projected dollar amounts and limit metrics", () => {
     const v = computeViewAwareAccountMetrics(base);
+    expect(v.projected.employeeContrib).toBe(12000);
+    expect(v.projected.employerMatch).toBe(3000);
+    expect(v.projected.totalContrib).toBe(15000);
     expect(v.projected.fundingPct).toBeCloseTo(12000 / 24500, 4);
     expect(v.projected.fundingMissing).toBe(24500 - 12000);
     expect(v.projected.pctOfSalaryToMax).toBeGreaterThan(0);
   });
 
-  it("blended uses pre-computed blended toward-limit", () => {
+  it("blended uses pre-computed blended dollar amounts", () => {
     const v = computeViewAwareAccountMetrics(base);
-    expect(v.blended.fundingPct).toBeCloseTo(blendedToward / 24500, 4);
-    expect(v.blended.fundingMissing).toBe(Math.max(0, 24500 - blendedToward));
+    expect(v.blended.employeeContrib).toBe(12200);
+    expect(v.blended.employerMatch).toBe(2800);
+    expect(v.blended.fundingPct).toBeCloseTo(12200 / 24500, 4);
   });
 
-  it("ytd shows actual progress only", () => {
+  it("ytd uses actual dollar amounts", () => {
     const v = computeViewAwareAccountMetrics(base);
+    expect(v.ytd.employeeContrib).toBe(5000);
+    expect(v.ytd.employerMatch).toBe(2000);
     expect(v.ytd.fundingPct).toBeCloseTo(5000 / 24500, 4);
-    expect(v.ytd.fundingMissing).toBe(24500 - 5000);
     expect(v.ytd.pctOfSalaryToMax).toBeNull();
   });
 
-  it("matchCountsTowardLimit includes employer match in ytd", () => {
+  it("matchCountsTowardLimit includes employer match in ytd funding", () => {
     const v = computeViewAwareAccountMetrics({
       ...base,
       matchCountsTowardLimit: true,
