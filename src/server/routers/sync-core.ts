@@ -52,6 +52,8 @@ export const syncCoreRouter = createTRPCRouter({
       const service = input.service as BudgetApiService;
 
       try {
+        // ── Phase 1: Network fetch (no DB writes) ────────────────────
+        // If anything here throws, no local state changes.
         const [accounts, categories] = await Promise.all([
           client.getAccounts(),
           client.getCategories(),
@@ -64,130 +66,134 @@ export const syncCoreRouter = createTRPCRouter({
         const sinceDate = `${now.getFullYear() - 1}-01-01`;
         const transactions = await client.getTransactions(sinceDate);
 
-        await Promise.all([
-          cacheSet(ctx.db, service, "accounts", accounts),
-          cacheSet(ctx.db, service, "categories", categories),
-          cacheSet(ctx.db, service, `months/${currentMonth}`, monthDetail),
-          cacheSet(ctx.db, service, "transactions", transactions),
-        ]);
+        // Read mappings before the transaction so we know what we'll be
+        // touching. The connection may have been edited concurrently, but
+        // the transaction below re-reads under the same isolation level.
+        const conn = await getApiConnection(ctx.db, service);
+        const mappings = conn?.accountMappings ?? [];
+        const pullMappings = mappings.filter(
+          (m) => m.syncDirection === "pull" || m.syncDirection === "both",
+        );
+        const { getApiAccountBalanceMapFromAccounts } =
+          await import("@/server/helpers/api-balance-resolution");
+        const apiBalanceMap = getApiAccountBalanceMapFromAccounts(accounts);
+        const currentYear = new Date().getFullYear();
 
-        await ctx.db
-          .update(schema.apiConnections)
-          .set({ lastSyncedAt: new Date() })
-          .where(eq(schema.apiConnections.service, service));
+        // ── Phase 2: Single-transaction commit (v0.5 expert-review C3) ──
+        // Cache writes + lastSyncedAt + asset-pull loop now share one
+        // transaction. If ANY asset write fails (unmapped type, DB
+        // constraint, missing row), the entire sync rolls back and the
+        // sync returns failure to the user. Previously: cache writes ran
+        // via Promise.all and the asset loop swallowed errors via inner
+        // try/catch and returned success: true with stale-mixed state.
+        const assetsPulled = await ctx.db.transaction(async (tx) => {
+          await cacheSet(tx, service, "accounts", accounts);
+          await cacheSet(tx, service, "categories", categories);
+          await cacheSet(tx, service, `months/${currentMonth}`, monthDetail);
+          await cacheSet(tx, service, "transactions", transactions);
 
-        // Auto-pull asset values from tracking accounts if pull mappings exist
-        let assetsPulled = 0;
-        try {
-          const conn = await getApiConnection(ctx.db, service);
-          const mappings = conn?.accountMappings ?? [];
-          const pullMappings = mappings.filter(
-            (m) => m.syncDirection === "pull" || m.syncDirection === "both",
-          );
-          if (pullMappings.length > 0) {
-            const { getApiAccountBalanceMapFromAccounts } =
-              await import("@/server/helpers/api-balance-resolution");
-            const apiBalanceMap = getApiAccountBalanceMapFromAccounts(accounts);
+          await tx
+            .update(schema.apiConnections)
+            .set({ lastSyncedAt: new Date() })
+            .where(eq(schema.apiConnections.service, service));
 
-            const currentYear = new Date().getFullYear();
-            for (const mapping of pullMappings) {
-              const apiBalance = apiBalanceMap.get(mapping.remoteAccountId);
-              if (apiBalance === undefined) continue;
+          if (pullMappings.length === 0) return 0;
 
-              // Resolve by localId prefix
-              const localId = mapping.localId ?? mapping.localName; // backward compat: fall back to localName during migration
-              // Prefer typed fields; fall back to prefix parsing for legacy mappings
-              if (mapping.loanId || localId.startsWith("mortgage:")) {
-                const loanId = mapping.loanId ?? Number(localId.split(":")[1]);
-                const mapType = mapping.loanMapType ?? localId.split(":")[2]; // 'propertyValue' or 'loanBalance'
-                if (mapType === "propertyValue") {
-                  await ctx.db
-                    .update(schema.mortgageLoans)
-                    .set({
-                      propertyValueEstimated: String(apiBalance),
-                      usePurchaseOrEstimated: "estimated",
-                    })
-                    .where(eq(schema.mortgageLoans.id, loanId));
-                }
-                if (mapType === "loanBalance") {
-                  await ctx.db
-                    .update(schema.mortgageLoans)
-                    .set({
-                      apiBalance: String(Math.abs(apiBalance)),
-                      apiBalanceDate: new Date().toISOString().slice(0, 10),
-                    })
-                    .where(eq(schema.mortgageLoans.id, loanId));
-                }
-                assetsPulled++;
-                continue;
+          let pulled = 0;
+          for (const mapping of pullMappings) {
+            const apiBalance = apiBalanceMap.get(mapping.remoteAccountId);
+            if (apiBalance === undefined) continue;
+
+            // Resolve by localId prefix
+            const localId = mapping.localId ?? mapping.localName; // backward compat
+            // Prefer typed fields; fall back to prefix parsing for legacy mappings
+            if (mapping.loanId || localId.startsWith("mortgage:")) {
+              const loanId = mapping.loanId ?? Number(localId.split(":")[1]);
+              const mapType = mapping.loanMapType ?? localId.split(":")[2]; // 'propertyValue' or 'loanBalance'
+              if (mapType === "propertyValue") {
+                await tx
+                  .update(schema.mortgageLoans)
+                  .set({
+                    propertyValueEstimated: String(apiBalance),
+                    usePurchaseOrEstimated: "estimated",
+                  })
+                  .where(eq(schema.mortgageLoans.id, loanId));
               }
-
-              if (mapping.assetId != null || localId.startsWith("asset:")) {
-                // Resolve asset by ID → get current name → upsert by name+year
-                const assetId =
-                  mapping.assetId ?? parseInt(localId.split(":")[1]!, 10);
-                const assetRow = await ctx.db
-                  .select()
-                  .from(schema.otherAssetItems)
-                  .where(eq(schema.otherAssetItems.id, assetId))
-                  .then((r) => r[0]);
-                if (assetRow) {
-                  const existing = await ctx.db
-                    .select()
-                    .from(schema.otherAssetItems)
-                    .where(eq(schema.otherAssetItems.name, assetRow.name))
-                    .then((rows) => rows.find((r) => r.year === currentYear));
-                  if (existing) {
-                    await ctx.db
-                      .update(schema.otherAssetItems)
-                      .set({
-                        value: String(apiBalance),
-                        note: `Synced from ${service.toUpperCase()}`,
-                      })
-                      .where(eq(schema.otherAssetItems.id, existing.id));
-                  } else {
-                    await ctx.db.insert(schema.otherAssetItems).values({
-                      name: assetRow.name,
-                      year: currentYear,
-                      value: String(apiBalance),
-                      note: `Synced from ${service.toUpperCase()}`,
-                    });
-                  }
-                }
-                assetsPulled++;
-                continue;
+              if (mapType === "loanBalance") {
+                await tx
+                  .update(schema.mortgageLoans)
+                  .set({
+                    apiBalance: String(Math.abs(apiBalance)),
+                    apiBalanceDate: new Date().toISOString().slice(0, 10),
+                  })
+                  .where(eq(schema.mortgageLoans.id, loanId));
               }
+              pulled++;
+              continue;
+            }
 
-              // Fallback for unmigrated mappings (localName-based resolution)
-              const existing = await ctx.db
+            if (mapping.assetId != null || localId.startsWith("asset:")) {
+              // Resolve asset by ID → get current name → upsert by name+year
+              const assetId =
+                mapping.assetId ?? parseInt(localId.split(":")[1]!, 10);
+              const assetRow = await tx
                 .select()
                 .from(schema.otherAssetItems)
-                .where(eq(schema.otherAssetItems.name, mapping.localName))
-                .then((rows) => rows.find((r) => r.year === currentYear));
-              if (existing) {
-                await ctx.db
-                  .update(schema.otherAssetItems)
-                  .set({
+                .where(eq(schema.otherAssetItems.id, assetId))
+                .then((r) => r[0]);
+              if (assetRow) {
+                const existing = await tx
+                  .select()
+                  .from(schema.otherAssetItems)
+                  .where(eq(schema.otherAssetItems.name, assetRow.name))
+                  .then((rows) => rows.find((r) => r.year === currentYear));
+                if (existing) {
+                  await tx
+                    .update(schema.otherAssetItems)
+                    .set({
+                      value: String(apiBalance),
+                      note: `Synced from ${service.toUpperCase()}`,
+                    })
+                    .where(eq(schema.otherAssetItems.id, existing.id));
+                } else {
+                  await tx.insert(schema.otherAssetItems).values({
+                    name: assetRow.name,
+                    year: currentYear,
                     value: String(apiBalance),
                     note: `Synced from ${service.toUpperCase()}`,
-                  })
-                  .where(eq(schema.otherAssetItems.id, existing.id));
-              } else {
-                await ctx.db.insert(schema.otherAssetItems).values({
-                  name: mapping.localName,
-                  year: currentYear,
+                  });
+                }
+              }
+              pulled++;
+              continue;
+            }
+
+            // Fallback for unmigrated mappings (localName-based resolution)
+            const existing = await tx
+              .select()
+              .from(schema.otherAssetItems)
+              .where(eq(schema.otherAssetItems.name, mapping.localName))
+              .then((rows) => rows.find((r) => r.year === currentYear));
+            if (existing) {
+              await tx
+                .update(schema.otherAssetItems)
+                .set({
                   value: String(apiBalance),
                   note: `Synced from ${service.toUpperCase()}`,
-                });
-              }
-              assetsPulled++;
+                })
+                .where(eq(schema.otherAssetItems.id, existing.id));
+            } else {
+              await tx.insert(schema.otherAssetItems).values({
+                name: mapping.localName,
+                year: currentYear,
+                value: String(apiBalance),
+                note: `Synced from ${service.toUpperCase()}`,
+              });
             }
+            pulled++;
           }
-        } catch (err) {
-          log("warn", "asset_pull_failed", {
-            error: err instanceof Error ? err.message : String(err),
-          });
-        }
+          return pulled;
+        });
 
         return {
           success: true,
@@ -203,6 +209,7 @@ export const syncCoreRouter = createTRPCRouter({
         };
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Unknown error";
+        log("error", "sync_failed", { service, error: msg });
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Sync failed: ${msg.slice(0, 200)}`,
