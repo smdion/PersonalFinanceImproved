@@ -59,7 +59,8 @@ function TypeBadge({ type }: { type: string }) {
     "timestamp without time zone": "bg-pink-100 text-pink-700",
     timestamp: "bg-pink-100 text-pink-700",
   };
-  const color = colors[type.toLowerCase()] ?? "bg-gray-100 text-gray-700";
+  const color =
+    colors[type.toLowerCase()] ?? "bg-surface-strong text-secondary";
   return (
     <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${color}`}>
       {type}

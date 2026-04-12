@@ -34,21 +34,6 @@ const EXEMPT: Set<string> = new Set([
   "src/components/ui/tooltip.tsx",
   // Theme picker itself.
   "src/components/ui/theme-toggle.tsx",
-
-  // Pre-v0.5 sweep — TODO replace with design tokens in v0.5.x follow-up.
-  // Tracked in .scratch/docs/expert-review-decisions.md → M26. The audit's
-  // lasting value is catching NEW regressions; these existing files are
-  // grandfathered until a focused theme-cleanup PR.
-  "src/app/(dashboard)/budget/page.tsx",
-  "src/app/(dashboard)/data-browser/page.tsx",
-  "src/components/cards/dashboard/contributions-card.tsx",
-  "src/components/cards/projection/projection-hero-kpis.tsx",
-  "src/components/cards/projection/projection-mc-results.tsx",
-  "src/components/layout/scenario-bar.tsx",
-  "src/components/mortgage/refinance-history.tsx",
-  "src/components/mortgage/refinance-impact.tsx",
-  "src/components/networth/net-worth-composition.tsx",
-  "src/components/networth/spreadsheet/spreadsheet-controls.tsx",
 ]);
 
 // Patterns we flag. Tailwind gray-N00 utilities specifically — other

@@ -165,8 +165,8 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
             key={i}
             className="bg-surface-sunken rounded-lg p-4 flex flex-col items-center justify-center animate-pulse"
           >
-            <div className="w-20 h-20 rounded-full bg-gray-200/20" />
-            <div className="h-3 w-20 bg-gray-200/20 rounded mt-2" />
+            <div className="w-20 h-20 rounded-full bg-surface-strong/20" />
+            <div className="h-3 w-20 bg-surface-strong/20 rounded mt-2" />
           </div>
         ))}
       </div>

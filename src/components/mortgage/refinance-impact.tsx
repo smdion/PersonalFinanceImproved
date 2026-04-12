@@ -92,7 +92,7 @@ export function RefinanceImpact({
                         className={`w-2 h-2 rounded-full flex-shrink-0 ${
                           loan.remainingMonths > 0
                             ? "bg-green-500"
-                            : "bg-gray-300"
+                            : "bg-surface-elevated"
                         }`}
                       />
                       <span className="font-medium">{loan.name}</span>
