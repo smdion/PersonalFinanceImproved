@@ -580,8 +580,27 @@ export const contributionRouter = createTRPCRouter({
               priorYearContribs: { id: number; amount: number }[];
               ytdContributions: number;
               ytdEmployerMatch: number;
+              blendedEmployee: number;
+              blendedMatch: number;
             }
           >();
+
+          // Compute method-aware remaining fraction for blended estimates.
+          // Each contribution method has a different delivery cadence.
+          const monthsElapsed =
+            asOfDate.getMonth() + (asOfDate.getDate() >= 15 ? 1 : 0);
+          function methodRemainingFraction(method: string): number {
+            switch (method) {
+              case "fixed_monthly":
+                return (12 - monthsElapsed) / 12;
+              case "fixed_annual":
+                return 0;
+              default:
+                return periodsPerYear > 0
+                  ? (periodsPerYear - periodsElapsedYtd) / periodsPerYear
+                  : 1;
+            }
+          }
           for (let i = 0; i < accounts.length; i++) {
             const acct = accounts[i]!;
             const rawContrib = rawContribs[i]!;
@@ -646,6 +665,8 @@ export const contributionRouter = createTRPCRouter({
               priorYearContribs: [],
               ytdContributions: 0,
               ytdEmployerMatch: 0,
+              blendedEmployee: 0,
+              blendedMatch: 0,
             };
             // Accumulate YTD actuals from proportionally-split performance data
             const contribActual = contribActualMap.get(rawContrib.id);
@@ -653,6 +674,20 @@ export const contributionRouter = createTRPCRouter({
               entry.ytdContributions += contribActual.contributions;
               entry.ytdEmployerMatch += contribActual.employerMatch;
             }
+            // Per-contrib blended: ytdActual + annual * method-aware remaining
+            const remaining = methodRemainingFraction(
+              rawContrib.contributionMethod,
+            );
+            const ytdEmp = contribActual?.contributions ?? 0;
+            const ytdMatch = contribActual?.employerMatch ?? 0;
+            entry.blendedEmployee +=
+              ytdEmp > 0 || ytdMatch > 0
+                ? ytdEmp + acct.annualContribution * remaining
+                : acct.annualContribution;
+            entry.blendedMatch +=
+              ytdEmp > 0 || ytdMatch > 0
+                ? ytdMatch + acct.employerMatch * remaining
+                : acct.employerMatch;
             const pyAmt =
               rawContrib.priorYearContribYear === priorYear
                 ? toNumber(rawContrib.priorYearContribAmount)
@@ -701,8 +736,6 @@ export const contributionRouter = createTRPCRouter({
                 roundToCents((totalEmployee / salary) * 100 * 100) / 100;
             }
 
-            const ytdRatio =
-              periodsPerYear > 0 ? periodsElapsedYtd / periodsPerYear : 0;
             const ytdActualForCategory =
               data.ytdContributions > 0 || data.ytdEmployerMatch > 0
                 ? {
@@ -710,12 +743,18 @@ export const contributionRouter = createTRPCRouter({
                     employerMatch: data.ytdEmployerMatch,
                   }
                 : null;
+            const blendedEmployee =
+              roundToCents(data.blendedEmployee) + bonusAdd;
+            const blendedMatch = roundToCents(data.blendedMatch);
+            const blendedTowardLimit = cfg?.matchCountsTowardLimit
+              ? blendedEmployee + blendedMatch
+              : blendedEmployee;
             const views = computeViewAwareAccountMetrics({
               towardLimit,
+              blendedTowardLimit,
               limit,
               salary,
               ytdActual: ytdActualForCategory,
-              ytdRatio,
               matchCountsTowardLimit: cfg?.matchCountsTowardLimit ?? false,
             });
 
@@ -815,6 +854,33 @@ export const contributionRouter = createTRPCRouter({
             ),
           );
 
+          // Blended totals: sum per-category blended amounts (method-aware remaining fractions)
+          const catEntries = Array.from(categoryMap.entries());
+          const retCats = catEntries.filter(([, d]) =>
+            isRetirementParent(d.parentCategory),
+          );
+          const portCats = catEntries.filter(([, d]) =>
+            isPortfolioParent(d.parentCategory),
+          );
+          const blendedRetWithoutMatch = roundToCents(
+            retCats.reduce((s, [, d]) => s + d.blendedEmployee, 0) + bonus401k,
+          );
+          const blendedRetWithMatch = roundToCents(
+            retCats.reduce(
+              (s, [, d]) => s + d.blendedEmployee + d.blendedMatch,
+              0,
+            ) + bonus401k,
+          );
+          const blendedPortWithoutMatch = roundToCents(
+            portCats.reduce((s, [, d]) => s + d.blendedEmployee, 0),
+          );
+          const blendedPortWithMatch = roundToCents(
+            portCats.reduce(
+              (s, [, d]) => s + d.blendedEmployee + d.blendedMatch,
+              0,
+            ),
+          );
+
           const ytdRatioForTotals =
             periodsPerYear > 0 ? periodsElapsedYtd / periodsPerYear : 0;
           const totalsViews = computeViewAwareTotals({
@@ -823,6 +889,12 @@ export const contributionRouter = createTRPCRouter({
               retirementWithMatch,
               portfolioWithoutMatch,
               portfolioWithMatch,
+            },
+            blended: {
+              retirementWithoutMatch: blendedRetWithoutMatch,
+              retirementWithMatch: blendedRetWithMatch,
+              portfolioWithoutMatch: blendedPortWithoutMatch,
+              portfolioWithMatch: blendedPortWithMatch,
             },
             ytdActuals: {
               retirement: ytdActualRetirement,

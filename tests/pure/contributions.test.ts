@@ -167,12 +167,14 @@ import {
 } from "@/lib/pure/contributions";
 
 describe("computeViewAwareAccountMetrics", () => {
+  // blendedTowardLimit = ytdActual.contributions + towardLimit * 0.6 = 5000 + 7200 = 12200
+  const blendedToward = 5000 + 12000 * 0.6;
   const base = {
     towardLimit: 12000,
+    blendedTowardLimit: blendedToward,
     limit: 24500,
     salary: 120000,
     ytdActual: { contributions: 5000, employerMatch: 2000 },
-    ytdRatio: 0.4,
     matchCountsTowardLimit: false,
   };
 
@@ -183,9 +185,8 @@ describe("computeViewAwareAccountMetrics", () => {
     expect(v.projected.pctOfSalaryToMax).toBeGreaterThan(0);
   });
 
-  it("blended combines YTD actual + projected remaining", () => {
+  it("blended uses pre-computed blended toward-limit", () => {
     const v = computeViewAwareAccountMetrics(base);
-    const blendedToward = 5000 + 12000 * 0.6;
     expect(v.blended.fundingPct).toBeCloseTo(blendedToward / 24500, 4);
     expect(v.blended.fundingMissing).toBe(Math.max(0, 24500 - blendedToward));
   });
@@ -203,12 +204,6 @@ describe("computeViewAwareAccountMetrics", () => {
       matchCountsTowardLimit: true,
     });
     expect(v.ytd.fundingPct).toBeCloseTo(7000 / 24500, 4);
-  });
-
-  it("ytdRatio=0 falls back to projected for all views", () => {
-    const v = computeViewAwareAccountMetrics({ ...base, ytdRatio: 0 });
-    expect(v.blended).toEqual(v.projected);
-    expect(v.ytd).toEqual(v.projected);
   });
 
   it("ytdActual=null falls back to projected for all views", () => {
@@ -231,12 +226,19 @@ describe("computeViewAwareAccountMetrics", () => {
 });
 
 describe("computeViewAwareTotals", () => {
+  // Blended = pre-computed from method-aware remaining fractions
   const base = {
     projected: {
       retirementWithoutMatch: 20000,
       retirementWithMatch: 25000,
       portfolioWithoutMatch: 5000,
       portfolioWithMatch: 5000,
+    },
+    blended: {
+      retirementWithoutMatch: 18000,
+      retirementWithMatch: 23500,
+      portfolioWithoutMatch: 4500,
+      portfolioWithMatch: 4500,
     },
     ytdActuals: { retirement: 8000, portfolio: 2000, match: 3000 },
     ytdRatio: 0.5,
@@ -250,13 +252,11 @@ describe("computeViewAwareTotals", () => {
     expect(v.projected.savingsRateWithMatch).toBeCloseTo(30000 / 150000, 4);
   });
 
-  it("blended combines YTD + projected remaining", () => {
+  it("blended uses pre-computed blended totals", () => {
     const v = computeViewAwareTotals(base);
-    expect(v.blended.retirementWithoutMatch).toBeCloseTo(8000 + 20000 * 0.5, 0);
-    expect(v.blended.retirementWithMatch).toBeCloseTo(
-      8000 + 3000 + 25000 * 0.5,
-      0,
-    );
+    expect(v.blended.retirementWithoutMatch).toBe(18000);
+    expect(v.blended.retirementWithMatch).toBe(23500);
+    expect(v.blended.totalWithMatch).toBe(23500 + 4500);
   });
 
   it("ytd shows actual amounts only", () => {
@@ -270,12 +270,6 @@ describe("computeViewAwareTotals", () => {
     const v = computeViewAwareTotals(base);
     // ytdRetWith=8000+3000=11000, ytdPortWith=2000, total=13000
     expect(v.ytd.savingsRateWithMatch).toBeCloseTo(13000 / (150000 * 0.5), 4);
-  });
-
-  it("ytdRatio=0 falls back to projected", () => {
-    const v = computeViewAwareTotals({ ...base, ytdRatio: 0 });
-    expect(v.blended).toEqual(v.projected);
-    expect(v.ytd).toEqual(v.projected);
   });
 
   it("all ytdActuals=0 falls back to projected", () => {
