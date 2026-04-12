@@ -4,7 +4,10 @@ import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateContributions } from "@/lib/calculators/contribution";
-import { countPeriodsElapsed } from "@/lib/calculators/paycheck";
+import {
+  countPeriodsElapsed,
+  mapSalaryTimelineToPeriods,
+} from "@/lib/calculators/paycheck";
 import { accountDisplayName, stripInstitutionSuffix } from "@/lib/utils/format";
 import {
   toNumber,
@@ -13,8 +16,10 @@ import {
   getEffectiveIncome,
   getTotalCompensation,
   buildContribAccounts,
+  computeAnnualContribution,
   computeBonusGross,
   loadAndApplyContribProfile,
+  getSalaryTimelineForYear,
 } from "@/server/helpers";
 import { roundToCents } from "@/lib/utils/math";
 import { getAge, isPriorYearContribWindow } from "@/lib/utils/date";
@@ -237,6 +242,118 @@ export const contributionRouter = createTRPCRouter({
 
       const asOfDate = new Date();
 
+      // Split YTD actuals proportionally when multiple contribs share a perf account.
+      // Uses salary-timeline-aware expected YTD (not projected annual) so mid-year
+      // salary changes are reflected in the split ratio.
+      const contribActualMap = new Map<
+        number,
+        { contributions: number; employerMatch: number }
+      >();
+      {
+        const activeContribs = effectiveContribs.filter((c) => c.isActive);
+        const currentYear = asOfDate.getFullYear();
+
+        // Cache salary timelines and period data per job to avoid redundant DB calls
+        const jobCache = new Map<
+          number,
+          {
+            timeline: { salary: number; effectiveDate: string | null }[];
+            periodsPerYear: number;
+            periodsElapsed: number;
+            anchorPayDate: Date | null;
+            payPeriod: string;
+          }
+        >();
+        for (const c of activeContribs) {
+          if (c.performanceAccountId == null || !c.jobId) continue;
+          if (jobCache.has(c.jobId)) continue;
+          const job = effectiveJobs.find((j) => j.id === c.jobId);
+          if (!job) continue;
+          const timeline = await getSalaryTimelineForYear(
+            ctx.db,
+            job.id,
+            job.annualSalary,
+            currentYear,
+          );
+          const periodsPerYear = getPeriodsPerYear(job.payPeriod);
+          const anchor = job.anchorPayDate ? new Date(job.anchorPayDate) : null;
+          const periodsElapsed = anchor
+            ? countPeriodsElapsed(asOfDate, job.payPeriod, anchor)
+            : Math.round((asOfDate.getMonth() / 12) * periodsPerYear);
+          jobCache.set(c.jobId, {
+            timeline,
+            periodsPerYear,
+            periodsElapsed,
+            anchorPayDate: anchor,
+            payPeriod: job.payPeriod,
+          });
+        }
+
+        // Compute expected YTD for each contrib and group by perf account
+        const byPerfId = new Map<
+          number,
+          { contribId: number; expectedYtd: number }[]
+        >();
+        for (const c of activeContribs) {
+          if (c.performanceAccountId == null) continue;
+          const value = toNumber(c.contributionValue);
+          let expectedYtd = 0;
+
+          const jd = c.jobId ? jobCache.get(c.jobId) : null;
+          if (c.contributionMethod === "percent_of_salary" && jd) {
+            // Walk salary timeline periods to compute exact YTD
+            const segments = mapSalaryTimelineToPeriods(
+              jd.timeline,
+              jd.payPeriod,
+              jd.anchorPayDate ?? new Date(`${currentYear}-01-15T00:00:00`),
+              currentYear,
+            );
+            const pct = value / 100;
+            for (const seg of segments) {
+              const segPeriods =
+                Math.min(seg.endPeriod, jd.periodsElapsed) -
+                seg.startPeriod +
+                1;
+              if (segPeriods <= 0) continue;
+              expectedYtd +=
+                seg.salary * pct * (segPeriods / jd.periodsPerYear);
+            }
+          } else {
+            // Fixed methods: scale by elapsed fraction
+            const periodsPerYear = jd?.periodsPerYear ?? 26;
+            const periodsElapsed = jd?.periodsElapsed ?? 0;
+            const annual = computeAnnualContribution(
+              c.contributionMethod,
+              value,
+              0,
+              periodsPerYear,
+            );
+            expectedYtd = annual * (periodsElapsed / periodsPerYear);
+          }
+
+          const arr = byPerfId.get(c.performanceAccountId) ?? [];
+          arr.push({ contribId: c.id, expectedYtd });
+          byPerfId.set(c.performanceAccountId, arr);
+        }
+
+        // Split perf account actuals proportionally by expected YTD
+        for (const [perfId, entries] of byPerfId) {
+          const actual = perfActualMap.get(perfId);
+          if (!actual) continue;
+          const totalExpected = entries.reduce((s, e) => s + e.expectedYtd, 0);
+          for (const entry of entries) {
+            const share =
+              totalExpected > 0
+                ? entry.expectedYtd / totalExpected
+                : 1 / entries.length;
+            contribActualMap.set(entry.contribId, {
+              contributions: roundToCents(actual.contributions * share),
+              employerMatch: roundToCents(actual.employerMatch * share),
+            });
+          }
+        }
+      }
+
       const results: PersonSnapshot[] = await Promise.all(
         people.map(async (person) => {
           const activeJob = findActiveJob(effectiveJobs, person.id);
@@ -438,9 +555,7 @@ export const contributionRouter = createTRPCRouter({
               limit,
               siblingAnnualTotal: roundToCents(siblingAnnualTotal),
               limitGroup: group,
-              ytdActual: rc.performanceAccountId
-                ? (perfActualMap.get(rc.performanceAccountId) ?? null)
-                : null,
+              ytdActual: contribActualMap.get(rc.id) ?? null,
               priorYear: priorYearData,
             };
           });
@@ -532,13 +647,11 @@ export const contributionRouter = createTRPCRouter({
               ytdContributions: 0,
               ytdEmployerMatch: 0,
             };
-            // Accumulate YTD actuals from performance data
-            if (rawContrib.performanceAccountId != null) {
-              const actual = perfActualMap.get(rawContrib.performanceAccountId);
-              if (actual) {
-                entry.ytdContributions += actual.contributions;
-                entry.ytdEmployerMatch += actual.employerMatch;
-              }
+            // Accumulate YTD actuals from proportionally-split performance data
+            const contribActual = contribActualMap.get(rawContrib.id);
+            if (contribActual) {
+              entry.ytdContributions += contribActual.contributions;
+              entry.ytdEmployerMatch += contribActual.employerMatch;
             }
             const pyAmt =
               rawContrib.priorYearContribYear === priorYear
