@@ -19,6 +19,7 @@ import {
   type ContribPeriod,
 } from "@/components/ui/contrib-period-toggle";
 import { FundingBar } from "./funding-bar";
+import { OVER_LIMIT_THRESHOLD } from "@/lib/constants";
 import {
   categoriesWithIrsLimit,
   getAccountTypeConfig,
@@ -441,7 +442,8 @@ export function ContributionSnapshot() {
                           <div className="flex justify-between text-xs mt-0.5">
                             <span
                               className={
-                                at.views[viewMode].fundingPct > 1.005
+                                at.views[viewMode].fundingPct >
+                                OVER_LIMIT_THRESHOLD
                                   ? "text-red-600 font-medium"
                                   : at.views[viewMode].fundingPct >= 1
                                     ? "text-green-600 font-medium"
@@ -450,7 +452,8 @@ export function ContributionSnapshot() {
                             >
                               {formatPercent(at.views[viewMode].fundingPct)} of{" "}
                               {formatCurrency(at.limit)}
-                              {at.views[viewMode].fundingPct > 1.005 && (
+                              {at.views[viewMode].fundingPct >
+                                OVER_LIMIT_THRESHOLD && (
                                 <span className="ml-1 text-[10px] bg-red-100 text-red-700 px-1 rounded">
                                   Over limit
                                 </span>
@@ -474,7 +477,8 @@ export function ContributionSnapshot() {
                                 : " does not count toward IRS limit"}
                             </p>
                           )}
-                          {at.views[viewMode].fundingPct > 1.005 && (
+                          {at.views[viewMode].fundingPct >
+                            OVER_LIMIT_THRESHOLD && (
                             <p className="text-[10px] text-red-600 mt-0.5">
                               Over by{" "}
                               {formatCurrency(
@@ -484,7 +488,8 @@ export function ContributionSnapshot() {
                               contribution
                             </p>
                           )}
-                          {at.views[viewMode].fundingPct <= 1 &&
+                          {at.views[viewMode].fundingPct <=
+                            OVER_LIMIT_THRESHOLD &&
                             at.views[viewMode].pctOfSalaryToMax !== null &&
                             Math.floor(at.views[viewMode].pctOfSalaryToMax) >
                               0 && (
@@ -496,7 +501,8 @@ export function ContributionSnapshot() {
                                 % to max
                               </p>
                             )}
-                          {at.views[viewMode].fundingPct <= 1 &&
+                          {at.views[viewMode].fundingPct <=
+                            OVER_LIMIT_THRESHOLD &&
                             at.views[viewMode].pctOfSalaryToMax !== null &&
                             Math.floor(at.views[viewMode].pctOfSalaryToMax) ===
                               0 && (

@@ -108,6 +108,9 @@ export const OVERFLOW_TOLERANCE = 1;
 /** Maximum sane effective tax rate (50%). */
 export const MAX_EFFECTIVE_TAX_RATE = 0.5;
 
+/** Funding ratio above which an account is considered over the IRS limit (filters rounding noise). */
+export const OVER_LIMIT_THRESHOLD = 1.005;
+
 /** Minimum bar width percentage for contribution visualization. */
 export const MIN_BAR_WIDTH_PCT = 0.005;
 

@@ -13,6 +13,7 @@ import {
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
+import { OVER_LIMIT_THRESHOLD } from "@/lib/constants";
 import {
   ContribPeriodToggle,
   getContribMultiplier,
@@ -44,7 +45,7 @@ function FundingBar({
   const totalPct = showMatchBeyond ? pct + (matchPct ?? 0) : pct;
   const typeColor = accountType ? accountColor(accountType) : null;
   const color =
-    pct > 1
+    pct > OVER_LIMIT_THRESHOLD
       ? "bg-red-500"
       : (typeColor ??
         (pct >= 1
@@ -259,7 +260,8 @@ export function ContributionsCard() {
                           <div className="flex justify-between text-[10px] mt-0.5">
                             <span
                               className={
-                                at.views[viewMode].fundingPct > 1.005
+                                at.views[viewMode].fundingPct >
+                                OVER_LIMIT_THRESHOLD
                                   ? "text-red-600 font-medium"
                                   : at.views[viewMode].fundingPct >= 1
                                     ? "text-green-600 font-medium"
@@ -268,7 +270,8 @@ export function ContributionsCard() {
                             >
                               {formatPercent(at.views[viewMode].fundingPct)} of{" "}
                               {formatCurrency(at.limit)}
-                              {at.views[viewMode].fundingPct > 1.005 && (
+                              {at.views[viewMode].fundingPct >
+                                OVER_LIMIT_THRESHOLD && (
                                 <span className="ml-1 bg-red-100 text-red-700 px-1 rounded">
                                   Over
                                 </span>
@@ -293,7 +296,8 @@ export function ContributionsCard() {
                             </p>
                           )}
                           {/* Need +X% to max */}
-                          {at.views[viewMode].fundingPct <= 1 &&
+                          {at.views[viewMode].fundingPct <=
+                            OVER_LIMIT_THRESHOLD &&
                             at.views[viewMode].pctOfSalaryToMax !== null &&
                             Math.floor(at.views[viewMode].pctOfSalaryToMax) >
                               0 && (
@@ -305,7 +309,8 @@ export function ContributionsCard() {
                                 % to max
                               </p>
                             )}
-                          {at.views[viewMode].fundingPct <= 1 &&
+                          {at.views[viewMode].fundingPct <=
+                            OVER_LIMIT_THRESHOLD &&
                             at.views[viewMode].pctOfSalaryToMax !== null &&
                             Math.floor(at.views[viewMode].pctOfSalaryToMax) ===
                               0 && (
