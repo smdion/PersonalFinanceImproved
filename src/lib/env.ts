@@ -22,6 +22,12 @@ const baseSchema = z.object({
   AUTH_AUTHENTIK_SECRET: z.string().min(1).optional(),
   // Cron secret — optional but must be strong when set
   CRON_SECRET: z.string().min(32).optional(),
+  // At-rest encryption key for api_connections.config (AES-256-GCM).
+  // Must be 32 bytes base64-encoded (44 chars). Generate with:
+  //   node -e 'console.log(require("crypto").randomBytes(32).toString("base64"))'
+  // Optional in dev (allows running without configuring API connections);
+  // required in production by the post-validate check below.
+  ENCRYPTION_KEY: z.string().optional(),
 });
 
 const pgSchema = baseSchema.extend({
@@ -64,6 +70,31 @@ function validateEnv(): Env {
           "auth bypass is already disabled at runtime by trpc.ts, but this " +
           "check makes the misconfiguration loud instead of silently ignored. " +
           "Remove ALLOW_DEV_MODE from the container env.",
+      );
+    }
+    if (!env.ENCRYPTION_KEY) {
+      throw new Error(
+        "ENCRYPTION_KEY is required in production. Without it, API " +
+          "credentials in api_connections.config cannot be encrypted at rest. " +
+          "Generate one with: " +
+          'node -e \'console.log(require("crypto").randomBytes(32).toString("base64"))\'',
+      );
+    }
+    // Validate length: must decode to exactly 32 bytes (44-char base64).
+    try {
+      const keyBytes = Buffer.from(env.ENCRYPTION_KEY, "base64").length;
+      if (keyBytes !== 32) {
+        throw new Error(
+          `ENCRYPTION_KEY must decode to exactly 32 bytes (got ${keyBytes}). ` +
+            "Regenerate with the command in CRON_SECRET error above.",
+        );
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message.startsWith("ENCRYPTION_KEY"))
+        throw err;
+      throw new Error(
+        "ENCRYPTION_KEY is not valid base64. Regenerate with: " +
+          'node -e \'console.log(require("crypto").randomBytes(32).toString("base64"))\'',
       );
     }
   }

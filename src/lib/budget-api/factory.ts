@@ -2,6 +2,7 @@
 
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
+import { readMaybeEncrypted } from "@/lib/crypto";
 import type { BudgetAPIClient } from "./interface";
 import type { ActiveBudgetApi, YnabConfig, ActualConfig } from "./types";
 import { YnabClient } from "./ynab-client";
@@ -53,17 +54,18 @@ export async function getClientForService(
   const conn = connections[0];
   if (!conn) return null;
 
-  const config = conn.config;
-
+  // conn.config may be plaintext (legacy v4) or an encrypted envelope (v5+).
+  // readMaybeEncrypted detects the format and decrypts only if necessary,
+  // so existing v4 deployments keep working until the next saveConnection
+  // upgrades the row to encrypted-at-rest.
   if (service === "ynab") {
-    const ynabConfig = config as YnabConfig;
+    const ynabConfig = readMaybeEncrypted<YnabConfig>(conn.config);
     if (!ynabConfig.accessToken || !ynabConfig.budgetId) return null;
     return new YnabClient(ynabConfig.accessToken, ynabConfig.budgetId);
   }
 
   if (service === "actual") {
-    // eslint-disable-next-line no-restricted-syntax -- type narrowing for untyped API response
-    const actualConfig = config as unknown as ActualConfig;
+    const actualConfig = readMaybeEncrypted<ActualConfig>(conn.config);
     if (
       !actualConfig.serverUrl ||
       !actualConfig.apiKey ||

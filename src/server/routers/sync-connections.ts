@@ -11,6 +11,7 @@ import {
   cacheClear,
 } from "@/lib/budget-api";
 import type { YnabConfig, ActualConfig } from "@/lib/budget-api";
+import { encryptJson } from "@/lib/crypto";
 
 const serviceEnum = z.enum(["ynab", "actual"]);
 
@@ -61,6 +62,13 @@ export const syncConnectionsRouter = createTRPCRouter({
               budgetSyncId: input.budgetSyncId,
             };
 
+      // Encrypt at rest with AES-256-GCM (per RULES.md § Permission &
+      // Security Gates and v0.5 expert-review item C1). The factory's
+      // readMaybeEncrypted() handles both encrypted-envelope and legacy
+      // plaintext rows on read, so this write transparently upgrades any
+      // pre-v0.5 row.
+      const encryptedConfig = encryptJson(config);
+
       // Single atomic upsert — onConflictDoUpdate is already transactional in
       // Postgres (the INSERT … ON CONFLICT DO UPDATE runs as one statement).
       // No explicit transaction wrapper needed.
@@ -68,11 +76,13 @@ export const syncConnectionsRouter = createTRPCRouter({
         .insert(schema.apiConnections)
         .values({
           service: input.service,
-          config,
+          config: encryptedConfig as unknown as YnabConfig | ActualConfig,
         })
         .onConflictDoUpdate({
           target: schema.apiConnections.service,
-          set: { config },
+          set: {
+            config: encryptedConfig as unknown as YnabConfig | ActualConfig,
+          },
         });
 
       return { success: true };
