@@ -12,7 +12,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- Relocation tool's retirement-only contribution filter no longer silently filtered out every contribution because it was comparing the wrong field — Retirement-account contributions now flow into the relocation calculator as intended
 - Mortgage current-balance detection no longer reads system time independently mid-request, so historical year-end balance queries are reliably classified as historical and don't accidentally pick up the latest API balance override
 
 ### Security

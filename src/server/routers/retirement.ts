@@ -43,7 +43,6 @@ import {
   addBasis,
   PARENT_CATEGORY_VALUES,
   isTaxFreeBucket,
-  isRetirementParent,
 } from "@/lib/config/account-types";
 import { getAge } from "@/lib/utils/date";
 import { roundToCents } from "@/lib/utils/math";
@@ -1214,11 +1213,11 @@ export const retirementRouter = createTRPCRouter({
       const perfCatMap = new Map(
         perfAccounts.map((p) => [p.id, p.parentCategory]),
       );
-      const allContribs = allContribsRaw.filter((c) => {
-        if (c.performanceAccountId == null) return false;
-        const cat = perfCatMap.get(c.performanceAccountId);
-        return cat != null && isRetirementParent(cat);
-      });
+      const allContribs = allContribsRaw.filter(
+        (c) =>
+          c.performanceAccountId != null &&
+          perfCatMap.get(c.performanceAccountId) === "401k/IRA",
+      );
 
       const primaryPerson = people.find((p) => p.isPrimaryUser) ?? people[0];
       if (!primaryPerson) return { result: null, budgetInfo: null };
