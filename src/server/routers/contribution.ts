@@ -198,16 +198,20 @@ export const contributionRouter = createTRPCRouter({
         number,
         { contributions: number; employerMatch: number }
       >();
+      // total_contributions includes employer match — split into employee-only + match
       for (const row of currentYearPerfActuals) {
         if (row.performanceAccountId == null) continue;
+        const total = toNumber(row.totalContributions);
+        const match = toNumber(row.employerContributions);
+        const employeeOnly = total - match;
         const existing = perfActualMap.get(row.performanceAccountId);
         if (existing) {
-          existing.contributions += toNumber(row.totalContributions);
-          existing.employerMatch += toNumber(row.employerContributions);
+          existing.contributions += employeeOnly;
+          existing.employerMatch += match;
         } else {
           perfActualMap.set(row.performanceAccountId, {
-            contributions: toNumber(row.totalContributions),
-            employerMatch: toNumber(row.employerContributions),
+            contributions: employeeOnly,
+            employerMatch: match,
           });
         }
       }
@@ -285,13 +289,14 @@ export const contributionRouter = createTRPCRouter({
         });
       }
 
-      // Compute expected YTD for each contrib and group by perf account
+      // Compute expected YTD for each contrib (salary-timeline-aware) and group by perf account.
+      // expectedYtdMap is also used in the categoryMap loop for data-lag detection.
+      const expectedYtdMap = new Map<number, number>();
       const byPerfId = new Map<
         number,
         { contribId: number; expectedYtd: number }[]
       >();
       for (const c of activeContribs) {
-        if (c.performanceAccountId == null) continue;
         const value = toNumber(c.contributionValue);
         let expectedYtd = 0;
 
@@ -324,9 +329,13 @@ export const contributionRouter = createTRPCRouter({
           expectedYtd = annual * (periodsElapsed / periodsPerYear);
         }
 
-        const arr = byPerfId.get(c.performanceAccountId) ?? [];
-        arr.push({ contribId: c.id, expectedYtd });
-        byPerfId.set(c.performanceAccountId, arr);
+        expectedYtdMap.set(c.id, expectedYtd);
+
+        if (c.performanceAccountId != null) {
+          const arr = byPerfId.get(c.performanceAccountId) ?? [];
+          arr.push({ contribId: c.id, expectedYtd });
+          byPerfId.set(c.performanceAccountId, arr);
+        }
       }
 
       const contribActualMap = new Map<
@@ -682,11 +691,14 @@ export const contributionRouter = createTRPCRouter({
             const ytdEmp = contribActual?.contributions ?? 0;
             const ytdMatch = contribActual?.employerMatch ?? 0;
             if (ytdEmp > 0 || ytdMatch > 0) {
-              const expectedEmp = acct.annualContribution * (1 - remaining);
+              // Use salary-timeline-aware expected YTD for data-lag detection
+              const timelineExpected =
+                expectedYtdMap.get(rawContrib.id) ??
+                acct.annualContribution * (1 - remaining);
               const expectedMatch = acct.employerMatch * (1 - remaining);
-              if (ytdEmp < expectedEmp * 0.95) entry.ytdDataStale = true;
+              if (ytdEmp < timelineExpected * 0.95) entry.ytdDataStale = true;
               entry.blendedEmployee +=
-                Math.max(ytdEmp, expectedEmp) +
+                Math.max(ytdEmp, timelineExpected) +
                 acct.annualContribution * remaining;
               entry.blendedMatch +=
                 Math.max(ytdMatch, expectedMatch) +
