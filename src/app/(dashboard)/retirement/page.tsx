@@ -25,6 +25,7 @@ import { ProjectionCard } from "@/components/cards/projection";
 import { WithdrawalComparisonCard } from "@/components/cards/withdrawal-comparison";
 import { StrategyGuideButton } from "@/components/cards/strategy-guide-panel";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
+import { PlanHealthCard } from "@/components/cards/plan-health";
 
 /** Convert a decimal string (e.g. '0.04') to a whole-number string for display ('4'). */
 function decToWhole(v: string): string {
@@ -278,6 +279,20 @@ export default function RetirementPage() {
           accColumnLabel ? `Budget scenario: ${accColumnLabel}` : undefined
         }
       />
+
+      {/* Plan health callouts (v0.5 M2/M4 helpers — others ship as helpers,
+          wire in v0.5.x once contribution-order + glide-path data is plumbed
+          into this query). */}
+      <div className="mb-4">
+        <PlanHealthCard
+          returnRate={parseFloat(settings.returnAfterRetirement)}
+          inflationRate={parseFloat(settings.annualInflation)}
+          salaryGrowthRate={parseFloat(settings.salaryAnnualIncrease)}
+          retirementHorizonYears={settings.endAge - settings.retirementAge}
+          hasBudgetLink={!!data.accumulationBudgetProfileId}
+        />
+      </div>
+
       {/* Page-level tabs */}
       <div className="inline-flex rounded-md border bg-surface-primary/60 p-0.5 mb-4">
         <button
