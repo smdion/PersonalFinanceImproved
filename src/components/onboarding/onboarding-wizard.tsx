@@ -174,26 +174,21 @@ function AdminStep({
 }
 
 function OidcStep() {
-  const [testResult, setTestResult] = useState<{
-    configured: boolean;
-    reachable: boolean;
-    issuer: string | null;
-  } | null>(null);
-  const [testing, setTesting] = useState(false);
+  const [shouldTest, setShouldTest] = useState(false);
 
   const testConnection = trpc.settings.testOidcConnection.useQuery(undefined, {
-    enabled: false,
+    enabled: shouldTest,
   });
 
-  const handleTest = async () => {
-    setTesting(true);
-    try {
-      const result = await testConnection.refetch();
-      setTestResult(result.data ?? null);
-    } catch {
-      setTestResult({ configured: false, reachable: false, issuer: null });
+  const testResult = testConnection.data ?? null;
+  const testing = testConnection.isFetching;
+
+  const handleTest = () => {
+    if (shouldTest) {
+      testConnection.refetch();
+    } else {
+      setShouldTest(true);
     }
-    setTesting(false);
   };
 
   const envVars = [
