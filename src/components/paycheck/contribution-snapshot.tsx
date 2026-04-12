@@ -403,7 +403,9 @@ export function ContributionSnapshot() {
                       <div className="flex items-baseline justify-between text-sm">
                         <div>
                           <span className="font-medium">
-                            {formatCurrency(at.employeeContrib * mult)}
+                            {formatCurrency(
+                              at.views[viewMode].employeeContrib * mult,
+                            )}
                           </span>
                           {at.currentPctOfSalary !== null &&
                             contribPeriod === "annual" && (
@@ -422,7 +424,10 @@ export function ContributionSnapshot() {
                         </div>
                         {at.employerMatch > 0 && (
                           <span className="text-sm text-muted">
-                            +{formatCurrency(at.employerMatch * mult)}
+                            +
+                            {formatCurrency(
+                              at.views[viewMode].employerMatch * mult,
+                            )}
                             <span className="text-xs text-faint ml-0.5">
                               {employerMatchLabel}
                             </span>
@@ -482,7 +487,9 @@ export function ContributionSnapshot() {
                             <p className="text-[10px] text-red-600 mt-0.5">
                               Over by{" "}
                               {formatCurrency(
-                                (at.employeeContrib - at.limit) * mult,
+                                (at.views[viewMode].employeeContrib -
+                                  at.limit) *
+                                  mult,
                               )}
                               {periodSuffix} — reduce to avoid excess
                               contribution
@@ -554,7 +561,7 @@ export function ContributionSnapshot() {
                                     style={{
                                       width: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                     }}
-                                    title={`Your cost: ${formatCurrency(at.employeeContrib * mult)}${periodSuffix}`}
+                                    title={`Your cost: ${formatCurrency(at.views[viewMode].employeeContrib * mult)}${periodSuffix}`}
                                   />
                                   <div
                                     className={`${accountMatchColor(categoryKey)} h-2 rounded-r-full transition-all absolute top-0`}
@@ -562,7 +569,7 @@ export function ContributionSnapshot() {
                                       left: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                       width: `${(at.employerMatch / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                     }}
-                                    title={`${employerMatchLabel}: ${formatCurrency(at.employerMatch * mult)}${periodSuffix}`}
+                                    title={`${employerMatchLabel}: ${formatCurrency(at.views[viewMode].employerMatch * mult)}${periodSuffix}`}
                                   />
                                 </div>
                                 <div className="flex justify-between text-[10px] mt-0.5">
@@ -571,7 +578,8 @@ export function ContributionSnapshot() {
                                   >
                                     Total value:{" "}
                                     {formatCurrency(
-                                      (at.employeeContrib + at.employerMatch) *
+                                      (at.views[viewMode].employeeContrib +
+                                        at.views[viewMode].employerMatch) *
                                         mult,
                                     )}
                                     {periodSuffix}
@@ -598,7 +606,7 @@ export function ContributionSnapshot() {
                                     style={{
                                       width: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                     }}
-                                    title={`You: ${formatCurrency(at.employeeContrib * mult)}${periodSuffix}`}
+                                    title={`You: ${formatCurrency(at.views[viewMode].employeeContrib * mult)}${periodSuffix}`}
                                   />
                                   <div
                                     className={`${accountMatchColor(categoryKey)} h-2 rounded-r-full absolute top-0`}
@@ -606,14 +614,14 @@ export function ContributionSnapshot() {
                                       left: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                       width: `${(at.employerMatch / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                     }}
-                                    title={`${employerMatchLabel}: ${formatCurrency(at.employerMatch * mult)}${periodSuffix}`}
+                                    title={`${employerMatchLabel}: ${formatCurrency(at.views[viewMode].employerMatch * mult)}${periodSuffix}`}
                                   />
                                 </>
                               ) : (
                                 <div
                                   className={`${accountColor(categoryKey)} h-2 rounded-full`}
                                   style={{ width: "100%" }}
-                                  title={`${formatCurrency(at.employeeContrib * mult)}${periodSuffix}`}
+                                  title={`${formatCurrency(at.views[viewMode].employeeContrib * mult)}${periodSuffix}`}
                                 />
                               )}
                             </div>
@@ -625,7 +633,10 @@ export function ContributionSnapshot() {
                               <span
                                 className={`${accountTextColor(categoryKey)} font-medium`}
                               >
-                                +{formatCurrency(at.employerMatch * mult)}
+                                +
+                                {formatCurrency(
+                                  at.views[viewMode].employerMatch * mult,
+                                )}
                                 {periodSuffix} {employerMatchLabel}
                               </span>
                             )}

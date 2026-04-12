@@ -237,7 +237,9 @@ export function ContributionsCard() {
                         </span>
                         <div className="text-right">
                           <span className="text-primary font-medium">
-                            {formatCurrency(at.employeeContrib * mult)}
+                            {formatCurrency(
+                              at.views[viewMode].employeeContrib * mult,
+                            )}
                           </span>
                           {at.currentPctOfSalary !== null &&
                             contribPeriod === "annual" && (
@@ -358,7 +360,7 @@ export function ContributionsCard() {
                                 style={{
                                   width: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                 }}
-                                title={`Your cost: ${formatCurrency(at.employeeContrib * mult)}${suffix}`}
+                                title={`Your cost: ${formatCurrency(at.views[viewMode].employeeContrib * mult)}${suffix}`}
                               />
                               <div
                                 className={`${accountMatchColor(at.categoryKey)} h-2 rounded-r-full transition-all absolute top-0`}
@@ -366,7 +368,7 @@ export function ContributionsCard() {
                                   left: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                   width: `${(at.employerMatch / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                 }}
-                                title={`${at.employerMatchLabel}: ${formatCurrency(at.employerMatch * mult)}${suffix}`}
+                                title={`${at.employerMatchLabel}: ${formatCurrency(at.views[viewMode].employerMatch * mult)}${suffix}`}
                               />
                             </div>
                             <div className="flex justify-between text-[10px] mt-0.5">
@@ -375,7 +377,8 @@ export function ContributionsCard() {
                               >
                                 Value:{" "}
                                 {formatCurrency(
-                                  (at.employeeContrib + at.employerMatch) *
+                                  (at.views[viewMode].employeeContrib +
+                                    at.views[viewMode].employerMatch) *
                                     mult,
                                 )}
                                 {suffix}
@@ -404,7 +407,7 @@ export function ContributionsCard() {
                                   style={{
                                     width: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                   }}
-                                  title={`You: ${formatCurrency(at.employeeContrib * mult)}${suffix}`}
+                                  title={`You: ${formatCurrency(at.views[viewMode].employeeContrib * mult)}${suffix}`}
                                 />
                                 <div
                                   className={`${accountMatchColor(at.categoryKey)} h-2 rounded-r-full absolute top-0`}
@@ -412,14 +415,14 @@ export function ContributionsCard() {
                                     left: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                     width: `${(at.employerMatch / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                   }}
-                                  title={`${at.employerMatchLabel}: ${formatCurrency(at.employerMatch * mult)}${suffix}`}
+                                  title={`${at.employerMatchLabel}: ${formatCurrency(at.views[viewMode].employerMatch * mult)}${suffix}`}
                                 />
                               </>
                             ) : (
                               <div
                                 className={`${accountColor(at.categoryKey)} h-2 rounded-full`}
                                 style={{ width: "100%" }}
-                                title={`${formatCurrency(at.employeeContrib * mult)}${suffix}`}
+                                title={`${formatCurrency(at.views[viewMode].employeeContrib * mult)}${suffix}`}
                               />
                             )}
                           </div>
@@ -429,7 +432,10 @@ export function ContributionsCard() {
                               <span
                                 className={`${accountTextColor(at.categoryKey)} font-medium`}
                               >
-                                +{formatCurrency(at.employerMatch * mult)}
+                                +
+                                {formatCurrency(
+                                  at.views[viewMode].employerMatch * mult,
+                                )}
                                 {suffix} {at.employerMatchLabel}
                               </span>
                             )}

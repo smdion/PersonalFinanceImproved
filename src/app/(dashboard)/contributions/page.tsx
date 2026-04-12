@@ -328,7 +328,7 @@ export default function ContributionsPage() {
                       <td className="text-right py-1.5">
                         {formatCurrency(
                           toDisplay(
-                            a.employeeContrib,
+                            a.views[viewMode].employeeContrib,
                             person.periodsPerYear,
                             period,
                           ),
@@ -337,7 +337,7 @@ export default function ContributionsPage() {
                       <td className="text-right py-1.5 text-emerald-600">
                         {formatCurrency(
                           toDisplay(
-                            a.employerMatch,
+                            a.views[viewMode].employerMatch,
                             person.periodsPerYear,
                             period,
                           ),
@@ -346,7 +346,7 @@ export default function ContributionsPage() {
                       <td className="text-right py-1.5 font-medium">
                         {formatCurrency(
                           toDisplay(
-                            a.totalContrib,
+                            a.views[viewMode].totalContrib,
                             person.periodsPerYear,
                             period,
                           ),
@@ -426,7 +426,7 @@ export default function ContributionsPage() {
                       <td className="text-right py-2">
                         {formatCurrency(
                           toDisplay(
-                            a.employeeContrib,
+                            a.views[viewMode].employeeContrib,
                             person.periodsPerYear,
                             period,
                           ),
@@ -437,7 +437,7 @@ export default function ContributionsPage() {
                           <span className="text-emerald-600">
                             {formatCurrency(
                               toDisplay(
-                                a.employerMatch,
+                                a.views[viewMode].employerMatch,
                                 person.periodsPerYear,
                                 period,
                               ),
