@@ -441,7 +441,7 @@ export function ContributionSnapshot() {
                           <div className="flex justify-between text-xs mt-0.5">
                             <span
                               className={
-                                at.views[viewMode].fundingPct > 1
+                                at.views[viewMode].fundingPct > 1.005
                                   ? "text-red-600 font-medium"
                                   : at.views[viewMode].fundingPct >= 1
                                     ? "text-green-600 font-medium"
@@ -450,7 +450,7 @@ export function ContributionSnapshot() {
                             >
                               {formatPercent(at.views[viewMode].fundingPct)} of{" "}
                               {formatCurrency(at.limit)}
-                              {at.views[viewMode].fundingPct > 1 && (
+                              {at.views[viewMode].fundingPct > 1.005 && (
                                 <span className="ml-1 text-[10px] bg-red-100 text-red-700 px-1 rounded">
                                   Over limit
                                 </span>
@@ -474,7 +474,7 @@ export function ContributionSnapshot() {
                                 : " does not count toward IRS limit"}
                             </p>
                           )}
-                          {at.views[viewMode].fundingPct > 1 && (
+                          {at.views[viewMode].fundingPct > 1.005 && (
                             <p className="text-[10px] text-red-600 mt-0.5">
                               Over by{" "}
                               {formatCurrency(

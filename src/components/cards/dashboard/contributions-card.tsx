@@ -259,7 +259,7 @@ export function ContributionsCard() {
                           <div className="flex justify-between text-[10px] mt-0.5">
                             <span
                               className={
-                                at.views[viewMode].fundingPct > 1
+                                at.views[viewMode].fundingPct > 1.005
                                   ? "text-red-600 font-medium"
                                   : at.views[viewMode].fundingPct >= 1
                                     ? "text-green-600 font-medium"
@@ -268,7 +268,7 @@ export function ContributionsCard() {
                             >
                               {formatPercent(at.views[viewMode].fundingPct)} of{" "}
                               {formatCurrency(at.limit)}
-                              {at.views[viewMode].fundingPct > 1 && (
+                              {at.views[viewMode].fundingPct > 1.005 && (
                                 <span className="ml-1 bg-red-100 text-red-700 px-1 rounded">
                                   Over
                                 </span>
