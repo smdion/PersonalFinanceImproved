@@ -195,6 +195,7 @@ export function DataTable<T extends { id: number | string }>({
                   return (
                     <th
                       key={col.key}
+                      scope="col"
                       aria-sort={ariaSort}
                       className={`text-left ${cellPad} font-medium text-secondary ${
                         col.sticky ? "sticky left-0 z-10 bg-surface-sunken" : ""
@@ -216,6 +217,7 @@ export function DataTable<T extends { id: number | string }>({
                 })}
                 {hasActions && (
                   <th
+                    scope="col"
                     className={`text-right ${cellPad} font-medium text-secondary w-24`}
                   >
                     Actions

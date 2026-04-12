@@ -635,3 +635,18 @@ th {
     box-shadow: none !important;
   }
 }
+
+/* WCAG 2.3.3 — Respect user's reduced-motion preference (v0.5 expert-review M11).
+ * Disables animations + transitions for users with vestibular disorders or who
+ * prefer less motion. Tailwind animation utilities (animate-in, fade-in, slide-in,
+ * zoom-in, etc.) and chart fade-ins all collapse to instant. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
