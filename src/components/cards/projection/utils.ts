@@ -15,6 +15,7 @@ import {
   parseColumnKey,
   ACCOUNT_TYPE_CONFIG,
   isRothType,
+  isTaxFreeBucket,
 } from "@/lib/config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
 import type {
@@ -148,7 +149,7 @@ export function filterYearByParentCategory(
     afterTaxBasis: 0,
   };
   for (const ia of filtered) {
-    if (ia.taxType === "taxFree") {
+    if (isTaxFreeBucket(ia.taxType)) {
       byTax.taxFree += ia.balance;
     } else {
       const cfg =
@@ -175,10 +176,10 @@ export function filterYearByParentCategory(
     const cfg = getAccountTypeConfig(cat);
     if (cfg.balanceStructure === "roth_traditional") {
       const trad = catIabs
-        .filter((ia) => ia.taxType !== "taxFree")
+        .filter((ia) => !isTaxFreeBucket(ia.taxType))
         .reduce((s, ia) => s + ia.balance, 0);
       const roth = catIabs
-        .filter((ia) => ia.taxType === "taxFree")
+        .filter((ia) => isTaxFreeBucket(ia.taxType))
         .reduce((s, ia) => s + ia.balance, 0);
       byAcct[cat] = {
         structure: "roth_traditional" as const,

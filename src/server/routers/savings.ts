@@ -11,6 +11,7 @@ import * as schema from "@/lib/db/schema";
 import { calculateSavings } from "@/lib/calculators/savings";
 import { calculateEFund } from "@/lib/calculators/efund";
 import { toNumber, computeBudgetAnnualTotal } from "@/server/helpers";
+import { zDecimal } from "./settings/_shared";
 import { log } from "@/lib/logger";
 import type { SavingsInput, EFundInput } from "@/lib/calculators/types";
 import {
@@ -41,9 +42,7 @@ function getEssentialExpenses(
 const plannedTransactionInput = z.object({
   goalId: z.number().int(),
   transactionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  amount: z.string().refine((v) => !isNaN(Number(v)) && v.trim() !== "", {
-    message: "Must be a valid number",
-  }), // positive = deposit, negative = withdrawal
+  amount: zDecimal, // positive = deposit, negative = withdrawal
   description: z.string().min(1),
   isRecurring: z.boolean().default(false),
   recurrenceMonths: z.number().int().nullable().optional(),

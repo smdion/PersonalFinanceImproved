@@ -5,6 +5,7 @@ import { DEFAULT_RETURN_RATE } from "@/lib/constants";
 import {
   createTRPCRouter,
   protectedProcedure,
+  scenarioProcedure,
   expensiveRateLimitMiddleware,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
@@ -1095,7 +1096,7 @@ export const projectionRouter = createTRPCRouter({
 
   // --- Mutations for editing projection assumptions ---
 
-  updateReturnRateTable: protectedProcedure
+  updateReturnRateTable: scenarioProcedure
     .input(
       z.object({
         entries: z.array(
@@ -1117,7 +1118,7 @@ export const projectionRouter = createTRPCRouter({
       return { updated: input.entries.length };
     }),
 
-  updateGlidePathAllocations: protectedProcedure
+  updateGlidePathAllocations: scenarioProcedure
     .input(
       z.object({
         entries: z.array(
@@ -1152,7 +1153,7 @@ export const projectionRouter = createTRPCRouter({
       return { updated: rows.length };
     }),
 
-  updateClampBounds: protectedProcedure
+  updateClampBounds: scenarioProcedure
     .input(
       z.object({
         preset: z.enum(["custom"]),
@@ -1793,7 +1794,7 @@ export const projectionRouter = createTRPCRouter({
       };
     }),
 
-  updateInflationRisk: protectedProcedure
+  updateInflationRisk: scenarioProcedure
     .input(
       z.object({
         preset: z.enum(["aggressive", "default", "conservative", "custom"]),
@@ -1814,7 +1815,7 @@ export const projectionRouter = createTRPCRouter({
     }),
 
   /** Persist MC asset class return/volatility overrides to appSettings. */
-  updateAssetClassOverrides: protectedProcedure
+  updateAssetClassOverrides: scenarioProcedure
     .input(
       z.array(
         z.object({
@@ -1863,7 +1864,7 @@ export const projectionRouter = createTRPCRouter({
   }),
 
   /** Create a new user Monte Carlo simulation preset. */
-  createPreset: protectedProcedure
+  createPreset: scenarioProcedure
     .input(
       z.object({
         name: z.string().min(1).max(100).trim(),
@@ -1900,7 +1901,7 @@ export const projectionRouter = createTRPCRouter({
     }),
 
   /** Update an existing user Monte Carlo simulation preset. */
-  updatePreset: protectedProcedure
+  updatePreset: scenarioProcedure
     .input(
       z.object({
         id: z.number().int(),
@@ -1934,7 +1935,7 @@ export const projectionRouter = createTRPCRouter({
     }),
 
   /** Delete a user Monte Carlo simulation preset. */
-  deletePreset: protectedProcedure
+  deletePreset: scenarioProcedure
     .input(z.object({ id: z.number().int() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db
@@ -1944,7 +1945,7 @@ export const projectionRouter = createTRPCRouter({
     }),
 
   /** Persist MC stochastic inflation overrides to appSettings. */
-  updateInflationOverrides: protectedProcedure
+  updateInflationOverrides: scenarioProcedure
     .input(
       z.object({
         meanRate: z.number().optional(),

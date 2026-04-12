@@ -67,6 +67,7 @@ export function computeMortgageBalance(
   mortgageLoans: (typeof schema.mortgageLoans.$inferSelect)[],
   extraPayments: (typeof schema.mortgageExtraPayments.$inferSelect)[],
   asOfDate: Date = new Date(),
+  currentDate?: Date,
 ): number {
   const { loanInputs, extras } = buildMortgageInputs(
     mortgageLoans,
@@ -77,6 +78,7 @@ export function computeMortgageBalance(
     extraPayments: extras,
     whatIfScenarios: [],
     asOfDate,
+    currentDate,
   });
   return result.loans.reduce((s, l) => s + l.currentBalance, 0);
 }

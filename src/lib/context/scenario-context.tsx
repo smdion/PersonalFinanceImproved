@@ -10,7 +10,8 @@ import React, {
 import { trpc } from "@/lib/trpc";
 import type { ScenarioOverrides } from "@/lib/db/schema";
 
-export type ViewMode = "projected" | "blended" | "ytd";
+import type { ViewMode } from "@/lib/calculators/types";
+export type { ViewMode };
 
 type Scenario = {
   id: number;

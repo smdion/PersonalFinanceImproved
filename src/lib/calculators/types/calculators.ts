@@ -213,6 +213,9 @@ export type MortgageInput = {
   extraPayments: MortgageExtraPayment[];
   whatIfScenarios: MortgageWhatIf[];
   asOfDate: Date;
+  // Request-resolved "now" for detecting present-period queries.
+  // Defaults to asOfDate when omitted (preserves behavior for callers querying the present).
+  currentDate?: Date;
 };
 
 export type AmortizationEntry = {

@@ -604,6 +604,7 @@ export const networthRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       const { dateFrom, dateTo, useMarketValue } = input;
+      const asOfDate = new Date();
 
       // Fetch shared data needed for both dates
       const [mortgageLoans, extraPayments, settings, allSnapshots] =
@@ -692,11 +693,13 @@ export const networthRouter = createTRPCRouter({
         mortgageLoans,
         extraPayments,
         new Date(dateFrom + "T00:00:00"),
+        asOfDate,
       );
       const mortgageTo = computeMortgageBalance(
         mortgageLoans,
         extraPayments,
         new Date(dateTo + "T00:00:00"),
+        asOfDate,
       );
 
       // Build category breakdown

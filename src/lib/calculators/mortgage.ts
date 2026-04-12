@@ -38,6 +38,7 @@ import { MONTHS_PER_YEAR, AMORTIZATION_BALANCE_TOLERANCE } from "../constants";
 export function calculateMortgage(input: MortgageInput): MortgageResult {
   const warnings: string[] = [];
   const { loans, extraPayments, whatIfScenarios, asOfDate } = input;
+  const currentDate = input.currentDate ?? asOfDate;
 
   // Validate interest rates — warn if they look like monthly rates instead of annual
   for (const loan of loans) {
@@ -62,7 +63,7 @@ export function calculateMortgage(input: MortgageInput): MortgageResult {
   // Amortize each currently active loan
   const loanResults: MortgageLoanResult[] = [];
   for (const loan of loans.filter((l) => l.isActive)) {
-    const result = amortizeLoan(loan, extraPayments, asOfDate);
+    const result = amortizeLoan(loan, extraPayments, asOfDate, currentDate);
     loanResults.push(result);
   }
 
@@ -77,7 +78,13 @@ export function calculateMortgage(input: MortgageInput): MortgageResult {
     // Use paidOffDate if set, else derive from refinance successor start date
     const endDate =
       loan.paidOffDate ?? (successor ? successor.startDate : undefined);
-    const result = amortizeLoan(loan, extraPayments, asOfDate, endDate);
+    const result = amortizeLoan(
+      loan,
+      extraPayments,
+      asOfDate,
+      currentDate,
+      endDate,
+    );
     // Attach historical metadata
     result.wasRefinanced = wasRefinanced;
     result.paidOffDate = endDate;
@@ -158,6 +165,7 @@ function amortizeLoan(
   loan: MortgageLoanInput,
   extraPayments: MortgageExtraPayment[],
   asOfDate: Date,
+  currentDate: Date,
   endDate?: Date,
 ): MortgageLoanResult {
   // Only consider extra payments belonging to this loan
@@ -195,7 +203,7 @@ function amortizeLoan(
   let apiBalanceDate: Date | undefined;
   let calculatedBalance: number | undefined;
   const isCurrentPeriod =
-    !endDate && new Date().getFullYear() - asOfDate.getFullYear() <= 0;
+    !endDate && currentDate.getFullYear() - asOfDate.getFullYear() <= 0;
   if (loan.apiBalance != null && isCurrentPeriod) {
     calculatedBalance = roundToCents(currentBalance);
     apiBalance = loan.apiBalance;

@@ -550,6 +550,11 @@ export function isTaxFree(taxTreatment: string): boolean {
   return taxTreatment === "tax_free";
 }
 
+/** Check if an engine-internal taxType key represents the tax-free (Roth) bucket. */
+export function isTaxFreeBucket(taxType: string): boolean {
+  return taxType === "taxFree";
+}
+
 /** Check if an engine-internal taxType key is pre-tax (traditional). */
 export function isPreTaxType(taxType: string): boolean {
   return taxType === "preTax";

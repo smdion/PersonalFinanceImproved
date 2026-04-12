@@ -8,6 +8,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.4
 
+## [0.4.21] - 2026-04-12
+
+### Added
+
+- IRS limit utilization bars, funding percentages, savings rates, and "% to max" recommendations now react to the View toggle (Current Salary / Year-End Estimate / Actual YTD) — previously only summary dollar totals changed
+- Contribution dollar amounts shown per account type now reflect the active view: Year-End Estimate shows salary-timeline-weighted totals accounting for mid-year raises, Actual YTD shows real performance data
+- Opus advisor subagent (`.claude/subagents/advisor.md`) and project-level working-style guide (`CLAUDE.md`) for structured code review before committing
+
+### Fixed
+
+- Contribution blended estimates no longer double-count when multiple contribution accounts share a single performance account — YTD actuals are split proportionally by expected contribution using salary-timeline-aware weights
+- Employer match in `total_contributions` performance data is now correctly subtracted out so employee-only YTD amounts aren't inflated by the match
+- Year-End Estimate accounts for stale performance data by filling only the exact missing payroll periods (computed from `performance_last_updated` date and pay schedule) at the current projected rate, rather than replacing or ignoring the actuals
+- Monthly and annual contributions (IRA, etc.) are no longer flagged as stale when biweekly paydays pass — stale-gap fill only applies to payroll-cadence contributions
+- Contribution method cadence (monthly vs biweekly vs annual) is now used for the blended remaining-fraction calculation, so monthly IRA contributions don't show false shortfalls against biweekly period counts
+- Over-limit "Over" badge and red bar no longer trigger from sub-cent rounding noise (0.5% tolerance via centralized `OVER_LIMIT_THRESHOLD` constant)
+- "Over by" amount for HSA and other match-counts-toward-limit accounts now correctly uses total contribution (employee + match), not just employee contribution
+- Portfolio employer match (ESPP discount) in YTD view is now correctly attributed to portfolio totals instead of being lumped into retirement match
+- Mortgage current-balance detection no longer reads system time independently mid-request
+- Savings rate card group breakdown (retirement vs taxable) now uses view-aware totals instead of projected-only calculator rates
+
+### Security
+
+- Projection page write operations now require the scenario permission instead of accepting any signed-in user
+
+### Changed
+
+- Blended contribution math consolidated server-side into two pure helpers (`computeViewAwareAccountMetrics`, `computeViewAwareTotals`), eliminating ~200 lines of duplicated client-side blending logic across 4 components
+- Blended savings rate uses salary-timeline-weighted total compensation as denominator, correctly reflecting mid-year salary changes
+- Inline string-equality and number-formatting violations collapsed onto shared config helpers and formatters
+- Inflation-rate fallback defined once in shared constants instead of duplicated across three pages
+- Savings transaction amounts use the shared decimal validator
+
+---
+
 ## [0.4.20] - 2026-04-11
 
 ### Changed

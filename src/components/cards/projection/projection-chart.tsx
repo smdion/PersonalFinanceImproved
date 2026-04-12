@@ -3,7 +3,7 @@
 /** Balance projection chart — stacked bar (deterministic) + confidence bands + median line. */
 import { taxTypeLabel, categoryChartHex } from "@/lib/utils/colors";
 import { ChartControls } from "./chart-controls";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, compactCurrency } from "@/lib/utils/format";
 import type { EngineYearProjection } from "@/lib/calculators/types";
 import {
   ComposedChart,
@@ -238,13 +238,7 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
               tick={{ fontSize: 10, fill: "#6b7280" }}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(v: number) =>
-                v >= 1_000_000
-                  ? `$${(v / 1_000_000).toFixed(1)}M`
-                  : v >= 1_000
-                    ? `$${(v / 1_000).toFixed(0)}K`
-                    : `$${v}`
-              }
+              tickFormatter={(v: number) => compactCurrency(v)}
               width={55}
             />
             <RechartsTooltip

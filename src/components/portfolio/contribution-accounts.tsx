@@ -8,7 +8,7 @@ import { useUser, isAdmin } from "@/lib/context/user-context";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { TAX_TREATMENT_LABELS as TAX_LABELS } from "@/lib/config/display-labels";
-import { formatPercent } from "@/lib/utils/format";
+import { formatPercent, formatCurrency } from "@/lib/utils/format";
 import {
   ACCOUNT_TYPE_CONFIG,
   getAllCategories,
@@ -390,16 +390,19 @@ export function ContributionAccountsSettings() {
                 {unlinkedContribs.map((c) => {
                   const taxLabel = TAX_LABELS[c.taxTreatment] ?? c.taxTreatment;
                   const acctType = c.subType ?? c.accountType;
+                  const contribAmount = formatCurrency(
+                    parseFloat(c.contributionValue),
+                  );
                   const contribDetail =
                     c.contributionMethod === "percent_of_salary"
                       ? `${c.contributionValue}% of salary`
                       : c.contributionMethod === "fixed_per_period"
-                        ? `$${c.contributionValue}/period`
+                        ? `${contribAmount}/period`
                         : c.contributionMethod === "fixed_monthly"
-                          ? `$${c.contributionValue}/mo`
+                          ? `${contribAmount}/mo`
                           : c.contributionMethod === "fixed_annual"
-                            ? `$${c.contributionValue}/yr`
-                            : `$${c.contributionValue}`;
+                            ? `${contribAmount}/yr`
+                            : contribAmount;
                   const matchDetail =
                     c.employerMatchType !== "none" && c.employerMatchValue
                       ? `, ${c.employerMatchValue}% match${c.employerMaxMatchPct ? ` up to ${formatPercent(parseFloat(c.employerMaxMatchPct))}` : ""}`

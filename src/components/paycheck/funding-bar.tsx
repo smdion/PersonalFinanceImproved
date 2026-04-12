@@ -2,6 +2,7 @@
 
 import { accountColor, accountMatchColor } from "@/lib/utils/colors";
 import { formatPercent } from "@/lib/utils/format";
+import { OVER_LIMIT_THRESHOLD } from "@/lib/constants";
 
 export function FundingBar({
   pct,
@@ -19,7 +20,7 @@ export function FundingBar({
   const totalPct = showMatchBeyond ? pct + (matchPct ?? 0) : pct;
   const typeColor = accountType ? accountColor(accountType) : null;
   const color =
-    pct > 1
+    pct > OVER_LIMIT_THRESHOLD
       ? "bg-red-500"
       : (typeColor ??
         (pct >= 1
