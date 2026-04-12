@@ -61,109 +61,27 @@ See RULES.md § Engine Modularity for the full module list (<!-- AUTO-GEN:engine
 
 ## Project Structure
 
-```
-ledgr/
-├── drizzle/                    # <!-- AUTO-GEN:migrations -->3<!-- /AUTO-GEN --> migration (v0.3 squashed schema)
-├── scripts/
-│   ├── seed.ts                 # xlsx parser + database seeder
-│   ├── validate.ts             # Post-seed validation
-│   ├── reseed-*.ts             # Targeted reseed scripts
-│   ├── seed-*.ts               # Feature-specific seed scripts (tax, MC, scenarios)
-│   └── migrate.ts              # Migration runner
-├── src/
-│   ├── middleware.ts            # Auth route protection (dev bypass / Authentik)
-│   ├── app/
-│   │   ├── (dashboard)/        # All authenticated pages
-│   │   │   ├── layout.tsx      # Auth wrapper + sidebar
-│   │   │   ├── dashboard-shell.tsx  # Dashboard shell component
-│   │   │   ├── page.tsx        # Dashboard
-│   │   │   ├── paycheck/ budget/ portfolio/ performance/
-│   │   │   ├── networth/ retirement/ mortgage/ savings/
-│   │   │   ├── assets/ historical/ settings/ brokerage/
-│   │   │   ├── tools/          # ESPP calculator, Relocation calculator
-│   │   │   ├── retirement/methodology/           # Engine methodology reference
-│   │   │   ├── retirement/accumulation-methodology/
-│   │   │   ├── retirement/decumulation-methodology/
-│   │   │   └── loading.tsx, error.tsx
-│   │   └── api/trpc/ health/
-│   ├── components/
-│   │   ├── ui/                 # <!-- AUTO-GEN:uiComponents -->21<!-- /AUTO-GEN --> shared components (EmptyState, HelpTip, PageHeader, AccountBadge, etc.)
-│   │   ├── cards/              # Dashboard cards + projection card ('use client')
-│   │   ├── charts/             # Chart wrappers ('use client')
-│   │   ├── forms/              # Form components
-│   │   ├── layout/             # DashboardLayout, Sidebar, DataFreshness, ScenarioBar
-│   │   ├── paycheck/           # <!-- AUTO-GEN:paycheckComponents -->16<!-- /AUTO-GEN --> paycheck domain components
-│   │   ├── budget/             # <!-- AUTO-GEN:budgetComponents -->8<!-- /AUTO-GEN --> budget domain components
-│   │   ├── mortgage/           # <!-- AUTO-GEN:mortgageComponents -->8<!-- /AUTO-GEN --> mortgage domain components
-│   │   ├── savings/            # <!-- AUTO-GEN:savingsComponents -->25<!-- /AUTO-GEN --> savings domain components
-│   │   ├── networth/           # <!-- AUTO-GEN:networthComponents -->9<!-- /AUTO-GEN --> net worth visualization components
-│   │   ├── performance/        # <!-- AUTO-GEN:performanceComponents -->9<!-- /AUTO-GEN --> performance tracking components
-│   │   ├── settings/           # <!-- AUTO-GEN:settingsComponents -->17<!-- /AUTO-GEN --> settings sub-components
-│   │   └── *-methodology-content.tsx  # 3 methodology content components
-│   ├── lib/
-│   │   ├── constants.ts        # App-wide constants (withdrawal rate, wealth score, FI thresholds)
-│   │   ├── calculators/        # Pure functions (no DB, no side effects)
-│   │   │   ├── types.ts        # All calculator I/O types (decoupled from Drizzle)
-│   │   │   ├── engine/         # Modular projection engine (<!-- AUTO-GEN:engineModules -->20<!-- /AUTO-GEN --> modules)
-│   │   │   │   ├── index.ts              # Public API barrel
-│   │   │   │   ├── projection.ts         # Orchestrator (accumulation + decumulation)
-│   │   │   │   ├── contribution-routing.ts
-│   │   │   │   ├── withdrawal-routing.ts
-│   │   │   │   ├── tax-estimation.ts
-│   │   │   │   ├── override-resolution.ts
-│   │   │   │   ├── balance-utils.ts
-│   │   │   │   ├── balance-deduction.ts
-│   │   │   │   ├── individual-account-tracking.ts
-│   │   │   │   ├── growth-application.ts
-│   │   │   │   ├── rmd-enforcement.ts
-│   │   │   │   ├── post-withdrawal-optimizer.ts  # Roth conversions, IRMAA, ACA
-│   │   │   │   └── guyton-klinger.ts
-│   │   │   └── *.ts            # <!-- AUTO-GEN:calculators -->15<!-- /AUTO-GEN --> domain calculators
-│   │   ├── config/
-│   │   │   ├── account-types.ts    # Central account type config + all derived helpers
-│   │   │   ├── display-labels.ts   # Consolidated label maps
-│   │   │   ├── tax-tables.ts       # Federal tax brackets + FICA rates + LTCG brackets
-│   │   │   ├── rmd-tables.ts       # IRS Uniform Lifetime Table + SECURE 2.0 start ages
-│   │   │   ├── irmaa-tables.ts     # Medicare Part B+D cliff-based surcharge thresholds
-│   │   │   └── aca-tables.ts       # ACA subsidy FPL lookup tables
-│   │   ├── context/
-│   │   │   ├── user-context.tsx     # Auth state, useUser(), hasPermission(), isAdmin()
-│   │   │   └── scenario-context.tsx # Scenario overrides, useScenario()
-│   │   ├── hooks/
-│   │   │   ├── use-debounced-value.ts
-│   │   │   ├── use-persisted-setting.ts  # Persist UI state to appSettings table
-│   │   │   ├── use-salary-overrides.ts
-│   │   │   ├── use-theme.ts
-│   │   │   └── use-toast.ts
-│   │   ├── db/
-│   │   │   ├── index.ts        # Database connection
-│   │   │   └── schema.ts       # All table definitions (<!-- AUTO-GEN:tables -->54<!-- /AUTO-GEN -->+ tables)
-│   │   ├── budget-api/          # Budget API clients (YNAB, Actual Budget)
-│   │   │   ├── index.ts              # Public API barrel
-│   │   │   ├── interface.ts          # BudgetAPIClient interface
-│   │   │   ├── types.ts              # Shared types (accounts, categories, transactions)
-│   │   │   ├── conversions.ts        # Milliunit/cent ↔ dollar helpers
-│   │   │   ├── ynab-client.ts        # YNAB implementation
-│   │   │   ├── cache.ts              # budget_api_cache read/write/invalidate
-│   │   │   └── factory.ts            # getBudgetAPIClient() — reads config, returns client
-│   │   └── utils/
-│   │       ├── math.ts         # safeDivide, roundToCents, sumBy
-│   │       ├── date.ts         # Date helpers
-│   │       ├── format.ts       # formatCurrency, formatPercent, formatDate, buildAccountLabel, accountDisplayName
-│   │       └── colors.ts       # Centralized color system (account types + tax treatments)
-│   └── server/
-│       ├── routers/            # <!-- AUTO-GEN:primaryRouters -->25<!-- /AUTO-GEN --> primary tRPC routers + <!-- AUTO-GEN:settingsSubRouters -->6<!-- /AUTO-GEN --> settings sub-routers + helpers.ts + index.ts
-│       ├── trpc.ts             # tRPC init + middleware (public/protected/admin/withPermission)
-│       └── auth.ts             # Auth.js config (Authentik OIDC + dev credentials)
-├── docs/
-│   ├── RULES.md                # Philosophy & rules
-│   ├── DESIGN.md               # This file
-│   ├── TODO.md                 # Remaining work
-│   ├── SNAPSHOT-PLAN.md        # State snapshot feature design
-│   ├── API-DOCS-PLAN.md        # Auto-generated API docs design
-│   └── Budget Overview.xlsx    # Source spreadsheet (seed data)
-└── tests/                      # Vitest (configured, tests pending)
-```
+Run `ls src/lib/ src/components/ src/server/routers/` for the live layout.
+Key concept → directory map:
+
+| Concept                 | Directory                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Calculators (pure)      | `src/lib/calculators/`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Engine modules          | `src/lib/calculators/engine/` (<!-- AUTO-GEN:engineModules -->20<!-- /AUTO-GEN --> modules)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Calculator I/O types    | `src/lib/calculators/types.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Config tables (declare) | `src/lib/config/` (account types, tax, RMD, IRMAA, ACA)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| DB schema               | `src/lib/db/schema.ts` (<!-- AUTO-GEN:tables -->54<!-- /AUTO-GEN -->+ tables)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| tRPC routers            | `src/server/routers/` (<!-- AUTO-GEN:primaryRouters -->25<!-- /AUTO-GEN --> primary + <!-- AUTO-GEN:settingsSubRouters -->6<!-- /AUTO-GEN --> settings sub-routers)                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Auth + tRPC middleware  | `src/server/auth.ts`, `src/server/trpc.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Pages (App Router)      | `src/app/(dashboard)/` (<!-- AUTO-GEN:pages -->26<!-- /AUTO-GEN --> pages)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Shared UI primitives    | `src/components/ui/` (<!-- AUTO-GEN:uiComponents -->21<!-- /AUTO-GEN --> components)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Domain components       | `src/components/{paycheck,budget,savings,networth,performance,mortgage,settings}/` — paycheck (<!-- AUTO-GEN:paycheckComponents -->16<!-- /AUTO-GEN -->), budget (<!-- AUTO-GEN:budgetComponents -->8<!-- /AUTO-GEN -->), savings (<!-- AUTO-GEN:savingsComponents -->25<!-- /AUTO-GEN -->), networth (<!-- AUTO-GEN:networthComponents -->9<!-- /AUTO-GEN -->), performance (<!-- AUTO-GEN:performanceComponents -->9<!-- /AUTO-GEN -->), mortgage (<!-- AUTO-GEN:mortgageComponents -->8<!-- /AUTO-GEN -->), settings (<!-- AUTO-GEN:settingsComponents -->17<!-- /AUTO-GEN -->) |
+| Dashboard cards         | `src/components/cards/` (<!-- AUTO-GEN:dashboardCards -->19<!-- /AUTO-GEN --> cards)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Budget API clients      | `src/lib/budget-api/` (YNAB + Actual)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Migrations              | `drizzle/` (<!-- AUTO-GEN:migrations -->3<!-- /AUTO-GEN --> migration, v0.3 squashed)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Scripts                 | `scripts/` (seed, validate, verify-docs, release)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Tests                   | `tests/` (Vitest)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Docs                    | `docs/RULES.md`, `docs/DESIGN.md`, `docs/TESTING.md`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 
 ---
 
@@ -470,124 +388,16 @@ Shared helpers power the data:
 
 ### Tooltip System
 
-All tooltips in the contribution engine card are **data-driven**: call sites provide raw financial data, a single renderer decides what to show, in what order, with what styling. There is no per-tooltip layout logic — if a data field is present it renders; if absent it's omitted.
+Tooltip rendering for the projection card is data-driven and lives in
+`src/components/cards/projection/tooltip-renderer.tsx`. Call sites build a
+`TooltipData` object (discriminated union: `kind: 'money' | 'info'`) and pass
+it to `renderTooltip()`. The renderer decides _how_ to render — never _what_
+data to show. Section order is fixed; every section is `{d.field && <render>}`.
 
-#### Architecture (3 layers)
-
-**Layer 1 — Types & Data-Driven Helpers** (`contribution-engine.tsx`, top of file)
-
-- **`TooltipData`**: Discriminated union — `kind: 'money'` (financial sections) or `kind: 'info'` (styled text lines). The `'money'` variant has ~17 optional fields (header, items, growth, yearChange, taxSplit, etc.)
-- **`TooltipLineItem`**: One row — label, amount, optional `taxType`, optional `sub[]` children. Used for accounts, contributions, withdrawals.
-- **`itemTaxType(category, taxField)`**: Pure function → `'roth' | 'traditional' | undefined`. 401k/403b/IRA always get a value; HSA/Brokerage return `undefined`. This is how `(Roth)` / `(Trad)` labels are automatic — call sites pass category + taxField, the renderer appends the suffix.
-
-**Data-driven lookup helpers** (eliminate all if-chains for category/bucket/column resolution):
-
-- **`catDisplayLabel`**: Record mapping category → display name (`'401k'→'401k'`, `'hsa'→'HSA'`, etc.). No ternary chains.
-- **`colKeyParts(key)`**: Derives `{category, treatment}` from a column key like `'401k_roth'` → `{category: '401k', treatment: 'roth'}`. Used by all column-level helpers.
-- **`colEngineTaxType(key)`**: Column key → engine taxType string (`'401k_roth'→'taxFree'`, `'hsa'→'hsa'`). Replaces per-site if-chains.
-- **`colBalance(ba, key)`** / **`colWithdrawal(slots, key)`**: Read balance or sum withdrawals for a column key from engine data. One function, works for any category — no hardcoded branches.
-- **`bucketSlotMap`**: Central config record mapping each tax bucket (`preTax`/`taxFree`/`hsa`/`afterTax`) to its slot contribution field, withdrawal field, category filter, spec treatment filter, tax display field, and match association flag. This is the single source of truth — adding a bucket means adding one entry here.
-- **`slotBucketContrib(slot, bucket)`** / **`slotBucketWithdrawal(slot, bucket)`**: Read contribution or withdrawal from a slot for a bucket, driven by `bucketSlotMap`.
-- **`filterSpecsForBucket(specs, bucket)`**: Filter contribution specs by tax treatment for a bucket, driven by `bucketSlotMap`.
-- **`iaBelongsToBucket(ia, bucket)`**: `ia.taxType === bucket`. The engine sets `taxType` to one of the 4 bucket names (`preTax`/`taxFree`/`hsa`/`afterTax`) during router setup — no mapping needed.
-- **`safeDivide(n, d)`**: Returns 0 when divisor is 0. Guards all `proRateFraction` and `rateCeilingScale` divisions.
-
-**Layer 2 — Renderer** (two functions, fixed behavior)
-
-- **`renderLineItem(item, idx, nested)`**: Renders one `TooltipLineItem` — label + tax suffix + amount + % + match sub-items + children. Recursive for `sub[]`.
-- **`renderTooltip(data)`**: The single render function. Renders sections in a hardcoded order:
-  1. Header (bold)
-  2. Meta (gray — year, return rate)
-  3. Meta2 (gray — BoY → EoY)
-  4. Override note (emerald)
-  5. Items (core content via `renderLineItem`)
-  6. Total (bold, border-top, optional match)
-  7. Tax split (Trad/Roth)
-  8. Growth (blue/red)
-  9. Contributions (green)
-  10. Withdrawals (red, optional tax cost)
-  11. Year change (total + change + breakdown)
-  12. Rate ceiling (amber)
-  13. Routing note (gray)
-  14. Budget (gray, border-top)
-  15. IRS limit (with maxed indicator)
-  16. Pro-rate (months, annual → pro-rated)
-  17. Balance / Legend
-
-The renderer never decides _what_ data to show — only _how_ to render what's present. Every section is `{d.field && <render it>}`.
-
-**Layer 3 — Call sites** (~23 locations)
-
-Each builds a `TooltipData` object from engine output and passes it to `renderTooltip()`. Call sites provide data only — no CSS classes, no ordering decisions, no conditional rendering logic.
-
-#### Balance-Change Derivation (critical pattern)
-
-All balance tooltips derive contributions and withdrawals from actual balance changes instead of relying on engine routing fields:
-
-```
-inflow  = currentBalance - previousBalance - growth   (accumulation)
-outflow = previousBalance + growth - currentBalance    (decumulation)
-```
-
-**Why**: The engine tracks `ia.contribution` per individual account, but the spec-to-account routing can produce zeroes when matching fails. Deriving from balance change is mathematically equivalent and robust.
-
-**Where**: All 4 balance tooltip variants (accum by-tax-type, accum by-account, decum by-account, decum by-tax-type).
-
-**First-year fallback**: When there's no previous projection year (`prevIa` is undefined), balance-change derivation would treat the entire starting balance as a "contribution". For year 0, fall back to the engine's tracked fields: `inflow = ia.contribution + ia.employerMatch`. For decumulation first year (no prev), outflow defaults to 0.
-
-**Rule**: Balance tooltips use `balance - prevBalance - growth` when a previous year exists, and `ia.contribution + ia.employerMatch` when it doesn't. Never use `prevBal = 0` as a default — that's the bug that caused contributions to show as hundreds of thousands.
-
-#### Data Sources by Tooltip Type
-
-| Tooltip type                       | Primary source                                   | What it reads                                                           |
-| ---------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------- |
-| Contribution                       | `yr.slots[]` + `contribSpecs[]`                  | Per-category amounts, spec-level person/tax breakdown                   |
-| Balance                            | `yr.individualAccountBalances[]`                 | Per-account balance + growth; contributions derived from balance change |
-| Withdrawal                         | `dyr.slots[]` + `yr.individualAccountBalances[]` | Per-category withdrawal amounts, per-account balances                   |
-| Info (age, salary, rate, warnings) | Scalar year fields                               | `yr.age`, `yr.projectedSalary`, warnings array                          |
-
-**Important**: Balance tooltips enumerate accounts from `yr.individualAccountBalances` (engine output), NOT `accountBreakdown` (snapshot-only). The snapshot doesn't include accounts created by contribution specs.
-
-#### Tax Label Rules
-
-Automatic via `itemTaxType()` — no call-site logic needed:
-
-- 401k, 403b, IRA → always `(Roth)` or `(Trad)` based on `taxType` field
-- HSA, Brokerage → no suffix
-- Applies to every `TooltipLineItem` in every tooltip type (balance, contribution, withdrawal)
-
-#### Pro-Rate Rules
-
-Year 0 (partial year) contributions are pro-rated: `firstYearFraction = (12 - asOfDate.getMonth()) / 12`. Both engine code paths (`useRealContribs` and `routeFromSpecs`) apply `* proRate`. The Rate column divides by pro-rated salary (`projectedSalary * proRateFraction`) so rates stay consistent with full-year equivalents.
-
-#### Regression Traps
-
-These have broken before during development — check during any migration:
-
-| Trap                                  | Root cause                                                                                    | Prevention                                                                                                                   |
-| ------------------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Balance contributions show as $0      | Used `ia.contribution` (engine routing field that can be 0)                                   | Use balance-change derivation, never `ia.contribution`                                                                       |
-| Balance tooltips missing accounts     | Used `accountBreakdown` (snapshot-only, excludes spec-created accounts)                       | Use `yr.individualAccountBalances`                                                                                           |
-| Pro-rate not applying                 | Engine has two code paths; only one was fixed                                                 | Both `useRealContribs` and `routeFromSpecs` paths must multiply by `proRate`                                                 |
-| Rate artificially low in year 0       | Pro-rated contributions / full annual salary                                                  | Divide by `projectedSalary * proRateFraction`                                                                                |
-| Total in/out missing HSA/Brokerage    | Old `taxSplit` only had Traditional/Roth                                                      | Enumerate from `yr.slots[]` to capture all types                                                                             |
-| Tax labels missing on balance items   | Call site forgot `taxType: itemTaxType(...)`                                                  | Every 401k/403b/IRA item must pass through `itemTaxType()`                                                                   |
-| Contributions routed to wrong account | Engine `specToAccount` key didn't include tax treatment — same person+category specs collided | `specKey` must include `taxTreatment` (e.g., `name::personId::taxTreatment`)                                                 |
-| Hardcoded category/bucket if-chains   | New category added but not in every if-chain — silently dropped                               | Use data-driven helpers (`colKeyParts`, `bucketSlotMap`, `catDisplayLabel`). Never write `if (cat === '...')` in call sites. |
-| Division by zero (Infinity%)          | `proRateFraction` or `rateCeilingScale` is 0                                                  | Always use `safeDivide()` and guard with `> 0` checks before dividing                                                        |
-
-#### Visual Validation Checklist
-
-| Step | What to hover                          | Expected                                                    |
-| ---- | -------------------------------------- | ----------------------------------------------------------- |
-| 1    | Year 0 contribution cell               | Pro-rate line with `X/12 mo`, non-zero amounts              |
-| 2    | Traditional balance (by tax-type view) | Account names with `(Trad)`, non-zero contrib sub-items     |
-| 3    | Roth balance (by tax-type view)        | Account names with `(Roth)`, contrib sub-items              |
-| 4    | Any 401k column (by account view)      | Per-account breakdown matching tax-type totals              |
-| 5    | Total In column                        | All contributing types present (Trad, Roth, HSA, Brokerage) |
-| 6    | Rate column on year 0                  | Rate matches full-year equivalent (not artificially low)    |
-| 7    | Decum balance cell                     | Withdrawal/growth info, per-account breakdown               |
-| 8    | Total balance column                   | All 4 tax buckets with percentages                          |
+Helper modules (`utils.ts`, `use-projection-derived.ts`, `types.ts`) hold the
+data-driven lookups (`bucketSlotMap`, `colKeyParts`, `itemTaxType`, etc.).
+Keep the field-by-field contract in the file header comment of
+`tooltip-renderer.tsx` — not here.
 
 ---
 
@@ -730,35 +540,15 @@ Defined in `src/app/globals.css` as CSS custom properties with light/dark overri
 
 ### Component Catalog
 
-| Component               | Import                                  | Variants/Props                                                                      | Use                                             |
-| ----------------------- | --------------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------- |
-| **Button**              | `@/components/ui/button`                | `variant`: primary, secondary, ghost, danger. `size`: xs, sm, md. `icon`: ReactNode | All action buttons                              |
-| **Badge**               | `@/components/ui/badge`                 | `color`: gray, blue, green, red, amber, purple, indigo                              | Status/category labels                          |
-| **AccountBadge**        | `@/components/ui/account-badge`         | `type`: account category string                                                     | Account type labels (derives color from config) |
-| **Card**                | `@/components/ui/card`                  | `title`, `subtitle`, `headerRight`, `collapsible`, `defaultOpen`                    | Content containers                              |
-| **Metric**              | `@/components/ui/card`                  | `value`, `label`, `trend`                                                           | KPI display inside cards                        |
-| **ProgressBar**         | `@/components/ui/card`                  | `value` (0-1), `label`, `color`, `tooltip`                                          | Progress indicators                             |
-| **Skeleton**            | `@/components/ui/skeleton`              | `className` (default: `h-4 w-full`)                                                 | Base loading placeholder                        |
-| **SkeletonChart**       | `@/components/ui/skeleton`              | `height` (default: 250)                                                             | Chart loading placeholder                       |
-| **SkeletonTable**       | `@/components/ui/skeleton`              | `rows` (default: 5), `columns` (default: 4)                                         | Table loading placeholder                       |
-| **EmptyState**          | `@/components/ui/empty-state`           | `message`, `hint`, `icon`, `action`, `link`                                         | Empty page/section placeholder                  |
-| **FormError**           | `@/components/ui/form-error`            | `error`, `message`, `prefix`                                                        | Inline field-level error (xs red text)          |
-| **FormErrorBlock**      | `@/components/ui/form-error`            | `error`, `message`, `prefix`                                                        | Section-level error (alert box)                 |
-| **Tooltip**             | `@/components/ui/tooltip`               | `content`, `lines`, `side`, `align`, `maxWidth`                                     | Hover information                               |
-| **HelpTip**             | `@/components/ui/help-tip`              | `text`, `lines`, `learnMoreHref`                                                    | Question-mark icon with help tooltip            |
-| **Toggle**              | `@/components/ui/toggle`                | `checked`, `onChange`, `label`, `size`: xs/sm                                       | On/off switch                                   |
-| **SlidePanel**          | `@/components/ui/slide-panel`           | `open`, `onClose`, `title`                                                          | Right-sliding overlay panel                     |
-| **InlineEdit**          | `@/components/ui/inline-edit`           | `value`, `onSave`, `formatDisplay`, `parseInput`, `type`                            | Click-to-edit text field                        |
-| **InlineSelect**        | `@/components/ui/inline-edit`           | `value`, `options`, `onSave`                                                        | Click-to-edit dropdown                          |
-| **DataTable**           | `@/components/ui/data-table`            | `columns`, `data`, `isLoading`, `onDelete`, `compact`                               | Sortable CRUD table                             |
-| **PageHeader**          | `@/components/ui/page-header`           | `title`, `subtitle`, `children` (actions)                                           | Page title bar                                  |
-| **ThemeToggle**         | `@/components/ui/theme-toggle`          | `compact`                                                                           | Light/dark/system picker                        |
-| **confirm()**           | `@/components/ui/confirm-dialog`        | Returns `Promise<boolean>`                                                          | Imperative confirmation dialog                  |
-| **promptText()**        | `@/components/ui/confirm-dialog`        | Returns `Promise<string \| null>`                                                   | Imperative text input dialog                    |
-| **useToasts()**         | `@/components/ui/toast`                 | `addToast({ variant, message })`                                                    | Toast notifications                             |
-| **ErrorBoundary**       | `@/components/ui/error-boundary`        | `fallback`                                                                          | Catch render errors                             |
-| **ContribPeriodToggle** | `@/components/ui/contrib-period-toggle` | `value`, `onChange`                                                                 | Annual/monthly/paycheck toggle                  |
-| **ScenarioValue**       | `@/components/ui/scenario-indicator`    | `entity`, `recordId`, `field`                                                       | Scenario override indicator                     |
+Run `ls src/components/ui/` for the live list (<!-- AUTO-GEN:uiComponents -->21<!-- /AUTO-GEN --> components). Each
+component exports a `*Props` type with the full prop contract — read the file
+directly rather than maintaining a duplicate table here. Imports are barreled
+via `@/components/ui` or available per-file (`@/components/ui/button`, etc.).
+
+Anchor primitives (covered above): `Button`, `Badge`, `AccountBadge`, `Card`,
+`Skeleton*`, `EmptyState`, `Tooltip`, `HelpTip`, `DataTable`, `PageHeader`,
+`ErrorBoundary`. Imperative dialogs: `confirm()`, `promptText()`. Toast hook:
+`useToasts()`.
 
 ### Layout Patterns
 
