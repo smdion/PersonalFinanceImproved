@@ -218,13 +218,12 @@ export function validateContributionOrder(
   // If HSA appears after a non-HSA tax-advantaged category, flag it.
   const hsaIndex = order.indexOf("hsa");
   if (hsaIndex > 0) {
-    const hasEarlierTaxAdvantaged = order
-      .slice(0, hsaIndex)
-      .some(
-        (c) =>
-          c !== "hsa" &&
-          categoriesWithIrsLimit().includes(c as AccountCategory),
-      );
+    const hasEarlierTaxAdvantaged = order.slice(0, hsaIndex).some(
+      (c) =>
+        // lint-violation-ok: this validator IS the predicate for HSA-specific
+        // ordering, intentionally referring to the category by name
+        c !== "hsa" && categoriesWithIrsLimit().includes(c as AccountCategory),
+    );
     if (hasEarlierTaxAdvantaged) {
       warnings.push({
         severity: "info",

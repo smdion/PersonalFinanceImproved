@@ -44,6 +44,7 @@ import {
   PARENT_CATEGORY_VALUES,
   isTaxFreeBucket,
   tracksCostBasis,
+  isRetirementParent,
 } from "@/lib/config/account-types";
 import { getAge } from "@/lib/utils/date";
 import { roundToCents } from "@/lib/utils/math";
@@ -1332,7 +1333,8 @@ export const retirementRouter = createTRPCRouter({
       let portfolioTotal = 0;
       if (snapshotData) {
         for (const a of snapshotData.accounts) {
-          if (a.parentCategory && a.parentCategory !== "Retirement") continue;
+          if (a.parentCategory && !isRetirementParent(a.parentCategory))
+            continue;
           portfolioTotal += a.amount;
         }
       }

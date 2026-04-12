@@ -179,6 +179,7 @@ function SavingsRateCardImpl() {
           "retirement",
           "hsa",
           ...Object.keys(groupTotals).filter(
+            // lint-violation-ok: "hsa" here is a savings group label key, not an account category
             (g) => g !== "retirement" && g !== "hsa",
           ),
         ].map((group) => {
