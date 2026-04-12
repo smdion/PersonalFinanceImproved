@@ -116,9 +116,6 @@ ALTER TABLE "self_loans" ALTER COLUMN "repaid_amount" SET DEFAULT '0';--> statem
 ALTER TABLE "annual_performance" ADD COLUMN "is_immutable" boolean DEFAULT false NOT NULL;--> statement-breakpoint
 CREATE INDEX "api_connections_linked_profile_id_idx" ON "api_connections" USING btree ("linked_profile_id");--> statement-breakpoint
 CREATE INDEX "budget_items_contribution_account_id_idx" ON "budget_items" USING btree ("contribution_account_id");--> statement-breakpoint
-ALTER TABLE "annual_performance" ADD CONSTRAINT "annual_perf_lifetime_gains_nonneg" CHECK ("annual_performance"."lifetime_gains" >= 0);--> statement-breakpoint
-ALTER TABLE "annual_performance" ADD CONSTRAINT "annual_perf_lifetime_contributions_nonneg" CHECK ("annual_performance"."lifetime_contributions" >= 0);--> statement-breakpoint
-ALTER TABLE "annual_performance" ADD CONSTRAINT "annual_perf_lifetime_match_nonneg" CHECK ("annual_performance"."lifetime_match" >= 0);--> statement-breakpoint
 -- Data backfill: existing finalized annual_performance rows pre-date the
 -- is_immutable flag and must be marked immutable on upgrade. Without this,
 -- v4-era finalized rows would silently lose the immutability protection

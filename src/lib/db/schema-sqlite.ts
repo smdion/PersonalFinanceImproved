@@ -524,7 +524,10 @@ export const annualPerformance = sqliteTable(
      *  and must not be edited via routers. Set on finalization. App-layer
      *  enforcement guards against silent drift when account_performance
      *  rows on a finalized year are edited (per RULES.md § Data Model
-     *  Principles point 4 cascade rule). */
+     *  Principles point 4 cascade rule). The router-level guard in
+     *  performance.ts:updateAnnual is the real protection — these fields
+     *  intentionally have NO CHECK constraints because lifetime_gains
+     *  can legitimately be negative (cumulative losses across years). */
     isImmutable: integer("is_immutable", { mode: "boolean" })
       .notNull()
       .default(false),

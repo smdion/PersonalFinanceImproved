@@ -151,11 +151,21 @@ async function handleSquashUpgrade(
     );
     const journalCount = journal.entries?.length ?? 0;
 
-    // Squash detection: appliedCount > journalCount means a squash occurred.
-    // Recovery: appliedCount == 0 with existing tables means a previous squash
-    // attempt cleared the journal but failed before recording the new hash.
+    // Squash detection. Three cases trigger recovery:
+    //   1. appliedCount > journalCount — old logic, catches the common case
+    //      where a squash collapses N migrations into M < N entries.
+    //   2. appliedCount == 0 with existing application tables — partial
+    //      recovery from a previous failed squash that cleared the journal.
+    //   3. HASH mismatch — appliedCount equals journalCount but the DB's
+    //      applied hashes don't match the journal's expected hashes. Happens
+    //      when a v0.5-style squash produces the same number of journal
+    //      entries as the previous version, but the file contents (and
+    //      therefore hashes) changed. Without this, drizzle.migrate() would
+    //      attempt to apply the new migrations from scratch and fail on
+    //      duplicate-table errors.
     let isPartialRecovery = false;
-    if (appliedCount <= journalCount) {
+    let needsRecovery = appliedCount > journalCount;
+    if (!needsRecovery) {
       if (appliedCount === 0) {
         // Check if any application tables exist (partial squash recovery)
         const { rows: tableProbe } = await client.query(
@@ -166,16 +176,36 @@ async function handleSquashUpgrade(
         );
         if (tableProbe[0]?.exists) {
           isPartialRecovery = true;
+          needsRecovery = true;
           log("info", "partial_squash_recovery_detected", {
             reason:
               "Migration journal empty but application tables exist — recovering from failed squash",
           });
-        } else {
-          return { backupPath: null, schemaVersion: null, wasSquash: false };
         }
-      } else {
-        return { backupPath: null, schemaVersion: null, wasSquash: false };
+      } else if (journalCount > 0) {
+        // Hash-mismatch detection
+        const cryptoMod = await import("crypto");
+        const { rows: appliedRows } = await client.query<{ hash: string }>(
+          "SELECT hash FROM drizzle.__drizzle_migrations",
+        );
+        const appliedHashes = new Set(appliedRows.map((r) => r.hash));
+        for (const entry of journal.entries) {
+          const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
+          if (!fs.existsSync(sqlPath)) continue;
+          const sql = fs.readFileSync(sqlPath, "utf-8");
+          const expected = cryptoMod
+            .createHash("sha256")
+            .update(sql)
+            .digest("hex");
+          if (!appliedHashes.has(expected)) {
+            needsRecovery = true;
+            break;
+          }
+        }
       }
+    }
+    if (!needsRecovery) {
+      return { backupPath: null, schemaVersion: null, wasSquash: false };
     }
 
     // --- Squash detected (or partial recovery) ---
@@ -431,6 +461,51 @@ async function runPostgres() {
 
     log("info", "migrations_applied", { dialect: "postgresql" });
 
+    // Drop demo schemas after a schema change so they get rebuilt fresh
+    // from the public schema's new structure on next activation. Demo
+    // schemas are sandboxes that the demo router (src/server/routers/
+    // demo.ts:436) recreates via DROP TABLE + CREATE TABLE LIKE public.x
+    // INCLUDING ALL on every activateProfile call. They never carry
+    // user-meaningful state, so dropping them on schema upgrade is the
+    // simplest way to keep them in sync with the public schema.
+    //
+    // Without this, demo profiles activated before a schema change
+    // would have stale per-tenant tables (missing new columns, old
+    // decimal precision, etc.) and any query into the demo schema
+    // would fail at runtime.
+    if (backupPath) {
+      const demoClient = await pool.connect();
+      try {
+        const { rows: demoSchemas } = await demoClient.query<{
+          nspname: string;
+        }>(
+          "SELECT nspname FROM pg_namespace WHERE nspname LIKE 'demo_%' ORDER BY nspname",
+        );
+        for (const { nspname } of demoSchemas) {
+          // Quote identifier to defend against schema names with special chars
+          const quoted = '"' + nspname.replaceAll('"', '""') + '"';
+          await demoClient.query(`DROP SCHEMA IF EXISTS ${quoted} CASCADE`);
+          log("info", "demo_schema_dropped_for_rebuild", {
+            schema: nspname,
+            reason:
+              "Schema upgrade — demo profile will be rebuilt fresh on next activation",
+          });
+        }
+        if (demoSchemas.length > 0) {
+          log("info", "demo_schemas_cleared", {
+            count: demoSchemas.length,
+            note: "Users with active demo profiles will need to re-activate via the UI",
+          });
+        }
+      } catch (demoErr) {
+        log("warn", "demo_schema_cleanup_failed", {
+          error: demoErr instanceof Error ? demoErr.message : String(demoErr),
+        });
+      } finally {
+        demoClient.release();
+      }
+    }
+
     // Write upgrade banner flag if a pre-migration backup was created
     if (backupPath) {
       const flagClient = await pool.connect();
@@ -513,7 +588,38 @@ function handleSQLiteSquashUpgrade(
   );
   const journalCount = journal.entries?.length ?? 0;
 
-  if (appliedCount <= journalCount) return null;
+  // Detect squash. Two cases:
+  //   1. Count mismatch (appliedCount > journalCount) — old logic, catches the
+  //      common case where a squash collapses N migrations into M < N.
+  //   2. HASH mismatch — appliedCount equals journalCount but the DB's applied
+  //      hashes don't match the journal's expected hashes. Happens when the
+  //      v4→v5 squash produces the same number of journal entries as the
+  //      previous version had, but the file contents (and therefore hashes)
+  //      changed. Without this, drizzle.migrate() would attempt to apply the
+  //      "new" migrations from scratch and fail on duplicate-table errors.
+  let needsSquashRecovery = appliedCount > journalCount;
+  if (!needsSquashRecovery && appliedCount > 0 && journalCount > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const cryptoMod = require("crypto") as typeof import("crypto");
+    const appliedHashes = new Set(
+      (
+        sqlite.prepare("SELECT hash FROM __drizzle_migrations").all() as {
+          hash: string;
+        }[]
+      ).map((r) => r.hash),
+    );
+    for (const entry of journal.entries) {
+      const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
+      if (!fs.existsSync(sqlPath)) continue;
+      const sql = fs.readFileSync(sqlPath, "utf-8");
+      const expected = cryptoMod.createHash("sha256").update(sql).digest("hex");
+      if (!appliedHashes.has(expected)) {
+        needsSquashRecovery = true;
+        break;
+      }
+    }
+  }
+  if (!needsSquashRecovery) return null;
 
   // --- Squash detected ---
   // Detect schema era: check for v0.3.x-specific table

@@ -1,5 +1,5 @@
 {
-  "id": "bce8cccf-f9dd-4ed1-b795-0be49bbce60e",
+  "id": "0dba1879-d53c-4252-9d91-086d4ec08a9e",
   "prevId": "36f08a59-7570-4a14-955f-122eda0ccb38",
   "version": "7",
   "dialect": "postgresql",
@@ -380,18 +380,6 @@
         "annual_perf_finalized_not_current": {
           "name": "annual_perf_finalized_not_current",
           "value": "NOT (\"annual_performance\".\"is_finalized\" AND \"annual_performance\".\"is_current_year\")"
-        },
-        "annual_perf_lifetime_gains_nonneg": {
-          "name": "annual_perf_lifetime_gains_nonneg",
-          "value": "\"annual_performance\".\"lifetime_gains\" >= 0"
-        },
-        "annual_perf_lifetime_contributions_nonneg": {
-          "name": "annual_perf_lifetime_contributions_nonneg",
-          "value": "\"annual_performance\".\"lifetime_contributions\" >= 0"
-        },
-        "annual_perf_lifetime_match_nonneg": {
-          "name": "annual_perf_lifetime_match_nonneg",
-          "value": "\"annual_performance\".\"lifetime_match\" >= 0"
         }
       },
       "isRLSEnabled": false

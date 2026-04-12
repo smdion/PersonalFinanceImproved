@@ -596,7 +596,10 @@ export const annualPerformance = pgTable(
      *  and must not be edited via routers. Set on finalization. App-layer
      *  enforcement guards against silent drift when account_performance
      *  rows on a finalized year are edited (per RULES.md § Data Model
-     *  Principles point 4 cascade rule). */
+     *  Principles point 4 cascade rule). The router-level guard in
+     *  performance.ts:updateAnnual is the real protection — these fields
+     *  intentionally have NO CHECK constraints because lifetime_gains
+     *  can legitimately be negative (cumulative losses across years). */
     isImmutable: boolean("is_immutable").notNull().default(false),
   },
   (table) => [
@@ -607,18 +610,6 @@ export const annualPerformance = pgTable(
     check(
       "annual_perf_finalized_not_current",
       sql`NOT (${table.isFinalized} AND ${table.isCurrentYear})`,
-    ),
-    check(
-      "annual_perf_lifetime_gains_nonneg",
-      sql`${table.lifetimeGains} >= 0`,
-    ),
-    check(
-      "annual_perf_lifetime_contributions_nonneg",
-      sql`${table.lifetimeContributions} >= 0`,
-    ),
-    check(
-      "annual_perf_lifetime_match_nonneg",
-      sql`${table.lifetimeMatch} >= 0`,
     ),
   ],
 );
