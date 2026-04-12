@@ -1,4 +1,5 @@
-"use client";
+import { memo } from "react";
+("use client");
 
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
@@ -14,7 +15,7 @@ import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import { LoadingCard, ErrorCard } from "./utils";
 
-export function RetirementCard() {
+function RetirementCardImpl() {
   const salaryOverrides = useSalaryOverrides();
   const [accBudgetProfileId] = usePersistedSetting<number | null>(
     "retirement_acc_budget_profile_id",
@@ -237,3 +238,5 @@ export function RetirementCard() {
     </Card>
   );
 }
+
+export const RetirementCard = memo(RetirementCardImpl);

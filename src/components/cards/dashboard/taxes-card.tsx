@@ -1,4 +1,5 @@
-"use client";
+import { memo } from "react";
+("use client");
 
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
@@ -9,7 +10,7 @@ import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
 import { LoadingCard, ErrorCard } from "./utils";
 
-export function TaxesCard() {
+function TaxesCardImpl() {
   const { viewMode } = useScenario();
   const isYtd = viewMode === "ytd";
   const isBlended = viewMode === "blended";
@@ -129,3 +130,5 @@ export function TaxesCard() {
     </Card>
   );
 }
+
+export const TaxesCard = memo(TaxesCardImpl);

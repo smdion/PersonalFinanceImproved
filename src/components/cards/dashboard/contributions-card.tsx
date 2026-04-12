@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
@@ -103,7 +103,7 @@ function FundingBar({
   );
 }
 
-export function ContributionsCard() {
+function ContributionsCardImpl() {
   const { viewMode } = useScenario();
   const salaryOverrides = useSalaryOverrides();
   const [activeContribProfileId] = usePersistedSetting<number | null>(
@@ -613,3 +613,5 @@ export function ContributionsCard() {
     </Card>
   );
 }
+
+export const ContributionsCard = memo(ContributionsCardImpl);

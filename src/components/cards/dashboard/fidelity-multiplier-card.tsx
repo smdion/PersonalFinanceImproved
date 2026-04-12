@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, ProgressBar } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -55,7 +55,7 @@ function getFidelityTarget(age: number): {
   };
 }
 
-export function FidelityMultiplierCard() {
+function FidelityMultiplierCardImpl() {
   const salaryOverrides = useSalaryOverrides();
   const engineInput = salaryOverrides.length > 0 ? { salaryOverrides } : {};
   const { data, isLoading, error } =
@@ -255,3 +255,5 @@ export function FidelityMultiplierCard() {
     </Card>
   );
 }
+
+export const FidelityMultiplierCard = memo(FidelityMultiplierCardImpl);

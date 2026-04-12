@@ -1,11 +1,12 @@
-"use client";
+import { memo } from "react";
+("use client");
 
 import { trpc } from "@/lib/trpc";
 import { Card, Metric, ProgressBar } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { LoadingCard, ErrorCard } from "./utils";
 
-export function MortgageCard() {
+function MortgageCardImpl() {
   const { data, isLoading, error } =
     trpc.mortgage.computeActiveSummary.useQuery();
   if (isLoading) return <LoadingCard title="Mortgage" />;
@@ -54,3 +55,5 @@ export function MortgageCard() {
     </Card>
   );
 }
+
+export const MortgageCard = memo(MortgageCardImpl);

@@ -1,4 +1,5 @@
-"use client";
+import { memo } from "react";
+("use client");
 
 import { trpc } from "@/lib/trpc";
 import { Card, ProgressBar } from "@/components/ui/card";
@@ -6,7 +7,7 @@ import { formatCurrency } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { LoadingCard, ErrorCard } from "./utils";
 
-export function SavingsGoalsCard() {
+function SavingsGoalsCardImpl() {
   const [efundBudgetColumn, setEfundBudgetColumn] = usePersistedSetting<number>(
     "efund_budget_column",
     -1,
@@ -364,3 +365,5 @@ export function SavingsGoalsCard() {
     </Card>
   );
 }
+
+export const SavingsGoalsCard = memo(SavingsGoalsCardImpl);

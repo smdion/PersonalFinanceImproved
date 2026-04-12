@@ -27,10 +27,20 @@ import {
   ACCOUNT_TYPE_CONFIG,
   type AccountCategory,
 } from "@/lib/config/account-types";
+import dynamic from "next/dynamic";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { ContributionAccountsSettings } from "@/components/portfolio/contribution-accounts";
-import { PortfolioChart } from "@/components/portfolio/portfolio-chart";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
+
+// v0.5 expert-review M8: code-split Recharts. PortfolioChart pulls in
+// ~250KB of recharts code; lazy-loading moves it to a dedicated chunk.
+const PortfolioChart = dynamic(
+  () =>
+    import("@/components/portfolio/portfolio-chart").then((m) => ({
+      default: m.PortfolioChart,
+    })),
+  { loading: () => <SkeletonChart />, ssr: false },
+);
 
 type PortfolioTaxType = "preTax" | "taxFree" | "hsa" | "afterTax";
 type PortfolioAccountType = string; // Derived from DB text column; validated by ACCOUNT_TYPE_CONFIG
