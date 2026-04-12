@@ -18,6 +18,7 @@ import {
   check,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 
 // All enum-like columns are plain `text`, validated at the app layer via Zod
 // against const arrays in `src/lib/config/enum-values.ts`.
@@ -910,7 +911,7 @@ export const retirementSettings = pgTable(
       .default(false),
     withdrawalRate: decimal("withdrawal_rate", { precision: 8, scale: 6 })
       .notNull()
-      .default("0.04"),
+      .default(DEFAULT_WITHDRAWAL_RATE.toString()),
     taxMultiplier: decimal("tax_multiplier", { precision: 8, scale: 6 })
       .notNull()
       .default("1.0"),

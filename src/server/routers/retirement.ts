@@ -43,6 +43,7 @@ import {
   addBasis,
   PARENT_CATEGORY_VALUES,
   isTaxFreeBucket,
+  tracksCostBasis,
 } from "@/lib/config/account-types";
 import { getAge } from "@/lib/utils/date";
 import { roundToCents } from "@/lib/utils/math";
@@ -491,7 +492,7 @@ export async function buildEnginePayload(
     ]),
   );
   const costBasisVal = perfAccounts
-    .filter((p) => p.isActive && p.accountType === "brokerage")
+    .filter((p) => p.isActive && tracksCostBasis(p.accountType))
     .reduce((sum, p) => sum + toNumber(String(p.costBasis ?? "0")), 0);
   portfolioByTaxType.afterTaxBasis = costBasisVal;
   // Distribute cost basis to per-parentCategory buckets proportionally by afterTax balance

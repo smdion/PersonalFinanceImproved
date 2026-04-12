@@ -35,7 +35,10 @@ import {
   recomputeLifetimeFields,
 } from "@/lib/pure/performance";
 import { accountDisplayName } from "@/lib/utils/format";
-import { isRetirementParent } from "@/lib/config/account-types";
+import {
+  isRetirementParent,
+  isPortfolioParent,
+} from "@/lib/config/account-types";
 import {
   accountTypeToPerformanceCategory,
   FULLY_RETIREMENT_PERF_CATEGORIES,
@@ -1333,10 +1336,9 @@ export const performanceRouter = createTRPCRouter({
               eq(schema.portfolioAccounts.snapshotId, nearestSnapshot[0]!.id),
             );
           for (const a of snapAccounts) {
-            const bucket =
-              a.parentCategory === "Portfolio"
-                ? portfolioByTaxLocation.portfolio
-                : portfolioByTaxLocation.retirement;
+            const bucket = isPortfolioParent(a.parentCategory)
+              ? portfolioByTaxLocation.portfolio
+              : portfolioByTaxLocation.retirement;
             bucket[a.taxType] = (bucket[a.taxType] ?? 0) + toNumber(a.amount);
           }
         }

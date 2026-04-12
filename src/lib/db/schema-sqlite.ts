@@ -11,6 +11,7 @@ import {
   check,
 } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
+import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 
 // All enum-like columns are plain `text`, validated at the app layer via Zod
 // against const arrays in `src/lib/config/enum-values.ts`.
@@ -260,8 +261,8 @@ export const savingsGoals = sqliteTable(
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     name: text("name").notNull().unique(),
     parentGoalId: integer("parent_goal_id"),
-    // Self-referential FK enforced via DB migration (ALTER TABLE ADD CONSTRAINT),
-    // not inline — Drizzle cannot self-reference in the same table definition.
+    // Self-referential FK enforced via migration 0001_add_parent_goal_fk.sql
+    // (ALTER TABLE ADD CONSTRAINT) — Drizzle cannot self-reference inline.
     targetAmount: text("target_amount"),
     targetMonths: integer("target_months"),
     targetDate: text("target_date"),
@@ -619,11 +620,9 @@ export const netWorthAnnual = sqliteTable("net_worth_annual", {
     .notNull()
     .default("0"),
   propertyTaxes: text("property_taxes"),
-  // Point-in-time tax location breakdown captured at finalization (JSON string).
+  // Point-in-time tax location breakdown captured at finalization.
   // Shape: { retirement: { taxFree: N, preTax: N, hsa: N, afterTax: N }, portfolio: { afterTax: N } }
-  portfolioByTaxLocation: text("portfolio_by_tax_location", {
-    mode: "json",
-  })
+  portfolioByTaxLocation: text("portfolio_by_tax_location", { mode: "json" })
     .$type<{
       retirement: Record<string, number>;
       portfolio: Record<string, number>;
@@ -777,7 +776,9 @@ export const retirementSettings = sqliteTable(
     })
       .notNull()
       .default(false),
-    withdrawalRate: text("withdrawal_rate").notNull().default("0.04"),
+    withdrawalRate: text("withdrawal_rate")
+      .notNull()
+      .default(DEFAULT_WITHDRAWAL_RATE.toString()),
     taxMultiplier: text("tax_multiplier").notNull().default("1.0"),
     grossUpForTaxes: integer("gross_up_for_taxes", { mode: "boolean" })
       .notNull()

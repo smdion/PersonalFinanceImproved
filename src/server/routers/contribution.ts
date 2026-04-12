@@ -46,6 +46,7 @@ import {
   getAccountTypeConfig,
   getDisplayConfig,
   getLimitGroup,
+  isInLimit401kGroup,
   getDefaultAccumulationOrder,
   categoriesWithIrsLimit,
   isRetirementCategory,
@@ -492,7 +493,7 @@ export const contributionRouter = createTRPCRouter({
             const bonusPct = rawContribs
               .filter(
                 (c) =>
-                  getLimitGroup(c.accountType as AccountCategory) === "401k" &&
+                  isInLimit401kGroup(c.accountType) &&
                   c.contributionMethod === "percent_of_salary",
               )
               .reduce((s, c) => s + toNumber(c.contributionValue) / 100, 0);
@@ -776,8 +777,9 @@ export const contributionRouter = createTRPCRouter({
             const limit = getLimitForCategory(data.categoryKey);
             const employeeContrib = roundToCents(data.employee);
             const employerMatch = roundToCents(data.match);
-            const bonusAdd =
-              getLimitGroup(data.categoryKey) === "401k" ? bonus401k : 0;
+            const bonusAdd = isInLimit401kGroup(data.categoryKey)
+              ? bonus401k
+              : 0;
             const totalEmployee = employeeContrib + bonusAdd;
             const cfg = categoriesWithIrsLimit().includes(
               data.categoryKey as AccountCategory,
