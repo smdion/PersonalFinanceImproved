@@ -1,5 +1,5 @@
 {
-  "id": "34253d35-7ac6-4527-b55b-d4a238b5b3d3",
+  "id": "36f08a59-7570-4a14-955f-122eda0ccb38",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -120,7 +120,7 @@
           "name": "performance_account_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         }
       },
       "indexes": {
@@ -3027,6 +3027,12 @@
           "type": "numeric(12, 2)",
           "primaryKey": false,
           "notNull": false
+        },
+        "portfolio_by_tax_location": {
+          "name": "portfolio_by_tax_location",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
         }
       },
       "indexes": {},
