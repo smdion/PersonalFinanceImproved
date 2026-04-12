@@ -493,6 +493,7 @@ export default function HousePage() {
                         title="Delete"
                       >
                         <svg
+                          aria-hidden="true"
                           className="w-3.5 h-3.5"
                           fill="none"
                           viewBox="0 0 24 24"
@@ -658,6 +659,7 @@ export default function HousePage() {
                           title="Delete"
                         >
                           <svg
+                            aria-hidden="true"
                             className="w-3.5 h-3.5"
                             fill="none"
                             viewBox="0 0 24 24"

@@ -13,7 +13,13 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 function LedgrLogo() {
   return (
-    <svg width="48" height="48" viewBox="0 0 32 32" className="shrink-0">
+    <svg
+      aria-hidden="true"
+      width="48"
+      height="48"
+      viewBox="0 0 32 32"
+      className="shrink-0"
+    >
       <rect
         width="32"
         height="32"
@@ -119,6 +125,7 @@ export function LoginForm({ hasOidc }: { hasOidc: boolean }) {
                 className="w-full px-4 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
               >
                 <svg
+                  aria-hidden="true"
                   width="20"
                   height="20"
                   viewBox="0 0 24 24"

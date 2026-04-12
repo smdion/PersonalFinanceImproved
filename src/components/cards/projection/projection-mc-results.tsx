@@ -69,7 +69,12 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
     <div className="space-y-3">
       {mcLoading && (
         <div className="flex items-center gap-2 py-8 justify-center text-sm text-muted">
-          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+          <svg
+            aria-hidden="true"
+            className="animate-spin h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
             <circle
               className="opacity-25"
               cx="12"

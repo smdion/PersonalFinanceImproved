@@ -757,6 +757,7 @@ function GroupRows({
         <td className="py-1.5 pr-3 font-semibold text-primary">
           <span className="flex items-center gap-1.5">
             <svg
+              aria-hidden="true"
               className={`w-2.5 h-2.5 text-faint transition-transform ${isExpanded ? "rotate-90" : ""}`}
               fill="none"
               viewBox="0 0 24 24"

@@ -337,6 +337,7 @@ function HistoricalTable({
                     title="View Net Worth page"
                   >
                     <svg
+                      aria-hidden="true"
                       className="w-3 h-3"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -371,6 +372,7 @@ function HistoricalTable({
                     title="View Performance page"
                   >
                     <svg
+                      aria-hidden="true"
                       className="w-3 h-3"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -400,6 +402,7 @@ function HistoricalTable({
                     title="View Portfolio page"
                   >
                     <svg
+                      aria-hidden="true"
                       className="w-3 h-3"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -429,6 +432,7 @@ function HistoricalTable({
                     title="Manage on Assets page"
                   >
                     <svg
+                      aria-hidden="true"
                       className="w-3 h-3"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -458,6 +462,7 @@ function HistoricalTable({
                     title="Manage on Liabilities page"
                   >
                     <svg
+                      aria-hidden="true"
                       className="w-3 h-3"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -487,6 +492,7 @@ function HistoricalTable({
                     title="View Paycheck page"
                   >
                     <svg
+                      aria-hidden="true"
                       className="w-3 h-3"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -516,6 +522,7 @@ function HistoricalTable({
                     title="View Paycheck page"
                   >
                     <svg
+                      aria-hidden="true"
                       className="w-3 h-3"
                       fill="none"
                       viewBox="0 0 24 24"

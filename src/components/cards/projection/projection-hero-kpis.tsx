@@ -60,7 +60,11 @@ function GaugeDonut({
       className={`${bg} rounded-lg p-3 flex flex-col items-center justify-center`}
     >
       <div className={`relative ${svgSize}`}>
-        <svg className={`${svgSize} -rotate-90`} viewBox="0 0 100 100">
+        <svg
+          aria-hidden="true"
+          className={`${svgSize} -rotate-90`}
+          viewBox="0 0 100 100"
+        >
           <circle
             cx="50"
             cy="50"

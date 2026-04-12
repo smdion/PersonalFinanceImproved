@@ -150,6 +150,7 @@ export function ProjectionCard(props: {
           {engineQuery.isLoading && (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <svg
+                aria-hidden="true"
                 className="animate-spin h-6 w-6 text-blue-500"
                 viewBox="0 0 24 24"
                 fill="none"

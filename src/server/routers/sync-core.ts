@@ -19,6 +19,7 @@ import {
   cacheSet,
   YNAB_EXPENSE_EXCLUDED_CATEGORIES,
 } from "@/lib/budget-api";
+import { detectDrift, hasDrift } from "@/lib/budget-api/drift-detection";
 import type {
   BudgetApiService,
   BudgetAccount,
@@ -52,6 +53,15 @@ export const syncCoreRouter = createTRPCRouter({
       const service = input.service as BudgetApiService;
 
       try {
+        // Read previous cached account list BEFORE the new fetch so we
+        // can diff for drift detection (v0.5 expert-review M21).
+        const cachedBefore = await cacheGet<BudgetAccount[]>(
+          ctx.db,
+          service,
+          "accounts",
+        ).catch(() => null);
+        const cachedAccountsBefore = cachedBefore?.data ?? [];
+
         // ── Phase 1: Network fetch (no DB writes) ────────────────────
         // If anything here throws, no local state changes.
         const [accounts, categories] = await Promise.all([
@@ -78,6 +88,17 @@ export const syncCoreRouter = createTRPCRouter({
           await import("@/server/helpers/api-balance-resolution");
         const apiBalanceMap = getApiAccountBalanceMapFromAccounts(accounts);
         const currentYear = new Date().getFullYear();
+
+        // ── Drift detection (v0.5 expert-review M21) ──
+        // Diff cached account list against new fetch. Surfaces broken
+        // mappings (deleted remote accounts), renames, and newly-added
+        // remote accounts. Result is attached to the sync response so
+        // the UI can render actionable callouts.
+        const driftReport = detectDrift(
+          cachedAccountsBefore,
+          accounts,
+          mappings,
+        );
 
         // ── Phase 2: Single-transaction commit (v0.5 expert-review C3) ──
         // Cache writes + lastSyncedAt + asset-pull loop now share one
@@ -206,6 +227,10 @@ export const syncCoreRouter = createTRPCRouter({
             transactions: transactions.length,
             assetsPulled,
           },
+          // v0.5 M21: drift report — UI renders broken mappings as
+          // actionable callouts so users can fix them rather than
+          // silently losing sync coverage.
+          drift: hasDrift(driftReport) ? driftReport : null,
         };
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Unknown error";
