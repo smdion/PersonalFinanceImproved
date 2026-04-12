@@ -67,6 +67,7 @@ type AccountTypeSnapshot = {
   employerMatch: number;
   totalContrib: number; // employee + employer (toward limit where applicable)
   views: Record<ViewMode, AccountViewMetrics>;
+  ytdDataStale: boolean; // true when YTD actual < expected — performance data may be behind
   currentPctOfSalary: number | null; // current employee % of salary (whole number)
   tradContrib: number;
   taxFreeContrib: number;
@@ -582,6 +583,7 @@ export const contributionRouter = createTRPCRouter({
               ytdEmployerMatch: number;
               blendedEmployee: number;
               blendedMatch: number;
+              ytdDataStale: boolean;
             }
           >();
 
@@ -667,6 +669,7 @@ export const contributionRouter = createTRPCRouter({
               ytdEmployerMatch: 0,
               blendedEmployee: 0,
               blendedMatch: 0,
+              ytdDataStale: false,
             };
             // Accumulate YTD actuals from proportionally-split performance data
             const contribActual = contribActualMap.get(rawContrib.id);
@@ -674,20 +677,28 @@ export const contributionRouter = createTRPCRouter({
               entry.ytdContributions += contribActual.contributions;
               entry.ytdEmployerMatch += contribActual.employerMatch;
             }
-            // Per-contrib blended: ytdActual + annual * method-aware remaining
+            // Per-contrib blended: max(ytdActual, expectedYtd) + annual * remaining.
+            // When actual < expected, assume data lag (not missed contributions)
+            // and fall back to projected. When actual > expected, use real pace.
             const remaining = methodRemainingFraction(
               rawContrib.contributionMethod,
             );
             const ytdEmp = contribActual?.contributions ?? 0;
             const ytdMatch = contribActual?.employerMatch ?? 0;
-            entry.blendedEmployee +=
-              ytdEmp > 0 || ytdMatch > 0
-                ? ytdEmp + acct.annualContribution * remaining
-                : acct.annualContribution;
-            entry.blendedMatch +=
-              ytdEmp > 0 || ytdMatch > 0
-                ? ytdMatch + acct.employerMatch * remaining
-                : acct.employerMatch;
+            if (ytdEmp > 0 || ytdMatch > 0) {
+              const expectedEmp = acct.annualContribution * (1 - remaining);
+              const expectedMatch = acct.employerMatch * (1 - remaining);
+              if (ytdEmp < expectedEmp * 0.95) entry.ytdDataStale = true;
+              entry.blendedEmployee +=
+                Math.max(ytdEmp, expectedEmp) +
+                acct.annualContribution * remaining;
+              entry.blendedMatch +=
+                Math.max(ytdMatch, expectedMatch) +
+                acct.employerMatch * remaining;
+            } else {
+              entry.blendedEmployee += acct.annualContribution;
+              entry.blendedMatch += acct.employerMatch;
+            }
             const pyAmt =
               rawContrib.priorYearContribYear === priorYear
                 ? toNumber(rawContrib.priorYearContribAmount)
@@ -790,6 +801,7 @@ export const contributionRouter = createTRPCRouter({
               employerMatch,
               totalContrib: totalEmployee + employerMatch,
               views,
+              ytdDataStale: data.ytdDataStale,
               currentPctOfSalary,
               tradContrib: roundToCents(data.trad),
               taxFreeContrib: roundToCents(data.taxFree),
@@ -996,6 +1008,7 @@ export const contributionRouter = createTRPCRouter({
             blended: zeroMetrics,
             ytd: zeroMetrics,
           },
+          ytdDataStale: false,
           currentPctOfSalary: null,
           tradContrib: isTaxFree(c.taxTreatment) ? 0 : roundToCents(annual),
           taxFreeContrib: isTaxFree(c.taxTreatment) ? roundToCents(annual) : 0,
