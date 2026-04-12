@@ -12,6 +12,8 @@ import {
 } from "@/lib/budget-api";
 import type { YnabConfig, ActualConfig } from "@/lib/budget-api";
 import { encryptJson } from "@/lib/crypto";
+import { validateOutboundUrl } from "@/lib/url-safety";
+import { TRPCError } from "@trpc/server";
 
 const serviceEnum = z.enum(["ynab", "actual"]);
 
@@ -53,6 +55,20 @@ export const syncConnectionsRouter = createTRPCRouter({
       ]),
     )
     .mutation(async ({ ctx, input }) => {
+      // SSRF block (v0.5 expert-review C2): for Actual Budget, the user
+      // supplies a serverUrl and the container makes outbound requests to
+      // it. Reject private/loopback/link-local destinations unless
+      // ALLOWED_ACTUAL_HOSTS env var explicitly opts the host in.
+      if (input.service === "actual") {
+        const safety = validateOutboundUrl(input.serverUrl);
+        if (!safety.ok) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Refusing to save Actual Budget connection: ${safety.reason}`,
+          });
+        }
+      }
+
       const config: YnabConfig | ActualConfig =
         input.service === "ynab"
           ? { accessToken: input.accessToken, budgetId: input.budgetId }
