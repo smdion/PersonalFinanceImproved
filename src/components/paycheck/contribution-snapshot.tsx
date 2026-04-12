@@ -387,8 +387,10 @@ export function ContributionSnapshot() {
 
                   // Compute match percentage of the limit for the funding bar
                   const matchPctOfLimit =
-                    hasLimit && at.limit > 0 && at.employerMatch > 0
-                      ? at.employerMatch / at.limit
+                    hasLimit &&
+                    at.limit > 0 &&
+                    at.views[viewMode].employerMatch > 0
+                      ? at.views[viewMode].employerMatch / at.limit
                       : undefined;
 
                   return (
@@ -487,7 +489,9 @@ export function ContributionSnapshot() {
                             <p className="text-[10px] text-red-600 mt-0.5">
                               Over by{" "}
                               {formatCurrency(
-                                (at.views[viewMode].employeeContrib -
+                                ((matchCountsTowardLimit
+                                  ? at.views[viewMode].totalContrib
+                                  : at.views[viewMode].employeeContrib) -
                                   at.limit) *
                                   mult,
                               )}

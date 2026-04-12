@@ -243,7 +243,12 @@ describe("computeViewAwareTotals", () => {
       portfolioWithoutMatch: 4500,
       portfolioWithMatch: 4500,
     },
-    ytdActuals: { retirement: 8000, portfolio: 2000, match: 3000 },
+    ytdActuals: {
+      retirement: 8000,
+      portfolio: 2000,
+      retirementMatch: 3000,
+      portfolioMatch: 0,
+    },
     ytdRatio: 0.5,
     totalCompensation: 150000,
   };
@@ -278,7 +283,12 @@ describe("computeViewAwareTotals", () => {
   it("all ytdActuals=0 falls back to projected", () => {
     const v = computeViewAwareTotals({
       ...base,
-      ytdActuals: { retirement: 0, portfolio: 0, match: 0 },
+      ytdActuals: {
+        retirement: 0,
+        portfolio: 0,
+        retirementMatch: 0,
+        portfolioMatch: 0,
+      },
     });
     expect(v.blended).toEqual(v.projected);
   });

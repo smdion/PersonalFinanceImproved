@@ -119,8 +119,10 @@ type PersonSnapshot = {
     ytdActualRetirement: number;
     /** Actual YTD portfolio contributions from performance data. */
     ytdActualPortfolio: number;
-    /** Actual YTD employer match from performance data. */
-    ytdActualMatch: number;
+    /** Actual YTD retirement employer match from performance data. */
+    ytdActualRetirementMatch: number;
+    /** Actual YTD portfolio employer match from performance data. */
+    ytdActualPortfolioMatch: number;
   };
   result: ReturnType<typeof calculateContributions> | null;
 };
@@ -420,7 +422,8 @@ export const contributionRouter = createTRPCRouter({
                 },
                 ytdActualRetirement: 0,
                 ytdActualPortfolio: 0,
-                ytdActualMatch: 0,
+                ytdActualRetirementMatch: 0,
+                ytdActualPortfolioMatch: 0,
               },
               result: null,
             };
@@ -902,11 +905,19 @@ export const contributionRouter = createTRPCRouter({
               )
               .reduce((s, pcd) => s + (pcd.ytdActual?.contributions ?? 0), 0),
           );
-          const ytdActualMatch = roundToCents(
-            perContribData.reduce(
-              (s, pcd) => s + (pcd.ytdActual?.employerMatch ?? 0),
-              0,
-            ),
+          const ytdActualRetirementMatch = roundToCents(
+            perContribData
+              .filter((_pcd, idx) =>
+                isRetirementParent(rawContribs[idx]?.parentCategory ?? ""),
+              )
+              .reduce((s, pcd) => s + (pcd.ytdActual?.employerMatch ?? 0), 0),
+          );
+          const ytdActualPortfolioMatch = roundToCents(
+            perContribData
+              .filter((_pcd, idx) =>
+                isPortfolioParent(rawContribs[idx]?.parentCategory ?? ""),
+              )
+              .reduce((s, pcd) => s + (pcd.ytdActual?.employerMatch ?? 0), 0),
           );
 
           // Blended totals: sum per-category blended amounts (method-aware remaining fractions)
@@ -979,7 +990,8 @@ export const contributionRouter = createTRPCRouter({
             ytdActuals: {
               retirement: ytdActualRetirement,
               portfolio: ytdActualPortfolio,
-              match: ytdActualMatch,
+              retirementMatch: ytdActualRetirementMatch,
+              portfolioMatch: ytdActualPortfolioMatch,
             },
             ytdRatio: ytdRatioForTotals,
             totalCompensation,
@@ -999,7 +1011,8 @@ export const contributionRouter = createTRPCRouter({
               views: totalsViews,
               ytdActualRetirement,
               ytdActualPortfolio,
-              ytdActualMatch,
+              ytdActualRetirementMatch,
+              ytdActualPortfolioMatch,
             },
             result,
           };

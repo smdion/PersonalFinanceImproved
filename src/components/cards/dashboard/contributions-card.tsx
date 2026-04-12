@@ -219,8 +219,8 @@ export function ContributionsCard() {
                         .matchCountsTowardLimit
                     : false;
                   const matchPctOfLimit =
-                    hasLimit && at.employerMatch > 0
-                      ? at.employerMatch / at.limit
+                    hasLimit && at.views[viewMode].employerMatch > 0
+                      ? at.views[viewMode].employerMatch / at.limit
                       : undefined;
 
                   return (

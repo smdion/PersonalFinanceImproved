@@ -111,7 +111,8 @@ describe("contribution router", () => {
         },
         ytdActualRetirement: 0,
         ytdActualPortfolio: 0,
-        ytdActualMatch: 0,
+        ytdActualRetirementMatch: 0,
+        ytdActualPortfolioMatch: 0,
       });
     });
   });

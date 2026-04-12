@@ -259,7 +259,12 @@ export function computeViewAwareTotals(input: {
     portfolioWithoutMatch: number;
     portfolioWithMatch: number;
   };
-  ytdActuals: { retirement: number; portfolio: number; match: number };
+  ytdActuals: {
+    retirement: number;
+    portfolio: number;
+    retirementMatch: number;
+    portfolioMatch: number;
+  };
   ytdRatio: number;
   totalCompensation: number;
   blendedTotalCompensation?: number;
@@ -287,7 +292,8 @@ export function computeViewAwareTotals(input: {
   const hasActuals =
     ytdActuals.retirement > 0 ||
     ytdActuals.portfolio > 0 ||
-    ytdActuals.match > 0;
+    ytdActuals.retirementMatch > 0 ||
+    ytdActuals.portfolioMatch > 0;
 
   if (!hasActuals) {
     return { projected: projView, blended: projView, ytd: projView };
@@ -296,9 +302,13 @@ export function computeViewAwareTotals(input: {
   const blendedView = buildView(blended, blendedComp);
 
   const ytdRetWithout = roundToCents(ytdActuals.retirement);
-  const ytdRetWith = roundToCents(ytdActuals.retirement + ytdActuals.match);
+  const ytdRetWith = roundToCents(
+    ytdActuals.retirement + ytdActuals.retirementMatch,
+  );
   const ytdPortWithout = roundToCents(ytdActuals.portfolio);
-  const ytdPortWith = roundToCents(ytdActuals.portfolio);
+  const ytdPortWith = roundToCents(
+    ytdActuals.portfolio + ytdActuals.portfolioMatch,
+  );
   const ytdCompensation = totalCompensation * ytdRatio;
   const ytdView = buildView(
     {
