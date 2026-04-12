@@ -6,8 +6,9 @@
  * against the counts claimed in DESIGN.md and TESTING.md.
  *
  * Usage:  npx tsx scripts/verify-docs.ts
- * Exit 0: All counts within 10% tolerance
- * Exit 1: One or more counts drifted beyond 10%
+ * Exit 0: All counts within 10% tolerance AND every tracked count has a marker
+ * Exit 1: One or more counts drifted beyond 10%, OR a tracked count is
+ *         missing its marker in DESIGN.md/TESTING.md (orphaned tracker)
  */
 
 import fs from "fs";
@@ -448,24 +449,35 @@ function main(): void {
 
   if (missing.length > 0) {
     console.log("");
-    console.log("Missing from docs:");
+    console.log("Orphaned trackers (no marker found in docs):");
     for (const r of missing) {
       console.log(
-        `  [info] ${r.name}: ${r.actual} actual (no claim found in docs)`,
+        `  [error] ${r.name}: ${r.actual} actual — add an <!-- AUTO-GEN:KEY -->${r.actual}<!-- /AUTO-GEN --> marker to DESIGN.md/TESTING.md, or remove the tracker from verify-docs.ts`,
       );
     }
   }
 
   console.log("");
 
-  // Exit non-zero if any count drifted more than 10%
+  // Exit non-zero if any count drifted more than 10%, OR if a tracked count
+  // has no marker in the docs at all (orphaned tracker — silent drift risk).
+  const failures: string[] = [];
   if (errors.length > 0) {
-    console.log(
-      `FAIL: ${errors.length} count(s) drifted more than 10% from documentation.`,
+    failures.push(
+      `${errors.length} count(s) drifted more than 10% from documentation`,
     );
+  }
+  if (missing.length > 0) {
+    failures.push(
+      `${missing.length} orphaned tracker(s) (counted but not claimed anywhere)`,
+    );
+  }
+
+  if (failures.length > 0) {
+    console.log(`FAIL: ${failures.join("; ")}.`);
     process.exit(1);
   } else {
-    console.log("PASS: All counts within 10% tolerance.");
+    console.log("PASS: All counts within 10% tolerance, no orphaned trackers.");
   }
 }
 
