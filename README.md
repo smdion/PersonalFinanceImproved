@@ -10,7 +10,7 @@ A self-hosted personal finance dashboard for tracking income, budgets, investmen
 - **Budget Management** — Category-based budgeting with YNAB and Actual Budget sync support. Track spending against targets with real-time budget API integration.
 - **Portfolio Tracking** — Multi-account portfolio with asset allocation, performance history, tax-location analysis, and rebalancing tools. Supports brokerage and retirement account types.
 - **Net Worth** — Year-over-year net worth tracking with asset and liability breakdowns, trend visualization, and milestone tracking.
-- **Retirement Planning** — Monte Carlo simulations with both accumulation and decumulation phases, validated against Trinity Study benchmarks. 7 withdrawal strategies, IRMAA cliff detection, RMD tracking, lump-sum injections, and configurable filing status.
+- **Retirement Planning** — Monte Carlo simulations with both accumulation and decumulation phases, validated against Trinity Study benchmarks. 8 withdrawal strategies (Fixed, Forgo-Inflation, Spending Decline, Constant Percentage, Endowment, Vanguard Dynamic, Guyton-Klinger, RMD-Based), per-person retirement ages and Social Security, IRMAA cliff detection, RMD tracking, lump-sum injections, and configurable filing status. A "Plan Health" card surfaces contribution-order warnings, glide-path mismatches, rosy-assumption flags, and a recommended withdrawal strategy in context.
 - **Contributions** — Household contribution analysis with savings rate summary, per-person account breakdown, employer match analysis, IRS limit enforcement, prior-year tax contributions, and multiple contribution profiles.
 - **Savings Goals** — Fund-based savings tracking with contribution allocation and projections.
 - **Mortgage** — Amortization tables, refinance comparison, and extra payment modeling.
@@ -21,18 +21,21 @@ A self-hosted personal finance dashboard for tracking income, budgets, investmen
 
 ### Platform Features
 
-- **Tax Engine** — Federal tax engine with 2025/2026 brackets, FICA, Additional Medicare Tax, LTCG graduated rates (progressive stacking), NIIT surtax, and Social Security taxation. LTCG and IRMAA brackets stored in database with year/filing-status versioning.
+- **Tax Engine** — Federal tax engine with 2025/2026 brackets verified against IRS Rev. Proc. 2025-32, FICA, Additional Medicare Tax, LTCG graduated rates (progressive stacking), NIIT surtax, SECURE 2.0 super catch-up contributions, and Social Security taxation. LTCG and IRMAA brackets stored in database with year/filing-status versioning. A CI freshness check fails the build if the current calendar year moves beyond the latest pinned tax year without a deliberate override.
 - **Monte Carlo Simulation** — Probabilistic retirement outcome modeling with configurable parameters.
+- **Credential Encryption at Rest** — YNAB and Actual Budget API tokens are encrypted with AES-256-GCM before being stored in the database. Existing plaintext rows are transparently upgraded on first write.
+- **SSRF Protection** — User-supplied Actual Budget server URLs are validated against private IP ranges; the app refuses to connect to RFC1918, loopback, or link-local addresses unless a host is explicitly added to `ALLOWED_ACTUAL_HOSTS`.
 - **Onboarding Wizard** — Guided setup for new users with demo profiles to explore the app before entering real data.
 - **Demo Mode** — Read-only demo mode with profile chooser (no login required).
-- **Dark Mode** — Full dark/light theme support.
+- **Dark Mode** — Full dark/light theme support with semantic design tokens and a CI-enforced theme audit.
+- **Accessibility** — WCAG AA-aligned contrast, `prefers-reduced-motion` support, keyboard skip-to-content, focus trapping in dialogs, screen-reader error announcements, and full ARIA coverage on inline icons and table semantics.
 - **RBAC** — Role-based access control via Authentik OIDC integration with granular viewer permissions.
 - **Raw Data Browser** — Admin-only live database table viewer with row counts, column metadata, paginated data, and JSON export.
-- **Help & Guide** — Walkthrough of every feature organized by section.
+- **Help & Guide** — Walkthrough of every feature organized by section, plus an in-app glossary for finance jargon.
 - **Auto-Versioning** — Automatic database snapshots on startup for pre-migration recovery points.
 - **Cross-Version Backup Import** — Import backups from older schema versions; data is automatically transformed to the current schema.
-- **CLI Backup Tools** — `pnpm backup:export` and `pnpm backup:import` for headless environments and scripted workflows.
-- **Health Check** — Built-in `/api/health` endpoint for container orchestration.
+- **CLI Backup Tools** — `pnpm backup:export` and `pnpm backup:import` for headless environments; a separate `scripts/backup.sh` runs `pg_dump` wrapped in AES-256 encryption for off-site backups.
+- **Health Check** — Built-in `/api/health` endpoint for container orchestration. A separate authenticated `/api/health/detailed` endpoint (gated by `CRON_SECRET`) exposes pool stats and budget API status.
 
 ## Quick Start
 
@@ -44,7 +47,7 @@ git clone <repo-url> && cd ledgr
 
 # Configure environment
 cp .env.example .env
-# Edit .env — at minimum set NEXTAUTH_SECRET and CRON_SECRET
+# Edit .env — at minimum set NEXTAUTH_SECRET, CRON_SECRET, and ENCRYPTION_KEY
 
 # Start the app (SQLite, zero config)
 docker compose up -d
@@ -58,12 +61,14 @@ By default, Ledgr uses SQLite — no database setup required. For PostgreSQL, us
 ### Generate Secrets
 
 ```bash
-# Generate NEXTAUTH_SECRET
+# Generate NEXTAUTH_SECRET, CRON_SECRET, and ENCRYPTION_KEY
+# (each is an independent random 32-byte base64 value)
 openssl rand -base64 32
-
-# Generate CRON_SECRET
+openssl rand -base64 32
 openssl rand -base64 32
 ```
+
+`ENCRYPTION_KEY` protects at-rest encryption of YNAB / Actual Budget API tokens stored in the database. If you're running in `DEMO_ONLY` mode only, it can be omitted — demo mode blocks all credential writes at the server layer.
 
 ## Configuration
 
@@ -71,12 +76,13 @@ All configuration is done through environment variables. Copy `.env.example` to 
 
 ### Required
 
-| Variable          | Description                                                                   | Default             |
-| ----------------- | ----------------------------------------------------------------------------- | ------------------- |
-| `NEXTAUTH_URL`    | Full URL where the app is hosted (e.g. `http://localhost:3000`)               | _(none — must set)_ |
-| `NEXTAUTH_SECRET` | Random secret for session encryption. Generate with `openssl rand -base64 32` | _(none — must set)_ |
-| `AUTH_TRUST_HOST` | Trust the `X-Forwarded-Host` header (set `true` behind a reverse proxy)       | `true`              |
-| `CRON_SECRET`     | Secret token for authenticating cron job API calls                            | _(none — must set)_ |
+| Variable          | Description                                                                                                                                                                                                                                       | Default             |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `NEXTAUTH_URL`    | Full URL where the app is hosted (e.g. `http://localhost:3000`)                                                                                                                                                                                   | _(none — must set)_ |
+| `NEXTAUTH_SECRET` | Random secret for session encryption. Generate with `openssl rand -base64 32`                                                                                                                                                                     | _(none — must set)_ |
+| `AUTH_TRUST_HOST` | Trust the `X-Forwarded-Host` header (set `true` behind a reverse proxy)                                                                                                                                                                           | `true`              |
+| `CRON_SECRET`     | Secret token for authenticating cron job API calls. Required in production — startup fails without it                                                                                                                                             | _(none — must set)_ |
+| `ENCRYPTION_KEY`  | 32-byte base64 key for AES-256-GCM encryption of budget API credentials at rest (see `api_connections.config`). Required in production — startup fails without it. Generate with `openssl rand -base64 32`. **Not required in `DEMO_ONLY` mode.** | _(none — must set)_ |
 
 ### Optional — Database
 
@@ -95,13 +101,9 @@ All configuration is done through environment variables. Copy `.env.example` to 
 | `AUTH_AUTHENTIK_SECRET` | Authentik OIDC client secret                                                                   |
 | `DEMO_ONLY`             | Set `true` for demo-only mode — no login required, read-only with profile chooser              |
 
-### Optional — Budget API Integration
+### Budget API Integration
 
-| Variable            | Description                                                                          |
-| ------------------- | ------------------------------------------------------------------------------------ |
-| `YNAB_ACCESS_TOKEN` | [YNAB](https://api.ynab.com/) personal access token for budget sync                  |
-| `ACTUAL_SERVER_URL` | [Actual Budget](https://actualbudget.org/) server URL (e.g. `http://localhost:5006`) |
-| `ACTUAL_PASSWORD`   | Actual Budget server password                                                        |
+YNAB and Actual Budget credentials are not configured via environment variables. After signing in as an admin, set them up in **Settings → Integrations**. Credentials are encrypted at rest with AES-256-GCM using `ENCRYPTION_KEY` before being stored in the `api_connections` table. See [Budget API Integration](#budget-api-integration-1) below for details.
 
 ## Architecture
 
@@ -234,16 +236,18 @@ For production authentication, configure an Authentik OIDC provider:
 
 ## Budget API Integration
 
-Ledgr supports syncing budget data from two external sources:
+Ledgr supports syncing budget data from two external sources. Both are configured from the in-app **Settings → Integrations** page — there are no environment variables for credentials. Whatever you enter is encrypted at rest with AES-256-GCM using the `ENCRYPTION_KEY` env var before being stored.
 
-- **YNAB (You Need A Budget)** — Provide a personal access token via `YNAB_ACCESS_TOKEN`. Generate one at [YNAB Developer Settings](https://app.ynab.com/settings/developer).
-- **Actual Budget** — Provide the server URL and password via `ACTUAL_SERVER_URL` and `ACTUAL_PASSWORD`. Requires a running [Actual Budget](https://actualbudget.org/) server instance.
+- **YNAB (You Need A Budget)** — Generate a personal access token at [YNAB Developer Settings](https://app.ynab.com/settings/developer), paste it into Settings → Integrations, and pick a budget from the list the UI fetches. Syncs accounts, categories, monthly summaries, and transactions with delta-sync support for fast incremental updates.
+- **Actual Budget** — Requires a running [Actual Budget HTTP API](https://github.com/jhonderson/actual-http-api) wrapper in front of your Actual server. Enter the server URL, API key, and budget sync ID in Settings → Integrations. Outbound requests to private IP ranges (RFC1918, loopback, link-local) are blocked by default; add specific hosts to `ALLOWED_ACTUAL_HOSTS` if you need to reach a private network.
 
-Both integrations are optional. Budget features work without them — you can manage budgets directly within Ledgr.
+Only one integration can be active at a time, controlled from the Integrations page. Both are optional — Ledgr's budgeting features work without either.
+
+The integration layer hardens every outbound call: typed error classification, automatic exponential backoff with `Retry-After` support on rate limits, deterministic idempotency keys so retries don't create duplicate transactions, and drift detection after every sync that surfaces broken account mappings directly in the UI.
 
 ## Testing
 
-2,700+ tests across 130 files covering calculators, retirement benchmarks, tRPC routers, UI components, database operations, and end-to-end browser flows.
+2,970+ tests across 142 vitest files plus 13 Playwright end-to-end specs, covering financial calculators, retirement benchmarks, server logic, UI components, database operations, theme token regressions, and end-to-end browser flows. CI enforces a 85% statement / 70% branch / 80% function / 85% line coverage threshold.
 
 ```bash
 pnpm test          # Run once
