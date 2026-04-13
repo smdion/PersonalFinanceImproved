@@ -4,9 +4,27 @@
  * Captures full calculateProjection() output for diverse fixture inputs.
  * After engine refactoring, these must produce byte-identical results.
  * Any difference = test failure (forces investigation before merge).
+ *
+ * FRESHNESS GUARD (v0.5 expert-review M16):
+ * Snapshots can rot. Engineers update them after a refactor without
+ * checking that the new values are CORRECT (the snapshot just records
+ * what the code currently produces). To prevent silent multi-year drift,
+ * the LAST_REVIEWED_AT constant below MUST be bumped to today's date
+ * whenever the snapshots are intentionally re-verified (i.e., a human
+ * has spot-checked the values against an authoritative source like
+ * cFIREsim or hand-computed expectations). The freshness test fails if
+ * the date is more than 180 days stale.
+ *
+ * To bump:
+ *   1. Spot-check 3-5 fixtures against an authoritative source
+ *   2. Update LAST_REVIEWED_AT below to today (YYYY-MM-DD)
+ *   3. Document the verification in .scratch/docs/SNAPSHOT-REVIEW-LOG.md
  */
 import { describe, it, expect } from "vitest";
 import { calculateProjection } from "@/lib/calculators/engine";
+
+const LAST_REVIEWED_AT = "2026-04-12";
+const FRESHNESS_DAYS = 180;
 import type {
   ProjectionInput,
   ContributionSpec,
@@ -2939,5 +2957,31 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     expect(metrics).toMatchSnapshot();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// Freshness guard (M16)
+// ─────────────────────────────────────────────────────────────────────
+
+describe("snapshot freshness guard", () => {
+  it(`LAST_REVIEWED_AT must be within ${FRESHNESS_DAYS} days`, () => {
+    const reviewedAt = new Date(LAST_REVIEWED_AT + "T00:00:00Z");
+    expect(Number.isFinite(reviewedAt.getTime())).toBe(true);
+    const ageDays = Math.floor(
+      (Date.now() - reviewedAt.getTime()) / (24 * 60 * 60 * 1000),
+    );
+    if (ageDays > FRESHNESS_DAYS) {
+      // Use expect.fail rather than toBeLessThanOrEqual so the message is rich.
+      expect.fail(
+        `Engine snapshots haven't been reviewed in ${ageDays} days ` +
+          `(LAST_REVIEWED_AT = ${LAST_REVIEWED_AT}, threshold = ${FRESHNESS_DAYS} days).\n\n` +
+          `Snapshots can rot — they record what the code currently produces, ` +
+          `not what it SHOULD produce. Spot-check 3-5 fixtures against an ` +
+          `authoritative source (cFIREsim, hand-computed values, IRS pubs), ` +
+          `then bump LAST_REVIEWED_AT in tests/calculators/engine-snapshot.test.ts ` +
+          `to today's date.`,
+      );
+    }
   });
 });

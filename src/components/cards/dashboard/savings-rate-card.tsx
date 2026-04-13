@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -17,7 +17,7 @@ import {
 import type { AccountCategory } from "@/lib/config/account-types";
 import { LoadingCard, ErrorCard } from "./utils";
 
-export function SavingsRateCard() {
+function SavingsRateCardImpl() {
   const { viewMode } = useScenario();
   const salaryOverrides = useSalaryOverrides();
   const [activeProfileId] = usePersistedSetting<number | null>(
@@ -179,6 +179,7 @@ export function SavingsRateCard() {
           "retirement",
           "hsa",
           ...Object.keys(groupTotals).filter(
+            // lint-violation-ok: "hsa" here is a savings group label key, not an account category
             (g) => g !== "retirement" && g !== "hsa",
           ),
         ].map((group) => {
@@ -229,3 +230,5 @@ export function SavingsRateCard() {
     </Card>
   );
 }
+
+export const SavingsRateCard = memo(SavingsRateCardImpl);

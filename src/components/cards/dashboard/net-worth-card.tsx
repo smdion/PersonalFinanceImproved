@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency } from "@/lib/utils/format";
 import { LoadingCard, ErrorCard } from "./utils";
 
-export function NetWorthCard() {
+function NetWorthCardImpl() {
   const { data, isLoading, error } = trpc.networth.computeSummary.useQuery();
   const [useMarket, setUseMarket] = useState(true);
   if (isLoading) return <LoadingCard title="Net Worth" />;
@@ -91,3 +91,5 @@ export function NetWorthCard() {
     </Card>
   );
 }
+
+export const NetWorthCard = memo(NetWorthCardImpl);

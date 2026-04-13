@@ -70,7 +70,7 @@ export function FundingBar({
       />
       {/* IRS limit marker line */}
       <div
-        className="absolute top-[-2px] h-[12px] w-[2px] bg-surface-elevated"
+        className="absolute top-[-2px] h-[12px] w-[2px] bg-surface-emphasis"
         style={{ left: `${limitPosition}%` }}
         title="Vertical line = 100% IRS annual limit"
       />

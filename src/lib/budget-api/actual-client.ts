@@ -15,6 +15,8 @@ import type {
   NewBudgetTransaction,
 } from "./types";
 import { fromCents, toCents } from "./conversions";
+import { classifyResponse, classifyThrown, retryWithBackoff } from "./errors";
+import { transactionIdempotencyKey } from "./idempotency";
 
 // -- Actual API response types --
 
@@ -176,31 +178,36 @@ export class ActualClient implements BudgetAPIClient {
     this.budgetPath = `${base}/v1/budgets/${budgetSyncId}`;
   }
 
+  /**
+   * Internal fetch wrapper. v0.5 expert-review M19/M22:
+   * - Throws typed BudgetApiError instead of generic Error so call sites
+   *   can distinguish auth/rate-limit/server/network/timeout failures.
+   * - Wrapped in retryWithBackoff which honors Retry-After on 429 and
+   *   does exponential backoff (1s/2s/4s capped at 30s) for retryable
+   *   errors. Auth + client errors are NOT retried.
+   */
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
     const url = `${this.budgetPath}${path}`;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15_000);
-    try {
-      const res = await fetch(url, {
-        ...init,
-        headers: { ...this.headers, ...init?.headers },
-        signal: controller.signal,
-      });
-      if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        throw new Error(
-          `Actual API ${res.status}: ${res.statusText} — ${body}`,
-        );
+    return retryWithBackoff(async () => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15_000);
+      try {
+        const res = await fetch(url, {
+          ...init,
+          headers: { ...this.headers, ...init?.headers },
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          const body = await res.text().catch(() => "");
+          throw classifyResponse(res, body);
+        }
+        return (await res.json()) as T;
+      } catch (e) {
+        throw classifyThrown(e);
+      } finally {
+        clearTimeout(timeout);
       }
-      return res.json() as Promise<T>;
-    } catch (e) {
-      if (e instanceof DOMException && e.name === "AbortError") {
-        throw new Error("Actual API request timed out (15s)");
-      }
-      throw e;
-    } finally {
-      clearTimeout(timeout);
-    }
+    });
   }
 
   async testConnection(): Promise<boolean> {
@@ -328,6 +335,20 @@ export class ActualClient implements BudgetAPIClient {
   }
 
   async createTransaction(tx: NewBudgetTransaction): Promise<string> {
+    // v0.5 expert-review M20: deterministic idempotency key. Actual's
+    // transaction model includes an `imported_id` field that the server
+    // uses for dedupe on import. Mirror the YNAB pattern: hash the
+    // canonical fingerprint and prefix it so it's recognizable as
+    // ledgr-generated in the Actual UI.
+    const idempotencyKey = transactionIdempotencyKey({
+      accountId: tx.accountId,
+      date: tx.date,
+      amount: toCents(tx.amount),
+      payee: tx.payeeName ?? null,
+      memo: tx.memo ?? null,
+    });
+    const importedId = `ledgr:${idempotencyKey.slice(0, 30)}`;
+
     const res = await this.request<{ data: { id: string } }>(
       `/accounts/${tx.accountId}/transactions`,
       {
@@ -339,6 +360,7 @@ export class ActualClient implements BudgetAPIClient {
           category: tx.categoryId,
           notes: tx.memo,
           cleared: tx.cleared ?? false,
+          imported_id: importedId,
         }),
       },
     );

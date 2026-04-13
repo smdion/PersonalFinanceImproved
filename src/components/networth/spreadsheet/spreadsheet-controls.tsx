@@ -65,7 +65,7 @@ export function SpreadsheetControls({
             type="checkbox"
             checked={useMarketValue}
             onChange={onToggleMarketValue}
-            className="rounded border-gray-300"
+            className="rounded border-default"
           />
           <span className="text-muted whitespace-nowrap">
             Include Home Estimated Growth
@@ -77,7 +77,7 @@ export function SpreadsheetControls({
             type="checkbox"
             checked={useSalaryAverage}
             onChange={onToggleSalaryAverage}
-            className="rounded border-gray-300"
+            className="rounded border-default"
           />
           <span className="text-muted whitespace-nowrap">
             Average Past 3 Years Salary for Stats

@@ -249,9 +249,13 @@ describe("YnabClient", () => {
   });
 
   describe("error handling", () => {
-    it("throws on non-OK response", async () => {
+    it("throws a typed auth error on 401", async () => {
+      // v0.5: ynab-client throws BudgetApiError instead of generic Error.
+      // The auth code is non-retryable so the failure surfaces immediately.
       mockFetch.mockReturnValueOnce(jsonResponse({}, 401));
-      await expect(client.getAccounts()).rejects.toThrow("YNAB API 401");
+      await expect(client.getAccounts()).rejects.toThrow(
+        /Authentication failed.*401/,
+      );
     });
   });
 });

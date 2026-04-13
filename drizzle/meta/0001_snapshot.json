@@ -1,6 +1,6 @@
 {
-  "id": "aa752624-870b-448e-8d02-640f4ca21659",
-  "prevId": "34253d35-7ac6-4527-b55b-d4a238b5b3d3",
+  "id": "0dba1879-d53c-4252-9d91-086d4ec08a9e",
+  "prevId": "36f08a59-7570-4a14-955f-122eda0ccb38",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -40,25 +40,25 @@
         },
         "beginning_balance": {
           "name": "beginning_balance",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
         "total_contributions": {
           "name": "total_contributions",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
         "yearly_gain_loss": {
           "name": "yearly_gain_loss",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
         "ending_balance": {
           "name": "ending_balance",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -70,28 +70,28 @@
         },
         "employer_contributions": {
           "name": "employer_contributions",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "fees": {
           "name": "fees",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "distributions": {
           "name": "distributions",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "rollovers": {
           "name": "rollovers",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
@@ -120,7 +120,7 @@
           "name": "performance_account_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         }
       },
       "indexes": {
@@ -253,25 +253,25 @@
         },
         "beginning_balance": {
           "name": "beginning_balance",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
         "total_contributions": {
           "name": "total_contributions",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
         "yearly_gain_loss": {
           "name": "yearly_gain_loss",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
         "ending_balance": {
           "name": "ending_balance",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -283,47 +283,47 @@
         },
         "employer_contributions": {
           "name": "employer_contributions",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "distributions": {
           "name": "distributions",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "fees": {
           "name": "fees",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "rollovers": {
           "name": "rollovers",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "lifetime_gains": {
           "name": "lifetime_gains",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
         "lifetime_contributions": {
           "name": "lifetime_contributions",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
         "lifetime_match": {
           "name": "lifetime_match",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -336,6 +336,13 @@
         },
         "is_finalized": {
           "name": "is_finalized",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "is_immutable": {
+          "name": "is_immutable",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
@@ -436,7 +443,23 @@
           "notNull": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "api_connections_linked_profile_id_idx": {
+          "name": "api_connections_linked_profile_id_idx",
+          "columns": [
+            {
+              "expression": "linked_profile_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
@@ -686,7 +709,7 @@
         },
         "target_amount": {
           "name": "target_amount",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -772,7 +795,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -988,6 +1011,21 @@
           "columns": [
             {
               "expression": "profile_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "budget_items_contribution_account_id_idx": {
+          "name": "budget_items_contribution_account_id_idx",
+          "columns": [
+            {
+              "expression": "contribution_account_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1297,7 +1335,7 @@
         },
         "contribution_value": {
           "name": "contribution_value",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -1309,7 +1347,7 @@
         },
         "employer_match_value": {
           "name": "employer_match_value",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": false
         },
@@ -1361,7 +1399,7 @@
         },
         "target_annual": {
           "name": "target_annual",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": false
         },
@@ -1386,7 +1424,7 @@
         },
         "prior_year_contrib_amount": {
           "name": "prior_year_contrib_amount",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
@@ -1812,7 +1850,7 @@
         },
         "cost": {
           "name": "cost",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -1920,7 +1958,7 @@
         },
         "annual_salary": {
           "name": "annual_salary",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -1991,7 +2029,7 @@
         },
         "bonus_override": {
           "name": "bonus_override",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": false
         },
@@ -2022,7 +2060,7 @@
         },
         "additional_fed_withholding": {
           "name": "additional_fed_withholding",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
@@ -2588,7 +2626,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -2682,27 +2720,27 @@
         },
         "principal_and_interest": {
           "name": "principal_and_interest",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
         "pmi": {
           "name": "pmi",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "insurance_and_taxes": {
           "name": "insurance_and_taxes",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "total_escrow": {
           "name": "total_escrow",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
@@ -2721,7 +2759,7 @@
         },
         "original_loan_amount": {
           "name": "original_loan_amount",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -2733,13 +2771,13 @@
         },
         "property_value_purchase": {
           "name": "property_value_purchase",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
         "property_value_estimated": {
           "name": "property_value_estimated",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": false
         },
@@ -2752,7 +2790,7 @@
         },
         "api_balance": {
           "name": "api_balance",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": false
         },
@@ -2811,13 +2849,13 @@
         },
         "extra_monthly_principal": {
           "name": "extra_monthly_principal",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
         "extra_one_time_payment": {
           "name": "extra_one_time_payment",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
@@ -2894,21 +2932,21 @@
         },
         "gross_income": {
           "name": "gross_income",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "combined_agi": {
           "name": "combined_agi",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "ssa_earnings": {
           "name": "ssa_earnings",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": false
         },
@@ -2920,111 +2958,111 @@
         },
         "taxes_paid": {
           "name": "taxes_paid",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": false
         },
         "cash": {
           "name": "cash",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "house_value": {
           "name": "house_value",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "retirement_total": {
           "name": "retirement_total",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "hsa": {
           "name": "hsa",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "lt_brokerage": {
           "name": "lt_brokerage",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "espp": {
           "name": "espp",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "r_brokerage": {
           "name": "r_brokerage",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "other_assets": {
           "name": "other_assets",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "mortgage_balance": {
           "name": "mortgage_balance",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "other_liabilities": {
           "name": "other_liabilities",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "tax_free_total": {
           "name": "tax_free_total",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "tax_deferred_total": {
           "name": "tax_deferred_total",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "portfolio_total": {
           "name": "portfolio_total",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "home_improvements_cumulative": {
           "name": "home_improvements_cumulative",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
         },
         "property_taxes": {
           "name": "property_taxes",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": false
         },
@@ -3032,7 +3070,7 @@
           "name": "portfolio_by_tax_location",
           "type": "jsonb",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         }
       },
       "indexes": {},
@@ -3073,7 +3111,7 @@
         },
         "value": {
           "name": "value",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -3138,7 +3176,7 @@
         },
         "amount_per_period": {
           "name": "amount_per_period",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -3302,7 +3340,7 @@
         },
         "cost_basis": {
           "name": "cost_basis",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
@@ -3479,7 +3517,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -3818,13 +3856,13 @@
         },
         "assessed_value": {
           "name": "assessed_value",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": false
         },
         "tax_amount": {
           "name": "tax_amount",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -3944,7 +3982,7 @@
         },
         "override_monthly_budget": {
           "name": "override_monthly_budget",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -4046,7 +4084,7 @@
         },
         "override_salary": {
           "name": "override_salary",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -4163,7 +4201,7 @@
         },
         "target_annual_income": {
           "name": "target_annual_income",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -4210,7 +4248,7 @@
         },
         "lt_brokerage_annual_contribution": {
           "name": "lt_brokerage_annual_contribution",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
@@ -4291,7 +4329,7 @@
         },
         "salary_cap": {
           "name": "salary_cap",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": false
         },
@@ -4332,7 +4370,7 @@
         },
         "social_security_monthly": {
           "name": "social_security_monthly",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'2500'"
@@ -4598,7 +4636,7 @@
         },
         "new_salary": {
           "name": "new_salary",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -4673,7 +4711,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         }
@@ -4742,7 +4780,7 @@
         },
         "target_amount": {
           "name": "target_amount",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": false
         },
@@ -4813,7 +4851,7 @@
         },
         "monthly_contribution": {
           "name": "monthly_contribution",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
@@ -4884,13 +4922,13 @@
         },
         "balance": {
           "name": "balance",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
         "deposit_or_withdrawal": {
           "name": "deposit_or_withdrawal",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": false
         },
@@ -4980,7 +5018,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -5127,7 +5165,7 @@
         },
         "amount": {
           "name": "amount",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -5139,7 +5177,7 @@
         },
         "repaid_amount": {
           "name": "repaid_amount",
-          "type": "numeric(12, 2)",
+          "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"

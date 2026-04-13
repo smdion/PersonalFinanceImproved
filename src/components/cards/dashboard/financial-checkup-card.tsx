@@ -1,5 +1,7 @@
 "use client";
 
+import { memo } from "react";
+
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -112,7 +114,7 @@ function CheckupRow({ step }: { step: CheckupStep }) {
   );
 }
 
-export function FinancialCheckupCard() {
+function FinancialCheckupCardImpl() {
   const { viewMode } = useScenario();
   const salaryOverrides = useSalaryOverrides();
   const [activeContribProfileId] = usePersistedSetting<number | null>(
@@ -323,3 +325,5 @@ export function FinancialCheckupCard() {
     </Card>
   );
 }
+
+export const FinancialCheckupCard = memo(FinancialCheckupCardImpl);

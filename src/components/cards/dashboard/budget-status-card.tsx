@@ -1,12 +1,14 @@
 "use client";
 
+import { memo } from "react";
+
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { LoadingCard, ErrorCard } from "./utils";
 
-export function BudgetStatusCard() {
+function BudgetStatusCardImpl() {
   const [activeColumn] = usePersistedSetting<number>("budget_active_column", 0);
   const { data, isLoading, error } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
@@ -51,3 +53,5 @@ export function BudgetStatusCard() {
     </Card>
   );
 }
+
+export const BudgetStatusCard = memo(BudgetStatusCardImpl);

@@ -75,6 +75,7 @@ export function SlidePanel({
             aria-label="Close"
           >
             <svg
+              aria-hidden="true"
               className="w-5 h-5"
               fill="none"
               viewBox="0 0 24 24"

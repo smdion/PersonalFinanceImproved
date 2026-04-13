@@ -60,7 +60,11 @@ function GaugeDonut({
       className={`${bg} rounded-lg p-3 flex flex-col items-center justify-center`}
     >
       <div className={`relative ${svgSize}`}>
-        <svg className={`${svgSize} -rotate-90`} viewBox="0 0 100 100">
+        <svg
+          aria-hidden="true"
+          className={`${svgSize} -rotate-90`}
+          viewBox="0 0 100 100"
+        >
           <circle
             cx="50"
             cy="50"
@@ -161,8 +165,8 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
             key={i}
             className="bg-surface-sunken rounded-lg p-4 flex flex-col items-center justify-center animate-pulse"
           >
-            <div className="w-20 h-20 rounded-full bg-gray-200/20" />
-            <div className="h-3 w-20 bg-gray-200/20 rounded mt-2" />
+            <div className="w-20 h-20 rounded-full bg-surface-strong/20" />
+            <div className="h-3 w-20 bg-surface-strong/20 rounded mt-2" />
           </div>
         ))}
       </div>

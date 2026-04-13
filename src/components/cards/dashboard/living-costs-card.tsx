@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -14,7 +14,7 @@ import {
 } from "@/lib/config/living-costs";
 import { LoadingCard } from "./utils";
 
-export function LivingCostsCard() {
+function LivingCostsCardImpl() {
   const { viewMode } = useScenario();
   const isYtd = viewMode === "ytd";
   const isBlended = viewMode === "blended";
@@ -249,3 +249,5 @@ export function LivingCostsCard() {
     </Card>
   );
 }
+
+export const LivingCostsCard = memo(LivingCostsCardImpl);

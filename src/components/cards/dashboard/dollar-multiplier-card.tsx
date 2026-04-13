@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -12,7 +12,7 @@ import {
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { LoadingCard, ErrorCard } from "./utils";
 
-export function DollarMultiplierCard() {
+function DollarMultiplierCardImpl() {
   const salaryOverrides = useSalaryOverrides();
   const engineInput = salaryOverrides.length > 0 ? { salaryOverrides } : {};
   const { data, isLoading, error } =
@@ -142,3 +142,5 @@ export function DollarMultiplierCard() {
     </Card>
   );
 }
+
+export const DollarMultiplierCard = memo(DollarMultiplierCardImpl);

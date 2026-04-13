@@ -1,10 +1,27 @@
 "use client";
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
-import { FundMiniChart } from "./fund-mini-chart";
+
+// Code-split the per-fund Recharts mini chart (v0.5 expert-review M8). All
+// FundCard instances on the page share a single chunk, so the recharts
+// payload is fetched once when the savings page hydrates instead of being
+// inlined in the page bundle. ssr:false because Recharts isn't SSR-friendly.
+const FundMiniChart = dynamic(
+  () => import("./fund-mini-chart").then((m) => ({ default: m.FundMiniChart })),
+  {
+    loading: () => (
+      <div
+        className="h-20 w-full bg-surface-sunken/40 rounded animate-pulse"
+        aria-hidden="true"
+      />
+    ),
+    ssr: false,
+  },
+);
 import { FundTransactionList } from "./fund-transaction-list";
 import { FundOverridesSummary } from "./fund-overrides-summary";
 import { GoalProjection, PlannedTxForm, NewFundForm } from "./types";

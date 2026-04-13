@@ -1,6 +1,10 @@
 "use client";
 
-import { useToasts, type ToastVariant } from "@/lib/hooks/use-toast";
+import {
+  useToasts,
+  type ToastVariant,
+  type ToastAction,
+} from "@/lib/hooks/use-toast";
 import { useEffect, useState } from "react";
 
 const variantStyles: Record<ToastVariant, string> = {
@@ -19,11 +23,13 @@ function ToastItem({
   id,
   message,
   variant,
+  action,
   onDismiss,
 }: {
   id: string;
   message: string;
   variant: ToastVariant;
+  action?: ToastAction;
   onDismiss: (id: string) => void;
 }) {
   const [visible, setVisible] = useState(false);
@@ -44,7 +50,20 @@ function ToastItem({
         {variantIcons[variant]}
       </span>
       <span className="flex-1">{message}</span>
+      {action && (
+        <button
+          type="button"
+          onClick={() => {
+            action.onClick();
+            onDismiss(id);
+          }}
+          className="ml-2 px-2 py-1 text-xs font-semibold underline hover:no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+        >
+          {action.label}
+        </button>
+      )}
       <button
+        type="button"
         onClick={() => onDismiss(id)}
         className="ml-2 opacity-60 hover:opacity-100 transition-opacity p-1 min-w-[44px] min-h-[44px] flex items-center justify-center"
         aria-label="Dismiss notification"
@@ -88,6 +107,7 @@ export function ToastContainer() {
           id={t.id}
           message={t.message}
           variant={t.variant}
+          action={t.action}
           onDismiss={dismiss}
         />
       ))}

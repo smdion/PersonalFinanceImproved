@@ -126,6 +126,7 @@ export function ProjectionTable({
           <div className="overflow-x-auto max-h-[28rem] overflow-y-auto">
             <table
               className="text-xs"
+              aria-label="Year-by-year retirement projection table with contributions, balances by tax bucket, and withdrawals"
               style={{
                 minWidth:
                   (balanceView === "account" || contribView === "account"
@@ -133,6 +134,12 @@ export function ProjectionTable({
                     : 1100) + (mcBandsByYear ? 120 : 0),
               }}
             >
+              <caption className="sr-only">
+                Year-by-year retirement projection. Columns include age, salary,
+                contributions split by tax treatment, account balances, return
+                rate, and withdrawal amounts in retirement years. Use Tab to
+                navigate; column headers indicate sort order via aria-sort.
+              </caption>
               <thead className="sticky top-0 bg-surface-primary z-10">
                 {/* Column group headers */}
                 <tr className="border-b border-subtle">

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils/format";
@@ -9,7 +9,7 @@ import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
 import { LoadingCard, ErrorCard } from "./utils";
 
-export function HouseholdIncomeCard() {
+function HouseholdIncomeCardImpl() {
   const { viewMode } = useScenario();
   const isYtd = viewMode === "ytd";
   const isBlended = viewMode === "blended";
@@ -136,3 +136,5 @@ export function HouseholdIncomeCard() {
     </Card>
   );
 }
+
+export const HouseholdIncomeCard = memo(HouseholdIncomeCardImpl);

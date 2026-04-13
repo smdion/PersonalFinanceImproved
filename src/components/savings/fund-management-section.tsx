@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
+import { toast } from "@/lib/hooks/use-toast";
 import { FundCardGrid } from "./fund-card-grid";
 import { FundCard } from "./fund-card";
 import { FundTimelineDetail } from "./fund-timeline-detail";
@@ -177,9 +178,42 @@ export function FundManagementSection({
   const createTx = trpc.savings.plannedTransactions.create.useMutation({
     onSuccess: () => utils.savings.invalidate(),
   });
-  const deleteTx = trpc.savings.plannedTransactions.delete.useMutation({
+  const deleteTxMut = trpc.savings.plannedTransactions.delete.useMutation({
     onSuccess: () => utils.savings.invalidate(),
   });
+
+  // v0.5 expert-review M27: undoable delete for planned transactions.
+  // PlannedTransactions are single-row, no cascade — safe to re-create on
+  // undo. We capture the full row (looked up by id from the in-memory list)
+  // before firing the delete, and stash it in the undo callback so the toast
+  // action can replay the create with the original payload. The new row
+  // gets a new auto-id, which is acceptable here because nothing references
+  // planned transactions by id.
+  const deleteTx = useCallback(
+    (params: { id: number }) => {
+      const row = plannedTransactions.find((t) => t.id === params.id);
+      deleteTxMut.mutate(params, {
+        onSuccess: () => {
+          if (!row) return;
+          toast.undo(
+            "Removed planned event",
+            () => {
+              createTx.mutate({
+                goalId: row.goalId,
+                transactionDate: row.transactionDate,
+                amount: String(row.amount),
+                description: row.description,
+                isRecurring: row.isRecurring,
+                recurrenceMonths: row.recurrenceMonths,
+              });
+            },
+            5000,
+          );
+        },
+      });
+    },
+    [plannedTransactions, deleteTxMut, createTx],
+  );
   const deleteTransfer = trpc.savings.transfers.delete.useMutation({
     onSuccess: () => utils.savings.invalidate(),
   });
@@ -424,7 +458,7 @@ export function FundManagementSection({
                   onGoalUpdateMulti={handleGoalUpdateMulti}
                   maxMonthlyFunding={maxMonthlyFunding}
                   onDeleteGoal={(p) => deleteGoal.mutate(p)}
-                  onDeleteTx={(p) => deleteTx.mutate(p)}
+                  onDeleteTx={deleteTx}
                   onDeleteTransfer={(p) => deleteTransfer.mutate(p)}
                   goalById={goalById as Map<number, { name: string }>}
                   onAddTx={handleAddTx}

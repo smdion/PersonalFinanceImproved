@@ -15,7 +15,7 @@ export function RefinanceHistory({
         {loanHistory.map((h) => (
           <div key={h.name} className="flex items-center gap-3 text-sm">
             <span
-              className={`w-2 h-2 rounded-full ${h.isActive ? "bg-green-500" : "bg-gray-300"}`}
+              className={`w-2 h-2 rounded-full ${h.isActive ? "bg-green-500" : "bg-surface-divider"}`}
             />
             <span className={h.isActive ? "font-medium" : "text-muted"}>
               {h.name}

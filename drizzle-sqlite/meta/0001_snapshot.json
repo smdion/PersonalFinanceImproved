@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "080c34f3-4168-4855-a522-e57318002c7e",
-  "prevId": "67dcbba3-8787-4759-a639-9aa3b817f2ca",
+  "id": "3de862cf-164b-4f95-886b-5ba6361e7bcf",
+  "prevId": "c3692f00-acf6-4be6-badf-9d1f8a63c84d",
   "tables": {
     "account_performance": {
       "name": "account_performance",
@@ -136,7 +136,7 @@
           "name": "performance_account_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         }
       },
@@ -318,6 +318,14 @@
           "notNull": true,
           "autoincrement": false,
           "default": false
+        },
+        "is_immutable": {
+          "name": "is_immutable",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
         }
       },
       "indexes": {
@@ -330,12 +338,7 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {
-        "annual_perf_finalized_not_current": {
-          "name": "annual_perf_finalized_not_current",
-          "value": "NOT (\"annual_performance\".\"is_finalized\" AND \"annual_performance\".\"is_current_year\")"
-        }
-      }
+      "checkConstraints": {}
     },
     "api_connections": {
       "name": "api_connections",
@@ -409,6 +412,11 @@
           "name": "api_connections_service_unique",
           "columns": ["service"],
           "isUnique": true
+        },
+        "api_connections_linked_profile_id_idx": {
+          "name": "api_connections_linked_profile_id_idx",
+          "columns": ["linked_profile_id"],
+          "isUnique": false
         }
       },
       "foreignKeys": {},
@@ -898,6 +906,11 @@
           "columns": ["profile_id"],
           "isUnique": false
         },
+        "budget_items_contribution_account_id_idx": {
+          "name": "budget_items_contribution_account_id_idx",
+          "columns": ["contribution_account_id"],
+          "isUnique": false
+        },
         "budget_items_profile_cat_sub_idx": {
           "name": "budget_items_profile_cat_sub_idx",
           "columns": ["profile_id", "category", "subcategory"],
@@ -1329,12 +1342,7 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {
-        "contribution_accounts_parent_cat_check": {
-          "name": "contribution_accounts_parent_cat_check",
-          "value": "parent_category IN ('Retirement', 'Portfolio')"
-        }
-      }
+      "checkConstraints": {}
     },
     "contribution_limits": {
       "name": "contribution_limits",
@@ -2347,12 +2355,7 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {
-        "date_pattern_check": {
-          "name": "date_pattern_check",
-          "value": "(payment_date IS NOT NULL AND start_date IS NULL AND end_date IS NULL) OR (payment_date IS NULL AND start_date IS NOT NULL AND end_date IS NOT NULL)"
-        }
-      }
+      "checkConstraints": {}
     },
     "mortgage_loans": {
       "name": "mortgage_loans",
@@ -2762,7 +2765,7 @@
           "name": "portfolio_by_tax_location",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         }
       },
@@ -3100,12 +3103,7 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {
-        "performance_accounts_parent_cat_check": {
-          "name": "performance_accounts_parent_cat_check",
-          "value": "parent_category IN ('Retirement', 'Portfolio')"
-        }
-      }
+      "checkConstraints": {}
     },
     "portfolio_accounts": {
       "name": "portfolio_accounts",
@@ -3265,12 +3263,7 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {
-        "portfolio_accounts_parent_cat_check": {
-          "name": "portfolio_accounts_parent_cat_check",
-          "value": "parent_category IN ('Retirement', 'Portfolio')"
-        }
-      }
+      "checkConstraints": {}
     },
     "portfolio_snapshots": {
       "name": "portfolio_snapshots",
@@ -4392,12 +4385,7 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {
-        "savings_goals_target_mode_check": {
-          "name": "savings_goals_target_mode_check",
-          "value": "target_mode IN ('fixed', 'ongoing')"
-        }
-      }
+      "checkConstraints": {}
     },
     "savings_monthly": {
       "name": "savings_monthly",

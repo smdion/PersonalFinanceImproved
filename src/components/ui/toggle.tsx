@@ -49,7 +49,11 @@ export function Toggle({
       >
         <span
           className={`absolute top-0.5 ${dot} rounded-full shadow-sm transition-all duration-200 ${
-            checked ? `${dotOn} bg-white` : `${dotOff} bg-gray-400`
+            // v0.5 M26: design tokens, not hardcoded grays. Off-state dot was
+            // bg-gray-400 (invisible on light surfaces in some themes).
+            checked
+              ? `${dotOn} bg-white`
+              : `${dotOff} bg-surface-elevated dark:bg-surface-primary border border-default`
           }`}
         />
       </span>

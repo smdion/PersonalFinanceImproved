@@ -107,6 +107,16 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
     changeFrequency: "annual",
   },
   {
+    name: "Standard deduction (seed)",
+    validThrough: 2026,
+    source: "IRS Revenue Procedure 2025-32",
+    updateUrl:
+      "https://www.irs.gov/newsroom/irs-provides-tax-inflation-adjustments",
+    location:
+      "seed-reference-data.sql → contribution_limits (standard_deduction_*)",
+    changeFrequency: "annual",
+  },
+  {
     name: "LTCG brackets (seed)",
     validThrough: 2026,
     source: "IRS Revenue Procedure 2025-32",

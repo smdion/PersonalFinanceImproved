@@ -3,6 +3,7 @@
 /** Savings goals tracking page showing progress, contributions, and projected completion dates. */
 
 import React, { useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
@@ -19,7 +20,17 @@ import {
   type NewFundForm,
 } from "@/components/savings";
 import { BudgetCapacityBar } from "@/components/savings/budget-capacity-bar";
-import { SavingsTrajectoryChart } from "@/components/savings/savings-trajectory-chart";
+
+// Code-split Recharts-heavy children (v0.5 expert-review M8). Loads on
+// page mount instead of bundling into the savings page chunk. ssr:false
+// because Recharts isn't SSR-friendly.
+const SavingsTrajectoryChart = dynamic(
+  () =>
+    import("@/components/savings/savings-trajectory-chart").then((m) => ({
+      default: m.SavingsTrajectoryChart,
+    })),
+  { loading: () => <SkeletonChart />, ssr: false },
+);
 import { UpcomingGoals } from "@/components/savings/upcoming-goals";
 import { TransferForm } from "@/components/savings/transfer-form";
 import { BrokerageGoalsSection } from "@/components/cards/brokerage-goals";

@@ -179,10 +179,13 @@ function CollapsibleNavGroup({
   return (
     <div>
       <button
+        type="button"
         onClick={() => setIsOpen((o) => !o)}
+        aria-expanded={isOpen}
+        aria-label={`${isOpen ? "Collapse" : "Expand"} ${group.label}`}
         className="w-full flex items-center gap-3 px-3 py-1.5 rounded text-sm text-faint hover:text-primary hover:bg-surface-elevated/50 transition-colors"
       >
-        <group.Icon className="w-4 h-4 shrink-0" />
+        <group.Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
         {showLabels && (
           <span className="hidden md:inline flex-1 text-left text-xs font-semibold uppercase tracking-wider">
             {group.label}
@@ -192,6 +195,7 @@ function CollapsibleNavGroup({
           {group.label}
         </span>
         <ChevronRight
+          aria-hidden="true"
           className={`w-3 h-3 shrink-0 transition-transform duration-150 ${isOpen ? "rotate-90" : ""}`}
         />
       </button>
@@ -255,6 +259,7 @@ export function Sidebar({
         <div className="p-4 border-b">
           <h1 className="text-lg font-bold flex items-center gap-2">
             <svg
+              aria-hidden="true"
               width="24"
               height="24"
               viewBox="0 0 32 32"

@@ -74,6 +74,7 @@ export function FundTransactionList({
           className="flex items-center gap-1.5 text-xs text-muted hover:text-primary"
         >
           <svg
+            aria-hidden="true"
             className={`w-3 h-3 transition-transform ${isOpen ? "rotate-90" : ""}`}
             fill="none"
             viewBox="0 0 24 24"

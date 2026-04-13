@@ -293,6 +293,7 @@ export function PoolDistributionEditor({
           </span>
           {isBalanced ? (
             <svg
+              aria-hidden="true"
               className="w-4 h-4 text-green-600"
               fill="none"
               viewBox="0 0 24 24"

@@ -1,9 +1,11 @@
+// Amber uses text-amber-800 (not 700) because text-amber-700 on bg-amber-100
+// falls below WCAG AA 4.5:1 contrast for small text (v0.5 expert-review M14).
 const colorStyles = {
   gray: "bg-surface-strong text-muted",
   blue: "bg-blue-50 text-blue-700",
   green: "bg-green-100 text-green-700",
   red: "bg-red-100 text-red-700",
-  amber: "bg-amber-100 text-amber-700",
+  amber: "bg-amber-100 text-amber-800",
   purple: "bg-purple-50 text-purple-600",
   indigo: "bg-indigo-50 text-indigo-700",
 } as const;

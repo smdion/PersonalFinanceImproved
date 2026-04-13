@@ -3,6 +3,7 @@
 /** Shows historical year-end net worth and account balances with trend charts and annual growth metrics. */
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
@@ -11,7 +12,16 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Tooltip } from "@/components/ui/tooltip";
-import { JobsSettings } from "@/components/historical/jobs";
+// Code-split the recharts-heavy jobs settings panel (v0.5 expert-review M8).
+// JobsSettings renders salary trend charts so it carries the recharts payload;
+// loads on historical page mount instead of bundling into the page chunk.
+const JobsSettings = dynamic(
+  () =>
+    import("@/components/historical/jobs").then((m) => ({
+      default: m.JobsSettings,
+    })),
+  { loading: () => <SkeletonChart />, ssr: false },
+);
 import {
   getAllCategories,
   ACCOUNT_TYPE_CONFIG,
@@ -337,6 +347,7 @@ function HistoricalTable({
                     title="View Net Worth page"
                   >
                     <svg
+                      aria-hidden="true"
                       className="w-3 h-3"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -371,6 +382,7 @@ function HistoricalTable({
                     title="View Performance page"
                   >
                     <svg
+                      aria-hidden="true"
                       className="w-3 h-3"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -400,6 +412,7 @@ function HistoricalTable({
                     title="View Portfolio page"
                   >
                     <svg
+                      aria-hidden="true"
                       className="w-3 h-3"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -429,6 +442,7 @@ function HistoricalTable({
                     title="Manage on Assets page"
                   >
                     <svg
+                      aria-hidden="true"
                       className="w-3 h-3"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -458,6 +472,7 @@ function HistoricalTable({
                     title="Manage on Liabilities page"
                   >
                     <svg
+                      aria-hidden="true"
                       className="w-3 h-3"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -487,6 +502,7 @@ function HistoricalTable({
                     title="View Paycheck page"
                   >
                     <svg
+                      aria-hidden="true"
                       className="w-3 h-3"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -516,6 +532,7 @@ function HistoricalTable({
                     title="View Paycheck page"
                   >
                     <svg
+                      aria-hidden="true"
                       className="w-3 h-3"
                       fill="none"
                       viewBox="0 0 24 24"
