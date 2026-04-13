@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.5
 
+## [0.5.1] - 2026-04-13
+
+### New
+
+- **Coast FIRE age** on the Retirement page and Dashboard — answers the question "when can I stop contributing and still fund my plan through end of plan?". Binary-searches candidate coast ages via the projection engine and reports the earliest passing age, or flags the plan as already Coast or unreachable. Success criterion: portfolio doesn't deplete AND sustainable withdrawal at retirement covers projected expenses
+- New **Plan Health tab** on the Retirement page — Plan Health and Coast FIRE are now grouped into their own tab alongside Projection and Strategy Comparison, instead of being rendered above every other view
+
+### Engine / internals
+
+- New pure calculator `src/lib/calculators/coast-fire.ts` — additive, calls `calculateProjection()` without modifying the engine
+- New tRPC procedure `projection.computeCoastFire` returning `{ coastFireAge, status, endBalance, sustainableWithdrawal, projectedExpensesAtRetirement }`
+
 ## [0.5.0] - 2026-04-13
 
 > What changed since v0.4.0. For patch-level detail, see the v0.4.x entries below.

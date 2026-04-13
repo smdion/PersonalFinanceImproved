@@ -10,6 +10,7 @@ import {
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateProjection } from "@/lib/calculators/engine";
+import { findCoastFireAge } from "@/lib/calculators/coast-fire";
 import {
   buildAccumulationOrder,
   computeCurrentStockAllocationPercent,
@@ -622,6 +623,98 @@ export const projectionRouter = createTRPCRouter({
           priority: g.priority,
         })),
       };
+    }),
+
+  /**
+   * Coast FIRE
+   *
+   * Finds the earliest age at which contributions can stop and the plan
+   * still funds expenses through end of plan. Uses the same engine payload
+   * as computeProjection, then binary-searches candidate "coast ages" via
+   * ~log₂(retirementAge - currentAge) engine runs.
+   *
+   * Success criterion: `portfolioDepletionAge === null` AND
+   * `sustainableWithdrawal >= projectedExpenses` at the first decumulation
+   * year. See `findCoastFireAge` for the full algorithm.
+   */
+  computeCoastFire: protectedProcedure
+    .input(
+      z.object({
+        // Mirrors the computeProjection input subset that affects the engine.
+        decumulationDefaults: z
+          .object({
+            withdrawalRate: z
+              .number()
+              .min(0)
+              .max(1)
+              .default(DEFAULT_WITHDRAWAL_RATE),
+            withdrawalRoutingMode: z
+              .enum(["bracket_filling", "waterfall", "percentage"])
+              .default("bracket_filling"),
+            withdrawalOrder: z
+              .array(z.enum(accountCategoryEnum()))
+              .default(getDefaultDecumulationOrder()),
+            withdrawalSplits: z
+              .record(z.enum(accountCategoryEnum()), z.number())
+              .default({ ...CONFIG_WITHDRAWAL_SPLITS }),
+            withdrawalTaxPreference: z
+              .record(z.string(), z.enum(["traditional", "roth"]))
+              .default({}),
+          })
+          .default({
+            withdrawalRate: DEFAULT_WITHDRAWAL_RATE,
+            withdrawalRoutingMode: "bracket_filling",
+            withdrawalOrder: getDefaultDecumulationOrder(),
+            withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS },
+            withdrawalTaxPreference: {},
+          }),
+        accumulationOverrides: accumulationOverrideSchema,
+        decumulationOverrides: decumulationOverrideSchema,
+        salaryOverrides: z
+          .array(z.object({ personId: z.number(), salary: z.number() }))
+          .optional(),
+        contributionProfileId: z.number().int().optional(),
+        accumulationBudgetProfileId: z.number().int().optional(),
+        accumulationBudgetColumn: z.number().int().min(0).optional(),
+        accumulationExpenseOverride: z.number().min(0).optional(),
+        decumulationBudgetProfileId: z.number().int().optional(),
+        decumulationBudgetColumn: z.number().int().min(0).optional(),
+        decumulationExpenseOverride: z.number().min(0).optional(),
+        snapshotId: z.number().int().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const data = await fetchRetirementData(ctx.db, {
+        snapshotId: input.snapshotId,
+      });
+      const payload = await buildEnginePayload(ctx.db, data, {
+        salaryOverrides: input.salaryOverrides,
+        contributionProfileId: input.contributionProfileId,
+        accumulationBudgetProfileId: input.accumulationBudgetProfileId,
+        accumulationBudgetColumn: input.accumulationBudgetColumn,
+        accumulationExpenseOverride: input.accumulationExpenseOverride,
+        decumulationBudgetProfileId: input.decumulationBudgetProfileId,
+        decumulationBudgetColumn: input.decumulationBudgetColumn,
+        decumulationExpenseOverride: input.decumulationExpenseOverride,
+      });
+      if (!payload) return { result: null };
+
+      const { settings, distributionTaxRates, baseEngineInput } = payload;
+
+      const engineInput = {
+        ...baseEngineInput,
+        decumulationDefaults: buildDecumulationDefaults(
+          settings,
+          input.decumulationDefaults,
+          distributionTaxRates,
+        ),
+        accumulationOverrides:
+          input.accumulationOverrides as AccumulationOverride[],
+        decumulationOverrides:
+          input.decumulationOverrides as DecumulationOverride[],
+      };
+
+      return { result: findCoastFireAge(engineInput) };
     }),
 
   /**
