@@ -18,19 +18,29 @@ export default defineConfig({
         "src/lib/config/**",
         "src/lib/budget-api/**",
         "src/lib/db/**",
-        // src/lib/utils/** is intentionally excluded — many helpers (colors,
-        // format) lack direct tests; including the dir would surface
-        // pre-existing 0% files and drag the threshold down. Add specific
-        // utility files here when they have first-class tests.
+        // src/lib/utils/** is file-by-file. Add utility files here as they
+        // get first-class tests. Files not listed are NOT counted toward
+        // coverage (neither numerator nor denominator), so gaps stay visible
+        // when you audit the exclude list rather than drifting silently.
         "src/lib/utils/account-mapping.ts",
+        "src/lib/utils/format.ts",
+        "src/lib/utils/math.ts",
+        "src/lib/utils/date.ts",
+        // src/lib/env.ts — production env invariants (CRON_SECRET,
+        // ENCRYPTION_KEY, DEMO_ONLY + NEXT_PHASE carve-outs from v0.5.0).
+        // Load-bearing at container boot.
+        "src/lib/env.ts",
         "src/server/**",
       ],
       exclude: [
         // Pure type definitions — no runtime code to test
         "src/lib/calculators/types/**",
         "src/lib/types/**",
-        // Auth infrastructure — requires real Next.js/NextAuth runtime
-        "src/server/auth.ts",
+        // Auth infrastructure — auth.config.ts is edge-runtime metadata only.
+        // auth.ts has its testable pure logic (assignRoleAndPermissions,
+        // loadPermissionGroups) covered via tests/server/auth-callback.test.ts;
+        // the rest of the file is the NextAuth handlers init which can't run
+        // in vitest. Leaving auth.ts in coverage so the testable pieces count.
         "src/server/auth.config.ts",
         // Server-side tRPC caller — requires Next.js Server Component context
         "src/server/helpers/server-trpc.ts",
