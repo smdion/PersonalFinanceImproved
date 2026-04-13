@@ -80,15 +80,13 @@ describe("sync core — syncAll", () => {
     );
   });
 
-  // The syncAll happy-path tests below were converted to .skip in v0.5
-  // when C3 (atomic sync writes) wrapped the sync body in
-  // ctx.db.transaction(async (tx) => ...). better-sqlite3 only supports
-  // SYNCHRONOUS transactions ("Transaction function cannot return a
-  // promise") so the integration path can't run under SQLite. Same
-  // pattern as the existing finalizeYear pure-function tests in
-  // performance-coverage.test.ts. Production behavior is verified by
-  // the PG-backed deploy smoke tests + the unit tests of the helpers.
-  it.skip("syncs accounts, categories, and transactions successfully", async () => {
+  // The syncAll happy-path tests below run under the test harness's
+  // db.transaction monkey-patch (see tests/routers/setup.ts) which
+  // routes async transaction callbacks through the outer db instance.
+  // The patch bypasses atomicity — production uses PG transactions
+  // which are exercised by the deploy smoke tests — but the logic
+  // inside the transaction block is still driven end-to-end here.
+  it("syncs accounts, categories, and transactions successfully", async () => {
     // Insert a connection row so lastSyncedAt update works
     db.insert(schema.apiConnections)
       .values({ service: "ynab", config: { apiKey: "test" } })
@@ -150,7 +148,7 @@ describe("sync core — syncAll", () => {
     expect(mockCacheSet).toHaveBeenCalledTimes(4);
   });
 
-  it.skip("pulls asset values from tracking accounts during sync", async () => {
+  it("pulls asset values from tracking accounts during sync", async () => {
     // Insert an asset for pull mapping
     db.insert(schema.otherAssetItems)
       .values({ name: "Vehicle", year: 2026, value: "20000" })
@@ -197,7 +195,7 @@ describe("sync core — syncAll", () => {
     expect(updated?.value).toBe("22000");
   });
 
-  it.skip("pulls mortgage property value from tracking account", async () => {
+  it("pulls mortgage property value from tracking account", async () => {
     db.insert(schema.mortgageLoans)
       .values({
         name: "Home",
@@ -253,7 +251,7 @@ describe("sync core — syncAll", () => {
     expect(updated?.usePurchaseOrEstimated).toBe("estimated");
   });
 
-  it.skip("pulls mortgage loan balance from tracking account", async () => {
+  it("pulls mortgage loan balance from tracking account", async () => {
     const loans = db.select().from(schema.mortgageLoans).all();
     const loan = loans[0]!;
 
