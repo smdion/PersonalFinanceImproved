@@ -70,8 +70,12 @@ export const RBAC_ADMIN_GROUP_KEY = "rbac_admin_group";
 /**
  * Build the group→permission mapping from DB overrides + defaults.
  * Reads app_settings keys: rbac_admin_group, rbac_group_scenario, etc.
+ *
+ * Exported so tests can call it directly with a mocked db (the file's
+ * top-level NextAuth init makes the rest of the module hard to import
+ * in a unit-test environment).
  */
-async function loadPermissionGroups(): Promise<{
+export async function loadPermissionGroups(): Promise<{
   adminGroup: string;
   groupToPermission: Record<string, Permission>;
 }> {
@@ -174,6 +178,70 @@ const localAdminProvider = Credentials({
   },
 });
 
+/**
+ * Pure logic for the JWT callback's role + permission assignment.
+ * Exported so tests can drive every branch without spinning up NextAuth.
+ *
+ * Mutates and returns the token. Takes loadGroups as a dependency so
+ * tests can inject a mock instead of hitting the real db.
+ */
+export async function assignRoleAndPermissions(
+  token: Record<string, unknown>,
+  user: unknown,
+  account: { provider?: string } | null | undefined,
+  loadGroups: () => Promise<{
+    adminGroup: string;
+    groupToPermission: Record<string, Permission>;
+  }> = loadPermissionGroups,
+): Promise<Record<string, unknown>> {
+  // No user object means this is a refresh, not a sign-in — leave the
+  // existing token alone.
+  if (!user) return token;
+
+  // Local admin: always admin role, no RBAC lookup needed.
+  if (account?.provider === "local-admin") {
+    token.role = "admin";
+    token.permissions = [];
+    token.authMethod = "local";
+    return token;
+  }
+
+  // OIDC (Authentik): map groups to permissions.
+  if (account?.provider === "authentik") {
+    token.authMethod = "oidc";
+    const groups = (user as Record<string, unknown>).groups;
+    const { adminGroup, groupToPermission } = await loadGroups();
+    if (Array.isArray(groups) && groups.includes(adminGroup)) {
+      token.role = "admin";
+      token.permissions = [];
+    } else {
+      token.role = "viewer";
+      token.permissions = groups
+        ? (groups as string[])
+            .map((g) => groupToPermission[g])
+            .filter((p): p is Permission => p !== undefined)
+        : [];
+    }
+    return token;
+  }
+
+  // Dev credentials (kept for development only, not production).
+  if (
+    account?.provider === "credentials" &&
+    process.env.NODE_ENV !== "production"
+  ) {
+    token.role = "admin";
+    token.permissions = [];
+    token.authMethod = "local";
+    return token;
+  }
+
+  // Unknown provider — safe default.
+  token.role = token.role ?? "viewer";
+  token.permissions = token.permissions ?? [];
+  return token;
+}
+
 // Extend the edge-compatible base config with DB-dependent callbacks and local admin provider
 const fullAuthConfig: NextAuthConfig = {
   ...authConfig,
@@ -189,54 +257,11 @@ const fullAuthConfig: NextAuthConfig = {
   },
   callbacks: {
     async jwt({ token, user, account }) {
-      // On initial sign-in, determine role based on auth method
-      if (user) {
-        // Local admin: always admin role, no RBAC lookup needed
-        if (account?.provider === "local-admin") {
-          token.role = "admin";
-          token.permissions = [];
-          token.authMethod = "local";
-          return token;
-        }
-
-        // OIDC (Authentik): map groups to permissions
-        if (account?.provider === "authentik") {
-          token.authMethod = "oidc";
-          // groups forwarded from the OIDC profile callback via the user object
-          const groups = (user as Record<string, unknown>).groups;
-          const { adminGroup, groupToPermission } =
-            await loadPermissionGroups();
-          if (Array.isArray(groups) && groups.includes(adminGroup)) {
-            token.role = "admin";
-            token.permissions = [];
-          } else {
-            token.role = "viewer";
-            token.permissions = groups
-              ? (groups as string[])
-                  .map((g) => groupToPermission[g])
-                  .filter((p): p is Permission => p !== undefined)
-              : [];
-          }
-          return token;
-        }
-
-        // Dev credentials (kept for development only, not production)
-        if (
-          account?.provider === "credentials" &&
-          process.env.NODE_ENV !== "production"
-        ) {
-          token.role = "admin";
-          token.permissions = [];
-          token.authMethod = "local";
-          return token;
-        }
-
-        // Unknown provider — safe default
-        token.role = token.role ?? "viewer";
-        token.permissions = token.permissions ?? [];
-      }
-
-      return token;
+      return (await assignRoleAndPermissions(
+        token as Record<string, unknown>,
+        user,
+        account,
+      )) as typeof token;
     },
     session({ session, token }) {
       if (session.user) {

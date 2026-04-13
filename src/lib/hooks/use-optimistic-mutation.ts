@@ -33,8 +33,7 @@
  * return value, manual fetch wrappers, etc.
  *
  * Undo-toast support is a separate feature (requires extending the Toast
- * API with action buttons). Tracked as a v0.5.x follow-up — search for
- * "M27 undo" in .scratch/docs/expert-review-decisions.md.
+ * API with action buttons). Tracked as a v0.5.x follow-up.
  */
 
 import { useState, useCallback, useRef } from "react";

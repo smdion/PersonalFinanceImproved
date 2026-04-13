@@ -432,6 +432,17 @@ These are true cross-cutting reference data that no single page owns.
 - **Account type config:** `src/lib/config/account-types.ts` is the single source for all account-type behavior. Use `getAccountTypeConfig()`, `getAllCategories()`, `isOverflowTarget()`, `categoriesWithIrsLimit()`, etc. — never hardcode category checks.
 - **Display labels:** Import from `src/lib/config/display-labels.ts`. Never define local label maps in components.
 
+### Refactoring: LOC vs per-file size
+
+"Too many lines" is two separate problems with separate fixes — don't conflate them in a refactor plan:
+
+- **Total LOC** is reduced by dead-code sweeps (`ts-prune`), parameterized test compression, and flattening premature abstractions. Realistic ceilings are small (~5% at current size) and often not worth the churn.
+- **Per-file size** is the real reviewability problem. Files over ~1,500 lines hurt cognitive load. The fix is splitting into focused modules. Splitting _increases_ total LOC slightly (new imports, prop types) but is the right trade.
+
+"Split large files" does not reduce total LOC. "Delete dead code" does not reduce per-file size. Different problems, different plans.
+
+**Prerequisite for any file split:** add smoke tests for the target file first — mount with mocked tRPC, assert key elements present, one mutation-plumbing test per page. The refactor needs a safety net.
+
 ---
 
 ## Constants & Defaults
