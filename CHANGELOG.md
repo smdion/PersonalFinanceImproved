@@ -12,13 +12,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### New
 
-- **Coast FIRE age** on the Retirement page and Dashboard — answers the question "when can I stop contributing and still fund my plan through end of plan?". Binary-searches candidate coast ages via the projection engine and reports the earliest passing age, or flags the plan as already Coast or unreachable. Success criterion: portfolio doesn't deplete AND sustainable withdrawal at retirement covers projected expenses
-- New **Plan Health tab** on the Retirement page — Plan Health and Coast FIRE are now grouped into their own tab alongside Projection and Strategy Comparison, instead of being rendered above every other view
+- **Coast FIRE age** on the Retirement page and Dashboard — answers the question "when can I stop contributing and still fund my plan through end of plan?". Binary-searches candidate coast ages via the projection engine and reports the earliest passing age, or flags the plan as already Coast or unreachable. Success criterion: portfolio doesn't deplete AND sustainable withdrawal at retirement covers projected expenses. Displayed in today's dollars
+- **Monte Carlo Coast FIRE validation** — on-demand button on the Coast FIRE card runs a binary search through Monte Carlo simulations (1000 trials per probe, shared seed for variance reduction) to find the earliest age where MC success rate crosses 90%. Answers the probabilistic question the deterministic answer can't: "at what age am I Coast FIRE even with market uncertainty?". Includes a boundary re-probe that flags non-monotonicity from IRMAA/ACA/LTCG cliffs
+- **Full plan MC robustness context** on the Coast FIRE card — reuses the already-running Monte Carlo prefetch (zero new server cost) to show success rate and spending stability for the baseline plan, clearly labeled as a different scenario than the Coast FIRE calculation
+- New **Plan Health tab** on the Retirement page — Plan Health callouts moved into their own tab alongside Projection and Strategy Comparison, instead of being rendered above every other view
 
 ### Engine / internals
 
 - New pure calculator `src/lib/calculators/coast-fire.ts` — additive, calls `calculateProjection()` without modifying the engine
-- New tRPC procedure `projection.computeCoastFire` returning `{ coastFireAge, status, endBalance, sustainableWithdrawal, projectedExpensesAtRetirement }`
+- New tRPC procedures `projection.computeCoastFire` (deterministic, fast) and `projection.computeCoastFireMC` (rate-limited, MC-based binary search with boundary re-probe for non-monotone plans)
+- Coast FIRE display values deflated to today's dollars at the router boundary (matches the convention used by `retirement-card.tsx`)
 
 ## [0.5.0] - 2026-04-13
 

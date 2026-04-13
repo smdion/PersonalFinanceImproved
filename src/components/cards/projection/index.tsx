@@ -16,6 +16,7 @@ import { OverridesPanelV2 as OverridesPanel } from "./overrides-panel-v2";
 import { ProjectionTable } from "./projection-table";
 import { ProjectionHeroKpis } from "./projection-hero-kpis";
 import { ProjectionChartSkeleton } from "./projection-chart-skeleton";
+import { CoastFireCard } from "@/components/cards/coast-fire-card";
 
 // Code-split Recharts-heavy children (v0.5 expert-review M8). Each chart is
 // ~250KB of recharts payload that loads only when the projection card mounts.
@@ -206,6 +207,16 @@ export function ProjectionCard(props: {
             <div className="space-y-4">
               {/* Hero KPIs */}
               <ProjectionHeroKpis s={s} />
+
+              {/* Coast FIRE — directly under hero KPIs. Reads the cached MC
+                 baseline from the same hook (no new query) for robustness
+                 context alongside the deterministic Coast FIRE age. */}
+              <CoastFireCard
+                input={s.debouncedInput}
+                mcBaseline={
+                  s.mcQuery.data?.result ?? s.mcPrefetchQuery.data?.result
+                }
+              />
 
               {/* MC assumptions summary — below hero, above controls */}
               <McResultsSection s={s} />

@@ -714,7 +714,359 @@ export const projectionRouter = createTRPCRouter({
           input.decumulationOverrides as DecumulationOverride[],
       };
 
-      return { result: findCoastFireAge(engineInput) };
+      const result = findCoastFireAge(engineInput);
+
+      // Deflate nominal values to today's dollars for display (matches the
+      // convention in retirement-card.tsx:118-134). Sustainable withdrawal and
+      // retirement-year expenses land at retirementAge; end balance lands at
+      // projectionEndAge. The calculator stays pure; deflation is a display
+      // concern and happens at the router boundary.
+      const yearsToRetirement = Math.max(
+        0,
+        engineInput.retirementAge - engineInput.currentAge,
+      );
+      const yearsToEnd = Math.max(
+        0,
+        engineInput.projectionEndAge - engineInput.currentAge,
+      );
+      const retirementDeflator = Math.pow(
+        1 + engineInput.inflationRate,
+        yearsToRetirement,
+      );
+      const endDeflator = Math.pow(1 + engineInput.inflationRate, yearsToEnd);
+
+      return {
+        result: {
+          ...result,
+          sustainableWithdrawalToday:
+            result.sustainableWithdrawal / retirementDeflator,
+          projectedExpensesAtRetirementToday:
+            result.projectedExpensesAtRetirement / retirementDeflator,
+          endBalanceToday: result.endBalance / endDeflator,
+        },
+      };
+    }),
+
+  /**
+   * Coast FIRE — Monte Carlo validation
+   *
+   * Finds the earliest age at which stopping contributions still produces
+   * a ≥90% Monte Carlo success rate. Binary searches candidate ages in
+   * [currentAge, retirementAge), running `calculateMonteCarlo` at each
+   * probe with `seed: 42` (common random numbers across probes for
+   * variance reduction) and a hardcoded "default" MC preset for
+   * reproducibility.
+   *
+   * Per advisor review: monotonicity of MC success rate in coast age is
+   * *approximate*, not strict (IRMAA/ACA/LTCG cliffs can break it). After
+   * binary search returns `lo`, we re-probe `lo - 1` as a sanity check.
+   * If the re-probe also passes, the true earliest age may be lower but
+   * we return the search result honestly with a warning.
+   *
+   * Cost: ~5-6 probes × 1 MC run × 1000 trials ≈ 4-6s wall clock (profiled
+   * 2026-04-13). Rate-limited via `expensiveRateLimitMiddleware`.
+   */
+  computeCoastFireMC: protectedProcedure
+    .use(expensiveRateLimitMiddleware)
+    .input(
+      z.object({
+        decumulationDefaults: z
+          .object({
+            withdrawalRate: z
+              .number()
+              .min(0)
+              .max(1)
+              .default(DEFAULT_WITHDRAWAL_RATE),
+            withdrawalRoutingMode: z
+              .enum(["bracket_filling", "waterfall", "percentage"])
+              .default("bracket_filling"),
+            withdrawalOrder: z
+              .array(z.enum(accountCategoryEnum()))
+              .default(getDefaultDecumulationOrder()),
+            withdrawalSplits: z
+              .record(z.enum(accountCategoryEnum()), z.number())
+              .default({ ...CONFIG_WITHDRAWAL_SPLITS }),
+            withdrawalTaxPreference: z
+              .record(z.string(), z.enum(["traditional", "roth"]))
+              .default({}),
+          })
+          .default({
+            withdrawalRate: DEFAULT_WITHDRAWAL_RATE,
+            withdrawalRoutingMode: "bracket_filling",
+            withdrawalOrder: getDefaultDecumulationOrder(),
+            withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS },
+            withdrawalTaxPreference: {},
+          }),
+        accumulationOverrides: accumulationOverrideSchema,
+        decumulationOverrides: decumulationOverrideSchema,
+        salaryOverrides: z
+          .array(z.object({ personId: z.number(), salary: z.number() }))
+          .optional(),
+        contributionProfileId: z.number().int().optional(),
+        accumulationBudgetProfileId: z.number().int().optional(),
+        accumulationBudgetColumn: z.number().int().min(0).optional(),
+        accumulationExpenseOverride: z.number().min(0).optional(),
+        decumulationBudgetProfileId: z.number().int().optional(),
+        decumulationBudgetColumn: z.number().int().min(0).optional(),
+        decumulationExpenseOverride: z.number().min(0).optional(),
+        snapshotId: z.number().int().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      // Fetch the engine payload + MC-specific tables in parallel. Mirrors
+      // computeMonteCarloProjection for the "default" preset only — no
+      // user-adjustable preset, no asset class overrides, no inflation
+      // overrides. Coast FIRE MC uses defaults for reproducibility.
+      const [data, assetClasses, assetCorrelations, presetRows, presetGpRows] =
+        await Promise.all([
+          fetchRetirementData(ctx.db, { snapshotId: input.snapshotId }),
+          ctx.db
+            .select()
+            .from(schema.assetClassParams)
+            .where(eq(schema.assetClassParams.isActive, true))
+            .orderBy(asc(schema.assetClassParams.sortOrder)),
+          ctx.db.select().from(schema.assetClassCorrelations),
+          ctx.db
+            .select()
+            .from(schema.mcPresets)
+            .where(eq(schema.mcPresets.key, "default")),
+          ctx.db
+            .execute<{
+              age: number;
+              asset_class_id: number;
+              allocation: string;
+            }>(
+              sql`SELECT gp.age, gp.asset_class_id, gp.allocation
+                FROM mc_preset_glide_paths gp
+                JOIN mc_presets p ON p.id = gp.preset_id
+                WHERE p.key = 'default'
+                ORDER BY gp.age, gp.asset_class_id`,
+            )
+            .then((r) => r.rows),
+        ]);
+
+      const payload = await buildEnginePayload(ctx.db, data, {
+        salaryOverrides: input.salaryOverrides,
+        contributionProfileId: input.contributionProfileId,
+        accumulationBudgetProfileId: input.accumulationBudgetProfileId,
+        accumulationBudgetColumn: input.accumulationBudgetColumn,
+        accumulationExpenseOverride: input.accumulationExpenseOverride,
+        decumulationBudgetProfileId: input.decumulationBudgetProfileId,
+        decumulationBudgetColumn: input.decumulationBudgetColumn,
+        decumulationExpenseOverride: input.decumulationExpenseOverride,
+      });
+      if (!payload) return { result: null };
+
+      const { settings, distributionTaxRates, baseEngineInput } = payload;
+
+      const engineInput = {
+        ...baseEngineInput,
+        decumulationDefaults: buildDecumulationDefaults(
+          settings,
+          input.decumulationDefaults,
+          distributionTaxRates,
+        ),
+        accumulationOverrides:
+          input.accumulationOverrides as AccumulationOverride[],
+        decumulationOverrides:
+          input.decumulationOverrides as DecumulationOverride[],
+      };
+
+      const preset = presetRows[0];
+      if (!preset) {
+        return {
+          result: {
+            coastFireAge: null,
+            status: "unreachable" as const,
+            successRate: 0,
+            spendingStabilityRate: 0,
+            confidenceThreshold: 0.9,
+            probesRun: 0,
+            warning: "Default MC preset not found in database.",
+          },
+        };
+      }
+
+      const returnMultiplier = toNumber(preset.returnMultiplier);
+      const volMultiplier = toNumber(preset.volMultiplier);
+      const mcAssetClasses = assetClasses.map((ac) => ({
+        id: ac.id,
+        name: ac.name,
+        meanReturn: toNumber(ac.meanReturn) * returnMultiplier,
+        stdDev: toNumber(ac.stdDev) * volMultiplier,
+      }));
+      const mcCorrelations = assetCorrelations.map((c) => ({
+        classAId: c.classAId,
+        classBId: c.classBId,
+        correlation: toNumber(c.correlation),
+      }));
+      const gpByAge = new Map<number, Record<number, number>>();
+      for (const row of presetGpRows) {
+        if (!gpByAge.has(row.age)) gpByAge.set(row.age, {});
+        gpByAge.get(row.age)![row.asset_class_id] = toNumber(row.allocation);
+      }
+      const mcGlidePath = Array.from(gpByAge.entries())
+        .sort(([a], [b]) => a - b)
+        .map(([gpAge, allocations]) => ({ age: gpAge, allocations }));
+      const inflationRisk = {
+        meanRate: toNumber(preset.inflationMean),
+        stdDev: toNumber(preset.inflationStdDev),
+      };
+
+      const CONFIDENCE = 0.9;
+      const NUM_TRIALS = 1000;
+      const SEED = 42;
+
+      // Probe helper: run MC with contributions zeroed from `coastAge`
+      // onward. Shared seed across probes = common random numbers =
+      // consistent variance across candidate ages.
+      const currentYear = engineInput.asOfDate.getFullYear();
+      let probesRun = 0;
+      const probeAt = (coastAge: number): number => {
+        probesRun += 1;
+        const yearOffset = coastAge - engineInput.currentAge;
+        const mcResult = calculateMonteCarlo({
+          engineInput: {
+            ...engineInput,
+            accumulationOverrides: [
+              ...engineInput.accumulationOverrides,
+              { year: currentYear + yearOffset, contributionRate: 0 },
+            ],
+          },
+          numTrials: NUM_TRIALS,
+          seed: SEED,
+          assetClasses: mcAssetClasses,
+          correlations: mcCorrelations,
+          glidePath: mcGlidePath,
+          inflationRisk,
+        });
+        return mcResult.successRate;
+      };
+
+      const passes = (rate: number): boolean => rate >= CONFIDENCE;
+
+      // Edge case: already past retirement.
+      if (engineInput.currentAge >= engineInput.retirementAge) {
+        const rate = probeAt(engineInput.currentAge);
+        return {
+          result: {
+            coastFireAge: engineInput.currentAge,
+            status: "already_coast" as const,
+            successRate: rate,
+            spendingStabilityRate: 0, // not computed for this branch
+            confidenceThreshold: CONFIDENCE,
+            probesRun,
+            warning: null,
+          },
+        };
+      }
+
+      // Probe stopping today — already Coast FIRE?
+      const stopNow = probeAt(engineInput.currentAge);
+      if (passes(stopNow)) {
+        // Also get spending stability at this age for display.
+        const fullResult = calculateMonteCarlo({
+          engineInput: {
+            ...engineInput,
+            accumulationOverrides: [
+              ...engineInput.accumulationOverrides,
+              { year: currentYear, contributionRate: 0 },
+            ],
+          },
+          numTrials: NUM_TRIALS,
+          seed: SEED,
+          assetClasses: mcAssetClasses,
+          correlations: mcCorrelations,
+          glidePath: mcGlidePath,
+          inflationRisk,
+        });
+        probesRun += 1;
+        return {
+          result: {
+            coastFireAge: engineInput.currentAge,
+            status: "already_coast" as const,
+            successRate: stopNow,
+            spendingStabilityRate: fullResult.spendingStabilityRate,
+            confidenceThreshold: CONFIDENCE,
+            probesRun,
+            warning: null,
+          },
+        };
+      }
+
+      // Probe stopping the year before retirement — is the plan reachable at all?
+      const maxCoastAge = engineInput.retirementAge - 1;
+      const stopLate = probeAt(maxCoastAge);
+      if (!passes(stopLate)) {
+        return {
+          result: {
+            coastFireAge: null,
+            status: "unreachable" as const,
+            successRate: stopLate,
+            spendingStabilityRate: 0,
+            confidenceThreshold: CONFIDENCE,
+            probesRun,
+            warning: null,
+          },
+        };
+      }
+
+      // Binary search for earliest passing age.
+      let lo = engineInput.currentAge + 1;
+      let hi = maxCoastAge;
+      while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (passes(probeAt(mid))) {
+          hi = mid;
+        } else {
+          lo = mid + 1;
+        }
+      }
+
+      // Boundary re-probe — non-monotonicity sanity check (advisor #2).
+      // If lo - 1 also passes, monotonicity broke somewhere; surface a
+      // warning so the user knows the answer may be conservative.
+      let warning: string | null = null;
+      if (lo - 1 >= engineInput.currentAge + 1) {
+        const rePrior = probeAt(lo - 1);
+        if (passes(rePrior)) {
+          warning =
+            "MC success rate is non-monotone near this age — the true earliest age may be lower. Likely caused by IRMAA/ACA/LTCG bracket interactions.";
+        }
+      }
+
+      // One more probe at lo for the spending stability rate.
+      const finalResult = calculateMonteCarlo({
+        engineInput: {
+          ...engineInput,
+          accumulationOverrides: [
+            ...engineInput.accumulationOverrides,
+            {
+              year: currentYear + (lo - engineInput.currentAge),
+              contributionRate: 0,
+            },
+          ],
+        },
+        numTrials: NUM_TRIALS,
+        seed: SEED,
+        assetClasses: mcAssetClasses,
+        correlations: mcCorrelations,
+        glidePath: mcGlidePath,
+        inflationRisk,
+      });
+      probesRun += 1;
+
+      return {
+        result: {
+          coastFireAge: lo,
+          status: "found" as const,
+          successRate: finalResult.successRate,
+          spendingStabilityRate: finalResult.spendingStabilityRate,
+          confidenceThreshold: CONFIDENCE,
+          probesRun,
+          warning,
+        },
+      };
     }),
 
   /**

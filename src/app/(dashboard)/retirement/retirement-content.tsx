@@ -56,7 +56,6 @@ const WithdrawalComparisonCard = dynamic(
 import { StrategyGuideButton } from "@/components/cards/strategy-guide-panel";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { PlanHealthCard } from "@/components/cards/plan-health";
-import { CoastFireCard } from "@/components/cards/coast-fire-card";
 
 /** Convert a decimal string (e.g. '0.04') to a whole-number string for display ('4'). */
 function decToWhole(v: string): string {
@@ -126,36 +125,6 @@ export function RetirementContent() {
     ],
   );
   const debouncedEngineInput = useDebouncedValue(engineInput, 600);
-
-  // Coast FIRE query input — same state as engineInput but without metadataOnly
-  // (computeCoastFire always runs the calculation).
-  const coastFireInput = useMemo(
-    () => ({
-      ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
-      ...(contribProfileId != null
-        ? { contributionProfileId: contribProfileId }
-        : {}),
-      ...(decBudgetProfileId != null
-        ? { decumulationBudgetProfileId: decBudgetProfileId }
-        : {}),
-      ...(decBudgetCol != null
-        ? { decumulationBudgetColumn: decBudgetCol }
-        : {}),
-      ...(decExpenseOverride
-        ? { decumulationExpenseOverride: parseFloat(decExpenseOverride) }
-        : {}),
-      ...(snapshotId != null ? { snapshotId } : {}),
-    }),
-    [
-      salaryOverrides,
-      contribProfileId,
-      decBudgetProfileId,
-      decBudgetCol,
-      decExpenseOverride,
-      snapshotId,
-    ],
-  );
-  const debouncedCoastFireInput = useDebouncedValue(coastFireInput, 600);
   const { data, isLoading, isFetching, error } =
     trpc.projection.computeProjection.useQuery(debouncedEngineInput, {
       placeholderData: (prev) => prev,
@@ -417,30 +386,26 @@ export function RetirementContent() {
       )}
 
       {pageTab === "planHealth" ? (
-        /* Plan Health tab — diagnostic callouts + Coast FIRE. The
-           PlanHealthCard consumes data.planHealth which the projection
-           router builds from contribution accounts (M1) and the active
-           glide path (M6). CoastFireCard makes its own query. */
-        <div className="space-y-4">
-          <PlanHealthCard
-            returnRate={parseFloat(settings.returnAfterRetirement)}
-            inflationRate={parseFloat(settings.annualInflation)}
-            salaryGrowthRate={parseFloat(settings.salaryAnnualIncrease)}
-            retirementHorizonYears={settings.endAge - settings.retirementAge}
-            hasBudgetLink={!!data.accumulationBudgetProfileId}
-            deterministicNestEgg={
-              data.result?.projectionByYear.find(
-                (p: { age: number }) => p.age === settings.retirementAge,
-              )?.endBalance
-            }
-            accumulationOrder={data.planHealth?.accumulationOrder}
-            currentAge={data.planHealth?.currentAge}
-            stockAllocationPercent={
-              data.planHealth?.currentStockAllocationPercent ?? undefined
-            }
-          />
-          <CoastFireCard input={debouncedCoastFireInput} />
-        </div>
+        /* Plan Health tab — diagnostic callouts derived from plan state.
+           Consumes data.planHealth which the projection router builds
+           from contribution accounts (M1) and the active glide path (M6). */
+        <PlanHealthCard
+          returnRate={parseFloat(settings.returnAfterRetirement)}
+          inflationRate={parseFloat(settings.annualInflation)}
+          salaryGrowthRate={parseFloat(settings.salaryAnnualIncrease)}
+          retirementHorizonYears={settings.endAge - settings.retirementAge}
+          hasBudgetLink={!!data.accumulationBudgetProfileId}
+          deterministicNestEgg={
+            data.result?.projectionByYear.find(
+              (p: { age: number }) => p.age === settings.retirementAge,
+            )?.endBalance
+          }
+          accumulationOrder={data.planHealth?.accumulationOrder}
+          currentAge={data.planHealth?.currentAge}
+          stockAllocationPercent={
+            data.planHealth?.currentStockAllocationPercent ?? undefined
+          }
+        />
       ) : pageTab === "comparison" ? (
         /* Strategy Comparison tab — rendered directly, no collapsible */
         comparisonLoading ? (
