@@ -60,49 +60,44 @@ export function buildAccumulationOrder(
   return order;
 }
 
+/** Row shapes this helper consumes from the drizzle queries. Exported so
+ *  tests can supply plain arrays without casting through the full db
+ *  type. */
+export interface GlidePathRow {
+  age: number;
+  assetClassId: number;
+  allocation: string | null;
+}
+
+export interface AssetClassRow {
+  id: number;
+  name: string;
+}
+
 /**
- * currentStockAllocationPercent: interpolate the active glide path at the
- * user's current age and sum the allocations for asset classes whose name
- * contains "Equit" or "Stock". Returns null if no glide path is configured
- * (the PlanHealthCard will then skip the M6 warning).
+ * Pure core of the M6 glide-path lookup: given the glide-path table rows
+ * and the active asset-class list, bracket-interpolate at currentAge and
+ * sum the equity classes. Exported for direct unit testing — the db-bound
+ * wrapper below just fetches the two arrays and delegates.
+ *
+ * Returns null when the inputs are unusable (no glide path, no equity
+ * classes) so the PlanHealthCard skips the M6 warning.
  */
-export async function computeCurrentStockAllocationPercent(
-  db: DbType,
+export function computeStockPercentFromGlidePath(
+  gpRows: readonly GlidePathRow[],
+  classRows: readonly AssetClassRow[],
   currentAge: number,
-): Promise<number | null> {
-  const [gpRows, classRows] = await Promise.all([
-    db
-      .select({
-        age: schema.glidePathAllocations.age,
-        assetClassId: schema.glidePathAllocations.assetClassId,
-        allocation: schema.glidePathAllocations.allocation,
-      })
-      .from(schema.glidePathAllocations),
-    db
-      .select({
-        id: schema.assetClassParams.id,
-        name: schema.assetClassParams.name,
-      })
-      .from(schema.assetClassParams)
-      .where(eq(schema.assetClassParams.isActive, true))
-      .orderBy(asc(schema.assetClassParams.sortOrder)),
-  ]);
+): number | null {
   if (gpRows.length === 0 || classRows.length === 0) return null;
 
   const stockClassIds = new Set<number>(
-    (classRows as { id: number; name: string }[])
-      .filter((c) => /equit|stock/i.test(c.name))
-      .map((c) => c.id),
+    classRows.filter((c) => /equit|stock/i.test(c.name)).map((c) => c.id),
   );
   if (stockClassIds.size === 0) return null;
 
   // Group glide path by age, then bracket-interpolate at currentAge.
   const byAge = new Map<number, Record<number, number>>();
-  for (const r of gpRows as {
-    age: number;
-    assetClassId: number;
-    allocation: string | null;
-  }[]) {
+  for (const r of gpRows) {
     if (!byAge.has(r.age)) byAge.set(r.age, {});
     byAge.get(r.age)![r.assetClassId] = toNumber(r.allocation);
   }
@@ -136,6 +131,36 @@ export async function computeCurrentStockAllocationPercent(
     stockSum += lo + (hi - lo) * t;
   }
   return Math.round(stockSum * 100 * 10) / 10;
+}
+
+/**
+ * currentStockAllocationPercent: db-bound wrapper around
+ * computeStockPercentFromGlidePath. Fetches the active glide-path rows +
+ * asset classes, then delegates to the pure function. Returns null when
+ * no glide path is configured.
+ */
+export async function computeCurrentStockAllocationPercent(
+  db: DbType,
+  currentAge: number,
+): Promise<number | null> {
+  const [gpRows, classRows] = await Promise.all([
+    db
+      .select({
+        age: schema.glidePathAllocations.age,
+        assetClassId: schema.glidePathAllocations.assetClassId,
+        allocation: schema.glidePathAllocations.allocation,
+      })
+      .from(schema.glidePathAllocations),
+    db
+      .select({
+        id: schema.assetClassParams.id,
+        name: schema.assetClassParams.name,
+      })
+      .from(schema.assetClassParams)
+      .where(eq(schema.assetClassParams.isActive, true))
+      .orderBy(asc(schema.assetClassParams.sortOrder)),
+  ]);
+  return computeStockPercentFromGlidePath(gpRows, classRows, currentAge);
 }
 
 // ---------------------------------------------------------------------------

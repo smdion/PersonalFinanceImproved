@@ -3,8 +3,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ProjectionInput } from "@/lib/calculators/types";
 import {
   buildAccumulationOrder,
-  computeCurrentStockAllocationPercent,
+  computeStockPercentFromGlidePath,
   runStressTestScenarios,
+  type GlidePathRow,
+  type AssetClassRow,
 } from "@/server/routers/projection-v5-helpers";
 
 /**
@@ -59,139 +61,83 @@ describe("buildAccumulationOrder (M1)", () => {
   });
 });
 
-describe("computeCurrentStockAllocationPercent (M6)", () => {
-  type MockDb = {
-    select: ReturnType<typeof vi.fn>;
-  };
+describe("computeStockPercentFromGlidePath (M6)", () => {
+  // Pure function — takes plain rows, no db mock needed. This is the
+  // testable core of the M6 glide-path lookup; the db-bound wrapper
+  // (computeCurrentStockAllocationPercent) is a thin delegation that
+  // the integration path exercises in production.
 
-  // Mimic the drizzle query builder chain just deeply enough for the
-  // helper's two select() → from() → (where().orderBy()) calls. The
-  // helper uses Promise.all([q1, q2]) so the order of the stubs is
-  // the order they're called in the helper body.
-  function makeDb(gpRows: unknown[], classRows: unknown[]): MockDb {
-    const gpChain = {
-      from: () => Promise.resolve(gpRows),
-    };
-    const classChain = {
-      from: () => ({
-        where: () => ({
-          orderBy: () => Promise.resolve(classRows),
-        }),
-      }),
-    };
-    let callIndex = 0;
-    return {
-      select: vi.fn(() => {
-        const c = callIndex++;
-        return c === 0 ? gpChain : classChain;
-      }),
-    };
-  }
-
-  it("returns null when no glide path is configured", async () => {
-    const db = makeDb([], []);
-    const result = await computeCurrentStockAllocationPercent(
-      db as unknown as Parameters<
-        typeof computeCurrentStockAllocationPercent
-      >[0],
-      35,
-    );
-    expect(result).toBeNull();
+  it("returns null when no glide path is configured", () => {
+    expect(computeStockPercentFromGlidePath([], [], 35)).toBeNull();
   });
 
-  it("returns null when asset classes have no stock/equity entries", async () => {
-    const db = makeDb(
-      [{ age: 30, assetClassId: 1, allocation: "1.0" }],
-      [{ id: 1, name: "US Bonds" }],
-    );
-    const result = await computeCurrentStockAllocationPercent(
-      db as unknown as Parameters<
-        typeof computeCurrentStockAllocationPercent
-      >[0],
-      35,
-    );
-    expect(result).toBeNull();
+  it("returns null when asset classes have no stock/equity entries", () => {
+    const gp: GlidePathRow[] = [
+      { age: 30, assetClassId: 1, allocation: "1.0" },
+    ];
+    const classes: AssetClassRow[] = [{ id: 1, name: "US Bonds" }];
+    expect(computeStockPercentFromGlidePath(gp, classes, 35)).toBeNull();
   });
 
-  it("sums equity allocations at the exact age when a glide path row matches", async () => {
-    const db = makeDb(
-      [
-        { age: 35, assetClassId: 1, allocation: "0.6" }, // US Equities
-        { age: 35, assetClassId: 2, allocation: "0.3" }, // International Equities
-        { age: 35, assetClassId: 3, allocation: "0.1" }, // Bonds
-      ],
-      [
-        { id: 1, name: "US Equities" },
-        { id: 2, name: "International Equities" },
-        { id: 3, name: "US Bonds" },
-      ],
-    );
-    const result = await computeCurrentStockAllocationPercent(
-      db as unknown as Parameters<
-        typeof computeCurrentStockAllocationPercent
-      >[0],
-      35,
-    );
+  it("sums equity allocations at the exact age when a glide path row matches", () => {
+    const gp: GlidePathRow[] = [
+      { age: 35, assetClassId: 1, allocation: "0.6" }, // US Equities
+      { age: 35, assetClassId: 2, allocation: "0.3" }, // International Equities
+      { age: 35, assetClassId: 3, allocation: "0.1" }, // Bonds
+    ];
+    const classes: AssetClassRow[] = [
+      { id: 1, name: "US Equities" },
+      { id: 2, name: "International Equities" },
+      { id: 3, name: "US Bonds" },
+    ];
     // 0.6 + 0.3 = 0.9 → 90.0%
-    expect(result).toBeCloseTo(90.0, 1);
+    expect(computeStockPercentFromGlidePath(gp, classes, 35)).toBeCloseTo(
+      90.0,
+      1,
+    );
   });
 
-  it("interpolates between two bracket ages when current age is in between", async () => {
-    const db = makeDb(
-      [
-        { age: 30, assetClassId: 1, allocation: "0.8" },
-        { age: 40, assetClassId: 1, allocation: "0.4" },
-        { age: 30, assetClassId: 2, allocation: "0.2" },
-        { age: 40, assetClassId: 2, allocation: "0.6" },
-      ],
-      [
-        { id: 1, name: "US Equities" },
-        { id: 2, name: "US Bonds" },
-      ],
-    );
+  it("interpolates between two bracket ages when current age is in between", () => {
+    const gp: GlidePathRow[] = [
+      { age: 30, assetClassId: 1, allocation: "0.8" },
+      { age: 40, assetClassId: 1, allocation: "0.4" },
+      { age: 30, assetClassId: 2, allocation: "0.2" },
+      { age: 40, assetClassId: 2, allocation: "0.6" },
+    ];
+    const classes: AssetClassRow[] = [
+      { id: 1, name: "US Equities" },
+      { id: 2, name: "US Bonds" },
+    ];
     // At age 35 (halfway), stock allocation should interpolate:
     // US Equities: 0.8 + (0.4 - 0.8) * 0.5 = 0.6 → 60%
-    const result = await computeCurrentStockAllocationPercent(
-      db as unknown as Parameters<
-        typeof computeCurrentStockAllocationPercent
-      >[0],
-      35,
+    expect(computeStockPercentFromGlidePath(gp, classes, 35)).toBeCloseTo(
+      60.0,
+      1,
     );
-    expect(result).toBeCloseTo(60.0, 1);
   });
 
-  it("clamps to the earliest bracket for ages below the glide path start", async () => {
-    const db = makeDb(
-      [
-        { age: 40, assetClassId: 1, allocation: "0.7" },
-        { age: 50, assetClassId: 1, allocation: "0.5" },
-      ],
-      [{ id: 1, name: "US Equities" }],
+  it("clamps to the earliest bracket for ages below the glide path start", () => {
+    const gp: GlidePathRow[] = [
+      { age: 40, assetClassId: 1, allocation: "0.7" },
+      { age: 50, assetClassId: 1, allocation: "0.5" },
+    ];
+    const classes: AssetClassRow[] = [{ id: 1, name: "US Equities" }];
+    expect(computeStockPercentFromGlidePath(gp, classes, 25)).toBeCloseTo(
+      70.0,
+      1,
     );
-    const result = await computeCurrentStockAllocationPercent(
-      db as unknown as Parameters<
-        typeof computeCurrentStockAllocationPercent
-      >[0],
-      25, // below the earliest age (40)
-    );
-    expect(result).toBeCloseTo(70.0, 1);
   });
 
-  it("clamps to the latest bracket for ages above the glide path end", async () => {
-    const db = makeDb(
-      [
-        { age: 40, assetClassId: 1, allocation: "0.7" },
-        { age: 50, assetClassId: 1, allocation: "0.5" },
-      ],
-      [{ id: 1, name: "US Equities" }],
+  it("clamps to the latest bracket for ages above the glide path end", () => {
+    const gp: GlidePathRow[] = [
+      { age: 40, assetClassId: 1, allocation: "0.7" },
+      { age: 50, assetClassId: 1, allocation: "0.5" },
+    ];
+    const classes: AssetClassRow[] = [{ id: 1, name: "US Equities" }];
+    expect(computeStockPercentFromGlidePath(gp, classes, 70)).toBeCloseTo(
+      50.0,
+      1,
     );
-    const result = await computeCurrentStockAllocationPercent(
-      db as unknown as Parameters<
-        typeof computeCurrentStockAllocationPercent
-      >[0],
-      70, // above the latest age (50)
-    );
-    expect(result).toBeCloseTo(50.0, 1);
   });
 });
 
