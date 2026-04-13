@@ -17,6 +17,7 @@ if (isPostgres()) {
 
   const pool = new pg.Pool({
     connectionString: env.DATABASE_URL,
+    // rejectUnauthorized: false is intentional — the homelab PG instance uses a self-signed cert.
     ssl: env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : false,
     max: env.DATABASE_POOL_MAX ? Number(env.DATABASE_POOL_MAX) : 20,
     idleTimeoutMillis: 30000,
