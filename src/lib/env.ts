@@ -56,7 +56,13 @@ function validateEnv(): Env {
 
   // Production-only invariants — fail loud at startup so a misconfigured
   // container is caught at boot, not after first request.
-  if (process.env.NODE_ENV === "production") {
+  //
+  // Skip during `next build`'s page-data collection phase. Next.js runs
+  // server modules with NODE_ENV=production to shake out static props
+  // even when the build container doesn't have the runtime secrets.
+  // Same pattern as the AUTH_AUTHENTIK_ISSUER guard in src/server/trpc.ts.
+  const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+  if (process.env.NODE_ENV === "production" && !isBuildPhase) {
     if (!env.CRON_SECRET) {
       throw new Error(
         "CRON_SECRET is required in production (32+ chars). Without it, " +
