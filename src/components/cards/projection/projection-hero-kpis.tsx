@@ -118,9 +118,11 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
     deflate,
     baseYear,
     mcQuery,
-    mcPrefetchQuery,
     mcLoading,
-    debouncedInput,
+    debouncedBaseInput,
+    scenarioView,
+    coastFireMcQuery,
+    coastFireMcResult,
   } = s;
 
   if (!result) return null;
@@ -146,8 +148,18 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
     peakPt ? peakPt.balance : peakYear.endBalance,
     peakYear.year,
   );
-  const mc = mcQuery.data?.result && !mcLoading ? mcQuery.data.result : null;
-  const mcBaseline = mcQuery.data?.result ?? mcPrefetchQuery.data?.result;
+  // When scenarioView === "coastFire", swap the MC data source to the
+  // Coast FIRE MC result (from computeCoastFireMC's final probe) so all the
+  // hero KPIs — Portfolio Survival, Income Stability, Nest Egg, End Balance —
+  // reflect the Coast FIRE scenario, not the baseline plan. Intentionally
+  // returns null while coast MC is loading — the existing `!mc && mcLoading`
+  // skeleton branch below handles the loading state.
+  const mc =
+    scenarioView === "coastFire"
+      ? (coastFireMcResult ?? null)
+      : mcQuery.data?.result && !mcLoading
+        ? mcQuery.data.result
+        : null;
   const mcBands = mc?.percentileBands ?? null;
   const mcRetBand = mcBands?.find((b) =>
     alreadyRetired
@@ -293,7 +305,13 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
         </KpiCard>
 
         {/* Card 5: Coast FIRE */}
-        <CoastFireCard input={debouncedInput} mcBaseline={mcBaseline} />
+        <CoastFireCard
+          input={debouncedBaseInput}
+          coastFireMcResult={coastFireMcQuery.data?.result ?? undefined}
+          coastFireMcLoading={
+            coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
+          }
+        />
       </div>
     );
   }
@@ -351,7 +369,11 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
       </KpiCard>
 
       {/* Coast FIRE — 4th card in deterministic mode */}
-      <CoastFireCard input={debouncedInput} mcBaseline={undefined} />
+      <CoastFireCard
+        input={debouncedBaseInput}
+        coastFireMcResult={undefined}
+        coastFireMcLoading={false}
+      />
     </div>
   );
 }

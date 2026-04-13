@@ -117,6 +117,9 @@ export function useProjectionFormState() {
   const [chartView, setChartView] = useState<"balance" | "strategy" | "budget">(
     "balance",
   );
+  const [scenarioView, setScenarioView] = useState<"baseline" | "coastFire">(
+    "baseline",
+  );
   const [showAllYears, setShowAllYears] = useState(false);
   const [showBars, setShowBars] = useState(true);
   const [fanBandRange, setFanBandRange] = useState<
@@ -197,6 +200,8 @@ export function useProjectionFormState() {
     setContribView,
     chartView,
     setChartView,
+    scenarioView,
+    setScenarioView,
     showAllYears,
     setShowAllYears,
     showBars,

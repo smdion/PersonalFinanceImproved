@@ -29,6 +29,8 @@ import type {
   AccumulationOverride,
   DecumulationOverride,
   DecumulationDefaults,
+  ProfileSwitch,
+  ProjectionInput,
 } from "@/lib/calculators/types";
 import {
   accountCategoryEnum,
@@ -216,6 +218,53 @@ function buildDecumulationDefaults(
   };
 }
 
+/**
+ * Build a merged `profileSwitches` array that zeros contributions + employer
+ * match from the Coast FIRE age onward.
+ *
+ * Injects a synthetic `ProfileSwitch` at `coastYear = currentYear + (coastAge
+ * - currentAge)` with empty contribution specs, zero employer match rates,
+ * zero base-year contributions/match, and contribution rate 0. The engine at
+ * projection-year-handlers.ts:582-611 processes switches sticky-forward, so
+ * every year from coastYear onward sees zero contributions AND zero employer
+ * match — which fixes the bug where `contributionRate: 0` in an
+ * accumulation override was silently ignored (engine line 985 has
+ * `rateCeiling > 0` which treats zero rate as "unset, use specs").
+ *
+ * Merges with the user's own `profileSwitches`: keeps any user-authored
+ * switches strictly before the coast year (so pre-coast years still reflect
+ * the user's configured future), and drops user switches at or after the
+ * coast year (those are moot — everything's zero from coast year forward).
+ *
+ * Used by computeProjection, computeMonteCarloProjection (when rendering
+ * the coast scenario chart), and computeCoastFireMC (when probing inside
+ * the binary search).
+ */
+function buildCoastFireProfileSwitches(
+  baseEngineInput: Pick<
+    ProjectionInput,
+    "asOfDate" | "currentAge" | "profileSwitches"
+  >,
+  coastAge: number,
+): ProfileSwitch[] {
+  const coastYear =
+    baseEngineInput.asOfDate.getFullYear() +
+    (coastAge - baseEngineInput.currentAge);
+  const zeroRecord = Object.fromEntries(
+    getAllCategories().map((c) => [c, 0]),
+  ) as Record<AccountCategory, number>;
+  const coastSwitch: ProfileSwitch = {
+    year: coastYear,
+    contributionSpecs: [],
+    employerMatchRateByCategory: zeroRecord,
+    baseYearContributions: zeroRecord,
+    baseYearEmployerMatch: zeroRecord,
+    contributionRate: 0,
+  };
+  const userSwitches = baseEngineInput.profileSwitches ?? [];
+  return [...userSwitches.filter((s) => s.year < coastYear), coastSwitch];
+}
+
 export const projectionRouter = createTRPCRouter({
   /**
    * Contribution/Distribution Engine
@@ -288,6 +337,11 @@ export const projectionRouter = createTRPCRouter({
         metadataOnly: z.boolean().default(false),
         /** Optional snapshot ID — use a historical portfolio snapshot instead of the latest. */
         snapshotId: z.number().int().optional(),
+        /** When set, apply a Coast FIRE scenario override: zero all contributions
+         *  starting at this age. Replaces user-authored accumulation overrides
+         *  for this query — Coast FIRE is a pure "stop contributing" scenario.
+         *  Decumulation overrides are preserved. */
+        coastFireOverrideAge: z.number().int().min(18).max(120).optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -369,13 +423,25 @@ export const projectionRouter = createTRPCRouter({
         );
       }
 
-      // Build the engine input — accumulation defaults from DB, overrides from UI
+      // When coastFireOverrideAge is set, inject a synthetic ProfileSwitch at
+      // the coast year that zeros contributions + employer match sticky-
+      // forward. Merges with user-authored profileSwitches (preserves any
+      // pre-coast-year user switches). See buildCoastFireProfileSwitches docs.
+      const profileSwitchesForEngine =
+        input.coastFireOverrideAge != null
+          ? buildCoastFireProfileSwitches(
+              baseEngineInput,
+              input.coastFireOverrideAge,
+            )
+          : baseEngineInput.profileSwitches;
+
       // When metadataOnly is true, skip the heavy projection calculation (used by the
       // retirement page which only needs settings/expenses/budget metadata).
       const result = input.metadataOnly
         ? null
         : calculateProjection({
             ...baseEngineInput,
+            profileSwitches: profileSwitchesForEngine,
             decumulationDefaults: buildDecumulationDefaults(
               settings,
               input.decumulationDefaults,
@@ -879,10 +945,12 @@ export const projectionRouter = createTRPCRouter({
             coastFireAge: null,
             status: "unreachable" as const,
             successRate: 0,
+            stopNowSuccessRate: 0,
             spendingStabilityRate: 0,
             confidenceThreshold: 0.9,
             probesRun: 0,
             warning: "Default MC preset not found in database.",
+            mcResult: null,
           },
         };
       }
@@ -917,21 +985,22 @@ export const projectionRouter = createTRPCRouter({
       const NUM_TRIALS = 1000;
       const SEED = 42;
 
-      // Probe helper: run MC with contributions zeroed from `coastAge`
-      // onward. Shared seed across probes = common random numbers =
-      // consistent variance across candidate ages.
-      const currentYear = engineInput.asOfDate.getFullYear();
+      // Probe helper: run MC with a profile switch at `coastAge` that zeros
+      // contributions AND employer match from that year forward. Pre-coast
+      // years use the user's actual configured plan (specs/realContribs/rate)
+      // so the pre-coast-year balance accumulates normally. Shared seed
+      // across probes = common random numbers = consistent variance across
+      // candidate ages.
       let probesRun = 0;
-      const probeAt = (coastAge: number): number => {
+      const probeMC = (coastAge: number) => {
         probesRun += 1;
-        const yearOffset = coastAge - engineInput.currentAge;
-        const mcResult = calculateMonteCarlo({
+        return calculateMonteCarlo({
           engineInput: {
             ...engineInput,
-            accumulationOverrides: [
-              ...engineInput.accumulationOverrides,
-              { year: currentYear + yearOffset, contributionRate: 0 },
-            ],
+            profileSwitches: buildCoastFireProfileSwitches(
+              engineInput,
+              coastAge,
+            ),
           },
           numTrials: NUM_TRIALS,
           seed: SEED,
@@ -940,73 +1009,67 @@ export const projectionRouter = createTRPCRouter({
           glidePath: mcGlidePath,
           inflationRisk,
         });
-        return mcResult.successRate;
       };
+      const probeAt = (coastAge: number): number =>
+        probeMC(coastAge).successRate;
 
       const passes = (rate: number): boolean => rate >= CONFIDENCE;
 
       // Edge case: already past retirement.
       if (engineInput.currentAge >= engineInput.retirementAge) {
-        const rate = probeAt(engineInput.currentAge);
+        const fullResult = probeMC(engineInput.currentAge);
         return {
           result: {
             coastFireAge: engineInput.currentAge,
             status: "already_coast" as const,
-            successRate: rate,
-            spendingStabilityRate: 0, // not computed for this branch
-            confidenceThreshold: CONFIDENCE,
-            probesRun,
-            warning: null,
-          },
-        };
-      }
-
-      // Probe stopping today — already Coast FIRE?
-      const stopNow = probeAt(engineInput.currentAge);
-      if (passes(stopNow)) {
-        // Also get spending stability at this age for display.
-        const fullResult = calculateMonteCarlo({
-          engineInput: {
-            ...engineInput,
-            accumulationOverrides: [
-              ...engineInput.accumulationOverrides,
-              { year: currentYear, contributionRate: 0 },
-            ],
-          },
-          numTrials: NUM_TRIALS,
-          seed: SEED,
-          assetClasses: mcAssetClasses,
-          correlations: mcCorrelations,
-          glidePath: mcGlidePath,
-          inflationRisk,
-        });
-        probesRun += 1;
-        return {
-          result: {
-            coastFireAge: engineInput.currentAge,
-            status: "already_coast" as const,
-            successRate: stopNow,
+            successRate: fullResult.successRate,
+            stopNowSuccessRate: fullResult.successRate,
             spendingStabilityRate: fullResult.spendingStabilityRate,
             confidenceThreshold: CONFIDENCE,
             probesRun,
             warning: null,
+            mcResult: fullResult,
+          },
+        };
+      }
+
+      // Probe stopping today — captured for every branch so the client can
+      // show "Stopping today: X% MC" alongside the found age. This is the
+      // key signal: when deterministic says "already coast" but MC says
+      // "need age N," the gap is quantified by stopNowResult.successRate.
+      const stopNowResult = probeMC(engineInput.currentAge);
+      const stopNowSuccessRate = stopNowResult.successRate;
+      if (passes(stopNowSuccessRate)) {
+        return {
+          result: {
+            coastFireAge: engineInput.currentAge,
+            status: "already_coast" as const,
+            successRate: stopNowSuccessRate,
+            stopNowSuccessRate,
+            spendingStabilityRate: stopNowResult.spendingStabilityRate,
+            confidenceThreshold: CONFIDENCE,
+            probesRun,
+            warning: null,
+            mcResult: stopNowResult,
           },
         };
       }
 
       // Probe stopping the year before retirement — is the plan reachable at all?
       const maxCoastAge = engineInput.retirementAge - 1;
-      const stopLate = probeAt(maxCoastAge);
-      if (!passes(stopLate)) {
+      const stopLateResult = probeMC(maxCoastAge);
+      if (!passes(stopLateResult.successRate)) {
         return {
           result: {
             coastFireAge: null,
             status: "unreachable" as const,
-            successRate: stopLate,
-            spendingStabilityRate: 0,
+            successRate: stopLateResult.successRate,
+            stopNowSuccessRate,
+            spendingStabilityRate: stopLateResult.spendingStabilityRate,
             confidenceThreshold: CONFIDENCE,
             probesRun,
             warning: null,
+            mcResult: stopLateResult,
           },
         };
       }
@@ -1035,36 +1098,21 @@ export const projectionRouter = createTRPCRouter({
         }
       }
 
-      // One more probe at lo for the spending stability rate.
-      const finalResult = calculateMonteCarlo({
-        engineInput: {
-          ...engineInput,
-          accumulationOverrides: [
-            ...engineInput.accumulationOverrides,
-            {
-              year: currentYear + (lo - engineInput.currentAge),
-              contributionRate: 0,
-            },
-          ],
-        },
-        numTrials: NUM_TRIALS,
-        seed: SEED,
-        assetClasses: mcAssetClasses,
-        correlations: mcCorrelations,
-        glidePath: mcGlidePath,
-        inflationRisk,
-      });
-      probesRun += 1;
+      // One more probe at lo for the spending stability rate + full MC data
+      // (chart and hero card consume the mcResult from this query).
+      const finalResult = probeMC(lo);
 
       return {
         result: {
           coastFireAge: lo,
           status: "found" as const,
           successRate: finalResult.successRate,
+          stopNowSuccessRate,
           spendingStabilityRate: finalResult.spendingStabilityRate,
           confidenceThreshold: CONFIDENCE,
           probesRun,
           warning,
+          mcResult: finalResult,
         },
       };
     }),
@@ -1236,7 +1284,9 @@ export const projectionRouter = createTRPCRouter({
         baseEngineInput,
       } = payload;
 
-      // Build the full engine input — mirrors getProjection so MC respects the same overrides
+      // Build the full engine input — mirrors getProjection so MC respects the same overrides.
+      // Note: Coast FIRE scenario rendering goes through computeCoastFireMC (which returns
+      // its final-probe mcResult for the chart), NOT this procedure with a coast flag.
       const engineInput = {
         ...baseEngineInput,
         decumulationDefaults: buildDecumulationDefaults(

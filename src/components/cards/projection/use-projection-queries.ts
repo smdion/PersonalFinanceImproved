@@ -3,7 +3,10 @@ import { useMemo, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
-import type { MonteCarloPercentileBand } from "@/lib/calculators/types";
+import type {
+  MonteCarloPercentileBand,
+  MonteCarloResult,
+} from "@/lib/calculators/types";
 import type { ProjectionFormState } from "./use-projection-form-state";
 import type { UseProjectionStateProps } from "./use-projection-state";
 import { filterYearByParentCategory } from "./utils";
@@ -26,6 +29,7 @@ export function useProjectionQueries(
     mcTaxMode,
     mcAssetClassOverrides,
     setMcAssetClassOverrides,
+    scenarioView,
   } = form;
 
   const {
@@ -44,7 +48,10 @@ export function useProjectionQueries(
   const withdrawalRate = withdrawalRateProp;
 
   // --- Debounced query inputs ---
-  const sharedInput = useMemo(
+  // baseSharedInput is the projection input WITHOUT the Coast FIRE override.
+  // Used by the Coast FIRE query itself (so it computes the baseline age)
+  // and as the foundation for sharedInput below.
+  const baseSharedInput = useMemo(
     () => ({
       salaryOverrides: salaryOverrides.length > 0 ? salaryOverrides : undefined,
       decumulationDefaults: {
@@ -92,6 +99,27 @@ export function useProjectionQueries(
       snapshotId,
     ],
   );
+
+  // Coast FIRE query — always fires on baseline input so the age is available
+  // regardless of scenario view. Used by the hero KPI Coast FIRE card AND to
+  // derive the override age for the scenario toggle.
+  const debouncedBaseInput = useDebouncedValue(baseSharedInput, 600);
+  const coastFireQuery = trpc.projection.computeCoastFire.useQuery(
+    debouncedBaseInput,
+    { placeholderData: (prev) => prev, staleTime: 60_000 },
+  );
+  const coastFireAge = coastFireQuery.data?.result?.coastFireAge ?? null;
+
+  // sharedInput is baseSharedInput + the Coast FIRE override when the user
+  // has toggled to the Coast FIRE scenario view. Only set when the age is
+  // sharedInput is baseSharedInput as-is. We intentionally do NOT thread
+  // coastFireOverrideAge through engineQuery anymore — that caused a visual
+  // lag when toggling scenarioView (engineQuery refetches with new input,
+  // 600ms debounce + ~500ms fetch, while MC data swaps synchronously). The
+  // deterministic coast projection is instead sourced from
+  // coastFireMcResult.deterministicProjection at the derived layer, which
+  // switches atomically alongside the MC bands.
+  const sharedInput = baseSharedInput;
   const debouncedInput = useDebouncedValue(sharedInput, 600);
 
   // --- tRPC query ---
@@ -152,12 +180,17 @@ export function useProjectionQueries(
     });
 
   // --- Monte Carlo queries ---
+  // mcPrefetchQuery + mcQuery use debouncedBaseInput (never include the Coast
+  // FIRE override). Coast FIRE scenario rendering is powered by
+  // coastFireMcQuery below — the chart data selectors pick between the two
+  // based on scenarioView so switching scenarios doesn't invalidate the
+  // baseline MC cache.
   const mcPrefetchQuery = trpc.projection.computeMonteCarloProjection.useQuery(
     {
       numTrials: 1000,
       preset: "default" as const,
       taxMode: mcTaxMode,
-      ...debouncedInput,
+      ...debouncedBaseInput,
     },
     {
       enabled: engineQuery.isSuccess && !engineQuery.isFetching,
@@ -172,7 +205,7 @@ export function useProjectionQueries(
       taxMode: mcTaxMode,
       assetClassOverrides:
         mcAssetClassOverrides.length > 0 ? mcAssetClassOverrides : undefined,
-      ...debouncedInput,
+      ...debouncedBaseInput,
     },
     {
       enabled:
@@ -182,6 +215,36 @@ export function useProjectionQueries(
       placeholderData: undefined,
     },
   );
+
+  // Coast FIRE Monte Carlo — prefetched on engineQuery success, same
+  // trigger as the baseline mcPrefetchQuery. Runs in the background (~4-6s
+  // for the binary search) while the user looks at the baseline view; by
+  // the time they toggle to Coast FIRE, the data is already cached and the
+  // toggle is instant. Returns binary-search result PLUS the full
+  // MonteCarloResult from its final probe (mcResult) so the chart and the
+  // hero card can both read from this single query. React Query dedupes on
+  // the query key, so any other consumer firing the same procedure with
+  // the same input hits the cache.
+  //
+  // Cost: one additional expensive-rate-limit slot per page load plus
+  // ~4-6s of background server CPU. For a self-hosted deployment this is
+  // negligible compared to the UX improvement of an instant Coast FIRE
+  // toggle.
+  const coastFireMcQuery = trpc.projection.computeCoastFireMC.useQuery(
+    debouncedBaseInput,
+    {
+      enabled: engineQuery.isSuccess && !engineQuery.isFetching,
+      placeholderData: (prev) => prev,
+      staleTime: 5 * 60_000,
+    },
+  );
+  // Cast to MonteCarloResult — tRPC's return-type inference widens the
+  // nested mcResult because of the union across the binary-search branches
+  // (already_coast / found / unreachable). The calculator authors this field
+  // directly from calculateMonteCarlo() so the runtime shape is guaranteed.
+  const coastFireMcResult = coastFireMcQuery.data?.result?.mcResult as
+    | MonteCarloResult
+    | undefined;
 
   // Initialize asset class overrides from saved DB values on first MC query success
   const mcOverridesInitialized = useRef(false);
@@ -200,12 +263,30 @@ export function useProjectionQueries(
     setMcAssetClassOverrides,
   ]);
 
+  // Two separate gates:
+  // - inCoastFireScenario: which MC source to LOAD (controls mcLoading etc).
+  //   As soon as the user toggles Coast FIRE, we're waiting on coast MC —
+  //   the spinner should show even before coastFireMcResult arrives.
+  // - useCoastFireMc: which MC source to READ from once data is available
+  //   (controls band/detail selectors). Requires coastFireMcResult to exist.
+  const inCoastFireScenario = scenarioView === "coastFire";
+  const useCoastFireMc = inCoastFireScenario && !!coastFireMcResult;
+
   const mcLoading =
     projectionMode === "monteCarlo" &&
-    (mcQuery.isLoading || mcQuery.isFetching);
+    (inCoastFireScenario
+      ? coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
+      : mcQuery.isLoading || mcQuery.isFetching);
 
   const mcBandsByYear = useMemo(() => {
     if (projectionMode === "monteCarlo" && mcQuery.isFetching) return null;
+    if (useCoastFireMc) {
+      const bands = coastFireMcResult?.percentileBands ?? null;
+      if (!bands) return null;
+      return new Map<number, MonteCarloPercentileBand>(
+        bands.map((b) => [b.year, b]),
+      );
+    }
     const mcBands =
       projectionMode === "monteCarlo"
         ? mcQuery.data?.result?.percentileBands
@@ -221,16 +302,19 @@ export function useProjectionQueries(
     mcQuery.isFetching,
     mcQuery.data?.result?.percentileBands,
     mcPrefetchQuery.data?.result?.percentileBands,
+    useCoastFireMc,
+    coastFireMcResult?.percentileBands,
   ]);
 
   const mcStabilityBands = useMemo(() => {
     if (projectionMode === "monteCarlo" && mcQuery.isFetching) return null;
-    const bands =
-      (projectionMode === "monteCarlo"
-        ? mcQuery.data?.result?.spendingStabilityBands
-        : null) ??
-      mcPrefetchQuery.data?.result?.spendingStabilityBands ??
-      null;
+    const bands = useCoastFireMc
+      ? (coastFireMcResult?.spendingStabilityBands ?? null)
+      : ((projectionMode === "monteCarlo"
+          ? mcQuery.data?.result?.spendingStabilityBands
+          : null) ??
+        mcPrefetchQuery.data?.result?.spendingStabilityBands ??
+        null);
     if (!bands) return null;
     return {
       stratRatio: new Map(bands.stratRatio.map((b) => [b.age, b])),
@@ -243,6 +327,8 @@ export function useProjectionQueries(
     mcQuery.isFetching,
     mcQuery.data?.result?.spendingStabilityBands,
     mcPrefetchQuery.data?.result?.spendingStabilityBands,
+    useCoastFireMc,
+    coastFireMcResult?.spendingStabilityBands,
   ]);
 
   const mcIsPrefetch =
@@ -253,12 +339,13 @@ export function useProjectionQueries(
 
   const mcDetByYear = useMemo(() => {
     if (projectionMode === "monteCarlo" && mcQuery.isFetching) return null;
-    const mcDet =
-      projectionMode === "monteCarlo"
-        ? mcQuery.data?.result?.deterministicProjection
-        : null;
-    const det =
-      mcDet ?? mcPrefetchQuery.data?.result?.deterministicProjection ?? null;
+    const det = useCoastFireMc
+      ? (coastFireMcResult?.deterministicProjection ?? null)
+      : ((projectionMode === "monteCarlo"
+          ? mcQuery.data?.result?.deterministicProjection
+          : null) ??
+        mcPrefetchQuery.data?.result?.deterministicProjection ??
+        null);
     if (!det) return null;
     return new Map(
       det.projectionByYear.map((y) => {
@@ -274,6 +361,8 @@ export function useProjectionQueries(
     mcQuery.data?.result?.deterministicProjection,
     mcPrefetchQuery.data?.result?.deterministicProjection,
     parentCategoryFilter,
+    useCoastFireMc,
+    coastFireMcResult?.deterministicProjection,
   ]);
 
   // Contribution profiles query
@@ -283,6 +372,11 @@ export function useProjectionQueries(
     withdrawalRate,
     sharedInput,
     debouncedInput,
+    debouncedBaseInput,
+    coastFireQuery,
+    coastFireAge,
+    coastFireMcQuery,
+    coastFireMcResult,
     engineQuery,
     mcPrefetchQuery,
     mcQuery,

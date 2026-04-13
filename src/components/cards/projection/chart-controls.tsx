@@ -17,9 +17,13 @@ export function ChartControls({ s }: { s: ProjectionState }) {
     fanBandRange,
     setFanBandRange,
     mcBandsByYear,
+    scenarioView,
+    setScenarioView,
+    coastFireAge,
   } = s;
 
   const hasMc = mcBandsByYear != null;
+  const coastFireAvailable = coastFireAge != null;
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
@@ -38,6 +42,38 @@ export function ChartControls({ s }: { s: ProjectionState }) {
           active={chartView === "budget"}
           onClick={() => setChartView("budget")}
           label="Budget"
+        />
+      </LabeledPillGroup>
+
+      <div className="w-px h-4 bg-surface-strong" />
+
+      <LabeledPillGroup
+        label="Scenario"
+        helpTip={
+          <HelpTip
+            maxWidth={360}
+            lines={[
+              "Active Plan: your plan as configured, with contributions continuing through retirement.",
+              "Coast FIRE: the same projection with contributions zeroed from your Coast FIRE age onward. Shows what your portfolio looks like if you stop saving at that age.",
+              coastFireAvailable
+                ? `Your Coast FIRE age: ${coastFireAge}`
+                : "Coast FIRE age not yet available — the toggle activates once the baseline calculation completes.",
+            ]}
+          />
+        }
+      >
+        <PillBtn
+          active={scenarioView === "baseline"}
+          onClick={() => setScenarioView("baseline")}
+          label="Active Plan"
+        />
+        <PillBtn
+          active={scenarioView === "coastFire"}
+          onClick={() => {
+            if (coastFireAvailable) setScenarioView("coastFire");
+          }}
+          label="Coast FIRE"
+          disabled={!coastFireAvailable}
         />
       </LabeledPillGroup>
 
