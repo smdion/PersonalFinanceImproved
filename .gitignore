@@ -23,3 +23,8 @@ tests/.tmp/
 
 # artifacts
 *.db
+# Local SQLite scratch (auto-created by db-migrate.ts when DATABASE_URL
+# is unset; contains ledgr.db + pre-migration backups). The *.db pattern
+# catches the files but git still reports the empty dir as untracked,
+# which trips scripts/release.sh + scripts/deploy.sh's clean-tree check.
+data/
