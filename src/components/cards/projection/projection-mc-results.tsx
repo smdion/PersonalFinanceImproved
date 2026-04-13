@@ -69,7 +69,12 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
     <div className="space-y-3">
       {mcLoading && (
         <div className="flex items-center gap-2 py-8 justify-center text-sm text-muted">
-          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+          <svg
+            aria-hidden="true"
+            className="animate-spin h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
             <circle
               className="opacity-25"
               cx="12"
@@ -195,7 +200,7 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
                   </div>
                   {(si.taxMode === "advanced" || si.hasAssetClassOverrides) && (
                     <>
-                      <div className="w-px h-6 bg-gray-300/60" />
+                      <div className="w-px h-6 bg-surface-divider/60" />
                       <div className="flex items-center gap-2 text-[10px]">
                         {si.taxMode === "advanced" && (
                           <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 font-medium">

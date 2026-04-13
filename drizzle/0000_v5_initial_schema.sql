@@ -16,7 +16,7 @@ CREATE TABLE "account_performance" (
 	"parent_category" text NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"is_finalized" boolean DEFAULT false NOT NULL,
-	"performance_account_id" integer
+	"performance_account_id" integer NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "annual_performance" (
@@ -374,6 +374,7 @@ CREATE TABLE "net_worth_annual" (
 	"portfolio_total" numeric(12, 2) DEFAULT '0' NOT NULL,
 	"home_improvements_cumulative" numeric(12, 2) DEFAULT '0' NOT NULL,
 	"property_taxes" numeric(12, 2),
+	"portfolio_by_tax_location" jsonb NOT NULL,
 	CONSTRAINT "net_worth_annual_year_end_date_unique" UNIQUE("year_end_date")
 );
 --> statement-breakpoint

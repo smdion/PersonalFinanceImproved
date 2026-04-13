@@ -1,90 +1,45 @@
-"use client";
+/**
+ * Dashboard server page (v0.5 expert-review M7).
+ *
+ * Server-side prefetches the most expensive dashboard queries so the
+ * cards hydrate with data immediately on first paint instead of
+ * waterfalling through useQuery on the client. The DashboardContent
+ * client component consumes the same queries via tRPC hooks — they
+ * read prefetched data from the React Query cache.
+ *
+ * Prefetch failures don't block the page render — the cards fall
+ * back to client-side fetching, which is the previous v0.4 behavior.
+ */
 
-import { PageHeader } from "@/components/ui/page-header";
-import { CardBoundary } from "@/components/cards/dashboard/utils";
 import {
-  HouseholdIncomeCard,
-  SavingsRateCard,
-  BudgetStatusCard,
-  SavingsGoalsCard,
-  RetirementCard,
-  MortgageCard,
-  NetWorthCard,
-  ContributionsCard,
-  TaxesCard,
-  FinancialCheckupCard,
-  FidelityMultiplierCard,
-  DollarMultiplierCard,
-  LivingCostsCard,
-} from "@/components/cards/dashboard";
-import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
-import { trpc } from "@/lib/trpc";
+  HydrationBoundary,
+  dehydrate,
+  type DehydratedState,
+} from "@tanstack/react-query";
+import { createServerHelpers } from "@/server/helpers/server-trpc";
+import { DashboardContent } from "./dashboard-content";
 
-export default function DashboardPage() {
-  const utils = trpc.useUtils();
-  const { data: onboarding } = trpc.settings.isOnboardingComplete.useQuery();
+export default async function DashboardPage() {
+  let dehydratedState: DehydratedState | undefined = undefined;
+  try {
+    const helpers = await createServerHelpers();
+    // Prefetch the queries the dashboard cards consume. Each Promise.all
+    // member is independent — one failure doesn't block the others.
+    // We prefetch the high-traffic networth + onboarding queries; other
+    // cards still client-fetch (incremental rollout).
+    await Promise.all([
+      helpers.networth.computeSummary.prefetch().catch(() => undefined),
+      helpers.settings.isOnboardingComplete.prefetch().catch(() => undefined),
+    ]);
+    dehydratedState = dehydrate(helpers.queryClient);
+  } catch {
+    // Swallow — fall back to pure client-side fetching.
+    dehydratedState = undefined;
+  }
 
   return (
-    <div>
-      {onboarding && !onboarding.complete && (
-        <OnboardingWizard onComplete={() => utils.settings.invalidate()} />
-      )}
-      <PageHeader title="Dashboard" subtitle="Financial overview" />
-
-      {/* Primary metrics row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mb-3">
-        <CardBoundary title="Net Worth">
-          <NetWorthCard />
-        </CardBoundary>
-        <CardBoundary title="Household Income">
-          <HouseholdIncomeCard />
-        </CardBoundary>
-        <CardBoundary title="Financial Checkup">
-          <FinancialCheckupCard />
-        </CardBoundary>
-      </div>
-
-      {/* Secondary row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mb-3">
-        <CardBoundary title="Savings Goals">
-          <SavingsGoalsCard />
-        </CardBoundary>
-        <CardBoundary title="Retirement">
-          <RetirementCard />
-        </CardBoundary>
-        <CardBoundary title="Contributions">
-          <ContributionsCard />
-        </CardBoundary>
-      </div>
-
-      {/* Retirement & budgeting insights */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mb-3">
-        <CardBoundary title="Fidelity Multiplier">
-          <FidelityMultiplierCard />
-        </CardBoundary>
-        <CardBoundary title="Dollar Multiplier">
-          <DollarMultiplierCard />
-        </CardBoundary>
-        <CardBoundary title="Living Costs">
-          <LivingCostsCard />
-        </CardBoundary>
-      </div>
-
-      {/* Detail row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-        <CardBoundary title="Mortgage">
-          <MortgageCard />
-        </CardBoundary>
-        <CardBoundary title="Savings Rate">
-          <SavingsRateCard />
-        </CardBoundary>
-        <CardBoundary title="Budget Status">
-          <BudgetStatusCard />
-        </CardBoundary>
-        <CardBoundary title="Taxes">
-          <TaxesCard />
-        </CardBoundary>
-      </div>
-    </div>
+    <HydrationBoundary state={dehydratedState}>
+      <DashboardContent />
+    </HydrationBoundary>
   );
 }

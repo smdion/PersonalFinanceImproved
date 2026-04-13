@@ -11,6 +11,9 @@ import {
   cacheClear,
 } from "@/lib/budget-api";
 import type { YnabConfig, ActualConfig } from "@/lib/budget-api";
+import { encryptJson } from "@/lib/crypto";
+import { validateOutboundUrl } from "@/lib/url-safety";
+import { TRPCError } from "@trpc/server";
 
 const serviceEnum = z.enum(["ynab", "actual"]);
 
@@ -52,6 +55,20 @@ export const syncConnectionsRouter = createTRPCRouter({
       ]),
     )
     .mutation(async ({ ctx, input }) => {
+      // SSRF block (v0.5 expert-review C2): for Actual Budget, the user
+      // supplies a serverUrl and the container makes outbound requests to
+      // it. Reject private/loopback/link-local destinations unless
+      // ALLOWED_ACTUAL_HOSTS env var explicitly opts the host in.
+      if (input.service === "actual") {
+        const safety = validateOutboundUrl(input.serverUrl);
+        if (!safety.ok) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Refusing to save Actual Budget connection: ${safety.reason}`,
+          });
+        }
+      }
+
       const config: YnabConfig | ActualConfig =
         input.service === "ynab"
           ? { accessToken: input.accessToken, budgetId: input.budgetId }
@@ -61,18 +78,32 @@ export const syncConnectionsRouter = createTRPCRouter({
               budgetSyncId: input.budgetSyncId,
             };
 
+      // Encrypt at rest with AES-256-GCM (per RULES.md § Permission &
+      // Security Gates and v0.5 expert-review item C1). The factory's
+      // readMaybeEncrypted() handles both encrypted-envelope and legacy
+      // plaintext rows on read, so this write transparently upgrades any
+      // pre-v0.5 row.
+      const encryptedConfig = encryptJson(config);
+
       // Single atomic upsert — onConflictDoUpdate is already transactional in
       // Postgres (the INSERT … ON CONFLICT DO UPDATE runs as one statement).
       // No explicit transaction wrapper needed.
+      //
+      // The two casts on this insert are intentional: Drizzle's column type
+      // is the YnabConfig|ActualConfig union, but the JSONB column accepts
+      // any JSON-serializable shape. The encrypted envelope from
+      // encryptJson() is stored as-is and readMaybeEncrypted() in
+      // factory.ts handles the read side.
+      // eslint-disable-next-line no-restricted-syntax -- see block comment above
+      const storedConfig = encryptedConfig as unknown as
+        | YnabConfig
+        | ActualConfig;
       await ctx.db
         .insert(schema.apiConnections)
-        .values({
-          service: input.service,
-          config,
-        })
+        .values({ service: input.service, config: storedConfig })
         .onConflictDoUpdate({
           target: schema.apiConnections.service,
-          set: { config },
+          set: { config: storedConfig },
         });
 
       return { success: true };

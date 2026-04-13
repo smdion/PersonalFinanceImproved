@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
@@ -69,7 +69,7 @@ function FundingBar({
         />
         {/* IRS limit marker at 100% */}
         <div
-          className="absolute top-[-2px] h-[12px] w-[2px] bg-gray-600"
+          className="absolute top-[-2px] h-[12px] w-[2px] bg-surface-emphasis"
           style={{ left: "100%" }}
           title="100% IRS annual limit"
         />
@@ -95,7 +95,7 @@ function FundingBar({
         title={`Employer match (does not count toward IRS limit)`}
       />
       <div
-        className="absolute top-[-2px] h-[12px] w-[2px] bg-gray-600"
+        className="absolute top-[-2px] h-[12px] w-[2px] bg-surface-emphasis"
         style={{ left: `${limitPosition}%` }}
         title="100% IRS annual limit"
       />
@@ -103,7 +103,7 @@ function FundingBar({
   );
 }
 
-export function ContributionsCard() {
+function ContributionsCardImpl() {
   const { viewMode } = useScenario();
   const salaryOverrides = useSalaryOverrides();
   const [activeContribProfileId] = usePersistedSetting<number | null>(
@@ -613,3 +613,5 @@ export function ContributionsCard() {
     </Card>
   );
 }
+
+export const ContributionsCard = memo(ContributionsCardImpl);

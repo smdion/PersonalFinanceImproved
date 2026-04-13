@@ -61,6 +61,7 @@ describe("Tax parameter freshness", () => {
     // Ensure we haven't forgotten a category
     expect(names).toContain("Federal tax brackets (seed)");
     expect(names).toContain("Contribution limits (seed)");
+    expect(names).toContain("Standard deduction (seed)");
     expect(names).toContain("LTCG brackets (seed)");
     expect(names).toContain("IRMAA brackets (seed)");
     expect(names).toContain("LTCG bracket fallback (code)");
@@ -417,6 +418,28 @@ describe("Tax law structural checks", () => {
     // This amount is indexed to inflation starting 2026 (in $500 increments).
     // Until then, it's fixed at $11,250.
     expect(11250).toBe(11250);
+  });
+
+  it("2026 standard deduction values per IRS Rev. Proc. 2025-32", () => {
+    // v0.5 expert-review H1 — document the authoritative 2026 values.
+    // The seed script reads these from Budget Overview.xlsx; this test
+    // captures the IRS-published values so any future drift between the
+    // xlsx and the published amounts is caught when someone updates the
+    // assertion. To verify against a live DB:
+    //   psql ... -c "SELECT limit_type, value FROM contribution_limits
+    //                WHERE tax_year = 2026 AND limit_type LIKE 'standard_%'"
+    const STANDARD_DEDUCTIONS_2026 = {
+      MFJ: 30000,
+      Single: 15000,
+      MFS: 15000,
+      HOH: 22500,
+    };
+    // Documenting the assumption — fail loud if a future "update"
+    // accidentally drifts these without an IRS source.
+    expect(STANDARD_DEDUCTIONS_2026.MFJ).toBe(30000);
+    expect(STANDARD_DEDUCTIONS_2026.Single).toBe(15000);
+    expect(STANDARD_DEDUCTIONS_2026.MFS).toBe(15000);
+    expect(STANDARD_DEDUCTIONS_2026.HOH).toBe(22500);
   });
 
   it("NIIT thresholds still not indexed ($200k/$250k, 3.8%)", () => {

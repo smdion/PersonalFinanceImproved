@@ -7,20 +7,51 @@ import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { PageHeader } from "@/components/ui/page-header";
+import dynamic from "next/dynamic";
 import { EmptyState } from "@/components/ui/empty-state";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { NetWorthCompare } from "@/components/cards/net-worth-compare";
 import {
-  NetWorthLineChart,
-  JourneyToAbundanceChart,
-  NetWorthLocationPie,
-  TaxLocationPie,
   NetWorthComposition,
   AssetsLiabilitiesCards,
   MetricsRow,
   YoYTable,
   FinancialIndependenceCard,
 } from "@/components/networth";
+
+// Code-split Recharts-heavy chart components into separate chunks (v0.5
+// expert-review M8). Each chart is ~250KB of bundle when bundled into the
+// page bundle; lazy-loading them via next/dynamic moves them to dedicated
+// chunks that load only when the page mounts. ssr:false because Recharts
+// isn't SSR-friendly.
+const NetWorthLineChart = dynamic(
+  () =>
+    import("@/components/networth/net-worth-line-chart").then((m) => ({
+      default: m.NetWorthLineChart,
+    })),
+  { loading: () => <SkeletonChart />, ssr: false },
+);
+const JourneyToAbundanceChart = dynamic(
+  () =>
+    import("@/components/networth/journey-to-abundance-chart").then((m) => ({
+      default: m.JourneyToAbundanceChart,
+    })),
+  { loading: () => <SkeletonChart />, ssr: false },
+);
+const NetWorthLocationPie = dynamic(
+  () =>
+    import("@/components/networth/net-worth-location-pie").then((m) => ({
+      default: m.NetWorthLocationPie,
+    })),
+  { loading: () => <SkeletonChart />, ssr: false },
+);
+const TaxLocationPie = dynamic(
+  () =>
+    import("@/components/networth/tax-location-pie").then((m) => ({
+      default: m.TaxLocationPie,
+    })),
+  { loading: () => <SkeletonChart />, ssr: false },
+);
 import { SpreadsheetView } from "@/components/networth/spreadsheet";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { projectFIYear } from "@/lib/calculators/fi-projection";

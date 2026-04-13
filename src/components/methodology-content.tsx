@@ -20,6 +20,7 @@ function Section({
       >
         {title}
         <svg
+          aria-hidden="true"
           className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`}
           fill="none"
           viewBox="0 0 24 24"

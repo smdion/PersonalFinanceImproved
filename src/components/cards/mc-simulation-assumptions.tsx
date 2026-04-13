@@ -214,6 +214,7 @@ export function SimulationAssumptions({
           )}
         </span>
         <svg
+          aria-hidden="true"
           className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
           fill="none"
           viewBox="0 0 24 24"

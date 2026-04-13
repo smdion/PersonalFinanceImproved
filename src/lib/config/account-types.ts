@@ -495,6 +495,17 @@ export function getLimitGroup(category: string): string | null {
   return cfg?.irsLimitGroup ?? null;
 }
 
+/** Check if a category shares the 401k IRS elective deferral limit (e.g. 401k, 403b). */
+export function isInLimit401kGroup(category: string): boolean {
+  return getLimitGroup(category) === "401k";
+}
+
+/** Check if a category tracks cost basis (after-tax accounts like brokerage). */
+export function tracksCostBasis(category: string): boolean {
+  const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
+  return cfg?.balanceStructure === "basis_tracking";
+}
+
 /** Valid parentCategory values — shared by Zod schemas, DB checks, and UI dropdowns. */
 export const PARENT_CATEGORY_VALUES = ["Retirement", "Portfolio"] as const;
 export type ParentCategory = (typeof PARENT_CATEGORY_VALUES)[number];

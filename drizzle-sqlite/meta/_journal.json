@@ -5,22 +5,15 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1774916660323,
-      "tag": "0000_v3_initial_schema",
+      "when": 1776021720557,
+      "tag": "0000_v5_initial_schema",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "6",
-      "when": 1775494479594,
-      "tag": "0001_fixed_shiva",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1775933146763,
-      "tag": "0002_stale_diamondback",
+      "when": 1776035662648,
+      "tag": "0001_v5_schema_changes",
       "breakpoints": true
     }
   ]

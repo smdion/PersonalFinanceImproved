@@ -135,6 +135,7 @@ export function ScenarioBar() {
 
   return (
     <div
+      data-scenario-bar
       className={`flex items-center justify-end px-3 sm:px-4 py-1.5 gap-3 border-b text-xs ${isInScenario ? "bg-amber-50 border-amber-200" : "bg-surface-primary border-default"}`}
     >
       {/* Scenario selector — pill style matching view toggle */}
@@ -311,7 +312,7 @@ export function ScenarioBar() {
                         }}
                         className="flex-1 text-left flex items-center gap-2"
                       >
-                        <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-surface-divider" />
                         {s.name}
                         <span className="text-[10px] text-faint">
                           (session)

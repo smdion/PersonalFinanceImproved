@@ -83,8 +83,8 @@ jobs:
           [ -d public ] && cp -r public .next/standalone/public || true
           # Write .env for the standalone server (reads dotenv, not shell env).
           # Values here must match the step env: block — single source of truth.
-          printf 'SQLITE_PATH=%s\nDEMO_ONLY=%s\nNEXTAUTH_SECRET=%s\nNEXTAUTH_URL=%s\nAUTH_TRUST_HOST=%s\n' \
-            "$SQLITE_PATH" "$DEMO_ONLY" "$NEXTAUTH_SECRET" "$NEXTAUTH_URL" "$AUTH_TRUST_HOST" \
+          printf 'SQLITE_PATH=%s\nDEMO_ONLY=%s\nNEXTAUTH_SECRET=%s\nNEXTAUTH_URL=%s\nAUTH_TRUST_HOST=%s\nCRON_SECRET=%s\nENCRYPTION_KEY=%s\n' \
+            "$SQLITE_PATH" "$DEMO_ONLY" "$NEXTAUTH_SECRET" "$NEXTAUTH_URL" "$AUTH_TRUST_HOST" "$CRON_SECRET" "$ENCRYPTION_KEY" \
             > .next/standalone/.env
           pnpm db:migrate
           pnpm run test:e2e
@@ -95,6 +95,13 @@ jobs:
           NEXTAUTH_SECRET: e2e-placeholder-secret-at-least-32-chars
           NEXTAUTH_URL: http://localhost:3000
           AUTH_TRUST_HOST: "true"
+          # Fake-but-valid values so the production env invariants in
+          # src/lib/env.ts pass. CRON_SECRET must be 32+ chars;
+          # ENCRYPTION_KEY must decode to exactly 32 bytes (44-char
+          # base64). These are NOT secrets — they only exist so the E2E
+          # server can boot with NODE_ENV=production.
+          CRON_SECRET: e2e-placeholder-cron-secret-at-least-32-chars
+          ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
 
       - name: Upload Playwright report
         if: failure()

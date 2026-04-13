@@ -183,6 +183,7 @@ export function UpcomingGoals({
             <div className="shrink-0 hidden sm:block">
               {item.type === "expense" ? (
                 <svg
+                  aria-hidden="true"
                   className={`w-5 h-5 ${item.funded ? "text-blue-600" : "text-red-600"}`}
                   fill="none"
                   viewBox="0 0 24 24"
@@ -197,6 +198,7 @@ export function UpcomingGoals({
                 </svg>
               ) : (
                 <svg
+                  aria-hidden="true"
                   className="w-5 h-5 text-green-600"
                   fill="none"
                   viewBox="0 0 24 24"

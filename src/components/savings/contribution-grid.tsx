@@ -192,6 +192,7 @@ export function ContributionGrid({
           className="flex items-center gap-2"
         >
           <svg
+            aria-hidden="true"
             className={`w-4 h-4 text-muted transition-transform ${isOpen ? "rotate-90" : ""}`}
             fill="none"
             viewBox="0 0 24 24"

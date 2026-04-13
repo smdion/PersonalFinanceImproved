@@ -30,6 +30,7 @@ function ExternalLink({ href, label }: { href: string; label: string }) {
       title={label}
     >
       <svg
+        aria-hidden="true"
         className="w-3 h-3"
         fill="none"
         viewBox="0 0 24 24"
@@ -352,6 +353,7 @@ export default function AssetsPage() {
                       title="Remove asset"
                     >
                       <svg
+                        aria-hidden="true"
                         className="w-3.5 h-3.5"
                         fill="none"
                         viewBox="0 0 24 24"

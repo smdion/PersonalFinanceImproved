@@ -22,6 +22,12 @@ const baseSchema = z.object({
   AUTH_AUTHENTIK_SECRET: z.string().min(1).optional(),
   // Cron secret — optional but must be strong when set
   CRON_SECRET: z.string().min(32).optional(),
+  // At-rest encryption key for api_connections.config (AES-256-GCM).
+  // Must be 32 bytes base64-encoded (44 chars). Generate with:
+  //   node -e 'console.log(require("crypto").randomBytes(32).toString("base64"))'
+  // Optional in dev (allows running without configuring API connections);
+  // required in production by the post-validate check below.
+  ENCRYPTION_KEY: z.string().optional(),
 });
 
 const pgSchema = baseSchema.extend({
@@ -46,7 +52,80 @@ function validateEnv(): Env {
       "Missing or invalid environment variables. See above for details.",
     );
   }
-  return result.data as Env;
+  const env = result.data as Env;
+
+  // Production-only invariants — fail loud at startup so a misconfigured
+  // container is caught at boot, not after first request.
+  //
+  // Skipped in two environments:
+  //
+  //   1. `next build`'s page-data collection phase. Next.js runs server
+  //      modules with NODE_ENV=production to shake out static props even
+  //      when the build container doesn't have the runtime secrets.
+  //
+  //   2. DEMO_ONLY mode. This is NOT a security workaround — it models
+  //      the fact that demo mode has a structurally different threat
+  //      profile enforced by the demoOnlyGuard middleware in
+  //      src/server/trpc.ts:161, which blocks EVERY non-`demo.*`
+  //      mutation at the tRPC layer. Specifically:
+  //        - ENCRYPTION_KEY protects api_connections.config (YNAB /
+  //          Actual API tokens). In demo mode saveConnection is a
+  //          blocked mutation and demo seeds do not populate
+  //          api_connections — no plaintext credentials can ever land
+  //          in the table, so there is nothing to encrypt.
+  //        - CRON_SECRET gates /api/health/detailed. In demo mode the
+  //          health details (DB up, migration version, row counts on
+  //          ephemeral per-tenant schemas) are not sensitive.
+  //      Same carve-out precedent already exists in src/server/trpc.ts:60
+  //      for AUTH_AUTHENTIK_ISSUER. A real prod install must still
+  //      satisfy both invariants — demo mode is the only exception and
+  //      it's load-bearing exactly because the mutation guard is.
+  const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+  const isDemoOnly = process.env.DEMO_ONLY === "true";
+  if (process.env.NODE_ENV === "production" && !isBuildPhase && !isDemoOnly) {
+    if (!env.CRON_SECRET) {
+      throw new Error(
+        "CRON_SECRET is required in production (32+ chars). Without it, " +
+          "/api/health/detailed and other cron-authed endpoints accept " +
+          "unauthenticated requests. Set CRON_SECRET to a strong random value.",
+      );
+    }
+    if (process.env.ALLOW_DEV_MODE === "true") {
+      throw new Error(
+        "ALLOW_DEV_MODE=true is not permitted in production. The dev-mode " +
+          "auth bypass is already disabled at runtime by trpc.ts, but this " +
+          "check makes the misconfiguration loud instead of silently ignored. " +
+          "Remove ALLOW_DEV_MODE from the container env.",
+      );
+    }
+    if (!env.ENCRYPTION_KEY) {
+      throw new Error(
+        "ENCRYPTION_KEY is required in production. Without it, API " +
+          "credentials in api_connections.config cannot be encrypted at rest. " +
+          "Generate one with: " +
+          'node -e \'console.log(require("crypto").randomBytes(32).toString("base64"))\'',
+      );
+    }
+    // Validate length: must decode to exactly 32 bytes (44-char base64).
+    try {
+      const keyBytes = Buffer.from(env.ENCRYPTION_KEY, "base64").length;
+      if (keyBytes !== 32) {
+        throw new Error(
+          `ENCRYPTION_KEY must decode to exactly 32 bytes (got ${keyBytes}). ` +
+            "Regenerate with the command in CRON_SECRET error above.",
+        );
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message.startsWith("ENCRYPTION_KEY"))
+        throw err;
+      throw new Error(
+        "ENCRYPTION_KEY is not valid base64. Regenerate with: " +
+          'node -e \'console.log(require("crypto").randomBytes(32).toString("base64"))\'',
+      );
+    }
+  }
+
+  return env;
 }
 
 export const env = validateEnv();

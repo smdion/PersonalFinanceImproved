@@ -15,6 +15,8 @@ import type {
   DeltaSyncResult,
 } from "./types";
 import { fromMilliunits, toMilliunits } from "./conversions";
+import { classifyResponse, classifyThrown, retryWithBackoff } from "./errors";
+import { transactionIdempotencyKey } from "./idempotency";
 
 const YNAB_BASE = "https://api.ynab.com/v1";
 
@@ -221,29 +223,38 @@ export class YnabClient implements BudgetAPIClient {
     this.budgetPath = `${YNAB_BASE}/budgets/${budgetId}`;
   }
 
+  /**
+   * Internal fetch wrapper. v0.5 expert-review M19/M22:
+   * - Throws typed BudgetApiError instead of generic Error so call sites
+   *   can distinguish auth/rate-limit/server/network/timeout failures.
+   * - Wrapped in retryWithBackoff which honors Retry-After on 429 and
+   *   does exponential backoff (1s/2s/4s capped at 30s) for retryable
+   *   errors. Auth + client errors are NOT retried.
+   */
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
     const url = path.startsWith("http") ? path : `${this.budgetPath}${path}`;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15_000);
-    try {
-      const res = await fetch(url, {
-        ...init,
-        headers: { ...this.headers, ...init?.headers },
-        signal: controller.signal,
-      });
-      if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        throw new Error(`YNAB API ${res.status}: ${res.statusText} — ${body}`);
+    return retryWithBackoff(async () => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15_000);
+      try {
+        const res = await fetch(url, {
+          ...init,
+          headers: { ...this.headers, ...init?.headers },
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          const body = await res.text().catch(() => "");
+          throw classifyResponse(res, body);
+        }
+        return (await res.json()) as T;
+      } catch (e) {
+        // classifyThrown preserves BudgetApiError + classifies AbortError
+        // / network errors, so the retry logic can decide whether to retry.
+        throw classifyThrown(e);
+      } finally {
+        clearTimeout(timeout);
       }
-      return res.json() as Promise<T>;
-    } catch (e) {
-      if (e instanceof DOMException && e.name === "AbortError") {
-        throw new Error("YNAB API request timed out (15s)");
-      }
-      throw e;
-    } finally {
-      clearTimeout(timeout);
-    }
+    });
   }
 
   async testConnection(): Promise<boolean> {
@@ -349,6 +360,22 @@ export class YnabClient implements BudgetAPIClient {
   }
 
   async createTransaction(tx: NewBudgetTransaction): Promise<string> {
+    // v0.5 expert-review M20: deterministic idempotency key. YNAB doesn't
+    // currently support an Idempotency-Key header officially, but the
+    // import_id field on /transactions IS the upstream-side dedupe key —
+    // YNAB rejects duplicate import_ids on the same account. We hash the
+    // canonical fingerprint and use it as import_id, prefixed so it's
+    // recognizable in the YNAB UI as ledgr-generated.
+    const idempotencyKey = transactionIdempotencyKey({
+      accountId: tx.accountId,
+      date: tx.date,
+      amount: toMilliunits(tx.amount),
+      payee: tx.payeeName ?? null,
+      memo: tx.memo ?? null,
+    });
+    // YNAB import_id is limited to 36 chars; truncate the base64url hash.
+    const importId = `ledgr:${idempotencyKey.slice(0, 30)}`;
+
     const res = await this.request<
       YnabResponse<{ transaction: { id: string } }>
     >("/transactions", {
@@ -363,6 +390,7 @@ export class YnabClient implements BudgetAPIClient {
           memo: tx.memo,
           cleared: tx.cleared ? "cleared" : "uncleared",
           approved: tx.approved ?? true,
+          import_id: importId,
         },
       }),
     });

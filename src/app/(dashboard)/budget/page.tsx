@@ -620,7 +620,7 @@ export default function BudgetPage() {
               <div className="flex items-center gap-2">
                 {isViewingNonActive ? (
                   <>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-semibold uppercase">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-strong text-muted font-semibold uppercase">
                       Viewing
                     </span>
                     <span className="text-xs text-muted">{profile?.name}</span>
