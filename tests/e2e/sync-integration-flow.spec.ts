@@ -21,7 +21,21 @@ import { test, expect } from "@playwright/test";
  * the mutation's onSuccess handler populates state the same way it
  * would in production.
  */
+// Skipped in DEMO_ONLY mode: Settings → Integrations is an admin-only
+// surface (saveConnection / fetchYnabBudgets / testConnection all use
+// adminProcedure), but the demoOnlySession assigned in src/server/trpc.ts
+// uses role="viewer". The admin procedures return UNAUTHORIZED rather
+// than rendering the credential form, so the token input never mounts.
+// Real sync-flow smoke is covered by the pre-existing sync-flow.spec.ts
+// which only asserts the page loads without crashing.
+const isDemoOnly = process.env.DEMO_ONLY === "true";
+
 test.describe("Sync integration journey (M18)", () => {
+  test.skip(
+    isDemoOnly,
+    "Integrations tab is admin-only and not exposed in DEMO_ONLY mode",
+  );
+
   test.beforeEach(async ({ page }) => {
     // Intercept the tRPC endpoint used by the "Fetch" button. Playwright
     // matches against the full URL so we use a glob that tolerates

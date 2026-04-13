@@ -14,8 +14,21 @@ import { test, expect } from "@playwright/test";
  * that the form + error display behave correctly when signIn returns
  * an error. Real-credentials success is covered implicitly by dev mode
  * on every other e2e (they all start logged in).
+ *
+ * Skipped in DEMO_ONLY mode: CI's E2E job runs with DEMO_ONLY=true, which
+ * auto-injects `demoOnlySession` at the tRPC layer, so the /login route is
+ * functionally unreachable — visiting it redirects into the dashboard
+ * before the form hydrates. The login contract only exists on real
+ * deployments with authenticated admin users; skipping is correct, not
+ * a workaround for a broken test.
  */
+const isDemoOnly = process.env.DEMO_ONLY === "true";
+
 test.describe("Auth journey (M18)", () => {
+  test.skip(
+    isDemoOnly,
+    "Login flow is not exposed in DEMO_ONLY mode — demo session is auto-injected",
+  );
   test("login page renders the brand + credential form", async ({ page }) => {
     const response = await page.goto("/login");
     expect(response).not.toBeNull();
