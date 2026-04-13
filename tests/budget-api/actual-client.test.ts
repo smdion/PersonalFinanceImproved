@@ -237,6 +237,184 @@ describe("ActualClient", () => {
     });
   });
 
+  describe("getCategories", () => {
+    it("merges categories into groups and maps cents to dollars", async () => {
+      // /categorygroups + /categories are fetched in parallel and merged
+      // by group_id. We provide both responses in the order the client
+      // fires them (Promise.all → request 1 then request 2 on Actual's
+      // HTTP impl; the test tolerates both orders by returning the same
+      // shape twice).
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: [
+            {
+              id: "g1",
+              name: "Bills",
+              is_income: false,
+              hidden: false,
+              categories: [],
+            },
+          ],
+        }),
+      );
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: [
+            {
+              id: "c1",
+              name: "Rent",
+              group_id: "g1",
+              hidden: false,
+              budgeted: 150000, // cents = $1500
+              spent: -140000,
+              balance: 10000,
+            },
+          ],
+        }),
+      );
+      const groups = await client.getCategories();
+      expect(groups).toHaveLength(1);
+      expect(groups[0]!.name).toBe("Bills");
+      expect(groups[0]!.categories[0]).toMatchObject({
+        name: "Rent",
+        budgeted: 1500,
+      });
+    });
+  });
+
+  describe("getMonthDetail", () => {
+    it("maps the month with its categories", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: {
+            month: "2026-01",
+            income: 500000,
+            budgeted: 400000,
+            spent: -350000,
+            to_budget: 100000,
+            categories: [
+              {
+                id: "c1",
+                name: "Rent",
+                group_id: "g1",
+                hidden: false,
+                budgeted: 150000,
+                spent: -140000,
+                balance: 10000,
+              },
+            ],
+          },
+        }),
+      );
+      const detail = await client.getMonthDetail("2026-01");
+      expect(detail.month).toBe("2026-01");
+      expect(detail.income).toBe(5000);
+      expect(detail.categories).toHaveLength(1);
+    });
+  });
+
+  describe("updateCategoryBudgeted", () => {
+    it("PATCHes with cents conversion", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({}));
+      await client.updateCategoryBudgeted("2026-01", "cat-1", 150);
+      const [, init] = mockFetch.mock.calls[0]!;
+      expect(init.method).toBe("PATCH");
+      expect(JSON.parse(init.body).budgeted).toBe(15000);
+    });
+  });
+
+  describe("getTransactions", () => {
+    it("aggregates transactions across open accounts, skipping closed", async () => {
+      // Response 1: /accounts — two accounts, one closed
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: [
+            {
+              id: "a1",
+              name: "Checking",
+              type: "checking",
+              offbudget: false,
+              closed: false,
+              balance: 0,
+            },
+            {
+              id: "a2",
+              name: "Old Savings",
+              type: "savings",
+              offbudget: false,
+              closed: true, // closed → should be skipped
+              balance: 0,
+            },
+          ],
+        }),
+      );
+      // Response 2: /accounts/a1/transactions
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: [
+            {
+              id: "tx-1",
+              account: "a1",
+              date: "2026-01-10",
+              amount: -5000, // $-50
+              payee: "p1",
+              payee_name: "Store",
+              notes: "test",
+              cleared: true,
+              reconciled: false,
+            },
+          ],
+        }),
+      );
+      const txs = await client.getTransactions("2026-01-01");
+      // Only one account's transactions returned — the closed account
+      // was never fetched.
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(txs).toHaveLength(1);
+      expect(txs[0]).toMatchObject({
+        id: "tx-1",
+        accountId: "a1",
+        accountName: "Checking",
+        amount: -50,
+      });
+    });
+  });
+
+  describe("deleteTransaction", () => {
+    it("sends a DELETE to /transactions/:id", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({}));
+      await client.deleteTransaction("tx-1");
+      const [url, init] = mockFetch.mock.calls[0]!;
+      expect(url).toContain("/transactions/tx-1");
+      expect(init.method).toBe("DELETE");
+    });
+  });
+
+  describe("getAccountTransactions", () => {
+    it("fetches + maps transactions for a specific account", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: [
+            {
+              id: "tx-2",
+              account: "a1",
+              date: "2026-01-15",
+              amount: -2500,
+              payee_name: "Coffee",
+              notes: null,
+              cleared: false,
+              reconciled: false,
+            },
+          ],
+        }),
+      );
+      const txs = await client.getAccountTransactions("a1", "2026-01-01");
+      expect(txs).toHaveLength(1);
+      expect(txs[0]!.amount).toBe(-25);
+      expect(txs[0]!.cleared).toBe(false);
+    });
+  });
+
   describe("error handling", () => {
     it("throws a typed auth error on 401 (M19)", async () => {
       // v0.5: actual-client throws BudgetApiError instead of generic Error.
