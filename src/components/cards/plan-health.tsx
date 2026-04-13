@@ -30,6 +30,7 @@
 
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
+import { trpc } from "@/lib/trpc";
 import { validateContributionOrder } from "@/lib/pure/contributions";
 import { checkGlidePath } from "@/lib/pure/glide-path";
 import {
@@ -42,7 +43,7 @@ import {
   type WithdrawalStrategyRecommendation,
 } from "@/lib/pure/withdrawal-strategy-recommendation";
 import { deriveProjectionBand } from "@/lib/pure/projection-bands";
-import { formatPercent } from "@/lib/utils/format";
+import { formatPercent, formatCurrency } from "@/lib/utils/format";
 
 interface PlanHealthCardProps {
   /** v0.5 M1 — accumulation account order. If absent, M1 callout is hidden. */
@@ -189,10 +190,14 @@ export function PlanHealthCard(props: PlanHealthCardProps) {
  * Stress test panel (v0.5 expert-review M2). Toggleable view that
  * compares the user's current assumptions against the canonical
  * conservative / baseline / optimistic scenarios from
- * src/lib/pure/stress-test.ts. Doesn't re-run the projection itself
- * — that's a follow-up. Renders the parameter sets side-by-side so
- * users can see how their inputs compare to historical tail-risk
- * outcomes.
+ * src/lib/pure/stress-test.ts.
+ *
+ * When opened, fires the projection.computeStressTest endpoint which
+ * actually re-runs the deterministic engine three times (once per
+ * scenario) at the stress parameters. The resulting nest egg per
+ * scenario is rendered alongside the parameter set so users see real
+ * outcomes, not just inputs. The query is gated on `open` so the
+ * heavy server work only happens when the user wants it.
  */
 function StressTestPanel({
   userReturnRate,
@@ -205,6 +210,14 @@ function StressTestPanel({
 }) {
   const [open, setOpen] = useState(false);
   const scenarios = getStressTestScenarios();
+  const { data: stressData, isLoading: stressLoading } =
+    trpc.projection.computeStressTest.useQuery(undefined, {
+      enabled: open,
+      staleTime: 5 * 60 * 1000,
+    });
+  const resultByLabel = new Map(
+    (stressData?.scenarios ?? []).map((s) => [s.label, s]),
+  );
 
   return (
     <div className="mt-4 border-t pt-3">
@@ -243,6 +256,9 @@ function StressTestPanel({
                 <th scope="col" className="py-2 px-2 font-medium">
                   Withdrawal
                 </th>
+                <th scope="col" className="py-2 px-2 font-medium">
+                  Nest egg
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -261,30 +277,41 @@ function StressTestPanel({
                       {formatPercent(userSalaryGrowth, 1)}
                     </td>
                     <td className="py-2 px-2">—</td>
+                    <td className="py-2 px-2">—</td>
                   </tr>
                 )}
-              {scenarios.map((s) => (
-                <tr key={s.label} className="border-b border-subtle">
-                  <td className="py-2 pr-2">
-                    <div className="font-medium">{s.label}</div>
-                    <div className="text-faint text-[10px]">
-                      {s.description}
-                    </div>
-                  </td>
-                  <td className="py-2 px-2">
-                    {formatPercent(s.returnRate, 1)}
-                  </td>
-                  <td className="py-2 px-2">
-                    {formatPercent(s.inflationRate, 1)}
-                  </td>
-                  <td className="py-2 px-2">
-                    {formatPercent(s.salaryGrowthRate, 1)}
-                  </td>
-                  <td className="py-2 px-2">
-                    {formatPercent(s.withdrawalRate, 1)}
-                  </td>
-                </tr>
-              ))}
+              {scenarios.map((s) => {
+                const result = resultByLabel.get(s.label);
+                return (
+                  <tr key={s.label} className="border-b border-subtle">
+                    <td className="py-2 pr-2">
+                      <div className="font-medium">{s.label}</div>
+                      <div className="text-faint text-[10px]">
+                        {s.description}
+                      </div>
+                    </td>
+                    <td className="py-2 px-2">
+                      {formatPercent(s.returnRate, 1)}
+                    </td>
+                    <td className="py-2 px-2">
+                      {formatPercent(s.inflationRate, 1)}
+                    </td>
+                    <td className="py-2 px-2">
+                      {formatPercent(s.salaryGrowthRate, 1)}
+                    </td>
+                    <td className="py-2 px-2">
+                      {formatPercent(s.withdrawalRate, 1)}
+                    </td>
+                    <td className="py-2 px-2 font-medium">
+                      {stressLoading
+                        ? "…"
+                        : result
+                          ? formatCurrency(result.nestEggAtRetirement)
+                          : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           <p className="mt-2 text-[11px] text-faint italic">

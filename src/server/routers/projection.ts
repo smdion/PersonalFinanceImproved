@@ -308,7 +308,7 @@ export const projectionRouter = createTRPCRouter({
         activeJobs,
         activeContribs,
         jobSalaries,
-        age: _age,
+        age,
         avgRetirementAge,
         maxEndAge,
         totalCompensation,
@@ -390,8 +390,108 @@ export const projectionRouter = createTRPCRouter({
         );
       }
 
+      // ── Plan health inputs (v0.5 expert-review M1 + M6) ──
+      // Build the data the PlanHealthCard needs to surface contribution-
+      // order and glide-path warnings. Both are derived inputs — not new
+      // first-class fields — so they live alongside `result` rather than
+      // changing the engine signature.
+      //
+      // accumulationOrder: distinct category names from activeContribs in
+      // their allocationPriority order (lower = higher priority = filled
+      // first). The validateContributionOrder() helper compares this
+      // against the CFP heuristic.
+      const accumulationOrder: string[] = (() => {
+        const sorted = [...activeContribs].sort(
+          (a, b) => (a.allocationPriority ?? 0) - (b.allocationPriority ?? 0),
+        );
+        const seen = new Set<string>();
+        const order: string[] = [];
+        for (const c of sorted) {
+          if (!seen.has(c.accountType)) {
+            seen.add(c.accountType);
+            order.push(c.accountType);
+          }
+        }
+        return order;
+      })();
+
+      // currentStockAllocationPercent: interpolate the active glide path
+      // at the user's current age and sum the allocations for asset
+      // classes whose name contains "Equit" or "Stock". Returns null if
+      // no glide path is configured (the helper will then skip the M6
+      // warning).
+      const currentStockAllocationPercent: number | null = await (async () => {
+        const [gpRows, classRows] = await Promise.all([
+          ctx.db
+            .select({
+              age: schema.glidePathAllocations.age,
+              assetClassId: schema.glidePathAllocations.assetClassId,
+              allocation: schema.glidePathAllocations.allocation,
+            })
+            .from(schema.glidePathAllocations),
+          ctx.db
+            .select({
+              id: schema.assetClassParams.id,
+              name: schema.assetClassParams.name,
+            })
+            .from(schema.assetClassParams)
+            .where(eq(schema.assetClassParams.isActive, true)),
+        ]);
+        if (gpRows.length === 0 || classRows.length === 0) return null;
+
+        const stockClassIds = new Set(
+          classRows.filter((c) => /equit|stock/i.test(c.name)).map((c) => c.id),
+        );
+        if (stockClassIds.size === 0) return null;
+
+        // Group glide path by age, then bracket-interpolate at currentAge.
+        const byAge = new Map<number, Record<number, number>>();
+        for (const r of gpRows) {
+          if (!byAge.has(r.age)) byAge.set(r.age, {});
+          byAge.get(r.age)![r.assetClassId] = toNumber(r.allocation);
+        }
+        const ages = Array.from(byAge.keys()).sort((a, b) => a - b);
+        if (ages.length === 0) return null;
+
+        const targetAge = age;
+        let lowerAge = ages[0]!;
+        let upperAge = ages[ages.length - 1]!;
+        if (targetAge <= lowerAge) {
+          upperAge = lowerAge;
+        } else if (targetAge >= upperAge) {
+          lowerAge = upperAge;
+        } else {
+          for (let i = 0; i < ages.length - 1; i++) {
+            if (targetAge >= ages[i]! && targetAge <= ages[i + 1]!) {
+              lowerAge = ages[i]!;
+              upperAge = ages[i + 1]!;
+              break;
+            }
+          }
+        }
+        const lowerAlloc = byAge.get(lowerAge)!;
+        const upperAlloc = byAge.get(upperAge)!;
+        const t =
+          upperAge === lowerAge
+            ? 0
+            : (targetAge - lowerAge) / (upperAge - lowerAge);
+
+        let stockSum = 0;
+        for (const id of stockClassIds) {
+          const lo = lowerAlloc[id] ?? 0;
+          const hi = upperAlloc[id] ?? 0;
+          stockSum += lo + (hi - lo) * t;
+        }
+        return Math.round(stockSum * 100 * 10) / 10;
+      })();
+
       return {
         result,
+        planHealth: {
+          currentAge: age,
+          accumulationOrder,
+          currentStockAllocationPercent,
+        },
         combinedSalary: roundToCents(totalCompensation),
         baseLimits: Object.fromEntries(
           categoriesWithIrsLimit().map((cat) => {
@@ -1394,6 +1494,131 @@ export const projectionRouter = createTRPCRouter({
       return {
         strategies,
         activeStrategy,
+        retirementAge: avgRetirementAge,
+      };
+    }),
+
+  /**
+   * Stress test (v0.5 expert-review M2).
+   *
+   * Re-runs the deterministic projection three times — once each at the
+   * conservative, baseline, and optimistic stress test parameter sets
+   * defined in src/lib/pure/stress-test.ts. Each scenario overrides
+   * returnRates / inflationRate / salaryGrowthRate / withdrawalRate
+   * before calling calculateProjection. Returns summary metrics
+   * (nest egg at retirement, sustainable withdrawal, depletion age) so
+   * the PlanHealthCard's stress test panel can render side-by-side
+   * outcomes instead of just side-by-side parameters.
+   */
+  computeStressTest: protectedProcedure
+    .input(
+      z
+        .object({
+          salaryOverrides: z
+            .array(z.object({ personId: z.number(), salary: z.number() }))
+            .optional(),
+          contributionProfileId: z.number().int().optional(),
+          accumulationBudgetProfileId: z.number().int().optional(),
+          accumulationBudgetColumn: z.number().int().min(0).optional(),
+          accumulationExpenseOverride: z.number().min(0).optional(),
+          decumulationBudgetProfileId: z.number().int().optional(),
+          decumulationBudgetColumn: z.number().int().min(0).optional(),
+          decumulationExpenseOverride: z.number().min(0).optional(),
+          snapshotId: z.number().int().optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const data = await fetchRetirementData(ctx.db, {
+        snapshotId: input?.snapshotId,
+      });
+      const payload = await buildEnginePayload(ctx.db, data, {
+        salaryOverrides: input?.salaryOverrides,
+        contributionProfileId: input?.contributionProfileId,
+        accumulationBudgetProfileId: input?.accumulationBudgetProfileId,
+        accumulationBudgetColumn: input?.accumulationBudgetColumn,
+        accumulationExpenseOverride: input?.accumulationExpenseOverride,
+        decumulationBudgetProfileId: input?.decumulationBudgetProfileId,
+        decumulationBudgetColumn: input?.decumulationBudgetColumn,
+        decumulationExpenseOverride: input?.decumulationExpenseOverride,
+      });
+      if (!payload) return { scenarios: [], retirementAge: null };
+
+      const {
+        settings,
+        distributionTaxRates,
+        baseEngineInput,
+        avgRetirementAge,
+      } = payload;
+
+      const { getStressTestScenarios } = await import("@/lib/pure/stress-test");
+      const stressScenarios = getStressTestScenarios();
+
+      const userStrategyParams = buildStrategyParams(settings);
+      const activeStrategy =
+        (settings.withdrawalStrategy as WithdrawalStrategyType) ?? "fixed";
+
+      const scenarios = stressScenarios.map((scenario) => {
+        // Build a flat returnRates schedule across the projection horizon at
+        // the scenario's nominal rate. The engine accepts per-age rates so
+        // it gets a constant rate at every age.
+        const flatReturnRates: { label: string; rate: number }[] = [];
+        for (
+          let a = baseEngineInput.currentAge;
+          a <= baseEngineInput.projectionEndAge;
+          a++
+        ) {
+          flatReturnRates.push({
+            label: `Age ${a}`,
+            rate: scenario.returnRate,
+          });
+        }
+
+        const decumulationDefaults = {
+          withdrawalRate: scenario.withdrawalRate,
+          withdrawalRoutingMode: "bracket_filling" as const,
+          withdrawalOrder: getDefaultDecumulationOrder() as AccountCategory[],
+          withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS } as Record<
+            AccountCategory,
+            number
+          >,
+          withdrawalTaxPreference: {},
+          distributionTaxRates,
+          withdrawalStrategy: activeStrategy,
+          strategyParams: userStrategyParams,
+        };
+
+        const result = calculateProjection({
+          ...baseEngineInput,
+          returnRates: flatReturnRates,
+          inflationRate: scenario.inflationRate,
+          salaryGrowthRate: scenario.salaryGrowthRate,
+          decumulationDefaults,
+          accumulationOverrides: [],
+          decumulationOverrides: [],
+        });
+
+        const retirementYear =
+          baseEngineInput.currentAge >= avgRetirementAge
+            ? result.projectionByYear[0]
+            : result.projectionByYear.find((p) => p.age === avgRetirementAge);
+        const nestEgg = retirementYear?.endBalance ?? 0;
+
+        return {
+          label: scenario.label,
+          description: scenario.description,
+          returnRate: scenario.returnRate,
+          inflationRate: scenario.inflationRate,
+          salaryGrowthRate: scenario.salaryGrowthRate,
+          withdrawalRate: scenario.withdrawalRate,
+          nestEggAtRetirement: roundToCents(nestEgg),
+          sustainableWithdrawal: result.sustainableWithdrawal,
+          portfolioDepletionAge: result.portfolioDepletionAge,
+        };
+      });
+
+      return {
+        scenarios,
         retirementAge: avgRetirementAge,
       };
     }),

@@ -32,7 +32,7 @@ export function NetWorthComposition({
       : []),
     { label: "Cash", value: cash, color: "bg-green-400" },
     ...(otherAssets > 0
-      ? [{ label: "Other", value: otherAssets, color: "bg-surface-elevated" }]
+      ? [{ label: "Other", value: otherAssets, color: "bg-surface-divider" }]
       : []),
   ];
 

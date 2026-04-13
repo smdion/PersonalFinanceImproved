@@ -88,17 +88,22 @@ export const syncConnectionsRouter = createTRPCRouter({
       // Single atomic upsert — onConflictDoUpdate is already transactional in
       // Postgres (the INSERT … ON CONFLICT DO UPDATE runs as one statement).
       // No explicit transaction wrapper needed.
+      //
+      // The two casts on this insert are intentional: Drizzle's column type
+      // is the YnabConfig|ActualConfig union, but the JSONB column accepts
+      // any JSON-serializable shape. The encrypted envelope from
+      // encryptJson() is stored as-is and readMaybeEncrypted() in
+      // factory.ts handles the read side.
+      // eslint-disable-next-line no-restricted-syntax -- see block comment above
+      const storedConfig = encryptedConfig as unknown as
+        | YnabConfig
+        | ActualConfig;
       await ctx.db
         .insert(schema.apiConnections)
-        .values({
-          service: input.service,
-          config: encryptedConfig as unknown as YnabConfig | ActualConfig,
-        })
+        .values({ service: input.service, config: storedConfig })
         .onConflictDoUpdate({
           target: schema.apiConnections.service,
-          set: {
-            config: encryptedConfig as unknown as YnabConfig | ActualConfig,
-          },
+          set: { config: storedConfig },
         });
 
       return { success: true };

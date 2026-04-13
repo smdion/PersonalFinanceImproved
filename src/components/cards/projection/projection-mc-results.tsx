@@ -200,7 +200,7 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
                   </div>
                   {(si.taxMode === "advanced" || si.hasAssetClassOverrides) && (
                     <>
-                      <div className="w-px h-6 bg-surface-elevated/60" />
+                      <div className="w-px h-6 bg-surface-divider/60" />
                       <div className="flex items-center gap-2 text-[10px]">
                         {si.taxMode === "advanced" && (
                           <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 font-medium">

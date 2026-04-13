@@ -194,6 +194,26 @@ describe("ActualClient", () => {
       expect(body.amount).toBe(-5000); // dollars → cents
       expect(body.cleared).toBe(true);
     });
+
+    it("includes a deterministic ledgr-prefixed imported_id (M20)", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: { id: "tx-a" } }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: { id: "tx-b" } }));
+      const payload = {
+        accountId: "acct-1",
+        date: "2026-01-20",
+        amount: -50,
+        payeeName: "Store",
+        categoryId: "cat-1",
+        memo: "Test",
+        cleared: true,
+      } as const;
+      await client.createTransaction(payload);
+      await client.createTransaction(payload);
+      const body1 = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const body2 = JSON.parse(mockFetch.mock.calls[1][1].body);
+      expect(body1.imported_id).toMatch(/^ledgr:/);
+      expect(body1.imported_id).toBe(body2.imported_id);
+    });
   });
 
   describe("updateTransaction", () => {
@@ -218,10 +238,13 @@ describe("ActualClient", () => {
   });
 
   describe("error handling", () => {
-    it("throws on non-OK response", async () => {
-      mockFetch.mockReturnValueOnce(jsonResponse({}, 500));
+    it("throws a typed auth error on 401 (M19)", async () => {
+      // v0.5: actual-client throws BudgetApiError instead of generic Error.
+      // The auth code is non-retryable so the failure surfaces immediately
+      // (avoids the 3-attempt backoff that retryable codes incur).
+      mockFetch.mockReturnValueOnce(jsonResponse({}, 401));
       await expect(client.getAccountBalance("x")).rejects.toThrow(
-        "Actual API 500",
+        /Authentication failed.*401/,
       );
     });
   });

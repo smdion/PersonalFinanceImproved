@@ -3,8 +3,24 @@
  *
  * Static-string scan that flags hardcoded gray Tailwind utility classes
  * in component files. Prefer the centralized design tokens defined in
- * src/app/globals.css (bg-surface-*, text-primary, text-muted, border-default,
- * etc.) over raw bg-gray-N00 / text-gray-N00 because:
+ * src/app/globals.css over raw bg-gray-N00 / text-gray-N00:
+ *
+ *   Surfaces (cards, panels, container fills):
+ *     bg-surface-primary       — pure white / dark slate (the page bg)
+ *     bg-surface-secondary     — gray-50  / dark slate
+ *     bg-surface-elevated      — gray-100 / mid slate (cards)
+ *     bg-surface-sunken        — gray-100 / dark slate (inset boxes)
+ *     bg-surface-strong        — gray-200 / mid slate (slightly darker)
+ *     bg-surface-divider       — gray-300 / slate-600 (dividers, inactive
+ *                                dot indicators, "Other" pie slices —
+ *                                visible against any surface above)
+ *     bg-surface-emphasis      — gray-600 / slate-300 (high-contrast
+ *                                accent fills like progress bar markers)
+ *
+ *   Text + borders: text-primary / text-secondary / text-muted /
+ *     text-faint and border-default / border-subtle / border-strong.
+ *
+ * Why centralize:
  *
  *   1. The tokens auto-adapt to dark mode without dual classes
  *   2. Theme changes happen in one place (CSS variables in globals.css)

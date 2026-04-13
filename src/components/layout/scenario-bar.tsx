@@ -311,7 +311,7 @@ export function ScenarioBar() {
                         }}
                         className="flex-1 text-left flex items-center gap-2"
                       >
-                        <span className="w-1.5 h-1.5 rounded-full bg-surface-elevated" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-surface-divider" />
                         {s.name}
                         <span className="text-[10px] text-faint">
                           (session)

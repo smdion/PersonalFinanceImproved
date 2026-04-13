@@ -37,6 +37,16 @@
   --color-surface-sunken: var(--surface-sunken);
   --color-surface-strong: var(--surface-strong);
 
+  /* Fill tokens — for non-text, non-card surface uses where the existing
+   * surface-* family is too light. surface-divider sits between strong
+   * and the dark text colors, used for thin dividers, inactive bullet
+   * indicators, and "Other" pie/bar slices. surface-emphasis is the
+   * darkest non-text fill, used for high-contrast accents like the
+   * IRS-limit marker on contribution progress bars. Both have light/dark
+   * variants so they remain visible against any surface background. */
+  --color-surface-divider: var(--surface-divider);
+  --color-surface-emphasis: var(--surface-emphasis);
+
   --color-input: var(--input-bg);
   --color-input-border: var(--input-border);
   --color-input-text: var(--input-text);
@@ -187,6 +197,8 @@
   --surface-elevated: #f3f4f6;
   --surface-sunken: #f3f4f6;
   --surface-strong: #e5e7eb;
+  --surface-divider: #d1d5db; /* gray-300 — dividers, inactive dots, "Other" slices */
+  --surface-emphasis: #4b5563; /* gray-600 — high-contrast markers, bar limit lines */
 
   /* ── Text (semantic text roles — use instead of text-gray-*) ── */
   --text-primary: #111827;
@@ -334,6 +346,8 @@
   --surface-elevated: #253347;
   --surface-sunken: #0f172a;
   --surface-strong: #334155;
+  --surface-divider: #475569; /* slate-600 — dividers, inactive dots */
+  --surface-emphasis: #cbd5e1; /* slate-300 — light marker on dark surfaces */
 
   /* ── Text ── */
   --text-primary: #f1f5f9;

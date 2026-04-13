@@ -6,6 +6,118 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+# v0.5
+
+## [0.5.0] - 2026-04-12
+
+Expert-review hardening release. An 11-persona audit of the v0.4 codebase
+surfaced 40 findings across security, tax correctness, CFP behavioral gaps,
+accessibility, architecture, and developer experience. This release closes
+every Critical and High finding, and every Medium finding except two that
+were explicitly deferred (M5 insurance gap analysis needs design; M17 test
+fixture variance was descoped). Also squashes the Drizzle migration graph
+into a single v5 baseline so new installs start clean while existing v4
+databases are auto-upgraded on first boot.
+
+### Database migration
+
+- **v4 → v5 upgrade path is automatic and production-safe**. [db-migrate.ts](db-migrate.ts) detects existing v4 installs via hash comparison against the v5 journal, backs up the database, replaces the journal with v5 metadata marking v5_initial_schema as applied, then runs the v5 delta migration. Zero manual steps for existing users.
+- **Migration graph squashed** — v0.4's dozens of incremental migrations collapsed into `0000_v5_initial_schema` + `0001_v5_schema_changes` so fresh installs skip the history replay.
+- **Decimal columns widened** to `numeric(14,2)` across 80 financial columns so no legitimate balance can overflow (~$1T ceiling).
+- **Annual performance immutability** — `annual_performance` gains an `is_immutable` column. Finalized rows are backfilled to `is_immutable=true` and router-layer guards block direct edits to `lifetime_*` fields on immutable rows. The cascadeLifetimeFields() helper is the only legal writer.
+- **Missing FK indexes added** — `budget_items_contribution_account_id_idx` and `api_connections_linked_profile_id_idx`.
+- **Demo schemas rebuilt** on migration — any `demo_*` schemas are dropped CASCADE after the main migration and rebuilt from `public` on next demo activation, so demo data never lags behind the live schema.
+
+### Security
+
+- **API credentials encrypted at rest** — YNAB tokens and Actual Budget API keys are now stored as AES-256-GCM envelopes, not plaintext JSON. Requires `ENCRYPTION_KEY` env var in production; the factory's `readMaybeEncrypted()` transparently handles both legacy plaintext and new encrypted rows on read, so this upgrade is zero-downtime.
+- **SSRF blocker for Actual Budget serverUrl** — user-supplied server URLs are now validated against an allowlist of public IP ranges (RFC1918/loopback/link-local rejected unless explicitly opted in via `ALLOWED_ACTUAL_HOSTS`). Previously the container could be coerced into making outbound requests to private infrastructure.
+- **Atomic sync writes + fail-loud on asset errors** — `syncAll` now wraps its multi-table writes in a transaction and pre-validates account mappings before any network fetch. Previously a mid-sync failure could leave the cache in a partially-written state.
+- **CRON_SECRET required in production** — startup fails if unset when `NODE_ENV=production`. Previously cron endpoints were protected by an optional secret that silently accepted requests without one.
+- **`ALLOW_DEV_MODE=true` blocked in production** — hard fail at startup instead of silent degradation.
+- **JWT session maxAge reduced** from 24h to 4h.
+- **Docker compose healthcheck + `depends_on: service_healthy`** — the app container now waits for Postgres to pass its healthcheck before starting, eliminating the startup race where the app crashed trying to connect before PG was ready.
+- **Encrypted off-site backup script** — `scripts/backup.sh` runs pg_dump, AES-256-encrypts with a passphrase, and emits the ciphertext for off-site storage. [backup-restore.md](docs/runbooks/backup-restore.md) runbook documents the restore drill.
+
+### Tax & financial correctness
+
+- **2026 standard deduction values verified** against IRS Rev. Proc. 2025-32. [tax-correctness.test.ts](tests/tax/tax-correctness.test.ts) now pins every filing-status threshold.
+- **SECURE 2.0 super catch-up boundary tests** — ages 59/60/63/64 hit the right limit (regular → super → regular) across every contribution account type.
+- **Tax-year freshness CI guard** — `scripts/check-tax-freshness.ts` fails CI if the current calendar year is beyond the latest pinned tax year without a deliberate override. Paired with [.scratch/docs/TAX-CALENDAR.md](.scratch/docs/TAX-CALENDAR.md) runbook for the annual update.
+
+### CFP behavioral gaps
+
+- **Plan Health card** (`src/components/cards/plan-health.tsx`) — new single-surface integration point on the retirement page that renders CFP-heuristic warnings in-context. Shows up to five findings:
+  - **Contribution order** (M1) — `validateContributionOrder()` flags tax-advantaged accounts ordered after brokerage, or HSA after other tax-advantaged, with a callout and fix recommendation. Driven by a server-computed `accumulationOrder` built from the user's contribution accounts sorted by `allocationPriority`.
+  - **Glide path mismatch** (M6) — `checkGlidePath()` compares the user's current stock allocation (interpolated from the active glide path) against the classic "110 − age" rule. Fires info/warn/danger severities when deviation exceeds 10/20/35pp.
+  - **Rosy assumptions** (M2) — `detectRosyAssumptions()` flags return rate > 8%, inflation < 2.5%, or salary growth > 4% with historical context.
+  - **Recommended withdrawal strategy** (M4) — `recommendWithdrawalStrategy()` picks a default based on retirement horizon + budget link, renders a one-sentence rationale, and marks the recommended option in the strategy picker with a ★ prefix and "— Recommended" suffix.
+  - **Projection band** (M3) — `deriveProjectionBand()` renders a ±25% band around the deterministic nest egg so users see the uncertainty without switching to the Monte Carlo view.
+- **Stress test panel** — toggleable panel on the Plan Health card compares the user's assumptions against conservative / baseline / optimistic canonical scenarios. **Actually re-runs the projection** at each parameter set via the new `projection.computeStressTest` endpoint, so users see nest-egg-per-scenario outcomes, not just parameter sets side-by-side.
+
+### Architecture & performance
+
+- **Edge middleware short-circuit for auth** (`src/proxy.ts`, formerly `middleware.ts`) — unauthenticated requests to `(dashboard)/*` routes redirect to `/login` at the edge instead of routing through the app layout's server session check.
+- **Server-side prefetch** (M7) on the three highest-traffic pages:
+  - Dashboard prefetches `networth.computeSummary` + `settings.isOnboardingComplete`.
+  - Retirement page split into [retirement/page.tsx](<src/app/(dashboard)/retirement/page.tsx>) (server) + [retirement-content.tsx](<src/app/(dashboard)/retirement/retirement-content.tsx>) (client), prefetching `projection.computeProjection`.
+  - Portfolio page split the same way, prefetching `networth.computeSummary`.
+  - All prefetches are wrapped in try/catch so failures fall back transparently to the previous client-side fetch behavior — strict win for the common path, zero risk for edge cases.
+- **Recharts code-splitting** (M8) — all 12 chart importers now lazy-load via `next/dynamic` with `ssr: false`. ~250KB of recharts payload moved from every dashboard/portfolio/retirement/networth/savings/mortgage/expenses/historical page bundle into shared lazy chunks that only load when a chart mounts. New [projection-chart-skeleton.tsx](src/components/cards/projection/projection-chart-skeleton.tsx) and [expenses/expenses-charts.tsx](src/components/expenses/expenses-charts.tsx) component files own the split boundary.
+- **`React.memo` on all 13 dashboard cards** (M10) — prevents unnecessary re-renders when one card's query invalidates.
+
+### Accessibility (Tier D sweep)
+
+- `prefers-reduced-motion` media query in [globals.css](src/app/globals.css) — users with motion sensitivity get a reduced-animation experience automatically.
+- `aria-expanded` on every sidebar collapsible.
+- **`aria-hidden` sweep on 34 decorative SVGs** across 24 files (M12) — all 100% of inline SVGs in the codebase now carry an a11y attribute. Sweep reviewed element-by-element; every addition is correct given the surrounding accessible name context (title, aria-label, or adjacent heading).
+- **Amber / yellow contrast bumps** — badges and callouts promoted from `amber-700` to `amber-800` to meet 4.5:1 on near-white backgrounds.
+- **Table semantics** — DataTable primitive now emits `scope="col"` on header cells; projection table adds a `<caption>` (sr-only) describing the data grid.
+
+### Sync resilience (API integration)
+
+- **Typed errors + exponential backoff with Retry-After** (M19) on both YNAB and Actual Budget clients. New [budget-api/errors.ts](src/lib/budget-api/errors.ts) defines `BudgetApiError` with auth / rate-limit / client / server / network / timeout / unknown codes. `retryWithBackoff()` retries retryable codes (rate-limit, server, network, timeout) with 1s/2s/4s cap, honors `Retry-After` headers on 429, and surfaces auth/client errors immediately without retry.
+- **Deterministic idempotency keys on transaction creation** (M20) — `transactionIdempotencyKey()` hashes a canonical fingerprint (account, date, amount, payee, memo) and feeds it as `import_id` (YNAB) / `imported_id` (Actual), both of which are the upstream-side dedupe field. Same payload → same key → retries deduplicate on the server. Keys are prefixed with `ledgr:` so they're recognizable in the upstream UI.
+- **Drift detection** (M21) — `detectDrift()` compares cached account list vs fresh fetch after every `syncAll`, identifies broken mappings (cached account no longer present upstream), renamed accounts, and new remote accounts. The drift report is attached to the sync result so the UI can surface actionable callouts instead of silently losing sync coverage.
+
+### Developer experience & docs
+
+- **`setup-dev.sh`** — one-command quickstart that installs, configures env, runs migrations, and seeds a dev database.
+- **In-app glossary** — [Glossary page](<src/app/(dashboard)/glossary/page.tsx>) reads from `src/lib/config/glossary.ts` so finance jargon has a first-class definition source.
+- **Auto-generated API_ROUTERS.md + ER diagram** — `scripts/verify-docs.ts` now emits both.
+- **Custom `eslint-plugin-ledgr`** (M15) — enforces the top 5–10 rules from RULES.md's "Violations to Watch For" list (no hardcoded account type strings, no raw color classes, etc.). Runs in `pnpm lint`.
+- **Snapshot freshness metadata + 6-month guard** (M16) — `snapshotReviewDate` on each snapshot; test fails if any snapshot hasn't been reviewed in 6 months.
+- **3 new E2E user journeys** (M18) — [auth-flow.spec.ts](tests/e2e/auth-flow.spec.ts), [scenario-edit-flow.spec.ts](tests/e2e/scenario-edit-flow.spec.ts), [sync-integration-flow.spec.ts](tests/e2e/sync-integration-flow.spec.ts) covering login form contract, scenario edit round-trip, and Settings → Integrations → YNAB fetch (with the tRPC edge mocked via `page.route()` so the test never hits api.ynab.com).
+- **`.claude/settings.json`** with a PostToolUse hook that runs `pnpm docs:verify` whenever engine, router, or schema files change — catches auto-gen count drift at edit time instead of at review time.
+- **Promoted `.scratch/docs/RULES.md` to `docs/RULES.md`** — made the authoritative rules document a first-class tracked file. Fixed 15 cross-references across the codebase.
+- **Slimmed CLAUDE.md, DESIGN.md** — dropped the stale Tooltip System section, trimmed the Project Structure tree and Component Catalog. ~7.8K tokens saved per DESIGN.md read.
+
+### UX
+
+- **Optimistic mutation hook** (`useOptimisticMutation`) — wraps any tRPC mutation with optimistic update + automatic rollback on error. Includes built-in undo-toast support.
+- **Toast undo action** (M27) — `toast.undo(label, undoFn, windowMs)` renders an Undo button in the toast. Wired on savings planned-transaction delete: captures the row before deletion and re-creates it on click if the user changes their mind within 5s.
+- **Typed error states** (M28) — tRPC errors are now categorized (auth / permission / rate-limit / validation / server / network) and rendered with appropriate UI: auth errors prompt a relogin, rate-limit errors show the cooldown window, etc.
+- **Theme color centralization** (M26) — every hardcoded gray Tailwind class in component files migrated to design tokens. Added two new fill tokens to [globals.css](src/app/globals.css):
+  - **`bg-surface-divider`** (gray-300 / slate-600) — dividers, inactive dot indicators, "Other" pie slices; visible against any surface above.
+  - **`bg-surface-emphasis`** (gray-600 / slate-300) — high-contrast accent fills like the IRS-limit marker on contribution progress bars.
+  - These fill the gap the design system previously missed — `surface-elevated` / `surface-strong` are too light for dot indicators, and the text tokens (`text-muted`, `text-secondary`) are semantically wrong as backgrounds. Routed 7 files through the new tokens.
+  - Custom ESLint rule (`tests/lint/theme-audit.test.ts`) blocks new `*-gray-N00` regressions.
+
+### Fixed
+
+- **Dashboard test re-targets** — `tests/components/dashboard.test.tsx` now imports `DashboardContent` instead of the server `page.tsx`, avoiding a next-auth + Next 16 module resolution incompatibility that crashed the test in v0.4.
+- **"use client" directive ordering** — fixed Python-script-mangled directive placement on 6 dashboard card files.
+- **Pre-existing negative `lifetime_gains` preserved** — `annual_performance` CHECK constraints initially added during the audit would have rejected 3 valid production rows (2015 401k/IRA cumulative losses, 2025–2026 Brokerage losses). Constraints removed; the router-layer immutability guard is the real protection.
+
+### Deferred
+
+- **M5 — Insurance gap analysis cards** (life / disability / umbrella + beneficiary tracking). Deferred pending design work. CFP table-stakes but a real new feature, not a fix.
+- **M17 — Test fixture variance** ($250k single, gig worker, HENRY profile). Descoped from this release.
+
+See [.scratch/docs/expert-review-decisions.md](.scratch/docs/expert-review-decisions.md) for the full tracker.
+
+---
+
 # v0.4
 
 ## [0.4.21] - 2026-04-12

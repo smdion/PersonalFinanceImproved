@@ -3,30 +3,33 @@
 /** Analyzes and compares expenses across budget profiles and categories with bar charts and period-over-period breakdowns. */
 
 import { useState, useMemo, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { PageHeader } from "@/components/ui/page-header";
-import {
-  formatCurrency,
-  formatPercent,
-  compactCurrency,
-} from "@/lib/utils/format";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { YNAB_EXPENSE_EXCLUDED_GROUPS } from "@/lib/budget-api";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-  Cell,
-  PieChart,
-  Pie,
-  Legend,
-} from "recharts";
+
+// Code-split the recharts-heavy chart row (v0.5 expert-review M8). Both
+// charts share a single chunk so the recharts payload is fetched once on
+// page mount instead of bundling into the page chunk. ssr:false because
+// Recharts isn't SSR-friendly.
+const BudgetVsActualBar = dynamic(
+  () =>
+    import("@/components/expenses/expenses-charts").then((m) => ({
+      default: m.BudgetVsActualBar,
+    })),
+  { loading: () => <SkeletonChart />, ssr: false },
+);
+const SpendingPie = dynamic(
+  () =>
+    import("@/components/expenses/expenses-charts").then((m) => ({
+      default: m.SpendingPie,
+    })),
+  { loading: () => <SkeletonChart />, ssr: false },
+);
 
 // ── Types ──
 
@@ -53,15 +56,6 @@ type BudgetItem = {
 };
 
 // ── Helpers ──
-
-const COLORS = {
-  budgeted: "#94a3b8", // slate-400
-  under: "#22c55e", // green-500
-  over: "#ef4444", // red-500
-  essential: "#3b82f6", // blue-500
-  discretionary: "#a855f7", // purple-500
-  neutral: "#64748b", // slate-500
-};
 
 const PIE_COLORS = [
   "#3b82f6",
@@ -379,59 +373,7 @@ export default function ExpensesPage() {
               <h3 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">
                 Budget vs Actual — This Month
               </h3>
-              <ResponsiveContainer
-                width="100%"
-                height={Math.max(200, groupSummary.length * 40)}
-              >
-                <BarChart
-                  data={groupSummary}
-                  layout="vertical"
-                  margin={{ top: 0, right: 20, left: 0, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                  <XAxis
-                    type="number"
-                    tickFormatter={(v: number) => compactCurrency(v)}
-                    fontSize={10}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    width={120}
-                    fontSize={10}
-                    tick={{ fill: "#6b7280" }}
-                  />
-                  <RechartsTooltip
-                    formatter={(value: unknown, name: unknown) => [
-                      formatCurrency(Number(value)),
-                      String(name),
-                    ]}
-                    labelStyle={{ fontSize: 11, fontWeight: 600 }}
-                    contentStyle={{ fontSize: 11 }}
-                  />
-                  <Bar
-                    dataKey="budgeted"
-                    fill={COLORS.budgeted}
-                    barSize={12}
-                    radius={[0, 2, 2, 0]}
-                    name="Budgeted"
-                  />
-                  <Bar
-                    dataKey="actual"
-                    barSize={12}
-                    radius={[0, 2, 2, 0]}
-                    name="Actual"
-                  >
-                    {groupSummary.map((entry, i) => (
-                      <Cell
-                        // eslint-disable-next-line react/no-array-index-key -- Recharts Cell components require index-based keys
-                        key={i}
-                        fill={entry.diff > 0 ? COLORS.over : COLORS.under}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <BudgetVsActualBar data={groupSummary} />
             </div>
 
             {/* Spending Breakdown Pie */}
@@ -440,32 +382,7 @@ export default function ExpensesPage() {
                 Spending Breakdown
               </h3>
               {spendingPie.length > 0 ? (
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={spendingPie}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={80}
-                      paddingAngle={2}
-                      dataKey="value"
-                      nameKey="name"
-                    >
-                      {spendingPie.map((entry, i) => (
-                        // eslint-disable-next-line react/no-array-index-key -- Recharts Cell components require index-based keys
-                        <Cell key={i} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip
-                      formatter={(value: unknown) =>
-                        formatCurrency(Number(value))
-                      }
-                      contentStyle={{ fontSize: 11 }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: 10 }} iconSize={8} />
-                  </PieChart>
-                </ResponsiveContainer>
+                <SpendingPie data={spendingPie} />
               ) : (
                 <p className="text-xs text-faint text-center py-8">
                   No spending data

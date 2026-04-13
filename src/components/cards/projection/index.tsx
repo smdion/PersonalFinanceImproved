@@ -2,6 +2,7 @@
 
 /** Top-level ProjectionCard component — orchestrates the projection state hook and delegates to sub-components. */
 import { useEffect } from "react";
+import dynamic from "next/dynamic";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import { MethodologyContent } from "@/components/methodology-content";
@@ -14,8 +15,23 @@ import { DecumulationConfig } from "./decumulation-config";
 import { OverridesPanelV2 as OverridesPanel } from "./overrides-panel-v2";
 import { ProjectionTable } from "./projection-table";
 import { ProjectionHeroKpis } from "./projection-hero-kpis";
-import { ProjectionChart, ProjectionChartSkeleton } from "./projection-chart";
-import { SpendingStabilityChart } from "./spending-stability-chart";
+import { ProjectionChartSkeleton } from "./projection-chart-skeleton";
+
+// Code-split Recharts-heavy children (v0.5 expert-review M8). Each chart is
+// ~250KB of recharts payload that loads only when the projection card mounts.
+// ssr:false because Recharts isn't SSR-friendly.
+const ProjectionChart = dynamic(
+  () =>
+    import("./projection-chart").then((m) => ({ default: m.ProjectionChart })),
+  { loading: () => <ProjectionChartSkeleton />, ssr: false },
+);
+const SpendingStabilityChart = dynamic(
+  () =>
+    import("./spending-stability-chart").then((m) => ({
+      default: m.SpendingStabilityChart,
+    })),
+  { loading: () => <ProjectionChartSkeleton />, ssr: false },
+);
 import { McResultsSection } from "./projection-mc-results";
 import {
   useProjectionState,

@@ -1,5 +1,6 @@
+"use client";
+
 import { memo } from "react";
-("use client");
 
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
