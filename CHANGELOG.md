@@ -8,113 +8,181 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.5
 
-## [0.5.0] - 2026-04-12
+## [0.5.0] - 2026-04-13
 
-Expert-review hardening release. An 11-persona audit of the v0.4 codebase
-surfaced 40 findings across security, tax correctness, CFP behavioral gaps,
-accessibility, architecture, and developer experience. This release closes
-every Critical and High finding, and every Medium finding except two that
-were explicitly deferred (M5 insurance gap analysis needs design; M17 test
-fixture variance was descoped). Also squashes the Drizzle migration graph
-into a single v5 baseline so new installs start clean while existing v4
-databases are auto-upgraded on first boot.
+> What changed since v0.4.0. For patch-level detail, see the v0.4.x entries below.
 
-### Database migration
+### Upgrading from v0.4.x
 
-- **v4 → v5 upgrade path is automatic and production-safe**. [db-migrate.ts](db-migrate.ts) detects existing v4 installs via hash comparison against the v5 journal, backs up the database, replaces the journal with v5 metadata marking v5_initial_schema as applied, then runs the v5 delta migration. Zero manual steps for existing users.
-- **Migration graph squashed** — v0.4's dozens of incremental migrations collapsed into `0000_v5_initial_schema` + `0001_v5_schema_changes` so fresh installs skip the history replay.
-- **Decimal columns widened** to `numeric(14,2)` across 80 financial columns so no legitimate balance can overflow (~$1T ceiling).
-- **Annual performance immutability** — `annual_performance` gains an `is_immutable` column. Finalized rows are backfilled to `is_immutable=true` and router-layer guards block direct edits to `lifetime_*` fields on immutable rows. The cascadeLifetimeFields() helper is the only legal writer.
-- **Missing FK indexes added** — `budget_items_contribution_account_id_idx` and `api_connections_linked_profile_id_idx`.
-- **Demo schemas rebuilt** on migration — any `demo_*` schemas are dropped CASCADE after the main migration and rebuilt from `public` on next demo activation, so demo data never lags behind the live schema.
+Pull the new image and restart — your database auto-upgrades on first boot. An existing v0.4 install is detected automatically, the database is backed up before any change, and the v5 schema migration runs in place with zero manual steps.
+
+**New environment variable required in production:** `ENCRYPTION_KEY`. Generate a 32-byte base64 value (`openssl rand -base64 32`) and set it before restarting — without it the container refuses to start. This protects at-rest encryption of your YNAB / Actual Budget credentials.
 
 ### Security
 
-- **API credentials encrypted at rest** — YNAB tokens and Actual Budget API keys are now stored as AES-256-GCM envelopes, not plaintext JSON. Requires `ENCRYPTION_KEY` env var in production; the factory's `readMaybeEncrypted()` transparently handles both legacy plaintext and new encrypted rows on read, so this upgrade is zero-downtime.
-- **SSRF blocker for Actual Budget serverUrl** — user-supplied server URLs are now validated against an allowlist of public IP ranges (RFC1918/loopback/link-local rejected unless explicitly opted in via `ALLOWED_ACTUAL_HOSTS`). Previously the container could be coerced into making outbound requests to private infrastructure.
-- **Atomic sync writes + fail-loud on asset errors** — `syncAll` now wraps its multi-table writes in a transaction and pre-validates account mappings before any network fetch. Previously a mid-sync failure could leave the cache in a partially-written state.
-- **CRON_SECRET required in production** — startup fails if unset when `NODE_ENV=production`. Previously cron endpoints were protected by an optional secret that silently accepted requests without one.
-- **`ALLOW_DEV_MODE=true` blocked in production** — hard fail at startup instead of silent degradation.
-- **JWT session maxAge reduced** from 24h to 4h.
-- **Docker compose healthcheck + `depends_on: service_healthy`** — the app container now waits for Postgres to pass its healthcheck before starting, eliminating the startup race where the app crashed trying to connect before PG was ready.
-- **Encrypted off-site backup script** — `scripts/backup.sh` runs pg_dump, AES-256-encrypts with a passphrase, and emits the ciphertext for off-site storage. [backup-restore.md](docs/runbooks/backup-restore.md) runbook documents the restore drill.
+- YNAB and Actual Budget API tokens are now encrypted at rest with AES-256-GCM. Existing installs transparently upgrade on first write — previously your budget API credentials sat in the database as plaintext JSON
+- User-supplied Actual Budget server URLs are now validated against private IP ranges; the app refuses to connect to loopback, RFC1918, or link-local addresses unless the host is explicitly allowlisted
+- If a sync run fails partway through, the budget API cache is now rolled back atomically instead of being left in a half-updated state — you'll either see the new data or the old data, never a mix
+- Production deployments now fail loud at startup if the cron secret is missing, if the dev-mode auth bypass is enabled, or (new this release) if the at-rest encryption key is missing. Previously these were silent defaults
+- Login sessions now expire after 4 hours instead of 24
+- App container now waits for Postgres to pass its healthcheck before starting, eliminating the startup race where the app crashed trying to connect before the DB was ready
+- New encrypted off-site backup script — a one-command `pg_dump` wrapped in AES-256 encryption that you can pipe to S3 / rclone / restic, plus a restore-drill runbook
+- Bumped Next.js to 16.2.3 to patch a high-severity Server Components Denial of Service advisory (GHSA-q4gf-8mx6-v5v3)
+- Projection page write operations now require the scenario permission instead of accepting any signed-in user
 
-### Tax & financial correctness
+### New
 
-- **2026 standard deduction values verified** against IRS Rev. Proc. 2025-32. [tax-correctness.test.ts](tests/tax/tax-correctness.test.ts) now pins every filing-status threshold.
-- **SECURE 2.0 super catch-up boundary tests** — ages 59/60/63/64 hit the right limit (regular → super → regular) across every contribution account type.
-- **Tax-year freshness CI guard** — `scripts/check-tax-freshness.ts` fails CI if the current calendar year is beyond the latest pinned tax year without a deliberate override. Paired with [.scratch/docs/TAX-CALENDAR.md](.scratch/docs/TAX-CALENDAR.md) runbook for the annual update.
+**Retirement projections:**
 
-### CFP behavioral gaps
+- **Plan Health card** on the retirement page surfaces up to five findings in context: contribution priority warnings (flags taxable-before-tax-advantaged or HSA behind other tax-advantaged accounts), glide path mismatch (compares your current stock allocation against the "110 − age" rule of thumb), rosy-assumption flags (return > 8%, inflation < 2.5%, salary growth > 4%), a recommended withdrawal strategy with a one-sentence rationale, and a ±25% band around your deterministic nest egg estimate so you can see the uncertainty without switching to the Monte Carlo view
+- **Stress test panel** runs your plan through three canonical scenarios — Conservative (bottom-decile 30-year returns, elevated inflation), Baseline (long-run US averages), and Optimistic (top-quartile returns). Shows the nest egg outcome for each side by side with your own plan assumptions
+- **Strategy picker** now marks the recommended option with "★ … — Recommended" based on your horizon and whether you have a budget linked
+- Monte Carlo confidence bands (50% / 80% / 90%) on Balance, Strategy, and Budget views of the Spending Stability chart
+- Three-way chart toggle on the retirement page: Balance, Spending Stability, Deterministic
+- "Vs Strategy" and "Vs Budget" spending stability donuts — the first measures against year-1 withdrawal, the second against your stated retirement budget
+- Strategy Analyzer: opt-in "Analyze My Strategy" button runs what-if scenarios and shows the top 3 parameter changes that would improve success rate or spending stability
+- Strategy Guide flyout on Projection and Strategy Comparison tabs explains each strategy's mechanics, strengths, weaknesses, and expected Stability score
 
-- **Plan Health card** (`src/components/cards/plan-health.tsx`) — new single-surface integration point on the retirement page that renders CFP-heuristic warnings in-context. Shows up to five findings:
-  - **Contribution order** (M1) — `validateContributionOrder()` flags tax-advantaged accounts ordered after brokerage, or HSA after other tax-advantaged, with a callout and fix recommendation. Driven by a server-computed `accumulationOrder` built from the user's contribution accounts sorted by `allocationPriority`.
-  - **Glide path mismatch** (M6) — `checkGlidePath()` compares the user's current stock allocation (interpolated from the active glide path) against the classic "110 − age" rule. Fires info/warn/danger severities when deviation exceeds 10/20/35pp.
-  - **Rosy assumptions** (M2) — `detectRosyAssumptions()` flags return rate > 8%, inflation < 2.5%, or salary growth > 4% with historical context.
-  - **Recommended withdrawal strategy** (M4) — `recommendWithdrawalStrategy()` picks a default based on retirement horizon + budget link, renders a one-sentence rationale, and marks the recommended option in the strategy picker with a ★ prefix and "— Recommended" suffix.
-  - **Projection band** (M3) — `deriveProjectionBand()` renders a ±25% band around the deterministic nest egg so users see the uncertainty without switching to the Monte Carlo view.
-- **Stress test panel** — toggleable panel on the Plan Health card compares the user's assumptions against conservative / baseline / optimistic canonical scenarios. **Actually re-runs the projection** at each parameter set via the new `projection.computeStressTest` endpoint, so users see nest-egg-per-scenario outcomes, not just parameter sets side-by-side.
+**Paycheck view:**
 
-### Architecture & performance
+- Three-mode paycheck view: "Current Salary" (forward planning at today's rate), "Year-End Estimate" (blended annual accounting for mid-year raises), and "Actual YTD" (elapsed periods only)
+- Year-End Estimate walks each pay period at its effective salary, correctly handling SS cap transitions and percent-of-salary contribution changes across mid-year raises
+- All contribution metrics (IRS utilization bars, funding percentages, savings rates, "% to max" recommendations) now react to the View toggle — previously only summary totals changed
 
-- **Edge middleware short-circuit for auth** (`src/proxy.ts`, formerly `middleware.ts`) — unauthenticated requests to `(dashboard)/*` routes redirect to `/login` at the edge instead of routing through the app layout's server session check.
-- **Server-side prefetch** (M7) on the three highest-traffic pages:
-  - Dashboard prefetches `networth.computeSummary` + `settings.isOnboardingComplete`.
-  - Retirement page split into [retirement/page.tsx](<src/app/(dashboard)/retirement/page.tsx>) (server) + [retirement-content.tsx](<src/app/(dashboard)/retirement/retirement-content.tsx>) (client), prefetching `projection.computeProjection`.
-  - Portfolio page split the same way, prefetching `networth.computeSummary`.
-  - All prefetches are wrapped in try/catch so failures fall back transparently to the previous client-side fetch behavior — strict win for the common path, zero risk for edge cases.
-- **Recharts code-splitting** (M8) — all 12 chart importers now lazy-load via `next/dynamic` with `ssr: false`. ~250KB of recharts payload moved from every dashboard/portfolio/retirement/networth/savings/mortgage/expenses/historical page bundle into shared lazy chunks that only load when a chart mounts. New [projection-chart-skeleton.tsx](src/components/cards/projection/projection-chart-skeleton.tsx) and [expenses/expenses-charts.tsx](src/components/expenses/expenses-charts.tsx) component files own the split boundary.
-- **`React.memo` on all 13 dashboard cards** (M10) — prevents unnecessary re-renders when one card's query invalidates.
+**Performance & trends:**
 
-### Accessibility (Tier D sweep)
+- **Update Performance form** — batch-edit current-year account flow data (contributions, employer match, distributions, rollovers, fees) from a single form instead of clicking individual cells. Ending balance can pull from the latest portfolio snapshot or be entered manually; gain/loss auto-calculates live
+- **Lifetime field cascade** — editing account data on a finalized year now recomputes lifetime totals across every subsequent year automatically
+- **Spreadsheet view for Trends page** — dense year-over-year comparison, financial health stats, tax location breakdown, and net worth location. Toggle between card and spreadsheet layouts
+- **Projected FI Year** — linear extrapolation of when financial independence will be reached, with prior-year reference when current year shows "Progress Stalled"
+- **Retirement parent category rollup rows** show combined retirement account totals alongside per-account-type detail
+- **Year-over-year comparison** with Projected / Actual YTD toggle — contributions are prorated for meaningful comparisons, gains/losses shown as-is
+- **Cost basis tracking** per account on the Performance page Brokerage tab, with computed unrealized gain column
+- **Chart X-axis toggle** — switch between Year and Age on the Net Worth Over Time and Journey to Abundance charts
 
-- `prefers-reduced-motion` media query in [globals.css](src/app/globals.css) — users with motion sensitivity get a reduced-animation experience automatically.
-- `aria-expanded` on every sidebar collapsible.
-- **`aria-hidden` sweep on 34 decorative SVGs** across 24 files (M12) — all 100% of inline SVGs in the codebase now carry an a11y attribute. Sweep reviewed element-by-element; every addition is correct given the surrounding accessible name context (title, aria-label, or adjacent heading).
-- **Amber / yellow contrast bumps** — badges and callouts promoted from `amber-700` to `amber-800` to meet 4.5:1 on near-white backgrounds.
-- **Table semantics** — DataTable primitive now emits `scope="col"` on header cells; projection table adds a `<caption>` (sr-only) describing the data grid.
+**Per-person retirement engine:**
 
-### Sync resilience (API integration)
+- Each spouse can now retire at a different age; the still-working spouse continues contributing while the retired spouse stops
+- Per-person Social Security with individual claiming ages and per-person breakdown in tooltips
+- Per-person RMDs computed from each spouse's birth year and individual Traditional account balances, following SECURE 2.0 rules
+- Per-person IRMAA — Medicare surcharge correctly applies to each spouse independently when both are 65+
 
-- **Typed errors + exponential backoff with Retry-After** (M19) on both YNAB and Actual Budget clients. New [budget-api/errors.ts](src/lib/budget-api/errors.ts) defines `BudgetApiError` with auth / rate-limit / client / server / network / timeout / unknown codes. `retryWithBackoff()` retries retryable codes (rate-limit, server, network, timeout) with 1s/2s/4s cap, honors `Retry-After` headers on 429, and surfaces auth/client errors immediately without retry.
-- **Deterministic idempotency keys on transaction creation** (M20) — `transactionIdempotencyKey()` hashes a canonical fingerprint (account, date, amount, payee, memo) and feeds it as `import_id` (YNAB) / `imported_id` (Actual), both of which are the upstream-side dedupe field. Same payload → same key → retries deduplicate on the server. Keys are prefixed with `ledgr:` so they're recognizable in the upstream UI.
-- **Drift detection** (M21) — `detectDrift()` compares cached account list vs fresh fetch after every `syncAll`, identifies broken mappings (cached account no longer present upstream), renamed accounts, and new remote accounts. The drift report is attached to the sync result so the UI can surface actionable callouts instead of silently losing sync coverage.
+**Brokerage & contributions:**
 
-### Developer experience & docs
+- Brokerage page redesigned: single-page layout with collapsed goals and a "Planned Events" replacing the separate Transactions tab
+- Today's $ / Future $ toggle with inflation-adjusted view
+- Per-account "After retirement" setting — stop contributions, continue until last person retires, or continue indefinitely
+- Per-account contribution scaling (with salary or fixed) to prevent fixed-dollar contributions from dropping during staggered retirement
+- Portfolio snapshot import automatically pulls YNAB balances for linked tracking accounts
 
-- **`setup-dev.sh`** — one-command quickstart that installs, configures env, runs migrations, and seeds a dev database.
-- **In-app glossary** — [Glossary page](<src/app/(dashboard)/glossary/page.tsx>) reads from `src/lib/config/glossary.ts` so finance jargon has a first-class definition source.
-- **Auto-generated API_ROUTERS.md + ER diagram** — `scripts/verify-docs.ts` now emits both.
-- **Custom `eslint-plugin-ledgr`** (M15) — enforces the top 5–10 rules from RULES.md's "Violations to Watch For" list (no hardcoded account type strings, no raw color classes, etc.). Runs in `pnpm lint`.
-- **Snapshot freshness metadata + 6-month guard** (M16) — `snapshotReviewDate` on each snapshot; test fails if any snapshot hasn't been reviewed in 6 months.
-- **3 new E2E user journeys** (M18) — [auth-flow.spec.ts](tests/e2e/auth-flow.spec.ts), [scenario-edit-flow.spec.ts](tests/e2e/scenario-edit-flow.spec.ts), [sync-integration-flow.spec.ts](tests/e2e/sync-integration-flow.spec.ts) covering login form contract, scenario edit round-trip, and Settings → Integrations → YNAB fetch (with the tRPC edge mocked via `page.route()` so the test never hits api.ynab.com).
-- **`.claude/settings.json`** with a PostToolUse hook that runs `pnpm docs:verify` whenever engine, router, or schema files change — catches auto-gen count drift at edit time instead of at review time.
-- **Promoted `.scratch/docs/RULES.md` to `docs/RULES.md`** — made the authoritative rules document a first-class tracked file. Fixed 15 cross-references across the codebase.
-- **Slimmed CLAUDE.md, DESIGN.md** — dropped the stale Tooltip System section, trimmed the Project Structure tree and Component Catalog. ~7.8K tokens saved per DESIGN.md read.
+**Overrides:**
 
-### UX
+- Wizard-style "Add Override" flow — pick year, pick what to change, fill 1-3 fields — replaces three dense forms
+- Database persistence — withdrawal rate, routing mode, account caps, Roth conversion targets, and lump sums survive page refresh
+- Lump sums target specific accounts and appear in the retirement projection table with In/Out column, contribution columns, and balance tooltips
 
-- **Optimistic mutation hook** (`useOptimisticMutation`) — wraps any tRPC mutation with optimistic update + automatic rollback on error. Includes built-in undo-toast support.
-- **Toast undo action** (M27) — `toast.undo(label, undoFn, windowMs)` renders an Undo button in the toast. Wired on savings planned-transaction delete: captures the row before deletion and re-creates it on click if the user changes their mind within 5s.
-- **Typed error states** (M28) — tRPC errors are now categorized (auth / permission / rate-limit / validation / server / network) and rendered with appropriate UI: auth errors prompt a relogin, rate-limit errors show the cooldown window, etc.
-- **Theme color centralization** (M26) — every hardcoded gray Tailwind class in component files migrated to design tokens. Added two new fill tokens to [globals.css](src/app/globals.css):
-  - **`bg-surface-divider`** (gray-300 / slate-600) — dividers, inactive dot indicators, "Other" pie slices; visible against any surface above.
-  - **`bg-surface-emphasis`** (gray-600 / slate-300) — high-contrast accent fills like the IRS-limit marker on contribution progress bars.
-  - These fill the gap the design system previously missed — `surface-elevated` / `surface-strong` are too light for dot indicators, and the text tokens (`text-muted`, `text-secondary`) are semantically wrong as backgrounds. Routed 7 files through the new tokens.
-  - Custom ESLint rule (`tests/lint/theme-audit.test.ts`) blocks new `*-gray-N00` regressions.
+**Sync (YNAB / Actual Budget):**
+
+- **Drift detection** — after every sync, the app compares the cached account list against what came back fresh and flags broken mappings (accounts deleted upstream), renamed accounts, and new remote accounts so you can fix them in the UI instead of losing sync coverage silently
+- **Deterministic idempotency keys** on transaction creation — if a sync is interrupted and retried, the upstream API deduplicates the request automatically instead of creating a duplicate transaction
+- **Automatic retry with exponential backoff** on rate-limit / server / network errors (1s → 2s → 4s, capped at 30s), honoring `Retry-After` headers on 429. Authentication errors surface immediately without retry
+- **Resync button** on every snapshot row in the Portfolio history table — re-pushes that snapshot to YNAB by removing its previous tagged adjustments and posting fresh ones
+- Snapshot-to-YNAB adjustments now carry a traceable memo tag and contributor account names so each YNAB entry points back to the originating Ledgr snapshot
+- New portfolio snapshots post one summed adjustment per YNAB tracking-account group instead of a separate transaction per mapping
+- YNAB account linking for Retirement Brokerage accounts; linked accounts use YNAB as the balance source of truth
+
+**Accessibility:**
+
+- Users with "reduce motion" preference now get a reduced-animation experience automatically
+- Screen readers no longer announce decorative icons as path data — every inline icon in the app is now correctly marked as decorative or labeled
+- Sidebar collapsibles announce their expanded/collapsed state to assistive tech
+- Amber badges and callouts bumped to darker shades to meet WCAG 4.5:1 contrast on near-white backgrounds
+- Data tables now emit proper column-header semantics and the projection table carries a screen-reader caption describing the grid
+
+**Undo & feedback:**
+
+- Deleting a planned savings event now shows a 5-second undo toast — click Undo to restore it instead of having to re-create from scratch
+- Form save errors now categorize by type (auth, permission, rate limit, validation, server, network) and show appropriate recovery UI (relogin prompt, cooldown window, retry button) instead of a generic "something went wrong"
+- Form edits now update optimistically — the UI reflects your change immediately and rolls back if the save fails
+
+### Improved
+
+- Retirement page now defaults to the Monte Carlo view (the Deterministic / MC toggle was removed — MC overlays on top of deterministic with no unique deterministic-only content)
+- All user-facing jargon renamed: "Det" → "Baseline", "MC Bands" → "Confidence Band", percentile notation → confidence percentages, "MC median" → "Sim. median"
+- Retirement, portfolio, and networth pages load faster on first paint — the most expensive data query starts on the server before the client mounts
+- All chart components are now lazy-loaded, dropping roughly 250KB off the initial download for pages that don't show charts
+- Dashboard cards no longer re-render unnecessarily when a single card's query invalidates
+- Spending stability chart shows a dollar Y-axis alongside the percentage axis, with withdrawal and plan amounts in tooltips
+- Strategy dropdowns now update instantly via optimistic cache updates instead of waiting 7-30s for a full projection recompute
+- Health stats on the Trends page show trajectory context when the current year is selected ("was X at year-end YYYY")
+- Wealth Score, AAW Score, and FI Progress now computed once in a shared helper — no more inconsistencies across the dashboard, contributions, and savings rate pages
+- Wealth Score changed to net worth / lifetime earnings (a clearer savings efficiency percentage)
+- AAW Score uses the Money Guy formula with average household age and Combined AGI
+- Savings rates use total compensation (including bonus) as the denominator everywhere, instead of mixing salary and total-comp across pages
+- Home value cost basis now correctly computed from cumulative improvement items instead of a broken per-year DB column
+- Restructured retirement page: spending strategy, budget, and withdrawal rate grouped in a "Decumulation Plan" section; Withdrawal Routing in a compact collapsed view with a sunken expanded panel
+- Budget and withdrawal-rate controls visually dim when the selected strategy doesn't use them
+- Fixed 148 instances of missing spacing between variables and text across the app
+- Softer, theme-aware card borders in both light and dark mode
+- Upgraded to Next.js 16 with Turbopack for faster development builds
+- "Recently Retired" demo profile with a realistic account mix (401k, 403b, IRA, Roth, brokerage)
 
 ### Fixed
 
-- **Dashboard test re-targets** — `tests/components/dashboard.test.tsx` now imports `DashboardContent` instead of the server `page.tsx`, avoiding a next-auth + Next 16 module resolution incompatibility that crashed the test in v0.4.
-- **"use client" directive ordering** — fixed Python-script-mangled directive placement on 6 dashboard card files.
-- **Pre-existing negative `lifetime_gains` preserved** — `annual_performance` CHECK constraints initially added during the audit would have rejected 3 valid production rows (2015 401k/IRA cumulative losses, 2025–2026 Brokerage losses). Constraints removed; the router-layer immutability guard is the real protection.
+**Retirement engine:**
 
-### Deferred
+- Post-retirement brokerage contributions no longer inflate retirement projection balances — brokerage-category post-retirement contributions are modeled on the brokerage page only, restoring correct Monte Carlo success rates
+- Vanguard, Constant Percentage, Endowment, and RMD strategies now correctly skip post-retirement inflation (dimmed UI settings no longer silently affect projections)
+- RMD pre-RMD fallback spending now grows with CPI to maintain purchasing power during the 10-18 year gap before RMD age
+- Spending Decline now produces a true real decline instead of a steeper nominal decline that over-cut by the full inflation rate
+- Guyton-Klinger guardrail parameters now pair correctly (Upper Guardrail with Increase %, Lower Guardrail with Decrease %)
+- Monte Carlo stochastic inflation now affects post-retirement expense growth (previously only pre-retirement inflation was randomized, leaving decumulation expenses fixed across all trials)
+- Strategy comparison now uses your saved Monte Carlo inflation overrides instead of the hardcoded 2.5% default
 
-- **M5 — Insurance gap analysis cards** (life / disability / umbrella + beneficiary tracking). Deferred pending design work. CFP table-stakes but a real new feature, not a fix.
-- **M17 — Test fixture variance** ($250k single, gig worker, HENRY profile). Descoped from this release.
+**Contributions & paycheck:**
 
-See [.scratch/docs/expert-review-decisions.md](.scratch/docs/expert-review-decisions.md) for the full tracker.
+- Contribution blended estimates no longer double-count when multiple contribution accounts share a single performance account
+- Year-End Estimate accounts for stale performance data by filling only the exact missing payroll periods at the current projected rate
+- Monthly and annual contributions are no longer flagged stale when biweekly paydays pass
+- Over-limit "Over" badge no longer triggers from sub-cent rounding noise
+- "Over by" amount for HSA and other match-counts-toward-limit accounts now uses total contribution instead of just employee contribution
+- Portfolio employer match (ESPP discount) in YTD view is correctly attributed to portfolio totals instead of retirement match
+
+**Data integrity:**
+
+- Internal data invariants tightened: missing or orphan rows now surface as clear errors instead of silently substituting "Unknown" or zero — bad data is caught early instead of producing wrong-but-quiet numbers downstream
+- Historical net-worth records backfilled with correct portfolio tax-location breakdowns
+
+**Budget & expenses:**
+
+- Expense page no longer counts YNAB savings allocations and reimbursements as spending — only outflows are included in actual amounts
+- Credit card payment transfers no longer appear as spending
+- Year-over-year comparison no longer shows $0 for the prior year
+
+**Other:**
+
+- Corrected 5 incorrect 2025 IRS contribution limits that were using 2026 values
+- First-year pro-rating now excludes the current month after mid-month
+- Mortgage current-balance detection no longer reads system time mid-request
+- Fixed Docker build failure on Node.js 25
+
+### Under the hood
+
+- All v0.4.x migrations squashed into a single clean v5 baseline — new installs get two migration files instead of dozens
+- Pre-upgrade auto-backup handles v0.1.x, v0.2.x, v0.3.x, and v0.4.x databases
+- Financial decimal columns widened so no legitimate balance can overflow
+- Added two missing foreign-key indexes flagged by the audit
+- Finalized annual performance rows are now marked immutable — the only way to modify their lifetime totals is through the proper cascade helper, preventing stale or inconsistent numbers
+- 2,977 automated tests (up from ~2,300 in v0.3.0) covering financial calculations, budget API integrations, database compatibility, accessibility regressions, and backup round-trips
+- Automated tax parameter staleness check in CI that fails the build if we're beyond the current tax year without a deliberate override
+- Three new end-to-end user journeys (auth, scenario edit, sync integration) and a component-level test of the login form contract
+- In-app glossary page for finance jargon, with definitions sourced from a single config
+- One-command dev quickstart script (`setup-dev.sh`) that installs, configures env, runs migrations, and seeds a fresh dev database
+
+### Known deferred
+
+- Insurance gap analysis cards (life / disability / umbrella / beneficiary tracking) — planned but needs its own design pass
+- Expanded test fixture profiles ($250k single earner, gig worker, HENRY) — tracked for a follow-up release
 
 ---
 
@@ -126,20 +194,19 @@ See [.scratch/docs/expert-review-decisions.md](.scratch/docs/expert-review-decis
 
 - IRS limit utilization bars, funding percentages, savings rates, and "% to max" recommendations now react to the View toggle (Current Salary / Year-End Estimate / Actual YTD) — previously only summary dollar totals changed
 - Contribution dollar amounts shown per account type now reflect the active view: Year-End Estimate shows salary-timeline-weighted totals accounting for mid-year raises, Actual YTD shows real performance data
-- Opus advisor subagent (`.claude/subagents/advisor.md`) and project-level working-style guide (`CLAUDE.md`) for structured code review before committing
 
 ### Fixed
 
-- Contribution blended estimates no longer double-count when multiple contribution accounts share a single performance account — YTD actuals are split proportionally by expected contribution using salary-timeline-aware weights
-- Employer match in `total_contributions` performance data is now correctly subtracted out so employee-only YTD amounts aren't inflated by the match
-- Year-End Estimate accounts for stale performance data by filling only the exact missing payroll periods (computed from `performance_last_updated` date and pay schedule) at the current projected rate, rather than replacing or ignoring the actuals
+- Contribution blended estimates no longer double-count when multiple contribution accounts share a single performance account — year-to-date actuals are split proportionally by expected contribution
+- Employer match is now correctly subtracted out of stored performance totals so employee-only year-to-date amounts aren't inflated by the match
+- Year-End Estimate accounts for stale performance data by filling only the exact missing payroll periods at the current projected rate, rather than replacing or ignoring the actuals
 - Monthly and annual contributions (IRA, etc.) are no longer flagged as stale when biweekly paydays pass — stale-gap fill only applies to payroll-cadence contributions
-- Contribution method cadence (monthly vs biweekly vs annual) is now used for the blended remaining-fraction calculation, so monthly IRA contributions don't show false shortfalls against biweekly period counts
-- Over-limit "Over" badge and red bar no longer trigger from sub-cent rounding noise (0.5% tolerance via centralized `OVER_LIMIT_THRESHOLD` constant)
+- Contribution cadence (monthly vs biweekly vs annual) is now used for the blended remaining-fraction calculation, so monthly IRA contributions don't show false shortfalls against biweekly period counts
+- Over-limit "Over" badge and red bar no longer trigger from sub-cent rounding noise
 - "Over by" amount for HSA and other match-counts-toward-limit accounts now correctly uses total contribution (employee + match), not just employee contribution
-- Portfolio employer match (ESPP discount) in YTD view is now correctly attributed to portfolio totals instead of being lumped into retirement match
-- Mortgage current-balance detection no longer reads system time independently mid-request
-- Savings rate card group breakdown (retirement vs taxable) now uses view-aware totals instead of projected-only calculator rates
+- Portfolio employer match (ESPP discount) in year-to-date view is now correctly attributed to portfolio totals instead of being lumped into retirement match
+- Mortgage current-balance detection no longer drifts when requests span a day boundary
+- Savings rate card group breakdown (retirement vs taxable) now uses view-aware totals instead of projected-only rates
 
 ### Security
 
@@ -147,11 +214,7 @@ See [.scratch/docs/expert-review-decisions.md](.scratch/docs/expert-review-decis
 
 ### Changed
 
-- Blended contribution math consolidated server-side into two pure helpers (`computeViewAwareAccountMetrics`, `computeViewAwareTotals`), eliminating ~200 lines of duplicated client-side blending logic across 4 components
-- Blended savings rate uses salary-timeline-weighted total compensation as denominator, correctly reflecting mid-year salary changes
-- Inline string-equality and number-formatting violations collapsed onto shared config helpers and formatters
-- Inflation-rate fallback defined once in shared constants instead of duplicated across three pages
-- Savings transaction amounts use the shared decimal validator
+- Blended savings rate uses salary-timeline-weighted total compensation as the denominator, correctly reflecting mid-year salary changes
 
 ---
 
@@ -219,18 +282,11 @@ See [.scratch/docs/expert-review-decisions.md](.scratch/docs/expert-review-decis
 
 ### Improved
 
-- Numeric defaults (withdrawal rate, return rate, high income threshold) extracted to shared constants — no more scattered magic numbers
-- Financial amount inputs on performance mutations validated with zDecimal (rejects non-numeric strings)
-- Account type fields validated against config enum everywhere (previously accepted arbitrary strings on some mutations)
-- Projection overrides permission aligned — brokerage permission now sufficient (was incorrectly admin-only)
-- Demo mode blocks data import/export API routes (previously bypassed tRPC demo guard)
-- Time resolution: buildYearEndHistory and retirement router use passed-in dates instead of independent new Date() calls
-- 17 hardcoded parentCategory checks replaced with isRetirementParent/isPortfolioParent predicates
-- 11 hardcoded tax type checks replaced with isPreTaxType/isRothType predicates
-- Performance category display order centralized in config (tabs and finalize modal now share one definition)
-- Form account type defaults driven from config instead of hardcoded "401k"
-- IRMAA age threshold extracted to MEDICARE_START_AGE config constant
-- 30+ inline percent formatters replaced with formatPercent(); compact currency formatters unified
+- Financial amount fields on performance edits now reject invalid values (non-numeric strings) at the form boundary
+- Account type fields validated against the config enum everywhere — previously some edit paths accepted arbitrary strings
+- Projection overrides now accept the brokerage permission instead of incorrectly requiring admin
+- Demo mode blocks the data import/export API routes (previously these bypassed the demo guard)
+- Performance tabs and the finalize modal now share a single category display order
 
 ---
 
@@ -260,32 +316,28 @@ See [.scratch/docs/expert-review-decisions.md](.scratch/docs/expert-review-decis
 
 ### Improved
 
-- All wealth metrics (Wealth Score, AAW Score, FI Progress) now computed once in buildYearEndHistory — single computation path eliminates inconsistencies across pages
-- Wealth Score changed to net worth / lifetime earnings (savings efficiency percentage)
-- AAW Score uses Money Guy formula with average household age and Combined AGI
-- Market value / cost basis toggle now affects all metrics: YoY table, health stats, net worth location, pie charts, and Journey to Abundance benchmarks
-- Salary averaging toggle impacts all consumers including Journey to Abundance benchmark lines
-- Journey to Abundance chart benchmark lines use same age-adjusted formula as AAW score
-- Tax location data from finalized JSONB column (point-in-time capture at year-end) instead of config-based derivation
-- Home value cost basis correctly computed from cumulative improvement items instead of broken per-year DB column
-- Current year gross income includes bonus via getTotalCompensation
-- FI Progress on dashboard now includes cash (consistent with Trends page)
+- All wealth metrics (Wealth Score, AAW Score, FI Progress) now share a single computation path — no more inconsistencies between the dashboard, contributions page, and Trends page
+- Wealth Score changed to net worth / lifetime earnings (a clearer savings-efficiency percentage)
+- AAW Score uses the Money Guy formula with average household age and Combined AGI
+- Market value / cost basis toggle now affects every metric consistently: year-over-year table, health stats, net worth location, pie charts, and Journey to Abundance benchmarks
+- Salary averaging toggle now propagates to Journey to Abundance benchmark lines
+- Tax location data now snapshots at year-end finalization instead of being re-derived from config
+- Home value cost basis correctly computed from cumulative improvement items instead of a broken per-year column
+- Current-year gross income includes bonus for wealth-metric denominators
+- FI Progress on the dashboard now includes cash (consistent with the Trends page)
 - Zebra striping on all spreadsheet tables for readability
 
 ### Fixed
 
-- computeFIProgress was excluding cash from the calculation
-- Tax location keys normalized to camelCase (was mixing snake_case and camelCase producing duplicate rows)
-- Wealth score labels unified across MetricsRow and Financial Checkup via shared wealthScoreTier helper
+- FI Progress calculation was excluding cash
+- Tax location breakdown was mixing two key-casing styles and producing duplicate rows
+- Wealth score labels are now consistent across the dashboard metrics row and Financial Checkup card
 
 ### Changed
 
-- calculateNetWorth inputs: age replaced with averageAge, annualSalary replaced with effectiveIncome, added lifetimeEarnings
-- Net worth calculator produces dual market/cost basis scores for wealth and AAW metrics
-- AAW thresholds updated: PAW >= 2.0, AAW >= 1.0 (was: PAW >= 1.0, AAW >= 0.5 with x2 baked in)
-- Schema: added portfolio_by_tax_location JSONB column to net_worth_annual
-- Finalization process now captures tax location breakdown at year-end
-- buildYearEndHistory is the single source of truth for all year-level financial data
+- Net worth calculator produces dual market/cost-basis scores for wealth and AAW metrics
+- AAW thresholds updated: PAW >= 2.0, AAW >= 1.0 (previously baked in a 2× factor)
+- Net worth records now carry a point-in-time tax location breakdown captured at year-end finalization
 
 ---
 
@@ -340,9 +392,8 @@ See [.scratch/docs/expert-review-decisions.md](.scratch/docs/expert-review-decis
 
 ### Improved
 
-- Both stability columns (strategy + budget) shown in strategy comparison table
-- Lever metadata added to strategy config — the analyzer reads paramField.lever to know which knobs to test, no parallel registry
-- Budget stability metric added to MC engine: compares withdrawals against user's retirement budget (inflation-adjusted) instead of year-1 withdrawal
+- Both stability columns (strategy + budget) shown in the strategy comparison table
+- Budget stability metric added to the Monte Carlo engine — compares withdrawals against your retirement budget (inflation-adjusted) instead of year-1 withdrawal
 
 ---
 
@@ -350,10 +401,10 @@ See [.scratch/docs/expert-review-decisions.md](.scratch/docs/expert-review-decis
 
 ### Improved
 
-- Today's $/Future $ toggle on Strategy Comparison tab, shared with Projection tab — toggling one updates both
-- Strategy guide content moved into withdrawal strategy config (data-driven) — guide panel reads the config shape with no per-strategy knowledge
-- Removed dead Compact/Expanded table toggle (All Years toggle already provides this)
-- Decumulation settings layout further compacted with 2-column strategy param grid
+- Today's $ / Future $ toggle on the Strategy Comparison tab, shared with the Projection tab — toggling one updates both
+- Strategy guide content moved into the withdrawal strategy config so every strategy's help text is maintained in one place
+- Removed the dead Compact/Expanded table toggle (All Years toggle already provides this)
+- Decumulation settings layout further compacted with a 2-column strategy parameter grid
 
 ---
 
@@ -430,7 +481,7 @@ See [.scratch/docs/expert-review-decisions.md](.scratch/docs/expert-review-decis
 ### Fixed
 
 - Monte Carlo stochastic inflation now affects post-retirement expense growth — previously only pre-retirement inflation was randomized, leaving decumulation expenses at a fixed rate across all trials
-- Restored projection scope badges on retirement page section headers showing which settings affect Deterministic, MC Simple, and MC Advanced modes (removed in v0.3.24)
+- Restored projection scope badges on the retirement page section headers showing which settings affect Deterministic, MC Simple, and MC Advanced modes (lost in an earlier refactor)
 
 ---
 
@@ -446,8 +497,7 @@ See [.scratch/docs/expert-review-decisions.md](.scratch/docs/expert-review-decis
 
 ### Fixed
 
-- Post-retirement contributions for Portfolio-category accounts now appear in the brokerage page Year-by-Year table — values are computed for display without inflating retirement engine balances
-- Clarified parentCategory as the controlling boundary for retirement vs portfolio routing (not account type)
+- Post-retirement contributions for Portfolio-category accounts now appear in the brokerage page Year-by-Year table — values are shown in the brokerage view without inflating retirement engine balances
 
 ---
 
@@ -456,7 +506,6 @@ See [.scratch/docs/expert-review-decisions.md](.scratch/docs/expert-review-decis
 ### Fixed
 
 - Portfolio-category (brokerage) contributions no longer inflate retirement projection balances — post-retirement brokerage contributions are modeled on the brokerage page only, restoring correct Monte Carlo success rates
-- Added engine invariant test enforcing category boundary: no brokerage contributions during decumulation years
 
 ---
 
@@ -579,12 +628,11 @@ All v0.3.x migrations have been squashed into a single initial schema. The migra
 
 - First-year pro-rating now excludes the current month after mid-month (day > 15) — March 30 shows 9 months remaining, not 10
 - Fixed-dollar brokerage contributions no longer drop during staggered retirement when one person retires
-- Post-retirement brokerage contributions grow with limit growth rate (inflation) instead of staying flat
-- Budget badge matching uses raw category key instead of display label (was never matching)
-- YNAB badge matching uses account category instead of missing performanceAccountId
+- Post-retirement brokerage contributions now grow with the limit growth rate (inflation) instead of staying flat
+- Budget linking badge now resolves correctly — previously never matched because it compared display labels instead of raw category keys
+- YNAB linking badge now resolves correctly for accounts that don't yet have a performance-account link
 - Contribution account linking dropdown no longer hides budget items that are already linked to API categories
 - Planned Events tooltip no longer incorrectly references IRS contribution limits (brokerage has none)
-- Renamed `colorKey` to `categoryKey` across contribution summary and all consumers for clarity
 
 ---
 
@@ -593,15 +641,13 @@ All v0.3.x migrations have been squashed into a single initial schema. The migra
 ### Added
 
 - Brokerage accounts can now be linked to YNAB tracking accounts — linked accounts use YNAB as the balance source of truth
-- New "Account Linking" section on brokerage page with link/unlink controls and YNAB badges
+- New "Account Linking" section on the brokerage page with link/unlink controls and YNAB badges
 - Portfolio snapshot import automatically pulls YNAB balances for linked accounts before pushing
-- New `pullPortfolioFromApi` endpoint updates snapshot balances from YNAB tracking accounts
 
 ### Improved
 
-- Extracted shared `getApiAccountBalanceMap()` helper — replaces 4 duplicated inline patterns across admin, sync-mappings, and sync-core routers
-- Consolidated brokerage page from 3 tabs to 2: removed "Transactions" tab (planned transactions), renamed "Lump Sum Events" to "Planned Events"
-- Planned Events use the shared engine-integrated lump sum system (shared with retirement page) instead of the separate goal-linked transaction system
+- Consolidated the brokerage page from 3 tabs to 2: removed "Transactions" tab, renamed "Lump Sum Events" to "Planned Events"
+- Planned Events now use the same engine-integrated lump sum system as the retirement page instead of a separate goal-linked transaction system
 
 ---
 
@@ -791,8 +837,7 @@ All v0.3.x migrations have been squashed into a single initial schema. The migra
 ### Added
 
 - New "Recently Retired" demo profile — a couple in their late 60s with $5M portfolio, RMD-based withdrawals, and Social Security delayed to age 70
-- Automated tax parameter staleness check in CI — flags outdated seed data after IRS publication dates
-- Backup round-trip integration test — validates data survives the full export → import cycle without loss
+- Backup files exported from one version now round-trip back through import without data loss, including across schema upgrades
 
 ---
 
@@ -873,7 +918,7 @@ All v0.3.x migrations have been squashed into a single initial schema. The migra
 
 ### Fixed
 
-- Fixed Docker build failure on Node.js 25 (replaced removed `corepack` with direct pnpm install)
+- Fixed Docker build failure on Node.js 25
 
 ---
 
@@ -1012,7 +1057,7 @@ auto-transformed to the current schema.
 
 ### Testing & CI
 
-- 2,300+ tests covering calculators, tRPC routers, helpers, and backup transforms
+- 2,300+ automated tests covering financial calculators, server logic, and backup round-trips
 - 26 E2E Playwright smoke tests for all dashboard pages
 - Coverage thresholds enforced (statements 85%, branches 70%, functions 80%, lines 85%)
 - Dependabot auto-merge for minor/patch updates after CI passes
