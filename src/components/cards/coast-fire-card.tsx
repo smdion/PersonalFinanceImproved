@@ -1,25 +1,23 @@
 "use client";
 
 /**
- * CoastFireCard — displays the user's Coast FIRE age.
+ * CoastFireCard — compact 5th hero KPI card.
  *
  * "Coast FIRE" is the earliest age at which the user can stop contributing
  * to retirement accounts and still fund their plan through end of plan.
- * Displays:
- *   - Deterministic Coast FIRE age (fast, always shown)
- *   - Today's-$ supporting context (deflated by the router)
- *   - Full-plan MC baseline robustness (from cached prefetch, zero cost)
- *   - Optional MC-derived Coast FIRE age at 90% confidence (on-demand button)
+ * Renders inside the hero KPI grid (projection-hero-kpis.tsx) and matches
+ * the shared KpiCard chrome. Shows the deterministic age + today's-$
+ * supporting context, with a subtle "Validate with MC" link that fires
+ * the expensive Monte Carlo binary search on-demand.
  *
- * The MC baseline is a pass-down prop from use-projection-queries so this
- * card doesn't fire its own duplicate query; it reuses whatever MC is
- * already running on the retirement page.
+ * The MC baseline (success rate / stability) is displayed in its own
+ * hero KPI cards next to this one, so we don't repeat it here.
  */
 
 import { useState } from "react";
-import { Card } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { KpiCard } from "./projection/projection-hero-kpis";
 import type { MonteCarloResult } from "@/lib/calculators/types/monte-carlo";
 
 type CoastFireInput = Parameters<
@@ -28,19 +26,21 @@ type CoastFireInput = Parameters<
 
 interface CoastFireCardProps {
   input: CoastFireInput;
-  /** MC baseline from the already-running prefetch / main MC query. Optional
-   *  because the card renders before MC completes on first load. */
+  /** Unused but kept for API stability — mcBaseline metrics live in
+   *  their own hero KPI cards (Success Rate, Spending Stability). */
   mcBaseline?: MonteCarloResult | null;
 }
 
-export function CoastFireCard({ input, mcBaseline }: CoastFireCardProps) {
+export function CoastFireCard({ input }: CoastFireCardProps) {
   const [mcClicked, setMcClicked] = useState(false);
 
-  const { data: deterministic, isLoading: detLoading } =
-    trpc.projection.computeCoastFire.useQuery(input, {
+  const { data: deterministic } = trpc.projection.computeCoastFire.useQuery(
+    input,
+    {
       placeholderData: (prev) => prev,
       staleTime: 60_000,
-    });
+    },
+  );
 
   const {
     data: mcData,
@@ -52,200 +52,136 @@ export function CoastFireCard({ input, mcBaseline }: CoastFireCardProps) {
   });
 
   return (
-    <Card className="p-4">
-      <div className="mb-3">
-        <h3 className="text-sm font-semibold text-primary">Coast FIRE</h3>
-        <p className="text-xs text-muted mt-0.5">
-          The earliest age at which you can stop contributing and still fund
-          your plan through end of plan.
-        </p>
-      </div>
-
-      {detLoading && (
-        <div className="text-xs text-muted animate-pulse">
-          Calculating Coast FIRE age...
-        </div>
-      )}
-
-      {deterministic?.result && (
-        <DeterministicSection result={deterministic.result} />
-      )}
-
-      {mcBaseline && <FullPlanRobustnessSection baseline={mcBaseline} />}
-
-      <div className="mt-4 pt-3 border-t border-subtle">
+    <KpiCard
+      label="Coast FIRE"
+      tooltip={[
+        "The earliest age at which you can stop contributing and still fund your plan through end of plan.",
+        "Success criterion: portfolio survives end-of-plan AND sustainable withdrawal at retirement covers projected expenses.",
+        "Click 'Validate with MC' for a probabilistic answer that accounts for market uncertainty — finds the earliest age where 90% of Monte Carlo scenarios still succeed.",
+      ]}
+    >
+      <DeterministicStatus result={deterministic?.result ?? undefined} />
+      <div className="mt-auto pt-2">
         {!mcClicked && !mcData && (
           <button
             type="button"
             onClick={() => setMcClicked(true)}
-            className="text-xs font-medium px-3 py-1.5 rounded border border-subtle bg-surface-primary hover:bg-surface-elevated transition-colors"
+            className="text-[10px] text-blue-400 hover:text-blue-300 underline"
           >
-            Run Monte Carlo Coast FIRE
+            Validate with Monte Carlo →
           </button>
         )}
-
         {mcClicked && mcLoading && (
-          <div className="text-xs text-muted animate-pulse">
-            Running Monte Carlo simulations — takes a few seconds...
+          <div className="text-[10px] text-muted animate-pulse">
+            Running Monte Carlo...
           </div>
         )}
-
         {mcError && (
-          <div className="text-xs text-error">
-            Monte Carlo failed: {mcError.message}
+          <div className="text-[10px] text-red-500">
+            MC failed: {mcError.message}
           </div>
         )}
-
-        {mcData?.result && <MonteCarloSection result={mcData.result} />}
+        {mcData?.result && <MonteCarloInline result={mcData.result} />}
       </div>
-    </Card>
+    </KpiCard>
   );
 }
 
-function DeterministicSection({
+function DeterministicStatus({
   result,
 }: {
-  result: {
-    coastFireAge: number | null;
-    status: "already_coast" | "found" | "unreachable";
-    sustainableWithdrawalToday: number;
-    projectedExpensesAtRetirementToday: number;
-  };
+  result:
+    | {
+        coastFireAge: number | null;
+        status: "already_coast" | "found" | "unreachable";
+        sustainableWithdrawalToday: number;
+        projectedExpensesAtRetirementToday: number;
+      }
+    | undefined;
 }) {
+  if (!result) {
+    return <div className="text-xl font-bold tabular-nums text-faint">—</div>;
+  }
+
   if (result.status === "unreachable") {
     return (
-      <div>
-        <div className="text-xl font-semibold text-warning">Not reachable</div>
-        <p className="text-xs text-muted mt-2">
-          Your plan doesn&apos;t coast at any age — continuing contributions
-          through retirement is required to fund expenses. Consider higher
-          contributions, lower expenses, a later retirement age, or a longer
-          horizon.
-        </p>
-      </div>
+      <>
+        <div className="text-xl font-bold tabular-nums text-red-500">
+          Not reachable
+        </div>
+        <div className="text-[10px] text-faint mt-1 leading-tight">
+          Plan requires contributions through retirement.
+        </div>
+      </>
     );
   }
 
-  const ageLabel =
-    result.status === "already_coast"
-      ? "You are already Coast FIRE"
-      : `Coast FIRE age: ${result.coastFireAge}`;
+  if (result.status === "already_coast") {
+    return (
+      <>
+        <div className="text-xl font-bold tabular-nums text-green-500">
+          Already ✓
+        </div>
+        <div className="text-[10px] text-faint mt-1 leading-tight">
+          {formatCurrency(result.sustainableWithdrawalToday)}/yr sustainable
+        </div>
+        <div className="text-[10px] text-faint leading-tight">
+          vs {formatCurrency(result.projectedExpensesAtRetirementToday)}{" "}
+          expenses
+        </div>
+      </>
+    );
+  }
 
   return (
-    <div>
-      <div className="text-xl font-semibold text-primary">{ageLabel}</div>
-      <p className="text-xs text-muted mt-2">
-        {result.status === "already_coast"
-          ? `At expected returns, stopping today sustains ${formatCurrency(
-              result.sustainableWithdrawalToday,
-            )}/yr at retirement (today's $) against ${formatCurrency(
-              result.projectedExpensesAtRetirementToday,
-            )} projected expenses.`
-          : `If you stop at ${result.coastFireAge}, your portfolio is projected to sustain ${formatCurrency(
-              result.sustainableWithdrawalToday,
-            )}/yr at retirement (today's $) against ${formatCurrency(
-              result.projectedExpensesAtRetirementToday,
-            )} projected expenses.`}
-      </p>
-    </div>
+    <>
+      <div className="text-xl font-bold tabular-nums text-primary">
+        Age {result.coastFireAge}
+      </div>
+      <div className="text-[10px] text-faint mt-1 leading-tight">
+        {formatCurrency(result.sustainableWithdrawalToday)}/yr sustainable
+      </div>
+      <div className="text-[10px] text-faint leading-tight">
+        vs {formatCurrency(result.projectedExpensesAtRetirementToday)} expenses
+      </div>
+    </>
   );
 }
 
-function FullPlanRobustnessSection({
-  baseline,
-}: {
-  baseline: MonteCarloResult;
-}) {
-  // The MC baseline describes the FULL plan (contributions continuing) —
-  // not the Coast FIRE scenario. Useful as a sanity check: if the full
-  // plan is shaky under MC, Coast FIRE is shakier.
-  return (
-    <div className="mt-3 text-xs text-muted">
-      <div className="font-medium text-secondary mb-1">
-        Full plan robustness (Monte Carlo baseline)
-      </div>
-      <div className="flex gap-4">
-        <span>
-          Success rate:{" "}
-          <span className="text-primary">
-            {formatPercent(baseline.successRate, 0)}
-          </span>
-        </span>
-        <span>
-          Spending stability:{" "}
-          <span className="text-primary">
-            {formatPercent(baseline.spendingStabilityRate, 0)}
-          </span>
-        </span>
-      </div>
-      <p className="text-[10px] text-faint mt-1">
-        Describes your current plan with contributions continuing, not the Coast
-        FIRE scenario. Run Monte Carlo Coast FIRE below for the true
-        probabilistic answer.
-      </p>
-    </div>
-  );
-}
-
-function MonteCarloSection({
+function MonteCarloInline({
   result,
 }: {
   result: {
     coastFireAge: number | null;
     status: "already_coast" | "found" | "unreachable";
     successRate: number;
-    spendingStabilityRate: number;
     confidenceThreshold: number;
-    probesRun: number;
     warning: string | null;
   };
 }) {
-  if (result.status === "unreachable") {
-    return (
-      <div className="mt-3">
-        <div className="text-sm font-medium text-warning">
-          Monte Carlo: not reachable at{" "}
-          {formatPercent(result.confidenceThreshold, 0)} confidence
-        </div>
-        <p className="text-xs text-muted mt-1">
-          Even stopping the year before retirement, Monte Carlo success rate
-          stays below {formatPercent(result.confidenceThreshold, 0)}. Your plan
-          has sequence-of-returns risk that the deterministic view doesn&apos;t
-          capture.
-        </p>
-      </div>
-    );
-  }
+  const label =
+    result.status === "unreachable"
+      ? "MC: not reachable"
+      : result.status === "already_coast"
+        ? "MC: already ✓"
+        : `MC age ${result.coastFireAge}`;
 
-  const ageLabel =
-    result.status === "already_coast"
-      ? "Already Coast FIRE under Monte Carlo"
-      : `Monte Carlo Coast FIRE age: ${result.coastFireAge}`;
+  const color =
+    result.status === "unreachable"
+      ? "text-red-500"
+      : result.successRate >= 0.9
+        ? "text-green-500"
+        : "text-yellow-500";
 
   return (
-    <div className="mt-3">
-      <div className="text-sm font-medium text-primary">{ageLabel}</div>
-      <div className="text-xs text-muted mt-1 flex gap-4">
-        <span>
-          Success rate:{" "}
-          <span className="text-primary">
-            {formatPercent(result.successRate, 0)}
-          </span>
-        </span>
-        <span>
-          Spending stability:{" "}
-          <span className="text-primary">
-            {formatPercent(result.spendingStabilityRate, 0)}
-          </span>
-        </span>
-      </div>
-      <p className="text-[10px] text-faint mt-1">
-        At {formatPercent(result.confidenceThreshold, 0)} confidence threshold.
-        Binary-searched with {result.probesRun} Monte Carlo probes at 1000
-        trials each, shared seed.
-      </p>
+    <div className="text-[10px] leading-tight">
+      <span className={`font-semibold ${color}`}>{label}</span>
+      <span className="text-faint ml-1">
+        ({formatPercent(result.successRate, 0)} @{" "}
+        {formatPercent(result.confidenceThreshold, 0)})
+      </span>
       {result.warning && (
-        <p className="text-[10px] text-warning mt-1">⚠ {result.warning}</p>
+        <div className="text-yellow-500 mt-0.5">⚠ non-monotone</div>
       )}
     </div>
   );
