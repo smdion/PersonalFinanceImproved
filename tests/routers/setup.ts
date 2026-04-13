@@ -115,6 +115,17 @@ export async function createTestCaller(
   // Apply SQLite migrations
   migrate(db, { migrationsFolder: "./drizzle-sqlite" });
 
+  // Monkey-patch db.transaction so routers that use async transaction
+  // callbacks (e.g. sync-core's C3 atomic write block) can run under the
+  // better-sqlite3 test harness. Production uses Postgres which supports
+  // async transactions natively; better-sqlite3 rejects them with
+  // "Transaction function cannot return a promise". This stub executes
+  // the callback against the outer db (no real atomicity) so the logic
+  // inside the transaction is still testable — atomicity itself is
+  // verified by the PG-backed deploy smoke tests, not the test suite.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (db as any).transaction = async (fn: (tx: unknown) => unknown) => fn(db);
+
   // Seed essential reference data (contribution limits, tax brackets)
   const seedPath = path.resolve("seed-reference-data.sql");
   if (fs.existsSync(seedPath)) {
