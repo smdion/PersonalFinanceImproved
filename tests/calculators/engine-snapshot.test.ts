@@ -2958,6 +2958,109 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     expect(metrics).toMatchSnapshot();
   });
+
+  it("fixture 63: high-income single earner $250k (single-filer thresholds)", () => {
+    // Exercises single-filer code paths at high income: 32% federal bracket,
+    // single-filer standard deduction, single SS torpedo thresholds, IRMAA
+    // cliffs at the single-filer half-size levels, ACA household-of-1 caps.
+    // Complements fixture 2 ($85k single) at the opposite end of the income curve.
+    const input = makeInput({
+      currentAge: 40,
+      retirementAge: 65,
+      projectionEndAge: 90,
+      currentSalary: 250000,
+      filingStatus: "single",
+      householdSize: 1,
+      enableIrmaaAwareness: true,
+      enableAcaAwareness: true,
+      startingBalances: {
+        preTax: 250000,
+        taxFree: 100000,
+        afterTax: 80000,
+        afterTaxBasis: 60000,
+        hsa: 20000,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 200000,
+          roth: 50000,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 20000 },
+        ira: { structure: "roth_traditional", traditional: 40000, roth: 60000 },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 80000,
+          basis: 60000,
+        },
+      },
+      annualExpenses: 120000,
+      socialSecurityAnnual: 42000,
+    });
+    const result = calculateProjection(input);
+    const metrics = extractMetrics(result);
+    expect(metrics).toMatchSnapshot();
+  });
+
+  it("fixture 64: pre-retiree age 60 at the accumulation→decumulation cusp", () => {
+    // Exercises the 5-year-to-retirement window with a near-peak portfolio:
+    // super catch-up at ages 60-63, return-dominated growth (short horizon),
+    // and the transition into decumulation at 65. Complements fixture 20
+    // (catch-up at 50) and fixture 4 (already retired at 67).
+    const input = makeInput({
+      currentAge: 60,
+      retirementAge: 65,
+      projectionEndAge: 90,
+      currentSalary: 180000,
+      filingStatus: "mfj",
+      birthYear: 1966,
+      accumulationDefaults: {
+        contributionRate: 0.3, // Aggressive final-5-years savings
+        routingMode: "waterfall",
+        accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
+        accountSplits: {
+          "401k": 0.4,
+          "403b": 0,
+          hsa: 0.1,
+          ira: 0.15,
+          brokerage: 0.35,
+        },
+        taxSplits: { "401k": 0.5, ira: 1.0 },
+      },
+      startingBalances: {
+        preTax: 800000,
+        taxFree: 150000,
+        afterTax: 200000,
+        afterTaxBasis: 150000,
+        hsa: 50000,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 600000,
+          roth: 100000,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 50000 },
+        ira: {
+          structure: "roth_traditional",
+          traditional: 200000,
+          roth: 50000,
+        },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 200000,
+          basis: 150000,
+        },
+      },
+      annualExpenses: 80000,
+      ssStartAge: 67,
+    });
+    const result = calculateProjection(input);
+    const metrics = extractMetrics(result);
+    expect(metrics).toMatchSnapshot();
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────

@@ -3101,3 +3101,81 @@ exports[`engine snapshot parity > fixture 62: Negative salaryGrowthRate with mul
   },
 }
 `;
+
+exports[`engine snapshot parity > fixture 63: high-income single earner $250k (single-filer thresholds) 1`] = `
+{
+  "accountDepletions": [
+    {
+      "category": "401k",
+      "depletionAge": 81,
+      "depletionYear": 2066,
+      "subType": "traditional",
+    },
+  ],
+  "finalYear": {
+    "age": 89,
+    "endBalance": 27332016.96,
+  },
+  "firstOverflowAge": 41,
+  "firstOverflowAmount": 4909,
+  "firstOverflowYear": 2026,
+  "portfolioDepletionAge": null,
+  "portfolioDepletionYear": null,
+  "retirementYear": {
+    "age": 65,
+    "endBalance": 8901265.08,
+    "projectedExpenses": 222473.29,
+    "totalWithdrawal": 271417.41,
+  },
+  "sustainableWithdrawal": 356050.6,
+  "totalYears": 50,
+  "warningCount": 0,
+  "year0": {
+    "endBalance": 537817.67,
+    "phase": "accumulation",
+    "projectedSalary": 250000,
+    "slotCount": 5,
+    "totalEmployee": 52083.33,
+    "totalEmployer": 6250,
+  },
+}
+`;
+
+exports[`engine snapshot parity > fixture 64: pre-retiree age 60 at the accumulation→decumulation cusp 1`] = `
+{
+  "accountDepletions": [
+    {
+      "category": "401k",
+      "depletionAge": 81,
+      "depletionYear": 2046,
+      "subType": "traditional",
+    },
+  ],
+  "finalYear": {
+    "age": 89,
+    "endBalance": 4291066.47,
+  },
+  "firstOverflowAge": null,
+  "firstOverflowAmount": null,
+  "firstOverflowYear": null,
+  "portfolioDepletionAge": null,
+  "portfolioDepletionYear": null,
+  "retirementYear": {
+    "age": 65,
+    "endBalance": 2060452.55,
+    "projectedExpenses": 90512.66,
+    "totalWithdrawal": 110425.45,
+  },
+  "sustainableWithdrawal": 82418.1,
+  "totalYears": 30,
+  "warningCount": 0,
+  "year0": {
+    "endBalance": 1321973.48,
+    "phase": "accumulation",
+    "projectedSalary": 180000,
+    "slotCount": 5,
+    "totalEmployee": 45000,
+    "totalEmployer": 4500,
+  },
+}
+`;
