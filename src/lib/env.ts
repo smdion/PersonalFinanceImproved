@@ -57,19 +57,29 @@ function validateEnv(): Env {
   // Production-only invariants — fail loud at startup so a misconfigured
   // container is caught at boot, not after first request.
   //
-  // Skip in two environments that legitimately don't need the real
-  // runtime secrets:
+  // Skipped in two environments:
   //
   //   1. `next build`'s page-data collection phase. Next.js runs server
   //      modules with NODE_ENV=production to shake out static props even
   //      when the build container doesn't have the runtime secrets.
   //
-  //   2. DEMO_ONLY mode. The demo deployment serves ephemeral per-tenant
-  //      Postgres schemas with no real user data and no real cron
-  //      endpoints; CRON_SECRET / ENCRYPTION_KEY aren't load-bearing
-  //      there because there are no credentials to encrypt and no
-  //      authenticated cron work running. Same carve-out as the
-  //      AUTH_AUTHENTIK_ISSUER check in src/server/trpc.ts:60.
+  //   2. DEMO_ONLY mode. This is NOT a security workaround — it models
+  //      the fact that demo mode has a structurally different threat
+  //      profile enforced by the demoOnlyGuard middleware in
+  //      src/server/trpc.ts:161, which blocks EVERY non-`demo.*`
+  //      mutation at the tRPC layer. Specifically:
+  //        - ENCRYPTION_KEY protects api_connections.config (YNAB /
+  //          Actual API tokens). In demo mode saveConnection is a
+  //          blocked mutation and demo seeds do not populate
+  //          api_connections — no plaintext credentials can ever land
+  //          in the table, so there is nothing to encrypt.
+  //        - CRON_SECRET gates /api/health/detailed. In demo mode the
+  //          health details (DB up, migration version, row counts on
+  //          ephemeral per-tenant schemas) are not sensitive.
+  //      Same carve-out precedent already exists in src/server/trpc.ts:60
+  //      for AUTH_AUTHENTIK_ISSUER. A real prod install must still
+  //      satisfy both invariants — demo mode is the only exception and
+  //      it's load-bearing exactly because the mutation guard is.
   const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
   const isDemoOnly = process.env.DEMO_ONLY === "true";
   if (process.env.NODE_ENV === "production" && !isBuildPhase && !isDemoOnly) {

@@ -26,8 +26,13 @@ import { test, expect } from "@playwright/test";
 // adminProcedure), but the demoOnlySession assigned in src/server/trpc.ts
 // uses role="viewer". The admin procedures return UNAUTHORIZED rather
 // than rendering the credential form, so the token input never mounts.
-// Real sync-flow smoke is covered by the pre-existing sync-flow.spec.ts
-// which only asserts the page loads without crashing.
+//
+// The coverage gap this skip opens is backfilled by
+// tests/components/integrations.test.tsx, which renders the real
+// IntegrationsSettings component with an admin user context and verifies
+// both service cards appear + the admin-gated form shows. Combined with
+// the pre-existing tests/e2e/sync-flow.spec.ts (page-load smoke), the
+// integrations contract is fully covered across the test matrix.
 const isDemoOnly = process.env.DEMO_ONLY === "true";
 
 test.describe("Sync integration journey (M18)", () => {

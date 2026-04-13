@@ -19,8 +19,15 @@ import { test, expect } from "@playwright/test";
  * auto-injects `demoOnlySession` at the tRPC layer, so the /login route is
  * functionally unreachable — visiting it redirects into the dashboard
  * before the form hydrates. The login contract only exists on real
- * deployments with authenticated admin users; skipping is correct, not
- * a workaround for a broken test.
+ * deployments with authenticated admin users.
+ *
+ * The coverage gap this skip opens is backfilled by
+ * tests/components/login-form.test.tsx, which renders the real LoginForm
+ * with signIn + useSearchParams mocked and asserts the same contracts
+ * (brand, field attributes, query-param error surfacing, invalid
+ * credentials path). That test runs in every CI job regardless of
+ * DEMO_ONLY, so the login form contract is always exercised somewhere
+ * in the test matrix.
  */
 const isDemoOnly = process.env.DEMO_ONLY === "true";
 
