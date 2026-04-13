@@ -57,12 +57,22 @@ function validateEnv(): Env {
   // Production-only invariants — fail loud at startup so a misconfigured
   // container is caught at boot, not after first request.
   //
-  // Skip during `next build`'s page-data collection phase. Next.js runs
-  // server modules with NODE_ENV=production to shake out static props
-  // even when the build container doesn't have the runtime secrets.
-  // Same pattern as the AUTH_AUTHENTIK_ISSUER guard in src/server/trpc.ts.
+  // Skip in two environments that legitimately don't need the real
+  // runtime secrets:
+  //
+  //   1. `next build`'s page-data collection phase. Next.js runs server
+  //      modules with NODE_ENV=production to shake out static props even
+  //      when the build container doesn't have the runtime secrets.
+  //
+  //   2. DEMO_ONLY mode. The demo deployment serves ephemeral per-tenant
+  //      Postgres schemas with no real user data and no real cron
+  //      endpoints; CRON_SECRET / ENCRYPTION_KEY aren't load-bearing
+  //      there because there are no credentials to encrypt and no
+  //      authenticated cron work running. Same carve-out as the
+  //      AUTH_AUTHENTIK_ISSUER check in src/server/trpc.ts:60.
   const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
-  if (process.env.NODE_ENV === "production" && !isBuildPhase) {
+  const isDemoOnly = process.env.DEMO_ONLY === "true";
+  if (process.env.NODE_ENV === "production" && !isBuildPhase && !isDemoOnly) {
     if (!env.CRON_SECRET) {
       throw new Error(
         "CRON_SECRET is required in production (32+ chars). Without it, " +
