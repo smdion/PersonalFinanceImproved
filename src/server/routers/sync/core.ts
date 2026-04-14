@@ -30,8 +30,7 @@ import type {
 import { parseAppSettings, buildMortgageInputs } from "@/server/helpers";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
 import { accountDisplayName } from "@/lib/utils/format";
-
-const serviceEnum = z.enum(["ynab", "actual"]);
+import { serviceEnum } from "./_shared";
 
 export const syncCoreRouter = createTRPCRouter({
   /**

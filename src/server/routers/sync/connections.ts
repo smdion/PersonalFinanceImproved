@@ -18,8 +18,7 @@ import type { YnabConfig, ActualConfig } from "@/lib/budget-api";
 import { encryptJson } from "@/lib/crypto";
 import { validateOutboundUrl } from "@/lib/url-safety";
 import { TRPCError } from "@trpc/server";
-
-const serviceEnum = z.enum(["ynab", "actual"]);
+import { serviceEnum } from "./_shared";
 
 export const syncConnectionsRouter = createTRPCRouter({
   /** Get connection status for each service (not just the active one) */

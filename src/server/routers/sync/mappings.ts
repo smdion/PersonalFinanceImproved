@@ -18,8 +18,7 @@ import { accountDisplayName } from "@/lib/utils/format";
 import { accountMappingSchema } from "@/lib/db/json-schemas";
 import { getApiAccountBalanceMap } from "@/server/helpers/api-balance-resolution";
 import { pushSnapshotToBudgetApi } from "@/server/helpers/budget-api-push";
-
-const serviceEnum = z.enum(["ynab", "actual"]);
+import { serviceEnum } from "./_shared";
 
 export const syncMappingsRouter = createTRPCRouter({
   /** Get account mappings for a service. */

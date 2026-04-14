@@ -10,8 +10,7 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { getActiveBudgetApi, getApiConnection } from "@/lib/budget-api";
-
-const serviceEnum = z.enum(["ynab", "actual"]);
+import { serviceEnum } from "./_shared";
 
 export const syncConfigRouter = createTRPCRouter({
   /** Get the current active_budget_api setting */

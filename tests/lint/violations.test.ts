@@ -388,12 +388,18 @@ function findInlinePercentFormatViolations(): Violation[] {
 
 // Rule 10: mutation using `z.string()` for known-enum fields.
 // `accountType` should be `z.enum(accountCategoryEnum())`.
-// `service` should be `z.enum(["ynab","actual"])` (or the serviceEnum from sync/_shared).
+// `service` should be `z.enum(["ynab","actual"])` in sync procedures
+//   (or the serviceEnum from sync/_shared).
 // Budget `category` and account `subType` are intentionally free-text and excluded.
+// admin.ts apiConnections CRUD is exempt: it's generic CRUD over any service type,
+//   not constrained to ynab/actual (tests use "simplefin", "monarch", etc.).
 function findStringEnumFieldViolations(): Violation[] {
   return findPatternViolations(
     /\b(?:accountType|service)\s*:\s*z\.string\b/,
     "no-string-enum-fields",
+    {
+      additionalExempt: new Set(["src/server/routers/settings/admin.ts"]),
+    },
   );
 }
 
