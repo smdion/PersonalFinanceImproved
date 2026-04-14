@@ -46,6 +46,7 @@ import {
   PERF_CATEGORY_BROKERAGE,
   PERF_CATEGORY_PORTFOLIO,
   PERF_CATEGORY_DISPLAY_ORDER,
+  type PerfCategory,
 } from "@/lib/config/display-labels";
 
 /** Accepts both the main db instance and transaction handles. */
@@ -101,8 +102,10 @@ function getEffectiveCategory(
     accountLabel: string;
   },
   byId: Map<number, PerfAccount>,
-): string {
-  return accountTypeToPerformanceCategory(resolveMaster(a, byId).accountType);
+): PerfCategory {
+  return accountTypeToPerformanceCategory(
+    resolveMaster(a, byId).accountType,
+  ) as PerfCategory;
 }
 
 /** Cascade-recompute lifetime fields on all annual_performance rows.
