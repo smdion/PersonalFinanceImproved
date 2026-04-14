@@ -42,6 +42,7 @@ import {
   BudgetProfileSidebar,
   type BudgetProfileListEntry,
 } from "@/components/budget";
+import { useProfileMutations } from "@/components/budget/hooks/use-profile-mutations";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 
 export default function BudgetPage() {
@@ -74,12 +75,8 @@ export default function BudgetPage() {
   );
   const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
   const { data: savingsGoals } = trpc.settings.savingsGoals.list.useQuery();
-  const setActiveProfile = trpc.budget.setActiveProfile.useMutation({
-    onSuccess: () => {
-      utils.budget.listProfiles.invalidate();
-      utils.budget.computeActiveSummary.invalidate();
-    },
-  });
+  const { setActiveProfile, createProfile, deleteProfile, renameProfile } =
+    useProfileMutations();
   const updateCell = trpc.budget.updateItemAmount.useMutation({
     onMutate: async (variables) => {
       await utils.budget.computeActiveSummary.cancel();
@@ -232,15 +229,6 @@ export default function BudgetPage() {
   });
   const syncToApi = trpc.budget.syncBudgetToApi.useMutation({
     onSuccess: () => utils.budget.computeActiveSummary.invalidate(),
-  });
-  const createProfile = trpc.budget.createProfile.useMutation({
-    onSuccess: () => utils.budget.listProfiles.invalidate(),
-  });
-  const deleteProfile = trpc.budget.deleteProfile.useMutation({
-    onSuccess: () => utils.budget.listProfiles.invalidate(),
-  });
-  const renameProfile = trpc.budget.renameProfile.useMutation({
-    onSuccess: () => utils.budget.listProfiles.invalidate(),
   });
   const convertToGoal = trpc.savings.convertBudgetItemToGoal.useMutation({
     onSuccess: () => {
