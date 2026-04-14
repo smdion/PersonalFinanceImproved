@@ -21,7 +21,7 @@ import type {
   Settings,
   UpsertSettingsMutation,
   ContribProfileListEntry as ContribProfile,
-} from "./_types";
+} from "./types";
 
 /** Convert a decimal string (e.g. '0.04') to a whole-number string for display ('4'). */
 function decToWhole(v: string): string {

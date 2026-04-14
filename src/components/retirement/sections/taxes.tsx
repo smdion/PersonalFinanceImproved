@@ -16,7 +16,7 @@ import type {
   Settings,
   SelectedScenario,
   UpsertSettingsMutation,
-} from "./_types";
+} from "./types";
 
 type Props = {
   settings: Settings;

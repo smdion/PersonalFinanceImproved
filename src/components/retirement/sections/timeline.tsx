@@ -11,7 +11,7 @@
 
 import { HelpTip } from "@/components/ui/help-tip";
 import { InlineEdit } from "@/components/ui/inline-edit";
-import type { Settings, PerPersonSettings } from "./_types";
+import type { Settings, PerPersonSettings } from "./types";
 
 type Props = {
   settings: Settings;

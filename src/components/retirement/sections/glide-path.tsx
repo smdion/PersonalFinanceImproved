@@ -12,7 +12,7 @@
 
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatPercent } from "@/lib/utils/format";
-import type { ReturnRateSummary } from "./_types";
+import type { ReturnRateSummary } from "./types";
 
 type Props = {
   returnRateSummary: ReturnRateSummary;

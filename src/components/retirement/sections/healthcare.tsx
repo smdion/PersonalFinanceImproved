@@ -7,7 +7,7 @@
 "use client";
 
 import { HelpTip } from "@/components/ui/help-tip";
-import type { Settings, UpsertSettingsMutation } from "./_types";
+import type { Settings, UpsertSettingsMutation } from "./types";
 
 type Props = {
   settings: Settings;

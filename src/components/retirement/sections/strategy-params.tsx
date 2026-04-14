@@ -18,7 +18,7 @@ import {
   type WithdrawalStrategyType,
 } from "@/lib/config/withdrawal-strategies";
 import { formatPercent } from "@/lib/utils/format";
-import type { Settings, UpsertSettingsMutation } from "./_types";
+import type { Settings, UpsertSettingsMutation } from "./types";
 
 type Props = {
   settings: Settings;

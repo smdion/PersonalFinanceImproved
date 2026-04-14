@@ -10,34 +10,11 @@
 import { HelpTip } from "@/components/ui/help-tip";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency } from "@/lib/utils/format";
-
-// Prop types are hand-rolled rather than inferred from the server router
-// because src/components/** is lint-forbidden from importing @/server/*
-// (no-restricted-imports rule). The parent `retirement-content.tsx` already
-// guards on `data.settings` presence before rendering this component.
-type Settings = {
-  personId: number;
-  retirementAge: number;
-  endAge: number;
-  returnAfterRetirement: string;
-  annualInflation: string;
-  salaryAnnualIncrease: string;
-  socialSecurityMonthly: string;
-  ssStartAge: number;
-};
-type PerPersonSettings = ReadonlyArray<{
-  personId: number;
-  name: string;
-  retirementAge: number;
-  endAge: number | null;
-  socialSecurityMonthly: string;
-}> | null;
-// The mutation pass-through type is intentionally loose — the section
-// only needs to call `.mutate(...)` and the parent owns the full optimistic
-// update pipeline. A tighter type would require importing from @/server,
-// which is forbidden.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type UpsertSettingsMutation = { mutate: (input: any) => void };
+import type {
+  Settings,
+  PerPersonSettings,
+  UpsertSettingsMutation,
+} from "./types";
 
 type Props = {
   settings: Settings;

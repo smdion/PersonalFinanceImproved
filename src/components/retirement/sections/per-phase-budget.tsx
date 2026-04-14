@@ -21,7 +21,7 @@ import {
   type WithdrawalStrategyType,
 } from "@/lib/config/withdrawal-strategies";
 import { formatCurrency } from "@/lib/utils/format";
-import type { Settings, BudgetProfileSummaries } from "./_types";
+import type { Settings, BudgetProfileSummaries } from "./types";
 
 type Props = {
   settings: Settings;

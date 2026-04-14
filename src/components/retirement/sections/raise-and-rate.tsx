@@ -22,7 +22,7 @@ import {
   type WithdrawalStrategyType,
 } from "@/lib/config/withdrawal-strategies";
 import { formatPercent } from "@/lib/utils/format";
-import type { Settings } from "./_types";
+import type { Settings } from "./types";
 
 /** Convert a decimal string (e.g. '0.04') to a whole-number string for display ('4'). */
 function decToWhole(v: string): string {
