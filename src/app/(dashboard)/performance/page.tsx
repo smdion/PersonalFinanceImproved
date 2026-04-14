@@ -8,6 +8,7 @@ import { confirm } from "@/components/ui/confirm-dialog";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { formatDate } from "@/lib/utils/format";
+import { PERF_CATEGORY_PORTFOLIO } from "@/lib/config/display-labels";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -238,7 +239,8 @@ export default function PerformancePage() {
         <FinalizeYearModal
           year={currentYear}
           rows={annualRows.filter(
-            (r) => r.year === currentYear && r.category !== "Portfolio",
+            (r) =>
+              r.year === currentYear && r.category !== PERF_CATEGORY_PORTFOLIO,
           )}
           onConfirm={(overrides) => {
             // Compute Portfolio override as sum of category overrides

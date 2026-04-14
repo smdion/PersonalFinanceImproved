@@ -5,6 +5,10 @@ import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import {
+  PERF_CATEGORY_RETIREMENT,
+  PERF_CATEGORY_BROKERAGE,
+} from "@/lib/config/display-labels";
+import {
   accountColor,
   accountMatchColor,
   accountTextColor,
@@ -557,7 +561,7 @@ function ContributionsCardImpl() {
         <div className="grid grid-cols-3 gap-3">
           <div>
             <p className="text-[10px] text-faint uppercase tracking-wide mb-0.5">
-              Retirement
+              {PERF_CATEGORY_RETIREMENT}
             </p>
             <div className="text-xs">
               <span className="font-semibold text-primary">
@@ -573,7 +577,7 @@ function ContributionsCardImpl() {
           </div>
           <div>
             <p className="text-[10px] text-faint uppercase tracking-wide mb-0.5">
-              Brokerage
+              {PERF_CATEGORY_BROKERAGE}
             </p>
             <div className="text-xs">
               <span className="font-semibold text-primary">

@@ -19,7 +19,10 @@ import { calculateNetWorth } from "@/lib/calculators/net-worth";
 import { countPeriodsElapsed } from "@/lib/calculators/paycheck";
 import type { NetWorthInput } from "@/lib/calculators/types";
 import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
-import { accountTypeToPerformanceCategory } from "@/lib/config/display-labels";
+import {
+  accountTypeToPerformanceCategory,
+  PERF_CATEGORY_PORTFOLIO,
+} from "@/lib/config/display-labels";
 
 // ---------------------------------------------------------------------------
 // Snapshot account grouping
@@ -413,7 +416,7 @@ export async function buildYearEndHistory(
 
   // 1. Populate from finalized annual_performance rows (non-Portfolio categories)
   for (const row of annualPerfRows) {
-    if (!row.isFinalized || row.category === "Portfolio") continue;
+    if (!row.isFinalized || row.category === PERF_CATEGORY_PORTFOLIO) continue;
     const yearMap = perfByCategoryByYear.get(row.year) ?? {};
     yearMap[row.category] = {
       endingBalance: toNumber(row.endingBalance),
@@ -493,7 +496,7 @@ export async function buildYearEndHistory(
 
   // 1. Finalized Portfolio annual rows (authoritative)
   for (const row of annualPerfRows) {
-    if (!row.isFinalized || row.category !== "Portfolio") continue;
+    if (!row.isFinalized || row.category !== PERF_CATEGORY_PORTFOLIO) continue;
     perfSummaryByYear.set(row.year, {
       beginningBalance: toNumber(row.beginningBalance),
       contributions: toNumber(row.totalContributions),
@@ -703,7 +706,7 @@ export async function buildYearEndHistory(
       (a) => a.year === currentYear,
     );
     const currentPortfolioRow = annualPerfRows.find(
-      (r) => r.year === currentYear && r.category === "Portfolio",
+      (r) => r.year === currentYear && r.category === PERF_CATEGORY_PORTFOLIO,
     );
     let perfSummary: {
       beginningBalance: number;
@@ -853,7 +856,7 @@ export async function buildYearEndHistory(
           const parentCat = a.parentCategory ?? "Retirement";
           const taxType = a.taxType ?? "preTax";
           const bucket =
-            parentCat === "Portfolio"
+            parentCat === PERF_CATEGORY_PORTFOLIO
               ? breakdown.portfolio
               : breakdown.retirement;
           bucket[taxType] = (bucket[taxType] ?? 0) + a.amount;

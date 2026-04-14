@@ -7,6 +7,7 @@
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { PERF_CATEGORY_HSA } from "@/lib/config/display-labels";
 import { PERFORMANCE_STALE_DAYS } from "@/lib/constants";
 import type { DetailedHistoryRow } from "./types";
 
@@ -76,7 +77,7 @@ function buildRowConfigs(
       flowType: "market",
     });
     // Add distributions row for categories that have them (e.g., HSA)
-    if (category === "HSA") {
+    if (category === PERF_CATEGORY_HSA) {
       rows.push({
         label: `${category} - Distributions`,
         accessor: (r) =>

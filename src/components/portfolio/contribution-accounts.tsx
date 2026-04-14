@@ -7,7 +7,11 @@ import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
-import { TAX_TREATMENT_LABELS as TAX_LABELS } from "@/lib/config/display-labels";
+import {
+  TAX_TREATMENT_LABELS as TAX_LABELS,
+  PERF_CATEGORY_RETIREMENT,
+  PERF_CATEGORY_PORTFOLIO,
+} from "@/lib/config/display-labels";
 import {
   formatPercent,
   formatCurrency,
@@ -156,8 +160,8 @@ export function ContributionAccountsSettings() {
   ];
 
   const categoryOptions = [
-    { value: "Retirement", label: "Retirement" },
-    { value: "Portfolio", label: "Portfolio" },
+    { value: PERF_CATEGORY_RETIREMENT, label: PERF_CATEGORY_RETIREMENT },
+    { value: PERF_CATEGORY_PORTFOLIO, label: PERF_CATEGORY_PORTFOLIO },
   ];
 
   const accountTypeOptions = getAllCategories().map((c) => ({
