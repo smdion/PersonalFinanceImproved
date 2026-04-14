@@ -14,7 +14,6 @@
  * imports) per eslint.config.mjs no-restricted-imports rule.
  */
 
-import React from "react";
 import { formatCurrency } from "@/lib/utils/format";
 import { FormError } from "@/components/ui/form-error";
 import type { ColumnResult } from "./types";

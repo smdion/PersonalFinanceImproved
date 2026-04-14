@@ -11,7 +11,6 @@
  * and wires click / keyboard / hover controls back up through callbacks.
  */
 
-import React from "react";
 import { formatCurrency } from "@/lib/utils/format";
 import { confirm, promptText } from "@/components/ui/confirm-dialog";
 import type { BudgetProfileListEntry } from "./types";
