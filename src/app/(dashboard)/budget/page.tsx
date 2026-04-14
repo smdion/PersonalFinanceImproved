@@ -19,11 +19,11 @@ import { usePerColumnPaycheck } from "@/lib/hooks/use-per-column-paycheck";
 import {
   BudgetModeManager,
   BudgetSummaryTable,
-  BudgetCategoryRow,
   AddItemForm,
   AddCategoryForm,
   ContributionProfileManager,
 } from "@/components/budget";
+import { BudgetTable } from "@/components/budget/budget-table";
 import type {
   RawItem,
   PayrollBreakdown,
@@ -769,120 +769,56 @@ export default function BudgetPage() {
               )}
 
               {/* Full budget table */}
-              <div className="overflow-x-auto relative">
-                <table
-                  className="w-full text-xs border-collapse"
-                  style={{ tableLayout: "fixed" }}
-                >
-                  <thead>
-                    <tr className="border-b-2 border-strong">
-                      <th
-                        className="text-left py-2 pr-3 text-muted font-medium sticky left-0 bg-surface-sunken z-10 select-none"
-                        style={{
-                          width: effectiveNameColWidth,
-                          minWidth: 120,
-                          maxWidth: 400,
-                        }}
-                      >
-                        <span className="flex items-center justify-between">
-                          <span>Category / Item</span>
-                          <span
-                            onMouseDown={onResizeStart}
-                            className="cursor-col-resize px-1 text-faint hover:text-secondary select-none"
-                            title="Drag to resize"
-                          >
-                            ⋮
-                          </span>
-                        </span>
-                      </th>
-                      {cols.map((label, colIdx) => (
-                        <th
-                          key={label}
-                          className="text-right py-2 px-3 text-muted font-medium min-w-[90px]"
-                        >
-                          {label}
-                          {apiService &&
-                            apiLinkedProfileId === profile?.id &&
-                            apiLinkedColumnIndex === colIdx && (
-                              <span className="ml-1 text-[8px] px-1 py-0.5 rounded bg-blue-100 text-blue-600 font-semibold align-middle">
-                                ⇄ {apiService.toUpperCase()}
-                              </span>
-                            )}
-                        </th>
-                      ))}
-                      {showApiColumn && (
-                        <th className="text-right py-2 px-2 text-muted font-medium min-w-[80px] text-xs">
-                          {apiActualsData?.service?.toUpperCase()}
-                        </th>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {visibleCategories.map(([catName, items]) => (
-                      <BudgetCategoryRow
-                        key={catName}
-                        categoryName={catName}
-                        items={items}
-                        numCols={numCols}
-                        catTotals={getCatTotals(items)}
-                        editMode={editMode}
-                        getDraft={getDraft}
-                        onSetDraft={setDraft}
-                        onUpdateCell={(id, col, amt) =>
-                          updateCell.mutate({ id, colIndex: col, amount: amt })
-                        }
-                        onToggleItemEssential={(id, isEssential) =>
-                          updateItemEssential.mutate({ id, isEssential })
-                        }
-                        onToggleCategoryEssential={(category, isEssential) =>
-                          updateCategoryEssential.mutate({
-                            category,
-                            isEssential,
-                          })
-                        }
-                        onMoveItem={(id, newCategory) =>
-                          moveItem.mutate({ id, newCategory })
-                        }
-                        onDeleteItem={(id) => deleteItem.mutate({ id })}
-                        onConvertToGoal={(id, name) =>
-                          convertToGoal.mutate({
-                            budgetItemId: id,
-                            goalName: name,
-                            targetMode: "ongoing",
-                          })
-                        }
-                        onAddItem={(category, subcategory, isEssential) =>
-                          createItem.mutate({
-                            category,
-                            subcategory,
-                            isEssential,
-                          })
-                        }
-                        addItemPending={createItem.isPending}
-                        addItemError={createItem.error}
-                        categoryNames={categoryNames}
-                        addingItemToCategory={addingItemToCategory}
-                        onSetAddingItemToCategory={setAddingItemToCategory}
-                        matchContrib={(sub) => matchContrib(sub)}
-                        canEdit={canEdit}
-                        apiActualsMap={apiActualsMap}
-                        showApiColumn={showApiColumn}
-                        nameColWidth={effectiveNameColWidth}
-                      />
-                    ))}
-                    {hasMoreCategories && (
-                      <tr ref={sentinelRef} aria-hidden="true">
-                        <td
-                          colSpan={numCols + (showApiColumn ? 2 : 1)}
-                          className="text-center py-3 text-xs text-muted"
-                        >
-                          Loading more categories...
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <BudgetTable
+                visibleCategories={visibleCategories}
+                hasMoreCategories={hasMoreCategories}
+                numCols={numCols}
+                cols={cols}
+                categoryNames={categoryNames}
+                getCatTotals={getCatTotals}
+                effectiveNameColWidth={effectiveNameColWidth}
+                onResizeStart={onResizeStart}
+                sentinelRef={sentinelRef}
+                apiService={apiService}
+                apiLinkedProfileId={apiLinkedProfileId}
+                profileId={profile?.id ?? null}
+                apiLinkedColumnIndex={apiLinkedColumnIndex}
+                showApiColumn={showApiColumn}
+                apiActualsService={apiActualsData?.service ?? null}
+                apiActualsMap={apiActualsMap}
+                canEdit={canEdit}
+                editMode={editMode}
+                addingItemToCategory={addingItemToCategory}
+                onSetAddingItemToCategory={setAddingItemToCategory}
+                rowHandlers={{
+                  getDraft,
+                  setDraft,
+                  onUpdateCell: (id, col, amt) =>
+                    updateCell.mutate({ id, colIndex: col, amount: amt }),
+                  onToggleItemEssential: (id, isEssential) =>
+                    updateItemEssential.mutate({ id, isEssential }),
+                  onToggleCategoryEssential: (category, isEssential) =>
+                    updateCategoryEssential.mutate({ category, isEssential }),
+                  onMoveItem: (id, newCategory) =>
+                    moveItem.mutate({ id, newCategory }),
+                  onDeleteItem: (id) => deleteItem.mutate({ id }),
+                  onConvertToGoal: (id, name) =>
+                    convertToGoal.mutate({
+                      budgetItemId: id,
+                      goalName: name,
+                      targetMode: "ongoing",
+                    }),
+                  onAddItem: (category, subcategory, isEssential) =>
+                    createItem.mutate({
+                      category,
+                      subcategory,
+                      isEssential,
+                    }),
+                  addItemPending: createItem.isPending,
+                  addItemError: createItem.error,
+                  matchContrib: (sub) => matchContrib(sub),
+                }}
+              />
 
               {/* Standalone add-item form for new categories */}
               {canEdit &&
