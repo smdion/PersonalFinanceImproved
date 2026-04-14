@@ -114,7 +114,13 @@ const config = [
     },
   },
   {
-    ignores: [".next/", "node_modules/", ".scratch/", "coverage/"],
+    ignores: [
+      ".next/",
+      "node_modules/",
+      ".scratch/",
+      "coverage/",
+      ".claude/worktrees/",
+    ],
   },
 ];
 export default config;

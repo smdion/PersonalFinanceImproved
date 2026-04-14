@@ -43,3 +43,20 @@ export type SinkingFundLine = {
   name: string;
   monthlyContribution: number;
 };
+
+/**
+ * A single profile row from `trpc.budget.listProfiles`. Hand-rolled here
+ * (instead of inferring from `@/server/*`) because components/** is
+ * lint-forbidden from importing server modules. Fields match the select
+ * shape plus the client-side derived fields (annualTotal, columnCount)
+ * the router attaches in its .map() pass.
+ */
+export type BudgetProfileListEntry = {
+  id: number;
+  name: string;
+  isActive: boolean;
+  columnLabels: unknown; // stored as JSON; callers cast to string[]
+  columnMonths: unknown; // stored as JSON; callers cast to number[] | null
+  annualTotal: number;
+  columnCount: number;
+};

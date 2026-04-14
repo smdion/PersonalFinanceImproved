@@ -1,12 +1,3 @@
 # Files exempt from the 2000-line size limit.
 # Each entry should have a tracking issue or plan to split.
 # Review quarterly — remove entries as files are refactored.
-
-# projection.ts — v0.5 expert-review additions (planHealth inputs for M1/M6,
-# computeStressTest endpoint for M2) pushed this over 2000 lines. ~138 lines
-# already extracted into projection-v5-helpers.ts. The remaining overflow is
-# pre-existing endpoints (computeProjection, computeMonteCarloProjection,
-# computeStrategyComparison, analyzeStrategy) whose proper split is tracked
-# as a v0.5.x follow-up — moving them is a real refactor, not a release-tail
-# change. Currently ~2060 lines.
-src/server/routers/projection.ts
