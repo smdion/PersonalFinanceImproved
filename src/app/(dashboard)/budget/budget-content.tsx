@@ -110,9 +110,7 @@ export function BudgetContent() {
   } = useColumnMutations();
   const { syncFromApi, syncToApi } = useSyncMutations();
 
-  // Local UI state — declared before useItemMutations so its
-  // setAddingItemToCategory setter can be passed as the createItem
-  // onSuccess callback.
+  // Local UI state
   const [activeTab, setActiveTab] = useState<"budget" | "contributions">(
     "budget",
   );
@@ -147,10 +145,7 @@ export function BudgetContent() {
     moveItem,
     createItem,
     convertToGoal,
-  } = useItemMutations({
-    selectedColumnRef,
-    onItemCreated: () => setAddingItemToCategory(null),
-  });
+  } = useItemMutations({ selectedColumnRef });
 
   // Lazy rendering for large budgets (prevents DOM bloat with 300+ rows)
   // All hooks must be declared before early returns to satisfy Rules of Hooks.
@@ -710,7 +705,9 @@ export function BudgetContent() {
                   <AddItemForm
                     category={addingItemToCategory}
                     onAdd={(category, subcategory, isEssential) =>
-                      createItem.mutate({ category, subcategory, isEssential })
+                      void createItem
+                        .mutateAsync({ category, subcategory, isEssential })
+                        .then(() => setAddingItemToCategory(null))
                     }
                     onCancel={() => setAddingItemToCategory(null)}
                     isPending={createItem.isPending}

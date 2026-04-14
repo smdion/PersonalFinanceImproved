@@ -21,15 +21,7 @@ export function usePortfolioMutations() {
     onSuccess: invalidate,
   });
 
-  return {
-    mutations: {
-      updateMappings,
-      createAssetAndMap,
-    },
-    invalidate,
-  };
+  return { updateMappings, createAssetAndMap, invalidate };
 }
 
-export type PortfolioMutations = ReturnType<
-  typeof usePortfolioMutations
->["mutations"];
+export type PortfolioMutations = ReturnType<typeof usePortfolioMutations>;

@@ -13,7 +13,7 @@
 import { trpc } from "@/lib/trpc";
 import { useInvalidatePreview } from "./use-invalidate-preview";
 
-export function useBudgetMutations() {
+export function useBudgetIntegrationsMutations() {
   const invalidate = useInvalidatePreview();
 
   const linkBudget = trpc.budget.linkToApi.useMutation({
@@ -45,21 +45,19 @@ export function useBudgetMutations() {
   });
 
   return {
-    mutations: {
-      linkBudget,
-      unlinkBudget,
-      createItem,
-      skipCategory,
-      unskipCategory,
-      renameBudgetToApi,
-      renameBudgetApiName,
-      moveBudgetToApiGroup,
-      setBudgetSyncDir,
-    },
+    linkBudget,
+    unlinkBudget,
+    createItem,
+    skipCategory,
+    unskipCategory,
+    renameBudgetToApi,
+    renameBudgetApiName,
+    moveBudgetToApiGroup,
+    setBudgetSyncDir,
     invalidate,
   };
 }
 
-export type BudgetMutations = ReturnType<
-  typeof useBudgetMutations
->["mutations"];
+export type BudgetIntegrationsMutations = ReturnType<
+  typeof useBudgetIntegrationsMutations
+>;

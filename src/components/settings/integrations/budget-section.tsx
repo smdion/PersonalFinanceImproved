@@ -25,14 +25,14 @@ import type {
 } from "../integrations-types";
 import { StatusBadge } from "../integrations-status-badge";
 import { ApiCategorySelect } from "../integrations-api-category-select";
-import type { BudgetMutations } from "./hooks/use-budget-mutations";
+import type { BudgetIntegrationsMutations } from "./hooks/use-budget-mutations";
 
 type Props = {
   service: Service;
   budget: NonNullable<PreviewData["budget"]>;
   savings: PreviewData["savings"];
   allApiCats: ApiCategoryOption[];
-  mutations: BudgetMutations;
+  mutations: BudgetIntegrationsMutations;
   onLinkSavings: (goalId: number, apiCategoryId: string) => void;
   /**
    * Number of savings-section overrides the user has queued up. The
