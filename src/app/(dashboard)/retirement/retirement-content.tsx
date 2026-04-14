@@ -72,9 +72,9 @@ function wholeToDec(v: string): string {
 }
 
 export function RetirementContent() {
-  const [pageTab, setPageTab] = useState<"projection" | "comparison">(
-    "projection",
-  );
+  const [pageTab, setPageTab] = useState<
+    "projection" | "comparison" | "planHealth"
+  >("projection");
   const [dollarMode, setDollarMode] = useState<"nominal" | "real">("real");
   const utils = trpc.useUtils();
   const salaryOverrides = useSalaryOverrides();
@@ -310,30 +310,6 @@ export function RetirementContent() {
         }
       />
 
-      {/* Plan health callouts (v0.5 expert-review M1/M2/M3/M4/M6).
-          The card consumes derived inputs from data.planHealth, which
-          the projection router builds from the user's contribution
-          accounts (M1) and the active glide path (M6). */}
-      <div className="mb-4">
-        <PlanHealthCard
-          returnRate={parseFloat(settings.returnAfterRetirement)}
-          inflationRate={parseFloat(settings.annualInflation)}
-          salaryGrowthRate={parseFloat(settings.salaryAnnualIncrease)}
-          retirementHorizonYears={settings.endAge - settings.retirementAge}
-          hasBudgetLink={!!data.accumulationBudgetProfileId}
-          deterministicNestEgg={
-            data.result?.projectionByYear.find(
-              (p: { age: number }) => p.age === settings.retirementAge,
-            )?.endBalance
-          }
-          accumulationOrder={data.planHealth?.accumulationOrder}
-          currentAge={data.planHealth?.currentAge}
-          stockAllocationPercent={
-            data.planHealth?.currentStockAllocationPercent ?? undefined
-          }
-        />
-      </div>
-
       {/* Page-level tabs */}
       <div className="inline-flex rounded-md border bg-surface-primary/60 p-0.5 mb-4">
         <button
@@ -360,6 +336,17 @@ export function RetirementContent() {
           }`}
         >
           Strategy Comparison
+        </button>
+        <button
+          type="button"
+          onClick={() => setPageTab("planHealth")}
+          className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+            pageTab === "planHealth"
+              ? "bg-surface-primary text-primary shadow-sm border"
+              : "text-muted hover:text-secondary"
+          }`}
+        >
+          Plan Health
         </button>
       </div>
 
@@ -398,7 +385,28 @@ export function RetirementContent() {
         </div>
       )}
 
-      {pageTab === "comparison" ? (
+      {pageTab === "planHealth" ? (
+        /* Plan Health tab — diagnostic callouts derived from plan state.
+           Consumes data.planHealth which the projection router builds
+           from contribution accounts (M1) and the active glide path (M6). */
+        <PlanHealthCard
+          returnRate={parseFloat(settings.returnAfterRetirement)}
+          inflationRate={parseFloat(settings.annualInflation)}
+          salaryGrowthRate={parseFloat(settings.salaryAnnualIncrease)}
+          retirementHorizonYears={settings.endAge - settings.retirementAge}
+          hasBudgetLink={!!data.accumulationBudgetProfileId}
+          deterministicNestEgg={
+            data.result?.projectionByYear.find(
+              (p: { age: number }) => p.age === settings.retirementAge,
+            )?.endBalance
+          }
+          accumulationOrder={data.planHealth?.accumulationOrder}
+          currentAge={data.planHealth?.currentAge}
+          stockAllocationPercent={
+            data.planHealth?.currentStockAllocationPercent ?? undefined
+          }
+        />
+      ) : pageTab === "comparison" ? (
         /* Strategy Comparison tab — rendered directly, no collapsible */
         comparisonLoading ? (
           <div className="space-y-2 p-4">

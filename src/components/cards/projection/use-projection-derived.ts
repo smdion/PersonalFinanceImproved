@@ -43,15 +43,34 @@ export function useProjectionDerived(
     showAllYears,
     personFilter,
     isPersonFiltered,
+    scenarioView,
   } = form;
 
-  const { engineQuery, contribProfilesQuery } = queries;
+  const { engineQuery, contribProfilesQuery, coastFireMcResult } = queries;
 
   const { parentCategoryFilter, people, onContributionRates } = props;
 
   // --- Engine data narrowing ---
+  // In Coast FIRE scenario, swap the deterministic projection source from
+  // the baseline engineQuery to the Coast FIRE MC run's internal
+  // deterministicProjection. This swap is synchronous (React Query cache
+  // read) and happens ATOMICALLY with the MC band swap, eliminating the
+  // visual lag that occurred when engineQuery was refetching with
+  // coastFireOverrideAge while MC bands updated instantly.
   const engineData = engineQuery.data;
-  const rawResult = engineData?.result ?? null;
+  const rawResult = useMemo(() => {
+    if (
+      scenarioView === "coastFire" &&
+      coastFireMcResult?.deterministicProjection
+    ) {
+      return coastFireMcResult.deterministicProjection;
+    }
+    return engineData?.result ?? null;
+  }, [
+    scenarioView,
+    coastFireMcResult?.deterministicProjection,
+    engineData?.result,
+  ]);
   const result = useMemo(() => {
     if (!rawResult || !parentCategoryFilter) return rawResult;
     return {

@@ -609,6 +609,33 @@ export function HelpContent() {
         </p>
       </Section>
 
+      {/* ── Historical ── */}
+      <Section title="Historical" icon={ScrollText}>
+        <p>
+          The <NavLink href="/historical">Historical</NavLink> page is a
+          year-over-year ledger of your financial history.
+        </p>
+        <ul className="list-disc list-inside space-y-1 ml-2">
+          <li>
+            <strong>Column groups</strong> &mdash; Toggle visibility of data
+            categories: Net Worth, Performance, Portfolio, Assets, Liabilities,
+            Income, and Tax.
+          </li>
+          <li>
+            <strong>Editable cells</strong> &mdash; Correct historical income,
+            tax rates, or other values by clicking directly in the table.
+          </li>
+          <li>
+            <strong>Job history</strong> &mdash; Track employment changes and
+            their income impact.
+          </li>
+          <li>
+            <strong>Notes</strong> &mdash; Add context to any year (e.g.
+            &ldquo;bought house&rdquo; or &ldquo;changed jobs&rdquo;).
+          </li>
+        </ul>
+      </Section>
+
       {/* ━━ ANALYSIS ━━ */}
       <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">
         Analysis
@@ -659,33 +686,6 @@ export function HelpContent() {
           <li>
             <strong>Budget profiles</strong> &mdash; Use different budget
             scenarios for retirement spending assumptions.
-          </li>
-        </ul>
-      </Section>
-
-      {/* ── Historical ── */}
-      <Section title="Historical" icon={ScrollText}>
-        <p>
-          The <NavLink href="/historical">Historical</NavLink> page is a
-          year-over-year ledger of your financial history.
-        </p>
-        <ul className="list-disc list-inside space-y-1 ml-2">
-          <li>
-            <strong>Column groups</strong> &mdash; Toggle visibility of data
-            categories: Net Worth, Performance, Portfolio, Assets, Liabilities,
-            Income, and Tax.
-          </li>
-          <li>
-            <strong>Editable cells</strong> &mdash; Correct historical income,
-            tax rates, or other values by clicking directly in the table.
-          </li>
-          <li>
-            <strong>Job history</strong> &mdash; Track employment changes and
-            their income impact.
-          </li>
-          <li>
-            <strong>Notes</strong> &mdash; Add context to any year (e.g.
-            &ldquo;bought house&rdquo; or &ldquo;changed jobs&rdquo;).
           </li>
         </ul>
       </Section>

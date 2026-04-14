@@ -204,7 +204,7 @@ export function ProjectionCard(props: {
 
           {result && (
             <div className="space-y-4">
-              {/* Hero KPIs */}
+              {/* Hero KPIs (includes Coast FIRE as 5th card) */}
               <ProjectionHeroKpis s={s} />
 
               {/* MC assumptions summary — below hero, above controls */}
