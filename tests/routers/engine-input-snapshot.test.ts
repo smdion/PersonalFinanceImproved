@@ -14,7 +14,7 @@
  * the gate that catches that class of bug.
  */
 import "./setup-mocks";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { createTestCaller, seedStandardDataset } from "./setup";
 import {
   buildEnginePayload,
@@ -22,11 +22,18 @@ import {
 } from "@/server/retirement/build-engine-payload";
 import * as schema from "@/lib/db/schema-sqlite";
 
+// Freeze wall clock so `currentAge` and any other time-derived fields in
+// `baseEngineInput` are deterministic across CI runners, local runs, and
+// timezone shifts. 2026-04-14 + dateOfBirth "1990-01-01" → currentAge 36.
+const FIXED_NOW = new Date("2026-04-14T12:00:00Z");
+
 describe("engine input snapshot guard", () => {
   let testCaller: Awaited<ReturnType<typeof createTestCaller>>;
   let payload: NonNullable<Awaited<ReturnType<typeof buildEnginePayload>>>;
 
   beforeAll(async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(FIXED_NOW);
     testCaller = await createTestCaller();
     const { db } = testCaller;
 
@@ -90,6 +97,7 @@ describe("engine input snapshot guard", () => {
 
   afterAll(async () => {
     await testCaller.cleanup();
+    vi.useRealTimers();
   });
 
   it("baseEngineInput shape and key fields are stable", () => {
