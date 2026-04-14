@@ -37,10 +37,8 @@ import {
 import { normalizeContribKey } from "@/lib/config/account-types";
 import { formatCurrency } from "@/lib/utils/format";
 import { confirm, promptText } from "@/components/ui/confirm-dialog";
-import {
-  PushPreviewModal,
-  type PushPreviewItem,
-} from "@/components/ui/push-preview-modal";
+import { type PushPreviewItem } from "@/components/ui/push-preview-modal";
+import { BudgetPushYnabModal } from "@/components/budget/budget-push-ynab-modal";
 import { FormError } from "@/components/ui/form-error";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 
@@ -1165,9 +1163,11 @@ export default function BudgetPage() {
 
       {/* Push to YNAB preview modal */}
       {pushPreviewItems && (
-        <PushPreviewModal
-          title={`Push"${cols[activeColumn]}" budget amounts to ${apiService?.toUpperCase()}`}
+        <BudgetPushYnabModal
           items={pushPreviewItems}
+          activeColumnLabel={cols[activeColumn]}
+          apiService={apiService}
+          isPending={syncToApi.isPending}
           onConfirm={() => {
             syncToApi.mutate(
               { selectedColumn: activeColumn },
@@ -1175,7 +1175,6 @@ export default function BudgetPage() {
             );
           }}
           onCancel={() => setPushPreviewItems(null)}
-          isPending={syncToApi.isPending}
         />
       )}
     </div>
