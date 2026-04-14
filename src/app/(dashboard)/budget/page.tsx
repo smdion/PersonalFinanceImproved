@@ -43,6 +43,7 @@ import {
   type BudgetProfileListEntry,
 } from "@/components/budget";
 import { useProfileMutations } from "@/components/budget/hooks/use-profile-mutations";
+import { useColumnMutations } from "@/components/budget/hooks/use-column-mutations";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 
 export default function BudgetPage() {
@@ -77,6 +78,13 @@ export default function BudgetPage() {
   const { data: savingsGoals } = trpc.settings.savingsGoals.list.useQuery();
   const { setActiveProfile, createProfile, deleteProfile, renameProfile } =
     useProfileMutations();
+  const {
+    addColumn,
+    removeColumn,
+    renameColumn,
+    updateColumnMonths,
+    updateColumnContribProfiles,
+  } = useColumnMutations();
   const updateCell = trpc.budget.updateItemAmount.useMutation({
     onMutate: async (variables) => {
       await utils.budget.computeActiveSummary.cancel();
@@ -108,15 +116,6 @@ export default function BudgetPage() {
     onSettled: () => utils.budget.computeActiveSummary.invalidate(),
   });
   const updateBatch = trpc.budget.updateItemAmounts.useMutation({
-    onSuccess: () => utils.budget.computeActiveSummary.invalidate(),
-  });
-  const addColumn = trpc.budget.addColumn.useMutation({
-    onSuccess: () => utils.budget.computeActiveSummary.invalidate(),
-  });
-  const removeColumn = trpc.budget.removeColumn.useMutation({
-    onSuccess: () => utils.budget.computeActiveSummary.invalidate(),
-  });
-  const renameColumn = trpc.budget.renameColumn.useMutation({
     onSuccess: () => utils.budget.computeActiveSummary.invalidate(),
   });
   const createItem = trpc.budget.createItem.useMutation({
@@ -210,19 +209,6 @@ export default function BudgetPage() {
         }
       },
       onSettled: () => utils.budget.computeActiveSummary.invalidate(),
-    });
-  const updateColumnMonths = trpc.budget.updateColumnMonths.useMutation({
-    onSuccess: () => {
-      utils.budget.computeActiveSummary.invalidate();
-      utils.budget.listProfiles.invalidate();
-    },
-  });
-  const updateColumnContribProfiles =
-    trpc.budget.updateColumnContributionProfileIds.useMutation({
-      onSuccess: () => {
-        utils.budget.computeActiveSummary.invalidate();
-        utils.budget.listProfiles.invalidate();
-      },
     });
   const syncFromApi = trpc.budget.syncBudgetFromApi.useMutation({
     onSuccess: () => utils.budget.computeActiveSummary.invalidate(),
