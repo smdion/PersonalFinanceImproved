@@ -574,10 +574,7 @@ export function BudgetContent() {
                 setRenameValue(name);
               }}
               onFinishRename={(id, currentName) => {
-                if (
-                  renameValue.trim() &&
-                  renameValue.trim() !== currentName
-                ) {
+                if (renameValue.trim() && renameValue.trim() !== currentName) {
                   renameProfile.mutate({ id, name: renameValue.trim() });
                 }
                 setRenamingProfileId(null);

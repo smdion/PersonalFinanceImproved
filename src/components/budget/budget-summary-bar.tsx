@@ -84,7 +84,7 @@ export function BudgetSummaryBar({
   saveError,
   pullError,
   pushError,
-  showModeManager,
+  showModeManager: _showModeManager,
   onToggleModeManager,
   isPulling,
   isPushing,
@@ -137,11 +137,7 @@ export function BudgetSummaryBar({
             <span className="text-faint">
               Weighted{" "}
               <span className="text-[10px]">
-                (
-                {columnMonths
-                  ?.map((m, i) => `${m}mo ${cols[i]}`)
-                  .join(" +")}
-                )
+                ({columnMonths?.map((m, i) => `${m}mo ${cols[i]}`).join(" +")})
               </span>
             </span>
           )}
@@ -156,9 +152,7 @@ export function BudgetSummaryBar({
                     )
                   : (allColumnResults[activeColumn]?.totalMonthly ?? 0) * 12,
               )}
-              <span className="text-[10px] text-faint font-normal">
-                /yr
-              </span>
+              <span className="text-[10px] text-faint font-normal">/yr</span>
             </span>
           )}
         </div>
@@ -191,7 +185,9 @@ export function BudgetSummaryBar({
               className="px-2 py-1 text-[10px] font-medium rounded bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50"
               title={`Pull linked amounts from ${apiService?.toUpperCase()} into"${cols[activeColumn]}" mode`}
             >
-              {isPulling ? "Pulling…" : `Pull from ${apiService?.toUpperCase()}`}
+              {isPulling
+                ? "Pulling…"
+                : `Pull from ${apiService?.toUpperCase()}`}
             </button>
             <button
               type="button"
