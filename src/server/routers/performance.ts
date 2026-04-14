@@ -45,6 +45,7 @@ import {
   PARENT_CATEGORY_ROLLUPS,
   PERF_CATEGORY_BROKERAGE,
   PERF_CATEGORY_PORTFOLIO,
+  PERF_CATEGORY_DISPLAY_ORDER,
 } from "@/lib/config/display-labels";
 
 /** Accepts both the main db instance and transaction handles. */
@@ -967,7 +968,7 @@ export const performanceRouter = createTRPCRouter({
         overrides: z
           .array(
             z.object({
-              category: z.string(),
+              category: z.enum(PERF_CATEGORY_DISPLAY_ORDER),
               beginningBalance: z.string(),
               totalContributions: z.string(),
               yearlyGainLoss: z.string(),

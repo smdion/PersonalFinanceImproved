@@ -392,7 +392,7 @@ export const adminProcedures = {
     upsert: adminProcedure
       .input(
         z.object({
-          service: z.string().min(1),
+          service: z.enum(["ynab", "actual"]),
           config: apiConfigSchema,
           accountMappings: z.array(accountMappingSchema).nullable().optional(),
         }),
@@ -417,7 +417,7 @@ export const adminProcedures = {
           .then((r) => r[0]);
       }),
     delete: adminProcedure
-      .input(z.object({ service: z.string() }))
+      .input(z.object({ service: z.enum(["ynab", "actual"]) }))
       .mutation(({ ctx, input }) =>
         ctx.db
           .delete(schema.apiConnections)
