@@ -24,14 +24,14 @@
  * closure's live-read semantics).
  */
 
-import type { RefObject } from "react";
+import type { MutableRefObject } from "react";
 import { trpc } from "@/lib/trpc";
 import { useInvalidateBudget } from "./use-invalidate-budget";
 
 type UseItemMutationsOpts = {
   /** Live-read of the selected column. Kept as a ref so the mutations
    *  don't need to re-bind on every column change. */
-  selectedColumnRef: RefObject<number>;
+  selectedColumnRef: MutableRefObject<number>;
   /** Invoked by createItem.onSuccess to clear the standalone-add
    *  "which category are we adding to" flag. */
   onItemCreated: () => void;
