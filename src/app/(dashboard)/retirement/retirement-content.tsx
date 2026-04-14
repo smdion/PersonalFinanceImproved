@@ -28,6 +28,7 @@ import { GlidePathSection } from "@/components/retirement/sections/glide-path";
 import { TimelineSection } from "@/components/retirement/sections/timeline";
 import { IncomeSection } from "@/components/retirement/sections/income";
 import { StrategyParamsSection } from "@/components/retirement/sections/strategy-params";
+import { PerPhaseBudgetSection } from "@/components/retirement/sections/per-phase-budget";
 
 // v0.5 expert-review M4: bridge the recommendation helper's kebab-case
 // strategy keys to the snake_case keys in WITHDRAWAL_STRATEGY_CONFIG /
@@ -573,174 +574,18 @@ export function RetirementContent() {
                       </div>
                     </div>
 
-                    {/* Per-phase budget profile + column selection */}
-                    {(() => {
-                      const activeStrategy = (settings?.withdrawalStrategy ??
-                        "fixed") as WithdrawalStrategyType;
-                      const strategyMeta = getStrategyMeta(activeStrategy);
-                      const { incomeSource } = strategyMeta;
-                      const budgetNotUsed =
-                        incomeSource === "formula" || incomeSource === "rate";
-                      const { usesWithdrawalRate, usesPostRetirementRaise } =
-                        strategyMeta;
-                      const profiles = data.budgetProfileSummaries ?? [];
-                      if (profiles.length === 0) return null;
-
-                      const decProfile =
-                        profiles.find(
-                          (p) => p.id === data.decumulationBudgetProfileId,
-                        ) ?? profiles.find((p) => p.isActive);
-                      const decLabels = decProfile?.columnLabels ?? [];
-                      const decTotals = decProfile?.columnTotals ?? [];
-                      const decMonths =
-                        (decProfile?.columnMonths as number[] | null) ?? null;
-                      const decWeighted =
-                        (decProfile?.weightedAnnualTotal as number | null) ??
-                        null;
-
-                      return (
-                        <div>
-                          {(budgetNotUsed ||
-                            !usesWithdrawalRate ||
-                            !usesPostRetirementRaise) && (
-                            <div className="text-xs text-amber-600 bg-amber-50 rounded px-2 py-1.5 mb-2">
-                              {`${strategyMeta.label} computes spending from ${
-                                incomeSource === "formula"
-                                  ? "your portfolio balance using IRS/endowment formulas"
-                                  : incomeSource === "rate"
-                                    ? "withdrawal rate × portfolio"
-                                    : "your retirement budget"
-                              }.`}
-                              {(() => {
-                                const dimmed: string[] = [];
-                                if (budgetNotUsed) dimmed.push("budget source");
-                                if (!usesWithdrawalRate)
-                                  dimmed.push("initial withdrawal rate");
-                                if (!usesPostRetirementRaise)
-                                  dimmed.push("post-retirement raise");
-                                return dimmed.length > 0
-                                  ? ` Dimmed settings (${dimmed.join(", ")}) are not used by this strategy.`
-                                  : "";
-                              })()}
-                            </div>
-                          )}
-                          <div
-                            className={`grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm ${budgetNotUsed ? "opacity-40" : ""}`}
-                          >
-                            {/* Retirement Budget source */}
-                            <div>
-                              <span className="text-muted">
-                                Budget Source
-                                <HelpTip text="Your starting retirement 'salary' — what you pay yourself from your portfolio each year. Grows by the Post-Retirement Raise rate. Set a manual override or use a budget profile." />
-                              </span>
-                              <div className="font-medium flex flex-col gap-1">
-                                {decExpenseOverride ? (
-                                  <span className="text-faint text-xs italic">
-                                    Using manual override
-                                  </span>
-                                ) : (
-                                  <>
-                                    <select
-                                      className="text-sm border rounded px-2 py-1 bg-surface-primary"
-                                      value={
-                                        data.decumulationBudgetProfileId ?? ""
-                                      }
-                                      onChange={(e) => {
-                                        setDecBudgetProfileId(
-                                          e.target.value
-                                            ? Number(e.target.value)
-                                            : null,
-                                        );
-                                        setDecBudgetCol(null);
-                                      }}
-                                    >
-                                      {profiles.map((p) => (
-                                        <option key={p.id} value={p.id}>
-                                          {p.name}
-                                          {p.isActive ? " (active)" : ""}
-                                        </option>
-                                      ))}
-                                    </select>
-                                    {decMonths ? (
-                                      <span className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-1">
-                                        Weighted:{" "}
-                                        {formatCurrency(decWeighted ?? 0)}
-                                        /yr
-                                        <span className="text-[10px] text-faint ml-1">
-                                          (
-                                          {decMonths
-                                            .map(
-                                              (m, i) =>
-                                                `${m}mo ${decLabels[i] ?? ""}`,
-                                            )
-                                            .join(" +")}
-                                          )
-                                        </span>
-                                      </span>
-                                    ) : decLabels.length >= 2 ? (
-                                      <select
-                                        className="text-sm border rounded px-2 py-1 bg-surface-primary"
-                                        value={data.decumulationBudgetColumn}
-                                        onChange={(e) =>
-                                          setDecBudgetCol(
-                                            Number(e.target.value),
-                                          )
-                                        }
-                                      >
-                                        {decLabels.map(
-                                          (label: string, idx: number) => (
-                                            <option key={label} value={idx}>
-                                              {label} (
-                                              {formatCurrency(
-                                                (decTotals[idx] ?? 0) * 12,
-                                              )}
-                                              /yr)
-                                            </option>
-                                          ),
-                                        )}
-                                      </select>
-                                    ) : null}
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                            {/* Retirement salary override */}
-                            <div>
-                              <span className="text-muted">
-                                Salary Override
-                                <HelpTip text="Set a flat annual amount as your starting retirement salary. Overrides the budget profile. Grows by the Post-Retirement Raise rate each year." />
-                              </span>
-                              <div className="font-medium flex items-center gap-1">
-                                <InlineEdit
-                                  value={decExpenseOverride ?? ""}
-                                  onSave={(v) => {
-                                    const cleaned = v.replace(/[^0-9]/g, "");
-                                    setDecExpenseOverride(cleaned || null);
-                                  }}
-                                  formatDisplay={(v) =>
-                                    v
-                                      ? `${formatCurrency(Number(v))}/yr`
-                                      : "None (using budget)"
-                                  }
-                                  parseInput={(v) => v.replace(/[^0-9]/g, "")}
-                                  type="number"
-                                  className="text-sm"
-                                  editable={!!settings}
-                                />
-                                {decExpenseOverride && (
-                                  <button
-                                    className="text-[10px] text-red-400 hover:text-red-600"
-                                    onClick={() => setDecExpenseOverride(null)}
-                                  >
-                                    clear
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
+                    <PerPhaseBudgetSection
+                      settings={settings}
+                      budgetProfileSummaries={data.budgetProfileSummaries}
+                      decumulationBudgetProfileId={
+                        data.decumulationBudgetProfileId
+                      }
+                      decumulationBudgetColumn={data.decumulationBudgetColumn}
+                      decExpenseOverride={decExpenseOverride}
+                      setDecExpenseOverride={setDecExpenseOverride}
+                      setDecBudgetProfileId={setDecBudgetProfileId}
+                      setDecBudgetCol={setDecBudgetCol}
+                    />
 
                     {/* Post-Retirement Raise + Withdrawal Rate side by side */}
                     {(() => {
