@@ -1714,7 +1714,6 @@ const computeRouter = createTRPCRouter({
       };
     }),
 
-
   /** Analyze the active strategy — run what-if MC scenarios and return ranked recommendations. */
   analyzeStrategy: protectedProcedure
     .input(
