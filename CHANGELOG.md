@@ -18,6 +18,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Coast FIRE via contribution profiles** — you can now create a contribution profile with zero contributions and use the existing Overrides panel → Contribution / Salary override to switch to it at a chosen year. Gives you explicit control over when to coast (vs the auto-detected Coast FIRE age) using existing UI. Before this release, the engine silently fell back to a 25% default contribution rate when a switched profile had zero contributions, which defeated the intent
 - New **Plan Health tab** on the Retirement page — Plan Health callouts moved into their own tab alongside Projection and Strategy Comparison, instead of being rendered above every other view
 
+### Changed
+
+- **Sidebar: "Historical" moved from Analysis into Net Worth.** The Historical page is a year-end net worth ledger — it belongs next to the Trends summary under Net Worth, not alongside forward-looking tools like Retirement and Contributions. Help content mirrors the new grouping.
+
+### Fixed
+
+- **Monte Carlo assumptions bar: "initial rate" typical-range hint is now strategy-aware.** The sub-label under the withdrawal-rate cell was hardcoded as `3–4%` (the classic fixed-strategy SWR band) even when the active strategy was a dynamic one where sustainable initial rates run higher (~5.0% for Spending Decline, ~5.2–5.6% for Guyton-Klinger per Morningstar 2025). Now shows `4–6%` when the label reads "initial rate" (dynamic strategies) and keeps `3–4%` when the label reads "withdrawal" (fixed). Prevents the misleading implication that a 5% dynamic initial rate is "out of range."
+
 ### Engine / internals
 
 - New pure calculator `src/lib/calculators/coast-fire.ts` — additive, calls `calculateProjection()` without modifying the engine
