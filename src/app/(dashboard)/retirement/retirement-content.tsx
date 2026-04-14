@@ -26,6 +26,7 @@ import { TaxesSection } from "@/components/retirement/sections/taxes";
 import { HealthcareSection } from "@/components/retirement/sections/healthcare";
 import { GlidePathSection } from "@/components/retirement/sections/glide-path";
 import { TimelineSection } from "@/components/retirement/sections/timeline";
+import { IncomeSection } from "@/components/retirement/sections/income";
 
 // v0.5 expert-review M4: bridge the recommendation helper's kebab-case
 // strategy keys to the snake_case keys in WITHDRAWAL_STRATEGY_CONFIG /
@@ -483,124 +484,15 @@ export function RetirementContent() {
                       }
                     />
 
-                    {/* Income (same box as Timeline) */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
-                          Income
-                        </h4>
-                        <div className="flex-1 border-t" />
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                        <div>
-                          <span className="text-muted">
-                            Household Salary
-                            <HelpTip text="Combined annual salary from your jobs. This is your starting income — grows each year by the Pre-Retirement Raise rate until retirement." />
-                          </span>
-                          <div className="font-medium">
-                            {data.combinedSalary != null
-                              ? formatCurrency(data.combinedSalary)
-                              : "—"}
-                            <span className="text-[10px] text-faint font-normal ml-1">
-                              from jobs
-                            </span>
-                          </div>
-                        </div>
-                        <div>
-                          <span className="text-muted">
-                            Pre-Retirement Raise
-                            <HelpTip text="Annual salary raise % during working years. Affects future contributions and employer match." />
-                          </span>
-                          <div className="font-medium">
-                            <InlineEdit
-                              value={decToWhole(settings.salaryAnnualIncrease)}
-                              onSave={(v) =>
-                                handleSettingPercentUpdate(
-                                  "salaryAnnualIncrease",
-                                  v,
-                                )
-                              }
-                              formatDisplay={(v) =>
-                                formatPercent(Number(v) / 100, 2)
-                              }
-                              parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-                              type="number"
-                              className="text-sm"
-                              editable={!!settings}
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <span className="text-muted">
-                            Salary Cap
-                            <HelpTip text="Growth stops at this amount. Leave blank for no cap." />
-                          </span>
-                          <div className="font-medium">
-                            <InlineEdit
-                              value={
-                                settings.salaryCap
-                                  ? String(
-                                      Math.round(
-                                        parseFloat(settings.salaryCap),
-                                      ),
-                                    )
-                                  : ""
-                              }
-                              onSave={(v) => {
-                                if (!settings) return;
-                                const val = v.replace(/[^0-9]/g, "");
-                                upsertSettings.mutate({
-                                  personId: settings.personId,
-                                  retirementAge: settings.retirementAge,
-                                  endAge: settings.endAge,
-                                  returnAfterRetirement:
-                                    settings.returnAfterRetirement,
-                                  annualInflation: settings.annualInflation,
-                                  salaryAnnualIncrease:
-                                    settings.salaryAnnualIncrease,
-                                  salaryCap: val === "" ? null : val,
-                                });
-                              }}
-                              formatDisplay={(v) =>
-                                v ? formatCurrency(Number(v)) : "None"
-                              }
-                              parseInput={(v) => v.replace(/[^0-9]/g, "")}
-                              type="number"
-                              className="text-sm"
-                              editable={!!settings}
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <span className="text-muted">
-                            Contribution Profile
-                            <HelpTip text="Select a contribution profile to override salary and contribution assumptions in the projection. 'Live' uses your current paycheck/contribution settings." />
-                          </span>
-                          <div className="font-medium">
-                            <select
-                              className="text-sm border rounded px-2 py-1 bg-surface-primary w-full"
-                              value={contribProfileId ?? ""}
-                              onChange={(e) =>
-                                setContribProfileId(
-                                  e.target.value
-                                    ? Number(e.target.value)
-                                    : null,
-                                )
-                              }
-                            >
-                              {contribProfiles.map((p) => (
-                                <option key={p.id} value={p.id}>
-                                  {p.name}
-                                  {!p.name.includes("(Live)") && p.isDefault
-                                    ? " (Live)"
-                                    : ""}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <IncomeSection
+                      settings={settings}
+                      combinedSalary={data.combinedSalary}
+                      upsertSettings={upsertSettings}
+                      handleSettingPercentUpdate={handleSettingPercentUpdate}
+                      contribProfiles={contribProfiles}
+                      contribProfileId={contribProfileId}
+                      setContribProfileId={setContribProfileId}
+                    />
                   </div>
 
                   {/* Right column: Decumulation Plan */}
