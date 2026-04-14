@@ -101,6 +101,13 @@ vi.mock("@/lib/config/display-labels", () => ({
   TAX_TREATMENT_TO_TAX_TYPE: {},
 }));
 
+// CoastFireCard uses trpc.projection.computeCoastFire.useQuery internally,
+// which requires a tRPC context we're not providing in this unit test.
+// Mock it out — its rendering is tested elsewhere.
+vi.mock("@/components/cards/coast-fire-card", () => ({
+  CoastFireCard: () => <div data-testid="coast-fire-card" />,
+}));
+
 // ---------------------------------------------------------------------------
 // Helpers — build minimal mock state matching useProjectionState return
 // ---------------------------------------------------------------------------
@@ -206,6 +213,14 @@ function baseMockState(overrides: Record<string, unknown> = {}): any {
     mcBandsByYear: null,
     mcIsPrefetch: false,
     mcChartPending: false,
+    coastFireMcQuery: {
+      data: null,
+      isLoading: false,
+      isFetching: false,
+    },
+    coastFireMcResult: null,
+    debouncedBaseInput: null,
+    scenarioView: "default",
 
     // Derived
     result: null,
@@ -528,7 +543,10 @@ describe("ProjectionHeroKpis", () => {
     });
     render(<ProjectionHeroKpis s={s} />);
     expect(screen.getByText("92%")).toBeInTheDocument();
-    expect(screen.getByText("Success Rate")).toBeInTheDocument();
+    // Labels post v0.5.1 rename — was "Success Rate" / "End Balance" before.
+    // Tailwind's uppercase class styles the display but leaves the DOM text
+    // as-authored, so assertions use title case.
+    expect(screen.getByText("Portfolio Survival")).toBeInTheDocument();
     expect(screen.getByText("End Balance")).toBeInTheDocument();
   });
 });
