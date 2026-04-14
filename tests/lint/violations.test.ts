@@ -15,7 +15,7 @@
  *    7. Hardcoded performance category strings in logic — bracket-index OR equality (use PERF_CATEGORY_* constants)
  *    8. useState with hardcoded account type ("401k", "ira", etc.)
  *    9. Inline `.toFixed(N) + "%"` instead of formatPercent()
- *   10. Mutation using `z.string()` for `accountType` instead of `z.enum(accountCategoryEnum())`
+ *   10. Mutation using `z.string()` for enum-typed fields (accountType, service) instead of z.enum()
  *   11. Absolute imports from engine internals instead of the barrel
  *
  * Intentionally NOT checked (needs semantic analysis, not string matching):
@@ -386,12 +386,14 @@ function findInlinePercentFormatViolations(): Violation[] {
   });
 }
 
-// Rule 10: mutation using `z.string()` for `accountType` field. Looks for
-// `accountType: z.string(` — should be `z.enum(accountCategoryEnum())`.
-function findAccountTypeZStringViolations(): Violation[] {
+// Rule 10: mutation using `z.string()` for known-enum fields.
+// `accountType` should be `z.enum(accountCategoryEnum())`.
+// `service` should be `z.enum(["ynab","actual"])` (or the serviceEnum from sync/_shared).
+// Budget `category` and account `subType` are intentionally free-text and excluded.
+function findStringEnumFieldViolations(): Violation[] {
   return findPatternViolations(
-    /\baccountType\s*:\s*z\.string\b/,
-    "no-account-type-z-string",
+    /\b(?:accountType|service)\s*:\s*z\.string\b/,
+    "no-string-enum-fields",
   );
 }
 
@@ -527,13 +529,14 @@ describe("RULES.md violations sweep", () => {
     }
   });
 
-  it("no `accountType: z.string()` in mutations (use z.enum(accountCategoryEnum()))", () => {
-    const violations = findAccountTypeZStringViolations();
+  it("no z.string() for known-enum fields (accountType, service) — use z.enum()", () => {
+    const violations = findStringEnumFieldViolations();
     if (violations.length > 0) {
       expect.fail(
-        `Found ${violations.length} accountType-z-string violations. ` +
-          `Use z.enum(accountCategoryEnum()) so Zod validation stays in sync ` +
-          `with the config source of truth.\n` +
+        `Found ${violations.length} string-enum-field violations. ` +
+          `Use z.enum(accountCategoryEnum()) for accountType, ` +
+          `z.enum(["ynab","actual"]) for service. ` +
+          `Budget category and account subType are free-text and exempt.\n` +
           formatViolations("Violations", violations),
       );
     }
