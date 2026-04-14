@@ -6,7 +6,7 @@ import { TRPCError } from "@trpc/server";
 import {
   createTRPCRouter,
   protectedProcedure,
-  adminProcedure,
+  syncProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import {
@@ -34,7 +34,7 @@ export const syncMappingsRouter = createTRPCRouter({
   }),
 
   /** Update account mappings for a service (works pre-activation). */
-  updateAccountMappings: adminProcedure
+  updateAccountMappings: syncProcedure
     .input(
       z.object({
         service: serviceEnum,
@@ -51,7 +51,7 @@ export const syncMappingsRouter = createTRPCRouter({
     }),
 
   /** Create a new Ledgr asset item and add a mapping to a tracking account. */
-  createAssetAndMap: adminProcedure
+  createAssetAndMap: syncProcedure
     .input(
       z.object({
         service: serviceEnum,
@@ -109,7 +109,7 @@ export const syncMappingsRouter = createTRPCRouter({
     }),
 
   /** Push portfolio snapshot balances to budget API tracking accounts. */
-  pushPortfolioToApi: adminProcedure
+  pushPortfolioToApi: syncProcedure
     .input(z.object({ snapshotId: z.number().int().optional() }).optional())
     .mutation(async ({ ctx, input }) => {
       const asOfDate = new Date();
@@ -184,7 +184,7 @@ export const syncMappingsRouter = createTRPCRouter({
    * deltas were computed against the old state). Pass `confirmNonLatest`
    * after warning the user.
    */
-  resyncSnapshot: adminProcedure
+  resyncSnapshot: syncProcedure
     .input(
       z.object({
         snapshotId: z.number().int().positive(),
@@ -268,7 +268,7 @@ export const syncMappingsRouter = createTRPCRouter({
     }),
 
   /** Pull tracking account balances from budget API into Ledgr asset values. */
-  pullAssetsFromApi: adminProcedure.mutation(async ({ ctx }) => {
+  pullAssetsFromApi: syncProcedure.mutation(async ({ ctx }) => {
     const active = await getActiveBudgetApi(ctx.db);
     if (active === "none") {
       throw new TRPCError({
@@ -351,7 +351,7 @@ export const syncMappingsRouter = createTRPCRouter({
    *   - asset: match localName to other_asset_items.name → set localId = "asset:{id}"
    *   - portfolio: reverse-map display label to performanceAccountId → set localId = "performance:{id}"
    */
-  migrateAccountMappingsToIds: adminProcedure.mutation(async ({ ctx }) => {
+  migrateAccountMappingsToIds: syncProcedure.mutation(async ({ ctx }) => {
     const connections = await ctx.db.select().from(schema.apiConnections);
     const report: Array<{ service: string; mapping: string; status: string }> =
       [];
@@ -500,7 +500,7 @@ export const syncMappingsRouter = createTRPCRouter({
   }),
 
   /** Pull portfolio balances from budget API tracking accounts into the latest snapshot. */
-  pullPortfolioFromApi: adminProcedure
+  pullPortfolioFromApi: syncProcedure
     .input(z.object({ snapshotId: z.number().int().optional() }).optional())
     .mutation(async ({ ctx, input }) => {
       const active = await getActiveBudgetApi(ctx.db);

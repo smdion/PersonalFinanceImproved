@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import {
   createTRPCRouter,
   protectedProcedure,
-  adminProcedure,
+  syncProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import {
@@ -41,7 +41,7 @@ export const syncConnectionsRouter = createTRPCRouter({
   }),
 
   /** Save (upsert) a budget API connection */
-  saveConnection: adminProcedure
+  saveConnection: syncProcedure
     .input(
       z.discriminatedUnion("service", [
         z.object({
@@ -113,7 +113,7 @@ export const syncConnectionsRouter = createTRPCRouter({
     }),
 
   /** Fetch YNAB budgets list using a raw token (before saving connection) */
-  fetchYnabBudgets: adminProcedure
+  fetchYnabBudgets: syncProcedure
     .input(z.object({ accessToken: z.string().min(1) }))
     .mutation(async ({ input }) => {
       try {
@@ -154,7 +154,7 @@ export const syncConnectionsRouter = createTRPCRouter({
     }),
 
   /** Test a specific service connection (works before activation) */
-  testConnection: adminProcedure
+  testConnection: syncProcedure
     .input(z.object({ service: serviceEnum }))
     .mutation(async ({ ctx, input }) => {
       const client = await getClientForService(ctx.db, input.service);
@@ -179,7 +179,7 @@ export const syncConnectionsRouter = createTRPCRouter({
     }),
 
   /** Delete a connection and clear its cache */
-  deleteConnection: adminProcedure
+  deleteConnection: syncProcedure
     .input(z.object({ service: serviceEnum }))
     .mutation(async ({ ctx, input }) => {
       await cacheClear(ctx.db, input.service);
