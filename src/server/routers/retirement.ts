@@ -850,6 +850,21 @@ export async function buildEnginePayload(
     const switchedContribRate =
       switchedTotalComp > 0 ? switchedTotalContrib / switchedTotalComp : 0;
 
+    // Contribution rate ceiling for the switched profile:
+    // - Both comp AND contribs > 0: compute the real ratio
+    // - Comp > 0 but contribs = 0: the profile is INTENTIONALLY zero (e.g. a
+    //   "Coast FIRE" profile — user is saying "stop contributing"). Use 0
+    //   so the engine's rate path produces zero contributions. Before: this
+    //   silently fell back to 0.25 which defeated the profile's intent.
+    // - No comp (missing data): keep the 0.25 safety fallback to avoid
+    //   surprising behavior on broken profiles.
+    const rateForSwitch =
+      switchedContribRate > 0
+        ? switchedContribRate
+        : switchedTotalComp > 0
+          ? 0
+          : 0.25;
+
     profileSwitches.push({
       year: override.projectionYear,
       contributionSpecs: data.contributionSpecs,
@@ -857,7 +872,7 @@ export async function buildEnginePayload(
       baseYearContributions: data.baseYearContributions,
       baseYearEmployerMatch: data.baseYearEmployerMatch,
       employerMatchByParentCat: data.employerMatchByParentCat,
-      contributionRate: switchedContribRate > 0 ? switchedContribRate : 0.25,
+      contributionRate: rateForSwitch,
     });
   }
 

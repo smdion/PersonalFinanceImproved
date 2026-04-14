@@ -61,6 +61,12 @@ function RetirementCardImpl() {
   };
   const { data, isLoading, error } =
     trpc.projection.computeProjection.useQuery(engineInput);
+  const { data: coastFireData } = trpc.projection.computeCoastFire.useQuery(
+    engineInput,
+    {
+      staleTime: 60_000,
+    },
+  );
   if (isLoading) return <LoadingCard title="Retirement" />;
   if (error) return <ErrorCard title="Retirement" message="Failed to load" />;
   if (!data?.result)
@@ -221,6 +227,24 @@ function RetirementCardImpl() {
               </div>
             );
           })()}
+        {coastFireData?.result && (
+          <div className="flex justify-between">
+            <span className="text-muted">
+              Coast FIRE
+              <HelpTip
+                text="The earliest age at which you can stop contributing and still fund your plan through end of plan. 'Already Coast' means you could stop today."
+                learnMoreHref="/retirement"
+              />
+            </span>
+            <span className="text-primary">
+              {coastFireData.result.status === "unreachable"
+                ? "Not reachable"
+                : coastFireData.result.status === "already_coast"
+                  ? "Already Coast"
+                  : `Age ${coastFireData.result.coastFireAge}`}
+            </span>
+          </div>
+        )}
         <div className="flex justify-between">
           <span className="text-muted">Duration</span>
           <span

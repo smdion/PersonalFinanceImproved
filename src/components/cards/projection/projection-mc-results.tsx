@@ -181,7 +181,12 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
                           ? "initial rate"
                           : "withdrawal"}
                       </div>
-                      <div className="text-[8px] text-faint">3–4%</div>
+                      <div className="text-[8px] text-faint">
+                        {si.withdrawalStrategy &&
+                        si.withdrawalStrategy !== "fixed"
+                          ? "4–6%"
+                          : "3–4%"}
+                      </div>
                     </div>
                     <div className="text-center">
                       <div className="font-semibold tabular-nums">

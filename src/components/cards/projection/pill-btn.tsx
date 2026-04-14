@@ -3,19 +3,24 @@ export function PillBtn({
   active,
   onClick,
   label,
+  disabled = false,
 }: {
   active: boolean;
   onClick: () => void;
   label: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${
-        active
-          ? "bg-surface-primary text-primary shadow-sm border"
-          : "text-muted hover:text-secondary"
+        disabled
+          ? "text-faint cursor-not-allowed"
+          : active
+            ? "bg-surface-primary text-primary shadow-sm border"
+            : "text-muted hover:text-secondary"
       }`}
     >
       {label}
