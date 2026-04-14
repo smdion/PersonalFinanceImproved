@@ -35,11 +35,13 @@ import {
   buildNonPayrollContribs,
 } from "@/components/budget/helpers";
 import { normalizeContribKey } from "@/lib/config/account-types";
-import { formatCurrency } from "@/lib/utils/format";
-import { confirm, promptText } from "@/components/ui/confirm-dialog";
 import { type PushPreviewItem } from "@/components/ui/push-preview-modal";
 import { BudgetPushYnabModal } from "@/components/budget/budget-push-ynab-modal";
 import { BudgetSummaryBar } from "@/components/budget/budget-summary-bar";
+import {
+  BudgetProfileSidebar,
+  type BudgetProfileListEntry,
+} from "@/components/budget";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 
 export default function BudgetPage() {
@@ -674,152 +676,35 @@ export default function BudgetPage() {
           {/* Master-detail layout */}
           <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
             {/* Left: profile list sidebar */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-[11px] font-semibold text-muted uppercase tracking-wide">
-                  Profiles
-                </h3>
-                {canEdit && (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const name = await promptText(
-                        "New budget profile name:",
-                        "e.g. Aggressive Savings",
-                      );
-                      if (name) createProfile.mutate({ name });
-                    }}
-                    className="text-[10px] font-medium text-blue-600 hover:text-blue-700"
-                  >
-                    + New
-                  </button>
-                )}
-              </div>
-              {(allProfiles ?? []).map((p) => {
-                const isViewing = p.id === displayProfileId;
-                return (
-                  <div
-                    key={p.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setViewingProfileId(p.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setViewingProfileId(p.id);
-                      }
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-md transition-colors group cursor-pointer ${
-                      isViewing
-                        ? "bg-blue-50 border border-blue-300"
-                        : "hover:bg-surface-sunken border border-transparent"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        {renamingProfileId === p.id ? (
-                          <input
-                            type="text"
-                            value={renameValue}
-                            onChange={(e) => setRenameValue(e.target.value)}
-                            onBlur={() => {
-                              if (
-                                renameValue.trim() &&
-                                renameValue.trim() !== p.name
-                              ) {
-                                renameProfile.mutate({
-                                  id: p.id,
-                                  name: renameValue.trim(),
-                                });
-                              }
-                              setRenamingProfileId(null);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter")
-                                (e.target as HTMLInputElement).blur();
-                              if (e.key === "Escape")
-                                setRenamingProfileId(null);
-                            }}
-                            autoFocus
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-xs font-medium text-primary bg-surface-primary border border-strong rounded px-1 py-0.5 w-full"
-                          />
-                        ) : (
-                          <span className="text-xs font-medium text-primary truncate">
-                            {p.name}
-                          </span>
-                        )}
-                        {p.isActive && (
-                          <span className="text-[8px] px-1 py-0.5 rounded bg-green-100 text-green-700 font-semibold shrink-0">
-                            ACTIVE
-                          </span>
-                        )}
-                        {apiService && apiLinkedProfileId === p.id && (
-                          <span className="text-[8px] px-1 py-0.5 rounded bg-blue-100 text-blue-700 font-semibold shrink-0">
-                            ⇄ {apiService.toUpperCase()} →{" "}
-                            {(p.columnLabels as string[])?.[
-                              apiLinkedColumnIndex
-                            ] ?? "Mode" + apiLinkedColumnIndex}
-                          </span>
-                        )}
-                      </div>
-                      {canEdit && renamingProfileId !== p.id && (
-                        <div
-                          className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {!p.isActive && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setActiveProfile.mutate({ id: p.id })
-                              }
-                              className="text-[10px] text-faint hover:text-green-600"
-                            >
-                              activate
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setRenamingProfileId(p.id);
-                              setRenameValue(p.name);
-                            }}
-                            className="text-[10px] text-faint hover:text-blue-600"
-                          >
-                            edit
-                          </button>
-                          {!p.isActive && (
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                if (
-                                  await confirm(`Delete profile"${p.name}"?`)
-                                ) {
-                                  deleteProfile.mutate({ id: p.id });
-                                }
-                              }}
-                              className="text-[10px] text-faint hover:text-red-600"
-                            >
-                              ×
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex gap-3 mt-1 text-[10px] text-muted">
-                      <span>{formatCurrency(p.annualTotal)}/yr</span>
-                      <span>
-                        {p.columnCount} mode{p.columnCount !== 1 ? "s" : ""}
-                        {(p.columnMonths as number[] | null)
-                          ? " (weighted)"
-                          : ""}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <BudgetProfileSidebar
+              profiles={(allProfiles ?? []) as BudgetProfileListEntry[]}
+              displayProfileId={displayProfileId}
+              canEdit={canEdit}
+              renamingProfileId={renamingProfileId}
+              renameValue={renameValue}
+              onRenameValueChange={setRenameValue}
+              onStartRename={(id, name) => {
+                setRenamingProfileId(id);
+                setRenameValue(name);
+              }}
+              onFinishRename={(id, currentName) => {
+                if (
+                  renameValue.trim() &&
+                  renameValue.trim() !== currentName
+                ) {
+                  renameProfile.mutate({ id, name: renameValue.trim() });
+                }
+                setRenamingProfileId(null);
+              }}
+              onCancelRename={() => setRenamingProfileId(null)}
+              apiService={apiService}
+              apiLinkedProfileId={apiLinkedProfileId}
+              apiLinkedColumnIndex={apiLinkedColumnIndex}
+              onSelectProfile={setViewingProfileId}
+              onCreateProfile={(name) => createProfile.mutate({ name })}
+              onSetActiveProfile={(id) => setActiveProfile.mutate({ id })}
+              onDeleteProfile={(id) => deleteProfile.mutate({ id })}
+            />
 
             {/* Right: budget detail panel */}
             <div className="border-t md:border-t-0 md:border-l pt-4 md:pt-0 md:pl-4">

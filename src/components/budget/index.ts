@@ -10,4 +10,5 @@ export type {
   PayrollBreakdown,
   ColumnResult,
   SinkingFundLine,
+  BudgetProfileListEntry,
 } from "./types";
