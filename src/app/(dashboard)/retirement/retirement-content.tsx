@@ -29,6 +29,7 @@ import { TimelineSection } from "@/components/retirement/sections/timeline";
 import { IncomeSection } from "@/components/retirement/sections/income";
 import { StrategyParamsSection } from "@/components/retirement/sections/strategy-params";
 import { PerPhaseBudgetSection } from "@/components/retirement/sections/per-phase-budget";
+import { RaiseAndRateSection } from "@/components/retirement/sections/raise-and-rate";
 
 // v0.5 expert-review M4: bridge the recommendation helper's kebab-case
 // strategy keys to the snake_case keys in WITHDRAWAL_STRATEGY_CONFIG /
@@ -587,85 +588,10 @@ export function RetirementContent() {
                       setDecBudgetCol={setDecBudgetCol}
                     />
 
-                    {/* Post-Retirement Raise + Withdrawal Rate side by side */}
-                    {(() => {
-                      const s = (settings?.withdrawalStrategy ??
-                        "fixed") as WithdrawalStrategyType;
-                      const meta = getStrategyMeta(s);
-                      return (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm mt-2">
-                          <div
-                            className={
-                              !meta.usesPostRetirementRaise ? "opacity-40" : ""
-                            }
-                          >
-                            <span className="text-muted">
-                              Post-Retirement Raise
-                              <HelpTip text="Your annual 'raise' in retirement. The base is set by your Retirement Budget — this rate grows it each year, like a cost-of-living adjustment. Independent of the Inflation rate." />
-                            </span>
-                            <div className="font-medium">
-                              <InlineEdit
-                                value={decToWhole(
-                                  settings.postRetirementInflation ??
-                                    settings.annualInflation,
-                                )}
-                                onSave={(v) =>
-                                  handleSettingPercentUpdate(
-                                    "postRetirementInflation",
-                                    v,
-                                  )
-                                }
-                                formatDisplay={(v) =>
-                                  formatPercent(Number(v) / 100, 2)
-                                }
-                                parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-                                type="number"
-                                className="text-sm"
-                                editable={!!settings}
-                              />
-                            </div>
-                          </div>
-                          <div
-                            className={
-                              !meta.usesWithdrawalRate ? "opacity-40" : ""
-                            }
-                          >
-                            <span className="text-muted">
-                              {meta.incomeSource === "budget"
-                                ? "Withdrawal Rate"
-                                : "Initial Withdrawal Rate"}
-                              <HelpTip
-                                text={
-                                  !meta.usesWithdrawalRate
-                                    ? `Not used by ${meta.label} — this strategy computes spending from its own formula (${meta.incomeSource === "formula" ? "IRS factors" : "base percentage of portfolio"}).`
-                                    : meta.incomeSource === "rate"
-                                      ? `Starting withdrawal rate for ${meta.label}. Sets the initial withdrawal amount, which the strategy then adjusts yearly based on portfolio performance.`
-                                      : "Your withdrawal rate applied to the projected retirement balance. Determines the annual withdrawal amount, which grows by the Post-Retirement Raise rate each year."
-                                }
-                              />
-                            </span>
-                            <div className="font-medium">
-                              <InlineEdit
-                                value={decToWhole(settings.withdrawalRate)}
-                                onSave={(v) =>
-                                  handleSettingPercentUpdate(
-                                    "withdrawalRate",
-                                    v,
-                                  )
-                                }
-                                formatDisplay={(v) =>
-                                  formatPercent(Number(v) / 100, 2)
-                                }
-                                parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-                                type="number"
-                                className="text-sm"
-                                editable={!!settings}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
+                    <RaiseAndRateSection
+                      settings={settings}
+                      handleSettingPercentUpdate={handleSettingPercentUpdate}
+                    />
 
                     <StrategyParamsSection
                       settings={settings}
