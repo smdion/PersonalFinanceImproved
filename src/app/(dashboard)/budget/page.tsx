@@ -45,12 +45,12 @@ import {
 import { useProfileMutations } from "@/components/budget/hooks/use-profile-mutations";
 import { useColumnMutations } from "@/components/budget/hooks/use-column-mutations";
 import { useSyncMutations } from "@/components/budget/hooks/use-sync-mutations";
+import { useItemMutations } from "@/components/budget/hooks/use-item-mutations";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 
 export default function BudgetPage() {
   const user = useUser();
   const canEdit = hasPermission(user, "budget");
-  const utils = trpc.useUtils();
   const [activeColumn, setActiveColumn] = usePersistedSetting<number>(
     "budget_active_column",
     0,
@@ -87,138 +87,10 @@ export default function BudgetPage() {
     updateColumnContribProfiles,
   } = useColumnMutations();
   const { syncFromApi, syncToApi } = useSyncMutations();
-  const updateCell = trpc.budget.updateItemAmount.useMutation({
-    onMutate: async (variables) => {
-      await utils.budget.computeActiveSummary.cancel();
-      const queryInput = { selectedColumn: activeColumn };
-      const previous = utils.budget.computeActiveSummary.getData(queryInput);
-      if (previous && "rawItems" in previous) {
-        utils.budget.computeActiveSummary.setData(queryInput, {
-          ...previous,
-          rawItems: previous.rawItems.map(
-            (item: (typeof previous.rawItems)[number]) => {
-              if (item.id !== variables.id) return item;
-              const newAmounts = [...item.amounts];
-              newAmounts[variables.colIndex] = variables.amount;
-              return { ...item, amounts: newAmounts };
-            },
-          ),
-        });
-      }
-      return { previous, queryInput };
-    },
-    onError: (_err, _variables, context) => {
-      if (context?.previous) {
-        utils.budget.computeActiveSummary.setData(
-          context.queryInput,
-          context.previous,
-        );
-      }
-    },
-    onSettled: () => utils.budget.computeActiveSummary.invalidate(),
-  });
-  const updateBatch = trpc.budget.updateItemAmounts.useMutation({
-    onSuccess: () => utils.budget.computeActiveSummary.invalidate(),
-  });
-  const createItem = trpc.budget.createItem.useMutation({
-    onSuccess: () => {
-      utils.budget.computeActiveSummary.invalidate();
-      setAddingItemToCategory(null);
-    },
-  });
-  const deleteItem = trpc.budget.deleteItem.useMutation({
-    onMutate: async (variables) => {
-      await utils.budget.computeActiveSummary.cancel();
-      const queryInput = { selectedColumn: activeColumn };
-      const previous = utils.budget.computeActiveSummary.getData(queryInput);
-      if (previous && "rawItems" in previous) {
-        utils.budget.computeActiveSummary.setData(queryInput, {
-          ...previous,
-          rawItems: previous.rawItems.filter(
-            (item: (typeof previous.rawItems)[number]) =>
-              item.id !== variables.id,
-          ),
-        });
-      }
-      return { previous, queryInput };
-    },
-    onError: (_err, _variables, context) => {
-      if (context?.previous) {
-        utils.budget.computeActiveSummary.setData(
-          context.queryInput,
-          context.previous,
-        );
-      }
-    },
-    onSettled: () => utils.budget.computeActiveSummary.invalidate(),
-  });
-  const moveItem = trpc.budget.moveItem.useMutation({
-    onSuccess: () => utils.budget.computeActiveSummary.invalidate(),
-  });
-  const updateItemEssential = trpc.budget.updateItemEssential.useMutation({
-    onMutate: async (variables) => {
-      await utils.budget.computeActiveSummary.cancel();
-      const queryInput = { selectedColumn: activeColumn };
-      const previous = utils.budget.computeActiveSummary.getData(queryInput);
-      if (previous && "rawItems" in previous) {
-        utils.budget.computeActiveSummary.setData(queryInput, {
-          ...previous,
-          rawItems: previous.rawItems.map(
-            (item: (typeof previous.rawItems)[number]) =>
-              item.id === variables.id
-                ? { ...item, isEssential: variables.isEssential }
-                : item,
-          ),
-        });
-      }
-      return { previous, queryInput };
-    },
-    onError: (_err, _variables, context) => {
-      if (context?.previous) {
-        utils.budget.computeActiveSummary.setData(
-          context.queryInput,
-          context.previous,
-        );
-      }
-    },
-    onSettled: () => utils.budget.computeActiveSummary.invalidate(),
-  });
-  const updateCategoryEssential =
-    trpc.budget.updateCategoryEssential.useMutation({
-      onMutate: async (variables) => {
-        await utils.budget.computeActiveSummary.cancel();
-        const queryInput = { selectedColumn: activeColumn };
-        const previous = utils.budget.computeActiveSummary.getData(queryInput);
-        if (previous && "rawItems" in previous) {
-          utils.budget.computeActiveSummary.setData(queryInput, {
-            ...previous,
-            rawItems: previous.rawItems.map(
-              (item: (typeof previous.rawItems)[number]) =>
-                item.category === variables.category
-                  ? { ...item, isEssential: variables.isEssential }
-                  : item,
-            ),
-          });
-        }
-        return { previous, queryInput };
-      },
-      onError: (_err, _variables, context) => {
-        if (context?.previous) {
-          utils.budget.computeActiveSummary.setData(
-            context.queryInput,
-            context.previous,
-          );
-        }
-      },
-      onSettled: () => utils.budget.computeActiveSummary.invalidate(),
-    });
-  const convertToGoal = trpc.savings.convertBudgetItemToGoal.useMutation({
-    onSuccess: () => {
-      utils.budget.computeActiveSummary.invalidate();
-      utils.savings.invalidate();
-    },
-  });
 
+  // Local UI state — declared before useItemMutations so its
+  // setAddingItemToCategory setter can be passed as the createItem
+  // onSuccess callback.
   const [activeTab, setActiveTab] = useState<"budget" | "contributions">(
     "budget",
   );
@@ -235,6 +107,28 @@ export default function BudgetPage() {
     string | null
   >(null);
   const [editDrafts, setEditDrafts] = useState<Map<string, number>>(new Map());
+
+  // Live-read of activeColumn for the optimistic item mutations. The
+  // mutations read from this ref in their onMutate handlers so a
+  // column-switch mid-flight still targets the user's current view.
+  const selectedColumnRef = useRef(activeColumn);
+  useEffect(() => {
+    selectedColumnRef.current = activeColumn;
+  }, [activeColumn]);
+
+  const {
+    updateCell,
+    deleteItem,
+    updateItemEssential,
+    updateCategoryEssential,
+    updateBatch,
+    moveItem,
+    createItem,
+    convertToGoal,
+  } = useItemMutations({
+    selectedColumnRef,
+    onItemCreated: () => setAddingItemToCategory(null),
+  });
 
   // Lazy rendering for large budgets (prevents DOM bloat with 300+ rows)
   // All hooks must be declared before early returns to satisfy Rules of Hooks.
