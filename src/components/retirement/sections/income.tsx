@@ -14,23 +14,14 @@
  */
 "use client";
 
-import type { inferRouterOutputs } from "@trpc/server";
 import { HelpTip } from "@/components/ui/help-tip";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import type { trpc } from "@/lib/trpc";
-import type { AppRouter } from "@/server/routers";
-
-type ProjectionData = NonNullable<
-  inferRouterOutputs<AppRouter>["projection"]["computeProjection"]
->;
-type LoadedProjection = Extract<ProjectionData, { settings: object }>;
-type Settings = LoadedProjection["settings"];
-type UpsertSettingsMutation = ReturnType<
-  typeof trpc.settings.retirementSettings.upsert.useMutation
->;
-type ContribProfile =
-  inferRouterOutputs<AppRouter>["contributionProfile"]["list"][number];
+import type {
+  Settings,
+  UpsertSettingsMutation,
+  ContribProfileListEntry as ContribProfile,
+} from "./_types";
 
 /** Convert a decimal string (e.g. '0.04') to a whole-number string for display ('4'). */
 function decToWhole(v: string): string {

@@ -14,7 +14,6 @@
  */
 "use client";
 
-import type { inferRouterOutputs } from "@trpc/server";
 import { HelpTip } from "@/components/ui/help-tip";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import {
@@ -22,14 +21,7 @@ import {
   type WithdrawalStrategyType,
 } from "@/lib/config/withdrawal-strategies";
 import { formatCurrency } from "@/lib/utils/format";
-import type { AppRouter } from "@/server/routers";
-
-type ProjectionData = NonNullable<
-  inferRouterOutputs<AppRouter>["projection"]["computeProjection"]
->;
-type LoadedProjection = Extract<ProjectionData, { settings: object }>;
-type Settings = LoadedProjection["settings"];
-type BudgetProfileSummaries = LoadedProjection["budgetProfileSummaries"];
+import type { Settings, BudgetProfileSummaries } from "./_types";
 
 type Props = {
   settings: Settings;

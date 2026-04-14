@@ -10,16 +10,9 @@
  */
 "use client";
 
-import type { inferRouterOutputs } from "@trpc/server";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatPercent } from "@/lib/utils/format";
-import type { AppRouter } from "@/server/routers";
-
-type ProjectionData = NonNullable<
-  inferRouterOutputs<AppRouter>["projection"]["computeProjection"]
->;
-type LoadedProjection = Extract<ProjectionData, { settings: object }>;
-type ReturnRateSummary = LoadedProjection["returnRateSummary"];
+import type { ReturnRateSummary } from "./_types";
 
 type Props = {
   returnRateSummary: ReturnRateSummary;

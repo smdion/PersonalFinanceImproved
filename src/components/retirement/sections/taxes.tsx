@@ -9,24 +9,14 @@
  */
 "use client";
 
-import type { inferRouterOutputs } from "@trpc/server";
 import { HelpTip } from "@/components/ui/help-tip";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatPercent } from "@/lib/utils/format";
-import type { trpc } from "@/lib/trpc";
-import type { AppRouter } from "@/server/routers";
-
-// `computeProjection` returns a union { result: null } | { result, settings, ... }.
-// Narrow to the "loaded" branch — the parent guards on this before rendering.
-type ProjectionData = NonNullable<
-  inferRouterOutputs<AppRouter>["projection"]["computeProjection"]
->;
-type LoadedProjection = Extract<ProjectionData, { settings: object }>;
-type Settings = LoadedProjection["settings"];
-type SelectedScenario = LoadedProjection["selectedScenario"];
-type UpsertSettingsMutation = ReturnType<
-  typeof trpc.settings.retirementSettings.upsert.useMutation
->;
+import type {
+  Settings,
+  SelectedScenario,
+  UpsertSettingsMutation,
+} from "./_types";
 
 type Props = {
   settings: Settings;
