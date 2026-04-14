@@ -39,7 +39,7 @@ import { formatCurrency } from "@/lib/utils/format";
 import { confirm, promptText } from "@/components/ui/confirm-dialog";
 import { type PushPreviewItem } from "@/components/ui/push-preview-modal";
 import { BudgetPushYnabModal } from "@/components/budget/budget-push-ynab-modal";
-import { FormError } from "@/components/ui/form-error";
+import { BudgetSummaryBar } from "@/components/budget/budget-summary-bar";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 
 export default function BudgetPage() {
@@ -617,187 +617,59 @@ export default function BudgetPage() {
       {activeTab === "budget" && (
         <CardBoundary title="Budget Profiles">
           {/* Active budget summary bar */}
-          <div className="flex flex-wrap items-center justify-between gap-2 bg-surface-sunken rounded-lg px-4 py-3 mb-4">
-            <div className="flex flex-wrap items-center gap-3 sm:gap-6">
-              <div className="flex items-center gap-2">
-                {isViewingNonActive ? (
-                  <>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-strong text-muted font-semibold uppercase">
-                      Viewing
-                    </span>
-                    <span className="text-xs text-muted">{profile?.name}</span>
-                    {activeProfile && (
-                      <span className="text-[10px] text-faint">
-                        (active: {activeProfile.name})
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-semibold uppercase">
-                      Active
-                    </span>
-                    <span className="text-xs text-muted">{profile?.name}</span>
-                  </>
-                )}
-                {apiService && apiLinkedProfileId === profile?.id && (
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-600 font-semibold">
-                    ⇄ {apiService.toUpperCase()} →{" "}
-                    {cols[apiLinkedColumnIndex] ?? "Unknown"}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-4 text-xs">
-                {cols.length > 0 && !isWeighted && (
-                  <span className="text-faint">
-                    Mode:{" "}
-                    <span className="font-medium text-secondary">
-                      {cols[activeColumn] ?? cols[0]}
-                    </span>
-                  </span>
-                )}
-                {isWeighted && (
-                  <span className="text-faint">
-                    Weighted{" "}
-                    <span className="text-[10px]">
-                      (
-                      {columnMonths
-                        .map((m, i) => `${m}mo ${cols[i]}`)
-                        .join(" +")}
-                      )
-                    </span>
-                  </span>
-                )}
-                {allColumnResults && (
-                  <span className="font-semibold text-secondary">
-                    {formatCurrency(
-                      isWeighted && columnMonths
-                        ? (allColumnResults as ColumnResult[]).reduce(
-                            (sum, r, i) =>
-                              sum + r.totalMonthly * (columnMonths[i] ?? 0),
-                            0,
-                          )
-                        : ((allColumnResults as ColumnResult[])[activeColumn]
-                            ?.totalMonthly ?? 0) * 12,
-                    )}
-                    <span className="text-[10px] text-faint font-normal">
-                      /yr
-                    </span>
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {canEdit && editMode && editDrafts.size > 0 && (
-                <span className="text-xs text-amber-600">
-                  {editDrafts.size} unsaved change
-                  {editDrafts.size !== 1 ? "s" : ""}
-                </span>
-              )}
-              {updateBatch.error && (
-                <FormError error={updateBatch.error} prefix="Save failed" />
-              )}
-              {syncFromApi.error && (
-                <FormError error={syncFromApi.error} prefix="Pull failed" />
-              )}
-              {syncToApi.error && (
-                <FormError error={syncToApi.error} prefix="Push failed" />
-              )}
-              {canEdit && (
-                <button
-                  type="button"
-                  onClick={() => setShowModeManager(!showModeManager)}
-                  className="px-2 py-1 text-[10px] font-medium rounded bg-surface-strong text-muted hover:bg-surface-strong"
-                >
-                  Manage Modes
-                </button>
-              )}
-              {canEdit &&
-                showApiColumn &&
-                apiLinkedProfileId === profile?.id && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        syncFromApi.mutate({ selectedColumn: activeColumn })
-                      }
-                      disabled={syncFromApi.isPending}
-                      className="px-2 py-1 text-[10px] font-medium rounded bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50"
-                      title={`Pull linked amounts from ${apiService?.toUpperCase()} into"${cols[activeColumn]}" mode`}
-                    >
-                      {syncFromApi.isPending
-                        ? "Pulling…"
-                        : `Pull from ${apiService?.toUpperCase()}`}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        // Build diff preview from raw items + cached YNAB actuals
-                        const items: PushPreviewItem[] = [];
-                        for (const item of rawItems) {
-                          if (!item.apiCategoryId) continue;
-                          if (
-                            item.apiSyncDirection !== "push" &&
-                            item.apiSyncDirection !== "both"
-                          )
-                            continue;
-                          const amounts = item.amounts as number[];
-                          const colIdx = Math.min(
-                            activeColumn,
-                            amounts.length - 1,
-                          );
-                          const newValue = amounts[colIdx] ?? 0;
-                          const actual = apiActualsMap.get(item.id);
-                          items.push({
-                            name: item.subcategory,
-                            field: "Budgeted",
-                            currentYnab: actual?.budgeted ?? 0,
-                            newValue,
-                          });
-                        }
-                        setPushPreviewItems(items);
-                      }}
-                      disabled={syncToApi.isPending}
-                      className="px-2 py-1 text-[10px] font-medium rounded bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50"
-                      title={`Push"${cols[activeColumn]}" mode amounts to ${apiService?.toUpperCase()}`}
-                    >
-                      {syncToApi.isPending
-                        ? "Pushing…"
-                        : `Push to ${apiService?.toUpperCase()}`}
-                    </button>
-                  </>
-                )}
-              {canEdit &&
-                showApiColumn &&
-                apiLinkedProfileId !== profile?.id &&
-                apiLinkedProfileId != null && (
-                  <span
-                    className="text-[10px] text-amber-600"
-                    title="Sync buttons are only available on the API-linked profile"
-                  >
-                    Sync: linked to another profile
-                  </span>
-                )}
-              {canEdit && (
-                <button
-                  type="button"
-                  onClick={toggleEditMode}
-                  disabled={updateBatch.isPending}
-                  className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${
-                    editMode
-                      ? "bg-green-600 text-white hover:bg-green-700"
-                      : "bg-surface-strong text-muted hover:bg-surface-strong"
-                  }`}
-                >
-                  {updateBatch.isPending
-                    ? "Saving…"
-                    : editMode
-                      ? "Save All"
-                      : "Edit Mode"}
-                </button>
-              )}
-            </div>
-          </div>
+          <BudgetSummaryBar
+            profileName={profile?.name ?? null}
+            activeProfileName={activeProfile?.name ?? null}
+            isViewingNonActive={isViewingNonActive}
+            profileId={profile?.id ?? null}
+            apiService={apiService}
+            apiLinkedProfileId={apiLinkedProfileId}
+            apiLinkedColumnIndex={apiLinkedColumnIndex}
+            showApiColumn={showApiColumn}
+            cols={cols}
+            activeColumn={activeColumn}
+            isWeighted={isWeighted}
+            columnMonths={columnMonths}
+            allColumnResults={allColumnResults as ColumnResult[] | null}
+            canEdit={canEdit}
+            editMode={editMode}
+            unsavedCount={editDrafts.size}
+            saveError={updateBatch.error}
+            pullError={syncFromApi.error}
+            pushError={syncToApi.error}
+            showModeManager={showModeManager}
+            onToggleModeManager={() => setShowModeManager(!showModeManager)}
+            isPulling={syncFromApi.isPending}
+            isPushing={syncToApi.isPending}
+            onPullFromApi={() =>
+              syncFromApi.mutate({ selectedColumn: activeColumn })
+            }
+            onOpenPushPreview={() => {
+              // Build diff preview from raw items + cached YNAB actuals
+              const items: PushPreviewItem[] = [];
+              for (const item of rawItems) {
+                if (!item.apiCategoryId) continue;
+                if (
+                  item.apiSyncDirection !== "push" &&
+                  item.apiSyncDirection !== "both"
+                )
+                  continue;
+                const amounts = item.amounts as number[];
+                const colIdx = Math.min(activeColumn, amounts.length - 1);
+                const newValue = amounts[colIdx] ?? 0;
+                const actual = apiActualsMap.get(item.id);
+                items.push({
+                  name: item.subcategory,
+                  field: "Budgeted",
+                  currentYnab: actual?.budgeted ?? 0,
+                  newValue,
+                });
+              }
+              setPushPreviewItems(items);
+            }}
+            isSavingBatch={updateBatch.isPending}
+            onToggleEditMode={toggleEditMode}
+          />
 
           {/* Master-detail layout */}
           <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
