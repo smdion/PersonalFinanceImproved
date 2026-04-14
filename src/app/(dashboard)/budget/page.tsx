@@ -44,6 +44,7 @@ import {
 } from "@/components/budget";
 import { useProfileMutations } from "@/components/budget/hooks/use-profile-mutations";
 import { useColumnMutations } from "@/components/budget/hooks/use-column-mutations";
+import { useSyncMutations } from "@/components/budget/hooks/use-sync-mutations";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 
 export default function BudgetPage() {
@@ -85,6 +86,7 @@ export default function BudgetPage() {
     updateColumnMonths,
     updateColumnContribProfiles,
   } = useColumnMutations();
+  const { syncFromApi, syncToApi } = useSyncMutations();
   const updateCell = trpc.budget.updateItemAmount.useMutation({
     onMutate: async (variables) => {
       await utils.budget.computeActiveSummary.cancel();
@@ -210,12 +212,6 @@ export default function BudgetPage() {
       },
       onSettled: () => utils.budget.computeActiveSummary.invalidate(),
     });
-  const syncFromApi = trpc.budget.syncBudgetFromApi.useMutation({
-    onSuccess: () => utils.budget.computeActiveSummary.invalidate(),
-  });
-  const syncToApi = trpc.budget.syncBudgetToApi.useMutation({
-    onSuccess: () => utils.budget.computeActiveSummary.invalidate(),
-  });
   const convertToGoal = trpc.savings.convertBudgetItemToGoal.useMutation({
     onSuccess: () => {
       utils.budget.computeActiveSummary.invalidate();
