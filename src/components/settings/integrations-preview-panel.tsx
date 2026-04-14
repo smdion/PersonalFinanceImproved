@@ -8,6 +8,11 @@ import { mappingsWithTypedIds } from "@/lib/utils/account-mapping";
 import type { PreviewData, Service, BudgetMatch } from "./integrations-types";
 import { StatusBadge } from "./integrations-status-badge";
 import { ApiCategorySelect } from "./integrations-api-category-select";
+import { useDriftMutations } from "./integrations/hooks/use-drift-mutations";
+import { useBudgetMutations } from "./integrations/hooks/use-budget-mutations";
+import { useSavingsMutations } from "./integrations/hooks/use-savings-mutations";
+import { useContribMutations } from "./integrations/hooks/use-contrib-mutations";
+import { usePortfolioMutations } from "./integrations/hooks/use-portfolio-mutations";
 
 export function PreviewPanel({
   preview,
@@ -18,7 +23,6 @@ export function PreviewPanel({
   isActive: boolean;
   service: Service;
 }) {
-  const utils = trpc.useUtils();
   const {
     cash,
     accounts,
@@ -52,71 +56,43 @@ export function PreviewPanel({
     "push" | "pull" | "both"
   >("push");
 
-  const invalidatePreview = () => {
-    utils.sync.getPreview.invalidate();
-  };
+  // Per-section mutation hooks — each hook owns a bundle for its section only
+  // so a pending flip in one section does not re-render the other four.
+  const { mutations: driftMutations } = useDriftMutations();
+  const { mutations: budgetMutations } = useBudgetMutations();
+  const { mutations: savingsMutations } = useSavingsMutations();
+  const { mutations: contribMutations } = useContribMutations();
+  const { mutations: portfolioMutations } = usePortfolioMutations();
 
-  // Mutations for linking / unlinking
-  const linkBudgetMut = trpc.budget.linkToApi.useMutation({
-    onSuccess: invalidatePreview,
-  });
-  const unlinkBudgetMut = trpc.budget.unlinkFromApi.useMutation({
-    onSuccess: invalidatePreview,
-  });
-  const linkSavingsMut = trpc.savings.linkGoalToApi.useMutation({
-    onSuccess: invalidatePreview,
-  });
-  const unlinkSavingsMut = trpc.savings.unlinkGoalFromApi.useMutation({
-    onSuccess: invalidatePreview,
-  });
-  const createItemMut = trpc.budget.createItem.useMutation({
-    onSuccess: invalidatePreview,
-  });
-  const skipCategoryMut = trpc.sync.skipCategory.useMutation({
-    onSuccess: invalidatePreview,
-  });
-  const unskipCategoryMut = trpc.sync.unskipCategory.useMutation({
-    onSuccess: invalidatePreview,
-  });
-  const renameBudgetToApiMut = trpc.sync.renameBudgetItemToApi.useMutation({
-    onSuccess: invalidatePreview,
-  });
-  const renameBudgetApiNameMut = trpc.sync.renameBudgetItemApiName.useMutation({
-    onSuccess: invalidatePreview,
-  });
-  const renameSavingsToApiMut = trpc.sync.renameSavingsGoalToApi.useMutation({
-    onSuccess: invalidatePreview,
-  });
-  const renameSavingsApiNameMut =
-    trpc.sync.renameSavingsGoalApiName.useMutation({
-      onSuccess: invalidatePreview,
-    });
-  const syncAllNamesMut = trpc.sync.syncAllNames.useMutation({
-    onSuccess: invalidatePreview,
-  });
-  const setLinkedProfileMut = trpc.sync.setLinkedProfile.useMutation({
-    onSuccess: invalidatePreview,
-  });
-  const setLinkedColumnMut = trpc.sync.setLinkedColumn.useMutation({
-    onSuccess: invalidatePreview,
-  });
-  const moveBudgetToApiGroupMut =
-    trpc.sync.moveBudgetItemToApiGroup.useMutation({
-      onSuccess: invalidatePreview,
-    });
-  const setBudgetSyncDirMut = trpc.budget.setSyncDirection.useMutation({
-    onSuccess: invalidatePreview,
-  });
-  const linkReimbursementMut =
-    trpc.savings.linkReimbursementCategory.useMutation({
-      onSuccess: invalidatePreview,
-    });
-  const linkContribMut = trpc.budget.linkContributionAccount.useMutation({
-    onSuccess: invalidatePreview,
-  });
-  const unlinkContribMut = trpc.budget.unlinkContributionAccount.useMutation({
-    onSuccess: invalidatePreview,
-  });
+  const {
+    syncAllNames: syncAllNamesMut,
+    setLinkedProfile: setLinkedProfileMut,
+    setLinkedColumn: setLinkedColumnMut,
+  } = driftMutations;
+  const {
+    linkBudget: linkBudgetMut,
+    unlinkBudget: unlinkBudgetMut,
+    createItem: createItemMut,
+    skipCategory: skipCategoryMut,
+    unskipCategory: unskipCategoryMut,
+    renameBudgetToApi: renameBudgetToApiMut,
+    renameBudgetApiName: renameBudgetApiNameMut,
+    moveBudgetToApiGroup: moveBudgetToApiGroupMut,
+    setBudgetSyncDir: setBudgetSyncDirMut,
+  } = budgetMutations;
+  const {
+    linkSavings: linkSavingsMut,
+    unlinkSavings: unlinkSavingsMut,
+    renameSavingsToApi: renameSavingsToApiMut,
+    renameSavingsApiName: renameSavingsApiNameMut,
+    linkReimbursement: linkReimbursementMut,
+  } = savingsMutations;
+  const { linkContrib: linkContribMut, unlinkContrib: unlinkContribMut } =
+    contribMutations;
+  const {
+    updateMappings: updateMappingsMut,
+    createAssetAndMap: createAssetAndMapMut,
+  } = portfolioMutations;
 
   // Contribution accounts for the contribution linking dropdown
   const contribAccountsQuery =
@@ -178,13 +154,6 @@ export function PreviewPanel({
       applySavingsLink(goalId, apiId);
     }
   };
-
-  const updateMappingsMut = trpc.sync.updateAccountMappings.useMutation({
-    onSuccess: invalidatePreview,
-  });
-  const createAssetAndMapMut = trpc.sync.createAssetAndMap.useMutation({
-    onSuccess: invalidatePreview,
-  });
 
   // Create a Ledgr budget item from an unmatched API category
   const createFromApi = (apiCat: {
