@@ -8,6 +8,53 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.5
 
+## [0.5.2] - 2026-04-14
+
+Maintenance release. No user-facing features or behavior changes — this is an internal reorganization to keep the codebase reviewable as it grows.
+
+### Changed
+
+- **TypeScript upgraded to 6.0.2** (dev dependency only; no runtime effect). Also picked up minor version bumps for `jsdom`, `prettier`, and `vitest` that were already on `main`.
+
+### Fixed
+
+- **Performance category tabs** — help tooltips now source their labels from the shared label config instead of a local duplicate map. Silent drift only; the displayed labels were already correct via CSS uppercase, but the underlying keys diverged from the canonical constants.
+- **Savings contribution grid** — the monthly total cell now uses the shared currency formatter instead of a hand-rolled `.toLocaleString()` string. Same output, but consistent with every other currency cell in the app.
+
+### Internals (no user-facing changes)
+
+Large internal file-split refactor. Every change below is pure relocation, validated byte-identical via the existing engine snapshot parity test (64 inline snapshots for `calculateProjection` output) plus a new `baseEngineInput` snapshot guard. All 3,100 tests pass both before and after the refactor.
+
+**Directory splits with preserved public APIs:**
+
+- Projection router is now a directory (`scenarios.ts`, `monte-carlo.ts`, `strategy.ts`, `stress-test.ts`, `presets.ts`, `_shared.ts`) composed via `mergeRouters(...)`. The top-level `projectionRouter` export is unchanged.
+- `projection-year-handlers.ts` (1,983-line engine file) split into 8 focused modules under `projection-year-handlers/` — `types`, `context`, `state`, `pre-year-setup`, `accumulation-year`, `decumulation-year`, `helpers`, and a barrel `index.ts`. Consumer import path (`./projection-year-handlers`) resolves to the same public surface.
+- `buildEnginePayload` extracted from the retirement router into a new retirement-scoped module at `server/retirement/build-engine-payload.ts`. The function was only consumed by the projection router's compute endpoints.
+- Six `sync-*.ts` router files consolidated into a `sync/` directory, matching the `projection/` and `settings/` layouts.
+
+**Page-level splits (content-component + section sub-components):**
+
+- **Retirement page** split into 9 section components (Social Security, Taxes, Healthcare, Glide Path, Timeline, Income, Strategy Params, Per-Phase Budget, Raise+Rate) with shared prop types. Parent dropped from 2,001 to 673 lines.
+- **Budget page** split into an SSR shell (45 lines) + a client content component + 5 section sub-components + 5 per-section mutation hooks + a shared invalidate hook.
+- **Integrations preview panel** split into 5 section components (drift banner, budget, savings, contrib, portfolio) with 5 per-section mutation hooks. The per-section hook shape prevents whole-panel re-renders when an unrelated section's mutation fires.
+- **Tools / Relocation calculator** split into 6 sub-components with hand-rolled local prop types.
+- **Portfolio page** — 4 already-named in-file components extracted to their own files.
+
+**New safety nets:**
+
+- `engine-input-snapshot.test.ts` — snapshots `baseEngineInput` for a deterministic fixture. Catches any refactor that accidentally changes a default, a derived value, or a memoization dependency in the engine input pipeline.
+- `.claude/worktrees/` added to both `.eslintignore` and `.prettierignore` (unblocks repo-wide lint runs when parallel refactor worktrees are active).
+
+**Tests:**
+
+- Two pre-existing failures in `projection-splits.test.tsx` (stale `"Success Rate"` / `"End Balance"` assertions carried over from a v0.5.0 label rename + missing `CoastFireCard` mock) — fixed on both v0.5.1 and v0.5.2 to keep the suite green.
+
+**Navigation comments (not splits):**
+
+- `schema-pg.ts` and `recently-retired.ts` both got section banner comments for navigation but were intentionally NOT split. Splitting `schema-pg.ts` would require rewriting the `gen-sqlite-schema.ts` codegen (mechanical text transform on a single-file input); splitting `recently-retired.ts` fragments what's logically one coherent demo data object.
+
+---
+
 ## [0.5.1] - 2026-04-13
 
 ### New

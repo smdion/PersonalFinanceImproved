@@ -7,6 +7,7 @@ import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { PERFORMANCE_STALE_DAYS } from "@/lib/constants";
+import { PERF_CATEGORY_DEFAULT } from "@/lib/config/display-labels";
 import {
   projectFIYear,
   formatFIProjection,
@@ -67,7 +68,7 @@ const STAT_ROWS: RowDef[] = [
     label: "Retirement Contribution Rate",
     format: (v) => formatPercent(v, 1),
     accessor: (r, ann) => {
-      const cat = r.performanceByCategory["401k/IRA"];
+      const cat = r.performanceByCategory[PERF_CATEGORY_DEFAULT];
       if (!cat || r.grossIncome <= 0) return 0;
       const total = cat.contributions + cat.employerMatch;
       const contribs =

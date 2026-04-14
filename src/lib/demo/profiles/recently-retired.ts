@@ -1,3 +1,16 @@
+// ============================================================================
+// Recently Retired demo profile
+//
+// Seed data for the "Recently Retired" onboarding tour. This file is a big
+// declarative object literal — no logic. Sections are grouped by domain with
+// banner comments to make navigation easier. Same shape as the other demo
+// profiles (dual-income-family, single-income, early-retirement, debt-payoff).
+//
+// If you're looking for a specific section, use the section banners below as
+// jump targets: People → Jobs → Budget → Savings → Contributions → Portfolio
+// snapshot → Annual performance → Retirement settings → Return rates →
+// Mortgages → Per-account history → Other assets → Net worth → App settings.
+// ============================================================================
 import type { DemoProfile } from "../types";
 
 export const recentlyRetiredProfile: DemoProfile = {
@@ -11,12 +24,13 @@ export const recentlyRetiredProfile: DemoProfile = {
     savingsRate: "N/A",
   },
 
+  // ── People ────────────────────────────────────────────────────────────────
   people: [
     { name: "James", dateOfBirth: "1959-03-22", isPrimaryUser: true },
     { name: "Patricia", dateOfBirth: "1961-08-10", isPrimaryUser: false },
   ],
 
-  // Both retired — jobs have end dates
+  // ── Jobs (both retired — end dates present) ──────────────────────────────
   jobs: [
     {
       personName: "James",
@@ -48,6 +62,7 @@ export const recentlyRetiredProfile: DemoProfile = {
     },
   ],
 
+  // ── Budget profiles & line items ─────────────────────────────────────────
   budgetProfiles: [
     {
       name: "Retirement Budget",
@@ -171,6 +186,7 @@ export const recentlyRetiredProfile: DemoProfile = {
     },
   ],
 
+  // ── Savings (sinking funds) ──────────────────────────────────────────────
   savingsGoals: [
     {
       name: "Emergency Fund",
@@ -267,9 +283,10 @@ export const recentlyRetiredProfile: DemoProfile = {
     },
   ],
 
-  // No active contributions — both retired. Empty array.
+  // ── Contributions (empty — both retired) ─────────────────────────────────
   contributionAccounts: [],
 
+  // ── Portfolio snapshot + per-account balances ────────────────────────────
   portfolioSnapshots: [{ snapshotDate: "2026-03-01" }],
 
   portfolioAccounts: [
@@ -346,6 +363,7 @@ export const recentlyRetiredProfile: DemoProfile = {
     },
   ],
 
+  // ── Performance accounts (account metadata for return tracking) ─────────
   performanceAccounts: [
     {
       institution: "Fidelity",
@@ -419,7 +437,7 @@ export const recentlyRetiredProfile: DemoProfile = {
     },
   ],
 
-  // 10 years of aggregated annual performance (2016–2025)
+  // ── Aggregated annual performance (10 years, 2016–2025) ─────────────────
   annualPerformance: [
     {
       category: "401k/IRA",
@@ -563,6 +581,7 @@ export const recentlyRetiredProfile: DemoProfile = {
     },
   ],
 
+  // ── Retirement settings (household + per-person) ─────────────────────────
   retirementSettings: {
     personName: "James",
     retirementAge: 65,
@@ -585,6 +604,7 @@ export const recentlyRetiredProfile: DemoProfile = {
     },
   ],
 
+  // ── Return-rate table (age-based glide path) ────────────────────────────
   returnRates: [
     { age: 65, rateOfReturn: "0.06" },
     { age: 70, rateOfReturn: "0.055" },
@@ -593,7 +613,7 @@ export const recentlyRetiredProfile: DemoProfile = {
     { age: 85, rateOfReturn: "0.04" },
   ],
 
-  // Paid-off home — no active mortgage
+  // ── Mortgages (paid-off home — empty active loans) ──────────────────────
   mortgageLoans: [
     {
       name: "Primary Residence",
@@ -608,7 +628,7 @@ export const recentlyRetiredProfile: DemoProfile = {
     },
   ],
 
-  // 10 years of per-account performance history (7 accounts)
+  // ── Per-account performance history (10 years × 7 accounts) ─────────────
   accountPerformance: [
     // --- James 401k (employer plan, contributions stopped at retirement 2024) ---
     ...[2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025].map(
@@ -1428,6 +1448,7 @@ export const recentlyRetiredProfile: DemoProfile = {
     },
   ],
 
+  // ── Other assets + property taxes + home improvements ──────────────────
   otherAssetItems: [
     { name: "Toyota Camry", year: 2024, value: "18000", note: "2021 model" },
     { name: "Toyota Camry", year: 2025, value: "15000", note: "Depreciation" },
@@ -1477,6 +1498,7 @@ export const recentlyRetiredProfile: DemoProfile = {
     { year: 2024, description: "Bathroom renovation", cost: "12000" },
   ],
 
+  // ── Net-worth annual history ────────────────────────────────────────────
   netWorthAnnual: [
     {
       yearEndDate: "2016-12-31",
@@ -1580,6 +1602,7 @@ export const recentlyRetiredProfile: DemoProfile = {
     },
   ],
 
+  // ── App settings overrides ──────────────────────────────────────────────
   appSettings: [
     { key: "budget_active_column", value: 1 },
     { key: "efund_budget_column", value: 0 },

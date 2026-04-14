@@ -397,7 +397,7 @@ export function ContributionGrid({
                         isYearStart ? "border-l border-strong" : ""
                       } ${total < 0 ? "text-red-600" : "text-muted"}`}
                     >
-                      ${Math.round(total).toLocaleString()}
+                      {formatCurrency(total)}
                     </td>
                   );
                 })}

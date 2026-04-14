@@ -8,7 +8,7 @@ import {
   protectedProcedure,
   syncProcedure,
   expensiveRateLimitMiddleware,
-} from "../trpc";
+} from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import {

@@ -2,14 +2,21 @@
 
 import React from "react";
 import { HelpTip } from "@/components/ui/help-tip";
+import {
+  PERF_CATEGORY_DEFAULT,
+  PERF_CATEGORY_HSA,
+  PERF_CATEGORY_BROKERAGE,
+  PERF_CATEGORY_RETIREMENT,
+  PERF_CATEGORY_PORTFOLIO,
+} from "@/lib/config/display-labels";
 
 const CATEGORY_HELP: Record<string, string> = {
-  "401k/IRA": "401k, 403b, and IRA accounts",
-  HSA: "Health Savings Accounts",
-  Brokerage: "Taxable brokerage and ESPP accounts",
-  Retirement:
+  [PERF_CATEGORY_DEFAULT]: "401k, 403b, and IRA accounts",
+  [PERF_CATEGORY_HSA]: "Health Savings Accounts",
+  [PERF_CATEGORY_BROKERAGE]: "Taxable brokerage and ESPP accounts",
+  [PERF_CATEGORY_RETIREMENT]:
     "All accounts with a retirement goal (401k/IRA + HSA + retirement brokerages)",
-  Portfolio: "Grand total across all investment accounts",
+  [PERF_CATEGORY_PORTFOLIO]: "Grand total across all investment accounts",
 };
 
 function TabGroup({

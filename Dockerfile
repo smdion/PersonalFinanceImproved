@@ -34,9 +34,13 @@ RUN pnpm build
 
 # Compile db-migrate.ts to JS using the TypeScript compiler already in devDeps.
 # --moduleResolution bundler + --module nodenext works with the existing imports.
+# --ignoreConfig: TypeScript 6.0 made it an error (TS5112) to pass both a file
+# argument and CLI flags without ignoring tsconfig.json. We don't want the
+# root tsconfig.json here — this is a standalone one-file compile.
 RUN pnpm exec tsc db-migrate.ts \
   --target ES2022 --module nodenext --moduleResolution nodenext \
-  --esModuleInterop --skipLibCheck --outDir .
+  --esModuleInterop --skipLibCheck --outDir . \
+  --ignoreConfig
 
 # Stage 3: Production runner
 FROM node:25.9.0-alpine@sha256:ad82ecad30371c43f4057aaa4800a8ed88f9446553a2d21323710c7b937177fc AS runner

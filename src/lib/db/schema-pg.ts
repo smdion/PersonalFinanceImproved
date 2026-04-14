@@ -42,7 +42,49 @@ import type {
   PortfolioTaxType,
 } from "@/lib/config/enum-values";
 
-// --- Tables ---
+// ============================================================================
+// TABLE OF CONTENTS — sections below are in this order:
+//
+//   1.  People & Jobs .............. people, jobs, salaryChanges
+//   2.  Contributions & Paycheck ... contributionAccounts, contributionLimits,
+//                                    paycheckDeductions
+//   3.  Budget ..................... budgetProfiles, budgetItems
+//   4.  Savings (sinking funds) .... savingsGoals, savingsMonthly,
+//                                    savingsPlannedTransactions,
+//                                    savingsAllocationOverrides
+//   5.  Brokerage goals ............ brokerageGoals, brokeragePlannedTransactions
+//   6.  Self loans ................. selfLoans
+//   7.  Portfolio performance ...... performanceAccounts, portfolioSnapshots,
+//                                    portfolioAccounts, annualPerformance,
+//                                    accountPerformance
+//   8.  Net worth (annual) ......... netWorthAnnual, homeImprovementItems,
+//                                    otherAssetItems, historicalNotes
+//   9.  Mortgages .................. mortgageLoans, mortgageWhatIfScenarios,
+//                                    mortgageExtraPayments, propertyTaxes
+//  10.  Retirement settings ........ retirementSettings, retirementSalaryOverrides,
+//                                    retirementBudgetOverrides, projectionOverrides,
+//                                    retirementScenarios
+//  11.  Return rates & tax tables .. returnRateTable, taxBrackets, ltcgBrackets,
+//                                    irmaaBrackets
+//  12.  API sync .................. apiConnections, budgetApiCache
+//  13.  App config / admin ......... appSettings, localAdmins
+//  14.  Scenarios (relocation) ..... relocationScenarios, scenarios
+//  15.  Monte Carlo ................ assetClassParams, assetClassCorrelations,
+//                                    glidePathAllocations, mcPresets,
+//                                    mcPresetGlidePaths, mcPresetReturnOverrides,
+//                                    mcUserPresets
+//  16.  Contribution profiles ...... contributionProfiles
+//  17.  State versions (backup) .... stateVersions, stateVersionTables, changeLog
+//
+// NOTE: this file is the source of truth. `schema-sqlite.ts` is auto-generated
+// via `npx tsx scripts/gen-sqlite-schema.ts` (mechanical regex transform —
+// splitting this file across multiple files would require rewriting that
+// codegen to follow TS imports). Keep sections in the order above.
+// ============================================================================
+
+// ────────────────────────────────────────────────────────────────────────────
+// 1. People & Jobs
+// ────────────────────────────────────────────────────────────────────────────
 
 export const people = pgTable("people", {
   id: serial("id").primaryKey(),
@@ -115,6 +157,10 @@ export const salaryChanges = pgTable(
   },
   (table) => [index("salary_changes_job_id_idx").on(table.jobId)],
 );
+
+// ────────────────────────────────────────────────────────────────────────────
+// 2. Contributions & Paycheck
+// ────────────────────────────────────────────────────────────────────────────
 
 export const contributionAccounts = pgTable(
   "contribution_accounts",
@@ -222,6 +268,10 @@ export const paycheckDeductions = pgTable(
   (table) => [index("paycheck_deductions_job_id_idx").on(table.jobId)],
 );
 
+// ────────────────────────────────────────────────────────────────────────────
+// 3. Budget
+// ────────────────────────────────────────────────────────────────────────────
+
 export const budgetProfiles = pgTable(
   "budget_profiles",
   {
@@ -276,6 +326,10 @@ export const budgetItems = pgTable(
     ),
   ],
 );
+
+// ────────────────────────────────────────────────────────────────────────────
+// 4. Savings (sinking funds)
+// ────────────────────────────────────────────────────────────────────────────
 
 export const savingsGoals = pgTable(
   "savings_goals",
@@ -379,6 +433,10 @@ export const savingsAllocationOverrides = pgTable(
 
 // Brokerage (after-tax) long-term goals — planned withdrawals at a target year.
 // Unlike sinking funds (cash), these are invested and subject to capital gains tax.
+// ────────────────────────────────────────────────────────────────────────────
+// 5. Brokerage goals
+// ────────────────────────────────────────────────────────────────────────────
+
 export const brokerageGoals = pgTable(
   "brokerage_goals",
   {
@@ -415,6 +473,10 @@ export const brokeragePlannedTransactions = pgTable(
   (table) => [index("brokerage_planned_tx_goal_id_idx").on(table.goalId)],
 );
 
+// ────────────────────────────────────────────────────────────────────────────
+// 6. Self loans
+// ────────────────────────────────────────────────────────────────────────────
+
 export const selfLoans = pgTable(
   "self_loans",
   {
@@ -437,6 +499,10 @@ export const selfLoans = pgTable(
     index("self_loans_to_goal_id_idx").on(table.toGoalId),
   ],
 );
+
+// ────────────────────────────────────────────────────────────────────────────
+// 7. Portfolio performance
+// ────────────────────────────────────────────────────────────────────────────
 
 export const performanceAccounts = pgTable(
   "performance_accounts",
@@ -674,6 +740,10 @@ export const accountPerformance = pgTable(
   ],
 );
 
+// ────────────────────────────────────────────────────────────────────────────
+// 8. Net worth (annual)
+// ────────────────────────────────────────────────────────────────────────────
+
 export const netWorthAnnual = pgTable("net_worth_annual", {
   id: serial("id").primaryKey(),
   yearEndDate: date("year_end_date").notNull().unique(),
@@ -776,6 +846,10 @@ export const historicalNotes = pgTable(
     uniqueIndex("historical_notes_year_field_idx").on(table.year, table.field),
   ],
 );
+
+// ────────────────────────────────────────────────────────────────────────────
+// 9. Mortgages
+// ────────────────────────────────────────────────────────────────────────────
 
 export const mortgageLoans = pgTable(
   "mortgage_loans",
@@ -890,6 +964,10 @@ export const propertyTaxes = pgTable(
     uniqueIndex("property_taxes_loan_year_idx").on(table.loanId, table.year),
   ],
 );
+
+// ────────────────────────────────────────────────────────────────────────────
+// 10. Retirement settings
+// ────────────────────────────────────────────────────────────────────────────
 
 export const retirementSettings = pgTable(
   "retirement_settings",
@@ -1162,6 +1240,10 @@ export const retirementScenarios = pgTable("retirement_scenarios", {
   notes: text("notes"),
 });
 
+// ────────────────────────────────────────────────────────────────────────────
+// 11. Return rates & tax tables
+// ────────────────────────────────────────────────────────────────────────────
+
 export const returnRateTable = pgTable("return_rate_table", {
   id: serial("id").primaryKey(),
   age: integer("age").notNull().unique(),
@@ -1252,6 +1334,10 @@ export type AccountMapping = {
   performanceAccountId?: number; // Direct reference to performanceAccounts.id
 };
 
+// ────────────────────────────────────────────────────────────────────────────
+// 12. API sync
+// ────────────────────────────────────────────────────────────────────────────
+
 export const apiConnections = pgTable(
   "api_connections",
   {
@@ -1289,6 +1375,10 @@ export const budgetApiCache = pgTable(
     ),
   ],
 );
+
+// ────────────────────────────────────────────────────────────────────────────
+// 13. App config / admin
+// ────────────────────────────────────────────────────────────────────────────
 
 export const appSettings = pgTable("app_settings", {
   id: serial("id").primaryKey(),
@@ -1338,6 +1428,10 @@ export type RelocationScenarioParams = {
   relocationContributionProfileId: number | null;
 };
 
+// ────────────────────────────────────────────────────────────────────────────
+// 14. Scenarios (relocation, generic)
+// ────────────────────────────────────────────────────────────────────────────
+
 export const relocationScenarios = pgTable("relocation_scenarios", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -1376,6 +1470,10 @@ export const scenarios = pgTable("scenarios", {
 });
 
 // --- Monte Carlo: Asset class parameters and glide path ---
+
+// ────────────────────────────────────────────────────────────────────────────
+// 15. Monte Carlo (asset classes + presets + glide paths)
+// ────────────────────────────────────────────────────────────────────────────
 
 export const assetClassParams = pgTable(
   "asset_class_params",
@@ -1531,6 +1629,10 @@ export const mcUserPresets = pgTable("mc_user_presets", {
 
 // --- Contribution profiles (what-if salary/contribution overrides) ---
 
+// ────────────────────────────────────────────────────────────────────────────
+// 16. Contribution profiles
+// ────────────────────────────────────────────────────────────────────────────
+
 export const contributionProfiles = pgTable("contribution_profiles", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
@@ -1550,6 +1652,10 @@ export const contributionProfiles = pgTable("contribution_profiles", {
 });
 
 // --- State versions (full-database versioning) ---
+
+// ────────────────────────────────────────────────────────────────────────────
+// 17. State versions (backup / restore)
+// ────────────────────────────────────────────────────────────────────────────
 
 export const stateVersions = pgTable(
   "state_versions",
