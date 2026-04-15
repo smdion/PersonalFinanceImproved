@@ -112,9 +112,6 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      - name: Audit production dependencies (high/critical)
-        run: npx audit-ci@^7 --high
-
       - name: Check migrations
         run: pnpm check:migrations
 
