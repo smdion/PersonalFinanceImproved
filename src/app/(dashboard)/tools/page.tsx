@@ -226,9 +226,11 @@ export default function ToolsPage() {
       const existing = scenariosQuery.data?.find(
         (s) => s.id === selectedScenarioId,
       );
+      // If the query hasn't loaded yet, don't clobber the name with a placeholder.
+      if (!existing) return;
       saveMutation.mutate({
         id: selectedScenarioId,
-        name: existing?.name ?? "Scenario",
+        name: existing.name,
         params: buildScenarioParams(),
       });
     } else {
