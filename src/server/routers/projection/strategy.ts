@@ -585,13 +585,18 @@ export const strategyRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
+      const key = "mc_inflation_overrides";
+      const value = {
+        meanRate: input.inflationMean,
+        stdDev: input.inflationStdDev,
+      };
       await db
-        .update(schema.mcPresets)
-        .set({
-          inflationMean: String(input.inflationMean),
-          inflationStdDev: String(input.inflationStdDev),
-        })
-        .where(eq(schema.mcPresets.key, input.preset));
+        .insert(schema.appSettings)
+        .values({ key, value })
+        .onConflictDoUpdate({
+          target: schema.appSettings.key,
+          set: { value },
+        });
       return { updated: true };
     }),
 
