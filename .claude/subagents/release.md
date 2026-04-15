@@ -39,9 +39,21 @@ Add a dated entry for the version. Read the existing CHANGELOG.md first to match
 - If this is a `.0` release: it is a rollup of all patches since the previous `.0`. Group by theme (New Features, Bug Fixes, Improved, Fixed, Security), not by patch.
 - If this is a patch release: list only what changed in this version.
 - Separate from the previous entry with `---`
-- Writing style: user-focused, not code-focused. "Retirement projections now handle mid-year retirement correctly" not "Fixed y=0 decumulation bug in pre-year-setup.ts"
 - Categories: `Added`, `Changed`, `Fixed`, `Improved`, `Security`, `Deprecated`, `Removed`
-- Omit function names, file paths, and internal details
+
+**Writing style — strictly user-focused:**
+
+- Describe the **experience change**, not the code change. "Retirement projections now handle mid-year retirement correctly" not "Fixed y=0 decumulation bug in pre-year-setup.ts"
+- **Never use function names, hook names, component names, class names, file paths, or line counts** — not even in an "Internals" section. Wrong: "`useBudgetPageState` extracted". Right: "Budget page state management split into smaller pieces."
+- "Internals" entries are OK for pure-refactor releases, but must still describe _what was done at a concept level_, not what was renamed or moved in code.
+- After writing the entry, re-read each bullet. If you can see a class name, function name, or file path, rewrite it.
+
+**Verify all older entries too:**
+
+Before committing, scan the last 10 entries in CHANGELOG.md and check:
+
+1. Every `## [x.y.z]` entry is preceded by a `---` separator (or a `# vX.Y` minor header)
+2. No entry contains raw code identifiers (backtick-wrapped names, `.ts`/`.tsx` file references, line counts like "785→398 lines")
 
 ### Step 2 — Bump version in package.json
 

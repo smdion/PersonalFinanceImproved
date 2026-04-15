@@ -23,22 +23,11 @@ Maintenance release. Engine correctness fixes and internal reorganization — no
 
 ### Internals (no user-facing changes)
 
-Internal refactors to improve separation of concerns. All changes are pure relocation or extraction — no behavior changes. All 198 engine snapshot tests pass before and after.
+Internal refactors to improve separation of concerns. All changes are pure relocation or extraction — no behavior changes.
 
-**Budget page extractions:**
-
-- `BudgetPageContext` introduced to carry shared state to `BudgetTable` and `BudgetSummaryBar`, eliminating a long prop-drilling chain. Budget content component dropped from 785 to 398 lines.
-- `useBudgetPageState` and `useBudgetDerivedData` hooks extracted from budget content, plus `BudgetDetailPanel` split out as a standalone component.
-
-**Contribution accounts extractions:**
-
-- `useContributionAccountsMutations` hook and `UnlinkedContribsBanner` component extracted from `contribution-accounts.tsx` (643→345 lines). All derived Maps are now memoized.
-
-**Portfolio stats extraction:**
-
-- Portfolio quick-look stats derivation extracted as a pure function with 18 new unit tests, making it independently verifiable outside the component tree.
-
-**Correctness micro-fixes (no user-visible effect):** category-totals memoization tightened, visible-categories list stabilized across renders, contribution-by-performance-id map type tightened, integrations per-section hooks unified to a consistent shape, internal mutations type renamed to avoid a collision with an unrelated type.
+- Budget page, contribution account settings, and portfolio quick-look panels broken into smaller, focused pieces for maintainability.
+- Portfolio quick-look stats extracted as a standalone pure function with 18 new unit tests, making the logic independently verifiable.
+- Shared state on the budget page lifted into a context object to eliminate redundant prop threading; expensive derived data wrapped in proper memoization to avoid unnecessary recalculation.
 
 ---
 
@@ -115,6 +104,8 @@ Large internal file-split refactor. Every change below is pure relocation, valid
 - `projection.computeProjection` and `projection.computeMonteCarloProjection` now accept a `coastFireOverrideAge` input; when set they thread the synthetic profile switch through the engine. Coast FIRE display values deflated to today's dollars at the router boundary (matches the convention used by `retirement-card.tsx`)
 - Fixed profile switch fallback at `retirement.ts:860`: when a switched contribution profile has salary but zero contributions, the engine now correctly uses rate 0 (intentional zero) instead of silently falling back to 25%. This unlocks the Coast FIRE via contribution profiles workflow
 - Unified terminology across Coast FIRE UI: "baseline" consistently refers to expected-return / point-estimate values, "simulated" refers to Monte Carlo outcomes, "Active Plan" is the scenario toggle name for your configured plan. No more overloaded "baseline" or jargon "deterministic / MC" references in user-facing copy
+
+---
 
 ## [0.5.0] - 2026-04-13
 
