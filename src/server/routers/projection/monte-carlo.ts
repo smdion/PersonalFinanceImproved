@@ -9,7 +9,7 @@
  * Extracted from the old monolith `projection.ts` in PR 2b of the v0.5.2
  * file-split refactor. Pure relocation — no logic changes.
  */
-import { eq, asc, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   createTRPCRouter,
@@ -47,6 +47,7 @@ import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
   buildDecumulationDefaults,
+  buildMcInputs,
 } from "./_shared";
 
 export const monteCarloRouter = createTRPCRouter({
@@ -147,29 +148,23 @@ export const monteCarloRouter = createTRPCRouter({
       // Fetch shared data + MC-specific tables + saved overrides in parallel
       const [
         data,
-        assetClasses,
-        assetCorrelations,
-        glidePathRows,
+        {
+          mcAssetClasses: baseMcAssetClasses,
+          mcCorrelations,
+          mcGlidePath: baseGlidePath,
+          savedInflationOverrides,
+        },
         savedAssetOverridesRow,
-        savedInflationOverridesRow,
       ] = await Promise.all([
-        fetchRetirementData(ctx.db, { snapshotId: input.snapshotId }),
-        ctx.db
-          .select()
-          .from(schema.assetClassParams)
-          .where(eq(schema.assetClassParams.isActive, true))
-          .orderBy(asc(schema.assetClassParams.sortOrder)),
-        ctx.db.select().from(schema.assetClassCorrelations),
-        ctx.db.select().from(schema.glidePathAllocations),
+        fetchRetirementData(ctx.db, {
+          snapshotId: input.snapshotId,
+          contributionProfileId: input.contributionProfileId,
+        }),
+        buildMcInputs(ctx.db),
         ctx.db
           .select({ value: schema.appSettings.value })
           .from(schema.appSettings)
           .where(eq(schema.appSettings.key, "mc_asset_class_overrides"))
-          .then((r) => r[0] ?? null),
-        ctx.db
-          .select({ value: schema.appSettings.value })
-          .from(schema.appSettings)
-          .where(eq(schema.appSettings.key, "mc_inflation_overrides"))
           .then((r) => r[0] ?? null),
       ]);
 
@@ -179,8 +174,6 @@ export const monteCarloRouter = createTRPCRouter({
         meanReturn?: number;
         stdDev?: number;
       }[];
-      const savedInflationOverrides = (savedInflationOverridesRow?.value ??
-        null) as { meanRate?: number; stdDev?: number } | null;
 
       const payload = await buildEnginePayload(ctx.db, data, {
         salaryOverrides: input.salaryOverrides,
@@ -342,7 +335,7 @@ export const monteCarloRouter = createTRPCRouter({
 
       // Validate asset class override IDs match DB
       if (input.assetClassOverrides) {
-        const activeIds = new Set(assetClasses.map((ac) => ac.id));
+        const activeIds = new Set(baseMcAssetClasses.map((ac) => ac.id));
         for (const override of input.assetClassOverrides) {
           if (!activeIds.has(override.id)) {
             throw new Error(
@@ -356,9 +349,9 @@ export const monteCarloRouter = createTRPCRouter({
       const returnMultiplier = preset ? toNumber(preset.returnMultiplier) : 1.0;
       const volMultiplier = preset ? toNumber(preset.volMultiplier) : 1.0;
 
-      const mcAssetClasses = assetClasses.map((ac) => {
-        const dbReturn = toNumber(ac.meanReturn);
-        const dbStdDev = toNumber(ac.stdDev);
+      const mcAssetClasses = baseMcAssetClasses.map((ac) => {
+        const dbReturn = ac.meanReturn;
+        const dbStdDev = ac.stdDev;
         const uiOverride = overrideById.get(ac.id);
         return {
           id: ac.id,
@@ -377,12 +370,6 @@ export const monteCarloRouter = createTRPCRouter({
         };
       });
 
-      const mcCorrelations = assetCorrelations.map((c) => ({
-        classAId: c.classAId,
-        classBId: c.classBId,
-        correlation: toNumber(c.correlation),
-      }));
-
       // Glide path: DB preset for named presets, glide_path_allocations for custom
       let mcGlidePath: { age: number; allocations: Record<number, number> }[];
       if (!isCustom && presetGpRows.length > 0) {
@@ -396,15 +383,8 @@ export const monteCarloRouter = createTRPCRouter({
           .sort(([a], [b]) => a - b)
           .map(([gpAge, allocations]) => ({ age: gpAge, allocations }));
       } else {
-        // Custom: build from glide_path_allocations table
-        const gpByAge = new Map<number, Record<number, number>>();
-        for (const gp of glidePathRows) {
-          if (!gpByAge.has(gp.age)) gpByAge.set(gp.age, {});
-          gpByAge.get(gp.age)![gp.assetClassId] = toNumber(gp.allocation);
-        }
-        mcGlidePath = Array.from(gpByAge.entries())
-          .sort(([a], [b]) => a - b)
-          .map(([gpAge, allocations]) => ({ age: gpAge, allocations }));
+        // Custom: use glide_path_allocations already fetched by buildMcInputs
+        mcGlidePath = baseGlidePath;
       }
 
       // Resolve effective inflation risk: explicit UI override > saved DB overrides > preset DB values > fallback
@@ -482,11 +462,11 @@ export const monteCarloRouter = createTRPCRouter({
       );
 
       // Build DB (raw) asset class values for comparison
-      const dbAssetClasses = assetClasses.map((ac) => ({
+      const dbAssetClasses = baseMcAssetClasses.map((ac) => ({
         id: ac.id,
         name: ac.name,
-        meanReturn: toNumber(ac.meanReturn),
-        stdDev: toNumber(ac.stdDev),
+        meanReturn: ac.meanReturn,
+        stdDev: ac.stdDev,
       }));
 
       return {

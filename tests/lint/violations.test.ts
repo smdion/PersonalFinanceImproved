@@ -12,10 +12,10 @@
  *    4. taxType direct string comparison (use isTaxFree / config helpers)
  *    5. displayName ?? accountLabel inline fallback (use accountDisplayName())
  *    6. Direct .accountLabel read in JSX (.tsx) for display (use accountDisplayName())
- *    7. Hardcoded performance category strings ("401k/IRA", "HSA", "Brokerage")
+ *    7. Hardcoded performance category strings in logic — bracket-index OR equality (use PERF_CATEGORY_* constants)
  *    8. useState with hardcoded account type ("401k", "ira", etc.)
  *    9. Inline `.toFixed(N) + "%"` instead of formatPercent()
- *   10. Mutation using `z.string()` for `accountType` instead of `z.enum(accountCategoryEnum())`
+ *   10. Mutation using `z.string()` for enum-typed fields (accountType, service) instead of z.enum()
  *   11. Absolute imports from engine internals instead of the barrel
  *
  * Intentionally NOT checked (needs semantic analysis, not string matching):
@@ -79,6 +79,17 @@ const EXEMPT: Record<string, string> = {
 };
 
 const CATEGORY_VALUES = ["401k", "403b", "hsa", "ira", "brokerage"];
+
+// Canonical performance-category display strings — these should always be
+// referenced via the PERF_CATEGORY_* constants from display-labels.ts,
+// never hardcoded as literals in logic or data-access code.
+const CANONICAL_PERF_CATEGORIES = [
+  "401k/IRA",
+  "HSA",
+  "Brokerage",
+  "Retirement",
+  "Portfolio",
+] as const;
 
 // ── File walker ─────────────────────────────────────────────────────
 
@@ -324,18 +335,28 @@ function findDirectAccountLabelReadViolations(): Violation[] {
   );
 }
 
-// Rule 7: hardcoded performance category strings used as bracket-index keys —
-// import the PERF_CATEGORY_* constant from display-labels.ts instead.
+// Rule 7: hardcoded performance-category strings used in logic — bracket-index
+// access OR equality/inequality comparisons. Both forms should import the
+// PERF_CATEGORY_* constants from display-labels.ts so a rename in one place
+// propagates everywhere.
 //
-// Only matches `x["Retirement"]` or `x?.["Retirement"]` patterns (real drift).
-// Does NOT match `parentCategory: "Retirement"` (object property value —
-// legitimate canonical usage), `title="Retirement"` (JSX prop), `| "Retirement"`
-// (type union), or `"Retirement"` inside comments. Those are all legitimate
-// uses of the canonical string values.
+// Catches:
+//   x["Retirement"]  /  x?.["HSA"]          — bracket-index form
+//   x === "Portfolio"  /  x !== "Brokerage"  — equality form
+//
+// Does NOT match display strings in JSX text nodes, type unions (| "Retirement"),
+// or arbitrary object labels (label: "Retirement"). Those are legitimate literal
+// uses that don't participate in programmatic comparisons.
 function findHardcodedPerfCategoryViolations(): Violation[] {
-  const pattern =
-    /\??\.?\[\s*["'](?:401k\/IRA|HSA|Brokerage|Retirement|Portfolio)["']\s*\]/;
-  return findPatternViolations(pattern, "no-hardcoded-perf-category-bracket", {
+  const cats = CANONICAL_PERF_CATEGORIES.map((c) => c.replace("/", "\\/")).join(
+    "|",
+  );
+  // Bracket-index: x["Retirement"] or x?.["Portfolio"]
+  const bracketSrc = `\\??\\.[?]?\\[\\s*["'](?:${cats})["']\\s*\\]`;
+  // Equality/inequality: === "Retirement" or !== "Brokerage"
+  const equalitySrc = `(?:===|!==)\\s*["'](?:${cats})["']`;
+  const combined = new RegExp(`(?:${bracketSrc}|${equalitySrc})`);
+  return findPatternViolations(combined, "no-hardcoded-perf-category", {
     additionalExempt: new Set(["src/lib/config/display-labels.ts"]),
   });
 }
@@ -365,12 +386,20 @@ function findInlinePercentFormatViolations(): Violation[] {
   });
 }
 
-// Rule 10: mutation using `z.string()` for `accountType` field. Looks for
-// `accountType: z.string(` — should be `z.enum(accountCategoryEnum())`.
-function findAccountTypeZStringViolations(): Violation[] {
+// Rule 10: mutation using `z.string()` for known-enum fields.
+// `accountType` should be `z.enum(accountCategoryEnum())`.
+// `service` should be `z.enum(["ynab","actual"])` in sync procedures
+//   (or the serviceEnum from sync/_shared).
+// Budget `category` and account `subType` are intentionally free-text and excluded.
+// admin.ts apiConnections CRUD is exempt: it's generic CRUD over any service type,
+//   not constrained to ynab/actual (tests use "simplefin", "monarch", etc.).
+function findStringEnumFieldViolations(): Violation[] {
   return findPatternViolations(
-    /\baccountType\s*:\s*z\.string\b/,
-    "no-account-type-z-string",
+    /\b(?:accountType|service)\s*:\s*z\.string\b/,
+    "no-string-enum-fields",
+    {
+      additionalExempt: new Set(["src/server/routers/settings/admin.ts"]),
+    },
   );
 }
 
@@ -468,14 +497,15 @@ describe("RULES.md violations sweep", () => {
     }
   });
 
-  it("no hardcoded performance category strings ('401k/IRA', 'HSA', 'Brokerage')", () => {
+  it("no hardcoded perf-category strings in logic — bracket-index or equality (use PERF_CATEGORY_* constants)", () => {
     const violations = findHardcodedPerfCategoryViolations();
     if (violations.length > 0) {
       expect.fail(
         `Found ${violations.length} hardcoded-perf-category violations. ` +
           `Import PERF_CATEGORY_DEFAULT / PERF_CATEGORY_HSA / PERF_CATEGORY_BROKERAGE ` +
           `/ PERF_CATEGORY_RETIREMENT / PERF_CATEGORY_PORTFOLIO from ` +
-          `@/lib/config/display-labels.\n` +
+          `@/lib/config/display-labels instead of comparing or indexing ` +
+          `with literal strings.\n` +
           formatViolations("Violations", violations),
       );
     }
@@ -505,13 +535,14 @@ describe("RULES.md violations sweep", () => {
     }
   });
 
-  it("no `accountType: z.string()` in mutations (use z.enum(accountCategoryEnum()))", () => {
-    const violations = findAccountTypeZStringViolations();
+  it("no z.string() for known-enum fields (accountType, service) — use z.enum()", () => {
+    const violations = findStringEnumFieldViolations();
     if (violations.length > 0) {
       expect.fail(
-        `Found ${violations.length} accountType-z-string violations. ` +
-          `Use z.enum(accountCategoryEnum()) so Zod validation stays in sync ` +
-          `with the config source of truth.\n` +
+        `Found ${violations.length} string-enum-field violations. ` +
+          `Use z.enum(accountCategoryEnum()) for accountType, ` +
+          `z.enum(["ynab","actual"]) for service. ` +
+          `Budget category and account subType are free-text and exempt.\n` +
           formatViolations("Violations", violations),
       );
     }

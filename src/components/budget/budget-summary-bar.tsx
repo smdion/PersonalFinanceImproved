@@ -12,87 +12,74 @@
  * plain primitive props and event callbacks — no queries, no mutations,
  * no data-shape narrowing. Prop types are hand-rolled (no `@/server/*`
  * imports) per eslint.config.mjs no-restricted-imports rule.
+ *
+ * F3 (v0.5.3): stable per-context values consumed from BudgetPageContext.
+ * Remaining props grouped into bundles. Props: 27 → 8.
  */
 
 import { formatCurrency } from "@/lib/utils/format";
 import { FormError } from "@/components/ui/form-error";
+import { useBudgetPageContext } from "./budget-page-context";
 import type { ColumnResult } from "./types";
 
 type Props = {
-  // Profile identity
-  profileName: string | null | undefined;
-  activeProfileName: string | null | undefined;
-  isViewingNonActive: boolean;
-  profileId: number | null | undefined;
-
-  // API integration
-  apiService: string | null | undefined;
-  apiLinkedProfileId: number | null;
-  apiLinkedColumnIndex: number;
-  showApiColumn: boolean;
-
-  // Columns + mode + totals
-  cols: string[];
-  activeColumn: number;
-  isWeighted: boolean;
-  columnMonths: number[] | null;
-  allColumnResults: ColumnResult[] | null | undefined;
-
-  // Permissions + edit state
-  canEdit: boolean;
-  editMode: boolean;
+  // Profile display data (not in context — changes when viewing non-active)
+  profileDisplay: {
+    profileName: string | null | undefined;
+    activeProfileName: string | null | undefined;
+    isViewingNonActive: boolean;
+  };
+  // Column display data (not in context — derived from server query result)
+  columnDisplay: {
+    isWeighted: boolean;
+    columnMonths: number[] | null;
+    allColumnResults: ColumnResult[] | null | undefined;
+  };
+  // Mutation errors (structural shape for FormError)
+  syncErrors: {
+    saveError: { message: string } | null;
+    pullError: { message: string } | null;
+    pushError: { message: string } | null;
+  };
+  // Sync action state + callbacks
+  syncActions: {
+    isPulling: boolean;
+    isPushing: boolean;
+    onPullFromApi: () => void;
+    onOpenPushPreview: () => void;
+  };
   unsavedCount: number;
-
-  // Errors — structural shape matching FormError's `error` prop. Parent
-  // passes through the tRPC mutation's `.error` field (nullable).
-  saveError: { message: string } | null;
-  pullError: { message: string } | null;
-  pushError: { message: string } | null;
-
-  // Mode manager toggle
-  showModeManager: boolean;
   onToggleModeManager: () => void;
-
-  // Sync actions
-  isPulling: boolean;
-  isPushing: boolean;
-  onPullFromApi: () => void;
-  onOpenPushPreview: () => void;
-
-  // Edit toggle
   isSavingBatch: boolean;
   onToggleEditMode: () => void;
 };
 
 export function BudgetSummaryBar({
-  profileName,
-  activeProfileName,
-  isViewingNonActive,
-  profileId,
-  apiService,
-  apiLinkedProfileId,
-  apiLinkedColumnIndex,
-  showApiColumn,
-  cols,
-  activeColumn,
-  isWeighted,
-  columnMonths,
-  allColumnResults,
-  canEdit,
-  editMode,
+  profileDisplay,
+  columnDisplay,
+  syncErrors,
+  syncActions,
   unsavedCount,
-  saveError,
-  pullError,
-  pushError,
-  showModeManager: _showModeManager,
   onToggleModeManager,
-  isPulling,
-  isPushing,
-  onPullFromApi,
-  onOpenPushPreview,
   isSavingBatch,
   onToggleEditMode,
 }: Props) {
+  const {
+    profileId,
+    cols,
+    activeColumn,
+    apiService,
+    apiLinkedProfileId,
+    apiLinkedColumnIndex,
+    showApiColumn,
+    canEdit,
+    editMode,
+  } = useBudgetPageContext();
+  const { profileName, activeProfileName, isViewingNonActive } = profileDisplay;
+  const { isWeighted, columnMonths, allColumnResults } = columnDisplay;
+  const { saveError, pullError, pushError } = syncErrors;
+  const { isPulling, isPushing, onPullFromApi, onOpenPushPreview } =
+    syncActions;
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 bg-surface-sunken rounded-lg px-4 py-3 mb-4">
       <div className="flex flex-wrap items-center gap-3 sm:gap-6">
@@ -120,7 +107,9 @@ export function BudgetSummaryBar({
           {apiService && apiLinkedProfileId === profileId && (
             <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-600 font-semibold">
               ⇄ {apiService.toUpperCase()} →{" "}
-              {cols[apiLinkedColumnIndex] ?? "Unknown"}
+              {apiLinkedColumnIndex != null
+                ? (cols[apiLinkedColumnIndex] ?? "Unknown")
+                : "Unknown"}
             </span>
           )}
         </div>

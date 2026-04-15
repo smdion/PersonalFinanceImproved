@@ -8,6 +8,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.5
 
+## [0.5.3] - 2026-04-14
+
+Maintenance release. Engine correctness fixes and internal reorganization — no new features.
+
+### Fixed
+
+- **Retirement projections now handle the case where retirement age equals current age.** Previously the projection engine would skip the final partial accumulation year, leaving contributions unapplied for the current year and producing incorrect nest-egg totals.
+- **Per-phase retirement budget is now set up before the first projection year runs.** An edge case near the retirement boundary could produce projections that used an uninitialized budget floor for the first year.
+- **Mid-year job change: paycheck tax brackets now split correctly at the salary boundary.** Previously, paychecks straddling a mid-year raise could apply the wrong marginal tax rate.
+- **HSA funds are now drawn down correctly after retirement.** A gap in the decumulation logic left HSA balances growing unused in post-retirement years instead of being spent.
+- **Employer match is now capped at the plan maximum before being counted toward annual totals.** High-contribution scenarios could previously exceed IRS limits via uncapped match.
+- **Pension income now reduces the savings floor before the minimum contribution is enforced.** Plans with significant pension income were over-saving to meet a floor that pension income already satisfied.
+
+### Internals (no user-facing changes)
+
+Internal refactors to improve separation of concerns. All changes are pure relocation or extraction — no behavior changes.
+
+- Budget page, contribution account settings, and portfolio quick-look panels broken into smaller, focused pieces for maintainability.
+- Portfolio quick-look stats extracted as a standalone pure function with 18 new unit tests, making the logic independently verifiable.
+- Shared state on the budget page lifted into a context object to eliminate redundant prop threading; expensive derived data wrapped in proper memoization to avoid unnecessary recalculation.
+
+---
+
 ## [0.5.2] - 2026-04-14
 
 Maintenance release. No user-facing features or behavior changes — this is an internal reorganization to keep the codebase reviewable as it grows.
@@ -81,6 +104,8 @@ Large internal file-split refactor. Every change below is pure relocation, valid
 - `projection.computeProjection` and `projection.computeMonteCarloProjection` now accept a `coastFireOverrideAge` input; when set they thread the synthetic profile switch through the engine. Coast FIRE display values deflated to today's dollars at the router boundary (matches the convention used by `retirement-card.tsx`)
 - Fixed profile switch fallback at `retirement.ts:860`: when a switched contribution profile has salary but zero contributions, the engine now correctly uses rate 0 (intentional zero) instead of silently falling back to 25%. This unlocks the Coast FIRE via contribution profiles workflow
 - Unified terminology across Coast FIRE UI: "baseline" consistently refers to expected-return / point-estimate values, "simulated" refers to Monte Carlo outcomes, "Active Plan" is the scenario toggle name for your configured plan. No more overloaded "baseline" or jargon "deterministic / MC" references in user-facing copy
+
+---
 
 ## [0.5.0] - 2026-04-13
 

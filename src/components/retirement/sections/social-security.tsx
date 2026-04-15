@@ -15,6 +15,7 @@ import type {
   PerPersonSettings,
   UpsertSettingsMutation,
 } from "./types";
+import { buildSettingsPatch } from "./settings-patch";
 
 type Props = {
   settings: Settings;
@@ -52,15 +53,17 @@ export function SocialSecuritySection({
                   onSave={(v) => {
                     const parsed = parseFloat(v);
                     if (isNaN(parsed) || parsed < 0) return;
-                    upsertSettings.mutate({
-                      personId: ps.personId,
-                      retirementAge: ps.retirementAge,
-                      endAge: ps.endAge ?? settings.endAge,
-                      returnAfterRetirement: settings.returnAfterRetirement,
-                      annualInflation: settings.annualInflation,
-                      salaryAnnualIncrease: settings.salaryAnnualIncrease,
-                      socialSecurityMonthly: String(parsed),
-                    });
+                    upsertSettings.mutate(
+                      buildSettingsPatch(
+                        {
+                          ...settings,
+                          personId: ps.personId,
+                          retirementAge: ps.retirementAge,
+                          endAge: ps.endAge ?? settings.endAge,
+                        },
+                        { socialSecurityMonthly: String(parsed) },
+                      ),
+                    );
                   }}
                   formatDisplay={(v) => `${formatCurrency(Number(v))}/mo`}
                   parseInput={(v) => v.replace(/[^0-9.]/g, "")}
@@ -88,15 +91,11 @@ export function SocialSecuritySection({
                   if (!settings) return;
                   const parsed = parseFloat(v);
                   if (isNaN(parsed) || parsed < 0) return;
-                  upsertSettings.mutate({
-                    personId: settings.personId,
-                    retirementAge: settings.retirementAge,
-                    endAge: settings.endAge,
-                    returnAfterRetirement: settings.returnAfterRetirement,
-                    annualInflation: settings.annualInflation,
-                    salaryAnnualIncrease: settings.salaryAnnualIncrease,
-                    socialSecurityMonthly: String(parsed),
-                  });
+                  upsertSettings.mutate(
+                    buildSettingsPatch(settings, {
+                      socialSecurityMonthly: String(parsed),
+                    }),
+                  );
                 }}
                 formatDisplay={(v) => `${formatCurrency(Number(v))}/mo`}
                 parseInput={(v) => v.replace(/[^0-9.]/g, "")}
@@ -123,15 +122,9 @@ export function SocialSecuritySection({
                 if (!settings) return;
                 const parsed = parseInt(v, 10);
                 if (isNaN(parsed) || parsed < 62 || parsed > 75) return;
-                upsertSettings.mutate({
-                  personId: settings.personId,
-                  retirementAge: settings.retirementAge,
-                  endAge: settings.endAge,
-                  returnAfterRetirement: settings.returnAfterRetirement,
-                  annualInflation: settings.annualInflation,
-                  salaryAnnualIncrease: settings.salaryAnnualIncrease,
-                  ssStartAge: parsed,
-                });
+                upsertSettings.mutate(
+                  buildSettingsPatch(settings, { ssStartAge: parsed }),
+                );
               }}
               type="number"
               className="text-sm"

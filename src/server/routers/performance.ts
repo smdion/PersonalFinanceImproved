@@ -44,6 +44,9 @@ import {
   FULLY_RETIREMENT_PERF_CATEGORIES,
   PARENT_CATEGORY_ROLLUPS,
   PERF_CATEGORY_BROKERAGE,
+  PERF_CATEGORY_PORTFOLIO,
+  PERF_CATEGORY_DISPLAY_ORDER,
+  type PerfCategory,
 } from "@/lib/config/display-labels";
 
 /** Accepts both the main db instance and transaction handles. */
@@ -99,8 +102,10 @@ function getEffectiveCategory(
     accountLabel: string;
   },
   byId: Map<number, PerfAccount>,
-): string {
-  return accountTypeToPerformanceCategory(resolveMaster(a, byId).accountType);
+): PerfCategory {
+  return accountTypeToPerformanceCategory(
+    resolveMaster(a, byId).accountType,
+  ) as PerfCategory;
 }
 
 /** Cascade-recompute lifetime fields on all annual_performance rows.
@@ -387,7 +392,7 @@ export const performanceRouter = createTRPCRouter({
         // Check: does exactly one non-Portfolio annual row exist for this year?
         // If so, Portfolio = that category (copy stored data, not account sums, for consistency)
         const nonPortfolioCats = annualRows.filter(
-          (r) => r.year === year && r.category !== "Portfolio",
+          (r) => r.year === year && r.category !== PERF_CATEGORY_PORTFOLIO,
         );
         if (nonPortfolioCats.length === 1 && nonPortfolioCats[0]) {
           const src = nonPortfolioCats[0];
@@ -447,7 +452,7 @@ export const performanceRouter = createTRPCRouter({
         // Existing Portfolio row: only recompute if not finalized
         const row = annualByKey.get(portfolioKey);
         const nonPortfolioForRecompute = annualRows.filter(
-          (r) => r.year === year && r.category !== "Portfolio",
+          (r) => r.year === year && r.category !== PERF_CATEGORY_PORTFOLIO,
         );
         if (row && !row.isFinalized && nonPortfolioForRecompute.length > 0) {
           const ps = sumAnnualRows(nonPortfolioForRecompute);
@@ -678,7 +683,7 @@ export const performanceRouter = createTRPCRouter({
 
     // Lifetime totals: use most recent Portfolio row (lifetime fields are now always computed)
     const portfolioRows = annualRows
-      .filter((r) => r.category === "Portfolio")
+      .filter((r) => r.category === PERF_CATEGORY_PORTFOLIO)
       .sort((a, b) => b.year - a.year);
     const latestPortfolio = portfolioRows[0] ?? null;
 
@@ -713,7 +718,7 @@ export const performanceRouter = createTRPCRouter({
 
     // Compute lifetime fees and distributions from all Portfolio annual rows
     const portfolioAnnualRows = annualRows.filter(
-      (r) => r.category === "Portfolio",
+      (r) => r.category === PERF_CATEGORY_PORTFOLIO,
     );
     const lifetimeFees = portfolioAnnualRows.reduce(
       (sum, r) => sum + r.fees,
@@ -966,7 +971,7 @@ export const performanceRouter = createTRPCRouter({
         overrides: z
           .array(
             z.object({
-              category: z.string(),
+              category: z.enum(PERF_CATEGORY_DISPLAY_ORDER),
               beginningBalance: z.string(),
               totalContributions: z.string(),
               yearlyGainLoss: z.string(),
@@ -1216,7 +1221,7 @@ export const performanceRouter = createTRPCRouter({
             if (existingAnnualCategories.has(category)) continue;
 
             const catAccounts =
-              category === "Portfolio"
+              category === PERF_CATEGORY_PORTFOLIO
                 ? activeAccounts
                 : activeAccounts.filter(
                     (a) =>

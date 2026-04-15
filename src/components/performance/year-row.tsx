@@ -7,6 +7,7 @@ import {
   accountDisplayName,
 } from "@/lib/utils/format";
 import { EditableCell } from "./editable-cell";
+import { PERF_CATEGORY_BROKERAGE } from "@/lib/config/display-labels";
 import { AddAccountForm } from "./add-account-form";
 import type { YearRowProps } from "./types";
 
@@ -218,7 +219,7 @@ export function YearRow({
             {formatCurrency(row.endingBalance)}
           </td>
         )}
-        {activeCategory === "Brokerage" && (
+        {activeCategory === PERF_CATEGORY_BROKERAGE && (
           <>
             <td className="text-right px-4 py-3 text-muted">
               {formatCurrency(row.lifetimeContributions + row.lifetimeMatch)}
@@ -474,7 +475,7 @@ export function YearRow({
                     {formatCurrency(a.endingBalance)}
                   </td>
                 )}
-                {activeCategory === "Brokerage" &&
+                {activeCategory === PERF_CATEGORY_BROKERAGE &&
                   (() => {
                     const master = masterAccounts?.find(
                       (m) => m.id === a.performanceAccountId,

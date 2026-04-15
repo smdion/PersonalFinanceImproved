@@ -30,6 +30,7 @@ import { IncomeSection } from "@/components/retirement/sections/income";
 import { StrategyParamsSection } from "@/components/retirement/sections/strategy-params";
 import { PerPhaseBudgetSection } from "@/components/retirement/sections/per-phase-budget";
 import { RaiseAndRateSection } from "@/components/retirement/sections/raise-and-rate";
+import type { UpsertSettingsMutation } from "@/components/retirement/sections/types";
 
 // v0.5 expert-review M4: bridge the recommendation helper's kebab-case
 // strategy keys to the snake_case keys in WITHDRAWAL_STRATEGY_CONFIG /
@@ -162,6 +163,12 @@ export function RetirementContent() {
       utils.projection.invalidate();
     },
   });
+  // tRPC's inferred input uses the specific withdrawalStrategy enum union and
+  // omits null from optional strategy fields; our Settings layer mirrors the
+  // raw DB shape (string / string|null). The gap is a TypeScript inference
+  // artifact — buildSettingsPatch only ever sends fields that Zod accepts.
+  const upsertSettingsMutation =
+    upsertSettings as unknown as UpsertSettingsMutation; // eslint-disable-line no-restricted-syntax
 
   // Lazy-load strategy comparison only when expanded
   const [comparisonExpanded, setComparisonExpanded] =
@@ -490,7 +497,7 @@ export function RetirementContent() {
                     <IncomeSection
                       settings={settings}
                       combinedSalary={data.combinedSalary}
-                      upsertSettings={upsertSettings}
+                      upsertSettings={upsertSettingsMutation}
                       handleSettingPercentUpdate={handleSettingPercentUpdate}
                       contribProfiles={contribProfiles}
                       contribProfileId={contribProfileId}
@@ -595,7 +602,7 @@ export function RetirementContent() {
 
                     <StrategyParamsSection
                       settings={settings}
-                      upsertSettings={upsertSettings}
+                      upsertSettings={upsertSettingsMutation}
                     />
                   </div>
                 </div>
@@ -647,18 +654,18 @@ export function RetirementContent() {
                   <SocialSecuritySection
                     settings={settings}
                     perPersonSettings={perPersonSettings}
-                    upsertSettings={upsertSettings}
+                    upsertSettings={upsertSettingsMutation}
                   />
 
                   <TaxesSection
                     settings={settings}
                     selectedScenario={selectedScenario}
-                    upsertSettings={upsertSettings}
+                    upsertSettings={upsertSettingsMutation}
                   />
 
                   <HealthcareSection
                     settings={settings}
-                    upsertSettings={upsertSettings}
+                    upsertSettings={upsertSettingsMutation}
                   />
 
                   <GlidePathSection returnRateSummary={returnRateSummary} />

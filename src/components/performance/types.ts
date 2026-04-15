@@ -1,4 +1,5 @@
 import React from "react";
+import type { PerfCategory } from "@/lib/config/display-labels";
 
 export type EditingCell = {
   type: "annual" | "account" | "master";
@@ -9,7 +10,7 @@ export type EditingCell = {
 export type AnnualRow = {
   id: number;
   year: number;
-  category: string;
+  category: PerfCategory;
   beginningBalance: number;
   totalContributions: number;
   yearlyGainLoss: number;

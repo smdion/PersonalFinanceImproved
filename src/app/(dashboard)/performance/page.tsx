@@ -8,6 +8,10 @@ import { confirm } from "@/components/ui/confirm-dialog";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { formatDate } from "@/lib/utils/format";
+import {
+  PERF_CATEGORY_PORTFOLIO,
+  type PerfCategory,
+} from "@/lib/config/display-labels";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -18,6 +22,7 @@ import {
   FinalizeYearModal,
   UpdatePerformanceForm,
 } from "@/components/performance";
+import type { AnnualRow } from "@/components/performance/types";
 import type { EditingCell } from "@/components/performance";
 
 export default function PerformancePage() {
@@ -85,13 +90,15 @@ export default function PerformancePage() {
     accountTypeCategories,
     parentCategories,
     currentYear,
-    annualRows,
+    annualRows: annualRowsRaw,
     accountRows,
     masterAccounts,
     lifetimeTotals,
     lastSnapshotDate,
     performanceLastUpdated,
   } = data;
+  // Router always produces valid PerfCategory values via getEffectiveCategory.
+  const annualRows = annualRowsRaw as AnnualRow[];
   const filtered = annualRows.filter((r) => r.category === activeCategory);
 
   function startEdit(
@@ -238,12 +245,13 @@ export default function PerformancePage() {
         <FinalizeYearModal
           year={currentYear}
           rows={annualRows.filter(
-            (r) => r.year === currentYear && r.category !== "Portfolio",
+            (r) =>
+              r.year === currentYear && r.category !== PERF_CATEGORY_PORTFOLIO,
           )}
           onConfirm={(overrides) => {
             // Compute Portfolio override as sum of category overrides
             const portfolioOverride = {
-              category: "Portfolio",
+              category: PERF_CATEGORY_PORTFOLIO as PerfCategory,
               beginningBalance: overrides
                 .reduce((s, o) => s + parseFloat(o.beginningBalance), 0)
                 .toFixed(2),
@@ -264,6 +272,9 @@ export default function PerformancePage() {
                 .toFixed(2),
               fees: overrides
                 .reduce((s, o) => s + parseFloat(o.fees), 0)
+                .toFixed(2),
+              rollovers: overrides
+                .reduce((s, o) => s + parseFloat(o.rollovers), 0)
                 .toFixed(2),
               lifetimeGains: overrides
                 .reduce((s, o) => s + parseFloat(o.lifetimeGains), 0)

@@ -399,10 +399,6 @@ export const DEFAULT_DECUMULATION_ORDER: AccountCategory[] = [
   "hsa",
 ];
 
-export const DEFAULT_WITHDRAWAL_TAX_PREF: Partial<
-  Record<AccountCategory, "traditional" | "roth">
-> = {};
-
 export const DEFAULT_WITHDRAWAL_SPLITS: Record<AccountCategory, number> =
   Object.fromEntries(
     Object.entries(ACCOUNT_TYPE_CONFIG).map(([k, v]) => [

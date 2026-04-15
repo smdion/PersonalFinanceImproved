@@ -10,7 +10,12 @@ import type {
   EditingCell,
   CreateAccountData,
 } from "./types";
-import { accountTypeToPerformanceCategory } from "@/lib/config/display-labels";
+import {
+  accountTypeToPerformanceCategory,
+  PERF_CATEGORY_BROKERAGE,
+  PERF_CATEGORY_PORTFOLIO,
+  PERF_CATEGORY_RETIREMENT,
+} from "@/lib/config/display-labels";
 import { isRetirementParent } from "@/lib/config/account-types";
 
 export function PerformanceTable({
@@ -96,7 +101,7 @@ export function PerformanceTable({
               Ending
               <HelpTip text="Balance based on tracked performance data. For in-progress years this may lag behind the Portfolio Value (which uses the latest snapshot)." />
             </th>
-            {activeCategory === "Brokerage" && (
+            {activeCategory === PERF_CATEGORY_BROKERAGE && (
               <>
                 <th className="text-right px-4 py-3 text-muted font-medium">
                   Cost Basis
@@ -122,8 +127,8 @@ export function PerformanceTable({
             const yearAccountsAll = accountRows
               .filter((a) => {
                 if (a.year !== year) return false;
-                if (activeCategory === "Portfolio") return true;
-                if (activeCategory === "Retirement")
+                if (activeCategory === PERF_CATEGORY_PORTFOLIO) return true;
+                if (activeCategory === PERF_CATEGORY_RETIREMENT)
                   return isRetirementParent(a.parentCategory);
                 return (
                   accountTypeToPerformanceCategory(a.accountType) ===

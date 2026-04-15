@@ -46,6 +46,15 @@ export const DEFAULT_HIGH_INCOME_THRESHOLD = 200_000;
 // (derived from each account type's defaultWithdrawalSplit config property)
 
 // ---------------------------------------------------------------------------
+// Contribution Defaults
+// ---------------------------------------------------------------------------
+
+/** Fallback contribution rate when a contribution profile has a spec without a
+ *  matching account or when income data is missing. Prevents the engine from
+ *  silently contributing 0% for users who haven't fully configured their profile. */
+export const FALLBACK_CONTRIBUTION_RATE = 0.25;
+
+// ---------------------------------------------------------------------------
 // Distribution Tax Rates (defaults for new retirement scenarios)
 // ---------------------------------------------------------------------------
 

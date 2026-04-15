@@ -8,6 +8,7 @@
 
 import { HelpTip } from "@/components/ui/help-tip";
 import type { Settings, UpsertSettingsMutation } from "./types";
+import { buildSettingsPatch } from "./settings-patch";
 
 type Props = {
   settings: Settings;
@@ -36,17 +37,13 @@ export function HealthcareSection({ settings, upsertSettings }: Props) {
             <button
               onClick={() => {
                 if (!settings) return;
-                upsertSettings.mutate({
-                  personId: settings.personId,
-                  retirementAge: settings.retirementAge,
-                  endAge: settings.endAge,
-                  returnAfterRetirement: settings.returnAfterRetirement,
-                  annualInflation: settings.annualInflation,
-                  salaryAnnualIncrease: settings.salaryAnnualIncrease,
-                  enableIrmaaAwareness: !(
-                    settings.enableIrmaaAwareness ?? false
-                  ),
-                });
+                upsertSettings.mutate(
+                  buildSettingsPatch(settings, {
+                    enableIrmaaAwareness: !(
+                      settings.enableIrmaaAwareness ?? false
+                    ),
+                  }),
+                );
               }}
               className={`text-sm px-2 py-0.5 rounded ${
                 (settings?.enableIrmaaAwareness ?? false)
@@ -67,15 +64,11 @@ export function HealthcareSection({ settings, upsertSettings }: Props) {
             <button
               onClick={() => {
                 if (!settings) return;
-                upsertSettings.mutate({
-                  personId: settings.personId,
-                  retirementAge: settings.retirementAge,
-                  endAge: settings.endAge,
-                  returnAfterRetirement: settings.returnAfterRetirement,
-                  annualInflation: settings.annualInflation,
-                  salaryAnnualIncrease: settings.salaryAnnualIncrease,
-                  enableAcaAwareness: !(settings.enableAcaAwareness ?? false),
-                });
+                upsertSettings.mutate(
+                  buildSettingsPatch(settings, {
+                    enableAcaAwareness: !(settings.enableAcaAwareness ?? false),
+                  }),
+                );
               }}
               className={`text-sm px-2 py-0.5 rounded ${
                 (settings?.enableAcaAwareness ?? false)
@@ -95,15 +88,11 @@ export function HealthcareSection({ settings, upsertSettings }: Props) {
                 value={String(settings?.householdSize ?? 2)}
                 onChange={(e) => {
                   if (!settings) return;
-                  upsertSettings.mutate({
-                    personId: settings.personId,
-                    retirementAge: settings.retirementAge,
-                    endAge: settings.endAge,
-                    returnAfterRetirement: settings.returnAfterRetirement,
-                    annualInflation: settings.annualInflation,
-                    salaryAnnualIncrease: settings.salaryAnnualIncrease,
-                    householdSize: parseInt(e.target.value, 10),
-                  });
+                  upsertSettings.mutate(
+                    buildSettingsPatch(settings, {
+                      householdSize: parseInt(e.target.value, 10),
+                    }),
+                  );
                 }}
                 className="text-sm border rounded px-1.5 py-0.5"
               >

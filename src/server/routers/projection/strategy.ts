@@ -14,7 +14,7 @@
  * Extracted from the old monolith `projection.ts` in PR 2b of the v0.5.2
  * file-split refactor. Pure relocation — no logic changes.
  */
-import { eq, asc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   createTRPCRouter,
@@ -46,7 +46,7 @@ import {
   getStrategyMeta,
   getStrategyDefaults,
 } from "@/lib/config/withdrawal-strategies";
-import { buildStrategyParams } from "./_shared";
+import { buildStrategyParams, buildMcInputs } from "./_shared";
 
 export const strategyRouter = createTRPCRouter({
   /**
@@ -74,27 +74,12 @@ export const strategyRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      // Load retirement data + MC config in parallel
       const [
         data,
-        assetClasses,
-        assetCorrelations,
-        glidePathRows,
-        savedInflationOverridesRow,
+        { mcAssetClasses, mcCorrelations, mcGlidePath, effectiveInflationRisk },
       ] = await Promise.all([
         fetchRetirementData(ctx.db, { snapshotId: input?.snapshotId }),
-        ctx.db
-          .select()
-          .from(schema.assetClassParams)
-          .where(eq(schema.assetClassParams.isActive, true))
-          .orderBy(asc(schema.assetClassParams.sortOrder)),
-        ctx.db.select().from(schema.assetClassCorrelations),
-        ctx.db.select().from(schema.glidePathAllocations),
-        ctx.db
-          .select({ value: schema.appSettings.value })
-          .from(schema.appSettings)
-          .where(eq(schema.appSettings.key, "mc_inflation_overrides"))
-          .then((r) => r[0] ?? null),
+        buildMcInputs(ctx.db),
       ]);
 
       const payload = await buildEnginePayload(ctx.db, data, {
@@ -115,39 +100,6 @@ export const strategyRouter = createTRPCRouter({
         baseEngineInput,
         avgRetirementAge,
       } = payload;
-
-      // Resolve effective inflation risk (same logic as computeMonteCarlo)
-      const savedInflationOverrides = (savedInflationOverridesRow?.value ??
-        null) as { meanRate?: number; stdDev?: number } | null;
-      const baseInflationRisk = { meanRate: 0.025, stdDev: 0.012 };
-      const effectiveInflationRisk = savedInflationOverrides
-        ? {
-            meanRate:
-              savedInflationOverrides.meanRate ?? baseInflationRisk.meanRate,
-            stdDev: savedInflationOverrides.stdDev ?? baseInflationRisk.stdDev,
-          }
-        : baseInflationRisk;
-
-      // Build MC inputs for success rate computation (200 trials per strategy)
-      const mcAssetClasses = assetClasses.map((ac) => ({
-        id: ac.id,
-        name: ac.name,
-        meanReturn: toNumber(ac.meanReturn),
-        stdDev: toNumber(ac.stdDev),
-      }));
-      const mcCorrelations = assetCorrelations.map((c) => ({
-        classAId: c.classAId,
-        classBId: c.classBId,
-        correlation: toNumber(c.correlation),
-      }));
-      const gpByAge = new Map<number, Record<number, number>>();
-      for (const gp of glidePathRows) {
-        if (!gpByAge.has(gp.age)) gpByAge.set(gp.age, {});
-        gpByAge.get(gp.age)![gp.assetClassId] = toNumber(gp.allocation);
-      }
-      const mcGlidePath = Array.from(gpByAge.entries())
-        .sort(([a], [b]) => a - b)
-        .map(([gpAge, allocations]) => ({ age: gpAge, allocations }));
 
       // Build MC-aligned deterministic return rates using geometric means
       const mcReturnRates: { label: string; rate: number }[] = [];
@@ -294,27 +246,12 @@ export const strategyRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      // Load data (same as strategy comparison)
       const [
         data,
-        assetClasses,
-        assetCorrelations,
-        glidePathRows,
-        savedInflationOverridesRow,
+        { mcAssetClasses, mcCorrelations, mcGlidePath, effectiveInflationRisk },
       ] = await Promise.all([
         fetchRetirementData(ctx.db, { snapshotId: input?.snapshotId }),
-        ctx.db
-          .select()
-          .from(schema.assetClassParams)
-          .where(eq(schema.assetClassParams.isActive, true))
-          .orderBy(asc(schema.assetClassParams.sortOrder)),
-        ctx.db.select().from(schema.assetClassCorrelations),
-        ctx.db.select().from(schema.glidePathAllocations),
-        ctx.db
-          .select({ value: schema.appSettings.value })
-          .from(schema.appSettings)
-          .where(eq(schema.appSettings.key, "mc_inflation_overrides"))
-          .then((r) => r[0] ?? null),
+        buildMcInputs(ctx.db),
       ]);
 
       const payload = await buildEnginePayload(ctx.db, data, {
@@ -336,38 +273,6 @@ export const strategyRouter = createTRPCRouter({
         };
 
       const { settings, distributionTaxRates, baseEngineInput } = payload;
-
-      // MC infrastructure (same as strategy comparison)
-      const savedInflationOverrides = (savedInflationOverridesRow?.value ??
-        null) as { meanRate?: number; stdDev?: number } | null;
-      const baseInflationRisk = { meanRate: 0.025, stdDev: 0.012 };
-      const effectiveInflationRisk = savedInflationOverrides
-        ? {
-            meanRate:
-              savedInflationOverrides.meanRate ?? baseInflationRisk.meanRate,
-            stdDev: savedInflationOverrides.stdDev ?? baseInflationRisk.stdDev,
-          }
-        : baseInflationRisk;
-
-      const mcAssetClasses = assetClasses.map((ac) => ({
-        id: ac.id,
-        name: ac.name,
-        meanReturn: toNumber(ac.meanReturn),
-        stdDev: toNumber(ac.stdDev),
-      }));
-      const mcCorrelations = assetCorrelations.map((c) => ({
-        classAId: c.classAId,
-        classBId: c.classBId,
-        correlation: toNumber(c.correlation),
-      }));
-      const gpByAge = new Map<number, Record<number, number>>();
-      for (const gp of glidePathRows) {
-        if (!gpByAge.has(gp.age)) gpByAge.set(gp.age, {});
-        gpByAge.get(gp.age)![gp.assetClassId] = toNumber(gp.allocation);
-      }
-      const mcGlidePath = Array.from(gpByAge.entries())
-        .sort(([a], [b]) => a - b)
-        .map(([gpAge, allocations]) => ({ age: gpAge, allocations }));
 
       if (mcAssetClasses.length === 0 || mcGlidePath.length === 0)
         return {

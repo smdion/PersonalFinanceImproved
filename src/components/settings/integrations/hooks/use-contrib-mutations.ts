@@ -21,13 +21,7 @@ export function useContribMutations() {
     onSuccess: invalidate,
   });
 
-  return {
-    mutations: {
-      linkContrib,
-      unlinkContrib,
-    },
-    invalidate,
-  };
+  return { mutations: { linkContrib, unlinkContrib }, invalidate };
 }
 
 export type ContribMutations = ReturnType<

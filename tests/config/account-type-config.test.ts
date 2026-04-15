@@ -24,7 +24,6 @@ import {
   getDefaultDecumulationOrder,
   buildCategoryRecord,
   accountCategoryEnum,
-  DEFAULT_WITHDRAWAL_TAX_PREF,
   DEFAULT_WITHDRAWAL_SPLITS,
   type AccountCategory,
   type AccountBalance,
@@ -344,14 +343,6 @@ describe("defaults", () => {
       0,
     );
     expect(total).toBeCloseTo(1.0, 2);
-  });
-
-  it("DEFAULT_WITHDRAWAL_TAX_PREF only has categories with Roth split", () => {
-    for (const key of Object.keys(DEFAULT_WITHDRAWAL_TAX_PREF)) {
-      expect(
-        getAccountTypeConfig(key as AccountCategory).supportsRothSplit,
-      ).toBe(true);
-    }
   });
 });
 

@@ -2,11 +2,14 @@
 
 import React, { useState } from "react";
 import { formatCurrency } from "@/lib/utils/format";
-import { PERF_CATEGORY_DISPLAY_ORDER } from "@/lib/config/display-labels";
+import {
+  PERF_CATEGORY_DISPLAY_ORDER,
+  type PerfCategory,
+} from "@/lib/config/display-labels";
 import type { AnnualRow } from "./types";
 
 type CategoryOverride = {
-  category: string;
+  category: PerfCategory;
   beginningBalance: string;
   totalContributions: string;
   yearlyGainLoss: string;

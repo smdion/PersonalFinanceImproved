@@ -1,3 +1,5 @@
+import type { PerfCategory } from "@/lib/config/display-labels";
+
 /**
  * DemoProfile — complete, holistic dataset for a demo persona.
  *
@@ -116,8 +118,9 @@ export type DemoProfile = {
   }[];
 
   annualPerformance: {
-    /** Used to look up the category key for the annualPerformance row. */
-    category: string;
+    /** Perf-category key — must be one of the PERF_CATEGORY_* constants.
+     *  TypeScript enforces this at compile time via the PerfCategory type. */
+    category: PerfCategory;
     year: number;
     beginningBalance: string;
     totalContributions: string;

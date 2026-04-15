@@ -6,12 +6,11 @@ import { TRPCError } from "@trpc/server";
 import {
   createTRPCRouter,
   protectedProcedure,
-  adminProcedure,
+  syncProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { getActiveBudgetApi, getApiConnection } from "@/lib/budget-api";
-
-const serviceEnum = z.enum(["ynab", "actual"]);
+import { serviceEnum } from "./_shared";
 
 export const syncConfigRouter = createTRPCRouter({
   /** Get the current active_budget_api setting */
@@ -20,7 +19,7 @@ export const syncConfigRouter = createTRPCRouter({
   }),
 
   /** Set the active_budget_api setting */
-  setActiveBudgetApi: adminProcedure
+  setActiveBudgetApi: syncProcedure
     .input(z.object({ value: z.enum(["none", "ynab", "actual"]) }))
     .mutation(async ({ ctx, input }) => {
       if (input.value !== "none") {
@@ -45,7 +44,7 @@ export const syncConfigRouter = createTRPCRouter({
     }),
 
   /** Set which Ledgr budget profile syncs with the budget API. */
-  setLinkedProfile: adminProcedure
+  setLinkedProfile: syncProcedure
     .input(z.object({ service: serviceEnum, profileId: z.number().int() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db
@@ -56,7 +55,7 @@ export const syncConfigRouter = createTRPCRouter({
     }),
 
   /** Set which budget column (mode) syncs with the budget API. */
-  setLinkedColumn: adminProcedure
+  setLinkedColumn: syncProcedure
     .input(
       z.object({ service: serviceEnum, columnIndex: z.number().int().min(0) }),
     )
@@ -69,7 +68,7 @@ export const syncConfigRouter = createTRPCRouter({
     }),
 
   /** Skip an API category — hide from "not in Ledgr" list */
-  skipCategory: adminProcedure
+  skipCategory: syncProcedure
     .input(z.object({ service: serviceEnum, categoryId: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
       const conn = await getApiConnection(ctx.db, input.service);
@@ -85,7 +84,7 @@ export const syncConfigRouter = createTRPCRouter({
     }),
 
   /** Unskip an API category — restore to "not in Ledgr" list */
-  unskipCategory: adminProcedure
+  unskipCategory: syncProcedure
     .input(z.object({ service: serviceEnum, categoryId: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
       const conn = await getApiConnection(ctx.db, input.service);

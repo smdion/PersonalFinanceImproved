@@ -17,6 +17,7 @@ import type {
   SelectedScenario,
   UpsertSettingsMutation,
 } from "./types";
+import { buildSettingsPatch } from "./settings-patch";
 
 type Props = {
   settings: Settings;
@@ -41,15 +42,11 @@ export function TaxesSection({
           value={settings.filingStatusExplicit ?? ""}
           onChange={(e) => {
             const val = e.target.value || null;
-            upsertSettings.mutate({
-              personId: settings.personId,
-              retirementAge: settings.retirementAge,
-              endAge: settings.endAge,
-              returnAfterRetirement: settings.returnAfterRetirement,
-              annualInflation: settings.annualInflation,
-              salaryAnnualIncrease: settings.salaryAnnualIncrease,
-              filingStatus: val as "MFJ" | "Single" | "HOH" | null,
-            });
+            upsertSettings.mutate(
+              buildSettingsPatch(settings, {
+                filingStatus: val as "MFJ" | "Single" | "HOH" | null,
+              }),
+            );
           }}
         >
           <option value="">Auto ({filingStatus})</option>
@@ -105,15 +102,11 @@ export function TaxesSection({
                 if (!settings) return;
                 const parsed = parseFloat(v);
                 if (isNaN(parsed) || parsed < 0) return;
-                upsertSettings.mutate({
-                  personId: settings.personId,
-                  retirementAge: settings.retirementAge,
-                  endAge: settings.endAge,
-                  returnAfterRetirement: settings.returnAfterRetirement,
-                  annualInflation: settings.annualInflation,
-                  salaryAnnualIncrease: settings.salaryAnnualIncrease,
-                  taxMultiplier: String(parsed),
-                });
+                upsertSettings.mutate(
+                  buildSettingsPatch(settings, {
+                    taxMultiplier: String(parsed),
+                  }),
+                );
               }}
               formatDisplay={(v) => `${Number(v).toFixed(1)}×`}
               parseInput={(v) => v.replace(/[^0-9.]/g, "")}
@@ -139,15 +132,11 @@ export function TaxesSection({
             <button
               onClick={() => {
                 if (!settings) return;
-                upsertSettings.mutate({
-                  personId: settings.personId,
-                  retirementAge: settings.retirementAge,
-                  endAge: settings.endAge,
-                  returnAfterRetirement: settings.returnAfterRetirement,
-                  annualInflation: settings.annualInflation,
-                  salaryAnnualIncrease: settings.salaryAnnualIncrease,
-                  grossUpForTaxes: !(settings.grossUpForTaxes ?? true),
-                });
+                upsertSettings.mutate(
+                  buildSettingsPatch(settings, {
+                    grossUpForTaxes: !(settings.grossUpForTaxes ?? true),
+                  }),
+                );
               }}
               className={`text-sm px-2 py-0.5 rounded ${
                 (settings?.grossUpForTaxes ?? true)
@@ -169,15 +158,11 @@ export function TaxesSection({
               value={String(Number(settings?.rothBracketTarget ?? "0.12"))}
               onChange={(e) => {
                 if (!settings) return;
-                upsertSettings.mutate({
-                  personId: settings.personId,
-                  retirementAge: settings.retirementAge,
-                  endAge: settings.endAge,
-                  returnAfterRetirement: settings.returnAfterRetirement,
-                  annualInflation: settings.annualInflation,
-                  salaryAnnualIncrease: settings.salaryAnnualIncrease,
-                  rothBracketTarget: e.target.value,
-                });
+                upsertSettings.mutate(
+                  buildSettingsPatch(settings, {
+                    rothBracketTarget: e.target.value,
+                  }),
+                );
               }}
               className="text-sm border rounded px-1.5 py-0.5"
             >
@@ -198,17 +183,13 @@ export function TaxesSection({
             <button
               onClick={() => {
                 if (!settings) return;
-                upsertSettings.mutate({
-                  personId: settings.personId,
-                  retirementAge: settings.retirementAge,
-                  endAge: settings.endAge,
-                  returnAfterRetirement: settings.returnAfterRetirement,
-                  annualInflation: settings.annualInflation,
-                  salaryAnnualIncrease: settings.salaryAnnualIncrease,
-                  enableRothConversions: !(
-                    settings.enableRothConversions ?? false
-                  ),
-                });
+                upsertSettings.mutate(
+                  buildSettingsPatch(settings, {
+                    enableRothConversions: !(
+                      settings.enableRothConversions ?? false
+                    ),
+                  }),
+                );
               }}
               className={`text-sm px-2 py-0.5 rounded ${
                 (settings?.enableRothConversions ?? false)
@@ -229,15 +210,11 @@ export function TaxesSection({
                 )}
                 onChange={(e) => {
                   if (!settings) return;
-                  upsertSettings.mutate({
-                    personId: settings.personId,
-                    retirementAge: settings.retirementAge,
-                    endAge: settings.endAge,
-                    returnAfterRetirement: settings.returnAfterRetirement,
-                    annualInflation: settings.annualInflation,
-                    salaryAnnualIncrease: settings.salaryAnnualIncrease,
-                    rothConversionTarget: e.target.value,
-                  });
+                  upsertSettings.mutate(
+                    buildSettingsPatch(settings, {
+                      rothConversionTarget: e.target.value,
+                    }),
+                  );
                 }}
                 className="text-sm border rounded px-1.5 py-0.5"
               >

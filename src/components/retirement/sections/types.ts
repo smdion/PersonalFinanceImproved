@@ -69,13 +69,22 @@ export type PerPersonSettings = ReadonlyArray<{
   ssStartAge?: number | null;
 }> | null;
 
+/** Typed payload for `retirementSettings.upsert`. The six required fields
+ *  anchor the row; all other Settings fields are optional overrides.
+ *  Defined here (component layer) to avoid importing from @/server/*. */
+export type UpsertSettingsInput = {
+  personId: number;
+  retirementAge: number;
+  endAge: number;
+  returnAfterRetirement: string;
+  annualInflation: string;
+  salaryAnnualIncrease: string;
+} & Partial<Settings>;
+
 /** The upsert mutation pass-through. Sections only need `.mutate(...)` —
- *  the parent owns the optimistic update pipeline. Loose input typing is
- *  deliberate: tightening would require importing from @/server/* which
- *  the lint rule forbids. */
+ *  the parent owns the optimistic update pipeline. */
 export type UpsertSettingsMutation = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  mutate: (input: any) => void;
+  mutate: (input: UpsertSettingsInput) => void;
 };
 
 /** Selected retirement scenario — used by Taxes section for per-account-type
