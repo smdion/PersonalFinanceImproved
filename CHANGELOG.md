@@ -8,6 +8,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.5
 
+## [0.5.3] - 2026-04-14
+
+Maintenance release. Engine correctness fixes and internal reorganization — no new features.
+
+### Fixed
+
+- **Retirement projections now handle the case where retirement age equals current age.** Previously the projection engine would skip the final partial accumulation year, leaving contributions unapplied for the current year and producing incorrect nest-egg totals.
+- **Per-phase retirement budget is now set up before the first projection year runs.** An edge case near the retirement boundary could produce projections that used an uninitialized budget floor for the first year.
+- **Mid-year job change: paycheck tax brackets now split correctly at the salary boundary.** Previously, paychecks straddling a mid-year raise could apply the wrong marginal tax rate.
+- **HSA funds are now drawn down correctly after retirement.** A gap in the decumulation logic left HSA balances growing unused in post-retirement years instead of being spent.
+- **Employer match is now capped at the plan maximum before being counted toward annual totals.** High-contribution scenarios could previously exceed IRS limits via uncapped match.
+- **Pension income now reduces the savings floor before the minimum contribution is enforced.** Plans with significant pension income were over-saving to meet a floor that pension income already satisfied.
+
+### Internals (no user-facing changes)
+
+Internal refactors to improve separation of concerns. All changes are pure relocation or extraction — no behavior changes. All 198 engine snapshot tests pass before and after.
+
+**Budget page extractions:**
+
+- `BudgetPageContext` introduced to carry shared state to `BudgetTable` and `BudgetSummaryBar`, eliminating a long prop-drilling chain. Budget content component dropped from 785 to 398 lines.
+- `useBudgetPageState` and `useBudgetDerivedData` hooks extracted from budget content, plus `BudgetDetailPanel` split out as a standalone component.
+
+**Contribution accounts extractions:**
+
+- `useContributionAccountsMutations` hook and `UnlinkedContribsBanner` component extracted from `contribution-accounts.tsx` (643→345 lines). All derived Maps are now memoized.
+
+**Portfolio stats extraction:**
+
+- Portfolio quick-look stats derivation extracted as a pure function with 18 new unit tests, making it independently verifiable outside the component tree.
+
+**Correctness micro-fixes (no user-visible effect):** category-totals memoization tightened, visible-categories list stabilized across renders, contribution-by-performance-id map type tightened, integrations per-section hooks unified to a consistent shape, internal mutations type renamed to avoid a collision with an unrelated type.
+
+---
+
 ## [0.5.2] - 2026-04-14
 
 Maintenance release. No user-facing features or behavior changes — this is an internal reorganization to keep the codebase reviewable as it grows.
