@@ -337,8 +337,13 @@ export const strategyRouter = createTRPCRouter({
       });
       const baseline = {
         successRate: baselineMc.successRate,
+        // Coalesce to 0 so downstream comparisons and arithmetic never see null.
+        // A null stability rate means the metric wasn't computable; treating it
+        // as 0 conservatively flags it for the smoothness diagnosis path.
         stabilityRate:
-          baselineMc.budgetStabilityRate ?? baselineMc.spendingStabilityRate,
+          baselineMc.budgetStabilityRate ??
+          baselineMc.spendingStabilityRate ??
+          0,
       };
 
       // --- Diagnose ---

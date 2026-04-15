@@ -477,6 +477,16 @@ export function WithdrawalComparisonCard({
               Dismiss
             </button>
           </div>
+        ) : analyzerQuery.isError ? (
+          <div className="rounded-lg border border-red-500/20 bg-red-950/20 p-3 text-xs text-faint">
+            Analysis failed. Try again or adjust your inputs.
+            <button
+              onClick={() => setAnalyzerEnabled(false)}
+              className="ml-2 text-[10px] text-faint hover:text-secondary"
+            >
+              Dismiss
+            </button>
+          </div>
         ) : analyzerQuery.data ? (
           <div className="rounded-lg border border-amber-500/20 bg-amber-950/20 p-3 text-xs text-faint">
             No parameter changes produce a meaningful improvement (&gt;2pp) for

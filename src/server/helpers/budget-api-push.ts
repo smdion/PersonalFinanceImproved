@@ -191,7 +191,10 @@ export async function pushSnapshotToBudgetApi(input: {
       });
     }
 
-    const tagged = existing.filter((t) => (t.memo ?? "").includes(tag));
+    // Use exact token match to avoid "snapshot:1" matching "snapshot:10".
+    const tagged = existing.filter((t) =>
+      (t.memo ?? "").split(/\s+/).includes(tag),
+    );
     if (tagged.length === 0) continue;
 
     if (mode === "create") {

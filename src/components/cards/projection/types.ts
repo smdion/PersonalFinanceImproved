@@ -271,7 +271,8 @@ export function accumOverrideToForm(o: AccumOverride): AccumOverrideForm {
       ? Object.fromEntries(
           Object.entries(o.accountCaps).map(([k, v]) => [
             k,
-            v > 0 ? String(v) : "",
+            // Use != null (not > 0) so a cap of exactly $0 round-trips correctly.
+            v != null ? String(v) : "",
           ]),
         )
       : buildCategoryRecord(() => "")) as Record<AccountCategory, string>,
@@ -322,7 +323,8 @@ export function decumOverrideToForm(o: DecumOverride): DecumOverrideForm {
       ? Object.fromEntries(
           Object.entries(o.withdrawalAccountCaps).map(([k, v]) => [
             k,
-            v > 0 ? String(v) : "",
+            // Use != null (not > 0) so a cap of exactly $0 round-trips correctly.
+            v != null ? String(v) : "",
           ]),
         )
       : buildCategoryRecord(() => "")) as Record<AccountCategory, string>,

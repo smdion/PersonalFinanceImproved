@@ -58,7 +58,18 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
     years.find((y) => y.phase === "decumulation" && y.rmdAmount > 0)?.age ??
     null;
   const retIdx = years.findIndex((y) => y.age === retAge);
-  const filtered = years.filter((_, i) => i % 2 === 0 || i === retIdx);
+  // Also pin the SS and RMD start years so milestone reference lines always
+  // appear, even when those ages fall on an odd-indexed (normally skipped) year.
+  const ssIdx = years.findIndex((y) => y.age === ssStartAge);
+  const rmdIdx =
+    rmdStartAge != null ? years.findIndex((y) => y.age === rmdStartAge) : -1;
+  const filtered = years.filter(
+    (_, i) =>
+      i % 2 === 0 ||
+      i === retIdx ||
+      i === ssIdx ||
+      (rmdIdx !== -1 && i === rmdIdx),
+  );
 
   // Hex colors for Recharts
   const TAX_HEX: Record<string, string> = {
