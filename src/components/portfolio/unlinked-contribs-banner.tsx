@@ -45,7 +45,7 @@ type PerfAccountEntry = {
 type Props = {
   unlinkedContribs: ContribEntry[];
   activeAccounts: PerfAccountEntry[];
-  contribsByPerfId: Map<number, unknown[]>;
+  contribsByPerfId: Map<number, ContribEntry[]>;
   personOptions: Array<{ value: string; label: string }>;
   jobLabel: (id: number | null) => string;
   admin: boolean;

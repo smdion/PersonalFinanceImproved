@@ -11,7 +11,7 @@
  * When `data` is null/undefined, outputs default to safe empty values.
  */
 
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { usePerColumnPaycheck } from "@/lib/hooks/use-per-column-paycheck";
 import {
   buildPayrollBreakdown,
@@ -189,22 +189,28 @@ export function useBudgetDerivedData({
     () => categories.map(([name]) => name),
     [categories],
   );
-  const visibleCategories = categories.slice(0, visibleCount);
+  const visibleCategories = useMemo(
+    () => categories.slice(0, visibleCount),
+    [categories, visibleCount],
+  );
   const hasMoreCategories = visibleCount < categories.length;
 
-  const getCatTotals = (items: RawItem[]) =>
-    Array.from({ length: numCols }, (_, col) =>
-      items.reduce(
-        (s, it) =>
-          s +
-          (editMode
-            ? getDraft(it.id, col, it.amounts[col] ?? 0)
-            : it.contribAmount != null
-              ? it.contribAmount
-              : (it.amounts[col] ?? 0)),
-        0,
+  const getCatTotals = useCallback(
+    (items: RawItem[]) =>
+      Array.from({ length: numCols }, (_, col) =>
+        items.reduce(
+          (s, it) =>
+            s +
+            (editMode
+              ? getDraft(it.id, col, it.amounts[col] ?? 0)
+              : it.contribAmount != null
+                ? it.contribAmount
+                : (it.amounts[col] ?? 0)),
+          0,
+        ),
       ),
-    );
+    [numCols, editMode, getDraft],
+  );
 
   // ---- Sinking funds (savings goals with monthly contributions) ----
 

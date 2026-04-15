@@ -6,7 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import type { PreviewData, Service } from "./integrations-types";
 import { useDriftMutations } from "./integrations/hooks/use-drift-mutations";
-import { useBudgetIntegrationsMutations } from "./integrations/hooks/use-budget-mutations";
+import { useBudgetMutations } from "./integrations/hooks/use-budget-mutations";
 import { useSavingsMutations } from "./integrations/hooks/use-savings-mutations";
 import { useContribMutations } from "./integrations/hooks/use-contrib-mutations";
 import { usePortfolioMutations } from "./integrations/hooks/use-portfolio-mutations";
@@ -42,7 +42,7 @@ export function PreviewPanel({
   // only so a pending flip in one section does not re-render the other four
   // once PR 6 section components land with `React.memo`.
   const driftMutations = useDriftMutations();
-  const budgetMutations = useBudgetIntegrationsMutations();
+  const budgetMutations = useBudgetMutations();
   const savingsMutations = useSavingsMutations();
   const contribMutations = useContribMutations();
   const portfolioMutations = usePortfolioMutations();
@@ -70,7 +70,7 @@ export function PreviewPanel({
   const handleLinkSavingsFromBudget = (goalId: number, apiId: string) => {
     const cat = allApiCats.find((c) => c.id === apiId);
     if (!cat) return;
-    savingsMutations.linkSavings.mutate({
+    savingsMutations.mutations.linkSavings.mutate({
       goalId,
       apiCategoryId: apiId,
       apiCategoryName: cat.name,
@@ -104,7 +104,7 @@ export function PreviewPanel({
         service={service}
         profile={profile}
         totalDrifted={totalDrifted}
-        mutations={driftMutations}
+        mutations={driftMutations.mutations}
       />
 
       {/* Dashboard — compact overview row */}
@@ -197,7 +197,7 @@ export function PreviewPanel({
           budget={budget}
           savings={savings}
           allApiCats={allApiCats}
-          mutations={budgetMutations}
+          mutations={budgetMutations.mutations}
           onLinkSavings={handleLinkSavingsFromBudget}
           savingsOverrideCount={savingsOverrideCount}
         />
@@ -207,7 +207,7 @@ export function PreviewPanel({
         <SavingsSection
           savings={savings}
           allApiCats={allApiCats}
-          mutations={savingsMutations}
+          mutations={savingsMutations.mutations}
           savingsOverrides={savingsOverrides}
           setSavingsOverrides={setSavingsOverrides}
         />
@@ -217,7 +217,7 @@ export function PreviewPanel({
         <ContribSection
           budget={budget}
           contribAccounts={contribAccounts}
-          mutations={contribMutations}
+          mutations={contribMutations.mutations}
         />
       )}
 
@@ -225,7 +225,7 @@ export function PreviewPanel({
         <PortfolioSection
           service={service}
           portfolio={portfolio}
-          mutations={portfolioMutations}
+          mutations={portfolioMutations.mutations}
         />
       )}
     </div>
