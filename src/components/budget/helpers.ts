@@ -16,7 +16,7 @@ import type { PayrollBreakdown } from "./types";
 export function buildPayrollBreakdown(
   paycheckData: unknown,
 ): PayrollBreakdown | null {
-  if (!paycheckData) return null;
+  if (!paycheckData || !Array.isArray(paycheckData)) return null;
   const data = paycheckData as Array<{
     paycheck: {
       periodsPerYear: number;
@@ -122,7 +122,7 @@ export function buildPayrollBreakdown(
 export function buildNonPayrollContribs(
   paycheckData: unknown,
 ): Map<string, number> {
-  if (!paycheckData) return new Map();
+  if (!paycheckData || !Array.isArray(paycheckData)) return new Map();
   const data = paycheckData as Array<{
     paycheck: { periodsPerYear: number } | null;
     job: unknown;

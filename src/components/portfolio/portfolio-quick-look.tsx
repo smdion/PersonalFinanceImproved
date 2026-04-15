@@ -172,29 +172,41 @@ export function PortfolioQuickLook({
             </div>
             <div>
               <div className="text-xs text-muted">Sharpest Gain</div>
-              <div className="font-medium text-green-500">
-                {isDollar
-                  ? `+${formatCurrency(sharpestGain.delta / sharpestGain.days)}/day`
-                  : `+${formatPercent(sharpestGain.deltaPct / sharpestGain.days / 100, 2)}/day`}
-              </div>
-              <div className="text-xs text-faint">
-                {formatDate(sharpestGain.date, "medium")} ·{" "}
-                {fmtPrimary(sharpestGain.delta, sharpestGain.deltaPct)} over{" "}
-                {sharpestGain.days}d
-              </div>
+              {sharpestGain ? (
+                <>
+                  <div className="font-medium text-green-500">
+                    {isDollar
+                      ? `+${formatCurrency(sharpestGain.delta / sharpestGain.days)}/day`
+                      : `+${formatPercent(sharpestGain.deltaPct / sharpestGain.days / 100, 2)}/day`}
+                  </div>
+                  <div className="text-xs text-faint">
+                    {formatDate(sharpestGain.date, "medium")} ·{" "}
+                    {fmtPrimary(sharpestGain.delta, sharpestGain.deltaPct)} over{" "}
+                    {sharpestGain.days}d
+                  </div>
+                </>
+              ) : (
+                <div className="text-faint">Not enough data</div>
+              )}
             </div>
             <div>
               <div className="text-xs text-muted">Sharpest Loss</div>
-              <div className="font-medium text-red-500">
-                {isDollar
-                  ? `${formatCurrency(sharpestLoss.delta / sharpestLoss.days)}/day`
-                  : `${formatPercent(sharpestLoss.deltaPct / sharpestLoss.days / 100, 2)}/day`}
-              </div>
-              <div className="text-xs text-faint">
-                {formatDate(sharpestLoss.date, "medium")} ·{" "}
-                {fmtPrimary(sharpestLoss.delta, sharpestLoss.deltaPct)} over{" "}
-                {sharpestLoss.days}d
-              </div>
+              {sharpestLoss ? (
+                <>
+                  <div className="font-medium text-red-500">
+                    {isDollar
+                      ? `${formatCurrency(sharpestLoss.delta / sharpestLoss.days)}/day`
+                      : `${formatPercent(sharpestLoss.deltaPct / sharpestLoss.days / 100, 2)}/day`}
+                  </div>
+                  <div className="text-xs text-faint">
+                    {formatDate(sharpestLoss.date, "medium")} ·{" "}
+                    {fmtPrimary(sharpestLoss.delta, sharpestLoss.deltaPct)} over{" "}
+                    {sharpestLoss.days}d
+                  </div>
+                </>
+              ) : (
+                <div className="text-faint">Not enough data</div>
+              )}
             </div>
           </div>
         </div>

@@ -53,25 +53,25 @@ export function derivePortfolioQuickLookStats(
     delta: number;
     deltaPct: number;
     days: number;
-  };
+  } | null;
   sharpestLossDollar: {
     date: string;
     delta: number;
     deltaPct: number;
     days: number;
-  };
+  } | null;
   sharpestGainPct: {
     date: string;
     delta: number;
     deltaPct: number;
     days: number;
-  };
+  } | null;
   sharpestLossPct: {
     date: string;
     delta: number;
     deltaPct: number;
     days: number;
-  };
+  } | null;
   ytdDelta: number;
   ytdPct: number;
   weekChange52: number | null;
@@ -129,19 +129,32 @@ export function derivePortfolioQuickLookStats(
   );
 
   // Sharpest gain / loss — ranked by rate of change ($/day or %/day)
+  // Guard: withRate may be empty if all consecutive snapshots share the same date.
   const withRate = changes.filter((c) => c.days > 0);
-  const sharpestGainDollar = withRate.reduce((best, c) =>
-    c.delta / c.days > best.delta / best.days ? c : best,
-  );
-  const sharpestLossDollar = withRate.reduce((worst, c) =>
-    c.delta / c.days < worst.delta / worst.days ? c : worst,
-  );
-  const sharpestGainPct = withRate.reduce((best, c) =>
-    c.deltaPct / c.days > best.deltaPct / best.days ? c : best,
-  );
-  const sharpestLossPct = withRate.reduce((worst, c) =>
-    c.deltaPct / c.days < worst.deltaPct / worst.days ? c : worst,
-  );
+  const sharpestGainDollar =
+    withRate.length > 0
+      ? withRate.reduce((best, c) =>
+          c.delta / c.days > best.delta / best.days ? c : best,
+        )
+      : null;
+  const sharpestLossDollar =
+    withRate.length > 0
+      ? withRate.reduce((worst, c) =>
+          c.delta / c.days < worst.delta / worst.days ? c : worst,
+        )
+      : null;
+  const sharpestGainPct =
+    withRate.length > 0
+      ? withRate.reduce((best, c) =>
+          c.deltaPct / c.days > best.deltaPct / best.days ? c : best,
+        )
+      : null;
+  const sharpestLossPct =
+    withRate.length > 0
+      ? withRate.reduce((worst, c) =>
+          c.deltaPct / c.days < worst.deltaPct / worst.days ? c : worst,
+        )
+      : null;
 
   // YTD change
   const currentYear = now.getFullYear().toString();

@@ -68,7 +68,7 @@ export function mappingsWithTypedIds(
 }
 
 function parseIntStrict(value: string): number | null {
-  if (!/^-?\d+$/.test(value)) return null;
+  if (!/^\d+$/.test(value)) return null;
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : null;
 }

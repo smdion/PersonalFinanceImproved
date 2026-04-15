@@ -677,9 +677,6 @@ export const netWorthAnnual = sqliteTable("net_worth_annual", {
   taxFreeTotal: text("tax_free_total").notNull().default("0"),
   taxDeferredTotal: text("tax_deferred_total").notNull().default("0"),
   portfolioTotal: text("portfolio_total").notNull().default("0"),
-  homeImprovementsCumulative: text("home_improvements_cumulative")
-    .notNull()
-    .default("0"),
   propertyTaxes: text("property_taxes"),
   // Point-in-time tax location breakdown captured at finalization.
   // Shape: { retirement: { taxFree: N, preTax: N, hsa: N, afterTax: N }, portfolio: { afterTax: N } }

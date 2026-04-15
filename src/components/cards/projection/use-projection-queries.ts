@@ -279,7 +279,12 @@ export function useProjectionQueries(
       : mcQuery.isLoading || mcQuery.isFetching);
 
   const mcBandsByYear = useMemo(() => {
-    if (projectionMode === "monteCarlo" && mcQuery.isFetching) return null;
+    if (
+      projectionMode === "monteCarlo" &&
+      mcQuery.isFetching &&
+      !useCoastFireMc
+    )
+      return null;
     if (useCoastFireMc) {
       const bands = coastFireMcResult?.percentileBands ?? null;
       if (!bands) return null;
@@ -307,7 +312,12 @@ export function useProjectionQueries(
   ]);
 
   const mcStabilityBands = useMemo(() => {
-    if (projectionMode === "monteCarlo" && mcQuery.isFetching) return null;
+    if (
+      projectionMode === "monteCarlo" &&
+      mcQuery.isFetching &&
+      !useCoastFireMc
+    )
+      return null;
     const bands = useCoastFireMc
       ? (coastFireMcResult?.spendingStabilityBands ?? null)
       : ((projectionMode === "monteCarlo"
@@ -338,7 +348,12 @@ export function useProjectionQueries(
     mcLoading || (!mcBandsByYear && mcPrefetchQuery.isFetching);
 
   const mcDetByYear = useMemo(() => {
-    if (projectionMode === "monteCarlo" && mcQuery.isFetching) return null;
+    if (
+      projectionMode === "monteCarlo" &&
+      mcQuery.isFetching &&
+      !useCoastFireMc
+    )
+      return null;
     const det = useCoastFireMc
       ? (coastFireMcResult?.deterministicProjection ?? null)
       : ((projectionMode === "monteCarlo"

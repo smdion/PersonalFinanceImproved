@@ -427,10 +427,10 @@ export function EditableCell({
   const save = useCallback(() => {
     setEditing(false);
     const parsed = parseFloat(editValue);
-    if (!isNaN(parsed) && parsed !== value) {
-      const dbField =
-        field === "homeImprovements" ? "homeImprovementsCumulative" : field;
-      onSave(year, { [dbField]: parsed });
+    // homeImprovements is derived from the home_improvement_items table —
+    // it is read-only in this table and not persisted via this save path.
+    if (!isNaN(parsed) && parsed !== value && field !== "homeImprovements") {
+      onSave(year, { [field]: parsed });
     }
   }, [editValue, value, field, year, onSave]);
 
