@@ -113,7 +113,7 @@ jobs:
           retention-days: 7
 
       - name: Audit production dependencies (high/critical)
-        run: pnpm audit --prod --audit-level=high
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Check migrations
         run: pnpm check:migrations
