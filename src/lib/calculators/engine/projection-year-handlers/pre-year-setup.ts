@@ -53,7 +53,14 @@ export function runPreYearSetup(
 
   const age = input.currentAge + y;
   const year = input.asOfDate.getFullYear() + y;
-  const isAccumulation = age < input.retirementAge;
+  // Treat y=0 as a final partial accumulation year when the person is
+  // retiring mid-calendar-year (retirementAge === currentAge and the as-of
+  // date is before year-end). This defers decumulation to y=1 so that
+  // accumulation-year.ts can pro-rate contributions and growth by
+  // firstYearFraction before the phase boundary is crossed.
+  const isAccumulation =
+    age < input.retirementAge ||
+    (y === 0 && age === input.retirementAge && ctx.firstYearFraction < 1);
 
   // Get return rate for this age (fall back to last available)
   let returnRate = returnRateMap.get(age);
@@ -162,17 +169,21 @@ export function runPreYearSetup(
     }
   }
 
-  // Reset expenses to decumulation budget at retirement boundary.
-  // Budget values are in today's dollars -- inflate to retirement-year nominal dollars
-  // using CPI (inflationRate), NOT the post-retirement raise rate.
-  // Year-over-year growth after this point uses the raise rate (postRetirementInflation).
-  if (
+  // Reset expenses to decumulation budget on the FIRST decumulation year.
+  // Do NOT key on `age === retirementAge`: that check fails in the mid-year
+  // case (retirementAge === currentAge) because by y=1 the age has already
+  // advanced past retirementAge. Instead, fire exactly once on the first year
+  // isAccumulation is false, tracked by state.decumulationExpensesSet.
+  // Budget values are in today's dollars -- inflate to retirement-year nominal
+  // dollars using CPI (inflationRate), NOT the post-retirement raise rate.
+  const decumulationExpensesJustSet =
     !isAccumulation &&
-    age === input.retirementAge &&
-    input.decumulationAnnualExpenses != null
-  ) {
+    !state.decumulationExpensesSet &&
+    input.decumulationAnnualExpenses != null;
+  if (decumulationExpensesJustSet) {
     state.projectedExpenses =
-      input.decumulationAnnualExpenses * Math.pow(1 + inflationRate, y);
+      input.decumulationAnnualExpenses! * Math.pow(1 + inflationRate, y);
+    state.decumulationExpensesSet = true;
   }
 
   // Apply budget override (sticky-forward) or inflate expenses
@@ -188,10 +199,7 @@ export function runPreYearSetup(
     !isAccumulation && !strategyUsesRaise ? 0 : effectiveInflation;
   if (budgetOverrideMap.has(year)) {
     state.projectedExpenses = budgetOverrideMap.get(year)!;
-  } else if (
-    y > 0 &&
-    !(age === input.retirementAge && input.decumulationAnnualExpenses != null)
-  ) {
+  } else if (y > 0 && !decumulationExpensesJustSet) {
     state.projectedExpenses = state.projectedExpenses * (1 + expenseInflation);
   }
 

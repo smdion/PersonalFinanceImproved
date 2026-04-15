@@ -112,6 +112,7 @@ export function buildProjectionState(
     accumulationDefaults,
     spendingState,
     magiHistory,
+    decumulationExpensesSet: false,
     firstOverflowYear: null,
     firstOverflowAge: null,
     firstOverflowAmount: null,
