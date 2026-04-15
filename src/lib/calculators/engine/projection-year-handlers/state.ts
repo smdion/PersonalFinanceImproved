@@ -27,7 +27,11 @@ export function buildProjectionState(
   // Clone contribution specs so salaryFraction updates don't mutate caller's input
   const contributionSpecs = input.contributionSpecs?.map((s) => ({ ...s }));
 
-  // Mutable active references for profile switching
+  // Active references for profile switching — point at the current profile's
+  // objects. pre-year-setup.ts replaces these references (state.activeXxx = ps.xxx)
+  // when a profile-switch year is reached, but NEVER mutates the pointed-at
+  // objects' properties. Clone on assignment is therefore NOT required here;
+  // only clone if a handler ever writes state.activeXxx[key] = value.
   const activeEmployerMatchRateByCategory = input.employerMatchRateByCategory;
   const activeBaseYearContributions = input.baseYearContributions;
   const activeBaseYearEmployerMatch = input.baseYearEmployerMatch;
@@ -108,6 +112,7 @@ export function buildProjectionState(
     accumulationDefaults,
     spendingState,
     magiHistory,
+    decumulationExpensesSet: false,
     firstOverflowYear: null,
     firstOverflowAge: null,
     firstOverflowAmount: null,

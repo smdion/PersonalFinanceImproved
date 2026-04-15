@@ -11,7 +11,10 @@
  * Pure relocation — no logic changes.
  */
 import { z } from "zod/v4";
+import { eq, asc } from "drizzle-orm";
 import { toNumber } from "@/server/helpers";
+import * as schema from "@/lib/db/schema";
+import type { db as _db } from "@/lib/db";
 import type {
   AccountCategory,
   DecumulationDefaults,
@@ -229,4 +232,89 @@ export function buildCoastFireProfileSwitches(
   };
   const userSwitches = baseEngineInput.profileSwitches ?? [];
   return [...userSwitches.filter((s) => s.year < coastYear), coastSwitch];
+}
+
+type Db = typeof _db;
+
+/**
+ * Bootstrap parallel fetch of the three core MC DB tables plus the saved
+ * inflation-risk override, then map them to the shapes the engine expects.
+ *
+ * Used by computeStrategyComparison, analyzeStrategy, and
+ * computeMonteCarloProjection. NOT used by computeCoastFireMC (which reads
+ * a preset-specific glide path keyed on mcPresets.key = 'default').
+ */
+export async function buildMcInputs(db: Db): Promise<{
+  mcAssetClasses: {
+    id: number;
+    name: string;
+    meanReturn: number;
+    stdDev: number;
+  }[];
+  mcCorrelations: { classAId: number; classBId: number; correlation: number }[];
+  mcGlidePath: { age: number; allocations: Record<number, number> }[];
+  effectiveInflationRisk: { meanRate: number; stdDev: number };
+  /** Raw saved inflation override — null if none saved. Callers that surface
+   *  this to the client (e.g. computeMonteCarloProjection) use this as-is. */
+  savedInflationOverrides: { meanRate?: number; stdDev?: number } | null;
+}> {
+  const BASE_INFLATION_RISK = { meanRate: 0.025, stdDev: 0.012 };
+
+  const [assetClasses, assetCorrelations, glidePathRows, savedInflationRow] =
+    await Promise.all([
+      db
+        .select()
+        .from(schema.assetClassParams)
+        .where(eq(schema.assetClassParams.isActive, true))
+        .orderBy(asc(schema.assetClassParams.sortOrder)),
+      db.select().from(schema.assetClassCorrelations),
+      db.select().from(schema.glidePathAllocations),
+      db
+        .select({ value: schema.appSettings.value })
+        .from(schema.appSettings)
+        .where(eq(schema.appSettings.key, "mc_inflation_overrides"))
+        .then((r) => r[0] ?? null),
+    ]);
+
+  const mcAssetClasses = assetClasses.map((ac) => ({
+    id: ac.id,
+    name: ac.name,
+    meanReturn: toNumber(ac.meanReturn),
+    stdDev: toNumber(ac.stdDev),
+  }));
+
+  const mcCorrelations = assetCorrelations.map((c) => ({
+    classAId: c.classAId,
+    classBId: c.classBId,
+    correlation: toNumber(c.correlation),
+  }));
+
+  const gpByAge = new Map<number, Record<number, number>>();
+  for (const gp of glidePathRows) {
+    if (!gpByAge.has(gp.age)) gpByAge.set(gp.age, {});
+    gpByAge.get(gp.age)![gp.assetClassId] = toNumber(gp.allocation);
+  }
+  const mcGlidePath = Array.from(gpByAge.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([gpAge, allocations]) => ({ age: gpAge, allocations }));
+
+  const savedInflationOverrides = (savedInflationRow?.value ?? null) as {
+    meanRate?: number;
+    stdDev?: number;
+  } | null;
+  const effectiveInflationRisk = savedInflationOverrides
+    ? {
+        meanRate:
+          savedInflationOverrides.meanRate ?? BASE_INFLATION_RISK.meanRate,
+        stdDev: savedInflationOverrides.stdDev ?? BASE_INFLATION_RISK.stdDev,
+      }
+    : BASE_INFLATION_RISK;
+
+  return {
+    mcAssetClasses,
+    mcCorrelations,
+    mcGlidePath,
+    effectiveInflationRisk,
+    savedInflationOverrides,
+  };
 }

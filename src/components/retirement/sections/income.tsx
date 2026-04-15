@@ -22,13 +22,8 @@ import type {
   UpsertSettingsMutation,
   ContribProfileListEntry as ContribProfile,
 } from "./types";
-
-/** Convert a decimal string (e.g. '0.04') to a whole-number string for display ('4'). */
-function decToWhole(v: string): string {
-  const n = parseFloat(v);
-  if (isNaN(n)) return "0";
-  return String(Math.round(n * 10000) / 100); // 0.04 → 4
-}
+import { buildSettingsPatch } from "./settings-patch";
+import { decToWhole } from "./helpers";
 
 type Props = {
   settings: Settings;
@@ -104,15 +99,11 @@ export function IncomeSection({
               onSave={(v) => {
                 if (!settings) return;
                 const val = v.replace(/[^0-9]/g, "");
-                upsertSettings.mutate({
-                  personId: settings.personId,
-                  retirementAge: settings.retirementAge,
-                  endAge: settings.endAge,
-                  returnAfterRetirement: settings.returnAfterRetirement,
-                  annualInflation: settings.annualInflation,
-                  salaryAnnualIncrease: settings.salaryAnnualIncrease,
-                  salaryCap: val === "" ? null : val,
-                });
+                upsertSettings.mutate(
+                  buildSettingsPatch(settings, {
+                    salaryCap: val === "" ? null : val,
+                  }),
+                );
               }}
               formatDisplay={(v) => (v ? formatCurrency(Number(v)) : "None")}
               parseInput={(v) => v.replace(/[^0-9]/g, "")}

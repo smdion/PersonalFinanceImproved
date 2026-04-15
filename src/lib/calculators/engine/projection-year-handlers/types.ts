@@ -74,6 +74,13 @@ export type ProjectionLoopState = {
   // Tax/IRMAA history
   magiHistory: number[];
 
+  // Phase tracking
+  /** Set to true on the first year isAccumulation is false. Prevents the
+   *  decumulation expense reset from firing more than once, and handles the
+   *  retirementAge===currentAge mid-year case where age never equals
+   *  retirementAge on the first decumulation year. */
+  decumulationExpensesSet: boolean;
+
   // Milestone tracking
   firstOverflowYear: number | null;
   firstOverflowAge: number | null;

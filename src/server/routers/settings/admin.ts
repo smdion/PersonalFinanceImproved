@@ -417,7 +417,7 @@ export const adminProcedures = {
           .then((r) => r[0]);
       }),
     delete: adminProcedure
-      .input(z.object({ service: z.string() }))
+      .input(z.object({ service: z.string().min(1) }))
       .mutation(({ ctx, input }) =>
         ctx.db
           .delete(schema.apiConnections)

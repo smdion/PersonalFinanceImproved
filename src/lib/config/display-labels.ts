@@ -112,6 +112,9 @@ export const PERF_CATEGORY_DISPLAY_ORDER = [
   PERF_CATEGORY_HSA,
 ] as const;
 
+/** Union of all valid performance-category display strings. */
+export type PerfCategory = (typeof PERF_CATEGORY_DISPLAY_ORDER)[number];
+
 /** Derive performance page display category from accountType string. */
 export function accountTypeToPerformanceCategory(
   accountType: string | null,

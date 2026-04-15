@@ -32,15 +32,9 @@ type UseItemMutationsOpts = {
   /** Live-read of the selected column. Kept as a ref so the mutations
    *  don't need to re-bind on every column change. */
   selectedColumnRef: MutableRefObject<number>;
-  /** Invoked by createItem.onSuccess to clear the standalone-add
-   *  "which category are we adding to" flag. */
-  onItemCreated: () => void;
 };
 
-export function useItemMutations({
-  selectedColumnRef,
-  onItemCreated,
-}: UseItemMutationsOpts) {
+export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
   const utils = trpc.useUtils();
   const { invalidateSummary, invalidateSummaryAndSavings } =
     useInvalidateBudget();
@@ -173,10 +167,7 @@ export function useItemMutations({
     onSuccess: invalidateSummary,
   });
   const createItem = trpc.budget.createItem.useMutation({
-    onSuccess: () => {
-      invalidateSummary();
-      onItemCreated();
-    },
+    onSuccess: invalidateSummary,
   });
   const convertToGoal = trpc.savings.convertBudgetItemToGoal.useMutation({
     onSuccess: invalidateSummaryAndSavings,

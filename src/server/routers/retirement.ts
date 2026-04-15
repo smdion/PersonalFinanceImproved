@@ -15,6 +15,7 @@ import {
   computeEmployerMatch,
 } from "@/server/helpers";
 import { isRetirementParent } from "@/lib/config/account-types";
+import { PERF_CATEGORY_DEFAULT } from "@/lib/config/display-labels";
 import { getAge } from "@/lib/utils/date";
 import { roundToCents } from "@/lib/utils/math";
 
@@ -127,7 +128,7 @@ export const retirementRouter = createTRPCRouter({
       const allContribs = allContribsRaw.filter(
         (c) =>
           c.performanceAccountId != null &&
-          perfCatMap.get(c.performanceAccountId) === "401k/IRA",
+          perfCatMap.get(c.performanceAccountId) === PERF_CATEGORY_DEFAULT,
       );
 
       const primaryPerson = people.find((p) => p.isPrimaryUser) ?? people[0];

@@ -19,7 +19,6 @@ import {
   categoriesWithIrsLimit,
   getLimitGroup,
   getRothFraction as configGetRothFraction,
-  isRothType,
   addTraditional,
   addRoth,
   addBalance,
@@ -30,6 +29,7 @@ import {
 import {
   OVERFLOW_TOLERANCE,
   MAX_BROKERAGE_RAMP_YEARS,
+  DEFAULT_TAX_RATE_BROKERAGE,
 } from "../../../constants";
 import { resolveAccumulationConfig } from "../override-resolution";
 import {
@@ -51,6 +51,7 @@ import type {
   ProjectionLoopState,
 } from "./types";
 import { updatePerPersonTradBalance } from "./helpers";
+import { applyLumpSums } from "./lump-sum";
 
 // ---------------------------------------------------------------------------
 // Accumulation year handler
@@ -408,46 +409,7 @@ export function runAccumulationYear(
   }
 
   // Apply lump sums (one-time injections, NOT subject to IRS limits)
-  for (const ls of config.lumpSums) {
-    const bs = getAccountTypeConfig(ls.targetAccount).balanceStructure;
-    if (bs === "roth_traditional") {
-      if (isRothType(ls.taxType ?? "")) {
-        balances.taxFree += ls.amount;
-        addRoth(acctBal[ls.targetAccount], ls.amount);
-      } else {
-        balances.preTax += ls.amount;
-        addTraditional(acctBal[ls.targetAccount], ls.amount);
-      }
-    } else if (bs === "single_bucket") {
-      balances.hsa += ls.amount;
-      addBalance(acctBal[ls.targetAccount], ls.amount);
-    } else {
-      // basis_tracking (brokerage)
-      balances.afterTax += ls.amount;
-      balances.afterTaxBasis += ls.amount;
-      addBalance(acctBal[ls.targetAccount], ls.amount);
-      addBasis(acctBal[ls.targetAccount], ls.amount);
-    }
-    // Update individual account tracking for the lump sum
-    if (hasIndividualAccounts) {
-      const taxType =
-        ls.taxType ??
-        (bs === "single_bucket"
-          ? "hsa"
-          : bs === "roth_traditional"
-            ? "preTax"
-            : "afterTax");
-      const target = ls.targetAccountName
-        ? indAccts.find((ia) => ia.name === ls.targetAccountName)
-        : (indAccts.find(
-            (ia) => ia.category === ls.targetAccount && ia.taxType === taxType,
-          ) ?? indAccts.find((ia) => ia.category === ls.targetAccount));
-      if (target) {
-        const key = indKey(target);
-        indBal.set(key, (indBal.get(key) ?? 0) + ls.amount);
-      }
-    }
-  }
+  applyLumpSums(config.lumpSums, ctx, state);
 
   // Route contributions, match, overflow, and ramp to individual accounts
   // Extracted to individual-account-tracking.ts
@@ -522,7 +484,8 @@ export function runAccumulationYear(
     const gainsPortion = roundToCents(drawAmount - basisPortion);
     const taxCost = roundToCents(
       gainsPortion *
-        (decumulationDefaults.distributionTaxRates?.brokerage ?? 0.15),
+        (decumulationDefaults.distributionTaxRates?.brokerage ??
+          DEFAULT_TAX_RATE_BROKERAGE),
     );
     balances.afterTax = roundToCents(balances.afterTax - drawAmount);
     balances.afterTaxBasis = roundToCents(

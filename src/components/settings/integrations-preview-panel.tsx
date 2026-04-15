@@ -41,11 +41,11 @@ export function PreviewPanel({
   // Per-section mutation hooks — each hook owns a bundle for its section
   // only so a pending flip in one section does not re-render the other four
   // once PR 6 section components land with `React.memo`.
-  const { mutations: driftMutations } = useDriftMutations();
-  const { mutations: budgetMutations } = useBudgetMutations();
-  const { mutations: savingsMutations } = useSavingsMutations();
-  const { mutations: contribMutations } = useContribMutations();
-  const { mutations: portfolioMutations } = usePortfolioMutations();
+  const driftMutations = useDriftMutations();
+  const budgetMutations = useBudgetMutations();
+  const savingsMutations = useSavingsMutations();
+  const contribMutations = useContribMutations();
+  const portfolioMutations = usePortfolioMutations();
 
   // `savingsOverrides` lives here (not inside SavingsSection) because
   // BudgetSection's "Apply all suggested matches" counter needs the count.
@@ -70,7 +70,7 @@ export function PreviewPanel({
   const handleLinkSavingsFromBudget = (goalId: number, apiId: string) => {
     const cat = allApiCats.find((c) => c.id === apiId);
     if (!cat) return;
-    savingsMutations.linkSavings.mutate({
+    savingsMutations.mutations.linkSavings.mutate({
       goalId,
       apiCategoryId: apiId,
       apiCategoryName: cat.name,
@@ -104,7 +104,7 @@ export function PreviewPanel({
         service={service}
         profile={profile}
         totalDrifted={totalDrifted}
-        mutations={driftMutations}
+        mutations={driftMutations.mutations}
       />
 
       {/* Dashboard — compact overview row */}
@@ -197,7 +197,7 @@ export function PreviewPanel({
           budget={budget}
           savings={savings}
           allApiCats={allApiCats}
-          mutations={budgetMutations}
+          mutations={budgetMutations.mutations}
           onLinkSavings={handleLinkSavingsFromBudget}
           savingsOverrideCount={savingsOverrideCount}
         />
@@ -207,7 +207,7 @@ export function PreviewPanel({
         <SavingsSection
           savings={savings}
           allApiCats={allApiCats}
-          mutations={savingsMutations}
+          mutations={savingsMutations.mutations}
           savingsOverrides={savingsOverrides}
           setSavingsOverrides={setSavingsOverrides}
         />
@@ -217,7 +217,7 @@ export function PreviewPanel({
         <ContribSection
           budget={budget}
           contribAccounts={contribAccounts}
-          mutations={contribMutations}
+          mutations={contribMutations.mutations}
         />
       )}
 
@@ -225,7 +225,7 @@ export function PreviewPanel({
         <PortfolioSection
           service={service}
           portfolio={portfolio}
-          mutations={portfolioMutations}
+          mutations={portfolioMutations.mutations}
         />
       )}
     </div>

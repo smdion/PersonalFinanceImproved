@@ -621,6 +621,52 @@ export async function loadAndApplyContribProfile(
   return { contribs, jobs, salaryMap };
 }
 
+/**
+ * Synchronous variant of `loadAndApplyContribProfile` — applies a
+ * pre-fetched profile row without issuing any DB queries.
+ *
+ * Used by `buildEnginePayload` when the profile row was already fetched
+ * in the `fetchRetirementData` parallel batch (C6 perf improvement).
+ */
+export function applyContribProfileRow(
+  profile: typeof schema.contributionProfiles.$inferSelect | null | undefined,
+  allContribs: (typeof schema.contributionAccounts.$inferSelect)[],
+  allJobs: (typeof schema.jobs.$inferSelect)[],
+  salaryOverrideMap: Map<number, number>,
+): {
+  contribs: ContribRowWithOverrides[];
+  jobs: (typeof schema.jobs.$inferSelect)[];
+  salaryMap: Map<number, number>;
+} {
+  if (!profile || profile.isDefault) {
+    return {
+      contribs: allContribs,
+      jobs: allJobs,
+      salaryMap: salaryOverrideMap,
+    };
+  }
+  const overridesRoot = profile.contributionOverrides as Record<
+    string,
+    Record<string, Record<string, unknown>>
+  >;
+  const contribs = applyContribOverrides(
+    allContribs,
+    overridesRoot.contributionAccounts ?? {},
+  );
+  const jobs = applyJobOverrides(allJobs, overridesRoot.jobs ?? {});
+  const salaryMap = new Map(salaryOverrideMap);
+  const profileSalaryOverrides = profile.salaryOverrides as Record<
+    string,
+    number
+  >;
+  for (const [personId, salary] of Object.entries(profileSalaryOverrides)) {
+    if (!salaryMap.has(Number(personId))) {
+      salaryMap.set(Number(personId), salary);
+    }
+  }
+  return { contribs, jobs, salaryMap };
+}
+
 // ---------------------------------------------------------------------------
 // Profile → Engine data builder
 // ---------------------------------------------------------------------------

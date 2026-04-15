@@ -25,11 +25,7 @@ export function useDriftMutations() {
   });
 
   return {
-    mutations: {
-      syncAllNames,
-      setLinkedProfile,
-      setLinkedColumn,
-    },
+    mutations: { syncAllNames, setLinkedProfile, setLinkedColumn },
     invalidate,
   };
 }

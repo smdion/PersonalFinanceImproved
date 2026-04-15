@@ -14,10 +14,16 @@
  *   - edit-mode draft store
  *   - all tRPC mutations (passed in as plain callback props)
  *   - the sentinel ref + observer wiring
+ *
+ * F2 (v0.5.3): stable per-context values (cols, apiService, profileId,
+ * apiLinkedProfileId, apiLinkedColumnIndex, showApiColumn, canEdit,
+ * editMode) are now consumed from BudgetPageContext instead of props.
+ * Layout props are bundled into the `layout` prop object. Props: 21 → 7.
  */
 
 import React from "react";
 import { BudgetCategoryRow } from "./budget-category-row";
+import { useBudgetPageContext } from "./budget-page-context";
 import type { RawItem } from "./types";
 
 type ApiActualsMap = Map<
@@ -25,7 +31,13 @@ type ApiActualsMap = Map<
   { activity: number; balance: number; budgeted: number }
 >;
 
-type RowHandlers = {
+export type TableLayout = {
+  effectiveNameColWidth: number;
+  onResizeStart: (e: React.MouseEvent) => void;
+  sentinelRef: React.RefObject<HTMLTableRowElement | null>;
+};
+
+export type RowHandlers = {
   getDraft: (id: number, colIndex: number, original: number) => number;
   setDraft: (id: number, colIndex: number, amount: number) => void;
   onUpdateCell: (id: number, colIndex: number, amount: number) => void;
@@ -42,67 +54,48 @@ type RowHandlers = {
   addItemPending: boolean;
   addItemError: { message: string } | null;
   matchContrib: (subcategory: string) => number | null;
+  // Adding-item state bundled here so the standalone add-item form
+  // outside the table can share the same handler via rowHandlers.
+  addingItemToCategory: string | null;
+  onSetAddingItemToCategory: (category: string | null) => void;
 };
 
 type Props = {
-  // Rows + grouping
+  // Row data
   visibleCategories: [string, RawItem[]][];
   hasMoreCategories: boolean;
-  numCols: number;
-  cols: string[];
   categoryNames: string[];
   getCatTotals: (items: RawItem[]) => number[];
-
-  // Layout
-  effectiveNameColWidth: number;
-  onResizeStart: (e: React.MouseEvent) => void;
-  sentinelRef: React.RefObject<HTMLTableRowElement | null>;
-
-  // API integration badges / extra column
-  apiService: string | null | undefined;
-  apiLinkedProfileId: number | null;
-  profileId: number | null | undefined;
-  apiLinkedColumnIndex: number;
-  showApiColumn: boolean;
-  apiActualsService: string | null | undefined;
+  // Layout bundle (effectiveNameColWidth, onResizeStart, sentinelRef)
+  layout: TableLayout;
+  // API actuals data (changes per API refresh)
   apiActualsMap: ApiActualsMap;
-
-  // Permissions + edit state
-  canEdit: boolean;
-  editMode: boolean;
-
-  // Adding-item state (hoisted to parent so the standalone add-item form
-  // outside the table can share it).
-  addingItemToCategory: string | null;
-  onSetAddingItemToCategory: (category: string | null) => void;
-
-  // Per-row pass-through callbacks
+  // Per-row callbacks (includes addingItemToCategory state)
   rowHandlers: RowHandlers;
 };
 
 export function BudgetTable({
   visibleCategories,
   hasMoreCategories,
-  numCols,
-  cols,
   categoryNames,
   getCatTotals,
-  effectiveNameColWidth,
-  onResizeStart,
-  sentinelRef,
-  apiService,
-  apiLinkedProfileId,
-  profileId,
-  apiLinkedColumnIndex,
-  showApiColumn,
-  apiActualsService,
+  layout,
   apiActualsMap,
-  canEdit,
-  editMode,
-  addingItemToCategory,
-  onSetAddingItemToCategory,
   rowHandlers,
 }: Props) {
+  const {
+    cols,
+    apiService,
+    apiLinkedProfileId,
+    profileId,
+    apiLinkedColumnIndex,
+    showApiColumn,
+    canEdit,
+    editMode,
+  } = useBudgetPageContext();
+  const numCols = cols.length;
+  const { effectiveNameColWidth, onResizeStart, sentinelRef } = layout;
+  const { addingItemToCategory, onSetAddingItemToCategory } = rowHandlers;
   return (
     <div className="overflow-x-auto relative">
       <table
@@ -147,7 +140,7 @@ export function BudgetTable({
             ))}
             {showApiColumn && (
               <th className="text-right py-2 px-2 text-muted font-medium min-w-[80px] text-xs">
-                {apiActualsService?.toUpperCase()}
+                {apiService?.toUpperCase()}
               </th>
             )}
           </tr>

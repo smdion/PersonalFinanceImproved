@@ -19,6 +19,7 @@ import {
 } from "@/lib/config/withdrawal-strategies";
 import { formatPercent } from "@/lib/utils/format";
 import type { Settings, UpsertSettingsMutation } from "./types";
+import { buildSettingsPatch } from "./settings-patch";
 
 type Props = {
   settings: Settings;
@@ -110,15 +111,11 @@ export function StrategyParamsSection({ settings, upsertSettings }: Props) {
           <div className="font-medium">
             <button
               onClick={() => {
-                upsertSettings.mutate({
-                  personId: settings.personId,
-                  retirementAge: settings.retirementAge,
-                  endAge: settings.endAge,
-                  returnAfterRetirement: settings.returnAfterRetirement,
-                  annualInflation: settings.annualInflation,
-                  salaryAnnualIncrease: settings.salaryAnnualIncrease,
-                  [dbCol]: !boolVal,
-                });
+                upsertSettings.mutate(
+                  buildSettingsPatch(settings, {
+                    [dbCol]: !boolVal,
+                  } as Partial<Settings>),
+                );
               }}
               className={`text-sm px-2 py-0.5 rounded ${
                 boolVal
@@ -146,15 +143,11 @@ export function StrategyParamsSection({ settings, upsertSettings }: Props) {
             <select
               value={String(numVal)}
               onChange={(e) => {
-                upsertSettings.mutate({
-                  personId: settings.personId,
-                  retirementAge: settings.retirementAge,
-                  endAge: settings.endAge,
-                  returnAfterRetirement: settings.returnAfterRetirement,
-                  annualInflation: settings.annualInflation,
-                  salaryAnnualIncrease: settings.salaryAnnualIncrease,
-                  [dbCol]: Number(e.target.value),
-                });
+                upsertSettings.mutate(
+                  buildSettingsPatch(settings, {
+                    [dbCol]: Number(e.target.value),
+                  } as Partial<Settings>),
+                );
               }}
               className="text-sm border rounded px-1.5 py-0.5"
             >
@@ -192,15 +185,11 @@ export function StrategyParamsSection({ settings, upsertSettings }: Props) {
             <select
               value={String(numVal)}
               onChange={(e) => {
-                upsertSettings.mutate({
-                  personId: settings.personId,
-                  retirementAge: settings.retirementAge,
-                  endAge: settings.endAge,
-                  returnAfterRetirement: settings.returnAfterRetirement,
-                  annualInflation: settings.annualInflation,
-                  salaryAnnualIncrease: settings.salaryAnnualIncrease,
-                  [dbCol]: e.target.value,
-                });
+                upsertSettings.mutate(
+                  buildSettingsPatch(settings, {
+                    [dbCol]: e.target.value,
+                  } as Partial<Settings>),
+                );
               }}
               className="text-sm border rounded px-1.5 py-0.5"
             >
@@ -241,15 +230,11 @@ export function StrategyParamsSection({ settings, upsertSettings }: Props) {
           <select
             value={String(pctVal)}
             onChange={(e) => {
-              upsertSettings.mutate({
-                personId: settings.personId,
-                retirementAge: settings.retirementAge,
-                endAge: settings.endAge,
-                returnAfterRetirement: settings.returnAfterRetirement,
-                annualInflation: settings.annualInflation,
-                salaryAnnualIncrease: settings.salaryAnnualIncrease,
-                [dbCol]: e.target.value,
-              });
+              upsertSettings.mutate(
+                buildSettingsPatch(settings, {
+                  [dbCol]: e.target.value,
+                } as Partial<Settings>),
+              );
             }}
             className="text-sm border rounded px-1.5 py-0.5"
           >
