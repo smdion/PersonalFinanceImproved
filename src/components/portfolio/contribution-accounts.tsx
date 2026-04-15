@@ -1,6 +1,12 @@
 "use client";
 
-/** Top-level account and contribution settings panel that fetches all portfolio data via tRPC and orchestrates CRUD mutations across accounts, contributions, and sub-accounts. */
+/**
+ * Top-level account and contribution settings panel. v0.5.3 F5.
+ *
+ * Fetches all portfolio data via tRPC and orchestrates CRUD mutations via
+ * useContributionAccountsMutations. Renders the collapsible panel with
+ * UnlinkedContribsBanner + AccountCard list.
+ */
 
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -8,15 +14,9 @@ import { useUser, isAdmin } from "@/lib/context/user-context";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import {
-  TAX_TREATMENT_LABELS as TAX_LABELS,
   PERF_CATEGORY_RETIREMENT,
   PERF_CATEGORY_PORTFOLIO,
 } from "@/lib/config/display-labels";
-import {
-  formatPercent,
-  formatCurrency,
-  accountDisplayName,
-} from "@/lib/utils/format";
 import {
   ACCOUNT_TYPE_CONFIG,
   getAllCategories,
@@ -24,15 +24,12 @@ import {
 import type { PortfolioSub } from "./contribution-accounts-types";
 import { AccountCard } from "./contribution-accounts-card";
 import { CreateAccountForm } from "./contribution-accounts-create-form";
-
-// ---------------------------------------------------------------------------
-// Main component
-// ---------------------------------------------------------------------------
+import { useContributionAccountsMutations } from "./use-contribution-accounts-mutations";
+import { UnlinkedContribsBanner } from "./unlinked-contribs-banner";
 
 export function ContributionAccountsSettings() {
   const user = useUser();
   const admin = isAdmin(user);
-  const utils = trpc.useUtils();
   const { data: people } = trpc.settings.people.list.useQuery();
   const { data: jobs } = trpc.settings.jobs.list.useQuery();
   const { data: contribs } = trpc.settings.contributionAccounts.list.useQuery();
@@ -45,56 +42,7 @@ export function ContributionAccountsSettings() {
   const [expandedAcctId, setExpandedAcctId] = useState<number | null>(null);
   const [creatingAccount, setCreatingAccount] = useState(false);
 
-  // Mutations
-  const updatePerfMut = trpc.settings.performanceAccounts.update.useMutation({
-    onSuccess: () => {
-      utils.settings.performanceAccounts.invalidate();
-      utils.retirement.invalidate();
-      utils.projection.invalidate();
-      utils.networth.invalidate();
-    },
-  });
-  const createPerfMut = trpc.settings.performanceAccounts.create.useMutation({
-    onSuccess: () => {
-      utils.settings.performanceAccounts.invalidate();
-      setCreatingAccount(false);
-    },
-  });
-  const deletePerfMut = trpc.settings.performanceAccounts.delete.useMutation({
-    onSuccess: () => utils.settings.performanceAccounts.invalidate(),
-  });
-  const updateContribMut =
-    trpc.settings.contributionAccounts.update.useMutation({
-      onSuccess: () => {
-        utils.settings.contributionAccounts.invalidate();
-        utils.retirement.invalidate();
-        utils.projection.invalidate();
-      },
-    });
-  const createContribMut =
-    trpc.settings.contributionAccounts.create.useMutation({
-      onSuccess: () => {
-        utils.settings.contributionAccounts.invalidate();
-        utils.retirement.invalidate();
-        utils.projection.invalidate();
-      },
-    });
-  const updatePortfolioAccountMut =
-    trpc.settings.portfolioSnapshots.updateAccount.useMutation({
-      onSuccess: () => {
-        utils.settings.portfolioSnapshots.getLatest.invalidate();
-        utils.networth.invalidate();
-      },
-    });
-  const createPortfolioAccountMut =
-    trpc.settings.portfolioSnapshots.createAccount.useMutation({
-      onSuccess: () => {
-        utils.settings.portfolioSnapshots.getLatest.invalidate();
-        utils.networth.invalidate();
-      },
-    });
-
-  // Derived data
+  // ---- Derived data ----
   const allContribs = contribs ?? [];
   const allAccounts = (perfAccounts ?? []).sort((a, b) => {
     if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
@@ -105,7 +53,6 @@ export function ContributionAccountsSettings() {
   const peopleList = people ?? [];
   const jobsList = jobs ?? [];
 
-  // Map: perfAccountId → contribution accounts linked to it
   const contribsByPerfId = new Map<number, typeof allContribs>();
   for (const c of allContribs) {
     if (c.performanceAccountId !== null) {
@@ -118,7 +65,6 @@ export function ContributionAccountsSettings() {
     (c) => c.performanceAccountId === null && c.isActive,
   );
 
-  // Balance + portfolio sub-accounts from latest snapshot
   const balanceByPerfId = new Map<number, number>();
   const portfolioSubsByPerfId = new Map<number, PortfolioSub[]>();
   if (latestSnap?.accounts) {
@@ -147,183 +93,39 @@ export function ContributionAccountsSettings() {
     }
   }
 
-  // Helpers
+  // ---- Helpers ----
   const jobLabel = (id: number | null) => {
     if (!id) return "Personal";
     const j = jobsList.find((j) => j.id === id);
     return j ? j.employerName : String(id);
   };
-
   const personOptions = [
     { value: "joint", label: "Joint" },
     ...peopleList.map((p) => ({ value: String(p.id), label: p.name })),
   ];
-
   const categoryOptions = [
     { value: PERF_CATEGORY_RETIREMENT, label: PERF_CATEGORY_RETIREMENT },
     { value: PERF_CATEGORY_PORTFOLIO, label: PERF_CATEGORY_PORTFOLIO },
   ];
-
   const accountTypeOptions = getAllCategories().map((c) => ({
     value: c,
     label: ACCOUNT_TYPE_CONFIG[c].displayLabel,
   }));
 
-  // Mutation helpers
-  const handlePerfUpdate = (
-    pa: (typeof allAccounts)[0],
-    updates: Partial<{
-      displayName: string | null;
-      institution: string;
-      accountType: string;
-      subType: string | null;
-      label: string | null;
-      parentCategory: "Retirement" | "Portfolio";
-      ownerPersonId: number | null;
-      ownershipType: "individual" | "joint";
-      retirementBehavior: string;
-      contributionScaling: string;
-      isActive: boolean;
-    }>,
-  ) => {
-    updatePerfMut.mutate({
-      id: pa.id,
-      institution: updates.institution ?? pa.institution,
-      accountType: (updates.accountType ??
-        pa.accountType) as import("@/lib/config/account-types").AccountCategory,
-      subType:
-        updates.subType !== undefined ? updates.subType : (pa.subType ?? null),
-      label: updates.label !== undefined ? updates.label : (pa.label ?? null),
-      displayName:
-        updates.displayName !== undefined
-          ? updates.displayName
-          : (pa.displayName ?? null),
-      ownerPersonId:
-        updates.ownerPersonId !== undefined
-          ? updates.ownerPersonId
-          : pa.ownerPersonId,
-      ownershipType:
-        updates.ownershipType !== undefined
-          ? updates.ownershipType
-          : (pa.ownershipType as "individual" | "joint"),
-      parentCategory:
-        updates.parentCategory !== undefined
-          ? updates.parentCategory
-          : (pa.parentCategory as "Retirement" | "Portfolio"),
-      isActive: updates.isActive !== undefined ? updates.isActive : pa.isActive,
-      displayOrder: pa.displayOrder,
-      retirementBehavior: (updates.retirementBehavior !== undefined
-        ? updates.retirementBehavior
-        : (pa.retirementBehavior ?? "stops_at_owner_retirement")) as
-        | "stops_at_owner_retirement"
-        | "stops_when_last_retires"
-        | "continues_after_retirement",
-      contributionScaling: (updates.contributionScaling !== undefined
-        ? updates.contributionScaling
-        : (pa.contributionScaling ?? "scales_with_salary")) as
-        | "scales_with_salary"
-        | "fixed_amount",
-    });
-  };
-
-  const handleContribUpdate = (
-    c: (typeof allContribs)[0],
-    updates: Partial<{
-      accountType: string;
-      personId: number;
-      jobId: number | null;
-      taxTreatment: string;
-      contributionMethod: string;
-      contributionValue: string;
-      employerMatchType: string;
-      employerMatchValue: string | null;
-      employerMaxMatchPct: string | null;
-      employerMatchTaxTreatment: string;
-      hsaCoverageType: string | null;
-      autoMaximize: boolean;
-      isActive: boolean;
-      ownership: "individual" | "joint";
-      performanceAccountId: number | null;
-      targetAnnual: string | null;
-      allocationPriority: number;
-      notes: string | null;
-      isPayrollDeducted: boolean | null;
-    }>,
-  ) => {
-    updateContribMut.mutate({
-      id: c.id,
-      personId: updates.personId ?? c.personId,
-      jobId: updates.jobId !== undefined ? updates.jobId : c.jobId,
-      accountType: (updates.accountType ?? c.accountType) as
-        | "401k"
-        | "403b"
-        | "ira"
-        | "hsa"
-        | "brokerage",
-      taxTreatment: (updates.taxTreatment ?? c.taxTreatment) as
-        | "pre_tax"
-        | "tax_free"
-        | "after_tax"
-        | "hsa",
-      contributionMethod: (updates.contributionMethod ??
-        c.contributionMethod) as
-        | "percent_of_salary"
-        | "fixed_per_period"
-        | "fixed_monthly"
-        | "fixed_annual",
-      contributionValue: updates.contributionValue ?? c.contributionValue,
-      employerMatchType: (updates.employerMatchType ?? c.employerMatchType) as
-        | "none"
-        | "percent_of_contribution"
-        | "dollar_match"
-        | "fixed_annual",
-      employerMatchValue:
-        updates.employerMatchValue !== undefined
-          ? updates.employerMatchValue
-          : c.employerMatchValue,
-      employerMaxMatchPct:
-        updates.employerMaxMatchPct !== undefined
-          ? updates.employerMaxMatchPct
-          : c.employerMaxMatchPct,
-      employerMatchTaxTreatment: (updates.employerMatchTaxTreatment ??
-        c.employerMatchTaxTreatment) as "pre_tax" | "tax_free",
-      hsaCoverageType: (updates.hsaCoverageType !== undefined
-        ? updates.hsaCoverageType
-        : c.hsaCoverageType) as "self_only" | "family" | null | undefined,
-      autoMaximize:
-        updates.autoMaximize !== undefined
-          ? updates.autoMaximize
-          : c.autoMaximize,
-      isActive: updates.isActive !== undefined ? updates.isActive : c.isActive,
-      ownership: updates.ownership ?? (c.ownership as "individual" | "joint"),
-      performanceAccountId:
-        updates.performanceAccountId !== undefined
-          ? updates.performanceAccountId
-          : c.performanceAccountId,
-      targetAnnual:
-        updates.targetAnnual !== undefined
-          ? updates.targetAnnual
-          : c.targetAnnual,
-      allocationPriority:
-        updates.allocationPriority !== undefined
-          ? updates.allocationPriority
-          : (c.allocationPriority ?? 0),
-      notes: updates.notes !== undefined ? updates.notes : c.notes,
-      isPayrollDeducted:
-        updates.isPayrollDeducted !== undefined
-          ? updates.isPayrollDeducted
-          : c.isPayrollDeducted,
-    });
-  };
-
-  const handleLinkContrib = (
-    contribId: number,
-    perfAccountId: number | null,
-  ) => {
-    const c = allContribs.find((x) => x.id === contribId);
-    if (!c) return;
-    handleContribUpdate(c, { performanceAccountId: perfAccountId });
-  };
+  // ---- Mutations ----
+  const {
+    createPerfMut,
+    deletePerfMut,
+    createContribMut,
+    updatePortfolioAccountMut,
+    createPortfolioAccountMut,
+    handlePerfUpdate,
+    handleContribUpdate,
+    handleLinkContrib,
+  } = useContributionAccountsMutations({
+    allContribs,
+    onCreatePerfSuccess: () => setCreatingAccount(false),
+  });
 
   if (allAccounts.length === 0 && !creatingAccount) return null;
 
@@ -383,114 +185,18 @@ export function ContributionAccountsSettings() {
 
       {expanded && (
         <>
-          {/* Unlinked contributions warning */}
-          {unlinkedContribs.length > 0 && (
-            <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 mt-3 text-sm">
-              <p className="font-medium text-amber-800">
-                {unlinkedContribs.length} contribution
-                {unlinkedContribs.length > 1 ? "s" : ""} not linked to a
-                portfolio account
-              </p>
-              <p className="text-amber-700 text-xs mt-1">
-                Unlinked contributions are excluded from retirement projections.
-              </p>
-              <div className="mt-2 space-y-1.5">
-                {unlinkedContribs.map((c) => {
-                  const taxLabel = TAX_LABELS[c.taxTreatment] ?? c.taxTreatment;
-                  const acctType = c.subType ?? c.accountType;
-                  const contribAmount = formatCurrency(
-                    parseFloat(c.contributionValue),
-                  );
-                  const contribDetail =
-                    c.contributionMethod === "percent_of_salary"
-                      ? `${c.contributionValue}% of salary`
-                      : c.contributionMethod === "fixed_per_period"
-                        ? `${contribAmount}/period`
-                        : c.contributionMethod === "fixed_monthly"
-                          ? `${contribAmount}/mo`
-                          : c.contributionMethod === "fixed_annual"
-                            ? `${contribAmount}/yr`
-                            : contribAmount;
-                  const matchDetail =
-                    c.employerMatchType !== "none" && c.employerMatchValue
-                      ? `, ${c.employerMatchValue}% match${c.employerMaxMatchPct ? ` up to ${formatPercent(parseFloat(c.employerMaxMatchPct))}` : ""}`
-                      : "";
-                  const employer = jobLabel(c.jobId);
-                  const compatibleAccounts = activeAccounts.filter(
-                    (pa) =>
-                      pa.ownerPersonId === c.personId ||
-                      pa.ownerPersonId === null,
-                  );
-                  return (
-                    <div
-                      key={c.id}
-                      className="flex items-center gap-2 flex-wrap"
-                    >
-                      <select
-                        value={
-                          c.ownership === "joint" ? "joint" : String(c.personId)
-                        }
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === "joint") {
-                            handleContribUpdate(c, { ownership: "joint" });
-                          } else {
-                            handleContribUpdate(c, {
-                              personId: parseInt(val, 10),
-                              ownership: "individual",
-                            });
-                          }
-                        }}
-                        disabled={!admin}
-                        className="border border-amber-300 rounded px-1 py-0.5 text-xs bg-surface-primary text-amber-800"
-                      >
-                        {personOptions.map((po) => (
-                          <option key={po.value} value={po.value}>
-                            {po.label}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="text-amber-800 text-xs">
-                        {taxLabel} {acctType} — {contribDetail}
-                        {matchDetail} ({employer})
-                        {!c.isActive && (
-                          <span className="ml-1 text-[9px] px-1 py-0.5 rounded bg-surface-strong text-muted font-semibold">
-                            INACTIVE
-                          </span>
-                        )}
-                      </span>
-                      <select
-                        value=""
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val) handleLinkContrib(c.id, parseInt(val, 10));
-                        }}
-                        disabled={!admin}
-                        className="border border-amber-300 rounded px-1.5 py-0.5 text-xs bg-surface-primary"
-                      >
-                        <option value="">Link to...</option>
-                        {compatibleAccounts.map((pa) => {
-                          const linkedCount =
-                            contribsByPerfId.get(pa.id)?.length ?? 0;
-                          return (
-                            <option key={pa.id} value={String(pa.id)}>
-                              {accountDisplayName(pa)} — {pa.parentCategory}
-                              {linkedCount > 0
-                                ? ` [${linkedCount} linked]`
-                                : ""}
-                            </option>
-                          );
-                        })}
-                      </select>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          <UnlinkedContribsBanner
+            unlinkedContribs={unlinkedContribs}
+            activeAccounts={activeAccounts}
+            contribsByPerfId={contribsByPerfId}
+            personOptions={personOptions}
+            jobLabel={jobLabel}
+            admin={admin}
+            onContribOwnerChange={(c, update) => handleContribUpdate(c, update)}
+            onLinkContrib={handleLinkContrib}
+          />
 
           <Card className="mt-0 rounded-t-none border-t-0 p-4">
-            {/* Add Account button */}
             {admin && (
               <div className="flex justify-end items-center gap-1 mb-3">
                 <HelpTip
@@ -523,7 +229,6 @@ export function ContributionAccountsSettings() {
               </div>
             )}
 
-            {/* Create account form */}
             {creatingAccount && (
               <div className="mb-4 border border-blue-200 rounded-lg p-4 bg-blue-50/50">
                 <CreateAccountForm
@@ -541,7 +246,6 @@ export function ContributionAccountsSettings() {
               </div>
             )}
 
-            {/* Account cards */}
             <div className="space-y-3">
               {visibleAccounts.map((pa) => (
                 <AccountCard
@@ -621,7 +325,6 @@ export function ContributionAccountsSettings() {
               ))}
             </div>
 
-            {/* Closed accounts toggle */}
             {closedAccounts.length > 0 && (
               <div className="border-t mt-3 pt-2">
                 <button
