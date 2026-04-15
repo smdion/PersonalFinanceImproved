@@ -72,7 +72,7 @@ import { CardBoundary } from "@/components/cards/dashboard/utils";
 import {
   BudgetPageContext,
   type BudgetPageContextValue,
-} from "./budget-page-context";
+} from "@/components/budget/budget-page-context";
 
 export function BudgetContent() {
   const user = useUser();
@@ -690,24 +690,14 @@ export function BudgetContent() {
                 <BudgetTable
                   visibleCategories={visibleCategories}
                   hasMoreCategories={hasMoreCategories}
-                  numCols={numCols}
-                  cols={cols}
                   categoryNames={categoryNames}
                   getCatTotals={getCatTotals}
-                  effectiveNameColWidth={effectiveNameColWidth}
-                  onResizeStart={onResizeStart}
-                  sentinelRef={sentinelRef}
-                  apiService={apiService}
-                  apiLinkedProfileId={apiLinkedProfileId}
-                  profileId={profile?.id ?? null}
-                  apiLinkedColumnIndex={apiLinkedColumnIndex}
-                  showApiColumn={showApiColumn}
-                  apiActualsService={apiActualsData?.service ?? null}
+                  layout={{
+                    effectiveNameColWidth,
+                    onResizeStart,
+                    sentinelRef,
+                  }}
                   apiActualsMap={apiActualsMap}
-                  canEdit={canEdit}
-                  editMode={editMode}
-                  addingItemToCategory={addingItemToCategory}
-                  onSetAddingItemToCategory={setAddingItemToCategory}
                   rowHandlers={{
                     getDraft,
                     setDraft,
@@ -735,6 +725,8 @@ export function BudgetContent() {
                     addItemPending: createItem.isPending,
                     addItemError: createItem.error,
                     matchContrib: (sub) => matchContrib(sub),
+                    addingItemToCategory,
+                    onSetAddingItemToCategory: setAddingItemToCategory,
                   }}
                 />
 
