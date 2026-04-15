@@ -23,8 +23,8 @@ import type {
   NetWorthInput,
 } from "@/lib/calculators/types";
 
-const JAN_1 = new Date("2025-01-01");
-const DEC_31 = new Date("2025-12-31");
+const JAN_1 = new Date(2025, 0, 1); // local-time constructor — avoids UTC-string timezone shift
+const DEC_31 = new Date(2025, 11, 31);
 
 // ── Paycheck edge cases ──
 
