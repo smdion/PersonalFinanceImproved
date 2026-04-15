@@ -13,6 +13,7 @@ import {
   getLimitGroup,
 } from "@/lib/config/account-types";
 import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
+import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import { LoadingCard, ErrorCard } from "./utils";
 
@@ -85,7 +86,8 @@ function RetirementCardImpl() {
     realDefaults,
     portfolioByTaxTypeByParentCat,
   } = data;
-  const retPortfolio = portfolioByTaxTypeByParentCat?.["Retirement"];
+  const retPortfolio =
+    portfolioByTaxTypeByParentCat?.[PERF_CATEGORY_RETIREMENT];
   const retAge = settings.retirementAge;
   const endAge = settings.endAge;
   const currentAge = result.projectionByYear[0]?.age ?? 0;

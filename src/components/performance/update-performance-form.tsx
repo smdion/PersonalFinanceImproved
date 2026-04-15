@@ -62,6 +62,7 @@ export function UpdatePerformanceForm({
         displayName: accountDisplayName(
           {
             institution: a.institution,
+            // lint-violation-ok: passing accountLabel into the blessed accountDisplayName helper, not rendering it directly
             accountLabel: a.accountLabel,
             accountType: a.accountType ?? undefined,
           },

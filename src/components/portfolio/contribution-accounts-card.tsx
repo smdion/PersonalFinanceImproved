@@ -189,6 +189,7 @@ export function AccountCard({
                         Name (computed)
                       </label>
                       <div className="border border-subtle bg-surface-sunken rounded px-2 py-1 text-xs text-muted">
+                        {/* lint-violation-ok: "Name (computed)" field deliberately shows the raw programmatic label, not the user-override displayName */}
                         {pa.accountLabel}
                       </div>
                     </div>
