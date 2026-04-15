@@ -90,7 +90,7 @@ export function useBudgetPageState({
 
   const toggleEditMode = () => {
     if (editMode) {
-      saveAllDrafts().catch(console.error);
+      saveAllDrafts().catch(console.warn);
     } else {
       setEditDrafts(new Map());
       setEditMode(true);
