@@ -156,7 +156,10 @@ export const monteCarloRouter = createTRPCRouter({
         },
         savedAssetOverridesRow,
       ] = await Promise.all([
-        fetchRetirementData(ctx.db, { snapshotId: input.snapshotId }),
+        fetchRetirementData(ctx.db, {
+          snapshotId: input.snapshotId,
+          contributionProfileId: input.contributionProfileId,
+        }),
         buildMcInputs(ctx.db),
         ctx.db
           .select({ value: schema.appSettings.value })

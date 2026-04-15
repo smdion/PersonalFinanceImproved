@@ -103,6 +103,7 @@ export const coastFireRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const data = await fetchRetirementData(ctx.db, {
         snapshotId: input.snapshotId,
+        contributionProfileId: input.contributionProfileId,
       });
       const payload = await buildEnginePayload(ctx.db, data, {
         salaryOverrides: input.salaryOverrides,
@@ -236,7 +237,10 @@ export const coastFireRouter = createTRPCRouter({
       // overrides. Coast FIRE MC uses defaults for reproducibility.
       const [data, assetClasses, assetCorrelations, presetRows, presetGpRows] =
         await Promise.all([
-          fetchRetirementData(ctx.db, { snapshotId: input.snapshotId }),
+          fetchRetirementData(ctx.db, {
+            snapshotId: input.snapshotId,
+            contributionProfileId: input.contributionProfileId,
+          }),
           ctx.db
             .select()
             .from(schema.assetClassParams)

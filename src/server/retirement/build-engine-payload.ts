@@ -18,6 +18,7 @@ import { eq, asc, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import {
   toNumber,
+  getSalariesForJobs,
   getCurrentSalary,
   getEffectiveIncome,
   getTotalCompensation,
@@ -27,6 +28,7 @@ import {
   requireLimit,
   accountDisplayName,
   aggregateContributionsByCategory,
+  applyContribProfileRow,
   loadAndApplyContribProfile,
   resolveProfile,
   buildProfileContribData,
@@ -73,7 +75,7 @@ const ENGINE_CATEGORIES = new Set<string>(PARENT_CATEGORY_VALUES);
  */
 export async function fetchRetirementData(
   db: Db,
-  opts?: { snapshotId?: number },
+  opts?: { snapshotId?: number; contributionProfileId?: number },
 ) {
   const [
     people,
@@ -93,6 +95,7 @@ export async function fetchRetirementData(
     allTaxBrackets,
     brokerageGoalRows,
     allAppSettings,
+    contribProfileRow,
   ] = await Promise.all([
     db.select().from(schema.people).orderBy(asc(schema.people.id)),
     db.select().from(schema.jobs),
@@ -133,6 +136,17 @@ export async function fetchRetirementData(
       .where(eq(schema.brokerageGoals.isActive, true))
       .orderBy(asc(schema.brokerageGoals.targetYear)),
     db.select().from(schema.appSettings),
+    // Batch contribution profile fetch when profileId is known at fetch time (C6).
+    // Returns the row (or null = not found) when profileId is provided; undefined when
+    // profileId is absent. buildEnginePayload checks for undefined to decide whether to
+    // fall back to the async fetch (backward compat for callers that don't pass profileId here).
+    opts?.contributionProfileId
+      ? db
+          .select()
+          .from(schema.contributionProfiles)
+          .where(eq(schema.contributionProfiles.id, opts.contributionProfileId))
+          .then((r) => r[0] ?? null)
+      : Promise.resolve(undefined as undefined),
   ]);
   return {
     people,
@@ -152,6 +166,7 @@ export async function fetchRetirementData(
     allTaxBrackets,
     brokerageGoalRows,
     allAppSettings,
+    contribProfileRow,
   };
 }
 
@@ -198,13 +213,24 @@ export async function buildEnginePayload(
   // All active contribution accounts feed the engine (both Retirement and Portfolio).
   // Pages filter output by parentCategory on individualAccountBalances.
   // When a contribution profile is selected, apply its overrides to the raw rows.
-  const contribProfileResult = await loadAndApplyContribProfile(
-    db,
-    opts.contributionProfileId,
-    allContribsRaw,
-    allJobs,
-    new Map<number, number>(), // empty — salary merging happens below with UI overrides
-  );
+  // C6: if the caller passed contributionProfileId to fetchRetirementData, the profile
+  // row is already batched in data.contribProfileRow (undefined = not fetched; use async
+  // fallback for backward-compat). When pre-fetched, the sync path avoids a serial round-trip.
+  const contribProfileResult =
+    data.contribProfileRow !== undefined
+      ? applyContribProfileRow(
+          data.contribProfileRow,
+          allContribsRaw,
+          allJobs,
+          new Map<number, number>(),
+        )
+      : await loadAndApplyContribProfile(
+          db,
+          opts.contributionProfileId,
+          allContribsRaw,
+          allJobs,
+          new Map<number, number>(), // empty — salary merging happens below with UI overrides
+        );
   const allContribs = contribProfileResult.contribs;
   const patchedJobs = contribProfileResult.jobs;
   const contribProfileSalaryOverrides: Map<number, number> | null =
@@ -322,21 +348,18 @@ export async function buildEnginePayload(
   }
   const asOfDate = referenceDate;
   const activeJobs = patchedJobs.filter((j) => !j.endDate);
-  const jobSalaries = await Promise.all(
-    activeJobs.map(async (j) => {
-      const dbSalary = await getCurrentSalary(
-        db,
-        j.id,
-        j.annualSalary,
-        asOfDate,
-      );
-      const overrideSalary = salaryOverrideMap.get(j.personId);
+  // C7: use getSalariesForJobs helper (deduplicates the parallel-fetch pattern).
+  // Post-process to apply salary override map and compute totalComp.
+  const rawSalaries = await getSalariesForJobs(db, activeJobs, asOfDate);
+  const jobSalaries = rawSalaries.map(
+    ({ job, baseSalary, effectiveIncome }) => {
+      const overrideSalary = salaryOverrideMap.get(job.personId);
       return {
-        job: j,
-        salary: overrideSalary ?? getEffectiveIncome(j, dbSalary),
-        totalComp: overrideSalary ?? getTotalCompensation(j, dbSalary),
+        job,
+        salary: overrideSalary ?? effectiveIncome,
+        totalComp: overrideSalary ?? getTotalCompensation(job, baseSalary),
       };
-    }),
+    },
   );
   // combinedSalary = effective income (respects includeBonusInContributions flag)
   // Used for contribution calculations where percent_of_salary uses the payroll basis

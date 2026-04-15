@@ -130,6 +130,7 @@ export const scenariosRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const data = await fetchRetirementData(ctx.db, {
         snapshotId: input.snapshotId,
+        contributionProfileId: input.contributionProfileId,
       });
       const payload = await buildEnginePayload(ctx.db, data, {
         salaryOverrides: input.salaryOverrides,
