@@ -8,7 +8,11 @@ import { useUser, isAdmin } from "@/lib/context/user-context";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { TAX_TREATMENT_LABELS as TAX_LABELS } from "@/lib/config/display-labels";
-import { formatPercent, formatCurrency } from "@/lib/utils/format";
+import {
+  formatPercent,
+  formatCurrency,
+  accountDisplayName,
+} from "@/lib/utils/format";
 import {
   ACCOUNT_TYPE_CONFIG,
   getAllCategories,
@@ -466,8 +470,7 @@ export function ContributionAccountsSettings() {
                             contribsByPerfId.get(pa.id)?.length ?? 0;
                           return (
                             <option key={pa.id} value={String(pa.id)}>
-                              {pa.displayName ?? pa.accountLabel} —{" "}
-                              {pa.parentCategory}
+                              {accountDisplayName(pa)} — {pa.parentCategory}
                               {linkedCount > 0
                                 ? ` [${linkedCount} linked]`
                                 : ""}

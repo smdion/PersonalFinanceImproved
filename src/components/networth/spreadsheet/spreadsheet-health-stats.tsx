@@ -7,7 +7,10 @@ import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { PERFORMANCE_STALE_DAYS } from "@/lib/constants";
-import { PERF_CATEGORY_DEFAULT } from "@/lib/config/display-labels";
+import {
+  PERF_CATEGORY_DEFAULT,
+  PERF_CATEGORY_BROKERAGE,
+} from "@/lib/config/display-labels";
 import {
   projectFIYear,
   formatFIProjection,
@@ -54,7 +57,7 @@ const STAT_ROWS: RowDef[] = [
     label: "Brokerage/ESPP Contribution Rate",
     format: (v) => formatPercent(v, 1),
     accessor: (r, ann) => {
-      const cat = r.performanceByCategory["Brokerage"];
+      const cat = r.performanceByCategory[PERF_CATEGORY_BROKERAGE];
       if (!cat || r.grossIncome <= 0) return 0;
       const contribs =
         ann && r.isCurrent && r.ytdRatio > 0 && r.ytdRatio < 1

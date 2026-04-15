@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { Card, ProgressBar } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatNumber } from "@/lib/utils/format";
+import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { LoadingCard, ErrorCard } from "./utils";
 
@@ -82,7 +83,8 @@ function FidelityMultiplierCardImpl() {
     settings,
     result,
   } = data;
-  const retPortfolio = portfolioByTaxTypeByParentCat?.["Retirement"];
+  const retPortfolio =
+    portfolioByTaxTypeByParentCat?.[PERF_CATEGORY_RETIREMENT];
   const currentYear = new Date().getFullYear();
   // Average age across all people (matches engine calculation)
   const currentAge = Math.round(
