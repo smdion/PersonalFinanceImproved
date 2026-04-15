@@ -8,7 +8,7 @@
  * UnlinkedContribsBanner + AccountCard list.
  */
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { Card } from "@/components/ui/card";
@@ -43,55 +43,70 @@ export function ContributionAccountsSettings() {
   const [creatingAccount, setCreatingAccount] = useState(false);
 
   // ---- Derived data ----
-  const allContribs = contribs ?? [];
-  const allAccounts = (perfAccounts ?? []).sort((a, b) => {
-    if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
-    return a.displayOrder - b.displayOrder;
-  });
-  const activeAccounts = allAccounts.filter((pa) => pa.isActive);
-  const closedAccounts = allAccounts.filter((pa) => !pa.isActive);
+  const allContribs = useMemo(() => contribs ?? [], [contribs]);
+  const allAccounts = useMemo(
+    () =>
+      (perfAccounts ?? []).sort((a, b) => {
+        if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+        return a.displayOrder - b.displayOrder;
+      }),
+    [perfAccounts],
+  );
+  const activeAccounts = useMemo(
+    () => allAccounts.filter((pa) => pa.isActive),
+    [allAccounts],
+  );
+  const closedAccounts = useMemo(
+    () => allAccounts.filter((pa) => !pa.isActive),
+    [allAccounts],
+  );
   const peopleList = people ?? [];
   const jobsList = jobs ?? [];
 
-  const contribsByPerfId = new Map<number, typeof allContribs>();
-  for (const c of allContribs) {
-    if (c.performanceAccountId !== null) {
-      const arr = contribsByPerfId.get(c.performanceAccountId) ?? [];
-      arr.push(c);
-      contribsByPerfId.set(c.performanceAccountId, arr);
-    }
-  }
-  const unlinkedContribs = allContribs.filter(
-    (c) => c.performanceAccountId === null && c.isActive,
-  );
-
-  const balanceByPerfId = new Map<number, number>();
-  const portfolioSubsByPerfId = new Map<number, PortfolioSub[]>();
-  if (latestSnap?.accounts) {
-    for (const a of latestSnap.accounts) {
-      if (a.performanceAccountId) {
-        if (a.isActive !== false) {
-          balanceByPerfId.set(
-            a.performanceAccountId,
-            (balanceByPerfId.get(a.performanceAccountId) ?? 0) +
-              parseFloat(a.amount),
-          );
-        }
-        const subs = portfolioSubsByPerfId.get(a.performanceAccountId) ?? [];
-        subs.push({
-          id: a.id,
-          taxType: a.taxType,
-          subType: a.subType,
-          label: a.label,
-          amount: a.amount,
-          accountType: a.accountType,
-          ownerPersonId: a.ownerPersonId,
-          isActive: a.isActive ?? true,
-        });
-        portfolioSubsByPerfId.set(a.performanceAccountId, subs);
+  const { contribsByPerfId, unlinkedContribs } = useMemo(() => {
+    const map = new Map<number, typeof allContribs>();
+    for (const c of allContribs) {
+      if (c.performanceAccountId !== null) {
+        const arr = map.get(c.performanceAccountId) ?? [];
+        arr.push(c);
+        map.set(c.performanceAccountId, arr);
       }
     }
-  }
+    const unlinked = allContribs.filter(
+      (c) => c.performanceAccountId === null && c.isActive,
+    );
+    return { contribsByPerfId: map, unlinkedContribs: unlinked };
+  }, [allContribs]);
+
+  const { balanceByPerfId, portfolioSubsByPerfId } = useMemo(() => {
+    const balMap = new Map<number, number>();
+    const subMap = new Map<number, PortfolioSub[]>();
+    if (latestSnap?.accounts) {
+      for (const a of latestSnap.accounts) {
+        if (a.performanceAccountId) {
+          if (a.isActive !== false) {
+            balMap.set(
+              a.performanceAccountId,
+              (balMap.get(a.performanceAccountId) ?? 0) + parseFloat(a.amount),
+            );
+          }
+          const subs = subMap.get(a.performanceAccountId) ?? [];
+          subs.push({
+            id: a.id,
+            taxType: a.taxType,
+            subType: a.subType,
+            label: a.label,
+            amount: a.amount,
+            accountType: a.accountType,
+            ownerPersonId: a.ownerPersonId,
+            isActive: a.isActive ?? true,
+          });
+          subMap.set(a.performanceAccountId, subs);
+        }
+      }
+    }
+    return { balanceByPerfId: balMap, portfolioSubsByPerfId: subMap };
+  }, [latestSnap]);
 
   // ---- Helpers ----
   const jobLabel = (id: number | null) => {

@@ -92,6 +92,7 @@ export function derivePortfolioQuickLookStats(
   firstDate: string;
 } | null {
   if (snapshots.length < 2) return null;
+  // ISO 8601 YYYY-MM-DD strings sort lexicographically = chronologically.
   const sorted = [...snapshots].sort((a, b) => a.date.localeCompare(b.date));
   const current = sorted[sorted.length - 1]!;
   const first = sorted[0]!;
