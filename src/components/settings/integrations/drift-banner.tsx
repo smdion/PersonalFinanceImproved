@@ -75,8 +75,10 @@ export function DriftBanner({
             value={profile.linkedProfileId ?? ""}
             onChange={(e) => {
               const val = e.target.value;
-              if (val)
-                setLinkedProfileMut.mutate({ service, profileId: Number(val) });
+              setLinkedProfileMut.mutate({
+                service,
+                profileId: val ? Number(val) : null,
+              });
             }}
             className="px-1 py-1 text-[11px] border border-strong rounded bg-surface-primary min-w-[120px]"
           >

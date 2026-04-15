@@ -240,7 +240,6 @@ describe("historical router — update", () => {
         taxFreeTotal: "0",
         taxDeferredTotal: "0",
         portfolioTotal: "0",
-        homeImprovementsCumulative: "0",
         portfolioByTaxLocation: { retirement: {}, portfolio: {} },
       })
       .run();
@@ -515,7 +514,6 @@ describe("historical router — home improvement items", () => {
         taxFreeTotal: "0",
         taxDeferredTotal: "0",
         portfolioTotal: "0",
-        homeImprovementsCumulative: "0",
         portfolioByTaxLocation: { retirement: {}, portfolio: {} },
       })
       .run();
@@ -537,7 +535,6 @@ describe("historical router — home improvement items", () => {
         taxFreeTotal: "0",
         taxDeferredTotal: "0",
         portfolioTotal: "0",
-        homeImprovementsCumulative: "0",
         portfolioByTaxLocation: { retirement: {}, portfolio: {} },
       })
       .run();
@@ -631,7 +628,6 @@ describe("historical router — other asset items", () => {
         taxFreeTotal: "0",
         taxDeferredTotal: "0",
         portfolioTotal: "0",
-        homeImprovementsCumulative: "0",
         portfolioByTaxLocation: { retirement: {}, portfolio: {} },
       })
       .run();
@@ -653,7 +649,6 @@ describe("historical router — other asset items", () => {
         taxFreeTotal: "0",
         taxDeferredTotal: "0",
         portfolioTotal: "0",
-        homeImprovementsCumulative: "0",
         portfolioByTaxLocation: { retirement: {}, portfolio: {} },
       })
       .run();
@@ -749,7 +744,6 @@ describe("historical router — salaries in history rows", () => {
           taxFreeTotal: "0",
           taxDeferredTotal: "0",
           portfolioTotal: "0",
-          homeImprovementsCumulative: "0",
           portfolioByTaxLocation: { retirement: {}, portfolio: {} },
         })
         .run();

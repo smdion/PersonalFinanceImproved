@@ -203,6 +203,34 @@ describe("all-time high (ATH)", () => {
   });
 });
 
+// ---- sharpest gain/loss — withRate empty ----
+
+describe("sharpest gain/loss with no multi-day changes", () => {
+  it("returns null for all four sharpest fields when all snapshots share the same date", () => {
+    // Both consecutive changes have days === 0, so withRate is empty.
+    const snaps = [
+      snap(1, "2024-01-01", 100_000),
+      snap(2, "2024-01-01", 105_000),
+      snap(3, "2024-01-01", 103_000),
+    ];
+    const result = derivePortfolioQuickLookStats(snaps)!;
+    expect(result.sharpestGainDollar).toBeNull();
+    expect(result.sharpestLossDollar).toBeNull();
+    expect(result.sharpestGainPct).toBeNull();
+    expect(result.sharpestLossPct).toBeNull();
+  });
+
+  it("returns non-null sharpest values when at least one change spans multiple days", () => {
+    const snaps = [
+      snap(1, "2024-01-01", 100_000),
+      snap(2, "2024-01-31", 110_000), // 30 days
+    ];
+    const result = derivePortfolioQuickLookStats(snaps)!;
+    expect(result.sharpestGainDollar).not.toBeNull();
+    expect(result.sharpestLossDollar).not.toBeNull();
+  });
+});
+
 // ---- all-time growth ----
 
 describe("all-time growth", () => {

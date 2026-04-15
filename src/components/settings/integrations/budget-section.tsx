@@ -86,17 +86,20 @@ export function BudgetSection({
     });
   };
 
-  // Apply all suggested budget matches + any manual overrides
+  // Apply all suggested budget matches + any manual overrides.
+  // Deduplicate by itemId so an override never races with its suggestion.
   const applyAllBudgetMatches = () => {
-    const toLink = [
-      ...budget.matches
-        .filter((m) => m.status === "suggested" && m.apiCategoryId)
-        .map((m) => ({ itemId: m.budgetItemId, apiId: m.apiCategoryId! })),
-      ...Object.entries(budgetOverrides)
-        .filter(([, v]) => v)
-        .map(([k, v]) => ({ itemId: Number(k), apiId: v })),
-    ];
-    for (const { itemId, apiId } of toLink) {
+    const map = new Map<number, string>();
+    for (const m of budget.matches) {
+      if (m.status === "suggested" && m.apiCategoryId) {
+        map.set(m.budgetItemId, m.apiCategoryId);
+      }
+    }
+    // Overrides take precedence — written second so they win.
+    for (const [k, v] of Object.entries(budgetOverrides)) {
+      if (v) map.set(Number(k), v);
+    }
+    for (const [itemId, apiId] of map) {
       applyBudgetLink(itemId, apiId);
     }
   };

@@ -792,12 +792,6 @@ export const netWorthAnnual = pgTable("net_worth_annual", {
   portfolioTotal: decimal("portfolio_total", { precision: 14, scale: 2 })
     .notNull()
     .default("0"),
-  homeImprovementsCumulative: decimal("home_improvements_cumulative", {
-    precision: 14,
-    scale: 2,
-  })
-    .notNull()
-    .default("0"),
   propertyTaxes: decimal("property_taxes", { precision: 14, scale: 2 }),
   // Point-in-time tax location breakdown captured at finalization.
   // Shape: { retirement: { taxFree: N, preTax: N, hsa: N, afterTax: N }, portfolio: { afterTax: N } }

@@ -181,8 +181,12 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
   let budgetStableCount = 0;
 
   // Budget baseline for budget stability metric (user's stated retirement expenses).
-  // Inflated from today's dollars to retirement-year dollars the same way the engine does.
-  const retirementBudget = engineInput.decumulationAnnualExpenses ?? null;
+  // Falls back to annualExpenses when decumulationAnnualExpenses is omitted
+  // (the server omits it when the decumulation budget matches accumulation).
+  const retirementBudget =
+    engineInput.decumulationAnnualExpenses ??
+    engineInput.annualExpenses ??
+    null;
 
   // Deflator for converting nominal retirement-year dollars to today's dollars
   const yearsToRetirement = engineInput.retirementAge - startAge;
@@ -305,11 +309,13 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
       if (isStable) spendingStableCount++;
 
       // Budget stability: same check but against the user's retirement budget
-      // (inflation-adjusted from today's dollars to each year's nominal dollars)
+      // (inflation-adjusted from today's dollars to each year's nominal dollars).
+      // Use trialInflationRate (not the deterministic rate) so accumulation and
+      // decumulation are in the same nominal frame within each trial.
       if (retirementBudget !== null) {
         const budgetAtRetirement =
           retirementBudget *
-          Math.pow(1 + engineInput.inflationRate, yearsToRetirement);
+          Math.pow(1 + trialInflationRate, yearsToRetirement);
         const isBudgetStable =
           budgetAtRetirement === 0 ||
           decYears.every((y, i) => {
@@ -319,11 +325,12 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
           });
         if (isBudgetStable) budgetStableCount++;
       }
-      // Per-year spending ratios for stability chart bands
+      // Per-year spending ratios for stability chart bands.
+      // Same trialInflationRate for consistency within each trial.
       const budgetAtRet =
         retirementBudget !== null
           ? retirementBudget *
-            Math.pow(1 + engineInput.inflationRate, yearsToRetirement)
+            Math.pow(1 + trialInflationRate, yearsToRetirement)
           : null;
       for (let di = 0; di < decYears.length && di < numDecYears; di++) {
         const yr = decYears[di]!;

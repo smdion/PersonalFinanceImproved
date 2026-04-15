@@ -8,6 +8,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.5
 
+## [0.5.4] - 2026-04-14
+
+Maintenance release. Bug fixes — no new features.
+
+### Fixed
+
+- **Snapshot sync no longer misidentifies transactions.** The memo-tag check used a substring match, so a `snapshot:1` tag would accidentally match transactions tagged `snapshot:10`, `snapshot:11`, etc. Sync now uses exact word-boundary matching, preventing false positive skips and double-posts on resyncs.
+- **Budget category totals now use the correct per-column contribution amounts.** When a category's contribution profile varies across months, the totals row was using a single scalar value for all columns instead of reading each column's actual contribution. Affected users would have seen incorrect monthly contribution totals in the budget summary.
+- **Saving a scenario while the page was still loading no longer overwrites its name.** If the save button was clicked before scenario data had finished fetching, the name could be silently replaced with a "Scenario" placeholder. The save is now a no-op until data is ready.
+- **Zero-dollar account cap overrides now survive the settings form.** A `$0` cap was being treated as absent (same as an unset cap) during form serialization, causing it to be cleared on the next save. The form now preserves explicit zero values correctly.
+- **Profile unlinking in integrations settings now works.** The mutation that removes a linked profile was not accepting a null profile ID, so the unlink action had no effect. It now sends `null` and the link is correctly cleared.
+- **Withdrawal comparison card now shows an error state when analysis fails.** Previously, an analysis error was displayed as "no improvement found" — an unrelated message that could mislead users into thinking the comparison ran successfully. A dedicated error state is shown instead.
+- **Monte Carlo projections now apply inflation consistently within each simulation path.** In stochastic runs, each trial samples its own inflation rate — but the retirement budget was being inflated by the global deterministic rate instead of the trial's sampled rate, causing the per-trial budget calculation to be inconsistent with the rest of that trial's outcome.
+- **Portfolio quick-look stats no longer crash when all snapshots share the same date.** The sharpest-gain and sharpest-loss calculations are now returned as `null` (displayed as "not enough data") rather than throwing on an empty reduce.
+
+### Removed
+
+- **`home_improvements_cumulative` column dropped from the annual net-worth table.** This column was never read by the app (cumulative figures are derived from the source table at query time) and was being written with stale data. Removed as dead weight — no data or behavior is affected.
+
+---
+
 ## [0.5.3] - 2026-04-14
 
 Maintenance release. Engine correctness fixes and internal reorganization — no new features.

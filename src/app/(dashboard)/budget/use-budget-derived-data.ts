@@ -198,18 +198,26 @@ export function useBudgetDerivedData({
   const getCatTotals = useCallback(
     (items: RawItem[]) =>
       Array.from({ length: numCols }, (_, col) =>
-        items.reduce(
-          (s, it) =>
-            s +
-            (editMode
-              ? getDraft(it.id, col, it.amounts[col] ?? 0)
-              : it.contribAmount != null
-                ? it.contribAmount
-                : (it.amounts[col] ?? 0)),
-          0,
-        ),
+        items.reduce((s, it) => {
+          let val: number;
+          if (editMode) {
+            val = getDraft(it.id, col, it.amounts[col] ?? 0);
+          } else if (it.contribAmount != null) {
+            val = it.contribAmount;
+          } else {
+            // Look up the per-column contribution profile before falling back
+            // to the raw amounts array, so each column reflects its own
+            // contribution profile rather than a single shared scalar.
+            const map = contribByCanonicalPerCol[col];
+            const key =
+              map && map.size > 0 ? normalizeContribKey(it.subcategory) : null;
+            const fromContrib = key != null ? (map!.get(key) ?? null) : null;
+            val = fromContrib ?? it.amounts[col] ?? 0;
+          }
+          return s + val;
+        }, 0),
       ),
-    [numCols, editMode, getDraft],
+    [numCols, editMode, getDraft, contribByCanonicalPerCol],
   );
 
   // ---- Sinking funds (savings goals with monthly contributions) ----

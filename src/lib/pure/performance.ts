@@ -394,7 +394,6 @@ export type NetWorthValues = {
   otherAssets: string;
   mortgageBalance: string;
   otherLiabilities: string;
-  homeImprovementsCumulative: string;
   propertyTaxes: string | null;
 };
 
@@ -423,7 +422,6 @@ export function assembleNetWorthValues(data: {
     otherAssets: data.otherAssets.toFixed(2),
     mortgageBalance: data.mortgageBalance.toFixed(2),
     otherLiabilities: data.otherLiabilities.toFixed(2),
-    homeImprovementsCumulative: data.homeImprovements.toFixed(2),
     propertyTaxes:
       data.propertyTaxes > 0 ? data.propertyTaxes.toFixed(2) : null,
   };

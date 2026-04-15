@@ -43,9 +43,14 @@ export const syncConfigRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  /** Set which Ledgr budget profile syncs with the budget API. */
+  /** Set (or clear) which Ledgr budget profile syncs with the budget API. */
   setLinkedProfile: syncProcedure
-    .input(z.object({ service: serviceEnum, profileId: z.number().int() }))
+    .input(
+      z.object({
+        service: serviceEnum,
+        profileId: z.number().int().nullable(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       await ctx.db
         .update(schema.apiConnections)

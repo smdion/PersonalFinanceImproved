@@ -337,8 +337,13 @@ export const strategyRouter = createTRPCRouter({
       });
       const baseline = {
         successRate: baselineMc.successRate,
+        // Coalesce to 0 so downstream comparisons and arithmetic never see null.
+        // A null stability rate means the metric wasn't computable; treating it
+        // as 0 conservatively flags it for the smoothness diagnosis path.
         stabilityRate:
-          baselineMc.budgetStabilityRate ?? baselineMc.spendingStabilityRate,
+          baselineMc.budgetStabilityRate ??
+          baselineMc.spendingStabilityRate ??
+          0,
       };
 
       // --- Diagnose ---
@@ -585,13 +590,18 @@ export const strategyRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
+      const key = "mc_inflation_overrides";
+      const value = {
+        meanRate: input.inflationMean,
+        stdDev: input.inflationStdDev,
+      };
       await db
-        .update(schema.mcPresets)
-        .set({
-          inflationMean: String(input.inflationMean),
-          inflationStdDev: String(input.inflationStdDev),
-        })
-        .where(eq(schema.mcPresets.key, input.preset));
+        .insert(schema.appSettings)
+        .values({ key, value })
+        .onConflictDoUpdate({
+          target: schema.appSettings.key,
+          set: { value },
+        });
       return { updated: true };
     }),
 

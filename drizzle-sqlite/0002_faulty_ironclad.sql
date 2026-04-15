@@ -1,0 +1,1 @@
+ALTER TABLE `net_worth_annual` DROP COLUMN `home_improvements_cumulative`;
