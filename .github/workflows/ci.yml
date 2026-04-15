@@ -113,9 +113,7 @@ jobs:
           retention-days: 7
 
       - name: Audit production dependencies (high/critical)
-        run: |
-          npm i --package-lock-only --ignore-scripts
-          npm audit --omit=dev --audit-level=high
+        run: npx audit-ci@^7 --high
 
       - name: Check migrations
         run: pnpm check:migrations
