@@ -69,6 +69,10 @@ import { useColumnMutations } from "@/components/budget/hooks/use-column-mutatio
 import { useSyncMutations } from "@/components/budget/hooks/use-sync-mutations";
 import { useItemMutations } from "@/components/budget/hooks/use-item-mutations";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
+import {
+  BudgetPageContext,
+  type BudgetPageContextValue,
+} from "./budget-page-context";
 
 export function BudgetContent() {
   const user = useUser();
@@ -355,6 +359,41 @@ export function BudgetContent() {
     });
   }, [perColumnPaycheckData]);
 
+  // API actuals variables — hoisted before early returns so the context
+  // memo below (also before early returns) can depend on them.
+  const showApiColumn = (apiActualsData?.actuals?.length ?? 0) > 0;
+  const apiService = apiActualsData?.service ?? null;
+  const apiLinkedProfileId = apiActualsData?.linkedProfileId ?? null;
+
+  // --- Page context (stable values shared with BudgetTable, BudgetSummaryBar) ---
+  // Must be before early returns to satisfy react-hooks/rules-of-hooks.
+  const pageCtxValue = useMemo<BudgetPageContextValue>(
+    () => ({
+      profileId: profile?.id ?? null,
+      cols,
+      activeColumn,
+      apiService: apiService ?? null,
+      apiLinkedProfileId,
+      apiLinkedColumnIndex: apiActualsData?.linkedColumnIndex ?? null,
+      showApiColumn,
+      canEdit,
+      editMode,
+      setEditMode,
+    }),
+    [
+      profile?.id,
+      cols,
+      activeColumn,
+      apiService,
+      apiLinkedProfileId,
+      apiActualsData?.linkedColumnIndex,
+      showApiColumn,
+      canEdit,
+      editMode,
+      setEditMode,
+    ],
+  );
+
   // --- Loading / error / empty states ---
 
   if (isLoading) {
@@ -446,14 +485,11 @@ export function BudgetContent() {
     return key ? (map.get(key) ?? null) : null;
   };
 
-  // --- API actuals ---
+  // --- API actuals map ---
   const apiActualsMap = new Map<
     number,
     { activity: number; balance: number; budgeted: number }
   >();
-  const showApiColumn = (apiActualsData?.actuals?.length ?? 0) > 0;
-  const apiService = apiActualsData?.service ?? null;
-  const apiLinkedProfileId = apiActualsData?.linkedProfileId ?? null;
   const apiLinkedColumnIndex = apiActualsData?.linkedColumnIndex ?? 0;
   if (apiActualsData?.actuals) {
     for (const a of apiActualsData.actuals) {
@@ -468,288 +504,293 @@ export function BudgetContent() {
   // --- Render ---
 
   return (
-    <div>
-      <PageHeader title="Budget" />
+    <BudgetPageContext.Provider value={pageCtxValue}>
+      <div>
+        <PageHeader title="Budget" />
 
-      {/* Tab bar */}
-      <div className="flex gap-1 border-b mb-4">
-        <button
-          type="button"
-          onClick={() => setActiveTab("budget")}
-          className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${
-            activeTab === "budget"
-              ? "border-blue-600 text-blue-600"
-              : "border-transparent text-muted hover:text-secondary"
-          }`}
-        >
-          Budget Profiles
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("contributions")}
-          className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${
-            activeTab === "contributions"
-              ? "border-blue-600 text-blue-600"
-              : "border-transparent text-muted hover:text-secondary"
-          }`}
-        >
-          Contribution Profiles
-        </button>
-      </div>
+        {/* Tab bar */}
+        <div className="flex gap-1 border-b mb-4">
+          <button
+            type="button"
+            onClick={() => setActiveTab("budget")}
+            className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${
+              activeTab === "budget"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-muted hover:text-secondary"
+            }`}
+          >
+            Budget Profiles
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("contributions")}
+            className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${
+              activeTab === "contributions"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-muted hover:text-secondary"
+            }`}
+          >
+            Contribution Profiles
+          </button>
+        </div>
 
-      {activeTab === "budget" && (
-        <CardBoundary title="Budget Profiles">
-          {/* Active budget summary bar */}
-          <BudgetSummaryBar
-            profileName={profile?.name ?? null}
-            activeProfileName={activeProfile?.name ?? null}
-            isViewingNonActive={isViewingNonActive}
-            profileId={profile?.id ?? null}
-            apiService={apiService}
-            apiLinkedProfileId={apiLinkedProfileId}
-            apiLinkedColumnIndex={apiLinkedColumnIndex}
-            showApiColumn={showApiColumn}
-            cols={cols}
-            activeColumn={activeColumn}
-            isWeighted={isWeighted}
-            columnMonths={columnMonths}
-            allColumnResults={allColumnResults as ColumnResult[] | null}
-            canEdit={canEdit}
-            editMode={editMode}
-            unsavedCount={editDrafts.size}
-            saveError={updateBatch.error}
-            pullError={syncFromApi.error}
-            pushError={syncToApi.error}
-            showModeManager={showModeManager}
-            onToggleModeManager={() => setShowModeManager(!showModeManager)}
-            isPulling={syncFromApi.isPending}
-            isPushing={syncToApi.isPending}
-            onPullFromApi={() =>
-              syncFromApi.mutate({ selectedColumn: activeColumn })
-            }
-            onOpenPushPreview={() => {
-              // Build diff preview from raw items + cached YNAB actuals
-              const items: PushPreviewItem[] = [];
-              for (const item of rawItems) {
-                if (!item.apiCategoryId) continue;
-                if (
-                  item.apiSyncDirection !== "push" &&
-                  item.apiSyncDirection !== "both"
-                )
-                  continue;
-                const amounts = item.amounts as number[];
-                const colIdx = Math.min(activeColumn, amounts.length - 1);
-                const newValue = amounts[colIdx] ?? 0;
-                const actual = apiActualsMap.get(item.id);
-                items.push({
-                  name: item.subcategory,
-                  field: "Budgeted",
-                  currentYnab: actual?.budgeted ?? 0,
-                  newValue,
-                });
-              }
-              setPushPreviewItems(items);
-            }}
-            isSavingBatch={updateBatch.isPending}
-            onToggleEditMode={toggleEditMode}
-          />
-
-          {/* Master-detail layout */}
-          <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
-            {/* Left: profile list sidebar */}
-            <BudgetProfileSidebar
-              profiles={(allProfiles ?? []) as BudgetProfileListEntry[]}
-              displayProfileId={displayProfileId}
-              canEdit={canEdit}
-              renamingProfileId={renamingProfileId}
-              renameValue={renameValue}
-              onRenameValueChange={setRenameValue}
-              onStartRename={(id, name) => {
-                setRenamingProfileId(id);
-                setRenameValue(name);
-              }}
-              onFinishRename={(id, currentName) => {
-                if (renameValue.trim() && renameValue.trim() !== currentName) {
-                  renameProfile.mutate({ id, name: renameValue.trim() });
-                }
-                setRenamingProfileId(null);
-              }}
-              onCancelRename={() => setRenamingProfileId(null)}
+        {activeTab === "budget" && (
+          <CardBoundary title="Budget Profiles">
+            {/* Active budget summary bar */}
+            <BudgetSummaryBar
+              profileName={profile?.name ?? null}
+              activeProfileName={activeProfile?.name ?? null}
+              isViewingNonActive={isViewingNonActive}
+              profileId={profile?.id ?? null}
               apiService={apiService}
               apiLinkedProfileId={apiLinkedProfileId}
               apiLinkedColumnIndex={apiLinkedColumnIndex}
-              onSelectProfile={setViewingProfileId}
-              onCreateProfile={(name) => createProfile.mutate({ name })}
-              onSetActiveProfile={(id) => setActiveProfile.mutate({ id })}
-              onDeleteProfile={(id) => deleteProfile.mutate({ id })}
+              showApiColumn={showApiColumn}
+              cols={cols}
+              activeColumn={activeColumn}
+              isWeighted={isWeighted}
+              columnMonths={columnMonths}
+              allColumnResults={allColumnResults as ColumnResult[] | null}
+              canEdit={canEdit}
+              editMode={editMode}
+              unsavedCount={editDrafts.size}
+              saveError={updateBatch.error}
+              pullError={syncFromApi.error}
+              pushError={syncToApi.error}
+              showModeManager={showModeManager}
+              onToggleModeManager={() => setShowModeManager(!showModeManager)}
+              isPulling={syncFromApi.isPending}
+              isPushing={syncToApi.isPending}
+              onPullFromApi={() =>
+                syncFromApi.mutate({ selectedColumn: activeColumn })
+              }
+              onOpenPushPreview={() => {
+                // Build diff preview from raw items + cached YNAB actuals
+                const items: PushPreviewItem[] = [];
+                for (const item of rawItems) {
+                  if (!item.apiCategoryId) continue;
+                  if (
+                    item.apiSyncDirection !== "push" &&
+                    item.apiSyncDirection !== "both"
+                  )
+                    continue;
+                  const amounts = item.amounts as number[];
+                  const colIdx = Math.min(activeColumn, amounts.length - 1);
+                  const newValue = amounts[colIdx] ?? 0;
+                  const actual = apiActualsMap.get(item.id);
+                  items.push({
+                    name: item.subcategory,
+                    field: "Budgeted",
+                    currentYnab: actual?.budgeted ?? 0,
+                    newValue,
+                  });
+                }
+                setPushPreviewItems(items);
+              }}
+              isSavingBatch={updateBatch.isPending}
+              onToggleEditMode={toggleEditMode}
             />
 
-            {/* Right: budget detail panel */}
-            <div className="border-t md:border-t-0 md:border-l pt-4 md:pt-0 md:pl-4">
-              {canEdit && showModeManager && (
-                <BudgetModeManager
-                  cols={cols}
-                  onRenameColumn={(idx, label) =>
-                    renameColumn.mutate({ colIndex: idx, label })
+            {/* Master-detail layout */}
+            <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
+              {/* Left: profile list sidebar */}
+              <BudgetProfileSidebar
+                profiles={(allProfiles ?? []) as BudgetProfileListEntry[]}
+                displayProfileId={displayProfileId}
+                canEdit={canEdit}
+                renamingProfileId={renamingProfileId}
+                renameValue={renameValue}
+                onRenameValueChange={setRenameValue}
+                onStartRename={(id, name) => {
+                  setRenamingProfileId(id);
+                  setRenameValue(name);
+                }}
+                onFinishRename={(id, currentName) => {
+                  if (
+                    renameValue.trim() &&
+                    renameValue.trim() !== currentName
+                  ) {
+                    renameProfile.mutate({ id, name: renameValue.trim() });
                   }
-                  onRemoveColumn={(idx) =>
-                    removeColumn.mutate({ colIndex: idx })
-                  }
-                  onAddColumn={(label) => addColumn.mutate({ label })}
-                  addColumnPending={addColumn.isPending}
-                  contributionProfiles={
-                    (contribProfiles ?? []) as Array<{
-                      id: number;
-                      name: string;
-                      isDefault: boolean;
-                    }>
-                  }
-                  columnContributionProfileIds={
-                    (profile?.columnContributionProfileIds as
-                      | (number | null)[]
-                      | null) ?? null
-                  }
-                  onUpdateContributionProfiles={(ids) =>
-                    updateColumnContribProfiles.mutate({
-                      columnContributionProfileIds: ids,
-                    })
-                  }
-                />
-              )}
-
-              {allColumnResults && (
-                <BudgetSummaryTable
-                  cols={cols}
-                  activeColumn={activeColumn}
-                  onSetActiveColumn={setActiveColumn}
-                  allColumnResults={allColumnResults as ColumnResult[]}
-                  payrollBreakdowns={payrollBreakdowns}
-                  columnMonths={columnMonths}
-                  onUpdateColumnMonths={(months) =>
-                    updateColumnMonths.mutate({ columnMonths: months })
-                  }
-                  apiLinkedColumnIndex={
-                    apiLinkedProfileId === profile?.id
-                      ? apiLinkedColumnIndex
-                      : null
-                  }
-                  apiService={apiService}
-                  sinkingFunds={sinkingFunds}
-                  nameColWidth={effectiveNameColWidth}
-                />
-              )}
-
-              {cols.length > 1 && !isWeighted && (
-                <p className="text-[10px] text-faint mb-2">
-                  Click a column header to set the active budget mode used
-                  across all pages
-                </p>
-              )}
-
-              {/* Full budget table */}
-              <BudgetTable
-                visibleCategories={visibleCategories}
-                hasMoreCategories={hasMoreCategories}
-                numCols={numCols}
-                cols={cols}
-                categoryNames={categoryNames}
-                getCatTotals={getCatTotals}
-                effectiveNameColWidth={effectiveNameColWidth}
-                onResizeStart={onResizeStart}
-                sentinelRef={sentinelRef}
+                  setRenamingProfileId(null);
+                }}
+                onCancelRename={() => setRenamingProfileId(null)}
                 apiService={apiService}
                 apiLinkedProfileId={apiLinkedProfileId}
-                profileId={profile?.id ?? null}
                 apiLinkedColumnIndex={apiLinkedColumnIndex}
-                showApiColumn={showApiColumn}
-                apiActualsService={apiActualsData?.service ?? null}
-                apiActualsMap={apiActualsMap}
-                canEdit={canEdit}
-                editMode={editMode}
-                addingItemToCategory={addingItemToCategory}
-                onSetAddingItemToCategory={setAddingItemToCategory}
-                rowHandlers={{
-                  getDraft,
-                  setDraft,
-                  onUpdateCell: (id, col, amt) =>
-                    updateCell.mutate({ id, colIndex: col, amount: amt }),
-                  onToggleItemEssential: (id, isEssential) =>
-                    updateItemEssential.mutate({ id, isEssential }),
-                  onToggleCategoryEssential: (category, isEssential) =>
-                    updateCategoryEssential.mutate({ category, isEssential }),
-                  onMoveItem: (id, newCategory) =>
-                    moveItem.mutate({ id, newCategory }),
-                  onDeleteItem: (id) => deleteItem.mutate({ id }),
-                  onConvertToGoal: (id, name) =>
-                    convertToGoal.mutate({
-                      budgetItemId: id,
-                      goalName: name,
-                      targetMode: "ongoing",
-                    }),
-                  onAddItem: (category, subcategory, isEssential) =>
-                    createItem.mutate({
-                      category,
-                      subcategory,
-                      isEssential,
-                    }),
-                  addItemPending: createItem.isPending,
-                  addItemError: createItem.error,
-                  matchContrib: (sub) => matchContrib(sub),
-                }}
+                onSelectProfile={setViewingProfileId}
+                onCreateProfile={(name) => createProfile.mutate({ name })}
+                onSetActiveProfile={(id) => setActiveProfile.mutate({ id })}
+                onDeleteProfile={(id) => deleteProfile.mutate({ id })}
               />
 
-              {/* Standalone add-item form for new categories */}
-              {canEdit &&
-                addingItemToCategory &&
-                !categoryMap.has(addingItemToCategory) && (
-                  <AddItemForm
-                    category={addingItemToCategory}
-                    onAdd={(category, subcategory, isEssential) =>
-                      void createItem
-                        .mutateAsync({ category, subcategory, isEssential })
-                        .then(() => setAddingItemToCategory(null))
+              {/* Right: budget detail panel */}
+              <div className="border-t md:border-t-0 md:border-l pt-4 md:pt-0 md:pl-4">
+                {canEdit && showModeManager && (
+                  <BudgetModeManager
+                    cols={cols}
+                    onRenameColumn={(idx, label) =>
+                      renameColumn.mutate({ colIndex: idx, label })
                     }
-                    onCancel={() => setAddingItemToCategory(null)}
-                    isPending={createItem.isPending}
-                    error={createItem.error}
-                    standalone
+                    onRemoveColumn={(idx) =>
+                      removeColumn.mutate({ colIndex: idx })
+                    }
+                    onAddColumn={(label) => addColumn.mutate({ label })}
+                    addColumnPending={addColumn.isPending}
+                    contributionProfiles={
+                      (contribProfiles ?? []) as Array<{
+                        id: number;
+                        name: string;
+                        isDefault: boolean;
+                      }>
+                    }
+                    columnContributionProfileIds={
+                      (profile?.columnContributionProfileIds as
+                        | (number | null)[]
+                        | null) ?? null
+                    }
+                    onUpdateContributionProfiles={(ids) =>
+                      updateColumnContribProfiles.mutate({
+                        columnContributionProfileIds: ids,
+                      })
+                    }
                   />
                 )}
 
-              {canEdit && (
-                <AddCategoryForm
-                  onCreateCategory={(name) => setAddingItemToCategory(name)}
+                {allColumnResults && (
+                  <BudgetSummaryTable
+                    cols={cols}
+                    activeColumn={activeColumn}
+                    onSetActiveColumn={setActiveColumn}
+                    allColumnResults={allColumnResults as ColumnResult[]}
+                    payrollBreakdowns={payrollBreakdowns}
+                    columnMonths={columnMonths}
+                    onUpdateColumnMonths={(months) =>
+                      updateColumnMonths.mutate({ columnMonths: months })
+                    }
+                    apiLinkedColumnIndex={
+                      apiLinkedProfileId === profile?.id
+                        ? apiLinkedColumnIndex
+                        : null
+                    }
+                    apiService={apiService}
+                    sinkingFunds={sinkingFunds}
+                    nameColWidth={effectiveNameColWidth}
+                  />
+                )}
+
+                {cols.length > 1 && !isWeighted && (
+                  <p className="text-[10px] text-faint mb-2">
+                    Click a column header to set the active budget mode used
+                    across all pages
+                  </p>
+                )}
+
+                {/* Full budget table */}
+                <BudgetTable
+                  visibleCategories={visibleCategories}
+                  hasMoreCategories={hasMoreCategories}
+                  numCols={numCols}
+                  cols={cols}
+                  categoryNames={categoryNames}
+                  getCatTotals={getCatTotals}
+                  effectiveNameColWidth={effectiveNameColWidth}
+                  onResizeStart={onResizeStart}
+                  sentinelRef={sentinelRef}
+                  apiService={apiService}
+                  apiLinkedProfileId={apiLinkedProfileId}
+                  profileId={profile?.id ?? null}
+                  apiLinkedColumnIndex={apiLinkedColumnIndex}
+                  showApiColumn={showApiColumn}
+                  apiActualsService={apiActualsData?.service ?? null}
+                  apiActualsMap={apiActualsMap}
+                  canEdit={canEdit}
+                  editMode={editMode}
+                  addingItemToCategory={addingItemToCategory}
+                  onSetAddingItemToCategory={setAddingItemToCategory}
+                  rowHandlers={{
+                    getDraft,
+                    setDraft,
+                    onUpdateCell: (id, col, amt) =>
+                      updateCell.mutate({ id, colIndex: col, amount: amt }),
+                    onToggleItemEssential: (id, isEssential) =>
+                      updateItemEssential.mutate({ id, isEssential }),
+                    onToggleCategoryEssential: (category, isEssential) =>
+                      updateCategoryEssential.mutate({ category, isEssential }),
+                    onMoveItem: (id, newCategory) =>
+                      moveItem.mutate({ id, newCategory }),
+                    onDeleteItem: (id) => deleteItem.mutate({ id }),
+                    onConvertToGoal: (id, name) =>
+                      convertToGoal.mutate({
+                        budgetItemId: id,
+                        goalName: name,
+                        targetMode: "ongoing",
+                      }),
+                    onAddItem: (category, subcategory, isEssential) =>
+                      createItem.mutate({
+                        category,
+                        subcategory,
+                        isEssential,
+                      }),
+                    addItemPending: createItem.isPending,
+                    addItemError: createItem.error,
+                    matchContrib: (sub) => matchContrib(sub),
+                  }}
                 />
-              )}
+
+                {/* Standalone add-item form for new categories */}
+                {canEdit &&
+                  addingItemToCategory &&
+                  !categoryMap.has(addingItemToCategory) && (
+                    <AddItemForm
+                      category={addingItemToCategory}
+                      onAdd={(category, subcategory, isEssential) =>
+                        void createItem
+                          .mutateAsync({ category, subcategory, isEssential })
+                          .then(() => setAddingItemToCategory(null))
+                      }
+                      onCancel={() => setAddingItemToCategory(null)}
+                      isPending={createItem.isPending}
+                      error={createItem.error}
+                      standalone
+                    />
+                  )}
+
+                {canEdit && (
+                  <AddCategoryForm
+                    onCreateCategory={(name) => setAddingItemToCategory(name)}
+                  />
+                )}
+              </div>
             </div>
-          </div>
-        </CardBoundary>
-      )}
+          </CardBoundary>
+        )}
 
-      {activeTab === "contributions" && (
-        <CardBoundary title="Contribution Profiles">
-          <ContributionProfileManager
-            canEdit={hasPermission(user, "contributionProfile")}
+        {activeTab === "contributions" && (
+          <CardBoundary title="Contribution Profiles">
+            <ContributionProfileManager
+              canEdit={hasPermission(user, "contributionProfile")}
+            />
+          </CardBoundary>
+        )}
+
+        {/* Push to YNAB preview modal */}
+        {pushPreviewItems && (
+          <BudgetPushYnabModal
+            items={pushPreviewItems}
+            activeColumnLabel={cols[activeColumn]}
+            apiService={apiService}
+            isPending={syncToApi.isPending}
+            onConfirm={() => {
+              syncToApi.mutate(
+                { selectedColumn: activeColumn },
+                { onSettled: () => setPushPreviewItems(null) },
+              );
+            }}
+            onCancel={() => setPushPreviewItems(null)}
           />
-        </CardBoundary>
-      )}
-
-      {/* Push to YNAB preview modal */}
-      {pushPreviewItems && (
-        <BudgetPushYnabModal
-          items={pushPreviewItems}
-          activeColumnLabel={cols[activeColumn]}
-          apiService={apiService}
-          isPending={syncToApi.isPending}
-          onConfirm={() => {
-            syncToApi.mutate(
-              { selectedColumn: activeColumn },
-              { onSettled: () => setPushPreviewItems(null) },
-            );
-          }}
-          onCancel={() => setPushPreviewItems(null)}
-        />
-      )}
-    </div>
+        )}
+      </div>
+    </BudgetPageContext.Provider>
   );
 }
