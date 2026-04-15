@@ -56,7 +56,10 @@ import {
   tracksCostBasis,
 } from "@/lib/config/account-types";
 import { roundToCents } from "@/lib/utils/math";
-import { IRS_LIMIT_GROWTH_RATE } from "@/lib/constants";
+import {
+  IRS_LIMIT_GROWTH_RATE,
+  FALLBACK_CONTRIBUTION_RATE,
+} from "@/lib/constants";
 import {
   estimateEffectiveTaxRate,
   incomeCapForMarginalRate,
@@ -602,11 +605,8 @@ export async function buildEnginePayload(
     }
   }
   // Aggregate contributions and employer match by category (shared helper — single pass)
-  const {
-    contribByCategory,
-    employerMatchByCategory,
-    employerMatchByParentCat: _employerMatchByParentCat,
-  } = aggregateContributionsByCategory(activeContribs, activeJobs, jobSalaries);
+  const { contribByCategory, employerMatchByCategory } =
+    aggregateContributionsByCategory(activeContribs, activeJobs, jobSalaries);
 
   // Build per-person salary map from job salaries
   const salaryByPerson: Record<number, number> = {};
@@ -885,14 +885,14 @@ export async function buildEnginePayload(
     //   "Coast FIRE" profile — user is saying "stop contributing"). Use 0
     //   so the engine's rate path produces zero contributions. Before: this
     //   silently fell back to 0.25 which defeated the profile's intent.
-    // - No comp (missing data): keep the 0.25 safety fallback to avoid
-    //   surprising behavior on broken profiles.
+    // - No comp (missing data): keep the fallback to avoid surprising behavior
+    //   on broken profiles.
     const rateForSwitch =
       switchedContribRate > 0
         ? switchedContribRate
         : switchedTotalComp > 0
           ? 0
-          : 0.25;
+          : FALLBACK_CONTRIBUTION_RATE;
 
     profileSwitches.push({
       year: override.projectionYear,
@@ -927,7 +927,8 @@ export async function buildEnginePayload(
   ) as Record<AccountCategory, number>;
 
   const derivedAccumulationDefaults = {
-    contributionRate: displayContribRate > 0 ? displayContribRate : 0.25,
+    contributionRate:
+      displayContribRate > 0 ? displayContribRate : FALLBACK_CONTRIBUTION_RATE,
     routingMode: "waterfall" as const,
     accountOrder: getDefaultAccumulationOrder(),
     accountSplits: realAccountSplits,
