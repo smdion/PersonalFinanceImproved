@@ -1,17 +1,20 @@
 /**
  * Engine input snapshot guard — the advisor-mandated numeric safety net for
  * the v0.5.2 refactor (see .scratch/docs/V052-REFACTOR-PLAN.md § Principles).
+ * Expanded in v0.5.3 (B6) per advisor pushback on 200-line inline snapshots:
+ * split into a structure test (keys-only inline snapshot) and content tests
+ * (explicit per-field assertions that reviewers can reason about without -u).
  *
- * Seeds a deterministic standard dataset and snapshots `baseEngineInput` and
- * every numeric field that feeds the projection / Monte Carlo engine. Any
- * refactor that silently drifts a default, a derived value, or a memoization
- * dependency will fail this test loudly instead of quietly producing wrong
- * retirement projections.
+ * Seeds a deterministic fixture — birth year 1990, salary $120k, retirement
+ * at 65, 2026-04-14 wall clock, 2026 IRS limits — and asserts that
+ * `baseEngineInput` carries the correct derived values. Any refactor that
+ * silently drifts a default, a derived value, or a limit lookup will fail
+ * this test loudly.
  *
- * Prereq for PRs 7–9 (retirement-content.tsx extraction). The retirement UI
- * is the canonical silent-wrong-numbers zone — a missed `useMemo` dep would
- * cause the engine to read stale inputs with no error surface. This file is
- * the gate that catches that class of bug.
+ * -- Structure test: `Object.keys(bei).sort()` inline snapshot guards field
+ *    add/remove (shape invariant, OK to auto-update on intentional additions).
+ * -- Content tests: explicit `toBe` assertions for numeric defaults that
+ *    MUST NOT be auto-updated without human review.
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
@@ -37,8 +40,29 @@ describe("engine input snapshot guard", () => {
     testCaller = await createTestCaller();
     const { db } = testCaller;
 
-    // Seed the canonical fixture
-    seedStandardDataset(db);
+    // Seed the canonical fixture (person id=1, job id=1, perfAcct id=1)
+    const { personId, jobId, perfAcctId } = seedStandardDataset(db);
+
+    // Seed a 401k contribution account so that baseLimits / catchupLimits
+    // are populated (limit computation iterates activeContribs per person).
+    // Correct field names: accountType (not category), contributionMethod (not
+    // method), contributionValue (not value). personId is NOT NULL.
+    db.insert(schema.contributionAccounts)
+      .values({
+        personId,
+        jobId,
+        accountType: "401k",
+        parentCategory: "Retirement",
+        taxTreatment: "pre_tax",
+        contributionMethod: "percent_of_salary",
+        contributionValue: "0.10",
+        employerMatchType: "percent_of_contrib",
+        employerMatchValue: "0.50",
+        employerMaxMatchPct: "0.06",
+        isActive: true,
+        performanceAccountId: perfAcctId,
+      })
+      .run();
 
     // Add asset classes (engine needs these for MC trials)
     db.insert(schema.assetClassParams)
@@ -183,5 +207,44 @@ describe("engine input snapshot guard", () => {
         "maxEndAge": 95,
       }
     `);
+  });
+
+  it("key numeric defaults match the seeded fixture — NO auto-update without human review", () => {
+    // B6 content guard (v0.5.3). These are EXPLICIT assertions — not snapshots.
+    // Any change to these numbers is a user-visible projection change and must
+    // be reviewed by a human before merging.
+    const bei = payload.baseEngineInput;
+
+    // Settings-derived scalars
+    // annualInflation: "0.03" → inflationRate
+    expect(bei.inflationRate).toBe(0.03);
+    // salaryAnnualIncrease: "0.03" → salaryGrowthRate
+    expect(bei.salaryGrowthRate).toBe(0.03);
+    // retirementAge: 65
+    expect(bei.retirementAge).toBe(65);
+    // endAge: 95 → projectionEndAge
+    expect(bei.projectionEndAge).toBe(95);
+    // annualSalary: "120000", no salary-change rows → currentSalary = 120000
+    expect(bei.currentSalary).toBe(120000);
+
+    // 2026 IRS contribution limits (seed: seed-reference-data.sql + vi.setSystemTime("2026-04-14"))
+    // baseLimits is keyed by AccountCategory. Only categories whose owners have
+    // activeContribs are populated; the rest are 0. We seeded a 401k account.
+    expect(bei.baseLimits["401k"]).toBe(24500); // 401k_employee_limit 2026
+    // catchupLimits is keyed by limit group name (not AccountCategory).
+    // Catchup requires age ≥ 50; fixture person is 36 → catchupByGroup populated
+    // from the limits table but not reflected in the effective limit. The limit
+    // TABLE value is what we assert here — application of catchup is age-gated
+    // in the engine, not in the payload.
+    expect(bei.catchupLimits["401k"]).toBe(8000); // 401k_catchup_limit 2026
+
+    // contributionSpecs — derived from the seeded 401k account
+    expect(Array.isArray(bei.contributionSpecs)).toBe(true);
+    expect(bei.contributionSpecs!.length).toBeGreaterThan(0);
+    expect(bei.contributionSpecs![0]!.category).toBe("401k");
+
+    // returnRates — no returnRateTable rows seeded → empty array
+    expect(Array.isArray(bei.returnRates)).toBe(true);
+    expect(bei.returnRates.length).toBe(0);
   });
 });
