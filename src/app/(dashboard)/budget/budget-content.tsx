@@ -538,55 +538,52 @@ export function BudgetContent() {
           <CardBoundary title="Budget Profiles">
             {/* Active budget summary bar */}
             <BudgetSummaryBar
-              profileName={profile?.name ?? null}
-              activeProfileName={activeProfile?.name ?? null}
-              isViewingNonActive={isViewingNonActive}
-              profileId={profile?.id ?? null}
-              apiService={apiService}
-              apiLinkedProfileId={apiLinkedProfileId}
-              apiLinkedColumnIndex={apiLinkedColumnIndex}
-              showApiColumn={showApiColumn}
-              cols={cols}
-              activeColumn={activeColumn}
-              isWeighted={isWeighted}
-              columnMonths={columnMonths}
-              allColumnResults={allColumnResults as ColumnResult[] | null}
-              canEdit={canEdit}
-              editMode={editMode}
-              unsavedCount={editDrafts.size}
-              saveError={updateBatch.error}
-              pullError={syncFromApi.error}
-              pushError={syncToApi.error}
-              showModeManager={showModeManager}
-              onToggleModeManager={() => setShowModeManager(!showModeManager)}
-              isPulling={syncFromApi.isPending}
-              isPushing={syncToApi.isPending}
-              onPullFromApi={() =>
-                syncFromApi.mutate({ selectedColumn: activeColumn })
-              }
-              onOpenPushPreview={() => {
-                // Build diff preview from raw items + cached YNAB actuals
-                const items: PushPreviewItem[] = [];
-                for (const item of rawItems) {
-                  if (!item.apiCategoryId) continue;
-                  if (
-                    item.apiSyncDirection !== "push" &&
-                    item.apiSyncDirection !== "both"
-                  )
-                    continue;
-                  const amounts = item.amounts as number[];
-                  const colIdx = Math.min(activeColumn, amounts.length - 1);
-                  const newValue = amounts[colIdx] ?? 0;
-                  const actual = apiActualsMap.get(item.id);
-                  items.push({
-                    name: item.subcategory,
-                    field: "Budgeted",
-                    currentYnab: actual?.budgeted ?? 0,
-                    newValue,
-                  });
-                }
-                setPushPreviewItems(items);
+              profileDisplay={{
+                profileName: profile?.name ?? null,
+                activeProfileName: activeProfile?.name ?? null,
+                isViewingNonActive,
               }}
+              columnDisplay={{
+                isWeighted,
+                columnMonths,
+                allColumnResults: allColumnResults as ColumnResult[] | null,
+              }}
+              syncErrors={{
+                saveError: updateBatch.error,
+                pullError: syncFromApi.error,
+                pushError: syncToApi.error,
+              }}
+              syncActions={{
+                isPulling: syncFromApi.isPending,
+                isPushing: syncToApi.isPending,
+                onPullFromApi: () =>
+                  syncFromApi.mutate({ selectedColumn: activeColumn }),
+                onOpenPushPreview: () => {
+                  // Build diff preview from raw items + cached YNAB actuals
+                  const items: PushPreviewItem[] = [];
+                  for (const item of rawItems) {
+                    if (!item.apiCategoryId) continue;
+                    if (
+                      item.apiSyncDirection !== "push" &&
+                      item.apiSyncDirection !== "both"
+                    )
+                      continue;
+                    const amounts = item.amounts as number[];
+                    const colIdx = Math.min(activeColumn, amounts.length - 1);
+                    const newValue = amounts[colIdx] ?? 0;
+                    const actual = apiActualsMap.get(item.id);
+                    items.push({
+                      name: item.subcategory,
+                      field: "Budgeted",
+                      currentYnab: actual?.budgeted ?? 0,
+                      newValue,
+                    });
+                  }
+                  setPushPreviewItems(items);
+                },
+              }}
+              unsavedCount={editDrafts.size}
+              onToggleModeManager={() => setShowModeManager(!showModeManager)}
               isSavingBatch={updateBatch.isPending}
               onToggleEditMode={toggleEditMode}
             />
