@@ -207,7 +207,10 @@ export function ContributionAccountsSettings() {
             personOptions={personOptions}
             jobLabel={jobLabel}
             admin={admin}
-            onContribOwnerChange={(c, update) => handleContribUpdate(c, update)}
+            onContribOwnerChange={(c, update) => {
+              const full = allContribs.find((x) => x.id === c.id);
+              if (full) handleContribUpdate(full, update);
+            }}
             onLinkContrib={handleLinkContrib}
           />
 

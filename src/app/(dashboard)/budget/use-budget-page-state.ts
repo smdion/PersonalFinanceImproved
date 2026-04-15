@@ -33,7 +33,7 @@ export function useBudgetPageState({
   setNameColWidth,
   updateBatch,
 }: {
-  data: { rawItems?: unknown } | null | undefined;
+  data: object | null | undefined;
   nameColWidth: number;
   setNameColWidth: (w: number) => void;
   updateBatch: UpdateBatch;

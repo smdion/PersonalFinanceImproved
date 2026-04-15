@@ -60,6 +60,6 @@ export function useBudgetMutations() {
   };
 }
 
-export type BudgetIntegrationsMutations = ReturnType<
+export type BudgetMutations = ReturnType<
   typeof useBudgetMutations
 >["mutations"];
