@@ -23,13 +23,7 @@ import {
 } from "@/lib/config/withdrawal-strategies";
 import { formatPercent } from "@/lib/utils/format";
 import type { Settings } from "./types";
-
-/** Convert a decimal string (e.g. '0.04') to a whole-number string for display ('4'). */
-function decToWhole(v: string): string {
-  const n = parseFloat(v);
-  if (isNaN(n)) return "0";
-  return String(Math.round(n * 10000) / 100); // 0.04 → 4
-}
+import { decToWhole } from "./helpers";
 
 type Props = {
   settings: Settings;
