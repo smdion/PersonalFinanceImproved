@@ -77,6 +77,7 @@ export function AccountCard({
       ownerPersonId?: number | null;
       isActive?: boolean;
       label?: string | null;
+      taxType?: string;
     },
   ) => void;
   onCreateSubAccount?: (data: {

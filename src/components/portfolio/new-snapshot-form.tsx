@@ -22,6 +22,7 @@ type AccountRow = {
   institution: string;
   accountType: PortfolioAccountType;
   subType: string | null;
+  label: string | null;
   taxType: PortfolioTaxType;
   ownerPersonId: number | null;
   amount: string; // editable string
@@ -98,8 +99,9 @@ function groupFormRows(
       if (hasMultipleOwners) {
         parts.push(personDisplayName(row.ownerPersonId, peopleMap) + " —");
       }
-      if (row.subType) {
-        parts.push(`${row.subType} (${taxTypeLabel(row.taxType)})`);
+      const displayName = row.label || row.subType;
+      if (displayName) {
+        parts.push(`${displayName} (${taxTypeLabel(row.taxType)})`);
       } else {
         const rawType = row.accountType.toLowerCase();
         if (
@@ -174,6 +176,7 @@ export function NewSnapshotForm({
         institution: a.institution,
         accountType: a.accountType,
         subType: a.subType ?? null,
+        label: a.label ?? null,
         taxType: a.taxType,
         ownerPersonId: a.ownerPersonId,
         amount: a.amount,

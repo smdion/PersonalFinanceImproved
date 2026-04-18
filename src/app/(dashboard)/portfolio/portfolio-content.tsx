@@ -48,6 +48,7 @@ type SnapshotAccountWithPerf = {
   taxType: string;
   accountType: string;
   subType: string | null;
+  label: string | null;
   amount: number;
   ownerPersonId: number | null;
   ownerName: string | null;
@@ -124,10 +125,10 @@ function buildSubRowLabel(
   if (group.hasMultipleOwners && a.ownerName) {
     parts.push(a.ownerName + " —");
   }
-  // Show subType (e.g.,"Employer Match","Rollover") when present,
-  // or raw accountType when it differs from the performance account type
-  if (a.subType) {
-    parts.push(`${a.subType} (${taxTypeLabel(a.taxType)})`);
+  // Show label > subType when present, else fall back to accountType/taxType
+  const displayName = a.label || a.subType;
+  if (displayName) {
+    parts.push(`${displayName} (${taxTypeLabel(a.taxType)})`);
   } else {
     const rawType = a.accountType.toLowerCase();
     const perfType = (group.perfAccountType ?? "").toLowerCase();

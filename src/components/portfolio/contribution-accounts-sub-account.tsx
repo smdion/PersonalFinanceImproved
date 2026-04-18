@@ -20,6 +20,7 @@ export function SubAccountRow({
       ownerPersonId?: number | null;
       isActive?: boolean;
       label?: string | null;
+      taxType?: string;
     },
   ) => void;
 }) {
@@ -91,28 +92,43 @@ export function SubAccountRow({
           {formatCurrency(parseFloat(sub.amount))}
         </span>
       </div>
-      {/* Line 2: owner + action */}
+      {/* Line 2: owner · tax type · action */}
       <div className="flex items-center justify-between gap-2 mt-1">
-        <select
-          value={sub.ownerPersonId ?? ""}
-          onChange={(e) =>
-            onUpdate?.(sub.id, {
-              ownerPersonId: e.target.value
-                ? parseInt(e.target.value, 10)
-                : null,
-            })
-          }
-          disabled={!onUpdate}
-          className={`text-[10px] text-faint bg-transparent border-none p-0 focus:ring-0${onUpdate ? "cursor-pointer hover:text-secondary" : "cursor-default"}`}
-          title={`Owner: ${ownerName}`}
-        >
-          <option value="">Joint</option>
-          {people.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2 min-w-0">
+          <select
+            value={sub.ownerPersonId ?? ""}
+            onChange={(e) =>
+              onUpdate?.(sub.id, {
+                ownerPersonId: e.target.value
+                  ? parseInt(e.target.value, 10)
+                  : null,
+              })
+            }
+            disabled={!onUpdate}
+            className={`text-[10px] text-faint bg-transparent border-none p-0 focus:ring-0${onUpdate ? "cursor-pointer hover:text-secondary" : "cursor-default"}`}
+            title={`Owner: ${ownerName}`}
+          >
+            <option value="">Joint</option>
+            {people.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <span className="text-faint text-[10px]">·</span>
+          <select
+            value={sub.taxType}
+            onChange={(e) => onUpdate?.(sub.id, { taxType: e.target.value })}
+            disabled={!onUpdate}
+            className={`text-[10px] text-faint bg-transparent border-none p-0 focus:ring-0${onUpdate ? "cursor-pointer hover:text-secondary" : "cursor-default"}`}
+            title="Tax type"
+          >
+            <option value="preTax">Pre-Tax</option>
+            <option value="taxFree">Tax-Free</option>
+            <option value="afterTax">After-Tax</option>
+            <option value="hsa">HSA</option>
+          </select>
+        </div>
         {onUpdate && (
           <button
             onClick={() => onUpdate(sub.id, { isActive: !sub.isActive })}
@@ -140,6 +156,7 @@ export function SubAccountInactiveSection({
       ownerPersonId?: number | null;
       isActive?: boolean;
       label?: string | null;
+      taxType?: string;
     },
   ) => void;
 }) {
@@ -219,7 +236,7 @@ export function AddSubAccountForm({
             className="w-full border rounded px-1.5 py-1 text-xs bg-surface-primary"
           >
             <option value="preTax">Pre-Tax</option>
-            <option value="taxFree">Tax-Free (Roth)</option>
+            <option value="taxFree">Tax-Free</option>
             <option value="afterTax">After-Tax</option>
             <option value="hsa">HSA</option>
           </select>
