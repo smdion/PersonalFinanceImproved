@@ -8,9 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.5
 
-## [0.5.5] - 2026-04-16
+## [0.5.5] - 2026-04-18
 
-New feature release — Analytics page for portfolio holdings entry, allocation tracking, and drift analysis.
+Feature release — Analytics page, performance formula fix, contribution entry improvements, and snapshot UX overhaul.
 
 ### Added
 
@@ -24,13 +24,22 @@ New feature release — Analytics page for portfolio holdings entry, allocation 
   - **Blended expense ratio**: first-year weighted average cost across the entire portfolio.
   - Snapshot-to-snapshot copy: duplicate holdings from a prior snapshot as a starting point for a new one.
   - All accounts aggregate view in the donut, drift, and blended ER panels.
-- **`account_holdings` table** — new schema table (tier 2) with unique constraint on `(performanceAccountId, snapshotId, ticker)`, FK cascade deletes, `weight_bps CHECK (0–10000)`, and decimal expense ratio.
-- **FMP sector → asset class map** (`src/lib/config/fmp-sector-map.ts`) — config-driven lookup table mapping FMP sector strings to `asset_class_params.name` values.
-- **Pure analytics functions** (`src/lib/pure/analytics.ts`) — `computeAllocation`, `computeDrift`, `computeBlendedER`, `aggregateHoldings`, and `coverageStatus`; 26 unit tests added.
+- **`account_holdings` table** — new schema table with unique constraint on `(performanceAccountId, snapshotId, ticker)`, FK cascade deletes, and decimal expense ratio.
+
+### Changed
+
+- **Performance update form now shows Employee and Employer contributions separately.** Enter your employee contribution and employer match independently — the app computes and displays the combined total automatically.
+- **Portfolio and performance snapshot forms now open in a slide-out drawer** instead of expanding inline on the page. Accounts are grouped by institution so you know which site to visit for each balance.
+- **Projection table and simulation loader now use skeleton loading** — no layout jump when data arrives. Simulation phases can be loaded independently.
 
 ### Fixed
 
-- **SQLite migration hash-mismatch detection no longer triggers false squash recovery.** The check was iterating all journal entries including unapplied ones, causing any new migration to appear as a hash mismatch. Now only previously-applied entries are checked.
+- **Gain/loss calculation was understating investment returns for accounts with employer contributions.** The formula was subtracting the employer match twice (once inside total contributions, once as a separate deduction). Any gain/loss computed by the app's update form was off by the employer match amount. Historical imported data was unaffected.
+- **Retirement contribution rate in the historical spreadsheet view was overstating the savings rate** by double-counting the employer match.
+- **Joint accounts were showing an individual owner's name** (e.g., "Sean IRA (Vanguard)" instead of "IRA (Vanguard)"). The display name now correctly derives the "Joint" prefix from account ownership type without requiring a data migration.
+- **Saving a portfolio snapshot no longer advances the performance "last updated" date.** The two timestamps are now independent.
+- **YNAB-synced data no longer falls back to manual values after 24 hours.** Synced data now persists until you manually trigger a resync.
+- **SQLite migration hash-mismatch detection no longer triggers false squash recovery.** The check was iterating all journal entries including unapplied ones. Now only previously-applied entries are checked.
 
 ---
 
