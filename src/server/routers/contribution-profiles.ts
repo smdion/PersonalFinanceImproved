@@ -222,6 +222,7 @@ export const contributionProfileRouter = createTRPCRouter({
             institution,
             displayName: displayPerfAccount?.displayName ?? null,
             accountLabel: displayPerfAccount?.accountLabel ?? null,
+            ownershipType: displayPerfAccount?.ownershipType ?? null,
           },
           person?.name,
         );

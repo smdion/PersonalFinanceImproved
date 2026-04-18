@@ -78,10 +78,10 @@ export function PerformanceTable({
               Beginning
             </th>
             <th className="text-right px-4 py-3 text-muted font-medium">
-              Contributions
+              Total Contributions
             </th>
             <th className="text-right px-4 py-3 text-muted font-medium">
-              Employer Contrib
+              Employer Match
             </th>
             <th className="text-right px-4 py-3 text-muted font-medium">
               Distributions

@@ -51,7 +51,7 @@ export function LifetimeSummaryCards({
       <Card title="Lifetime Contributions">
         <Metric
           value={formatCurrency(totals.contributions)}
-          label="Employee contributions"
+          label="Employee + employer combined"
         />
       </Card>
       <Card title="Lifetime Match">

@@ -25,7 +25,7 @@ export const TAX_TREATMENT_LABELS: Record<string, string> = {
 
 export const EMPLOYER_MATCH_LABELS: Record<string, string> = {
   none: "None",
-  percent_of_contribution: "% of Contrib",
+  percent_of_contribution: "% of Contributions",
   dollar_match: "$ Match",
   fixed_annual: "Fixed/Year",
 };

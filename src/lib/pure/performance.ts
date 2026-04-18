@@ -260,8 +260,8 @@ export function resolvePortfolioValues(
 export function computeGainLoss(input: {
   endingBalance: number;
   beginningBalance: number;
+  /** Employee + employer contributions combined. */
   totalContributions: number;
-  employerContributions: number;
   distributions: number;
   rollovers: number;
   fees: number;
@@ -269,8 +269,7 @@ export function computeGainLoss(input: {
   return (
     input.endingBalance -
     input.beginningBalance -
-    input.totalContributions -
-    input.employerContributions +
+    input.totalContributions +
     input.distributions -
     input.rollovers +
     input.fees

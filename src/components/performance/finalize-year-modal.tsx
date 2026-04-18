@@ -33,7 +33,7 @@ type FinalizeYearModalProps = {
 
 const FIELDS = [
   { key: "beginningBalance", label: "Beginning Balance" },
-  { key: "totalContributions", label: "Contributions" },
+  { key: "totalContributions", label: "Total Contributions" },
   { key: "employerContributions", label: "Employer Match" },
   { key: "distributions", label: "Distributions" },
   { key: "rollovers", label: "Rollovers" },
