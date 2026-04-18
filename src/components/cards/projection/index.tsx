@@ -213,7 +213,7 @@ export function ProjectionCard(props: {
                     Monte Carlo auto-load is off — chart bands unavailable.
                   </span>
                   <button
-                    onClick={runMonteCarlo}
+                    onClick={() => runMonteCarlo()}
                     className="text-xs text-blue-500 hover:text-blue-400 font-medium"
                   >
                     Run Monte Carlo

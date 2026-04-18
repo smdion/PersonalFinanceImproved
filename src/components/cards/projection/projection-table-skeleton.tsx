@@ -144,7 +144,7 @@ export function ProjectionTableSkeleton() {
               <div
                 key={id}
                 className="flex justify-center"
-                style={{ flex: COLS[ci].grow }}
+                style={{ flex: COLS[ci]?.grow }}
               >
                 <div
                   className="h-2.5 rounded bg-surface-strong/60 animate-pulse"
@@ -167,13 +167,13 @@ export function ProjectionTableSkeleton() {
                 <div
                   key={`${id}-${cid}`}
                   className="flex justify-center"
-                  style={{ flex: COLS[ci].grow }}
+                  style={{ flex: COLS[ci]?.grow }}
                 >
-                  {fills[ci] > 0 && (
+                  {(fills[ci] ?? 0) > 0 && (
                     <div
                       className="h-3.5 rounded bg-surface-strong animate-pulse"
                       style={{
-                        width: `${fills[ci]}%`,
+                        width: `${fills[ci] ?? 0}%`,
                         animationDelay: `${delay}ms`,
                         animationDuration: "1.8s",
                       }}
