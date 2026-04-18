@@ -4,7 +4,6 @@
 
 import React, { useState } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
-import { confirm } from "@/components/ui/confirm-dialog";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { formatDate } from "@/lib/utils/format";
@@ -36,7 +35,6 @@ export default function PerformancePage() {
   const [expandedYear, setExpandedYear] = useState<number | null>(null);
   const [editingCell, setEditingCell] = useState<EditingCell>(null);
   const [editValue, setEditValue] = useState("");
-  const [showAddAccount, setShowAddAccount] = useState<number | null>(null);
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const [showUpdatePerformance, setShowUpdatePerformance] = useState(false);
 
@@ -44,15 +42,6 @@ export default function PerformancePage() {
     onSuccess: () => utils.performance.computeSummary.invalidate(),
   });
   const updateAccount = trpc.performance.updateAccount.useMutation({
-    onSuccess: () => utils.performance.computeSummary.invalidate(),
-  });
-  const createAccount = trpc.performance.createAccount.useMutation({
-    onSuccess: () => {
-      utils.performance.computeSummary.invalidate();
-      setShowAddAccount(null);
-    },
-  });
-  const deleteAccount = trpc.performance.deleteAccount.useMutation({
     onSuccess: () => utils.performance.computeSummary.invalidate(),
   });
   const updateCostBasis = trpc.performance.updateCostBasis.useMutation({
@@ -140,16 +129,6 @@ export default function PerformancePage() {
       saveEdit();
     } else if (e.key === "Escape") {
       setEditingCell(null);
-    }
-  }
-
-  async function handleDeleteAccount(id: number, label: string) {
-    if (
-      await confirm(
-        `Delete account"${label}" from this year? This cannot be undone.`,
-      )
-    ) {
-      deleteAccount.mutate({ id });
     }
   }
 
@@ -295,12 +274,6 @@ export default function PerformancePage() {
         onEditValueChange={setEditValue}
         onSaveEdit={saveEdit}
         onKeyDown={handleKeyDown}
-        onDeleteAccount={handleDeleteAccount}
-        showAddAccount={showAddAccount}
-        onShowAddAccount={setShowAddAccount}
-        onCreateAccount={(data) => createAccount.mutate(data)}
-        onCancelAddAccount={() => setShowAddAccount(null)}
-        isCreatingAccount={createAccount.isPending}
         canEdit={canEdit}
       />
 

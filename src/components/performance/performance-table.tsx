@@ -8,7 +8,6 @@ import type {
   AccountRow,
   MasterAccount,
   EditingCell,
-  CreateAccountData,
 } from "./types";
 import {
   accountTypeToPerformanceCategory,
@@ -31,12 +30,6 @@ export function PerformanceTable({
   onEditValueChange,
   onSaveEdit,
   onKeyDown,
-  onDeleteAccount,
-  showAddAccount,
-  onShowAddAccount,
-  onCreateAccount,
-  onCancelAddAccount,
-  isCreatingAccount,
   canEdit,
 }: {
   filtered: AnnualRow[];
@@ -56,12 +49,6 @@ export function PerformanceTable({
   onEditValueChange: (v: string) => void;
   onSaveEdit: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
-  onDeleteAccount: (id: number, label: string) => void;
-  showAddAccount: number | null;
-  onShowAddAccount: (year: number | null) => void;
-  onCreateAccount: (data: CreateAccountData) => void;
-  onCancelAddAccount: () => void;
-  isCreatingAccount: boolean;
   canEdit?: boolean;
 }) {
   const years = Array.from(new Set(filtered.map((r) => r.year))).sort(
@@ -170,14 +157,6 @@ export function PerformanceTable({
                 onEditValueChange={onEditValueChange}
                 onSaveEdit={onSaveEdit}
                 onKeyDown={onKeyDown}
-                onDeleteAccount={onDeleteAccount}
-                showAddAccount={showAddAccount === year}
-                onShowAddAccount={() =>
-                  onShowAddAccount(showAddAccount === year ? null : year)
-                }
-                onCreateAccount={onCreateAccount}
-                onCancelAddAccount={onCancelAddAccount}
-                isCreatingAccount={isCreatingAccount}
                 activeCategory={activeCategory}
                 masterAccounts={masterAccounts}
                 canEdit={canEdit}

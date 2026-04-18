@@ -110,12 +110,6 @@ export type YearRowProps = {
   onEditValueChange: (v: string) => void;
   onSaveEdit: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
-  onDeleteAccount: (id: number, label: string) => void;
-  showAddAccount: boolean;
-  onShowAddAccount: () => void;
-  onCreateAccount: (data: CreateAccountData) => void;
-  onCancelAddAccount: () => void;
-  isCreatingAccount: boolean;
   activeCategory: string;
   masterAccounts: MasterAccount[];
   canEdit?: boolean;
