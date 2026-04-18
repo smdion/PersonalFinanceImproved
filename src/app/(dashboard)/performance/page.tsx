@@ -32,7 +32,7 @@ export default function PerformancePage() {
   const { data, isLoading, error } = trpc.performance.computeSummary.useQuery();
   const utils = trpc.useUtils();
   const [activeCategory, setActiveCategory] = useState("Portfolio");
-  const [expandedYear, setExpandedYear] = useState<number | null>(null);
+  const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
   const [editingCell, setEditingCell] = useState<EditingCell>(null);
   const [editValue, setEditValue] = useState("");
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
@@ -264,9 +264,14 @@ export default function PerformancePage() {
         accountRows={accountRows}
         masterAccounts={masterAccounts}
         activeCategory={activeCategory}
-        expandedYear={expandedYear}
+        expandedYears={expandedYears}
         onToggleYear={(year) =>
-          setExpandedYear(expandedYear === year ? null : year)
+          setExpandedYears((prev) => {
+            const next = new Set(prev);
+            if (next.has(year)) next.delete(year);
+            else next.add(year);
+            return next;
+          })
         }
         editingCell={editingCell}
         editValue={editValue}

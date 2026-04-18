@@ -22,7 +22,7 @@ export function PerformanceTable({
   accountRows,
   masterAccounts,
   activeCategory,
-  expandedYear,
+  expandedYears,
   onToggleYear,
   editingCell,
   editValue,
@@ -36,7 +36,7 @@ export function PerformanceTable({
   accountRows: AccountRow[];
   masterAccounts: MasterAccount[];
   activeCategory: string;
-  expandedYear: number | null;
+  expandedYears: Set<number>;
   onToggleYear: (year: number) => void;
   editingCell: EditingCell;
   editValue: string;
@@ -110,7 +110,7 @@ export function PerformanceTable({
           {years.map((year) => {
             const row = filtered.find((r) => r.year === year);
             if (!row) return null;
-            const isExpanded = expandedYear === year;
+            const isExpanded = expandedYears.has(year);
             const yearAccountsAll = accountRows
               .filter((a) => {
                 if (a.year !== year) return false;
