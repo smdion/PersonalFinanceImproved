@@ -4,7 +4,10 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, accountDisplayName } from "@/lib/utils/format";
 import { computeGainLoss } from "@/lib/pure/performance";
+import { getDisplayConfig } from "@/lib/config/account-types";
+import { EsppCalculator } from "./espp-calculator";
 import type { UpdateFormRow, UpdatePerformanceFormProps } from "./types";
+import type { EsppSummary } from "@/lib/pure/performance";
 
 type EndingBalanceSource = "snapshot" | "manual";
 
@@ -59,6 +62,8 @@ export function UpdatePerformanceForm({
       return {
         accountPerformanceId: a.id,
         performanceAccountId: a.performanceAccountId,
+        accountType: a.accountType,
+        subType: a.subType,
         displayName: accountDisplayName(
           {
             institution: a.institution,
@@ -323,6 +328,30 @@ function AccountFormRow({
     ? parseFloat(row.yearlyGainLoss) || 0
     : computedGainLoss;
 
+  const displayCfg = getDisplayConfig(row.accountType ?? "", row.subType);
+  const [showCalculator, setShowCalculator] = useState(
+    displayCfg.hasPurchasePeriodCalculator,
+  );
+
+  const applyEsppSummary = useCallback(
+    (summary: EsppSummary) => {
+      onFieldChange(
+        id,
+        "employeeContrib",
+        summary.employeeContributions.toFixed(2),
+      );
+      onFieldChange(
+        id,
+        "employerContributions",
+        summary.employerMatch.toFixed(2),
+      );
+      onFieldChange(id, "rollovers", summary.rollovers.toFixed(2));
+      onFieldChange(id, "fees", summary.fees.toFixed(2));
+      onFieldChange(id, "distributions", summary.distributions.toFixed(2));
+    },
+    [id, onFieldChange],
+  );
+
   return (
     <div className="mb-3 last:mb-0 pb-3 last:pb-0 border-b border-subtle last:border-b-0">
       {/* Account name */}
@@ -331,7 +360,24 @@ function AccountFormRow({
         <span className="text-sm font-semibold text-primary">
           {row.displayName}
         </span>
+        {displayCfg.hasPurchasePeriodCalculator && !showCalculator && (
+          <button
+            type="button"
+            onClick={() => setShowCalculator(true)}
+            className="text-[10px] text-teal-600 hover:text-teal-800 ml-auto"
+          >
+            ESPP Calculator
+          </button>
+        )}
       </div>
+
+      {/* ESPP calculator — shown for ESPP sub-type accounts */}
+      {showCalculator && displayCfg.hasPurchasePeriodCalculator && (
+        <EsppCalculator
+          onApply={applyEsppSummary}
+          onDismiss={() => setShowCalculator(false)}
+        />
+      )}
 
       {/* Flow fields — one row */}
       <div className="grid grid-cols-5 gap-2 mb-1">

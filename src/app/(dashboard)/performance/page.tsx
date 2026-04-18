@@ -23,6 +23,7 @@ import {
   FinalizeYearModal,
   UpdatePerformanceForm,
 } from "@/components/performance";
+import { PendingRollovers } from "@/components/performance/pending-rollovers";
 import type { AnnualRow } from "@/components/performance/types";
 import type { EditingCell } from "@/components/performance";
 
@@ -97,6 +98,8 @@ export default function PerformancePage() {
     lifetimeTotals,
     lastSnapshotDate,
     performanceLastUpdated,
+    pendingRollovers,
+    balanceMismatch,
   } = data;
   // Router always produces valid PerfCategory values via getEffectiveCategory.
   const annualRows = annualRowsRaw as AnnualRow[];
@@ -197,6 +200,59 @@ export default function PerformancePage() {
           totals={lifetimeTotals}
           snapshotDate={lastSnapshotDate}
         />
+      )}
+
+      {/* Ending balance consistency warning */}
+      {balanceMismatch && (
+        <div className="mb-3 rounded-md border border-orange-400/60 bg-orange-50/40 dark:bg-orange-950/20 px-3 py-2 text-xs text-orange-800 dark:text-orange-300 flex items-start gap-2">
+          <svg
+            aria-hidden="true"
+            className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+            />
+          </svg>
+          <span>
+            <span className="font-semibold">Balance mismatch:</span> Performance
+            account totals (
+            {new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: "USD",
+            }).format(balanceMismatch.perfTotal)}
+            ) differ from portfolio snapshot (
+            {new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: "USD",
+            }).format(balanceMismatch.snapTotal)}
+            ) by{" "}
+            {new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: "USD",
+            }).format(Math.abs(balanceMismatch.delta))}
+            {balanceMismatch.explainedByPending
+              ? " — this matches your pending rollover(s)."
+              : ". Check that ending balances and snapshot values are consistent."}
+          </span>
+        </div>
+      )}
+
+      {/* Pending rollovers tracker */}
+      {pendingRollovers && pendingRollovers.length > 0 && (
+        <div className="mb-3">
+          <PendingRollovers
+            pendingRollovers={pendingRollovers}
+            accountRows={accountRows}
+            masterAccounts={masterAccounts}
+            onMutated={() => utils.performance.computeSummary.invalidate()}
+          />
+        </div>
       )}
 
       {canEdit && currentYear && (

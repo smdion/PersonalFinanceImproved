@@ -45,6 +45,7 @@ export type AccountRow = {
   rollovers: number;
   parentCategory: string;
   accountType: string | null;
+  subType: string | null;
   isActive: boolean;
   performanceAccountId: number | null;
   displayOrder: number;
@@ -140,6 +141,8 @@ export type UpdateFormRow = {
   displayName: string;
   institution: string;
   parentCategory: string;
+  accountType: string | null;
+  subType: string | null;
   beginningBalance: number;
   /** Employee-only portion of contributions (totalContributions - employerContributions). */
   employeeContrib: string;

@@ -740,6 +740,43 @@ export const accountPerformance = pgTable(
   ],
 );
 
+export const pendingRollovers = pgTable(
+  "pending_rollovers",
+  {
+    id: serial("id").primaryKey(),
+    /** The account_performance row the rollover originates from (ESPP side). */
+    sourceAccountPerformanceId: integer("source_account_performance_id")
+      .notNull()
+      .references(() => accountPerformance.id, { onDelete: "restrict" }),
+    /** The master performance_accounts record the money is going to. Year-row may not exist yet at record time. */
+    destinationPerformanceAccountId: integer(
+      "destination_performance_account_id",
+    )
+      .notNull()
+      .references(() => performanceAccounts.id, { onDelete: "restrict" }),
+    amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
+    saleDate: date("sale_date").notNull(),
+    /** Year the rollover originates from — determines which source account_performance row is debited. */
+    saleYear: integer("sale_year").notNull(),
+    /** Year the rollover applies to on the destination side (defaults to saleYear; may differ for Dec→Jan wires). */
+    applyYear: integer("apply_year").notNull(),
+    notes: text("notes"),
+    /** Set when the user confirms the wire has landed in the destination account. */
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("pending_rollovers_source_idx").on(table.sourceAccountPerformanceId),
+    index("pending_rollovers_dest_idx").on(
+      table.destinationPerformanceAccountId,
+    ),
+    index("pending_rollovers_sale_year_idx").on(table.saleYear),
+    index("pending_rollovers_confirmed_idx").on(table.confirmedAt),
+  ],
+);
+
 export const accountHoldings = pgTable(
   "account_holdings",
   {
