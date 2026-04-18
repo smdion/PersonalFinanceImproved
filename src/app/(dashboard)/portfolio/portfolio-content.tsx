@@ -120,25 +120,30 @@ function buildSubRowLabel(
   a: SnapshotAccountWithPerf,
   group: AccountGroup,
 ): string {
-  const parts: string[] = [];
-  // Owner prefix for joint accounts with multiple owners
-  if (group.hasMultipleOwners && a.ownerName) {
-    parts.push(a.ownerName + " —");
-  }
-  // Show label > subType when present, else fall back to accountType/taxType
+  const owner = group.hasMultipleOwners && a.ownerName ? a.ownerName : null;
+  const taxLabel = taxTypeLabel(a.taxType);
   const displayName = a.label || a.subType;
+
+  let typeLabel: string;
   if (displayName) {
-    parts.push(`${displayName} (${taxTypeLabel(a.taxType)})`);
+    typeLabel = displayName;
   } else {
     const rawType = a.accountType.toLowerCase();
     const perfType = (group.perfAccountType ?? "").toLowerCase();
-    if (rawType !== perfType && rawType !== a.taxType.toLowerCase()) {
-      parts.push(`${a.accountType} (${taxTypeLabel(a.taxType)})`);
-    } else {
-      parts.push(taxTypeLabel(a.taxType));
-    }
+    typeLabel =
+      rawType !== perfType && rawType !== a.taxType.toLowerCase()
+        ? a.accountType
+        : taxLabel;
   }
-  return parts.join("");
+
+  if (owner) {
+    // Owner is primary; type goes in parens (omit if redundant with taxLabel)
+    const qualifier =
+      typeLabel !== taxLabel ? `${typeLabel} · ${taxLabel}` : typeLabel;
+    return `${owner} (${qualifier})`;
+  }
+
+  return typeLabel !== taxLabel ? `${typeLabel} (${taxLabel})` : typeLabel;
 }
 
 // ---------------------------------------------------------------------------

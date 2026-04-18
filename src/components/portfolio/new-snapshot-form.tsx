@@ -95,25 +95,31 @@ function groupFormRows(
     const perfAccountType = (pa?.accountType ?? "").toLowerCase();
 
     for (const row of group.rows) {
-      const parts: string[] = [];
-      if (hasMultipleOwners) {
-        parts.push(personDisplayName(row.ownerPersonId, peopleMap) + " —");
-      }
+      const owner = hasMultipleOwners
+        ? personDisplayName(row.ownerPersonId, peopleMap)
+        : null;
+      const taxLabel = taxTypeLabel(row.taxType);
       const displayName = row.label || row.subType;
+
+      let typeLabel: string;
       if (displayName) {
-        parts.push(`${displayName} (${taxTypeLabel(row.taxType)})`);
+        typeLabel = displayName;
       } else {
         const rawType = row.accountType.toLowerCase();
-        if (
-          rawType !== perfAccountType &&
-          rawType !== row.taxType.toLowerCase()
-        ) {
-          parts.push(`${row.accountType} (${taxTypeLabel(row.taxType)})`);
-        } else {
-          parts.push(taxTypeLabel(row.taxType));
-        }
+        typeLabel =
+          rawType !== perfAccountType && rawType !== row.taxType.toLowerCase()
+            ? row.accountType
+            : taxLabel;
       }
-      row.subLabel = parts.join("");
+
+      if (owner) {
+        const qualifier =
+          typeLabel !== taxLabel ? `${typeLabel} · ${taxLabel}` : typeLabel;
+        row.subLabel = `${owner} (${qualifier})`;
+      } else {
+        row.subLabel =
+          typeLabel !== taxLabel ? `${typeLabel} (${taxLabel})` : typeLabel;
+      }
     }
   }
 
