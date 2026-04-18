@@ -73,7 +73,11 @@ export function AccountCard({
   onCreateContrib?: (data: Record<string, unknown>) => void;
   onSubAccountUpdate?: (
     id: number,
-    updates: { ownerPersonId?: number | null; isActive?: boolean },
+    updates: {
+      ownerPersonId?: number | null;
+      isActive?: boolean;
+      label?: string | null;
+    },
   ) => void;
   onCreateSubAccount?: (data: {
     institution: string;

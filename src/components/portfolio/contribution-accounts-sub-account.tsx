@@ -16,7 +16,11 @@ export function SubAccountRow({
   people: { id: number; name: string }[];
   onUpdate?: (
     id: number,
-    updates: { ownerPersonId?: number | null; isActive?: boolean },
+    updates: {
+      ownerPersonId?: number | null;
+      isActive?: boolean;
+      label?: string | null;
+    },
   ) => void;
 }) {
   const taxLabel = taxTypeLabel(sub.taxType);
@@ -24,16 +28,63 @@ export function SubAccountRow({
   const ownerName = sub.ownerPersonId
     ? (people.find((p) => p.id === sub.ownerPersonId)?.name ?? "?")
     : "Joint";
+  const [editingLabel, setEditingLabel] = useState(false);
+  const [labelDraft, setLabelDraft] = useState(sub.label ?? "");
+
+  function commitLabel() {
+    setEditingLabel(false);
+    const trimmed = labelDraft.trim();
+    const next = trimmed || null;
+    if (next !== (sub.label ?? null)) onUpdate?.(sub.id, { label: next });
+  }
+
   return (
     <div
       className={`px-3 py-2 bg-surface-primary border border-subtle rounded text-xs ${!sub.isActive ? "opacity-50" : ""}`}
     >
       {/* Line 1: label + amount */}
       <div className="flex items-center justify-between gap-2">
-        <span className="text-secondary font-medium truncate">
-          {subLabel}
-          {subLabel !== taxLabel && (
-            <span className="text-faint ml-1 font-normal">({taxLabel})</span>
+        <span className="text-secondary font-medium truncate flex items-center gap-1 min-w-0">
+          {editingLabel ? (
+            <input
+              autoFocus
+              value={labelDraft}
+              onChange={(e) => setLabelDraft(e.target.value)}
+              onBlur={commitLabel}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  commitLabel();
+                }
+                if (e.key === "Escape") {
+                  setEditingLabel(false);
+                  setLabelDraft(sub.label ?? "");
+                }
+              }}
+              placeholder={sub.subType || taxLabel}
+              className="border-b border-blue-400 bg-transparent outline-none text-xs w-full min-w-0"
+            />
+          ) : (
+            <>
+              <span className="truncate">{subLabel}</span>
+              {subLabel !== taxLabel && (
+                <span className="text-faint font-normal shrink-0">
+                  ({taxLabel})
+                </span>
+              )}
+              {onUpdate && (
+                <button
+                  onClick={() => {
+                    setLabelDraft(sub.label ?? "");
+                    setEditingLabel(true);
+                  }}
+                  title="Edit label"
+                  className="text-faint hover:text-secondary shrink-0 ml-0.5"
+                >
+                  ✎
+                </button>
+              )}
+            </>
           )}
         </span>
         <span className="font-mono text-secondary shrink-0">
@@ -85,7 +136,11 @@ export function SubAccountInactiveSection({
   people: { id: number; name: string }[];
   onUpdate?: (
     id: number,
-    updates: { ownerPersonId?: number | null; isActive?: boolean },
+    updates: {
+      ownerPersonId?: number | null;
+      isActive?: boolean;
+      label?: string | null;
+    },
   ) => void;
 }) {
   const [show, setShow] = useState(false);
