@@ -8,11 +8,108 @@ import {
   DEFAULT_LIVING_COST_MAPPING,
 } from "@/lib/config/living-costs";
 import { formatPercent } from "@/lib/utils/format";
+import { usePersistedToggle } from "@/lib/hooks/use-persisted-setting";
+import {
+  SK_RETIREMENT_SIMULATION_AUTOLOAD,
+  SK_RETIREMENT_MC_AUTOLOAD,
+  SK_RETIREMENT_COASTFIRE_MC_AUTOLOAD,
+} from "@/lib/constants/settings-keys";
 
 export function GeneralSettings() {
   return (
     <div className="space-y-8">
+      <RetirementSettings />
       <LivingCostMappingEditor />
+    </div>
+  );
+}
+
+function Toggle({
+  checked,
+  onChange,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <button
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+        checked ? "bg-blue-600" : "bg-gray-300"
+      }`}
+    >
+      <span
+        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+          checked ? "translate-x-4" : "translate-x-1"
+        }`}
+      />
+    </button>
+  );
+}
+
+function RetirementSettings() {
+  const [engineAutoload, setEngineAutoload] = usePersistedToggle(
+    SK_RETIREMENT_SIMULATION_AUTOLOAD,
+    true,
+  );
+  const [mcAutoload, setMcAutoload] = usePersistedToggle(
+    SK_RETIREMENT_MC_AUTOLOAD,
+    true,
+  );
+  const [coastFireMcAutoload, setCoastFireMcAutoload] = usePersistedToggle(
+    SK_RETIREMENT_COASTFIRE_MC_AUTOLOAD,
+    true,
+  );
+
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-primary mb-1">Retirement</h3>
+      <p className="text-xs text-muted mb-3">
+        Controls for the retirement projection page.
+      </p>
+      <div className="border rounded-lg divide-y divide-subtle">
+        <div className="flex items-center justify-between px-3 py-3">
+          <div>
+            <div className="text-sm font-medium text-primary">
+              Auto-load simulation
+            </div>
+            <div className="text-xs text-muted mt-0.5">
+              Runs the projection engine automatically on page load and whenever
+              inputs change. Disable to trigger manually.
+            </div>
+          </div>
+          <Toggle checked={engineAutoload} onChange={setEngineAutoload} />
+        </div>
+        <div className="flex items-center justify-between px-3 py-3">
+          <div>
+            <div className="text-sm font-medium text-primary">
+              Auto-load simulations
+            </div>
+            <div className="text-xs text-muted mt-0.5">
+              Prefetches 1,000 simulation trials in the background after the
+              engine completes. Disable on slow connections or to run manually.
+            </div>
+          </div>
+          <Toggle checked={mcAutoload} onChange={setMcAutoload} />
+        </div>
+        <div className="flex items-center justify-between px-3 py-3">
+          <div>
+            <div className="text-sm font-medium text-primary">
+              Auto-load Coast FIRE simulations
+            </div>
+            <div className="text-xs text-muted mt-0.5">
+              Runs the Coast FIRE simulation after the engine completes. Takes
+              4–6s. Disable if you don&apos;t use the Coast FIRE scenario.
+            </div>
+          </div>
+          <Toggle
+            checked={coastFireMcAutoload}
+            onChange={setCoastFireMcAutoload}
+          />
+        </div>
+      </div>
     </div>
   );
 }

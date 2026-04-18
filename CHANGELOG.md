@@ -8,6 +8,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.5
 
+## [0.5.5] - 2026-04-16
+
+New feature release — Analytics page for portfolio holdings entry, allocation tracking, and drift analysis.
+
+### Added
+
+- **Analytics page** (`/analytics`) — a new dashboard section for entering and tracking portfolio holdings across accounts and snapshots.
+  - Per-account holdings table: enter tickers, weights (basis points), expense ratios, and asset class classifications for each position.
+  - **FMP ticker lookup**: optional Financial Modeling Prep integration auto-fills name, expense ratio, and suggests an asset class from the sector. Requires an FMP API key in Integrations settings.
+  - **Coverage indicator**: warns when account weights deviate more than 5% from 100%.
+  - **Allocation donut chart**: shows actual allocation breakdown by asset class, normalised over classified holdings only.
+  - **Drift table**: compares actual allocation to the glide-path target for the user's age, with per-class under/overweight breakdown.
+  - **Historical allocation chart**: line chart of allocation over time when two or more snapshots have holdings data.
+  - **Blended expense ratio**: first-year weighted average cost across the entire portfolio.
+  - Snapshot-to-snapshot copy: duplicate holdings from a prior snapshot as a starting point for a new one.
+  - All accounts aggregate view in the donut, drift, and blended ER panels.
+- **`account_holdings` table** — new schema table (tier 2) with unique constraint on `(performanceAccountId, snapshotId, ticker)`, FK cascade deletes, `weight_bps CHECK (0–10000)`, and decimal expense ratio.
+- **FMP sector → asset class map** (`src/lib/config/fmp-sector-map.ts`) — config-driven lookup table mapping FMP sector strings to `asset_class_params.name` values.
+- **Pure analytics functions** (`src/lib/pure/analytics.ts`) — `computeAllocation`, `computeDrift`, `computeBlendedER`, `aggregateHoldings`, and `coverageStatus`; 26 unit tests added.
+
+### Fixed
+
+- **SQLite migration hash-mismatch detection no longer triggers false squash recovery.** The check was iterating all journal entries including unapplied ones, causing any new migration to appear as a hash mismatch. Now only previously-applied entries are checked.
+
+---
+
 ## [0.5.4] - 2026-04-14
 
 Maintenance release. Bug fixes — no new features.

@@ -1,2 +1,3 @@
 pnpm-lock.yaml
 .claude/worktrees/
+pre-upgrade-backup-*.json
