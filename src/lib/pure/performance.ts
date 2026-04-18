@@ -6,19 +6,19 @@ import { toNumber } from "@/server/helpers/transforms";
 
 /**
  * Modified Dietz return: gainLoss / (beginBal + netFlows/2).
+ * contribs = totalContributions (employee + employer combined).
  * Returns null when denominator is zero (no capital at risk).
  */
 export function computeReturn(
   beginBal: number,
   contribs: number,
   gainLoss: number,
-  employer: number,
   distributions: number,
   fees: number = 0,
   rollovers: number = 0,
 ): number | null {
   const denominator =
-    beginBal + (contribs + rollovers + employer - distributions - fees) / 2;
+    beginBal + (contribs + rollovers - distributions - fees) / 2;
   if (denominator === 0) return null;
   return gainLoss / denominator;
 }
@@ -171,7 +171,6 @@ export function resolveCategoryValues(
       vals.beginningBalance,
       vals.totalContributions,
       vals.yearlyGainLoss,
-      vals.employerContributions,
       vals.distributions,
       vals.fees,
       vals.rollovers,
@@ -187,7 +186,6 @@ export function resolveCategoryValues(
     sums.beginBal,
     sums.contribs,
     sums.gainLoss,
-    sums.employer,
     sums.distributions,
     sums.fees,
     sums.rollovers,
@@ -229,7 +227,6 @@ export function resolvePortfolioValues(
     ps.beginBal,
     ps.contribs,
     ps.gainLoss,
-    ps.employer,
     ps.distributions,
     ps.fees,
     ps.rollovers,

@@ -341,7 +341,6 @@ export const performanceRouter = createTRPCRouter({
               sums.beginBal,
               sums.contribs,
               sums.gainLoss,
-              sums.employer,
               sums.distributions,
               sums.fees,
               sums.rollovers,
@@ -375,7 +374,6 @@ export const performanceRouter = createTRPCRouter({
               sums.beginBal,
               sums.contribs,
               sums.gainLoss,
-              sums.employer,
               sums.distributions,
               sums.fees,
               sums.rollovers,
@@ -431,7 +429,6 @@ export const performanceRouter = createTRPCRouter({
               ps.beginBal,
               ps.contribs,
               ps.gainLoss,
-              ps.employer,
               ps.distributions,
               ps.fees,
               ps.rollovers,
@@ -468,7 +465,6 @@ export const performanceRouter = createTRPCRouter({
             ps.beginBal,
             ps.contribs,
             ps.gainLoss,
-            ps.employer,
             ps.distributions,
             ps.fees,
             ps.rollovers,
@@ -487,7 +483,6 @@ export const performanceRouter = createTRPCRouter({
           row.beginningBalance,
           row.totalContributions,
           row.yearlyGainLoss,
-          row.employerContributions,
           row.distributions,
           row.fees,
           row.rollovers,
@@ -599,7 +594,6 @@ export const performanceRouter = createTRPCRouter({
           beginBal,
           contribs,
           gainLoss,
-          employer,
           distributions,
           fees,
           rolloverSum,
@@ -643,9 +637,6 @@ export const performanceRouter = createTRPCRouter({
       const distributions = toNumber(r.distributions);
       const fees = toNumber(r.fees);
       const rollovers = toNumber(r.rollovers);
-      const storedReturn = r.annualReturnPct
-        ? toNumber(r.annualReturnPct)
-        : null;
       return {
         id: r.id,
         year: r.year,
@@ -658,17 +649,14 @@ export const performanceRouter = createTRPCRouter({
         totalContributions: contribs,
         yearlyGainLoss: gainLoss,
         endingBalance: toNumber(r.endingBalance),
-        annualReturnPct:
-          storedReturn ??
-          computeReturn(
-            beginBal,
-            contribs,
-            gainLoss,
-            employer,
-            distributions,
-            fees,
-            rollovers,
-          ),
+        annualReturnPct: computeReturn(
+          beginBal,
+          contribs,
+          gainLoss,
+          distributions,
+          fees,
+          rollovers,
+        ),
         employerContributions: employer,
         fees,
         distributions,
