@@ -75,6 +75,7 @@ const VERSION_TABLE_NAMES = [
   "mc_preset_return_overrides",
   "projection_overrides",
   "mc_user_presets",
+  "account_holdings",
 ];
 
 // ---------------------------------------------------------------------------
@@ -183,13 +184,16 @@ async function handleSquashUpgrade(
           });
         }
       } else if (journalCount > 0) {
-        // Hash-mismatch detection
+        // Hash-mismatch detection.
+        // Only check the first `appliedCount` journal entries — entries beyond
+        // appliedCount are legitimately new (not yet applied) and should NOT
+        // trigger squash recovery; they go through the normal migrate() path.
         const cryptoMod = await import("crypto");
         const { rows: appliedRows } = await client.query<{ hash: string }>(
           "SELECT hash FROM drizzle.__drizzle_migrations",
         );
         const appliedHashes = new Set(appliedRows.map((r) => r.hash));
-        for (const entry of journal.entries) {
+        for (const entry of journal.entries.slice(0, appliedCount)) {
           const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
           if (!fs.existsSync(sqlPath)) continue;
           const sql = fs.readFileSync(sqlPath, "utf-8");
@@ -599,6 +603,9 @@ function handleSQLiteSquashUpgrade(
   //      "new" migrations from scratch and fail on duplicate-table errors.
   let needsSquashRecovery = appliedCount > journalCount;
   if (!needsSquashRecovery && appliedCount > 0 && journalCount > 0) {
+    // Only check the first `appliedCount` journal entries for hash mismatch.
+    // Entries beyond appliedCount are legitimately new (not yet applied) and
+    // should NOT trigger squash recovery — they go through the normal migrate() path.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const cryptoMod = require("crypto") as typeof import("crypto");
     const appliedHashes = new Set(
@@ -608,7 +615,7 @@ function handleSQLiteSquashUpgrade(
         }[]
       ).map((r) => r.hash),
     );
-    for (const entry of journal.entries) {
+    for (const entry of journal.entries.slice(0, appliedCount)) {
       const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
       if (!fs.existsSync(sqlPath)) continue;
       const sql = fs.readFileSync(sqlPath, "utf-8");

@@ -148,3 +148,14 @@ export const MIN_INFLATION_RATE = -0.1;
 
 /** Cap the brokerage ramp multiplier year to prevent unbounded growth. */
 export const MAX_BROKERAGE_RAMP_YEARS = 40;
+
+// ---------------------------------------------------------------------------
+// Analytics
+// ---------------------------------------------------------------------------
+
+/** Show coverage indicator when holdings weight sum deviates this far from
+ *  10000 bps (100%). Applies to both under and over coverage. */
+export const ANALYTICS_WEIGHT_COVERAGE_WARN_BPS = 500; // 5%
+
+/** Default number of snapshots to fetch for historical allocation/drift charts. */
+export const ANALYTICS_HISTORY_SNAPSHOT_LIMIT = 12;

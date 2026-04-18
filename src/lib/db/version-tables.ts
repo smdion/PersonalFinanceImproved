@@ -70,6 +70,7 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "account_performance", tier: 2 },
   { name: "mc_preset_glide_paths", tier: 2 },
   { name: "mc_preset_return_overrides", tier: 2 },
+  { name: "account_holdings", tier: 2 },
 ];
 
 // Validate tier ordering: entries must be grouped by tier (0, then 1, then 2).
