@@ -28,7 +28,6 @@
  * data becomes available.
  */
 
-import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { validateContributionOrder } from "@/lib/pure/contributions";
@@ -187,17 +186,14 @@ export function PlanHealthCard(props: PlanHealthCardProps) {
 }
 
 /**
- * Stress test panel (v0.5 expert-review M2). Toggleable view that
- * compares the user's current assumptions against the canonical
- * conservative / baseline / optimistic scenarios from
- * src/lib/pure/stress-test.ts.
+ * Stress test panel (v0.5 expert-review M2). Compares the user's
+ * current assumptions against the canonical conservative / baseline /
+ * optimistic scenarios from src/lib/pure/stress-test.ts.
  *
- * When opened, fires the projection.computeStressTest endpoint which
- * actually re-runs the deterministic engine three times (once per
- * scenario) at the stress parameters. The resulting nest egg per
- * scenario is rendered alongside the parameter set so users see real
- * outcomes, not just inputs. The query is gated on `open` so the
- * heavy server work only happens when the user wants it.
+ * Fires the projection.computeStressTest endpoint which re-runs the
+ * deterministic engine three times (once per scenario). The resulting
+ * nest egg per scenario is rendered alongside the parameter set so
+ * users see real outcomes, not just inputs.
  */
 function StressTestPanel({
   userReturnRate,
@@ -208,11 +204,9 @@ function StressTestPanel({
   userInflationRate?: number;
   userSalaryGrowth?: number;
 }) {
-  const [open, setOpen] = useState(false);
   const scenarios = getStressTestScenarios();
   const { data: stressData, isLoading: stressLoading } =
     trpc.projection.computeStressTest.useQuery(undefined, {
-      enabled: open,
       staleTime: 5 * 60 * 1000,
     });
   const resultByLabel = new Map(
@@ -221,106 +215,96 @@ function StressTestPanel({
 
   return (
     <div className="mt-4 border-t pt-3">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="text-xs font-semibold text-blue-700 hover:text-blue-800 underline"
-      >
-        {open ? "Hide" : "Show"} stress test comparison
-      </button>
-      {open && (
-        <div className="mt-3 overflow-x-auto">
-          <table
-            className="w-full text-xs"
-            aria-label="Stress test parameter comparison"
-          >
-            <caption className="sr-only">
-              Compares the user&apos;s assumptions to canonical conservative,
-              baseline, and optimistic stress-test scenarios.
-            </caption>
-            <thead>
-              <tr className="text-left text-faint border-b">
-                <th scope="col" className="py-2 pr-2 font-medium">
-                  Scenario
-                </th>
-                <th scope="col" className="py-2 px-2 font-medium">
-                  Return
-                </th>
-                <th scope="col" className="py-2 px-2 font-medium">
-                  Inflation
-                </th>
-                <th scope="col" className="py-2 px-2 font-medium">
-                  Salary growth
-                </th>
-                <th scope="col" className="py-2 px-2 font-medium">
-                  Withdrawal
-                </th>
-                <th scope="col" className="py-2 px-2 font-medium">
-                  Nest egg
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {typeof userReturnRate === "number" &&
-                typeof userInflationRate === "number" &&
-                typeof userSalaryGrowth === "number" && (
-                  <tr className="border-b border-subtle bg-blue-50">
-                    <td className="py-2 pr-2 font-semibold">Your plan</td>
-                    <td className="py-2 px-2">
-                      {formatPercent(userReturnRate, 1)}
-                    </td>
-                    <td className="py-2 px-2">
-                      {formatPercent(userInflationRate, 1)}
-                    </td>
-                    <td className="py-2 px-2">
-                      {formatPercent(userSalaryGrowth, 1)}
-                    </td>
-                    <td className="py-2 px-2">—</td>
-                    <td className="py-2 px-2">—</td>
-                  </tr>
-                )}
-              {scenarios.map((s) => {
-                const result = resultByLabel.get(s.label);
-                return (
-                  <tr key={s.label} className="border-b border-subtle">
-                    <td className="py-2 pr-2">
-                      <div className="font-medium">{s.label}</div>
-                      <div className="text-faint text-[10px]">
-                        {s.description}
-                      </div>
-                    </td>
-                    <td className="py-2 px-2">
-                      {formatPercent(s.returnRate, 1)}
-                    </td>
-                    <td className="py-2 px-2">
-                      {formatPercent(s.inflationRate, 1)}
-                    </td>
-                    <td className="py-2 px-2">
-                      {formatPercent(s.salaryGrowthRate, 1)}
-                    </td>
-                    <td className="py-2 px-2">
-                      {formatPercent(s.withdrawalRate, 1)}
-                    </td>
-                    <td className="py-2 px-2 font-medium">
-                      {stressLoading
-                        ? "…"
-                        : result
-                          ? formatCurrency(result.nestEggAtRetirement)
-                          : "—"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          <p className="mt-2 text-[11px] text-faint italic">
-            Conservative ≈ bottom-decile of historical 30-year outcomes. If your
-            plan only works in the baseline or optimistic case, consider
-            lowering your return rate or raising your withdrawal buffer.
-          </p>
-        </div>
-      )}
+      <div className="mt-3 overflow-x-auto">
+        <table
+          className="w-full text-xs"
+          aria-label="Stress test parameter comparison"
+        >
+          <caption className="sr-only">
+            Compares the user&apos;s assumptions to canonical conservative,
+            baseline, and optimistic stress-test scenarios.
+          </caption>
+          <thead>
+            <tr className="text-left text-faint border-b">
+              <th scope="col" className="py-2 pr-2 font-medium">
+                Scenario
+              </th>
+              <th scope="col" className="py-2 px-2 font-medium">
+                Return
+              </th>
+              <th scope="col" className="py-2 px-2 font-medium">
+                Inflation
+              </th>
+              <th scope="col" className="py-2 px-2 font-medium">
+                Salary growth
+              </th>
+              <th scope="col" className="py-2 px-2 font-medium">
+                Withdrawal
+              </th>
+              <th scope="col" className="py-2 px-2 font-medium">
+                Nest egg
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {typeof userReturnRate === "number" &&
+              typeof userInflationRate === "number" &&
+              typeof userSalaryGrowth === "number" && (
+                <tr className="border-b border-subtle bg-blue-50">
+                  <td className="py-2 pr-2 font-semibold">Your plan</td>
+                  <td className="py-2 px-2">
+                    {formatPercent(userReturnRate, 1)}
+                  </td>
+                  <td className="py-2 px-2">
+                    {formatPercent(userInflationRate, 1)}
+                  </td>
+                  <td className="py-2 px-2">
+                    {formatPercent(userSalaryGrowth, 1)}
+                  </td>
+                  <td className="py-2 px-2">—</td>
+                  <td className="py-2 px-2">—</td>
+                </tr>
+              )}
+            {scenarios.map((s) => {
+              const result = resultByLabel.get(s.label);
+              return (
+                <tr key={s.label} className="border-b border-subtle">
+                  <td className="py-2 pr-2">
+                    <div className="font-medium">{s.label}</div>
+                    <div className="text-faint text-[10px]">
+                      {s.description}
+                    </div>
+                  </td>
+                  <td className="py-2 px-2">
+                    {formatPercent(s.returnRate, 1)}
+                  </td>
+                  <td className="py-2 px-2">
+                    {formatPercent(s.inflationRate, 1)}
+                  </td>
+                  <td className="py-2 px-2">
+                    {formatPercent(s.salaryGrowthRate, 1)}
+                  </td>
+                  <td className="py-2 px-2">
+                    {formatPercent(s.withdrawalRate, 1)}
+                  </td>
+                  <td className="py-2 px-2 font-medium">
+                    {stressLoading
+                      ? "…"
+                      : result
+                        ? formatCurrency(result.nestEggAtRetirement)
+                        : "—"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <p className="mt-2 text-[11px] text-faint italic">
+          Conservative ≈ bottom-decile of historical 30-year outcomes. If your
+          plan only works in the baseline or optimistic case, consider lowering
+          your return rate or raising your withdrawal buffer.
+        </p>
+      </div>
     </div>
   );
 }

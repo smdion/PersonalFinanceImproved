@@ -3,6 +3,12 @@ import { useMemo, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
+import { usePersistedToggle } from "@/lib/hooks/use-persisted-setting";
+import {
+  SK_RETIREMENT_SIMULATION_AUTOLOAD,
+  SK_RETIREMENT_MC_AUTOLOAD,
+  SK_RETIREMENT_COASTFIRE_MC_AUTOLOAD,
+} from "@/lib/constants/settings-keys";
 import type {
   MonteCarloPercentileBand,
   MonteCarloResult,
@@ -122,10 +128,24 @@ export function useProjectionQueries(
   const sharedInput = baseSharedInput;
   const debouncedInput = useDebouncedValue(sharedInput, 600);
 
+  // --- Autoload settings ---
+  const [autoloadEnabled] = usePersistedToggle(
+    SK_RETIREMENT_SIMULATION_AUTOLOAD,
+    true,
+  );
+  const [mcAutoloadEnabled] = usePersistedToggle(
+    SK_RETIREMENT_MC_AUTOLOAD,
+    true,
+  );
+  const [coastFireMcAutoloadEnabled] = usePersistedToggle(
+    SK_RETIREMENT_COASTFIRE_MC_AUTOLOAD,
+    true,
+  );
+
   // --- tRPC query ---
   const engineQuery = trpc.projection.computeProjection.useQuery(
     debouncedInput,
-    { placeholderData: (prev) => prev },
+    { placeholderData: (prev) => prev, enabled: autoloadEnabled },
   );
 
   // --- Mutations ---
@@ -193,7 +213,8 @@ export function useProjectionQueries(
       ...debouncedBaseInput,
     },
     {
-      enabled: engineQuery.isSuccess && !engineQuery.isFetching,
+      enabled:
+        mcAutoloadEnabled && engineQuery.isSuccess && !engineQuery.isFetching,
       placeholderData: (prev) => prev,
     },
   );
@@ -209,6 +230,7 @@ export function useProjectionQueries(
     },
     {
       enabled:
+        mcAutoloadEnabled &&
         projectionMode === "monteCarlo" &&
         engineQuery.isSuccess &&
         !engineQuery.isFetching,
@@ -233,7 +255,10 @@ export function useProjectionQueries(
   const coastFireMcQuery = trpc.projection.computeCoastFireMC.useQuery(
     debouncedBaseInput,
     {
-      enabled: engineQuery.isSuccess && !engineQuery.isFetching,
+      enabled:
+        coastFireMcAutoloadEnabled &&
+        engineQuery.isSuccess &&
+        !engineQuery.isFetching,
       placeholderData: (prev) => prev,
       staleTime: 5 * 60_000,
     },
@@ -392,6 +417,12 @@ export function useProjectionQueries(
     coastFireAge,
     coastFireMcQuery,
     coastFireMcResult,
+    autoloadEnabled,
+    runSimulation: engineQuery.refetch,
+    mcAutoloadEnabled,
+    runMonteCarlo: mcPrefetchQuery.refetch,
+    coastFireMcAutoloadEnabled,
+    runCoastFireMc: coastFireMcQuery.refetch,
     engineQuery,
     mcPrefetchQuery,
     mcQuery,
