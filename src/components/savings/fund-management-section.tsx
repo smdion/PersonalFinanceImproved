@@ -10,6 +10,7 @@ import { EmergencyFundDetail } from "./emergency-fund-detail";
 import { FUND_COLORS } from "./fund-colors";
 import type { GoalProjection, PlannedTxForm, NewFundForm } from "./types";
 import type { PushPreviewItem } from "@/components/ui/push-preview-modal";
+import { useUpdatePlannedTx } from "./use-update-planned-tx";
 
 interface RawGoal {
   id: number;
@@ -105,6 +106,7 @@ export interface FundManagementSectionProps {
   efundTierIndex: number;
   onEfundTierChange: (column: number) => void;
   reimbursementsData?: ReimbursementData | null;
+  apiServiceName?: string | null;
   /** From ApiSyncSection — piped through to FundCard */
   onLinkToApi: (goalId: number) => void;
   onUnlinkFromApi: (goalId: number) => void;
@@ -154,6 +156,7 @@ export function FundManagementSection({
   efundTierIndex,
   onEfundTierChange,
   reimbursementsData,
+  apiServiceName,
   onLinkToApi,
   onUnlinkFromApi,
   onConvertToBudgetItem,
@@ -181,6 +184,8 @@ export function FundManagementSection({
   const deleteTxMut = trpc.savings.plannedTransactions.delete.useMutation({
     onSuccess: () => utils.savings.invalidate(),
   });
+  const { onUpdateTx: updateTxFn, isPending: updateTxPendingFlag } =
+    useUpdatePlannedTx();
 
   // v0.5 expert-review M27: undoable delete for planned transactions.
   // PlannedTransactions are single-row, no cascade — safe to re-create on
@@ -463,6 +468,8 @@ export function FundManagementSection({
                   goalById={goalById as Map<number, { name: string }>}
                   onAddTx={handleAddTx}
                   createTxPending={createTx.isPending}
+                  onUpdateTx={updateTxFn}
+                  updateTxPending={updateTxPendingFlag}
                   onEditMonth={onEditMonth}
                   onDeleteOverride={onDeleteOverride}
                   onTimelineClick={(goalId, monthIndex) => {
@@ -477,6 +484,7 @@ export function FundManagementSection({
                   createGoalPending={createGoalPending}
                   canEdit={canEdit}
                   apiBalance={apiBalanceMap.get(raw.id) ?? null}
+                  apiServiceName={apiServiceName}
                   onLinkToApi={onLinkToApi}
                   onUnlinkFromApi={onUnlinkFromApi}
                   onConvertToBudgetItem={onConvertToBudgetItem}

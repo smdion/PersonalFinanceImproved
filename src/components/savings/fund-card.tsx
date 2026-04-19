@@ -198,6 +198,9 @@ export function FundCard({
   goalById,
   onAddTx,
   createTxPending,
+  onUpdateTx,
+  updateTxPending,
+  apiServiceName,
   onEditMonth,
   onDeleteOverride,
   onTimelineClick,
@@ -234,6 +237,9 @@ export function FundCard({
   goalById?: Map<number, { name: string }>;
   onAddTx: (form: PlannedTxForm) => void;
   createTxPending: boolean;
+  onUpdateTx?: (id: number, form: PlannedTxForm) => void;
+  updateTxPending?: boolean;
+  apiServiceName?: string | null;
   onEditMonth: (monthDate: Date) => void;
   onDeleteOverride: (params: { goalId: number; monthDate: string }) => void;
   onTimelineClick: (goalId: number, monthIndex: number) => void;
@@ -268,6 +274,8 @@ export function FundCard({
       : 0;
   const progressPct = (progress * 100).toFixed(0);
 
+  const serviceLabel = (apiServiceName ?? "API").toUpperCase();
+
   return (
     <div className="bg-surface-primary rounded-lg border p-4 shadow-sm hover:shadow-md transition-shadow">
       {/* ── Header: Goal name + status badge + menu ── */}
@@ -290,9 +298,9 @@ export function FundCard({
             {rawGoal.isApiSyncEnabled && rawGoal.apiCategoryName && (
               <span
                 className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-blue-100 text-blue-600 border border-blue-200"
-                title={`Synced from ${rawGoal.apiCategoryName}`}
+                title={`Synced with ${rawGoal.apiCategoryName}`}
               >
-                API
+                {serviceLabel}
               </span>
             )}
           </div>
@@ -404,23 +412,23 @@ export function FundCard({
           </div>
           <div className="space-y-0.5 text-[11px]">
             <div className="flex items-center justify-between">
-              <span className="text-blue-500/70 flex items-center gap-1">
-                <span className="text-[9px]">← pull</span> Balance
+              <span className="text-blue-500/70">
+                ↓ Balance from {serviceLabel}
               </span>
               <span className="text-blue-300 font-semibold tabular-nums">
                 {formatCurrency(apiBalance.balance)}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-blue-500/70 flex items-center gap-1">
-                <span className="text-[9px]">→ push</span> Budgeted
+              <span className="text-blue-500/70">
+                ↑ Monthly goal pushed to {serviceLabel}
               </span>
               <span className="text-blue-300 tabular-nums">
                 {formatCurrency(apiBalance.budgeted)}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-blue-500/70">Activity</span>
+              <span className="text-blue-500/70">Spent in {serviceLabel}</span>
               <span className="text-blue-300/70 tabular-nums">
                 {formatCurrency(apiBalance.activity)}
               </span>
@@ -618,6 +626,8 @@ export function FundCard({
           goalById={goalById}
           onAddTx={onAddTx}
           createTxPending={createTxPending}
+          onUpdateTx={onUpdateTx}
+          updateTxPending={updateTxPending}
           canEdit={canEdit}
         />
       </div>

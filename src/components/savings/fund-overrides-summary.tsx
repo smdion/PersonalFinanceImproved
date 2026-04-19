@@ -116,6 +116,51 @@ function formatRangeLabel(range: OverrideRange): string {
   return `${formatMonthShort(range.startMonth)}\u2013${formatMonthShort(range.endMonth)}`;
 }
 
+function OverrideRangeRow({
+  range,
+  defaultAllocation,
+  onEditMonth,
+  onClear,
+  canEdit,
+}: {
+  range: OverrideRange;
+  defaultAllocation: number;
+  onEditMonth: (d: Date) => void;
+  onClear: () => void;
+  canEdit?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between text-xs py-1 px-2 bg-surface-elevated rounded">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => onEditMonth(new Date(range.startMonth + "T00:00:00"))}
+          className="text-blue-600 font-medium hover:text-blue-700 underline underline-offset-2"
+        >
+          {formatRangeLabel(range)}
+        </button>
+        <span className="text-secondary">
+          {formatCurrency(range.amount)}/mo
+        </span>
+        {range.amount === 0 && (
+          <span className="text-yellow-500 text-[10px]">(paused)</span>
+        )}
+        <span className="text-muted text-[10px]">
+          default: {formatCurrency(defaultAllocation)}
+        </span>
+      </div>
+      {canEdit !== false && (
+        <button
+          onClick={onClear}
+          className="text-muted hover:text-red-600 text-[10px]"
+          title="Reset to default"
+        >
+          clear
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function FundOverridesSummary({
   overrides,
   goalId,
@@ -132,9 +177,20 @@ export function FundOverridesSummary({
   canEdit?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const goalOverrides = overrides.filter((o) => o.goalId === goalId);
   const ranges = collapseOverrides(goalOverrides);
+
+  const thisMonth = new Date();
+  thisMonth.setDate(1);
+  thisMonth.setHours(0, 0, 0, 0);
+  const currentRanges = ranges.filter(
+    (r) => new Date(r.endMonth + "T00:00:00") >= thisMonth,
+  );
+  const pastRanges = ranges.filter(
+    (r) => new Date(r.endMonth + "T00:00:00") < thisMonth,
+  );
 
   if (ranges.length === 0 && canEdit === false) return null;
 
@@ -171,7 +227,7 @@ export function FundOverridesSummary({
               d="M9 5l7 7-7 7"
             />
           </svg>
-          Monthly Overrides ({ranges.length})
+          Monthly Overrides ({currentRanges.length})
         </button>
         {canEdit !== false && (
           <button
@@ -188,48 +244,55 @@ export function FundOverridesSummary({
 
       {isOpen && (
         <div className="mt-2 space-y-1.5">
-          {ranges.length === 0 && (
+          {currentRanges.length === 0 && pastRanges.length === 0 && (
             <p className="text-xs text-muted py-1">
               No overrides. Default: {formatCurrency(defaultAllocation)}/mo
             </p>
           )}
+          {currentRanges.length === 0 && pastRanges.length > 0 && (
+            <p className="text-xs text-muted py-1">
+              No upcoming overrides. Default:{" "}
+              {formatCurrency(defaultAllocation)}/mo
+            </p>
+          )}
 
-          {ranges.map((range) => (
-            <div
+          {currentRanges.map((range) => (
+            <OverrideRangeRow
               key={range.startMonth}
-              className="flex items-center justify-between text-xs py-1 px-2 bg-surface-elevated rounded"
-            >
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => {
-                    const d = new Date(range.startMonth + "T00:00:00");
-                    onEditMonth(d);
-                  }}
-                  className="text-blue-600 font-medium hover:text-blue-700 underline underline-offset-2"
-                >
-                  {formatRangeLabel(range)}
-                </button>
-                <span className="text-secondary">
-                  {formatCurrency(range.amount)}/mo
-                </span>
-                {range.amount === 0 && (
-                  <span className="text-yellow-500 text-[10px]">(paused)</span>
-                )}
-                <span className="text-muted text-[10px]">
-                  default: {formatCurrency(defaultAllocation)}
-                </span>
-              </div>
-              {canEdit !== false && (
-                <button
-                  onClick={() => handleClearRange(range)}
-                  className="text-muted hover:text-red-600 text-[10px]"
-                  title="Reset to default"
-                >
-                  clear
-                </button>
-              )}
-            </div>
+              range={range}
+              defaultAllocation={defaultAllocation}
+              onEditMonth={onEditMonth}
+              onClear={() => handleClearRange(range)}
+              canEdit={canEdit}
+            />
           ))}
+
+          {pastRanges.length > 0 && (
+            <>
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className="text-[10px] text-muted hover:text-primary mt-1"
+              >
+                {showHistory
+                  ? "Hide history"
+                  : `Show history (${pastRanges.length})`}
+              </button>
+              {showHistory && (
+                <div className="opacity-50">
+                  {pastRanges.map((range) => (
+                    <OverrideRangeRow
+                      key={range.startMonth}
+                      range={range}
+                      defaultAllocation={defaultAllocation}
+                      onEditMonth={onEditMonth}
+                      onClear={() => handleClearRange(range)}
+                      canEdit={canEdit}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>

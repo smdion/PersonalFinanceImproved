@@ -8,6 +8,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.5
 
+## [0.5.7] - 2026-04-19
+
+Inline transaction editing, API label clarity, and history toggle for past items.
+
+### Added
+
+- **Inline transaction editing** — planned transactions can now be edited in place from both the fund card and the Upcoming Milestones panel. Click the pencil icon on any non-transfer transaction to change the date, amount, description, or recurrence without opening a separate form.
+- **Show history toggle** — past planned transactions and past monthly allocation overrides are now hidden by default and revealed with a "Show history (N)" toggle. Upcoming and current items remain always visible.
+
+### Changed
+
+- **API badge now shows the connected service name** (e.g., "YNAB") instead of the generic "API" label.
+- **Sync direction labels are now descriptive**: "↓ Balance from YNAB", "↑ Monthly goal pushed to YNAB", and "Spent in YNAB" replace the previous "pull", "push", and "Activity" labels.
+
+### Fixed
+
+- **Portfolio bar chart bars now all start at the same horizontal position.** The account label column is now fixed-width so shorter labels no longer cause bars to shift left.
+
+---
+
 ## [0.5.6] - 2026-04-19
 
 ESPP calculator, pending rollover tracker, balance consistency warning, portfolio label editing, and performance page UX improvements.
