@@ -32,6 +32,7 @@ ESPP calculator, pending rollover tracker, balance consistency warning, portfoli
 
 - **Sub-account sub-type and custom label were silently dropped when creating a new snapshot.** Employer Match and Rollover sub-types entered on previous snapshots were not carried forward, so every new snapshot had to be re-tagged manually.
 - **Performance page crashed on load after upgrading from v0.5.5.** The pending rollovers migration file was present but missing from the migration journal, so the database table was never created. The app now applies the migration correctly on startup.
+- **Pending rollover account labels now respect the display name priority rules** applied throughout the rest of the app (friendly name → stored label → constructed fallback).
 
 ---
 
