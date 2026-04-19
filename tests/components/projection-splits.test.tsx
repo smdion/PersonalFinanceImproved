@@ -559,7 +559,7 @@ describe("ProjectionChartSkeleton", () => {
   it("renders loading state", async () => {
     const { ProjectionChartSkeleton } =
       await import("@/components/cards/projection/projection-chart");
-    render(<ProjectionChartSkeleton />);
+    render(<ProjectionChartSkeleton phase="simulation" />);
     expect(screen.getByText("Balance Projection")).toBeInTheDocument();
     expect(screen.getByText(/Simulating/)).toBeInTheDocument();
   });
@@ -698,15 +698,16 @@ describe("McResultsSection", () => {
     expect(container.innerHTML).toBe("");
   });
 
-  it("shows loading spinner when MC is running", async () => {
+  it("renders empty while MC is loading (spinner is in ProjectionLoader)", async () => {
     const { McResultsSection } =
       await import("@/components/cards/projection/projection-mc-results");
     const s = baseMockState({
       projectionMode: "monteCarlo",
       mcLoading: true,
     });
-    render(<McResultsSection s={s} />);
-    expect(screen.getByText(/Running 1,000 simulations/)).toBeInTheDocument();
+    const { container } = render(<McResultsSection s={s} />);
+    expect(container.querySelector(".space-y-3")).toBeInTheDocument();
+    expect(screen.queryByText(/simulations/i)).not.toBeInTheDocument();
   });
 
   it("shows error message on MC failure", async () => {

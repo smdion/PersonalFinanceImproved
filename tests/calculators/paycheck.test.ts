@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { calculatePaycheck } from "@/lib/calculators/paycheck";
+import {
+  calculatePaycheck,
+  calculateBlendedAnnual,
+  type SalarySegment,
+} from "@/lib/calculators/paycheck";
+import type { PaycheckResult } from "@/lib/calculators/types";
 import { PERSON_A_PAYCHECK_INPUT, PERSON_B_PAYCHECK_INPUT } from "./fixtures";
 
 describe("calculatePaycheck", () => {
@@ -166,5 +171,87 @@ describe("calculatePaycheck", () => {
         expect(period.ficaMedicare).toBeGreaterThan(0);
       }
     });
+  });
+
+  describe("top tax bracket (null max)", () => {
+    it("calculates withholding for income above the highest bracket floor", () => {
+      // MFJ 2C top bracket starts at $400,450 (max: null). Need salary > $400,450.
+      const result = calculatePaycheck({
+        ...PERSON_A_PAYCHECK_INPUT,
+        annualSalary: 600_000,
+        deductions: [],
+        contributionAccounts: [],
+      });
+      expect(result.federalWithholding).toBeGreaterThan(0);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// calculateBlendedAnnual
+// ---------------------------------------------------------------------------
+
+function makeMinimalPaycheck(gross: number): PaycheckResult {
+  return {
+    gross,
+    federalWithholding: gross * 0.22,
+    preTaxDeductions: [],
+    postTaxDeductions: [],
+    // eslint-disable-next-line no-restricted-syntax -- test-only stub; only fields calculateBlendedAnnual reads
+  } as unknown as PaycheckResult;
+}
+
+function makeSegment(
+  gross: number,
+  startPeriod: number,
+  endPeriod: number,
+): SalarySegment {
+  return {
+    salary: gross * 26,
+    effectiveDate: null,
+    startPeriod,
+    endPeriod,
+    paycheck: makeMinimalPaycheck(gross),
+  };
+}
+
+const TAX_BRACKETS = {
+  socialSecurityWageBase: 176_100,
+  socialSecurityRate: 0.062,
+  medicareRate: 0.0145,
+};
+
+describe("calculateBlendedAnnual", () => {
+  it("returns zero totals for empty segments (early return)", () => {
+    const result = calculateBlendedAnnual([], TAX_BRACKETS);
+    expect(result.gross).toBe(0);
+    expect(result.ficaSS).toBe(0);
+    expect(result.ficaMedicare).toBe(0);
+  });
+
+  it("computes totals for a full-year single segment", () => {
+    // $150k salary: $5,769.23/period × 26 = $150k gross
+    const result = calculateBlendedAnnual(
+      [makeSegment(5769.23, 1, 26)],
+      TAX_BRACKETS,
+    );
+    expect(result.gross).toBeCloseTo(5769.23 * 26, 0);
+    expect(result.ficaSS).toBeGreaterThan(0);
+    expect(result.ficaMedicare).toBeGreaterThan(0);
+  });
+
+  it("handles SS wage base spanning across periods (lines 986-990)", () => {
+    // segFicaBase = $10,000/period, ssWageBase = $176,100
+    // Period 17: ytd = 170,000 < 176,100 → full SS
+    // Period 18: ytd = 180,000 > 176,100, prev = 170,000 < 176,100 → spanning case
+    // Period 19+: prev >= 176,100 → no SS
+    const result = calculateBlendedAnnual(
+      [makeSegment(10_000, 1, 26)],
+      TAX_BRACKETS,
+    );
+    // SS should be capped at ssWageBase × rate, not 26 × 10000 × rate
+    const maxSS =
+      TAX_BRACKETS.socialSecurityWageBase * TAX_BRACKETS.socialSecurityRate;
+    expect(result.ficaSS).toBeCloseTo(maxSS, 0);
   });
 });

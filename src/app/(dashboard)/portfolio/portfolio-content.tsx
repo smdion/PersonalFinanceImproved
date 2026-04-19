@@ -23,6 +23,7 @@ import { confirm } from "@/components/ui/confirm-dialog";
 import { ContributionAccountsSettings } from "@/components/portfolio/contribution-accounts";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { NewSnapshotForm } from "@/components/portfolio/new-snapshot-form";
+import { SlidePanel } from "@/components/ui/slide-panel";
 import { AccountBalanceOverview } from "@/components/portfolio/account-balance-overview";
 import { PortfolioQuickLook } from "@/components/portfolio/portfolio-quick-look";
 
@@ -290,17 +291,23 @@ export function PortfolioContent() {
       )}
 
       {/* New Snapshot Form */}
-      {canEdit && showNewSnapshot && (
-        <NewSnapshotForm
+      {canEdit && (
+        <SlidePanel
+          open={showNewSnapshot}
           onClose={() => setShowNewSnapshot(false)}
-          onSaved={() => {
-            setShowNewSnapshot(false);
-            utils.networth.computeSummary.invalidate();
-            utils.networth.listHistory.invalidate();
-            utils.networth.listSnapshots.invalidate();
-            utils.settings.portfolioSnapshots.getLatest.invalidate();
-          }}
-        />
+          title="New Snapshot"
+        >
+          <NewSnapshotForm
+            onClose={() => setShowNewSnapshot(false)}
+            onSaved={() => {
+              setShowNewSnapshot(false);
+              utils.networth.computeSummary.invalidate();
+              utils.networth.listHistory.invalidate();
+              utils.networth.listSnapshots.invalidate();
+              utils.settings.portfolioSnapshots.getLatest.invalidate();
+            }}
+          />
+        </SlidePanel>
       )}
 
       {/* Portfolio value chart */}

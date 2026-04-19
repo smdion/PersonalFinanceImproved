@@ -421,19 +421,20 @@ describe("performance.computeSummary — lifetime cumulative + null return fill"
 
   it("fills null annualReturnPct on rows with financial data", async () => {
     // Seed an annual row with null return but non-zero financials
+    // totalContributions includes employer (25000 = 20000 employee + 5000 employer)
     seedAnnualPerf(db, {
       year: 2018,
       category: "401k/IRA",
       beginningBalance: "100000",
-      totalContributions: "20000",
+      totalContributions: "25000",
       yearlyGainLoss: "10000",
-      endingBalance: "130000",
+      endingBalance: "135000",
       employerContributions: "5000",
       distributions: "0",
       fees: "200",
       rollovers: "0",
       lifetimeGains: "10000",
-      lifetimeContributions: "20000",
+      lifetimeContributions: "25000",
       lifetimeMatch: "5000",
       isFinalized: true,
       isCurrentYear: false,
@@ -446,8 +447,8 @@ describe("performance.computeSummary — lifetime cumulative + null return fill"
     );
     expect(row2018).toBeDefined();
     // Return should be computed since it was null in stored row
-    // Modified Dietz: 10000 / (100000 + (20000 + 0 + 5000 - 0 - 200) / 2)
-    const expected = 10000 / (100000 + (20000 + 5000 - 200) / 2);
+    // Modified Dietz: 10000 / (100000 + (25000 - 200) / 2) = 10000 / 112400
+    const expected = 10000 / (100000 + (25000 - 200) / 2);
     expect(row2018!.annualReturnPct).toBeCloseTo(expected, 4);
   });
 });
@@ -673,18 +674,19 @@ import {
 describe("finalizeYear — pure computation logic", () => {
   describe("computeReturn (Modified Dietz)", () => {
     it("computes return for typical account data", () => {
-      // gainLoss / (beginBal + (contribs + rollovers + employer - distributions - fees) / 2)
-      // = 12000 / (100000 + (20000 + 0 + 5000 - 0 - 200) / 2) = 12000 / 112400 ≈ 0.106762
-      const result = computeReturn(100000, 20000, 12000, 5000, 0, 200, 0);
+      // contribs = totalContributions (employee + employer combined) = 25000
+      // gainLoss / (beginBal + (contribs + rollovers - distributions - fees) / 2)
+      // = 12000 / (100000 + (25000 + 0 - 0 - 200) / 2) = 12000 / 112400 ≈ 0.106762
+      const result = computeReturn(100000, 25000, 12000, 0, 200, 0);
       expect(result).toBeCloseTo(12000 / 112400, 6);
     });
 
     it("returns null when denominator is zero (no beginning balance, no flows)", () => {
-      expect(computeReturn(0, 0, 0, 0, 0, 0, 0)).toBeNull();
+      expect(computeReturn(0, 0, 0, 0, 0, 0)).toBeNull();
     });
 
     it("handles negative returns (loss year)", () => {
-      const result = computeReturn(100000, 10000, -15000, 0, 0, 100, 0);
+      const result = computeReturn(100000, 10000, -15000, 0, 100, 0);
       expect(result).not.toBeNull();
       expect(result!).toBeLessThan(0);
       // -15000 / (100000 + (10000 - 100) / 2) = -15000 / 104950
@@ -692,15 +694,15 @@ describe("finalizeYear — pure computation logic", () => {
     });
 
     it("handles distributions and rollovers in denominator", () => {
-      // Distributions reduce denominator, rollovers increase it
-      const result = computeReturn(50000, 5000, 3000, 2000, 1000, 50, 8000);
-      // denom = 50000 + (5000 + 8000 + 2000 - 1000 - 50) / 2 = 50000 + 6975 = 56975
+      // contribs = 7000 (employee 5000 + employer 2000), distributions = 1000, fees = 50, rollovers = 8000
+      const result = computeReturn(50000, 7000, 3000, 1000, 50, 8000);
+      // denom = 50000 + (7000 + 8000 - 1000 - 50) / 2 = 50000 + 6975 = 56975
       expect(result).toBeCloseTo(3000 / 56975, 6);
     });
 
     it("works with zero beginning balance but nonzero flows", () => {
       // New account: no starting balance, received rollover
-      const result = computeReturn(0, 0, 500, 0, 0, 0, 50000);
+      const result = computeReturn(0, 0, 500, 0, 0, 50000);
       // denom = 0 + 50000/2 = 25000
       expect(result).toBeCloseTo(500 / 25000, 6);
     });
@@ -825,12 +827,13 @@ describe("finalizeYear — pure computation logic", () => {
   describe("computeReturn + sumAccounts integration", () => {
     it("computes correct return from summed account data", () => {
       // Simulates the finalizeYear flow: sum accounts → compute return
+      // totalContributions includes employer (25000 = 20000 employee + 5000 employer)
       const accounts: AccountLike[] = [
         {
           beginningBalance: "100000",
-          totalContributions: "20000",
+          totalContributions: "25000",
           yearlyGainLoss: "12000",
-          endingBalance: "135000",
+          endingBalance: "137000",
           employerContributions: "5000",
           distributions: "0",
           fees: "200",
@@ -843,13 +846,12 @@ describe("finalizeYear — pure computation logic", () => {
         sums.beginBal,
         sums.contribs,
         sums.gainLoss,
-        sums.employer,
         sums.distributions,
         sums.fees,
         sums.rollovers,
       );
 
-      // 12000 / (100000 + (20000 + 5000 - 200) / 2) = 12000 / 112400
+      // 12000 / (100000 + (25000 + 0 - 0 - 200) / 2) = 12000 / 112400
       expect(returnPct).toBeCloseTo(0.106762, 4);
     });
   });

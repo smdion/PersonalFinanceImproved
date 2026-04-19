@@ -16,6 +16,11 @@ export const SK_BUDGET_NAME_COL_WIDTH = "budget_name_col_width";
 export const SK_ACTIVE_CONTRIB_PROFILE_ID = "active_contrib_profile_id";
 
 // ── Retirement ──────────────────────────────────────────────────────
+export const SK_RETIREMENT_SIMULATION_AUTOLOAD =
+  "retirement_simulation_autoload";
+export const SK_RETIREMENT_MC_AUTOLOAD = "retirement_mc_autoload";
+export const SK_RETIREMENT_COASTFIRE_MC_AUTOLOAD =
+  "retirement_coastfire_mc_autoload";
 export const SK_RETIREMENT_ACC_BUDGET_PROFILE_ID =
   "retirement_acc_budget_profile_id";
 export const SK_RETIREMENT_ACC_BUDGET_COL =
