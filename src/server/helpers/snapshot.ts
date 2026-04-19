@@ -198,6 +198,7 @@ export type YearEndRow = {
   /** Per-account performance breakdown (from account_performance table). */
   perfByAccount: {
     label: string;
+    accountType: string;
     beginningBalance: number;
     contributions: number;
     employerMatch: number;
@@ -397,6 +398,7 @@ export async function buildYearEndHistory(
     const yearAccounts = accountPerfRows.filter((a) => a.year === year);
     const accounts: YearEndRow["perfByAccount"] = yearAccounts.map((acct) => ({
       label: `${acct.institution} — ${acct.accountLabel.replace(` (${acct.institution})`, "")}`,
+      accountType: resolveHistoryMaster(acct).accountType,
       beginningBalance: toNumber(acct.beginningBalance),
       contributions: toNumber(acct.totalContributions),
       employerMatch: toNumber(acct.employerContributions),

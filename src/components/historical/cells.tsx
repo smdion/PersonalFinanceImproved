@@ -402,6 +402,7 @@ export function EditableCell({
   notes,
   onUpsertNote,
   editableFields,
+  tooltipLines,
 }: {
   value: number | null;
   field: string;
@@ -414,6 +415,7 @@ export function EditableCell({
   notes: Record<string, string>;
   onUpsertNote: (year: number, field: string, note: string) => void;
   editableFields?: Set<string>;
+  tooltipLines?: string[];
 }) {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
@@ -468,11 +470,21 @@ export function EditableCell({
       title={isEditable ? "Double-click to edit" : undefined}
     >
       <span className="relative group/cell inline-flex items-center gap-0.5">
-        <span>
-          {value !== null && value !== undefined
-            ? formatCurrency(value)
-            : "\u2014"}
-        </span>
+        {tooltipLines && tooltipLines.length > 0 ? (
+          <Tooltip lines={tooltipLines} side="bottom" maxWidth={400}>
+            <span className="cursor-help border-b border-dotted border-strong">
+              {value !== null && value !== undefined
+                ? formatCurrency(value)
+                : "\u2014"}
+            </span>
+          </Tooltip>
+        ) : (
+          <span>
+            {value !== null && value !== undefined
+              ? formatCurrency(value)
+              : "\u2014"}
+          </span>
+        )}
         {existingNote && <NoteIndicator note={existingNote} />}
         {!isCurrent && (
           <NoteButton
