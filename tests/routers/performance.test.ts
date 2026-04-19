@@ -283,9 +283,9 @@ describe("performance router", () => {
           r.year === 2024 && r.institution === "Schwab",
       );
       expect(row).toBeDefined();
-      // Modified Dietz: gainLoss / (beginBal + (contribs + rollovers + employer - distributions - fees) / 2)
-      // = 5000 / (50000 + (10000 + 0 + 3000 - 0 - 100) / 2) = 5000 / (50000 + 6450) = 5000 / 56450
-      const expectedReturn = 5000 / 56450;
+      // Modified Dietz: gainLoss / (beginBal + (contribs - fees) / 2)
+      // = 5000 / (50000 + (10000 - 100) / 2) = 5000 / 54950
+      const expectedReturn = 5000 / 54950;
       expect(row!.annualReturnPct).toBeCloseTo(expectedReturn, 4);
     });
 
@@ -973,8 +973,8 @@ describe("performance router", () => {
           r.year === 2020 && r.category === "401k/IRA",
       );
       expect(row).toBeDefined();
-      // Modified Dietz: 8000 / (60000 + (10000 + 0 + 3000 - 0 - 200) / 2) = 8000 / 66400
-      const expected = 8000 / 66400;
+      // Modified Dietz: 8000 / (60000 + (10000 - 200) / 2) = 8000 / 64900
+      const expected = 8000 / 64900;
       expect(row!.annualReturnPct).toBeCloseTo(expected, 4);
     });
   });
