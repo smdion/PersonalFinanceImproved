@@ -56,6 +56,7 @@ export function FundTransactionList({
   const [isOpen, setIsOpen] = useState(
     transactions.length <= 5 && transactions.length > 0,
   );
+  const [showHistory, setShowHistory] = useState(false);
   const [addingTx, setAddingTx] = useState(false);
   const [txForm, setTxForm] = useState<PlannedTxForm>(emptyTxForm(goalId));
 
@@ -141,23 +142,35 @@ export function FundTransactionList({
           ))}
 
           {past.length > 0 && (
-            <div className="opacity-50">
-              {past.map((tx) => (
-                <TransactionRow
-                  key={tx.id}
-                  tx={tx}
-                  currentGoalId={goalId}
-                  goalById={goalById}
-                  onDelete={() => handleDelete(tx)}
-                  onUpdate={
-                    onUpdateTx ? (form) => onUpdateTx(tx.id, form) : undefined
-                  }
-                  updatePending={updateTxPending}
-                  canEdit={canEdit}
-                  isPast
-                />
-              ))}
-            </div>
+            <>
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className="text-[10px] text-muted hover:text-primary mt-1"
+              >
+                {showHistory ? "Hide history" : `Show history (${past.length})`}
+              </button>
+              {showHistory && (
+                <div className="opacity-50">
+                  {past.map((tx) => (
+                    <TransactionRow
+                      key={tx.id}
+                      tx={tx}
+                      currentGoalId={goalId}
+                      goalById={goalById}
+                      onDelete={() => handleDelete(tx)}
+                      onUpdate={
+                        onUpdateTx
+                          ? (form) => onUpdateTx(tx.id, form)
+                          : undefined
+                      }
+                      updatePending={updateTxPending}
+                      canEdit={canEdit}
+                      isPast
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
 
           {addingTx && (
