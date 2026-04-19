@@ -8,7 +8,6 @@ import {
 } from "@/lib/utils/format";
 import { EditableCell } from "./editable-cell";
 import { PERF_CATEGORY_BROKERAGE } from "@/lib/config/display-labels";
-import { AddAccountForm } from "./add-account-form";
 import type { YearRowProps } from "./types";
 
 export function YearRow({
@@ -24,12 +23,6 @@ export function YearRow({
   onEditValueChange,
   onSaveEdit,
   onKeyDown,
-  onDeleteAccount,
-  showAddAccount,
-  onShowAddAccount,
-  onCreateAccount,
-  onCancelAddAccount,
-  isCreatingAccount,
   activeCategory,
   masterAccounts,
   canEdit = true,
@@ -283,35 +276,6 @@ export function YearRow({
                         accountType: a.accountType ?? undefined,
                       })}
                     </span>
-                    {acctEditable && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteAccount(
-                            a.id,
-                            `${accountDisplayName({ ...a, accountType: a.accountType ?? undefined })}`,
-                          );
-                        }}
-                        className="text-faint hover:text-red-500 transition-colors ml-1"
-                        title="Delete account row"
-                        aria-label="Delete account row"
-                      >
-                        <svg
-                          className="w-3.5 h-3.5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                          aria-hidden="true"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
-                      </button>
-                    )}
                   </span>
                 </td>
                 <td className="text-right px-4 py-2 text-muted">
@@ -533,32 +497,6 @@ export function YearRow({
             </React.Fragment>
           );
         })}
-      {isExpanded && showAccounts && canEdit && (
-        <tr className="bg-surface-sunken/30 border-b border-subtle">
-          <td colSpan={13} className="px-4 py-2 pl-10">
-            {showAddAccount ? (
-              <AddAccountForm
-                year={row.year}
-                parentCategory={activeCategory}
-                masterAccounts={masterAccounts}
-                onSave={onCreateAccount}
-                onCancel={onCancelAddAccount}
-                isSaving={isCreatingAccount}
-              />
-            ) : (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onShowAddAccount();
-                }}
-                className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
-              >
-                + Add Account
-              </button>
-            )}
-          </td>
-        </tr>
-      )}
     </>
   );
 }

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   calculatePaycheck,
   calculateBlendedAnnual,
+  mapSalaryTimelineToPeriods,
   type SalarySegment,
 } from "@/lib/calculators/paycheck";
 import type { PaycheckResult } from "@/lib/calculators/types";
@@ -253,5 +254,116 @@ describe("calculateBlendedAnnual", () => {
     const maxSS =
       TAX_BRACKETS.socialSecurityWageBase * TAX_BRACKETS.socialSecurityRate;
     expect(result.ficaSS).toBeCloseTo(maxSS, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// mapSalaryTimelineToPeriods
+// ---------------------------------------------------------------------------
+
+describe("mapSalaryTimelineToPeriods", () => {
+  const anchor = new Date("2026-01-02T00:00:00"); // a Friday
+
+  it("returns empty array for empty timeline", () => {
+    expect(mapSalaryTimelineToPeriods([], "biweekly", anchor, 2026)).toEqual(
+      [],
+    );
+  });
+
+  it("returns single full-year segment for a one-entry timeline (monthly)", () => {
+    const result = mapSalaryTimelineToPeriods(
+      [{ salary: 100_000, effectiveDate: null }],
+      "monthly",
+      anchor,
+      2026,
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0]!.startPeriod).toBe(1);
+    expect(result[0]!.endPeriod).toBe(12);
+    expect(result[0]!.salary).toBe(100_000);
+  });
+
+  it("returns single full-year segment for a one-entry timeline (semimonthly)", () => {
+    const result = mapSalaryTimelineToPeriods(
+      [{ salary: 80_000, effectiveDate: null }],
+      "semimonthly",
+      anchor,
+      2026,
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0]!.endPeriod).toBe(24);
+  });
+
+  it("returns single full-year segment for a one-entry timeline (biweekly)", () => {
+    const result = mapSalaryTimelineToPeriods(
+      [{ salary: 90_000, effectiveDate: null }],
+      "biweekly",
+      anchor,
+      2026,
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0]!.endPeriod).toBe(26);
+  });
+
+  it("returns single full-year segment for a one-entry timeline (weekly)", () => {
+    const result = mapSalaryTimelineToPeriods(
+      [{ salary: 60_000, effectiveDate: null }],
+      "weekly",
+      anchor,
+      2026,
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0]!.endPeriod).toBe(52);
+  });
+
+  it("splits into two segments when salary changes mid-year (biweekly)", () => {
+    const timeline = [
+      { salary: 100_000, effectiveDate: null },
+      { salary: 120_000, effectiveDate: "2026-07-01" },
+    ];
+    const result = mapSalaryTimelineToPeriods(
+      timeline,
+      "biweekly",
+      anchor,
+      2026,
+    );
+    expect(result).toHaveLength(2);
+    expect(result[0]!.salary).toBe(100_000);
+    expect(result[1]!.salary).toBe(120_000);
+    expect(result[0]!.endPeriod).toBeLessThan(result[1]!.startPeriod);
+    expect(result[1]!.endPeriod).toBe(26);
+  });
+
+  it("splits into two segments for monthly pay periods", () => {
+    const timeline = [
+      { salary: 100_000, effectiveDate: null },
+      { salary: 110_000, effectiveDate: "2026-07-01" },
+    ];
+    const result = mapSalaryTimelineToPeriods(
+      timeline,
+      "monthly",
+      anchor,
+      2026,
+    );
+    expect(result).toHaveLength(2);
+    expect(result[0]!.salary).toBe(100_000);
+    expect(result[1]!.salary).toBe(110_000);
+    expect(result[0]!.endPeriod + 1).toBe(result[1]!.startPeriod);
+  });
+
+  it("splits into two segments for semimonthly pay periods", () => {
+    const timeline = [
+      { salary: 95_000, effectiveDate: null },
+      { salary: 105_000, effectiveDate: "2026-07-01" },
+    ];
+    const result = mapSalaryTimelineToPeriods(
+      timeline,
+      "semimonthly",
+      anchor,
+      2026,
+    );
+    expect(result).toHaveLength(2);
+    expect(result[0]!.startPeriod).toBe(1);
+    expect(result[1]!.endPeriod).toBe(24);
   });
 });

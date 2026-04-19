@@ -45,6 +45,7 @@ export type AccountRow = {
   rollovers: number;
   parentCategory: string;
   accountType: string | null;
+  subType: string | null;
   isActive: boolean;
   performanceAccountId: number | null;
   displayOrder: number;
@@ -109,12 +110,6 @@ export type YearRowProps = {
   onEditValueChange: (v: string) => void;
   onSaveEdit: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
-  onDeleteAccount: (id: number, label: string) => void;
-  showAddAccount: boolean;
-  onShowAddAccount: () => void;
-  onCreateAccount: (data: CreateAccountData) => void;
-  onCancelAddAccount: () => void;
-  isCreatingAccount: boolean;
   activeCategory: string;
   masterAccounts: MasterAccount[];
   canEdit?: boolean;
@@ -140,6 +135,8 @@ export type UpdateFormRow = {
   displayName: string;
   institution: string;
   parentCategory: string;
+  accountType: string | null;
+  subType: string | null;
   beginningBalance: number;
   /** Employee-only portion of contributions (totalContributions - employerContributions). */
   employeeContrib: string;

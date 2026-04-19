@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { toNumber, buildYearEndHistory } from "@/server/helpers";
+import { computeBonusGross } from "@/server/helpers/salary";
 
 export const historicalRouter = createTRPCRouter({
   computeSummary: protectedProcedure.query(async ({ ctx }) => {
@@ -70,7 +71,7 @@ export const historicalRouter = createTRPCRouter({
       return { person: { id: person.id, name: person.name }, timeline };
     });
 
-    // Build salary lookup: year → person → salary (for table display)
+    // Build salary lookup: year → person → base salary (for table display)
     const salaryByYear = new Map<number, Map<string, number>>();
     for (const person of salaryHistory) {
       for (const job of person.timeline) {
@@ -86,6 +87,41 @@ export const historicalRouter = createTRPCRouter({
               salary = ch.newSalary;
           }
           salaryByYear.get(y)!.set(person.person.name, salary);
+        }
+      }
+    }
+
+    // Build salary detail lookup: year → person → {base, bonus, total} (for tooltip)
+    const salaryDetailsByYear = new Map<
+      number,
+      Map<string, { base: number; bonus: number; total: number }>
+    >();
+    for (const person of people) {
+      const personJobs = jobs.filter((j) => j.personId === person.id);
+      for (const job of personJobs) {
+        const startYear = new Date(job.startDate).getFullYear();
+        const endYear = job.endDate
+          ? new Date(job.endDate).getFullYear()
+          : new Date().getFullYear();
+        const jobChanges = salaryChanges.filter((sc) => sc.jobId === job.id);
+        for (let y = startYear; y <= endYear; y++) {
+          if (!salaryDetailsByYear.has(y))
+            salaryDetailsByYear.set(y, new Map());
+          let base = toNumber(job.annualSalary);
+          for (const ch of jobChanges) {
+            if (new Date(ch.effectiveDate).getFullYear() <= y)
+              base = toNumber(ch.newSalary);
+          }
+          const bonus = computeBonusGross(
+            base,
+            job.bonusPercent,
+            job.bonusMultiplier,
+            job.bonusOverride,
+            job.monthsInBonusYear,
+          );
+          salaryDetailsByYear
+            .get(y)!
+            .set(person.name, { base, bonus, total: base + bonus });
         }
       }
     }
@@ -154,6 +190,17 @@ export const historicalRouter = createTRPCRouter({
         }
       }
 
+      const salaryDetails: Record<
+        string,
+        { base: number; bonus: number; total: number }
+      > = {};
+      const yearDetails = salaryDetailsByYear.get(row.year);
+      if (yearDetails) {
+        for (const [name, details] of Array.from(yearDetails.entries())) {
+          salaryDetails[name] = details;
+        }
+      }
+
       const hiData = homeImpByYear.get(row.year);
       const oaData = otherAssetsByYear.get(row.year);
 
@@ -176,6 +223,7 @@ export const historicalRouter = createTRPCRouter({
           oaData && oaData.items.length > 0 ? oaData.total : row.otherAssets,
         otherAssetItems: oaData?.items ?? [],
         salaries,
+        salaryDetails,
       };
     });
 

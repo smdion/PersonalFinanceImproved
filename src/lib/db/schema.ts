@@ -51,6 +51,7 @@ export const portfolioSnapshots = active.portfolioSnapshots;
 export const portfolioAccounts = active.portfolioAccounts;
 export const annualPerformance = active.annualPerformance;
 export const accountPerformance = active.accountPerformance;
+export const pendingRollovers = active.pendingRollovers;
 export const accountHoldings = active.accountHoldings;
 export const netWorthAnnual = active.netWorthAnnual;
 export const homeImprovementItems = active.homeImprovementItems;

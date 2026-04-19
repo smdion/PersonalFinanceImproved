@@ -126,6 +126,12 @@ export const MIN_BAR_WIDTH_PCT = 0.005;
 /** Change detection threshold for contribution warnings (1 cent). */
 export const CHANGE_DETECTION_THRESHOLD = 0.01;
 
+/** Ending balance mismatch warning: absolute floor in dollars. */
+export const PERF_BALANCE_MISMATCH_ABS = 5;
+
+/** Ending balance mismatch warning: relative threshold (0.01% of portfolio total). */
+export const PERF_BALANCE_MISMATCH_PCT = 0.0001;
+
 // ---------------------------------------------------------------------------
 // Limits
 // ---------------------------------------------------------------------------

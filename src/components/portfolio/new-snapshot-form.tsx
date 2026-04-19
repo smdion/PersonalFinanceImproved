@@ -22,6 +22,7 @@ type AccountRow = {
   institution: string;
   accountType: PortfolioAccountType;
   subType: string | null;
+  label: string | null;
   taxType: PortfolioTaxType;
   ownerPersonId: number | null;
   amount: string; // editable string
@@ -94,24 +95,31 @@ function groupFormRows(
     const perfAccountType = (pa?.accountType ?? "").toLowerCase();
 
     for (const row of group.rows) {
-      const parts: string[] = [];
-      if (hasMultipleOwners) {
-        parts.push(personDisplayName(row.ownerPersonId, peopleMap) + " —");
-      }
-      if (row.subType) {
-        parts.push(`${row.subType} (${taxTypeLabel(row.taxType)})`);
+      const owner = hasMultipleOwners
+        ? personDisplayName(row.ownerPersonId, peopleMap)
+        : null;
+      const taxLabel = taxTypeLabel(row.taxType);
+      const displayName = row.label || row.subType;
+
+      let typeLabel: string;
+      if (displayName) {
+        typeLabel = displayName;
       } else {
         const rawType = row.accountType.toLowerCase();
-        if (
-          rawType !== perfAccountType &&
-          rawType !== row.taxType.toLowerCase()
-        ) {
-          parts.push(`${row.accountType} (${taxTypeLabel(row.taxType)})`);
-        } else {
-          parts.push(taxTypeLabel(row.taxType));
-        }
+        typeLabel =
+          rawType !== perfAccountType && rawType !== row.taxType.toLowerCase()
+            ? row.accountType
+            : taxLabel;
       }
-      row.subLabel = parts.join("");
+
+      if (owner) {
+        const qualifier =
+          typeLabel !== taxLabel ? `${typeLabel} · ${taxLabel}` : typeLabel;
+        row.subLabel = `${owner} (${qualifier})`;
+      } else {
+        row.subLabel =
+          typeLabel !== taxLabel ? `${typeLabel} (${taxLabel})` : typeLabel;
+      }
     }
   }
 
@@ -174,6 +182,7 @@ export function NewSnapshotForm({
         institution: a.institution,
         accountType: a.accountType,
         subType: a.subType ?? null,
+        label: a.label ?? null,
         taxType: a.taxType,
         ownerPersonId: a.ownerPersonId,
         amount: a.amount,
@@ -202,6 +211,8 @@ export function NewSnapshotForm({
         taxType: r.taxType,
         accountType:
           r.accountType as import("@/lib/config/account-types").AccountCategory,
+        subType: r.subType ?? null,
+        label: r.label ?? null,
         amount: r.amount,
         ownerPersonId: r.ownerPersonId,
         performanceAccountId: r.performanceAccountId,

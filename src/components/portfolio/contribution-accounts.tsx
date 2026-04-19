@@ -315,7 +315,16 @@ export function ContributionAccountsSettings() {
                   onSubAccountUpdate={
                     admin
                       ? (id, updates) =>
-                          updatePortfolioAccountMut.mutate({ id, ...updates })
+                          updatePortfolioAccountMut.mutate({
+                            id,
+                            ...updates,
+                            taxType: updates.taxType as
+                              | "preTax"
+                              | "taxFree"
+                              | "afterTax"
+                              | "hsa"
+                              | undefined,
+                          })
                       : undefined
                   }
                   onCreateSubAccount={

@@ -343,6 +343,61 @@ export function recomputeLifetimeFields(rows: LifetimeCascadeRow[]): {
   return updates;
 }
 
+/** One ESPP purchase period's raw inputs from UBS documents. */
+export type EsppPeriod = {
+  /** Total payroll withheld (employee deductions). From purchase confirmation "Total Amount Withheld". */
+  withheld: number;
+  /** Total market value at purchase date. From purchase confirmation "Total Market Value". Lookback already applied by UBS. */
+  marketValue: number;
+  /** Gross sale proceeds before commission. From sale trade confirmation. 0 if shares not yet sold. */
+  grossProceeds: number;
+  /** Brokerage commission on the sale. From sale trade confirmation. */
+  commission: number;
+  /** Dividends or fractional-share payouts kept at UBS (not wired to brokerage). */
+  dividendsKept: number;
+};
+
+/** YTD-cumulative values derived from one or more ESPP periods. */
+export type EsppSummary = {
+  employeeContributions: number;
+  employerMatch: number;
+  totalContributions: number;
+  /** Net rollover amount to record (negative = outflow from ESPP). Equals −(grossProceeds − commission) for sold periods. */
+  rollovers: number;
+  fees: number;
+  distributions: number;
+};
+
+/**
+ * Compute YTD ESPP performance values from raw per-period UBS document inputs.
+ * Employer match = marketValue − withheld (UBS applies lookback; we read the result).
+ * Rollovers are negative (money leaving the ESPP account toward the brokerage).
+ */
+export function computeEsppSummary(periods: EsppPeriod[]): EsppSummary {
+  let employeeContributions = 0;
+  let employerMatch = 0;
+  let rollovers = 0;
+  let fees = 0;
+  let distributions = 0;
+
+  for (const p of periods) {
+    employeeContributions += p.withheld;
+    employerMatch += p.marketValue - p.withheld;
+    rollovers -= p.grossProceeds - p.commission;
+    fees += p.commission;
+    distributions += p.dividendsKept;
+  }
+
+  return {
+    employeeContributions,
+    employerMatch,
+    totalContributions: employeeContributions + employerMatch,
+    rollovers,
+    fees,
+    distributions,
+  };
+}
+
 /** Minimal account shape for next-year seeding decisions. */
 export type SeedableAccount = {
   isActive: boolean;

@@ -8,7 +8,6 @@ import type {
   AccountRow,
   MasterAccount,
   EditingCell,
-  CreateAccountData,
 } from "./types";
 import {
   accountTypeToPerformanceCategory,
@@ -23,7 +22,7 @@ export function PerformanceTable({
   accountRows,
   masterAccounts,
   activeCategory,
-  expandedYear,
+  expandedYears,
   onToggleYear,
   editingCell,
   editValue,
@@ -31,19 +30,13 @@ export function PerformanceTable({
   onEditValueChange,
   onSaveEdit,
   onKeyDown,
-  onDeleteAccount,
-  showAddAccount,
-  onShowAddAccount,
-  onCreateAccount,
-  onCancelAddAccount,
-  isCreatingAccount,
   canEdit,
 }: {
   filtered: AnnualRow[];
   accountRows: AccountRow[];
   masterAccounts: MasterAccount[];
   activeCategory: string;
-  expandedYear: number | null;
+  expandedYears: Set<number>;
   onToggleYear: (year: number) => void;
   editingCell: EditingCell;
   editValue: string;
@@ -56,12 +49,6 @@ export function PerformanceTable({
   onEditValueChange: (v: string) => void;
   onSaveEdit: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
-  onDeleteAccount: (id: number, label: string) => void;
-  showAddAccount: number | null;
-  onShowAddAccount: (year: number | null) => void;
-  onCreateAccount: (data: CreateAccountData) => void;
-  onCancelAddAccount: () => void;
-  isCreatingAccount: boolean;
   canEdit?: boolean;
 }) {
   const years = Array.from(new Set(filtered.map((r) => r.year))).sort(
@@ -123,7 +110,7 @@ export function PerformanceTable({
           {years.map((year) => {
             const row = filtered.find((r) => r.year === year);
             if (!row) return null;
-            const isExpanded = expandedYear === year;
+            const isExpanded = expandedYears.has(year);
             const yearAccountsAll = accountRows
               .filter((a) => {
                 if (a.year !== year) return false;
@@ -170,14 +157,6 @@ export function PerformanceTable({
                 onEditValueChange={onEditValueChange}
                 onSaveEdit={onSaveEdit}
                 onKeyDown={onKeyDown}
-                onDeleteAccount={onDeleteAccount}
-                showAddAccount={showAddAccount === year}
-                onShowAddAccount={() =>
-                  onShowAddAccount(showAddAccount === year ? null : year)
-                }
-                onCreateAccount={onCreateAccount}
-                onCancelAddAccount={onCancelAddAccount}
-                isCreatingAccount={isCreatingAccount}
                 activeCategory={activeCategory}
                 masterAccounts={masterAccounts}
                 canEdit={canEdit}

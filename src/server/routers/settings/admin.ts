@@ -987,13 +987,15 @@ export const adminProcedures = {
         return { ...snapshot, apiSyncResult, apiPullResult };
       }),
 
-    /** Update a single portfolio account row (e.g. change owner or toggle active). */
+    /** Update a single portfolio account row (e.g. change owner, toggle active, set label, change tax type). */
     updateAccount: portfolioProcedure
       .input(
         z.object({
           id: z.number().int(),
           ownerPersonId: z.number().int().nullable().optional(),
           isActive: z.boolean().optional(),
+          label: z.string().trim().nullable().optional(),
+          taxType: z.enum(PORTFOLIO_TAX_TYPE_VALUES).optional(),
         }),
       )
       .mutation(async ({ ctx, input }) => {
@@ -1001,6 +1003,8 @@ export const adminProcedures = {
         if (input.ownerPersonId !== undefined)
           updates.ownerPersonId = input.ownerPersonId;
         if (input.isActive !== undefined) updates.isActive = input.isActive;
+        if (input.label !== undefined) updates.label = input.label || null;
+        if (input.taxType !== undefined) updates.taxType = input.taxType;
         if (Object.keys(updates).length > 0) {
           await ctx.db
             .update(schema.portfolioAccounts)
