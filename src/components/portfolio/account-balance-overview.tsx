@@ -189,42 +189,41 @@ export function AccountBalanceOverview() {
         />
       </div>
 
-      {/* Per-person detail table */}
-      <div className="mb-6">
+      {/* Row 2: Per-person detail + per-account bar chart side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <SummaryTable
           title="Per Person Detail"
           rows={personDetailRows}
           total={portfolioTotal}
           showPct
         />
-      </div>
 
-      {/* Per-account bar chart */}
-      <div>
-        <h4 className="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
-          By Account
-        </h4>
-        <div className="space-y-2">
-          {activeAccounts.map((pa) => {
-            const balance = balanceByPerfId.get(pa.id) ?? 0;
-            const pct = (balance / maxBalance) * 100;
-            return (
-              <div key={pa.id} className="flex items-center gap-3">
-                <div className="w-[140px] shrink-0 text-xs text-muted truncate">
-                  {accountDisplayName(pa)}
+        <div>
+          <h4 className="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
+            By Account
+          </h4>
+          <div className="space-y-2">
+            {activeAccounts.map((pa) => {
+              const balance = balanceByPerfId.get(pa.id) ?? 0;
+              const pct = (balance / maxBalance) * 100;
+              return (
+                <div key={pa.id} className="flex items-center gap-3">
+                  <div className="w-[140px] shrink-0 text-xs text-muted truncate">
+                    {accountDisplayName(pa)}
+                  </div>
+                  <div className="flex-1 h-4 bg-surface-elevated rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${accountColor(pa.accountType)}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <div className="w-[90px] text-right text-xs font-medium text-secondary">
+                    {formatCurrency(balance)}
+                  </div>
                 </div>
-                <div className="flex-1 h-4 bg-surface-elevated rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${accountColor(pa.accountType)}`}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                <div className="w-[90px] text-right text-xs font-medium text-secondary">
-                  {formatCurrency(balance)}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
     </Card>
