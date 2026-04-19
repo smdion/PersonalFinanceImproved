@@ -38,7 +38,7 @@ export function FundTransactionList({
   onAddTx,
   createTxPending,
   onUpdateTx,
-  updateTxPending,
+  updateTxPending: _updateTxPending,
   canEdit,
 }: {
   transactions: PlannedTransaction[];
@@ -49,18 +49,19 @@ export function FundTransactionList({
   goalById?: Map<number, { name: string }>;
   onAddTx: (form: PlannedTxForm) => void;
   createTxPending: boolean;
-  onUpdateTx?: (id: number, form: PlannedTxForm) => void;
+  onUpdateTx?: (id: number, form: PlannedTxForm) => Promise<void> | void;
   updateTxPending?: boolean;
   canEdit?: boolean;
 }) {
-  const [isOpen, setIsOpen] = useState(
-    transactions.length <= 5 && transactions.length > 0,
-  );
+  const today = new Date().toISOString().slice(0, 10);
+  const upcomingCount = transactions.filter(
+    (tx) => tx.transactionDate >= today,
+  ).length;
+  const [isOpen, setIsOpen] = useState(upcomingCount <= 5 && upcomingCount > 0);
   const [showHistory, setShowHistory] = useState(false);
   const [addingTx, setAddingTx] = useState(false);
   const [txForm, setTxForm] = useState<PlannedTxForm>(emptyTxForm(goalId));
 
-  const today = new Date().toISOString().slice(0, 10);
   const sorted = [...transactions].sort((a, b) =>
     a.transactionDate.localeCompare(b.transactionDate),
   );
@@ -136,7 +137,6 @@ export function FundTransactionList({
               onUpdate={
                 onUpdateTx ? (form) => onUpdateTx(tx.id, form) : undefined
               }
-              updatePending={updateTxPending}
               canEdit={canEdit}
             />
           ))}
@@ -163,7 +163,6 @@ export function FundTransactionList({
                           ? (form) => onUpdateTx(tx.id, form)
                           : undefined
                       }
-                      updatePending={updateTxPending}
                       canEdit={canEdit}
                       isPast
                     />
@@ -195,7 +194,6 @@ function TransactionRow({
   goalById,
   onDelete,
   onUpdate,
-  updatePending,
   canEdit,
   isPast,
 }: {
@@ -203,13 +201,13 @@ function TransactionRow({
   currentGoalId: number;
   goalById?: Map<number, { name: string }>;
   onDelete: () => void;
-  onUpdate?: (form: PlannedTxForm) => void;
-  updatePending?: boolean;
+  onUpdate?: (form: PlannedTxForm) => Promise<void> | void;
   canEdit?: boolean;
   isPast?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<PlannedTxForm>(txToForm(tx));
+  const [submitting, setSubmitting] = useState(false);
   const isTransfer = !!tx.transferPairId;
 
   let transferLabel: string | null = null;
@@ -287,20 +285,28 @@ function TransactionRow({
         </div>
         <div className="flex gap-2 mt-3">
           <button
-            onClick={() => {
+            onClick={async () => {
               if (
                 !editForm.transactionDate ||
                 !editForm.amount ||
                 !editForm.description
               )
                 return;
-              onUpdate?.(editForm);
-              setEditing(false);
+              if (editForm.isRecurring && !editForm.recurrenceMonths) return;
+              setSubmitting(true);
+              try {
+                await onUpdate?.(editForm);
+                setEditing(false);
+              } finally {
+                setSubmitting(false);
+              }
             }}
-            disabled={updatePending}
+            disabled={
+              submitting || (editForm.isRecurring && !editForm.recurrenceMonths)
+            }
             className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
           >
-            {updatePending ? "Saving..." : "Save"}
+            {submitting ? "Saving..." : "Save"}
           </button>
           <button
             onClick={() => {

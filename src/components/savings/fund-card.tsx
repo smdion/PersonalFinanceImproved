@@ -274,6 +274,8 @@ export function FundCard({
       : 0;
   const progressPct = (progress * 100).toFixed(0);
 
+  const serviceLabel = (apiServiceName ?? "API").toUpperCase();
+
   return (
     <div className="bg-surface-primary rounded-lg border p-4 shadow-sm hover:shadow-md transition-shadow">
       {/* ── Header: Goal name + status badge + menu ── */}
@@ -298,7 +300,7 @@ export function FundCard({
                 className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-blue-100 text-blue-600 border border-blue-200"
                 title={`Synced with ${rawGoal.apiCategoryName}`}
               >
-                {(apiServiceName ?? "API").toUpperCase()}
+                {serviceLabel}
               </span>
             )}
           </div>
@@ -411,7 +413,7 @@ export function FundCard({
           <div className="space-y-0.5 text-[11px]">
             <div className="flex items-center justify-between">
               <span className="text-blue-500/70">
-                ↓ Balance from {(apiServiceName ?? "API").toUpperCase()}
+                ↓ Balance from {serviceLabel}
               </span>
               <span className="text-blue-300 font-semibold tabular-nums">
                 {formatCurrency(apiBalance.balance)}
@@ -419,17 +421,14 @@ export function FundCard({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-blue-500/70">
-                ↑ Monthly goal pushed to{" "}
-                {(apiServiceName ?? "API").toUpperCase()}
+                ↑ Monthly goal pushed to {serviceLabel}
               </span>
               <span className="text-blue-300 tabular-nums">
                 {formatCurrency(apiBalance.budgeted)}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-blue-500/70">
-                Spent in {(apiServiceName ?? "API").toUpperCase()}
-              </span>
+              <span className="text-blue-500/70">Spent in {serviceLabel}</span>
               <span className="text-blue-300/70 tabular-nums">
                 {formatCurrency(apiBalance.activity)}
               </span>

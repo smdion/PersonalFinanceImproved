@@ -76,14 +76,14 @@ export function UpcomingGoals({
   plannedTransactions,
   monthDates,
   onUpdateTx,
-  updateTxPending,
+  updateTxPending: _updateTxPending,
 }: {
   goalProjections: GoalProjection[];
   savingsGoals: SavingsGoalSummary[];
   plannedTransactions: PlannedTransaction[];
   monthDates: Date[];
-  onUpdateTx?: (id: number, form: PlannedTxForm) => void;
-  updateTxPending?: boolean;
+  onUpdateTx?: (id: number, form: PlannedTxForm) => Promise<void> | void;
+  updateTxPending?: boolean; // reserved for callers; row uses local submitting state
 }) {
   const now = new Date();
   const items: UpcomingItem[] = [];
@@ -152,6 +152,7 @@ export function UpcomingGoals({
   const [showAll, setShowAll] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<PlannedTxForm | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // Sort by date (soonest first)
   items.sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -183,7 +184,7 @@ export function UpcomingGoals({
           if (isEditing && editForm) {
             return (
               <div
-                key={`${item.fundName}-${item.type}-${item.date.getTime()}`}
+                key={`${item.txId ?? ""}-${item.fundName}-${item.type}-${item.date.getTime()}`}
                 className="border rounded-lg p-3 bg-surface-primary/50"
               >
                 <p className="text-xs font-medium text-faint mb-2">
@@ -270,21 +271,31 @@ export function UpcomingGoals({
                 </div>
                 <div className="flex gap-2 mt-3">
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       if (
                         !editForm.transactionDate ||
                         !editForm.amount ||
                         !editForm.description
                       )
                         return;
-                      onUpdateTx?.(item.txId!, editForm);
-                      setEditingId(null);
-                      setEditForm(null);
+                      if (editForm.isRecurring && !editForm.recurrenceMonths)
+                        return;
+                      setSubmitting(true);
+                      try {
+                        await onUpdateTx?.(item.txId!, editForm);
+                        setEditingId(null);
+                        setEditForm(null);
+                      } finally {
+                        setSubmitting(false);
+                      }
                     }}
-                    disabled={updateTxPending}
+                    disabled={
+                      submitting ||
+                      (editForm.isRecurring && !editForm.recurrenceMonths)
+                    }
                     className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
                   >
-                    {updateTxPending ? "Saving..." : "Save"}
+                    {submitting ? "Saving..." : "Save"}
                   </button>
                   <button
                     onClick={() => {
@@ -302,7 +313,7 @@ export function UpcomingGoals({
 
           return (
             <div
-              key={`${item.fundName}-${item.type}-${item.date.getTime()}`}
+              key={`${item.txId ?? ""}-${item.fundName}-${item.type}-${item.date.getTime()}`}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 border ${
                 item.type === "expense"
                   ? item.funded
@@ -419,7 +430,7 @@ export function UpcomingGoals({
                       setEditingId(item.txId!);
                       setEditForm({
                         goalId: item.goalId!,
-                        transactionDate: item.date.toISOString().slice(0, 10),
+                        transactionDate: `${item.date.getFullYear()}-${String(item.date.getMonth() + 1).padStart(2, "0")}-${String(item.date.getDate()).padStart(2, "0")}`,
                         amount: String(-item.amount),
                         description: item.description,
                         isRecurring: item.isRecurring ?? false,

@@ -45,6 +45,7 @@ import {
 } from "@/components/savings/api-sync-section";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { usePerColumnPaycheck } from "@/lib/hooks/use-per-column-paycheck";
+import { useUpdatePlannedTx } from "@/components/savings/use-update-planned-tx";
 import {
   computeMaxMonthlyFunding,
   type CapacityPerson,
@@ -155,9 +156,8 @@ export default function SavingsPage() {
       setShowTransferForm(false);
     },
   });
-  const updateTx = trpc.savings.plannedTransactions.update.useMutation({
-    onSuccess: () => utils.savings.invalidate(),
-  });
+  const { onUpdateTx: updateTxFn, isPending: updateTxPending } =
+    useUpdatePlannedTx();
 
   // ── Ref for FundManagementSection callbacks (goal updates used by other sections) ──
   const fundCallbacksRef = useRef<FundManagementCallbacks | null>(null);
@@ -562,21 +562,8 @@ export default function SavingsPage() {
               savingsGoals={savings.goals}
               plannedTransactions={plannedTransactions}
               monthDates={monthDates}
-              onUpdateTx={(id, form) =>
-                updateTx.mutate({
-                  id,
-                  goalId: form.goalId,
-                  transactionDate: form.transactionDate,
-                  amount: form.amount,
-                  description: form.description,
-                  isRecurring: form.isRecurring,
-                  recurrenceMonths:
-                    form.isRecurring && form.recurrenceMonths
-                      ? Number(form.recurrenceMonths)
-                      : null,
-                })
-              }
-              updateTxPending={updateTx.isPending}
+              onUpdateTx={updateTxFn}
+              updateTxPending={updateTxPending}
             />
           )}
         </section>

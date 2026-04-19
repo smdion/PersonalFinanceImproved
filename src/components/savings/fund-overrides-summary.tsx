@@ -244,9 +244,15 @@ export function FundOverridesSummary({
 
       {isOpen && (
         <div className="mt-2 space-y-1.5">
-          {currentRanges.length === 0 && (
+          {currentRanges.length === 0 && pastRanges.length === 0 && (
             <p className="text-xs text-muted py-1">
               No overrides. Default: {formatCurrency(defaultAllocation)}/mo
+            </p>
+          )}
+          {currentRanges.length === 0 && pastRanges.length > 0 && (
+            <p className="text-xs text-muted py-1">
+              No upcoming overrides. Default:{" "}
+              {formatCurrency(defaultAllocation)}/mo
             </p>
           )}
 
