@@ -4,7 +4,6 @@
 
 import React, { useState } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
-import { confirm } from "@/components/ui/confirm-dialog";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { formatDate } from "@/lib/utils/format";
@@ -23,6 +22,7 @@ import {
   FinalizeYearModal,
   UpdatePerformanceForm,
 } from "@/components/performance";
+import { PendingRollovers } from "@/components/performance/pending-rollovers";
 import type { AnnualRow } from "@/components/performance/types";
 import type { EditingCell } from "@/components/performance";
 
@@ -32,10 +32,9 @@ export default function PerformancePage() {
   const { data, isLoading, error } = trpc.performance.computeSummary.useQuery();
   const utils = trpc.useUtils();
   const [activeCategory, setActiveCategory] = useState("Portfolio");
-  const [expandedYear, setExpandedYear] = useState<number | null>(null);
+  const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
   const [editingCell, setEditingCell] = useState<EditingCell>(null);
   const [editValue, setEditValue] = useState("");
-  const [showAddAccount, setShowAddAccount] = useState<number | null>(null);
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const [showUpdatePerformance, setShowUpdatePerformance] = useState(false);
 
@@ -43,15 +42,6 @@ export default function PerformancePage() {
     onSuccess: () => utils.performance.computeSummary.invalidate(),
   });
   const updateAccount = trpc.performance.updateAccount.useMutation({
-    onSuccess: () => utils.performance.computeSummary.invalidate(),
-  });
-  const createAccount = trpc.performance.createAccount.useMutation({
-    onSuccess: () => {
-      utils.performance.computeSummary.invalidate();
-      setShowAddAccount(null);
-    },
-  });
-  const deleteAccount = trpc.performance.deleteAccount.useMutation({
     onSuccess: () => utils.performance.computeSummary.invalidate(),
   });
   const updateCostBasis = trpc.performance.updateCostBasis.useMutation({
@@ -97,6 +87,8 @@ export default function PerformancePage() {
     lifetimeTotals,
     lastSnapshotDate,
     performanceLastUpdated,
+    pendingRollovers,
+    balanceMismatch,
   } = data;
   // Router always produces valid PerfCategory values via getEffectiveCategory.
   const annualRows = annualRowsRaw as AnnualRow[];
@@ -137,16 +129,6 @@ export default function PerformancePage() {
       saveEdit();
     } else if (e.key === "Escape") {
       setEditingCell(null);
-    }
-  }
-
-  async function handleDeleteAccount(id: number, label: string) {
-    if (
-      await confirm(
-        `Delete account"${label}" from this year? This cannot be undone.`,
-      )
-    ) {
-      deleteAccount.mutate({ id });
     }
   }
 
@@ -199,6 +181,59 @@ export default function PerformancePage() {
         />
       )}
 
+      {/* Ending balance consistency warning */}
+      {balanceMismatch && (
+        <div className="mb-3 rounded-md border border-orange-400/60 bg-orange-50/40 dark:bg-orange-950/20 px-3 py-2 text-xs text-orange-800 dark:text-orange-300 flex items-start gap-2">
+          <svg
+            aria-hidden="true"
+            className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+            />
+          </svg>
+          <span>
+            <span className="font-semibold">Balance mismatch:</span> Performance
+            account totals (
+            {new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: "USD",
+            }).format(balanceMismatch.perfTotal)}
+            ) differ from portfolio snapshot (
+            {new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: "USD",
+            }).format(balanceMismatch.snapTotal)}
+            ) by{" "}
+            {new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: "USD",
+            }).format(Math.abs(balanceMismatch.delta))}
+            {balanceMismatch.explainedByPending
+              ? " — this matches your pending rollover(s)."
+              : ". Check that ending balances and snapshot values are consistent."}
+          </span>
+        </div>
+      )}
+
+      {/* Pending rollovers tracker */}
+      {pendingRollovers && pendingRollovers.length > 0 && (
+        <div className="mb-3">
+          <PendingRollovers
+            pendingRollovers={pendingRollovers}
+            accountRows={accountRows}
+            masterAccounts={masterAccounts}
+            onMutated={() => utils.performance.computeSummary.invalidate()}
+          />
+        </div>
+      )}
+
       {canEdit && currentYear && (
         <SlidePanel
           open={showUpdatePerformance}
@@ -229,9 +264,14 @@ export default function PerformancePage() {
         accountRows={accountRows}
         masterAccounts={masterAccounts}
         activeCategory={activeCategory}
-        expandedYear={expandedYear}
+        expandedYears={expandedYears}
         onToggleYear={(year) =>
-          setExpandedYear(expandedYear === year ? null : year)
+          setExpandedYears((prev) => {
+            const next = new Set(prev);
+            if (next.has(year)) next.delete(year);
+            else next.add(year);
+            return next;
+          })
         }
         editingCell={editingCell}
         editValue={editValue}
@@ -239,12 +279,6 @@ export default function PerformancePage() {
         onEditValueChange={setEditValue}
         onSaveEdit={saveEdit}
         onKeyDown={handleKeyDown}
-        onDeleteAccount={handleDeleteAccount}
-        showAddAccount={showAddAccount}
-        onShowAddAccount={setShowAddAccount}
-        onCreateAccount={(data) => createAccount.mutate(data)}
-        onCancelAddAccount={() => setShowAddAccount(null)}
-        isCreatingAccount={createAccount.isPending}
         canEdit={canEdit}
       />
 

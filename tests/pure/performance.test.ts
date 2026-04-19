@@ -14,6 +14,8 @@ import {
   computePortfolioTotal,
   computeHomeImprovementsCumulative,
   filterActiveJobsAtDate,
+  computeEsppSummary,
+  computeGainLoss,
 } from "@/lib/pure/performance";
 import type {
   CategoryOverride,
@@ -310,5 +312,142 @@ describe("filterActiveJobsAtDate", () => {
   it("includes jobs ending on the exact date", () => {
     const active = filterActiveJobsAtDate(jobs, new Date("2022-12-31"));
     expect(active.map((j) => j.name)).toContain("old");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computeEsppSummary
+// ---------------------------------------------------------------------------
+
+describe("computeGainLoss", () => {
+  it("computes gain as ending minus beginning minus contributions plus distributions minus rollovers plus fees", () => {
+    const result = computeGainLoss({
+      endingBalance: 110_000,
+      beginningBalance: 100_000,
+      totalContributions: 5_000,
+      distributions: 0,
+      rollovers: 0,
+      fees: 0,
+    });
+    expect(result).toBe(5_000);
+  });
+
+  it("returns zero when all changes cancel out", () => {
+    expect(
+      computeGainLoss({
+        endingBalance: 100_000,
+        beginningBalance: 100_000,
+        totalContributions: 0,
+        distributions: 0,
+        rollovers: 0,
+        fees: 0,
+      }),
+    ).toBe(0);
+  });
+
+  it("accounts for rollovers reducing gain", () => {
+    // Rollover out reduces apparent gain (money left the account)
+    const result = computeGainLoss({
+      endingBalance: 50_000,
+      beginningBalance: 100_000,
+      totalContributions: 0,
+      distributions: 0,
+      rollovers: -60_000, // negative rollover = outflow
+      fees: 0,
+    });
+    expect(result).toBe(10_000); // 50k - 100k - 0 + 0 - (-60k) + 0
+  });
+
+  it("accounts for fees increasing loss", () => {
+    const result = computeGainLoss({
+      endingBalance: 99_000,
+      beginningBalance: 100_000,
+      totalContributions: 0,
+      distributions: 0,
+      rollovers: 0,
+      fees: 50,
+    });
+    expect(result).toBe(-950); // -1000 from balance drop + 50 fees
+  });
+});
+
+describe("computeEsppSummary", () => {
+  it("returns zeros for empty periods", () => {
+    const result = computeEsppSummary([]);
+    expect(result.employeeContributions).toBe(0);
+    expect(result.employerMatch).toBe(0);
+    expect(result.totalContributions).toBe(0);
+    expect(result.rollovers).toBe(0);
+    expect(result.fees).toBe(0);
+    expect(result.distributions).toBe(0);
+  });
+
+  it("computes employer match as marketValue minus withheld", () => {
+    const result = computeEsppSummary([
+      {
+        withheld: 1000,
+        marketValue: 1150,
+        grossProceeds: 0,
+        commission: 0,
+        dividendsKept: 0,
+      },
+    ]);
+    expect(result.employeeContributions).toBe(1000);
+    expect(result.employerMatch).toBe(150);
+    expect(result.totalContributions).toBe(1150);
+  });
+
+  it("computes rollovers as negative net proceeds when shares are sold", () => {
+    const result = computeEsppSummary([
+      {
+        withheld: 1000,
+        marketValue: 1150,
+        grossProceeds: 1200,
+        commission: 10,
+        dividendsKept: 0,
+      },
+    ]);
+    // rollovers = -(1200 - 10) = -1190
+    expect(result.rollovers).toBeCloseTo(-1190);
+    expect(result.fees).toBe(10);
+  });
+
+  it("accumulates across multiple periods", () => {
+    const result = computeEsppSummary([
+      {
+        withheld: 500,
+        marketValue: 575,
+        grossProceeds: 600,
+        commission: 5,
+        dividendsKept: 2,
+      },
+      {
+        withheld: 500,
+        marketValue: 575,
+        grossProceeds: 600,
+        commission: 5,
+        dividendsKept: 3,
+      },
+    ]);
+    expect(result.employeeContributions).toBe(1000);
+    expect(result.employerMatch).toBe(150);
+    expect(result.totalContributions).toBe(1150);
+    expect(result.rollovers).toBeCloseTo(-1190);
+    expect(result.fees).toBe(10);
+    expect(result.distributions).toBe(5);
+  });
+
+  it("handles unsold periods with zero grossProceeds", () => {
+    const result = computeEsppSummary([
+      {
+        withheld: 800,
+        marketValue: 920,
+        grossProceeds: 0,
+        commission: 0,
+        dividendsKept: 0,
+      },
+    ]);
+    expect(result.rollovers).toBe(0);
+    expect(result.employerMatch).toBe(120);
   });
 });

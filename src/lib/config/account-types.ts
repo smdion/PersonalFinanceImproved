@@ -293,6 +293,7 @@ export const ACCOUNT_TYPE_CONFIG = {
         description:
           "Employee stock purchase plan — employer discount on company stock",
         hasDiscountBar: true,
+        hasPurchasePeriodCalculator: true,
         employerMatchLabel: "disc.",
         colors: {
           bg: "bg-teal-500",
@@ -353,6 +354,7 @@ export function getDisplayConfig(
   subType?: string | null,
 ): {
   hasDiscountBar: boolean;
+  hasPurchasePeriodCalculator: boolean;
   employerMatchLabel: string;
   displayLabel: string;
 } {
@@ -360,6 +362,7 @@ export function getDisplayConfig(
   if (!cfg)
     return {
       hasDiscountBar: false,
+      hasPurchasePeriodCalculator: false,
       employerMatchLabel: "match",
       displayLabel: accountType,
     };
@@ -369,14 +372,19 @@ export function getDisplayConfig(
       string,
       | {
           hasDiscountBar: boolean;
+          hasPurchasePeriodCalculator?: boolean;
           employerMatchLabel: string;
           displayLabel: string;
         }
       | undefined
     >
   )[subLower];
-  if (sub) return sub;
-  return cfg;
+  if (sub)
+    return {
+      ...sub,
+      hasPurchasePeriodCalculator: sub.hasPurchasePeriodCalculator ?? false,
+    };
+  return { ...cfg, hasPurchasePeriodCalculator: false };
 }
 
 // ---------------------------------------------------------------------------

@@ -263,6 +263,7 @@ type HistoricalRow = {
   perfReturnPct: number | null;
   perfByAccount: {
     label: string;
+    accountType: string;
     beginningBalance: number;
     contributions: number;
     employerMatch: number;
@@ -286,6 +287,7 @@ type HistoricalRow = {
   taxesPaid: number | null;
   propertyTaxes: number | null;
   salaries: Record<string, number>;
+  salaryDetails: Record<string, { base: number; bonus: number; total: number }>;
 };
 
 function HistoricalTable({
@@ -761,12 +763,34 @@ function HistoricalTable({
                         formatCurrency(row.portfolioTotal)
                       )}
                     </td>
-                    {portfolioBreakdownCols.map((col) => (
-                      <NumCell
-                        key={col.key}
-                        value={row.portfolioByType[col.key] ?? 0}
-                      />
-                    ))}
+                    {portfolioBreakdownCols.map((col) => {
+                      const val = row.portfolioByType[col.key] ?? 0;
+                      const lines = row.perfByAccount
+                        .filter(
+                          (a) =>
+                            a.accountType === col.key && a.endingBalance !== 0,
+                        )
+                        .sort((a, b) => b.endingBalance - a.endingBalance)
+                        .map(
+                          (a) =>
+                            `${a.label}: ${formatCurrency(a.endingBalance)}`,
+                        );
+                      if (lines.length > 0) {
+                        return (
+                          <td
+                            key={col.key}
+                            className="text-right py-1.5 px-1.5"
+                          >
+                            <Tooltip lines={lines} side="bottom" maxWidth={400}>
+                              <span className="cursor-help border-b border-dotted border-strong">
+                                {formatCurrency(val)}
+                              </span>
+                            </Tooltip>
+                          </td>
+                        );
+                      }
+                      return <NumCell key={col.key} value={val} />;
+                    })}
                   </>
                 )}
                 {/* Assets — read-only, managed on Assets page */}
@@ -832,6 +856,13 @@ function HistoricalTable({
                       notes={notes}
                       onUpsertNote={onUpsertNote}
                       editableFields={EDITABLE_FIELDS}
+                      tooltipLines={Object.entries(row.salaryDetails)
+                        .sort(([a], [b]) => a.localeCompare(b))
+                        .map(([name, d]) =>
+                          d.bonus > 0
+                            ? `${name}: ${formatCurrency(d.base)} + ${formatCurrency(d.bonus)} bonus = ${formatCurrency(d.total)}`
+                            : `${name}: ${formatCurrency(d.base)}`,
+                        )}
                     />
                     <EditableCell
                       value={row.combinedAgi}
