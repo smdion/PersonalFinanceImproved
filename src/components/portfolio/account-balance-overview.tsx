@@ -190,15 +190,17 @@ export function AccountBalanceOverview() {
       </div>
 
       {/* Row 2: Per-person detail + per-account bar chart side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SummaryTable
-          title="Per Person Detail"
-          rows={personDetailRows}
-          total={portfolioTotal}
-          showPct
-        />
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-1 min-w-0">
+          <SummaryTable
+            title="Per Person Detail"
+            rows={personDetailRows}
+            total={portfolioTotal}
+            showPct
+          />
+        </div>
 
-        <div>
+        <div className="lg:col-span-3">
           <h4 className="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
             By Account
           </h4>
@@ -208,7 +210,7 @@ export function AccountBalanceOverview() {
               const pct = (balance / maxBalance) * 100;
               return (
                 <div key={pa.id} className="flex items-center gap-3">
-                  <div className="w-[140px] shrink-0 text-xs text-muted truncate">
+                  <div className="w-[260px] shrink-0 text-xs text-muted truncate">
                     {accountDisplayName(pa)}
                   </div>
                   <div className="flex-1 h-4 bg-surface-elevated rounded-full overflow-hidden">
