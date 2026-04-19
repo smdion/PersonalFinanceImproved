@@ -765,7 +765,9 @@ export const performanceRouter = createTRPCRouter({
 
       // Check if delta is explained by pending rollovers
       const pendingTotal = pendingRollovers
-        .filter((pr) => pr.saleYear === currentYear)
+        .filter(
+          (pr) => pr.saleYear === currentYear || pr.applyYear === currentYear,
+        )
         .reduce((sum, pr) => sum + pr.amount, 0);
       return {
         perfTotal,
