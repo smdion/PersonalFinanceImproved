@@ -396,7 +396,7 @@ export async function buildYearEndHistory(
   for (const year of Array.from(allPerfAccountYears)) {
     const yearAccounts = accountPerfRows.filter((a) => a.year === year);
     const accounts: YearEndRow["perfByAccount"] = yearAccounts.map((acct) => ({
-      label: `${acct.institution} — ${acct.accountLabel}`,
+      label: `${acct.institution} — ${acct.accountLabel.replace(` (${acct.institution})`, "")}`,
       beginningBalance: toNumber(acct.beginningBalance),
       contributions: toNumber(acct.totalContributions),
       employerMatch: toNumber(acct.employerContributions),
