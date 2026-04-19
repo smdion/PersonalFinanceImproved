@@ -211,6 +211,8 @@ export function NewSnapshotForm({
         taxType: r.taxType,
         accountType:
           r.accountType as import("@/lib/config/account-types").AccountCategory,
+        subType: r.subType ?? null,
+        label: r.label ?? null,
         amount: r.amount,
         ownerPersonId: r.ownerPersonId,
         performanceAccountId: r.performanceAccountId,
