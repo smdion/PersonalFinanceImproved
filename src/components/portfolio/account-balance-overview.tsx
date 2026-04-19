@@ -210,7 +210,7 @@ export function AccountBalanceOverview() {
               const pct = (balance / maxBalance) * 100;
               return (
                 <div key={pa.id} className="flex items-center gap-3">
-                  <div className="max-w-[260px] min-w-0 shrink text-xs text-muted truncate">
+                  <div className="w-[260px] shrink-0 text-xs text-muted truncate">
                     {accountDisplayName(pa)}
                   </div>
                   <div className="flex-1 h-4 bg-surface-elevated rounded-full overflow-hidden">
