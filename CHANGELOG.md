@@ -8,6 +8,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.5
 
+## [0.5.6] - 2026-04-19
+
+ESPP calculator, pending rollover tracker, balance consistency warning, portfolio label editing, and performance page UX improvements.
+
+### Added
+
+- **ESPP calculator** — accounts tagged as ESPP now show a quarterly purchase period input panel on the performance page. Enter raw purchase data (grant price, purchase price, sale price, shares, FMV) and the app computes your gain/loss and pre-fills the performance form. Multiple periods stack; totals roll up into a YTD summary before you apply.
+- **Pending rollover tracker** — track in-flight rollovers between accounts before they settle. Create a pending rollover with an estimated amount, then confirm it with the actual amount when the transfer lands. Confirming atomically updates both the source and destination account performance records in a single transaction. An amber notice above the performance table shows open rollovers at a glance.
+- **Balance consistency warning** — when a portfolio snapshot and a performance record share the same date, a warning appears if the balances diverge beyond a small threshold ($5 or 0.01% of portfolio, whichever is larger). The warning notes if the gap is explained by a pending rollover.
+
+### Changed
+
+- **Sub-account labels can now be edited inline.** Click the pencil icon next to any sub-account row on the portfolio page to rename it. Clearing the label reverts to the default sub-type or tax-type name.
+- **Sub-account tax type can now be changed on the portfolio page.** A dropdown lets you switch a sub-account between Traditional, Roth, and other tax types without leaving the page.
+- **Joint account sub-account labels now lead with the owner name.** For example, "Sean (Roth)" and "Joanna (Roth)" instead of the previous reversed format.
+- **Portfolio page layout: per-person detail and bar chart now sit side by side** (larger screens), with the bar chart taking three-quarters of the width to give account names more room.
+- **Multiple performance years can now be expanded simultaneously.** Previously opening one year automatically closed the previous one; now each year header toggles independently.
+- **Add and delete account controls have moved to the portfolio page.** The performance page is now read and edit only — account structure is managed from portfolio, reducing clutter on the performance view.
+- **Historical page chart tooltips now format account names as "Institution — Account Type"** (e.g., "Vanguard — Retirement Brokerage") instead of the previous reversed format that duplicated the institution name.
+
+### Fixed
+
+- **Sub-account sub-type and custom label were silently dropped when creating a new snapshot.** Employer Match and Rollover sub-types entered on previous snapshots were not carried forward, so every new snapshot had to be re-tagged manually.
+
+---
+
 ## [0.5.5] - 2026-04-18
 
 Feature release — Analytics page, performance formula fix, contribution entry improvements, and snapshot UX overhaul.
