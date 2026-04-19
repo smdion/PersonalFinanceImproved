@@ -55,7 +55,7 @@ export function ProjectionChartSkeleton({
             >
               {phase === "engine"
                 ? "Running projection engine..."
-                : "Simulating 1,000 scenarios..."}
+                : "Simulating scenarios..."}
             </div>
           </div>
         )}

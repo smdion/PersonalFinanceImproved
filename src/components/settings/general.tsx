@@ -27,14 +27,17 @@ export function GeneralSettings() {
 function Toggle({
   checked,
   onChange,
+  ariaLabel,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
+  ariaLabel: string;
 }) {
   return (
     <button
       role="switch"
       aria-checked={checked}
+      aria-label={ariaLabel}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
         checked ? "bg-blue-600" : "bg-surface-strong" // theme-audit-ok: toggle off-state
@@ -80,7 +83,11 @@ function RetirementSettings() {
               inputs change. Disable to trigger manually.
             </div>
           </div>
-          <Toggle checked={engineAutoload} onChange={setEngineAutoload} />
+          <Toggle
+            checked={engineAutoload}
+            onChange={setEngineAutoload}
+            ariaLabel="Auto-load simulation"
+          />
         </div>
         <div className="flex items-center justify-between px-3 py-3">
           <div>
@@ -92,7 +99,11 @@ function RetirementSettings() {
               engine completes. Disable on slow connections or to run manually.
             </div>
           </div>
-          <Toggle checked={mcAutoload} onChange={setMcAutoload} />
+          <Toggle
+            checked={mcAutoload}
+            onChange={setMcAutoload}
+            ariaLabel="Auto-load simulations"
+          />
         </div>
         <div className="flex items-center justify-between px-3 py-3">
           <div>
@@ -107,6 +118,7 @@ function RetirementSettings() {
           <Toggle
             checked={coastFireMcAutoload}
             onChange={setCoastFireMcAutoload}
+            ariaLabel="Auto-load Coast FIRE simulations"
           />
         </div>
       </div>

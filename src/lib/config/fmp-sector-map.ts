@@ -25,12 +25,6 @@ export const FMP_SECTOR_TO_ASSET_CLASS: Record<string, string | null> = {
   // Real estate gets its own asset class
   "Real Estate": "Real Estate",
 
-  // ETF / fund categories
-  ETF: null, // sector alone is insufficient — user must classify
-  "Bond ETF": "US Bonds",
-  "International Equity": "International Equities",
-
-  // Present in glide path seed data
-  TIPS: "TIPS",
-  Cash: "Cash",
+  // ETF / fund categories (FMP only returns generic "ETF" — user must classify)
+  ETF: null,
 };

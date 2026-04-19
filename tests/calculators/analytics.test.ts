@@ -258,7 +258,7 @@ describe("coverageStatus", () => {
     expect(sumBps).toBe(11000);
   });
 
-  it("returns ok for empty holdings (sum = 0 only triggers under if > WARN_BPS off)", () => {
+  it("returns under for empty holdings (sum=0, deviation 10000 >> WARN_BPS)", () => {
     // 0 bps, threshold 500 → 10000 - 0 = 10000 > 500 → under
     const { status } = coverageStatus([], WARN_BPS);
     expect(status).toBe("under");

@@ -5,7 +5,7 @@ CREATE TABLE `account_holdings` (
 	`ticker` text NOT NULL,
 	`name` text NOT NULL,
 	`weight_bps` integer NOT NULL,
-	`expense_ratio` numeric,
+	`expense_ratio` text,
 	`asset_class_id` integer,
 	`asset_class_source` text DEFAULT 'manual' NOT NULL,
 	FOREIGN KEY (`performance_account_id`) REFERENCES `performance_accounts`(`id`) ON UPDATE no action ON DELETE cascade,

@@ -79,8 +79,7 @@ export function checkGlidePath(
   const message =
     `Your simulation's assumed stock allocation (${currentStockPercent}%) is ${absDev}pp ${direction} ` +
     `than the "110 − age" rule of thumb suggests for age ${age} (${recommended}%). ` +
-    `This is based on your configured glide path, not actual holdings — ` +
-    `Ledgr doesn't see your portfolio's stock/bond breakdown.`;
+    `This check uses your configured glide path, not actual holdings.`;
 
   return {
     severity,

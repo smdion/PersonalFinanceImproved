@@ -5,7 +5,7 @@
  * target, drift, and blended expense ratio.
  */
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { Card } from "@/components/ui/card";
@@ -191,7 +191,7 @@ function HoldingsTable({
   accountId: number;
   accountName: string;
   accountBalance: number;
-  snapshotId: number;
+  snapshotId: number | undefined;
   savedHoldings: HoldingRow[];
   assetClasses: { id: number; name: string }[];
   hasFmpKey: boolean;
@@ -211,6 +211,21 @@ function HoldingsTable({
       lookupState: "idle" as const,
     })),
   );
+
+  useEffect(() => {
+    setDrafts(
+      savedHoldings.map((h) => ({
+        key: String(h.id),
+        ticker: h.ticker,
+        name: h.name,
+        weightBps: h.weightBps,
+        expenseRatioStr: erToDisplay(h.expenseRatio),
+        assetClassId: h.assetClassId,
+        assetClassSource: h.assetClassSource,
+        lookupState: "idle" as const,
+      })),
+    );
+  }, [snapshotId, savedHoldings]);
 
   const [saving, setSaving] = useState(false);
 
@@ -303,6 +318,7 @@ function HoldingsTable({
           assetClassId: d.assetClassId,
           assetClassSource: d.assetClassSource,
         }));
+      if (!snapshotId) return;
       await bulkUpsert.mutateAsync({
         performanceAccountId: accountId,
         snapshotId,
@@ -811,7 +827,7 @@ export function AnalyticsContent() {
                 accountId={acct.id}
                 accountName={accountDisplayName(acct)}
                 accountBalance={balanceByPerfAcct.get(acct.id) ?? 0}
-                snapshotId={effectiveSnapshotId ?? snapshots?.[0]?.id ?? 0}
+                snapshotId={effectiveSnapshotId ?? snapshots?.[0]?.id}
                 savedHoldings={holdingsByAccount.get(acct.id) ?? []}
                 assetClasses={assetClasses ?? []}
                 hasFmpKey={hasFmpKey ?? false}

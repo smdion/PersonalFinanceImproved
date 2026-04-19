@@ -205,10 +205,13 @@ function StressTestPanel({
   userSalaryGrowth?: number;
 }) {
   const scenarios = getStressTestScenarios();
-  const { data: stressData, isLoading: stressLoading } =
-    trpc.projection.computeStressTest.useQuery(undefined, {
-      staleTime: 5 * 60 * 1000,
-    });
+  const {
+    data: stressData,
+    isLoading: stressLoading,
+    isError: stressError,
+  } = trpc.projection.computeStressTest.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000,
+  });
   const resultByLabel = new Map(
     (stressData?.scenarios ?? []).map((s) => [s.label, s]),
   );
@@ -290,9 +293,11 @@ function StressTestPanel({
                   <td className="py-2 px-2 font-medium">
                     {stressLoading
                       ? "…"
-                      : result
-                        ? formatCurrency(result.nestEggAtRetirement)
-                        : "—"}
+                      : stressError
+                        ? "Error"
+                        : result
+                          ? formatCurrency(result.nestEggAtRetirement)
+                          : "—"}
                   </td>
                 </tr>
               );

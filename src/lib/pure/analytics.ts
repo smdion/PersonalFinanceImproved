@@ -188,7 +188,8 @@ export function coverageStatus(
   warnThresholdBps: number,
 ): { sumBps: number; status: "ok" | "under" | "over" } {
   const sumBps = holdings.reduce((s, h) => s + h.weightBps, 0);
-  if (sumBps > 10000) return { sumBps, status: "over" };
-  if (10000 - sumBps > warnThresholdBps) return { sumBps, status: "under" };
-  return { sumBps, status: "ok" };
+  const delta = sumBps - 10000;
+  if (Math.abs(delta) <= warnThresholdBps) return { sumBps, status: "ok" };
+  if (delta > 0) return { sumBps, status: "over" };
+  return { sumBps, status: "under" };
 }
