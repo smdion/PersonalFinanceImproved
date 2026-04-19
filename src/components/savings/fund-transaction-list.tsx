@@ -5,6 +5,18 @@ import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { AddTransactionForm } from "./add-transaction-form";
 import { PlannedTxForm, emptyTxForm } from "./types";
 
+function txToForm(tx: PlannedTransaction): PlannedTxForm {
+  return {
+    goalId: tx.goalId,
+    transactionDate: tx.transactionDate,
+    amount: String(tx.amount),
+    description: tx.description,
+    isRecurring: tx.isRecurring,
+    recurrenceMonths:
+      tx.recurrenceMonths != null ? String(tx.recurrenceMonths) : "",
+  };
+}
+
 interface PlannedTransaction {
   id: number;
   goalId: number;
@@ -25,6 +37,8 @@ export function FundTransactionList({
   goalById,
   onAddTx,
   createTxPending,
+  onUpdateTx,
+  updateTxPending,
   canEdit,
 }: {
   transactions: PlannedTransaction[];
@@ -35,6 +49,8 @@ export function FundTransactionList({
   goalById?: Map<number, { name: string }>;
   onAddTx: (form: PlannedTxForm) => void;
   createTxPending: boolean;
+  onUpdateTx?: (id: number, form: PlannedTxForm) => void;
+  updateTxPending?: boolean;
   canEdit?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(
@@ -116,6 +132,10 @@ export function FundTransactionList({
               currentGoalId={goalId}
               goalById={goalById}
               onDelete={() => handleDelete(tx)}
+              onUpdate={
+                onUpdateTx ? (form) => onUpdateTx(tx.id, form) : undefined
+              }
+              updatePending={updateTxPending}
               canEdit={canEdit}
             />
           ))}
@@ -129,6 +149,10 @@ export function FundTransactionList({
                   currentGoalId={goalId}
                   goalById={goalById}
                   onDelete={() => handleDelete(tx)}
+                  onUpdate={
+                    onUpdateTx ? (form) => onUpdateTx(tx.id, form) : undefined
+                  }
+                  updatePending={updateTxPending}
                   canEdit={canEdit}
                   isPast
                 />
@@ -157,6 +181,8 @@ function TransactionRow({
   currentGoalId: _currentGoalId,
   goalById,
   onDelete,
+  onUpdate,
+  updatePending,
   canEdit,
   isPast,
 }: {
@@ -164,22 +190,117 @@ function TransactionRow({
   currentGoalId: number;
   goalById?: Map<number, { name: string }>;
   onDelete: () => void;
+  onUpdate?: (form: PlannedTxForm) => void;
+  updatePending?: boolean;
   canEdit?: boolean;
   isPast?: boolean;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState<PlannedTxForm>(txToForm(tx));
   const isTransfer = !!tx.transferPairId;
 
-  // For transfers, figure out the other fund's name
   let transferLabel: string | null = null;
   if (isTransfer && goalById) {
-    // This tx is one half of a transfer pair. The amount sign tells us direction:
-    // negative = money leaving this fund (transfer out), positive = money arriving (transfer in)
-    if (tx.amount < 0) {
-      // We're the source — description should mention destination, but we show generic label
-      transferLabel = "Transfer out";
-    } else {
-      transferLabel = "Transfer in";
-    }
+    transferLabel = tx.amount < 0 ? "Transfer out" : "Transfer in";
+  }
+
+  if (editing) {
+    return (
+      <div className="mt-1 mb-1 border rounded-lg p-3 bg-surface-primary/50">
+        <p className="text-xs font-medium text-faint mb-2">Edit transaction</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div>
+            <label className="block text-xs text-faint mb-1">Date</label>
+            <input
+              type="date"
+              value={editForm.transactionDate}
+              onChange={(e) =>
+                setEditForm({ ...editForm, transactionDate: e.target.value })
+              }
+              className="w-full border bg-surface-elevated text-primary rounded px-2 py-1 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-faint mb-1">
+              Amount (negative = spending)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={editForm.amount}
+              onChange={(e) =>
+                setEditForm({ ...editForm, amount: e.target.value })
+              }
+              className="w-full border bg-surface-elevated text-primary rounded px-2 py-1 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-faint mb-1">Description</label>
+            <input
+              type="text"
+              value={editForm.description}
+              onChange={(e) =>
+                setEditForm({ ...editForm, description: e.target.value })
+              }
+              className="w-full border bg-surface-elevated text-primary rounded px-2 py-1 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-faint mb-1">Recurring?</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={editForm.isRecurring}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, isRecurring: e.target.checked })
+                }
+              />
+              {editForm.isRecurring && (
+                <input
+                  type="number"
+                  value={editForm.recurrenceMonths}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      recurrenceMonths: e.target.value,
+                    })
+                  }
+                  placeholder="every N months"
+                  className="border bg-surface-elevated text-primary rounded px-2 py-1 text-sm w-24"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-2 mt-3">
+          <button
+            onClick={() => {
+              if (
+                !editForm.transactionDate ||
+                !editForm.amount ||
+                !editForm.description
+              )
+                return;
+              onUpdate?.(editForm);
+              setEditing(false);
+            }}
+            disabled={updatePending}
+            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+          >
+            {updatePending ? "Saving..." : "Save"}
+          </button>
+          <button
+            onClick={() => {
+              setEditForm(txToForm(tx));
+              setEditing(false);
+            }}
+            className="px-3 py-1 border text-faint rounded text-sm hover:bg-surface-elevated"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -209,6 +330,18 @@ function TransactionRow({
           {tx.amount >= 0 ? "+" : ""}
           {formatCurrency(tx.amount)}
         </span>
+        {canEdit !== false && !isTransfer && onUpdate && (
+          <button
+            onClick={() => {
+              setEditForm(txToForm(tx));
+              setEditing(true);
+            }}
+            className="text-muted/50 hover:text-blue-600 text-xs"
+            title="Edit"
+          >
+            ✎
+          </button>
+        )}
         {canEdit !== false && (
           <button
             onClick={onDelete}

@@ -155,6 +155,9 @@ export default function SavingsPage() {
       setShowTransferForm(false);
     },
   });
+  const updateTx = trpc.savings.plannedTransactions.update.useMutation({
+    onSuccess: () => utils.savings.invalidate(),
+  });
 
   // ── Ref for FundManagementSection callbacks (goal updates used by other sections) ──
   const fundCallbacksRef = useRef<FundManagementCallbacks | null>(null);
@@ -559,6 +562,21 @@ export default function SavingsPage() {
               savingsGoals={savings.goals}
               plannedTransactions={plannedTransactions}
               monthDates={monthDates}
+              onUpdateTx={(id, form) =>
+                updateTx.mutate({
+                  id,
+                  goalId: form.goalId,
+                  transactionDate: form.transactionDate,
+                  amount: form.amount,
+                  description: form.description,
+                  isRecurring: form.isRecurring,
+                  recurrenceMonths:
+                    form.isRecurring && form.recurrenceMonths
+                      ? Number(form.recurrenceMonths)
+                      : null,
+                })
+              }
+              updateTxPending={updateTx.isPending}
             />
           )}
         </section>

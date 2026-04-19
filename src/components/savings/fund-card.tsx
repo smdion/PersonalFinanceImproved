@@ -198,6 +198,8 @@ export function FundCard({
   goalById,
   onAddTx,
   createTxPending,
+  onUpdateTx,
+  updateTxPending,
   onEditMonth,
   onDeleteOverride,
   onTimelineClick,
@@ -234,6 +236,8 @@ export function FundCard({
   goalById?: Map<number, { name: string }>;
   onAddTx: (form: PlannedTxForm) => void;
   createTxPending: boolean;
+  onUpdateTx?: (id: number, form: PlannedTxForm) => void;
+  updateTxPending?: boolean;
   onEditMonth: (monthDate: Date) => void;
   onDeleteOverride: (params: { goalId: number; monthDate: string }) => void;
   onTimelineClick: (goalId: number, monthIndex: number) => void;
@@ -618,6 +622,8 @@ export function FundCard({
           goalById={goalById}
           onAddTx={onAddTx}
           createTxPending={createTxPending}
+          onUpdateTx={onUpdateTx}
+          updateTxPending={updateTxPending}
           canEdit={canEdit}
         />
       </div>

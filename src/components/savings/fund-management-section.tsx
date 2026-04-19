@@ -181,6 +181,9 @@ export function FundManagementSection({
   const deleteTxMut = trpc.savings.plannedTransactions.delete.useMutation({
     onSuccess: () => utils.savings.invalidate(),
   });
+  const updateTxMut = trpc.savings.plannedTransactions.update.useMutation({
+    onSuccess: () => utils.savings.invalidate(),
+  });
 
   // v0.5 expert-review M27: undoable delete for planned transactions.
   // PlannedTransactions are single-row, no cascade — safe to re-create on
@@ -463,6 +466,21 @@ export function FundManagementSection({
                   goalById={goalById as Map<number, { name: string }>}
                   onAddTx={handleAddTx}
                   createTxPending={createTx.isPending}
+                  onUpdateTx={(id, form) =>
+                    updateTxMut.mutate({
+                      id,
+                      goalId: form.goalId,
+                      transactionDate: form.transactionDate,
+                      amount: form.amount,
+                      description: form.description,
+                      isRecurring: form.isRecurring,
+                      recurrenceMonths:
+                        form.isRecurring && form.recurrenceMonths
+                          ? Number(form.recurrenceMonths)
+                          : null,
+                    })
+                  }
+                  updateTxPending={updateTxMut.isPending}
                   onEditMonth={onEditMonth}
                   onDeleteOverride={onDeleteOverride}
                   onTimelineClick={(goalId, monthIndex) => {
