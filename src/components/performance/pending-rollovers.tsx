@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, accountDisplayName } from "@/lib/utils/format";
 
 type PendingRollover = {
   id: number;
@@ -128,10 +128,10 @@ function PendingRolloverRow({
   );
 
   const srcLabel = srcRow
-    ? `${srcRow.institution} — ${srcRow.accountLabel}`
+    ? accountDisplayName(srcRow)
     : `Account #${rollover.sourceAccountPerformanceId}`;
   const destLabel = destMaster
-    ? `${destMaster.institution} — ${destMaster.accountLabel}`
+    ? accountDisplayName(destMaster)
     : `Account #${rollover.destinationPerformanceAccountId}`;
 
   const yearNote =
