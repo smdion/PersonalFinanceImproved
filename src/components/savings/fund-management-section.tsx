@@ -105,6 +105,7 @@ export interface FundManagementSectionProps {
   efundTierIndex: number;
   onEfundTierChange: (column: number) => void;
   reimbursementsData?: ReimbursementData | null;
+  apiServiceName?: string | null;
   /** From ApiSyncSection — piped through to FundCard */
   onLinkToApi: (goalId: number) => void;
   onUnlinkFromApi: (goalId: number) => void;
@@ -154,6 +155,7 @@ export function FundManagementSection({
   efundTierIndex,
   onEfundTierChange,
   reimbursementsData,
+  apiServiceName,
   onLinkToApi,
   onUnlinkFromApi,
   onConvertToBudgetItem,
@@ -495,6 +497,7 @@ export function FundManagementSection({
                   createGoalPending={createGoalPending}
                   canEdit={canEdit}
                   apiBalance={apiBalanceMap.get(raw.id) ?? null}
+                  apiServiceName={apiServiceName}
                   onLinkToApi={onLinkToApi}
                   onUnlinkFromApi={onUnlinkFromApi}
                   onConvertToBudgetItem={onConvertToBudgetItem}

@@ -200,6 +200,7 @@ export function FundCard({
   createTxPending,
   onUpdateTx,
   updateTxPending,
+  apiServiceName,
   onEditMonth,
   onDeleteOverride,
   onTimelineClick,
@@ -238,6 +239,7 @@ export function FundCard({
   createTxPending: boolean;
   onUpdateTx?: (id: number, form: PlannedTxForm) => void;
   updateTxPending?: boolean;
+  apiServiceName?: string | null;
   onEditMonth: (monthDate: Date) => void;
   onDeleteOverride: (params: { goalId: number; monthDate: string }) => void;
   onTimelineClick: (goalId: number, monthIndex: number) => void;
@@ -294,9 +296,9 @@ export function FundCard({
             {rawGoal.isApiSyncEnabled && rawGoal.apiCategoryName && (
               <span
                 className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-blue-100 text-blue-600 border border-blue-200"
-                title={`Synced from ${rawGoal.apiCategoryName}`}
+                title={`Synced with ${rawGoal.apiCategoryName}`}
               >
-                API
+                {(apiServiceName ?? "API").toUpperCase()}
               </span>
             )}
           </div>
@@ -408,23 +410,26 @@ export function FundCard({
           </div>
           <div className="space-y-0.5 text-[11px]">
             <div className="flex items-center justify-between">
-              <span className="text-blue-500/70 flex items-center gap-1">
-                <span className="text-[9px]">← pull</span> Balance
+              <span className="text-blue-500/70">
+                ↓ Balance from {(apiServiceName ?? "API").toUpperCase()}
               </span>
               <span className="text-blue-300 font-semibold tabular-nums">
                 {formatCurrency(apiBalance.balance)}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-blue-500/70 flex items-center gap-1">
-                <span className="text-[9px]">→ push</span> Budgeted
+              <span className="text-blue-500/70">
+                ↑ Monthly goal pushed to{" "}
+                {(apiServiceName ?? "API").toUpperCase()}
               </span>
               <span className="text-blue-300 tabular-nums">
                 {formatCurrency(apiBalance.budgeted)}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-blue-500/70">Activity</span>
+              <span className="text-blue-500/70">
+                Spent in {(apiServiceName ?? "API").toUpperCase()}
+              </span>
               <span className="text-blue-300/70 tabular-nums">
                 {formatCurrency(apiBalance.activity)}
               </span>

@@ -645,6 +645,7 @@ export default function SavingsPage() {
           goalById={goalById}
           childGoalsByParent={childGoalsByParent}
           apiBalanceMap={apiBalanceMap}
+          apiServiceName={apiBalancesData?.service}
           canEdit={canEdit}
           onEditMonth={setEditingMonth}
           onDeleteOverride={apiSync.onDeleteOverride}
