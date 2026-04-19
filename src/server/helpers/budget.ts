@@ -8,8 +8,8 @@ import { toNumber } from "./transforms";
 import type { Db } from "./transforms";
 import { parseAppSettings } from "./settings";
 
-/** 24 hours in milliseconds — max age for budget API cache before falling back to manual. */
-export const BUDGET_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+/** No TTL — cached YNAB data is kept until the user manually triggers a resync. */
+export const BUDGET_CACHE_MAX_AGE_MS = undefined;
 
 /**
  * Get effective cash balance.

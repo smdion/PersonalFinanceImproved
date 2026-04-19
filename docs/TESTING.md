@@ -30,7 +30,7 @@ Framework: [Vitest](https://vitest.dev/) with globals enabled. E2E: [Playwright]
 | **Helpers**       | 10    | ~193  | Server helper unit tests (budget, contribution, salary, snapshot, transforms, settings) |
 | **E2E**           | 9     | 35    | Playwright smoke tests (health, navigation, page flows)                                 |
 
-Total: **<!-- AUTO-GEN:totalTests -->2752<!-- /AUTO-GEN --> tests** across **<!-- AUTO-GEN:vitestFiles -->154<!-- /AUTO-GEN --> vitest files** + **35 Playwright E2E tests** (<!-- AUTO-GEN:e2eFiles -->13<!-- /AUTO-GEN --> files).
+Total: **<!-- AUTO-GEN:totalTests -->2752<!-- /AUTO-GEN --> tests** across **<!-- AUTO-GEN:vitestFiles -->157<!-- /AUTO-GEN --> vitest files** + **35 Playwright E2E tests** (<!-- AUTO-GEN:e2eFiles -->13<!-- /AUTO-GEN --> files).
 
 ### Coverage
 

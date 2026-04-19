@@ -58,9 +58,9 @@ export function RelocationProjectionTable({
                 Age
                 {peopleLookup && peopleLookup.length > 1 ? " (avg)" : ""}
               </th>
-              <th className="text-right py-1 pr-3">Contrib</th>
+              <th className="text-right py-1 pr-3">Contributions</th>
               <th className="text-right py-1 pr-3">Current Balance</th>
-              <th className="text-right py-1 pr-3">Reloc Contrib</th>
+              <th className="text-right py-1 pr-3">Reloc Contributions</th>
               <th className="text-right py-1 pr-3">Relocation Balance</th>
               <th className="text-right py-1 pr-3">Gap</th>
               <th className="text-right py-1">Reloc Expenses</th>

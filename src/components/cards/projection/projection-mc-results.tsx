@@ -54,44 +54,13 @@ export function McDepletionCallout({ s }: { s: ProjectionState }) {
 
 /** MC loading, errors, warnings, and compact summary bar. */
 export function McResultsSection({ s }: { s: ProjectionState }) {
-  const {
-    projectionMode,
-    mcTrials,
-    mcPreset,
-    mcLoading,
-    mcQuery,
-    setShowAssumptions,
-  } = s;
+  const { projectionMode, mcLoading, mcQuery, setShowAssumptions } = s;
 
   if (projectionMode !== "monteCarlo") return null;
 
   return (
     <div className="space-y-3">
-      {mcLoading && (
-        <div className="flex items-center gap-2 py-8 justify-center text-sm text-muted">
-          <svg
-            aria-hidden="true"
-            className="animate-spin h-4 w-4"
-            viewBox="0 0 24 24"
-            fill="none"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-            />
-          </svg>
-          Running {mcTrials.toLocaleString()} simulations ({mcPreset})...
-        </div>
-      )}
+      {/* MC loading state is handled by the unified ProjectionLoader slim strip */}
       {mcQuery.error && (
         <div className="text-sm text-red-500 py-4">
           Monte Carlo failed: {mcQuery.error.message}

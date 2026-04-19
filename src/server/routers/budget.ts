@@ -788,7 +788,8 @@ export const budgetRouter = createTRPCRouter({
       const perf = c.performanceAccountId
         ? perfMap.get(c.performanceAccountId)
         : null;
-      // Only show owner name for individual accounts, not joint
+      // Pass ownershipType so accountDisplayName applies "Joint" prefix for
+      // joint accounts and the individual owner name for individual accounts.
       const ownerName =
         c.ownership === "individual" ? personMap.get(c.personId) : undefined;
       const label = accountDisplayName(
@@ -799,6 +800,7 @@ export const budgetRouter = createTRPCRouter({
           displayName: perf?.displayName,
           accountLabel: perf?.accountLabel,
           institution: perf?.institution,
+          ownershipType: perf?.ownershipType ?? c.ownership,
         },
         ownerName ?? undefined,
       );

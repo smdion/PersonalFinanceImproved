@@ -77,10 +77,9 @@ export function checkGlidePath(
 
   const direction = dev > 0 ? "more aggressive" : "more conservative";
   const message =
-    `Your stock allocation (${currentStockPercent}%) is ${absDev}pp ${direction} ` +
+    `Your simulation's assumed stock allocation (${currentStockPercent}%) is ${absDev}pp ${direction} ` +
     `than the "110 − age" rule of thumb suggests for age ${age} (${recommended}%). ` +
-    `This is a heuristic, not a mandate — but if you don't have a specific ` +
-    `reason for the deviation, consider rebalancing toward the recommendation.`;
+    `This check uses your configured glide path, not actual holdings.`;
 
   return {
     severity,

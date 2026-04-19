@@ -48,7 +48,7 @@ import type {
 //   6.  Self loans ................. selfLoans
 //   7.  Portfolio performance ...... performanceAccounts, portfolioSnapshots,
 //                                    portfolioAccounts, annualPerformance,
-//                                    accountPerformance
+//                                    accountPerformance, accountHoldings
 //   8.  Net worth (annual) ......... netWorthAnnual, homeImprovementItems,
 //                                    otherAssetItems, historicalNotes
 //   9.  Mortgages .................. mortgageLoans, mortgageWhatIfScenarios,
@@ -646,6 +646,66 @@ export const accountPerformance = sqliteTable(
     index("account_performance_owner_id_idx").on(table.ownerPersonId),
     index("account_performance_perf_acct_idx").on(table.performanceAccountId),
     index("account_performance_is_active_idx").on(table.isActive),
+  ],
+);
+
+export const accountHoldings = sqliteTable(
+  "account_holdings",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+
+    // Which account and which snapshot this holding belongs to.
+    // Holdings are immutable once the snapshot is taken — updating
+    // holdings creates new rows under the new snapshot, not in-place edits.
+    performanceAccountId: integer("performance_account_id")
+      .notNull()
+      .references(() => performanceAccounts.id, { onDelete: "cascade" }),
+    snapshotId: integer("snapshot_id")
+      .notNull()
+      .references(() => portfolioSnapshots.id, { onDelete: "cascade" }),
+
+    ticker: text("ticker").notNull(),
+    name: text("name").notNull(),
+
+    // Weight in basis points (0–10000 = 0%–100% of the account balance).
+    // Dollar value is COMPUTED: portfolioAccount.amount × weightBps / 10000.
+    // Never store an independent dollar amount — that would create a second
+    // total that can silently diverge from the authoritative snapshot balance.
+    weightBps: integer("weight_bps").notNull(),
+
+    // Expense ratio as a decimal rate (not basis points).
+    // Matches decimal(12,6) convention used by all other rate columns
+    // (asset_class_params.mean_return, glide_path_allocations.allocation, etc.).
+    // Nullable = user hasn't entered it / FMP returned nothing.
+    expenseRatio: text("expense_ratio"),
+
+    // FK to asset_class_params.id — the same table the MC engine reads.
+    // Nullable = not yet classified.
+    assetClassId: integer("asset_class_id").references(
+      () => assetClassParams.id,
+      { onDelete: "set null" },
+    ),
+
+    // Source of the asset class assignment — surfaces to user so they
+    // know whether to trust or override it.
+    // 'fmp' = auto-assigned from FMP sector, 'manual' = user set it.
+    assetClassSource: text("asset_class_source")
+      .notNull()
+      .default("manual")
+      .$type<"fmp" | "manual">(),
+  },
+  (table) => [
+    // Unique: one ticker entry per account per snapshot
+    uniqueIndex("account_holdings_acct_snap_ticker_idx").on(
+      table.performanceAccountId,
+      table.snapshotId,
+      table.ticker,
+    ),
+    // FK indexes (PostgreSQL doesn't auto-create these)
+    index("account_holdings_perf_acct_idx").on(table.performanceAccountId),
+    index("account_holdings_snapshot_idx").on(table.snapshotId),
+    index("account_holdings_asset_class_idx").on(table.assetClassId),
+    // Weight sanity check (per-row; sum across holdings is validated in the app)
   ],
 );
 

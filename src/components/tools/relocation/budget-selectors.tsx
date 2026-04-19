@@ -254,7 +254,7 @@ export function RelocationBudgetSelectors({
                   Salary: {formatCurrency(currentContribProfile.combinedSalary)}
                 </span>
                 <span>
-                  Contrib:{" "}
+                  Contributions:{" "}
                   {formatCurrency(currentContribProfile.annualContributions)}
                   /yr
                 </span>
@@ -291,7 +291,7 @@ export function RelocationBudgetSelectors({
                   {formatCurrency(relocationContribProfile.combinedSalary)}
                 </span>
                 <span>
-                  Contrib:{" "}
+                  Contributions:{" "}
                   {formatCurrency(relocationContribProfile.annualContributions)}
                   /yr
                 </span>

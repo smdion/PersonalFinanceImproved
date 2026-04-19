@@ -271,6 +271,46 @@ describe("findCoastFireAge", () => {
     expect(result.coastFireAge).toBe(70);
   });
 
+  it("exercises binary search and returns found with near-zero starting balance", () => {
+    // Near-zero balance → can't coast today (stopNow fails).
+    // 35 years of contributions at $150k salary → easily passes if stopping
+    // at retirementAge-1 (stopLate passes). Forces the binary search branch.
+    const input = makeInput({
+      currentAge: 30,
+      retirementAge: 65,
+      currentSalary: 150_000,
+      annualExpenses: 60_000,
+      startingBalances: {
+        preTax: 500,
+        taxFree: 0,
+        afterTax: 0,
+        afterTaxBasis: 0,
+        hsa: 0,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 500,
+          roth: 0,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 0 },
+        ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+        brokerage: { structure: "basis_tracking", balance: 0, basis: 0 },
+      },
+    });
+
+    const result = findCoastFireAge(input);
+
+    expect(result.status).toBe("found");
+    expect(result.coastFireAge).not.toBeNull();
+    expect(result.coastFireAge).toBeGreaterThan(input.currentAge);
+    expect(result.coastFireAge).toBeLessThan(input.retirementAge);
+    expect(result.sustainableWithdrawal).toBeGreaterThanOrEqual(
+      result.projectedExpensesAtRetirement,
+    );
+  });
+
   it("returns an earliest-age result (binary search invariant)", () => {
     // Run with the moderate-balance fixture; if status is "found", verify
     // that the age immediately before coastFireAge does NOT pass — i.e.,

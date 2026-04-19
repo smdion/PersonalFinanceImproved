@@ -23,12 +23,12 @@ export function YoYComparison({ years, data }: YoYComparisonProps) {
       format: formatCurrency,
     },
     {
-      label: "Contributions",
+      label: "Total Contributions",
       getValue: (r) => r.totalContributions,
       format: formatCurrency,
     },
     {
-      label: "Employer Contrib",
+      label: "Employer Match",
       getValue: (r) => r.employerContributions,
       format: formatCurrency,
     },

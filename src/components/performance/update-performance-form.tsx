@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Card } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, accountDisplayName } from "@/lib/utils/format";
 import { computeGainLoss } from "@/lib/pure/performance";
@@ -56,6 +55,7 @@ export function UpdatePerformanceForm({
         a.performanceAccountId !== null
           ? (snapshotByPerfAcct.current.get(a.performanceAccountId) ?? null)
           : null;
+      const employeeContrib = a.totalContributions - a.employerContributions;
       return {
         accountPerformanceId: a.id,
         performanceAccountId: a.performanceAccountId,
@@ -65,12 +65,14 @@ export function UpdatePerformanceForm({
             // lint-violation-ok: passing accountLabel into the blessed accountDisplayName helper, not rendering it directly
             accountLabel: a.accountLabel,
             accountType: a.accountType ?? undefined,
+            ownershipType: a.ownershipType,
           },
           a.ownerName ?? undefined,
         ),
+        institution: a.institution,
         parentCategory: a.parentCategory,
         beginningBalance: a.beginningBalance,
-        totalContributions: String(a.totalContributions),
+        employeeContrib: String(employeeContrib),
         employerContributions: String(a.employerContributions),
         distributions: String(a.distributions),
         rollovers: String(a.rollovers),
@@ -80,7 +82,7 @@ export function UpdatePerformanceForm({
         gainLossOverride: false,
         snapshotEndingBalance: snapBal,
         original: {
-          totalContributions: a.totalContributions,
+          employeeContrib,
           employerContributions: a.employerContributions,
           distributions: a.distributions,
           rollovers: a.rollovers,
@@ -121,11 +123,13 @@ export function UpdatePerformanceForm({
   // Compute gain/loss for a row using the pure function
   const getComputedGainLoss = useCallback(
     (row: UpdateFormRow): number => {
+      const totalContrib =
+        (parseFloat(row.employeeContrib) || 0) +
+        (parseFloat(row.employerContributions) || 0);
       return computeGainLoss({
         endingBalance: getEndingBalance(row),
         beginningBalance: row.beginningBalance,
-        totalContributions: parseFloat(row.totalContributions) || 0,
-        employerContributions: parseFloat(row.employerContributions) || 0,
+        totalContributions: totalContrib,
         distributions: parseFloat(row.distributions) || 0,
         rollovers: parseFloat(row.rollovers) || 0,
         fees: parseFloat(row.fees) || 0,
@@ -141,9 +145,13 @@ export function UpdatePerformanceForm({
       const gainLoss = r.gainLossOverride
         ? parseFloat(r.yearlyGainLoss) || 0
         : getComputedGainLoss(r);
+      const totalContributions = (
+        (parseFloat(r.employeeContrib) || 0) +
+        (parseFloat(r.employerContributions) || 0)
+      ).toFixed(2);
       return {
         id: r.accountPerformanceId,
-        totalContributions: r.totalContributions,
+        totalContributions,
         employerContributions: r.employerContributions,
         distributions: r.distributions,
         rollovers: r.rollovers,
@@ -157,13 +165,15 @@ export function UpdatePerformanceForm({
 
   const currentRows = rows ?? [];
 
-  // Group rows by parentCategory
+  // Group rows by institution (sorted alphabetically)
   const groups = new Map<string, UpdateFormRow[]>();
   for (const row of currentRows) {
-    const cat = row.parentCategory;
-    if (!groups.has(cat)) groups.set(cat, []);
-    groups.get(cat)!.push(row);
+    if (!groups.has(row.institution)) groups.set(row.institution, []);
+    groups.get(row.institution)!.push(row);
   }
+  const sortedGroups = Array.from(groups.entries()).sort(([a], [b]) =>
+    a.localeCompare(b),
+  );
 
   const totalGainLoss = currentRows.reduce((sum, r) => {
     const gl = r.gainLossOverride
@@ -175,122 +185,116 @@ export function UpdatePerformanceForm({
   const snapshotDate = latestSnap?.snapshot?.snapshotDate ?? null;
 
   if (loadingSnap) {
-    return (
-      <Card title={`Update Performance (${currentYear})`} className="mb-6">
-        <p className="text-sm text-muted">Loading snapshot data...</p>
-      </Card>
-    );
+    return <p className="text-sm text-muted">Loading snapshot data...</p>;
   }
 
   return (
-    <Card title={`Update Performance (${currentYear})`} className="mb-6">
-      <div className="space-y-4">
-        {/* Ending balance source toggle */}
-        <div className="flex items-center gap-4 text-sm">
-          <span className="text-muted font-medium">Ending Balance Source:</span>
-          <label className="flex items-center gap-1.5 cursor-pointer">
-            <input
-              type="radio"
-              name="endingBalanceSource"
-              checked={endingBalanceSource === "snapshot"}
-              onChange={() => setEndingBalanceSource("snapshot")}
-              className="accent-indigo-600"
-            />
-            <span>
-              From Latest Snapshot
-              {snapshotDate && (
-                <span className="text-faint ml-1">({snapshotDate})</span>
-              )}
-            </span>
-          </label>
-          <label className="flex items-center gap-1.5 cursor-pointer">
-            <input
-              type="radio"
-              name="endingBalanceSource"
-              checked={endingBalanceSource === "manual"}
-              onChange={() => setEndingBalanceSource("manual")}
-              className="accent-indigo-600"
-            />
-            <span>Manual Entry</span>
-          </label>
-        </div>
-
-        {/* Account groups */}
-        {Array.from(groups.entries()).map(([category, groupRows]) => {
-          const groupGainLoss = groupRows.reduce((sum, r) => {
-            const gl = r.gainLossOverride
-              ? parseFloat(r.yearlyGainLoss) || 0
-              : getComputedGainLoss(r);
-            return sum + gl;
-          }, 0);
-
-          return (
-            <div key={category}>
-              {/* Category header */}
-              <div className="flex items-baseline justify-between border-b-2 border-strong pb-1 mb-3">
-                <span className="text-sm font-semibold text-primary">
-                  {category}
-                </span>
-                <span
-                  className={`text-xs font-medium ${groupGainLoss >= 0 ? "text-green-600" : "text-red-600"}`}
-                >
-                  Gain/Loss: {formatCurrency(groupGainLoss)}
-                </span>
-              </div>
-
-              {/* Account rows */}
-              {groupRows.map((row) => (
-                <AccountFormRow
-                  key={row.accountPerformanceId}
-                  row={row}
-                  endingBalanceSource={endingBalanceSource}
-                  snapshotDate={snapshotDate}
-                  computedGainLoss={getComputedGainLoss(row)}
-                  effectiveEndingBalance={getEndingBalance(row)}
-                  onFieldChange={updateRow}
-                />
-              ))}
-            </div>
-          );
-        })}
-
-        {/* Total */}
-        <div className="flex items-baseline justify-between border-t-2 border-strong pt-2">
-          <span className="font-semibold">Total Gain/Loss</span>
-          <span
-            className={`font-bold ${totalGainLoss >= 0 ? "text-green-600" : "text-red-600"}`}
-          >
-            {formatCurrency(totalGainLoss)}
+    <div className="space-y-4">
+      {/* Ending balance source toggle */}
+      <div className="flex items-center gap-4 text-sm">
+        <span className="text-muted font-medium">Ending Balance Source:</span>
+        <label className="flex items-center gap-1.5 cursor-pointer">
+          <input
+            type="radio"
+            name="endingBalanceSource"
+            checked={endingBalanceSource === "snapshot"}
+            onChange={() => setEndingBalanceSource("snapshot")}
+            className="accent-blue-600"
+          />
+          <span>
+            From Latest Snapshot
+            {snapshotDate && (
+              <span className="text-faint ml-1">({snapshotDate})</span>
+            )}
           </span>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-3">
-          <div className="flex-1" />
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-3 py-1.5 text-sm text-muted hover:text-primary border border-strong rounded"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={batchMutation.isPending || currentRows.length === 0}
-            className="px-4 py-1.5 text-sm text-white bg-indigo-600 hover:bg-indigo-700 rounded disabled:opacity-50"
-          >
-            {batchMutation.isPending ? "Saving..." : "Save Update"}
-          </button>
-        </div>
-
-        {batchMutation.isError && (
-          <p className="text-sm text-red-600">
-            Error: {batchMutation.error.message}
-          </p>
-        )}
+        </label>
+        <label className="flex items-center gap-1.5 cursor-pointer">
+          <input
+            type="radio"
+            name="endingBalanceSource"
+            checked={endingBalanceSource === "manual"}
+            onChange={() => setEndingBalanceSource("manual")}
+            className="accent-blue-600"
+          />
+          <span>Manual Entry</span>
+        </label>
       </div>
-    </Card>
+
+      {/* Account groups — one section per institution */}
+      {sortedGroups.map(([institution, groupRows]) => {
+        const groupGainLoss = groupRows.reduce((sum, r) => {
+          const gl = r.gainLossOverride
+            ? parseFloat(r.yearlyGainLoss) || 0
+            : getComputedGainLoss(r);
+          return sum + gl;
+        }, 0);
+
+        return (
+          <div key={institution} className="mb-2">
+            {/* Institution header */}
+            <div className="flex items-baseline justify-between border-b-2 border-strong pb-1.5 mb-3">
+              <span className="text-sm font-semibold text-primary">
+                {institution}
+              </span>
+              <span
+                className={`text-xs font-medium ${groupGainLoss >= 0 ? "text-green-600" : "text-red-600"}`}
+              >
+                Gain/Loss: {formatCurrency(groupGainLoss)}
+              </span>
+            </div>
+
+            {/* Account rows */}
+            {groupRows.map((row) => (
+              <AccountFormRow
+                key={row.accountPerformanceId}
+                row={row}
+                endingBalanceSource={endingBalanceSource}
+                snapshotDate={snapshotDate}
+                computedGainLoss={getComputedGainLoss(row)}
+                effectiveEndingBalance={getEndingBalance(row)}
+                onFieldChange={updateRow}
+              />
+            ))}
+          </div>
+        );
+      })}
+
+      {/* Total */}
+      <div className="flex items-baseline justify-between border-t-2 border-strong pt-2">
+        <span className="font-semibold">Total Gain/Loss</span>
+        <span
+          className={`font-bold ${totalGainLoss >= 0 ? "text-green-600" : "text-red-600"}`}
+        >
+          {formatCurrency(totalGainLoss)}
+        </span>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1" />
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-3 py-1.5 text-sm text-muted hover:text-primary border border-strong rounded"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={batchMutation.isPending || currentRows.length === 0}
+          className="px-4 py-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-50"
+        >
+          {batchMutation.isPending ? "Saving..." : "Save Update"}
+        </button>
+      </div>
+
+      {batchMutation.isError && (
+        <p className="text-sm text-red-600">
+          Error: {batchMutation.error.message}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -320,64 +324,94 @@ function AccountFormRow({
     : computedGainLoss;
 
   return (
-    <div className="mb-4 last:mb-0">
+    <div className="mb-3 last:mb-0 pb-3 last:pb-0 border-b border-subtle last:border-b-0">
       {/* Account name */}
-      <div className="text-sm font-medium text-primary mb-1.5">
-        {row.displayName}
+      <div className="flex items-center gap-2 mb-2">
+        <span className="w-0.5 h-4 rounded-full bg-blue-500 flex-shrink-0" />
+        <span className="text-sm font-semibold text-primary">
+          {row.displayName}
+        </span>
       </div>
 
-      {/* Flow fields */}
-      <div className="grid grid-cols-5 gap-2 mb-1.5">
-        <FieldInput
-          label="Contributions"
-          value={row.totalContributions}
-          originalValue={row.original.totalContributions}
-          onChange={(v) => onFieldChange(id, "totalContributions", v)}
+      {/* Flow fields — one row */}
+      <div className="grid grid-cols-5 gap-2 mb-1">
+        <CompactCurrencyField
+          label="Employee Contrib"
+          value={row.employeeContrib}
+          originalValue={row.original.employeeContrib}
+          onChange={(v) => onFieldChange(id, "employeeContrib", v)}
         />
-        <FieldInput
-          label="Employer"
+        <CompactCurrencyField
+          label="Employer Match"
           value={row.employerContributions}
           originalValue={row.original.employerContributions}
           onChange={(v) => onFieldChange(id, "employerContributions", v)}
         />
-        <FieldInput
+        <CompactCurrencyField
           label="Distributions"
           value={row.distributions}
           originalValue={row.original.distributions}
           onChange={(v) => onFieldChange(id, "distributions", v)}
         />
-        <FieldInput
+        <CompactCurrencyField
           label="Rollovers"
           value={row.rollovers}
           originalValue={row.original.rollovers}
           onChange={(v) => onFieldChange(id, "rollovers", v)}
         />
-        <FieldInput
+        <CompactCurrencyField
           label="Fees"
           value={row.fees}
           originalValue={row.original.fees}
           onChange={(v) => onFieldChange(id, "fees", v)}
         />
       </div>
+      {/* Total contributions read-only display */}
+      <div className="text-[10px] text-muted mb-2">
+        Total Contributions:{" "}
+        <span className="font-medium text-primary">
+          {formatCurrency(
+            (parseFloat(row.employeeContrib) || 0) +
+              (parseFloat(row.employerContributions) || 0),
+          )}
+        </span>
+      </div>
 
-      {/* Ending balance + gain/loss row */}
+      {/* Ending balance + gain/loss summary */}
       <div className="flex items-center gap-4 text-sm">
         {/* Ending balance */}
         <div className="flex items-center gap-1.5">
-          <span className="text-muted">Ending Bal:</span>
+          <span className="text-xs text-muted">Ending Bal:</span>
           {endingBalanceSource === "snapshot" &&
           row.snapshotEndingBalance !== null ? (
-            <span className="font-medium">
+            <span className="text-xs font-medium">
               {formatCurrency(row.snapshotEndingBalance)}
               {snapshotDate && (
-                <span className="text-faint text-xs ml-1">
-                  (snapshot {snapshotDate})
+                <span className="text-faint text-[10px] ml-1">
+                  ({snapshotDate})
                 </span>
               )}
             </span>
           ) : endingBalanceSource === "snapshot" &&
             row.snapshotEndingBalance === null ? (
             <span className="flex items-center gap-1.5">
+              <div className="flex items-center border border-default rounded focus-within:ring-1 focus-within:ring-blue-500">
+                <span className="pl-1.5 text-xs text-muted select-none">$</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={row.endingBalance}
+                  onChange={(e) =>
+                    onFieldChange(id, "endingBalance", e.target.value)
+                  }
+                  className="w-24 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none"
+                />
+              </div>
+              <span className="text-[10px] text-amber-600">(no snapshot)</span>
+            </span>
+          ) : (
+            <div className="flex items-center border border-default rounded focus-within:ring-1 focus-within:ring-blue-500">
+              <span className="pl-1.5 text-xs text-muted select-none">$</span>
               <input
                 type="number"
                 step="0.01"
@@ -385,23 +419,12 @@ function AccountFormRow({
                 onChange={(e) =>
                   onFieldChange(id, "endingBalance", e.target.value)
                 }
-                className="border rounded px-2 py-0.5 text-sm text-right w-28"
+                className="w-24 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none"
               />
-              <span className="text-xs text-amber-600">(no snapshot)</span>
-            </span>
-          ) : (
-            <input
-              type="number"
-              step="0.01"
-              value={row.endingBalance}
-              onChange={(e) =>
-                onFieldChange(id, "endingBalance", e.target.value)
-              }
-              className="border rounded px-2 py-0.5 text-sm text-right w-28"
-            />
+            </div>
           )}
           {row.original.endingBalance !== effectiveEndingBalance && (
-            <span className="text-xs text-faint">
+            <span className="text-[10px] text-faint">
               was {formatCurrency(row.original.endingBalance)}
             </span>
           )}
@@ -409,23 +432,26 @@ function AccountFormRow({
 
         {/* Gain/loss */}
         <div className="flex items-center gap-1.5">
-          <span className="text-muted">Gain/Loss:</span>
+          <span className="text-xs text-muted">Gain/Loss:</span>
           {row.gainLossOverride ? (
             <>
-              <input
-                type="number"
-                step="0.01"
-                value={row.yearlyGainLoss}
-                onChange={(e) =>
-                  onFieldChange(id, "yearlyGainLoss", e.target.value)
-                }
-                className="border rounded px-2 py-0.5 text-sm text-right w-28"
-              />
-              <span className="text-xs text-amber-600 italic">manual</span>
+              <div className="flex items-center border border-default rounded focus-within:ring-1 focus-within:ring-blue-500">
+                <span className="pl-1.5 text-xs text-muted select-none">$</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={row.yearlyGainLoss}
+                  onChange={(e) =>
+                    onFieldChange(id, "yearlyGainLoss", e.target.value)
+                  }
+                  className="w-24 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none"
+                />
+              </div>
+              <span className="text-[10px] text-amber-600 italic">manual</span>
               <button
                 type="button"
                 onClick={() => onFieldChange(id, "gainLossOverride", false)}
-                className="text-xs text-blue-600 hover:text-blue-800"
+                className="text-[10px] text-blue-600 hover:text-blue-800"
               >
                 reset
               </button>
@@ -433,7 +459,7 @@ function AccountFormRow({
           ) : (
             <>
               <span
-                className={`font-medium ${gainLoss >= 0 ? "text-green-600" : "text-red-600"}`}
+                className={`text-sm font-semibold tabular-nums ${gainLoss >= 0 ? "text-green-600" : "text-red-600"}`}
               >
                 {formatCurrency(gainLoss)}
               </span>
@@ -473,8 +499,8 @@ function AccountFormRow({
   );
 }
 
-/** Small labeled number input with "was" hint. */
-function FieldInput({
+/** Small labeled currency input with $ prefix, zero-value dimming, and "was" hint. */
+function CompactCurrencyField({
   label,
   value,
   originalValue,
@@ -486,6 +512,7 @@ function FieldInput({
   onChange: (value: string) => void;
 }) {
   const numValue = parseFloat(value) || 0;
+  const isZero = numValue === 0 && originalValue === 0;
   const changed = numValue !== originalValue;
 
   return (
@@ -493,13 +520,18 @@ function FieldInput({
       <label className="block text-[10px] font-medium text-muted mb-0.5">
         {label}
       </label>
-      <input
-        type="number"
-        step="0.01"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="border rounded px-2 py-0.5 text-sm text-right w-full"
-      />
+      <div
+        className={`flex items-center border border-default rounded focus-within:ring-1 focus-within:ring-blue-500 transition-opacity${isZero ? " opacity-40 focus-within:opacity-100" : ""}`}
+      >
+        <span className="pl-1.5 text-xs text-muted select-none">$</span>
+        <input
+          type="number"
+          step="0.01"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="flex-1 min-w-0 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none"
+        />
+      </div>
       {changed && originalValue !== 0 && (
         <div className="text-[10px] text-faint text-right">
           was {formatCurrency(originalValue)}

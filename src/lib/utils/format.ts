@@ -152,19 +152,26 @@ export function accountDisplayName(
 ): string {
   // Priority 1: user-set friendly name
   if (account.displayName) return account.displayName;
+
+  // Joint accounts always show "Joint" prefix; individual accounts use the
+  // provided ownerName. When ownershipType is absent the caller's ownerName
+  // is used as-is (backward-compat for objects that don't carry the field).
+  const effectiveOwner =
+    account.ownershipType === "joint" ? "Joint" : ownerName;
+
   // Priority 2: programmatic label (stored on performanceAccounts)
   if (account.accountLabel) {
-    // When an owner name is provided and the label doesn't already include it,
-    // rebuild with the owner prefix so duplicate account types (e.g. two IRAs
-    // at the same institution) are distinguishable.
+    // Rebuild with the correct prefix when the stored label doesn't already
+    // start with it. This corrects labels stored before the joint-prefix rule
+    // was introduced without requiring a DB migration.
     if (
-      ownerName &&
-      !account.accountLabel.startsWith(ownerName) &&
+      effectiveOwner &&
+      !account.accountLabel.startsWith(effectiveOwner) &&
       account.accountType &&
       account.institution
     ) {
       return buildAccountLabel({
-        ownerName,
+        ownerName: effectiveOwner,
         accountType: account.accountType,
         subType: account.subType,
         label: account.label,
@@ -176,7 +183,7 @@ export function accountDisplayName(
   // Priority 3: construct on the fly (fallback for objects without accountLabel)
   if (account.accountType && account.institution) {
     return buildAccountLabel({
-      ownerName,
+      ownerName: effectiveOwner,
       accountType: account.accountType,
       subType: account.subType,
       label: account.label,
@@ -189,7 +196,7 @@ export function accountDisplayName(
       account.accountType,
       account.subType,
     );
-    return ownerName ? `${ownerName} ${displayLabel}` : displayLabel;
+    return effectiveOwner ? `${effectiveOwner} ${displayLabel}` : displayLabel;
   }
   return "Unknown";
 }

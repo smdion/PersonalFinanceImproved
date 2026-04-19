@@ -420,7 +420,7 @@ export function ScenarioBar() {
       />
       <div className="w-px h-4 bg-surface-strong" />
       <ProfilePill
-        label="Contrib"
+        label="Contributions"
         options={contribOptions}
         onActivate={(id) => setActiveContribId(Number(id))}
       />

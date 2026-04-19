@@ -34,6 +34,7 @@ import {
   HelpCircle,
   Layers,
   Database,
+  PieChart,
   type LucideIcon,
 } from "lucide-react";
 
@@ -85,6 +86,7 @@ const navStructure: NavEntry[] = [
     items: [
       { href: "/retirement", label: "Retirement", Icon: Palmtree },
       { href: "/contributions", label: "Contributions", Icon: Layers },
+      { href: "/analytics", label: "Analytics", Icon: PieChart },
       { href: "/tools", label: "Tools", Icon: Wrench },
     ],
   },

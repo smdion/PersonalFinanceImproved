@@ -565,8 +565,8 @@ function HistoricalTable({
             {showPerf && (
               <>
                 <ColHeader border>Beg Bal</ColHeader>
-                <ColHeader>Contribs</ColHeader>
-                <ColHeader>Match</ColHeader>
+                <ColHeader>Total Contributions</ColHeader>
+                <ColHeader>Employer Match</ColHeader>
                 <ColHeader>Gain/Loss</ColHeader>
                 <ColHeader>End Bal</ColHeader>
                 <ColHeader>Return %</ColHeader>

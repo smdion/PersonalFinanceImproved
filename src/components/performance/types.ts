@@ -138,9 +138,11 @@ export type UpdateFormRow = {
   accountPerformanceId: number;
   performanceAccountId: number | null;
   displayName: string;
+  institution: string;
   parentCategory: string;
   beginningBalance: number;
-  totalContributions: string;
+  /** Employee-only portion of contributions (totalContributions - employerContributions). */
+  employeeContrib: string;
   employerContributions: string;
   distributions: string;
   rollovers: string;
@@ -152,7 +154,7 @@ export type UpdateFormRow = {
   snapshotEndingBalance: number | null;
   /** Original DB values at form open, for "was" hints. */
   original: {
-    totalContributions: number;
+    employeeContrib: number;
     employerContributions: number;
     distributions: number;
     rollovers: number;

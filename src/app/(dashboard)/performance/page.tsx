@@ -13,6 +13,7 @@ import {
   type PerfCategory,
 } from "@/lib/config/display-labels";
 import { PageHeader } from "@/components/ui/page-header";
+import { SlidePanel } from "@/components/ui/slide-panel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
 import {
@@ -198,16 +199,22 @@ export default function PerformancePage() {
         />
       )}
 
-      {canEdit && showUpdatePerformance && currentYear && (
-        <UpdatePerformanceForm
-          currentYear={currentYear}
-          accountRows={accountRows}
+      {canEdit && currentYear && (
+        <SlidePanel
+          open={showUpdatePerformance}
           onClose={() => setShowUpdatePerformance(false)}
-          onSaved={() => {
-            setShowUpdatePerformance(false);
-            utils.performance.computeSummary.invalidate();
-          }}
-        />
+          title={`Update Performance (${currentYear})`}
+        >
+          <UpdatePerformanceForm
+            currentYear={currentYear}
+            accountRows={accountRows}
+            onClose={() => setShowUpdatePerformance(false)}
+            onSaved={() => {
+              setShowUpdatePerformance(false);
+              utils.performance.computeSummary.invalidate();
+            }}
+          />
+        </SlidePanel>
       )}
 
       <CategoryTabs

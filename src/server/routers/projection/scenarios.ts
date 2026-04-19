@@ -326,8 +326,9 @@ export const scenariosRouter = createTRPCRouter({
             catAccts.find(
               (a) => (exactOwner(a) || noOwner(a)) && parentCatMatch(a),
             );
-          // Fallback: use linked performance account's display name
-          // Pass the contributor's ownerName so joint accounts show the correct person
+          // Fallback: use linked performance account's display name.
+          // perfAcct includes ownershipType so accountDisplayName applies
+          // "Joint" prefix for joint accounts automatically.
           const perfAcct = contrib?.performanceAccountId
             ? perfAccountMap.get(contrib.performanceAccountId)
             : undefined;
@@ -338,8 +339,7 @@ export const scenariosRouter = createTRPCRouter({
             ...rest,
             personId,
             parentCategory,
-            // Prefer perf account name (uses contributor's ownerName for joint accounts),
-            // fall back to portfolio match name
+            // Prefer perf account name, fall back to portfolio match name
             accountDisplayName: perfFallback ?? matchedAcct?.name,
           };
         }),

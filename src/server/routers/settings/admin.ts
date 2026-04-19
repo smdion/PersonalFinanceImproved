@@ -575,8 +575,10 @@ export const adminProcedures = {
       .input(performanceAccountInput)
       .mutation(async ({ ctx, input }) => {
         // Resolve owner name for programmatic label
-        let ownerName: string | null = null;
-        if (input.ownerPersonId) {
+        // Joint accounts always get "Joint" prefix; individual accounts get person name.
+        let ownerName: string | null =
+          input.ownershipType === "joint" ? "Joint" : null;
+        if (input.ownershipType !== "joint" && input.ownerPersonId) {
           const [person] = await ctx.db
             .select({ name: schema.people.name })
             .from(schema.people)
@@ -610,8 +612,10 @@ export const adminProcedures = {
       )
       .mutation(async ({ ctx, input: { id, ...data } }) => {
         // Resolve owner name for programmatic label
-        let ownerName: string | null = null;
-        if (data.ownerPersonId) {
+        // Joint accounts always get "Joint" prefix; individual accounts get person name.
+        let ownerName: string | null =
+          data.ownershipType === "joint" ? "Joint" : null;
+        if (data.ownershipType !== "joint" && data.ownerPersonId) {
           const [person] = await ctx.db
             .select({ name: schema.people.name })
             .from(schema.people)
@@ -855,17 +859,11 @@ export const adminProcedures = {
             }
           }
 
-          // Recompute annual_performance category rollups for this year
+          // Recompute annual_performance category rollups for this year.
+          // Do NOT stamp performance_last_updated — snapshot saves are independent
+          // of performance tracking; only explicit performance edits should move that date.
           if (perfTotals.size > 0) {
             await recomputeAnnualRollups(tx, snapshotYear);
-            const now = new Date().toISOString();
-            await tx
-              .insert(schema.appSettings)
-              .values({ key: "performance_last_updated", value: now })
-              .onConflictDoUpdate({
-                target: schema.appSettings.key,
-                set: { value: now },
-              });
           }
 
           return snap;

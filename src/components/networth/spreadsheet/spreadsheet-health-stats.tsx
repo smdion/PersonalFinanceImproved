@@ -73,11 +73,10 @@ const STAT_ROWS: RowDef[] = [
     accessor: (r, ann) => {
       const cat = r.performanceByCategory[PERF_CATEGORY_DEFAULT];
       if (!cat || r.grossIncome <= 0) return 0;
-      const total = cat.contributions + cat.employerMatch;
       const contribs =
         ann && r.isCurrent && r.ytdRatio > 0 && r.ytdRatio < 1
-          ? total / r.ytdRatio
-          : total;
+          ? cat.contributions / r.ytdRatio
+          : cat.contributions;
       return contribs / r.grossIncome;
     },
     isFlowMetric: true,
