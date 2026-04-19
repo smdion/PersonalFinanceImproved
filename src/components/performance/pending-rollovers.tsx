@@ -269,23 +269,25 @@ function PendingRolloverRow({
   );
 }
 
-/** Small badge shown on individual account rows in the performance table. */
+/**
+ * Small badge shown on individual account rows in the performance table.
+ * For "out": pass the account_performance.id (sourceAccountPerformanceId FK).
+ * For "in": pass the performance_accounts.id (destinationPerformanceAccountId FK).
+ */
 export function PendingRolloverBadge({
-  accountPerformanceId,
+  id,
   pendingRollovers,
   direction,
 }: {
-  accountPerformanceId: number;
+  id: number;
   pendingRollovers: PendingRollover[];
   direction: "out" | "in";
 }) {
   const relevant =
     direction === "out"
-      ? pendingRollovers.filter(
-          (pr) => pr.sourceAccountPerformanceId === accountPerformanceId,
-        )
+      ? pendingRollovers.filter((pr) => pr.sourceAccountPerformanceId === id)
       : pendingRollovers.filter(
-          (pr) => pr.destinationPerformanceAccountId === accountPerformanceId,
+          (pr) => pr.destinationPerformanceAccountId === id,
         );
 
   if (relevant.length === 0) return null;
