@@ -45,6 +45,7 @@ import {
 } from "@/components/savings/api-sync-section";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { usePerColumnPaycheck } from "@/lib/hooks/use-per-column-paycheck";
+import { useUpdatePlannedTx } from "@/components/savings/use-update-planned-tx";
 import {
   computeMaxMonthlyFunding,
   type CapacityPerson,
@@ -155,6 +156,8 @@ export default function SavingsPage() {
       setShowTransferForm(false);
     },
   });
+  const { onUpdateTx: updateTxFn, isPending: updateTxPending } =
+    useUpdatePlannedTx();
 
   // ── Ref for FundManagementSection callbacks (goal updates used by other sections) ──
   const fundCallbacksRef = useRef<FundManagementCallbacks | null>(null);
@@ -559,6 +562,8 @@ export default function SavingsPage() {
               savingsGoals={savings.goals}
               plannedTransactions={plannedTransactions}
               monthDates={monthDates}
+              onUpdateTx={updateTxFn}
+              updateTxPending={updateTxPending}
             />
           )}
         </section>
@@ -627,6 +632,7 @@ export default function SavingsPage() {
           goalById={goalById}
           childGoalsByParent={childGoalsByParent}
           apiBalanceMap={apiBalanceMap}
+          apiServiceName={apiBalancesData?.service}
           canEdit={canEdit}
           onEditMonth={setEditingMonth}
           onDeleteOverride={apiSync.onDeleteOverride}
