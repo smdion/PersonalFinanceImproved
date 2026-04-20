@@ -446,8 +446,11 @@ export function runDecumulationYear(
     brokerageTaxCost = roundToCents(
       computeLtcgTax(revisedOrdinary, brokerageGainsPortion, filingStatus),
     );
-    postConversionLtcgRate =
-      brokerageGainsPortion > 0 ? brokerageTaxCost / brokerageGainsPortion : 0;
+    // Marginal rate at the top of the gains stack — display only, tax is in brokerageTaxCost
+    postConversionLtcgRate = getLtcgRate(
+      revisedOrdinary + brokerageGainsPortion,
+      filingStatus,
+    );
     // Recompute taxCost with revised brokerage tax
     taxCost = roundToCents(
       totalTraditionalWithdrawal * actualTraditionalRate +
@@ -456,14 +459,16 @@ export function runDecumulationYear(
         brokerageTaxCost,
     );
   } else {
-    // When no brokerage gains exist, use marginal LTCG rate as a display fallback
-    // for post-withdrawal optimizer. No tax is actually computed from this value.
+    // Display-only: marginal bracket at the ceiling of the gains stack.
+    // No tax is actually computed from this value.
     postConversionLtcgRate =
-      brokerageGainsPortion > 0
-        ? brokerageTaxCost / brokerageGainsPortion
-        : filingStatus
-          ? getLtcgRate(actualTaxableIncome, filingStatus)
-          : taxRates.brokerage;
+      brokerageGainsPortion > 0 && filingStatus
+        ? getLtcgRate(actualTaxableIncome + brokerageGainsPortion, filingStatus)
+        : brokerageGainsPortion > 0
+          ? taxRates.brokerage
+          : filingStatus
+            ? getLtcgRate(actualTaxableIncome, filingStatus)
+            : taxRates.brokerage;
   }
 
   // --- NIIT (Net Investment Income Tax, 3.8% surtax) ---

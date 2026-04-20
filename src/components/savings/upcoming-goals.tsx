@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { formatCurrency } from "@/lib/utils/format";
 import { FUND_COLORS } from "./fund-colors";
-import { GoalProjection, monthKey } from "./types";
+import { GoalProjection, monthKey, PlannedTxForm } from "./types";
 
 interface PlannedTransaction {
   id: number;
@@ -12,6 +12,7 @@ interface PlannedTransaction {
   amount: number;
   description: string;
   isRecurring: boolean;
+  recurrenceMonths: number | null;
   transferPairId?: string | null;
 }
 
@@ -27,12 +28,16 @@ interface SavingsGoalSummary {
 
 interface UpcomingItem {
   type: "expense" | "target_reached";
+  txId?: number;
+  goalId?: number;
   fundName: string;
   fundColor: string;
   date: Date;
   monthsAway: number;
   amount: number;
   description: string;
+  isRecurring?: boolean;
+  recurrenceMonths?: number | null;
   /** Balance at that point in time */
   projectedBalance: number;
   /** For expenses: will the fund cover it? */
@@ -70,11 +75,15 @@ export function UpcomingGoals({
   savingsGoals,
   plannedTransactions,
   monthDates,
+  onUpdateTx,
+  updateTxPending: _updateTxPending,
 }: {
   goalProjections: GoalProjection[];
   savingsGoals: SavingsGoalSummary[];
   plannedTransactions: PlannedTransaction[];
   monthDates: Date[];
+  onUpdateTx?: (id: number, form: PlannedTxForm) => Promise<void> | void;
+  updateTxPending?: boolean; // reserved for callers; row uses local submitting state
 }) {
   const now = new Date();
   const items: UpcomingItem[] = [];
@@ -97,12 +106,16 @@ export function UpcomingGoals({
       const projBal = mi >= 0 ? gp.balances[mi]! : gp.current;
       items.push({
         type: "expense",
+        txId: tx.id,
+        goalId: tx.goalId,
         fundName: gp.name,
         fundColor: color,
         date: txDate,
         monthsAway: months,
         amount: Math.abs(tx.amount),
         description: tx.description,
+        isRecurring: tx.isRecurring,
+        recurrenceMonths: tx.recurrenceMonths,
         projectedBalance: projBal,
         funded: projBal >= 0,
       });
@@ -137,6 +150,9 @@ export function UpcomingGoals({
 
   const INITIAL_SHOW = 4;
   const [showAll, setShowAll] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<PlannedTxForm | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // Sort by date (soonest first)
   items.sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -162,115 +178,277 @@ export function UpcomingGoals({
       </div>
 
       <div className="space-y-2.5">
-        {visibleItems.map((item) => (
-          <div
-            key={`${item.fundName}-${item.type}-${item.date.getTime()}`}
-            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 border ${
-              item.type === "expense"
-                ? item.funded
-                  ? "border bg-surface-sunken"
-                  : "border-red-300/50 bg-red-50"
-                : "border-green-300/30 bg-green-50"
-            }`}
-          >
-            {/* Fund color dot */}
+        {visibleItems.map((item) => {
+          const isEditing = item.txId !== undefined && editingId === item.txId;
+
+          if (isEditing && editForm) {
+            return (
+              <div
+                key={`${item.txId ?? ""}-${item.fundName}-${item.type}-${item.date.getTime()}`}
+                className="border rounded-lg p-3 bg-surface-primary/50"
+              >
+                <p className="text-xs font-medium text-faint mb-2">
+                  Edit — {item.fundName}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-xs text-faint mb-1">
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      value={editForm.transactionDate}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          transactionDate: e.target.value,
+                        })
+                      }
+                      className="w-full border bg-surface-elevated text-primary rounded px-2 py-1 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-faint mb-1">
+                      Amount (negative = spending)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editForm.amount}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, amount: e.target.value })
+                      }
+                      className="w-full border bg-surface-elevated text-primary rounded px-2 py-1 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-faint mb-1">
+                      Description
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.description}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          description: e.target.value,
+                        })
+                      }
+                      className="w-full border bg-surface-elevated text-primary rounded px-2 py-1 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-faint mb-1">
+                      Recurring?
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={editForm.isRecurring}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            isRecurring: e.target.checked,
+                          })
+                        }
+                      />
+                      {editForm.isRecurring && (
+                        <input
+                          type="number"
+                          value={editForm.recurrenceMonths}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              recurrenceMonths: e.target.value,
+                            })
+                          }
+                          placeholder="every N months"
+                          className="border bg-surface-elevated text-primary rounded px-2 py-1 text-sm w-24"
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={async () => {
+                      if (
+                        !editForm.transactionDate ||
+                        !editForm.amount ||
+                        !editForm.description
+                      )
+                        return;
+                      if (editForm.isRecurring && !editForm.recurrenceMonths)
+                        return;
+                      setSubmitting(true);
+                      try {
+                        await onUpdateTx?.(item.txId!, editForm);
+                        setEditingId(null);
+                        setEditForm(null);
+                      } finally {
+                        setSubmitting(false);
+                      }
+                    }}
+                    disabled={
+                      submitting ||
+                      (editForm.isRecurring && !editForm.recurrenceMonths)
+                    }
+                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {submitting ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingId(null);
+                      setEditForm(null);
+                    }}
+                    className="px-3 py-1 border text-faint rounded text-sm hover:bg-surface-elevated"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            );
+          }
+
+          return (
             <div
-              className="w-3 h-3 rounded-full shrink-0"
-              style={{ backgroundColor: item.fundColor }}
-            />
+              key={`${item.txId ?? ""}-${item.fundName}-${item.type}-${item.date.getTime()}`}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 border ${
+                item.type === "expense"
+                  ? item.funded
+                    ? "border bg-surface-sunken"
+                    : "border-red-300/50 bg-red-50"
+                  : "border-green-300/30 bg-green-50"
+              }`}
+            >
+              {/* Fund color dot */}
+              <div
+                className="w-3 h-3 rounded-full shrink-0"
+                style={{ backgroundColor: item.fundColor }}
+              />
 
-            {/* Icon — hidden on small screens to save space */}
-            <div className="shrink-0 hidden sm:block">
-              {item.type === "expense" ? (
-                <svg
-                  aria-hidden="true"
-                  className={`w-5 h-5 ${item.funded ? "text-blue-600" : "text-red-600"}`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  aria-hidden="true"
-                  className="w-5 h-5 text-green-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              )}
-            </div>
+              {/* Icon — hidden on small screens to save space */}
+              <div className="shrink-0 hidden sm:block">
+                {item.type === "expense" ? (
+                  <svg
+                    aria-hidden="true"
+                    className={`w-5 h-5 ${item.funded ? "text-blue-600" : "text-red-600"}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    aria-hidden="true"
+                    className="w-5 h-5 text-green-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                )}
+              </div>
 
-            {/* Details */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-primary truncate">
-                  {item.fundName}
-                </span>
-                <span
-                  className={`text-xs px-1.5 py-0.5 rounded ${
-                    item.type === "expense"
+              {/* Details */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-primary truncate">
+                    {item.fundName}
+                  </span>
+                  <span
+                    className={`text-xs px-1.5 py-0.5 rounded ${
+                      item.type === "expense"
+                        ? item.funded
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-red-100 text-red-700"
+                        : "bg-green-100 text-green-700"
+                    }`}
+                  >
+                    {item.type === "expense"
                       ? item.funded
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-red-100 text-red-700"
-                      : "bg-green-100 text-green-700"
+                        ? "Funded"
+                        : "Short"
+                      : "Goal met"}
+                  </span>
+                </div>
+                <p className="text-xs text-muted truncate">
+                  {item.description}
+                </p>
+              </div>
+
+              {/* Amount */}
+              <div className="text-right shrink-0">
+                <div
+                  className={`text-sm font-semibold tabular-nums ${
+                    item.type === "expense" ? "text-primary" : "text-green-600"
                   }`}
                 >
-                  {item.type === "expense"
-                    ? item.funded
-                      ? "Funded"
-                      : "Short"
-                    : "Goal met"}
-                </span>
-              </div>
-              <p className="text-xs text-muted truncate">{item.description}</p>
-            </div>
-
-            {/* Amount */}
-            <div className="text-right shrink-0">
-              <div
-                className={`text-sm font-semibold tabular-nums ${
-                  item.type === "expense" ? "text-primary" : "text-green-600"
-                }`}
-              >
-                {item.type === "expense" ? "-" : ""}
-                {formatCurrency(item.amount)}
-              </div>
-              {item.type === "expense" && (
-                <div className="text-[10px] text-muted tabular-nums">
-                  bal: {formatCurrency(item.projectedBalance)}
+                  {item.type === "expense" ? "-" : ""}
+                  {formatCurrency(item.amount)}
                 </div>
-              )}
-            </div>
+                {item.type === "expense" && (
+                  <div className="text-[10px] text-muted tabular-nums">
+                    bal: {formatCurrency(item.projectedBalance)}
+                  </div>
+                )}
+              </div>
 
-            {/* Timeline */}
-            <div className="text-right shrink-0 w-[4.5rem]">
-              <div className="text-xs text-secondary font-medium">
-                {formatMonthYear(item.date)}
+              {/* Timeline */}
+              <div className="text-right shrink-0 w-[4.5rem]">
+                <div className="text-xs text-secondary font-medium">
+                  {formatMonthYear(item.date)}
+                </div>
+                <div className="text-[10px] text-muted">
+                  {item.monthsAway <= 0
+                    ? "This month"
+                    : item.monthsAway === 1
+                      ? "1 month"
+                      : `${item.monthsAway} months`}
+                </div>
               </div>
-              <div className="text-[10px] text-muted">
-                {item.monthsAway <= 0
-                  ? "This month"
-                  : item.monthsAway === 1
-                    ? "1 month"
-                    : `${item.monthsAway} months`}
-              </div>
+
+              {/* Edit button — only for editable expense rows */}
+              {item.type === "expense" &&
+                item.txId !== undefined &&
+                onUpdateTx && (
+                  <button
+                    onClick={() => {
+                      setEditingId(item.txId!);
+                      setEditForm({
+                        goalId: item.goalId!,
+                        transactionDate: `${item.date.getFullYear()}-${String(item.date.getMonth() + 1).padStart(2, "0")}-${String(item.date.getDate()).padStart(2, "0")}`,
+                        amount: String(-item.amount),
+                        description: item.description,
+                        isRecurring: item.isRecurring ?? false,
+                        recurrenceMonths:
+                          item.recurrenceMonths != null
+                            ? String(item.recurrenceMonths)
+                            : "",
+                      });
+                    }}
+                    className="text-muted/50 hover:text-blue-600 text-xs shrink-0"
+                    title="Edit"
+                  >
+                    ✎
+                  </button>
+                )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
