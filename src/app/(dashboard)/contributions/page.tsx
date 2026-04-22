@@ -13,7 +13,10 @@ import { accountColor } from "@/lib/utils/colors";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { useScenario } from "@/lib/context/scenario-context";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
-import { safeDivide } from "@/lib/utils/math";
+import {
+  isPortfolioParent,
+  isRetirementParent,
+} from "@/lib/config/account-types";
 
 type PeriodMode = "annual" | "monthly" | "per-period";
 
@@ -106,31 +109,59 @@ export default function ContributionsPage() {
         activePeople.length
       : 26;
 
-  // Household totals (view-mode-aware)
-  const totalRetirementWith = activePeople.reduce(
-    (s, p) => s + p.totals.views[viewMode].retirementWithMatch,
-    0,
-  );
-  const totalRetirementWithout = activePeople.reduce(
-    (s, p) => s + p.totals.views[viewMode].retirementWithoutMatch,
-    0,
-  );
-  const totalPortfolioWith = activePeople.reduce(
-    (s, p) => s + p.totals.views[viewMode].portfolioWithMatch,
-    0,
-  );
-  const totalPortfolioWithout = activePeople.reduce(
-    (s, p) => s + p.totals.views[viewMode].portfolioWithoutMatch,
-    0,
-  );
-  const totalWith = activePeople.reduce(
-    (s, p) => s + p.totals.views[viewMode].totalWithMatch,
-    0,
-  );
-  const totalWithout = activePeople.reduce(
-    (s, p) => s + p.totals.views[viewMode].totalWithoutMatch,
-    0,
-  );
+  // Joint account contributions split by parentCategory.
+  // jointAccountTypes carries per-account data; jointTotals carries the
+  // household aggregate. Both are already on the router response — the page
+  // was simply not reading them, causing joint brokerage to show 0% / $0.
+  const jointAccountTypes = data?.jointAccountTypes ?? [];
+  const jointTotals = data?.jointTotals ?? {
+    totalWithoutMatch: 0,
+    totalWithMatch: 0,
+  };
+  const jointRetirementWith = jointAccountTypes
+    .filter((a) => isRetirementParent(a.parentCategory))
+    .reduce((s, a) => s + a.totalContrib, 0);
+  const jointRetirementWithout = jointAccountTypes
+    .filter((a) => isRetirementParent(a.parentCategory))
+    .reduce((s, a) => s + a.employeeContrib, 0);
+  const jointPortfolioWith = jointAccountTypes
+    .filter((a) => isPortfolioParent(a.parentCategory))
+    .reduce((s, a) => s + a.totalContrib, 0);
+  const jointPortfolioWithout = jointAccountTypes
+    .filter((a) => isPortfolioParent(a.parentCategory))
+    .reduce((s, a) => s + a.employeeContrib, 0);
+
+  // Household totals (view-mode-aware) — include joint accounts in all three buckets
+  const totalRetirementWith =
+    activePeople.reduce(
+      (s, p) => s + p.totals.views[viewMode].retirementWithMatch,
+      0,
+    ) + jointRetirementWith;
+  const totalRetirementWithout =
+    activePeople.reduce(
+      (s, p) => s + p.totals.views[viewMode].retirementWithoutMatch,
+      0,
+    ) + jointRetirementWithout;
+  const totalPortfolioWith =
+    activePeople.reduce(
+      (s, p) => s + p.totals.views[viewMode].portfolioWithMatch,
+      0,
+    ) + jointPortfolioWith;
+  const totalPortfolioWithout =
+    activePeople.reduce(
+      (s, p) => s + p.totals.views[viewMode].portfolioWithoutMatch,
+      0,
+    ) + jointPortfolioWithout;
+  const totalWith =
+    activePeople.reduce(
+      (s, p) => s + p.totals.views[viewMode].totalWithMatch,
+      0,
+    ) + jointTotals.totalWithMatch;
+  const totalWithout =
+    activePeople.reduce(
+      (s, p) => s + p.totals.views[viewMode].totalWithoutMatch,
+      0,
+    ) + jointTotals.totalWithoutMatch;
   const totalEmployerMatch = totalWith - totalWithout;
 
   const pl = periodLabel(period);
@@ -199,27 +230,12 @@ export default function ContributionsPage() {
       {/* Household summary — rates from server (single source of truth) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         {(() => {
-          // Aggregate server-computed per-person rates weighted by compensation
-          const hhRateWith = (safeDivide(
-            activePeople.reduce(
-              (s, p) =>
-                s +
-                p.totals.views[viewMode].savingsRateWithMatch *
-                  (p.totalCompensation ?? p.salary),
-              0,
-            ),
-            combinedSalary,
-          ) ?? 0) as number;
-          const hhRateWithout = (safeDivide(
-            activePeople.reduce(
-              (s, p) =>
-                s +
-                p.totals.views[viewMode].savingsRateWithoutMatch *
-                  (p.totalCompensation ?? p.salary),
-              0,
-            ),
-            combinedSalary,
-          ) ?? 0) as number;
+          // Total savings rate — totalWith/Without already include joint accounts,
+          // so this naturally captures the full household picture.
+          const hhRateWith =
+            combinedSalary > 0 ? totalWith / combinedSalary : 0;
+          const hhRateWithout =
+            combinedSalary > 0 ? totalWithout / combinedSalary : 0;
           const retRateWith =
             combinedSalary > 0 ? totalRetirementWith / combinedSalary : 0;
           const retRateWithout =
@@ -585,6 +601,96 @@ export default function ContributionsPage() {
         </Card>
       ))}
 
+      {/* Joint accounts */}
+      {jointAccountTypes.length > 0 && (
+        <Card
+          title={`Joint — ${formatCurrency(toDisplay(jointTotals.totalWithMatch, avgPeriodsPerYear, period))}/yr`}
+          className="mb-6"
+        >
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-xs text-muted border-b">
+                <th className="text-left py-1 font-normal">Account</th>
+                <th className="text-right py-1 font-normal">Employee</th>
+                <th className="text-right py-1 font-normal">Match</th>
+                <th className="text-right py-1 font-normal">Limit</th>
+                <th className="text-left py-1 font-normal pl-4 w-48">
+                  Utilization
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {jointAccountTypes.map((a) => (
+                <tr key={a.accountType} className="border-b border-subtle">
+                  <td className="py-2">
+                    <span className="flex items-center gap-2">
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: accountColor(a.categoryKey) }}
+                      />
+                      <span>{a.accountType}</span>
+                    </span>
+                  </td>
+                  <td className="text-right py-2">
+                    {formatCurrency(
+                      toDisplay(
+                        a.views[viewMode].employeeContrib,
+                        avgPeriodsPerYear,
+                        period,
+                      ),
+                    )}
+                  </td>
+                  <td className="text-right py-2">
+                    {a.employerMatch > 0 ? (
+                      <span className="text-emerald-600">
+                        {formatCurrency(
+                          toDisplay(
+                            a.views[viewMode].employerMatch,
+                            avgPeriodsPerYear,
+                            period,
+                          ),
+                        )}
+                      </span>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </td>
+                  <td className="text-right py-2 text-muted">—</td>
+                  <td className="py-2 pl-4">
+                    <span className="text-xs text-muted">No limit</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2">
+                <td className="py-2 font-medium">Total</td>
+                <td className="text-right py-2 font-medium">
+                  {formatCurrency(
+                    toDisplay(
+                      jointTotals.totalWithoutMatch,
+                      avgPeriodsPerYear,
+                      period,
+                    ),
+                  )}
+                </td>
+                <td className="text-right py-2 font-medium text-emerald-600">
+                  {formatCurrency(
+                    toDisplay(
+                      jointTotals.totalWithMatch -
+                        jointTotals.totalWithoutMatch,
+                      avgPeriodsPerYear,
+                      period,
+                    ),
+                  )}
+                </td>
+                <td colSpan={2} />
+              </tr>
+            </tfoot>
+          </table>
+        </Card>
+      )}
+
       {/* Profile comparison */}
       {selectedProfileId && profileData && (
         <Card title="Profile Comparison" className="mb-6">
@@ -598,32 +704,49 @@ export default function ContributionsPage() {
               </tr>
             </thead>
             <tbody>
-              {[
-                {
-                  label: "Total (with match)",
-                  current: totalWith,
-                  profile: profileData.people.reduce(
-                    (s, p) => s + p.totals.views[viewMode].totalWithMatch,
-                    0,
-                  ),
-                },
-                {
-                  label: "Retirement",
-                  current: totalRetirementWith,
-                  profile: profileData.people.reduce(
-                    (s, p) => s + p.totals.views[viewMode].retirementWithMatch,
-                    0,
-                  ),
-                },
-                {
-                  label: "Portfolio",
-                  current: totalPortfolioWith,
-                  profile: profileData.people.reduce(
-                    (s, p) => s + p.totals.views[viewMode].portfolioWithMatch,
-                    0,
-                  ),
-                },
-              ].map((row) => {
+              {(() => {
+                const profileJointAccountTypes =
+                  profileData.jointAccountTypes ?? [];
+                const profileJointRetirementWith = profileJointAccountTypes
+                  .filter((a) => isRetirementParent(a.parentCategory))
+                  .reduce((s, a) => s + a.totalContrib, 0);
+                const profileJointPortfolioWith = profileJointAccountTypes
+                  .filter((a) => isPortfolioParent(a.parentCategory))
+                  .reduce((s, a) => s + a.totalContrib, 0);
+                const profileJointTotalWith =
+                  profileData.jointTotals?.totalWithMatch ?? 0;
+                return [
+                  {
+                    label: "Total (with match)",
+                    current: totalWith,
+                    profile:
+                      profileData.people.reduce(
+                        (s, p) => s + p.totals.views[viewMode].totalWithMatch,
+                        0,
+                      ) + profileJointTotalWith,
+                  },
+                  {
+                    label: "Retirement",
+                    current: totalRetirementWith,
+                    profile:
+                      profileData.people.reduce(
+                        (s, p) =>
+                          s + p.totals.views[viewMode].retirementWithMatch,
+                        0,
+                      ) + profileJointRetirementWith,
+                  },
+                  {
+                    label: "Portfolio",
+                    current: totalPortfolioWith,
+                    profile:
+                      profileData.people.reduce(
+                        (s, p) =>
+                          s + p.totals.views[viewMode].portfolioWithMatch,
+                        0,
+                      ) + profileJointPortfolioWith,
+                  },
+                ];
+              })().map((row) => {
                 const delta = row.profile - row.current;
                 return (
                   <tr key={row.label} className="border-b border-subtle">

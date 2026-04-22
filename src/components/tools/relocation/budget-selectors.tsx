@@ -102,7 +102,7 @@ export function RelocationBudgetSelectors({
               ))}
             </select>
             {currentMonths ? (
-              <span className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-1">
+              <span className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded px-2 py-1">
                 Weighted: {formatCurrency((currentWeighted ?? 0) / 12)}/mo
                 <span className="text-[10px] text-faint ml-1">
                   (
@@ -176,7 +176,7 @@ export function RelocationBudgetSelectors({
               ))}
             </select>
             {targetMonths ? (
-              <span className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-1">
+              <span className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded px-2 py-1">
                 Weighted: {formatCurrency((targetWeighted ?? 0) / 12)}/mo
                 <span className="text-[10px] text-faint ml-1">
                   (

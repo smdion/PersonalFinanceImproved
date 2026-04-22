@@ -68,7 +68,7 @@ export function RelocationYearAdjustments({
             return (
               <div
                 key={adj.id}
-                className="flex items-center gap-1 bg-blue-50 text-blue-700 rounded px-2 py-1 text-xs"
+                className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded px-2 py-1 text-xs"
               >
                 <span>
                   {adj.year}: {adjLabel}
@@ -169,7 +169,7 @@ export function RelocationYearAdjustments({
                   const totals = selectedProf?.columnTotals ?? [];
                   if (months) {
                     return (
-                      <span className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-1 self-end">
+                      <span className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded px-2 py-1 self-end">
                         Weighted:{" "}
                         {formatCurrency(
                           (selectedProf?.weightedAnnualTotal ?? 0) / 12,
