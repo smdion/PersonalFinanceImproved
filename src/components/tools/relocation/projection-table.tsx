@@ -107,11 +107,15 @@ export function RelocationProjectionTable({
                 <tr
                   key={row.year}
                   className={`border-b border-subtle ${
-                    row.hasAdjustment ? "bg-blue-50" : ""
-                  } ${row.age === r.currentFiAge ? "bg-green-50" : ""} ${
-                    row.age === r.relocationFiAge ? "bg-purple-50" : ""
-                  } ${row.age === r.earliestRelocateAge ? "bg-cyan-50" : ""} ${
-                    purchaseYears.has(row.year) ? "bg-orange-50" : ""
+                    row.hasAdjustment ? "bg-blue-50 dark:bg-blue-900/20" : ""
+                  } ${row.age === r.currentFiAge ? "bg-green-50 dark:bg-green-900/20" : ""} ${
+                    row.age === r.relocationFiAge
+                      ? "bg-purple-50 dark:bg-purple-900/20"
+                      : ""
+                  } ${row.age === r.earliestRelocateAge ? "bg-cyan-50 dark:bg-cyan-900/20" : ""} ${
+                    purchaseYears.has(row.year)
+                      ? "bg-orange-50 dark:bg-orange-900/20"
+                      : ""
                   }`}
                 >
                   <td className="py-1 pr-3">{row.year}</td>
@@ -173,24 +177,24 @@ export function RelocationProjectionTable({
       </div>
       <div className="mt-2 flex flex-wrap gap-3 text-[10px] text-faint">
         <span>
-          <span className="inline-block w-2 h-2 bg-green-200 rounded mr-1" />
+          <span className="inline-block w-2 h-2 bg-green-200 dark:bg-green-800/60 rounded mr-1" />
           FI = current FI age
         </span>
         <span>
-          <span className="inline-block w-2 h-2 bg-purple-200 rounded mr-1" />
+          <span className="inline-block w-2 h-2 bg-purple-200 dark:bg-purple-800/60 rounded mr-1" />
           FI-R = relocation FI age
         </span>
         <span>
-          <span className="inline-block w-2 h-2 bg-cyan-200 rounded mr-1" />
+          <span className="inline-block w-2 h-2 bg-cyan-200 dark:bg-cyan-800/60 rounded mr-1" />
           MOVE = earliest safe relocation
         </span>
         <span>
-          <span className="inline-block w-2 h-2 bg-blue-200 rounded mr-1" />* =
-          expense adjustment
+          <span className="inline-block w-2 h-2 bg-blue-200 dark:bg-blue-800/60 rounded mr-1" />
+          * = expense adjustment
         </span>
         <span>
-          <span className="inline-block w-2 h-2 bg-orange-200 rounded mr-1" />$
-          = large purchase
+          <span className="inline-block w-2 h-2 bg-orange-200 dark:bg-orange-800/60 rounded mr-1" />
+          $ = large purchase
         </span>
       </div>
     </div>
