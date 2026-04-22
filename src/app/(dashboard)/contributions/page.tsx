@@ -601,6 +601,96 @@ export default function ContributionsPage() {
         </Card>
       ))}
 
+      {/* Joint accounts */}
+      {jointAccountTypes.length > 0 && (
+        <Card
+          title={`Joint — ${formatCurrency(toDisplay(jointTotals.totalWithMatch, avgPeriodsPerYear, period))}/yr`}
+          className="mb-6"
+        >
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-xs text-muted border-b">
+                <th className="text-left py-1 font-normal">Account</th>
+                <th className="text-right py-1 font-normal">Employee</th>
+                <th className="text-right py-1 font-normal">Match</th>
+                <th className="text-right py-1 font-normal">Limit</th>
+                <th className="text-left py-1 font-normal pl-4 w-48">
+                  Utilization
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {jointAccountTypes.map((a) => (
+                <tr key={a.accountType} className="border-b border-subtle">
+                  <td className="py-2">
+                    <span className="flex items-center gap-2">
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: accountColor(a.categoryKey) }}
+                      />
+                      <span>{a.accountType}</span>
+                    </span>
+                  </td>
+                  <td className="text-right py-2">
+                    {formatCurrency(
+                      toDisplay(
+                        a.views[viewMode].employeeContrib,
+                        avgPeriodsPerYear,
+                        period,
+                      ),
+                    )}
+                  </td>
+                  <td className="text-right py-2">
+                    {a.employerMatch > 0 ? (
+                      <span className="text-emerald-600">
+                        {formatCurrency(
+                          toDisplay(
+                            a.views[viewMode].employerMatch,
+                            avgPeriodsPerYear,
+                            period,
+                          ),
+                        )}
+                      </span>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </td>
+                  <td className="text-right py-2 text-muted">—</td>
+                  <td className="py-2 pl-4">
+                    <span className="text-xs text-muted">No limit</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2">
+                <td className="py-2 font-medium">Total</td>
+                <td className="text-right py-2 font-medium">
+                  {formatCurrency(
+                    toDisplay(
+                      jointTotals.totalWithoutMatch,
+                      avgPeriodsPerYear,
+                      period,
+                    ),
+                  )}
+                </td>
+                <td className="text-right py-2 font-medium text-emerald-600">
+                  {formatCurrency(
+                    toDisplay(
+                      jointTotals.totalWithMatch -
+                        jointTotals.totalWithoutMatch,
+                      avgPeriodsPerYear,
+                      period,
+                    ),
+                  )}
+                </td>
+                <td colSpan={2} />
+              </tr>
+            </tfoot>
+          </table>
+        </Card>
+      )}
+
       {/* Profile comparison */}
       {selectedProfileId && profileData && (
         <Card title="Profile Comparison" className="mb-6">
