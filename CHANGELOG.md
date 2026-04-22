@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Contributions page Portfolio and Retirement cards now include joint accounts.** Joint brokerage and joint retirement contributions were excluded from the summary card totals and savings rate calculations, showing $0 and 0% for households with joint accounts.
 - **Brokerage page now uses the active contribution profile when projecting.** If a contribution profile was selected, the Funding Sources card reflected it but the projection engine was still using live contribution data — causing the two panels to show different numbers for the same scenario. They now use the same inputs.
 - **Contributions Profile Comparison now includes joint accounts.** The Profile and Current columns in the Profile Comparison table were asymmetric — Current included joint account contributions but the Profile column did not, producing a false delta for households with joint brokerage or retirement accounts.
+- **Contributions page now shows a Joint section for joint accounts.** Accounts not tied to a specific person (e.g., joint brokerage) were counted in totals but never displayed as their own breakdown card. A Joint section now appears after the per-person sections showing each account's employee contribution, employer match, and total.
 
 ---
 
