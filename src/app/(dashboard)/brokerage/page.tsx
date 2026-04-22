@@ -689,7 +689,7 @@ function contributionTooltip(yr: BrokerageGoalYear): TooltipData {
           proRate: {
             months: Math.round(yr.proRateFraction * 12),
             annualAmount: Math.round(
-              safeDivide(yr.contribution, yr.proRateFraction!),
+              safeDivide(yr.contribution, yr.proRateFraction!) ?? 0,
             ),
             proRatedAmount: yr.contribution,
           },
