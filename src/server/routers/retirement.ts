@@ -15,7 +15,6 @@ import {
   computeEmployerMatch,
 } from "@/server/helpers";
 import { isRetirementParent } from "@/lib/config/account-types";
-import { PERF_CATEGORY_DEFAULT } from "@/lib/config/display-labels";
 import { getAge } from "@/lib/utils/date";
 import { roundToCents } from "@/lib/utils/math";
 
@@ -119,16 +118,13 @@ export const retirementRouter = createTRPCRouter({
         ctx.db.select().from(schema.performanceAccounts),
       ]);
       // Filter to Retirement-only contributions for the relocation tool.
-      // audit-exception: literal "401k/IRA" string compare is intentional here
-      // for visual filtering and is allowed to bypass the parent-category
-      // predicate rule.
       const perfCatMap = new Map(
         perfAccounts.map((p) => [p.id, p.parentCategory]),
       );
       const allContribs = allContribsRaw.filter(
         (c) =>
           c.performanceAccountId != null &&
-          perfCatMap.get(c.performanceAccountId) === PERF_CATEGORY_DEFAULT,
+          isRetirementParent(perfCatMap.get(c.performanceAccountId)),
       );
 
       const primaryPerson = people.find((p) => p.isPrimaryUser) ?? people[0];
