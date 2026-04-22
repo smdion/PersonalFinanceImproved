@@ -614,32 +614,49 @@ export default function ContributionsPage() {
               </tr>
             </thead>
             <tbody>
-              {[
-                {
-                  label: "Total (with match)",
-                  current: totalWith,
-                  profile: profileData.people.reduce(
-                    (s, p) => s + p.totals.views[viewMode].totalWithMatch,
-                    0,
-                  ),
-                },
-                {
-                  label: "Retirement",
-                  current: totalRetirementWith,
-                  profile: profileData.people.reduce(
-                    (s, p) => s + p.totals.views[viewMode].retirementWithMatch,
-                    0,
-                  ),
-                },
-                {
-                  label: "Portfolio",
-                  current: totalPortfolioWith,
-                  profile: profileData.people.reduce(
-                    (s, p) => s + p.totals.views[viewMode].portfolioWithMatch,
-                    0,
-                  ),
-                },
-              ].map((row) => {
+              {(() => {
+                const profileJointAccountTypes =
+                  profileData.jointAccountTypes ?? [];
+                const profileJointRetirementWith = profileJointAccountTypes
+                  .filter((a) => isRetirementParent(a.parentCategory))
+                  .reduce((s, a) => s + a.totalContrib, 0);
+                const profileJointPortfolioWith = profileJointAccountTypes
+                  .filter((a) => isPortfolioParent(a.parentCategory))
+                  .reduce((s, a) => s + a.totalContrib, 0);
+                const profileJointTotalWith =
+                  profileData.jointTotals?.totalWithMatch ?? 0;
+                return [
+                  {
+                    label: "Total (with match)",
+                    current: totalWith,
+                    profile:
+                      profileData.people.reduce(
+                        (s, p) => s + p.totals.views[viewMode].totalWithMatch,
+                        0,
+                      ) + profileJointTotalWith,
+                  },
+                  {
+                    label: "Retirement",
+                    current: totalRetirementWith,
+                    profile:
+                      profileData.people.reduce(
+                        (s, p) =>
+                          s + p.totals.views[viewMode].retirementWithMatch,
+                        0,
+                      ) + profileJointRetirementWith,
+                  },
+                  {
+                    label: "Portfolio",
+                    current: totalPortfolioWith,
+                    profile:
+                      profileData.people.reduce(
+                        (s, p) =>
+                          s + p.totals.views[viewMode].portfolioWithMatch,
+                        0,
+                      ) + profileJointPortfolioWith,
+                  },
+                ];
+              })().map((row) => {
                 const delta = row.profile - row.current;
                 return (
                   <tr key={row.label} className="border-b border-subtle">
