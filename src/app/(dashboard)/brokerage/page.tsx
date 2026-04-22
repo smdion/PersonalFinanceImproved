@@ -31,6 +31,8 @@ import {
   LumpSumBadge,
 } from "@/components/cards/projection/lump-sum-form";
 import { isPortfolioParent } from "@/lib/config/account-types";
+import { sumBy, safeDivide } from "@/lib/utils/math";
+import { SkeletonTable } from "@/components/ui/skeleton";
 
 export default function BrokeragePage() {
   const user = useUser();
@@ -111,6 +113,9 @@ export default function BrokeragePage() {
     ...(accumOverridesFromLumpSums.length > 0
       ? { accumulationOverrides: accumOverridesFromLumpSums }
       : {}),
+    ...(activeProfileId != null
+      ? { contributionProfileId: activeProfileId }
+      : {}),
   };
   const contribInput = {
     ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
@@ -124,10 +129,11 @@ export default function BrokeragePage() {
   const { data: contribData } =
     trpc.contribution.computeSummary.useQuery(contribInput);
   const { data: brokerageData } = trpc.brokerage.computeSummary.useQuery();
+  const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
   const upsertSetting = trpc.settings.appSettings.upsert.useMutation({
     onSuccess: () => utils.invalidate(),
   });
-  const [showGoals, setShowGoals] = useState(false);
+  const [isGoalsOpen, setIsGoalsOpen] = useState(false);
   const [dollarMode, setDollarMode] = useState<"nominal" | "real">("nominal");
 
   if (isLoading) {
@@ -137,9 +143,7 @@ export default function BrokeragePage() {
           title="Brokerage Projection"
           subtitle="Non-retirement investment accounts"
         />
-        <div className="text-faint text-sm mt-8 text-center">
-          Loading projection...
-        </div>
+        <SkeletonTable rows={12} className="mt-4" />
       </div>
     );
   }
@@ -171,7 +175,6 @@ export default function BrokeragePage() {
     asOfDate: new Date(),
     goals: data.brokerageGoals ?? [],
     engineYears: data.result.projectionByYear,
-    parentCategoryFilter: "Portfolio",
   };
   const brokerageResult = calculateBrokerageGoals(brokerageGoalsInput);
 
@@ -208,10 +211,7 @@ export default function BrokeragePage() {
   };
 
   // Funding sources
-  const totalDirectContrib = portfolioAccounts.reduce(
-    (s, at) => s + at.totalContrib,
-    0,
-  );
+  const totalDirectContrib = sumBy(portfolioAccounts, (at) => at.totalContrib);
   const firstYear = brokerageResult.projectionByYear[0];
   const totalOverflow = firstYear?.overflow ?? 0;
   const accYears = data.result.projectionByYear.filter(
@@ -222,12 +222,42 @@ export default function BrokeragePage() {
     | undefined;
   const brokerageRamp = firstAccYear?.brokerageRampContribution ?? 0;
 
+  const activeProfileName =
+    activeProfileId != null
+      ? (contribProfiles?.find((p) => p.id === activeProfileId)?.name ?? null)
+      : null;
+  const hasContextOverrides =
+    activeProfileName != null || salaryOverrides.length > 0;
+
   return (
     <div>
       <PageHeader
         title="Brokerage Projection"
         subtitle="Non-retirement investment accounts"
       />
+
+      {hasContextOverrides && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-subtle bg-surface-secondary px-4 py-2 text-xs text-muted">
+          <span className="font-medium text-secondary">Projection basis:</span>
+          {activeProfileName != null && (
+            <span>
+              Contribution profile:{" "}
+              <span className="font-medium text-primary">
+                {activeProfileName}
+              </span>
+            </span>
+          )}
+          {salaryOverrides.length > 0 && (
+            <span>
+              Salary overrides:{" "}
+              <span className="font-medium text-primary">
+                {salaryOverrides.length} active
+              </span>
+            </span>
+          )}
+          <HelpTip text="These settings are applied to both the funding summary and the year-by-year projection. Change them on the Paycheck page." />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
         {/* Funding Sources */}
@@ -280,17 +310,17 @@ export default function BrokeragePage() {
             </div>
             <button
               type="button"
-              onClick={() => setShowGoals(!showGoals)}
+              onClick={() => setIsGoalsOpen(!isGoalsOpen)}
               className={`text-xs font-medium px-3 py-1 rounded transition-colors ${
-                showGoals
+                isGoalsOpen
                   ? "bg-surface-strong text-muted hover:text-primary"
                   : "bg-indigo-600 text-white hover:bg-indigo-700"
               }`}
             >
-              {showGoals ? "Done" : "Edit Goals"}
+              {isGoalsOpen ? "Done" : "Edit Goals"}
             </button>
           </div>
-          {showGoals && (
+          {isGoalsOpen && (
             <div className="mt-3">
               <BrokerageGoalsSection />
             </div>
@@ -658,10 +688,9 @@ function contributionTooltip(yr: BrokerageGoalYear): TooltipData {
       ? {
           proRate: {
             months: Math.round(yr.proRateFraction * 12),
-            annualAmount:
-              yr.proRateFraction > 0
-                ? Math.round(yr.contribution / yr.proRateFraction)
-                : yr.contribution,
+            annualAmount: Math.round(
+              safeDivide(yr.contribution, yr.proRateFraction),
+            ),
             proRatedAmount: yr.contribution,
           },
         }
@@ -833,7 +862,7 @@ function YearByYearTable({
                   {yr.year}
                   {yr.proRateFraction != null && (
                     <span className="ml-1 text-[9px] text-faint">
-                      ({Math.round(yr.proRateFraction * 12)} mo)
+                      ({Math.round(yr.proRateFraction * 12)} months)
                     </span>
                   )}
                 </td>
