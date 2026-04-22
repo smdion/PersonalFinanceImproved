@@ -13,7 +13,10 @@ import { accountColor } from "@/lib/utils/colors";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { useScenario } from "@/lib/context/scenario-context";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
-import { safeDivide } from "@/lib/utils/math";
+import {
+  isPortfolioParent,
+  isRetirementParent,
+} from "@/lib/config/account-types";
 
 type PeriodMode = "annual" | "monthly" | "per-period";
 
@@ -106,31 +109,59 @@ export default function ContributionsPage() {
         activePeople.length
       : 26;
 
-  // Household totals (view-mode-aware)
-  const totalRetirementWith = activePeople.reduce(
-    (s, p) => s + p.totals.views[viewMode].retirementWithMatch,
-    0,
-  );
-  const totalRetirementWithout = activePeople.reduce(
-    (s, p) => s + p.totals.views[viewMode].retirementWithoutMatch,
-    0,
-  );
-  const totalPortfolioWith = activePeople.reduce(
-    (s, p) => s + p.totals.views[viewMode].portfolioWithMatch,
-    0,
-  );
-  const totalPortfolioWithout = activePeople.reduce(
-    (s, p) => s + p.totals.views[viewMode].portfolioWithoutMatch,
-    0,
-  );
-  const totalWith = activePeople.reduce(
-    (s, p) => s + p.totals.views[viewMode].totalWithMatch,
-    0,
-  );
-  const totalWithout = activePeople.reduce(
-    (s, p) => s + p.totals.views[viewMode].totalWithoutMatch,
-    0,
-  );
+  // Joint account contributions split by parentCategory.
+  // jointAccountTypes carries per-account data; jointTotals carries the
+  // household aggregate. Both are already on the router response — the page
+  // was simply not reading them, causing joint brokerage to show 0% / $0.
+  const jointAccountTypes = data?.jointAccountTypes ?? [];
+  const jointTotals = data?.jointTotals ?? {
+    totalWithoutMatch: 0,
+    totalWithMatch: 0,
+  };
+  const jointRetirementWith = jointAccountTypes
+    .filter((a) => isRetirementParent(a.parentCategory))
+    .reduce((s, a) => s + a.totalContrib, 0);
+  const jointRetirementWithout = jointAccountTypes
+    .filter((a) => isRetirementParent(a.parentCategory))
+    .reduce((s, a) => s + a.employeeContrib, 0);
+  const jointPortfolioWith = jointAccountTypes
+    .filter((a) => isPortfolioParent(a.parentCategory))
+    .reduce((s, a) => s + a.totalContrib, 0);
+  const jointPortfolioWithout = jointAccountTypes
+    .filter((a) => isPortfolioParent(a.parentCategory))
+    .reduce((s, a) => s + a.employeeContrib, 0);
+
+  // Household totals (view-mode-aware) — include joint accounts in all three buckets
+  const totalRetirementWith =
+    activePeople.reduce(
+      (s, p) => s + p.totals.views[viewMode].retirementWithMatch,
+      0,
+    ) + jointRetirementWith;
+  const totalRetirementWithout =
+    activePeople.reduce(
+      (s, p) => s + p.totals.views[viewMode].retirementWithoutMatch,
+      0,
+    ) + jointRetirementWithout;
+  const totalPortfolioWith =
+    activePeople.reduce(
+      (s, p) => s + p.totals.views[viewMode].portfolioWithMatch,
+      0,
+    ) + jointPortfolioWith;
+  const totalPortfolioWithout =
+    activePeople.reduce(
+      (s, p) => s + p.totals.views[viewMode].portfolioWithoutMatch,
+      0,
+    ) + jointPortfolioWithout;
+  const totalWith =
+    activePeople.reduce(
+      (s, p) => s + p.totals.views[viewMode].totalWithMatch,
+      0,
+    ) + jointTotals.totalWithMatch;
+  const totalWithout =
+    activePeople.reduce(
+      (s, p) => s + p.totals.views[viewMode].totalWithoutMatch,
+      0,
+    ) + jointTotals.totalWithoutMatch;
   const totalEmployerMatch = totalWith - totalWithout;
 
   const pl = periodLabel(period);
@@ -199,27 +230,12 @@ export default function ContributionsPage() {
       {/* Household summary — rates from server (single source of truth) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         {(() => {
-          // Aggregate server-computed per-person rates weighted by compensation
-          const hhRateWith = (safeDivide(
-            activePeople.reduce(
-              (s, p) =>
-                s +
-                p.totals.views[viewMode].savingsRateWithMatch *
-                  (p.totalCompensation ?? p.salary),
-              0,
-            ),
-            combinedSalary,
-          ) ?? 0) as number;
-          const hhRateWithout = (safeDivide(
-            activePeople.reduce(
-              (s, p) =>
-                s +
-                p.totals.views[viewMode].savingsRateWithoutMatch *
-                  (p.totalCompensation ?? p.salary),
-              0,
-            ),
-            combinedSalary,
-          ) ?? 0) as number;
+          // Total savings rate — totalWith/Without already include joint accounts,
+          // so this naturally captures the full household picture.
+          const hhRateWith =
+            combinedSalary > 0 ? totalWith / combinedSalary : 0;
+          const hhRateWithout =
+            combinedSalary > 0 ? totalWithout / combinedSalary : 0;
           const retRateWith =
             combinedSalary > 0 ? totalRetirementWith / combinedSalary : 0;
           const retRateWithout =
