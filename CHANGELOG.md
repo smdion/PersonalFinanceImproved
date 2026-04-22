@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.5
 
+## [0.5.8] - 2026-04-22
+
+### Fixed
+
+- **Relocation Analysis now correctly counts all retirement contributions.** HSA and brokerage retirement contributions were silently excluded from the relocation calculator due to a wrong internal category check, causing the contribution total to show $0, FI ages to show "N/A", and projection table row highlights to never fire. All retirement-category accounts are now included, matching the behavior on every other page.
+- **Relocation projection row highlights and legend swatches are now visible in dark mode.** The current-FI, relocation-FI, earliest-move, expense-adjustment, and large-purchase highlight colors were missing dark-mode variants, making them invisible against dark backgrounds.
+- **Contributions page Portfolio and Retirement cards now include joint accounts.** Joint brokerage and joint retirement contributions were excluded from the summary card totals and savings rate calculations, showing $0 and 0% for households with joint accounts.
+- **Brokerage page now uses the active contribution profile when projecting.** If a contribution profile was selected, the Funding Sources card reflected it but the projection engine was still using live contribution data — causing the two panels to show different numbers for the same scenario. They now use the same inputs.
+
+---
+
 ## [0.5.7] - 2026-04-19
 
 Inline transaction editing, API label clarity, and history toggle for past items.
