@@ -13,6 +13,7 @@ import { accountColor } from "@/lib/utils/colors";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { useScenario } from "@/lib/context/scenario-context";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
+import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import {
   isPortfolioParent,
   isRetirementParent,
@@ -52,6 +53,11 @@ export default function ContributionsPage() {
   const [selectedProfileId, setSelectedProfileId] = useState<
     number | undefined
   >(activeProfileId ?? undefined);
+  const [matchOverride, setMatchOverride] = useState<boolean | null>(null);
+  const [highIncomeThreshold] = usePersistedSetting<number>(
+    "high_income_threshold",
+    DEFAULT_HIGH_INCOME_THRESHOLD,
+  );
 
   const { data: profileData } = trpc.contribution.computeSummary.useQuery(
     { contributionProfileId: selectedProfileId },
@@ -102,7 +108,8 @@ export default function ContributionsPage() {
     0,
   );
   // High income: show employee-only rate as headline (match is "free money", not savings effort)
-  const highIncome = combinedSalary >= DEFAULT_HIGH_INCOME_THRESHOLD;
+  const highIncome = combinedSalary >= highIncomeThreshold;
+  const excludeMatch = matchOverride !== null ? matchOverride : highIncome;
   const avgPeriodsPerYear =
     activePeople.length > 0
       ? activePeople.reduce((s, p) => s + p.periodsPerYear, 0) /
@@ -191,6 +198,16 @@ export default function ContributionsPage() {
               ))}
             </select>
           )}
+          <button
+            onClick={() => setMatchOverride(excludeMatch ? false : true)}
+            className={`text-xs px-2 py-1 rounded transition-colors ${
+              matchOverride !== null
+                ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-medium"
+                : "text-muted hover:bg-surface-elevated"
+            }`}
+          >
+            {excludeMatch ? "Incl. match" : "Excl. match"}
+          </button>
           <div className="flex gap-1 bg-surface-elevated rounded-full p-0.5">
             {(["annual", "monthly", "per-period"] as const).map((m) => (
               <button
@@ -245,16 +262,16 @@ export default function ContributionsPage() {
           const portRateWithout =
             combinedSalary > 0 ? totalPortfolioWithout / combinedSalary : 0;
           const isBlended = viewMode === "blended";
-          const primary = highIncome ? "without" : "with";
+          const primary = excludeMatch ? "without" : "with";
           return (
             <>
               <SummaryCard
                 label={isBlended ? "Total Savings (Est.)" : "Total Savings"}
                 rate={primary === "without" ? hhRateWithout : hhRateWith}
                 rateAlt={primary === "without" ? hhRateWith : hhRateWithout}
-                altLabel={highIncome ? "w/ match" : "w/o match"}
+                altLabel={excludeMatch ? "w/ match" : "w/o match"}
                 amount={toDisplay(
-                  highIncome ? totalWithout : totalWith,
+                  excludeMatch ? totalWithout : totalWith,
                   avgPeriodsPerYear,
                   period,
                 )}
@@ -265,9 +282,9 @@ export default function ContributionsPage() {
                 label={isBlended ? "Retirement (Est.)" : "Retirement"}
                 rate={primary === "without" ? retRateWithout : retRateWith}
                 rateAlt={primary === "without" ? retRateWith : retRateWithout}
-                altLabel={highIncome ? "w/ match" : "w/o match"}
+                altLabel={excludeMatch ? "w/ match" : "w/o match"}
                 amount={toDisplay(
-                  highIncome ? totalRetirementWithout : totalRetirementWith,
+                  excludeMatch ? totalRetirementWithout : totalRetirementWith,
                   avgPeriodsPerYear,
                   period,
                 )}
@@ -278,9 +295,9 @@ export default function ContributionsPage() {
                 label={isBlended ? "Portfolio (Est.)" : "Portfolio"}
                 rate={primary === "without" ? portRateWithout : portRateWith}
                 rateAlt={primary === "without" ? portRateWith : portRateWithout}
-                altLabel={highIncome ? "w/ match" : "w/o match"}
+                altLabel={excludeMatch ? "w/ match" : "w/o match"}
                 amount={toDisplay(
-                  highIncome ? totalPortfolioWithout : totalPortfolioWith,
+                  excludeMatch ? totalPortfolioWithout : totalPortfolioWith,
                   avgPeriodsPerYear,
                   period,
                 )}
@@ -588,10 +605,13 @@ export default function ContributionsPage() {
                     <>
                       Savings rate:{" "}
                       {formatPercent(
-                        person.totals.views[viewMode].savingsRateWithMatch,
+                        excludeMatch
+                          ? person.totals.views[viewMode]
+                              .savingsRateWithoutMatch
+                          : person.totals.views[viewMode].savingsRateWithMatch,
                         1,
                       )}{" "}
-                      (with match)
+                      ({excludeMatch ? "w/o match" : "w/ match"})
                     </>
                   )}
                 </td>
@@ -707,43 +727,65 @@ export default function ContributionsPage() {
               {(() => {
                 const profileJointAccountTypes =
                   profileData.jointAccountTypes ?? [];
-                const profileJointRetirementWith = profileJointAccountTypes
+                const totalKey = excludeMatch
+                  ? "totalWithoutMatch"
+                  : "totalWithMatch";
+                const retKey = excludeMatch
+                  ? "retirementWithoutMatch"
+                  : "retirementWithMatch";
+                const portKey = excludeMatch
+                  ? "portfolioWithoutMatch"
+                  : "portfolioWithMatch";
+                const profileJointTotal = excludeMatch
+                  ? (profileData.jointTotals?.totalWithoutMatch ?? 0)
+                  : (profileData.jointTotals?.totalWithMatch ?? 0);
+                const profileJointRetirement = profileJointAccountTypes
                   .filter((a) => isRetirementParent(a.parentCategory))
-                  .reduce((s, a) => s + a.totalContrib, 0);
-                const profileJointPortfolioWith = profileJointAccountTypes
+                  .reduce(
+                    (s, a) =>
+                      s + (excludeMatch ? a.employeeContrib : a.totalContrib),
+                    0,
+                  );
+                const profileJointPortfolio = profileJointAccountTypes
                   .filter((a) => isPortfolioParent(a.parentCategory))
-                  .reduce((s, a) => s + a.totalContrib, 0);
-                const profileJointTotalWith =
-                  profileData.jointTotals?.totalWithMatch ?? 0;
+                  .reduce(
+                    (s, a) =>
+                      s + (excludeMatch ? a.employeeContrib : a.totalContrib),
+                    0,
+                  );
                 return [
                   {
-                    label: "Total (with match)",
-                    current: totalWith,
+                    label: excludeMatch
+                      ? "Total (w/o match)"
+                      : "Total (w/ match)",
+                    current: excludeMatch ? totalWithout : totalWith,
                     profile:
                       profileData.people.reduce(
-                        (s, p) => s + p.totals.views[viewMode].totalWithMatch,
+                        (s, p) => s + p.totals.views[viewMode][totalKey],
                         0,
-                      ) + profileJointTotalWith,
+                      ) + profileJointTotal,
                   },
                   {
                     label: "Retirement",
-                    current: totalRetirementWith,
+                    current: excludeMatch
+                      ? totalRetirementWithout
+                      : totalRetirementWith,
                     profile:
                       profileData.people.reduce(
-                        (s, p) =>
-                          s + p.totals.views[viewMode].retirementWithMatch,
+                        (s, p) => s + p.totals.views[viewMode][retKey],
                         0,
-                      ) + profileJointRetirementWith,
+                      ) + profileJointRetirement,
                   },
                   {
                     label: "Portfolio",
-                    current: totalPortfolioWith,
+                    current: excludeMatch
+                      ? totalPortfolioWithout
+                      : totalPortfolioWith,
                     profile:
                       profileData.people.reduce(
-                        (s, p) =>
-                          s + p.totals.views[viewMode].portfolioWithMatch,
+                        (s, p) => s + p.totals.views[viewMode][portKey],
                         0,
-                      ) + profileJointPortfolioWith,
+                      ) + profileJointPortfolio,
                   },
                 ];
               })().map((row) => {
