@@ -426,6 +426,29 @@ describe("retirement router -- populated data", () => {
     expect(Array.isArray(r.projectionByYear)).toBe(true);
     expect(r.projectionByYear.length).toBeGreaterThan(0);
   });
+
+  // Regression: retirement.ts previously filtered contributions using
+  // PERF_CATEGORY_DEFAULT ("401k/IRA"), a display-tab label that never matches
+  // the parentCategory column ("Retirement"). All contributions were silently
+  // dropped — annualContributions came back 0 and projectionByYear balance
+  // never grew beyond the starting snapshot amount.
+  it("contributions are non-zero and projection balance grows when retirement accounts exist", async () => {
+    const result = await caller.retirement.computeRelocationAnalysis({
+      currentProfileId: profileId,
+      currentBudgetColumn: 0,
+      relocationProfileId: profileId,
+      relocationBudgetColumn: 0,
+    });
+    const r = result.result!;
+    const cp = result.currentContribProfile as { annualContributions: number };
+    // Core regression: contributions must reach the calculator
+    expect(cp.annualContributions).toBeGreaterThan(0);
+    // Projection balance must grow beyond the seeded starting balance ($250,000)
+    const lastYear = r.projectionByYear[r.projectionByYear.length - 1] as
+      | { currentBalance: number }
+      | undefined;
+    expect(lastYear?.currentBalance ?? 0).toBeGreaterThan(250000);
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -6,7 +6,10 @@
 // this calculator provides the goal-oriented analysis layer.
 
 import { roundToCents } from "@/lib/utils/math";
-import { isOverflowTarget } from "@/lib/config/account-types";
+import {
+  isOverflowTarget,
+  isPortfolioParent,
+} from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type {
   EngineAccumulationYear,
@@ -29,9 +32,6 @@ export type BrokerageGoalsInput = {
   goals: BrokerageGoalInput[];
   /** Engine projection years (accumulation + decumulation). */
   engineYears: EngineYearProjection[];
-  /** When set, derive afterTax balance from individual accounts matching this parentCategory
-   *  instead of the aggregate balanceByTaxType.afterTax (which mixes all parentCategories). */
-  parentCategoryFilter?: string;
 };
 
 // --- Output ---
@@ -109,7 +109,7 @@ export type BrokerageGoalsResult = {
 export function calculateBrokerageGoals(
   input: BrokerageGoalsInput,
 ): BrokerageGoalsResult {
-  const { goals, engineYears, parentCategoryFilter } = input;
+  const { goals, engineYears } = input;
   const warnings: string[] = [];
 
   // Build goal status map from engine's accumulation years
@@ -134,18 +134,18 @@ export function calculateBrokerageGoals(
 
   for (let i = 0; i < engineYears.length; i++) {
     const yr = engineYears[i]!;
-    // When parentCategoryFilter is set, derive afterTax from individual accounts
-    // matching that parentCategory (e.g. 'Portfolio' for brokerage page).
-    // Otherwise use the aggregate bucket (which includes all parentCategories).
+    // Derive afterTax from Portfolio-category individual accounts so the
+    // brokerage page only reflects portfolio accounts, not all parentCategories.
+    // Falls back to the aggregate bucket when no individual balances are present.
     let afterTax: number;
     let afterTaxBasis: number;
-    if (parentCategoryFilter && yr.individualAccountBalances.length > 0) {
-      const filtered = yr.individualAccountBalances.filter(
-        (ia) => ia.parentCategory === parentCategoryFilter,
+    if (yr.individualAccountBalances.length > 0) {
+      const filtered = yr.individualAccountBalances.filter((ia) =>
+        isPortfolioParent(ia.parentCategory),
       );
       if (filtered.length === 0 && i === 0) {
         warnings.push(
-          `parentCategoryFilter "${parentCategoryFilter}" matched zero individual accounts — brokerage goals will show as shortfalls`,
+          "No Portfolio-category accounts found — brokerage goals will show as shortfalls",
         );
       }
       afterTax = roundToCents(filtered.reduce((s, ia) => s + ia.balance, 0));
@@ -170,10 +170,10 @@ export function calculateBrokerageGoals(
       const accYr = yr as EngineAccumulationYear;
       proRateFraction = accYr.proRateFraction;
 
-      if (parentCategoryFilter && yr.individualAccountBalances.length > 0) {
-        // Derive contribution/overflow from filtered individual accounts' breakdown fields.
-        const filtered = yr.individualAccountBalances.filter(
-          (ia) => ia.parentCategory === parentCategoryFilter,
+      if (yr.individualAccountBalances.length > 0) {
+        // Derive contribution/overflow from Portfolio-category individual accounts.
+        const filtered = yr.individualAccountBalances.filter((ia) =>
+          isPortfolioParent(ia.parentCategory),
         );
         contribution = roundToCents(
           filtered.reduce(
@@ -237,9 +237,9 @@ export function calculateBrokerageGoals(
       // Brokerage contributions continue post-retirement (fixed-dollar only)
       const decYr = yr as EngineDecumulationYear;
       contribution = roundToCents(decYr.brokerageContribution);
-      if (parentCategoryFilter && yr.individualAccountBalances.length > 0) {
-        const filtered = yr.individualAccountBalances.filter(
-          (ia) => ia.parentCategory === parentCategoryFilter,
+      if (yr.individualAccountBalances.length > 0) {
+        const filtered = yr.individualAccountBalances.filter((ia) =>
+          isPortfolioParent(ia.parentCategory),
         );
         employerMatch = roundToCents(
           filtered.reduce((s, ia) => s + ia.employerMatch, 0),
@@ -247,11 +247,12 @@ export function calculateBrokerageGoals(
       }
     }
 
-    // Growth: when filtering by parentCategory, use individual accounts' growth field directly
+    // Growth: use Portfolio-category individual accounts' growth field directly
+    // when available; otherwise derive from net inflow.
     let growth: number;
-    if (parentCategoryFilter && yr.individualAccountBalances.length > 0) {
-      const filtered = yr.individualAccountBalances.filter(
-        (ia) => ia.parentCategory === parentCategoryFilter,
+    if (yr.individualAccountBalances.length > 0) {
+      const filtered = yr.individualAccountBalances.filter((ia) =>
+        isPortfolioParent(ia.parentCategory),
       );
       growth = roundToCents(filtered.reduce((s, ia) => s + ia.growth, 0));
     } else {
@@ -259,11 +260,11 @@ export function calculateBrokerageGoals(
       growth = roundToCents(afterTax - prevBalance - netInflow);
     }
 
-    // Build per-account breakdown for tooltips
+    // Build per-account breakdown for tooltips — Portfolio accounts only
     const filteredAccounts =
-      parentCategoryFilter && yr.individualAccountBalances.length > 0
-        ? yr.individualAccountBalances.filter(
-            (ia) => ia.parentCategory === parentCategoryFilter,
+      yr.individualAccountBalances.length > 0
+        ? yr.individualAccountBalances.filter((ia) =>
+            isPortfolioParent(ia.parentCategory),
           )
         : yr.individualAccountBalances;
 
