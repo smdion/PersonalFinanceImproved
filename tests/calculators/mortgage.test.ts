@@ -155,6 +155,15 @@ describe("calculateMortgage", () => {
         noExtrasResult.loans[0]!.currentBalance,
       );
     });
+
+    it("totalMonthsSaved equals monthsSavedByExtras when no refinancing", () => {
+      // Single loan with no refi chain — totalMonthsSaved should equal monthsAheadOfSchedule.
+      expect(result.totalMonthsSaved).toBe(result.monthsSavedByExtras);
+      expect(result.monthsSavedByRefi).toBe(0);
+      expect(result.totalMonthsSaved).toBe(
+        result.loans[0]!.monthsAheadOfSchedule,
+      );
+    });
   });
 
   describe("negative extra payment warning", () => {
@@ -347,6 +356,32 @@ describe("calculateMortgage", () => {
       const hist = result.historicalLoans[0]!;
       expect(hist.fullTermStandardInterest).toBeDefined();
       expect(hist.fullTermStandardInterest).toBeGreaterThan(0);
+    });
+
+    it("historical loan has fullTermStandardRemainingMonths", () => {
+      const hist = result.historicalLoans[0]!;
+      // Original 30yr loan started 2022-09-01, would pay off ~2052-09-01.
+      // asOfDate is well before that, so remaining months should be positive.
+      expect(hist.fullTermStandardRemainingMonths).toBeDefined();
+      expect(hist.fullTermStandardRemainingMonths).toBeGreaterThan(0);
+    });
+
+    it("totalMonthsSaved is positive when refi shortens the term", () => {
+      // Original: 30yr. Refi: 15yr (shorter). Active loan started 2024-01-01 and
+      // has fewer remaining months than the original 30yr would have. Savings should be > 0.
+      expect(result.totalMonthsSaved).toBeGreaterThan(0);
+    });
+
+    it("totalMonthsSaved >= monthsSavedByExtras (no extras in this input)", () => {
+      // No extra payments in input, so monthsSavedByExtras = 0.
+      expect(result.monthsSavedByExtras).toBe(0);
+      expect(result.totalMonthsSaved).toBe(result.monthsSavedByRefi);
+    });
+
+    it("totalMonthsSaved equals monthsSavedByRefi + monthsSavedByExtras", () => {
+      expect(result.totalMonthsSaved).toBe(
+        result.monthsSavedByRefi + result.monthsSavedByExtras,
+      );
     });
   });
 

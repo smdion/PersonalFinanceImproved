@@ -141,12 +141,34 @@ export function calculateMortgage(input: MortgageInput): MortgageResult {
     }
   }
 
+  // Compute total months saved across the full refinance chain + extra payments.
+  // Root loan = the inactive loan with no refinancedFromId (original first loan in chain).
+  const rootLoanInput = loans.find((l) => !l.isActive && !l.refinancedFromId);
+  const rootHistResult = rootLoanInput
+    ? historicalResults.find((r) => r.loanId === rootLoanInput.id)
+    : undefined;
+  const activeLoan = loanResults[0];
+
+  const monthsSavedByExtras = activeLoan?.monthsAheadOfSchedule ?? 0;
+  let monthsSavedByRefi = 0;
+  let totalMonthsSaved = monthsSavedByExtras;
+
+  if (rootHistResult?.fullTermStandardRemainingMonths != null && activeLoan) {
+    const origRemaining = rootHistResult.fullTermStandardRemainingMonths;
+    const actualRemaining = activeLoan.remainingMonths;
+    totalMonthsSaved = Math.max(0, origRemaining - actualRemaining);
+    monthsSavedByRefi = Math.max(0, totalMonthsSaved - monthsSavedByExtras);
+  }
+
   return {
     loans: loanResults,
     historicalLoans: historicalResults,
     loanHistory,
     whatIfResults,
     warnings,
+    monthsSavedByRefi,
+    monthsSavedByExtras,
+    totalMonthsSaved,
   };
 }
 
@@ -237,9 +259,14 @@ function amortizeLoan(
   const lastEntry = schedule[schedule.length - 1];
   const payoffDate = lastEntry?.date ?? loan.startDate;
 
-  // For historical loans, provide the full-term standard interest for Refinance Impact comparison
+  // For historical loans, provide the full-term standard interest and remaining months
+  // for Refinance Impact comparison and totalMonthsSaved computation.
   const fullTermStandardInterest = endDate
     ? roundToCents(fullStandardSchedule.reduce((s, e) => s + e.interest, 0))
+    : undefined;
+  // Count entries after asOfDate using the same method as remainingMonths — avoids off-by-1 at month boundaries.
+  const fullTermStandardRemainingMonths = endDate
+    ? fullStandardSchedule.filter((e) => e.date > asOfDate).length
     : undefined;
 
   return {
@@ -255,6 +282,7 @@ function amortizeLoan(
     payoffDate,
     amortizationSchedule: schedule,
     fullTermStandardInterest,
+    fullTermStandardRemainingMonths,
     apiBalance,
     apiBalanceDate,
     calculatedBalance,

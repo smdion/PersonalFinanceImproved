@@ -170,6 +170,9 @@ export default function LiabilitiesPage() {
               historicalLoans={result.historicalLoans}
               activeLoans={result.loans}
               loanHistory={result.loanHistory}
+              totalMonthsSaved={result.totalMonthsSaved}
+              monthsSavedByRefi={result.monthsSavedByRefi}
+              monthsSavedByExtras={result.monthsSavedByExtras}
             />
           )}
 
