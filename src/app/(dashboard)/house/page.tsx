@@ -11,6 +11,7 @@ import { Card, Metric } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { Lock, LockOpen } from "lucide-react";
 
 function SyncBadge({ source }: { source: string }) {
   return (
@@ -45,6 +46,7 @@ export default function HousePage() {
   const [taxAmount, setTaxAmount] = useState("");
   const [taxNote, setTaxNote] = useState("");
   const [editingTax, setEditingTax] = useState<number | null>(null);
+  const [taxLocked, setTaxLocked] = useState(true);
   const [editTaxAssessed, setEditTaxAssessed] = useState("");
   const [editTaxAmount, setEditTaxAmount] = useState("");
   const [editTaxNote, setEditTaxNote] = useState("");
@@ -308,14 +310,27 @@ export default function HousePage() {
       <Card
         title="Property Taxes"
         headerRight={
-          loanId && (
+          <span className="inline-flex items-center gap-2">
             <button
-              onClick={() => setAddingTax((p) => !p)}
-              className="px-2 py-1 text-[10px] font-medium rounded bg-surface-elevated text-muted hover:bg-surface-strong transition-colors"
+              onClick={() => setTaxLocked((l) => !l)}
+              className="p-1 text-faint hover:text-primary transition-colors"
+              title={taxLocked ? "Unlock to edit" : "Lock editing"}
             >
-              {addingTax ? "Cancel" : "+ Add"}
+              {taxLocked ? (
+                <Lock className="w-3.5 h-3.5" />
+              ) : (
+                <LockOpen className="w-3.5 h-3.5" />
+              )}
             </button>
-          )
+            {loanId && !taxLocked && (
+              <button
+                onClick={() => setAddingTax((p) => !p)}
+                className="px-2 py-1 text-[10px] font-medium rounded bg-surface-elevated text-muted hover:bg-surface-strong transition-colors"
+              >
+                {addingTax ? "Cancel" : "+ Add"}
+              </button>
+            )}
+          </span>
         }
       >
         {addingTax && loanId && (
@@ -454,8 +469,9 @@ export default function HousePage() {
                 ) : (
                   <tr
                     key={pt.id}
-                    className="group border-b border-subtle hover:bg-surface-sunken cursor-pointer"
+                    className={`group border-b border-subtle hover:bg-surface-sunken ${taxLocked ? "" : "cursor-pointer"}`}
                     onClick={() => {
+                      if (taxLocked) return;
                       setEditingTax(pt.id);
                       setEditTaxAssessed(
                         pt.assessedValue != null
@@ -484,29 +500,31 @@ export default function HousePage() {
                       {pt.note ?? ""}
                     </td>
                     <td className="py-1.5">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteTaxMutation.mutate({ id: pt.id });
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-0.5 text-faint hover:text-red-600 transition-all"
-                        title="Delete"
-                      >
-                        <svg
-                          aria-hidden="true"
-                          className="w-3.5 h-3.5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
+                      {!taxLocked && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteTaxMutation.mutate({ id: pt.id });
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 text-faint hover:text-red-600 transition-all"
+                          title="Delete"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
+                          <svg
+                            aria-hidden="true"
+                            className="w-3.5 h-3.5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ),
