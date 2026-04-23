@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Lock, LockOpen } from "lucide-react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { YearRow } from "./year-row";
 import type {
@@ -31,6 +32,8 @@ export function PerformanceTable({
   onSaveEdit,
   onKeyDown,
   canEdit,
+  locked,
+  onToggleLock,
 }: {
   filtered: AnnualRow[];
   accountRows: AccountRow[];
@@ -50,6 +53,8 @@ export function PerformanceTable({
   onSaveEdit: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
   canEdit?: boolean;
+  locked?: boolean;
+  onToggleLock?: () => void;
 }) {
   const years = Array.from(new Set(filtered.map((r) => r.year))).sort(
     (a, b) => b - a,
@@ -101,8 +106,23 @@ export function PerformanceTable({
               </>
             )}
             <th className="text-right px-4 py-3 text-muted font-medium">
-              Return
-              <HelpTip text="Annual rate of return calculated from gains relative to average invested balance" />
+              <span className="inline-flex items-center gap-1 justify-end">
+                Return
+                <HelpTip text="Annual rate of return calculated from gains relative to average invested balance" />
+                {onToggleLock && (
+                  <button
+                    onClick={onToggleLock}
+                    className="ml-1 text-faint hover:text-primary transition-colors"
+                    title={locked ? "Unlock to edit" : "Lock editing"}
+                  >
+                    {locked ? (
+                      <Lock className="w-3.5 h-3.5" />
+                    ) : (
+                      <LockOpen className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                )}
+              </span>
             </th>
           </tr>
         </thead>
