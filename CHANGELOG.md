@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.5
 
+## [0.5.9] - 2026-04-22
+
+### Added
+
+- **Contributions page now has a match toggle.** A new "Incl. match / Excl. match" button in the contributions page header lets you override whether employer match is included in the savings rate display. Defaults to the same high-income threshold logic used on the dashboard savings card, and highlights when overridden.
+- **Contributions page now shows a match toggle aligned with dashboard logic.** Savings rates on the contributions page now use `savingsRateWithMatch` / `savingsRateWithoutMatch` from the router (same values used by the dashboard), so the two views are always consistent.
+- **Lock-to-edit padlock on Performance, Analytics Holdings, and House Property Tax tables.** All three inline-editable tables default to locked on page load to prevent accidental edits. A padlock icon in the table header unlocks editing. Performance table lock sits inline in the Return column header; Analytics holdings lock appears per-account card; House property tax lock is in the card header alongside the Add button.
+- **Mortgage Summary card now shows total time saved across the full refinance chain.** Previously showed only "months ahead of schedule" from extra payments on the current loan. Now shows total months saved vs. the original loan with no refinancing and no extra payments (e.g., "14 yr 1 mo ahead of original timeline"), with the breakdown visible in the Refinance Impact section helpTip.
+- **Refinance Impact section now includes a "Total Time Saved" row.** Appears below "Net Interest Saved by Refinancing" with a helpTip that decomposes the savings into refinancing benefit and extra-payment benefit.
+
+### Fixed
+
+- **Contributions page no longer double-counts high-income match exclusion.** Match override state is now a nullable boolean so "auto" (follow threshold logic), "force include", and "force exclude" are distinct states with no ambiguity.
+
 ## [0.5.8] - 2026-04-22
 
 ### Fixed
