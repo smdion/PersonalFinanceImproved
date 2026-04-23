@@ -5,14 +5,28 @@ import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import type { LoanSummary, LoanHistoryEntry } from "./types";
 
+function formatDuration(months: number): string {
+  const years = Math.floor(months / 12);
+  const rem = months % 12;
+  if (years === 0) return `${rem} mo`;
+  if (rem === 0) return `${years} yr`;
+  return `${years} yr ${rem} mo`;
+}
+
 export function RefinanceImpact({
   historicalLoans,
   activeLoans,
   loanHistory,
+  totalMonthsSaved,
+  monthsSavedByRefi,
+  monthsSavedByExtras,
 }: {
   historicalLoans: LoanSummary[];
   activeLoans: LoanSummary[];
   loanHistory: LoanHistoryEntry[];
+  totalMonthsSaved: number;
+  monthsSavedByRefi: number;
+  monthsSavedByExtras: number;
 }) {
   // Compare the original (root) loan's full-term cost against the actual refinance path.
   // "If we had stayed on the original loan, how much more/less interest would we pay?"
@@ -162,6 +176,21 @@ export function RefinanceImpact({
               </td>
               <td />
             </tr>
+            {totalMonthsSaved > 0 && (
+              <tr className="font-semibold text-green-700">
+                <td className="py-2 pr-4">
+                  Total Time Saved
+                  <HelpTip
+                    text={`${formatDuration(monthsSavedByRefi)} from refinancing + ${formatDuration(monthsSavedByExtras)} from extra payments vs. the original loan with no extras`}
+                  />
+                </td>
+                <td />
+                <td className="text-right py-2 px-3">
+                  {formatDuration(totalMonthsSaved)}
+                </td>
+                <td />
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

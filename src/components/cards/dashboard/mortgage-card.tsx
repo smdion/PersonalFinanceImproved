@@ -7,6 +7,14 @@ import { Card, Metric, ProgressBar } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { LoadingCard, ErrorCard } from "./utils";
 
+function formatDuration(months: number): string {
+  const years = Math.floor(months / 12);
+  const rem = months % 12;
+  if (years === 0) return `${rem} mo`;
+  if (rem === 0) return `${years} yr`;
+  return `${years} yr ${rem} mo`;
+}
+
 function MortgageCardImpl() {
   const { data, isLoading, error } =
     trpc.mortgage.computeActiveSummary.useQuery();
@@ -48,9 +56,10 @@ function MortgageCardImpl() {
           {Math.ceil(primaryLoan.remainingMonths / 12)} years
         </span>
       </div>
-      {primaryLoan.monthsAheadOfSchedule > 0 && (
+      {(data?.result.totalMonthsSaved ?? 0) > 0 && (
         <p className="text-xs text-green-600 mt-1">
-          {primaryLoan.monthsAheadOfSchedule} months ahead of schedule
+          {formatDuration(data!.result.totalMonthsSaved)} ahead of original
+          timeline
         </p>
       )}
     </Card>
