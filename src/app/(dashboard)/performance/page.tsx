@@ -37,6 +37,7 @@ export default function PerformancePage() {
   const [editValue, setEditValue] = useState("");
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const [showUpdatePerformance, setShowUpdatePerformance] = useState(false);
+  const [tableLocked, setTableLocked] = useState(true);
 
   const updateAnnual = trpc.performance.updateAnnual.useMutation({
     onSuccess: () => utils.performance.computeSummary.invalidate(),
@@ -279,7 +280,9 @@ export default function PerformancePage() {
         onEditValueChange={setEditValue}
         onSaveEdit={saveEdit}
         onKeyDown={handleKeyDown}
-        canEdit={canEdit}
+        canEdit={canEdit && !tableLocked}
+        locked={tableLocked}
+        onToggleLock={canEdit ? () => setTableLocked((l) => !l) : undefined}
       />
 
       {showFinalizeModal && currentYear && (
