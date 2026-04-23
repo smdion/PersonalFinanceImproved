@@ -44,6 +44,8 @@ import {
   Plus,
   Trash2,
   Search,
+  Lock,
+  LockOpen,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -187,6 +189,8 @@ function HoldingsTable({
   assetClasses,
   hasFmpKey,
   onSaved,
+  locked = false,
+  onToggleLock,
 }: {
   accountId: number;
   accountName: string;
@@ -196,6 +200,8 @@ function HoldingsTable({
   assetClasses: { id: number; name: string }[];
   hasFmpKey: boolean;
   onSaved: () => void;
+  locked?: boolean;
+  onToggleLock?: () => void;
 }) {
   const utils = trpc.useUtils();
 
@@ -347,6 +353,19 @@ function HoldingsTable({
             </span>
           )}
         </div>
+        {onToggleLock && (
+          <button
+            onClick={onToggleLock}
+            className="p-1.5 text-faint hover:text-primary transition-colors"
+            title={locked ? "Unlock to edit" : "Lock editing"}
+          >
+            {locked ? (
+              <Lock className="w-4 h-4" />
+            ) : (
+              <LockOpen className="w-4 h-4" />
+            )}
+          </button>
+        )}
       </div>
 
       {/* Holdings table */}
@@ -371,9 +390,10 @@ function HoldingsTable({
               >
                 <td className="py-1 pr-2">
                   <input
-                    className="w-full bg-transparent border border-default rounded px-1.5 py-0.5 text-xs font-mono uppercase text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full bg-transparent border border-default rounded px-1.5 py-0.5 text-xs font-mono uppercase text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-default"
                     value={row.ticker}
                     placeholder="VTSAX"
+                    readOnly={locked}
                     onChange={(e) =>
                       updateRow(row.key, {
                         ticker: e.target.value.toUpperCase(),
@@ -384,9 +404,10 @@ function HoldingsTable({
                 <td className="py-1 pr-2">
                   <div className="flex items-center gap-1">
                     <input
-                      className="w-full bg-transparent border border-default rounded px-1.5 py-0.5 text-xs text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full bg-transparent border border-default rounded px-1.5 py-0.5 text-xs text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-default"
                       value={row.name}
                       placeholder="Fund name"
+                      readOnly={locked}
                       onChange={(e) =>
                         updateRow(row.key, { name: e.target.value })
                       }
@@ -420,13 +441,14 @@ function HoldingsTable({
                 </td>
                 <td className="py-1 pr-2">
                   <input
-                    className="w-full bg-transparent border border-default rounded px-1.5 py-0.5 text-xs text-right text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full bg-transparent border border-default rounded px-1.5 py-0.5 text-xs text-right text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-default"
                     type="number"
                     min={0}
                     max={100}
                     step={0.1}
                     value={bpsToPercent(row.weightBps) || ""}
                     placeholder="0"
+                    readOnly={locked}
                     onChange={(e) =>
                       updateRow(row.key, {
                         weightBps: Math.round(
@@ -439,12 +461,13 @@ function HoldingsTable({
                 </td>
                 <td className="py-1 pr-2">
                   <input
-                    className="w-full bg-transparent border border-default rounded px-1.5 py-0.5 text-xs text-right text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full bg-transparent border border-default rounded px-1.5 py-0.5 text-xs text-right text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-default"
                     type="number"
                     min={0}
                     step={0.001}
                     value={row.expenseRatioStr || ""}
                     placeholder="0.030"
+                    readOnly={locked}
                     onChange={(e) =>
                       updateRow(row.key, { expenseRatioStr: e.target.value })
                     }
@@ -452,7 +475,8 @@ function HoldingsTable({
                 </td>
                 <td className="py-1 pr-2">
                   <select
-                    className="w-full bg-surface-primary border border-default rounded px-1.5 py-0.5 text-xs text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full bg-surface-primary border border-default rounded px-1.5 py-0.5 text-xs text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-default"
+                    disabled={locked}
                     value={row.assetClassId ?? ""}
                     onChange={(e) =>
                       updateRow(row.key, {
@@ -483,13 +507,15 @@ function HoldingsTable({
                   </span>
                 </td>
                 <td className="py-1">
-                  <button
-                    onClick={() => removeRow(row.key)}
-                    className="text-faint hover:text-red-500"
-                    title="Remove holding"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {!locked && (
+                    <button
+                      onClick={() => removeRow(row.key)}
+                      className="text-faint hover:text-red-500"
+                      title="Remove holding"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -499,22 +525,24 @@ function HoldingsTable({
 
       <CoverageIndicator holdings={drafts} />
 
-      <div className="flex items-center gap-2 mt-2">
-        <button
-          onClick={addRow}
-          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Add holding
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="ml-auto px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-        >
-          {saving ? "Saving…" : "Save"}
-        </button>
-      </div>
+      {!locked && (
+        <div className="flex items-center gap-2 mt-2">
+          <button
+            onClick={addRow}
+            className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add holding
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="ml-auto px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+      )}
 
       {/* Per-account allocation donut */}
       {drafts.some((d) => d.assetClassId !== null && d.weightBps > 0) && (
@@ -678,6 +706,7 @@ export function AnalyticsContent() {
   const [selectedSnapshotId, setSelectedSnapshotId] = useState<
     number | undefined
   >(undefined);
+  const [holdingsLocked, setHoldingsLocked] = useState(true);
 
   const { data: holdings, refetch: refetchHoldings } =
     trpc.analytics.getHoldings.useQuery({
@@ -832,6 +861,10 @@ export function AnalyticsContent() {
                 assetClasses={assetClasses ?? []}
                 hasFmpKey={hasFmpKey ?? false}
                 onSaved={() => refetchHoldings()}
+                locked={holdingsLocked}
+                onToggleLock={
+                  canEdit ? () => setHoldingsLocked((l) => !l) : undefined
+                }
               />
             </Card>
           ))}
