@@ -244,6 +244,9 @@ export type MortgageLoanResult = {
    *  if the loan ran to completion with no extras. Used by the Refinance Impact comparison.
    *  Undefined for active loans. */
   fullTermStandardInterest?: number;
+  /** For historical loans: months remaining on the original full-term standard schedule as of
+   *  asOfDate (same counting method as remainingMonths). Used for totalMonthsSaved computation. */
+  fullTermStandardRemainingMonths?: number;
   /** Date the loan was paid off or refinanced. Only set for historical loans. */
   paidOffDate?: Date;
   /** Balance at the time the loan was paid off / refinanced. */
@@ -282,6 +285,12 @@ export type MortgageResult = {
   loanHistory: LoanHistoryEntry[];
   whatIfResults: MortgageWhatIfResult[];
   warnings: string[];
+  /** Months saved by refinancing (rate/term benefit), independent of extra payments. */
+  monthsSavedByRefi: number;
+  /** Months saved by extra payments on the active loan (= active loan's monthsAheadOfSchedule). */
+  monthsSavedByExtras: number;
+  /** Total months saved vs. the original loan with no extras and no refinancing. */
+  totalMonthsSaved: number;
 };
 
 // --- Net Worth ---
