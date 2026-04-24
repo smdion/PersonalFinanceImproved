@@ -174,7 +174,8 @@ export function BonusSection({
             const totalTaxRate =
               bonusEstimate.bonusGross > 0
                 ? (bonusEstimate.bonusFederalWithholding +
-                    bonusEstimate.bonusFica) /
+                    bonusEstimate.bonusFica +
+                    bonusEstimate.bonusContributions) /
                   bonusEstimate.bonusGross
                 : 0;
             return (
@@ -201,6 +202,14 @@ export function BonusSection({
                   <span>FICA</span>
                   <span>-{formatCurrency(bonusEstimate.bonusFica)}</span>
                 </div>
+                {bonusEstimate.bonusContributions > 0 && (
+                  <div className="flex justify-between text-muted">
+                    <span>401k / contributions</span>
+                    <span>
+                      -{formatCurrency(bonusEstimate.bonusContributions)}
+                    </span>
+                  </div>
+                )}
                 <div className="border-t border-amber-200 pt-1 flex justify-between font-medium">
                   <span>
                     Net

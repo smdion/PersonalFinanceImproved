@@ -31,6 +31,7 @@ export type BonusEstimate = {
   bonusNet: number;
   bonusFederalWithholding: number;
   bonusFica: number;
+  bonusContributions: number;
 };
 
 export type PaycheckInput = {

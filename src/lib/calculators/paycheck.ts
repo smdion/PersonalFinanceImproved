@@ -352,6 +352,7 @@ function calculateBonus(
       bonusNet: 0,
       bonusFederalWithholding: 0,
       bonusFica: 0,
+      bonusContributions: 0,
     };
   }
 
@@ -398,7 +399,13 @@ function calculateBonus(
     bonusGross - bonusFederalWithholding - bonusFica - bonusContributions,
   );
 
-  return { bonusGross, bonusNet, bonusFederalWithholding, bonusFica };
+  return {
+    bonusGross,
+    bonusNet,
+    bonusFederalWithholding,
+    bonusFica,
+    bonusContributions,
+  };
 }
 
 /**
