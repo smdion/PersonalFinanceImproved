@@ -229,7 +229,7 @@ export const paycheckRouter = createTRPCRouter({
               ? toNumber(activeJob.bonusOverride)
               : null,
             monthsInBonusYear: activeJob.monthsInBonusYear,
-            includeContribInBonus: activeJob.includeBonusInContributions,
+            includeContribInBonus: activeJob.include401kInBonus,
             bonusMonth: activeJob.bonusMonth,
             bonusDayOfMonth: activeJob.bonusDayOfMonth,
             asOfDate,
