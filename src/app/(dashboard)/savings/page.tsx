@@ -39,6 +39,8 @@ import {
   type FundManagementCallbacks,
 } from "@/components/savings/fund-management-section";
 import { AllocationEditorSection } from "@/components/savings/allocation-editor-section";
+import { SavingsTrajectoryTable } from "@/components/savings/savings-trajectory-table";
+import { AllTransactionsTab } from "@/components/savings/all-transactions-tab";
 import {
   ApiSyncSection,
   useApiSync,
@@ -131,6 +133,9 @@ export default function SavingsPage() {
   const [editingMonth, setEditingMonth] = useState<Date | null>(null);
   const [showTransferForm, setShowTransferForm] = useState(false);
   const [showNewFund, setShowNewFund] = useState(false);
+  const [projectionsTab, setProjectionsTab] = useState<
+    "table" | "chart" | "edit" | "transactions"
+  >("table");
   const [yearlyGrowth, setYearlyGrowth] = useState<
     Record<number, { type: "pct" | "dollar"; value: number }>
   >({});
@@ -420,7 +425,9 @@ export default function SavingsPage() {
   );
 
   const handleFundClick = (fundName: string) => {
-    const el = document.getElementById(`fund-card-${fundName}`);
+    const gp = goalProjections.find((g) => g.name === fundName);
+    if (!gp) return;
+    const el = document.getElementById(`fund-card-${gp.goalId}`);
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
@@ -545,9 +552,10 @@ export default function SavingsPage() {
         />
       )}
 
-      {/* ── Overview ── */}
-      <CardBoundary title="Savings Overview">
+      {/* ── At a Glance ── */}
+      <CardBoundary title="Overview">
         <section className="space-y-4">
+          <h2 className="text-base font-semibold text-primary">Overview</h2>
           <SummaryCards
             savings={savings}
             efund={efund}
@@ -569,33 +577,68 @@ export default function SavingsPage() {
         </section>
       </CardBoundary>
 
-      {/* ── Planning & Projections ── */}
-      <CardBoundary title="Savings Projections">
-        <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">
-              Projections
-            </h2>
-            <div className="flex-1 border-t border/50" />
+      {/* ── Projections ── */}
+      <CardBoundary title="Projections">
+        <section className="bg-surface-primary rounded-lg border p-4 sm:p-5 space-y-4">
+          {/* Section header */}
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-primary">
+                Projections
+              </h2>
+              <p className="text-xs text-faint mt-0.5">
+                Where your funds are headed based on current allocations
+              </p>
+            </div>
+            {/* Settings toolbar */}
+            <BudgetCapacityBar
+              maxMonthlyFunding={maxMonthlyFunding}
+              totalMonthlyAllocation={totalMonthlyAllocation}
+              budgetData={budgetData}
+              budgetColumn={budgetColumn}
+              setBudgetColumn={setBudgetColumn}
+              projectionYears={projectionYears}
+              setProjectionYears={setProjectionYears}
+              budgetNote={budgetNote}
+              crossModeCapacity={crossModeCapacity}
+            />
           </div>
 
-          <BudgetCapacityBar
-            maxMonthlyFunding={maxMonthlyFunding}
-            totalMonthlyAllocation={totalMonthlyAllocation}
-            budgetData={budgetData}
-            budgetColumn={budgetColumn}
-            setBudgetColumn={setBudgetColumn}
-            projectionYears={projectionYears}
-            setProjectionYears={setProjectionYears}
-            yearlyGrowth={yearlyGrowth}
-            setYearlyGrowth={setYearlyGrowth}
-            budgetNote={budgetNote}
-            goalProjections={goalProjections}
-            onGoalUpdate={onGoalUpdate}
-            crossModeCapacity={crossModeCapacity}
-          />
-
+          {/* Tab bar */}
           {goalProjections.length > 0 && (
+            <div className="flex border-b -mx-4 sm:-mx-5 px-4 sm:px-5">
+              {(
+                [
+                  { key: "table", label: "Monthly Balances" },
+                  { key: "chart", label: "Chart" },
+                  { key: "edit", label: "Allocations" },
+                  { key: "transactions", label: "Transactions" },
+                ] as const
+              ).map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setProjectionsTab(key)}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    projectionsTab === key
+                      ? "border-blue-600 text-blue-600"
+                      : "border-transparent text-muted hover:text-primary"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Tab content */}
+          {goalProjections.length > 0 && projectionsTab === "table" && (
+            <SavingsTrajectoryTable
+              goalProjections={goalProjections}
+              monthDates={monthDates}
+            />
+          )}
+
+          {goalProjections.length > 0 && projectionsTab === "chart" && (
             <SavingsTrajectoryChart
               goalProjections={goalProjections}
               monthDates={monthDates}
@@ -603,63 +646,86 @@ export default function SavingsPage() {
             />
           )}
 
-          <AllocationEditorSection
+          {projectionsTab === "transactions" && (
+            <AllTransactionsTab
+              plannedTransactions={plannedTransactions}
+              goalProjections={goalProjections}
+              canEdit={canEdit}
+            />
+          )}
+
+          {projectionsTab === "edit" && (
+            <AllocationEditorSection
+              goalProjections={goalProjections}
+              monthDates={monthDates}
+              totalMonthlyAllocation={totalMonthlyAllocation}
+              maxMonthlyFunding={maxMonthlyFunding}
+              monthlyPools={monthlyPools}
+              canEdit={canEdit}
+              onGoalUpdate={onGoalUpdate}
+              onGoalUpdateMulti={onGoalUpdateMulti}
+              editingMonth={editingMonth}
+              setEditingMonth={setEditingMonth}
+              projectionYears={projectionYears}
+              yearlyGrowth={yearlyGrowth}
+              setYearlyGrowth={setYearlyGrowth}
+            />
+          )}
+        </section>
+      </CardBoundary>
+
+      {/* ── Funds ── */}
+      <CardBoundary title="Funds">
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-base font-semibold text-primary">Funds</h2>
+            <p className="text-xs text-faint mt-0.5">
+              These funds set the allocation amounts used in the projections
+              above — click any fund to expand
+            </p>
+          </div>
+          <FundManagementSection
+            rawGoals={rawGoals}
             goalProjections={goalProjections}
+            savings={savings}
+            plannedTransactions={plannedTransactions}
+            allocationOverrides={allocationOverrides}
             monthDates={monthDates}
             totalMonthlyAllocation={totalMonthlyAllocation}
             maxMonthlyFunding={maxMonthlyFunding}
-            monthlyPools={monthlyPools}
+            goalById={goalById}
+            childGoalsByParent={childGoalsByParent}
+            apiBalanceMap={apiBalanceMap}
+            apiServiceName={apiBalancesData?.service}
             canEdit={canEdit}
-            onGoalUpdate={onGoalUpdate}
-            onGoalUpdateMulti={onGoalUpdateMulti}
-            editingMonth={editingMonth}
-            setEditingMonth={setEditingMonth}
+            onEditMonth={setEditingMonth}
+            onDeleteOverride={apiSync.onDeleteOverride}
+            efund={efund}
+            budgetTierLabels={budgetTierLabels}
+            efundTierIndex={efundTierIndex}
+            onEfundTierChange={setEfundBudgetColumn}
+            reimbursementsData={reimbursementsData}
+            onLinkToApi={apiSync.onLinkToApi}
+            onUnlinkFromApi={apiSync.onUnlinkFromApi}
+            onConvertToBudgetItem={apiSync.onConvertToBudgetItem}
+            onPushPreview={apiSync.onPushPreview}
+            callbacksRef={fundCallbacksRef}
+            showNewFund={showNewFund}
+            setShowNewFund={setShowNewFund}
+            newFund={newFund}
+            setNewFund={setNewFund}
+            createGoalMutate={(params, options) =>
+              createGoal.mutate(params, options)
+            }
+            createGoalPending={createGoal.isPending}
           />
         </section>
       </CardBoundary>
 
-      {/* ── Fund Details ── */}
-      <CardBoundary title="Fund Management">
-        <FundManagementSection
-          rawGoals={rawGoals}
-          goalProjections={goalProjections}
-          savings={savings}
-          plannedTransactions={plannedTransactions}
-          allocationOverrides={allocationOverrides}
-          monthDates={monthDates}
-          totalMonthlyAllocation={totalMonthlyAllocation}
-          maxMonthlyFunding={maxMonthlyFunding}
-          goalById={goalById}
-          childGoalsByParent={childGoalsByParent}
-          apiBalanceMap={apiBalanceMap}
-          apiServiceName={apiBalancesData?.service}
-          canEdit={canEdit}
-          onEditMonth={setEditingMonth}
-          onDeleteOverride={apiSync.onDeleteOverride}
-          efund={efund}
-          budgetTierLabels={budgetTierLabels}
-          efundTierIndex={efundTierIndex}
-          onEfundTierChange={setEfundBudgetColumn}
-          reimbursementsData={reimbursementsData}
-          onLinkToApi={apiSync.onLinkToApi}
-          onUnlinkFromApi={apiSync.onUnlinkFromApi}
-          onConvertToBudgetItem={apiSync.onConvertToBudgetItem}
-          onPushPreview={apiSync.onPushPreview}
-          callbacksRef={fundCallbacksRef}
-          showNewFund={showNewFund}
-          setShowNewFund={setShowNewFund}
-          newFund={newFund}
-          setNewFund={setNewFund}
-          createGoalMutate={(params, options) =>
-            createGoal.mutate(params, options)
-          }
-          createGoalPending={createGoal.isPending}
-        />
-      </CardBoundary>
-
-      {/* ── Long-term Investments ── */}
-      <CardBoundary title="Long-term Investments">
-        <section>
+      {/* ── Investments ── */}
+      <CardBoundary title="Investments">
+        <section className="space-y-3">
+          <h2 className="text-base font-semibold text-primary">Investments</h2>
           <BrokerageGoalsSection />
         </section>
       </CardBoundary>
