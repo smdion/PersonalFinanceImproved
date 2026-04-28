@@ -33,7 +33,6 @@ const SavingsTrajectoryChart = dynamic(
 );
 import { UpcomingGoals } from "@/components/savings/upcoming-goals";
 import { TransferForm } from "@/components/savings/transfer-form";
-import { BrokerageGoalsSection } from "@/components/cards/brokerage-goals";
 import {
   FundManagementSection,
   type FundManagementCallbacks,
@@ -675,14 +674,6 @@ export default function SavingsPage() {
             }
             createGoalPending={createGoal.isPending}
           />
-        </section>
-      </CardBoundary>
-
-      {/* ── Investments ── */}
-      <CardBoundary title="Investments">
-        <section className="space-y-3">
-          <h2 className="text-base font-semibold text-primary">Investments</h2>
-          <BrokerageGoalsSection />
         </section>
       </CardBoundary>
 
