@@ -60,6 +60,7 @@ interface EfundData {
   trueBalance: number;
   monthsCovered: number | null;
   targetMonths: number;
+  targetAmount: number;
   progress: number;
   neededAfterRepay: number;
 }
@@ -483,6 +484,7 @@ export function FundManagementSection({
                   onCreateFund={handleCreateFund}
                   createGoalPending={createGoalPending}
                   canEdit={canEdit}
+                  efundResult={raw.isEmergencyFund ? efund : null}
                   apiBalance={apiBalanceMap.get(raw.id) ?? null}
                   apiServiceName={apiServiceName}
                   onLinkToApi={onLinkToApi}

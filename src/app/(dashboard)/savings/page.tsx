@@ -406,6 +406,7 @@ export default function SavingsPage() {
       goalId,
       current: goal.current,
       target: goal.target,
+      targetMode: (raw?.targetMode ?? "fixed") as "fixed" | "ongoing",
       monthlyAllocation: baseAllocation,
       monthlyAllocations,
       balances,
@@ -495,7 +496,11 @@ export default function SavingsPage() {
             {apiBalancesData?.service && (
               <button
                 onClick={() =>
-                  apiSync.buildPushAllPreview(rawGoals, apiBalanceMap)
+                  apiSync.buildPushAllPreview(
+                    rawGoals,
+                    apiBalanceMap,
+                    efund?.targetAmount ?? undefined,
+                  )
                 }
                 disabled={apiSync.pushToApiPending}
                 className="px-3 py-1.5 border border-green-600 text-green-400 rounded text-sm hover:bg-green-600/20 disabled:opacity-50"

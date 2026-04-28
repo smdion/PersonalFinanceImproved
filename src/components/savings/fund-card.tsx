@@ -54,6 +54,12 @@ interface PlannedTransaction {
   transferPairId?: string | null;
 }
 
+interface EfundResult {
+  neededAfterRepay: number;
+  targetAmount: number;
+  progress: number;
+}
+
 interface AllocationOverride {
   goalId: number;
   monthDate: string;
@@ -76,6 +82,7 @@ function getGoalStatus(
   rawGoal: RawGoal,
   projection: GoalProjection,
   transactions: PlannedTransaction[],
+  efundResult?: EfundResult | null,
 ): { label: string; color: string; bgColor: string; borderColor: string } {
   // Balance goes negative — needs attention regardless
   const goesNegative = projection.balances.some((b) => b < 0);
@@ -88,9 +95,9 @@ function getGoalStatus(
     };
   }
 
-  // Emergency fund with target — special case (only fund type with a target)
-  if (rawGoal.isEmergencyFund && savingsGoal.target > 0) {
-    if (savingsGoal.current >= savingsGoal.target) {
+  // Emergency fund — use Ledgr-computed neededAfterRepay as the funded check
+  if (rawGoal.isEmergencyFund && efundResult) {
+    if (efundResult.neededAfterRepay <= 0) {
       return {
         label: "Funded",
         color: "text-green-600",
@@ -212,6 +219,7 @@ export function FundCard({
   onCreateFund,
   createGoalPending,
   canEdit,
+  efundResult,
   apiBalance,
   onLinkToApi,
   onUnlinkFromApi,
@@ -251,6 +259,7 @@ export function FundCard({
   onCreateFund: () => void;
   createGoalPending: boolean;
   canEdit?: boolean;
+  efundResult?: EfundResult | null;
   apiBalance?: { balance: number; budgeted: number; activity: number } | null;
   onLinkToApi?: (goalId: number) => void;
   onUnlinkFromApi?: (goalId: number) => void;
@@ -263,17 +272,26 @@ export function FundCard({
   const [reassigningChildId, setReassigningChildId] = useState<number | null>(
     null,
   );
-  const status = getGoalStatus(savingsGoal, rawGoal, projection, transactions);
+  const status = getGoalStatus(
+    savingsGoal,
+    rawGoal,
+    projection,
+    transactions,
+    efundResult,
+  );
   const pct =
     totalMonthlyAllocation > 0
       ? ((projection.monthlyAllocation / totalMonthlyAllocation) * 100).toFixed(
           0,
         )
       : "0";
+  // E-fund uses Ledgr-computed progress (balanceWithRepay / target); others use raw balance
   const progress =
-    savingsGoal.target > 0
-      ? Math.min(savingsGoal.current / savingsGoal.target, 1)
-      : 0;
+    rawGoal.isEmergencyFund && efundResult
+      ? Math.min(efundResult.progress, 1)
+      : savingsGoal.target > 0
+        ? Math.min(savingsGoal.current / savingsGoal.target, 1)
+        : 0;
   const progressPct = (progress * 100).toFixed(0);
 
   const serviceLabel = (apiServiceName ?? "API").toUpperCase();
@@ -417,9 +435,13 @@ export function FundCard({
           {status.label}
         </span>
 
-        {/* Balance — fixed width column */}
-        <span className="text-sm font-bold text-primary tabular-nums w-[108px] text-right shrink-0">
-          {formatCurrency(savingsGoal.current)}
+        {/* Balance — fixed width column; e-fund shows still-needed instead of raw balance */}
+        <span className="text-sm font-bold tabular-nums w-[108px] text-right shrink-0 text-primary">
+          {rawGoal.isEmergencyFund && efundResult
+            ? efundResult.neededAfterRepay <= 0
+              ? "Fully funded"
+              : formatCurrency(efundResult.neededAfterRepay)
+            : formatCurrency(savingsGoal.current)}
         </span>
 
         {/* Monthly — fixed width column, muted when $0 */}
@@ -480,32 +502,57 @@ export function FundCard({
             {/* Balance + upcoming info */}
             <div className="flex items-baseline justify-between mb-2">
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-extrabold text-primary tabular-nums">
-                  {formatCurrency(savingsGoal.current)}
-                </span>
-                {(rawGoal.targetMode === "fixed" ||
-                  rawGoal.isEmergencyFund) && (
+                {rawGoal.isEmergencyFund && efundResult ? (
                   <>
-                    <span className="text-faint text-lg">/</span>
-                    {canEdit !== false && !rawGoal.isEmergencyFund ? (
-                      <InlineEdit
-                        value={String(savingsGoal.target)}
-                        onSave={(v) =>
-                          onGoalUpdate(projection.goalId, "targetAmount", v)
-                        }
-                        formatDisplay={(v) =>
-                          v === "0"
-                            ? "$0 — set target"
-                            : formatCurrency(Number(v))
-                        }
-                        parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-                        type="number"
-                        className="text-muted text-xl"
-                      />
-                    ) : (
-                      <span className="text-muted text-xl">
-                        {formatCurrency(savingsGoal.target)}
+                    <div>
+                      <div className="text-[10px] text-faint mb-0.5">
+                        still needed
+                      </div>
+                      <span className="text-3xl font-extrabold text-primary tabular-nums">
+                        {efundResult.neededAfterRepay <= 0
+                          ? "Fully funded"
+                          : formatCurrency(efundResult.neededAfterRepay)}
                       </span>
+                    </div>
+                    <span className="text-faint text-lg">/</span>
+                    <div>
+                      <div className="text-[10px] text-faint mb-0.5">
+                        target
+                      </div>
+                      <span className="text-muted text-xl tabular-nums">
+                        {formatCurrency(efundResult.targetAmount)}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-3xl font-extrabold text-primary tabular-nums">
+                      {formatCurrency(savingsGoal.current)}
+                    </span>
+                    {rawGoal.targetMode === "fixed" && (
+                      <>
+                        <span className="text-faint text-lg">/</span>
+                        {canEdit !== false ? (
+                          <InlineEdit
+                            value={String(savingsGoal.target)}
+                            onSave={(v) =>
+                              onGoalUpdate(projection.goalId, "targetAmount", v)
+                            }
+                            formatDisplay={(v) =>
+                              v === "0"
+                                ? "$0 — set target"
+                                : formatCurrency(Number(v))
+                            }
+                            parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+                            type="number"
+                            className="text-muted text-xl"
+                          />
+                        ) : (
+                          <span className="text-muted text-xl">
+                            {formatCurrency(savingsGoal.target)}
+                          </span>
+                        )}
+                      </>
                     )}
                   </>
                 )}
@@ -555,10 +602,11 @@ export function FundCard({
                       {progressPct}%
                     </span>
                     <span className="text-xs text-muted">
-                      {formatCurrency(
-                        Math.max(0, savingsGoal.target - savingsGoal.current),
-                      )}{" "}
-                      remaining
+                      {rawGoal.isEmergencyFund && efundResult
+                        ? efundResult.neededAfterRepay <= 0
+                          ? "Fully funded"
+                          : `${formatCurrency(efundResult.neededAfterRepay)} remaining`
+                        : `${formatCurrency(Math.max(0, savingsGoal.target - savingsGoal.current))} remaining`}
                     </span>
                   </div>
                 </div>

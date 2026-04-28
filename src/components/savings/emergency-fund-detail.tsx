@@ -9,6 +9,7 @@ interface EfundData {
   trueBalance: number;
   monthsCovered: number | null;
   targetMonths: number;
+  targetAmount: number;
   progress: number;
   neededAfterRepay: number;
 }

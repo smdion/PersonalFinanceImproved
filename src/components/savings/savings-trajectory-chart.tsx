@@ -248,9 +248,9 @@ export function SavingsTrajectoryChart({
           {/* Zero reference line */}
           <ReferenceLine y={0} stroke={p.refLine} strokeDasharray="4 4" />
 
-          {/* Target reference lines for each fund */}
+          {/* Target reference lines for fixed-target funds only */}
           {goalProjections.map((gp, i) => {
-            if (gp.target <= 0) return null;
+            if (gp.targetMode !== "fixed" || gp.target <= 0) return null;
             const color = FUND_COLORS[i % FUND_COLORS.length]!;
             return (
               <ReferenceLine

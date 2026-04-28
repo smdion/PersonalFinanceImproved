@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { formatCurrency } from "@/lib/utils/format";
 import { FUND_COLORS } from "./fund-colors";
 import { GoalProjection, monthKey, PlannedTxForm } from "./types";
@@ -24,24 +24,6 @@ interface SavingsGoalSummary {
   monthlyAllocation: number;
   progress: number;
   monthsToTarget: number | null;
-}
-
-interface UpcomingItem {
-  type: "expense" | "target_reached";
-  txId?: number;
-  goalId?: number;
-  fundName: string;
-  fundColor: string;
-  date: Date;
-  monthsAway: number;
-  amount: number;
-  description: string;
-  isRecurring?: boolean;
-  recurrenceMonths?: number | null;
-  /** Balance at that point in time */
-  projectedBalance: number;
-  /** For expenses: will the fund cover it? */
-  funded: boolean;
 }
 
 const MONTH_NAMES_SHORT = [
@@ -75,7 +57,7 @@ export function UpcomingGoals({
   savingsGoals,
   plannedTransactions,
   monthDates,
-  onUpdateTx,
+  onUpdateTx: _onUpdateTx,
   updateTxPending: _updateTxPending,
 }: {
   goalProjections: GoalProjection[];
@@ -83,369 +65,162 @@ export function UpcomingGoals({
   plannedTransactions: PlannedTransaction[];
   monthDates: Date[];
   onUpdateTx?: (id: number, form: PlannedTxForm) => Promise<void> | void;
-  updateTxPending?: boolean; // reserved for callers; row uses local submitting state
+  updateTxPending?: boolean;
 }) {
   const now = new Date();
-  const items: UpcomingItem[] = [];
 
-  for (let gpIdx = 0; gpIdx < goalProjections.length; gpIdx++) {
-    const gp = goalProjections[gpIdx]!;
-    const sg = savingsGoals.find((g) => g.goalId === gp.goalId);
-    const color = FUND_COLORS[gpIdx % FUND_COLORS.length]!;
+  // Build one card per fund — only funds with an upcoming expense are shown
+  const cards = goalProjections
+    .map((gp, gpIdx) => {
+      const sg = savingsGoals.find((g) => g.goalId === gp.goalId);
+      const color = FUND_COLORS[gpIdx % FUND_COLORS.length]!;
 
-    // 1. Upcoming planned expenses (withdrawals)
-    const fundTxs = plannedTransactions.filter(
-      (t) => t.goalId === gp.goalId && t.amount < 0 && !t.transferPairId,
+      // Only consider withdrawals (expenses), skip deposits and transfers
+      const nextExpense =
+        plannedTransactions
+          .filter(
+            (t) => t.goalId === gp.goalId && t.amount < 0 && !t.transferPairId,
+          )
+          .map((tx) => {
+            const txDate = new Date(tx.transactionDate + "T00:00:00");
+            if (txDate <= now) return null;
+            const mi = monthDates.findIndex(
+              (d) => monthKey(d) === monthKey(txDate),
+            );
+            const projBal =
+              mi >= 0 ? (gp.balances[mi] ?? gp.current) : gp.current;
+            return {
+              tx,
+              date: txDate,
+              monthsAway: monthsDiff(now, txDate),
+              projBal,
+              funded: projBal >= 0,
+            };
+          })
+          .filter((x): x is NonNullable<typeof x> => x !== null)
+          .sort((a, b) => a.date.getTime() - b.date.getTime())[0] ?? null;
+
+      if (!nextExpense) return null;
+
+      const progress = sg ? Math.min(1, sg.progress) : null;
+      const hasTarget = sg && sg.target > 0;
+
+      return { gp, sg, color, nextExpense, progress, hasTarget };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+    // Sort by soonest upcoming expense first
+    .sort(
+      (a, b) => a.nextExpense.date.getTime() - b.nextExpense.date.getTime(),
     );
-    for (const tx of fundTxs) {
-      const txDate = new Date(tx.transactionDate + "T00:00:00");
-      if (txDate <= now) continue;
-      const months = monthsDiff(now, txDate);
-      // Find projected balance at that month
-      const mi = monthDates.findIndex((d) => monthKey(d) === monthKey(txDate));
-      const projBal = mi >= 0 ? gp.balances[mi]! : gp.current;
-      items.push({
-        type: "expense",
-        txId: tx.id,
-        goalId: tx.goalId,
-        fundName: gp.name,
-        fundColor: color,
-        date: txDate,
-        monthsAway: months,
-        amount: Math.abs(tx.amount),
-        description: tx.description,
-        isRecurring: tx.isRecurring,
-        recurrenceMonths: tx.recurrenceMonths,
-        projectedBalance: projBal,
-        funded: projBal >= 0,
-      });
-    }
 
-    // 2. Target reached milestone (for goals with a target and positive monthsToTarget)
-    if (
-      sg &&
-      sg.target > 0 &&
-      sg.monthsToTarget !== null &&
-      sg.monthsToTarget > 0 &&
-      sg.progress < 1
-    ) {
-      const targetDate = new Date(
-        now.getFullYear(),
-        now.getMonth() + sg.monthsToTarget,
-        1,
-      );
-      items.push({
-        type: "target_reached",
-        fundName: gp.name,
-        fundColor: color,
-        date: targetDate,
-        monthsAway: sg.monthsToTarget,
-        amount: sg.target,
-        description: "Target reached",
-        projectedBalance: sg.target,
-        funded: true,
-      });
-    }
-  }
-
-  const INITIAL_SHOW = 4;
-  const [showAll, setShowAll] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<PlannedTxForm | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  // Sort by date (soonest first)
-  items.sort((a, b) => a.date.getTime() - b.date.getTime());
-
-  if (items.length === 0) return null;
-  const visibleItems = showAll ? items : items.slice(0, INITIAL_SHOW);
-  const hasMore = items.length > INITIAL_SHOW;
+  if (cards.length === 0) return null;
 
   return (
     <div className="bg-surface-primary rounded-lg border p-3 sm:p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-primary">
-          Upcoming Milestones
-        </h2>
-        {hasMore && (
-          <button
-            onClick={() => setShowAll(!showAll)}
-            className="text-xs text-blue-600 hover:text-blue-700"
-          >
-            {showAll ? "Show less" : `Show all (${items.length})`}
-          </button>
-        )}
-      </div>
+      <h2 className="text-sm font-semibold text-primary mb-3">
+        What You&apos;re Saving For
+      </h2>
 
-      <div className="space-y-2.5">
-        {visibleItems.map((item) => {
-          const isEditing = item.txId !== undefined && editingId === item.txId;
-
-          if (isEditing && editForm) {
-            return (
-              <div
-                key={`${item.txId ?? ""}-${item.fundName}-${item.type}-${item.date.getTime()}`}
-                className="border rounded-lg p-3 bg-surface-primary/50"
-              >
-                <p className="text-xs font-medium text-faint mb-2">
-                  Edit — {item.fundName}
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  <div>
-                    <label className="block text-xs text-faint mb-1">
-                      Date
-                    </label>
-                    <input
-                      type="date"
-                      value={editForm.transactionDate}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          transactionDate: e.target.value,
-                        })
-                      }
-                      className="w-full border bg-surface-elevated text-primary rounded px-2 py-1 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-faint mb-1">
-                      Amount (negative = spending)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={editForm.amount}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, amount: e.target.value })
-                      }
-                      className="w-full border bg-surface-elevated text-primary rounded px-2 py-1 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-faint mb-1">
-                      Description
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.description}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          description: e.target.value,
-                        })
-                      }
-                      className="w-full border bg-surface-elevated text-primary rounded px-2 py-1 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-faint mb-1">
-                      Recurring?
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={editForm.isRecurring}
-                        onChange={(e) =>
-                          setEditForm({
-                            ...editForm,
-                            isRecurring: e.target.checked,
-                          })
-                        }
-                      />
-                      {editForm.isRecurring && (
-                        <input
-                          type="number"
-                          value={editForm.recurrenceMonths}
-                          onChange={(e) =>
-                            setEditForm({
-                              ...editForm,
-                              recurrenceMonths: e.target.value,
-                            })
-                          }
-                          placeholder="every N months"
-                          className="border bg-surface-elevated text-primary rounded px-2 py-1 text-sm w-24"
-                        />
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-2 mt-3">
-                  <button
-                    onClick={async () => {
-                      if (
-                        !editForm.transactionDate ||
-                        !editForm.amount ||
-                        !editForm.description
-                      )
-                        return;
-                      if (editForm.isRecurring && !editForm.recurrenceMonths)
-                        return;
-                      setSubmitting(true);
-                      try {
-                        await onUpdateTx?.(item.txId!, editForm);
-                        setEditingId(null);
-                        setEditForm(null);
-                      } finally {
-                        setSubmitting(false);
-                      }
-                    }}
-                    disabled={
-                      submitting ||
-                      (editForm.isRecurring && !editForm.recurrenceMonths)
-                    }
-                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {submitting ? "Saving..." : "Save"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditingId(null);
-                      setEditForm(null);
-                    }}
-                    className="px-3 py-1 border text-faint rounded text-sm hover:bg-surface-elevated"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            );
-          }
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
+        {cards.map(({ gp, sg, color, nextExpense, progress, hasTarget }) => {
+          const isShort = !nextExpense.funded;
+          const monthsAway = nextExpense.monthsAway;
 
           return (
             <div
-              key={`${item.txId ?? ""}-${item.fundName}-${item.type}-${item.date.getTime()}`}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 border ${
-                item.type === "expense"
-                  ? item.funded
-                    ? "border bg-surface-sunken"
-                    : "border-red-300/50 bg-red-50"
-                  : "border-green-300/30 bg-green-50"
+              key={gp.goalId}
+              className={`rounded-lg border overflow-hidden ${
+                isShort ? "border-red-400/40" : "border-surface-strong"
               }`}
             >
-              {/* Fund color dot */}
-              <div
-                className="w-3 h-3 rounded-full shrink-0"
-                style={{ backgroundColor: item.fundColor }}
-              />
+              {/* Colored top accent bar */}
+              <div className="h-1 w-full" style={{ backgroundColor: color }} />
 
-              {/* Icon — hidden on small screens to save space */}
-              <div className="shrink-0 hidden sm:block">
-                {item.type === "expense" ? (
-                  <svg
-                    aria-hidden="true"
-                    className={`w-5 h-5 ${item.funded ? "text-blue-600" : "text-red-600"}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    aria-hidden="true"
-                    className="w-5 h-5 text-green-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                )}
-              </div>
-
-              {/* Details */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-primary truncate">
-                    {item.fundName}
+              <div className="px-3 py-2.5 space-y-2">
+                {/* Fund name + balance */}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-semibold text-primary truncate">
+                    {gp.name}
                   </span>
-                  <span
-                    className={`text-xs px-1.5 py-0.5 rounded ${
-                      item.type === "expense"
-                        ? item.funded
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-red-100 text-red-700"
-                        : "bg-green-100 text-green-700"
-                    }`}
-                  >
-                    {item.type === "expense"
-                      ? item.funded
-                        ? "Funded"
-                        : "Short"
-                      : "Goal met"}
+                  <span className="text-xs tabular-nums text-muted shrink-0">
+                    {formatCurrency(gp.current)}
+                    {hasTarget && sg && (
+                      <span className="text-faint">
+                        {" "}
+                        / {formatCurrency(sg.target)}
+                      </span>
+                    )}
                   </span>
                 </div>
-                <p className="text-xs text-muted truncate">
-                  {item.description}
-                </p>
-              </div>
 
-              {/* Amount */}
-              <div className="text-right shrink-0">
-                <div
-                  className={`text-sm font-semibold tabular-nums ${
-                    item.type === "expense" ? "text-primary" : "text-green-600"
-                  }`}
-                >
-                  {item.type === "expense" ? "-" : ""}
-                  {formatCurrency(item.amount)}
-                </div>
-                {item.type === "expense" && (
-                  <div className="text-[10px] text-muted tabular-nums">
-                    bal: {formatCurrency(item.projectedBalance)}
+                {/* Progress bar */}
+                {hasTarget && progress !== null && (
+                  <div className="h-1 rounded-full bg-surface-strong overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${progress * 100}%`,
+                        backgroundColor: color,
+                        opacity: 0.7,
+                      }}
+                    />
                   </div>
                 )}
-              </div>
 
-              {/* Timeline */}
-              <div className="text-right shrink-0 w-[4.5rem]">
-                <div className="text-xs text-secondary font-medium">
-                  {formatMonthYear(item.date)}
-                </div>
-                <div className="text-[10px] text-muted">
-                  {item.monthsAway <= 0
-                    ? "This month"
-                    : item.monthsAway === 1
-                      ? "1 month"
-                      : `${item.monthsAway} months`}
+                {/* Next expense — hero block */}
+                <div
+                  className={`rounded-md px-2.5 py-2 space-y-1 ${
+                    isShort
+                      ? "bg-red-500/8 border border-red-400/20"
+                      : "bg-surface-elevated"
+                  }`}
+                >
+                  {/* Description — hero text */}
+                  <p className="text-sm font-semibold text-primary leading-tight truncate">
+                    {nextExpense.tx.description}
+                  </p>
+
+                  {/* Countdown row */}
+                  <div className="flex items-end justify-between gap-2">
+                    <div>
+                      <p className="text-[10px] text-faint">
+                        {formatMonthYear(nextExpense.date)}
+                      </p>
+                      <p
+                        className={`text-[10px] font-medium ${
+                          isShort ? "text-red-500" : "text-muted"
+                        }`}
+                      >
+                        bal after: {formatCurrency(nextExpense.projBal)}
+                      </p>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      {/* Big countdown number */}
+                      <div className="flex items-baseline gap-0.5 justify-end">
+                        <span
+                          className="text-2xl font-bold tabular-nums leading-none"
+                          style={{ color }}
+                        >
+                          {monthsAway <= 0 ? "Now" : monthsAway}
+                        </span>
+                        {monthsAway > 0 && (
+                          <span className="text-[10px] text-faint ml-0.5">
+                            mo
+                          </span>
+                        )}
+                      </div>
+                      <p
+                        className={`text-xs font-semibold tabular-nums ${
+                          isShort ? "text-red-500" : "text-primary"
+                        }`}
+                      >
+                        −{formatCurrency(Math.abs(nextExpense.tx.amount))}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              {/* Edit button — only for editable expense rows */}
-              {item.type === "expense" &&
-                item.txId !== undefined &&
-                onUpdateTx && (
-                  <button
-                    onClick={() => {
-                      setEditingId(item.txId!);
-                      setEditForm({
-                        goalId: item.goalId!,
-                        transactionDate: `${item.date.getFullYear()}-${String(item.date.getMonth() + 1).padStart(2, "0")}-${String(item.date.getDate()).padStart(2, "0")}`,
-                        amount: String(-item.amount),
-                        description: item.description,
-                        isRecurring: item.isRecurring ?? false,
-                        recurrenceMonths:
-                          item.recurrenceMonths != null
-                            ? String(item.recurrenceMonths)
-                            : "",
-                      });
-                    }}
-                    className="text-muted/50 hover:text-blue-600 text-xs shrink-0"
-                    title="Edit"
-                  >
-                    ✎
-                  </button>
-                )}
             </div>
           );
         })}
