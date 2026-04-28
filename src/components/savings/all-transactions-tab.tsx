@@ -128,7 +128,7 @@ export function AllTransactionsTab({
       goalId: addForm.goalId,
       transactionDate: addForm.transactionDate,
       description: addForm.description,
-      amount: addForm.isNegative ? -Math.abs(amt) : Math.abs(amt),
+      amount: String(addForm.isNegative ? -Math.abs(amt) : Math.abs(amt)),
       isRecurring: addForm.isRecurring,
       recurrenceMonths: addForm.isRecurring ? addForm.recurrenceMonths : null,
     });
