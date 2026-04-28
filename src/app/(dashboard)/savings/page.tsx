@@ -33,7 +33,6 @@ const SavingsTrajectoryChart = dynamic(
   { loading: () => <SkeletonChart />, ssr: false },
 );
 import { UpcomingGoals } from "@/components/savings/upcoming-goals";
-import { TransferForm } from "@/components/savings/transfer-form";
 import {
   FundManagementSection,
   type FundManagementCallbacks,
@@ -115,7 +114,6 @@ export default function SavingsPage() {
   // ── Cross-section coordination ──
   const apiSync = useApiSync();
   const [editingMonth, setEditingMonth] = useState<Date | null>(null);
-  const [showTransferForm, setShowTransferForm] = useState(false);
   const [showNewFund, setShowNewFund] = useState(false);
   const [projectionsTab, setProjectionsTab] = useState<
     "table" | "chart" | "edit" | "transactions" | "extraPaychecks"
@@ -137,12 +135,6 @@ export default function SavingsPage() {
     onSuccess: () => {
       utils.savings.invalidate();
       setShowNewFund(false);
-    },
-  });
-  const createTransfer = trpc.savings.transfers.create.useMutation({
-    onSuccess: () => {
-      utils.savings.invalidate();
-      setShowTransferForm(false);
     },
   });
   const { onUpdateTx: updateTxFn, isPending: updateTxPending } =
@@ -458,37 +450,7 @@ export default function SavingsPage() {
             ? `Budget: ${budgetLabel} | Profile: ${profileName}`
             : `Budget: ${budgetLabel} | Profile: Live`;
         })()}
-      >
-        {canEdit && (
-          <div className="flex flex-wrap gap-2">
-            {apiBalancesData?.service && (
-              <button
-                onClick={() =>
-                  apiSync.buildPushAllPreview(
-                    rawGoals,
-                    apiBalanceMap,
-                    efund?.targetAmount ?? undefined,
-                  )
-                }
-                disabled={apiSync.pushToApiPending}
-                className="px-3 py-1.5 border border-green-600 text-green-400 rounded text-sm hover:bg-green-600/20 disabled:opacity-50"
-                title="Push monthly contributions as budget API goal targets"
-              >
-                {apiSync.pushToApiPending
-                  ? "Pushing..."
-                  : "Push Contributions \u2192"}
-              </button>
-            )}
-            <Button
-              variant="secondary"
-              onClick={() => setShowTransferForm(true)}
-            >
-              Transfer
-            </Button>
-            <Button onClick={() => setShowNewFund(true)}>+ New Fund</Button>
-          </div>
-        )}
-      </PageHeader>
+      ></PageHeader>
 
       {/* Warnings */}
       {savings.warnings.length > 0 && (
@@ -499,30 +461,6 @@ export default function SavingsPage() {
             </p>
           ))}
         </div>
-      )}
-
-      {canEdit && showTransferForm && (
-        <TransferForm
-          goals={rawGoals
-            .filter((g) => g.isActive && !g.parentGoalId)
-            .map((g) => ({ id: g.id, name: g.name }))}
-          onSubmit={(data) => createTransfer.mutate(data)}
-          isPending={createTransfer.isPending}
-          onCancel={() => setShowTransferForm(false)}
-        />
-      )}
-
-      {canEdit && showNewFund && (
-        <NewFundFormCard
-          newFund={newFund}
-          setNewFund={setNewFund}
-          onSubmit={handleCreateFund}
-          onCancel={() => setShowNewFund(false)}
-          isPending={createGoal.isPending}
-          availableParents={rawGoals
-            .filter((g) => !g.parentGoalId && g.isActive)
-            .map((g) => ({ id: g.id, name: g.name }))}
-        />
       )}
 
       {/* ── At a Glance ── */}
@@ -640,28 +578,50 @@ export default function SavingsPage() {
             })()}
 
           {projectionsTab === "edit" && (
-            <AllocationEditorSection
-              goalProjections={goalProjections}
-              monthDates={monthDates}
-              totalMonthlyAllocation={totalMonthlyAllocation}
-              maxMonthlyFunding={maxMonthlyFunding}
-              monthlyPools={monthlyPools}
-              canEdit={canEdit}
-              onGoalUpdate={onGoalUpdate}
-              onGoalUpdateMulti={onGoalUpdateMulti}
-              editingMonth={editingMonth}
-              setEditingMonth={setEditingMonth}
-              projectionYears={projectionYears}
-              yearlyGrowth={yearlyGrowth}
-              setYearlyGrowth={setYearlyGrowth}
-              ruleMonthKeys={
-                new Set(
-                  (allocationOverrides ?? [])
-                    .filter((o) => o.source === "rule")
-                    .map((o) => o.monthDate.slice(0, 7)),
-                )
-              }
-            />
+            <div className="space-y-3">
+              {canEdit && apiBalancesData?.service && (
+                <div className="flex justify-end">
+                  <button
+                    onClick={() =>
+                      apiSync.buildPushAllPreview(
+                        rawGoals,
+                        apiBalanceMap,
+                        efund?.targetAmount ?? undefined,
+                      )
+                    }
+                    disabled={apiSync.pushToApiPending}
+                    className="px-3 py-1.5 border border-green-600 text-green-400 rounded text-sm hover:bg-green-600/20 disabled:opacity-50"
+                    title="Push monthly allocation amounts as budget API goal targets"
+                  >
+                    {apiSync.pushToApiPending
+                      ? "Pushing..."
+                      : "Push Monthly Targets →"}
+                  </button>
+                </div>
+              )}
+              <AllocationEditorSection
+                goalProjections={goalProjections}
+                monthDates={monthDates}
+                totalMonthlyAllocation={totalMonthlyAllocation}
+                maxMonthlyFunding={maxMonthlyFunding}
+                monthlyPools={monthlyPools}
+                canEdit={canEdit}
+                onGoalUpdate={onGoalUpdate}
+                onGoalUpdateMulti={onGoalUpdateMulti}
+                editingMonth={editingMonth}
+                setEditingMonth={setEditingMonth}
+                projectionYears={projectionYears}
+                yearlyGrowth={yearlyGrowth}
+                setYearlyGrowth={setYearlyGrowth}
+                ruleMonthKeys={
+                  new Set(
+                    (allocationOverrides ?? [])
+                      .filter((o) => o.source === "rule")
+                      .map((o) => o.monthDate.slice(0, 7)),
+                  )
+                }
+              />
+            </div>
           )}
         </section>
       </CardBoundary>
@@ -669,13 +629,30 @@ export default function SavingsPage() {
       {/* ── Funds ── */}
       <CardBoundary title="Funds">
         <section className="space-y-3">
-          <div>
-            <h2 className="text-base font-semibold text-primary">Funds</h2>
-            <p className="text-xs text-faint mt-0.5">
-              These funds set the allocation amounts used in the projections
-              above — click any fund to expand
-            </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-primary">Funds</h2>
+              <p className="text-xs text-faint mt-0.5">
+                These funds set the allocation amounts used in the projections
+                above — click any fund to expand
+              </p>
+            </div>
+            {canEdit && (
+              <Button onClick={() => setShowNewFund(true)}>+ New Fund</Button>
+            )}
           </div>
+          {canEdit && showNewFund && (
+            <NewFundFormCard
+              newFund={newFund}
+              setNewFund={setNewFund}
+              onSubmit={handleCreateFund}
+              onCancel={() => setShowNewFund(false)}
+              isPending={createGoal.isPending}
+              availableParents={rawGoals
+                .filter((g) => !g.parentGoalId && g.isActive)
+                .map((g) => ({ id: g.id, name: g.name }))}
+            />
+          )}
           <FundManagementSection
             rawGoals={rawGoals}
             goalProjections={goalProjections}
