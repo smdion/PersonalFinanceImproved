@@ -342,6 +342,11 @@ export default function SavingsPage() {
       pct !== null && maxMonthlyFunding !== null
         ? (pct / 100) * maxMonthlyFunding
         : goal.monthlyAllocation;
+    // YNAB-linked goals report the live "Available" balance, which already
+    // includes the current month's budgeted amount. Skip adding the allocation
+    // for month[0] to avoid double-counting it.
+    const balanceIncludesCurrentMonth =
+      !!(raw?.isApiSyncEnabled && raw?.apiCategoryId) && now.getDate() > 1;
 
     for (let i = 0; i < projectionMonths; i++) {
       const mk = monthKey(monthDates[i]!);
@@ -352,7 +357,9 @@ export default function SavingsPage() {
       const defaultAllocation = getAllocationForYear(baseAllocation, yr);
       const allocation =
         overrideAmount !== undefined ? overrideAmount : defaultAllocation;
-      balance += allocation;
+      if (!(i === 0 && balanceIncludesCurrentMonth)) {
+        balance += allocation;
+      }
       if (events) {
         for (const ev of events) balance += ev.amount;
       }
