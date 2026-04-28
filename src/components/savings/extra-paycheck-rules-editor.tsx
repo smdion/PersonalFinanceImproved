@@ -14,6 +14,158 @@ import { formatCurrency } from "@/lib/utils/format";
 import { getExtraPaycheckMonthKeys } from "@/lib/calculators/paycheck";
 import type { ExtraPaycheckRule } from "@/lib/db/schema-pg";
 
+type YearlyGrowthEntry = { type: "pct" | "dollar"; value: number };
+type YearlyGrowth = Record<number, YearlyGrowthEntry>;
+
+function projectedNetPay(
+  baseNetPay: number,
+  year: number,
+  baseYear: number,
+  yearlyGrowth: YearlyGrowth,
+): number {
+  let pay = baseNetPay;
+  for (let y = baseYear + 1; y <= year; y++) {
+    const e = yearlyGrowth[y];
+    if (!e || e.value === 0) continue;
+    pay = e.type === "pct" ? pay * (1 + e.value / 100) : pay + e.value;
+  }
+  return pay;
+}
+
+function PaycheckGrowthEditor({
+  projectionYears,
+  baseNetPay,
+  yearlyGrowth,
+  setYearlyGrowth,
+}: {
+  projectionYears: number;
+  baseNetPay: number;
+  yearlyGrowth: YearlyGrowth;
+  setYearlyGrowth: (g: YearlyGrowth) => void;
+}) {
+  const baseYear = new Date().getFullYear();
+  const years: number[] = [];
+  for (let i = 1; i <= projectionYears; i++) years.push(baseYear + i);
+  if (years.length === 0) return null;
+
+  const updateEntry = (yr: number, patch: Partial<YearlyGrowthEntry>) => {
+    const current = yearlyGrowth[yr] ?? { type: "pct", value: 0 };
+    setYearlyGrowth({ ...yearlyGrowth, [yr]: { ...current, ...patch } });
+  };
+  const removeEntry = (yr: number) => {
+    const next = { ...yearlyGrowth };
+    delete next[yr];
+    setYearlyGrowth(next);
+  };
+  const applyToAll = (entry: YearlyGrowthEntry) => {
+    const next: YearlyGrowth = {};
+    for (const yr of years) next[yr] = { ...entry };
+    setYearlyGrowth(next);
+  };
+
+  return (
+    <div className="rounded border bg-surface-elevated/40 p-3 space-y-1.5 text-xs">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] text-faint font-medium uppercase tracking-wide">
+          Net Pay Annual Growth
+        </span>
+        {Object.keys(yearlyGrowth).length === 0 && (
+          <button
+            onClick={() => applyToAll({ type: "pct", value: 3 })}
+            className="text-[10px] text-blue-600 hover:text-blue-700"
+          >
+            Set 3% for all
+          </button>
+        )}
+      </div>
+      {years.map((yr) => {
+        const entry = yearlyGrowth[yr];
+        const hasEntry = entry !== undefined && entry.value !== 0;
+        const projected = projectedNetPay(
+          baseNetPay,
+          yr,
+          baseYear,
+          yearlyGrowth,
+        );
+        return (
+          <div key={yr} className="flex items-center gap-2">
+            <span className="text-faint w-10 shrink-0">{yr}</span>
+            <div className="flex bg-surface-elevated rounded p-0.5">
+              <button
+                onClick={() => updateEntry(yr, { type: "pct" })}
+                className={`px-1.5 py-0.5 rounded text-[10px] ${!entry || entry.type === "pct" ? "bg-surface-strong text-primary" : "text-faint hover:text-primary"}`}
+              >
+                %
+              </button>
+              <button
+                onClick={() => updateEntry(yr, { type: "dollar" })}
+                className={`px-1.5 py-0.5 rounded text-[10px] ${entry?.type === "dollar" ? "bg-surface-strong text-primary" : "text-faint hover:text-primary"}`}
+              >
+                $
+              </button>
+            </div>
+            <div className="flex items-center gap-0.5">
+              {entry?.type === "dollar" && (
+                <span className="text-[10px] text-muted">+$</span>
+              )}
+              <input
+                type="number"
+                min="0"
+                step={entry?.type === "dollar" ? "50" : "0.5"}
+                value={entry?.value ?? ""}
+                placeholder="0"
+                onChange={(e) => {
+                  const val =
+                    e.target.value === "" ? 0 : Number(e.target.value);
+                  updateEntry(yr, { value: val });
+                }}
+                className="w-16 border bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs text-right tabular-nums"
+              />
+              {(!entry || entry.type === "pct") && (
+                <span className="text-[10px] text-muted">%</span>
+              )}
+              {entry?.type === "dollar" && (
+                <span className="text-[10px] text-muted">/check</span>
+              )}
+            </div>
+            <span className="text-[10px] text-muted tabular-nums">
+              &rarr; {formatCurrency(projected)}/check
+            </span>
+            {hasEntry && (
+              <button
+                onClick={() => removeEntry(yr)}
+                className="text-[10px] text-muted hover:text-faint"
+                title="Remove growth for this year"
+              >
+                &times;
+              </button>
+            )}
+          </div>
+        );
+      })}
+      {years.length > 1 && Object.keys(yearlyGrowth).length > 0 && (
+        <div className="flex gap-2 pt-0.5">
+          <button
+            onClick={() => {
+              const first = yearlyGrowth[years[0]!];
+              if (first) applyToAll(first);
+            }}
+            className="text-[10px] text-muted hover:text-faint"
+          >
+            Apply first to all
+          </button>
+          <button
+            onClick={() => setYearlyGrowth({})}
+            className="text-[10px] text-muted hover:text-red-600"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const MONTH_LABELS = [
   "Jan",
   "Feb",
@@ -61,12 +213,14 @@ function PersonPanel({
   goals,
   netPayPerCheck,
   projectionMonthKeys,
+  yearlyGrowth,
   onSaved,
 }: {
   job: JobEntry;
   goals: Goal[];
   netPayPerCheck: number;
   projectionMonthKeys: Set<string>;
+  yearlyGrowth: YearlyGrowth;
   onSaved: () => void;
 }) {
   const utils = trpc.useUtils();
@@ -230,16 +384,33 @@ function PersonPanel({
             const covered = rules.some(
               (r) => mk >= r.from && (r.to === null || mk <= r.to),
             );
+            const year = parseInt(mk.slice(0, 4));
+            const baseYear = new Date().getFullYear();
+            const projected = projectedNetPay(
+              netPayPerCheck,
+              year,
+              baseYear,
+              yearlyGrowth,
+            );
+            const hasGrowth = Object.values(yearlyGrowth).some(
+              (e) => e.value !== 0,
+            );
             return (
               <span
                 key={mk}
                 className={`text-[10px] px-1.5 py-0.5 rounded border ${
                   covered
-                    ? "bg-green-50 border-green-200 text-green-700"
-                    : "bg-amber-50 border-amber-200 text-amber-700"
+                    ? "bg-green-50 border-green-200 text-green-700 dark:bg-green-950/30 dark:border-green-800"
+                    : "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/30 dark:border-amber-800"
                 }`}
+                title={`Projected net pay: ${formatCurrency(projected)}`}
               >
                 {fmt(mk)}
+                {hasGrowth && year > baseYear && (
+                  <span className="ml-1 opacity-70">
+                    {formatCurrency(projected)}
+                  </span>
+                )}
                 {!covered && " ⚠"}
               </span>
             );
@@ -458,6 +629,7 @@ export function ExtraPaycheckRulesEditor({
 }) {
   const { data: jobs, isLoading } =
     trpc.savings.extraPaycheckRouting.list.useQuery();
+  const [yearlyGrowth, setYearlyGrowth] = useState<YearlyGrowth>({});
 
   const projectionMonthKeys = useMemo(
     () =>
@@ -469,6 +641,24 @@ export function ExtraPaycheckRulesEditor({
       ),
     [monthDates],
   );
+
+  // Distinct future years in the projection (for growth editor)
+  const projectionYears = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const maxYear = monthDates.reduce(
+      (max, d) => Math.max(max, d.getFullYear()),
+      currentYear,
+    );
+    return maxYear - currentYear;
+  }, [monthDates]);
+
+  // Representative base net pay (first person with a value, for the growth editor)
+  const baseNetPay = useMemo(() => {
+    for (const v of netPayByPersonId.values()) {
+      if (v > 0) return v;
+    }
+    return 0;
+  }, [netPayByPersonId]);
 
   if (isLoading) return <p className="text-xs text-muted">Loading…</p>;
   if (!jobs?.length)
@@ -484,30 +674,43 @@ export function ExtraPaycheckRulesEditor({
   }
 
   return (
-    <div className="space-y-6">
-      {Array.from(byPerson.entries()).map(
-        ([personId, { name, jobs: personJobs }]) => (
-          <div key={personId}>
-            <h3 className="text-sm font-semibold text-primary mb-3">{name}</h3>
-            {personJobs.map((job) => (
-              <div key={job.id} className="mb-4">
-                {personJobs.length > 1 && (
-                  <p className="text-[10px] text-muted mb-1.5">
-                    {job.employerName}
-                  </p>
-                )}
-                <PersonPanel
-                  job={job}
-                  goals={goals}
-                  netPayPerCheck={netPayByPersonId.get(personId) ?? 0}
-                  projectionMonthKeys={projectionMonthKeys}
-                  onSaved={() => {}}
-                />
-              </div>
-            ))}
-          </div>
-        ),
+    <div className="space-y-4">
+      {projectionYears > 0 && baseNetPay > 0 && (
+        <PaycheckGrowthEditor
+          projectionYears={projectionYears}
+          baseNetPay={baseNetPay}
+          yearlyGrowth={yearlyGrowth}
+          setYearlyGrowth={setYearlyGrowth}
+        />
       )}
+      <div className="space-y-6">
+        {Array.from(byPerson.entries()).map(
+          ([personId, { name, jobs: personJobs }]) => (
+            <div key={personId}>
+              <h3 className="text-sm font-semibold text-primary mb-3">
+                {name}
+              </h3>
+              {personJobs.map((job) => (
+                <div key={job.id} className="mb-4">
+                  {personJobs.length > 1 && (
+                    <p className="text-[10px] text-muted mb-1.5">
+                      {job.employerName}
+                    </p>
+                  )}
+                  <PersonPanel
+                    job={job}
+                    goals={goals}
+                    netPayPerCheck={netPayByPersonId.get(personId) ?? 0}
+                    projectionMonthKeys={projectionMonthKeys}
+                    yearlyGrowth={yearlyGrowth}
+                    onSaved={() => {}}
+                  />
+                </div>
+              ))}
+            </div>
+          ),
+        )}
+      </div>
     </div>
   );
 }

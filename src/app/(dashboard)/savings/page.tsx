@@ -196,7 +196,12 @@ export default function SavingsPage() {
 
   const apiBalanceMap = new Map<
     number,
-    { balance: number; budgeted: number; activity: number }
+    {
+      balance: number;
+      budgeted: number;
+      activity: number;
+      goalTarget: number | null;
+    }
   >();
   if (apiBalancesData?.balances) {
     for (const b of apiBalancesData.balances) {
@@ -204,6 +209,7 @@ export default function SavingsPage() {
         balance: b.balance,
         budgeted: b.budgeted,
         activity: b.activity,
+        goalTarget: b.goalTarget ?? null,
       });
     }
   }

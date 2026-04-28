@@ -720,7 +720,12 @@ export const savingsRouter = createTRPCRouter({
 
     const catMap = new Map<
       string,
-      { balance: number; budgeted: number; activity: number }
+      {
+        balance: number;
+        budgeted: number;
+        activity: number;
+        goalTarget?: number;
+      }
     >();
     for (const group of categoriesCache.data) {
       for (const cat of group.categories) {
@@ -728,6 +733,7 @@ export const savingsRouter = createTRPCRouter({
           balance: cat.balance,
           budgeted: cat.budgeted,
           activity: cat.activity,
+          goalTarget: cat.goalTarget,
         });
       }
     }
@@ -743,6 +749,7 @@ export const savingsRouter = createTRPCRouter({
           balance: cat?.balance ?? 0,
           budgeted: cat?.budgeted ?? 0,
           activity: cat?.activity ?? 0,
+          goalTarget: cat?.goalTarget ?? null,
         };
       });
 

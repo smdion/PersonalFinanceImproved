@@ -228,14 +228,21 @@ export function useApiSync() {
       rawGoals: RawGoal[],
       apiBalanceMap: Map<
         number,
-        { balance: number; budgeted: number; activity: number }
+        {
+          balance: number;
+          budgeted: number;
+          activity: number;
+          goalTarget: number | null;
+        }
       >,
       efundComputedTarget?: number,
     ) => {
       const items: PushPreviewItem[] = [];
       for (const g of rawGoals) {
         if (!g.isApiSyncEnabled || !g.apiCategoryId) continue;
-        const currentBudgeted = apiBalanceMap.get(g.id)?.budgeted ?? 0;
+        const cat = apiBalanceMap.get(g.id);
+        // currentYnab = existing YNAB goal target, not the budgeted (contribution) amount
+        const currentYnab = cat?.goalTarget ?? 0;
         if (g.isEmergencyFund) {
           // E-fund: push computed target balance (targetMonths × essential expenses)
           const newValue = efundComputedTarget ?? 0;
@@ -243,7 +250,7 @@ export function useApiSync() {
             items.push({
               name: g.name,
               field: "Target Balance (TB)",
-              currentYnab: currentBudgeted,
+              currentYnab,
               newValue,
             });
           }
@@ -253,7 +260,7 @@ export function useApiSync() {
             items.push({
               name: g.name,
               field: "Monthly Goal Target",
-              currentYnab: currentBudgeted,
+              currentYnab,
               newValue: amount,
             });
           }

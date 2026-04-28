@@ -96,7 +96,12 @@ export interface FundManagementSectionProps {
   childGoalsByParent: Map<number, RawGoal[]>;
   apiBalanceMap: Map<
     number,
-    { balance: number; budgeted: number; activity: number }
+    {
+      balance: number;
+      budgeted: number;
+      activity: number;
+      goalTarget: number | null;
+    }
   >;
   canEdit: boolean;
   /** From AllocationEditorSection — piped through to FundCard */
