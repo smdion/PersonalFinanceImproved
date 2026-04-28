@@ -50,10 +50,12 @@ export function AllTransactionsTab({
   plannedTransactions,
   goalProjections,
   canEdit,
+  projectionEndDate,
 }: {
   plannedTransactions: PlannedTransaction[];
   goalProjections: GoalProjection[];
   canEdit?: boolean;
+  projectionEndDate?: Date;
 }) {
   const utils = trpc.useUtils();
   const [adding, setAdding] = useState(false);
@@ -119,11 +121,14 @@ export function AllTransactionsTab({
   today.setHours(0, 0, 0, 0);
 
   // Show all upcoming transactions including transfers (deduped: only show one leg per pair)
+  // Clipped to the projection window end date when provided.
   const seenPairs = new Set<string>();
   const upcoming = plannedTransactions
     .filter((tx) => {
       const date = new Date(tx.transactionDate + "T00:00:00");
       if (!tx.isRecurring && date < today) return false;
+      if (projectionEndDate && !tx.isRecurring && date > projectionEndDate)
+        return false;
       if (tx.transferPairId) {
         if (seenPairs.has(tx.transferPairId)) return false;
         seenPairs.add(tx.transferPairId);

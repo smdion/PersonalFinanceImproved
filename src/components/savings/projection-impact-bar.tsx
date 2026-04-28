@@ -48,61 +48,69 @@ export function ProjectionImpactBar({
   if (goalProjections.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {goalProjections.map((gp, i) => {
-        const color = FUND_COLORS[i % FUND_COLORS.length]!;
-        const endBalance = gp.balances[gp.balances.length - 1] ?? 0;
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-medium text-muted">Fund Tracker</span>
+        <span className="text-[10px] text-faint">
+          — projected end balance &amp; status within this window
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {goalProjections.map((gp, i) => {
+          const color = FUND_COLORS[i % FUND_COLORS.length]!;
+          const endBalance = gp.balances[gp.balances.length - 1] ?? 0;
 
-        const negIdx = gp.balances.findIndex((b) => b < 0);
-        const fundedIdx =
-          gp.targetMode === "fixed" && gp.target > 0
-            ? gp.balances.findIndex((b) => b >= gp.target)
-            : -1;
-        const atRisk = gp.targetMode === "ongoing" && isRevolvingAtRisk(gp);
+          const negIdx = gp.balances.findIndex((b) => b < 0);
+          const fundedIdx =
+            gp.targetMode === "fixed" && gp.target > 0
+              ? gp.balances.findIndex((b) => b >= gp.target)
+              : -1;
+          const atRisk = gp.targetMode === "ongoing" && isRevolvingAtRisk(gp);
 
-        let statusEl: React.ReactNode;
-        if (negIdx !== -1) {
-          statusEl = (
-            <span className="text-red-500 font-medium whitespace-nowrap">
-              ✗ Neg {shortMonth(monthDates[negIdx]!)}
-            </span>
-          );
-        } else if (atRisk) {
-          statusEl = (
-            <span className="text-amber-500 font-medium whitespace-nowrap">
-              ⚠ At risk
-            </span>
-          );
-        } else if (fundedIdx !== -1) {
-          statusEl = (
-            <span className="text-green-600 font-medium whitespace-nowrap">
-              ✓ {shortMonth(monthDates[fundedIdx]!)}
-            </span>
-          );
-        } else {
-          statusEl = (
-            <span className="text-faint whitespace-nowrap">On track</span>
-          );
-        }
+          let statusEl: React.ReactNode;
+          if (negIdx !== -1) {
+            statusEl = (
+              <span className="text-red-500 font-medium whitespace-nowrap">
+                ✗ Neg {shortMonth(monthDates[negIdx]!)}
+              </span>
+            );
+          } else if (atRisk) {
+            statusEl = (
+              <span className="text-amber-500 font-medium whitespace-nowrap">
+                ⚠ At risk
+              </span>
+            );
+          } else if (fundedIdx !== -1) {
+            statusEl = (
+              <span className="text-green-600 font-medium whitespace-nowrap">
+                ✓ {shortMonth(monthDates[fundedIdx]!)}
+              </span>
+            );
+          } else {
+            statusEl = (
+              <span className="text-faint whitespace-nowrap">On track</span>
+            );
+          }
 
-        return (
-          <div
-            key={gp.goalId}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-surface-elevated/30 text-xs"
-            style={{ borderLeftColor: color, borderLeftWidth: 3 }}
-          >
-            <span className="font-medium text-secondary whitespace-nowrap">
-              {gp.name}
-            </span>
-            <span className="text-faint">·</span>
-            <span className="tabular-nums text-primary whitespace-nowrap">
-              {formatCompact(endBalance)}
-            </span>
-            <span className="text-faint">·</span>
-            {statusEl}
-          </div>
-        );
-      })}
+          return (
+            <div
+              key={gp.goalId}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-surface-elevated/30 text-xs"
+              style={{ borderLeftColor: color, borderLeftWidth: 3 }}
+            >
+              <span className="font-medium text-secondary whitespace-nowrap">
+                {gp.name}
+              </span>
+              <span className="text-faint">·</span>
+              <span className="tabular-nums text-primary whitespace-nowrap">
+                {formatCompact(endBalance)}
+              </span>
+              <span className="text-faint">·</span>
+              {statusEl}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -568,6 +568,7 @@ export default function SavingsPage() {
               plannedTransactions={plannedTransactions}
               goalProjections={goalProjections}
               canEdit={canEdit}
+              projectionEndDate={monthDates[monthDates.length - 1]}
             />
           )}
 
