@@ -8,6 +8,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.5
 
+## [0.5.10] - 2026-04-28
+
+### Added
+
+- **Savings page overhauled.** Fund cards are now collapsible with a full details panel per fund. Projections moved into tabbed views (Monthly Balances, Chart, Allocations, Transactions). Planned transaction diamonds on the trajectory chart are now clickable to show event details in the tooltip.
+- **Savings Allocations tab supports inline pool editing.** The monthly pool amount in the Allocations modal is now editable inline — change the pool for a specific month without touching the underlying goal settings.
+- **Allocated column in the contribution grid is now clickable.** Clicking any cell in the Allocated column opens the month override editor for that month, matching the behavior of all other clickable rows.
+- **Budget page warns when savings allocations exceed capacity.** Each column's Savings row now shows a per-column "⚠ $X over → fix in Savings" badge when total sinking fund commitments exceed the available budget leftover, so over-commitment is visible without switching pages.
+- **Savings changes bust the budget cache.** Updating or deleting a savings goal now invalidates the budget summary query, so the budget warning always reflects the current savings state.
+
+### Fixed
+
+- **Income Replacement projection now starts from the true e-fund balance.** Previously the projection used the raw YNAB balance as the starting point, which made the Income Replacement column appear flat at the target value. It now uses the true balance (YNAB balance minus outstanding self-loans/reimbursements), so the trajectory reflects the real starting point.
+- **Overview section resized to 3-column grid** after Bonus Leftover card was removed; was still rendering at 25% width per card.
+- **Projections header no longer shows budget mode selector.** The Standard/Tight/Emergency pills and cross-mode comparison section were removed; the year selector is the only control remaining.
+
+### Removed
+
+- **Investments/long-term goals section removed from savings page.** Brokerage goals are on the dedicated Investments page; the duplicate added noise without value.
+- **Total Balance footer removed from the Allocations contribution grid.** The aggregate balance row at the bottom of the grid was misleading and has been removed.
+- **Bonus Leftover hero card removed from savings Overview.** The value is accessible through Budget; the card was redundant.
+
 ## [0.5.9] - 2026-04-22
 
 ### Added
