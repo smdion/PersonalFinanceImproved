@@ -221,6 +221,7 @@ export function SavingsTrajectoryChart({
           <RechartsTooltip
             content={(tooltipProps) => (
               <EventTooltip
+                // eslint-disable-next-line no-restricted-syntax -- Recharts TooltipProps has readonly payload array incompatible with EventTooltip's mutable signature; no typed wrapper available
                 {...(tooltipProps as unknown as {
                   active?: boolean;
                   payload?: { name: string; value: number; color: string }[];

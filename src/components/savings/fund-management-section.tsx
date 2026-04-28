@@ -174,10 +174,16 @@ export function FundManagementSection({
 
   // ── Mutations ──
   const updateGoal = trpc.settings.savingsGoals.update.useMutation({
-    onSuccess: () => utils.savings.invalidate(),
+    onSuccess: () => {
+      utils.savings.invalidate();
+      utils.budget.computeActiveSummary.invalidate();
+    },
   });
   const deleteGoal = trpc.settings.savingsGoals.delete.useMutation({
-    onSuccess: () => utils.savings.invalidate(),
+    onSuccess: () => {
+      utils.savings.invalidate();
+      utils.budget.computeActiveSummary.invalidate();
+    },
   });
   const createTx = trpc.savings.plannedTransactions.create.useMutation({
     onSuccess: () => utils.savings.invalidate(),
