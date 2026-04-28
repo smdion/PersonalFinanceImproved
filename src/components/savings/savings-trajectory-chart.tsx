@@ -273,13 +273,13 @@ export function SavingsTrajectoryChart({
                 dataKey={gp.name}
                 stroke={color}
                 strokeWidth={2}
-                dot={(dotProps: {
-                  cx?: number;
-                  cy?: number;
-                  index: number;
-                  key?: string;
-                }) => {
-                  const { cx = 0, cy = 0, index } = dotProps;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                dot={(dotProps: any) => {
+                  const {
+                    cx = 0,
+                    cy = 0,
+                    index,
+                  } = dotProps as { cx?: number; cy?: number; index: number };
                   const events = gp.monthEvents[index];
                   if (!events?.length)
                     return <g key={`no-ev-${gp.name}-${index}`} />;
@@ -304,12 +304,13 @@ export function SavingsTrajectoryChart({
                     </g>
                   );
                 }}
-                activeDot={(dotProps: {
-                  cx?: number;
-                  cy?: number;
-                  index: number;
-                }) => {
-                  const { cx = 0, cy = 0, index } = dotProps;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                activeDot={(dotProps: any) => {
+                  const {
+                    cx = 0,
+                    cy = 0,
+                    index,
+                  } = dotProps as { cx?: number; cy?: number; index: number };
                   const events = gp.monthEvents[index];
                   const s = 6;
                   if (events?.length) {
