@@ -1,5 +1,5 @@
 /** Savings router for savings goals, emergency fund calculations, planned transactions, and budget API expense integration. */
-import { eq, asc, sql, lt } from "drizzle-orm";
+import { eq, asc, sql, lt, isNull } from "drizzle-orm";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import {
@@ -1014,6 +1014,7 @@ export const savingsRouter = createTRPCRouter({
           extraPaycheckRouting: schema.jobs.extraPaycheckRouting,
         })
         .from(schema.jobs)
+        .where(isNull(schema.jobs.endDate))
         .orderBy(asc(schema.jobs.personId), asc(schema.jobs.id));
       const people = await ctx.db
         .select({ id: schema.people.id, name: schema.people.name })

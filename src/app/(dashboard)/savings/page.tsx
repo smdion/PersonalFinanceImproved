@@ -118,7 +118,7 @@ export default function SavingsPage() {
   const [showTransferForm, setShowTransferForm] = useState(false);
   const [showNewFund, setShowNewFund] = useState(false);
   const [projectionsTab, setProjectionsTab] = useState<
-    "table" | "chart" | "edit" | "transactions" | "extra"
+    "table" | "chart" | "edit" | "transactions" | "extraPaychecks"
   >("table");
   const [yearlyGrowth, setYearlyGrowth] = useState<
     Record<number, { type: "pct" | "dollar"; value: number }>
@@ -569,7 +569,7 @@ export default function SavingsPage() {
                   { key: "chart", label: "Chart" },
                   { key: "edit", label: "Allocations" },
                   { key: "transactions", label: "Transactions" },
-                  { key: "extra", label: "Extra Checks" },
+                  { key: "extraPaychecks", label: "Extra Paychecks" },
                 ] as const
               ).map(({ key, label }) => (
                 <button
@@ -611,7 +611,7 @@ export default function SavingsPage() {
             />
           )}
 
-          {projectionsTab === "extra" &&
+          {projectionsTab === "extraPaychecks" &&
             (() => {
               const netPayByPersonId = new Map<number, number>();
               if (paycheckData) {
@@ -627,6 +627,7 @@ export default function SavingsPage() {
                     .filter((g) => g.isActive && !g.parentGoalId)
                     .map((g) => ({ id: g.id, name: g.name }))}
                   netPayByPersonId={netPayByPersonId}
+                  monthDates={monthDates}
                 />
               );
             })()}

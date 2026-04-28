@@ -50,27 +50,23 @@ type RuleForm = {
   from: string;
   to: string; // empty = open-ended
   splits: { goalId: number; pct: string }[];
-  netPaySnapshot: string;
 };
 
-function emptyForm(netPay: number): RuleForm {
-  return {
-    from: "",
-    to: "",
-    splits: [{ goalId: 0, pct: "100" }],
-    netPaySnapshot: String(Math.round(netPay)),
-  };
+function emptyForm(): RuleForm {
+  return { from: "", to: "", splits: [{ goalId: 0, pct: "100" }] };
 }
 
 function PersonPanel({
   job,
   goals,
   netPayPerCheck,
+  projectionMonthKeys,
   onSaved,
 }: {
   job: JobEntry;
   goals: Goal[];
   netPayPerCheck: number;
+  projectionMonthKeys: Set<string>;
   onSaved: () => void;
 }) {
   const utils = trpc.useUtils();
@@ -88,10 +84,12 @@ function PersonPanel({
       new Date(job.anchorPayDate + "T00:00:00Z"),
       job.payPeriod,
       now,
-      24,
-    ).map((d) => d.slice(0, 7)); // "YYYY-MM-01" → "YYYY-MM"
+      projectionMonthKeys.size,
+    )
+      .map((d) => d.slice(0, 7)) // "YYYY-MM-01" → "YYYY-MM"
+      .filter((mk) => projectionMonthKeys.has(mk));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [job.anchorPayDate, job.payPeriod]);
+  }, [job.anchorPayDate, job.payPeriod, projectionMonthKeys]);
 
   const rules: ExtraPaycheckRule[] = job.extraPaycheckRouting ?? [];
 
@@ -99,7 +97,7 @@ function PersonPanel({
   const [addForm, setAddForm] = useState<RuleForm | null>(null);
 
   function openAdd() {
-    setAddForm(emptyForm(netPayPerCheck));
+    setAddForm(emptyForm());
     setEditingIdx(null);
   }
 
@@ -114,7 +112,6 @@ function PersonPanel({
       from: r.from,
       to: r.to ?? "",
       splits: r.splits.map((s) => ({ goalId: s.goalId, pct: String(s.pct) })),
-      netPaySnapshot: String(r.netPaySnapshot),
     });
   }
 
@@ -132,7 +129,7 @@ function PersonPanel({
       from: addForm.from,
       to: addForm.to.trim() || null,
       splits,
-      netPaySnapshot: Number(addForm.netPaySnapshot),
+      netPaySnapshot: Math.round(netPayPerCheck),
     };
 
     let updated: ExtraPaycheckRule[];
@@ -196,7 +193,7 @@ function PersonPanel({
     addForm.from.match(/^\d{4}-\d{2}$/) &&
     addForm.splits.every((s) => s.goalId > 0) &&
     Math.abs(splitTotal - 100) < 0.01 &&
-    Number(addForm.netPaySnapshot) > 0;
+    netPayPerCheck > 0;
 
   // Which upcoming months have no rule
   const uncoveredMonths = upcomingMonths.filter((mk) => {
@@ -227,7 +224,7 @@ function PersonPanel({
       {upcomingMonths.length > 0 && (
         <div className="flex flex-wrap gap-1.5 items-center">
           <span className="text-[10px] text-muted font-medium">
-            Next 2 yr extra checks:
+            Extra paychecks in projection:
           </span>
           {upcomingMonths.map((mk) => {
             const covered = rules.some(
@@ -409,21 +406,12 @@ function PersonPanel({
             </div>
           </div>
 
-          <label className="space-y-0.5 block">
-            <span className="text-[10px] text-muted">
-              Net pay / check ($) — your current take-home is{" "}
-              <span className="font-medium">
-                {formatCurrency(netPayPerCheck)}
-              </span>
+          <p className="text-[10px] text-muted">
+            Net pay per check will be snapshotted from paycheck:{" "}
+            <span className="font-medium tabular-nums">
+              {formatCurrency(netPayPerCheck)}
             </span>
-            <input
-              type="number"
-              min={0}
-              value={addForm.netPaySnapshot}
-              onChange={(e) => setFormField("netPaySnapshot", e.target.value)}
-              className="w-full border rounded px-2 py-1 text-xs bg-surface-primary tabular-nums"
-            />
-          </label>
+          </p>
 
           <div className="flex gap-2 pt-1">
             <button
@@ -462,12 +450,25 @@ function PersonPanel({
 export function ExtraPaycheckRulesEditor({
   goals,
   netPayByPersonId,
+  monthDates,
 }: {
   goals: Goal[];
   netPayByPersonId: Map<number, number>;
+  monthDates: Date[];
 }) {
   const { data: jobs, isLoading } =
     trpc.savings.extraPaycheckRouting.list.useQuery();
+
+  const projectionMonthKeys = useMemo(
+    () =>
+      new Set(
+        monthDates.map(
+          (d) =>
+            `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+        ),
+      ),
+    [monthDates],
+  );
 
   if (isLoading) return <p className="text-xs text-muted">Loading…</p>;
   if (!jobs?.length)
@@ -499,6 +500,7 @@ export function ExtraPaycheckRulesEditor({
                   job={job}
                   goals={goals}
                   netPayPerCheck={netPayByPersonId.get(personId) ?? 0}
+                  projectionMonthKeys={projectionMonthKeys}
                   onSaved={() => {}}
                 />
               </div>

@@ -35,7 +35,7 @@ const MONTH_NAMES = [
 ];
 
 function monthLabel(d: Date): string {
-  return `${MONTH_NAMES[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
+  return `${MONTH_NAMES[d.getMonth()]} 1 '${String(d.getFullYear()).slice(2)}`;
 }
 
 /* ── Default contribution cell: $ and % that drive each other ── */
@@ -204,7 +204,7 @@ export function ContributionGrid({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-4 text-[11px] text-faint px-1">
+      <div className="flex flex-wrap items-center gap-4 text-[11px] text-faint px-1">
         <span className="flex items-center gap-1">
           <span className="text-green-600 font-semibold">$0,000</span>
           <span>= default monthly contribution (click to edit)</span>
@@ -212,6 +212,9 @@ export function ContributionGrid({
         <span className="flex items-center gap-1">
           <span className="text-blue-600 font-semibold">$0,000</span>
           <span>= month override (click month to change)</span>
+        </span>
+        <span className="text-faint">
+          Contributions applied on the 1st of each month.
         </span>
       </div>
       <div className="overflow-auto max-h-[480px] rounded-lg border">
