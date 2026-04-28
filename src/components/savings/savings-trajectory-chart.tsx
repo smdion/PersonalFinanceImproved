@@ -221,7 +221,7 @@ export function SavingsTrajectoryChart({
           <RechartsTooltip
             content={(tooltipProps) => (
               <EventTooltip
-                {...(tooltipProps as {
+                {...(tooltipProps as unknown as {
                   active?: boolean;
                   payload?: { name: string; value: number; color: string }[];
                   label?: string;
