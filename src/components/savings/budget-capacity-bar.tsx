@@ -13,7 +13,7 @@ function YearRangeSelector({
 }) {
   return (
     <div className="flex items-center gap-1">
-      {[2, 3, 5].map((y) => (
+      {[2, 3, 5, 10].map((y) => (
         <button
           key={y}
           onClick={() => setProjectionYears(y)}
