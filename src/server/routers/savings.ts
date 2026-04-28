@@ -254,10 +254,15 @@ export const savingsRouter = createTRPCRouter({
             g.isEmergencyFund && efundResult
               ? efundResult.targetAmount
               : toNumber(g.targetAmount);
+          // E-fund uses trueBalance (raw balance minus outstanding self-loans/reimbursements)
+          const currentBalance =
+            g.isEmergencyFund && efundResult
+              ? efundResult.trueBalance
+              : (balanceMap.get(g.id) ?? 0);
           return {
             id: g.id,
             name: g.name,
-            currentBalance: balanceMap.get(g.id) ?? 0,
+            currentBalance,
             targetBalance,
             allocationPercent:
               totalMonthlyPool > 0 ? monthlyContrib / totalMonthlyPool : 0,

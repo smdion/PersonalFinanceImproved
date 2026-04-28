@@ -429,6 +429,25 @@ export function FundManagementSection({
                   }
                 : undefined
             }
+            monthlyAllocation={(() => {
+              const efundGoal = rawGoals.find((g) => g.isEmergencyFund);
+              return (
+                savings.goals.find((g) => g.goalId === efundGoal?.id)
+                  ?.monthlyAllocation ?? 0
+              );
+            })()}
+            poolPct={(() => {
+              const efundGoal = rawGoals.find((g) => g.isEmergencyFund);
+              const alloc =
+                savings.goals.find((g) => g.goalId === efundGoal?.id)
+                  ?.monthlyAllocation ?? 0;
+              return totalMonthlyAllocation > 0
+                ? ((alloc / totalMonthlyAllocation) * 100).toFixed(0)
+                : "0";
+            })()}
+            isApiSyncEnabled={
+              rawGoals.find((g) => g.isEmergencyFund)?.isApiSyncEnabled ?? false
+            }
           />
         )}
 
@@ -436,6 +455,8 @@ export function FundManagementSection({
           {goalProjections.map((gp, i) => {
             const raw = goalById.get(gp.goalId);
             if (!raw) return null;
+            // Income Replacement lives in the EmergencyFundDetail card above
+            if (raw.isEmergencyFund) return null;
             const savingsGoal = savings.goals.find(
               (g) => g.goalId === gp.goalId,
             );

@@ -103,7 +103,7 @@ export function UpcomingGoals({
       if (!nextExpense) return null;
 
       const progress = sg ? Math.min(1, sg.progress) : null;
-      const hasTarget = sg && sg.target > 0;
+      const hasTarget = sg && sg.target > 0 && gp.targetMode === "fixed";
 
       return { gp, sg, color, nextExpense, progress, hasTarget };
     })

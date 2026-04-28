@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   PoolDistributionEditor,
   type FundAllocation,
@@ -74,25 +74,23 @@ export function MonthOverrideModal({
   }, [goalProjections, monthIndex]);
 
   const [funds, setFunds] = useState<FundAllocation[]>(initialFunds);
-
-  // Reset funds if monthDate changes
-  useEffect(() => {
-    setFunds(initialFunds);
-  }, [initialFunds]);
+  const [localPool, setLocalPool] = useState(pool);
 
   const total = funds.reduce((s, f) => s + f.amount, 0);
-  const isBalanced = Math.abs(total - pool) < 1;
+  const isBalanced = Math.abs(total - localPool) < 1;
 
-  const hasChanges = funds.some(
-    (f) =>
-      Math.abs(
-        f.amount -
-          (monthIndex >= 0
-            ? goalProjections.find((gp) => gp.goalId === f.goalId)!
-                .monthlyAllocations[monthIndex]!
-            : f.defaultAmount),
-      ) >= 0.01,
-  );
+  const hasChanges =
+    Math.abs(localPool - pool) >= 0.01 ||
+    funds.some(
+      (f) =>
+        Math.abs(
+          f.amount -
+            (monthIndex >= 0
+              ? goalProjections.find((gp) => gp.goalId === f.goalId)!
+                  .monthlyAllocations[monthIndex]!
+              : f.defaultAmount),
+        ) >= 0.01,
+    );
 
   const handleApply = useCallback(() => {
     if (!isBalanced) return;
@@ -208,9 +206,11 @@ export function MonthOverrideModal({
           {/* Body — scrollable */}
           <div className="flex-1 overflow-y-auto px-5 py-4">
             <PoolDistributionEditor
-              pool={pool}
+              pool={localPool}
               funds={funds}
               onChange={setFunds}
+              poolEditable
+              onPoolChange={setLocalPool}
             />
           </div>
 

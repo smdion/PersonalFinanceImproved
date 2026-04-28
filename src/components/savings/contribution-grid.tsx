@@ -338,52 +338,31 @@ export function ContributionGrid({
                     );
                   })}
 
-                  {/* Allocated column — total allocated this month */}
-                  <td
-                    className={`text-center py-1.5 px-2 text-[10px] tabular-nums ${
-                      isOverAllocated
-                        ? "text-red-600 font-semibold"
-                        : "text-faint"
-                    }`}
-                    title={
-                      isOverAllocated
-                        ? `Allocations don't match pool (${formatCurrency(monthTotal)} vs ${formatCurrency(monthPool)})`
-                        : undefined
-                    }
-                  >
-                    {formatCurrency(monthTotal)}
+                  {/* Allocated column — total allocated this month, clickable to edit */}
+                  <td className="text-center py-1.5 px-2">
+                    <button
+                      onClick={
+                        canEdit !== false ? () => onEditMonth(date) : undefined
+                      }
+                      className={`tabular-nums text-[10px] ${
+                        canEdit !== false
+                          ? "cursor-pointer hover:text-blue-700"
+                          : ""
+                      } ${isOverAllocated ? "text-red-600 font-semibold" : "text-faint"}`}
+                      title={
+                        isOverAllocated
+                          ? `Allocations don't match pool (${formatCurrency(monthTotal)} vs ${formatCurrency(monthPool)}) — Click to edit month`
+                          : canEdit !== false
+                            ? "Click to edit month"
+                            : undefined
+                      }
+                    >
+                      {formatCurrency(monthTotal)}
+                    </button>
                   </td>
                 </tr>
               );
             })}
-
-            {/* Total Balance footer — end-of-projection balance per fund */}
-            <tr className="border-t-2 border-strong">
-              <td className="sticky left-0 z-10 bg-surface-primary px-3 py-1.5 text-[10px] font-medium text-muted uppercase tracking-wide whitespace-nowrap border-r">
-                Total Balance
-              </td>
-              {goalProjections.map((gp) => {
-                const finalBalance = gp.balances[gp.balances.length - 1] ?? 0;
-                return (
-                  <td
-                    key={gp.goalId}
-                    className={`text-center py-1.5 px-2 text-[10px] tabular-nums font-semibold ${
-                      finalBalance < 0 ? "text-red-600" : "text-muted"
-                    }`}
-                  >
-                    {formatCurrency(finalBalance)}
-                  </td>
-                );
-              })}
-              <td className="text-center py-1.5 px-2 text-[10px] tabular-nums font-semibold text-muted">
-                {formatCurrency(
-                  goalProjections.reduce(
-                    (s, gp) => s + (gp.balances[gp.balances.length - 1] ?? 0),
-                    0,
-                  ),
-                )}
-              </td>
-            </tr>
           </tbody>
         </table>
       </div>

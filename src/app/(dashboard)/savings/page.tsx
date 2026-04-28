@@ -46,7 +46,6 @@ import {
   useApiSync,
 } from "@/components/savings/api-sync-section";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
-import { usePerColumnPaycheck } from "@/lib/hooks/use-per-column-paycheck";
 import { useUpdatePlannedTx } from "@/components/savings/use-update-planned-tx";
 import {
   computeMaxMonthlyFunding,
@@ -63,10 +62,7 @@ export default function SavingsPage() {
     "efund_budget_column",
     -1,
   );
-  const [budgetColumn, setBudgetColumn] = usePersistedSetting<number>(
-    "budget_active_column",
-    0,
-  );
+  const [budgetColumn] = usePersistedSetting<number>("budget_active_column", 0);
   const [projectionYears, setProjectionYears] = usePersistedSetting<number>(
     "savings_projection_years",
     3,
@@ -115,18 +111,6 @@ export default function SavingsPage() {
   // Fetch contribution profiles list for subtitle display
   const { data: contribProfilesList } =
     trpc.contributionProfile.list.useQuery();
-
-  // Per-column paycheck data for cross-mode capacity comparison
-  const columnContribProfileIds =
-    (budgetData?.profile?.columnContributionProfileIds as
-      | (number | null)[]
-      | null) ??
-    budgetData?.columnLabels?.map(() => null) ??
-    [];
-  const perColumnPaychecks = usePerColumnPaycheck(
-    columnContribProfileIds,
-    salaryOverrides,
-  );
 
   // ── Cross-section coordination ──
   const apiSync = useApiSync();
@@ -245,29 +229,6 @@ export default function SavingsPage() {
           budgetMonthlyTotal,
         )
       : null;
-
-  // ── Cross-mode capacity (all budget columns) ──
-  const crossModeCapacity =
-    budgetData?.result && budgetData.columnLabels
-      ? budgetData.columnLabels.map((label, index) => {
-          const colPaycheck = perColumnPaychecks[index];
-          const colResult = budgetData.allColumnResults?.[index] as
-            | { totalMonthly: number }
-            | undefined;
-          if (!colPaycheck || !colResult)
-            return { label, amount: null as number | null };
-          const colBudgetTotal = budgetData.columnMonths
-            ? (budgetData.weightedAnnualTotal ?? 0) / 12
-            : colResult.totalMonthly;
-          return {
-            label,
-            amount: computeMaxMonthlyFunding(
-              colPaycheck.people as CapacityPerson[],
-              colBudgetTotal,
-            ),
-          };
-        })
-      : undefined;
 
   // ── Budget frequency note for help text ──
   const budgetNote = (() => {
@@ -561,13 +522,7 @@ export default function SavingsPage() {
       <CardBoundary title="Overview">
         <section className="space-y-4">
           <h2 className="text-base font-semibold text-primary">Overview</h2>
-          <SummaryCards
-            savings={savings}
-            efund={efund}
-            paycheckData={paycheckData?.people}
-            maxMonthlyFunding={maxMonthlyFunding}
-            totalMonthlyAllocation={totalMonthlyAllocation}
-          />
+          <SummaryCards savings={savings} efund={efund} />
 
           {goalProjections.length > 0 && (
             <UpcomingGoals
@@ -599,13 +554,9 @@ export default function SavingsPage() {
             <BudgetCapacityBar
               maxMonthlyFunding={maxMonthlyFunding}
               totalMonthlyAllocation={totalMonthlyAllocation}
-              budgetData={budgetData}
-              budgetColumn={budgetColumn}
-              setBudgetColumn={setBudgetColumn}
               projectionYears={projectionYears}
               setProjectionYears={setProjectionYears}
               budgetNote={budgetNote}
-              crossModeCapacity={crossModeCapacity}
             />
           </div>
 

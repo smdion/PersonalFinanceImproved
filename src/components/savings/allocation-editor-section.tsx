@@ -351,6 +351,7 @@ export function AllocationEditorSection({
 
       {editingMonth && (
         <MonthOverrideModal
+          key={`${editingMonth.getFullYear()}-${editingMonth.getMonth()}`}
           monthDate={editingMonth}
           monthDates={monthDates}
           goalProjections={goalProjections}
