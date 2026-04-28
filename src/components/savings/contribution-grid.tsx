@@ -15,6 +15,8 @@ interface ContributionGridProps {
   onGoalUpdateMulti?: (goalId: number, fields: Record<string, string>) => void;
   onEditMonth: (monthDate: Date) => void;
   canEdit?: boolean;
+  /** "YYYY-MM" keys for months that have rule-sourced extra-paycheck overrides. */
+  ruleMonthKeys?: Set<string>;
 }
 
 const MONTH_NAMES = [
@@ -195,6 +197,7 @@ export function ContributionGrid({
   onGoalUpdateMulti,
   onEditMonth,
   canEdit,
+  ruleMonthKeys,
 }: ContributionGridProps) {
   // Base pool for the default row (no annual growth applied)
   const pool = maxMonthlyFunding ?? totalMonthlyAllocation;
@@ -299,6 +302,11 @@ export function ContributionGrid({
                     >
                       {monthLabel(date)}
                     </button>
+                    {ruleMonthKeys?.has(mk) && (
+                      <div className="text-[9px] text-purple-600 font-medium leading-tight mt-0.5">
+                        ✦ extra check
+                      </div>
+                    )}
                   </td>
 
                   {/* Per-fund allocation cells */}

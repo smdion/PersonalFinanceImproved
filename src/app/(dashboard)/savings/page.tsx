@@ -20,6 +20,7 @@ import {
   type NewFundForm,
 } from "@/components/savings";
 import { BudgetCapacityBar } from "@/components/savings/budget-capacity-bar";
+import { ExtraPaycheckRulesEditor } from "@/components/savings/extra-paycheck-rules-editor";
 
 // Code-split Recharts-heavy children (v0.5 expert-review M8). Loads on
 // page mount instead of bundling into the savings page chunk. ssr:false
@@ -117,7 +118,7 @@ export default function SavingsPage() {
   const [showTransferForm, setShowTransferForm] = useState(false);
   const [showNewFund, setShowNewFund] = useState(false);
   const [projectionsTab, setProjectionsTab] = useState<
-    "table" | "chart" | "edit" | "transactions"
+    "table" | "chart" | "edit" | "transactions" | "extra"
   >("table");
   const [yearlyGrowth, setYearlyGrowth] = useState<
     Record<number, { type: "pct" | "dollar"; value: number }>
@@ -561,13 +562,14 @@ export default function SavingsPage() {
 
           {/* Tab bar */}
           {goalProjections.length > 0 && (
-            <div className="flex border-b -mx-4 sm:-mx-5 px-4 sm:px-5">
+            <div className="flex border-b -mx-4 sm:-mx-5 px-4 sm:px-5 overflow-x-auto">
               {(
                 [
                   { key: "table", label: "Monthly Balances" },
                   { key: "chart", label: "Chart" },
                   { key: "edit", label: "Allocations" },
                   { key: "transactions", label: "Transactions" },
+                  { key: "extra", label: "Extra Checks" },
                 ] as const
               ).map(({ key, label }) => (
                 <button
@@ -609,6 +611,26 @@ export default function SavingsPage() {
             />
           )}
 
+          {projectionsTab === "extra" &&
+            (() => {
+              const netPayByPersonId = new Map<number, number>();
+              if (paycheckData) {
+                for (const p of paycheckData.people) {
+                  if (p.paycheck && p.job) {
+                    netPayByPersonId.set(p.person.id, p.paycheck.netPay);
+                  }
+                }
+              }
+              return (
+                <ExtraPaycheckRulesEditor
+                  goals={rawGoals
+                    .filter((g) => g.isActive && !g.parentGoalId)
+                    .map((g) => ({ id: g.id, name: g.name }))}
+                  netPayByPersonId={netPayByPersonId}
+                />
+              );
+            })()}
+
           {projectionsTab === "edit" && (
             <AllocationEditorSection
               goalProjections={goalProjections}
@@ -624,6 +646,13 @@ export default function SavingsPage() {
               projectionYears={projectionYears}
               yearlyGrowth={yearlyGrowth}
               setYearlyGrowth={setYearlyGrowth}
+              ruleMonthKeys={
+                new Set(
+                  (allocationOverrides ?? [])
+                    .filter((o) => o.source === "rule")
+                    .map((o) => o.monthDate.slice(0, 7)),
+                )
+              }
             />
           )}
         </section>

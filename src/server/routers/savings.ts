@@ -11,6 +11,7 @@ import * as schema from "@/lib/db/schema";
 import { calculateSavings } from "@/lib/calculators/savings";
 import { calculateEFund } from "@/lib/calculators/efund";
 import { toNumber, computeBudgetAnnualTotal } from "@/server/helpers";
+import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
 import { zDecimal } from "./settings/_shared";
 import { log } from "@/lib/logger";
 import type { SavingsInput, EFundInput } from "@/lib/calculators/types";
@@ -295,6 +296,7 @@ export const savingsRouter = createTRPCRouter({
         goalId: o.goalId,
         monthDate: o.monthDate,
         amount: toNumber(o.amount),
+        source: o.source ?? "manual",
       }));
 
       return {
@@ -996,5 +998,97 @@ export const savingsRouter = createTRPCRouter({
           );
         return { ok: true };
       }),
+  }),
+
+  // ══ EXTRA PAYCHECK ROUTING ══
+  extraPaycheckRouting: createTRPCRouter({
+    /** Load routing rules for all jobs. */
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const jobs = await ctx.db
+        .select({
+          id: schema.jobs.id,
+          personId: schema.jobs.personId,
+          employerName: schema.jobs.employerName,
+          payPeriod: schema.jobs.payPeriod,
+          anchorPayDate: schema.jobs.anchorPayDate,
+          extraPaycheckRouting: schema.jobs.extraPaycheckRouting,
+        })
+        .from(schema.jobs)
+        .orderBy(asc(schema.jobs.personId), asc(schema.jobs.id));
+      const people = await ctx.db
+        .select({ id: schema.people.id, name: schema.people.name })
+        .from(schema.people);
+      const personMap = new Map(people.map((p) => [p.id, p.name]));
+      return jobs.map((j) => ({
+        ...j,
+        personName: personMap.get(j.personId) ?? "Unknown",
+      }));
+    }),
+
+    /** Save routing rules for a single job and re-materialize overrides. */
+    save: savingsProcedure
+      .input(
+        z.object({
+          jobId: z.number().int(),
+          rules: z.array(
+            z.object({
+              from: z.string().regex(/^\d{4}-\d{2}$/),
+              to: z
+                .string()
+                .regex(/^\d{4}-\d{2}$/)
+                .nullable(),
+              splits: z.array(
+                z.object({
+                  goalId: z.number().int(),
+                  pct: z.number().min(0).max(100),
+                }),
+              ),
+              netPaySnapshot: z.number().positive(),
+            }),
+          ),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        // Validate: splits for each rule must sum to 100
+        for (const rule of input.rules) {
+          const total = rule.splits.reduce((s, sp) => s + sp.pct, 0);
+          if (Math.abs(total - 100) > 0.01) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Rule starting ${rule.from}: splits must sum to 100% (got ${total.toFixed(1)}%)`,
+            });
+          }
+          // Validate no overlapping date ranges
+          for (const other of input.rules) {
+            if (other === rule) continue;
+            const aEnd = rule.to ?? "9999-12";
+            const bEnd = other.to ?? "9999-12";
+            if (rule.from <= bEnd && other.from <= aEnd) {
+              if (rule.from !== other.from) {
+                throw new TRPCError({
+                  code: "BAD_REQUEST",
+                  message: `Rules overlap: ${rule.from}–${rule.to ?? "∞"} and ${other.from}–${other.to ?? "∞"}`,
+                });
+              }
+            }
+          }
+        }
+
+        await ctx.db
+          .update(schema.jobs)
+          .set({
+            extraPaycheckRouting: input.rules.length > 0 ? input.rules : null,
+          })
+          .where(eq(schema.jobs.id, input.jobId));
+
+        await materializeExtraPaycheckOverrides(ctx.db);
+        return { ok: true };
+      }),
+
+    /** Re-run materializer without changing rules (e.g. after goal rename). */
+    rematerialize: savingsProcedure.mutation(async ({ ctx }) => {
+      await materializeExtraPaycheckOverrides(ctx.db);
+      return { ok: true };
+    }),
   }),
 });

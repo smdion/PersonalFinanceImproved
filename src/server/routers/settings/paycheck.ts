@@ -6,6 +6,7 @@ import {
   adminProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
+import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
 import {
   accountCategoryEnum,
   getAccountTypeConfig,
@@ -149,28 +150,34 @@ export const paycheckProcedures = {
         .from(schema.jobs)
         .orderBy(asc(schema.jobs.personId), asc(schema.jobs.startDate)),
     ),
-    create: adminProcedure.input(jobInput).mutation(({ ctx, input }) =>
-      ctx.db
+    create: adminProcedure.input(jobInput).mutation(async ({ ctx, input }) => {
+      const result = await ctx.db
         .insert(schema.jobs)
         .values(input)
         .returning()
-        .then((r) => r[0]),
-    ),
+        .then((r) => r[0]);
+      await materializeExtraPaycheckOverrides(ctx.db);
+      return result;
+    }),
     update: adminProcedure
       .input(z.object({ id: z.number().int() }).extend(jobInput.shape))
-      .mutation(({ ctx, input: { id, ...data } }) =>
-        ctx.db
+      .mutation(async ({ ctx, input: { id, ...data } }) => {
+        const result = await ctx.db
           .update(schema.jobs)
           .set(data)
           .where(eq(schema.jobs.id, id))
           .returning()
-          .then((r) => r[0]),
-      ),
+          .then((r) => r[0]);
+        await materializeExtraPaycheckOverrides(ctx.db);
+        return result;
+      }),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
-      .mutation(({ ctx, input }) =>
-        ctx.db.delete(schema.jobs).where(eq(schema.jobs.id, input.id)),
-      ),
+      .mutation(async ({ ctx, input }) => {
+        await ctx.db.delete(schema.jobs).where(eq(schema.jobs.id, input.id));
+        await materializeExtraPaycheckOverrides(ctx.db);
+        return { ok: true };
+      }),
   }),
 
   salaryChanges: createTRPCRouter({
