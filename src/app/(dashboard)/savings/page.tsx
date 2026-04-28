@@ -44,6 +44,7 @@ import {
   ApiSyncSection,
   useApiSync,
 } from "@/components/savings/api-sync-section";
+import { ProjectionImpactBar } from "@/components/savings/projection-impact-bar";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { useUpdatePlannedTx } from "@/components/savings/use-update-planned-tx";
 import {
@@ -536,6 +537,14 @@ export default function SavingsPage() {
                 </button>
               ))}
             </div>
+          )}
+
+          {/* Impact bar — live per-fund status, visible on all tabs */}
+          {goalProjections.length > 0 && (
+            <ProjectionImpactBar
+              goalProjections={goalProjections}
+              monthDates={monthDates}
+            />
           )}
 
           {/* Tab content */}
