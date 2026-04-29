@@ -4,7 +4,6 @@ import React from "react";
 import { Card, ProgressBar } from "@/components/ui/card";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/utils/format";
-import { BrokerageGoalsSection } from "@/components/cards/brokerage-goals";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { NewFundForm } from "./types";
 
@@ -383,9 +382,6 @@ export function FundDetailsTab({
             );
           })}
       </div>
-
-      {/* Long-Term Goals (brokerage-funded) */}
-      <BrokerageGoalsSection />
     </>
   );
 }

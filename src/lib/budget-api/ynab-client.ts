@@ -337,16 +337,19 @@ export class YnabClient implements BudgetAPIClient {
   async updateCategoryGoalTarget(
     categoryId: string,
     targetAmount: number,
+    goalType?: string,
   ): Promise<void> {
     // YNAB goal_target is plan-level, not month-specific.
     // The API requires a month in the path but it doesn't scope the target.
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    const patch: Record<string, unknown> = {
+      goal_target: toMilliunits(targetAmount),
+    };
+    if (goalType) patch.goal_type = goalType;
     await this.request(`/months/${currentMonth}/categories/${categoryId}`, {
       method: "PATCH",
-      body: JSON.stringify({
-        category: { goal_target: toMilliunits(targetAmount) },
-      }),
+      body: JSON.stringify({ category: patch }),
     });
   }
 

@@ -3,6 +3,21 @@ import { render, screen } from "@testing-library/react";
 import { FundCard } from "@/components/savings/fund-card";
 import type { GoalProjection } from "@/components/savings/types";
 
+// next/dynamic doesn't resolve in jsdom — call the factory and render once resolved
+vi.mock("next/dynamic", () => ({
+  default: (fn: () => Promise<{ default: React.ComponentType }>) => {
+    let Resolved: React.ComponentType | null = null;
+    fn().then((m) => {
+      Resolved = m.default;
+    });
+    return (props: Record<string, unknown>) => {
+      if (!Resolved) return null;
+      const C = Resolved;
+      return <C {...props} />;
+    };
+  },
+}));
+
 vi.mock("@/components/ui/inline-edit", () => ({
   InlineEdit: ({ value }: { value: string }) => <span>{value}</span>,
 }));
@@ -150,6 +165,11 @@ describe("FundCard", () => {
         {...defaultProps}
         rawGoal={makeRawGoal({ isEmergencyFund: true, targetMode: "ongoing" })}
         savingsGoal={makeSavingsGoal({ current: 10000, target: 10000 })}
+        efundResult={{
+          neededAfterRepay: -100,
+          targetAmount: 10000,
+          progress: 1,
+        }}
       />,
     );
     expect(screen.getByText("Funded")).toBeInTheDocument();
@@ -165,6 +185,11 @@ describe("FundCard", () => {
           target: 10000,
           monthlyAllocation: 500,
         })}
+        efundResult={{
+          neededAfterRepay: 500,
+          targetAmount: 10000,
+          progress: 0.5,
+        }}
       />,
     );
     expect(screen.getByText("In progress")).toBeInTheDocument();
@@ -193,7 +218,7 @@ describe("FundCard", () => {
   });
 
   it("renders mini chart", () => {
-    render(<FundCard {...defaultProps} />);
+    render(<FundCard {...defaultProps} defaultExpanded />);
     expect(screen.getByTestId("mini-chart")).toBeInTheDocument();
   });
 });

@@ -486,15 +486,26 @@ export function BudgetSummaryTable({
                         </span>
                       </td>
                       {allColumnResults.map((r, i) => {
-                        const totalSavings =
-                          (payrollBreakdowns[i]?.netMonthly ?? 0) -
-                          r.totalMonthly;
+                        const netMonthly =
+                          payrollBreakdowns[i]?.netMonthly ?? 0;
+                        const totalSavings = netMonthly - r.totalMonthly;
+                        const overage =
+                          payrollBreakdowns[i] !== null
+                            ? totalSinking - totalSavings
+                            : 0;
+                        const isOverCapacity = overage > 0.01;
                         return (
                           <td
                             key={cols[i]}
                             className={`text-right py-1.5 px-2 tabular-nums ${totalSavings >= 0 ? "text-emerald-700" : "text-red-600"}`}
                           >
                             {formatCurrency(totalSavings)}
+                            {isOverCapacity && (
+                              <div className="text-[9px] text-red-500 leading-tight mt-0.5">
+                                ⚠ {formatCurrency(overage)} over → fix in
+                                Savings
+                              </div>
+                            )}
                           </td>
                         );
                       })}

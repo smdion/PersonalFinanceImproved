@@ -10,6 +10,12 @@ export interface CapacityPerson {
   budgetPerMonth?: number;
 }
 
+/** Minimal goal shape needed for allocation total. */
+export interface SavingsGoalForAllocation {
+  isActive: boolean;
+  monthlyContribution: number | string;
+}
+
 /**
  * Compute the maximum monthly funding available for savings goals.
  * Returns null if inputs are insufficient (no paycheck data or no active earners).
@@ -28,4 +34,16 @@ export function computeMaxMonthlyFunding(
   }, 0);
 
   return monthlyNet - budgetMonthlyTotal;
+}
+
+/**
+ * Sum monthly contributions across all active savings goals with a contribution > 0.
+ * Single source of truth used by both the savings page and budget page warnings.
+ */
+export function computeTotalMonthlyAllocation(
+  goals: SavingsGoalForAllocation[],
+): number {
+  return goals
+    .filter((g) => g.isActive && Number(g.monthlyContribution) > 0)
+    .reduce((s, g) => s + Number(g.monthlyContribution), 0);
 }

@@ -48,6 +48,7 @@ export interface GoalProjection {
   goalId: number;
   current: number;
   target: number;
+  targetMode: "fixed" | "ongoing";
   monthlyAllocation: number;
   monthlyAllocations: number[];
   balances: number[];

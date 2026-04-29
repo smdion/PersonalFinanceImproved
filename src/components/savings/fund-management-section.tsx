@@ -60,6 +60,7 @@ interface EfundData {
   trueBalance: number;
   monthsCovered: number | null;
   targetMonths: number;
+  targetAmount: number;
   progress: number;
   neededAfterRepay: number;
 }
@@ -173,10 +174,16 @@ export function FundManagementSection({
 
   // ── Mutations ──
   const updateGoal = trpc.settings.savingsGoals.update.useMutation({
-    onSuccess: () => utils.savings.invalidate(),
+    onSuccess: () => {
+      utils.savings.invalidate();
+      utils.budget.computeActiveSummary.invalidate();
+    },
   });
   const deleteGoal = trpc.settings.savingsGoals.delete.useMutation({
-    onSuccess: () => utils.savings.invalidate(),
+    onSuccess: () => {
+      utils.savings.invalidate();
+      utils.budget.computeActiveSummary.invalidate();
+    },
   });
   const createTx = trpc.savings.plannedTransactions.create.useMutation({
     onSuccess: () => utils.savings.invalidate(),
@@ -428,6 +435,25 @@ export function FundManagementSection({
                   }
                 : undefined
             }
+            monthlyAllocation={(() => {
+              const efundGoal = rawGoals.find((g) => g.isEmergencyFund);
+              return (
+                savings.goals.find((g) => g.goalId === efundGoal?.id)
+                  ?.monthlyAllocation ?? 0
+              );
+            })()}
+            poolPct={(() => {
+              const efundGoal = rawGoals.find((g) => g.isEmergencyFund);
+              const alloc =
+                savings.goals.find((g) => g.goalId === efundGoal?.id)
+                  ?.monthlyAllocation ?? 0;
+              return totalMonthlyAllocation > 0
+                ? ((alloc / totalMonthlyAllocation) * 100).toFixed(0)
+                : "0";
+            })()}
+            isApiSyncEnabled={
+              rawGoals.find((g) => g.isEmergencyFund)?.isApiSyncEnabled ?? false
+            }
           />
         )}
 
@@ -435,6 +461,8 @@ export function FundManagementSection({
           {goalProjections.map((gp, i) => {
             const raw = goalById.get(gp.goalId);
             if (!raw) return null;
+            // Income Replacement lives in the EmergencyFundDetail card above
+            if (raw.isEmergencyFund) return null;
             const savingsGoal = savings.goals.find(
               (g) => g.goalId === gp.goalId,
             );
@@ -483,6 +511,7 @@ export function FundManagementSection({
                   onCreateFund={handleCreateFund}
                   createGoalPending={createGoalPending}
                   canEdit={canEdit}
+                  efundResult={raw.isEmergencyFund ? efund : null}
                   apiBalance={apiBalanceMap.get(raw.id) ?? null}
                   apiServiceName={apiServiceName}
                   onLinkToApi={onLinkToApi}

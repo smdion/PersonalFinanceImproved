@@ -254,10 +254,15 @@ export const savingsRouter = createTRPCRouter({
             g.isEmergencyFund && efundResult
               ? efundResult.targetAmount
               : toNumber(g.targetAmount);
+          // E-fund uses trueBalance (raw balance minus outstanding self-loans/reimbursements)
+          const currentBalance =
+            g.isEmergencyFund && efundResult
+              ? efundResult.trueBalance
+              : (balanceMap.get(g.id) ?? 0);
           return {
             id: g.id,
             name: g.name,
-            currentBalance: balanceMap.get(g.id) ?? 0,
+            currentBalance,
             targetBalance,
             allocationPercent:
               totalMonthlyPool > 0 ? monthlyContrib / totalMonthlyPool : 0,
@@ -743,8 +748,10 @@ export const savingsRouter = createTRPCRouter({
   }),
 
   /**
-   * Push monthly contributions as budget API goal targets for linked sinking funds.
-   * Sets the goal target at the plan/category level (not month-specific).
+   * Push goal targets to the budget API for linked sinking funds.
+   * - Sinking funds: pushes monthlyContribution as the YNAB monthly-funding target.
+   * - Emergency fund: pushes computed targetAmount (targetMonths × essentials) with
+   *   goal_type "TB" (Target Balance) — matching the Income Replacement category semantics.
    * Can optionally push a single goal by ID.
    */
   pushContributionsToApi: savingsProcedure
@@ -758,7 +765,17 @@ export const savingsRouter = createTRPCRouter({
         });
       }
 
-      const goals = await ctx.db.select().from(schema.savingsGoals);
+      const [goals, budgetProfiles, budgetItems, appSettings] =
+        await Promise.all([
+          ctx.db.select().from(schema.savingsGoals),
+          ctx.db
+            .select()
+            .from(schema.budgetProfiles)
+            .where(eq(schema.budgetProfiles.isActive, true)),
+          ctx.db.select().from(schema.budgetItems),
+          ctx.db.select().from(schema.appSettings),
+        ]);
+
       const linked = goals.filter((g) => g.isApiSyncEnabled && g.apiCategoryId);
       const toPush = input?.goalId
         ? linked.filter((g) => g.id === input.goalId)
@@ -766,19 +783,66 @@ export const savingsRouter = createTRPCRouter({
 
       if (toPush.length === 0) return { pushed: 0 };
 
+      // Compute essential expenses using the e-fund's saved column (same logic as computeSummary)
+      const activeProfile = budgetProfiles[0];
+      const settingsMap = new Map(
+        appSettings.map((s: { key: string; value: unknown }) => [
+          s.key,
+          s.value,
+        ]),
+      );
+      const budgetActiveColumn =
+        typeof settingsMap.get("budget_active_column") === "number"
+          ? (settingsMap.get("budget_active_column") as number)
+          : 0;
+      const efundSavedColumn =
+        typeof settingsMap.get("efund_budget_column") === "number"
+          ? (settingsMap.get("efund_budget_column") as number)
+          : null;
+      const efundTierIndex = efundSavedColumn ?? budgetActiveColumn;
+      const essentialExpenses = activeProfile
+        ? getEssentialExpenses(
+            budgetItems as {
+              profileId: number;
+              isEssential: boolean;
+              amounts: number[];
+            }[],
+            activeProfile.id,
+            efundTierIndex,
+            activeProfile.columnMonths ?? null,
+          )
+        : 0;
+
       let pushed = 0;
       for (const goal of toPush) {
-        const monthly = toNumber(goal.monthlyContribution);
-        if (monthly > 0) {
-          try {
-            await client.updateCategoryGoalTarget(goal.apiCategoryId!, monthly);
-            pushed++;
-          } catch (err) {
-            log("warn", "push_goal_target_failed", {
-              goalId: goal.id,
-              error: err instanceof Error ? err.message : String(err),
-            });
+        try {
+          if (goal.isEmergencyFund) {
+            // Income Replacement = target-balance YNAB category: push computed dollar target
+            const targetMonths = goal.targetMonths ?? 4;
+            const targetAmount = targetMonths * essentialExpenses;
+            if (targetAmount > 0) {
+              await client.updateCategoryGoalTarget(
+                goal.apiCategoryId!,
+                targetAmount,
+                "TB",
+              );
+              pushed++;
+            }
+          } else {
+            const monthly = toNumber(goal.monthlyContribution);
+            if (monthly > 0) {
+              await client.updateCategoryGoalTarget(
+                goal.apiCategoryId!,
+                monthly,
+              );
+              pushed++;
+            }
           }
+        } catch (err) {
+          log("warn", "push_goal_target_failed", {
+            goalId: goal.id,
+            error: err instanceof Error ? err.message : String(err),
+          });
         }
       }
 

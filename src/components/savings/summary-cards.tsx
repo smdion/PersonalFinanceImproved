@@ -22,24 +22,9 @@ interface EfundData {
   neededAfterRepay: number;
 }
 
-interface PaycheckPerson {
-  paycheck: {
-    netPay: number;
-    periodsPerYear: number;
-    bonusEstimate: {
-      bonusNet: number;
-      bonusGross: number;
-    };
-  } | null;
-  job: unknown;
-}
-
 export function SummaryCards({
   savings,
   efund,
-  paycheckData,
-  maxMonthlyFunding,
-  totalMonthlyAllocation,
 }: {
   savings: {
     totalSaved: number;
@@ -47,14 +32,11 @@ export function SummaryCards({
     warnings: string[];
   };
   efund: EfundData | null;
-  paycheckData: PaycheckPerson[] | undefined;
-  maxMonthlyFunding: number | null;
-  totalMonthlyAllocation: number;
 }) {
   const pool = savings.goals.reduce((s, g) => s + g.monthlyAllocation, 0);
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
       <Card title="Total Saved">
         <Metric value={formatCurrency(savings.totalSaved)} />
         {efund && (
@@ -126,42 +108,6 @@ export function SummaryCards({
           </div>
         </Card>
       )}
-      {(() => {
-        const activePeople = (paycheckData ?? []).filter((d) => d.paycheck);
-        const totalBonusNet = activePeople.reduce(
-          (s, d) => s + (d.paycheck?.bonusEstimate.bonusNet ?? 0),
-          0,
-        );
-        const totalBonusGross = activePeople.reduce(
-          (s, d) => s + (d.paycheck?.bonusEstimate.bonusGross ?? 0),
-          0,
-        );
-        if (totalBonusGross <= 0) return null;
-        const monthlyBudgetLeftover =
-          maxMonthlyFunding != null && maxMonthlyFunding > 0
-            ? maxMonthlyFunding - totalMonthlyAllocation
-            : null;
-        return (
-          <Card
-            title={
-              <>
-                Bonus Leftover
-                <HelpTip text="Annual bonus cash after taxes and retirement contributions. Available as lump-sum funding for sinking funds or other goals." />
-              </>
-            }
-          >
-            <Metric
-              value={formatCurrency(totalBonusNet)}
-              label="Annual bonus take-home"
-            />
-            {monthlyBudgetLeftover != null && (
-              <div className="mt-2 text-xs text-muted">
-                Budget surplus: {formatCurrency(monthlyBudgetLeftover)}/mo
-              </div>
-            )}
-          </Card>
-        );
-      })()}
     </div>
   );
 }

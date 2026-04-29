@@ -32,6 +32,10 @@ const MONTH_NAMES = [
   "Dec",
 ];
 
+function monthLabel(d: Date): string {
+  return `${MONTH_NAMES[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
+}
+
 /* ── Default contribution cell: $ and % that drive each other ── */
 
 function DefaultContributionCell({
@@ -52,6 +56,9 @@ function DefaultContributionCell({
   const [percentValue, setPercentValue] = useState("");
 
   const pct = pool > 0 ? (gp.monthlyAllocation / pool) * 100 : 0;
+
+  // Already-funded funds show a special indicator instead of editable $0
+  const isFunded = gp.target > 0 && gp.current >= gp.target;
 
   const startEditDollar = () => {
     setEditing("dollar");
@@ -88,7 +95,6 @@ function DefaultContributionCell({
       setEditing(null);
       return;
     }
-    // Save both $ (fallback) and % (source of truth) together
     if (!isNaN(pctVal) && onGoalUpdateMulti) {
       onGoalUpdateMulti(gp.goalId, {
         monthlyContribution: dollar,
@@ -142,6 +148,17 @@ function DefaultContributionCell({
     );
   }
 
+  if (isFunded) {
+    return (
+      <div className="flex flex-col items-center">
+        <span className="text-[10px] text-green-600 font-semibold">
+          ✓ Funded
+        </span>
+        <span className="text-[9px] text-faint">$0/mo needed</span>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center">
       <button
@@ -166,7 +183,7 @@ function DefaultContributionCell({
   );
 }
 
-/* ── Main grid ── */
+/* ── Main grid — months as rows (left), funds as columns (top) ── */
 
 export function ContributionGrid({
   goalProjections,
@@ -179,136 +196,132 @@ export function ContributionGrid({
   onEditMonth,
   canEdit,
 }: ContributionGridProps) {
-  const [isOpen, setIsOpen] = useState(true);
-
-  // Base pool for the default column (no annual growth)
+  // Base pool for the default row (no annual growth applied)
   const pool = maxMonthlyFunding ?? totalMonthlyAllocation;
 
   return (
-    <div className="bg-surface-primary rounded-lg border p-3 sm:p-4">
-      <div className="flex items-center justify-between mb-3">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2"
-        >
-          <svg
-            aria-hidden="true"
-            className={`w-4 h-4 text-muted transition-transform ${isOpen ? "rotate-90" : ""}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-          <h2 className="text-sm font-semibold text-primary">
-            Monthly Contributions
-          </h2>
-        </button>
-        {isOpen && (
-          <p className="text-[10px] text-muted">
-            Set defaults (green). Click a month to edit all fund allocations.
-            Blue = override.
-          </p>
-        )}
+    <div className="space-y-2">
+      <div className="flex items-center gap-4 text-[11px] text-faint px-1">
+        <span className="flex items-center gap-1">
+          <span className="text-green-600 font-semibold">$0,000</span>
+          <span>= default monthly contribution (click to edit)</span>
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="text-blue-600 font-semibold">$0,000</span>
+          <span>= month override (click month to change)</span>
+        </span>
       </div>
-
-      {isOpen && (
-        <div className="overflow-x-auto">
-          <table className="text-xs border-collapse">
-            <thead className="sticky top-0 z-10">
-              <tr>
-                <th className="text-left py-1.5 pr-2 text-muted font-medium sticky left-0 bg-surface-primary z-20 min-w-[80px]">
-                  Fund
-                </th>
-                <th className="text-center py-1.5 px-1.5 text-green-500 font-medium border-r-2 border-green-800/50">
-                  <div className="text-[10px]">Default</div>
-                  <div className="text-[8px] text-muted">/month</div>
-                </th>
-                {monthDates.map((d, monthIndex) => {
-                  const mk = monthKey(d);
-                  const isYearStart = d.getMonth() === 0;
-                  const monthPool = monthlyPools[monthIndex]!;
-                  const monthTotal = goalProjections.reduce(
-                    (s, gp) => s + gp.monthlyAllocations[monthIndex]!,
-                    0,
-                  );
-                  return (
-                    <th
-                      key={mk}
-                      className={`text-center py-1 px-0.5 text-muted font-normal ${
-                        isYearStart ? "border-l border-strong" : ""
-                      }`}
-                      title={`${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()} — Total: ${formatCurrency(monthTotal)} (${monthPool > 0 ? formatPercent(monthTotal / monthPool) : "0%"} of pool ${formatCurrency(monthPool)})`}
-                    >
-                      <div className="text-[9px]">
-                        {MONTH_NAMES[d.getMonth()]}
-                      </div>
-                      {isYearStart && (
-                        <div className="text-[8px] text-muted">
-                          {d.getFullYear()}
-                        </div>
-                      )}
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              {goalProjections.map((gp, gpIndex) => (
-                <tr key={gp.goalId} className="border-t border-subtle/50">
-                  {/* Fund name */}
-                  <td className="py-1.5 pr-2 sticky left-0 bg-surface-primary z-10">
-                    <div className="flex items-center gap-1.5">
-                      <div
-                        className="w-2 h-2 rounded-full shrink-0"
-                        style={{
-                          backgroundColor:
-                            FUND_COLORS[gpIndex % FUND_COLORS.length],
-                        }}
-                      />
-                      <span className="text-secondary font-medium truncate text-[11px]">
-                        {gp.name}
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* Default contribution: $ and % */}
-                  <td className="py-1 px-2 text-center border-r-2 border-green-800/50">
-                    <DefaultContributionCell
-                      gp={gp}
-                      pool={pool}
-                      onGoalUpdate={onGoalUpdate}
-                      onGoalUpdateMulti={onGoalUpdateMulti}
-                      canEdit={canEdit}
+      <div className="overflow-auto max-h-[480px] rounded-lg border">
+        <table className="w-full text-xs border-collapse">
+          <thead className="sticky top-0 z-10">
+            {/* Row 1: column headers — Month | fund names | Allocated */}
+            <tr className="bg-surface-sunken border-b">
+              <th className="sticky left-0 z-20 bg-surface-sunken text-left px-3 py-2 font-medium text-muted whitespace-nowrap border-r text-xs">
+                Month
+              </th>
+              {goalProjections.map((gp, i) => (
+                <th
+                  key={gp.goalId}
+                  className="text-center px-2 py-2 font-medium text-xs whitespace-nowrap min-w-[110px]"
+                >
+                  <span className="inline-flex items-center gap-1.5 justify-center">
+                    <span
+                      className="inline-block w-2 h-2 rounded-full shrink-0"
+                      style={{
+                        backgroundColor: FUND_COLORS[i % FUND_COLORS.length],
+                      }}
                     />
+                    <span className="text-muted">{gp.name}</span>
+                  </span>
+                </th>
+              ))}
+              <th className="text-center px-2 py-2 font-medium text-[10px] text-muted whitespace-nowrap min-w-[80px]">
+                Allocated
+              </th>
+            </tr>
+
+            {/* Row 2: Default /mo — editable default contribution per fund */}
+            <tr className="bg-surface-elevated border-b">
+              <td className="sticky left-0 z-10 bg-surface-elevated px-3 py-2 text-xs font-semibold text-green-500 border-r whitespace-nowrap">
+                Default /mo
+              </td>
+              {goalProjections.map((gp) => (
+                <td key={gp.goalId} className="text-center px-2 py-1.5">
+                  <DefaultContributionCell
+                    gp={gp}
+                    pool={pool}
+                    onGoalUpdate={onGoalUpdate}
+                    onGoalUpdateMulti={onGoalUpdateMulti}
+                    canEdit={canEdit}
+                  />
+                </td>
+              ))}
+              <td className="text-center px-2 py-1.5 text-[10px] text-muted tabular-nums">
+                {formatCurrency(pool)}
+              </td>
+            </tr>
+          </thead>
+
+          <tbody>
+            {monthDates.map((date, rowIdx) => {
+              const mk = monthKey(date);
+              const monthPool = monthlyPools[rowIdx]!;
+              const monthTotal = goalProjections.reduce(
+                (s, gp) => s + (gp.monthlyAllocations[rowIdx] ?? 0),
+                0,
+              );
+              const isOverAllocated = Math.abs(monthTotal - monthPool) >= 1;
+              const isYearStart = date.getMonth() === 0;
+
+              return (
+                <tr
+                  key={mk}
+                  className={`border-b last:border-0 hover:bg-surface-elevated/40 transition-colors ${
+                    isYearStart ? "border-t-2 border-strong" : ""
+                  }`}
+                >
+                  {/* Month label — click to open month override modal */}
+                  <td className="sticky left-0 z-10 bg-surface-primary px-3 py-1.5 border-r whitespace-nowrap">
+                    <button
+                      onClick={
+                        canEdit !== false ? () => onEditMonth(date) : undefined
+                      }
+                      className={`text-xs text-muted tabular-nums ${
+                        canEdit !== false
+                          ? "hover:text-blue-600 cursor-pointer"
+                          : ""
+                      }`}
+                      title={
+                        canEdit !== false
+                          ? "Click to edit all fund allocations for this month"
+                          : undefined
+                      }
+                    >
+                      {monthLabel(date)}
+                    </button>
                   </td>
 
-                  {/* Month cells — read-only, click opens modal */}
-                  {monthDates.map((d, monthIndex) => {
-                    const mk = monthKey(d);
-                    const allocation = gp.monthlyAllocations[monthIndex]!;
-                    const isOverride = gp.hasOverride[monthIndex];
-                    const balance = gp.balances[monthIndex]!;
+                  {/* Per-fund allocation cells */}
+                  {goalProjections.map((gp) => {
+                    const allocation = gp.monthlyAllocations[rowIdx] ?? 0;
+                    const isOverride = gp.hasOverride[rowIdx];
+                    const balance = gp.balances[rowIdx] ?? 0;
                     const isNegative = balance < 0;
-                    const isYearStart = d.getMonth() === 0;
 
                     return (
                       <td
-                        key={mk}
-                        className={`py-1 px-0.5 text-center ${
-                          isYearStart ? "border-l border-strong" : ""
-                        } ${isNegative ? "bg-red-50" : ""}`}
+                        key={gp.goalId}
+                        className={`text-center py-1.5 px-2 ${
+                          isNegative ? "bg-red-50/30 dark:bg-red-950/10" : ""
+                        }`}
                       >
                         <button
                           onClick={
-                            canEdit !== false ? () => onEditMonth(d) : undefined
+                            canEdit !== false
+                              ? () => onEditMonth(date)
+                              : undefined
                           }
-                          className={`tabular-nums leading-tight text-[11px] ${
+                          className={`tabular-nums text-[11px] ${
                             canEdit !== false
                               ? "cursor-pointer hover:text-blue-700"
                               : ""
@@ -317,95 +330,42 @@ export function ContributionGrid({
                               ? "text-blue-600 font-semibold"
                               : "text-faint"
                           }`}
-                          title={`${formatPercent(monthlyPools[monthIndex]! > 0 ? allocation / monthlyPools[monthIndex]! : 0, 1)} of pool — Balance: ${formatCurrency(balance)}${canEdit !== false ? " — Click to edit month" : ""}`}
+                          title={`Balance: ${formatCurrency(balance)}${canEdit !== false ? " — Click to edit month" : ""}`}
                         >
-                          {Math.round(allocation).toLocaleString()}
+                          {formatCurrency(allocation)}
                         </button>
                       </td>
                     );
                   })}
-                </tr>
-              ))}
 
-              {/* Pool allocation row — shows sum of allocations per month */}
-              <tr className="border-t border-subtle/50">
-                <td className="py-1 pr-3 sticky left-0 bg-surface-primary z-10">
-                  <span className="text-muted font-medium text-[10px] uppercase tracking-wide">
-                    Pool Alloc
-                  </span>
-                </td>
-                <td className="py-1 px-2 text-center border-r-2 border-green-800/50">
-                  <div className="text-[10px] tabular-nums text-muted">
-                    {formatCurrency(pool)}
-                  </div>
-                </td>
-                {monthDates.map((d, monthIndex) => {
-                  const mk = monthKey(d);
-                  const monthPool = monthlyPools[monthIndex]!;
-                  const monthTotal = goalProjections.reduce(
-                    (s, gp) => s + gp.monthlyAllocations[monthIndex]!,
-                    0,
-                  );
-                  const isOverAllocated = Math.abs(monthTotal - monthPool) >= 1;
-                  const isYearStart = d.getMonth() === 0;
-                  return (
-                    <td
-                      key={mk}
-                      className={`py-1 px-0.5 text-center text-[10px] tabular-nums ${
-                        isYearStart ? "border-l border-strong" : ""
+                  {/* Allocated column — total allocated this month, clickable to edit */}
+                  <td className="text-center py-1.5 px-2">
+                    <button
+                      onClick={
+                        canEdit !== false ? () => onEditMonth(date) : undefined
+                      }
+                      className={`tabular-nums text-[10px] ${
+                        canEdit !== false
+                          ? "cursor-pointer hover:text-blue-700"
+                          : ""
                       } ${isOverAllocated ? "text-red-600 font-semibold" : "text-faint"}`}
                       title={
                         isOverAllocated
-                          ? `Allocations don't match pool (${formatCurrency(monthTotal)} vs ${formatCurrency(monthPool)})`
-                          : undefined
+                          ? `Allocations don't match pool (${formatCurrency(monthTotal)} vs ${formatCurrency(monthPool)}) — Click to edit month`
+                          : canEdit !== false
+                            ? "Click to edit month"
+                            : undefined
                       }
                     >
-                      {Math.round(monthTotal).toLocaleString()}
-                    </td>
-                  );
-                })}
-              </tr>
-
-              {/* Totals row */}
-              <tr className="border-t-2 border-strong">
-                <td className="py-1.5 pr-3 sticky left-0 bg-surface-primary z-10">
-                  <span className="text-muted font-medium text-[10px] uppercase tracking-wide">
-                    Total Balance
-                  </span>
-                </td>
-                <td className="py-1 px-2 text-center border-r-2 border-green-800/50">
-                  <div className="text-xs tabular-nums font-semibold text-secondary">
-                    {formatCurrency(totalMonthlyAllocation)}
-                  </div>
-                  <div className="text-[10px] text-muted">
-                    {pool > 0
-                      ? formatPercent(totalMonthlyAllocation / pool)
-                      : "—"}
-                  </div>
-                </td>
-                {monthDates.map((d, monthIndex) => {
-                  const mk = monthKey(d);
-                  const total = goalProjections.reduce(
-                    (s, gp) => s + gp.balances[monthIndex]!,
-                    0,
-                  );
-                  const isYearStart = d.getMonth() === 0;
-                  return (
-                    <td
-                      key={mk}
-                      className={`py-1 px-0.5 text-center text-[10px] tabular-nums ${
-                        isYearStart ? "border-l border-strong" : ""
-                      } ${total < 0 ? "text-red-600" : "text-muted"}`}
-                    >
-                      {formatCurrency(total)}
-                    </td>
-                  );
-                })}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
+                      {formatCurrency(monthTotal)}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

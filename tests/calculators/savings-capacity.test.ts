@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
   computeMaxMonthlyFunding,
+  computeTotalMonthlyAllocation,
   type CapacityPerson,
+  type SavingsGoalForAllocation,
 } from "@/lib/calculators/savings-capacity";
 
 describe("computeMaxMonthlyFunding", () => {
@@ -75,5 +77,43 @@ describe("computeMaxMonthlyFunding", () => {
     // Monthly net: 2000 * 24/12 = 4000
     // Max funding: 4000 - 5000 = -1000
     expect(computeMaxMonthlyFunding(people, 5000)).toBeCloseTo(-1000, 0);
+  });
+});
+
+describe("computeTotalMonthlyAllocation", () => {
+  it("returns 0 for empty list", () => {
+    expect(computeTotalMonthlyAllocation([])).toBe(0);
+  });
+
+  it("sums contributions from active goals with positive contribution", () => {
+    const goals: SavingsGoalForAllocation[] = [
+      { isActive: true, monthlyContribution: 500 },
+      { isActive: true, monthlyContribution: 300 },
+    ];
+    expect(computeTotalMonthlyAllocation(goals)).toBeCloseTo(800, 2);
+  });
+
+  it("ignores inactive goals", () => {
+    const goals: SavingsGoalForAllocation[] = [
+      { isActive: true, monthlyContribution: 500 },
+      { isActive: false, monthlyContribution: 300 },
+    ];
+    expect(computeTotalMonthlyAllocation(goals)).toBeCloseTo(500, 2);
+  });
+
+  it("ignores goals with zero contribution", () => {
+    const goals: SavingsGoalForAllocation[] = [
+      { isActive: true, monthlyContribution: 500 },
+      { isActive: true, monthlyContribution: 0 },
+    ];
+    expect(computeTotalMonthlyAllocation(goals)).toBeCloseTo(500, 2);
+  });
+
+  it("handles string contributions", () => {
+    const goals: SavingsGoalForAllocation[] = [
+      { isActive: true, monthlyContribution: "250.50" },
+      { isActive: true, monthlyContribution: "100" },
+    ];
+    expect(computeTotalMonthlyAllocation(goals)).toBeCloseTo(350.5, 2);
   });
 });
