@@ -226,6 +226,7 @@ export function FundCard({
   onConvertToBudgetItem,
   onUpdateParent,
   availableParents,
+  defaultExpanded,
 }: {
   projection: GoalProjection;
   rawGoal: RawGoal;
@@ -266,8 +267,9 @@ export function FundCard({
   onConvertToBudgetItem?: (goalId: number, name: string) => void;
   onUpdateParent?: (childGoalId: number, newParentId: number | null) => void;
   availableParents?: { id: number; name: string }[];
+  defaultExpanded?: boolean;
 }) {
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(!defaultExpanded);
   const [showMenu, setShowMenu] = useState(false);
   const [reassigningChildId, setReassigningChildId] = useState<number | null>(
     null,
