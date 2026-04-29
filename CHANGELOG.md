@@ -8,6 +8,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.5
 
+## [0.5.11] - 2026-04-28
+
+### Added
+
+- **Extra paycheck routing for biweekly workers.** Biweekly employees who receive a third paycheck roughly twice a year can now set per-job routing rules that automatically apply those extra checks to savings goals. Rules specify which goals receive what percentage of the net pay, so the extra income flows where it belongs without manual allocation each time.
+- **Extra Paychecks tab on the savings Projections card.** A new tab shows upcoming months that will have an extra paycheck (based on the projection window), with an inline editor for managing routing rules. The net-pay snapshot is sourced automatically from the paycheck calculator — no manual entry required.
+- **Contribution grid now marks rule-sourced months.** Months where the extra-paycheck routing rule applied an allocation show a purple ✦ badge, making it easy to distinguish automatic rule entries from manual overrides.
+- **Transfer transactions now appear in the Transactions tab.** Transfer entries between funds are shown alongside standard planned transactions, giving a complete view of all fund activity in one place.
+- **Fund selector in the transaction edit form.** When editing a planned transaction, the target fund is now selectable from a dropdown, making it easy to reassign a transaction without deleting and re-creating it.
+
+### Changed
+
+- **Month labels in the contribution grid and Monthly Balances tab now include the day** ("Jan 1 '26") to make explicit that contributions are applied on the 1st of each month. A legend note reinforces this below the grid.
+
+### Fixed
+
+- **YNAB-linked goals no longer double-count the current month's allocation.** YNAB's "Available" balance already includes the current month's budgeted amount. The projection loop was adding the monthly allocation on top of that, causing the first month's projected balance to be overstated. The projection now skips the current-month addition when the live balance already reflects it.
+
+---
+
 ## [0.5.10] - 2026-04-28
 
 ### Added
