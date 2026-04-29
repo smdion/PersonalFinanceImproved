@@ -21,7 +21,7 @@ const MONTH_NAMES = [
 ];
 
 function monthLabel(d: Date): string {
-  return `${MONTH_NAMES[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
+  return `${MONTH_NAMES[d.getMonth()]} 1 '${String(d.getFullYear()).slice(2)}`;
 }
 
 /**

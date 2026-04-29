@@ -261,7 +261,12 @@ export function FundCard({
   createGoalPending: boolean;
   canEdit?: boolean;
   efundResult?: EfundResult | null;
-  apiBalance?: { balance: number; budgeted: number; activity: number } | null;
+  apiBalance?: {
+    balance: number;
+    budgeted: number;
+    activity: number;
+    goalTarget: number | null;
+  } | null;
   onLinkToApi?: (goalId: number) => void;
   onUnlinkFromApi?: (goalId: number) => void;
   onConvertToBudgetItem?: (goalId: number, name: string) => void;

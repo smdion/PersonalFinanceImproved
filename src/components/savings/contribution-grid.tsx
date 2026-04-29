@@ -15,6 +15,8 @@ interface ContributionGridProps {
   onGoalUpdateMulti?: (goalId: number, fields: Record<string, string>) => void;
   onEditMonth: (monthDate: Date) => void;
   canEdit?: boolean;
+  /** "YYYY-MM" keys for months that have rule-sourced extra-paycheck overrides. */
+  ruleMonthKeys?: Set<string>;
 }
 
 const MONTH_NAMES = [
@@ -33,7 +35,7 @@ const MONTH_NAMES = [
 ];
 
 function monthLabel(d: Date): string {
-  return `${MONTH_NAMES[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
+  return `${MONTH_NAMES[d.getMonth()]} 1 '${String(d.getFullYear()).slice(2)}`;
 }
 
 /* ── Default contribution cell: $ and % that drive each other ── */
@@ -195,13 +197,14 @@ export function ContributionGrid({
   onGoalUpdateMulti,
   onEditMonth,
   canEdit,
+  ruleMonthKeys,
 }: ContributionGridProps) {
   // Base pool for the default row (no annual growth applied)
   const pool = maxMonthlyFunding ?? totalMonthlyAllocation;
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-4 text-[11px] text-faint px-1">
+      <div className="flex flex-wrap items-center gap-4 text-[11px] text-faint px-1">
         <span className="flex items-center gap-1">
           <span className="text-green-600 font-semibold">$0,000</span>
           <span>= default monthly contribution (click to edit)</span>
@@ -209,6 +212,9 @@ export function ContributionGrid({
         <span className="flex items-center gap-1">
           <span className="text-blue-600 font-semibold">$0,000</span>
           <span>= month override (click month to change)</span>
+        </span>
+        <span className="text-faint">
+          Contributions applied on the 1st of each month.
         </span>
       </div>
       <div className="overflow-auto max-h-[480px] rounded-lg border">
@@ -299,6 +305,11 @@ export function ContributionGrid({
                     >
                       {monthLabel(date)}
                     </button>
+                    {ruleMonthKeys?.has(mk) && (
+                      <div className="text-[9px] text-purple-600 font-medium leading-tight mt-0.5">
+                        ✦ extra check
+                      </div>
+                    )}
                   </td>
 
                   {/* Per-fund allocation cells */}
