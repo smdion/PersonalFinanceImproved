@@ -16,6 +16,10 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
       utils.sync.getSyncStatus.invalidate();
       utils.sync.getConnection.invalidate();
       utils.sync.getPreview.invalidate();
+      // Refresh all data that YNAB sync may have updated
+      utils.savings.invalidate();
+      utils.budget.invalidate();
+      utils.assets.invalidate();
     },
   });
 

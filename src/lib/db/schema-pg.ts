@@ -42,6 +42,18 @@ import type {
   PortfolioTaxType,
 } from "@/lib/config/enum-values";
 
+/** One date-ranged rule directing an extra paycheck to one or more savings goals. */
+export type ExtraPaycheckRule = {
+  /** "YYYY-MM" — first month this rule applies (inclusive). */
+  from: string;
+  /** "YYYY-MM" — last month this rule applies (inclusive), or null for open-ended. */
+  to: string | null;
+  /** How to split the check across goals; pct values must sum to 100. */
+  splits: { goalId: number; pct: number }[];
+  /** Net-pay-per-check snapshot at the time the rule was saved, used for dollar conversion. */
+  netPaySnapshot: number;
+};
+
 // ============================================================================
 // TABLE OF CONTENTS — sections below are in this order:
 //
@@ -139,6 +151,9 @@ export const jobs = pgTable(
       precision: 6,
       scale: 4,
     }),
+    extraPaycheckRouting: jsonb("extra_paycheck_routing").$type<
+      ExtraPaycheckRule[] | null
+    >(),
   },
   (table) => [index("jobs_person_id_idx").on(table.personId)],
 );
@@ -422,6 +437,7 @@ export const savingsAllocationOverrides = pgTable(
       .references(() => savingsGoals.id, { onDelete: "cascade" }),
     monthDate: date("month_date").notNull(),
     amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
+    source: text("source").notNull().default("manual"),
   },
   (table) => [
     uniqueIndex("savings_alloc_override_goal_month_idx").on(

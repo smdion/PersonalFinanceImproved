@@ -21,6 +21,7 @@ import {
   seedBudgetProfile,
   seedBudgetItem,
   seedAppSetting,
+  seedJob,
 } from "./setup";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
@@ -739,5 +740,85 @@ describe("savings.allocationOverrides advanced", () => {
       });
       expect(result).toEqual({ ok: true });
     });
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// extraPaycheckRouting
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe("savings.extraPaycheckRouting", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+  let goalId: number;
+  let jobId: number;
+
+  beforeAll(async () => {
+    const harness = await createTestCaller();
+    caller = harness.caller;
+    db = harness.db;
+    cleanup = harness.cleanup;
+    const { personId } = seedStandardDataset(db);
+    goalId = seedSavingsGoal(db, { name: "Vacation" });
+    jobId = seedJob(db, personId, {
+      payPeriod: "biweekly",
+      anchorPayDate: "2025-01-03",
+    });
+  });
+
+  afterAll(() => cleanup());
+
+  it("list returns all jobs with routing fields", async () => {
+    const jobs = await caller.savings.extraPaycheckRouting.list();
+    expect(Array.isArray(jobs)).toBe(true);
+    expect(jobs.length).toBeGreaterThan(0);
+    expect(jobs[0]).toHaveProperty("id");
+    expect(jobs[0]).toHaveProperty("payPeriod");
+    expect(jobs[0]).toHaveProperty("extraPaycheckRouting");
+  });
+
+  it("save stores routing rules and returns ok", async () => {
+    const result = await caller.savings.extraPaycheckRouting.save({
+      jobId,
+      rules: [
+        {
+          from: "2025-01",
+          to: null,
+          splits: [{ goalId, pct: 100 }],
+          netPaySnapshot: 3000,
+        },
+      ],
+    });
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("save rejects rules that don't sum to 100%", async () => {
+    await expect(
+      caller.savings.extraPaycheckRouting.save({
+        jobId,
+        rules: [
+          {
+            from: "2025-01",
+            to: null,
+            splits: [{ goalId, pct: 50 }],
+            netPaySnapshot: 3000,
+          },
+        ],
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("save clears rules when passed empty array", async () => {
+    const result = await caller.savings.extraPaycheckRouting.save({
+      jobId,
+      rules: [],
+    });
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("rematerialize runs without error", async () => {
+    const result = await caller.savings.extraPaycheckRouting.rematerialize();
+    expect(result).toEqual({ ok: true });
   });
 });

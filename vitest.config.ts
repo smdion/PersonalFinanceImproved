@@ -48,10 +48,13 @@ export default defineConfig({
         "src/server/routers/demo.ts",
         // Testing router — admin-only on-demand vitest runner
         "src/server/routers/testing.ts",
-        // Router re-export barrels
+        // Router re-export barrels and documentation-only files
         "src/server/routers/index.ts",
         "src/server/routers/settings/index.ts",
+        "src/server/routers/settings.ts",
         "src/server/helpers/index.ts",
+        // Documentation-only (no executable statements)
+        "src/server/routers/_shared.ts",
         // OpenAPI doc generator — runtime-only
         "src/server/api-docs.ts",
         "src/server/routers/api-docs.ts",

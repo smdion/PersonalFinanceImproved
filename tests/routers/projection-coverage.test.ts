@@ -1285,3 +1285,102 @@ describe("projection router — analyzeStrategy", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// computeStressTest
+// ---------------------------------------------------------------------------
+
+describe("projection router — computeStressTest", () => {
+  it("returns empty scenarios when no retirement data is seeded", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const response = await caller.projection.computeStressTest();
+      expect(response).toEqual({ scenarios: [], retirementAge: null });
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("returns three scenarios with seeded data", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+
+      const response = await caller.projection.computeStressTest();
+      expect(Array.isArray(response.scenarios)).toBe(true);
+      expect(response.scenarios.length).toBe(3);
+      expect(response.retirementAge).toBeGreaterThan(0);
+
+      for (const scenario of response.scenarios) {
+        expect(scenario).toHaveProperty("label");
+        expect(scenario).toHaveProperty("nestEggAtRetirement");
+        expect(scenario).toHaveProperty("portfolioDepletionAge");
+      }
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("accepts optional overrides without throwing", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+
+      const response = await caller.projection.computeStressTest({
+        accumulationExpenseOverride: 5000,
+        decumulationExpenseOverride: 4000,
+      });
+      expect(Array.isArray(response.scenarios)).toBe(true);
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computeCoastFire
+// ---------------------------------------------------------------------------
+
+describe("projection router — computeCoastFire", () => {
+  it("returns null result when no retirement data is seeded", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const response = await caller.projection.computeCoastFire({});
+      expect(response).toEqual({ result: null });
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("returns coast FIRE result object with seeded data", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+
+      const response = await caller.projection.computeCoastFire({});
+      expect(response).toHaveProperty("result");
+      expect(response.result).not.toBeNull();
+      expect(response.result).toHaveProperty("coastFireAge");
+      expect(response.result).toHaveProperty("sustainableWithdrawalToday");
+      expect(response.result).toHaveProperty("endBalanceToday");
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("accepts decumulationDefaults override without throwing", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+
+      const response = await caller.projection.computeCoastFire({
+        decumulationDefaults: { withdrawalRate: 0.035 },
+      });
+      expect(response).toHaveProperty("result");
+    } finally {
+      cleanup();
+    }
+  });
+});

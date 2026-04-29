@@ -173,7 +173,7 @@ export function MonthOverrideModal({
     return goalProjections.some((gp) => gp.hasOverride[monthIndex]);
   }, [goalProjections, monthIndex]);
 
-  const monthLabel = `${MONTH_NAMES[monthDate.getMonth()]} ${monthDate.getFullYear()}`;
+  const monthLabel = `${MONTH_NAMES[monthDate.getMonth()]} 1, ${monthDate.getFullYear()}`;
 
   return (
     <>

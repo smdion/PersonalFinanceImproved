@@ -530,6 +530,65 @@ export function countPeriodsElapsed(
 }
 
 /**
+ * Returns YYYY-MM-01 date strings for every extra-paycheck month (3 paydays)
+ * within the window [asOfDate, asOfDate + horizonMonths). Only biweekly pay
+ * produces extra paycheck months; all other schedules return [].
+ */
+export function getExtraPaycheckMonthKeys(
+  anchorPayDate: Date,
+  payPeriod: string,
+  asOfDate: Date,
+  horizonMonths: number,
+): string[] {
+  if (payPeriod !== "biweekly") return [];
+
+  const msPerDay = MS_PER_DAY;
+  const results: string[] = [];
+
+  // Walk years covered by the horizon, collecting 3-payday months via payday counting.
+  const startYear = asOfDate.getUTCFullYear();
+  const endDate = new Date(
+    Date.UTC(
+      asOfDate.getUTCFullYear(),
+      asOfDate.getUTCMonth() + horizonMonths,
+      1,
+    ),
+  );
+  const endYear = endDate.getUTCFullYear();
+
+  for (let year = startYear; year <= endYear; year++) {
+    const jan1 = new Date(Date.UTC(year, 0, 1));
+    const dec31 = new Date(Date.UTC(year, 11, 31));
+
+    let payday = new Date(anchorPayDate);
+    while (payday > jan1) payday = new Date(payday.getTime() - 14 * msPerDay);
+    while (payday < jan1) payday = new Date(payday.getTime() + 14 * msPerDay);
+
+    const counts = new Array(12).fill(0) as number[];
+    while (payday <= dec31) {
+      counts[payday.getUTCMonth()]!++;
+      payday = new Date(payday.getTime() + 14 * msPerDay);
+    }
+    for (let m = 0; m < 12; m++) {
+      if ((counts[m] ?? 0) >= 3) {
+        const key = `${year}-${String(m + 1).padStart(2, "0")}-01`;
+        const keyDate = new Date(Date.UTC(year, m, 1));
+        if (
+          keyDate >=
+            new Date(
+              Date.UTC(asOfDate.getUTCFullYear(), asOfDate.getUTCMonth(), 1),
+            ) &&
+          keyDate < endDate
+        ) {
+          results.push(key);
+        }
+      }
+    }
+  }
+  return results;
+}
+
+/**
  * Finds the pay period that contains the bonus pay date.
  * When bonusDayOfMonth is provided, matches the specific date within the month.
  * Otherwise falls back to the first pay period of the given month.

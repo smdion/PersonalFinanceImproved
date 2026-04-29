@@ -20,6 +20,7 @@ import {
   type NewFundForm,
 } from "@/components/savings";
 import { BudgetCapacityBar } from "@/components/savings/budget-capacity-bar";
+import { ExtraPaycheckRulesEditor } from "@/components/savings/extra-paycheck-rules-editor";
 
 // Code-split Recharts-heavy children (v0.5 expert-review M8). Loads on
 // page mount instead of bundling into the savings page chunk. ssr:false
@@ -32,7 +33,6 @@ const SavingsTrajectoryChart = dynamic(
   { loading: () => <SkeletonChart />, ssr: false },
 );
 import { UpcomingGoals } from "@/components/savings/upcoming-goals";
-import { TransferForm } from "@/components/savings/transfer-form";
 import {
   FundManagementSection,
   type FundManagementCallbacks,
@@ -44,6 +44,7 @@ import {
   ApiSyncSection,
   useApiSync,
 } from "@/components/savings/api-sync-section";
+import { ProjectionImpactBar } from "@/components/savings/projection-impact-bar";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { useUpdatePlannedTx } from "@/components/savings/use-update-planned-tx";
 import {
@@ -114,10 +115,9 @@ export default function SavingsPage() {
   // ── Cross-section coordination ──
   const apiSync = useApiSync();
   const [editingMonth, setEditingMonth] = useState<Date | null>(null);
-  const [showTransferForm, setShowTransferForm] = useState(false);
   const [showNewFund, setShowNewFund] = useState(false);
   const [projectionsTab, setProjectionsTab] = useState<
-    "table" | "chart" | "edit" | "transactions"
+    "table" | "chart" | "edit" | "transactions" | "extraPaychecks"
   >("table");
   const [yearlyGrowth, setYearlyGrowth] = useState<
     Record<number, { type: "pct" | "dollar"; value: number }>
@@ -136,12 +136,6 @@ export default function SavingsPage() {
     onSuccess: () => {
       utils.savings.invalidate();
       setShowNewFund(false);
-    },
-  });
-  const createTransfer = trpc.savings.transfers.create.useMutation({
-    onSuccess: () => {
-      utils.savings.invalidate();
-      setShowTransferForm(false);
     },
   });
   const { onUpdateTx: updateTxFn, isPending: updateTxPending } =
@@ -203,7 +197,12 @@ export default function SavingsPage() {
 
   const apiBalanceMap = new Map<
     number,
-    { balance: number; budgeted: number; activity: number }
+    {
+      balance: number;
+      budgeted: number;
+      activity: number;
+      goalTarget: number | null;
+    }
   >();
   if (apiBalancesData?.balances) {
     for (const b of apiBalancesData.balances) {
@@ -211,6 +210,7 @@ export default function SavingsPage() {
         balance: b.balance,
         budgeted: b.budgeted,
         activity: b.activity,
+        goalTarget: b.goalTarget ?? null,
       });
     }
   }
@@ -341,6 +341,11 @@ export default function SavingsPage() {
       pct !== null && maxMonthlyFunding !== null
         ? (pct / 100) * maxMonthlyFunding
         : goal.monthlyAllocation;
+    // YNAB-linked goals report the live "Available" balance, which already
+    // includes the current month's budgeted amount. Skip adding the allocation
+    // for month[0] to avoid double-counting it.
+    const balanceIncludesCurrentMonth =
+      !!(raw?.isApiSyncEnabled && raw?.apiCategoryId) && now.getDate() > 1;
 
     for (let i = 0; i < projectionMonths; i++) {
       const mk = monthKey(monthDates[i]!);
@@ -351,7 +356,9 @@ export default function SavingsPage() {
       const defaultAllocation = getAllocationForYear(baseAllocation, yr);
       const allocation =
         overrideAmount !== undefined ? overrideAmount : defaultAllocation;
-      balance += allocation;
+      if (!(i === 0 && balanceIncludesCurrentMonth)) {
+        balance += allocation;
+      }
       if (events) {
         for (const ev of events) balance += ev.amount;
       }
@@ -450,37 +457,7 @@ export default function SavingsPage() {
             ? `Budget: ${budgetLabel} | Profile: ${profileName}`
             : `Budget: ${budgetLabel} | Profile: Live`;
         })()}
-      >
-        {canEdit && (
-          <div className="flex flex-wrap gap-2">
-            {apiBalancesData?.service && (
-              <button
-                onClick={() =>
-                  apiSync.buildPushAllPreview(
-                    rawGoals,
-                    apiBalanceMap,
-                    efund?.targetAmount ?? undefined,
-                  )
-                }
-                disabled={apiSync.pushToApiPending}
-                className="px-3 py-1.5 border border-green-600 text-green-400 rounded text-sm hover:bg-green-600/20 disabled:opacity-50"
-                title="Push monthly contributions as budget API goal targets"
-              >
-                {apiSync.pushToApiPending
-                  ? "Pushing..."
-                  : "Push Contributions \u2192"}
-              </button>
-            )}
-            <Button
-              variant="secondary"
-              onClick={() => setShowTransferForm(true)}
-            >
-              Transfer
-            </Button>
-            <Button onClick={() => setShowNewFund(true)}>+ New Fund</Button>
-          </div>
-        )}
-      </PageHeader>
+      ></PageHeader>
 
       {/* Warnings */}
       {savings.warnings.length > 0 && (
@@ -491,30 +468,6 @@ export default function SavingsPage() {
             </p>
           ))}
         </div>
-      )}
-
-      {canEdit && showTransferForm && (
-        <TransferForm
-          goals={rawGoals
-            .filter((g) => g.isActive && !g.parentGoalId)
-            .map((g) => ({ id: g.id, name: g.name }))}
-          onSubmit={(data) => createTransfer.mutate(data)}
-          isPending={createTransfer.isPending}
-          onCancel={() => setShowTransferForm(false)}
-        />
-      )}
-
-      {canEdit && showNewFund && (
-        <NewFundFormCard
-          newFund={newFund}
-          setNewFund={setNewFund}
-          onSubmit={handleCreateFund}
-          onCancel={() => setShowNewFund(false)}
-          isPending={createGoal.isPending}
-          availableParents={rawGoals
-            .filter((g) => !g.parentGoalId && g.isActive)
-            .map((g) => ({ id: g.id, name: g.name }))}
-        />
       )}
 
       {/* ── At a Glance ── */}
@@ -561,13 +514,14 @@ export default function SavingsPage() {
 
           {/* Tab bar */}
           {goalProjections.length > 0 && (
-            <div className="flex border-b -mx-4 sm:-mx-5 px-4 sm:px-5">
+            <div className="flex border-b -mx-4 sm:-mx-5 px-4 sm:px-5 overflow-x-auto">
               {(
                 [
                   { key: "table", label: "Monthly Balances" },
                   { key: "chart", label: "Chart" },
                   { key: "edit", label: "Allocations" },
                   { key: "transactions", label: "Transactions" },
+                  { key: "extraPaychecks", label: "Extra Paychecks" },
                 ] as const
               ).map(({ key, label }) => (
                 <button
@@ -583,6 +537,14 @@ export default function SavingsPage() {
                 </button>
               ))}
             </div>
+          )}
+
+          {/* Impact bar — live per-fund status, visible on all tabs */}
+          {goalProjections.length > 0 && (
+            <ProjectionImpactBar
+              goalProjections={goalProjections}
+              monthDates={monthDates}
+            />
           )}
 
           {/* Tab content */}
@@ -606,25 +568,76 @@ export default function SavingsPage() {
               plannedTransactions={plannedTransactions}
               goalProjections={goalProjections}
               canEdit={canEdit}
+              projectionEndDate={monthDates[monthDates.length - 1]}
             />
           )}
 
+          {projectionsTab === "extraPaychecks" &&
+            (() => {
+              const netPayByPersonId = new Map<number, number>();
+              if (paycheckData) {
+                for (const p of paycheckData.people) {
+                  if (p.paycheck && p.job) {
+                    netPayByPersonId.set(p.person.id, p.paycheck.netPay);
+                  }
+                }
+              }
+              return (
+                <ExtraPaycheckRulesEditor
+                  goals={rawGoals
+                    .filter((g) => g.isActive && !g.parentGoalId)
+                    .map((g) => ({ id: g.id, name: g.name }))}
+                  netPayByPersonId={netPayByPersonId}
+                  monthDates={monthDates}
+                />
+              );
+            })()}
+
           {projectionsTab === "edit" && (
-            <AllocationEditorSection
-              goalProjections={goalProjections}
-              monthDates={monthDates}
-              totalMonthlyAllocation={totalMonthlyAllocation}
-              maxMonthlyFunding={maxMonthlyFunding}
-              monthlyPools={monthlyPools}
-              canEdit={canEdit}
-              onGoalUpdate={onGoalUpdate}
-              onGoalUpdateMulti={onGoalUpdateMulti}
-              editingMonth={editingMonth}
-              setEditingMonth={setEditingMonth}
-              projectionYears={projectionYears}
-              yearlyGrowth={yearlyGrowth}
-              setYearlyGrowth={setYearlyGrowth}
-            />
+            <div className="space-y-3">
+              {canEdit && apiBalancesData?.service && (
+                <div className="flex justify-end">
+                  <button
+                    onClick={() =>
+                      apiSync.buildPushAllPreview(
+                        rawGoals,
+                        apiBalanceMap,
+                        efund?.targetAmount ?? undefined,
+                      )
+                    }
+                    disabled={apiSync.pushToApiPending}
+                    className="px-3 py-1.5 border border-green-600 text-green-400 rounded text-sm hover:bg-green-600/20 disabled:opacity-50"
+                    title="Push monthly allocation amounts as budget API goal targets"
+                  >
+                    {apiSync.pushToApiPending
+                      ? "Pushing..."
+                      : "Push Monthly Targets →"}
+                  </button>
+                </div>
+              )}
+              <AllocationEditorSection
+                goalProjections={goalProjections}
+                monthDates={monthDates}
+                totalMonthlyAllocation={totalMonthlyAllocation}
+                maxMonthlyFunding={maxMonthlyFunding}
+                monthlyPools={monthlyPools}
+                canEdit={canEdit}
+                onGoalUpdate={onGoalUpdate}
+                onGoalUpdateMulti={onGoalUpdateMulti}
+                editingMonth={editingMonth}
+                setEditingMonth={setEditingMonth}
+                projectionYears={projectionYears}
+                yearlyGrowth={yearlyGrowth}
+                setYearlyGrowth={setYearlyGrowth}
+                ruleMonthKeys={
+                  new Set(
+                    (allocationOverrides ?? [])
+                      .filter((o) => o.source === "rule")
+                      .map((o) => o.monthDate.slice(0, 7)),
+                  )
+                }
+              />
+            </div>
           )}
         </section>
       </CardBoundary>
@@ -632,13 +645,30 @@ export default function SavingsPage() {
       {/* ── Funds ── */}
       <CardBoundary title="Funds">
         <section className="space-y-3">
-          <div>
-            <h2 className="text-base font-semibold text-primary">Funds</h2>
-            <p className="text-xs text-faint mt-0.5">
-              These funds set the allocation amounts used in the projections
-              above — click any fund to expand
-            </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-primary">Funds</h2>
+              <p className="text-xs text-faint mt-0.5">
+                These funds set the allocation amounts used in the projections
+                above — click any fund to expand
+              </p>
+            </div>
+            {canEdit && (
+              <Button onClick={() => setShowNewFund(true)}>+ New Fund</Button>
+            )}
           </div>
+          {canEdit && showNewFund && (
+            <NewFundFormCard
+              newFund={newFund}
+              setNewFund={setNewFund}
+              onSubmit={handleCreateFund}
+              onCancel={() => setShowNewFund(false)}
+              isPending={createGoal.isPending}
+              availableParents={rawGoals
+                .filter((g) => !g.parentGoalId && g.isActive)
+                .map((g) => ({ id: g.id, name: g.name }))}
+            />
+          )}
           <FundManagementSection
             rawGoals={rawGoals}
             goalProjections={goalProjections}

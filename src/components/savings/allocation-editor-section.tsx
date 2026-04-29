@@ -291,6 +291,8 @@ export interface AllocationEditorSectionProps {
   projectionYears: number;
   yearlyGrowth: YearlyGrowth;
   setYearlyGrowth: (g: YearlyGrowth) => void;
+  /** Set of "YYYY-MM" keys for months that have rule-sourced overrides. */
+  ruleMonthKeys?: Set<string>;
 }
 
 export function AllocationEditorSection({
@@ -307,6 +309,7 @@ export function AllocationEditorSection({
   projectionYears,
   yearlyGrowth,
   setYearlyGrowth,
+  ruleMonthKeys,
 }: AllocationEditorSectionProps) {
   const utils = trpc.useUtils();
   const basePool = maxMonthlyFunding ?? totalMonthlyAllocation;
@@ -346,6 +349,7 @@ export function AllocationEditorSection({
           onGoalUpdateMulti={onGoalUpdateMulti}
           onEditMonth={setEditingMonth}
           canEdit={canEdit}
+          ruleMonthKeys={ruleMonthKeys}
         />
       )}
 

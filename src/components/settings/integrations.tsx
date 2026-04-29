@@ -39,6 +39,9 @@ function ServiceCard({
     utils.sync.getSyncStatus.invalidate();
     utils.sync.getActiveBudgetApi.invalidate();
     utils.sync.getPreview.invalidate();
+    utils.savings.invalidate();
+    utils.budget.invalidate();
+    utils.assets.invalidate();
   };
 
   const saveConnectionMut = trpc.sync.saveConnection.useMutation({

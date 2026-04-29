@@ -19,6 +19,8 @@ function SavingsGoalsCardImpl() {
       : undefined;
   const { data, isLoading, error } =
     trpc.savings.computeSummary.useQuery(efundTierInput);
+  const { data: reimbursementsData } =
+    trpc.savings.listEfundReimbursements.useQuery();
   if (isLoading) return <LoadingCard title="Savings Goals" />;
   if (error)
     return <ErrorCard title="Savings Goals" message="Failed to load" />;
@@ -251,18 +253,30 @@ function SavingsGoalsCardImpl() {
                   </span>
                 </div>
               )}
+            {(reimbursementsData?.total ?? 0) > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted">Pending Reimb.</span>
+                <span className="text-amber-600">
+                  +{formatCurrency(reimbursementsData!.total)}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between font-medium">
               <span className="text-muted">Needed</span>
-              <span
-                className={
-                  efund.neededAfterRepay <= 0
-                    ? "text-green-600"
-                    : "text-red-600"
-                }
-              >
-                {efund.neededAfterRepay <= 0 ? "-" : ""}
-                {formatCurrency(Math.abs(efund.neededAfterRepay))}
-              </span>
+              {(() => {
+                const effectiveNeeded =
+                  efund.neededAfterRepay - (reimbursementsData?.total ?? 0);
+                return (
+                  <span
+                    className={
+                      effectiveNeeded <= 0 ? "text-green-600" : "text-red-600"
+                    }
+                  >
+                    {effectiveNeeded <= 0 ? "-" : ""}
+                    {formatCurrency(Math.abs(effectiveNeeded))}
+                  </span>
+                );
+              })()}
             </div>
           </div>
         </div>
