@@ -9,6 +9,7 @@ interface EfundData {
   trueBalance: number;
   monthsCovered: number | null;
   targetMonths: number;
+  targetAmount: number;
   progress: number;
   neededAfterRepay: number;
 }
@@ -28,6 +29,9 @@ export function EmergencyFundDetail({
   onTierChange,
   onTargetMonthsChange,
   reimbursements,
+  monthlyAllocation,
+  poolPct,
+  isApiSyncEnabled,
 }: {
   efund: EfundData;
   budgetTierLabels: string[];
@@ -35,6 +39,9 @@ export function EmergencyFundDetail({
   onTierChange: (tier: number) => void;
   onTargetMonthsChange?: (months: number) => void;
   reimbursements?: ReimbursementData | null;
+  monthlyAllocation?: number;
+  poolPct?: string;
+  isApiSyncEnabled?: boolean;
 }) {
   const [showReimbursements, setShowReimbursements] = useState(false);
 
@@ -92,6 +99,47 @@ export function EmergencyFundDetail({
           </p>
         </div>
       </div>
+
+      {/* Progress bar */}
+      {efund.targetAmount > 0 && (
+        <div className="mt-4">
+          <div className="h-2.5 bg-surface-strong rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${efund.progress >= 1 ? "bg-green-500" : "bg-blue-500"}`}
+              style={{ width: `${Math.min(100, efund.progress * 100)}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between mt-1 text-xs text-muted">
+            <span className="tabular-nums font-semibold">
+              {(efund.progress * 100).toFixed(0)}%
+            </span>
+            <span className="tabular-nums">
+              {efund.neededAfterRepay <= 0
+                ? "Fully funded"
+                : `${formatCurrency(efund.neededAfterRepay)} remaining`}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Monthly saving line */}
+      {monthlyAllocation !== undefined && (
+        <div className="mt-3 flex items-center gap-2 text-xs border-t pt-3">
+          <span className="text-muted">Saving</span>
+          <span className="font-bold text-green-600 tabular-nums">
+            {formatCurrency(monthlyAllocation)}/mo
+          </span>
+          {poolPct && <span className="text-faint">({poolPct}% of pool)</span>}
+          {isApiSyncEnabled && (
+            <span
+              className="text-blue-600/70 text-[10px]"
+              title="Target balance pushed to YNAB"
+            >
+              → push
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Pending Reimbursements */}
       {reimbursements && reimbursements.items.length > 0 && (

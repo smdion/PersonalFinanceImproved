@@ -39,9 +39,98 @@ function useChartPalette() {
     tooltipBg: dark ? "#1f2937" : "#ffffff",
     tooltipBorder: dark ? "#374151" : "#e5e7eb",
     tooltipText: dark ? "#e5e7eb" : "#1f2937",
+    tooltipMuted: dark ? "#9ca3af" : "#6b7280",
     dotFill: dark ? "#1f2937" : "#ffffff",
     refLine: dark ? "#6b7280" : "#9ca3af",
   };
+}
+
+const MONTH_LABELS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+function formatMonthKey(mk: string): string {
+  const [y, m] = mk.split("-");
+  return `${MONTH_LABELS[parseInt(m!) - 1]} ${y}`;
+}
+
+// Custom tooltip showing balances + any events that month
+function EventTooltip({
+  active,
+  payload,
+  label,
+  goalProjections,
+  monthDates,
+  p,
+}: {
+  active?: boolean;
+  payload?: { name: string; value: number; color: string }[];
+  label?: string;
+  goalProjections: GoalProjection[];
+  monthDates: Date[];
+  p: ReturnType<typeof useChartPalette>;
+}) {
+  if (!active || !payload?.length || !label) return null;
+
+  const monthIdx = monthDates.findIndex((d) => monthKey(d) === label);
+
+  return (
+    <div
+      style={{
+        background: p.tooltipBg,
+        border: `1px solid ${p.tooltipBorder}`,
+        borderRadius: 6,
+        padding: "8px 10px",
+        fontSize: 11,
+        color: p.tooltipText,
+        minWidth: 160,
+      }}
+    >
+      <p style={{ fontWeight: 600, marginBottom: 6 }}>
+        {formatMonthKey(label)}
+      </p>
+      {payload.map((entry) => {
+        const gp = goalProjections.find((g) => g.name === entry.name);
+        const events =
+          monthIdx >= 0 && gp ? (gp.monthEvents[monthIdx] ?? []) : [];
+        return (
+          <div key={entry.name} style={{ marginBottom: events.length ? 4 : 2 }}>
+            <span style={{ color: entry.color }}>
+              ● {entry.name}:{" "}
+              <span style={{ fontWeight: 600 }}>
+                {formatCurrency(entry.value)}
+              </span>
+            </span>
+            {events.map((ev) => (
+              <div
+                key={ev.id}
+                style={{
+                  paddingLeft: 12,
+                  color: ev.amount < 0 ? "#f87171" : "#4ade80",
+                  fontSize: 10,
+                  marginTop: 1,
+                }}
+              >
+                {ev.description}: {ev.amount < 0 ? "−" : "+"}
+                {formatCurrency(Math.abs(ev.amount))}
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export function SavingsTrajectoryChart({
@@ -77,7 +166,19 @@ export function SavingsTrajectoryChart({
             Goal Trajectories
           </h2>
           <p className={`text-[10px] ${p.subtitle} mt-0.5`}>
-            Click a fund in the legend to scroll to its detail card
+            Click a fund in the legend to scroll to its detail card ·{" "}
+            <span className="inline-flex items-center gap-1">
+              <span
+                style={{
+                  display: "inline-block",
+                  width: 8,
+                  height: 8,
+                  background: "currentColor",
+                  clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)",
+                }}
+              />
+              = planned transaction
+            </span>
           </p>
         </div>
         {negativeInfo.length > 0 && (
@@ -105,21 +206,7 @@ export function SavingsTrajectoryChart({
             interval="preserveStartEnd"
             tickFormatter={(v: string) => {
               const [y, m] = v.split("-");
-              const months = [
-                "Jan",
-                "Feb",
-                "Mar",
-                "Apr",
-                "May",
-                "Jun",
-                "Jul",
-                "Aug",
-                "Sep",
-                "Oct",
-                "Nov",
-                "Dec",
-              ];
-              return `${months[parseInt(m!) - 1]} '${y!.slice(2)}`;
+              return `${MONTH_LABELS[parseInt(m!) - 1]} '${y!.slice(2)}`;
             }}
           />
 
@@ -132,36 +219,19 @@ export function SavingsTrajectoryChart({
           />
 
           <RechartsTooltip
-            contentStyle={{
-              fontSize: 11,
-              backgroundColor: p.tooltipBg,
-              border: `1px solid ${p.tooltipBorder}`,
-              borderRadius: 6,
-              color: p.tooltipText,
-            }}
-            labelFormatter={(label) => {
-              const str = String(label);
-              const [y, m] = str.split("-");
-              const months = [
-                "Jan",
-                "Feb",
-                "Mar",
-                "Apr",
-                "May",
-                "Jun",
-                "Jul",
-                "Aug",
-                "Sep",
-                "Oct",
-                "Nov",
-                "Dec",
-              ];
-              return `${months[parseInt(m!) - 1]} ${y}`;
-            }}
-            formatter={(value, name) => [
-              formatCurrency(Number(value)),
-              String(name),
-            ]}
+            content={(tooltipProps) => (
+              <EventTooltip
+                // eslint-disable-next-line no-restricted-syntax -- Recharts TooltipProps has readonly payload array incompatible with EventTooltip's mutable signature; no typed wrapper available
+                {...(tooltipProps as unknown as {
+                  active?: boolean;
+                  payload?: { name: string; value: number; color: string }[];
+                  label?: string;
+                })}
+                goalProjections={goalProjections}
+                monthDates={monthDates}
+                p={p}
+              />
+            )}
           />
 
           <Legend
@@ -179,9 +249,9 @@ export function SavingsTrajectoryChart({
           {/* Zero reference line */}
           <ReferenceLine y={0} stroke={p.refLine} strokeDasharray="4 4" />
 
-          {/* Target reference lines for each fund */}
+          {/* Target reference lines for fixed-target funds only */}
           {goalProjections.map((gp, i) => {
-            if (gp.target <= 0) return null;
+            if (gp.targetMode !== "fixed" || gp.target <= 0) return null;
             const color = FUND_COLORS[i % FUND_COLORS.length]!;
             return (
               <ReferenceLine
@@ -204,12 +274,69 @@ export function SavingsTrajectoryChart({
                 dataKey={gp.name}
                 stroke={color}
                 strokeWidth={2}
-                dot={false}
-                activeDot={{
-                  r: 4,
-                  stroke: color,
-                  strokeWidth: 2,
-                  fill: p.dotFill,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                dot={(dotProps: any) => {
+                  const {
+                    cx = 0,
+                    cy = 0,
+                    index,
+                  } = dotProps as { cx?: number; cy?: number; index: number };
+                  const events = gp.monthEvents[index];
+                  if (!events?.length)
+                    return <g key={`no-ev-${gp.name}-${index}`} />;
+                  const s = 5;
+                  return (
+                    <g key={`ev-${gp.name}-${index}`}>
+                      {/* Enlarged invisible hit area */}
+                      <rect
+                        x={cx - 12}
+                        y={cy - 12}
+                        width={24}
+                        height={24}
+                        fill="transparent"
+                      />
+                      {/* Diamond marker */}
+                      <polygon
+                        points={`${cx},${cy - s} ${cx + s},${cy} ${cx},${cy + s} ${cx - s},${cy}`}
+                        fill={color}
+                        stroke={p.dotFill}
+                        strokeWidth={1.5}
+                      />
+                    </g>
+                  );
+                }}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                activeDot={(dotProps: any) => {
+                  const {
+                    cx = 0,
+                    cy = 0,
+                    index,
+                  } = dotProps as { cx?: number; cy?: number; index: number };
+                  const events = gp.monthEvents[index];
+                  const s = 6;
+                  if (events?.length) {
+                    return (
+                      <g key={`active-ev-${gp.name}-${index}`}>
+                        <polygon
+                          points={`${cx},${cy - s} ${cx + s},${cy} ${cx},${cy + s} ${cx - s},${cy}`}
+                          fill={color}
+                          stroke={p.dotFill}
+                          strokeWidth={2}
+                        />
+                      </g>
+                    );
+                  }
+                  return (
+                    <circle
+                      key={`active-${gp.name}-${index}`}
+                      cx={cx}
+                      cy={cy}
+                      r={4}
+                      stroke={color}
+                      strokeWidth={2}
+                      fill={p.dotFill}
+                    />
+                  );
                 }}
               />
             );

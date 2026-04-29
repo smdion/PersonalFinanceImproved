@@ -14,6 +14,7 @@ interface RawGoal {
   targetAmount: string | null;
   apiCategoryId?: string | null;
   isApiSyncEnabled?: boolean | null;
+  isEmergencyFund?: boolean | null;
 }
 
 interface ApiCategoryGroup {
@@ -229,26 +230,33 @@ export function useApiSync() {
         number,
         { balance: number; budgeted: number; activity: number }
       >,
+      efundComputedTarget?: number,
     ) => {
       const items: PushPreviewItem[] = [];
       for (const g of rawGoals) {
         if (!g.isApiSyncEnabled || !g.apiCategoryId) continue;
-        const amount = parseFloat(g.monthlyContribution ?? "0") || 0;
         const currentBudgeted = apiBalanceMap.get(g.id)?.budgeted ?? 0;
-        items.push({
-          name: g.name,
-          field: "Goal Target",
-          currentYnab: currentBudgeted,
-          newValue: amount,
-        });
-        const target = parseFloat(g.targetAmount ?? "0") || 0;
-        if (target > 0) {
-          items.push({
-            name: g.name,
-            field: "Goal Target",
-            currentYnab: target,
-            newValue: target,
-          });
+        if (g.isEmergencyFund) {
+          // E-fund: push computed target balance (targetMonths × essential expenses)
+          const newValue = efundComputedTarget ?? 0;
+          if (newValue > 0) {
+            items.push({
+              name: g.name,
+              field: "Target Balance (TB)",
+              currentYnab: currentBudgeted,
+              newValue,
+            });
+          }
+        } else {
+          const amount = parseFloat(g.monthlyContribution ?? "0") || 0;
+          if (amount > 0) {
+            items.push({
+              name: g.name,
+              field: "Monthly Goal Target",
+              currentYnab: currentBudgeted,
+              newValue: amount,
+            });
+          }
         }
       }
       setPendingPushGoalId(undefined);
