@@ -340,6 +340,7 @@ export function RetirementContent() {
         </button>
         <button
           type="button"
+          aria-label="Strategy Comparison"
           onClick={() => {
             setPageTab("comparison");
             setComparisonExpanded(true);
@@ -350,8 +351,12 @@ export function RetirementContent() {
               : "text-muted hover:text-secondary"
           }`}
         >
-          <span className="sm:hidden">Comparison</span>
-          <span className="hidden sm:inline">Strategy Comparison</span>
+          <span aria-hidden="true" className="sm:hidden">
+            Comparison
+          </span>
+          <span aria-hidden="true" className="hidden sm:inline">
+            Strategy Comparison
+          </span>
         </button>
         <button
           type="button"
