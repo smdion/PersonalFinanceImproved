@@ -19,6 +19,7 @@ import {
   monthKey,
   type NewFundForm,
 } from "@/components/savings";
+import type { TargetMode } from "@/lib/config/enum-values";
 import { BudgetCapacityBar } from "@/components/savings/budget-capacity-bar";
 import { ExtraPaycheckRulesEditor } from "@/components/savings/extra-paycheck-rules-editor";
 
@@ -373,7 +374,7 @@ export default function SavingsPage() {
       goalId,
       current: goal.current,
       target: goal.target,
-      targetMode: (raw?.targetMode ?? "fixed") as "fixed" | "ongoing",
+      targetMode: (raw?.targetMode ?? "fixed") as TargetMode,
       monthlyAllocation: baseAllocation,
       monthlyAllocations,
       balances,

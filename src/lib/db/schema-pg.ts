@@ -364,7 +364,7 @@ export const savingsGoals = pgTable(
     apiCategoryName: text("api_category_name"),
     isApiSyncEnabled: boolean("is_api_sync_enabled").notNull().default(false),
     reimbursementApiCategoryId: text("reimbursement_api_category_id"),
-    targetMode: text("target_mode").notNull().default("fixed"), // 'fixed' | 'ongoing'
+    targetMode: text("target_mode").notNull().default("fixed"), // 'fixed' | 'ongoing' | 'bucket' — validated by Zod (app-layer, no DB constraint)
     monthlyContribution: decimal("monthly_contribution", {
       precision: 14,
       scale: 2,
@@ -376,13 +376,7 @@ export const savingsGoals = pgTable(
       scale: 3,
     }), // % of budget leftover (e.g., 25.5 = 25.5%)
   },
-  (table) => [
-    index("savings_goals_is_active_idx").on(table.isActive),
-    check(
-      "savings_goals_target_mode_check",
-      sql`target_mode IN ('fixed', 'ongoing')`,
-    ),
-  ],
+  (table) => [index("savings_goals_is_active_idx").on(table.isActive)],
 );
 
 export const savingsMonthly = pgTable(

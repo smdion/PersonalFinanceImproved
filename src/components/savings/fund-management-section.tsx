@@ -9,6 +9,7 @@ import { FundTimelineDetail } from "./fund-timeline-detail";
 import { EmergencyFundDetail } from "./emergency-fund-detail";
 import { FUND_COLORS } from "./fund-colors";
 import type { GoalProjection, PlannedTxForm, NewFundForm } from "./types";
+import type { TargetMode } from "@/lib/config/enum-values";
 import type { PushPreviewItem } from "@/components/ui/push-preview-modal";
 import { useUpdatePlannedTx } from "./use-update-planned-tx";
 
@@ -131,7 +132,7 @@ export interface FundManagementSectionProps {
       parentGoalId: number | null;
       monthlyContribution: string;
       targetAmount: string | null;
-      targetMode: "fixed" | "ongoing";
+      targetMode: TargetMode;
       targetDate: string | null;
       isActive: boolean;
       isEmergencyFund: boolean;
@@ -294,7 +295,7 @@ export function FundManagementSection({
 
   const handleGoalUpdateMulti = (
     goalId: number,
-    fields: Record<string, string>,
+    fields: Record<string, string | null>,
   ) => {
     const raw = goalById.get(goalId);
     if (!raw) return;

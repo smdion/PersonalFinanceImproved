@@ -13,6 +13,7 @@ import { calculateEFund } from "@/lib/calculators/efund";
 import { toNumber, computeBudgetAnnualTotal } from "@/server/helpers";
 import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
 import { zDecimal } from "./settings/_shared";
+import { targetModeSchema } from "@/lib/config/enum-values";
 import { log } from "@/lib/logger";
 import type { SavingsInput, EFundInput } from "@/lib/calculators/types";
 import {
@@ -587,7 +588,7 @@ export const savingsRouter = createTRPCRouter({
         goalName: z.string().min(1),
         monthlyContribution: z.string().default("0"),
         targetAmount: z.string().nullable().optional(),
-        targetMode: z.enum(["fixed", "ongoing"]).default("ongoing"),
+        targetMode: targetModeSchema.default("ongoing"),
       }),
     )
     .mutation(async ({ ctx, input }) => {
