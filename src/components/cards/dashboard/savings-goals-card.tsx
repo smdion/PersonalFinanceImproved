@@ -40,7 +40,7 @@ function SavingsGoalsCardImpl() {
   type GoalStatus = {
     kind: "funded" | "on-track" | "accumulating" | "shortfall" | "no-target";
     totalPlanned?: number;
-    shortfalls?: { month: string; amount: number }[];
+    shortfalls?: { month: string; amount: number; descriptions: string[] }[];
     needed?: number;
   };
   const goalStatusMap = new Map<number, GoalStatus>();
@@ -114,7 +114,11 @@ function SavingsGoalsCardImpl() {
       }
 
       let onTrack = true;
-      const shortfalls: { month: string; amount: number }[] = [];
+      const shortfalls: {
+        month: string;
+        amount: number;
+        descriptions: string[];
+      }[] = [];
       let balance = current;
       const lastTx = goalTxs[goalTxs.length - 1] as
         | { transactionDate: string; amount: number }
@@ -134,10 +138,18 @@ function SavingsGoalsCardImpl() {
           ? overrideMap.get(mk)!
           : calcGoal.monthlyAllocation;
         balance += contribution;
+        const monthDescriptions: string[] = [];
         for (const tx of goalTxs) {
-          const t = tx as { transactionDate: string; amount: number };
+          const t = tx as {
+            transactionDate: string;
+            amount: number;
+            description?: string;
+          };
           if (t.transactionDate?.startsWith(mk)) {
             balance += t.amount;
+            if (t.amount < 0 && t.description) {
+              monthDescriptions.push(t.description);
+            }
           }
         }
         if (balance < 0) {
@@ -145,6 +157,7 @@ function SavingsGoalsCardImpl() {
           shortfalls.push({
             month: `${shortMonthNames[monthDate.getMonth()]} ${monthDate.getFullYear()}`,
             amount: Math.abs(balance),
+            descriptions: monthDescriptions,
           });
         }
       }
@@ -342,10 +355,17 @@ function SavingsGoalsCardImpl() {
                       {formatCurrency(status.totalPlanned!)} planned
                     </span>
                   ) : status?.kind === "shortfall" && status.shortfalls ? (
-                    <div className="text-[10px] text-red-600 space-y-0">
+                    <div className="text-[10px] text-red-600 space-y-0.5">
                       {status.shortfalls.slice(0, 3).map((s) => (
                         <div key={s.month}>
-                          -{formatCurrency(s.amount)} in {s.month}
+                          <span>
+                            -{formatCurrency(s.amount)} in {s.month}
+                          </span>
+                          {s.descriptions.length > 0 && (
+                            <span className="text-red-400 ml-1">
+                              ({s.descriptions.join(", ")})
+                            </span>
+                          )}
                         </div>
                       ))}
                       {status.shortfalls.length > 3 && (
