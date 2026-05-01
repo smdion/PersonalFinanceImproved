@@ -139,6 +139,7 @@ function SavingsGoalsCardImpl() {
           : calcGoal.monthlyAllocation;
         balance += contribution;
         const monthDescriptions: string[] = [];
+        let hasWithdrawal = false;
         for (const tx of goalTxs) {
           const t = tx as {
             transactionDate: string;
@@ -147,12 +148,13 @@ function SavingsGoalsCardImpl() {
           };
           if (t.transactionDate?.startsWith(mk)) {
             balance += t.amount;
-            if (t.amount < 0 && t.description) {
-              monthDescriptions.push(t.description);
+            if (t.amount < 0) {
+              hasWithdrawal = true;
+              if (t.description) monthDescriptions.push(t.description);
             }
           }
         }
-        if (balance < 0) {
+        if (balance < 0 && hasWithdrawal) {
           onTrack = false;
           shortfalls.push({
             month: `${shortMonthNames[monthDate.getMonth()]} ${monthDate.getFullYear()}`,
