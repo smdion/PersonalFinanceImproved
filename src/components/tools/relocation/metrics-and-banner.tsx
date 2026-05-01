@@ -11,9 +11,10 @@ import type { RelocationResult } from "./types";
 
 type Props = {
   result: RelocationResult;
+  displayAge: (year: number) => number | null;
 };
 
-export function RelocationMetricsAndBanner({ result: r }: Props) {
+export function RelocationMetricsAndBanner({ result: r, displayAge }: Props) {
   return (
     <>
       {/* Key metrics */}
@@ -87,8 +88,17 @@ export function RelocationMetricsAndBanner({ result: r }: Props) {
               : "—"}
           </div>
           <div className="text-xs text-faint">
-            {r.currentFiAge !== null ? `Age ${r.currentFiAge}` : "N/A"} →{" "}
-            {r.relocationFiAge !== null ? `Age ${r.relocationFiAge}` : "N/A"}
+            {r.currentFiYear != null
+              ? `Age ${displayAge(r.currentFiYear) ?? r.currentFiAge ?? "?"}`
+              : r.currentFiAge != null
+                ? `Age ${r.currentFiAge}`
+                : `Not by ${r.retirementAge}`}{" "}
+            →{" "}
+            {r.relocationFiYear != null
+              ? `Age ${displayAge(r.relocationFiYear) ?? r.relocationFiAge ?? "?"}`
+              : r.relocationFiAge != null
+                ? `Age ${r.relocationFiAge}`
+                : `Not by ${r.retirementAge}`}
           </div>
         </div>
       </div>
@@ -101,9 +111,20 @@ export function RelocationMetricsAndBanner({ result: r }: Props) {
             Target a portfolio of at least{" "}
             <strong>{formatCurrency(r.recommendedPortfolioToRelocate)}</strong>{" "}
             before relocating.
-            {r.earliestRelocateAge <= (r.currentFiAge ?? 999)
-              ? ` You can relocate as early as age ${r.earliestRelocateAge} and still reach FI by retirement.`
-              : ` Earliest safe relocation age: ${r.earliestRelocateAge}.`}
+            {(() => {
+              const displayMoveAge =
+                r.earliestRelocateYear != null
+                  ? (displayAge(r.earliestRelocateYear) ??
+                    r.earliestRelocateAge)
+                  : r.earliestRelocateAge;
+              const displayCurrentFiAge =
+                r.currentFiYear != null
+                  ? (displayAge(r.currentFiYear) ?? r.currentFiAge)
+                  : r.currentFiAge;
+              return (displayMoveAge ?? 999) <= (displayCurrentFiAge ?? 999)
+                ? ` You can relocate as early as age ${displayMoveAge} and still reach FI by retirement.`
+                : ` Earliest safe relocation age: ${displayMoveAge}.`;
+            })()}
           </span>
         </div>
       ) : (

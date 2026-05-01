@@ -88,15 +88,21 @@ export function EmergencyFundDetail({
         <div>
           <p className="text-faint text-xs mb-1">
             Still Needed
-            <HelpTip text="How much more you need to save to reach your target months of coverage" />
+            <HelpTip text="How much more you need to save to reach your target months of coverage, after self-loan repayment and any pending reimbursements" />
           </p>
-          <p
-            className={`text-lg font-semibold ${efund.neededAfterRepay <= 0 ? "text-green-600" : "text-red-600"}`}
-          >
-            {efund.neededAfterRepay <= 0
-              ? "Fully funded"
-              : formatCurrency(efund.neededAfterRepay)}
-          </p>
+          {(() => {
+            const stillNeeded =
+              efund.neededAfterRepay - (reimbursements?.total ?? 0);
+            return (
+              <p
+                className={`text-lg font-semibold ${stillNeeded <= 0 ? "text-green-600" : "text-red-600"}`}
+              >
+                {stillNeeded <= 0
+                  ? "Fully funded"
+                  : formatCurrency(stillNeeded)}
+              </p>
+            );
+          })()}
         </div>
       </div>
 
@@ -114,9 +120,13 @@ export function EmergencyFundDetail({
               {(efund.progress * 100).toFixed(0)}%
             </span>
             <span className="tabular-nums">
-              {efund.neededAfterRepay <= 0
-                ? "Fully funded"
-                : `${formatCurrency(efund.neededAfterRepay)} remaining`}
+              {(() => {
+                const stillNeeded =
+                  efund.neededAfterRepay - (reimbursements?.total ?? 0);
+                return stillNeeded <= 0
+                  ? "Fully funded"
+                  : `${formatCurrency(stillNeeded)} remaining`;
+              })()}
             </span>
           </div>
         </div>
@@ -171,7 +181,10 @@ export function EmergencyFundDetail({
                 </div>
               ))}
               <div className="border-t pt-1.5 flex justify-between text-xs text-faint">
-                <span>Counted as self-loan (added to with-repay balance)</span>
+                <span>
+                  Shown for reference — track these in Self-Loans to include in
+                  balance calculations
+                </span>
               </div>
             </div>
           )}

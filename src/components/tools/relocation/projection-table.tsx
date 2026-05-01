@@ -61,8 +61,8 @@ export function RelocationProjectionTable({
               </th>
               <th className="text-right py-1 pr-3">Contributions</th>
               <th className="text-right py-1 pr-3">Current Balance</th>
-              <th className="text-right py-1 pr-3">Reloc Contributions</th>
-              <th className="text-right py-1 pr-3">Relocation Balance</th>
+              <th className="text-right py-1 pr-3">Move Path Contributions</th>
+              <th className="text-right py-1 pr-3">Move Path Balance</th>
               <th className="text-right py-1 pr-3">Gap</th>
               <th className="text-right py-1">Reloc Expenses</th>
             </tr>
@@ -100,78 +100,93 @@ export function RelocationProjectionTable({
                 relocLargePurchases.map((p) => p.purchaseYear),
               );
 
+              const lastProjectedYear = rows[rows.length - 1]?.year;
+
               const displayRows = showRelocAllYears
                 ? rows
                 : rows.filter((row) => milestoneYears.has(row.year));
 
-              return displayRows.map((row) => (
-                <tr
-                  key={row.year}
-                  className={`border-b border-subtle ${
-                    row.hasAdjustment ? "bg-blue-50 dark:bg-blue-900/20" : ""
-                  } ${row.age === r.currentFiAge ? "bg-green-50 dark:bg-green-900/20" : ""} ${
-                    row.age === r.relocationFiAge
-                      ? "bg-purple-50 dark:bg-purple-900/20"
-                      : ""
-                  } ${row.age === r.earliestRelocateAge ? "bg-cyan-50 dark:bg-cyan-900/20" : ""} ${
-                    purchaseYears.has(row.year)
-                      ? "bg-orange-50 dark:bg-orange-900/20"
-                      : ""
-                  }`}
-                >
-                  <td className="py-1 pr-3">{row.year}</td>
-                  <td className="py-1 pr-3" title={ageTooltip(row.year)}>
-                    {displayAge(row.year) ?? row.age}
-                    {row.age === r.currentFiAge && (
-                      <span className="ml-1 text-green-600 text-[10px]">
-                        FI
-                      </span>
-                    )}
-                    {row.age === r.relocationFiAge && (
-                      <span className="ml-1 text-purple-600 text-[10px]">
-                        FI-R
-                      </span>
-                    )}
-                    {row.age === r.earliestRelocateAge && (
-                      <span className="ml-1 text-cyan-600 text-[10px]">
-                        MOVE
-                      </span>
-                    )}
-                  </td>
-                  <td className="text-right py-1 pr-3 font-mono">
-                    {formatCurrency(row.currentContribution)}
-                  </td>
-                  <td className="text-right py-1 pr-3 font-mono">
-                    {formatCurrency(row.currentBalance)}
-                  </td>
-                  <td className="text-right py-1 pr-3 font-mono">
-                    {formatCurrency(row.relocationContribution)}
-                  </td>
-                  <td className="text-right py-1 pr-3 font-mono">
-                    {formatCurrency(row.relocationBalance)}
-                  </td>
-                  <td
-                    className={`text-right py-1 pr-3 font-mono ${row.delta < 0 ? "text-red-600" : "text-green-600"}`}
+              return displayRows.map((row) => {
+                const isLastRow = row.year === lastProjectedYear;
+                return (
+                  <tr
+                    key={row.year}
+                    className={`border-b border-subtle ${
+                      row.hasAdjustment ? "bg-blue-50 dark:bg-blue-900/20" : ""
+                    } ${row.age === r.currentFiAge ? "bg-green-50 dark:bg-green-900/20" : ""} ${
+                      row.age === r.relocationFiAge
+                        ? "bg-purple-50 dark:bg-purple-900/20"
+                        : ""
+                    } ${row.age === r.earliestRelocateAge ? "bg-cyan-50 dark:bg-cyan-900/20" : ""} ${
+                      purchaseYears.has(row.year)
+                        ? "bg-orange-50 dark:bg-orange-900/20"
+                        : ""
+                    }`}
                   >
-                    {row.delta < 0 ? "" : "+"}
-                    {formatCurrency(row.delta)}
-                  </td>
-                  <td className="text-right py-1 font-mono">
-                    {formatCurrency(row.relocationExpenses / 12)}/mo
-                    {row.hasAdjustment && (
-                      <span className="ml-1 text-blue-500">*</span>
-                    )}
-                    {row.largePurchaseImpact !== 0 && (
-                      <span
-                        className="ml-1 text-orange-500"
-                        title={`Portfolio: ${row.largePurchaseImpact > 0 ? "+" : ""}${formatCurrency(row.largePurchaseImpact)}`}
-                      >
-                        $
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ));
+                    <td className="py-1 pr-3">{row.year}</td>
+                    <td className="py-1 pr-3" title={ageTooltip(row.year)}>
+                      {displayAge(row.year) ?? row.age}
+                      {row.age === r.currentFiAge && (
+                        <span className="ml-1 text-green-600 text-[10px]">
+                          FI
+                        </span>
+                      )}
+                      {row.age === r.relocationFiAge && (
+                        <span className="ml-1 text-purple-600 text-[10px]">
+                          FI-R
+                        </span>
+                      )}
+                      {row.age === r.earliestRelocateAge && (
+                        <span className="ml-1 text-cyan-600 text-[10px]">
+                          MOVE
+                        </span>
+                      )}
+                      {isLastRow && r.currentFiAge === null && (
+                        <span className="ml-1 text-red-500 text-[10px]">
+                          FI not met
+                        </span>
+                      )}
+                      {isLastRow && r.relocationFiAge === null && (
+                        <span className="ml-1 text-red-400 text-[10px]">
+                          FI-R not met
+                        </span>
+                      )}
+                    </td>
+                    <td className="text-right py-1 pr-3 font-mono">
+                      {formatCurrency(row.currentContribution)}
+                    </td>
+                    <td className="text-right py-1 pr-3 font-mono">
+                      {formatCurrency(row.currentBalance)}
+                    </td>
+                    <td className="text-right py-1 pr-3 font-mono">
+                      {formatCurrency(row.relocationContribution)}
+                    </td>
+                    <td className="text-right py-1 pr-3 font-mono">
+                      {formatCurrency(row.relocationBalance)}
+                    </td>
+                    <td
+                      className={`text-right py-1 pr-3 font-mono ${row.delta < 0 ? "text-red-600" : "text-green-600"}`}
+                    >
+                      {row.delta < 0 ? "" : "+"}
+                      {formatCurrency(row.delta)}
+                    </td>
+                    <td className="text-right py-1 font-mono">
+                      {formatCurrency(row.relocationExpenses / 12)}/mo
+                      {row.hasAdjustment && (
+                        <span className="ml-1 text-blue-500">*</span>
+                      )}
+                      {row.largePurchaseImpact !== 0 && (
+                        <span
+                          className="ml-1 text-orange-500"
+                          title={`Portfolio: ${row.largePurchaseImpact > 0 ? "+" : ""}${formatCurrency(row.largePurchaseImpact)}`}
+                        >
+                          $
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              });
             })()}
           </tbody>
         </table>

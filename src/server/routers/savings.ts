@@ -49,30 +49,6 @@ const plannedTransactionInput = z.object({
   recurrenceMonths: z.number().int().nullable().optional(),
 });
 
-/** Look up the reimbursement category's goalTarget for the e-fund (represents self-loan amount). */
-async function getEfundReimbursementGoalTarget(
-  db: Parameters<typeof cacheGet>[0],
-  efundGoal: { reimbursementApiCategoryId: string | null },
-): Promise<number> {
-  if (!efundGoal.reimbursementApiCategoryId) return 0;
-  const active = await getActiveBudgetApi(db);
-  if (active === "none") return 0;
-  const categoriesCache = await cacheGet<BudgetCategoryGroup[]>(
-    db,
-    active,
-    "categories",
-  );
-  if (!categoriesCache) return 0;
-  for (const group of categoriesCache.data) {
-    for (const cat of group.categories) {
-      if (cat.id === efundGoal.reimbursementApiCategoryId) {
-        return cat.goalTarget ?? 0;
-      }
-    }
-  }
-  return 0;
-}
-
 export const savingsRouter = createTRPCRouter({
   computeSummary: protectedProcedure
     .input(z.object({ budgetTierOverride: z.number().optional() }).optional())
@@ -217,23 +193,42 @@ export const savingsRouter = createTRPCRouter({
       let efundResult = null;
 
       if (efundGoal) {
-        const outstandingLoans = selfLoans
-          .filter((l) => l.fromGoalId === efundGoal.id)
-          .reduce(
-            (s, l) => s + (toNumber(l.amount) - toNumber(l.repaidAmount)),
-            0,
-          );
-
-        // The reimbursement category's goalTarget represents money owed back
-        // to the e-fund (self-loan tracked in YNAB). Add it to outstanding loans.
-        const reimbursementSelfLoan = await getEfundReimbursementGoalTarget(
-          ctx.db,
-          efundGoal,
-        );
+        // Self-loan tracking is exclusive: if a YNAB reimbursement category is
+        // linked, its goalTarget is the source of truth (YNAB-tracked workflow).
+        // Otherwise fall back to the Ledgr DB self_loans table. Using both at
+        // once causes double-counting because the same money appears in both places.
+        let outstandingSelfLoans: number;
+        if (efundGoal.reimbursementApiCategoryId) {
+          const active = await getActiveBudgetApi(ctx.db);
+          outstandingSelfLoans = 0;
+          if (active !== "none") {
+            const categoriesCache = await cacheGet<BudgetCategoryGroup[]>(
+              ctx.db,
+              active,
+              "categories",
+            );
+            if (categoriesCache) {
+              for (const group of categoriesCache.data) {
+                for (const cat of group.categories) {
+                  if (cat.id === efundGoal.reimbursementApiCategoryId) {
+                    outstandingSelfLoans = cat.goalTarget ?? 0;
+                  }
+                }
+              }
+            }
+          }
+        } else {
+          outstandingSelfLoans = selfLoans
+            .filter((l) => l.fromGoalId === efundGoal.id)
+            .reduce(
+              (s, l) => s + (toNumber(l.amount) - toNumber(l.repaidAmount)),
+              0,
+            );
+        }
 
         const efundInput: EFundInput = {
           emergencyFundBalance: balanceMap.get(efundGoal.id) ?? 0,
-          outstandingSelfLoans: outstandingLoans + reimbursementSelfLoan,
+          outstandingSelfLoans,
           essentialMonthlyExpenses,
           targetMonths: efundGoal.targetMonths ?? 4,
           asOfDate: new Date(),
@@ -255,10 +250,11 @@ export const savingsRouter = createTRPCRouter({
             g.isEmergencyFund && efundResult
               ? efundResult.targetAmount
               : toNumber(g.targetAmount);
-          // E-fund uses trueBalance (raw balance minus outstanding self-loans/reimbursements)
+          // E-fund uses balanceWithRepay so the savings goal list stays consistent
+          // with the e-fund detail card (both show the "after repay" view).
           const currentBalance =
             g.isEmergencyFund && efundResult
-              ? efundResult.trueBalance
+              ? efundResult.balanceWithRepay
               : (balanceMap.get(g.id) ?? 0);
           return {
             id: g.id,
