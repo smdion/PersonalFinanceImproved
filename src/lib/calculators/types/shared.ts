@@ -35,6 +35,10 @@ export type ContributionAccountInput = {
   name: string;
   annualContribution: number;
   perPeriodContribution: number;
+  /** Fractional rate of gross pay (e.g. 0.14 for 14%). Non-null only for
+   *  percent_of_salary accounts — used to scale contributions against bonus
+   *  gross rather than reusing the regular per-period dollar amount. */
+  rateOfGross: number | null;
   taxTreatment: TaxTreatmentType;
   isPayrollDeducted: boolean;
   group: string; // e.g. 'retirement', 'portfolio' — driven by account data, not hardcoded
