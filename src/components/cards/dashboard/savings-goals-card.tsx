@@ -69,9 +69,22 @@ function SavingsGoalsCardImpl() {
       targetMode: string;
       targetDate: string | null;
       monthlyContribution: string | null;
+      isEmergencyFund?: boolean;
     };
     const calcGoal = savings.goals.find((g) => g.goalId === rg.id);
     if (!calcGoal) continue;
+
+    // E-fund status uses effectiveNeeded (after repay minus pending reimb) to
+    // stay consistent with the e-fund section above and the savings page detail.
+    if (rg.isEmergencyFund && efund) {
+      const effectiveNeeded =
+        efund.neededAfterRepay - (reimbursementsData?.total ?? 0);
+      goalStatusMap.set(rg.id, {
+        kind: effectiveNeeded <= 0 ? "funded" : "shortfall",
+        needed: effectiveNeeded > 0 ? effectiveNeeded : undefined,
+      });
+      continue;
+    }
 
     const current = calcGoal.current;
     // Data-driven: fixed goals use their target, ongoing goals have no fixed target to reach
