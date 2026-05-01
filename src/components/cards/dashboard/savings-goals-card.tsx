@@ -285,9 +285,11 @@ function SavingsGoalsCardImpl() {
                       effectiveNeeded <= 0 ? "text-green-600" : "text-red-600"
                     }
                   >
-                    {effectiveNeeded <= 0
+                    {effectiveNeeded === 0
                       ? "Funded"
-                      : formatCurrency(effectiveNeeded)}
+                      : effectiveNeeded < 0
+                        ? `${formatCurrency(Math.abs(effectiveNeeded))} surplus`
+                        : formatCurrency(effectiveNeeded)}
                   </span>
                 );
               })()}
