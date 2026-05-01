@@ -77,6 +77,32 @@ export function PreviewPanel({
     });
   };
 
+  const handleCreateSavingsGoalFromApi = (apiCat: {
+    id: string;
+    name: string;
+  }) => {
+    savingsMutations.mutations.createGoal.mutate(
+      {
+        name: apiCat.name,
+        targetMode: "ongoing",
+        isActive: true,
+        monthlyContribution: "0",
+        priority: 0,
+      },
+      {
+        onSuccess: (created) => {
+          if (created) {
+            savingsMutations.mutations.linkSavings.mutate({
+              goalId: created.id,
+              apiCategoryId: apiCat.id,
+              apiCategoryName: apiCat.name,
+            });
+          }
+        },
+      },
+    );
+  };
+
   // Count drifted items (name or category) — pure derived state, kept in
   // the orchestrator so both the dashboard header and the DriftBanner
   // component can read the same number.
@@ -199,6 +225,7 @@ export function PreviewPanel({
           allApiCats={allApiCats}
           mutations={budgetMutations.mutations}
           onLinkSavings={handleLinkSavingsFromBudget}
+          onCreateSavingsGoalFromApi={handleCreateSavingsGoalFromApi}
           savingsOverrideCount={savingsOverrideCount}
         />
       )}
