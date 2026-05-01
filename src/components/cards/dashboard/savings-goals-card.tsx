@@ -77,9 +77,10 @@ function SavingsGoalsCardImpl() {
     // E-fund status uses effectiveNeeded (after repay minus pending reimb) to
     // stay consistent with the e-fund section above and the savings page detail.
     if (rg.isEmergencyFund && efund) {
+      const needed = efund.neededAfterRepay;
       goalStatusMap.set(rg.id, {
-        kind: efund.neededAfterRepay <= 0 ? "funded" : "shortfall",
-        needed: efund.neededAfterRepay > 0 ? efund.neededAfterRepay : undefined,
+        kind: needed <= 0.005 ? "funded" : "shortfall",
+        needed: needed > 0.005 ? needed : undefined,
       });
       continue;
     }
@@ -276,15 +277,14 @@ function SavingsGoalsCardImpl() {
               <span className="text-muted">Needed</span>
               {(() => {
                 const needed = efund.neededAfterRepay;
+                const funded = needed <= 0.005;
                 return (
-                  <span
-                    className={needed <= 0 ? "text-green-600" : "text-red-600"}
-                  >
-                    {needed === 0
-                      ? "Funded"
-                      : needed < 0
+                  <span className={funded ? "text-green-600" : "text-red-600"}>
+                    {funded
+                      ? needed < -0.005
                         ? `${formatCurrency(Math.abs(needed))} surplus`
-                        : formatCurrency(needed)}
+                        : "Funded"
+                      : formatCurrency(needed)}
                   </span>
                 );
               })()}

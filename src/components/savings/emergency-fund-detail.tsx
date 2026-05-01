@@ -92,13 +92,12 @@ export function EmergencyFundDetail({
           </p>
           {(() => {
             const stillNeeded = efund.neededAfterRepay;
+            const funded = stillNeeded <= 0.005;
             return (
               <p
-                className={`text-lg font-semibold ${stillNeeded <= 0 ? "text-green-600" : "text-red-600"}`}
+                className={`text-lg font-semibold ${funded ? "text-green-600" : "text-red-600"}`}
               >
-                {stillNeeded <= 0
-                  ? "Fully funded"
-                  : formatCurrency(stillNeeded)}
+                {funded ? "Fully funded" : formatCurrency(stillNeeded)}
               </p>
             );
           })()}
@@ -119,7 +118,7 @@ export function EmergencyFundDetail({
               {(efund.progress * 100).toFixed(0)}%
             </span>
             <span className="tabular-nums">
-              {efund.neededAfterRepay <= 0
+              {efund.neededAfterRepay <= 0.005
                 ? "Fully funded"
                 : `${formatCurrency(efund.neededAfterRepay)} remaining`}
             </span>
