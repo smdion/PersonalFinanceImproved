@@ -91,8 +91,7 @@ export function EmergencyFundDetail({
             <HelpTip text="How much more you need to save to reach your target months of coverage, after self-loan repayment and any pending reimbursements" />
           </p>
           {(() => {
-            const stillNeeded =
-              efund.neededAfterRepay - (reimbursements?.total ?? 0);
+            const stillNeeded = efund.neededAfterRepay;
             return (
               <p
                 className={`text-lg font-semibold ${stillNeeded <= 0 ? "text-green-600" : "text-red-600"}`}
@@ -120,13 +119,9 @@ export function EmergencyFundDetail({
               {(efund.progress * 100).toFixed(0)}%
             </span>
             <span className="tabular-nums">
-              {(() => {
-                const stillNeeded =
-                  efund.neededAfterRepay - (reimbursements?.total ?? 0);
-                return stillNeeded <= 0
-                  ? "Fully funded"
-                  : `${formatCurrency(stillNeeded)} remaining`;
-              })()}
+              {efund.neededAfterRepay <= 0
+                ? "Fully funded"
+                : `${formatCurrency(efund.neededAfterRepay)} remaining`}
             </span>
           </div>
         </div>
