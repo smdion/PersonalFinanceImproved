@@ -326,7 +326,7 @@ export function RetirementContent() {
       />
 
       {/* Page-level tabs */}
-      <div className="inline-flex rounded-md border bg-surface-primary/60 p-0.5 mb-4">
+      <div className="flex flex-wrap rounded-md border bg-surface-primary/60 p-0.5 mb-4 w-fit max-w-full">
         <button
           type="button"
           onClick={() => setPageTab("projection")}
@@ -350,7 +350,8 @@ export function RetirementContent() {
               : "text-muted hover:text-secondary"
           }`}
         >
-          Strategy Comparison
+          <span className="sm:hidden">Comparison</span>
+          <span className="hidden sm:inline">Strategy Comparison</span>
         </button>
         <button
           type="button"

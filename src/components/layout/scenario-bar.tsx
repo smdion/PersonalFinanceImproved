@@ -136,7 +136,7 @@ export function ScenarioBar() {
   return (
     <div
       data-scenario-bar
-      className={`flex items-center justify-end px-3 sm:px-4 py-1.5 gap-3 border-b text-xs ${isInScenario ? "bg-amber-50 border-amber-200" : "bg-surface-primary border-default"}`}
+      className={`flex flex-wrap items-center justify-end px-3 sm:px-4 py-1.5 gap-x-3 gap-y-1.5 border-b text-xs ${isInScenario ? "bg-amber-50 border-amber-200" : "bg-surface-primary border-default"}`}
     >
       {/* Scenario selector — pill style matching view toggle */}
       <div className="flex items-center gap-2" ref={dropdownRef}>
@@ -409,7 +409,7 @@ export function ScenarioBar() {
       </div>
 
       {/* Divider */}
-      <div className="w-px h-4 bg-surface-strong" />
+      <div className="hidden sm:block w-px h-4 bg-surface-strong" />
 
       {/* Profile switchers */}
       <ProfilePill
@@ -418,7 +418,7 @@ export function ScenarioBar() {
         onActivate={(id) => activateBudget.mutate({ id: Number(id) })}
         isPending={activateBudget.isPending}
       />
-      <div className="w-px h-4 bg-surface-strong" />
+      <div className="hidden sm:block w-px h-4 bg-surface-strong" />
       <ProfilePill
         label="Contributions"
         options={contribOptions}
@@ -426,7 +426,7 @@ export function ScenarioBar() {
       />
 
       {/* Divider */}
-      <div className="w-px h-4 bg-surface-strong" />
+      <div className="hidden sm:block w-px h-4 bg-surface-strong" />
 
       {/* View mode toggle */}
       <div className="flex items-center gap-2">
@@ -449,7 +449,8 @@ export function ScenarioBar() {
                 : "text-muted hover:text-secondary "
             }`}
           >
-            Current Salary
+            <span className="sm:hidden">Current</span>
+            <span className="hidden sm:inline">Current Salary</span>
           </button>
           <button
             role="tab"
@@ -462,7 +463,8 @@ export function ScenarioBar() {
                 : "text-muted hover:text-secondary "
             }`}
           >
-            Year-End Estimate
+            <span className="sm:hidden">Year-End</span>
+            <span className="hidden sm:inline">Year-End Estimate</span>
           </button>
           <button
             role="tab"
@@ -475,7 +477,8 @@ export function ScenarioBar() {
                 : "text-muted hover:text-secondary "
             }`}
           >
-            Actual YTD
+            <span className="sm:hidden">YTD</span>
+            <span className="hidden sm:inline">Actual YTD</span>
           </button>
         </div>
       </div>

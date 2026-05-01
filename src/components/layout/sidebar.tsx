@@ -127,7 +127,7 @@ function NavLink({
       aria-current={isActive ? "page" : undefined}
       onClick={onMobileClose}
       title={collapsed ? item.label : undefined}
-      className={`flex items-center gap-3 px-3 py-1.5 rounded text-sm transition-all duration-150 ${
+      className={`flex items-center gap-3 px-3 py-2 rounded text-sm transition-all duration-150 ${
         indent && !collapsed ? "ml-4" : ""
       } ${collapsed ? "md:justify-center" : ""} ${
         isActive
@@ -185,7 +185,7 @@ function CollapsibleNavGroup({
         onClick={() => setIsOpen((o) => !o)}
         aria-expanded={isOpen}
         aria-label={`${isOpen ? "Collapse" : "Expand"} ${group.label}`}
-        className="w-full flex items-center gap-3 px-3 py-1.5 rounded text-sm text-faint hover:text-primary hover:bg-surface-elevated/50 transition-colors"
+        className="w-full flex items-center gap-3 px-3 py-2 rounded text-sm text-faint hover:text-primary hover:bg-surface-elevated/50 transition-colors"
       >
         <group.Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
         {showLabels && (
@@ -354,7 +354,7 @@ export function Sidebar({
             <Link
               href="/demo"
               onClick={onMobileClose}
-              className={`flex items-center gap-3 px-3 py-1.5 rounded text-sm text-faint hover:text-blue-400 hover:bg-surface-elevated transition-colors ${collapsed ? "md:justify-center" : ""}`}
+              className={`flex items-center gap-3 px-3 py-2 rounded text-sm text-faint hover:text-blue-400 hover:bg-surface-elevated transition-colors ${collapsed ? "md:justify-center" : ""}`}
               title={collapsed ? "Switch Profile" : undefined}
             >
               <LogOut className="w-4 h-4 shrink-0" />
@@ -366,7 +366,7 @@ export function Sidebar({
           ) : (
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
-              className={`w-full flex items-center gap-3 px-3 py-1.5 rounded text-sm text-faint hover:text-red-400 hover:bg-surface-elevated transition-colors ${collapsed ? "md:justify-center" : ""}`}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded text-sm text-faint hover:text-red-400 hover:bg-surface-elevated transition-colors ${collapsed ? "md:justify-center" : ""}`}
               title={collapsed ? "Sign Out" : undefined}
             >
               <LogOut className="w-4 h-4 shrink-0" />

@@ -24,7 +24,7 @@ export function DashboardLayout({
       </a>
       <button
         onClick={() => setMobileOpen(true)}
-        className="fixed top-2 left-2 z-30 p-2 rounded-lg bg-surface-primary text-primary shadow-lg md:hidden"
+        className="fixed top-2 left-2 z-30 p-2.5 rounded-lg bg-surface-primary text-primary shadow-lg md:hidden min-h-[44px] min-w-[44px] flex items-center justify-center"
         aria-label="Open navigation menu"
       >
         <svg

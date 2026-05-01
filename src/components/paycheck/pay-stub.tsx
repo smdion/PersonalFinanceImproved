@@ -90,7 +90,7 @@ export function PayStub({
                 {row.type === "real" && row.raw && (
                   <button
                     onClick={() => onDeleteDeduction?.(row.raw!.id)}
-                    className="absolute -left-5 top-0.5 text-faint hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute -left-5 top-0.5 text-faint hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                     title="Remove deduction"
                     aria-label="Remove deduction"
                   >
@@ -200,7 +200,7 @@ export function PayStub({
                 {row.type === "real" && row.raw && (
                   <button
                     onClick={() => onDeleteDeduction?.(row.raw!.id)}
-                    className="absolute -left-5 top-0.5 text-faint hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute -left-5 top-0.5 text-faint hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                     title="Remove deduction"
                     aria-label="Remove deduction"
                   >

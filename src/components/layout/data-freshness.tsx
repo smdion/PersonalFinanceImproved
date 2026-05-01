@@ -99,11 +99,11 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
             side="right"
             align="center"
             sideOffset={8}
-            className="z-[9999] rounded-lg bg-slate-900 px-3.5 py-2.5 text-slate-100 shadow-xl animate-in fade-in-0 zoom-in-95"
+            className="z-[9999] rounded-lg bg-slate-900 dark:bg-slate-700 px-3.5 py-2.5 text-slate-100 shadow-xl animate-in fade-in-0 zoom-in-95"
             onPointerDownOutside={() => setOpen(false)}
           >
             {tooltipContent}
-            <TooltipPrimitive.Arrow className="fill-slate-900" />
+            <TooltipPrimitive.Arrow className="fill-slate-900 dark:fill-slate-700" />
           </TooltipPrimitive.Content>
         </TooltipPrimitive.Portal>
       </TooltipPrimitive.Root>
@@ -118,14 +118,11 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
     >
       <TooltipPrimitive.Trigger asChild>
         <button
-          className="w-full flex items-center gap-3 px-3 py-1.5 rounded text-sm text-faint hover:text-primary hover:bg-surface-elevated transition-colors"
+          className="w-full flex items-center gap-3 px-3 py-2 rounded text-sm text-faint hover:text-primary hover:bg-surface-elevated transition-colors"
           onClick={() => setOpen((o) => !o)}
         >
           <RefreshCw className="w-4 h-4 shrink-0" />
-          <span className="hidden md:inline text-[11px]">
-            Data{oldestLabel ? `: ${oldestLabel}` : ""}
-          </span>
-          <span className="md:hidden text-[11px]">
+          <span className="text-[11px]">
             Data{oldestLabel ? `: ${oldestLabel}` : ""}
           </span>
         </button>
