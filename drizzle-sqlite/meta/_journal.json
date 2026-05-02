@@ -5,43 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1776021720557,
-      "tag": "0000_v5_initial_schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1776035662648,
-      "tag": "0001_v5_schema_changes",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1776226625552,
-      "tag": "0002_faulty_ironclad",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1776480000000,
-      "tag": "0003_account_holdings",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1776566400000,
-      "tag": "0004_espp_pending_rollovers",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1745827200000,
-      "tag": "0005_extra_paycheck_routing",
+      "when": 1746403200000,
+      "tag": "0000_v6_initial_schema",
       "breakpoints": true
     }
   ]
