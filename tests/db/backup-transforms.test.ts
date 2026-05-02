@@ -401,6 +401,57 @@ describe("KNOWN_SCHEMA_VERSIONS completeness", () => {
 });
 
 // ---------------------------------------------------------------------------
+// v0.5_final → v0.6.0 transform
+// ---------------------------------------------------------------------------
+
+describe("transformBackupToCurrentSchema — v0.5_final to v0.6.0", () => {
+  it("adds pending_rollovers as empty array when absent in v0.5 backup", () => {
+    const tables = makeBackup({
+      savings_goals: [{ id: 1, is_api_sync_enabled: true }],
+    });
+    const result = transformBackupToCurrentSchema(
+      tables,
+      "v0.5_final",
+      CURRENT_VERSION,
+    );
+    expect(result.transformed).toBe(true);
+    expect(result.tables["pending_rollovers"]).toEqual([]);
+  });
+
+  it("preserves existing pending_rollovers rows from v0.5 backup", () => {
+    const tables = makeBackup({
+      pending_rollovers: [{ id: 1, amount: "500" }],
+    });
+    const result = transformBackupToCurrentSchema(
+      tables,
+      "v0.5_final",
+      CURRENT_VERSION,
+    );
+    expect(result.tables["pending_rollovers"]).toEqual([
+      { id: 1, amount: "500" },
+    ]);
+  });
+
+  it("does not alter other tables during v0.5 transform", () => {
+    const tables = makeBackup({
+      savings_goals: [{ id: 1, is_api_sync_enabled: false }],
+      annual_performance: [{ id: 1, category: "401k/IRA" }],
+    });
+    const result = transformBackupToCurrentSchema(
+      tables,
+      "v0.5_final",
+      CURRENT_VERSION,
+    );
+    expect(result.tables.savings_goals).toEqual([
+      { id: 1, is_api_sync_enabled: false },
+    ]);
+    expect(result.tables.annual_performance).toEqual([
+      { id: 1, category: "401k/IRA" },
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Data isolation — transform doesn't mutate original
 // ---------------------------------------------------------------------------
 

@@ -1,7 +1,7 @@
 /**
  * Registry of all tables included in state versions, ordered by FK dependency tier.
  *
- * Insert order: tier 0 → 1 → 2 (parent tables first).
+ * Insert order: tier 0 → 1 → 2 → 3 (parent tables first).
  * Truncate: all tables in a single TRUNCATE ... CASCADE statement.
  *
  * Adding a new table = one entry here. Zero logic changes.
@@ -10,7 +10,7 @@
 export type VersionTableEntry = {
   /** PostgreSQL table name (snake_case). */
   name: string;
-  /** FK dependency tier: 0 = no FKs, 1 = depends on tier 0, 2 = depends on tier 1. */
+  /** FK dependency tier: 0 = no FKs, 1 = depends on tier 0, 2 = depends on tier 1, 3 = depends on tier 2. */
   tier: number;
 };
 
@@ -71,10 +71,12 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "mc_preset_glide_paths", tier: 2 },
   { name: "mc_preset_return_overrides", tier: 2 },
   { name: "account_holdings", tier: 2 },
-  { name: "pending_rollovers", tier: 2 }, // FKs into account_performance (tier 2) + performance_accounts (tier 1); must follow account_performance
+
+  // Tier 3 — depends on tier 2
+  { name: "pending_rollovers", tier: 3 }, // FKs into account_performance (tier 2, ON DELETE restrict) + performance_accounts (tier 1)
 ];
 
-// Validate tier ordering: entries must be grouped by tier (0, then 1, then 2).
+// Validate tier ordering: entries must be grouped by ascending tier.
 // This catches accidental mis-ordering when adding new tables.
 (() => {
   let maxTier = -1;
@@ -82,14 +84,14 @@ export const VERSION_TABLES: VersionTableEntry[] = [
     if (entry.tier < maxTier) {
       throw new Error(
         `VERSION_TABLES ordering error: "${entry.name}" (tier ${entry.tier}) appears after tier ${maxTier}. ` +
-          `Tables must be grouped by tier (0 → 1 → 2).`,
+          `Tables must be grouped by ascending tier.`,
       );
     }
     maxTier = Math.max(maxTier, entry.tier);
   }
 })();
 
-/** All table names in insert order (tier 0 → 1 → 2). */
+/** All table names in insert order (tier 0 → 1 → 2 → 3). */
 export const VERSION_TABLE_NAMES = VERSION_TABLES.map((t) => t.name);
 
 /** Excluded from versioning (audit/version tables + ephemeral caches). */
