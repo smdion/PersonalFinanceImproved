@@ -20,6 +20,8 @@ export function NewFundFormCard({
   availableParents?: { id: number; name: string }[];
 }) {
   const isFixed = newFund.targetMode === "fixed";
+  const isOngoing = newFund.targetMode === "ongoing";
+  const isBucket = newFund.targetMode === "bucket";
 
   return (
     <Card title="Create New Sinking Fund" className="mb-4">
@@ -34,21 +36,23 @@ export function NewFundFormCard({
             className="w-full border rounded px-2 py-1 text-sm"
           />
         </div>
-        <div>
-          <label className="block text-xs text-muted mb-1">
-            Monthly Contribution
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            value={newFund.monthlyContribution}
-            onChange={(e) =>
-              setNewFund({ ...newFund, monthlyContribution: e.target.value })
-            }
-            placeholder="500"
-            className="w-full border rounded px-2 py-1 text-sm"
-          />
-        </div>
+        {!isBucket && (
+          <div>
+            <label className="block text-xs text-muted mb-1">
+              Monthly Contribution
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={newFund.monthlyContribution}
+              onChange={(e) =>
+                setNewFund({ ...newFund, monthlyContribution: e.target.value })
+              }
+              placeholder="500"
+              className="w-full border rounded px-2 py-1 text-sm"
+            />
+          </div>
+        )}
         <div>
           <label className="block text-xs text-muted mb-1">Goal Type</label>
           <div className="flex bg-surface-elevated rounded p-0.5">
@@ -73,32 +77,53 @@ export function NewFundFormCard({
                 })
               }
               className={`flex-1 px-2 py-1 text-xs rounded transition-colors ${
-                !isFixed
+                isOngoing
                   ? "bg-surface-primary text-primary shadow-sm font-medium"
                   : "text-muted hover:text-secondary"
               }`}
             >
               Ongoing
             </button>
+            <button
+              type="button"
+              onClick={() =>
+                setNewFund({
+                  ...newFund,
+                  targetMode: "bucket",
+                  targetDate: "",
+                  targetAmount: "",
+                  monthlyContribution: "",
+                })
+              }
+              className={`flex-1 px-2 py-1 text-xs rounded transition-colors ${
+                isBucket
+                  ? "bg-surface-primary text-primary shadow-sm font-medium"
+                  : "text-muted hover:text-secondary"
+              }`}
+            >
+              Bucket
+            </button>
           </div>
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
-        <div>
-          <label className="block text-xs text-muted mb-1">
-            Target Amount {!isFixed && "(maintain level)"}
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            value={newFund.targetAmount}
-            onChange={(e) =>
-              setNewFund({ ...newFund, targetAmount: e.target.value })
-            }
-            placeholder={isFixed ? "10000" : "2000"}
-            className="w-full border rounded px-2 py-1 text-sm"
-          />
-        </div>
+        {!isBucket && (
+          <div>
+            <label className="block text-xs text-muted mb-1">
+              Target Amount {isOngoing && "(maintain level)"}
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={newFund.targetAmount}
+              onChange={(e) =>
+                setNewFund({ ...newFund, targetAmount: e.target.value })
+              }
+              placeholder={isFixed ? "10000" : "2000"}
+              className="w-full border rounded px-2 py-1 text-sm"
+            />
+          </div>
+        )}
         {isFixed && (
           <div>
             <label className="block text-xs text-muted mb-1">Target Date</label>

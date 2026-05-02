@@ -80,7 +80,7 @@ export function SalaryTracker({
               )}
               <button
                 onClick={() => deleteChange.mutate({ id: sc.id })}
-                className="text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity ml-1"
+                className="text-red-300 hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-1"
                 title="Delete"
               >
                 ×
@@ -120,7 +120,7 @@ export function SalaryTracker({
                       )}
                       <button
                         onClick={() => deleteChange.mutate({ id: sc.id })}
-                        className="text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity ml-1"
+                        className="text-red-300 hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-1"
                         title="Delete"
                       >
                         ×

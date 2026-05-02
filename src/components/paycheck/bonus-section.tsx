@@ -38,7 +38,7 @@ export function BonusSection({
   return (
     <div className="space-y-2">
       <SectionHeader>Bonus Estimate</SectionHeader>
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-1 text-sm">
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 space-y-1 text-sm">
         <div className="space-y-1 mb-1">
           <div className="flex items-center gap-1">
             <Toggle
@@ -210,7 +210,7 @@ export function BonusSection({
                     </span>
                   </div>
                 )}
-                <div className="border-t border-amber-200 pt-1 flex justify-between font-medium">
+                <div className="border-t border-yellow-200 pt-1 flex justify-between font-medium">
                   <span>
                     Net
                     <span className="text-xs text-faint font-normal ml-1">

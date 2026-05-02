@@ -89,6 +89,11 @@ vi.mock("@/lib/trpc", () => {
         unlinkGoalFromApi: mutationFactory(),
         linkReimbursementCategory: mutationFactory(),
       },
+      settings: {
+        savingsGoals: {
+          create: mutationFactory(),
+        },
+      },
     },
   };
 });
@@ -129,13 +134,14 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
     );
   });
 
-  it("useSavingsMutations returns the expected 5-mutation shape", async () => {
+  it("useSavingsMutations returns the expected 6-mutation shape", async () => {
     const { useSavingsMutations } =
       await import("@/components/settings/integrations/hooks/use-savings-mutations");
     const { result } = renderHook(() => useSavingsMutations());
     const keys = Object.keys(result.current.mutations).sort();
     expect(keys).toEqual(
       [
+        "createGoal",
         "linkReimbursement",
         "linkSavings",
         "renameSavingsApiName",

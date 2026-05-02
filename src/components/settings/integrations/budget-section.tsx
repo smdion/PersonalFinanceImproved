@@ -34,6 +34,7 @@ type Props = {
   allApiCats: ApiCategoryOption[];
   mutations: BudgetMutations;
   onLinkSavings: (goalId: number, apiCategoryId: string) => void;
+  onCreateSavingsGoalFromApi: (apiCat: { id: string; name: string }) => void;
   /**
    * Number of savings-section overrides the user has queued up. The
    * "Apply all suggested matches" button counter displays
@@ -51,6 +52,7 @@ export function BudgetSection({
   allApiCats,
   mutations,
   onLinkSavings,
+  onCreateSavingsGoalFromApi,
   savingsOverrideCount,
 }: Props) {
   const {
@@ -66,6 +68,9 @@ export function BudgetSection({
   } = mutations;
 
   const [expandedBudget, setExpandedBudget] = useState(false);
+  const [creatingSavingsFor, setCreatingSavingsFor] = useState<string | null>(
+    null,
+  );
   const [budgetOverrides, setBudgetOverrides] = useState<
     Record<number, string>
   >({});
@@ -456,7 +461,21 @@ export function BudgetSection({
                       disabled={createItemMut.isPending}
                       className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
                     >
-                      + Create
+                      + Budget item
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setCreatingSavingsFor(c.id);
+                        try {
+                          await Promise.resolve(onCreateSavingsGoalFromApi(c));
+                        } finally {
+                          setCreatingSavingsFor(null);
+                        }
+                      }}
+                      disabled={creatingSavingsFor === c.id}
+                      className="text-[10px] px-1.5 py-0.5 bg-green-50 text-green-700 rounded hover:bg-green-100 whitespace-nowrap disabled:opacity-50"
+                    >
+                      + Sinking fund
                     </button>
                     <button
                       onClick={() =>

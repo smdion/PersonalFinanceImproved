@@ -487,6 +487,40 @@ describe("settings.savingsGoals", () => {
       expect(result!.targetMode).toBe("ongoing");
     });
 
+    it("creates a bucket-mode goal", async () => {
+      const result = await caller.settings.savingsGoals.create({
+        name: "Holding Bucket",
+        monthlyContribution: "0",
+        priority: 4,
+        isActive: true,
+        targetMode: "bucket",
+      });
+      expect(result).toBeDefined();
+      expect(result!.targetMode).toBe("bucket");
+    });
+
+    it("update rejects invalid targetMode", async () => {
+      const created = await caller.settings.savingsGoals.create({
+        name: "Mode Test Goal",
+        monthlyContribution: "0",
+        priority: 5,
+        isActive: true,
+        targetMode: "fixed",
+      });
+      await expect(
+        caller.settings.savingsGoals.update({
+          id: created!.id,
+          name: "Mode Test Goal",
+          monthlyContribution: "0",
+          isActive: true,
+          isEmergencyFund: false,
+          // @ts-expect-error intentional invalid value
+          targetMode: "invalid_mode",
+        }),
+      ).rejects.toThrow();
+      await caller.settings.savingsGoals.delete({ id: created!.id });
+    });
+
     it("created goals appear in list", async () => {
       const rows = await caller.settings.savingsGoals.list();
       expect(rows.length).toBeGreaterThanOrEqual(3);

@@ -71,6 +71,7 @@ export const PERSON_A_CONTRIBUTIONS: ContributionAccountInput[] = [
     name: "Roth 401k",
     annualContribution: 16800.0, // 120000 * 0.14
     perPeriodContribution: 646.15, // 16800 / 26
+    rateOfGross: 0.14,
     taxTreatment: "tax_free",
     isPayrollDeducted: true,
     group: "retirement",
@@ -81,6 +82,7 @@ export const PERSON_A_CONTRIBUTIONS: ContributionAccountInput[] = [
     name: "Roth IRA",
     annualContribution: 8125.0, // 312.50 * 26
     perPeriodContribution: 312.5,
+    rateOfGross: null,
     taxTreatment: "tax_free",
     isPayrollDeducted: false,
     group: "retirement",
@@ -91,6 +93,7 @@ export const PERSON_A_CONTRIBUTIONS: ContributionAccountInput[] = [
     name: "LT Brokerage",
     annualContribution: 1950.0, // 75 * 26
     perPeriodContribution: 75,
+    rateOfGross: null,
     taxTreatment: "after_tax",
     isPayrollDeducted: false,
     group: "portfolio",
@@ -136,6 +139,7 @@ export const PERSON_B_CONTRIBUTIONS: ContributionAccountInput[] = [
     name: "Traditional 401k",
     annualContribution: 17600.0, // 110000 * 0.16
     perPeriodContribution: 676.92, // 17600 / 26
+    rateOfGross: 0.16,
     taxTreatment: "pre_tax",
     isPayrollDeducted: true,
     group: "retirement",
@@ -146,6 +150,7 @@ export const PERSON_B_CONTRIBUTIONS: ContributionAccountInput[] = [
     name: "Roth 401k",
     annualContribution: 5500.0, // 110000 * 0.05
     perPeriodContribution: 211.54, // 5500 / 26
+    rateOfGross: 0.05,
     taxTreatment: "tax_free",
     isPayrollDeducted: true,
     group: "retirement",
@@ -156,6 +161,7 @@ export const PERSON_B_CONTRIBUTIONS: ContributionAccountInput[] = [
     name: "HSA",
     annualContribution: 8346.0, // 321 * 26
     perPeriodContribution: 321.0,
+    rateOfGross: null,
     taxTreatment: "hsa",
     isPayrollDeducted: true,
     group: "portfolio",
@@ -166,6 +172,7 @@ export const PERSON_B_CONTRIBUTIONS: ContributionAccountInput[] = [
     name: "ESPP",
     annualContribution: 11000.0, // 110000 * 0.10
     perPeriodContribution: 423.08, // 11000 / 26
+    rateOfGross: 0.1,
     taxTreatment: "after_tax",
     isPayrollDeducted: true,
     group: "portfolio",
@@ -176,6 +183,7 @@ export const PERSON_B_CONTRIBUTIONS: ContributionAccountInput[] = [
     name: "Roth IRA",
     annualContribution: 8125.0,
     perPeriodContribution: 312.5,
+    rateOfGross: null,
     taxTreatment: "tax_free",
     isPayrollDeducted: false,
     group: "retirement",

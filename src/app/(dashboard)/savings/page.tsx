@@ -19,6 +19,12 @@ import {
   monthKey,
   type NewFundForm,
 } from "@/components/savings";
+import { TARGET_MODE_VALUES } from "@/lib/config/enum-values";
+import type { TargetMode } from "@/lib/config/enum-values";
+
+function isTargetMode(v: unknown): v is TargetMode {
+  return TARGET_MODE_VALUES.includes(v as TargetMode);
+}
 import { BudgetCapacityBar } from "@/components/savings/budget-capacity-bar";
 import { ExtraPaycheckRulesEditor } from "@/components/savings/extra-paycheck-rules-editor";
 
@@ -373,7 +379,7 @@ export default function SavingsPage() {
       goalId,
       current: goal.current,
       target: goal.target,
-      targetMode: (raw?.targetMode ?? "fixed") as "fixed" | "ongoing",
+      targetMode: isTargetMode(raw?.targetMode) ? raw.targetMode : "fixed",
       monthlyAllocation: baseAllocation,
       monthlyAllocations,
       balances,
@@ -461,9 +467,9 @@ export default function SavingsPage() {
 
       {/* Warnings */}
       {savings.warnings.length > 0 && (
-        <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-3">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
           {savings.warnings.map((w) => (
-            <p key={w} className="text-sm text-yellow-400">
+            <p key={w} className="text-sm text-yellow-800">
               {w}
             </p>
           ))}

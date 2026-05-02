@@ -344,7 +344,7 @@ export const savingsGoals = sqliteTable(
       .notNull()
       .default(false),
     reimbursementApiCategoryId: text("reimbursement_api_category_id"),
-    targetMode: text("target_mode").notNull().default("fixed"), // 'fixed' | 'ongoing'
+    targetMode: text("target_mode").notNull().default("fixed"), // 'fixed' | 'ongoing' | 'bucket' — validated by Zod (app-layer, no DB constraint)
     monthlyContribution: text("monthly_contribution").notNull().default("0"),
     allocationPercent: text("allocation_percent"), // % of budget leftover (e.g., 25.5 = 25.5%)
   },

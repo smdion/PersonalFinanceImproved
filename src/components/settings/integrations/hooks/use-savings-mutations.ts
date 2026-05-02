@@ -30,6 +30,9 @@ export function useSavingsMutations() {
   const linkReimbursement = trpc.savings.linkReimbursementCategory.useMutation({
     onSuccess: invalidate,
   });
+  const createGoal = trpc.settings.savingsGoals.create.useMutation({
+    onSuccess: invalidate,
+  });
 
   return {
     mutations: {
@@ -38,6 +41,7 @@ export function useSavingsMutations() {
       renameSavingsToApi,
       renameSavingsApiName,
       linkReimbursement,
+      createGoal,
     },
     invalidate,
   };

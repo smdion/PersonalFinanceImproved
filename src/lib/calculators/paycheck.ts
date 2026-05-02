@@ -385,12 +385,17 @@ function calculateBonus(
   const bonusFicaMed = roundToCents(bonusGross * medRate);
   const bonusFica = bonusFicaSS + bonusFicaMed;
 
-  // Optionally deduct payroll contributions (e.g. 401k) from bonus paycheck
+  // Optionally deduct payroll contributions (e.g. 401k) from bonus paycheck.
+  // Percent-of-salary accounts scale against bonusGross; fixed-amount accounts
+  // use their regular per-period dollar amount unchanged.
   let bonusContributions = 0;
   if (input.includeContribInBonus) {
     for (const ca of input.contributionAccounts) {
       if (ca.isPayrollDeducted) {
-        bonusContributions += ca.perPeriodContribution;
+        bonusContributions +=
+          ca.rateOfGross !== null
+            ? roundToCents(ca.rateOfGross * bonusGross)
+            : ca.perPeriodContribution;
       }
     }
   }

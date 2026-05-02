@@ -506,7 +506,7 @@ export default function HousePage() {
                             e.stopPropagation();
                             deleteTaxMutation.mutate({ id: pt.id });
                           }}
-                          className="opacity-0 group-hover:opacity-100 p-0.5 text-faint hover:text-red-600 transition-all"
+                          className="md:opacity-0 md:group-hover:opacity-100 p-0.5 text-faint hover:text-red-600 transition-all"
                           title="Delete"
                         >
                           <svg
@@ -673,7 +673,7 @@ export default function HousePage() {
                             e.stopPropagation();
                             deleteHIMutation.mutate({ id: hi.id });
                           }}
-                          className="opacity-0 group-hover:opacity-100 p-0.5 text-faint hover:text-red-600 transition-all"
+                          className="md:opacity-0 md:group-hover:opacity-100 p-0.5 text-faint hover:text-red-600 transition-all"
                           title="Delete"
                         >
                           <svg
