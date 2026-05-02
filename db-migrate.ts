@@ -76,6 +76,7 @@ const VERSION_TABLE_NAMES = [
   "projection_overrides",
   "mc_user_presets",
   "account_holdings",
+  "pending_rollovers",
 ];
 
 // ---------------------------------------------------------------------------
@@ -92,6 +93,15 @@ type SquashResult = {
 async function detectSchemaEra(
   client: import("pg").PoolClient,
 ): Promise<string> {
+  // v0.5.x has is_immutable on annual_performance (added in 0001_v5_schema_changes)
+  const { rows: probeV05 } = await client.query(
+    `SELECT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'annual_performance' AND column_name = 'is_immutable'
+    ) AS exists`,
+  );
+  if (probeV05[0]?.exists) return "v0.5_final";
+
   // v0.3.x has projection_overrides table (added in v0.3.23)
   const { rows: probeV03 } = await client.query(
     `SELECT EXISTS (
@@ -592,50 +602,87 @@ function handleSQLiteSquashUpgrade(
   );
   const journalCount = journal.entries?.length ?? 0;
 
-  // Detect squash. Two cases:
+  // Detect squash. Three cases:
   //   1. Count mismatch (appliedCount > journalCount) — old logic, catches the
   //      common case where a squash collapses N migrations into M < N.
-  //   2. HASH mismatch — appliedCount equals journalCount but the DB's applied
+  //   2. appliedCount === 0 with existing application tables — partial recovery
+  //      from a previous failed squash that cleared the journal but didn't finish.
+  //   3. HASH mismatch — appliedCount equals journalCount but the DB's applied
   //      hashes don't match the journal's expected hashes. Happens when the
   //      v4→v5 squash produces the same number of journal entries as the
   //      previous version had, but the file contents (and therefore hashes)
   //      changed. Without this, drizzle.migrate() would attempt to apply the
   //      "new" migrations from scratch and fail on duplicate-table errors.
   let needsSquashRecovery = appliedCount > journalCount;
-  if (!needsSquashRecovery && appliedCount > 0 && journalCount > 0) {
-    // Only check the first `appliedCount` journal entries for hash mismatch.
-    // Entries beyond appliedCount are legitimately new (not yet applied) and
-    // should NOT trigger squash recovery — they go through the normal migrate() path.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const cryptoMod = require("crypto") as typeof import("crypto");
-    const appliedHashes = new Set(
-      (
-        sqlite.prepare("SELECT hash FROM __drizzle_migrations").all() as {
-          hash: string;
-        }[]
-      ).map((r) => r.hash),
-    );
-    for (const entry of journal.entries.slice(0, appliedCount)) {
-      const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
-      if (!fs.existsSync(sqlPath)) continue;
-      const sql = fs.readFileSync(sqlPath, "utf-8");
-      const expected = cryptoMod.createHash("sha256").update(sql).digest("hex");
-      if (!appliedHashes.has(expected)) {
+  if (!needsSquashRecovery) {
+    if (appliedCount === 0) {
+      // Check if any application tables exist (partial squash recovery).
+      // Use the era probes so we can skip the second probe pass below if positive.
+      const v05Check = sqlite
+        .prepare(
+          "SELECT count(*) AS n FROM pragma_table_info('annual_performance') WHERE name='is_immutable'",
+        )
+        .get() as { n: number };
+      const v03Check = sqlite
+        .prepare(
+          "SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name='projection_overrides'",
+        )
+        .get() as { n: number };
+      if (v05Check.n > 0 || v03Check.n > 0) {
         needsSquashRecovery = true;
-        break;
+        log("info", "partial_squash_recovery_detected", {
+          reason:
+            "Migration journal empty but application tables exist — recovering from failed squash",
+        });
+      }
+    } else if (journalCount > 0) {
+      // Only check the first `appliedCount` journal entries for hash mismatch.
+      // Entries beyond appliedCount are legitimately new (not yet applied) and
+      // should NOT trigger squash recovery — they go through the normal migrate() path.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const cryptoMod = require("crypto") as typeof import("crypto");
+      const appliedHashes = new Set(
+        (
+          sqlite.prepare("SELECT hash FROM __drizzle_migrations").all() as {
+            hash: string;
+          }[]
+        ).map((r) => r.hash),
+      );
+      for (const entry of journal.entries.slice(0, appliedCount)) {
+        const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
+        if (!fs.existsSync(sqlPath)) continue;
+        const sql = fs.readFileSync(sqlPath, "utf-8");
+        const expected = cryptoMod
+          .createHash("sha256")
+          .update(sql)
+          .digest("hex");
+        if (!appliedHashes.has(expected)) {
+          needsSquashRecovery = true;
+          break;
+        }
       }
     }
   }
   if (!needsSquashRecovery) return null;
 
   // --- Squash detected ---
-  // Detect schema era: check for v0.3.x-specific table
-  const probeV03 = sqlite
+  // Detect schema era. Check newest first to correctly classify v0.5.x installs.
+  const probeV05Sqlite = sqlite
+    .prepare(
+      "SELECT count(*) AS n FROM pragma_table_info('annual_performance') WHERE name='is_immutable'",
+    )
+    .get() as { n: number };
+  const probeV03Sqlite = sqlite
     .prepare(
       "SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name='projection_overrides'",
     )
     .get() as { n: number };
-  const schemaVersion = probeV03.n > 0 ? "v0.3_final" : "v0.2_final";
+  const schemaVersion =
+    probeV05Sqlite.n > 0
+      ? "v0.5_final"
+      : probeV03Sqlite.n > 0
+        ? "v0.3_final"
+        : "v0.2_final";
 
   log("info", "sqlite_squash_upgrade_start", {
     appliedMigrations: appliedCount,

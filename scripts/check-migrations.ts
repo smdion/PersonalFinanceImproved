@@ -82,6 +82,10 @@ for (const entry of entries) {
     const statements = sql
       .split(/-->\s*statement-breakpoint\s*|;\s*\n/)
       .map((s) => s.trim())
+      // Strip leading SQL comment lines so a file-level header that lands in
+      // the same chunk as the first real statement is not mistaken for a
+      // comment-only chunk and silently dropped.
+      .map((s) => s.replace(/^(--[^\n]*\n\s*)*/g, "").trim())
       .filter((s) => s.length > 0 && !s.startsWith("--"));
 
     for (const stmt of statements) {

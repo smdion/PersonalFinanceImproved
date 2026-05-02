@@ -49,6 +49,7 @@ export const KNOWN_SCHEMA_VERSIONS = [
   // Synthetic tags used by pre-upgrade backup (db-migrate.ts schema probing)
   "v0.2_final",
   "v0.3_final",
+  "v0.5_final",
 ] as const;
 
 export type KnownSchemaVersion = (typeof KNOWN_SCHEMA_VERSIONS)[number];
@@ -143,8 +144,9 @@ function versionIndex(tag: string): number {
 // Schema era classification
 // ---------------------------------------------------------------------------
 
-/** Returns "v0.1" | "v0.2" | "v0.3" based on the schema version tag. */
-function schemaEra(tag: string): "v0.1" | "v0.2" | "v0.3" {
+/** Returns the broad era for a schema version tag. */
+function schemaEra(tag: string): "v0.1" | "v0.2" | "v0.3" | "v0.5" {
+  if (tag === "v0.5_final") return "v0.5";
   if (tag === "v0.3_final") return "v0.3";
   if (tag === "v0.2_final") return "v0.2";
 
@@ -338,6 +340,26 @@ function transformV02xV03xToV040(tables: TableData): TableData {
 }
 
 // ---------------------------------------------------------------------------
+// The v0.5.x → v0.6.0 transformer
+// ---------------------------------------------------------------------------
+
+/**
+ * Transform a v0.5.x backup to match the v0.6.0 schema.
+ *
+ * The data shape is unchanged between v0.5 and v0.6 — this squash release
+ * only consolidates migrations and adds `pending_rollovers` to the versioned
+ * backup set. v0.5 backups did not include `pending_rollovers` (it was
+ * accidentally omitted from VERSION_TABLE_NAMES), so restoring a v0.5 backup
+ * simply starts that table empty, which is safe.
+ */
+function transformV05xToV060(tables: TableData): TableData {
+  if (!tables["pending_rollovers"]) {
+    tables["pending_rollovers"] = [];
+  }
+  return tables;
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -387,14 +409,19 @@ export function transformBackupToCurrentSchema(
 
   const era = schemaEra(schemaVersion);
 
-  // v0.1.x → apply v0.1 → v0.2 transforms first, then v0.2/v0.3 → v0.4
-  if (era === "v0.1") {
-    transformV01xToV020(cloned, schemaVersion);
-  }
+  if (era === "v0.5") {
+    // v0.5.x → v0.6.0: no column renames, only pending_rollovers table added
+    transformV05xToV060(cloned);
+  } else {
+    // v0.1.x → apply v0.1 → v0.2 transforms first, then v0.2/v0.3 → v0.4
+    if (era === "v0.1") {
+      transformV01xToV020(cloned, schemaVersion);
+    }
 
-  // v0.1.x and v0.2.x both need the v0.2/v0.3 → v0.4 transforms
-  // v0.3.x also needs it (idempotent — fills in any missing columns)
-  transformV02xV03xToV040(cloned);
+    // v0.1.x and v0.2.x both need the v0.2/v0.3 → v0.4 transforms
+    // v0.3.x also needs it (idempotent — fills in any missing columns)
+    transformV02xV03xToV040(cloned);
+  }
 
   log("info", "backup_transform_complete", {
     from: schemaVersion,
