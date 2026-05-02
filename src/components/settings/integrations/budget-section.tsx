@@ -68,6 +68,9 @@ export function BudgetSection({
   } = mutations;
 
   const [expandedBudget, setExpandedBudget] = useState(false);
+  const [creatingSavingsFor, setCreatingSavingsFor] = useState<string | null>(
+    null,
+  );
   const [budgetOverrides, setBudgetOverrides] = useState<
     Record<number, string>
   >({});
@@ -461,7 +464,15 @@ export function BudgetSection({
                       + Budget item
                     </button>
                     <button
-                      onClick={() => onCreateSavingsGoalFromApi(c)}
+                      onClick={async () => {
+                        setCreatingSavingsFor(c.id);
+                        try {
+                          await Promise.resolve(onCreateSavingsGoalFromApi(c));
+                        } finally {
+                          setCreatingSavingsFor(null);
+                        }
+                      }}
+                      disabled={creatingSavingsFor === c.id}
                       className="text-[10px] px-1.5 py-0.5 bg-green-50 text-green-700 rounded hover:bg-green-100 whitespace-nowrap disabled:opacity-50"
                     >
                       + Sinking fund

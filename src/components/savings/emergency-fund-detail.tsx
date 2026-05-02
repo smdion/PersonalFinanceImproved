@@ -88,7 +88,7 @@ export function EmergencyFundDetail({
         <div>
           <p className="text-faint text-xs mb-1">
             Still Needed
-            <HelpTip text="How much more you need to save to reach your target months of coverage, after self-loan repayment and any pending reimbursements" />
+            <HelpTip text="How much more you need to save to reach your target months of coverage, after subtracting outstanding self-loan repayment from the target. Pending reimbursements are shown separately below for reference." />
           </p>
           {(() => {
             const stillNeeded = efund.neededAfterRepay;

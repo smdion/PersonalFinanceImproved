@@ -104,7 +104,7 @@ export function RelocationMetricsAndBanner({ result: r, displayAge }: Props) {
       </div>
 
       {/* Recommendation banner */}
-      {r.earliestRelocateAge !== null ? (
+      {r.earliestRelocateAge !== null || r.earliestRelocateYear != null ? (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
           <span className="font-semibold text-blue-800">Recommendation:</span>{" "}
           <span className="text-blue-700">

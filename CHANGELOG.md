@@ -21,7 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **E-fund self-loan no longer inflates the relocation projection.** Outstanding self-loans and reimbursements are now subtracted from the effective balance before projecting income replacement.
 - **E-fund status uses effective needed for all checks.** "Funded" and surplus calculations are now consistent — all checks use the net needed amount (after self-loans) instead of mixing raw and adjusted values.
-- **E-fund shows "Funded" and surplus correctly.** The status badge now reads "Funded" when effectiveNeeded ≤ 0, and shows the surplus amount when the fund is over-target, instead of displaying a negative dollar amount.
+- **E-fund shows "Funded" and surplus correctly.** The status badge now reads "Funded" when the remaining need is within a half-cent of zero, and shows the surplus amount when the fund is over-target, instead of displaying a negative dollar amount.
 - **Bonus 401k withholding now scales by contribution rate.** Previously the bonus paycheck deducted the flat per-period 401k amount; it now applies the contribution rate against the bonus gross, matching how payroll actually works.
 - **E-fund no longer double-subtracts reimbursement notes.** Reimbursement notes were being counted twice in the effective needed calculation; the duplicate subtraction is removed.
 - **Savings shortfall rows only appear when a withdrawal is present.** Previously a shortfall row could appear even when no withdrawal transaction existed; now the row is suppressed unless there is an actual shortfall event.

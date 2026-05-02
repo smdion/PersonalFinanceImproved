@@ -87,7 +87,6 @@ export function PreviewPanel({
         targetMode: "ongoing",
         isActive: true,
         monthlyContribution: "0",
-        priority: 0,
       },
       {
         onSuccess: (created) => {

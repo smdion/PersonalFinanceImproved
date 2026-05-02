@@ -380,7 +380,15 @@ export function FundCard({
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowMenu(false);
-                  onGoalUpdate(projection.goalId, "targetMode", "ongoing");
+                  if (onGoalUpdateMulti) {
+                    onGoalUpdateMulti(projection.goalId, {
+                      targetMode: "ongoing",
+                      targetAmount: null,
+                      targetDate: null,
+                    });
+                  } else {
+                    onGoalUpdate(projection.goalId, "targetMode", "ongoing");
+                  }
                 }}
                 className="block w-full text-left px-3 py-1 text-xs text-secondary hover:bg-surface-elevated"
               >
