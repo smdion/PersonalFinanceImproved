@@ -250,118 +250,37 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
         relocationCombinedSalary
       : 0;
 
-  // Project both scenarios year-by-year
   const yearsToProject = Math.max(0, retirementAge - currentAge);
-  const projectionByYear: RelocationYearProjection[] = [];
 
-  let currentBalance = currentPortfolio;
-  let relocationBalance = currentPortfolio;
-  let currentFiAge: number | null = null;
-  let relocationFiAge: number | null = null;
-  let curSalary = currentCombinedSalary;
-  let relocSalary = relocationCombinedSalary;
-  let totalPurchaseHit = 0;
-
-  for (let y = 0; y < yearsToProject; y++) {
-    const age = currentAge + y;
-    const year = asOfDate.getFullYear() + y;
-
-    // Salary growth — independent trajectories per scenario
-    if (y > 0) {
-      curSalary = roundToCents(curSalary * (1 + currentSalaryGrowthRate));
-      relocSalary = roundToCents(
-        relocSalary * (1 + relocationSalaryGrowthRate),
+  // Pass 1: project current-scenario balances — needed as starting points for
+  // the MOVE simulation before the main loop runs.
+  const currentBalanceByYear: number[] = [];
+  {
+    let bal = currentPortfolio;
+    let sal = currentCombinedSalary;
+    for (let y = 0; y < yearsToProject; y++) {
+      const year = asOfDate.getFullYear() + y;
+      if (y > 0) sal = roundToCents(sal * (1 + currentSalaryGrowthRate));
+      const rate = getActiveRate(year, rateSchedule) ?? currentBaseContribRate;
+      bal = roundToCents(
+        growOneYear(bal, roundToCents(sal * rate), nominalReturnRate),
       );
+      currentBalanceByYear.push(bal);
     }
-
-    // Resolve contribution rate override (sticky, applies to both scenarios)
-    const overrideRate = getActiveRate(year, rateSchedule);
-    const hasContribOverride = overrideRate !== null;
-
-    // Current scenario contributions
-    const currentRate = overrideRate ?? currentBaseContribRate;
-    const currentContrib = roundToCents(curSalary * currentRate);
-    currentBalance = roundToCents(
-      growOneYear(currentBalance, currentContrib, nominalReturnRate),
-    );
-
-    // Relocation scenario: expenses may have year-specific adjustments
-    const relocMonthly = adjustmentMap.has(year)
-      ? adjustmentMap.get(year)!
-      : relocationMonthlyExpenses;
-    const relocAnnualThisYear = roundToCents(relocMonthly * 12);
-
-    // Large purchase costs for this year
-    const purchaseMonthly = purchaseMonthlyForYear(year, purchaseData);
-    const purchaseAnnualCost = roundToCents(purchaseMonthly * 12);
-    const purchaseImpact = purchasePortfolioImpactForYear(year, purchaseData);
-
-    const totalRelocExpenses = roundToCents(
-      relocAnnualThisYear + purchaseAnnualCost,
-    );
-
-    // Relocation scenario contributions — uses relocation profile's rate directly
-    const relocRate = overrideRate ?? relocBaseContribRate;
-    const relocContrib = roundToCents(relocSalary * relocRate);
-
-    relocationBalance = roundToCents(
-      growOneYear(relocationBalance, relocContrib, nominalReturnRate),
-    );
-
-    // Apply one-time purchase portfolio impact (cash outlay - sale proceeds)
-    if (purchaseImpact !== 0) {
-      relocationBalance = roundToCents(relocationBalance + purchaseImpact);
-      totalPurchaseHit = roundToCents(totalPurchaseHit - purchaseImpact); // positive = cost
-    }
-
-    // Check FI crossover (inflation-adjusted targets)
-    const inflatedCurrentFi = roundToCents(
-      currentFiTarget * Math.pow(1 + inflationRate, y),
-    );
-    const inflatedRelocFi = roundToCents(
-      relocationFiTarget * Math.pow(1 + inflationRate, y),
-    );
-
-    if (currentFiAge === null && currentBalance >= inflatedCurrentFi) {
-      currentFiAge = age;
-    }
-    if (relocationFiAge === null && relocationBalance >= inflatedRelocFi) {
-      relocationFiAge = age;
-    }
-
-    projectionByYear.push({
-      year,
-      age,
-      currentBalance,
-      relocationBalance,
-      delta: roundToCents(relocationBalance - currentBalance),
-      relocationExpenses: totalRelocExpenses,
-      currentContribution: currentContrib,
-      relocationContribution: relocContrib,
-      hasAdjustment: adjustmentMap.has(year),
-      hasContributionOverride: hasContribOverride,
-      largePurchaseImpact: purchaseImpact,
-      monthlyPaymentFromPurchases: purchaseMonthly,
-    });
   }
 
-  const fiAgeDelay =
-    currentFiAge !== null && relocationFiAge !== null
-      ? relocationFiAge - currentFiAge
-      : null;
-
-  // Recommended portfolio to relocate: find the earliest year where the relocation
-  // scenario still reaches FI target by retirement.
+  // Pass 2: find the earliest age where switching to relocation still reaches
+  // FI-R before retirement (using current-scenario balance as the starting
+  // point, since you haven't moved yet).
   let recommendedPortfolio = 0;
   let earliestRelocateAge: number | null = null;
+  let earliestRelocateYear: number | null = null;
 
   if (yearsToProject > 0) {
     for (let startY = 0; startY < yearsToProject; startY++) {
       const startAge = currentAge + startY;
       const startingBalance =
-        startY === 0
-          ? currentPortfolio
-          : projectionByYear[startY - 1]!.currentBalance;
+        startY === 0 ? currentPortfolio : currentBalanceByYear[startY - 1]!;
 
       let simBalance = startingBalance;
       let simRelocSalary =
@@ -375,24 +294,21 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
           simRelocSalary = roundToCents(
             simRelocSalary * (1 + relocationSalaryGrowthRate),
           );
-
         const overrideRate2 = getActiveRate(year2, rateSchedule);
         const rate2 = overrideRate2 ?? relocBaseContribRate;
-        const simContrib = roundToCents(simRelocSalary * rate2);
-
         simBalance = roundToCents(
-          growOneYear(simBalance, simContrib, nominalReturnRate),
+          growOneYear(
+            simBalance,
+            roundToCents(simRelocSalary * rate2),
+            nominalReturnRate,
+          ),
         );
-
-        // Apply one-time purchase impacts in simulation too
         const simPurchaseImpact = purchasePortfolioImpactForYear(
           year2,
           purchaseData,
         );
-        if (simPurchaseImpact !== 0) {
+        if (simPurchaseImpact !== 0)
           simBalance = roundToCents(simBalance + simPurchaseImpact);
-        }
-
         const inflatedTarget = roundToCents(
           relocationFiTarget * Math.pow(1 + inflationRate, y2),
         );
@@ -402,8 +318,9 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
         }
       }
 
-      if (reachesFi && earliestRelocateAge === null) {
+      if (reachesFi) {
         earliestRelocateAge = startAge;
+        earliestRelocateYear = asOfDate.getFullYear() + startY;
         recommendedPortfolio = roundToCents(startingBalance);
         break;
       }
@@ -416,6 +333,125 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
       recommendedPortfolio = relocationFiTarget;
     }
   }
+
+  // Pass 3: build the unified projection.
+  //
+  // The "relocation" column represents the single recommended path:
+  //   - Before MOVE age: stay on current inputs (haven't moved yet)
+  //   - From MOVE age onward: switch to relocation salary, contributions,
+  //     and expenses
+  //
+  // When no safe MOVE age exists (earliestRelocateAge === null) the column
+  // falls back to "move today" so the table still shows why it doesn't work.
+  const moveAge = earliestRelocateAge ?? currentAge;
+
+  const projectionByYear: RelocationYearProjection[] = [];
+  let currentBalance = currentPortfolio;
+  let hybridBalance = currentPortfolio;
+  let currentFiAge: number | null = null;
+  let relocationFiAge: number | null = null;
+  let currentFiYear: number | null = null;
+  let relocationFiYear: number | null = null;
+  let curSalary = currentCombinedSalary;
+  let relocSalary = relocationCombinedSalary;
+  let totalPurchaseHit = 0;
+
+  for (let y = 0; y < yearsToProject; y++) {
+    const age = currentAge + y;
+    const year = asOfDate.getFullYear() + y;
+
+    if (y > 0) {
+      curSalary = roundToCents(curSalary * (1 + currentSalaryGrowthRate));
+      relocSalary = roundToCents(
+        relocSalary * (1 + relocationSalaryGrowthRate),
+      );
+    }
+
+    const overrideRate = getActiveRate(year, rateSchedule);
+    const hasContribOverride = overrideRate !== null;
+
+    // Current scenario
+    const currentRate = overrideRate ?? currentBaseContribRate;
+    const currentContrib = roundToCents(curSalary * currentRate);
+    currentBalance = roundToCents(
+      growOneYear(currentBalance, currentContrib, nominalReturnRate),
+    );
+
+    // Hybrid scenario
+    let relocationContrib: number;
+    let totalRelocExpenses: number;
+    let hasAdjustment: boolean;
+    let purchaseImpact: number;
+    let purchaseMonthly: number;
+
+    if (age < moveAge) {
+      // Pre-move: mirror current exactly
+      hybridBalance = currentBalance;
+      relocationContrib = currentContrib;
+      totalRelocExpenses = currentAnnual;
+      hasAdjustment = false;
+      purchaseImpact = 0;
+      purchaseMonthly = 0;
+    } else {
+      // Post-move: relocation inputs take over
+      const relocMonthly = adjustmentMap.has(year)
+        ? adjustmentMap.get(year)!
+        : relocationMonthlyExpenses;
+      const relocAnnualThisYear = roundToCents(relocMonthly * 12);
+      purchaseMonthly = purchaseMonthlyForYear(year, purchaseData);
+      const purchaseAnnualCost = roundToCents(purchaseMonthly * 12);
+      purchaseImpact = purchasePortfolioImpactForYear(year, purchaseData);
+
+      const relocRate = overrideRate ?? relocBaseContribRate;
+      relocationContrib = roundToCents(relocSalary * relocRate);
+      hybridBalance = roundToCents(
+        growOneYear(hybridBalance, relocationContrib, nominalReturnRate),
+      );
+      if (purchaseImpact !== 0) {
+        hybridBalance = roundToCents(hybridBalance + purchaseImpact);
+        totalPurchaseHit = roundToCents(totalPurchaseHit - purchaseImpact);
+      }
+      totalRelocExpenses = roundToCents(
+        relocAnnualThisYear + purchaseAnnualCost,
+      );
+      hasAdjustment = adjustmentMap.has(year);
+    }
+
+    const inflatedCurrentFi = roundToCents(
+      currentFiTarget * Math.pow(1 + inflationRate, y),
+    );
+    const inflatedRelocFi = roundToCents(
+      relocationFiTarget * Math.pow(1 + inflationRate, y),
+    );
+    if (currentFiAge === null && currentBalance >= inflatedCurrentFi) {
+      currentFiAge = age;
+      currentFiYear = year;
+    }
+    if (relocationFiAge === null && hybridBalance >= inflatedRelocFi) {
+      relocationFiAge = age;
+      relocationFiYear = year;
+    }
+
+    projectionByYear.push({
+      year,
+      age,
+      currentBalance,
+      relocationBalance: hybridBalance,
+      delta: roundToCents(hybridBalance - currentBalance),
+      relocationExpenses: totalRelocExpenses,
+      currentContribution: currentContrib,
+      relocationContribution: relocationContrib,
+      hasAdjustment,
+      hasContributionOverride: hasContribOverride,
+      largePurchaseImpact: purchaseImpact,
+      monthlyPaymentFromPurchases: purchaseMonthly,
+    });
+  }
+
+  const fiAgeDelay =
+    currentFiAge !== null && relocationFiAge !== null
+      ? relocationFiAge - currentFiAge
+      : null;
 
   return {
     currentAnnualExpenses: currentAnnual,
@@ -432,10 +468,14 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
     currentFiAge,
     relocationFiAge,
     fiAgeDelay,
+    currentFiYear,
+    relocationFiYear,
     recommendedPortfolioToRelocate: recommendedPortfolio,
     earliestRelocateAge,
+    earliestRelocateYear,
     totalLargePurchasePortfolioHit: totalPurchaseHit,
     steadyStateMonthlyFromPurchases: ssMonthly,
+    retirementAge,
     projectionByYear,
     warnings,
   };

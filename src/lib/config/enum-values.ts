@@ -117,6 +117,12 @@ export const CONTRIBUTION_SCALING_VALUES = [
 export type ContributionScaling = (typeof CONTRIBUTION_SCALING_VALUES)[number];
 export const contributionScalingSchema = z.enum(CONTRIBUTION_SCALING_VALUES);
 
+// ── Savings Goal Target Mode ──
+
+export const TARGET_MODE_VALUES = ["fixed", "ongoing", "bucket"] as const;
+export type TargetMode = (typeof TARGET_MODE_VALUES)[number];
+export const targetModeSchema = z.enum(TARGET_MODE_VALUES);
+
 // ── Portfolio Tax Type ──
 
 export const PORTFOLIO_TAX_TYPE_VALUES = [

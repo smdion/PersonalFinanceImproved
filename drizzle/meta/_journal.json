@@ -43,6 +43,20 @@
       "when": 1745827200000,
       "tag": "0005_extra_paycheck_routing",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1746057600000,
+      "tag": "0006_bucket_target_mode",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1746144000000,
+      "tag": "0007_drop_target_mode_check_all_schemas",
+      "breakpoints": true
     }
   ]
 }

@@ -349,7 +349,7 @@ export default function AssetsPage() {
                   {!item.synced && (
                     <button
                       onClick={() => deleteOAMutation.mutate({ id: item.id })}
-                      className="opacity-0 group-hover:opacity-100 p-0.5 text-faint hover:text-red-600 transition-all"
+                      className="md:opacity-0 md:group-hover:opacity-100 p-0.5 text-faint hover:text-red-600 transition-all"
                       title="Remove asset"
                     >
                       <svg

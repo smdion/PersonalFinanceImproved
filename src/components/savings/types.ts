@@ -1,4 +1,5 @@
 import { formatDate } from "@/lib/utils/format";
+import type { TargetMode } from "@/lib/config/enum-values";
 
 export interface PlannedTxForm {
   goalId: number;
@@ -22,7 +23,7 @@ export interface NewFundForm {
   name: string;
   monthlyContribution: string;
   targetAmount: string;
-  targetMode: "fixed" | "ongoing";
+  targetMode: TargetMode;
   targetDate: string;
   parentGoalId?: number | null;
 }
@@ -48,7 +49,7 @@ export interface GoalProjection {
   goalId: number;
   current: number;
   target: number;
-  targetMode: "fixed" | "ongoing";
+  targetMode: TargetMode;
   monthlyAllocation: number;
   monthlyAllocations: number[];
   balances: number[];

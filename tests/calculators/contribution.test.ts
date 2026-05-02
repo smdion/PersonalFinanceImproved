@@ -86,6 +86,7 @@ describe("calculateContributions", () => {
         name: "Roth 401k",
         annualContribution: PERSON_A_SALARY * 0.14, // 16,800
         perPeriodContribution: (PERSON_A_SALARY * 0.14) / 26,
+        rateOfGross: 0.14,
         taxTreatment: "tax_free",
         isPayrollDeducted: true,
         group: "retirement",
@@ -96,6 +97,7 @@ describe("calculateContributions", () => {
         name: "Roth IRA",
         annualContribution: 312.5 * 26, // 8,125
         perPeriodContribution: 312.5,
+        rateOfGross: null,
         taxTreatment: "tax_free",
         isPayrollDeducted: false,
         group: "retirement",
@@ -106,6 +108,7 @@ describe("calculateContributions", () => {
         name: "LT Brokerage",
         annualContribution: 75 * 26, // 1,950
         perPeriodContribution: 75,
+        rateOfGross: null,
         taxTreatment: "after_tax",
         isPayrollDeducted: false,
         group: "taxable",
@@ -121,6 +124,7 @@ describe("calculateContributions", () => {
         name: "Traditional 401k",
         annualContribution: PERSON_B_SALARY * 0.16, // 17,600
         perPeriodContribution: (PERSON_B_SALARY * 0.16) / 26,
+        rateOfGross: 0.16,
         taxTreatment: "pre_tax",
         isPayrollDeducted: true,
         group: "retirement",
@@ -131,6 +135,7 @@ describe("calculateContributions", () => {
         name: "Roth 401k",
         annualContribution: PERSON_B_SALARY * 0.05, // 5,500
         perPeriodContribution: (PERSON_B_SALARY * 0.05) / 26,
+        rateOfGross: 0.05,
         taxTreatment: "tax_free",
         isPayrollDeducted: true,
         group: "retirement",
@@ -141,6 +146,7 @@ describe("calculateContributions", () => {
         name: "Roth IRA",
         annualContribution: 312.5 * 26, // 8,125
         perPeriodContribution: 312.5,
+        rateOfGross: null,
         taxTreatment: "tax_free",
         isPayrollDeducted: false,
         group: "retirement",
@@ -151,6 +157,7 @@ describe("calculateContributions", () => {
         name: "HSA",
         annualContribution: 321 * 26, // 8,346
         perPeriodContribution: 321,
+        rateOfGross: null,
         taxTreatment: "hsa",
         isPayrollDeducted: true,
         group: "hsa",
@@ -161,6 +168,7 @@ describe("calculateContributions", () => {
         name: "ESPP",
         annualContribution: PERSON_B_SALARY * 0.1, // 11,000
         perPeriodContribution: (PERSON_B_SALARY * 0.1) / 26,
+        rateOfGross: 0.1,
         taxTreatment: "after_tax",
         isPayrollDeducted: true,
         group: "taxable",

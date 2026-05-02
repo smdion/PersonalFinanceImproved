@@ -391,7 +391,10 @@ export default function ToolsPage() {
                   }
                 />
 
-                <RelocationMetricsAndBanner result={r} />
+                <RelocationMetricsAndBanner
+                  result={r}
+                  displayAge={displayAge}
+                />
 
                 <RelocationLargePurchases
                   result={r}

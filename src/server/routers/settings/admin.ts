@@ -27,6 +27,7 @@ import {
   getAccountTypeConfig,
   parentCategoryEnum,
 } from "@/lib/config/account-types";
+import { targetModeSchema } from "@/lib/config/enum-values";
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
   PORTFOLIO_TAX_TYPE_VALUES,
@@ -113,7 +114,7 @@ const savingsGoalInput = z.object({
   priority: z.number().int().default(0),
   isActive: z.boolean().default(true),
   isEmergencyFund: z.boolean().default(false),
-  targetMode: z.enum(["fixed", "ongoing"]).default("fixed"),
+  targetMode: targetModeSchema.default("fixed"),
   monthlyContribution: numericText.default("0"),
   allocationPercent: numericText.nullable().optional(), // % of budget leftover
 });

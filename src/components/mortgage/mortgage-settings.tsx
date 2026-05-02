@@ -701,7 +701,7 @@ export function MortgageSettings() {
                             if (await confirm("Delete this extra payment?"))
                               deleteExtra.mutate({ id: ep.id });
                           }}
-                          className="text-xs text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="text-xs text-red-400 hover:text-red-600 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                         >
                           Delete
                         </button>

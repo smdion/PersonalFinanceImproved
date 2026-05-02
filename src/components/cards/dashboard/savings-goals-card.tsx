@@ -40,7 +40,7 @@ function SavingsGoalsCardImpl() {
   type GoalStatus = {
     kind: "funded" | "on-track" | "accumulating" | "shortfall" | "no-target";
     totalPlanned?: number;
-    shortfalls?: { month: string; amount: number }[];
+    shortfalls?: { month: string; amount: number; descriptions: string[] }[];
     needed?: number;
   };
   const goalStatusMap = new Map<number, GoalStatus>();
@@ -69,9 +69,21 @@ function SavingsGoalsCardImpl() {
       targetMode: string;
       targetDate: string | null;
       monthlyContribution: string | null;
+      isEmergencyFund?: boolean;
     };
     const calcGoal = savings.goals.find((g) => g.goalId === rg.id);
     if (!calcGoal) continue;
+
+    // E-fund status uses effectiveNeeded (after repay minus pending reimb) to
+    // stay consistent with the e-fund section above and the savings page detail.
+    if (rg.isEmergencyFund && efund) {
+      const needed = efund.neededAfterRepay;
+      goalStatusMap.set(rg.id, {
+        kind: needed <= 0.005 ? "funded" : "shortfall",
+        needed: needed > 0.005 ? needed : undefined,
+      });
+      continue;
+    }
 
     const current = calcGoal.current;
     // Data-driven: fixed goals use their target, ongoing goals have no fixed target to reach
@@ -102,7 +114,11 @@ function SavingsGoalsCardImpl() {
       }
 
       let onTrack = true;
-      const shortfalls: { month: string; amount: number }[] = [];
+      const shortfalls: {
+        month: string;
+        amount: number;
+        descriptions: string[];
+      }[] = [];
       let balance = current;
       const lastTx = goalTxs[goalTxs.length - 1] as
         | { transactionDate: string; amount: number }
@@ -122,17 +138,28 @@ function SavingsGoalsCardImpl() {
           ? overrideMap.get(mk)!
           : calcGoal.monthlyAllocation;
         balance += contribution;
+        const monthDescriptions: string[] = [];
+        let hasWithdrawal = false;
         for (const tx of goalTxs) {
-          const t = tx as { transactionDate: string; amount: number };
+          const t = tx as {
+            transactionDate: string;
+            amount: number;
+            description?: string;
+          };
           if (t.transactionDate?.startsWith(mk)) {
             balance += t.amount;
+            if (t.amount < 0) {
+              hasWithdrawal = true;
+              if (t.description) monthDescriptions.push(t.description);
+            }
           }
         }
-        if (balance < 0) {
+        if (balance < 0 && hasWithdrawal) {
           onTrack = false;
           shortfalls.push({
             month: `${shortMonthNames[monthDate.getMonth()]} ${monthDate.getFullYear()}`,
             amount: Math.abs(balance),
+            descriptions: monthDescriptions,
           });
         }
       }
@@ -264,16 +291,15 @@ function SavingsGoalsCardImpl() {
             <div className="flex justify-between font-medium">
               <span className="text-muted">Needed</span>
               {(() => {
-                const effectiveNeeded =
-                  efund.neededAfterRepay - (reimbursementsData?.total ?? 0);
+                const needed = efund.neededAfterRepay;
+                const funded = needed <= 0.005;
                 return (
-                  <span
-                    className={
-                      effectiveNeeded <= 0 ? "text-green-600" : "text-red-600"
-                    }
-                  >
-                    {effectiveNeeded <= 0 ? "-" : ""}
-                    {formatCurrency(Math.abs(effectiveNeeded))}
+                  <span className={funded ? "text-green-600" : "text-red-600"}>
+                    {funded
+                      ? needed < -0.005
+                        ? `${formatCurrency(Math.abs(needed))} surplus`
+                        : "Funded"
+                      : formatCurrency(needed)}
                   </span>
                 );
               })()}
@@ -331,10 +357,17 @@ function SavingsGoalsCardImpl() {
                       {formatCurrency(status.totalPlanned!)} planned
                     </span>
                   ) : status?.kind === "shortfall" && status.shortfalls ? (
-                    <div className="text-[10px] text-red-600 space-y-0">
+                    <div className="text-[10px] text-red-600 space-y-0.5">
                       {status.shortfalls.slice(0, 3).map((s) => (
                         <div key={s.month}>
-                          -{formatCurrency(s.amount)} in {s.month}
+                          <span>
+                            -{formatCurrency(s.amount)} in {s.month}
+                          </span>
+                          {s.descriptions.length > 0 && (
+                            <span className="text-red-400 ml-1">
+                              ({s.descriptions.join(", ")})
+                            </span>
+                          )}
                         </div>
                       ))}
                       {status.shortfalls.length > 3 && (

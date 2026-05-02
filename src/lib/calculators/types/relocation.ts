@@ -132,17 +132,23 @@ export type RelocationResult = {
   currentFiAge: number | null;
   relocationFiAge: number | null;
   fiAgeDelay: number | null;
+  /** Calendar year FI is reached — use this to derive display age. */
+  currentFiYear: number | null;
+  relocationFiYear: number | null;
 
   /** Recommended minimum portfolio before relocating. */
   recommendedPortfolioToRelocate: number;
   /** Earliest age where relocating still reaches relocation FI target by retirement. */
   earliestRelocateAge: number | null;
+  /** Calendar year corresponding to earliestRelocateAge — use to derive display age. */
+  earliestRelocateYear: number | null;
 
   /** Total one-time portfolio hit from all large purchases (cash outlays minus sale proceeds). */
   totalLargePurchasePortfolioHit: number;
   /** Steady-state monthly cost added by large purchases (ongoing costs + loan payments for active loans). */
   steadyStateMonthlyFromPurchases: number;
 
+  retirementAge: number;
   projectionByYear: RelocationYearProjection[];
   warnings: string[];
 };
