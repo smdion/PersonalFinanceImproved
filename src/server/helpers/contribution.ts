@@ -120,6 +120,10 @@ export function buildContribAccounts(
       name: c.subType || c.label || c.accountType,
       annualContribution: roundToCents(annual),
       perPeriodContribution: roundToCents(perPeriod),
+      rateOfGross:
+        c.contributionMethod === "percent_of_salary"
+          ? contribValue / 100
+          : null,
       taxTreatment: c.taxTreatment,
       isPayrollDeducted: c.isPayrollDeducted ?? c.jobId !== null,
       group,

@@ -8,6 +8,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.5
 
+## [0.5.12] - 2026-05-01
+
+### Added
+
+- **Bucket mode for savings goals.** A new "Bucket" target type turns any savings goal into a free-form holding fund with no fixed target amount. Useful for parking money without a specific goal in mind.
+- **Transaction names on savings shortfall rows.** When a goal has a funding shortfall, the dashboard now shows the transaction name alongside the amount, making it clear which planned transaction is the cause.
+- **Relocation projection unified and expanded.** The Tools page relocation projection now unifies salary-adjusted and non-adjusted views, with plain-English legend labels and contextual help tips on each column.
+- **"+" Create split into two actions on the Integrations page.** Adding a new linked item now offers a clear choice between a budget line item and a sinking fund, rather than a single ambiguous button.
+
+### Fixed
+
+- **E-fund self-loan no longer inflates the relocation projection.** Outstanding self-loans and reimbursements are now subtracted from the effective balance before projecting income replacement.
+- **E-fund status uses effective needed for all checks.** "Funded" and surplus calculations are now consistent — all checks use the net needed amount (after self-loans) instead of mixing raw and adjusted values.
+- **E-fund shows "Funded" and surplus correctly.** The status badge now reads "Funded" when the remaining need is within a half-cent of zero, and shows the surplus amount when the fund is over-target, instead of displaying a negative dollar amount.
+- **Bonus 401k withholding now scales by contribution rate.** Previously the bonus paycheck deducted the flat per-period 401k amount; it now applies the contribution rate against the bonus gross, matching how payroll actually works.
+- **E-fund no longer double-subtracts reimbursement notes.** Reimbursement notes were being counted twice in the effective needed calculation; the duplicate subtraction is removed.
+- **Savings shortfall rows only appear when a withdrawal is present.** Previously a shortfall row could appear even when no withdrawal transaction existed; now the row is suppressed unless there is an actual shortfall event.
+- **Mobile layout and touch targets improved across the app.** The hamburger button, sidebar nav links, and all action buttons now meet the 44 px minimum touch target size. The scenario bar wraps gracefully on narrow screens. Action buttons (delete, edit) that were previously hidden until hover are now always visible on touch devices.
+
+### Improved
+
+- **Tooltips now visible in dark mode.** Tooltip backgrounds are now correctly dark in dark mode (previously they blended into the page background and disappeared).
+- **Warning banners use a consistent color style.** The bonus estimate and savings warning banners now use the same yellow styling as all other informational banners in the app.
+
+---
+
 ## [0.5.11] - 2026-04-28
 
 ### Added

@@ -326,7 +326,7 @@ export function RetirementContent() {
       />
 
       {/* Page-level tabs */}
-      <div className="inline-flex rounded-md border bg-surface-primary/60 p-0.5 mb-4">
+      <div className="flex flex-wrap rounded-md border bg-surface-primary/60 p-0.5 mb-4 w-fit max-w-full">
         <button
           type="button"
           onClick={() => setPageTab("projection")}
@@ -340,6 +340,7 @@ export function RetirementContent() {
         </button>
         <button
           type="button"
+          aria-label="Strategy Comparison"
           onClick={() => {
             setPageTab("comparison");
             setComparisonExpanded(true);
@@ -350,7 +351,12 @@ export function RetirementContent() {
               : "text-muted hover:text-secondary"
           }`}
         >
-          Strategy Comparison
+          <span aria-hidden="true" className="sm:hidden">
+            Comparison
+          </span>
+          <span aria-hidden="true" className="hidden sm:inline">
+            Strategy Comparison
+          </span>
         </button>
         <button
           type="button"

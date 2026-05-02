@@ -95,6 +95,16 @@ function getGoalStatus(
     };
   }
 
+  // Bucket — free-form holding fund with no target
+  if (rawGoal.targetMode === "bucket") {
+    return {
+      label: "Bucket",
+      color: "text-muted",
+      bgColor: "bg-surface-elevated",
+      borderColor: "border-strong/50",
+    };
+  }
+
   // Emergency fund — use Ledgr-computed neededAfterRepay as the funded check
   if (rawGoal.isEmergencyFund && efundResult) {
     if (efundResult.neededAfterRepay <= 0) {
@@ -239,7 +249,10 @@ export function FundCard({
   totalMonthlyAllocation: number;
   fundColor: string;
   onGoalUpdate: (goalId: number, field: string, value: string) => void;
-  onGoalUpdateMulti?: (goalId: number, fields: Record<string, string>) => void;
+  onGoalUpdateMulti?: (
+    goalId: number,
+    fields: Record<string, string | null>,
+  ) => void;
   maxMonthlyFunding?: number | null;
   onDeleteGoal: (params: { id: number }) => void;
   onDeleteTx: (params: { id: number }) => void;
@@ -350,24 +363,57 @@ export function FundCard({
                 Unlink API
               </button>
             )}
-            {!rawGoal.isEmergencyFund && (
+            {!rawGoal.isEmergencyFund && rawGoal.targetMode !== "fixed" && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowMenu(false);
-                  onGoalUpdate(
-                    projection.goalId,
-                    "targetMode",
-                    rawGoal.targetMode === "ongoing" ? "fixed" : "ongoing",
-                  );
+                  onGoalUpdate(projection.goalId, "targetMode", "fixed");
                 }}
                 className="block w-full text-left px-3 py-1 text-xs text-secondary hover:bg-surface-elevated"
               >
-                {rawGoal.targetMode === "ongoing"
-                  ? "Set Fixed Target"
-                  : "Set Ongoing"}
+                Set Fixed Target
               </button>
             )}
+            {!rawGoal.isEmergencyFund && rawGoal.targetMode !== "ongoing" && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu(false);
+                  if (onGoalUpdateMulti) {
+                    onGoalUpdateMulti(projection.goalId, {
+                      targetMode: "ongoing",
+                      targetAmount: null,
+                      targetDate: null,
+                    });
+                  } else {
+                    onGoalUpdate(projection.goalId, "targetMode", "ongoing");
+                  }
+                }}
+                className="block w-full text-left px-3 py-1 text-xs text-secondary hover:bg-surface-elevated"
+              >
+                Set Ongoing
+              </button>
+            )}
+            {!rawGoal.isEmergencyFund &&
+              rawGoal.targetMode !== "bucket" &&
+              onGoalUpdateMulti && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMenu(false);
+                    onGoalUpdateMulti(projection.goalId, {
+                      targetMode: "bucket",
+                      targetAmount: null,
+                      targetDate: null,
+                      monthlyContribution: "0",
+                    });
+                  }}
+                  className="block w-full text-left px-3 py-1 text-xs text-secondary hover:bg-surface-elevated"
+                >
+                  Set as Bucket
+                </button>
+              )}
             {onConvertToBudgetItem && !rawGoal.isEmergencyFund && (
               <button
                 onClick={async (e) => {

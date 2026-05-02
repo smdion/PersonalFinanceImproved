@@ -625,6 +625,21 @@ describe("savings.convertBudgetItemToGoal", () => {
     expect(result.targetMode).toBe("ongoing");
   });
 
+  it("converts a budget item to a bucket goal", async () => {
+    const itemId = seedBudgetItem(db, profileId, {
+      category: "Savings",
+      subcategory: "Holding Bucket",
+      amounts: [0],
+    });
+    const result = await caller.savings.convertBudgetItemToGoal({
+      budgetItemId: itemId,
+      goalName: "Holding Bucket",
+      monthlyContribution: "0",
+      targetMode: "bucket",
+    });
+    expect(result.targetMode).toBe("bucket");
+  });
+
   it("throws NOT_FOUND for a non-existent budget item", async () => {
     await expect(
       caller.savings.convertBudgetItemToGoal({
