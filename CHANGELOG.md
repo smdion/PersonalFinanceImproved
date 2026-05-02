@@ -10,10 +10,57 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.6.0] - 2026-05-01
 
-### Changed
+> What changed since v0.5.0. For patch-level detail, see the v0.5.x entries below.
 
-- **Migration squash.** All incremental database migrations from v0.5 (PostgreSQL 0000–0007, SQLite 0000–0005) have been collapsed into a single `0000_v6_initial_schema` file. Fresh installs boot from the clean baseline; existing v0.5.x installs are automatically detected and upgraded — the migration runner creates a pre-upgrade backup, clears the old journal, and re-applies the squashed schema idempotently.
-- **`pending_rollovers` added to versioned backups.** This table (introduced in v0.5.11 for ESPP rollover tracking) was accidentally omitted from the backup snapshot set. It is now included. Restoring a v0.5.x backup on v0.6.0 starts the table empty, which is safe — no ESPP rollover data existed in backups taken before this release.
+### Upgrading from v0.5.x
+
+Pull the new image and restart — your database upgrades automatically. The migration runner detects the v0.5 schema, creates a pre-upgrade backup, and applies the v0.6 baseline in place with no manual steps.
+
+### New Features
+
+- **Coast FIRE age.** The Retirement page and Dashboard now answer "when can I stop contributing and still fund my plan through retirement?" A scenario toggle on the projection chart flips all KPIs, bars, and Monte Carlo bands to the Coast FIRE what-if so you can compare directly against your active plan.
+- **Analytics page** (`/analytics`). Enter portfolio holdings — tickers, weights, expense ratios, and asset class — for each account and snapshot. See your actual allocation in a donut chart, compare it against your glide-path target in a drift table, track allocation over time, and compute your blended expense ratio. Optional FMP integration auto-fills ticker data.
+- **ESPP calculator and pending rollover tracker.** Performance page accounts tagged as ESPP get a quarterly purchase-period input panel that computes gain/loss and pre-fills the performance form. In-flight rollovers between accounts can be tracked, then confirmed when the transfer settles — confirming updates both accounts atomically.
+- **Extra paycheck routing.** Biweekly employees who receive a 27th paycheck twice a year can set routing rules that automatically split those checks across savings goals. A new Extra Paychecks tab on the savings Projections card shows upcoming extra-paycheck months and an inline rule editor.
+- **Savings page overhauled.** Fund cards are collapsible with a full details panel. Projections live in tabbed views (Monthly Balances, Chart, Allocations, Transactions). Planned transaction events on the trajectory chart are clickable.
+- **Bucket mode for savings goals.** A "Bucket" target type creates a free-form holding fund with no fixed target, useful for parking money without a specific goal.
+- **Inline transaction editing and show history toggle.** Planned transactions can be edited in place. Past transactions and past allocation overrides are hidden by default behind a "Show history (N)" toggle.
+- **Lock-to-edit on editable tables.** Performance, Analytics holdings, and House property tax tables default to locked on load to prevent accidental edits. A padlock icon in the header unlocks each table.
+- **Balance consistency warning.** When a portfolio snapshot and a performance record share the same date, a warning appears if the balances diverge beyond a small threshold — and notes if the gap is explained by a pending rollover.
+- **Contributions page match toggle.** A new "Incl. match / Excl. match" button lets you override whether employer match is included in the savings rate display, with a highlight when overridden.
+- **Mortgage total time saved.** The Mortgage Summary card now shows total months saved versus the original loan with no refinancing and no extra payments, across the full refinance chain.
+
+### Improved
+
+- **Mobile layout and touch targets.** The hamburger button, sidebar nav links, and all action buttons meet the 44 px minimum touch target. Action buttons that were hidden until hover are always visible on touch devices.
+- **Relocation projection unified.** Salary-adjusted and non-adjusted views are merged into a single table with plain-English legend labels and help tips on each column.
+- **API sync labels are now descriptive.** "↓ Balance from YNAB", "↑ Monthly goal pushed to YNAB", and "Spent in YNAB" replace the previous "pull", "push", and "Activity" labels. The API badge shows the connected service name instead of the generic "API."
+- **Portfolio page improvements.** Sub-account labels and tax types can be edited inline. Multiple performance years can be expanded simultaneously. Add and delete account controls moved to the portfolio page to reduce clutter on performance.
+- **Tooltips visible in dark mode.** Tooltip backgrounds are now correctly dark in dark mode.
+- **Savings budget warning.** Each budget column now shows a "⚠ $X over → fix in Savings" badge when sinking fund commitments exceed the leftover, so over-commitment is visible without switching pages.
+- **Plan Health tab.** Plan Health callouts moved into their own tab on the Retirement page.
+
+### Fixed
+
+- **E-fund calculations corrected.** Self-loans and reimbursements are correctly subtracted from the effective needed balance for status, surplus, and relocation projection calculations. Reimbursement notes are no longer double-subtracted.
+- **Bonus 401k withholding now scales by contribution rate.** Previously the bonus deducted the flat per-period amount; it now applies the contribution rate against the bonus gross.
+- **YNAB-linked goals no longer double-count the current month's allocation.** YNAB's Available balance already includes the current month's budgeted amount; the projection no longer adds it again.
+- **Contributions page joint accounts.** Joint brokerage and retirement contributions are now included in summary card totals, savings rate calculations, profile comparisons, and the per-person breakdown.
+- **Relocation analysis retirement contributions.** HSA and brokerage retirement contributions were silently excluded from the relocation calculator, causing $0 contribution totals and N/A FI ages. All retirement-category accounts are now included.
+- **YNAB snapshot sync deduplication.** Memo-tag matching now uses exact word-boundary checks, preventing `snapshot:1` from accidentally matching `snapshot:10` on resyncs.
+- **Budget category contribution totals.** When a category's contribution profile varies across months, the totals row now reads each column's actual contribution amount.
+- **Zero-dollar account cap overrides now survive save.** A `$0` cap was treated as absent during serialization and cleared on the next save.
+- **Monte Carlo inflation now applies consistently within each trial.** Post-retirement expense growth now uses the trial's sampled inflation rate, not the global deterministic rate.
+- **Retirement engine edge cases.** Retirement at current age, uninitialized budget floor at the retirement boundary, mid-year salary-bracket splits, HSA drawdown after retirement, uncapped employer match, and pension-income floor interactions are all corrected.
+- **Savings shortfall rows only appear when a withdrawal is present.** The row is now suppressed unless there is an actual shortfall event.
+- **SQLite migration hash-mismatch detection no longer triggers false squash recovery.** Only previously-applied entries are checked, not unapplied future entries.
+
+### Under the Hood
+
+- **Migration squash.** All v0.5.x incremental migrations (PostgreSQL 0000–0007, SQLite 0000–0005) collapsed into a single v0.6 baseline schema file — generated directly from the live production schema so there is no hand-editing of column definitions. Existing installs auto-upgrade with a pre-upgrade backup.
+- **`pending_rollovers` added to versioned backups.** This table was accidentally omitted from the backup snapshot set since v0.5.6. It is now included; restoring a pre-v0.6.0 backup starts the table empty, which is safe.
+- **TypeScript upgraded to 6.0.2.**
+- **Large internal file-split refactor (v0.5.2–v0.5.3).** Retirement page, budget page, integrations preview panel, tools/relocation calculator, and projection router split into focused sub-components and modules. No user-facing behavior changes — all 3,243 tests pass.
 
 ---
 
