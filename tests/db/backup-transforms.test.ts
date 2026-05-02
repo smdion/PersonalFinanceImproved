@@ -375,7 +375,8 @@ describe("KNOWN_SCHEMA_VERSIONS completeness", () => {
     // Synthetic tags
     expect(KNOWN_SCHEMA_VERSIONS).toContain("v0.2_final");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("v0.3_final");
-    expect(KNOWN_SCHEMA_VERSIONS.length).toBe(27);
+    expect(KNOWN_SCHEMA_VERSIONS).toContain("v0.5_final");
+    expect(KNOWN_SCHEMA_VERSIONS.length).toBe(28);
   });
 
   it("SQLite tags transform correctly (same as PG equivalents)", () => {

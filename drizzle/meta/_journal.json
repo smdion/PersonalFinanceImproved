@@ -5,57 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1776021019907,
-      "tag": "0000_v5_initial_schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1776035661796,
-      "tag": "0001_v5_schema_changes",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1776226617616,
-      "tag": "0002_fuzzy_the_executioner",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1776480000000,
-      "tag": "0003_account_holdings",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1776566400000,
-      "tag": "0004_espp_pending_rollovers",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1745827200000,
-      "tag": "0005_extra_paycheck_routing",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1746057600000,
-      "tag": "0006_bucket_target_mode",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1746144000000,
-      "tag": "0007_drop_target_mode_check_all_schemas",
+      "when": 1746403200000,
+      "tag": "0000_v6_initial_schema",
       "breakpoints": true
     }
   ]

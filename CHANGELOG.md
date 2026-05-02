@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+# v0.6
+
+## [0.6.0] - 2026-05-01
+
+### Changed
+
+- **Migration squash.** All incremental database migrations from v0.5 (PostgreSQL 0000–0007, SQLite 0000–0005) have been collapsed into a single `0000_v6_initial_schema` file. Fresh installs boot from the clean baseline; existing v0.5.x installs are automatically detected and upgraded — the migration runner creates a pre-upgrade backup, clears the old journal, and re-applies the squashed schema idempotently.
+- **`pending_rollovers` added to versioned backups.** This table (introduced in v0.5.11 for ESPP rollover tracking) was accidentally omitted from the backup snapshot set. It is now included. Restoring a v0.5.x backup on v0.6.0 starts the table empty, which is safe — no ESPP rollover data existed in backups taken before this release.
+
+---
+
 # v0.5
 
 ## [0.5.12] - 2026-05-01

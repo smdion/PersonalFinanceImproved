@@ -76,6 +76,7 @@ const VERSION_TABLE_NAMES = [
   "projection_overrides",
   "mc_user_presets",
   "account_holdings",
+  "pending_rollovers",
 ];
 
 // ---------------------------------------------------------------------------
@@ -92,6 +93,15 @@ type SquashResult = {
 async function detectSchemaEra(
   client: import("pg").PoolClient,
 ): Promise<string> {
+  // v0.5.x has is_immutable on annual_performance (added in 0001_v5_schema_changes)
+  const { rows: probeV05 } = await client.query(
+    `SELECT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'annual_performance' AND column_name = 'is_immutable'
+    ) AS exists`,
+  );
+  if (probeV05[0]?.exists) return "v0.5_final";
+
   // v0.3.x has projection_overrides table (added in v0.3.23)
   const { rows: probeV03 } = await client.query(
     `SELECT EXISTS (
@@ -629,13 +639,23 @@ function handleSQLiteSquashUpgrade(
   if (!needsSquashRecovery) return null;
 
   // --- Squash detected ---
-  // Detect schema era: check for v0.3.x-specific table
-  const probeV03 = sqlite
+  // Detect schema era. Check newest first to correctly classify v0.5.x installs.
+  const probeV05Sqlite = sqlite
+    .prepare(
+      "SELECT count(*) AS n FROM pragma_table_info('annual_performance') WHERE name='is_immutable'",
+    )
+    .get() as { n: number };
+  const probeV03Sqlite = sqlite
     .prepare(
       "SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name='projection_overrides'",
     )
     .get() as { n: number };
-  const schemaVersion = probeV03.n > 0 ? "v0.3_final" : "v0.2_final";
+  const schemaVersion =
+    probeV05Sqlite.n > 0
+      ? "v0.5_final"
+      : probeV03Sqlite.n > 0
+        ? "v0.3_final"
+        : "v0.2_final";
 
   log("info", "sqlite_squash_upgrade_start", {
     appliedMigrations: appliedCount,
