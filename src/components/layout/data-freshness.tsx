@@ -91,9 +91,9 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
           <span>{syncDate ?? "never"}</span>
         </div>
       )}
-      {canSync && (
+      {syncAllMut.isPending && (
         <div className="pt-1 text-[10px] text-slate-500 text-center">
-          {syncAllMut.isPending ? "Syncing…" : "Tap row to sync"}
+          Syncing…
         </div>
       )}
     </div>

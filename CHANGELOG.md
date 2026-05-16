@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.6
 
+## [0.6.2] - 2026-05-16
+
+### Added
+
+- **Sync: Auto-sync on page load.** When enabled, the app automatically syncs your budget API data on page load if it is stale. The stale threshold is configurable in Settings → Integrations (default: 4 hours).
+- **Sync: Tap-to-sync.** Clicking the data freshness row in the sidebar triggers an immediate manual sync — works in both collapsed (icon) and expanded (row) sidebar modes.
+- **Settings: Sync behavior controls.** A new "Sync Behavior" card in Settings → Integrations lets you toggle auto-sync on/off and set the stale-data threshold (1, 2, 4, 8, or 24 hours).
+- **Help: Savings features documented.** The Help page now covers the Monthly Balances history dropdown, fund column toggles, transaction history tab, extra paycheck routing, and auto-recorded monthly balances from sync.
+
+### Improved
+
+- Sync now refreshes mortgage and net worth data in addition to savings, budget, and assets after completing.
+
+---
+
 ## [0.6.1] - 2026-05-15
 
 ### Added
