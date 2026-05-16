@@ -55,11 +55,9 @@ export function ProjectionImpactBar({
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <span className="text-xs font-medium text-muted">Fund Tracker</span>
-        <span className="text-[10px] text-faint">
-          — click to show/hide in table
-        </span>
+        <span className="text-[10px] text-faint">Toggle columns</span>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
         {goalProjections.map((gp, i) => {
           const color = FUND_COLORS[i % FUND_COLORS.length]!;
           const endBalance = gp.balances[gp.balances.length - 1] ?? 0;
@@ -102,21 +100,19 @@ export function ProjectionImpactBar({
               key={gp.goalId}
               onClick={() => onToggle(gp.goalId)}
               aria-pressed={!isHidden}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-surface-elevated/30 text-xs transition-opacity cursor-pointer hover:opacity-80 ${
+              className={`grid grid-cols-[1fr_auto_auto] items-center gap-x-2 px-3 py-1.5 rounded-lg border bg-surface-elevated/30 text-xs transition-opacity cursor-pointer hover:opacity-80 min-w-0 ${
                 isHidden ? "opacity-40" : ""
               }`}
               style={{ borderLeftColor: color, borderLeftWidth: 3 }}
             >
               <span
-                className={`font-medium text-secondary whitespace-nowrap ${isHidden ? "line-through" : ""}`}
+                className={`font-medium text-secondary truncate text-left ${isHidden ? "line-through" : ""}`}
               >
                 {gp.name}
               </span>
-              <span className="text-faint">·</span>
               <span className="tabular-nums text-primary whitespace-nowrap">
                 {formatCompact(endBalance)}
               </span>
-              <span className="text-faint">·</span>
               {statusEl}
             </button>
           );

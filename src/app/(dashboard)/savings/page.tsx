@@ -11,6 +11,7 @@ import { useUser, hasPermission } from "@/lib/context/user-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useLocalStorageSet } from "@/lib/hooks/use-local-storage-set";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import {
   SummaryCards,
@@ -122,15 +123,15 @@ export default function SavingsPage() {
   const apiSync = useApiSync();
   const [editingMonth, setEditingMonth] = useState<Date | null>(null);
   const [showNewFund, setShowNewFund] = useState(false);
-  const [hiddenGoalIds, setHiddenGoalIds] = useState<Set<number>>(new Set());
+  const [hiddenGoalIds, setHiddenGoalIds] = useLocalStorageSet(
+    "ledgr:savings:hiddenFunds",
+  );
 
   const handleToggleGoalColumn = (id: number) => {
-    setHiddenGoalIds((prev) => {
-      const s = new Set(prev);
-      if (s.has(id)) s.delete(id);
-      else s.add(id);
-      return s;
-    });
+    const s = new Set(hiddenGoalIds);
+    if (s.has(id)) s.delete(id);
+    else s.add(id);
+    setHiddenGoalIds(s);
   };
   const [projectionsTab, setProjectionsTab] = useState<
     "table" | "chart" | "edit" | "transactions" | "extraPaychecks"
