@@ -573,7 +573,9 @@ export default function SavingsPage() {
 
           {goalProjections.length > 0 && projectionsTab === "chart" && (
             <SavingsTrajectoryChart
-              goalProjections={goalProjections}
+              goalProjections={goalProjections.filter(
+                (gp) => !hiddenGoalIds.has(gp.goalId),
+              )}
               monthDates={monthDates}
               onFundClick={handleFundClick}
             />

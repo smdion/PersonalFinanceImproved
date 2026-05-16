@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import { formatCurrency } from "@/lib/utils/format";
 import { FUND_COLORS } from "./fund-colors";
 import type { GoalProjection } from "./types";
 import { trpc } from "@/lib/trpc";
+import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 
 const MONTH_NAMES = [
   "Jan",
@@ -56,8 +57,14 @@ export function SavingsTrajectoryTable({
   monthDates: Date[];
   hiddenGoalIds: Set<number>;
 }) {
-  const [showEvents, setShowEvents] = useState(true);
-  const [historyWindow, setHistoryWindow] = useState<HistoryWindow>(0);
+  const [showEvents, setShowEvents] = useLocalStorage<boolean>(
+    "ledgr:savings:showEvents",
+    true,
+  );
+  const [historyWindow, setHistoryWindow] = useLocalStorage<HistoryWindow>(
+    "ledgr:savings:historyWindow",
+    0,
+  );
 
   // Lazy-load history only when enabled
   const { data: historyData } = trpc.savings.getMonthlyHistory.useQuery(
