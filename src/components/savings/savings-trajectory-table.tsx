@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { formatCurrency } from "@/lib/utils/format";
 import { FUND_COLORS } from "./fund-colors";
 import type { GoalProjection } from "./types";
+import { trpc } from "@/lib/trpc";
 
 const MONTH_NAMES = [
   "Jan",
@@ -24,6 +25,10 @@ function monthLabel(d: Date): string {
   return `${MONTH_NAMES[d.getMonth()]} 1 '${String(d.getFullYear()).slice(2)}`;
 }
 
+function monthKeyStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+}
+
 /**
  * For revolving funds (targetMode === "ongoing"), look ahead from month i
  * to find the next future withdrawal month. Returns the balance at that month,
@@ -40,14 +45,69 @@ function nextWithdrawalBalance(
   return null;
 }
 
+type HistoryWindow = 0 | 3 | 6 | 12 | "all";
+
 export function SavingsTrajectoryTable({
   goalProjections,
   monthDates,
+  hiddenGoalIds,
 }: {
   goalProjections: GoalProjection[];
   monthDates: Date[];
+  hiddenGoalIds: Set<number>;
 }) {
   const [showEvents, setShowEvents] = useState(true);
+  const [historyWindow, setHistoryWindow] = useState<HistoryWindow>(0);
+
+  // Lazy-load history only when enabled
+  const { data: historyData } = trpc.savings.getMonthlyHistory.useQuery(
+    undefined,
+    { enabled: historyWindow !== 0 },
+  );
+
+  // Stable color map — must use full goalProjections so hidden funds keep their color
+  const goalIdToColorIndex = useMemo(
+    () => Object.fromEntries(goalProjections.map((gp, i) => [gp.goalId, i])),
+    [goalProjections],
+  );
+
+  // Filter visible columns
+  const visibleProjections = useMemo(
+    () => goalProjections.filter((gp) => !hiddenGoalIds.has(gp.goalId)),
+    [goalProjections, hiddenGoalIds],
+  );
+
+  // ── Build historical rows (must be before early return — hook ordering) ──
+  const firstProjectedKey = monthDates[0] ? monthKeyStr(monthDates[0]) : null;
+
+  const historicalRows = useMemo(() => {
+    if (
+      historyWindow === 0 ||
+      !historyData?.rows.length ||
+      !firstProjectedKey
+    ) {
+      return [];
+    }
+
+    // Group by monthDate
+    const byMonth = new Map<string, Map<number, number>>();
+    for (const row of historyData.rows) {
+      // Normalize to YYYY-MM-01
+      const key = row.monthDate.slice(0, 7) + "-01";
+      if (key >= firstProjectedKey) continue; // only past months
+      if (!byMonth.has(key)) byMonth.set(key, new Map());
+      byMonth.get(key)!.set(row.goalId, row.balance);
+    }
+
+    // Sort ascending, then slice to window
+    const sorted = Array.from(byMonth.entries()).sort(([a], [b]) =>
+      a.localeCompare(b),
+    );
+    const windowed =
+      historyWindow === "all" ? sorted : sorted.slice(-historyWindow);
+
+    return windowed.map(([key, balMap]) => ({ key, balMap }));
+  }, [historyData, historyWindow, firstProjectedKey]);
 
   if (goalProjections.length === 0) return null;
 
@@ -99,15 +159,34 @@ export function SavingsTrajectoryTable({
               <span>= balance negative</span>
             </span>
           </div>
-          {hasAnyEvents && (
-            <button
-              onClick={() => setShowEvents((v) => !v)}
-              className="flex items-center gap-1 px-2 py-0.5 rounded border border-surface-strong text-faint hover:text-primary hover:border-primary transition-colors text-[11px] shrink-0"
+          <div className="flex items-center gap-2 shrink-0">
+            {/* History window selector */}
+            <select
+              value={String(historyWindow)}
+              onChange={(e) => {
+                const v = e.target.value;
+                setHistoryWindow(
+                  v === "all" ? "all" : (Number(v) as HistoryWindow),
+                );
+              }}
+              className="text-[11px] border border-surface-strong rounded px-1.5 py-0.5 bg-surface-primary text-faint hover:text-primary"
             >
-              <span>{showEvents ? "▾" : "▸"}</span>
-              <span>{showEvents ? "Hide" : "Show"} transactions</span>
-            </button>
-          )}
+              <option value="0">No history</option>
+              <option value="3">3 months history</option>
+              <option value="6">6 months history</option>
+              <option value="12">1 year history</option>
+              <option value="all">All history</option>
+            </select>
+            {hasAnyEvents && (
+              <button
+                onClick={() => setShowEvents((v) => !v)}
+                className="flex items-center gap-1 px-2 py-0.5 rounded border border-surface-strong text-faint hover:text-primary hover:border-primary transition-colors text-[11px]"
+              >
+                <span>{showEvents ? "▾" : "▸"}</span>
+                <span>{showEvents ? "Hide" : "Show"} transactions</span>
+              </button>
+            )}
+          </div>
         </div>
       )}
       <div className="overflow-auto max-h-[480px] rounded-lg border">
@@ -117,54 +196,101 @@ export function SavingsTrajectoryTable({
               <th className="sticky left-0 z-20 bg-surface-sunken text-left px-3 py-2 font-medium text-muted text-xs whitespace-nowrap border-r">
                 Month
               </th>
-              {goalProjections.map((gp, i) => (
-                <th
-                  key={gp.goalId}
-                  className="text-right px-3 py-2 font-medium text-xs whitespace-nowrap min-w-[110px]"
-                >
-                  <span className="inline-flex items-center gap-1.5 justify-end">
-                    <span
-                      className="inline-block w-2 h-2 rounded-full shrink-0"
-                      style={{
-                        backgroundColor: FUND_COLORS[i % FUND_COLORS.length],
-                      }}
-                    />
-                    <span className="text-muted">{gp.name}</span>
-                  </span>
-                  {gp.targetMode === "fixed" && gp.target > 0 && (
-                    <div className="text-[10px] text-faint font-normal">
-                      target {formatCurrency(gp.target)}
-                    </div>
-                  )}
-                </th>
-              ))}
+              {visibleProjections.map((gp) => {
+                const colorIdx = goalIdToColorIndex[gp.goalId] ?? 0;
+                return (
+                  <th
+                    key={gp.goalId}
+                    className="text-right px-3 py-2 font-medium text-xs whitespace-nowrap min-w-[110px]"
+                  >
+                    <span className="inline-flex items-center gap-1.5 justify-end">
+                      <span
+                        className="inline-block w-2 h-2 rounded-full shrink-0"
+                        style={{
+                          backgroundColor:
+                            FUND_COLORS[colorIdx % FUND_COLORS.length],
+                        }}
+                      />
+                      <span className="text-muted">{gp.name}</span>
+                    </span>
+                    {gp.targetMode === "fixed" && gp.target > 0 && (
+                      <div className="text-[10px] text-faint font-normal">
+                        target {formatCurrency(gp.target)}
+                      </div>
+                    )}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
+            {/* ── Historical rows ── */}
+            {historicalRows.map(({ key, balMap }) => {
+              // Parse key back to a display label
+              const [yr, mo] = key.split("-");
+              const displayDate = new Date(Number(yr), Number(mo) - 1, 1);
+              return (
+                <tr
+                  key={`hist-${key}`}
+                  className="border-b bg-surface-elevated/20"
+                >
+                  <td className="sticky left-0 z-10 bg-surface-elevated/20 px-3 py-1.5 text-xs text-faint whitespace-nowrap border-r">
+                    {monthLabel(displayDate)}
+                    <span className="ml-1.5 text-[9px] text-faint/60 uppercase tracking-wide">
+                      actual
+                    </span>
+                  </td>
+                  {visibleProjections.map((gp) => {
+                    const val = balMap.get(gp.goalId);
+                    return (
+                      <td
+                        key={gp.goalId}
+                        className="text-right px-3 py-1.5 text-xs tabular-nums text-muted"
+                      >
+                        {val !== undefined ? formatCurrency(val) : "—"}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+
+            {/* ── Separator between history and projections ── */}
+            {historicalRows.length > 0 && (
+              <tr aria-hidden="true">
+                <td
+                  colSpan={visibleProjections.length + 1}
+                  className="px-3 py-1 text-[10px] text-faint/50 text-center bg-surface-sunken border-b border-t tracking-widest"
+                >
+                  ─── Projected ───
+                </td>
+              </tr>
+            )}
+
+            {/* ── Projected rows ── */}
             {monthDates.map((date, rowIdx) => {
-              // Collect all events this month across all funds, sorted
+              // Collect events across visible funds only
               const rowEvents: {
                 goalId: number;
-                gpIdx: number;
                 id: string;
                 amount: number;
                 description: string;
+                colorIdx: number;
               }[] = [];
-              for (let gi = 0; gi < goalProjections.length; gi++) {
-                const gp = goalProjections[gi]!;
+              for (const gp of visibleProjections) {
                 for (const ev of gp.monthEvents[rowIdx] ?? []) {
                   rowEvents.push({
                     goalId: gp.goalId,
-                    gpIdx: gi,
                     id: ev.id,
                     amount: ev.amount,
                     description: ev.description,
+                    colorIdx: goalIdToColorIndex[gp.goalId] ?? 0,
                   });
                 }
               }
               rowEvents.sort(
                 (a, b) =>
-                  a.gpIdx - b.gpIdx ||
+                  a.colorIdx - b.colorIdx ||
                   a.description.localeCompare(b.description),
               );
 
@@ -175,7 +301,7 @@ export function SavingsTrajectoryTable({
                     <td className="sticky left-0 z-10 bg-surface-primary px-3 py-1.5 text-xs text-muted whitespace-nowrap border-r">
                       {monthLabel(date)}
                     </td>
-                    {goalProjections.map((gp) => {
+                    {visibleProjections.map((gp) => {
                       const balance = gp.balances[rowIdx] ?? 0;
                       const isNegative = balance < 0;
 
@@ -221,7 +347,6 @@ export function SavingsTrajectoryTable({
                           );
                         }
 
-                        // Lookahead: find the next withdrawal balance from this month forward
                         const futureWithdrawalBal = nextWithdrawalBalance(
                           gp,
                           rowIdx,
@@ -241,7 +366,6 @@ export function SavingsTrajectoryTable({
                           );
                         }
 
-                        // Green only on months with a covered withdrawal; white otherwise
                         const cls =
                           "text-right px-3 py-1.5 text-xs tabular-nums" +
                           (hasWithdrawalThisMonth
@@ -268,11 +392,11 @@ export function SavingsTrajectoryTable({
                     })}
                   </tr>
 
-                  {/* Event sub-rows — visible when showEvents is true */}
+                  {/* Event sub-rows */}
                   {showEvents &&
                     rowEvents.map((ev) => {
                       const evColor =
-                        FUND_COLORS[ev.gpIdx % FUND_COLORS.length]!;
+                        FUND_COLORS[ev.colorIdx % FUND_COLORS.length]!;
                       return (
                         <tr
                           key={`ev-${ev.goalId}-${ev.id}`}
@@ -286,7 +410,7 @@ export function SavingsTrajectoryTable({
                               └
                             </span>
                           </td>
-                          {goalProjections.map((gp) => (
+                          {visibleProjections.map((gp) => (
                             <td
                               key={gp.goalId}
                               className="text-right px-3 py-1"
