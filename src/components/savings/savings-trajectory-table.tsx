@@ -189,7 +189,7 @@ export function SavingsTrajectoryTable({
           </select>
           {hasAnyEvents && (
             <button
-              onClick={() => setShowEvents((v) => !v)}
+              onClick={() => setShowEvents(!showEvents)}
               className="flex items-center gap-1 px-2 py-0.5 rounded border border-surface-strong text-faint hover:text-primary hover:border-primary transition-colors text-[11px]"
             >
               <span>{showEvents ? "▾" : "▸"}</span>
