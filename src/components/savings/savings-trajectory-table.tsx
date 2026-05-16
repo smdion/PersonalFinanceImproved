@@ -132,8 +132,8 @@ export function SavingsTrajectoryTable({
 
   return (
     <div className="space-y-2">
-      {(hasAnyFixedTarget || hasAnyRevolving || hasAnyEvents) && (
-        <div className="flex items-center justify-between gap-4 text-[11px] text-faint px-1">
+      <div className="flex items-center justify-between gap-4 text-[11px] text-faint px-1">
+        {hasAnyFixedTarget || hasAnyRevolving || hasAnyEvents ? (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             {hasAnyFixedTarget && (
               <span className="flex items-center gap-1">
@@ -159,36 +159,38 @@ export function SavingsTrajectoryTable({
               <span>= balance negative</span>
             </span>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {/* History window selector */}
-            <select
-              value={String(historyWindow)}
-              onChange={(e) => {
-                const v = e.target.value;
-                setHistoryWindow(
-                  v === "all" ? "all" : (Number(v) as HistoryWindow),
-                );
-              }}
-              className="text-[11px] border border-surface-strong rounded px-1.5 py-0.5 bg-surface-primary text-faint hover:text-primary"
+        ) : (
+          <span />
+        )}
+        <div className="flex items-center gap-2 shrink-0">
+          <select
+            aria-label="History range"
+            value={String(historyWindow)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setHistoryWindow(
+                v === "all" ? "all" : (Number(v) as HistoryWindow),
+              );
+            }}
+            className="text-[11px] border border-surface-strong rounded px-1.5 py-0.5 bg-surface-primary text-faint hover:text-primary"
+          >
+            <option value="0">No history</option>
+            <option value="3">3 months history</option>
+            <option value="6">6 months history</option>
+            <option value="12">1 year history</option>
+            <option value="all">All history</option>
+          </select>
+          {hasAnyEvents && (
+            <button
+              onClick={() => setShowEvents((v) => !v)}
+              className="flex items-center gap-1 px-2 py-0.5 rounded border border-surface-strong text-faint hover:text-primary hover:border-primary transition-colors text-[11px]"
             >
-              <option value="0">No history</option>
-              <option value="3">3 months history</option>
-              <option value="6">6 months history</option>
-              <option value="12">1 year history</option>
-              <option value="all">All history</option>
-            </select>
-            {hasAnyEvents && (
-              <button
-                onClick={() => setShowEvents((v) => !v)}
-                className="flex items-center gap-1 px-2 py-0.5 rounded border border-surface-strong text-faint hover:text-primary hover:border-primary transition-colors text-[11px]"
-              >
-                <span>{showEvents ? "▾" : "▸"}</span>
-                <span>{showEvents ? "Hide" : "Show"} transactions</span>
-              </button>
-            )}
-          </div>
+              <span>{showEvents ? "▾" : "▸"}</span>
+              <span>{showEvents ? "Hide" : "Show"} transactions</span>
+            </button>
+          )}
         </div>
-      )}
+      </div>
       <div className="overflow-auto max-h-[480px] rounded-lg border">
         <table className="w-full text-sm border-collapse">
           <thead className="sticky top-0 z-10">

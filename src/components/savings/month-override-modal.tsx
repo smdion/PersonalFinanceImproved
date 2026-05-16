@@ -96,18 +96,16 @@ export function MonthOverrideModal({
     setPendingFillForward(false);
   }, []);
 
-  const hasChanges =
-    Math.abs(localPool - pool) >= 0.01 ||
-    funds.some(
-      (f) =>
-        Math.abs(
-          f.amount -
-            (monthIndex >= 0
-              ? goalProjections.find((gp) => gp.goalId === f.goalId)!
-                  .monthlyAllocations[monthIndex]!
-              : f.defaultAmount),
-        ) >= 0.01,
-    );
+  const hasChanges = funds.some(
+    (f) =>
+      Math.abs(
+        f.amount -
+          (monthIndex >= 0
+            ? goalProjections.find((gp) => gp.goalId === f.goalId)!
+                .monthlyAllocations[monthIndex]!
+            : f.defaultAmount),
+      ) >= 0.01,
+  );
 
   const doApply = useCallback(() => {
     const md = formatMonthDate(monthDate);

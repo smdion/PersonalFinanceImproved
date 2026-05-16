@@ -117,102 +117,64 @@ export const syncCoreRouter = createTRPCRouter({
             .set({ lastSyncedAt: new Date() })
             .where(eq(schema.apiConnections.service, service));
 
-          // ── Record savings_monthly from YNAB category balances ───────────
-          // Fetch all API-linked savings goals.
-          const linkedGoals = await tx
-            .select({
-              id: schema.savingsGoals.id,
-              apiCategoryId: schema.savingsGoals.apiCategoryId,
-            })
-            .from(schema.savingsGoals)
-            .where(
-              and(
-                eq(schema.savingsGoals.isApiSyncEnabled, true),
-                eq(schema.savingsGoals.isActive, true),
-              ),
-            );
-
-          // Build categoryId → balance map from this sync's month detail.
-          const catBalanceMap = new Map<string, number>(
-            (monthDetail.categories ?? [])
-              .filter((c) => c.id != null)
-              .map((c) => [c.id, c.balance]),
-          );
-
-          // Step 1: upsert current month balance for each linked goal.
-          for (const goal of linkedGoals) {
-            if (!goal.apiCategoryId) continue;
-            const balance = catBalanceMap.get(goal.apiCategoryId);
-            if (balance === undefined) continue;
-            await tx
-              .insert(schema.savingsMonthly)
-              .values({
-                goalId: goal.id,
-                monthDate: currentMonth,
-                balance: String(balance),
+          // ── Record savings_monthly from budget category balances ─────────
+          // Only runs for the active service — a non-active service's category
+          // balances should not overwrite savings history.
+          const activeService = await getActiveBudgetApi(ctx.db);
+          if (service === activeService) {
+            // Fetch all API-linked savings goals.
+            const linkedGoals = await tx
+              .select({
+                id: schema.savingsGoals.id,
+                apiCategoryId: schema.savingsGoals.apiCategoryId,
               })
-              .onConflictDoUpdate({
-                target: [
-                  schema.savingsMonthly.goalId,
-                  schema.savingsMonthly.monthDate,
-                ],
-                // Only overwrite balance — never touch deposit_or_withdrawal or notes.
-                set: { balance: String(balance) },
-              });
-          }
+              .from(schema.savingsGoals)
+              .where(
+                and(
+                  eq(schema.savingsGoals.isApiSyncEnabled, true),
+                  eq(schema.savingsGoals.isActive, true),
+                ),
+              );
 
-          // Step 2: backfill prior months from cached month detail entries.
-          // Old months/YYYY-MM-01 entries accumulate in budget_api_cache from
-          // past syncs. We harvest them once into savings_monthly, then prune
-          // them in step 3. Only writes rows that don't already exist.
-          const priorMonthCaches = await tx
-            .select({
-              cacheKey: schema.budgetApiCache.cacheKey,
-              data: schema.budgetApiCache.data,
-            })
-            .from(schema.budgetApiCache)
-            .where(
-              and(
-                eq(schema.budgetApiCache.service, service),
-                like(schema.budgetApiCache.cacheKey, "months/%"),
-                ne(schema.budgetApiCache.cacheKey, `months/${currentMonth}`),
-              ),
-            );
-
-          for (const entry of priorMonthCaches) {
-            // Cache key is "months/YYYY-MM-01" — extract the date portion.
-            const monthDate = entry.cacheKey.replace("months/", "");
-            const detail = entry.data as {
-              categories?: { id: string; balance: number }[];
-            };
-            const priorCatMap = new Map<string, number>(
-              (detail.categories ?? [])
+            // Build categoryId → balance map from this sync's month detail.
+            const catBalanceMap = new Map<string, number>(
+              (monthDetail.categories ?? [])
                 .filter((c) => c.id != null)
                 .map((c) => [c.id, c.balance]),
             );
+
+            // Step 1: upsert current month balance for each linked goal.
             for (const goal of linkedGoals) {
               if (!goal.apiCategoryId) continue;
-              const balance = priorCatMap.get(goal.apiCategoryId);
+              const balance = catBalanceMap.get(goal.apiCategoryId);
               if (balance === undefined) continue;
-              // Insert only — never overwrite an existing month's recorded balance.
               await tx
                 .insert(schema.savingsMonthly)
                 .values({
                   goalId: goal.id,
-                  monthDate,
+                  monthDate: currentMonth,
                   balance: String(balance),
                 })
-                .onConflictDoNothing();
+                .onConflictDoUpdate({
+                  target: [
+                    schema.savingsMonthly.goalId,
+                    schema.savingsMonthly.monthDate,
+                  ],
+                  // Only overwrite balance — never touch deposit_or_withdrawal or notes.
+                  set: { balance: String(balance) },
+                });
             }
-          }
 
-          // Step 3: prune prior months/YYYY-MM-01 cache entries now that the
-          // data lives in savings_monthly. Current month is preserved — other
-          // code paths (budget actuals, getPreview) read it. Note: intentional
-          // policy — callers must not assume prior-month cache entries exist.
-          if (priorMonthCaches.length > 0) {
-            await tx
-              .delete(schema.budgetApiCache)
+            // Step 2: backfill prior months from cached month detail entries.
+            // Old months/YYYY-MM-01 entries accumulate in budget_api_cache from
+            // past syncs. We harvest them once into savings_monthly, then prune
+            // them in step 3. Only writes rows that don't already exist.
+            const priorMonthCaches = await tx
+              .select({
+                cacheKey: schema.budgetApiCache.cacheKey,
+                data: schema.budgetApiCache.data,
+              })
+              .from(schema.budgetApiCache)
               .where(
                 and(
                   eq(schema.budgetApiCache.service, service),
@@ -220,6 +182,54 @@ export const syncCoreRouter = createTRPCRouter({
                   ne(schema.budgetApiCache.cacheKey, `months/${currentMonth}`),
                 ),
               );
+
+            let harvested = false;
+            for (const entry of priorMonthCaches) {
+              // Cache key is "months/YYYY-MM-01" — extract the date portion.
+              const monthDate = entry.cacheKey.replace("months/", "");
+              const detail = entry.data as {
+                categories?: { id: string; balance: number }[];
+              };
+              const priorCatMap = new Map<string, number>(
+                (detail.categories ?? [])
+                  .filter((c) => c.id != null)
+                  .map((c) => [c.id, c.balance]),
+              );
+              for (const goal of linkedGoals) {
+                if (!goal.apiCategoryId) continue;
+                const balance = priorCatMap.get(goal.apiCategoryId);
+                if (balance === undefined) continue;
+                // Insert only — never overwrite an existing month's recorded balance.
+                await tx
+                  .insert(schema.savingsMonthly)
+                  .values({
+                    goalId: goal.id,
+                    monthDate,
+                    balance: String(balance),
+                  })
+                  .onConflictDoNothing();
+                harvested = true;
+              }
+            }
+
+            // Step 3: prune prior months/YYYY-MM-01 cache entries now that the
+            // data lives in savings_monthly. Current month is preserved — other
+            // code paths (budget actuals, getPreview) read it. Note: intentional
+            // policy — callers must not assume prior-month cache entries exist.
+            if (harvested) {
+              await tx
+                .delete(schema.budgetApiCache)
+                .where(
+                  and(
+                    eq(schema.budgetApiCache.service, service),
+                    like(schema.budgetApiCache.cacheKey, "months/%"),
+                    ne(
+                      schema.budgetApiCache.cacheKey,
+                      `months/${currentMonth}`,
+                    ),
+                  ),
+                );
+            }
           }
 
           if (pullMappings.length === 0) return 0;

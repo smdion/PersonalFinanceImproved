@@ -635,6 +635,7 @@ export function AllTransactionsTab({
               v === "all" ? "all" : (Number(v) as 0 | 3 | 6 | 12),
             );
           }}
+          aria-label="History window"
           className="text-[11px] border border-surface-strong rounded px-1.5 py-0.5 bg-surface-primary text-faint hover:text-primary"
         >
           <option value="0">No history</option>
@@ -648,7 +649,7 @@ export function AllTransactionsTab({
       {/* Transaction table */}
       {past.length === 0 && upcoming.length === 0 ? (
         <p className="text-sm text-faint text-center py-8">
-          No upcoming transactions across any fund.
+          No transactions across any fund.
         </p>
       ) : (
         <div className="overflow-auto rounded-lg border">
@@ -774,7 +775,7 @@ export function AllTransactionsTab({
               })}
 
               {/* Separator between history and upcoming */}
-              {past.length > 0 && (
+              {past.length > 0 && upcoming.length > 0 && (
                 <tr aria-hidden="true">
                   <td
                     colSpan={canEdit !== false ? 6 : 5}
