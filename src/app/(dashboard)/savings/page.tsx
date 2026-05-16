@@ -122,6 +122,16 @@ export default function SavingsPage() {
   const apiSync = useApiSync();
   const [editingMonth, setEditingMonth] = useState<Date | null>(null);
   const [showNewFund, setShowNewFund] = useState(false);
+  const [hiddenGoalIds, setHiddenGoalIds] = useState<Set<number>>(new Set());
+
+  const handleToggleGoalColumn = (id: number) => {
+    setHiddenGoalIds((prev) => {
+      const s = new Set(prev);
+      if (s.has(id)) s.delete(id);
+      else s.add(id);
+      return s;
+    });
+  };
   const [projectionsTab, setProjectionsTab] = useState<
     "table" | "chart" | "edit" | "transactions" | "extraPaychecks"
   >("table");
@@ -246,10 +256,14 @@ export default function SavingsPage() {
   })();
 
   // ── Projection months ──
+  // Start from the current month on the 1st; shift to next month once the 1st
+  // has passed so the table only shows months whose contribution date is today
+  // or in the future.
   const projectionMonths = projectionYears * 12;
   const now = new Date();
+  const startOffset = now.getDate() > 1 ? 1 : 0;
   const monthDates: Date[] = [];
-  for (let i = 0; i < projectionMonths; i++) {
+  for (let i = startOffset; i < projectionMonths + startOffset; i++) {
     monthDates.push(new Date(now.getFullYear(), now.getMonth() + i, 1));
   }
 
@@ -347,12 +361,6 @@ export default function SavingsPage() {
       pct !== null && maxMonthlyFunding !== null
         ? (pct / 100) * maxMonthlyFunding
         : goal.monthlyAllocation;
-    // YNAB-linked goals report the live "Available" balance, which already
-    // includes the current month's budgeted amount. Skip adding the allocation
-    // for month[0] to avoid double-counting it.
-    const balanceIncludesCurrentMonth =
-      !!(raw?.isApiSyncEnabled && raw?.apiCategoryId) && now.getDate() > 1;
-
     for (let i = 0; i < projectionMonths; i++) {
       const mk = monthKey(monthDates[i]!);
       const events = goalTxMap?.get(mk) ?? null;
@@ -362,9 +370,7 @@ export default function SavingsPage() {
       const defaultAllocation = getAllocationForYear(baseAllocation, yr);
       const allocation =
         overrideAmount !== undefined ? overrideAmount : defaultAllocation;
-      if (!(i === 0 && balanceIncludesCurrentMonth)) {
-        balance += allocation;
-      }
+      balance += allocation;
       if (events) {
         for (const ev of events) balance += ev.amount;
       }
@@ -550,6 +556,8 @@ export default function SavingsPage() {
             <ProjectionImpactBar
               goalProjections={goalProjections}
               monthDates={monthDates}
+              hiddenGoalIds={hiddenGoalIds}
+              onToggle={handleToggleGoalColumn}
             />
           )}
 
@@ -558,6 +566,7 @@ export default function SavingsPage() {
             <SavingsTrajectoryTable
               goalProjections={goalProjections}
               monthDates={monthDates}
+              hiddenGoalIds={hiddenGoalIds}
             />
           )}
 

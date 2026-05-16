@@ -1096,4 +1096,43 @@ export const savingsRouter = createTRPCRouter({
       return { ok: true };
     }),
   }),
+
+  /** All recorded monthly balances for active savings goals (for history view). */
+  getMonthlyHistory: protectedProcedure.query(async ({ ctx }) => {
+    const activeGoals = await ctx.db
+      .select({ id: schema.savingsGoals.id })
+      .from(schema.savingsGoals)
+      .where(eq(schema.savingsGoals.isActive, true));
+
+    if (activeGoals.length === 0) return { rows: [] };
+
+    const { isPostgres } = await import("@/lib/db/dialect");
+    const ids = activeGoals.map((g) => g.id);
+    const inList = sql.join(
+      ids.map((id) => sql`${id}`),
+      sql`, `,
+    );
+
+    const rows = isPostgres()
+      ? await ctx.db.execute(sql`
+          SELECT goal_id, month_date::text, balance::numeric
+          FROM savings_monthly
+          WHERE goal_id IN (${inList})
+          ORDER BY month_date ASC
+        `)
+      : await ctx.db.execute(sql`
+          SELECT goal_id, month_date, CAST(balance AS REAL) AS balance
+          FROM savings_monthly
+          WHERE goal_id IN (${inList})
+          ORDER BY month_date ASC
+        `);
+
+    return {
+      rows: rows.rows.map((r) => ({
+        goalId: r.goal_id as number,
+        monthDate: r.month_date as string,
+        balance: Number(r.balance),
+      })),
+    };
+  }),
 });
