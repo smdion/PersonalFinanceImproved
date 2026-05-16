@@ -1,27 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef } from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { RefreshCw } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { formatDate } from "@/lib/utils/format";
 
 export function DataFreshness({ compact }: { compact?: boolean }) {
-  const [open, setOpen] = useState(false);
   const utils = trpc.useUtils();
   const { data } = trpc.settings.getDataFreshness.useQuery();
   const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
+  const hasFiredAutoSync = useRef(false);
+
   const syncAllMut = trpc.sync.syncAll.useMutation({
     onSuccess: () => {
       utils.sync.getSyncStatus.invalidate();
       utils.sync.getConnection.invalidate();
       utils.sync.getPreview.invalidate();
-      // Refresh all data that YNAB sync may have updated
       utils.savings.invalidate();
       utils.budget.invalidate();
       utils.assets.invalidate();
+      utils.mortgage.invalidate();
+      utils.networth.invalidate();
     },
   });
+
+  // Auto-sync on mount when data is stale. Fires at most once per mount.
+  useEffect(() => {
+    if (hasFiredAutoSync.current) return;
+    if (!syncStatus) return;
+    if (!syncStatus.autoSync.enabled) return;
+    if (!syncStatus.service || !syncStatus.connected) return;
+    if (syncAllMut.isPending) return;
+
+    const staleMs = syncStatus.autoSync.staleHours * 3_600_000;
+    const lastSynced = syncStatus.lastSynced
+      ? new Date(syncStatus.lastSynced).getTime()
+      : 0;
+
+    if (Date.now() - lastSynced > staleMs) {
+      hasFiredAutoSync.current = true;
+      syncAllMut.mutate({
+        service: syncStatus.service as "ynab" | "actual",
+      });
+    }
+  }, [syncStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!data) return null;
 
@@ -29,6 +52,15 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
   const syncDate = syncStatus?.lastSynced
     ? formatDate(syncStatus.lastSynced.toString())
     : null;
+
+  const canSync = !!(syncStatus?.service && syncStatus.connected);
+
+  const handleSync = () => {
+    if (!canSync || syncAllMut.isPending) return;
+    syncAllMut.mutate({
+      service: syncStatus!.service! as "ynab" | "actual",
+    });
+  };
 
   // Oldest date across all sources
   const dates = [data.balanceDate, data.performanceDate, syncDate].filter(
@@ -54,26 +86,14 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
         </div>
       )}
       {syncLabel && (
-        <div className="flex justify-between gap-4 items-center">
+        <div className="flex justify-between gap-4">
           <span className="text-slate-400">{syncLabel}</span>
-          <span className="flex items-center gap-1.5">
-            {syncDate ?? "never"}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                syncAllMut.mutate({
-                  service: syncStatus!.service! as "ynab" | "actual",
-                });
-              }}
-              disabled={syncAllMut.isPending}
-              className="text-blue-400 hover:text-blue-300 disabled:opacity-50"
-              title="Refresh sync"
-            >
-              <RefreshCw
-                className={`w-3 h-3 ${syncAllMut.isPending ? "animate-spin" : ""}`}
-              />
-            </button>
-          </span>
+          <span>{syncDate ?? "never"}</span>
+        </div>
+      )}
+      {canSync && (
+        <div className="pt-1 text-[10px] text-slate-500 text-center">
+          {syncAllMut.isPending ? "Syncing…" : "Tap row to sync"}
         </div>
       )}
     </div>
@@ -81,17 +101,17 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
 
   if (compact) {
     return (
-      <TooltipPrimitive.Root
-        delayDuration={200}
-        open={open}
-        onOpenChange={setOpen}
-      >
+      <TooltipPrimitive.Root delayDuration={300}>
         <TooltipPrimitive.Trigger asChild>
           <button
-            className="w-full flex items-center justify-center p-2 text-faint hover:text-primary transition-colors"
-            onClick={() => setOpen((o) => !o)}
+            className="w-full flex items-center justify-center p-2 text-faint hover:text-primary transition-colors disabled:opacity-50"
+            onClick={handleSync}
+            disabled={syncAllMut.isPending}
+            title={canSync ? "Sync data" : "Data freshness"}
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw
+              className={`w-4 h-4 ${syncAllMut.isPending ? "animate-spin" : ""}`}
+            />
           </button>
         </TooltipPrimitive.Trigger>
         <TooltipPrimitive.Portal>
@@ -100,7 +120,6 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
             align="center"
             sideOffset={8}
             className="z-[9999] rounded-lg bg-slate-900 dark:bg-slate-700 px-3.5 py-2.5 text-slate-100 shadow-xl animate-in fade-in-0 zoom-in-95"
-            onPointerDownOutside={() => setOpen(false)}
           >
             {tooltipContent}
             <TooltipPrimitive.Arrow className="fill-slate-900 dark:fill-slate-700" />
@@ -111,17 +130,17 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
   }
 
   return (
-    <TooltipPrimitive.Root
-      delayDuration={200}
-      open={open}
-      onOpenChange={setOpen}
-    >
+    <TooltipPrimitive.Root delayDuration={300}>
       <TooltipPrimitive.Trigger asChild>
         <button
-          className="w-full flex items-center gap-3 px-3 py-2 rounded text-sm text-faint hover:text-primary hover:bg-surface-elevated transition-colors min-h-[44px]"
-          onClick={() => setOpen((o) => !o)}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded text-sm text-faint hover:text-primary hover:bg-surface-elevated transition-colors min-h-[44px] disabled:opacity-50"
+          onClick={handleSync}
+          disabled={syncAllMut.isPending}
+          title={canSync ? "Sync data" : "Data freshness"}
         >
-          <RefreshCw className="w-4 h-4 shrink-0" />
+          <RefreshCw
+            className={`w-4 h-4 shrink-0 ${syncAllMut.isPending ? "animate-spin" : ""}`}
+          />
           <span className="text-[11px]">
             Data{oldestLabel ? `: ${oldestLabel}` : ""}
           </span>
@@ -133,7 +152,6 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
           align="center"
           sideOffset={8}
           className="z-[9999] rounded-lg bg-slate-900 dark:bg-slate-700 px-3.5 py-2.5 text-slate-100 shadow-xl animate-in fade-in-0 zoom-in-95"
-          onPointerDownOutside={() => setOpen(false)}
         >
           {tooltipContent}
           <TooltipPrimitive.Arrow className="fill-slate-900 dark:fill-slate-700" />
