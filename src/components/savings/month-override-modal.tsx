@@ -241,15 +241,15 @@ export function MonthOverrideModal({
           <div className="border-t px-5 py-3 flex flex-col gap-2">
             {/* Under-allocation confirmation panel */}
             {(pendingApply || pendingFillForward) && (
-              <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 flex flex-col gap-2">
-                <p className="text-xs text-amber-800 font-medium">
-                  {formatCurrency(localPool - total)} of the{" "}
-                  {formatCurrency(localPool)}/mo pool is unallocated.
+              <div className="rounded-lg bg-surface-elevated border-l-2 border-l-amber-500 border border-strong px-3 py-2.5 flex flex-col gap-2">
+                <p className="text-xs text-secondary">
+                  <span className="text-amber-400 font-semibold">
+                    {formatCurrency(localPool - total)}
+                  </span>{" "}
+                  of the {formatCurrency(localPool)}/mo pool is unallocated.{" "}
                   {pendingFillForward
-                    ? " Fill forward will apply this to all months from " +
-                      monthLabel +
-                      " onward."
-                    : " This applies to " + monthLabel + " only."}
+                    ? `Fill forward will apply this to all months from ${monthLabel} onward.`
+                    : `This applies to ${monthLabel} only.`}
                 </p>
                 <div className="flex items-center justify-end gap-2">
                   <button
@@ -257,13 +257,13 @@ export function MonthOverrideModal({
                       setPendingApply(false);
                       setPendingFillForward(false);
                     }}
-                    className="px-3 py-1.5 text-xs border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-100"
+                    className="px-3 py-1.5 text-xs border border-strong text-muted rounded-lg hover:bg-surface-sunken"
                   >
                     Go back
                   </button>
                   <button
                     onClick={pendingFillForward ? doFillForward : doApply}
-                    className="px-3 py-1.5 text-xs bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+                    className="px-3 py-1.5 text-xs bg-amber-500 text-black font-medium rounded-lg hover:bg-amber-400"
                   >
                     {pendingFillForward
                       ? "Fill forward anyway"
