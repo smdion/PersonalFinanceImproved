@@ -5,6 +5,7 @@ import {
   PoolDistributionEditor,
   type FundAllocation,
 } from "./pool-distribution-editor";
+import { formatCurrency } from "@/lib/utils/format";
 import { type GoalProjection, monthKey } from "./types";
 
 const MONTH_NAMES = [
@@ -75,49 +76,52 @@ export function MonthOverrideModal({
 
   const [funds, setFunds] = useState<FundAllocation[]>(initialFunds);
   const [localPool, setLocalPool] = useState(pool);
+  const [pendingApply, setPendingApply] = useState(false);
+  const [pendingFillForward, setPendingFillForward] = useState(false);
 
   const total = funds.reduce((s, f) => s + f.amount, 0);
-  const isBalanced = Math.abs(total - localPool) < 1;
+  const isOverAllocated = total > localPool + 1;
+  const isUnderAllocated = total < localPool - 1;
 
-  const hasChanges =
-    Math.abs(localPool - pool) >= 0.01 ||
-    funds.some(
-      (f) =>
-        Math.abs(
-          f.amount -
-            (monthIndex >= 0
-              ? goalProjections.find((gp) => gp.goalId === f.goalId)!
-                  .monthlyAllocations[monthIndex]!
-              : f.defaultAmount),
-        ) >= 0.01,
-    );
+  // Wrap setters to clear confirmation state on any allocation/pool change
+  const handleFundsChange = useCallback((newFunds: FundAllocation[]) => {
+    setFunds(newFunds);
+    setPendingApply(false);
+    setPendingFillForward(false);
+  }, []);
 
-  const handleApply = useCallback(() => {
-    if (!isBalanced) return;
+  const handlePoolChange = useCallback((newPool: number) => {
+    setLocalPool(newPool);
+    setPendingApply(false);
+    setPendingFillForward(false);
+  }, []);
+
+  const hasChanges = funds.some(
+    (f) =>
+      Math.abs(
+        f.amount -
+          (monthIndex >= 0
+            ? goalProjections.find((gp) => gp.goalId === f.goalId)!
+                .monthlyAllocations[monthIndex]!
+            : f.defaultAmount),
+      ) >= 0.01,
+  );
+
+  const doApply = useCallback(() => {
     const md = formatMonthDate(monthDate);
-    // Only include overrides where amount differs from default
     const allocations = funds
       .filter((f) => Math.abs(f.amount - f.defaultAmount) >= 0.01)
       .map((f) => ({ goalId: f.goalId, amount: f.amount }));
 
     if (allocations.length === 0) {
-      // All match defaults — clear overrides for this month
       onDeleteMonthOverrides([md]);
     } else {
       onUpsertMonth({ monthDate: md, allocations });
     }
     onClose();
-  }, [
-    funds,
-    isBalanced,
-    monthDate,
-    onUpsertMonth,
-    onDeleteMonthOverrides,
-    onClose,
-  ]);
+  }, [funds, monthDate, onUpsertMonth, onDeleteMonthOverrides, onClose]);
 
-  const handleFillForward = useCallback(() => {
-    if (!isBalanced) return;
+  const doFillForward = useCallback(() => {
     const startMd = formatMonthDate(monthDate);
     const allMds = monthDates.map((d) => formatMonthDate(d));
     const allocations = funds
@@ -125,7 +129,6 @@ export function MonthOverrideModal({
       .map((f) => ({ goalId: f.goalId, amount: f.amount }));
 
     if (allocations.length === 0) {
-      // Clear all overrides from this month forward
       onDeleteMonthOverrides(allMds.filter((m) => m >= startMd));
     } else {
       onUpsertMonthRange({
@@ -138,13 +141,30 @@ export function MonthOverrideModal({
     onClose();
   }, [
     funds,
-    isBalanced,
     monthDate,
     monthDates,
     onUpsertMonthRange,
     onDeleteMonthOverrides,
     onClose,
   ]);
+
+  const handleApply = useCallback(() => {
+    if (isOverAllocated) return;
+    if (isUnderAllocated && !pendingApply) {
+      setPendingApply(true);
+      return;
+    }
+    doApply();
+  }, [isOverAllocated, isUnderAllocated, pendingApply, doApply]);
+
+  const handleFillForward = useCallback(() => {
+    if (isOverAllocated) return;
+    if (isUnderAllocated && !pendingFillForward) {
+      setPendingFillForward(true);
+      return;
+    }
+    doFillForward();
+  }, [isOverAllocated, isUnderAllocated, pendingFillForward, doFillForward]);
 
   const handleReset = useCallback(() => {
     const md = formatMonthDate(monthDate);
@@ -190,8 +210,9 @@ export function MonthOverrideModal({
                 Edit Month &mdash; {monthLabel}
               </h2>
               <p className="text-xs text-muted mt-0.5">
-                Distribute the savings pool across funds. All allocations must
-                sum to the pool total.
+                Distribute the savings pool across funds. Allocations can be
+                less than the pool — any unallocated amount is treated as going
+                elsewhere.
               </p>
             </div>
             <button
@@ -208,14 +229,48 @@ export function MonthOverrideModal({
             <PoolDistributionEditor
               pool={localPool}
               funds={funds}
-              onChange={setFunds}
+              onChange={handleFundsChange}
               poolEditable
-              onPoolChange={setLocalPool}
+              onPoolChange={handlePoolChange}
             />
           </div>
 
           {/* Footer */}
           <div className="border-t px-5 py-3 flex flex-col gap-2">
+            {/* Under-allocation confirmation panel */}
+            {(pendingApply || pendingFillForward) && (
+              <div className="rounded-lg bg-surface-elevated border-l-2 border-l-amber-500 border border-strong px-3 py-2.5 flex flex-col gap-2">
+                <p className="text-xs text-secondary">
+                  <span className="text-amber-400 font-semibold">
+                    {formatCurrency(localPool - total)}
+                  </span>{" "}
+                  of the {formatCurrency(localPool)}/mo pool is unallocated.{" "}
+                  {pendingFillForward
+                    ? `Fill forward will apply this to all months from ${monthLabel} onward.`
+                    : `This applies to ${monthLabel} only.`}
+                </p>
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => {
+                      setPendingApply(false);
+                      setPendingFillForward(false);
+                    }}
+                    className="px-3 py-1.5 text-xs border border-strong text-muted rounded-lg hover:bg-surface-sunken"
+                  >
+                    Go back
+                  </button>
+                  <button
+                    onClick={pendingFillForward ? doFillForward : doApply}
+                    className="px-3 py-1.5 text-xs bg-amber-500 text-black font-medium rounded-lg hover:bg-amber-400"
+                  >
+                    {pendingFillForward
+                      ? "Fill forward anyway"
+                      : "Apply anyway"}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Reset row */}
             <div className="flex items-center gap-3">
               <button
@@ -245,7 +300,7 @@ export function MonthOverrideModal({
               </button>
               <button
                 onClick={handleFillForward}
-                disabled={!isBalanced || !hasChanges}
+                disabled={isOverAllocated || !hasChanges}
                 className="px-3 py-1.5 text-xs bg-surface-strong text-secondary rounded-lg hover:bg-surface-strong disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Apply this distribution from this month to the end of projections"
               >
@@ -253,7 +308,7 @@ export function MonthOverrideModal({
               </button>
               <button
                 onClick={handleApply}
-                disabled={!isBalanced || !hasChanges}
+                disabled={isOverAllocated || !hasChanges}
                 className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Apply this month

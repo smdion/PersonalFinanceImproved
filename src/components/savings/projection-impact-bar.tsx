@@ -41,9 +41,13 @@ function isRevolvingAtRisk(gp: GoalProjection): boolean {
 export function ProjectionImpactBar({
   goalProjections,
   monthDates,
+  hiddenGoalIds,
+  onToggle,
 }: {
   goalProjections: GoalProjection[];
   monthDates: Date[];
+  hiddenGoalIds: Set<number>;
+  onToggle: (goalId: number) => void;
 }) {
   if (goalProjections.length === 0) return null;
 
@@ -52,13 +56,14 @@ export function ProjectionImpactBar({
       <div className="flex items-center gap-2">
         <span className="text-xs font-medium text-muted">Fund Tracker</span>
         <span className="text-[10px] text-faint">
-          — projected end balance &amp; status within this window
+          — click to show/hide in table
         </span>
       </div>
       <div className="flex flex-wrap gap-2">
         {goalProjections.map((gp, i) => {
           const color = FUND_COLORS[i % FUND_COLORS.length]!;
           const endBalance = gp.balances[gp.balances.length - 1] ?? 0;
+          const isHidden = hiddenGoalIds.has(gp.goalId);
 
           const negIdx = gp.balances.findIndex((b) => b < 0);
           const fundedIdx =
@@ -93,12 +98,18 @@ export function ProjectionImpactBar({
           }
 
           return (
-            <div
+            <button
               key={gp.goalId}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-surface-elevated/30 text-xs"
+              onClick={() => onToggle(gp.goalId)}
+              aria-pressed={!isHidden}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-surface-elevated/30 text-xs transition-opacity cursor-pointer hover:opacity-80 ${
+                isHidden ? "opacity-40" : ""
+              }`}
               style={{ borderLeftColor: color, borderLeftWidth: 3 }}
             >
-              <span className="font-medium text-secondary whitespace-nowrap">
+              <span
+                className={`font-medium text-secondary whitespace-nowrap ${isHidden ? "line-through" : ""}`}
+              >
                 {gp.name}
               </span>
               <span className="text-faint">·</span>
@@ -107,7 +118,7 @@ export function ProjectionImpactBar({
               </span>
               <span className="text-faint">·</span>
               {statusEl}
-            </div>
+            </button>
           );
         })}
       </div>

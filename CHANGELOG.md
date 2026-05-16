@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.6
 
+## [0.6.1] - 2026-05-15
+
+### Added
+
+- **Savings: Monthly Balances history.** A dropdown above the Monthly Balances table lets you show up to 12 months (or all) of actual recorded balances alongside projections. Historical rows are visually distinguished from projected ones, with a "─── Projected ───" separator.
+- **Savings: Transaction history.** The same history dropdown is available on the Transactions tab, showing past non-recurring transactions above upcoming ones with a separator.
+- **Savings: Fund column toggle.** Clicking a fund chip in the Fund Tracker shows or hides that fund's column in the Monthly Balances table. Hidden funds retain their color position so the remaining columns don't shift colors.
+
+### Improved
+
+- **Savings: Monthly balances auto-recorded from sync.** Each YNAB sync now writes the current month's balance for each linked savings goal to history automatically, so the Monthly Balances history fills in going forward without manual entry. Prior synced months are backfilled from the sync cache on first run.
+- **Savings: Projection table starts from next month.** When today is not the 1st, the first projected month is the upcoming month rather than the current one — avoiding a partial month at the top of the table.
+- Savings month editor now allows saving allocations below 100% of the pool — useful when that month's contribution needs to go elsewhere. An inline warning shows the unallocated amount before confirming, with context-specific copy for single-month vs. fill-forward actions.
+
+---
+
 ## [0.6.0] - 2026-05-01
 
 > What changed since v0.5.0. For patch-level detail, see the v0.5.x entries below.
