@@ -63,6 +63,7 @@ export function AllTransactionsTab({
     "transaction",
   );
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [historyWindow, setHistoryWindow] = useState<0 | 3 | 6 | 12 | "all">(0);
   const [addForm, setAddForm] = useState({
     ...defaultAddForm,
     goalId: goalProjections[0]?.goalId ?? 0,
@@ -136,6 +137,36 @@ export function AllTransactionsTab({
       return true;
     })
     .sort((a, b) => a.transactionDate.localeCompare(b.transactionDate));
+
+  // Past non-recurring transactions for the history window.
+  const historyWindowStart =
+    historyWindow === 0
+      ? null
+      : historyWindow === "all"
+        ? new Date(0)
+        : (() => {
+            const d = new Date(today);
+            d.setMonth(d.getMonth() - historyWindow);
+            return d;
+          })();
+
+  const seenHistPairs = new Set<string>();
+  const past =
+    historyWindowStart === null
+      ? []
+      : plannedTransactions
+          .filter((tx) => {
+            if (tx.isRecurring) return false;
+            const date = new Date(tx.transactionDate + "T00:00:00");
+            if (date >= today) return false;
+            if (date < historyWindowStart) return false;
+            if (tx.transferPairId) {
+              if (seenHistPairs.has(tx.transferPairId)) return false;
+              seenHistPairs.add(tx.transferPairId);
+            }
+            return true;
+          })
+          .sort((a, b) => b.transactionDate.localeCompare(a.transactionDate)); // newest first
 
   const startEdit = (tx: PlannedTransaction) => {
     setEditingId(tx.id);
@@ -593,8 +624,29 @@ export function AllTransactionsTab({
         </div>
       )}
 
+      {/* Toolbar: history selector */}
+      <div className="flex items-center justify-between gap-4 text-[11px] text-faint px-1">
+        <span />
+        <select
+          value={String(historyWindow)}
+          onChange={(e) => {
+            const v = e.target.value;
+            setHistoryWindow(
+              v === "all" ? "all" : (Number(v) as 0 | 3 | 6 | 12),
+            );
+          }}
+          className="text-[11px] border border-surface-strong rounded px-1.5 py-0.5 bg-surface-primary text-faint hover:text-primary"
+        >
+          <option value="0">No history</option>
+          <option value="3">3 months history</option>
+          <option value="6">6 months history</option>
+          <option value="12">1 year history</option>
+          <option value="all">All history</option>
+        </select>
+      </div>
+
       {/* Transaction table */}
-      {upcoming.length === 0 ? (
+      {past.length === 0 && upcoming.length === 0 ? (
         <p className="text-sm text-faint text-center py-8">
           No upcoming transactions across any fund.
         </p>
@@ -622,6 +674,117 @@ export function AllTransactionsTab({
               </tr>
             </thead>
             <tbody>
+              {/* Past (history) rows */}
+              {past.map((tx) => {
+                const isTransfer = !!tx.transferPairId;
+                const color = fundColorMap.get(tx.goalId);
+                const name = fundNameMap.get(tx.goalId) ?? "Unknown";
+                const otherLeg = isTransfer
+                  ? plannedTransactions.find(
+                      (t) =>
+                        t.transferPairId === tx.transferPairId &&
+                        t.id !== tx.id,
+                    )
+                  : null;
+                const fromLeg = isTransfer
+                  ? tx.amount < 0
+                    ? tx
+                    : (otherLeg ?? tx)
+                  : null;
+                const toLeg = isTransfer
+                  ? tx.amount > 0
+                    ? tx
+                    : (otherLeg ?? tx)
+                  : null;
+                return (
+                  <tr
+                    key={`hist-${tx.id}`}
+                    className="border-b bg-surface-elevated/20"
+                  >
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {isTransfer ? (
+                        <span className="inline-flex items-center gap-1 text-[10px]">
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{
+                              backgroundColor: fundColorMap.get(
+                                fromLeg?.goalId ?? 0,
+                              ),
+                            }}
+                          />
+                          <span className="text-faint">
+                            {fundNameMap.get(fromLeg?.goalId ?? 0) ?? "?"}
+                          </span>
+                          <span className="text-faint/50">→</span>
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{
+                              backgroundColor: fundColorMap.get(
+                                toLeg?.goalId ?? 0,
+                              ),
+                            }}
+                          />
+                          <span className="text-faint">
+                            {fundNameMap.get(toLeg?.goalId ?? 0) ?? "?"}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5">
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: color }}
+                          />
+                          <span className="text-faint font-medium">{name}</span>
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-faint whitespace-nowrap tabular-nums">
+                      {formatDate(
+                        new Date(tx.transactionDate + "T00:00:00"),
+                        "short",
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-faint">
+                      {isTransfer && (
+                        <span className="inline-block text-[9px] font-medium text-blue-400/70 bg-blue-50/50 dark:bg-blue-950/20 rounded px-1 mr-1.5">
+                          transfer
+                        </span>
+                      )}
+                      {tx.description}
+                    </td>
+                    <td
+                      className={`px-3 py-2 text-right tabular-nums font-medium whitespace-nowrap ${
+                        isTransfer
+                          ? "text-blue-400/70"
+                          : tx.amount < 0
+                            ? "text-red-400/70"
+                            : "text-green-500/70"
+                      }`}
+                    >
+                      {isTransfer
+                        ? formatCurrency(Math.abs(tx.amount))
+                        : `${tx.amount < 0 ? "−" : "+"}${formatCurrency(Math.abs(tx.amount))}`}
+                    </td>
+                    <td className="px-3 py-2 text-center text-faint/40">
+                      <span className="text-[10px]">—</span>
+                    </td>
+                    {canEdit !== false && <td className="px-3 py-2" />}
+                  </tr>
+                );
+              })}
+
+              {/* Separator between history and upcoming */}
+              {past.length > 0 && (
+                <tr aria-hidden="true">
+                  <td
+                    colSpan={canEdit !== false ? 6 : 5}
+                    className="px-3 py-1 text-[10px] text-faint/50 text-center bg-surface-sunken border-b border-t tracking-widest"
+                  >
+                    ─── Upcoming ───
+                  </td>
+                </tr>
+              )}
+
               {upcoming.map((tx) => {
                 const isTransfer = !!tx.transferPairId;
                 const color = fundColorMap.get(tx.goalId);
