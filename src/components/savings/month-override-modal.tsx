@@ -5,6 +5,7 @@ import {
   PoolDistributionEditor,
   type FundAllocation,
 } from "./pool-distribution-editor";
+import { formatCurrency } from "@/lib/utils/format";
 import { type GoalProjection, monthKey } from "./types";
 
 const MONTH_NAMES = [
