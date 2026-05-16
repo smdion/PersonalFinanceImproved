@@ -37,6 +37,8 @@ export function PoolDistributionEditor({
 
   const total = funds.reduce((s, f) => s + f.amount, 0);
   const isBalanced = Math.abs(total - pool) < 1;
+  const isUnderAllocated = total < pool - 1;
+  const isOverAllocated = total > pool + 1;
   const remaining = pool - total;
 
   const updateFundAmount = useCallback(
@@ -286,7 +288,11 @@ export function PoolDistributionEditor({
         <div className="flex items-center gap-2">
           <span
             className={`text-sm font-medium tabular-nums ${
-              isBalanced ? "text-green-600" : "text-red-600"
+              isBalanced
+                ? "text-green-600"
+                : isOverAllocated
+                  ? "text-red-600"
+                  : "text-amber-600"
             }`}
           >
             Total: {formatCurrency(total)} / {formatCurrency(pool)}
@@ -307,14 +313,16 @@ export function PoolDistributionEditor({
               />
             </svg>
           ) : (
-            <span className="text-xs text-red-600">
+            <span
+              className={`text-xs ${isOverAllocated ? "text-red-600" : "text-amber-600"}`}
+            >
               ({remaining > 0 ? "+" : ""}
               {formatCurrency(remaining)}{" "}
               {remaining > 0 ? "unallocated" : "over"})
             </span>
           )}
         </div>
-        {!isBalanced && (
+        {(isUnderAllocated || isOverAllocated) && (
           <button
             onClick={distributeRemaining}
             className="px-2.5 py-1 text-xs bg-surface-strong text-secondary rounded hover:bg-surface-strong"
