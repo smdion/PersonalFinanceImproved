@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.6
 
+## [0.6.1] - 2026-05-15
+
+### Improved
+
+- Savings month editor now allows saving allocations below 100% of the pool — useful when that month's contribution needs to go elsewhere. An inline warning shows the unallocated amount before confirming, with context-specific copy for single-month vs. fill-forward actions.
+
+---
+
 ## [0.6.0] - 2026-05-01
 
 > What changed since v0.5.0. For patch-level detail, see the v0.5.x entries below.
