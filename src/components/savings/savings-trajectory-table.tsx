@@ -83,6 +83,10 @@ export function SavingsTrajectoryTable({
     () => goalProjections.filter((gp) => !hiddenGoalIds.has(gp.goalId)),
     [goalProjections, hiddenGoalIds],
   );
+  const hiddenProjections = useMemo(
+    () => goalProjections.filter((gp) => hiddenGoalIds.has(gp.goalId)),
+    [goalProjections, hiddenGoalIds],
+  );
 
   // ── Build historical rows (must be before early return — hook ordering) ──
   const firstProjectedKey = monthDates[0] ? monthKeyStr(monthDates[0]) : null;
@@ -199,10 +203,10 @@ export function SavingsTrajectoryTable({
         </div>
       </div>
       <div className="overflow-auto max-h-[480px] rounded-lg border">
-        <table className="w-full text-sm border-collapse">
-          <thead className="sticky top-0 z-10">
+        <table className="w-full text-sm border-separate border-spacing-0">
+          <thead>
             <tr className="bg-surface-sunken border-b">
-              <th className="sticky left-0 z-20 bg-surface-sunken text-left px-3 py-2 font-medium text-muted text-xs whitespace-nowrap border-r">
+              <th className="sticky top-0 left-0 z-20 bg-surface-sunken text-left px-3 py-2 font-medium text-muted text-xs whitespace-nowrap border-r">
                 Month
               </th>
               {visibleProjections.map((gp) => {
@@ -210,7 +214,7 @@ export function SavingsTrajectoryTable({
                 return (
                   <th
                     key={gp.goalId}
-                    className="text-right px-3 py-2 font-medium text-xs whitespace-nowrap min-w-[110px]"
+                    className="sticky top-0 z-10 bg-surface-sunken text-right px-3 py-2 font-medium text-xs whitespace-nowrap min-w-[110px] align-top"
                   >
                     <span className="inline-flex items-center gap-1.5 justify-end">
                       <span
@@ -222,14 +226,27 @@ export function SavingsTrajectoryTable({
                       />
                       <span className="text-muted">{gp.name}</span>
                     </span>
-                    {gp.targetMode === "fixed" && gp.target > 0 && (
+                    {gp.targetMode === "fixed" && gp.target > 0 ? (
                       <div className="text-[10px] text-faint font-normal">
                         target {formatCurrency(gp.target)}
+                      </div>
+                    ) : gp.targetMode === "ongoing" ? (
+                      <div className="text-[10px] text-faint/60 font-normal italic">
+                        revolving
+                      </div>
+                    ) : (
+                      <div className="text-[10px] text-faint/40 font-normal">
+                        no target
                       </div>
                     )}
                   </th>
                 );
               })}
+              {hiddenProjections.length > 0 && (
+                <th className="sticky top-0 z-10 bg-surface-sunken text-right px-3 py-2 font-medium text-xs whitespace-nowrap min-w-[110px] align-top text-faint/60">
+                  {hiddenProjections.length} hidden
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -260,6 +277,16 @@ export function SavingsTrajectoryTable({
                       </td>
                     );
                   })}
+                  {hiddenProjections.length > 0 && (
+                    <td className="text-right px-3 py-1.5 text-xs tabular-nums text-faint/50">
+                      {formatCurrency(
+                        hiddenProjections.reduce(
+                          (s, gp) => s + (balMap.get(gp.goalId) ?? 0),
+                          0,
+                        ),
+                      )}
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -399,6 +426,16 @@ export function SavingsTrajectoryTable({
                         </td>
                       );
                     })}
+                    {hiddenProjections.length > 0 && (
+                      <td className="text-right px-3 py-1.5 text-xs tabular-nums text-faint/50 bg-surface-sunken/40">
+                        {formatCurrency(
+                          hiddenProjections.reduce(
+                            (s, gp) => s + (gp.balances[rowIdx] ?? 0),
+                            0,
+                          ),
+                        )}
+                      </td>
+                    )}
                   </tr>
 
                   {/* Event sub-rows */}
@@ -443,6 +480,9 @@ export function SavingsTrajectoryTable({
                               )}
                             </td>
                           ))}
+                          {hiddenProjections.length > 0 && (
+                            <td className="bg-surface-sunken/40" />
+                          )}
                         </tr>
                       );
                     })}

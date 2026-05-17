@@ -17,6 +17,7 @@ interface ContributionGridProps {
   canEdit?: boolean;
   /** "YYYY-MM" keys for months that have rule-sourced extra-paycheck overrides. */
   ruleMonthKeys?: Set<string>;
+  hiddenGoalIds?: Set<number>;
 }
 
 const MONTH_NAMES = [
@@ -108,65 +109,130 @@ function DefaultContributionCell({
     setEditing(null);
   };
 
+  const inputCls =
+    "flex-1 text-left border border-default bg-surface-elevated text-primary rounded-lg px-3 py-2 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
+
   if (editing) {
     return (
-      <div className="flex flex-col items-center gap-0.5">
-        <div className="flex items-center gap-0.5">
-          <span className="text-[9px] text-muted">$</span>
-          <input
-            type="number"
-            autoFocus={editing === "dollar"}
-            value={dollarValue}
-            onChange={(e) => handleDollarChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") commit();
-              if (e.key === "Escape") setEditing(null);
-            }}
-            className="w-14 text-center text-xs border border-green-500 bg-surface-primary text-primary rounded px-1 py-0.5 tabular-nums"
-          />
+      <>
+        <div className="text-green-600/30 text-xs font-semibold tabular-nums text-center select-none">
+          {formatCurrency(gp.monthlyAllocation)}
         </div>
-        <div className="flex items-center gap-0.5">
-          <input
-            type="number"
-            autoFocus={editing === "percent"}
-            value={percentValue}
-            onChange={(e) => handlePercentChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") commit();
-              if (e.key === "Escape") setEditing(null);
-            }}
-            step="0.1"
-            className="w-14 text-center text-xs border border-green-500 bg-surface-primary text-primary rounded px-1 py-0.5 tabular-nums"
-          />
-          <span className="text-[9px] text-muted">%</span>
-        </div>
-        <button
-          onClick={commit}
-          className="px-2 py-0.5 text-[9px] bg-green-600 text-white rounded hover:bg-green-700"
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setEditing(null)}
         >
-          Set
-        </button>
-      </div>
+          <div
+            className="bg-surface-primary border border-default rounded-xl shadow-2xl p-5 w-64 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <p className="text-sm font-semibold text-primary">{gp.name}</p>
+              <p className="text-[10px] text-faint mt-0.5">
+                Default monthly contribution
+              </p>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted w-4 shrink-0">$</span>
+                <input
+                  type="number"
+                  autoFocus={editing === "dollar"}
+                  value={dollarValue}
+                  onChange={(e) => handleDollarChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commit();
+                    if (e.key === "Escape") setEditing(null);
+                  }}
+                  className={inputCls}
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-4 shrink-0" />
+                <div className="flex-1 flex items-center gap-2">
+                  <div className="flex-1 border-t border-subtle/40" />
+                  <span className="text-[10px] text-faint/60">or</span>
+                  <div className="flex-1 border-t border-subtle/40" />
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted w-4 shrink-0">%</span>
+                <input
+                  type="number"
+                  autoFocus={editing === "percent"}
+                  value={percentValue}
+                  onChange={(e) => handlePercentChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commit();
+                    if (e.key === "Escape") setEditing(null);
+                  }}
+                  step="0.1"
+                  className={inputCls}
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setEditing(null)}
+                className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-default text-muted hover:text-primary transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={commit}
+                className="flex-1 px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
     );
   }
 
-  if (isFunded) {
+  // $0 and not funded → dash placeholder
+  if (gp.monthlyAllocation === 0 && !isFunded) {
     return (
-      <div className="flex flex-col items-center">
-        <span className="text-[10px] text-green-600 font-semibold">
-          ✓ Funded
-        </span>
-        <span className="text-[9px] text-faint">$0/mo needed</span>
-      </div>
+      <button
+        onClick={canEdit !== false ? startEditDollar : undefined}
+        className={`tabular-nums text-faint text-xs rounded transition-colors ${
+          canEdit !== false
+            ? "cursor-pointer hover:bg-surface-elevated/60 px-1"
+            : ""
+        }`}
+        title="Click to set default monthly contribution"
+      >
+        —
+      </button>
+    );
+  }
+
+  // $0 but funded → funded badge only
+  if (gp.monthlyAllocation === 0 && isFunded) {
+    return (
+      <button
+        onClick={canEdit !== false ? startEditDollar : undefined}
+        className={`text-[10px] text-green-600/70 rounded transition-colors ${
+          canEdit !== false
+            ? "cursor-pointer hover:bg-surface-elevated/60 px-1"
+            : ""
+        }`}
+        title="Funded — click to set a contribution anyway"
+      >
+        ✓ funded
+      </button>
     );
   }
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex items-center justify-center gap-1 whitespace-nowrap">
       <button
         onClick={canEdit !== false ? startEditDollar : undefined}
-        className={`tabular-nums font-semibold text-green-600 text-xs ${
-          canEdit !== false ? "cursor-pointer hover:text-green-700" : ""
+        className={`tabular-nums font-semibold text-green-600 text-xs rounded transition-colors ${
+          canEdit !== false
+            ? "cursor-pointer hover:bg-surface-elevated/60 px-1"
+            : ""
         }`}
         title="Click to change default monthly contribution"
       >
@@ -174,13 +240,16 @@ function DefaultContributionCell({
       </button>
       <button
         onClick={canEdit !== false ? startEditPercent : undefined}
-        className={`tabular-nums text-[10px] text-muted ${
-          canEdit !== false ? "cursor-pointer hover:text-secondary" : ""
+        className={`tabular-nums text-[10px] text-muted rounded transition-colors ${
+          canEdit !== false
+            ? "cursor-pointer hover:bg-surface-elevated/60 px-1"
+            : ""
         }`}
         title="Click to set by percentage of pool"
       >
-        {formatPercent(pct / 100)}
+        · {formatPercent(pct / 100)}
       </button>
+      {isFunded && <span className="text-[9px] text-green-600/70">✓</span>}
     </div>
   );
 }
@@ -198,50 +267,53 @@ export function ContributionGrid({
   onEditMonth,
   canEdit,
   ruleMonthKeys,
+  hiddenGoalIds,
 }: ContributionGridProps) {
   // Base pool for the default row (no annual growth applied)
   const pool = maxMonthlyFunding ?? totalMonthlyAllocation;
 
+  const visibleProjections = hiddenGoalIds
+    ? goalProjections.filter((gp) => !hiddenGoalIds.has(gp.goalId))
+    : goalProjections;
+  const hiddenProjections = hiddenGoalIds
+    ? goalProjections.filter((gp) => hiddenGoalIds.has(gp.goalId))
+    : [];
+
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-4 text-[11px] text-faint px-1">
-        <span className="flex items-center gap-1">
-          <span className="text-green-600 font-semibold">$0,000</span>
-          <span>= default monthly contribution (click to edit)</span>
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="text-blue-600 font-semibold">$0,000</span>
-          <span>= month override (click month to change)</span>
-        </span>
-        <span className="text-faint">
-          Contributions applied on the 1st of each month.
-        </span>
-      </div>
       <div className="overflow-auto max-h-[480px] rounded-lg border">
-        <table className="w-full text-xs border-collapse">
-          <thead className="sticky top-0 z-10">
-            {/* Row 1: column headers — Month | fund names | Allocated */}
+        <table className="w-full text-xs border-separate border-spacing-0">
+          <thead>
+            {/* Row 1: column headers — Month | fund names | hidden agg | Allocated */}
             <tr className="bg-surface-sunken border-b">
-              <th className="sticky left-0 z-20 bg-surface-sunken text-left px-3 py-2 font-medium text-muted whitespace-nowrap border-r text-xs">
+              <th className="sticky top-0 left-0 z-20 bg-surface-sunken text-left px-3 py-2 font-medium text-muted whitespace-nowrap border-r text-xs">
                 Month
               </th>
-              {goalProjections.map((gp, i) => (
-                <th
-                  key={gp.goalId}
-                  className="text-center px-2 py-2 font-medium text-xs whitespace-nowrap min-w-[110px]"
-                >
-                  <span className="inline-flex items-center gap-1.5 justify-center">
-                    <span
-                      className="inline-block w-2 h-2 rounded-full shrink-0"
-                      style={{
-                        backgroundColor: FUND_COLORS[i % FUND_COLORS.length],
-                      }}
-                    />
-                    <span className="text-muted">{gp.name}</span>
-                  </span>
+              {visibleProjections.map((gp) => {
+                const i = goalProjections.indexOf(gp);
+                return (
+                  <th
+                    key={gp.goalId}
+                    className="sticky top-0 z-10 bg-surface-sunken text-center px-2 py-2 font-medium text-xs whitespace-nowrap min-w-[110px]"
+                  >
+                    <span className="inline-flex items-center gap-1.5 justify-center">
+                      <span
+                        className="inline-block w-2 h-2 rounded-full shrink-0"
+                        style={{
+                          backgroundColor: FUND_COLORS[i % FUND_COLORS.length],
+                        }}
+                      />
+                      <span className="text-muted">{gp.name}</span>
+                    </span>
+                  </th>
+                );
+              })}
+              {hiddenProjections.length > 0 && (
+                <th className="sticky top-0 z-10 bg-surface-sunken text-center px-2 py-2 font-medium text-[10px] text-faint/60 whitespace-nowrap min-w-[90px]">
+                  {hiddenProjections.length} hidden
                 </th>
-              ))}
-              <th className="text-center px-2 py-2 font-medium text-[10px] text-muted whitespace-nowrap min-w-[80px]">
+              )}
+              <th className="sticky top-0 z-10 bg-surface-sunken text-center px-2 py-2 font-medium text-[10px] text-muted whitespace-nowrap min-w-[80px]">
                 Allocated
               </th>
             </tr>
@@ -251,8 +323,11 @@ export function ContributionGrid({
               <td className="sticky left-0 z-10 bg-surface-elevated px-3 py-2 text-xs font-semibold text-green-500 border-r whitespace-nowrap">
                 Default /mo
               </td>
-              {goalProjections.map((gp) => (
-                <td key={gp.goalId} className="text-center px-2 py-1.5">
+              {visibleProjections.map((gp) => (
+                <td
+                  key={gp.goalId}
+                  className="bg-surface-elevated text-center px-2 py-1.5"
+                >
                   <DefaultContributionCell
                     gp={gp}
                     pool={pool}
@@ -262,7 +337,17 @@ export function ContributionGrid({
                   />
                 </td>
               ))}
-              <td className="text-center px-2 py-1.5 text-[10px] text-muted tabular-nums">
+              {hiddenProjections.length > 0 && (
+                <td className="text-center px-2 py-1.5 text-[10px] text-faint/50 tabular-nums bg-surface-sunken/40">
+                  {formatCurrency(
+                    hiddenProjections.reduce(
+                      (s, gp) => s + gp.monthlyAllocation,
+                      0,
+                    ),
+                  )}
+                </td>
+              )}
+              <td className="bg-surface-elevated text-center px-2 py-1.5 text-[10px] text-muted tabular-nums">
                 {formatCurrency(pool)}
               </td>
             </tr>
@@ -272,7 +357,11 @@ export function ContributionGrid({
             {monthDates.map((date, rowIdx) => {
               const mk = monthKey(date);
               const monthPool = monthlyPools[rowIdx]!;
-              const monthTotal = goalProjections.reduce(
+              const monthTotal = visibleProjections.reduce(
+                (s, gp) => s + (gp.monthlyAllocations[rowIdx] ?? 0),
+                0,
+              );
+              const hiddenTotal = hiddenProjections.reduce(
                 (s, gp) => s + (gp.monthlyAllocations[rowIdx] ?? 0),
                 0,
               );
@@ -292,9 +381,9 @@ export function ContributionGrid({
                       onClick={
                         canEdit !== false ? () => onEditMonth(date) : undefined
                       }
-                      className={`text-xs text-muted tabular-nums ${
+                      className={`text-xs text-muted tabular-nums rounded transition-colors ${
                         canEdit !== false
-                          ? "hover:text-blue-600 cursor-pointer"
+                          ? "hover:bg-surface-elevated/60 cursor-pointer px-1 -mx-1"
                           : ""
                       }`}
                       title={
@@ -313,7 +402,7 @@ export function ContributionGrid({
                   </td>
 
                   {/* Per-fund allocation cells */}
-                  {goalProjections.map((gp) => {
+                  {visibleProjections.map((gp) => {
                     const allocation = gp.monthlyAllocations[rowIdx] ?? 0;
                     const isOverride = gp.hasOverride[rowIdx];
                     const balance = gp.balances[rowIdx] ?? 0;
@@ -332,9 +421,9 @@ export function ContributionGrid({
                               ? () => onEditMonth(date)
                               : undefined
                           }
-                          className={`tabular-nums text-[11px] ${
+                          className={`tabular-nums text-[11px] rounded transition-colors ${
                             canEdit !== false
-                              ? "cursor-pointer hover:text-blue-700"
+                              ? "cursor-pointer hover:bg-surface-elevated/60 px-0.5"
                               : ""
                           } ${
                             isOverride
@@ -349,15 +438,24 @@ export function ContributionGrid({
                     );
                   })}
 
+                  {/* Hidden funds aggregate cell */}
+                  {hiddenProjections.length > 0 && (
+                    <td className="text-center py-1.5 px-2 bg-surface-sunken/40">
+                      <span className="tabular-nums text-[11px] text-faint/50">
+                        {formatCurrency(hiddenTotal)}
+                      </span>
+                    </td>
+                  )}
+
                   {/* Allocated column — total allocated this month, clickable to edit */}
                   <td className="text-center py-1.5 px-2">
                     <button
                       onClick={
                         canEdit !== false ? () => onEditMonth(date) : undefined
                       }
-                      className={`tabular-nums text-[10px] ${
+                      className={`tabular-nums text-[10px] rounded transition-colors ${
                         canEdit !== false
-                          ? "cursor-pointer hover:text-blue-700"
+                          ? "cursor-pointer hover:bg-surface-elevated/60 px-0.5"
                           : ""
                       } ${isOverAllocated ? "text-red-600 font-semibold" : "text-faint"}`}
                       title={

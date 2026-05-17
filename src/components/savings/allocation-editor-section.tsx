@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
 import { ContributionGrid } from "./contribution-grid";
 import { MonthOverrideModal } from "./month-override-modal";
-import { PctAllocator } from "./pct-allocator";
 import type { GoalProjection } from "./types";
 
 type YearlyGrowthEntry = { type: "pct" | "dollar"; value: number };
@@ -13,7 +12,7 @@ type YearlyGrowth = Record<number, YearlyGrowthEntry>;
 
 /* ── Per-year growth editor (moved from BudgetCapacityBar) ── */
 
-function YearlyGrowthEditor({
+export function YearlyGrowthEditor({
   projectionYears,
   yearlyGrowth,
   setYearlyGrowth,
@@ -122,7 +121,7 @@ function YearlyGrowthEditor({
                     e.target.value === "" ? 0 : Number(e.target.value);
                   updateEntry(yr, { value: val });
                 }}
-                className="w-16 border bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs text-right tabular-nums"
+                className="w-16 border border-default bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
               {(!entry || entry.type === "pct") && (
                 <span className="text-[10px] text-muted">%</span>
@@ -170,110 +169,6 @@ function YearlyGrowthEditor({
   );
 }
 
-/* ── Edit Allocations tools header (growth + % allocator toggles) ── */
-
-function EditTools({
-  projectionYears,
-  yearlyGrowth,
-  setYearlyGrowth,
-  basePool,
-  goalProjections,
-  onGoalUpdate,
-}: {
-  projectionYears: number;
-  yearlyGrowth: YearlyGrowth;
-  setYearlyGrowth: (g: YearlyGrowth) => void;
-  basePool: number;
-  goalProjections: GoalProjection[];
-  onGoalUpdate: (goalId: number, field: string, value: string) => void;
-}) {
-  const [showGrowth, setShowGrowth] = useState(false);
-  const [showPctAllocator, setShowPctAllocator] = useState(false);
-  const growthCount = Object.values(yearlyGrowth).filter(
-    (e) => e.value !== 0,
-  ).length;
-
-  return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          onClick={() => {
-            setShowGrowth(!showGrowth);
-            if (showPctAllocator) setShowPctAllocator(false);
-          }}
-          className={`px-2 py-0.5 text-xs rounded flex items-center gap-1 ${
-            showGrowth
-              ? "bg-blue-600 text-white"
-              : "bg-surface-elevated text-faint hover:bg-surface-strong"
-          }`}
-        >
-          Annual Growth
-          {growthCount > 0 && (
-            <span className="bg-blue-500 text-white text-[9px] rounded-full px-1">
-              {growthCount}
-            </span>
-          )}
-        </button>
-
-        <button
-          onClick={() => {
-            setShowPctAllocator(!showPctAllocator);
-            if (showGrowth) setShowGrowth(false);
-          }}
-          className={`px-2 py-0.5 text-xs rounded ${
-            showPctAllocator
-              ? "bg-blue-600 text-white"
-              : "bg-surface-elevated text-faint hover:bg-surface-strong"
-          }`}
-        >
-          % Allocator
-        </button>
-      </div>
-
-      {showGrowth && (
-        <div className="bg-surface-elevated/30 rounded-lg p-3">
-          <YearlyGrowthEditor
-            projectionYears={projectionYears}
-            yearlyGrowth={yearlyGrowth}
-            setYearlyGrowth={setYearlyGrowth}
-            basePool={basePool}
-          />
-        </div>
-      )}
-
-      {showPctAllocator && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium text-blue-300">
-              Percentage Allocator &mdash; set a total pool and distribute by %
-            </p>
-            <button
-              onClick={() => setShowPctAllocator(false)}
-              className="text-xs text-muted hover:text-faint"
-            >
-              Close
-            </button>
-          </div>
-          <PctAllocator
-            goals={goalProjections}
-            defaultPool={basePool}
-            onApply={(allocations) => {
-              for (const { goalId, amount } of allocations) {
-                onGoalUpdate(
-                  goalId,
-                  "monthlyContribution",
-                  String(Math.round(amount)),
-                );
-              }
-              setShowPctAllocator(false);
-            }}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ── Main AllocationEditorSection ── */
 
 export interface AllocationEditorSectionProps {
@@ -287,12 +182,9 @@ export interface AllocationEditorSectionProps {
   onGoalUpdateMulti: (goalId: number, fields: Record<string, string>) => void;
   editingMonth: Date | null;
   setEditingMonth: (d: Date | null) => void;
-  // Growth / allocator tools (moved from BudgetCapacityBar)
-  projectionYears: number;
-  yearlyGrowth: YearlyGrowth;
-  setYearlyGrowth: (g: YearlyGrowth) => void;
   /** Set of "YYYY-MM" keys for months that have rule-sourced overrides. */
   ruleMonthKeys?: Set<string>;
+  hiddenGoalIds?: Set<number>;
 }
 
 export function AllocationEditorSection({
@@ -306,10 +198,8 @@ export function AllocationEditorSection({
   onGoalUpdateMulti,
   editingMonth,
   setEditingMonth,
-  projectionYears,
-  yearlyGrowth,
-  setYearlyGrowth,
   ruleMonthKeys,
+  hiddenGoalIds,
 }: AllocationEditorSectionProps) {
   const utils = trpc.useUtils();
   const basePool = maxMonthlyFunding ?? totalMonthlyAllocation;
@@ -328,16 +218,6 @@ export function AllocationEditorSection({
 
   return (
     <>
-      {/* Growth + allocator tools */}
-      <EditTools
-        projectionYears={projectionYears}
-        yearlyGrowth={yearlyGrowth}
-        setYearlyGrowth={setYearlyGrowth}
-        basePool={basePool}
-        goalProjections={goalProjections}
-        onGoalUpdate={onGoalUpdate}
-      />
-
       {goalProjections.length > 0 && (
         <ContributionGrid
           goalProjections={goalProjections}
@@ -350,6 +230,7 @@ export function AllocationEditorSection({
           onEditMonth={setEditingMonth}
           canEdit={canEdit}
           ruleMonthKeys={ruleMonthKeys}
+          hiddenGoalIds={hiddenGoalIds}
         />
       )}
 
