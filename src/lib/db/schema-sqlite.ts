@@ -42,8 +42,31 @@ export type ExtraPaycheckRule = {
   to: string | null;
   /** How to split the check across goals; pct values must sum to 100. */
   splits: { goalId: number; pct: number }[];
-  /** Net-pay-per-check snapshot at the time the rule was saved, used for dollar conversion. */
-  netPaySnapshot: number;
+  /**
+   * @deprecated Use ExtraPaycheckRoutingData.baseNetPayPerCheck + yearlyGrowth instead.
+   * Kept for backward-compat fallback when routing-level base is absent.
+   */
+  netPaySnapshot?: number;
+};
+
+/** A one-time per-month override that takes precedence over the matching rule. */
+export type ExtraPaycheckOverride = {
+  /** "YYYY-MM" — the specific extra-paycheck month this override applies to. */
+  month: string;
+  /** Override splits; pct values must sum to 100. */
+  splits: { goalId: number; pct: number }[];
+};
+
+/** Per-year growth entry for projecting future extra-paycheck net pay. */
+export type YearlyGrowthEntry = { type: "pct" | "dollar"; value: number };
+
+/** Top-level shape stored in jobs.extra_paycheck_routing. */
+export type ExtraPaycheckRoutingData = {
+  rules: ExtraPaycheckRule[];
+  overrides?: ExtraPaycheckOverride[];
+  baseNetPayPerCheck?: number;
+  baseYear?: number;
+  yearlyGrowth?: Record<string, YearlyGrowthEntry>;
 };
 
 // ============================================================================
@@ -138,7 +161,7 @@ export const jobs = sqliteTable(
     budgetPeriodsPerMonth: text("budget_periods_per_month"),
     extraPaycheckRouting: text("extra_paycheck_routing", {
       mode: "json",
-    }).$type<ExtraPaycheckRule[] | null>(),
+    }).$type<ExtraPaycheckRoutingData | null>(),
   },
   (table) => [index("jobs_person_id_idx").on(table.personId)],
 );
@@ -387,8 +410,12 @@ export const savingsPlannedTransactions = sqliteTable(
       .default(false),
     recurrenceMonths: integer("recurrence_months"), // if recurring, repeat every N months
     transferPairId: text("transfer_pair_id"), // non-null + shared between two rows = a transfer pair
+    source: text("source").notNull().default("manual"), // 'manual' | 'rule'
   },
-  (table) => [index("savings_planned_tx_goal_id_idx").on(table.goalId)],
+  (table) => [
+    index("savings_planned_tx_goal_id_idx").on(table.goalId),
+    index("savings_planned_tx_source_idx").on(table.source),
+  ],
 );
 
 // Per-month allocation overrides for sinking fund projections.

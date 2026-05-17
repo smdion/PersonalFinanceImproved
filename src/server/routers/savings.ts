@@ -1,5 +1,5 @@
 /** Savings router for savings goals, emergency fund calculations, planned transactions, and budget API expense integration. */
-import { eq, asc, sql, lt, isNull } from "drizzle-orm";
+import { eq, asc, sql, lt, isNull, and } from "drizzle-orm";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import {
@@ -285,6 +285,7 @@ export const savingsRouter = createTRPCRouter({
         isRecurring: t.isRecurring,
         recurrenceMonths: t.recurrenceMonths,
         transferPairId: t.transferPairId,
+        source: t.source ?? "manual",
       }));
 
       // Transform allocation overrides for the client
@@ -324,21 +325,53 @@ export const savingsRouter = createTRPCRouter({
           .object({ id: z.number().int() })
           .extend(plannedTransactionInput.shape),
       )
-      .mutation(({ ctx, input: { id, ...data } }) =>
-        ctx.db
+      .mutation(async ({ ctx, input: { id, ...data } }) => {
+        const [row] = await ctx.db
+          .select({ source: schema.savingsPlannedTransactions.source })
+          .from(schema.savingsPlannedTransactions)
+          .where(eq(schema.savingsPlannedTransactions.id, id));
+        if (row?.source === "rule") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "Auto-generated transactions cannot be edited. Manage them via the Extra Paychecks tab.",
+          });
+        }
+        return ctx.db
           .update(schema.savingsPlannedTransactions)
           .set(data)
-          .where(eq(schema.savingsPlannedTransactions.id, id))
+          .where(
+            and(
+              eq(schema.savingsPlannedTransactions.id, id),
+              eq(schema.savingsPlannedTransactions.source, "manual"),
+            ),
+          )
           .returning()
-          .then((r) => r[0]),
-      ),
+          .then((r) => r[0]);
+      }),
     delete: savingsProcedure
       .input(z.object({ id: z.number().int() }))
-      .mutation(({ ctx, input }) =>
-        ctx.db
+      .mutation(async ({ ctx, input }) => {
+        const [row] = await ctx.db
+          .select({ source: schema.savingsPlannedTransactions.source })
+          .from(schema.savingsPlannedTransactions)
+          .where(eq(schema.savingsPlannedTransactions.id, input.id));
+        if (row?.source === "rule") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "Auto-generated transactions cannot be deleted. Manage them via the Extra Paychecks tab.",
+          });
+        }
+        return ctx.db
           .delete(schema.savingsPlannedTransactions)
-          .where(eq(schema.savingsPlannedTransactions.id, input.id)),
-      ),
+          .where(
+            and(
+              eq(schema.savingsPlannedTransactions.id, input.id),
+              eq(schema.savingsPlannedTransactions.source, "manual"),
+            ),
+          );
+      }),
   }),
 
   // ══ ALLOCATION OVERRIDES ══
@@ -1030,7 +1063,7 @@ export const savingsRouter = createTRPCRouter({
       }));
     }),
 
-    /** Save routing rules for a single job and re-materialize overrides. */
+    /** Save routing rules for a single job and re-materialize. Preserves existing overrides and growth settings. */
     save: savingsProcedure
       .input(
         z.object({
@@ -1048,9 +1081,17 @@ export const savingsRouter = createTRPCRouter({
                   pct: z.number().min(0).max(100),
                 }),
               ),
-              netPaySnapshot: z.number().positive(),
             }),
           ),
+          /** Net pay per check from the live paycheck calculator at save time. */
+          baseNetPayPerCheck: z.number().positive().optional(),
+          /** Per-year growth rates; keyed by year string e.g. "2027". */
+          yearlyGrowth: z
+            .record(
+              z.string(),
+              z.object({ type: z.enum(["pct", "dollar"]), value: z.number() }),
+            )
+            .optional(),
         }),
       )
       .mutation(async ({ ctx, input }) => {
@@ -1079,11 +1120,139 @@ export const savingsRouter = createTRPCRouter({
           }
         }
 
+        // Preserve existing overrides and growth settings when saving rules
+        const [existingJob] = await ctx.db
+          .select({ extraPaycheckRouting: schema.jobs.extraPaycheckRouting })
+          .from(schema.jobs)
+          .where(eq(schema.jobs.id, input.jobId));
+        const existing = existingJob?.extraPaycheckRouting;
+        const existingOverrides = existing?.overrides ?? [];
+
+        const nowYear = new Date().getFullYear();
         await ctx.db
           .update(schema.jobs)
           .set({
-            extraPaycheckRouting: input.rules.length > 0 ? input.rules : null,
+            extraPaycheckRouting:
+              input.rules.length > 0
+                ? {
+                    rules: input.rules,
+                    overrides: existingOverrides,
+                    // Update base if provided; otherwise preserve whatever was stored
+                    baseNetPayPerCheck:
+                      input.baseNetPayPerCheck ?? existing?.baseNetPayPerCheck,
+                    baseYear:
+                      input.baseNetPayPerCheck !== undefined
+                        ? nowYear
+                        : existing?.baseYear,
+                    yearlyGrowth:
+                      input.yearlyGrowth !== undefined
+                        ? input.yearlyGrowth
+                        : existing?.yearlyGrowth,
+                  }
+                : null,
           })
+          .where(eq(schema.jobs.id, input.jobId));
+
+        await materializeExtraPaycheckOverrides(ctx.db);
+        return { ok: true };
+      }),
+
+    /** Persist net-pay base and growth rates for a job, then re-materialize. */
+    saveGrowth: savingsProcedure
+      .input(
+        z.object({
+          jobId: z.number().int(),
+          baseNetPayPerCheck: z.number().positive(),
+          yearlyGrowth: z.record(
+            z.string(),
+            z.object({ type: z.enum(["pct", "dollar"]), value: z.number() }),
+          ),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        const [existingJob] = await ctx.db
+          .select({ extraPaycheckRouting: schema.jobs.extraPaycheckRouting })
+          .from(schema.jobs)
+          .where(eq(schema.jobs.id, input.jobId));
+        if (!existingJob?.extraPaycheckRouting) return { ok: true };
+
+        const nowYear = new Date().getFullYear();
+        await ctx.db
+          .update(schema.jobs)
+          .set({
+            extraPaycheckRouting: {
+              ...existingJob.extraPaycheckRouting,
+              baseNetPayPerCheck: input.baseNetPayPerCheck,
+              baseYear: nowYear,
+              yearlyGrowth: input.yearlyGrowth,
+            },
+          })
+          .where(eq(schema.jobs.id, input.jobId));
+
+        await materializeExtraPaycheckOverrides(ctx.db);
+        return { ok: true };
+      }),
+
+    /** Upsert or delete a one-time override for a specific extra-paycheck month. */
+    saveOverride: savingsProcedure
+      .input(
+        z.object({
+          jobId: z.number().int(),
+          month: z.string().regex(/^\d{4}-\d{2}$/),
+          splits: z
+            .array(
+              z.object({
+                goalId: z.number().int(),
+                pct: z.number().min(0).max(100),
+              }),
+            )
+            .nullable(), // null = delete the override
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        if (input.splits !== null) {
+          const total = input.splits.reduce((s, sp) => s + sp.pct, 0);
+          if (Math.abs(total - 100) > 0.01) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Override splits must sum to 100% (got ${total.toFixed(1)}%)`,
+            });
+          }
+        }
+
+        const [job] = await ctx.db
+          .select({ extraPaycheckRouting: schema.jobs.extraPaycheckRouting })
+          .from(schema.jobs)
+          .where(eq(schema.jobs.id, input.jobId));
+        if (!job?.extraPaycheckRouting) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "No routing rules for this job",
+          });
+        }
+
+        const routing = job.extraPaycheckRouting;
+        let overrides = routing.overrides ?? [];
+
+        if (input.splits === null) {
+          overrides = overrides.filter((o) => o.month !== input.month);
+        } else {
+          const exists = overrides.some((o) => o.month === input.month);
+          if (exists) {
+            overrides = overrides.map((o) =>
+              o.month === input.month ? { ...o, splits: input.splits! } : o,
+            );
+          } else {
+            overrides = [
+              ...overrides,
+              { month: input.month, splits: input.splits },
+            ];
+          }
+        }
+
+        await ctx.db
+          .update(schema.jobs)
+          .set({ extraPaycheckRouting: { ...routing, overrides } })
           .where(eq(schema.jobs.id, input.jobId));
 
         await materializeExtraPaycheckOverrides(ctx.db);
