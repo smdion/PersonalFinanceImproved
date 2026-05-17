@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import { Lock, LockOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
@@ -17,6 +18,7 @@ interface PlannedTransaction {
   isRecurring: boolean;
   recurrenceMonths: number | null;
   transferPairId?: string | null;
+  source?: string;
 }
 
 interface EditForm {
@@ -73,6 +75,10 @@ export function AllTransactionsTab({
   const [tableLocked, setTableLocked] = useLocalStorage<boolean>(
     "ledgr:savings:txLocked",
     true,
+  );
+  const [showRuleTx, setShowRuleTx] = useLocalStorage<boolean>(
+    "ledgr:savings:showRuleTx",
+    false,
   );
   const [addForm, setAddForm] = useState({
     ...defaultAddForm,
@@ -146,9 +152,11 @@ export function AllTransactionsTab({
 
   // Show all upcoming transactions including transfers (deduped: only show one leg per pair)
   // Clipped to the projection window end date when provided.
+  // Rule-generated rows hidden by default unless showRuleTx is on.
   const seenPairs = new Set<string>();
   const upcoming = plannedTransactions
     .filter((tx) => {
+      if (tx.source === "rule" && !showRuleTx) return false;
       const date = new Date(tx.transactionDate + "T00:00:00");
       if (!tx.isRecurring && date < today) return false;
       if (projectionEndDate && !tx.isRecurring && date > projectionEndDate)
@@ -179,6 +187,7 @@ export function AllTransactionsTab({
       ? []
       : plannedTransactions
           .filter((tx) => {
+            if (tx.source === "rule" && !showRuleTx) return false;
             if (tx.isRecurring) return false;
             const date = new Date(tx.transactionDate + "T00:00:00");
             if (date >= today) return false;
@@ -350,7 +359,7 @@ export function AllTransactionsTab({
                         goalId: Number(e.target.value),
                       })
                     }
-                    className="w-full border bg-surface-primary text-primary rounded px-2 py-1 text-xs"
+                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
                     {goalProjections.map((gp) => (
                       <option key={gp.goalId} value={gp.goalId}>
@@ -374,7 +383,7 @@ export function AllTransactionsTab({
                         transactionDate: e.target.value,
                       })
                     }
-                    className="w-full border bg-surface-primary text-primary rounded px-2 py-1 text-xs"
+                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
 
@@ -408,7 +417,7 @@ export function AllTransactionsTab({
                       onChange={(e) =>
                         setAddForm({ ...addForm, amount: e.target.value })
                       }
-                      className="flex-1 border bg-surface-primary text-primary rounded px-2 py-1 text-xs"
+                      className="flex-1 border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -432,7 +441,7 @@ export function AllTransactionsTab({
                       if (e.key === "Enter") commitAdd();
                       if (e.key === "Escape") cancelAdd();
                     }}
-                    className="w-full border bg-surface-primary text-primary rounded px-2 py-1 text-xs"
+                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
 
@@ -464,7 +473,7 @@ export function AllTransactionsTab({
                             recurrenceMonths: Number(e.target.value),
                           })
                         }
-                        className="w-12 border bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs text-center"
+                        className="w-12 border border-default rounded px-1.5 py-0.5 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 text-center"
                       />
                       <span>months</span>
                     </div>
@@ -473,19 +482,17 @@ export function AllTransactionsTab({
               </div>
 
               <div className="flex gap-2 pt-1">
-                <button
+                <Button
+                  variant="primary"
+                  size="sm"
                   onClick={commitAdd}
                   disabled={createTx.isPending}
-                  className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50"
                 >
                   {createTx.isPending ? "Adding…" : "Add"}
-                </button>
-                <button
-                  onClick={cancelAdd}
-                  className="px-3 py-1 text-xs text-muted hover:text-primary"
-                >
+                </Button>
+                <Button variant="ghost" size="sm" onClick={cancelAdd}>
                   Cancel
-                </button>
+                </Button>
               </div>
             </>
           ) : (
@@ -508,7 +515,7 @@ export function AllTransactionsTab({
                             : transferForm.toGoalId,
                       })
                     }
-                    className="w-full border bg-surface-primary text-primary rounded px-2 py-1 text-xs"
+                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
                     <option value={0}>Select fund…</option>
                     {goalProjections.map((gp) => (
@@ -532,7 +539,7 @@ export function AllTransactionsTab({
                         toGoalId: Number(e.target.value),
                       })
                     }
-                    className="w-full border bg-surface-primary text-primary rounded px-2 py-1 text-xs"
+                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
                     <option value={0}>Select fund…</option>
                     {toGoalOptions.map((gp) => (
@@ -560,7 +567,7 @@ export function AllTransactionsTab({
                         amount: e.target.value,
                       })
                     }
-                    className="w-full border bg-surface-primary text-primary rounded px-2 py-1 text-xs"
+                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
 
@@ -578,7 +585,7 @@ export function AllTransactionsTab({
                         transactionDate: e.target.value,
                       })
                     }
-                    className="w-full border bg-surface-primary text-primary rounded px-2 py-1 text-xs"
+                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
 
@@ -601,7 +608,7 @@ export function AllTransactionsTab({
                       if (e.key === "Enter") commitTransfer();
                       if (e.key === "Escape") cancelAdd();
                     }}
-                    className="w-full border bg-surface-primary text-primary rounded px-2 py-1 text-xs"
+                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
 
@@ -633,7 +640,7 @@ export function AllTransactionsTab({
                             recurrenceMonths: Number(e.target.value),
                           })
                         }
-                        className="w-12 border bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs text-center"
+                        className="w-12 border border-default rounded px-1.5 py-0.5 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 text-center"
                       />
                       <span>months</span>
                     </div>
@@ -657,19 +664,17 @@ export function AllTransactionsTab({
                 )}
 
               <div className="flex gap-2 pt-1">
-                <button
+                <Button
+                  variant="primary"
+                  size="sm"
                   onClick={commitTransfer}
                   disabled={createTransfer.isPending}
-                  className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50"
                 >
                   {createTransfer.isPending ? "Adding…" : "Add Transfer"}
-                </button>
-                <button
-                  onClick={cancelAdd}
-                  className="px-3 py-1 text-xs text-muted hover:text-primary"
-                >
+                </Button>
+                <Button variant="ghost" size="sm" onClick={cancelAdd}>
                   Cancel
-                </button>
+                </Button>
               </div>
             </>
           )}
@@ -685,6 +690,23 @@ export function AllTransactionsTab({
               className="px-2.5 py-1 text-[11px] bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong rounded border"
             >
               + Add transaction
+            </button>
+          )}
+          {plannedTransactions.some((tx) => tx.source === "rule") && (
+            <button
+              onClick={() => setShowRuleTx(!showRuleTx)}
+              className={`px-2 py-0.5 text-[11px] rounded border transition-colors ${
+                showRuleTx
+                  ? "border-blue-400 text-blue-600 bg-blue-50 dark:bg-blue-950/20"
+                  : "border-surface-strong text-faint hover:text-primary"
+              }`}
+              title={
+                showRuleTx
+                  ? "Hide extra paycheck transactions"
+                  : "Show extra paycheck transactions"
+              }
+            >
+              {showRuleTx ? "Hide" : "Show"} extra paychecks
             </button>
           )}
         </div>
@@ -886,8 +908,12 @@ export function AllTransactionsTab({
                     : (otherLeg ?? tx)
                   : null;
 
+                const isRuleRow = tx.source === "rule";
                 const editable =
-                  !tableLocked && !isTransfer && canEdit !== false;
+                  !tableLocked &&
+                  !isTransfer &&
+                  !isRuleRow &&
+                  canEdit !== false;
                 const handlers = makeInputHandlers(tx);
 
                 return (
@@ -923,7 +949,7 @@ export function AllTransactionsTab({
                             }
                             onBlur={handlers.onBlur}
                             onKeyDown={handlers.onKeyDown}
-                            className="border bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs"
+                            className="border border-default bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                           >
                             {goalProjections.map((gp) => (
                               <option key={gp.goalId} value={gp.goalId}>
@@ -993,7 +1019,7 @@ export function AllTransactionsTab({
                           }
                           onBlur={handlers.onBlur}
                           onKeyDown={handlers.onKeyDown}
-                          className="border bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs"
+                          className="border border-default bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
                       ) : (
                         formatDate(
@@ -1025,13 +1051,18 @@ export function AllTransactionsTab({
                           }
                           onBlur={handlers.onBlur}
                           onKeyDown={handlers.onKeyDown}
-                          className="w-full border bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs"
+                          className="w-full border border-default bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
                       ) : (
                         <>
                           {isTransfer && (
                             <span className="inline-block text-[9px] font-medium text-blue-500 bg-blue-50 dark:bg-blue-950/30 rounded px-1 mr-1.5">
                               transfer
+                            </span>
+                          )}
+                          {isRuleRow && (
+                            <span className="inline-block text-[9px] font-medium text-purple-500 bg-purple-50 dark:bg-purple-950/30 rounded px-1 mr-1.5">
+                              extra paycheck
                             </span>
                           )}
                           {tx.description}
@@ -1064,7 +1095,7 @@ export function AllTransactionsTab({
                           }
                           onBlur={handlers.onBlur}
                           onKeyDown={handlers.onKeyDown}
-                          className="w-24 border bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs text-right"
+                          className="w-24 border border-default bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
                       ) : isTransfer ? (
                         formatCurrency(Math.abs(tx.amount))
@@ -1087,7 +1118,7 @@ export function AllTransactionsTab({
                     {/* Actions */}
                     {canEdit !== false && (
                       <td className="px-3 py-2">
-                        {!tableLocked && (
+                        {!tableLocked && !isRuleRow && (
                           <button
                             onClick={() =>
                               isTransfer && tx.transferPairId
@@ -1099,7 +1130,7 @@ export function AllTransactionsTab({
                             disabled={
                               deleteTx.isPending || deleteTransfer.isPending
                             }
-                            className="text-[10px] text-muted hover:text-red-600 disabled:opacity-50"
+                            className="text-xs text-faint hover:text-red-600 transition-colors disabled:opacity-50"
                           >
                             ×
                           </button>
