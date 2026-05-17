@@ -268,24 +268,16 @@ export function FundManagementSection({
             raw.apiCategoryId
           ) {
             const newAmount = parseFloat(value) || 0;
-            const currentBudgeted = apiBalanceMap.get(raw.id)?.budgeted ?? 0;
+            const currentGoalTarget =
+              apiBalanceMap.get(raw.id)?.goalTarget ?? 0;
             const items: PushPreviewItem[] = [
               {
                 name: raw.name,
-                field: "Budgeted (current + next month)",
-                currentYnab: currentBudgeted,
+                field: "Monthly Goal Target",
+                currentYnab: currentGoalTarget,
                 newValue: newAmount,
               },
             ];
-            const target = parseFloat(raw.targetAmount ?? "0") || 0;
-            if (target > 0) {
-              items.push({
-                name: raw.name,
-                field: "Goal Target",
-                currentYnab: target,
-                newValue: target,
-              });
-            }
             onPushPreview(items, raw.id);
           }
         },
@@ -318,25 +310,16 @@ export function FundManagementSection({
             raw.apiCategoryId
           ) {
             const newAmount = parseFloat(fields.monthlyContribution!) || 0;
-            const currentBudgeted = apiBalanceMap.get(raw.id)?.budgeted ?? 0;
+            const currentGoalTarget =
+              apiBalanceMap.get(raw.id)?.goalTarget ?? 0;
             const items: PushPreviewItem[] = [
               {
                 name: raw.name,
-                field: "Budgeted (current + next month)",
-                currentYnab: currentBudgeted,
+                field: "Monthly Goal Target",
+                currentYnab: currentGoalTarget,
                 newValue: newAmount,
               },
             ];
-            const target =
-              parseFloat(fields.targetAmount ?? raw.targetAmount ?? "0") || 0;
-            if (target > 0) {
-              items.push({
-                name: raw.name,
-                field: "Goal Target",
-                currentYnab: target,
-                newValue: target,
-              });
-            }
             onPushPreview(items, raw.id);
           }
         },
@@ -413,6 +396,14 @@ export function FundManagementSection({
             Fund Details
           </h2>
           <div className="flex-1 border-t border-subtle/50" />
+          {canEdit && (
+            <button
+              onClick={() => _setShowNewFund(true)}
+              className="text-xs text-blue-600 hover:text-blue-700 font-medium shrink-0"
+            >
+              + New Fund
+            </button>
+          )}
         </div>
 
         {efund && (
