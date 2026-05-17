@@ -153,19 +153,27 @@ export function UpcomingGoals({
                   </span>
                 </div>
 
-                {/* Progress bar */}
-                {hasTarget && progress !== null && (
-                  <div className="h-1 rounded-full bg-surface-strong overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${progress * 100}%`,
-                        backgroundColor: color,
-                        opacity: 0.7,
-                      }}
-                    />
-                  </div>
-                )}
+                {/* Progress bar — only shown when working toward a target */}
+                {hasTarget &&
+                  progress !== null &&
+                  sg &&
+                  gp.current < sg.target && (
+                    <div className="relative h-1.5 rounded-full bg-surface-strong overflow-visible">
+                      <div
+                        className="absolute inset-y-0 left-0 rounded-full"
+                        style={{
+                          width: `${progress * 100}%`,
+                          backgroundColor: color,
+                          opacity: 0.7,
+                        }}
+                      />
+                      {/* Tick at right edge = target */}
+                      <div
+                        className="absolute top-1/2 -translate-y-1/2 w-0.5 h-3 rounded-full bg-white/30"
+                        style={{ left: "100%" }}
+                      />
+                    </div>
+                  )}
 
                 {/* Next expense — hero block */}
                 <div
