@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import { Lock, LockOpen } from "lucide-react";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
@@ -26,6 +27,8 @@ interface EditForm {
   isRecurring: boolean;
   recurrenceMonths: number;
 }
+
+type ActiveCellField = "goalId" | "transactionDate" | "description" | "amount";
 
 const defaultAddForm = {
   goalId: 0,
@@ -67,6 +70,10 @@ export function AllTransactionsTab({
   const [historyWindow, setHistoryWindow] = useLocalStorage<
     0 | 3 | 6 | 12 | "all"
   >("ledgr:savings:txHistoryWindow", 0);
+  const [tableLocked, setTableLocked] = useLocalStorage<boolean>(
+    "ledgr:savings:txLocked",
+    true,
+  );
   const [addForm, setAddForm] = useState({
     ...defaultAddForm,
     goalId: goalProjections[0]?.goalId ?? 0,
@@ -76,6 +83,13 @@ export function AllTransactionsTab({
     fromGoalId: goalProjections[0]?.goalId ?? 0,
   });
   const [editForm, setEditForm] = useState<EditForm | null>(null);
+  const [activeCell, setActiveCell] = useState<{
+    id: number;
+    field: ActiveCellField;
+  } | null>(null);
+
+  // Prevents double-mutation when Enter fires blur immediately after
+  const committingRef = useRef(false);
 
   const createTx = trpc.savings.plannedTransactions.create.useMutation({
     onSuccess: () => {
@@ -105,10 +119,16 @@ export function AllTransactionsTab({
     },
   });
   const deleteTx = trpc.savings.plannedTransactions.delete.useMutation({
-    onSuccess: () => utils.savings.invalidate(),
+    onSuccess: () => {
+      utils.savings.invalidate();
+      setActiveCell(null);
+    },
   });
   const deleteTransfer = trpc.savings.transfers.delete.useMutation({
-    onSuccess: () => utils.savings.invalidate(),
+    onSuccess: () => {
+      utils.savings.invalidate();
+      setActiveCell(null);
+    },
   });
 
   const fundColorMap = new Map(
@@ -183,10 +203,23 @@ export function AllTransactionsTab({
     });
   };
 
+  const activateCell = (tx: PlannedTransaction, field: ActiveCellField) => {
+    if (tableLocked) return;
+    // Initialize editForm for this row only when switching rows.
+    // Blur on the departing cell commits before activateCell fires on the new cell.
+    if (editingId !== tx.id) startEdit(tx);
+    setActiveCell({ id: tx.id, field });
+  };
+
   const commitEdit = (tx: PlannedTransaction) => {
     if (!editForm) return;
     const amt = parseFloat(editForm.amount);
-    if (isNaN(amt)) return;
+    if (isNaN(amt)) {
+      // Revert invalid amount and close without saving
+      setEditForm({ ...editForm, amount: String(Math.abs(tx.amount)) });
+      setActiveCell(null);
+      return;
+    }
     updateTx.mutate({
       id: tx.id,
       goalId: editForm.goalId,
@@ -244,6 +277,33 @@ export function AllTransactionsTab({
   const toGoalOptions = goalProjections.filter(
     (gp) => gp.goalId !== transferForm.fromGoalId,
   );
+
+  const isCellActive = (txId: number, field: ActiveCellField) =>
+    activeCell?.id === txId && activeCell.field === field;
+
+  // Shared blur/keydown handlers for inline inputs
+  const makeInputHandlers = (tx: PlannedTransaction) => ({
+    onBlur: () => {
+      if (committingRef.current) {
+        committingRef.current = false;
+        return;
+      }
+      commitEdit(tx);
+      setActiveCell(null);
+    },
+    onKeyDown: (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") {
+        committingRef.current = true;
+        commitEdit(tx);
+        setActiveCell(null);
+      }
+      if (e.key === "Escape") {
+        setEditingId(null);
+        setEditForm(null);
+        setActiveCell(null);
+      }
+    },
+  });
 
   return (
     <div className="space-y-3">
@@ -616,35 +676,51 @@ export function AllTransactionsTab({
         </div>
       )}
 
-      {/* Toolbar: add button + history selector */}
+      {/* Toolbar: add button + history selector + lock */}
       <div className="flex items-center justify-between gap-4 text-[11px] text-faint px-1">
-        {canEdit !== false && !adding ? (
-          <button
-            onClick={() => setAdding(true)}
-            className="px-2.5 py-1 text-[11px] bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong rounded border"
+        <div className="flex items-center gap-2">
+          {canEdit !== false && !adding && (
+            <button
+              onClick={() => setAdding(true)}
+              className="px-2.5 py-1 text-[11px] bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong rounded border"
+            >
+              + Add transaction
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            value={String(historyWindow)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setHistoryWindow(
+                v === "all" ? "all" : (Number(v) as 0 | 3 | 6 | 12),
+              );
+            }}
+            aria-label="History window"
+            className="text-[11px] border border-surface-strong rounded px-1.5 py-0.5 bg-surface-primary text-faint hover:text-primary"
           >
-            + Add transaction
-          </button>
-        ) : (
-          <span />
-        )}
-        <select
-          value={String(historyWindow)}
-          onChange={(e) => {
-            const v = e.target.value;
-            setHistoryWindow(
-              v === "all" ? "all" : (Number(v) as 0 | 3 | 6 | 12),
-            );
-          }}
-          aria-label="History window"
-          className="text-[11px] border border-surface-strong rounded px-1.5 py-0.5 bg-surface-primary text-faint hover:text-primary"
-        >
-          <option value="0">No history</option>
-          <option value="3">3 months history</option>
-          <option value="6">6 months history</option>
-          <option value="12">1 year history</option>
-          <option value="all">All history</option>
-        </select>
+            <option value="0">No history</option>
+            <option value="3">3 months history</option>
+            <option value="6">6 months history</option>
+            <option value="12">1 year history</option>
+            <option value="all">All history</option>
+          </select>
+          {canEdit !== false && (
+            <button
+              onClick={() => setTableLocked(!tableLocked)}
+              title={tableLocked ? "Unlock to edit" : "Lock editing"}
+              aria-label={tableLocked ? "Unlock to edit" : "Lock editing"}
+              className="text-faint hover:text-primary transition-colors"
+            >
+              {tableLocked ? (
+                <Lock className="w-3.5 h-3.5" />
+              ) : (
+                <LockOpen className="w-3.5 h-3.5" />
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Transaction table */}
@@ -672,7 +748,7 @@ export function AllTransactionsTab({
                 <th className="text-center px-3 py-2 font-medium text-muted whitespace-nowrap">
                   Recurring
                 </th>
-                {canEdit !== false && <th className="px-3 py-2 w-16" />}
+                {canEdit !== false && <th className="px-3 py-2 w-8" />}
               </tr>
             </thead>
             <tbody>
@@ -791,9 +867,7 @@ export function AllTransactionsTab({
                 const isTransfer = !!tx.transferPairId;
                 const color = fundColorMap.get(tx.goalId);
                 const name = fundNameMap.get(tx.goalId) ?? "Unknown";
-                const isEditing = editingId === tx.id;
 
-                // Find the other leg of a transfer to show "From → To"
                 const otherLeg = isTransfer
                   ? plannedTransactions.find(
                       (t) =>
@@ -812,17 +886,34 @@ export function AllTransactionsTab({
                     : (otherLeg ?? tx)
                   : null;
 
-                if (isEditing && editForm && !isTransfer) {
-                  const editColor = fundColorMap.get(editForm.goalId);
-                  return (
-                    <tr key={tx.id} className="border-b bg-surface-elevated/40">
-                      <td className="px-3 py-2 whitespace-nowrap">
+                const editable =
+                  !tableLocked && !isTransfer && canEdit !== false;
+                const handlers = makeInputHandlers(tx);
+
+                return (
+                  <tr
+                    key={tx.id}
+                    className="border-b last:border-0 hover:bg-surface-elevated/40 transition-colors"
+                  >
+                    {/* Fund */}
+                    <td
+                      className={`px-3 py-2 whitespace-nowrap${editable ? " cursor-pointer" : ""}`}
+                      onClick={
+                        editable ? () => activateCell(tx, "goalId") : undefined
+                      }
+                    >
+                      {isCellActive(tx.id, "goalId") && editForm ? (
                         <div className="inline-flex items-center gap-1.5">
                           <span
                             className="w-2 h-2 rounded-full shrink-0"
-                            style={{ backgroundColor: editColor }}
+                            style={{
+                              backgroundColor: fundColorMap.get(
+                                editForm.goalId,
+                              ),
+                            }}
                           />
                           <select
+                            autoFocus
                             value={editForm.goalId}
                             onChange={(e) =>
                               setEditForm({
@@ -830,6 +921,8 @@ export function AllTransactionsTab({
                                 goalId: Number(e.target.value),
                               })
                             }
+                            onBlur={handlers.onBlur}
+                            onKeyDown={handlers.onKeyDown}
                             className="border bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs"
                           >
                             {goalProjections.map((gp) => (
@@ -839,113 +932,7 @@ export function AllTransactionsTab({
                             ))}
                           </select>
                         </div>
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          type="date"
-                          value={editForm.transactionDate}
-                          onChange={(e) =>
-                            setEditForm({
-                              ...editForm,
-                              transactionDate: e.target.value,
-                            })
-                          }
-                          className="border bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          autoFocus
-                          type="text"
-                          value={editForm.description}
-                          onChange={(e) =>
-                            setEditForm({
-                              ...editForm,
-                              description: e.target.value,
-                            })
-                          }
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") commitEdit(tx);
-                            if (e.key === "Escape") {
-                              setEditingId(null);
-                              setEditForm(null);
-                            }
-                          }}
-                          className="w-full border bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={editForm.amount}
-                          onChange={(e) =>
-                            setEditForm({ ...editForm, amount: e.target.value })
-                          }
-                          className="w-24 border bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs text-right"
-                        />
-                      </td>
-                      <td className="px-3 py-2 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <input
-                            type="checkbox"
-                            checked={editForm.isRecurring}
-                            onChange={(e) =>
-                              setEditForm({
-                                ...editForm,
-                                isRecurring: e.target.checked,
-                              })
-                            }
-                          />
-                          {editForm.isRecurring && (
-                            <input
-                              type="number"
-                              min={1}
-                              value={editForm.recurrenceMonths}
-                              onChange={(e) =>
-                                setEditForm({
-                                  ...editForm,
-                                  recurrenceMonths: Number(e.target.value),
-                                })
-                              }
-                              className="w-10 border bg-surface-primary text-primary rounded px-1 py-0.5 text-xs text-center"
-                            />
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => commitEdit(tx)}
-                            disabled={updateTx.isPending}
-                            className="text-blue-600 hover:text-blue-700 text-[10px] font-medium disabled:opacity-50"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={() => {
-                              setEditingId(null);
-                              setEditForm(null);
-                            }}
-                            className="text-muted hover:text-primary text-[10px]"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                }
-
-                return (
-                  <tr
-                    key={tx.id}
-                    className="border-b last:border-0 hover:bg-surface-elevated/40 transition-colors"
-                  >
-                    {/* Fund */}
-                    <td className="px-3 py-2 whitespace-nowrap">
-                      {isTransfer ? (
+                      ) : isTransfer ? (
                         <span className="inline-flex items-center gap-1 text-[10px]">
                           <span
                             className="w-2 h-2 rounded-full shrink-0"
@@ -983,36 +970,109 @@ export function AllTransactionsTab({
                         </span>
                       )}
                     </td>
+
                     {/* Date */}
-                    <td className="px-3 py-2 text-muted whitespace-nowrap tabular-nums">
-                      {formatDate(
-                        new Date(tx.transactionDate + "T00:00:00"),
-                        "short",
+                    <td
+                      className={`px-3 py-2 text-muted whitespace-nowrap tabular-nums${editable ? " cursor-pointer" : ""}`}
+                      onClick={
+                        editable
+                          ? () => activateCell(tx, "transactionDate")
+                          : undefined
+                      }
+                    >
+                      {isCellActive(tx.id, "transactionDate") && editForm ? (
+                        <input
+                          autoFocus
+                          type="date"
+                          value={editForm.transactionDate}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              transactionDate: e.target.value,
+                            })
+                          }
+                          onBlur={handlers.onBlur}
+                          onKeyDown={handlers.onKeyDown}
+                          className="border bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs"
+                        />
+                      ) : (
+                        formatDate(
+                          new Date(tx.transactionDate + "T00:00:00"),
+                          "short",
+                        )
                       )}
                     </td>
+
                     {/* Description */}
-                    <td className="px-3 py-2 text-muted">
-                      {isTransfer && (
-                        <span className="inline-block text-[9px] font-medium text-blue-500 bg-blue-50 dark:bg-blue-950/30 rounded px-1 mr-1.5">
-                          transfer
-                        </span>
+                    <td
+                      className={`px-3 py-2 text-muted${editable ? " cursor-pointer" : ""}`}
+                      onClick={
+                        editable
+                          ? () => activateCell(tx, "description")
+                          : undefined
+                      }
+                    >
+                      {isCellActive(tx.id, "description") && editForm ? (
+                        <input
+                          autoFocus
+                          type="text"
+                          value={editForm.description}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              description: e.target.value,
+                            })
+                          }
+                          onBlur={handlers.onBlur}
+                          onKeyDown={handlers.onKeyDown}
+                          className="w-full border bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs"
+                        />
+                      ) : (
+                        <>
+                          {isTransfer && (
+                            <span className="inline-block text-[9px] font-medium text-blue-500 bg-blue-50 dark:bg-blue-950/30 rounded px-1 mr-1.5">
+                              transfer
+                            </span>
+                          )}
+                          {tx.description}
+                        </>
                       )}
-                      {tx.description}
                     </td>
+
                     {/* Amount */}
                     <td
-                      className={`px-3 py-2 text-right tabular-nums font-medium whitespace-nowrap ${
+                      className={`px-3 py-2 text-right tabular-nums font-medium whitespace-nowrap${editable ? " cursor-pointer" : ""} ${
                         isTransfer
                           ? "text-blue-500"
                           : tx.amount < 0
                             ? "text-red-500"
                             : "text-green-600"
                       }`}
+                      onClick={
+                        editable ? () => activateCell(tx, "amount") : undefined
+                      }
                     >
-                      {isTransfer
-                        ? formatCurrency(Math.abs(tx.amount))
-                        : `${tx.amount < 0 ? "−" : "+"}${formatCurrency(Math.abs(tx.amount))}`}
+                      {isCellActive(tx.id, "amount") && editForm ? (
+                        <input
+                          autoFocus
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={editForm.amount}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, amount: e.target.value })
+                          }
+                          onBlur={handlers.onBlur}
+                          onKeyDown={handlers.onKeyDown}
+                          className="w-24 border bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs text-right"
+                        />
+                      ) : isTransfer ? (
+                        formatCurrency(Math.abs(tx.amount))
+                      ) : (
+                        `${tx.amount < 0 ? "−" : "+"}${formatCurrency(Math.abs(tx.amount))}`
+                      )}
                     </td>
+
                     {/* Recurring */}
                     <td className="px-3 py-2 text-center text-faint">
                       {tx.isRecurring ? (
@@ -1023,18 +1083,11 @@ export function AllTransactionsTab({
                         <span className="text-[10px] text-faint/40">—</span>
                       )}
                     </td>
+
                     {/* Actions */}
                     {canEdit !== false && (
                       <td className="px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          {!isTransfer && (
-                            <button
-                              onClick={() => startEdit(tx)}
-                              className="text-[10px] text-muted hover:text-blue-600"
-                            >
-                              Edit
-                            </button>
-                          )}
+                        {!tableLocked && (
                           <button
                             onClick={() =>
                               isTransfer && tx.transferPairId
@@ -1050,7 +1103,7 @@ export function AllTransactionsTab({
                           >
                             ×
                           </button>
-                        </div>
+                        )}
                       </td>
                     )}
                   </tr>
