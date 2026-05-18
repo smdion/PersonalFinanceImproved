@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Savings: Extra paycheck yearly growth.** Each person's extra paycheck rules editor now includes a per-year raise rate section (% or flat $/mo) that projects how the savings pool grows over time. The Pool Growth bar at the top of the Paychecks & Growth tab shows the compounded trajectory.
 - **Savings: Plan / Manage tabs.** The savings page is reorganised into two top-level tabs — **Plan** (trajectory table, chart, allocations, transactions, paychecks & growth) and **Manage** (fund settings, targets, sub-goals). Overview remains always visible above the tabs.
 - **Savings: Hidden funds aggregate column.** Funds toggled off in the Fund Tracker no longer waste blank columns in the trajectory table and contribution grid. Their balances are collected into a compact "N hidden" column on the right so the total picture is never lost.
+- **Savings: Inline lock-to-edit on transactions.** The Transactions tab now follows the same lock-to-edit pattern as Performance and Analytics — a padlock icon in the toolbar unlocks the table for inline editing. Clicking any cell activates an input directly in place; changes save on blur or Enter, and Escape reverts. This replaces the previous expand-row form.
 - **Sync: Auto-sync on page load.** When enabled, the app automatically syncs your budget API data on page load if it is stale. The stale threshold is configurable in Settings → Integrations (default: 4 hours).
 - **Sync: Tap-to-sync.** Clicking the data freshness row in the sidebar triggers an immediate manual sync — works in both collapsed (icon) and expanded (row) sidebar modes.
 - **Settings: Sync behavior controls.** A new "Sync Behavior" card in Settings → Integrations lets you toggle auto-sync on/off and set the stale-data threshold (1, 2, 4, 8, or 24 hours).
@@ -25,6 +26,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Savings: Month override modal** opens showing only funds with an active allocation. Zero-allocation funds are accessible via an expandable "+ Add fund" section.
 - **Savings: Transactions tab** hides rule-generated extra-paycheck rows by default and marks them read-only with a badge — they can be revealed via a toggle but not accidentally edited or deleted.
 - Sync now refreshes mortgage and net worth data in addition to savings, budget, and assets after completing.
+
+### Fixed
+
+- **Savings: Pool growth projection** was reporting inflated growth (≈33% at 0% raise for biweekly earners) because the projection loop used the raw `periodsPerYear / 12` average rather than `budgetPerMonth`, which excludes the extra paychecks that are routed separately. Both the base and projected pool now use the same denominator — 0% raise produces a flat line.
+- **Savings: Extra paycheck net pay** is now always computed server-side by running the full paycheck calculator (tax brackets, deductions, contributions) against live DB data. Previously the client UI supplied the value, creating a mismatch risk with the Paycheck page.
+- **Savings: Materializer race condition.** Concurrent extra-paycheck saves (e.g. two auto-upgrades firing simultaneously on first load) could race on the delete→insert cycle and produce duplicate rule-generated transactions. The materializer now serializes via a module-level mutex and wraps the replacement in a DB transaction.
 
 ---
 
