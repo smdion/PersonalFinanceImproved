@@ -33,7 +33,7 @@ import { computeHouseholdTax } from "@/lib/pure/tax";
 import { findActiveJob } from "@/lib/pure/profiles";
 
 /** Build TaxBracketInput from DB bracket row + limits. */
-function buildBracketInput(
+export function buildBracketInput(
   bracketRow: typeof schema.taxBrackets.$inferSelect,
   limits: Map<string, number>,
 ): TaxBracketInput {

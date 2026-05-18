@@ -10,7 +10,17 @@ import {
 import * as schema from "@/lib/db/schema";
 import { calculateSavings } from "@/lib/calculators/savings";
 import { calculateEFund } from "@/lib/calculators/efund";
-import { toNumber, computeBudgetAnnualTotal } from "@/server/helpers";
+import { calculatePaycheck } from "@/lib/calculators/paycheck";
+import {
+  toNumber,
+  computeBudgetAnnualTotal,
+  getPeriodsPerYear,
+  getCurrentSalary,
+  buildContribAccounts,
+  requireLimit,
+} from "@/server/helpers";
+import { buildBracketInput } from "./paycheck";
+import type { DeductionLine, PaycheckInput } from "@/lib/calculators/types";
 import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
 import { zDecimal } from "./settings/_shared";
 import { targetModeSchema } from "@/lib/config/enum-values";
@@ -22,6 +32,123 @@ import {
   cacheGet,
 } from "@/lib/budget-api";
 import type { BudgetCategoryGroup } from "@/lib/budget-api";
+
+/**
+ * Compute the current net-pay-per-check for a job by running the paycheck
+ * calculator against live DB data. Used to snapshot baseNetPayPerCheck when
+ * routing rules or growth rates are saved, so the value always reflects the
+ * actual paycheck calculation rather than a client-supplied number.
+ */
+async function computeJobNetPayPerCheck(
+  db: Parameters<typeof getCurrentSalary>[0],
+  jobId: number,
+): Promise<number> {
+  const taxYear = new Date().getFullYear();
+  const asOfDate = new Date();
+
+  const [job] = await db
+    .select()
+    .from(schema.jobs)
+    .where(eq(schema.jobs.id, jobId));
+  if (!job) return 0;
+
+  const [allBrackets, jobDeductions, jobContribs, personalContribs, allLimits] =
+    await Promise.all([
+      db
+        .select()
+        .from(schema.taxBrackets)
+        .where(eq(schema.taxBrackets.taxYear, taxYear)),
+      db
+        .select()
+        .from(schema.paycheckDeductions)
+        .where(eq(schema.paycheckDeductions.jobId, jobId)),
+      db
+        .select()
+        .from(schema.contributionAccounts)
+        .where(
+          and(
+            eq(schema.contributionAccounts.jobId, jobId),
+            eq(schema.contributionAccounts.isActive, true),
+          ),
+        ),
+      db
+        .select()
+        .from(schema.contributionAccounts)
+        .where(
+          and(
+            isNull(schema.contributionAccounts.jobId),
+            eq(schema.contributionAccounts.personId, job.personId),
+            eq(schema.contributionAccounts.isActive, true),
+          ),
+        ),
+      db
+        .select()
+        .from(schema.contributionLimits)
+        .where(eq(schema.contributionLimits.taxYear, taxYear)),
+    ]);
+
+  const limitsMap = new Map<string, number>();
+  const limitsRecord: Record<string, number> = {};
+  for (const l of allLimits) {
+    const v = toNumber(l.value);
+    limitsMap.set(l.limitType, v);
+    limitsRecord[l.limitType] = v;
+  }
+
+  const bracketRow = allBrackets.find(
+    (b) =>
+      b.filingStatus === job.w4FilingStatus &&
+      b.w4Checkbox === job.w4Box2cChecked,
+  );
+  if (!bracketRow) return 0;
+
+  const currentSalary = await getCurrentSalary(
+    db,
+    job.id,
+    job.annualSalary,
+    asOfDate,
+  );
+  const periodsPerYear = getPeriodsPerYear(job.payPeriod);
+  const taxBrackets = buildBracketInput(bracketRow, limitsMap);
+
+  const deductions: DeductionLine[] = jobDeductions.map((d) => ({
+    name: d.deductionName,
+    amount: toNumber(d.amountPerPeriod),
+    taxTreatment: d.isPretax ? ("pre_tax" as const) : ("after_tax" as const),
+    ficaExempt: d.ficaExempt,
+  }));
+
+  const contribAccounts = buildContribAccounts(
+    jobContribs,
+    personalContribs.filter((c) => c.ownership !== "joint"),
+    currentSalary,
+    periodsPerYear,
+  );
+
+  const paycheckInput: PaycheckInput = {
+    annualSalary: currentSalary,
+    payPeriod: job.payPeriod,
+    payWeek: job.payWeek,
+    anchorPayDate: new Date(job.anchorPayDate ?? job.startDate),
+    supplementalTaxRate: requireLimit(limitsMap, "supplemental_tax_rate"),
+    contributionAccounts: contribAccounts,
+    deductions,
+    taxBrackets,
+    limits: limitsRecord,
+    ytdGrossEarnings: 0,
+    bonusPercent: toNumber(job.bonusPercent),
+    bonusMultiplier: toNumber(job.bonusMultiplier),
+    bonusOverride: job.bonusOverride ? toNumber(job.bonusOverride) : null,
+    monthsInBonusYear: job.monthsInBonusYear,
+    includeContribInBonus: job.include401kInBonus,
+    bonusMonth: job.bonusMonth,
+    bonusDayOfMonth: job.bonusDayOfMonth,
+    asOfDate,
+  };
+
+  const paycheck = calculatePaycheck(paycheckInput);
+  return Math.round(paycheck.netPay * 100) / 100;
+}
 
 /** Sum essential budget items for a given tier/column, returning monthly. */
 function getEssentialExpenses(
@@ -1083,8 +1210,6 @@ export const savingsRouter = createTRPCRouter({
               ),
             }),
           ),
-          /** Net pay per check from the live paycheck calculator at save time. */
-          baseNetPayPerCheck: z.number().positive().optional(),
           /** Per-year growth rates; keyed by year string e.g. "2027". */
           yearlyGrowth: z
             .record(
@@ -1128,6 +1253,11 @@ export const savingsRouter = createTRPCRouter({
         const existing = existingJob?.extraPaycheckRouting;
         const existingOverrides = existing?.overrides ?? [];
 
+        // Always recompute net pay from the paycheck calculator — never trust a client-supplied value.
+        const baseNetPayPerCheck = await computeJobNetPayPerCheck(
+          ctx.db,
+          input.jobId,
+        );
         const nowYear = new Date().getFullYear();
         await ctx.db
           .update(schema.jobs)
@@ -1137,13 +1267,8 @@ export const savingsRouter = createTRPCRouter({
                 ? {
                     rules: input.rules,
                     overrides: existingOverrides,
-                    // Update base if provided; otherwise preserve whatever was stored
-                    baseNetPayPerCheck:
-                      input.baseNetPayPerCheck ?? existing?.baseNetPayPerCheck,
-                    baseYear:
-                      input.baseNetPayPerCheck !== undefined
-                        ? nowYear
-                        : existing?.baseYear,
+                    baseNetPayPerCheck,
+                    baseYear: nowYear,
                     yearlyGrowth:
                       input.yearlyGrowth !== undefined
                         ? input.yearlyGrowth
@@ -1157,12 +1282,11 @@ export const savingsRouter = createTRPCRouter({
         return { ok: true };
       }),
 
-    /** Persist net-pay base and growth rates for a job, then re-materialize. */
+    /** Persist growth rates for a job, then re-materialize. Net pay is always recomputed server-side. */
     saveGrowth: savingsProcedure
       .input(
         z.object({
           jobId: z.number().int(),
-          baseNetPayPerCheck: z.number().positive(),
           yearlyGrowth: z.record(
             z.string(),
             z.object({ type: z.enum(["pct", "dollar"]), value: z.number() }),
@@ -1176,13 +1300,17 @@ export const savingsRouter = createTRPCRouter({
           .where(eq(schema.jobs.id, input.jobId));
         if (!existingJob?.extraPaycheckRouting) return { ok: true };
 
+        const baseNetPayPerCheck = await computeJobNetPayPerCheck(
+          ctx.db,
+          input.jobId,
+        );
         const nowYear = new Date().getFullYear();
         await ctx.db
           .update(schema.jobs)
           .set({
             extraPaycheckRouting: {
               ...existingJob.extraPaycheckRouting,
-              baseNetPayPerCheck: input.baseNetPayPerCheck,
+              baseNetPayPerCheck,
               baseYear: nowYear,
               yearlyGrowth: input.yearlyGrowth,
             },

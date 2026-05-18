@@ -352,25 +352,23 @@ function PersonPanel({
   const baseYearDisplay = routing?.baseYear ?? new Date().getFullYear();
 
   // Auto-upgrade: if rules exist but baseNetPayPerCheck hasn't been set yet,
-  // silently persist the current live value so the materializer switches from
-  // the stale per-rule netPaySnapshot to the dynamic projection path.
+  // trigger saveGrowth so the server recomputes net pay and the materializer
+  // switches from the stale per-rule netPaySnapshot to the dynamic projection path.
   const autoUpgradeFiredRef = useRef(false);
   useEffect(() => {
     if (
       autoUpgradeFiredRef.current ||
       rules.length === 0 ||
-      routing?.baseNetPayPerCheck !== undefined ||
-      netPayPerCheck <= 0
+      routing?.baseNetPayPerCheck !== undefined
     )
       return;
     autoUpgradeFiredRef.current = true;
     saveGrowthMutation.mutate({
       jobId: job.id,
-      baseNetPayPerCheck: Math.round(netPayPerCheck),
       yearlyGrowth: {},
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [job.id, routing?.baseNetPayPerCheck, netPayPerCheck]);
+  }, [job.id, routing?.baseNetPayPerCheck]);
 
   // Number of future years visible in the projection (for growth editor rows).
   const projectionYears = useMemo(() => {
@@ -488,7 +486,6 @@ function PersonPanel({
     saveMutation.mutate({
       jobId: job.id,
       rules: updated,
-      baseNetPayPerCheck: Math.round(netPayPerCheck),
       yearlyGrowth,
     });
     setAddForm(null);
@@ -584,7 +581,6 @@ function PersonPanel({
               onClick={() =>
                 saveGrowthMutation.mutate({
                   jobId: job.id,
-                  baseNetPayPerCheck: Math.round(netPayPerCheck),
                   yearlyGrowth,
                 })
               }
