@@ -323,7 +323,7 @@ export default function SavingsPage() {
       let projectedMonthlyNet = 0;
       for (const p of activeEarners) {
         const pc = p.paycheck as { netPay: number; periodsPerYear: number };
-        const perMonth = p.budgetPerMonth ?? pc.periodsPerYear / 12;
+        const perMonth = pc.periodsPerYear / 12;
         const routing = (
           p.job as { extraPaycheckRouting?: ExtraPaycheckRoutingData | null }
         )?.extraPaycheckRouting;
