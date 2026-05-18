@@ -19,6 +19,7 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
 } from "recharts";
+import { CHART_FONT } from "@/components/charts/chart-defaults";
 
 type Job = {
   id: number;
@@ -216,11 +217,11 @@ export function JobsSettings() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="date"
-                fontSize={10}
+                fontSize={CHART_FONT.tick}
                 tickFormatter={(d: string) => formatDate(d)}
               />
               <YAxis
-                fontSize={10}
+                fontSize={CHART_FONT.tick}
                 tickFormatter={(v: number) => compactCurrency(v)}
               />
               <RechartsTooltip
@@ -229,7 +230,7 @@ export function JobsSettings() {
                   formatCurrency(Number(value)),
                   String(name),
                 ]}
-                contentStyle={{ fontSize: 11 }}
+                contentStyle={{ fontSize: CHART_FONT.tooltip }}
               />
               {personNames.map((name, i) => (
                 <Area

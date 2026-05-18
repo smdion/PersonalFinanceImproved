@@ -19,6 +19,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { CHART_FONT } from "@/components/charts/chart-defaults";
 
 // 8 distinct colors for strategies
 const STRATEGY_COLORS = [
@@ -322,18 +323,18 @@ export function WithdrawalComparisonCard({
               <XAxis
                 dataKey="age"
                 stroke="#9ca3af"
-                tick={{ fontSize: 10 }}
+                tick={{ fontSize: CHART_FONT.tick }}
                 label={{
                   value: "Age",
                   position: "insideBottom",
                   offset: -5,
-                  fontSize: 10,
+                  fontSize: CHART_FONT.tick,
                   fill: "#9ca3af",
                 }}
               />
               <YAxis
                 stroke="#9ca3af"
-                tick={{ fontSize: 10 }}
+                tick={{ fontSize: CHART_FONT.tick }}
                 tickFormatter={(v: number) => compactCurrency(v)}
               />
               <Tooltip
@@ -341,13 +342,15 @@ export function WithdrawalComparisonCard({
                   backgroundColor: "#1f2937",
                   border: "1px solid #374151",
                   borderRadius: "6px",
-                  fontSize: 11,
+                  fontSize: CHART_FONT.tooltip,
                 }}
                 labelStyle={{ color: "#9ca3af" }}
                 formatter={(value) => formatCurrency(Number(value))}
                 labelFormatter={(age) => `Age ${age}`}
               />
-              <Legend wrapperStyle={{ fontSize: 10, paddingTop: 16 }} />
+              <Legend
+                wrapperStyle={{ fontSize: CHART_FONT.legend, paddingTop: 16 }}
+              />
               {strategies.map((s, i) => (
                 <Line
                   key={s.strategy}

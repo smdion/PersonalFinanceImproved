@@ -21,6 +21,7 @@ import {
   getAccountSegments,
   getSegmentBalance,
 } from "@/lib/config/account-types";
+import { CHART_FONT } from "@/components/charts/chart-defaults";
 import type { useProjectionState } from "./use-projection-state";
 
 type ProjectionState = ReturnType<typeof useProjectionState>;
@@ -210,12 +211,12 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis
               dataKey="age"
-              tick={{ fontSize: 10, fill: "#6b7280" }}
+              tick={{ fontSize: CHART_FONT.tick, fill: "#6b7280" }}
               tickLine={false}
               axisLine={{ stroke: "#d1d5db" }}
             />
             <YAxis
-              tick={{ fontSize: 10, fill: "#6b7280" }}
+              tick={{ fontSize: CHART_FONT.tick, fill: "#6b7280" }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v: number) => compactCurrency(v)}
@@ -446,7 +447,7 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
                 label={{
                   value: "SS",
                   position: "top",
-                  fontSize: 9,
+                  fontSize: CHART_FONT.tiny,
                   fill: "#2dd4bf",
                 }}
               />
@@ -463,7 +464,7 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
                   label={{
                     value: "RMD",
                     position: "top",
-                    fontSize: 9,
+                    fontSize: CHART_FONT.tiny,
                     fill: "#f59e0b",
                   }}
                 />

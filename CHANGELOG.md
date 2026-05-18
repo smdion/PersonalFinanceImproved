@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.6
 
+## [0.6.3] - 2026-05-18
+
+### Fixed
+
+- **Pay stub: "HSA" now renders in all caps.** The HSA deduction row was displaying as "hsa" in the per-period pay stub. It now shows "HSA" (alongside FSA and IRA, which receive the same treatment).
+- **Savings: Pushing monthly targets to YNAB now works for emergency fund goals.** Goals configured as "Target Balance" were silently failing when pushed — YNAB's month-specific budget endpoint ignores goal metadata, so the app now uses the correct plan-level endpoint for these goals. Monthly contribution goals were unaffected.
+
+### Improved
+
+- **Budget table no longer shows a YNAB column.** Actual spending data belongs on the Expenses page where it can be reviewed in context. The Pull from YNAB / Push to YNAB buttons remain on the Budget page.
+- **Savings moved to Cash Flow in the sidebar.** Savings sits alongside Paycheck, Budget, and Expenses — the section previously called "Wealth" is renamed "Investments" and now contains Portfolio, Performance, and Brokerage.
+- **Savings trajectory table columns are now equal width.** The month column has a fixed width and all fund columns share the remaining space evenly, regardless of how many funds are shown or hidden.
+- **Small text and chart labels are more readable.** All small-text sizes across the app are now driven by three named tokens (rather than scattered per-pixel values), and the floor for secondary labels was raised. Chart axis ticks and legends were also corrected to use the appropriate size — a number of charts had shrunk these to the same size as floating inline annotations.
+
+---
+
 ## [0.6.2] - 2026-05-17
 
 ### Added

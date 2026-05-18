@@ -14,6 +14,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { CHART_COLORS } from "@/lib/utils/colors";
+import { CHART_FONT } from "@/components/charts/chart-defaults";
 import { compactCurrency, type HistoryRow } from "./types";
 
 export type ChartXAxisMode = "year" | "age";
@@ -54,7 +55,7 @@ export function NetWorthLineChart({
           <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.mcGrid} />
           <XAxis
             dataKey={useAge ? "displayAge" : "year"}
-            tick={{ fontSize: 12, fill: CHART_COLORS.mcAxis }}
+            tick={{ fontSize: CHART_FONT.xTick, fill: CHART_COLORS.mcAxis }}
             tickFormatter={(v: number) => {
               if (useAge) return String(v);
               const row = history.find((h) => h.year === v);
@@ -66,13 +67,13 @@ export function NetWorthLineChart({
                     value: "Age",
                     position: "insideBottom",
                     offset: -2,
-                    fontSize: 12,
+                    fontSize: CHART_FONT.xTick,
                   }
                 : undefined
             }
           />
           <YAxis
-            tick={{ fontSize: 11, fill: CHART_COLORS.mcAxis }}
+            tick={{ fontSize: CHART_FONT.tick, fill: CHART_COLORS.mcAxis }}
             tickFormatter={compactCurrency}
             width={65}
           />
@@ -87,10 +88,14 @@ export function NetWorthLineChart({
               const row = history.find((h) => h.year === num);
               return row?.isCurrent ? `${num} (YTD)` : String(num);
             }}
-            contentStyle={{ fontSize: 12 }}
+            contentStyle={{ fontSize: CHART_FONT.tooltip }}
           />
           <Legend
-            wrapperStyle={{ fontSize: 11, lineHeight: "1.5", paddingTop: 4 }}
+            wrapperStyle={{
+              fontSize: CHART_FONT.legend,
+              lineHeight: "1.5",
+              paddingTop: 4,
+            }}
           />
           <Line
             type="monotone"

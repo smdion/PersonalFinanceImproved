@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { taxTypeLabel, TAX_PIE_COLORS, CHART_COLORS } from "@/lib/utils/colors";
+import { CHART_FONT } from "@/components/charts/chart-defaults";
 import {
   PieChart,
   Pie,
@@ -62,7 +63,7 @@ export function TaxLocationPie({
               </Pie>
               <RechartsTooltip
                 formatter={(value) => formatCurrency(Number(value))}
-                contentStyle={{ fontSize: 12 }}
+                contentStyle={{ fontSize: CHART_FONT.tooltip }}
               />
             </PieChart>
           </ResponsiveContainer>

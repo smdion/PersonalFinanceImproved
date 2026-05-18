@@ -18,6 +18,7 @@ import {
   Legend,
 } from "recharts";
 import { formatCurrency, compactCurrency } from "@/lib/utils/format";
+import { CHART_FONT } from "@/components/charts/chart-defaults";
 
 const COLORS = {
   budgeted: "#94a3b8",
@@ -54,13 +55,13 @@ export function BudgetVsActualBar({
         <XAxis
           type="number"
           tickFormatter={(v: number) => compactCurrency(v)}
-          fontSize={10}
+          fontSize={CHART_FONT.tick}
         />
         <YAxis
           type="category"
           dataKey="name"
           width={120}
-          fontSize={10}
+          fontSize={CHART_FONT.tick}
           tick={{ fill: "#6b7280" }}
         />
         <RechartsTooltip
@@ -68,8 +69,8 @@ export function BudgetVsActualBar({
             formatCurrency(Number(value)),
             String(name),
           ]}
-          labelStyle={{ fontSize: 11, fontWeight: 600 }}
-          contentStyle={{ fontSize: 11 }}
+          labelStyle={{ fontSize: CHART_FONT.legend, fontWeight: 600 }}
+          contentStyle={{ fontSize: CHART_FONT.tooltip }}
         />
         <Bar
           dataKey="budgeted"
@@ -111,9 +112,9 @@ export function SpendingPie({ data }: { data: readonly SpendingPieSlice[] }) {
         </Pie>
         <RechartsTooltip
           formatter={(value: unknown) => formatCurrency(Number(value))}
-          contentStyle={{ fontSize: 11 }}
+          contentStyle={{ fontSize: CHART_FONT.tooltip }}
         />
-        <Legend wrapperStyle={{ fontSize: 10 }} iconSize={8} />
+        <Legend wrapperStyle={{ fontSize: CHART_FONT.legend }} iconSize={8} />
       </PieChart>
     </ResponsiveContainer>
   );

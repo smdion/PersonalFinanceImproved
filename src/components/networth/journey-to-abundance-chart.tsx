@@ -15,6 +15,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { CHART_COLORS } from "@/lib/utils/colors";
+import { CHART_FONT } from "@/components/charts/chart-defaults";
 import {
   WEALTH_FORMULA_AGE_CUTOFF,
   WEALTH_FORMULA_BASE_DENOMINATOR,
@@ -83,20 +84,20 @@ export function JourneyToAbundanceChart({
           <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.mcGrid} />
           <XAxis
             dataKey={xAxisMode === "year" ? "year" : "age"}
-            tick={{ fontSize: 12, fill: CHART_COLORS.mcAxis }}
+            tick={{ fontSize: CHART_FONT.xTick, fill: CHART_COLORS.mcAxis }}
             label={
               xAxisMode === "age"
                 ? {
                     value: "Age",
                     position: "insideBottom",
                     offset: -2,
-                    fontSize: 12,
+                    fontSize: CHART_FONT.xTick,
                   }
                 : undefined
             }
           />
           <YAxis
-            tick={{ fontSize: 11, fill: CHART_COLORS.mcAxis }}
+            tick={{ fontSize: CHART_FONT.tick, fill: CHART_COLORS.mcAxis }}
             tickFormatter={compactCurrency}
             width={65}
           />
@@ -108,10 +109,14 @@ export function JourneyToAbundanceChart({
             labelFormatter={(label: unknown) =>
               xAxisMode === "year" ? String(label) : `Age ${label}`
             }
-            contentStyle={{ fontSize: 12 }}
+            contentStyle={{ fontSize: CHART_FONT.tooltip }}
           />
           <Legend
-            wrapperStyle={{ fontSize: 11, lineHeight: "1.5", paddingTop: 4 }}
+            wrapperStyle={{
+              fontSize: CHART_FONT.legend,
+              lineHeight: "1.5",
+              paddingTop: 4,
+            }}
           />
           {hasIncome && (
             <Line

@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { CHART_COLORS } from "@/lib/utils/colors";
+import { CHART_FONT } from "@/components/charts/chart-defaults";
 
 export function NetWorthLocationPie({
   portfolioTotal,
@@ -75,7 +76,7 @@ export function NetWorthLocationPie({
               </Pie>
               <RechartsTooltip
                 formatter={(value) => formatCurrency(Number(value))}
-                contentStyle={{ fontSize: 12 }}
+                contentStyle={{ fontSize: CHART_FONT.tooltip }}
               />
             </PieChart>
           </ResponsiveContainer>

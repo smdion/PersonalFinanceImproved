@@ -26,6 +26,7 @@ import {
   Legend,
 } from "recharts";
 import { ChartControls } from "./chart-controls";
+import { CHART_FONT } from "@/components/charts/chart-defaults";
 import type { useProjectionState } from "./use-projection-state";
 
 type ProjectionState = ReturnType<typeof useProjectionState>;
@@ -180,12 +181,12 @@ export function SpendingStabilityChart({
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis
             dataKey="age"
-            tick={{ fontSize: 10, fill: "var(--text-faint)" }}
+            tick={{ fontSize: CHART_FONT.tick, fill: "var(--text-faint)" }}
             tickFormatter={(v: number) => String(v)}
           />
           <YAxis
             yAxisId="left"
-            tick={{ fontSize: 9, fill: "var(--text-faint)" }}
+            tick={{ fontSize: CHART_FONT.tiny, fill: "var(--text-faint)" }}
             tickFormatter={(v: number) => {
               const dollars = (v / 100) * year1Baseline;
               return compactCurrency(dollars);
@@ -198,7 +199,7 @@ export function SpendingStabilityChart({
           <YAxis
             yAxisId="right"
             orientation="right"
-            tick={{ fontSize: 10, fill: "var(--text-faint)" }}
+            tick={{ fontSize: CHART_FONT.tick, fill: "var(--text-faint)" }}
             tickFormatter={(v: number) => formatPercent(v / 100)}
             domain={[
               0,
@@ -259,7 +260,9 @@ export function SpendingStabilityChart({
               );
             }}
           />
-          <Legend wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
+          <Legend
+            wrapperStyle={{ fontSize: CHART_FONT.legend, paddingTop: 8 }}
+          />
 
           {/* 75% stability threshold */}
           <ReferenceLine
@@ -272,7 +275,7 @@ export function SpendingStabilityChart({
               value: "75% Floor",
               position: "right",
               fill: "var(--text-red-500, #ef4444)",
-              fontSize: 9,
+              fontSize: CHART_FONT.tiny,
             }}
           />
           {/* 100% baseline reference */}
