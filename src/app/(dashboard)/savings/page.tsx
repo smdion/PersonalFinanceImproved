@@ -5,12 +5,12 @@
 import React, { useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useLocalStorageSet } from "@/lib/hooks/use-local-storage-set";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import {
   SummaryCards,
@@ -25,6 +25,7 @@ import type { TargetMode } from "@/lib/config/enum-values";
 function isTargetMode(v: unknown): v is TargetMode {
   return TARGET_MODE_VALUES.includes(v as TargetMode);
 }
+import { formatCurrency } from "@/lib/utils/format";
 import { BudgetCapacityBar } from "@/components/savings/budget-capacity-bar";
 import { ExtraPaycheckRulesEditor } from "@/components/savings/extra-paycheck-rules-editor";
 
@@ -44,6 +45,7 @@ import {
   type FundManagementCallbacks,
 } from "@/components/savings/fund-management-section";
 import { AllocationEditorSection } from "@/components/savings/allocation-editor-section";
+import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import { SavingsTrajectoryTable } from "@/components/savings/savings-trajectory-table";
 import { AllTransactionsTab } from "@/components/savings/all-transactions-tab";
 import {
@@ -122,22 +124,23 @@ export default function SavingsPage() {
   const apiSync = useApiSync();
   const [editingMonth, setEditingMonth] = useState<Date | null>(null);
   const [showNewFund, setShowNewFund] = useState(false);
-  const [hiddenGoalIds, setHiddenGoalIds] = useState<Set<number>>(new Set());
+  const [hiddenGoalIds, setHiddenGoalIds] = useLocalStorageSet(
+    "ledgr:savings:hiddenFunds",
+  );
 
   const handleToggleGoalColumn = (id: number) => {
-    setHiddenGoalIds((prev) => {
-      const s = new Set(prev);
-      if (s.has(id)) s.delete(id);
-      else s.add(id);
-      return s;
-    });
+    const s = new Set(hiddenGoalIds);
+    if (s.has(id)) s.delete(id);
+    else s.add(id);
+    setHiddenGoalIds(s);
   };
-  const [projectionsTab, setProjectionsTab] = useState<
-    "table" | "chart" | "edit" | "transactions" | "extraPaychecks"
-  >("table");
-  const [yearlyGrowth, setYearlyGrowth] = useState<
-    Record<number, { type: "pct" | "dollar"; value: number }>
-  >({});
+  const [projectionView, setProjectionView] = useState<"table" | "chart">(
+    "table",
+  );
+  const [masterTab, setMasterTab] = useState<"plan" | "manage">("plan");
+  const [editTab, setEditTab] = useState<
+    "allocations" | "transactions" | "extraPaychecks"
+  >("allocations");
 
   // ── Top-level form state (lives here to render in correct layout position) ──
   const [newFund, setNewFund] = useState<NewFundForm>({
@@ -301,40 +304,58 @@ export default function SavingsPage() {
     }
   }
 
-  // ── Growth multipliers ──
+  // ── Derived pool growth from per-person paycheck raise rates ──
+  // Projects the monthly savings pool forward by applying each earner's stored
+  // raise rates to their current net pay. Assumes flat budget expenses.
   const startYear = now.getFullYear();
-  const growthMultiplierByYear = new Map<number, number>();
-  {
-    let prevPool = 1;
-    for (let yr = startYear; yr <= startYear + projectionYears; yr++) {
-      const entry = yearlyGrowth[yr];
-      if (yr === startYear || !entry || entry.value === 0) {
-        growthMultiplierByYear.set(yr, prevPool);
-      } else if (entry.type === "pct") {
-        prevPool = prevPool * (1 + entry.value / 100);
-        growthMultiplierByYear.set(yr, prevPool);
-      } else {
-        growthMultiplierByYear.set(yr, prevPool);
-      }
-    }
-  }
+  const derivedPoolByYear = new Map<number, number>();
 
-  const dollarIncreaseByYear = new Map<number, number>();
-  {
-    let cumDollar = 0;
-    for (let yr = startYear; yr <= startYear + projectionYears; yr++) {
-      const entry = yearlyGrowth[yr];
-      if (entry && entry.type === "dollar" && yr > startYear) {
-        cumDollar += entry.value;
+  if (
+    maxMonthlyFunding !== null &&
+    budgetMonthlyTotal !== null &&
+    paycheckData
+  ) {
+    derivedPoolByYear.set(startYear, maxMonthlyFunding);
+    const activeEarners = paycheckData.people.filter(
+      (p) => p.paycheck && p.job,
+    );
+    for (let yr = startYear + 1; yr <= startYear + projectionYears; yr++) {
+      let projectedMonthlyNet = 0;
+      for (const p of activeEarners) {
+        const pc = p.paycheck as { netPay: number; periodsPerYear: number };
+        // Use budgetPerMonth (regular checks only) to match how maxMonthlyFunding
+        // is computed — extra biweekly checks are routed separately, not budget income.
+        const perMonth =
+          (p as { budgetPerMonth?: number }).budgetPerMonth ??
+          pc.periodsPerYear / 12;
+        const routing = (
+          p.job as { extraPaycheckRouting?: ExtraPaycheckRoutingData | null }
+        )?.extraPaycheckRouting;
+        const raises = routing?.yearlyGrowth ?? {};
+        let netPerCheck = pc.netPay;
+        for (let y = startYear + 1; y <= yr; y++) {
+          const e = raises[String(y)];
+          if (!e || e.value === 0) continue;
+          netPerCheck =
+            e.type === "pct"
+              ? netPerCheck * (1 + e.value / 100)
+              : netPerCheck + e.value;
+        }
+        projectedMonthlyNet += netPerCheck * perMonth;
       }
-      dollarIncreaseByYear.set(yr, cumDollar);
+      derivedPoolByYear.set(
+        yr,
+        Math.max(0, projectedMonthlyNet - budgetMonthlyTotal),
+      );
     }
   }
 
   function getAllocationForYear(baseAmount: number, year: number): number {
-    const multiplier = growthMultiplierByYear.get(year) ?? 1;
-    const dollarAdd = dollarIncreaseByYear.get(year) ?? 0;
-    return baseAmount * multiplier + dollarAdd;
+    const projectedPool = derivedPoolByYear.get(year);
+    if (projectedPool === undefined) return baseAmount;
+    const refPool = derivedPoolByYear.get(startYear) ?? projectedPool;
+    if (refPool <= 0) return baseAmount;
+    return baseAmount * (projectedPool / refPool);
   }
 
   // ── Goal projections ──
@@ -394,14 +415,16 @@ export default function SavingsPage() {
     };
   });
 
+  goalProjections.sort((a, b) => b.monthlyAllocation - a.monthlyAllocation);
+
   const totalMonthlyAllocation = goalProjections.reduce(
     (s, g) => s + g.monthlyAllocation,
     0,
   );
 
   const basePool = maxMonthlyFunding ?? totalMonthlyAllocation;
-  const monthlyPools = monthDates.map((d) =>
-    getAllocationForYear(basePool, d.getFullYear()),
+  const monthlyPools = monthDates.map(
+    (d) => derivedPoolByYear.get(d.getFullYear()) ?? basePool,
   );
 
   const handleFundClick = (fundName: string) => {
@@ -410,6 +433,16 @@ export default function SavingsPage() {
     const el = document.getElementById(`fund-card-${gp.goalId}`);
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
+
+  // ── Extra paycheck net pay map ──
+  const netPayByPersonId = new Map<number, number>();
+  if (paycheckData) {
+    for (const p of paycheckData.people) {
+      if (p.paycheck && p.job) {
+        netPayByPersonId.set(p.person.id, p.paycheck.netPay);
+      }
+    }
+  }
 
   // ── Top-level form handlers ──
   const handleCreateFund = () => {
@@ -501,226 +534,306 @@ export default function SavingsPage() {
         </section>
       </CardBoundary>
 
-      {/* ── Projections ── */}
-      <CardBoundary title="Projections">
-        <section className="bg-surface-primary rounded-lg border p-4 sm:p-5 space-y-4">
-          {/* Section header */}
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-base font-semibold text-primary">
-                Projections
-              </h2>
-              <p className="text-xs text-faint mt-0.5">
-                Where your funds are headed based on current allocations
-              </p>
-            </div>
-            {/* Settings toolbar */}
-            <BudgetCapacityBar
-              maxMonthlyFunding={maxMonthlyFunding}
-              totalMonthlyAllocation={totalMonthlyAllocation}
-              projectionYears={projectionYears}
-              setProjectionYears={setProjectionYears}
-              budgetNote={budgetNote}
-            />
-          </div>
+      {/* ── Master tabs ── */}
+      <div className="flex border-b border-subtle">
+        {(
+          [
+            { key: "plan", label: "Plan" },
+            { key: "manage", label: "Manage" },
+          ] as const
+        ).map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setMasterTab(key)}
+            className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              masterTab === key
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-muted hover:text-primary"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
-          {/* Tab bar */}
-          {goalProjections.length > 0 && (
-            <div className="flex border-b -mx-4 sm:-mx-5 px-4 sm:px-5 overflow-x-auto">
-              {(
-                [
-                  { key: "table", label: "Monthly Balances" },
-                  { key: "chart", label: "Chart" },
-                  { key: "edit", label: "Allocations" },
-                  { key: "transactions", label: "Transactions" },
-                  { key: "extraPaychecks", label: "Extra Paychecks" },
-                ] as const
-              ).map(({ key, label }) => (
-                <button
-                  key={key}
-                  onClick={() => setProjectionsTab(key)}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                    projectionsTab === key
-                      ? "border-blue-600 text-blue-600"
-                      : "border-transparent text-muted hover:text-primary"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Impact bar — live per-fund status, visible on all tabs */}
-          {goalProjections.length > 0 && (
-            <ProjectionImpactBar
-              goalProjections={goalProjections}
-              monthDates={monthDates}
-              hiddenGoalIds={hiddenGoalIds}
-              onToggle={handleToggleGoalColumn}
-            />
-          )}
-
-          {/* Tab content */}
-          {goalProjections.length > 0 && projectionsTab === "table" && (
-            <SavingsTrajectoryTable
-              goalProjections={goalProjections}
-              monthDates={monthDates}
-              hiddenGoalIds={hiddenGoalIds}
-            />
-          )}
-
-          {goalProjections.length > 0 && projectionsTab === "chart" && (
-            <SavingsTrajectoryChart
-              goalProjections={goalProjections}
-              monthDates={monthDates}
-              onFundClick={handleFundClick}
-            />
-          )}
-
-          {projectionsTab === "transactions" && (
-            <AllTransactionsTab
-              plannedTransactions={plannedTransactions}
-              goalProjections={goalProjections}
-              canEdit={canEdit}
-              projectionEndDate={monthDates[monthDates.length - 1]}
-            />
-          )}
-
-          {projectionsTab === "extraPaychecks" &&
-            (() => {
-              const netPayByPersonId = new Map<number, number>();
-              if (paycheckData) {
-                for (const p of paycheckData.people) {
-                  if (p.paycheck && p.job) {
-                    netPayByPersonId.set(p.person.id, p.paycheck.netPay);
-                  }
-                }
-              }
-              return (
-                <ExtraPaycheckRulesEditor
-                  goals={rawGoals
-                    .filter((g) => g.isActive && !g.parentGoalId)
-                    .map((g) => ({ id: g.id, name: g.name }))}
-                  netPayByPersonId={netPayByPersonId}
-                  monthDates={monthDates}
-                />
-              );
-            })()}
-
-          {projectionsTab === "edit" && (
-            <div className="space-y-3">
-              {canEdit && apiBalancesData?.service && (
-                <div className="flex justify-end">
+      {/* ── Plan tab ── */}
+      {masterTab === "plan" && (
+        <CardBoundary title="Plan">
+          <section className="bg-surface-primary rounded-lg border border-default p-4 sm:p-5 space-y-4">
+            {/* Controls row */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              {goalProjections.length > 0 && (
+                <div className="flex rounded border border-subtle overflow-hidden text-xs">
                   <button
-                    onClick={() =>
-                      apiSync.buildPushAllPreview(
-                        rawGoals,
-                        apiBalanceMap,
-                        efund?.targetAmount ?? undefined,
-                      )
-                    }
-                    disabled={apiSync.pushToApiPending}
-                    className="px-3 py-1.5 border border-green-600 text-green-400 rounded text-sm hover:bg-green-600/20 disabled:opacity-50"
-                    title="Push monthly allocation amounts as budget API goal targets"
+                    onClick={() => setProjectionView("table")}
+                    className={`px-2.5 py-1 transition-colors ${
+                      projectionView === "table"
+                        ? "bg-surface-elevated text-primary"
+                        : "text-muted hover:text-primary"
+                    }`}
                   >
-                    {apiSync.pushToApiPending
-                      ? "Pushing..."
-                      : "Push Monthly Targets →"}
+                    Table
+                  </button>
+                  <button
+                    onClick={() => setProjectionView("chart")}
+                    className={`px-2.5 py-1 transition-colors ${
+                      projectionView === "chart"
+                        ? "bg-surface-elevated text-primary"
+                        : "text-muted hover:text-primary"
+                    }`}
+                  >
+                    Chart
                   </button>
                 </div>
               )}
-              <AllocationEditorSection
-                goalProjections={goalProjections}
-                monthDates={monthDates}
-                totalMonthlyAllocation={totalMonthlyAllocation}
+              <BudgetCapacityBar
                 maxMonthlyFunding={maxMonthlyFunding}
-                monthlyPools={monthlyPools}
-                canEdit={canEdit}
-                onGoalUpdate={onGoalUpdate}
-                onGoalUpdateMulti={onGoalUpdateMulti}
-                editingMonth={editingMonth}
-                setEditingMonth={setEditingMonth}
+                totalMonthlyAllocation={totalMonthlyAllocation}
                 projectionYears={projectionYears}
-                yearlyGrowth={yearlyGrowth}
-                setYearlyGrowth={setYearlyGrowth}
-                ruleMonthKeys={
-                  new Set(
-                    (allocationOverrides ?? [])
-                      .filter((o) => o.source === "rule")
-                      .map((o) => o.monthDate.slice(0, 7)),
-                  )
-                }
+                setProjectionYears={setProjectionYears}
+                budgetNote={budgetNote}
               />
             </div>
-          )}
-        </section>
-      </CardBoundary>
 
-      {/* ── Funds ── */}
-      <CardBoundary title="Funds">
-        <section className="space-y-3">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="text-base font-semibold text-primary">Funds</h2>
-              <p className="text-xs text-faint mt-0.5">
-                These funds set the allocation amounts used in the projections
-                above — click any fund to expand
-              </p>
-            </div>
-            {canEdit && (
-              <Button onClick={() => setShowNewFund(true)}>+ New Fund</Button>
+            {/* Impact bar */}
+            {goalProjections.length > 0 && (
+              <ProjectionImpactBar
+                goalProjections={goalProjections}
+                monthDates={monthDates}
+                hiddenGoalIds={hiddenGoalIds}
+                onToggle={handleToggleGoalColumn}
+              />
             )}
-          </div>
-          {canEdit && showNewFund && (
-            <NewFundFormCard
+
+            {/* Projection output */}
+            {goalProjections.length > 0 && projectionView === "table" && (
+              <SavingsTrajectoryTable
+                goalProjections={goalProjections}
+                monthDates={monthDates}
+                hiddenGoalIds={hiddenGoalIds}
+              />
+            )}
+            {goalProjections.length > 0 && projectionView === "chart" && (
+              <SavingsTrajectoryChart
+                goalProjections={goalProjections.filter(
+                  (gp) => !hiddenGoalIds.has(gp.goalId),
+                )}
+                monthDates={monthDates}
+                onFundClick={handleFundClick}
+              />
+            )}
+
+            {/* Edit tabs */}
+            {goalProjections.length > 0 && (
+              <div className="border-t border-subtle/60 pt-4 space-y-4">
+                <div className="flex border-b">
+                  {(
+                    [
+                      { key: "allocations", label: "Allocations" },
+                      { key: "transactions", label: "Transactions" },
+                      { key: "extraPaychecks", label: "Paychecks & Growth" },
+                    ] as const
+                  ).map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setEditTab(key)}
+                      className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                        editTab === key
+                          ? "border-blue-600 text-blue-600"
+                          : "border-transparent text-muted hover:text-primary"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {editTab === "allocations" && (
+                  <div className="space-y-3">
+                    {canEdit && apiBalancesData?.service && (
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() =>
+                            apiSync.buildPushAllPreview(
+                              rawGoals,
+                              apiBalanceMap,
+                              efund?.targetAmount ?? undefined,
+                            )
+                          }
+                          disabled={apiSync.pushToApiPending}
+                          className="px-2.5 py-1 text-[11px] rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors disabled:opacity-50"
+                          title="Push monthly allocation amounts as budget API goal targets"
+                        >
+                          {apiSync.pushToApiPending
+                            ? "Pushing..."
+                            : "Push Monthly Targets →"}
+                        </button>
+                      </div>
+                    )}
+                    <AllocationEditorSection
+                      goalProjections={goalProjections}
+                      monthDates={monthDates}
+                      totalMonthlyAllocation={totalMonthlyAllocation}
+                      maxMonthlyFunding={maxMonthlyFunding}
+                      monthlyPools={monthlyPools}
+                      canEdit={canEdit}
+                      onGoalUpdate={onGoalUpdate}
+                      onGoalUpdateMulti={onGoalUpdateMulti}
+                      editingMonth={editingMonth}
+                      setEditingMonth={setEditingMonth}
+                      hiddenGoalIds={hiddenGoalIds}
+                      ruleMonthKeys={
+                        new Set(
+                          (allocationOverrides ?? [])
+                            .filter((o) => o.source === "rule")
+                            .map((o) => o.monthDate.slice(0, 7)),
+                        )
+                      }
+                    />
+                  </div>
+                )}
+
+                {editTab === "transactions" && (
+                  <AllTransactionsTab
+                    plannedTransactions={plannedTransactions}
+                    goalProjections={goalProjections}
+                    canEdit={canEdit}
+                    projectionEndDate={monthDates[monthDates.length - 1]}
+                  />
+                )}
+
+                {editTab === "extraPaychecks" && (
+                  <div className="space-y-4">
+                    {/* Pool Growth — full-width compact bar */}
+                    <div className="flex items-center gap-6 rounded-lg border border-subtle/40 px-4 py-3">
+                      <div>
+                        <h3 className="text-sm font-semibold text-primary">
+                          Pool Growth
+                        </h3>
+                        <p className="text-xs text-faint mt-0.5">
+                          Derived from raise rates &middot; flat budget assumed
+                        </p>
+                      </div>
+                      {(() => {
+                        if (maxMonthlyFunding === null)
+                          return (
+                            <p className="text-xs text-faint">
+                              Requires paycheck and budget data.
+                            </p>
+                          );
+                        const endYear = startYear + projectionYears;
+                        const endPool =
+                          derivedPoolByYear.get(endYear) ?? maxMonthlyFunding;
+                        const totalGrowthPct =
+                          maxMonthlyFunding > 0
+                            ? ((endPool - maxMonthlyFunding) /
+                                maxMonthlyFunding) *
+                              100
+                            : 0;
+                        const hasGrowth = Math.abs(totalGrowthPct) >= 0.01;
+                        return (
+                          <p className="text-xs text-faint tabular-nums">
+                            {hasGrowth ? (
+                              <>
+                                <span className="text-primary font-medium">
+                                  {formatCurrency(maxMonthlyFunding)}/mo
+                                </span>
+                                {" → "}
+                                <span className="text-primary font-medium">
+                                  {formatCurrency(endPool)}/mo
+                                </span>
+                                {" by "}
+                                {endYear}
+                                <span className="text-green-600 ml-1">
+                                  (+{totalGrowthPct.toFixed(1)}%)
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-primary font-medium">
+                                  {formatCurrency(maxMonthlyFunding)}/mo
+                                </span>
+                                <span className="text-faint/60 ml-1">
+                                  · set raise rates to project growth
+                                </span>
+                              </>
+                            )}
+                          </p>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Extra paycheck rules — Sean / Joanna side by side */}
+                    <ExtraPaycheckRulesEditor
+                      goals={rawGoals
+                        .filter((g) => g.isActive && !g.parentGoalId)
+                        .map((g) => ({ id: g.id, name: g.name }))}
+                      netPayByPersonId={netPayByPersonId}
+                      monthDates={monthDates}
+                      layout="columns"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+        </CardBoundary>
+      )}
+
+      {/* ── Manage tab ── */}
+      {masterTab === "manage" && (
+        <CardBoundary title="Manage">
+          <section className="bg-surface-primary rounded-lg border border-default p-4 sm:p-5 space-y-3">
+            {canEdit && showNewFund && (
+              <NewFundFormCard
+                newFund={newFund}
+                setNewFund={setNewFund}
+                onSubmit={handleCreateFund}
+                onCancel={() => setShowNewFund(false)}
+                isPending={createGoal.isPending}
+                availableParents={rawGoals
+                  .filter((g) => !g.parentGoalId && g.isActive)
+                  .map((g) => ({ id: g.id, name: g.name }))}
+              />
+            )}
+            <FundManagementSection
+              rawGoals={rawGoals}
+              goalProjections={goalProjections}
+              savings={savings}
+              plannedTransactions={plannedTransactions}
+              allocationOverrides={allocationOverrides}
+              monthDates={monthDates}
+              totalMonthlyAllocation={totalMonthlyAllocation}
+              maxMonthlyFunding={maxMonthlyFunding}
+              goalById={goalById}
+              childGoalsByParent={childGoalsByParent}
+              apiBalanceMap={apiBalanceMap}
+              apiServiceName={apiBalancesData?.service}
+              canEdit={canEdit}
+              onEditMonth={setEditingMonth}
+              onDeleteOverride={apiSync.onDeleteOverride}
+              efund={efund}
+              budgetTierLabels={budgetTierLabels}
+              efundTierIndex={efundTierIndex}
+              onEfundTierChange={setEfundBudgetColumn}
+              reimbursementsData={reimbursementsData}
+              onLinkToApi={apiSync.onLinkToApi}
+              onUnlinkFromApi={apiSync.onUnlinkFromApi}
+              onConvertToBudgetItem={apiSync.onConvertToBudgetItem}
+              onPushPreview={apiSync.onPushPreview}
+              callbacksRef={fundCallbacksRef}
+              showNewFund={showNewFund}
+              setShowNewFund={setShowNewFund}
               newFund={newFund}
               setNewFund={setNewFund}
-              onSubmit={handleCreateFund}
-              onCancel={() => setShowNewFund(false)}
-              isPending={createGoal.isPending}
-              availableParents={rawGoals
-                .filter((g) => !g.parentGoalId && g.isActive)
-                .map((g) => ({ id: g.id, name: g.name }))}
+              createGoalMutate={(params, options) =>
+                createGoal.mutate(params, options)
+              }
+              createGoalPending={createGoal.isPending}
             />
-          )}
-          <FundManagementSection
-            rawGoals={rawGoals}
-            goalProjections={goalProjections}
-            savings={savings}
-            plannedTransactions={plannedTransactions}
-            allocationOverrides={allocationOverrides}
-            monthDates={monthDates}
-            totalMonthlyAllocation={totalMonthlyAllocation}
-            maxMonthlyFunding={maxMonthlyFunding}
-            goalById={goalById}
-            childGoalsByParent={childGoalsByParent}
-            apiBalanceMap={apiBalanceMap}
-            apiServiceName={apiBalancesData?.service}
-            canEdit={canEdit}
-            onEditMonth={setEditingMonth}
-            onDeleteOverride={apiSync.onDeleteOverride}
-            efund={efund}
-            budgetTierLabels={budgetTierLabels}
-            efundTierIndex={efundTierIndex}
-            onEfundTierChange={setEfundBudgetColumn}
-            reimbursementsData={reimbursementsData}
-            onLinkToApi={apiSync.onLinkToApi}
-            onUnlinkFromApi={apiSync.onUnlinkFromApi}
-            onConvertToBudgetItem={apiSync.onConvertToBudgetItem}
-            onPushPreview={apiSync.onPushPreview}
-            callbacksRef={fundCallbacksRef}
-            showNewFund={showNewFund}
-            setShowNewFund={setShowNewFund}
-            newFund={newFund}
-            setNewFund={setNewFund}
-            createGoalMutate={(params, options) =>
-              createGoal.mutate(params, options)
-            }
-            createGoalPending={createGoal.isPending}
-          />
-        </section>
-      </CardBoundary>
+          </section>
+        </CardBoundary>
+      )}
 
       {/* ── API Sync Modals ── */}
       <ApiSyncSection

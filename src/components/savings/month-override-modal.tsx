@@ -78,14 +78,36 @@ export function MonthOverrideModal({
   const [localPool, setLocalPool] = useState(pool);
   const [pendingApply, setPendingApply] = useState(false);
   const [pendingFillForward, setPendingFillForward] = useState(false);
+  const [showAddFunds, setShowAddFunds] = useState(false);
 
-  const total = funds.reduce((s, f) => s + f.amount, 0);
+  // Which funds are shown in the editor — start with funds that have non-zero allocations
+  const [visibleFundIds, setVisibleFundIds] = useState<Set<number>>(() => {
+    const activeIds = new Set(
+      initialFunds.filter((f) => f.amount > 0).map((f) => f.goalId),
+    );
+    // If nothing is active, show everything so the modal isn't empty
+    return activeIds.size > 0
+      ? activeIds
+      : new Set(initialFunds.map((f) => f.goalId));
+  });
+
+  const visibleFunds = funds.filter((f) => visibleFundIds.has(f.goalId));
+  const hiddenFunds = funds.filter((f) => !visibleFundIds.has(f.goalId));
+
+  const total = visibleFunds.reduce((s, f) => s + f.amount, 0);
   const isOverAllocated = total > localPool + 1;
   const isUnderAllocated = total < localPool - 1;
 
-  // Wrap setters to clear confirmation state on any allocation/pool change
-  const handleFundsChange = useCallback((newFunds: FundAllocation[]) => {
-    setFunds(newFunds);
+  // Wrap setters to clear confirmation state on any allocation/pool change.
+  // PoolDistributionEditor receives only the visible subset, so merge updates back
+  // into the full funds array (hidden funds retain their values unchanged).
+  const handleFundsChange = useCallback((updatedVisible: FundAllocation[]) => {
+    setFunds((prev) =>
+      prev.map((f) => {
+        const updated = updatedVisible.find((u) => u.goalId === f.goalId);
+        return updated ?? f;
+      }),
+    );
     setPendingApply(false);
     setPendingFillForward(false);
   }, []);
@@ -96,7 +118,7 @@ export function MonthOverrideModal({
     setPendingFillForward(false);
   }, []);
 
-  const hasChanges = funds.some(
+  const hasChanges = visibleFunds.some(
     (f) =>
       Math.abs(
         f.amount -
@@ -225,14 +247,54 @@ export function MonthOverrideModal({
           </div>
 
           {/* Body — scrollable */}
-          <div className="flex-1 overflow-y-auto px-5 py-4">
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
             <PoolDistributionEditor
               pool={localPool}
-              funds={funds}
+              funds={visibleFunds}
               onChange={handleFundsChange}
               poolEditable
               onPoolChange={handlePoolChange}
             />
+
+            {/* Hidden (zero-allocation) funds — expandable */}
+            {hiddenFunds.length > 0 && (
+              <div>
+                <button
+                  onClick={() => setShowAddFunds((v) => !v)}
+                  className="text-xs text-muted hover:text-secondary transition-colors flex items-center gap-1"
+                >
+                  <span>{showAddFunds ? "▾" : "▸"}</span>
+                  <span>
+                    {showAddFunds ? "Hide" : "Add fund"} ({hiddenFunds.length}{" "}
+                    with $0 allocation)
+                  </span>
+                </button>
+
+                {showAddFunds && (
+                  <div className="mt-2 space-y-1.5 pl-1">
+                    {hiddenFunds.map((f) => (
+                      <div
+                        key={f.goalId}
+                        className="flex items-center justify-between rounded-lg border border-dashed border-strong px-3 py-2"
+                      >
+                        <span className="text-sm text-muted">{f.name}</span>
+                        <button
+                          onClick={() => {
+                            setVisibleFundIds(
+                              (prev) => new Set([...prev, f.goalId]),
+                            );
+                            setShowAddFunds(false);
+                          }}
+                          className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                          + Add
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Footer */}
@@ -276,7 +338,7 @@ export function MonthOverrideModal({
               <button
                 onClick={handleReset}
                 disabled={!thisMonthHasOverrides}
-                className="text-xs text-muted hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                className="text-xs text-muted hover:text-red-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 title="Remove all overrides for this month"
               >
                 Reset this month
@@ -284,7 +346,7 @@ export function MonthOverrideModal({
               <button
                 onClick={handleResetForward}
                 disabled={!hasOverridesFromHere}
-                className="text-xs text-muted hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                className="text-xs text-muted hover:text-red-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 title="Remove all overrides from this month to the end of projections"
               >
                 Reset this month forward

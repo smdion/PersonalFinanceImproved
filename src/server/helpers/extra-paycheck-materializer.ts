@@ -1,30 +1,75 @@
 /**
- * Extra-paycheck override materializer.
+ * Extra-paycheck materializer.
  *
- * Reads `jobs.extra_paycheck_routing` rules and writes the resulting dollar
- * amounts into `savings_allocation_overrides` with `source = 'rule'` for the
- * next 24 months. Manual overrides (source = 'manual') are never touched.
+ * Reads `jobs.extra_paycheck_routing` (rules + optional overrides) and writes
+ * the resulting dollar amounts into `savings_planned_transactions` with
+ * `source = 'rule'` for the next 24 months.
  *
- * Call after: job create/update/delete, or explicit rule save.
+ * Override priority: if an ExtraPaycheckOverride entry matches the month key,
+ * its splits are used instead of the rule's splits.
+ *
+ * Call after: job create/update/delete, explicit rule/override save.
  */
 
-import { eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import type { ExtraPaycheckRule } from "@/lib/db/schema-pg";
+import type {
+  ExtraPaycheckRule,
+  ExtraPaycheckOverride,
+  ExtraPaycheckRoutingData,
+  YearlyGrowthEntry,
+} from "@/lib/db/schema-pg";
 import { getExtraPaycheckMonthKeys } from "@/lib/calculators/paycheck";
 import type { Db } from "./transforms";
 
-const HORIZON_MONTHS = 24;
+const HORIZON_MONTHS = 120; // covers the max 10-year projection window
 
 /**
- * Materialize extra-paycheck overrides for all jobs that have routing rules.
- * Safe to call repeatedly — fully replaces existing rule-sourced overrides.
+ * Project a base net-pay-per-check forward to a target year, applying stored
+ * growth entries. Each entry modifies the running total (pct = percentage of
+ * current total; dollar = flat bump carried forward as the new base).
+ * Years with no entry default to 0% growth.
  */
+function projectedNetPay(
+  base: number,
+  targetYear: number,
+  baseYear: number,
+  yearlyGrowth: Record<string, YearlyGrowthEntry>,
+): number {
+  let pay = base;
+  for (let y = baseYear + 1; y <= targetYear; y++) {
+    const e = yearlyGrowth[String(y)];
+    if (!e || e.value === 0) continue;
+    pay = e.type === "pct" ? pay * (1 + e.value / 100) : pay + e.value;
+  }
+  return pay;
+}
+
+// Serializes concurrent materializer calls within the same Node.js process.
+// Prevents the delete→insert race when two mutations (e.g. two auto-upgrades)
+// fire simultaneously and each runs a full materialize cycle.
+let materializerLock: Promise<void> = Promise.resolve();
+
 export async function materializeExtraPaycheckOverrides(db: Db): Promise<void> {
+  const prev = materializerLock;
+  let unlock!: () => void;
+  materializerLock = new Promise<void>((r) => {
+    unlock = r;
+  });
+  await prev;
+
+  try {
+    await _materialize(db);
+  } finally {
+    unlock();
+  }
+}
+
+async function _materialize(db: Db): Promise<void> {
   const now = new Date();
 
-  // Load all jobs with routing rules and their people
-  const jobsWithRules = await db
+  // Load all active jobs with routing data
+  const allJobs = await db
     .select({
       id: schema.jobs.id,
       anchorPayDate: schema.jobs.anchorPayDate,
@@ -32,29 +77,19 @@ export async function materializeExtraPaycheckOverrides(db: Db): Promise<void> {
       extraPaycheckRouting: schema.jobs.extraPaycheckRouting,
       personId: schema.jobs.personId,
     })
-    .from(schema.jobs)
-    .then(
-      (
-        rows: {
-          id: number;
-          anchorPayDate: string | null;
-          payPeriod: string;
-          extraPaycheckRouting: ExtraPaycheckRule[] | null;
-          personId: number;
-        }[],
-      ) =>
-        rows.filter((j) => j.extraPaycheckRouting?.length && j.anchorPayDate),
-    );
+    .from(schema.jobs);
 
-  if (jobsWithRules.length === 0) {
-    // No rules — delete any stale rule-sourced overrides
-    await db
-      .delete(schema.savingsAllocationOverrides)
-      .where(eq(schema.savingsAllocationOverrides.source, "rule"));
-    return;
-  }
+  const jobsWithRules = (
+    allJobs as {
+      id: number;
+      anchorPayDate: string | null;
+      payPeriod: string;
+      extraPaycheckRouting: ExtraPaycheckRoutingData | null;
+      personId: number;
+    }[]
+  ).filter((j) => j.extraPaycheckRouting?.rules?.length && j.anchorPayDate);
 
-  // Load all active goal ids so we can skip deleted goals
+  // Load active goal ids
   const activeGoals = await db
     .select({ id: schema.savingsGoals.id })
     .from(schema.savingsGoals)
@@ -63,34 +98,69 @@ export async function materializeExtraPaycheckOverrides(db: Db): Promise<void> {
     (activeGoals as { id: number }[]).map((g) => g.id),
   );
 
-  // Build the full set of desired rule overrides: { goalId, monthDate, amount }
-  type OverrideRow = { goalId: number; monthDate: string; amount: string };
-  const desired = new Map<string, OverrideRow>(); // key = "goalId:YYYY-MM-01"
+  // Build desired planned transaction rows: { goalId, transactionDate, amount, description }
+  type TxRow = {
+    goalId: number;
+    transactionDate: string;
+    amount: string;
+    description: string;
+  };
+  const desired = new Map<string, TxRow>(); // key = "goalId:YYYY-MM-01"
+
+  // Load person names for descriptions
+  const people = await db
+    .select({ id: schema.people.id, name: schema.people.name })
+    .from(schema.people);
+  const personNameMap = new Map(
+    (people as { id: number; name: string }[]).map((p) => [p.id, p.name]),
+  );
+
+  const nowYear = now.getFullYear();
 
   for (const job of jobsWithRules) {
+    const routing = job.extraPaycheckRouting!;
+    const rules = routing.rules;
+    const overrides = routing.overrides ?? [];
+    const yearlyGrowth = routing.yearlyGrowth ?? {};
+    const baseNetPay = routing.baseNetPayPerCheck;
+    const baseYear = routing.baseYear ?? nowYear;
+    const personName = personNameMap.get(job.personId) ?? "Unknown";
+
     const anchor = new Date(job.anchorPayDate! + "T00:00:00Z");
-    const monthKeys = getExtraPaycheckMonthKeys(
+    const monthDates = getExtraPaycheckMonthKeys(
       anchor,
       job.payPeriod,
       now,
       HORIZON_MONTHS,
     );
 
-    for (const monthDate of monthKeys) {
-      // "YYYY-MM-01" → "YYYY-MM" for rule matching
-      const monthKey = monthDate.slice(0, 7);
-      const rule = findActiveRule(job.extraPaycheckRouting!, monthKey);
+    for (const transactionDate of monthDates) {
+      const monthKey = transactionDate.slice(0, 7); // "YYYY-MM"
+
+      // Override takes priority over rule for splits
+      const override = overrides.find((o) => o.month === monthKey);
+      const rule = findActiveRule(rules, monthKey);
       if (!rule) continue;
 
-      for (const split of rule.splits) {
+      const splits = override?.splits ?? rule.splits;
+
+      // Compute net pay: prefer routing-level base + growth projection;
+      // fall back to per-rule netPaySnapshot for legacy records.
+      const targetYear = parseInt(monthKey.slice(0, 4));
+      const netPay =
+        baseNetPay !== undefined
+          ? projectedNetPay(baseNetPay, targetYear, baseYear, yearlyGrowth)
+          : (rule.netPaySnapshot ?? 0);
+
+      for (const split of splits) {
         if (!activeGoalIds.has(split.goalId)) continue;
-        const amount = (rule.netPaySnapshot * split.pct) / 100;
-        const key = `${split.goalId}:${monthDate}`;
+        const amount = (netPay * split.pct) / 100;
+        const key = `${split.goalId}:${transactionDate}`;
         const existing = desired.get(key);
         desired.set(key, {
           goalId: split.goalId,
-          monthDate,
-          // Multiple jobs can add to the same goal/month — sum them
+          transactionDate,
+          description: personName,
           amount: String(
             Math.round(
               ((existing ? Number(existing.amount) : 0) + amount) * 100,
@@ -101,85 +171,27 @@ export async function materializeExtraPaycheckOverrides(db: Db): Promise<void> {
     }
   }
 
-  // Load existing rule-sourced overrides
-  const existingRuleOverrides = await db
-    .select({
-      id: schema.savingsAllocationOverrides.id,
-      goalId: schema.savingsAllocationOverrides.goalId,
-      monthDate: schema.savingsAllocationOverrides.monthDate,
-      amount: schema.savingsAllocationOverrides.amount,
-    })
-    .from(schema.savingsAllocationOverrides)
-    .where(eq(schema.savingsAllocationOverrides.source, "rule"));
+  // Delete all rule-sourced rows then insert fresh ones inside a transaction
+  // so the replacement is atomic at the DB level.
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(schema.savingsPlannedTransactions)
+      .where(eq(schema.savingsPlannedTransactions.source, "rule"));
 
-  const existingMap = new Map<string, { id: number; amount: string }>();
-  for (const row of existingRuleOverrides as {
-    id: number;
-    goalId: number;
-    monthDate: string;
-    amount: string;
-  }[]) {
-    existingMap.set(`${row.goalId}:${row.monthDate}`, {
-      id: row.id,
-      amount: row.amount,
-    });
-  }
-
-  // Load existing manual overrides so we never overwrite them
-  const manualOverrides = await db
-    .select({
-      goalId: schema.savingsAllocationOverrides.goalId,
-      monthDate: schema.savingsAllocationOverrides.monthDate,
-    })
-    .from(schema.savingsAllocationOverrides)
-    .where(eq(schema.savingsAllocationOverrides.source, "manual"));
-  const manualKeys = new Set<string>(
-    (manualOverrides as { goalId: number; monthDate: string }[]).map(
-      (r) => `${r.goalId}:${r.monthDate}`,
-    ),
-  );
-
-  // Compute inserts, updates, and deletes
-  const toInsert: {
-    goalId: number;
-    monthDate: string;
-    amount: string;
-    source: string;
-  }[] = [];
-  const toUpdate: { id: number; amount: string }[] = [];
-  const toDelete: number[] = [];
-
-  for (const [key, row] of desired) {
-    if (manualKeys.has(key)) continue; // manual wins
-    const existing = existingMap.get(key);
-    if (!existing) {
-      toInsert.push({ ...row, source: "rule" });
-    } else if (Math.abs(Number(existing.amount) - Number(row.amount)) >= 0.01) {
-      toUpdate.push({ id: existing.id, amount: row.amount });
+    if (desired.size > 0) {
+      await tx.insert(schema.savingsPlannedTransactions).values(
+        Array.from(desired.values()).map((row) => ({
+          ...row,
+          isRecurring: false,
+          recurrenceMonths: null,
+          transferPairId: null,
+          source: "rule" as const,
+        })),
+      );
     }
-  }
-  for (const [key, { id }] of existingMap) {
-    if (!desired.has(key)) toDelete.push(id);
-  }
-
-  // Apply changes
-  if (toInsert.length > 0) {
-    await db.insert(schema.savingsAllocationOverrides).values(toInsert);
-  }
-  for (const { id, amount } of toUpdate) {
-    await db
-      .update(schema.savingsAllocationOverrides)
-      .set({ amount })
-      .where(eq(schema.savingsAllocationOverrides.id, id));
-  }
-  if (toDelete.length > 0) {
-    await db
-      .delete(schema.savingsAllocationOverrides)
-      .where(inArray(schema.savingsAllocationOverrides.id, toDelete));
-  }
+  });
 }
 
-/** Find the active rule for a given "YYYY-MM" key. */
 function findActiveRule(
   rules: ExtraPaycheckRule[],
   monthKey: string,
@@ -191,3 +203,5 @@ function findActiveRule(
   }
   return null;
 }
+
+export type { ExtraPaycheckOverride };

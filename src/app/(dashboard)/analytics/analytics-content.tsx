@@ -219,6 +219,7 @@ function HoldingsTable({
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset draft rows when snapshot changes
     setDrafts(
       savedHoldings.map((h) => ({
         key: String(h.id),

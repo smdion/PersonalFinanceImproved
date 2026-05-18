@@ -1,9 +1,183 @@
 {
-  "id": "0dba1879-d53c-4252-9d91-086d4ec08a9e",
-  "prevId": "36f08a59-7570-4a14-955f-122eda0ccb38",
+  "id": "3c4cfe1d-e8c3-45b6-9025-ce2c9cda492b",
+  "prevId": "45b24f25-060d-4355-bdf4-081540e8e7b8",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.account_holdings": {
+      "name": "account_holdings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "performance_account_id": {
+          "name": "performance_account_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "snapshot_id": {
+          "name": "snapshot_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ticker": {
+          "name": "ticker",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "weight_bps": {
+          "name": "weight_bps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expense_ratio": {
+          "name": "expense_ratio",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "asset_class_id": {
+          "name": "asset_class_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "asset_class_source": {
+          "name": "asset_class_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'manual'"
+        }
+      },
+      "indexes": {
+        "account_holdings_acct_snap_ticker_idx": {
+          "name": "account_holdings_acct_snap_ticker_idx",
+          "columns": [
+            {
+              "expression": "performance_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "snapshot_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "ticker",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "account_holdings_perf_acct_idx": {
+          "name": "account_holdings_perf_acct_idx",
+          "columns": [
+            {
+              "expression": "performance_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "account_holdings_snapshot_idx": {
+          "name": "account_holdings_snapshot_idx",
+          "columns": [
+            {
+              "expression": "snapshot_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "account_holdings_asset_class_idx": {
+          "name": "account_holdings_asset_class_idx",
+          "columns": [
+            {
+              "expression": "asset_class_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "account_holdings_performance_account_id_performance_accounts_id_fk": {
+          "name": "account_holdings_performance_account_id_performance_accounts_id_fk",
+          "tableFrom": "account_holdings",
+          "tableTo": "performance_accounts",
+          "columnsFrom": ["performance_account_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "account_holdings_snapshot_id_portfolio_snapshots_id_fk": {
+          "name": "account_holdings_snapshot_id_portfolio_snapshots_id_fk",
+          "tableFrom": "account_holdings",
+          "tableTo": "portfolio_snapshots",
+          "columnsFrom": ["snapshot_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "account_holdings_asset_class_id_asset_class_params_id_fk": {
+          "name": "account_holdings_asset_class_id_asset_class_params_id_fk",
+          "tableFrom": "account_holdings",
+          "tableTo": "asset_class_params",
+          "columnsFrom": ["asset_class_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "account_holdings_weight_range": {
+          "name": "account_holdings_weight_range",
+          "value": "weight_bps >= 0 AND weight_bps <= 10000"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.account_performance": {
       "name": "account_performance",
       "schema": "",
@@ -2070,6 +2244,12 @@
           "type": "numeric(6, 4)",
           "primaryKey": false,
           "notNull": false
+        },
+        "extra_paycheck_routing": {
+          "name": "extra_paycheck_routing",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -3053,13 +3233,6 @@
           "notNull": true,
           "default": "'0'"
         },
-        "home_improvements_cumulative": {
-          "name": "home_improvements_cumulative",
-          "type": "numeric(14, 2)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'0'"
-        },
         "property_taxes": {
           "name": "property_taxes",
           "type": "numeric(14, 2)",
@@ -3219,6 +3392,160 @@
           "columnsFrom": ["job_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pending_rollovers": {
+      "name": "pending_rollovers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "source_account_performance_id": {
+          "name": "source_account_performance_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "destination_performance_account_id": {
+          "name": "destination_performance_account_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sale_date": {
+          "name": "sale_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sale_year": {
+          "name": "sale_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "apply_year": {
+          "name": "apply_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "confirmed_at": {
+          "name": "confirmed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "pending_rollovers_source_idx": {
+          "name": "pending_rollovers_source_idx",
+          "columns": [
+            {
+              "expression": "source_account_performance_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "pending_rollovers_dest_idx": {
+          "name": "pending_rollovers_dest_idx",
+          "columns": [
+            {
+              "expression": "destination_performance_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "pending_rollovers_sale_year_idx": {
+          "name": "pending_rollovers_sale_year_idx",
+          "columns": [
+            {
+              "expression": "sale_year",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "pending_rollovers_confirmed_idx": {
+          "name": "pending_rollovers_confirmed_idx",
+          "columns": [
+            {
+              "expression": "confirmed_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "pending_rollovers_source_account_performance_id_account_performance_id_fk": {
+          "name": "pending_rollovers_source_account_performance_id_account_performance_id_fk",
+          "tableFrom": "pending_rollovers",
+          "tableTo": "account_performance",
+          "columnsFrom": ["source_account_performance_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "pending_rollovers_destination_performance_account_id_performance_accounts_id_fk": {
+          "name": "pending_rollovers_destination_performance_account_id_performance_accounts_id_fk",
+          "tableFrom": "pending_rollovers",
+          "tableTo": "performance_accounts",
+          "columnsFrom": ["destination_performance_account_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
           "onUpdate": "no action"
         }
       },
@@ -4714,6 +5041,13 @@
           "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'manual'"
         }
       },
       "indexes": {
@@ -4890,12 +5224,7 @@
         }
       },
       "policies": {},
-      "checkConstraints": {
-        "savings_goals_target_mode_check": {
-          "name": "savings_goals_target_mode_check",
-          "value": "target_mode IN ('fixed', 'ongoing')"
-        }
-      },
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.savings_monthly": {
@@ -5046,6 +5375,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'manual'"
         }
       },
       "indexes": {
@@ -5054,6 +5390,21 @@
           "columns": [
             {
               "expression": "goal_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "savings_planned_tx_source_idx": {
+          "name": "savings_planned_tx_source_idx",
+          "columns": [
+            {
+              "expression": "source",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

@@ -1,5 +1,5 @@
 /** Savings router for savings goals, emergency fund calculations, planned transactions, and budget API expense integration. */
-import { eq, asc, sql, lt, isNull } from "drizzle-orm";
+import { eq, asc, sql, lt, isNull, and } from "drizzle-orm";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import {
@@ -10,7 +10,17 @@ import {
 import * as schema from "@/lib/db/schema";
 import { calculateSavings } from "@/lib/calculators/savings";
 import { calculateEFund } from "@/lib/calculators/efund";
-import { toNumber, computeBudgetAnnualTotal } from "@/server/helpers";
+import { calculatePaycheck } from "@/lib/calculators/paycheck";
+import {
+  toNumber,
+  computeBudgetAnnualTotal,
+  getPeriodsPerYear,
+  getCurrentSalary,
+  buildContribAccounts,
+  requireLimit,
+} from "@/server/helpers";
+import { buildBracketInput } from "./paycheck";
+import type { DeductionLine, PaycheckInput } from "@/lib/calculators/types";
 import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
 import { zDecimal } from "./settings/_shared";
 import { targetModeSchema } from "@/lib/config/enum-values";
@@ -22,6 +32,123 @@ import {
   cacheGet,
 } from "@/lib/budget-api";
 import type { BudgetCategoryGroup } from "@/lib/budget-api";
+
+/**
+ * Compute the current net-pay-per-check for a job by running the paycheck
+ * calculator against live DB data. Used to snapshot baseNetPayPerCheck when
+ * routing rules or growth rates are saved, so the value always reflects the
+ * actual paycheck calculation rather than a client-supplied number.
+ */
+async function computeJobNetPayPerCheck(
+  db: Parameters<typeof getCurrentSalary>[0],
+  jobId: number,
+): Promise<number> {
+  const taxYear = new Date().getFullYear();
+  const asOfDate = new Date();
+
+  const [job] = await db
+    .select()
+    .from(schema.jobs)
+    .where(eq(schema.jobs.id, jobId));
+  if (!job) return 0;
+
+  const [allBrackets, jobDeductions, jobContribs, personalContribs, allLimits] =
+    await Promise.all([
+      db
+        .select()
+        .from(schema.taxBrackets)
+        .where(eq(schema.taxBrackets.taxYear, taxYear)),
+      db
+        .select()
+        .from(schema.paycheckDeductions)
+        .where(eq(schema.paycheckDeductions.jobId, jobId)),
+      db
+        .select()
+        .from(schema.contributionAccounts)
+        .where(
+          and(
+            eq(schema.contributionAccounts.jobId, jobId),
+            eq(schema.contributionAccounts.isActive, true),
+          ),
+        ),
+      db
+        .select()
+        .from(schema.contributionAccounts)
+        .where(
+          and(
+            isNull(schema.contributionAccounts.jobId),
+            eq(schema.contributionAccounts.personId, job.personId),
+            eq(schema.contributionAccounts.isActive, true),
+          ),
+        ),
+      db
+        .select()
+        .from(schema.contributionLimits)
+        .where(eq(schema.contributionLimits.taxYear, taxYear)),
+    ]);
+
+  const limitsMap = new Map<string, number>();
+  const limitsRecord: Record<string, number> = {};
+  for (const l of allLimits) {
+    const v = toNumber(l.value);
+    limitsMap.set(l.limitType, v);
+    limitsRecord[l.limitType] = v;
+  }
+
+  const bracketRow = allBrackets.find(
+    (b) =>
+      b.filingStatus === job.w4FilingStatus &&
+      b.w4Checkbox === job.w4Box2cChecked,
+  );
+  if (!bracketRow) return 0;
+
+  const currentSalary = await getCurrentSalary(
+    db,
+    job.id,
+    job.annualSalary,
+    asOfDate,
+  );
+  const periodsPerYear = getPeriodsPerYear(job.payPeriod);
+  const taxBrackets = buildBracketInput(bracketRow, limitsMap);
+
+  const deductions: DeductionLine[] = jobDeductions.map((d) => ({
+    name: d.deductionName,
+    amount: toNumber(d.amountPerPeriod),
+    taxTreatment: d.isPretax ? ("pre_tax" as const) : ("after_tax" as const),
+    ficaExempt: d.ficaExempt,
+  }));
+
+  const contribAccounts = buildContribAccounts(
+    jobContribs,
+    personalContribs.filter((c) => c.ownership !== "joint"),
+    currentSalary,
+    periodsPerYear,
+  );
+
+  const paycheckInput: PaycheckInput = {
+    annualSalary: currentSalary,
+    payPeriod: job.payPeriod,
+    payWeek: job.payWeek,
+    anchorPayDate: new Date(job.anchorPayDate ?? job.startDate),
+    supplementalTaxRate: requireLimit(limitsMap, "supplemental_tax_rate"),
+    contributionAccounts: contribAccounts,
+    deductions,
+    taxBrackets,
+    limits: limitsRecord,
+    ytdGrossEarnings: 0,
+    bonusPercent: toNumber(job.bonusPercent),
+    bonusMultiplier: toNumber(job.bonusMultiplier),
+    bonusOverride: job.bonusOverride ? toNumber(job.bonusOverride) : null,
+    monthsInBonusYear: job.monthsInBonusYear,
+    includeContribInBonus: job.include401kInBonus,
+    bonusMonth: job.bonusMonth,
+    bonusDayOfMonth: job.bonusDayOfMonth,
+    asOfDate,
+  };
+
+  const paycheck = calculatePaycheck(paycheckInput);
+  return Math.round(paycheck.netPay * 100) / 100;
+}
 
 /** Sum essential budget items for a given tier/column, returning monthly. */
 function getEssentialExpenses(
@@ -285,6 +412,7 @@ export const savingsRouter = createTRPCRouter({
         isRecurring: t.isRecurring,
         recurrenceMonths: t.recurrenceMonths,
         transferPairId: t.transferPairId,
+        source: t.source ?? "manual",
       }));
 
       // Transform allocation overrides for the client
@@ -324,21 +452,53 @@ export const savingsRouter = createTRPCRouter({
           .object({ id: z.number().int() })
           .extend(plannedTransactionInput.shape),
       )
-      .mutation(({ ctx, input: { id, ...data } }) =>
-        ctx.db
+      .mutation(async ({ ctx, input: { id, ...data } }) => {
+        const [row] = await ctx.db
+          .select({ source: schema.savingsPlannedTransactions.source })
+          .from(schema.savingsPlannedTransactions)
+          .where(eq(schema.savingsPlannedTransactions.id, id));
+        if (row?.source === "rule") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "Auto-generated transactions cannot be edited. Manage them via the Extra Paychecks tab.",
+          });
+        }
+        return ctx.db
           .update(schema.savingsPlannedTransactions)
           .set(data)
-          .where(eq(schema.savingsPlannedTransactions.id, id))
+          .where(
+            and(
+              eq(schema.savingsPlannedTransactions.id, id),
+              eq(schema.savingsPlannedTransactions.source, "manual"),
+            ),
+          )
           .returning()
-          .then((r) => r[0]),
-      ),
+          .then((r) => r[0]);
+      }),
     delete: savingsProcedure
       .input(z.object({ id: z.number().int() }))
-      .mutation(({ ctx, input }) =>
-        ctx.db
+      .mutation(async ({ ctx, input }) => {
+        const [row] = await ctx.db
+          .select({ source: schema.savingsPlannedTransactions.source })
+          .from(schema.savingsPlannedTransactions)
+          .where(eq(schema.savingsPlannedTransactions.id, input.id));
+        if (row?.source === "rule") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "Auto-generated transactions cannot be deleted. Manage them via the Extra Paychecks tab.",
+          });
+        }
+        return ctx.db
           .delete(schema.savingsPlannedTransactions)
-          .where(eq(schema.savingsPlannedTransactions.id, input.id)),
-      ),
+          .where(
+            and(
+              eq(schema.savingsPlannedTransactions.id, input.id),
+              eq(schema.savingsPlannedTransactions.source, "manual"),
+            ),
+          );
+      }),
   }),
 
   // ══ ALLOCATION OVERRIDES ══
@@ -1030,7 +1190,7 @@ export const savingsRouter = createTRPCRouter({
       }));
     }),
 
-    /** Save routing rules for a single job and re-materialize overrides. */
+    /** Save routing rules for a single job and re-materialize. Preserves existing overrides and growth settings. */
     save: savingsProcedure
       .input(
         z.object({
@@ -1048,9 +1208,15 @@ export const savingsRouter = createTRPCRouter({
                   pct: z.number().min(0).max(100),
                 }),
               ),
-              netPaySnapshot: z.number().positive(),
             }),
           ),
+          /** Per-year growth rates; keyed by year string e.g. "2027". */
+          yearlyGrowth: z
+            .record(
+              z.string(),
+              z.object({ type: z.enum(["pct", "dollar"]), value: z.number() }),
+            )
+            .optional(),
         }),
       )
       .mutation(async ({ ctx, input }) => {
@@ -1079,11 +1245,142 @@ export const savingsRouter = createTRPCRouter({
           }
         }
 
+        // Preserve existing overrides and growth settings when saving rules
+        const [existingJob] = await ctx.db
+          .select({ extraPaycheckRouting: schema.jobs.extraPaycheckRouting })
+          .from(schema.jobs)
+          .where(eq(schema.jobs.id, input.jobId));
+        const existing = existingJob?.extraPaycheckRouting;
+        const existingOverrides = existing?.overrides ?? [];
+
+        // Always recompute net pay from the paycheck calculator — never trust a client-supplied value.
+        const baseNetPayPerCheck = await computeJobNetPayPerCheck(
+          ctx.db,
+          input.jobId,
+        );
+        const nowYear = new Date().getFullYear();
         await ctx.db
           .update(schema.jobs)
           .set({
-            extraPaycheckRouting: input.rules.length > 0 ? input.rules : null,
+            extraPaycheckRouting:
+              input.rules.length > 0
+                ? {
+                    rules: input.rules,
+                    overrides: existingOverrides,
+                    baseNetPayPerCheck,
+                    baseYear: nowYear,
+                    yearlyGrowth:
+                      input.yearlyGrowth !== undefined
+                        ? input.yearlyGrowth
+                        : existing?.yearlyGrowth,
+                  }
+                : null,
           })
+          .where(eq(schema.jobs.id, input.jobId));
+
+        await materializeExtraPaycheckOverrides(ctx.db);
+        return { ok: true };
+      }),
+
+    /** Persist growth rates for a job, then re-materialize. Net pay is always recomputed server-side. */
+    saveGrowth: savingsProcedure
+      .input(
+        z.object({
+          jobId: z.number().int(),
+          yearlyGrowth: z.record(
+            z.string(),
+            z.object({ type: z.enum(["pct", "dollar"]), value: z.number() }),
+          ),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        const [existingJob] = await ctx.db
+          .select({ extraPaycheckRouting: schema.jobs.extraPaycheckRouting })
+          .from(schema.jobs)
+          .where(eq(schema.jobs.id, input.jobId));
+        if (!existingJob?.extraPaycheckRouting) return { ok: true };
+
+        const baseNetPayPerCheck = await computeJobNetPayPerCheck(
+          ctx.db,
+          input.jobId,
+        );
+        const nowYear = new Date().getFullYear();
+        await ctx.db
+          .update(schema.jobs)
+          .set({
+            extraPaycheckRouting: {
+              ...existingJob.extraPaycheckRouting,
+              baseNetPayPerCheck,
+              baseYear: nowYear,
+              yearlyGrowth: input.yearlyGrowth,
+            },
+          })
+          .where(eq(schema.jobs.id, input.jobId));
+
+        await materializeExtraPaycheckOverrides(ctx.db);
+        return { ok: true };
+      }),
+
+    /** Upsert or delete a one-time override for a specific extra-paycheck month. */
+    saveOverride: savingsProcedure
+      .input(
+        z.object({
+          jobId: z.number().int(),
+          month: z.string().regex(/^\d{4}-\d{2}$/),
+          splits: z
+            .array(
+              z.object({
+                goalId: z.number().int(),
+                pct: z.number().min(0).max(100),
+              }),
+            )
+            .nullable(), // null = delete the override
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        if (input.splits !== null) {
+          const total = input.splits.reduce((s, sp) => s + sp.pct, 0);
+          if (Math.abs(total - 100) > 0.01) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Override splits must sum to 100% (got ${total.toFixed(1)}%)`,
+            });
+          }
+        }
+
+        const [job] = await ctx.db
+          .select({ extraPaycheckRouting: schema.jobs.extraPaycheckRouting })
+          .from(schema.jobs)
+          .where(eq(schema.jobs.id, input.jobId));
+        if (!job?.extraPaycheckRouting) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "No routing rules for this job",
+          });
+        }
+
+        const routing = job.extraPaycheckRouting;
+        let overrides = routing.overrides ?? [];
+
+        if (input.splits === null) {
+          overrides = overrides.filter((o) => o.month !== input.month);
+        } else {
+          const exists = overrides.some((o) => o.month === input.month);
+          if (exists) {
+            overrides = overrides.map((o) =>
+              o.month === input.month ? { ...o, splits: input.splits! } : o,
+            );
+          } else {
+            overrides = [
+              ...overrides,
+              { month: input.month, splits: input.splits },
+            ];
+          }
+        }
+
+        await ctx.db
+          .update(schema.jobs)
+          .set({ extraPaycheckRouting: { ...routing, overrides } })
           .where(eq(schema.jobs.id, input.jobId));
 
         await materializeExtraPaycheckOverrides(ctx.db);

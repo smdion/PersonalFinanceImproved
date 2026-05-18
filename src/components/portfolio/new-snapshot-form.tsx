@@ -189,7 +189,6 @@ export function NewSnapshotForm({
         previousAmount: parseFloat(a.amount),
         performanceAccountId: a.performanceAccountId ?? null,
       })) ?? [];
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time initialization from query data
     setRows(initial);
   }, [loadingLatest, latestSnap]);
 

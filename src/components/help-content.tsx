@@ -159,7 +159,10 @@ export function HelpContent() {
           </li>
           <li>
             <strong>Data freshness</strong> &mdash; The sidebar shows when data
-            was last refreshed from your budget API (if connected).
+            was last refreshed from your budget API (if connected). Hover to see
+            a breakdown by data type. Click the row to trigger a manual sync, or
+            let auto-sync handle it automatically when data becomes stale
+            (configurable in Settings &gt; Integrations).
           </li>
         </ul>
       </Section>
@@ -364,8 +367,32 @@ export function HelpContent() {
             priorities change.
           </li>
           <li>
-            <strong>Goal projection</strong> &mdash; Charts showing when
-            you&rsquo;ll reach each target at your current savings rate.
+            <strong>Goal projection</strong> &mdash; A multi-tab projection
+            workspace: Monthly Balances table, Chart, Allocations editor,
+            Transactions, and Extra Paychecks.
+          </li>
+          <li>
+            <strong>Monthly Balances history</strong> &mdash; A dropdown above
+            the Monthly Balances table shows up to 12 months (or all) of
+            recorded balances alongside projections, with a separator
+            distinguishing historical from projected rows.
+          </li>
+          <li>
+            <strong>Fund column toggles</strong> &mdash; Click any fund chip in
+            the Fund Tracker to show or hide that fund&rsquo;s column in the
+            Monthly Balances table. Hidden funds retain their color position so
+            remaining columns don&rsquo;t shift.
+          </li>
+          <li>
+            <strong>Transaction history</strong> &mdash; The Transactions tab
+            includes a history dropdown that shows past non-recurring
+            transactions above upcoming ones with a separator for clarity.
+          </li>
+          <li>
+            <strong>Extra paycheck routing</strong> &mdash; For biweekly
+            employees, set rules to automatically split a 27th paycheck across
+            funds. The Extra Paychecks tab shows upcoming months with an inline
+            rule editor; rule-sourced months display a purple ✦ badge.
           </li>
           <li>
             <strong>Budget capacity bar</strong> &mdash; Shows how much of your
@@ -381,7 +408,8 @@ export function HelpContent() {
           </li>
           <li>
             <strong>API sync</strong> &mdash; Sync fund balances from your
-            connected budget app.
+            connected budget app. Each sync automatically records the current
+            month&rsquo;s balance for each linked fund to history.
           </li>
         </ul>
       </Section>
@@ -645,14 +673,15 @@ export function HelpContent() {
       <Section title="Retirement" icon={Palmtree}>
         <p>
           The <NavLink href="/retirement">Retirement</NavLink> page is a
-          full-featured retirement planner powered by Monte Carlo simulation.
+          full-featured retirement planner powered by simulation.
         </p>
         <h4 className="font-semibold text-secondary">Key concepts</h4>
         <ul className="list-disc list-inside space-y-1 ml-2">
           <li>
             <strong>Accumulation phase</strong> &mdash; The years where
             you&rsquo;re saving and investing. The projection models portfolio
-            growth using randomized returns calibrated to historical data.{" "}
+            growth across thousands of simulated return sequences calibrated to
+            historical data.{" "}
             <NavLink href="/retirement/accumulation-methodology">
               Read the methodology
             </NavLink>
@@ -883,7 +912,14 @@ export function HelpContent() {
           </li>
           <li>
             <strong>Data freshness</strong> &mdash; The sidebar shows the last
-            sync time. Data is refreshed automatically on page load.
+            sync time. Click the data freshness row to sync immediately, or
+            enable auto-sync to refresh automatically when data becomes stale.
+          </li>
+          <li>
+            <strong>Auto-sync settings</strong> &mdash; In Settings &gt;
+            Integrations, toggle auto-sync on/off and set the stale-data
+            threshold (how many hours old data must be before it auto-syncs on
+            page load). Default threshold is 4 hours.
           </li>
           <li>
             <strong>No API? No problem</strong> &mdash; Every feature works

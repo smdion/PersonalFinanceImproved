@@ -7,7 +7,6 @@ import fs from "fs";
 import path from "path";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -37,7 +36,7 @@ export async function createTestDb(): Promise<TestDbContext> {
   sqlite.pragma("foreign_keys = ON");
 
   const db = drizzle(sqlite, { schema: sqliteSchema });
-  migrate(db, { migrationsFolder: "./drizzle-sqlite" });
+  applyMigrationsIdempotent(sqlite);
 
   // Seed reference data
   const seedPath = path.resolve("seed-reference-data.sql");
@@ -75,4 +74,66 @@ export async function createTestDb(): Promise<TestDbContext> {
   };
 
   return { db, rawDb, schema: sqliteSchema, cleanup };
+}
+
+/**
+ * Apply SQLite migrations idempotently, ignoring "already exists" / "duplicate
+ * column" errors that arise when the squash migration (0000) was generated from
+ * a later schema snapshot, causing 0001 to re-add tables/columns 0000 already
+ * created. Mirrors the savepoint logic in db-migrate.ts.
+ */
+export function applyMigrationsIdempotent(
+  sqlite: InstanceType<typeof Database>,
+  migrationsFolder = "./drizzle-sqlite",
+): void {
+  const journalPath = path.resolve(`${migrationsFolder}/meta/_journal.json`);
+  const journal = JSON.parse(fs.readFileSync(journalPath, "utf-8")) as {
+    entries: { tag: string }[];
+  };
+  sqlite.exec(
+    "CREATE TABLE IF NOT EXISTS __drizzle_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT NOT NULL, created_at NUMERIC)",
+  );
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const crypto = require("crypto") as typeof import("crypto");
+  const applied = new Set(
+    (
+      sqlite.prepare("SELECT hash FROM __drizzle_migrations").all() as {
+        hash: string;
+      }[]
+    ).map((r) => r.hash),
+  );
+  for (const entry of journal.entries) {
+    const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
+    if (!fs.existsSync(sqlPath)) continue;
+    const sql = fs.readFileSync(sqlPath, "utf-8");
+    const hash = crypto.createHash("sha256").update(sql).digest("hex");
+    if (applied.has(hash)) continue;
+    const stmts = sql
+      .split("--> statement-breakpoint")
+      .map((s: string) => s.trim())
+      .filter(Boolean);
+    const applyTx = sqlite.transaction(() => {
+      for (const stmt of stmts) {
+        try {
+          sqlite.exec(stmt);
+        } catch (e) {
+          const msg = (e as Error).message ?? "";
+          if (
+            msg.includes("already exists") ||
+            msg.includes("duplicate column")
+          ) {
+            // idempotent — skip
+          } else {
+            throw e;
+          }
+        }
+      }
+      sqlite
+        .prepare(
+          "INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)",
+        )
+        .run(hash, Date.now());
+    });
+    applyTx();
+  }
 }

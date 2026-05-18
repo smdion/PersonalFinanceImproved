@@ -204,9 +204,29 @@ export const syncConnectionsRouter = createTRPCRouter({
 
   /** Get sync status for the active API */
   getSyncStatus: protectedProcedure.query(async ({ ctx }) => {
-    const active = await getActiveBudgetApi(ctx.db);
+    const [active, autoEnabledRow, staleHoursRow] = await Promise.all([
+      getActiveBudgetApi(ctx.db),
+      ctx.db
+        .select({ value: schema.appSettings.value })
+        .from(schema.appSettings)
+        .where(eq(schema.appSettings.key, "sync_auto_enabled"))
+        .limit(1)
+        .then((r) => r[0]?.value ?? null),
+      ctx.db
+        .select({ value: schema.appSettings.value })
+        .from(schema.appSettings)
+        .where(eq(schema.appSettings.key, "sync_auto_stale_hours"))
+        .limit(1)
+        .then((r) => r[0]?.value ?? null),
+    ]);
+
+    const autoSync = {
+      enabled: autoEnabledRow !== "false",
+      staleHours: Math.max(1, Number(staleHoursRow ?? "4") || 4),
+    };
+
     if (active === "none") {
-      return { service: null, connected: false, lastSynced: null };
+      return { service: null, connected: false, lastSynced: null, autoSync };
     }
 
     const conn = await getApiConnection(ctx.db, active);
@@ -214,6 +234,7 @@ export const syncConnectionsRouter = createTRPCRouter({
       service: active,
       connected: !!conn,
       lastSynced: conn?.lastSyncedAt ?? null,
+      autoSync,
     };
   }),
 });

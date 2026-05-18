@@ -8,11 +8,15 @@
  * an inline add/edit form. Saves via savings.extraPaycheckRouting.save.
  */
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
-import { getExtraPaycheckMonthKeys } from "@/lib/calculators/paycheck";
-import type { ExtraPaycheckRule } from "@/lib/db/schema-pg";
+import { Button } from "@/components/ui/button";
+import type {
+  ExtraPaycheckRule,
+  ExtraPaycheckOverride,
+  ExtraPaycheckRoutingData,
+} from "@/lib/db/schema-pg";
 
 type YearlyGrowthEntry = { type: "pct" | "dollar"; value: number };
 type YearlyGrowth = Record<number, YearlyGrowthEntry>;
@@ -35,15 +39,16 @@ function projectedNetPay(
 function PaycheckGrowthEditor({
   projectionYears,
   baseNetPay,
+  baseYear,
   yearlyGrowth,
   setYearlyGrowth,
 }: {
   projectionYears: number;
   baseNetPay: number;
+  baseYear: number;
   yearlyGrowth: YearlyGrowth;
   setYearlyGrowth: (g: YearlyGrowth) => void;
 }) {
-  const baseYear = new Date().getFullYear();
   const years: number[] = [];
   for (let i = 1; i <= projectionYears; i++) years.push(baseYear + i);
   if (years.length === 0) return null;
@@ -166,6 +171,95 @@ function PaycheckGrowthEditor({
   );
 }
 
+function SimpleGrowthEditor({
+  projectionYears,
+  baseNetPay,
+  baseYear,
+  yearlyGrowth,
+  setYearlyGrowth,
+}: {
+  projectionYears: number;
+  baseNetPay: number;
+  baseYear: number;
+  yearlyGrowth: YearlyGrowth;
+  setYearlyGrowth: (g: YearlyGrowth) => void;
+}) {
+  const [showDetail, setShowDetail] = useState(false);
+  const years: number[] = [];
+  for (let i = 1; i <= projectionYears; i++) years.push(baseYear + i);
+
+  const nonZeroEntries = years
+    .map((y) => yearlyGrowth[y])
+    .filter((e): e is YearlyGrowthEntry => e !== undefined && e.value !== 0);
+  const isUniform =
+    nonZeroEntries.length === 0 ||
+    nonZeroEntries.every(
+      (e) =>
+        e.type === nonZeroEntries[0]!.type &&
+        e.value === nonZeroEntries[0]!.value,
+    );
+  const uniformEntry: YearlyGrowthEntry = nonZeroEntries[0] ?? {
+    type: "pct",
+    value: 0,
+  };
+
+  const applyUniform = (entry: YearlyGrowthEntry) => {
+    const next: YearlyGrowth = {};
+    for (const yr of years) {
+      if (entry.value !== 0) next[yr] = { ...entry };
+    }
+    setYearlyGrowth(next);
+  };
+
+  if (years.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2.5 flex-wrap">
+        <span className="text-xs text-faint">Annual raise</span>
+        {!isUniform ? (
+          <span className="text-[10px] text-muted italic">custom by year</span>
+        ) : (
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              min={0}
+              step={0.5}
+              value={uniformEntry.value || ""}
+              placeholder="0"
+              onChange={(e) => {
+                const val = e.target.value === "" ? 0 : Number(e.target.value);
+                applyUniform({ type: "pct", value: val });
+              }}
+              className="w-14 border bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs text-right tabular-nums"
+            />
+            <span className="text-[10px] text-muted">% / yr</span>
+          </div>
+        )}
+        <button
+          onClick={() => setShowDetail((v) => !v)}
+          className="text-[10px] text-blue-600 hover:text-blue-700"
+        >
+          {showDetail
+            ? "hide detail"
+            : isUniform
+              ? "customize by year"
+              : "edit"}
+        </button>
+      </div>
+      {showDetail && (
+        <PaycheckGrowthEditor
+          projectionYears={projectionYears}
+          baseNetPay={baseNetPay}
+          baseYear={baseYear}
+          yearlyGrowth={yearlyGrowth}
+          setYearlyGrowth={setYearlyGrowth}
+        />
+      )}
+    </div>
+  );
+}
+
 const MONTH_LABELS = [
   "Jan",
   "Feb",
@@ -195,7 +289,7 @@ type JobEntry = {
   employerName: string;
   payPeriod: string;
   anchorPayDate: string | null;
-  extraPaycheckRouting: ExtraPaycheckRule[] | null;
+  extraPaycheckRouting: ExtraPaycheckRoutingData | null;
 };
 
 type RuleForm = {
@@ -213,14 +307,12 @@ function PersonPanel({
   goals,
   netPayPerCheck,
   projectionMonthKeys,
-  yearlyGrowth,
   onSaved,
 }: {
   job: JobEntry;
   goals: Goal[];
   netPayPerCheck: number;
   projectionMonthKeys: Set<string>;
-  yearlyGrowth: YearlyGrowth;
   onSaved: () => void;
 }) {
   const utils = trpc.useUtils();
@@ -230,25 +322,122 @@ function PersonPanel({
       onSaved();
     },
   });
+  const saveGrowthMutation =
+    trpc.savings.extraPaycheckRouting.saveGrowth.useMutation({
+      onSuccess: () => utils.savings.invalidate(),
+    });
+  const saveOverrideMutation =
+    trpc.savings.extraPaycheckRouting.saveOverride.useMutation({
+      onSuccess: () => {
+        utils.savings.invalidate();
+        setOverrideMonth(null);
+        setOverrideForm(null);
+      },
+    });
 
-  const now = new Date();
-  const upcomingMonths = useMemo(() => {
-    if (!job.anchorPayDate || job.payPeriod !== "biweekly") return [];
-    return getExtraPaycheckMonthKeys(
-      new Date(job.anchorPayDate + "T00:00:00Z"),
-      job.payPeriod,
-      now,
-      projectionMonthKeys.size,
+  const routing = job.extraPaycheckRouting;
+  const rules: ExtraPaycheckRule[] = routing?.rules ?? [];
+  const overrides: ExtraPaycheckOverride[] = routing?.overrides ?? [];
+
+  // Growth state is per-person, initialized from persisted routing data.
+  const [yearlyGrowth, setYearlyGrowth] = useState<YearlyGrowth>(
+    () => (routing?.yearlyGrowth as YearlyGrowth | undefined) ?? {},
+  );
+
+  // Base net pay: use stored value if available, else fall back to live calculator value.
+  const baseNetPayDisplay =
+    routing?.baseNetPayPerCheck !== undefined
+      ? routing.baseNetPayPerCheck
+      : netPayPerCheck;
+  const baseYearDisplay = routing?.baseYear ?? new Date().getFullYear();
+
+  // Auto-upgrade: if rules exist but baseNetPayPerCheck hasn't been set yet,
+  // trigger saveGrowth so the server recomputes net pay and the materializer
+  // switches from the stale per-rule netPaySnapshot to the dynamic projection path.
+  const autoUpgradeFiredRef = useRef(false);
+  useEffect(() => {
+    if (
+      autoUpgradeFiredRef.current ||
+      rules.length === 0 ||
+      routing?.baseNetPayPerCheck !== undefined
     )
-      .map((d) => d.slice(0, 7)) // "YYYY-MM-01" → "YYYY-MM"
-      .filter((mk) => projectionMonthKeys.has(mk));
+      return;
+    autoUpgradeFiredRef.current = true;
+    saveGrowthMutation.mutate({
+      jobId: job.id,
+      yearlyGrowth: {},
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [job.anchorPayDate, job.payPeriod, projectionMonthKeys]);
+  }, [job.id, routing?.baseNetPayPerCheck]);
 
-  const rules: ExtraPaycheckRule[] = job.extraPaycheckRouting ?? [];
+  // Number of future years visible in the projection (for growth editor rows).
+  const projectionYears = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    let maxYear = currentYear;
+    for (const mk of projectionMonthKeys) {
+      const y = parseInt(mk.slice(0, 4));
+      if (y > maxYear) maxYear = y;
+    }
+    return maxYear - currentYear;
+  }, [projectionMonthKeys]);
 
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [addForm, setAddForm] = useState<RuleForm | null>(null);
+
+  // Override state: which month is open for override editing
+  const [overrideMonth, setOverrideMonth] = useState<string | null>(null);
+  const [overrideForm, setOverrideForm] = useState<
+    { goalId: number; pct: string }[] | null
+  >(null);
+
+  function openAddOverride() {
+    setOverrideForm([{ goalId: 0, pct: "100" }]);
+    setOverrideMonth("");
+  }
+
+  function openOverride(mk: string) {
+    const existing = overrides.find((o) => o.month === mk);
+    if (existing) {
+      setOverrideForm(
+        existing.splits.map((s) => ({ goalId: s.goalId, pct: String(s.pct) })),
+      );
+    } else {
+      const rule = rules.find(
+        (r) => mk >= r.from && (r.to === null || mk <= r.to),
+      );
+      setOverrideForm(
+        rule
+          ? rule.splits.map((s) => ({ goalId: s.goalId, pct: String(s.pct) }))
+          : [{ goalId: 0, pct: "100" }],
+      );
+    }
+    setOverrideMonth(mk);
+  }
+
+  function saveOverride() {
+    if (
+      overrideMonth === null ||
+      !overrideMonth.match(/^\d{4}-\d{2}$/) ||
+      !overrideForm
+    )
+      return;
+    const splits = overrideForm
+      .filter((s) => s.goalId > 0 && Number(s.pct) > 0)
+      .map((s) => ({ goalId: s.goalId, pct: Number(s.pct) }));
+    saveOverrideMutation.mutate({
+      jobId: job.id,
+      month: overrideMonth,
+      splits,
+    });
+  }
+
+  function deleteOverride(mk: string) {
+    saveOverrideMutation.mutate({ jobId: job.id, month: mk, splits: null });
+  }
+
+  const overrideSplitTotal = overrideForm
+    ? overrideForm.reduce((s, sp) => s + Number(sp.pct), 0)
+    : 0;
 
   function openAdd() {
     setAddForm(emptyForm());
@@ -283,7 +472,6 @@ function PersonPanel({
       from: addForm.from,
       to: addForm.to.trim() || null,
       splits,
-      netPaySnapshot: Math.round(netPayPerCheck),
     };
 
     let updated: ExtraPaycheckRule[];
@@ -295,7 +483,11 @@ function PersonPanel({
       );
     }
 
-    saveMutation.mutate({ jobId: job.id, rules: updated });
+    saveMutation.mutate({
+      jobId: job.id,
+      rules: updated,
+      yearlyGrowth,
+    });
     setAddForm(null);
     setEditingIdx(null);
   }
@@ -349,14 +541,6 @@ function PersonPanel({
     Math.abs(splitTotal - 100) < 0.01 &&
     netPayPerCheck > 0;
 
-  // Which upcoming months have no rule
-  const uncoveredMonths = upcomingMonths.filter((mk) => {
-    const rule = rules.find(
-      (r) => mk >= r.from && (r.to === null || mk <= r.to),
-    );
-    return !rule;
-  });
-
   if (job.payPeriod !== "biweekly") {
     return (
       <div className="text-xs text-muted py-2">
@@ -373,58 +557,44 @@ function PersonPanel({
   }
 
   return (
-    <div className="space-y-3">
-      {/* Upcoming extra paycheck months */}
-      {upcomingMonths.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 items-center">
-          <span className="text-[10px] text-muted font-medium">
-            Extra paychecks in projection:
-          </span>
-          {upcomingMonths.map((mk) => {
-            const covered = rules.some(
-              (r) => mk >= r.from && (r.to === null || mk <= r.to),
-            );
-            const year = parseInt(mk.slice(0, 4));
-            const baseYear = new Date().getFullYear();
-            const projected = projectedNetPay(
-              netPayPerCheck,
-              year,
-              baseYear,
-              yearlyGrowth,
-            );
-            const hasGrowth = Object.values(yearlyGrowth).some(
-              (e) => e.value !== 0,
-            );
-            return (
-              <span
-                key={mk}
-                className={`text-[10px] px-1.5 py-0.5 rounded border ${
-                  covered
-                    ? "bg-green-50 border-green-200 text-green-700 dark:bg-green-950/30 dark:border-green-800"
-                    : "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/30 dark:border-amber-800"
-                }`}
-                title={`Projected net pay: ${formatCurrency(projected)}`}
-              >
-                {fmt(mk)}
-                {hasGrowth && year > baseYear && (
-                  <span className="ml-1 opacity-70">
-                    {formatCurrency(projected)}
-                  </span>
-                )}
-                {!covered && " ⚠"}
-              </span>
-            );
-          })}
+    <div className="space-y-4">
+      {/* Growth editor — per-person, persisted */}
+      {projectionYears > 0 && netPayPerCheck > 0 && (
+        <div className="rounded border border-subtle bg-surface-sunken/30 p-3 space-y-2.5">
+          <SimpleGrowthEditor
+            projectionYears={projectionYears}
+            baseNetPay={baseNetPayDisplay}
+            baseYear={baseYearDisplay}
+            yearlyGrowth={yearlyGrowth}
+            setYearlyGrowth={setYearlyGrowth}
+          />
+          <div className="flex items-center gap-3 flex-wrap border-t border-subtle/50 pt-2">
+            <span className="text-[10px] text-faint">
+              Base {formatCurrency(baseNetPayDisplay)}/check
+              {routing?.baseYear
+                ? ` · saved ${routing.baseYear}`
+                : " · not yet saved"}
+            </span>
+            <Button
+              variant="secondary"
+              size="xs"
+              onClick={() =>
+                saveGrowthMutation.mutate({
+                  jobId: job.id,
+                  yearlyGrowth,
+                })
+              }
+              disabled={saveGrowthMutation.isPending}
+            >
+              {saveGrowthMutation.isPending
+                ? "Applying…"
+                : "Apply growth rates"}
+            </Button>
+            <span className="text-[10px] text-faint/60">
+              Re-apply after salary changes
+            </span>
+          </div>
         </div>
-      )}
-
-      {uncoveredMonths.length > 0 && (
-        <p className="text-[10px] text-amber-600">
-          {uncoveredMonths.length} upcoming extra check month
-          {uncoveredMonths.length !== 1 ? "s" : ""}{" "}
-          {uncoveredMonths.length !== 1 ? "have" : "has"} no rule — the funds
-          will be unassigned.
-        </p>
       )}
 
       {/* Rule list */}
@@ -440,45 +610,54 @@ function PersonPanel({
             </tr>
           </thead>
           <tbody>
-            {rules.map((rule, idx) => (
-              <tr
-                key={`${rule.from}-${rule.to ?? "open"}`}
-                className="border-b border-subtle/50"
-              >
-                <td className="py-1 pr-2 tabular-nums">{fmt(rule.from)}</td>
-                <td className="py-1 pr-2 tabular-nums text-muted">
-                  {rule.to ? fmt(rule.to) : "∞"}
-                </td>
-                <td className="py-1 pr-2">
-                  {rule.splits.map((s) => {
-                    const g = goals.find((g) => g.id === s.goalId);
-                    return (
-                      <span key={s.goalId} className="mr-1.5">
-                        {g?.name ?? `#${s.goalId}`}{" "}
-                        <span className="text-faint">{s.pct}%</span>
-                      </span>
-                    );
-                  })}
-                </td>
-                <td className="py-1 pr-2 tabular-nums text-muted">
-                  {formatCurrency(rule.netPaySnapshot)}
-                </td>
-                <td className="py-1 text-right">
-                  <button
-                    onClick={() => openEdit(idx)}
-                    className="text-blue-600 hover:text-blue-800 mr-2 text-[10px]"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => deleteRule(idx)}
-                    className="text-red-400 hover:text-red-600 text-[10px]"
-                  >
-                    ×
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {rules.map((rule, idx) => {
+              const ruleYear = parseInt(rule.from.slice(0, 4));
+              const netPerCheck = projectedNetPay(
+                baseNetPayDisplay,
+                ruleYear,
+                baseYearDisplay,
+                yearlyGrowth,
+              );
+              return (
+                <tr
+                  key={`${rule.from}-${rule.to ?? "open"}`}
+                  className="border-b border-subtle/50"
+                >
+                  <td className="py-1 pr-2 tabular-nums">{fmt(rule.from)}</td>
+                  <td className="py-1 pr-2 tabular-nums text-muted">
+                    {rule.to ? fmt(rule.to) : "∞"}
+                  </td>
+                  <td className="py-1 pr-2">
+                    {rule.splits.map((s) => {
+                      const g = goals.find((g) => g.id === s.goalId);
+                      return (
+                        <span key={s.goalId} className="mr-1.5">
+                          {g?.name ?? `#${s.goalId}`}{" "}
+                          <span className="text-faint">{s.pct}%</span>
+                        </span>
+                      );
+                    })}
+                  </td>
+                  <td className="py-1 pr-2 tabular-nums text-muted">
+                    {formatCurrency(netPerCheck)}
+                  </td>
+                  <td className="py-1 text-right">
+                    <button
+                      onClick={() => openEdit(idx)}
+                      className="text-xs text-blue-600 hover:text-blue-700 mr-2"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => deleteRule(idx)}
+                      className="text-xs text-faint hover:text-red-600 transition-colors"
+                    >
+                      ×
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}
@@ -486,6 +665,177 @@ function PersonPanel({
       {rules.length === 0 && !addForm && (
         <p className="text-xs text-muted">No routing rules yet.</p>
       )}
+
+      {/* Month overrides */}
+      <div className="border-t border-subtle/50 pt-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] text-faint font-medium uppercase tracking-wide">
+            Month overrides
+          </span>
+          {overrideMonth === null && (
+            <button
+              onClick={openAddOverride}
+              className="px-2.5 py-1 text-[11px] rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors"
+            >
+              + Add override
+            </button>
+          )}
+        </div>
+        {overrides.length > 0 && overrideMonth === null && (
+          <div className="space-y-1.5">
+            {overrides.map((o) => (
+              <div key={o.month} className="flex items-center gap-2 text-xs">
+                <span className="text-faint tabular-nums w-16 shrink-0">
+                  {fmt(o.month)}
+                </span>
+                <span className="text-muted flex-1">
+                  {o.splits
+                    .map((s) => {
+                      const g = goals.find((g) => g.id === s.goalId);
+                      return `${g?.name ?? `#${s.goalId}`} ${s.pct}%`;
+                    })
+                    .join(", ")}
+                </span>
+                <button
+                  onClick={() => openOverride(o.month)}
+                  className="text-xs text-blue-600 hover:text-blue-700"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => deleteOverride(o.month)}
+                  disabled={saveOverrideMutation.isPending}
+                  className="text-xs text-faint hover:text-red-600 transition-colors"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {overrides.length === 0 && overrideMonth === null && (
+          <p className="text-[10px] text-faint/50">None set.</p>
+        )}
+        {overrideMonth !== null && overrideForm && (
+          <div className="border border-subtle rounded-md p-3 space-y-2 bg-surface-sunken/50 text-xs">
+            {overrideMonth === "" ? (
+              <label className="space-y-0.5 block">
+                <span className="text-[10px] text-muted">Month</span>
+                <input
+                  type="month"
+                  value={overrideMonth}
+                  onChange={(e) => setOverrideMonth(e.target.value)}
+                  className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </label>
+            ) : (
+              <p className="font-medium text-primary">
+                Override — {fmt(overrideMonth)}
+              </p>
+            )}
+            <div className="space-y-1">
+              <span className="text-[10px] text-muted">
+                Fund splits (must total 100%)
+              </span>
+              {overrideForm.map((sp, si) => (
+                // eslint-disable-next-line react/no-array-index-key
+                <div key={si} className="flex gap-2 items-center">
+                  <select
+                    value={sp.goalId}
+                    onChange={(e) => {
+                      const next = overrideForm.map((s, i) =>
+                        i === si ? { ...s, goalId: Number(e.target.value) } : s,
+                      );
+                      setOverrideForm(next);
+                    }}
+                    className="flex-1 border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value={0}>— choose fund —</option>
+                    {goals.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.name}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={sp.pct}
+                    onChange={(e) => {
+                      const next = overrideForm.map((s, i) =>
+                        i === si ? { ...s, pct: e.target.value } : s,
+                      );
+                      setOverrideForm(next);
+                    }}
+                    className="w-16 border border-default rounded px-1.5 py-0.5 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 text-right tabular-nums"
+                  />
+                  <span className="text-[10px] text-muted">%</span>
+                  {overrideForm.length > 1 && (
+                    <button
+                      onClick={() =>
+                        setOverrideForm(overrideForm.filter((_, i) => i !== si))
+                      }
+                      className="text-xs text-faint hover:text-red-600 transition-colors"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() =>
+                    setOverrideForm([...overrideForm, { goalId: 0, pct: "0" }])
+                  }
+                  className="text-xs text-blue-600 hover:text-blue-700"
+                >
+                  + add fund
+                </button>
+                <span
+                  className={`text-[10px] tabular-nums ${
+                    Math.abs(overrideSplitTotal - 100) < 0.01
+                      ? "text-green-600"
+                      : "text-red-500"
+                  }`}
+                >
+                  Total: {overrideSplitTotal.toFixed(0)}%
+                </span>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={saveOverride}
+                disabled={
+                  !overrideMonth.match(/^\d{4}-\d{2}$/) ||
+                  Math.abs(overrideSplitTotal - 100) >= 0.01 ||
+                  saveOverrideMutation.isPending
+                }
+              >
+                {saveOverrideMutation.isPending ? "Saving…" : "Save override"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setOverrideMonth(null);
+                  setOverrideForm(null);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+            {saveOverrideMutation.error && (
+              <p className="text-xs text-red-600">
+                {saveOverrideMutation.error.message}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Add/edit form */}
       {addForm && (
@@ -496,25 +846,23 @@ function PersonPanel({
 
           <div className="grid grid-cols-2 gap-3">
             <label className="space-y-0.5">
-              <span className="text-[10px] text-muted">From (YYYY-MM)</span>
+              <span className="text-[10px] text-muted">From</span>
               <input
-                type="text"
-                placeholder="2026-06"
+                type="month"
                 value={addForm.from}
                 onChange={(e) => setFormField("from", e.target.value)}
-                className="w-full border rounded px-2 py-1 text-xs bg-surface-primary"
+                className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </label>
             <label className="space-y-0.5">
               <span className="text-[10px] text-muted">
-                To (YYYY-MM, blank = open)
+                To (blank = open-ended)
               </span>
               <input
-                type="text"
-                placeholder="open-ended"
+                type="month"
                 value={addForm.to}
                 onChange={(e) => setFormField("to", e.target.value)}
-                className="w-full border rounded px-2 py-1 text-xs bg-surface-primary"
+                className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </label>
           </div>
@@ -529,7 +877,7 @@ function PersonPanel({
                 <select
                   value={sp.goalId}
                   onChange={(e) => setSplitGoal(si, Number(e.target.value))}
-                  className="flex-1 border rounded px-2 py-1 text-xs bg-surface-primary"
+                  className="flex-1 border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   <option value={0}>— choose fund —</option>
                   {goals.map((g) => (
@@ -545,13 +893,13 @@ function PersonPanel({
                   step={1}
                   value={sp.pct}
                   onChange={(e) => setSplitPct(si, e.target.value)}
-                  className="w-16 border rounded px-2 py-1 text-xs bg-surface-primary tabular-nums"
+                  className="w-16 border border-default rounded px-1.5 py-0.5 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 text-right tabular-nums"
                 />
                 <span className="text-[10px] text-muted">%</span>
                 {addForm.splits.length > 1 && (
                   <button
                     onClick={() => removeSplit(si)}
-                    className="text-red-400 hover:text-red-600 text-xs"
+                    className="text-xs text-faint hover:text-red-600 transition-colors"
                   >
                     ×
                   </button>
@@ -561,7 +909,7 @@ function PersonPanel({
             <div className="flex items-center justify-between">
               <button
                 onClick={addSplit}
-                className="text-[10px] text-blue-600 hover:text-blue-800"
+                className="text-xs text-blue-600 hover:text-blue-700"
               >
                 + add fund
               </button>
@@ -578,26 +926,26 @@ function PersonPanel({
           </div>
 
           <p className="text-[10px] text-muted">
-            Net pay per check will be snapshotted from paycheck:{" "}
-            <span className="font-medium tabular-nums">
-              {formatCurrency(netPayPerCheck)}
-            </span>
+            Net pay per check is calculated from the paycheck page and projected
+            using the growth rates above.
           </p>
 
           <div className="flex gap-2 pt-1">
-            <button
+            <Button
+              variant="primary"
+              size="sm"
               onClick={saveForm}
               disabled={!formValid || saveMutation.isPending}
-              className="px-3 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {saveMutation.isPending ? "Saving…" : "Save rule"}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={editingIdx !== null ? cancelEdit : cancelAdd}
-              className="px-3 py-1 text-xs rounded border text-muted hover:text-primary"
             >
               Cancel
-            </button>
+            </Button>
           </div>
 
           {saveMutation.error && (
@@ -609,7 +957,7 @@ function PersonPanel({
       {!addForm && (
         <button
           onClick={openAdd}
-          className="text-xs text-blue-600 hover:text-blue-800"
+          className="px-2.5 py-1 text-[11px] rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors"
         >
           + Add rule
         </button>
@@ -622,14 +970,15 @@ export function ExtraPaycheckRulesEditor({
   goals,
   netPayByPersonId,
   monthDates,
+  layout = "stacked",
 }: {
   goals: Goal[];
   netPayByPersonId: Map<number, number>;
   monthDates: Date[];
+  layout?: "stacked" | "columns";
 }) {
   const { data: jobs, isLoading } =
     trpc.savings.extraPaycheckRouting.list.useQuery();
-  const [yearlyGrowth, setYearlyGrowth] = useState<YearlyGrowth>({});
 
   const projectionMonthKeys = useMemo(
     () =>
@@ -641,24 +990,6 @@ export function ExtraPaycheckRulesEditor({
       ),
     [monthDates],
   );
-
-  // Distinct future years in the projection (for growth editor)
-  const projectionYears = useMemo(() => {
-    const currentYear = new Date().getFullYear();
-    const maxYear = monthDates.reduce(
-      (max, d) => Math.max(max, d.getFullYear()),
-      currentYear,
-    );
-    return maxYear - currentYear;
-  }, [monthDates]);
-
-  // Representative base net pay (first person with a value, for the growth editor)
-  const baseNetPay = useMemo(() => {
-    for (const v of netPayByPersonId.values()) {
-      if (v > 0) return v;
-    }
-    return 0;
-  }, [netPayByPersonId]);
 
   if (isLoading) return <p className="text-xs text-muted">Loading…</p>;
   if (!jobs?.length)
@@ -673,44 +1004,41 @@ export function ExtraPaycheckRulesEditor({
     byPerson.get(job.personId)!.jobs.push(job);
   }
 
+  const wrapperCls =
+    layout === "columns" ? "grid grid-cols-2 gap-4 items-start" : "space-y-6";
+
   return (
-    <div className="space-y-4">
-      {projectionYears > 0 && baseNetPay > 0 && (
-        <PaycheckGrowthEditor
-          projectionYears={projectionYears}
-          baseNetPay={baseNetPay}
-          yearlyGrowth={yearlyGrowth}
-          setYearlyGrowth={setYearlyGrowth}
-        />
+    <div className={wrapperCls}>
+      {Array.from(byPerson.entries()).map(
+        ([personId, { name, jobs: personJobs }]) => (
+          <div
+            key={personId}
+            className={
+              layout === "columns"
+                ? "rounded-lg border border-subtle/40 p-4 space-y-3"
+                : undefined
+            }
+          >
+            <h3 className="text-sm font-semibold text-primary">{name}</h3>
+            {personJobs.map((job) => (
+              <div key={job.id}>
+                {personJobs.length > 1 && (
+                  <p className="text-[10px] text-muted mb-1.5">
+                    {job.employerName}
+                  </p>
+                )}
+                <PersonPanel
+                  job={job}
+                  goals={goals}
+                  netPayPerCheck={netPayByPersonId.get(personId) ?? 0}
+                  projectionMonthKeys={projectionMonthKeys}
+                  onSaved={() => {}}
+                />
+              </div>
+            ))}
+          </div>
+        ),
       )}
-      <div className="space-y-6">
-        {Array.from(byPerson.entries()).map(
-          ([personId, { name, jobs: personJobs }]) => (
-            <div key={personId}>
-              <h3 className="text-sm font-semibold text-primary mb-3">
-                {name}
-              </h3>
-              {personJobs.map((job) => (
-                <div key={job.id} className="mb-4">
-                  {personJobs.length > 1 && (
-                    <p className="text-[10px] text-muted mb-1.5">
-                      {job.employerName}
-                    </p>
-                  )}
-                  <PersonPanel
-                    job={job}
-                    goals={goals}
-                    netPayPerCheck={netPayByPersonId.get(personId) ?? 0}
-                    projectionMonthKeys={projectionMonthKeys}
-                    yearlyGrowth={yearlyGrowth}
-                    onSaved={() => {}}
-                  />
-                </div>
-              ))}
-            </div>
-          ),
-        )}
-      </div>
     </div>
   );
 }
