@@ -30,9 +30,12 @@
    * text-caption: 12px — secondary labels, footnotes, helper text
    * text-label  : 13px — primary UI labels, table values, legend text
    * text-xs/sm are left at Tailwind defaults (12px / 14px) */
-  --text-micro: 0.6875rem / 1rem;
-  --text-caption: 0.75rem / 1rem;
-  --text-label: 0.8125rem / 1.25rem;
+  --text-micro: 0.625rem;
+  --text-micro--line-height: 1rem;
+  --text-caption: 0.6875rem;
+  --text-caption--line-height: 1rem;
+  --text-label: 0.75rem;
+  --text-label--line-height: 1.25rem;
 }
 
 @theme inline {
