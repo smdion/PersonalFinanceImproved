@@ -8,10 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.6
 
-## [0.6.2] - 2026-05-16
+## [0.6.2] - 2026-05-17
 
 ### Added
 
+- **Savings: Extra paycheck yearly growth.** Each person's extra paycheck rules editor now includes a per-year raise rate section (% or flat $/mo) that projects how the savings pool grows over time. The Pool Growth bar at the top of the Paychecks & Growth tab shows the compounded trajectory.
+- **Savings: Plan / Manage tabs.** The savings page is reorganised into two top-level tabs — **Plan** (trajectory table, chart, allocations, transactions, paychecks & growth) and **Manage** (fund settings, targets, sub-goals). Overview remains always visible above the tabs.
+- **Savings: Hidden funds aggregate column.** Funds toggled off in the Fund Tracker no longer waste blank columns in the trajectory table and contribution grid. Their balances are collected into a compact "N hidden" column on the right so the total picture is never lost.
 - **Sync: Auto-sync on page load.** When enabled, the app automatically syncs your budget API data on page load if it is stale. The stale threshold is configurable in Settings → Integrations (default: 4 hours).
 - **Sync: Tap-to-sync.** Clicking the data freshness row in the sidebar triggers an immediate manual sync — works in both collapsed (icon) and expanded (row) sidebar modes.
 - **Settings: Sync behavior controls.** A new "Sync Behavior" card in Settings → Integrations lets you toggle auto-sync on/off and set the stale-data threshold (1, 2, 4, 8, or 24 hours).
@@ -19,6 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Improved
 
+- **Savings: Month override modal** opens showing only funds with an active allocation. Zero-allocation funds are accessible via an expandable "+ Add fund" section.
+- **Savings: Transactions tab** hides rule-generated extra-paycheck rows by default and marks them read-only with a badge — they can be revealed via a toggle but not accidentally edited or deleted.
 - Sync now refreshes mortgage and net worth data in addition to savings, budget, and assets after completing.
 
 ---
