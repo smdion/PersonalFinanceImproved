@@ -121,7 +121,7 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
                   className={`flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border px-4 py-2.5 ${ps.bg} ${ps.border}`}
                 >
                   <span
-                    className={`px-2 py-0.5 rounded-md font-bold uppercase tracking-wider text-[10px] shadow-sm ${ps.pill}`}
+                    className={`px-2 py-0.5 rounded-md font-bold uppercase tracking-wider text-caption shadow-sm ${ps.pill}`}
                   >
                     {si.presetLabel}
                   </span>
@@ -130,27 +130,27 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
                       <div className="font-semibold tabular-nums">
                         {formatPercent(si.blendedReturn, 2)}
                       </div>
-                      <div className="text-[9px] text-faint">return</div>
-                      <div className="text-[8px] text-faint">5–10%</div>
+                      <div className="text-micro text-faint">return</div>
+                      <div className="text-micro text-faint">5–10%</div>
                     </div>
                     <div className="text-center">
                       <div className="font-semibold tabular-nums">
                         {formatPercent(si.blendedVol, 2)}
                       </div>
-                      <div className="text-[9px] text-faint">volatility</div>
-                      <div className="text-[8px] text-faint">8–16%</div>
+                      <div className="text-micro text-faint">volatility</div>
+                      <div className="text-micro text-faint">8–16%</div>
                     </div>
                     <div className="text-center">
                       <div className="font-semibold tabular-nums">
                         {formatPercent(si.withdrawalRate, 2)}
                       </div>
-                      <div className="text-[9px] text-faint">
+                      <div className="text-micro text-faint">
                         {si.withdrawalStrategy &&
                         si.withdrawalStrategy !== "fixed"
                           ? "initial rate"
                           : "withdrawal"}
                       </div>
-                      <div className="text-[8px] text-faint">
+                      <div className="text-micro text-faint">
                         {si.withdrawalStrategy &&
                         si.withdrawalStrategy !== "fixed"
                           ? "4–6%"
@@ -161,21 +161,21 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
                       <div className="font-semibold tabular-nums">
                         {formatPercent(si.inflationRisk.meanRate, 2)}
                       </div>
-                      <div className="text-[9px] text-faint">inflation</div>
-                      <div className="text-[8px] text-faint">2–3%</div>
+                      <div className="text-micro text-faint">inflation</div>
+                      <div className="text-micro text-faint">2–3%</div>
                     </div>
                     <div className="text-center">
                       <div className="font-semibold tabular-nums">
                         {mcr.numTrials.toLocaleString()}
                       </div>
-                      <div className="text-[9px] text-faint">trials</div>
-                      <div className="text-[8px] text-faint">1K+</div>
+                      <div className="text-micro text-faint">trials</div>
+                      <div className="text-micro text-faint">1K+</div>
                     </div>
                   </div>
                   {(si.taxMode === "advanced" || si.hasAssetClassOverrides) && (
                     <>
                       <div className="w-px h-6 bg-surface-divider/60" />
-                      <div className="flex items-center gap-2 text-[10px]">
+                      <div className="flex items-center gap-2 text-caption">
                         {si.taxMode === "advanced" && (
                           <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 font-medium">
                             Tax-aware
@@ -192,7 +192,7 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
                   <button
                     type="button"
                     onClick={() => setShowAssumptions(true)}
-                    className={`ml-auto px-3 py-1.5 rounded-md text-[11px] font-semibold border shadow-sm transition-colors ${ps.border} ${ps.accent} hover:bg-surface-primary/80`}
+                    className={`ml-auto px-3 py-1.5 rounded-md text-label font-semibold border shadow-sm transition-colors ${ps.border} ${ps.accent} hover:bg-surface-primary/80`}
                   >
                     View Assumptions &rarr;
                   </button>

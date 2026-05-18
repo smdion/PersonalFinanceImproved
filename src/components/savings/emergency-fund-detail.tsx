@@ -136,7 +136,7 @@ export function EmergencyFundDetail({
           {poolPct && <span className="text-faint">({poolPct}% of pool)</span>}
           {isApiSyncEnabled && (
             <span
-              className="text-blue-600/70 text-[10px]"
+              className="text-blue-600/70 text-caption"
               title="Target balance pushed to YNAB"
             >
               → push
@@ -152,7 +152,7 @@ export function EmergencyFundDetail({
             onClick={() => setShowReimbursements(!showReimbursements)}
             className="flex items-center gap-2 text-xs text-muted hover:text-secondary"
           >
-            <span className="text-[10px]">
+            <span className="text-caption">
               {showReimbursements ? "▾" : "▸"}
             </span>
             <span>Pending Reimbursements</span>

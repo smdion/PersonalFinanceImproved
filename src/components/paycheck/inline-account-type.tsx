@@ -35,7 +35,7 @@ export function InlineAccountType({
         setEditing(false);
       }}
       onBlur={() => setEditing(false)}
-      className="text-[10px] font-semibold uppercase tracking-wide rounded border border-blue-400 px-1 py-0.5 bg-surface-primary"
+      className="text-caption font-semibold uppercase tracking-wide rounded border border-blue-400 px-1 py-0.5 bg-surface-primary"
     >
       {WATERFALL_CATEGORIES.map((t) => (
         <option key={t} value={t}>

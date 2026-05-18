@@ -51,7 +51,7 @@ export function DriftBanner({
                 syncAllNamesMut.mutate({ service, direction: "pull" })
               }
               disabled={syncAllNamesMut.isPending}
-              className="px-2 py-0.5 text-[10px] bg-amber-100 text-amber-700 rounded hover:bg-amber-200 whitespace-nowrap disabled:opacity-50"
+              className="px-2 py-0.5 text-caption bg-amber-100 text-amber-700 rounded hover:bg-amber-200 whitespace-nowrap disabled:opacity-50"
             >
               Use all API names
             </button>
@@ -60,7 +60,7 @@ export function DriftBanner({
                 syncAllNamesMut.mutate({ service, direction: "keepLedgr" })
               }
               disabled={syncAllNamesMut.isPending}
-              className="px-2 py-0.5 text-[10px] bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
+              className="px-2 py-0.5 text-caption bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
             >
               Keep all Ledgr names
             </button>
@@ -80,7 +80,7 @@ export function DriftBanner({
                 profileId: val ? Number(val) : null,
               });
             }}
-            className="px-1 py-1 text-[11px] border border-strong rounded bg-surface-primary min-w-[120px]"
+            className="px-1 py-1 text-label border border-strong rounded bg-surface-primary min-w-[120px]"
           >
             <option value="">Select...</option>
             {profile.availableProfiles.map((p) => (
@@ -101,7 +101,7 @@ export function DriftBanner({
                     columnIndex: Number(e.target.value),
                   })
                 }
-                className="px-1 py-1 text-[11px] border border-strong rounded bg-surface-primary min-w-[80px]"
+                className="px-1 py-1 text-label border border-strong rounded bg-surface-primary min-w-[80px]"
               >
                 {profile.columnLabels.map((label, i) => (
                   <option key={label} value={i}>

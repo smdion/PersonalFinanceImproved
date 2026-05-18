@@ -141,7 +141,7 @@ function SavingsRateCardImpl() {
             e.stopPropagation();
             setMatchOverride(excludeMatch ? false : true);
           }}
-          className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
+          className={`text-caption px-2 py-0.5 rounded transition-colors ${
             matchOverride !== null
               ? "bg-blue-100 text-blue-700 font-medium"
               : "text-faint hover:bg-surface-elevated"

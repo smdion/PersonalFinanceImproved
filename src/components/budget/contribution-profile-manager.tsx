@@ -73,7 +73,7 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
         <div className="flex items-center justify-between bg-surface-sunken rounded-lg px-4 py-3 mb-4">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-semibold uppercase">
+              <span className="text-micro px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-semibold uppercase">
                 Active
               </span>
               <span className="text-xs text-muted">Current paycheck data</span>
@@ -110,7 +110,7 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
         {/* Left: profile list */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-[11px] font-semibold text-muted uppercase tracking-wide">
+            <h3 className="text-label font-semibold text-muted uppercase tracking-wide">
               Profiles
             </h3>
             {canEdit && (
@@ -120,7 +120,7 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
                   setEditingProfileId(null);
                   setShowEditor(true);
                 }}
-                className="text-[10px] font-medium text-blue-600 hover:text-blue-700"
+                className="text-caption font-medium text-blue-600 hover:text-blue-700"
               >
                 + New
               </button>
@@ -206,7 +206,7 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
           ))}
 
           {customProfiles.length === 0 && (
-            <p className="text-[10px] text-faint italic px-2 py-3">
+            <p className="text-caption text-faint italic px-2 py-3">
               No custom profiles yet. Create one to model a different salary or
               contribution strategy.
             </p>
@@ -311,7 +311,7 @@ function ProfileListItem({
             </span>
           )}
           {profile.isDefault && (
-            <span className="text-[8px] px-1 py-0.5 rounded bg-green-100 text-green-700 font-semibold shrink-0">
+            <span className="text-micro px-1 py-0.5 rounded bg-green-100 text-green-700 font-semibold shrink-0">
               ACTIVE
             </span>
           )}
@@ -325,7 +325,7 @@ function ProfileListItem({
               <button
                 type="button"
                 onClick={onRename}
-                className="text-[10px] text-faint hover:text-blue-600"
+                className="text-caption text-faint hover:text-blue-600"
               >
                 edit
               </button>
@@ -334,7 +334,7 @@ function ProfileListItem({
               <button
                 type="button"
                 onClick={onEdit}
-                className="text-[10px] text-faint hover:text-blue-600"
+                className="text-caption text-faint hover:text-blue-600"
               >
                 configure
               </button>
@@ -343,7 +343,7 @@ function ProfileListItem({
               <button
                 type="button"
                 onClick={onDelete}
-                className="text-[10px] text-faint hover:text-red-600"
+                className="text-caption text-faint hover:text-red-600"
               >
                 ×
               </button>
@@ -351,7 +351,7 @@ function ProfileListItem({
           </div>
         )}
       </div>
-      <div className="flex gap-3 mt-1 text-[10px] text-muted">
+      <div className="flex gap-3 mt-1 text-caption text-muted">
         <span>{formatCurrency(profile.summary.combinedSalary)}</span>
         <span>{formatCurrency(profile.summary.annualContributions)}/yr</span>
         {profile.summary.annualEmployerMatch > 0 && (
@@ -395,12 +395,12 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
       <div className="flex items-center gap-2 mb-4">
         <h3 className="text-sm font-semibold text-primary">{profile.name}</h3>
         {profile.isDefault && (
-          <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-semibold">
+          <span className="text-micro px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-semibold">
             ACTIVE
           </span>
         )}
         {profile.description && (
-          <span className="text-[10px] text-faint">
+          <span className="text-caption text-faint">
             — {profile.description}
           </span>
         )}
@@ -409,7 +409,7 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
       {/* Salary section */}
       {profile.salaryDetails.length > 0 && (
         <div className="mb-5">
-          <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wide mb-2">
+          <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
             Salary
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -424,7 +424,7 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                   <div className="text-xs font-medium text-secondary">
                     {sd.personName}
                   </div>
-                  <div className="text-[10px] text-faint">
+                  <div className="text-caption text-faint">
                     {sd.employerNameOverride ? (
                       <span className="text-amber-600">
                         {sd.employerNameOverride}
@@ -441,7 +441,7 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                     </span>
                   </div>
                   {sd.estimatedBonus > 0 && (
-                    <div className="text-[10px] text-faint mt-0.5">
+                    <div className="text-caption text-faint mt-0.5">
                       +{formatCurrency(sd.estimatedBonus)} estimated bonus
                     </div>
                   )}
@@ -454,7 +454,7 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
 
       {/* Contributions section */}
       <div>
-        <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wide mb-2">
+        <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
           Contribution Accounts
         </h4>
         <table className="w-full text-xs">
@@ -492,7 +492,7 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                         {ad.accountName}
                       </span>
                       {isProfileDisabled && (
-                        <span className="text-[8px] px-1 py-0.5 rounded bg-surface-strong text-muted font-semibold shrink-0">
+                        <span className="text-micro px-1 py-0.5 rounded bg-surface-strong text-muted font-semibold shrink-0">
                           DISABLED
                         </span>
                       )}
@@ -808,7 +808,7 @@ function ProfileEditor({
           {/* Name & Description */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] font-medium text-muted">Name</label>
+              <label className="text-label font-medium text-muted">Name</label>
               <input
                 type="text"
                 value={name}
@@ -818,7 +818,7 @@ function ProfileEditor({
               />
             </div>
             <div>
-              <label className="text-[11px] font-medium text-muted">
+              <label className="text-label font-medium text-muted">
                 Description
               </label>
               <input
@@ -834,7 +834,7 @@ function ProfileEditor({
           {/* Salary Overrides */}
           {baseData?.salaryDetails && baseData.salaryDetails.length > 0 && (
             <div>
-              <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wide mb-2">
+              <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
                 Salary
               </h4>
               <div className="space-y-2">
@@ -847,7 +847,7 @@ function ProfileEditor({
                       <div className="text-xs font-medium text-secondary">
                         {sd.personName}
                       </div>
-                      <div className="text-[10px] text-faint">
+                      <div className="text-caption text-faint">
                         {sd.employerName} · Current:{" "}
                         {formatCurrency(sd.currentSalary)}
                       </div>
@@ -876,7 +876,7 @@ function ProfileEditor({
                               return next;
                             })
                           }
-                          className="text-[10px] text-faint hover:text-red-500"
+                          className="text-caption text-faint hover:text-red-500"
                         >
                           ×
                         </button>
@@ -891,7 +891,7 @@ function ProfileEditor({
           {/* Contribution Overrides */}
           {baseData?.accountDetails && baseData.accountDetails.length > 0 && (
             <div>
-              <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wide mb-2">
+              <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
                 Contributions
               </h4>
               <table className="w-full text-xs">
@@ -973,7 +973,7 @@ function ProfileEditor({
                                 })
                               }
                               placeholder="Override name..."
-                              className="w-full mt-0.5 px-1.5 py-0.5 text-[10px] border rounded bg-surface-primary text-primary"
+                              className="w-full mt-0.5 px-1.5 py-0.5 text-caption border rounded bg-surface-primary text-primary"
                             />
                           )}
                         </td>
@@ -985,7 +985,7 @@ function ProfileEditor({
                         <td className="py-1.5 text-right">
                           <div className="flex items-center justify-end gap-0.5">
                             {!isPercent && (
-                              <span className="text-[10px] text-faint">$</span>
+                              <span className="text-caption text-faint">$</span>
                             )}
                             <input
                               type="number"
@@ -1000,7 +1000,7 @@ function ProfileEditor({
                               className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
                             />
                             {isPercent && (
-                              <span className="text-[10px] text-faint">%</span>
+                              <span className="text-caption text-faint">%</span>
                             )}
                             {contribOverrides[String(ad.id)] && (
                               <button
@@ -1012,7 +1012,7 @@ function ProfileEditor({
                                     return next;
                                   })
                                 }
-                                className="text-[10px] text-faint hover:text-red-500"
+                                className="text-caption text-faint hover:text-red-500"
                               >
                                 ×
                               </button>
@@ -1040,7 +1040,7 @@ function ProfileEditor({
                                 placeholder={fmtValue(ad.liveMatchValue)}
                                 className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
                               />
-                              <span className="text-[10px] text-faint">%</span>
+                              <span className="text-caption text-faint">%</span>
                               {matchOverrides[String(ad.id)]?.matchValue && (
                                 <button
                                   type="button"
@@ -1056,7 +1056,7 @@ function ProfileEditor({
                                       return next;
                                     })
                                   }
-                                  className="text-[10px] text-faint hover:text-red-500"
+                                  className="text-caption text-faint hover:text-red-500"
                                 >
                                   ×
                                 </button>
@@ -1087,7 +1087,7 @@ function ProfileEditor({
                                 placeholder={liveMaxMatchDisplay || "—"}
                                 className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
                               />
-                              <span className="text-[10px] text-faint">%</span>
+                              <span className="text-caption text-faint">%</span>
                               {matchOverrides[String(ad.id)]?.maxMatchPct && (
                                 <button
                                   type="button"
@@ -1103,7 +1103,7 @@ function ProfileEditor({
                                       return next;
                                     })
                                   }
-                                  className="text-[10px] text-faint hover:text-red-500"
+                                  className="text-caption text-faint hover:text-red-500"
                                 >
                                   ×
                                 </button>
@@ -1123,7 +1123,7 @@ function ProfileEditor({
           {/* Bonus Overrides */}
           {baseData?.salaryDetails && baseData.salaryDetails.length > 0 && (
             <div>
-              <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wide mb-2">
+              <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
                 Bonus & Employer
               </h4>
               <div className="space-y-3">
@@ -1165,7 +1165,7 @@ function ProfileEditor({
                       </div>
                       <div className="grid grid-cols-3 gap-3">
                         <div>
-                          <label className="text-[10px] text-muted">
+                          <label className="text-caption text-muted">
                             Bonus
                           </label>
                           <div className="flex items-center gap-0.5 mt-0.5">
@@ -1179,13 +1179,13 @@ function ProfileEditor({
                               step="1"
                               className="w-full px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
                             />
-                            <span className="text-[10px] text-faint shrink-0">
+                            <span className="text-caption text-faint shrink-0">
                               %
                             </span>
                           </div>
                         </div>
                         <div>
-                          <label className="text-[10px] text-muted">
+                          <label className="text-caption text-muted">
                             Multiplier
                           </label>
                           <div className="flex items-center gap-0.5 mt-0.5">
@@ -1199,17 +1199,17 @@ function ProfileEditor({
                               step="0.1"
                               className="w-full px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
                             />
-                            <span className="text-[10px] text-faint shrink-0">
+                            <span className="text-caption text-faint shrink-0">
                               ×
                             </span>
                           </div>
                         </div>
                         <div>
-                          <label className="text-[10px] text-muted">
+                          <label className="text-caption text-muted">
                             Fixed override
                           </label>
                           <div className="flex items-center gap-0.5 mt-0.5">
-                            <span className="text-[10px] text-faint shrink-0">
+                            <span className="text-caption text-faint shrink-0">
                               $
                             </span>
                             <input
@@ -1225,7 +1225,7 @@ function ProfileEditor({
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2 mt-2">
-                        <label className="flex items-center gap-1.5 text-[10px] text-muted">
+                        <label className="flex items-center gap-1.5 text-caption text-muted">
                           <input
                             type="checkbox"
                             checked={
@@ -1243,7 +1243,7 @@ function ProfileEditor({
                           />
                           Deduct 401k from bonus
                         </label>
-                        <label className="flex items-center gap-1.5 text-[10px] text-muted">
+                        <label className="flex items-center gap-1.5 text-caption text-muted">
                           <input
                             type="checkbox"
                             checked={

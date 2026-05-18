@@ -75,7 +75,7 @@ export function AddCategoryForm({ onCreateCategory }: AddCategoryFormProps) {
         >
           Cancel
         </button>
-        <span className="text-[10px] text-faint">
+        <span className="text-caption text-faint">
           Creates the category — you&apos;ll then add items to it
         </span>
       </div>

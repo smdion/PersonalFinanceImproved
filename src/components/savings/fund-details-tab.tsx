@@ -157,7 +157,7 @@ export function FundDetailsTab({
                           goal.monthsToTarget <= monthsUntilTarget;
                         return (
                           <span
-                            className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${onTrack ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+                            className={`text-caption font-medium px-1.5 py-0.5 rounded ${onTrack ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
                           >
                             {onTrack
                               ? "On track"
@@ -215,7 +215,7 @@ export function FundDetailsTab({
                   (() => {
                     const lastTx = lastTxByGoalId.get(raw.id)!;
                     return (
-                      <p className="text-[11px] text-faint mt-1.5">
+                      <p className="text-label text-faint mt-1.5">
                         Last: {formatDate(lastTx.transactionDate, "medium")}{" "}
                         &mdash; {lastTx.description}{" "}
                         <span
@@ -235,7 +235,7 @@ export function FundDetailsTab({
                 {/* Sub-goals within this fund */}
                 {children.length > 0 && (
                   <div className="mt-3 border-t border-subtle pt-2">
-                    <p className="text-[10px] text-faint uppercase tracking-wide mb-1.5">
+                    <p className="text-caption text-faint uppercase tracking-wide mb-1.5">
                       Goals in this fund
                     </p>
                     <div className="space-y-2">

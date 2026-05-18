@@ -90,7 +90,7 @@ export function SalaryTracker({
         ))}
         {futureChanges.length > 0 && (
           <div className="mt-1 pt-1 border-t">
-            <p className="text-[10px] text-faint uppercase mb-0.5">Upcoming</p>
+            <p className="text-caption text-faint uppercase mb-0.5">Upcoming</p>
             {futureChanges.map((sc) => {
               const scSalary = Number(sc.newSalary);
               const isActive = activeSalaryOverride === scSalary;
@@ -176,7 +176,7 @@ export function SalaryTracker({
         ) : (
           <button
             onClick={() => setAdding(true)}
-            className="mt-1 text-[10px] text-blue-500 hover:text-blue-700"
+            className="mt-1 text-caption text-blue-500 hover:text-blue-700"
           >
             + Add salary change
           </button>

@@ -56,14 +56,14 @@ const navStructure: NavEntry[] = [
     items: [
       { href: "/paycheck", label: "Paycheck", Icon: Wallet },
       { href: "/budget", label: "Budget", Icon: ClipboardList },
+      { href: "/savings", label: "Savings", Icon: PiggyBank },
       { href: "/expenses", label: "Expenses", Icon: Receipt },
     ],
   },
   {
-    label: "Wealth",
+    label: "Investments",
     Icon: TrendingUp,
     items: [
-      { href: "/savings", label: "Savings", Icon: PiggyBank },
       { href: "/portfolio", label: "Portfolio", Icon: Gem },
       { href: "/performance", label: "Performance", Icon: Trophy },
       { href: "/brokerage", label: "Brokerage", Icon: BarChart3 },
@@ -395,7 +395,7 @@ export function Sidebar({
           {!collapsed &&
             process.env.APP_VERSION &&
             process.env.APP_VERSION !== "dev" && (
-              <span className="text-[10px] text-faint/50 mr-1">
+              <span className="text-caption text-faint/50 mr-1">
                 v{process.env.APP_VERSION}
               </span>
             )}

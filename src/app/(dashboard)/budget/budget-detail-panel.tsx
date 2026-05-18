@@ -166,7 +166,7 @@ export function BudgetDetailPanel({
       )}
 
       {cols.length > 1 && !isWeighted && (
-        <p className="text-[10px] text-faint mb-2">
+        <p className="text-caption text-faint mb-2">
           Click a column header to set the active budget mode used across all
           pages
         </p>

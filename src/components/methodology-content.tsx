@@ -326,7 +326,7 @@ export function MethodologyContent() {
               </tr>
             </thead>
             <tbody className="divide-y ">
-              <tr className="text-[10px] text-faint italic">
+              <tr className="text-caption text-faint italic">
                 <td className="py-1 pr-2">Cost</td>
                 <td className="pr-2">Free (self-hosted)</td>
                 <td className="pr-2">Free</td>

@@ -96,7 +96,7 @@ export function BonusSection({
             Gross Override
             <HelpTip text="Set a specific bonus amount instead of using the calculated salary x percent x multiplier" />
             {!hasOverride && (
-              <span className="text-[10px] text-faint">
+              <span className="text-caption text-faint">
                 (calc: {formatCurrency(calculatedGross)})
               </span>
             )}

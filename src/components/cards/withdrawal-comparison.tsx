@@ -135,7 +135,7 @@ export function WithdrawalComparisonCard({
             <button
               type="button"
               onClick={() => onDollarModeChange("real")}
-              className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors ${
+              className={`px-2 py-0.5 text-caption font-medium rounded transition-colors ${
                 dollarMode === "real"
                   ? "bg-surface-primary text-primary shadow-sm border"
                   : "text-muted hover:text-secondary"
@@ -146,7 +146,7 @@ export function WithdrawalComparisonCard({
             <button
               type="button"
               onClick={() => onDollarModeChange("nominal")}
-              className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors ${
+              className={`px-2 py-0.5 text-caption font-medium rounded transition-colors ${
                 dollarMode === "nominal"
                   ? "bg-surface-primary text-primary shadow-sm border"
                   : "text-muted hover:text-secondary"
@@ -213,7 +213,7 @@ export function WithdrawalComparisonCard({
                         >
                           {s.shortLabel}
                           {isActive && (
-                            <span className="text-blue-400 text-[9px] ml-1">
+                            <span className="text-blue-400 text-micro ml-1">
                               (active)
                             </span>
                           )}
@@ -305,13 +305,13 @@ export function WithdrawalComparisonCard({
           <div className="flex justify-end gap-1 mb-3">
             <button
               onClick={() => setChartMetric("endBalance")}
-              className={`px-2 py-0.5 text-[10px] rounded ${chartMetric === "endBalance" ? "bg-blue-600 text-white" : "bg-surface-elevated text-faint"}`}
+              className={`px-2 py-0.5 text-caption rounded ${chartMetric === "endBalance" ? "bg-blue-600 text-white" : "bg-surface-elevated text-faint"}`}
             >
               Portfolio Balance
             </button>
             <button
               onClick={() => setChartMetric("withdrawal")}
-              className={`px-2 py-0.5 text-[10px] rounded ${chartMetric === "withdrawal" ? "bg-blue-600 text-white" : "bg-surface-elevated text-faint"}`}
+              className={`px-2 py-0.5 text-caption rounded ${chartMetric === "withdrawal" ? "bg-blue-600 text-white" : "bg-surface-elevated text-faint"}`}
             >
               Annual Withdrawal
             </button>
@@ -372,7 +372,7 @@ export function WithdrawalComparisonCard({
           <div className="flex justify-end">
             <button
               onClick={() => setAnalyzerEnabled(true)}
-              className="text-[11px] text-sky-400 hover:text-sky-300 border border-sky-400/30 hover:border-sky-400/60 rounded px-2 py-0.5 transition-colors"
+              className="text-label text-sky-400 hover:text-sky-300 border border-sky-400/30 hover:border-sky-400/60 rounded px-2 py-0.5 transition-colors"
             >
               Analyze My Strategy →
             </button>
@@ -389,7 +389,7 @@ export function WithdrawalComparisonCard({
                 <h4 className="text-sm font-semibold text-primary">
                   Strategy Analysis — {analyzerQuery.data.strategyLabel}
                 </h4>
-                <p className="text-[11px] text-faint">
+                <p className="text-label text-faint">
                   Current plan:{" "}
                   {formatPercent(analyzerQuery.data.baseline?.successRate ?? 0)}{" "}
                   success ·{" "}
@@ -401,7 +401,7 @@ export function WithdrawalComparisonCard({
               </div>
               <button
                 onClick={() => setAnalyzerEnabled(false)}
-                className="text-[10px] text-faint hover:text-secondary"
+                className="text-caption text-faint hover:text-secondary"
               >
                 Dismiss
               </button>
@@ -459,7 +459,7 @@ export function WithdrawalComparisonCard({
               })}
             </div>
 
-            <p className="text-[10px] text-faint mt-3">
+            <p className="text-caption text-faint mt-3">
               Full engine assumptions used with only the stated change. 200
               Monte Carlo simulations each.
             </p>
@@ -472,7 +472,7 @@ export function WithdrawalComparisonCard({
             timeline.
             <button
               onClick={() => setAnalyzerEnabled(false)}
-              className="ml-2 text-[10px] text-faint hover:text-secondary"
+              className="ml-2 text-caption text-faint hover:text-secondary"
             >
               Dismiss
             </button>
@@ -482,7 +482,7 @@ export function WithdrawalComparisonCard({
             Analysis failed. Try again or adjust your inputs.
             <button
               onClick={() => setAnalyzerEnabled(false)}
-              className="ml-2 text-[10px] text-faint hover:text-secondary"
+              className="ml-2 text-caption text-faint hover:text-secondary"
             >
               Dismiss
             </button>
@@ -495,7 +495,7 @@ export function WithdrawalComparisonCard({
             retirement, increasing guaranteed income).
             <button
               onClick={() => setAnalyzerEnabled(false)}
-              className="ml-2 text-[10px] text-faint hover:text-secondary"
+              className="ml-2 text-caption text-faint hover:text-secondary"
             >
               Dismiss
             </button>

@@ -71,13 +71,13 @@ function PaycheckGrowthEditor({
   return (
     <div className="rounded border bg-surface-elevated/40 p-3 space-y-1.5 text-xs">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-faint font-medium uppercase tracking-wide">
+        <span className="text-caption text-faint font-medium uppercase tracking-wide">
           Net Pay Annual Growth
         </span>
         {Object.keys(yearlyGrowth).length === 0 && (
           <button
             onClick={() => applyToAll({ type: "pct", value: 3 })}
-            className="text-[10px] text-blue-600 hover:text-blue-700"
+            className="text-caption text-blue-600 hover:text-blue-700"
           >
             Set 3% for all
           </button>
@@ -98,20 +98,20 @@ function PaycheckGrowthEditor({
             <div className="flex bg-surface-elevated rounded p-0.5">
               <button
                 onClick={() => updateEntry(yr, { type: "pct" })}
-                className={`px-1.5 py-0.5 rounded text-[10px] ${!entry || entry.type === "pct" ? "bg-surface-strong text-primary" : "text-faint hover:text-primary"}`}
+                className={`px-1.5 py-0.5 rounded text-caption ${!entry || entry.type === "pct" ? "bg-surface-strong text-primary" : "text-faint hover:text-primary"}`}
               >
                 %
               </button>
               <button
                 onClick={() => updateEntry(yr, { type: "dollar" })}
-                className={`px-1.5 py-0.5 rounded text-[10px] ${entry?.type === "dollar" ? "bg-surface-strong text-primary" : "text-faint hover:text-primary"}`}
+                className={`px-1.5 py-0.5 rounded text-caption ${entry?.type === "dollar" ? "bg-surface-strong text-primary" : "text-faint hover:text-primary"}`}
               >
                 $
               </button>
             </div>
             <div className="flex items-center gap-0.5">
               {entry?.type === "dollar" && (
-                <span className="text-[10px] text-muted">+$</span>
+                <span className="text-caption text-muted">+$</span>
               )}
               <input
                 type="number"
@@ -127,19 +127,19 @@ function PaycheckGrowthEditor({
                 className="w-16 border bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs text-right tabular-nums"
               />
               {(!entry || entry.type === "pct") && (
-                <span className="text-[10px] text-muted">%</span>
+                <span className="text-caption text-muted">%</span>
               )}
               {entry?.type === "dollar" && (
-                <span className="text-[10px] text-muted">/check</span>
+                <span className="text-caption text-muted">/check</span>
               )}
             </div>
-            <span className="text-[10px] text-muted tabular-nums">
+            <span className="text-caption text-muted tabular-nums">
               &rarr; {formatCurrency(projected)}/check
             </span>
             {hasEntry && (
               <button
                 onClick={() => removeEntry(yr)}
-                className="text-[10px] text-muted hover:text-faint"
+                className="text-caption text-muted hover:text-faint"
                 title="Remove growth for this year"
               >
                 &times;
@@ -155,13 +155,13 @@ function PaycheckGrowthEditor({
               const first = yearlyGrowth[years[0]!];
               if (first) applyToAll(first);
             }}
-            className="text-[10px] text-muted hover:text-faint"
+            className="text-caption text-muted hover:text-faint"
           >
             Apply first to all
           </button>
           <button
             onClick={() => setYearlyGrowth({})}
-            className="text-[10px] text-muted hover:text-red-600"
+            className="text-caption text-muted hover:text-red-600"
           >
             Clear all
           </button>
@@ -218,7 +218,7 @@ function SimpleGrowthEditor({
       <div className="flex items-center gap-2.5 flex-wrap">
         <span className="text-xs text-faint">Annual raise</span>
         {!isUniform ? (
-          <span className="text-[10px] text-muted italic">custom by year</span>
+          <span className="text-caption text-muted italic">custom by year</span>
         ) : (
           <div className="flex items-center gap-1">
             <input
@@ -233,12 +233,12 @@ function SimpleGrowthEditor({
               }}
               className="w-14 border bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs text-right tabular-nums"
             />
-            <span className="text-[10px] text-muted">% / yr</span>
+            <span className="text-caption text-muted">% / yr</span>
           </div>
         )}
         <button
           onClick={() => setShowDetail((v) => !v)}
-          className="text-[10px] text-blue-600 hover:text-blue-700"
+          className="text-caption text-blue-600 hover:text-blue-700"
         >
           {showDetail
             ? "hide detail"
@@ -569,7 +569,7 @@ function PersonPanel({
             setYearlyGrowth={setYearlyGrowth}
           />
           <div className="flex items-center gap-3 flex-wrap border-t border-subtle/50 pt-2">
-            <span className="text-[10px] text-faint">
+            <span className="text-caption text-faint">
               Base {formatCurrency(baseNetPayDisplay)}/check
               {routing?.baseYear
                 ? ` · saved ${routing.baseYear}`
@@ -590,7 +590,7 @@ function PersonPanel({
                 ? "Applying…"
                 : "Apply growth rates"}
             </Button>
-            <span className="text-[10px] text-faint/60">
+            <span className="text-caption text-faint/60">
               Re-apply after salary changes
             </span>
           </div>
@@ -669,13 +669,13 @@ function PersonPanel({
       {/* Month overrides */}
       <div className="border-t border-subtle/50 pt-3 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] text-faint font-medium uppercase tracking-wide">
+          <span className="text-caption text-faint font-medium uppercase tracking-wide">
             Month overrides
           </span>
           {overrideMonth === null && (
             <button
               onClick={openAddOverride}
-              className="px-2.5 py-1 text-[11px] rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors"
+              className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors"
             >
               + Add override
             </button>
@@ -714,13 +714,13 @@ function PersonPanel({
           </div>
         )}
         {overrides.length === 0 && overrideMonth === null && (
-          <p className="text-[10px] text-faint/50">None set.</p>
+          <p className="text-caption text-faint/50">None set.</p>
         )}
         {overrideMonth !== null && overrideForm && (
           <div className="border border-subtle rounded-md p-3 space-y-2 bg-surface-sunken/50 text-xs">
             {overrideMonth === "" ? (
               <label className="space-y-0.5 block">
-                <span className="text-[10px] text-muted">Month</span>
+                <span className="text-caption text-muted">Month</span>
                 <input
                   type="month"
                   value={overrideMonth}
@@ -734,7 +734,7 @@ function PersonPanel({
               </p>
             )}
             <div className="space-y-1">
-              <span className="text-[10px] text-muted">
+              <span className="text-caption text-muted">
                 Fund splits (must total 100%)
               </span>
               {overrideForm.map((sp, si) => (
@@ -771,7 +771,7 @@ function PersonPanel({
                     }}
                     className="w-16 border border-default rounded px-1.5 py-0.5 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 text-right tabular-nums"
                   />
-                  <span className="text-[10px] text-muted">%</span>
+                  <span className="text-caption text-muted">%</span>
                   {overrideForm.length > 1 && (
                     <button
                       onClick={() =>
@@ -794,7 +794,7 @@ function PersonPanel({
                   + add fund
                 </button>
                 <span
-                  className={`text-[10px] tabular-nums ${
+                  className={`text-caption tabular-nums ${
                     Math.abs(overrideSplitTotal - 100) < 0.01
                       ? "text-green-600"
                       : "text-red-500"
@@ -846,7 +846,7 @@ function PersonPanel({
 
           <div className="grid grid-cols-2 gap-3">
             <label className="space-y-0.5">
-              <span className="text-[10px] text-muted">From</span>
+              <span className="text-caption text-muted">From</span>
               <input
                 type="month"
                 value={addForm.from}
@@ -855,7 +855,7 @@ function PersonPanel({
               />
             </label>
             <label className="space-y-0.5">
-              <span className="text-[10px] text-muted">
+              <span className="text-caption text-muted">
                 To (blank = open-ended)
               </span>
               <input
@@ -868,7 +868,7 @@ function PersonPanel({
           </div>
 
           <div className="space-y-1">
-            <span className="text-[10px] text-muted">
+            <span className="text-caption text-muted">
               Fund splits (must total 100%)
             </span>
             {addForm.splits.map((sp, si) => (
@@ -895,7 +895,7 @@ function PersonPanel({
                   onChange={(e) => setSplitPct(si, e.target.value)}
                   className="w-16 border border-default rounded px-1.5 py-0.5 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 text-right tabular-nums"
                 />
-                <span className="text-[10px] text-muted">%</span>
+                <span className="text-caption text-muted">%</span>
                 {addForm.splits.length > 1 && (
                   <button
                     onClick={() => removeSplit(si)}
@@ -914,7 +914,7 @@ function PersonPanel({
                 + add fund
               </button>
               <span
-                className={`text-[10px] tabular-nums ${
+                className={`text-caption tabular-nums ${
                   Math.abs(splitTotal - 100) < 0.01
                     ? "text-green-600"
                     : "text-red-500"
@@ -925,7 +925,7 @@ function PersonPanel({
             </div>
           </div>
 
-          <p className="text-[10px] text-muted">
+          <p className="text-caption text-muted">
             Net pay per check is calculated from the paycheck page and projected
             using the growth rates above.
           </p>
@@ -957,7 +957,7 @@ function PersonPanel({
       {!addForm && (
         <button
           onClick={openAdd}
-          className="px-2.5 py-1 text-[11px] rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors"
+          className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors"
         >
           + Add rule
         </button>
@@ -1023,7 +1023,7 @@ export function ExtraPaycheckRulesEditor({
             {personJobs.map((job) => (
               <div key={job.id}>
                 {personJobs.length > 1 && (
-                  <p className="text-[10px] text-muted mb-1.5">
+                  <p className="text-caption text-muted mb-1.5">
                     {job.employerName}
                   </p>
                 )}

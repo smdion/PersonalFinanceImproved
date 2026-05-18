@@ -15,7 +15,7 @@ import { Lock, LockOpen } from "lucide-react";
 
 function SyncBadge({ source }: { source: string }) {
   return (
-    <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600">
+    <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-caption font-medium bg-blue-50 text-blue-600">
       Synced from {source.toUpperCase()}
     </span>
   );
@@ -325,7 +325,7 @@ export default function HousePage() {
             {loanId && !taxLocked && (
               <button
                 onClick={() => setAddingTax((p) => !p)}
-                className="px-2 py-1 text-[10px] font-medium rounded bg-surface-elevated text-muted hover:bg-surface-strong transition-colors"
+                className="px-2 py-1 text-caption font-medium rounded bg-surface-elevated text-muted hover:bg-surface-strong transition-colors"
               >
                 {addingTax ? "Cancel" : "+ Add"}
               </button>
@@ -460,7 +460,7 @@ export default function HousePage() {
                       </Button>
                       <button
                         onClick={() => setEditingTax(null)}
-                        className="ml-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-surface-elevated text-muted hover:bg-surface-strong transition-colors"
+                        className="ml-1 px-1.5 py-0.5 text-caption font-medium rounded bg-surface-elevated text-muted hover:bg-surface-strong transition-colors"
                       >
                         Cancel
                       </button>
@@ -547,7 +547,7 @@ export default function HousePage() {
         headerRight={
           <button
             onClick={() => setAddingHI((p) => !p)}
-            className="px-2 py-1 text-[10px] font-medium rounded bg-surface-elevated text-muted hover:bg-surface-strong transition-colors"
+            className="px-2 py-1 text-caption font-medium rounded bg-surface-elevated text-muted hover:bg-surface-strong transition-colors"
           >
             {addingHI ? "Cancel" : "+ Add"}
           </button>
@@ -641,7 +641,7 @@ export default function HousePage() {
                       </Button>
                       <button
                         onClick={() => setEditingHI(null)}
-                        className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-surface-elevated text-muted hover:bg-surface-strong transition-colors"
+                        className="px-1.5 py-0.5 text-caption font-medium rounded bg-surface-elevated text-muted hover:bg-surface-strong transition-colors"
                       >
                         Cancel
                       </button>
@@ -659,7 +659,7 @@ export default function HousePage() {
                       <div className="flex-1 min-w-0">
                         <span className="text-muted">{hi.description}</span>
                         {hi.note && (
-                          <p className="text-[10px] text-faint truncate">
+                          <p className="text-caption text-faint truncate">
                             {hi.note}
                           </p>
                         )}

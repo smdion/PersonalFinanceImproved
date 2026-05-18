@@ -165,7 +165,7 @@ export function SavingsTrajectoryChart({
           <h2 className={`text-sm font-semibold ${p.title}`}>
             Goal Trajectories
           </h2>
-          <p className={`text-[10px] ${p.subtitle} mt-0.5`}>
+          <p className={`text-caption ${p.subtitle} mt-0.5`}>
             Click a fund in the legend to scroll to its detail card ·{" "}
             <span className="inline-flex items-center gap-1">
               <span
@@ -183,7 +183,7 @@ export function SavingsTrajectoryChart({
         </div>
         {negativeInfo.length > 0 && (
           <span
-            className={`text-[10px] ${p.negBadgeText} ${p.negBadgeBg} px-2 py-0.5 rounded border ${p.negBadgeBorder}`}
+            className={`text-caption ${p.negBadgeText} ${p.negBadgeBg} px-2 py-0.5 rounded border ${p.negBadgeBorder}`}
           >
             {negativeInfo.join(", ")}{" "}
             {negativeInfo.length === 1 ? "goes" : "go"} negative

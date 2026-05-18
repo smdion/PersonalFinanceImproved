@@ -105,7 +105,7 @@ export function SubAccountRow({
               })
             }
             disabled={!onUpdate}
-            className={`text-[10px] text-faint bg-transparent border-none p-0 focus:ring-0${onUpdate ? "cursor-pointer hover:text-secondary" : "cursor-default"}`}
+            className={`text-caption text-faint bg-transparent border-none p-0 focus:ring-0${onUpdate ? "cursor-pointer hover:text-secondary" : "cursor-default"}`}
             title={`Owner: ${ownerName}`}
           >
             <option value="">Joint</option>
@@ -115,12 +115,12 @@ export function SubAccountRow({
               </option>
             ))}
           </select>
-          <span className="text-faint text-[10px]">·</span>
+          <span className="text-faint text-caption">·</span>
           <select
             value={sub.taxType}
             onChange={(e) => onUpdate?.(sub.id, { taxType: e.target.value })}
             disabled={!onUpdate}
-            className={`text-[10px] text-faint bg-transparent border-none p-0 focus:ring-0${onUpdate ? "cursor-pointer hover:text-secondary" : "cursor-default"}`}
+            className={`text-caption text-faint bg-transparent border-none p-0 focus:ring-0${onUpdate ? "cursor-pointer hover:text-secondary" : "cursor-default"}`}
             title="Tax type"
           >
             <option value="preTax">Pre-Tax</option>
@@ -132,7 +132,7 @@ export function SubAccountRow({
         {onUpdate && (
           <button
             onClick={() => onUpdate(sub.id, { isActive: !sub.isActive })}
-            className={`text-[10px] shrink-0 ${sub.isActive ? "text-red-400 hover:text-red-600" : "text-green-500 hover:text-green-700"}`}
+            className={`text-caption shrink-0 ${sub.isActive ? "text-red-400 hover:text-red-600" : "text-green-500 hover:text-green-700"}`}
             title={sub.isActive ? "Deactivate" : "Reactivate"}
           >
             {sub.isActive ? "Deactivate" : "Reactivate"}
@@ -165,7 +165,7 @@ export function SubAccountInactiveSection({
     <div className="mt-2">
       <button
         onClick={() => setShow(!show)}
-        className="text-[10px] text-faint hover:text-secondary"
+        className="text-caption text-faint hover:text-secondary"
       >
         {show ? "Hide" : "Show"} {subs.length} inactive sub-account
         {subs.length > 1 ? "s" : ""}
@@ -224,12 +224,12 @@ export function AddSubAccountForm({
 
   return (
     <div className="border border-blue-200 rounded-lg p-3 bg-blue-50/30 space-y-2">
-      <div className="text-[10px] font-semibold text-muted uppercase tracking-wider">
+      <div className="text-caption font-semibold text-muted uppercase tracking-wider">
         New Sub-Account
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <div>
-          <label className="text-[10px] text-muted">Tax Type</label>
+          <label className="text-caption text-muted">Tax Type</label>
           <select
             value={taxType}
             onChange={(e) => setTaxType(e.target.value)}
@@ -242,7 +242,7 @@ export function AddSubAccountForm({
           </select>
         </div>
         <div>
-          <label className="text-[10px] text-muted">Amount</label>
+          <label className="text-caption text-muted">Amount</label>
           <input
             type="number"
             value={amount}
@@ -252,7 +252,7 @@ export function AddSubAccountForm({
           />
         </div>
         <div>
-          <label className="text-[10px] text-muted">Sub-Type</label>
+          <label className="text-caption text-muted">Sub-Type</label>
           <input
             type="text"
             value={subType}
@@ -262,7 +262,7 @@ export function AddSubAccountForm({
           />
         </div>
         <div>
-          <label className="text-[10px] text-muted">Label</label>
+          <label className="text-caption text-muted">Label</label>
           <input
             type="text"
             value={label}
@@ -272,7 +272,7 @@ export function AddSubAccountForm({
           />
         </div>
         <div>
-          <label className="text-[10px] text-muted">Owner</label>
+          <label className="text-caption text-muted">Owner</label>
           <select
             value={owner ?? ""}
             onChange={(e) =>

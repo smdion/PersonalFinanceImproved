@@ -225,7 +225,7 @@ function SavingsGoalsCardImpl() {
                     e.preventDefault();
                     setEfundBudgetColumn(idx);
                   }}
-                  className={`px-2 py-0.5 text-[10px] rounded transition-colors ${
+                  className={`px-2 py-0.5 text-caption rounded transition-colors ${
                     efundTierIndex === idx
                       ? "bg-surface-primary text-primary shadow-sm font-medium"
                       : "text-muted hover:text-secondary"
@@ -353,11 +353,11 @@ function SavingsGoalsCardImpl() {
                 </div>
                 <div className="flex justify-between items-start">
                   {status?.kind === "on-track" ? (
-                    <span className="text-[10px] text-green-600">
+                    <span className="text-caption text-green-600">
                       {formatCurrency(status.totalPlanned!)} planned
                     </span>
                   ) : status?.kind === "shortfall" && status.shortfalls ? (
-                    <div className="text-[10px] text-red-600 space-y-0.5">
+                    <div className="text-caption text-red-600 space-y-0.5">
                       {status.shortfalls.slice(0, 3).map((s) => (
                         <div key={s.month}>
                           <span>
@@ -377,22 +377,22 @@ function SavingsGoalsCardImpl() {
                       )}
                     </div>
                   ) : status?.kind === "shortfall" && status.needed ? (
-                    <span className="text-[10px] text-red-600">
+                    <span className="text-caption text-red-600">
                       {formatCurrency(status.needed)} needed
                       {g.monthlyAllocation <= 0 ? " — no contribution" : ""}
                     </span>
                   ) : status?.kind === "accumulating" ? (
-                    <span className="text-[10px] text-amber-600">
+                    <span className="text-caption text-amber-600">
                       {formatCurrency(status.needed!)} to go
                       {g.monthsToTarget ? ` — ~${g.monthsToTarget}mo` : ""}
                     </span>
                   ) : status?.kind === "funded" ? (
-                    <span className="text-[10px] text-green-600">Funded</span>
+                    <span className="text-caption text-green-600">Funded</span>
                   ) : (
                     <span />
                   )}
                   {g.monthlyAllocation > 0 && (
-                    <span className="text-[10px] text-faint">
+                    <span className="text-caption text-faint">
                       {formatCurrency(g.monthlyAllocation)}/mo
                     </span>
                   )}

@@ -62,7 +62,7 @@ export function ProjectionImpactBar({
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <span className="text-xs font-medium text-muted">Fund Tracker</span>
-        <span className="text-[10px] text-faint">Toggle columns</span>
+        <span className="text-caption text-faint">Toggle columns</span>
       </div>
 
       {/* Visible funds — full chips */}
@@ -138,7 +138,7 @@ export function ProjectionImpactBar({
                 onClick={() => onToggle(gp.goalId)}
                 aria-pressed={false}
                 title={`Show ${gp.name}`}
-                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-dashed border-strong text-[10px] text-faint hover:text-muted transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-dashed border-strong text-caption text-faint hover:text-muted transition-colors cursor-pointer"
               >
                 <span
                   className="w-1.5 h-1.5 rounded-full shrink-0"

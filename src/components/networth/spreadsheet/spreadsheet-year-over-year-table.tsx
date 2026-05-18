@@ -278,7 +278,7 @@ export function SpreadsheetYearOverYearTable({
                   </td>
                   <td className="text-right py-1.5 px-2">
                     {showOutdatedA ? (
-                      <span className="text-amber-500 text-[10px]">
+                      <span className="text-amber-500 text-caption">
                         Outdated
                       </span>
                     ) : valueA !== null ? (
@@ -293,7 +293,7 @@ export function SpreadsheetYearOverYearTable({
                   </td>
                   <td className="text-right py-1.5 px-2">
                     {showOutdatedB ? (
-                      <span className="text-amber-500 text-[10px]">
+                      <span className="text-amber-500 text-caption">
                         Outdated
                       </span>
                     ) : valueB !== null ? (
@@ -308,7 +308,7 @@ export function SpreadsheetYearOverYearTable({
                   </td>
                   <td className="text-right py-1.5 px-2">
                     {showInProgress ? (
-                      <span className="text-blue-500 text-[10px]">
+                      <span className="text-blue-500 text-caption">
                         In Progress
                       </span>
                     ) : percentChange !== null ? (
@@ -326,7 +326,7 @@ export function SpreadsheetYearOverYearTable({
                   </td>
                   <td className="text-right py-1.5 pl-2">
                     {showInProgress ? (
-                      <span className="text-blue-500 text-[10px]">
+                      <span className="text-blue-500 text-caption">
                         In Progress
                       </span>
                     ) : dollarChange !== null ? (
@@ -349,7 +349,7 @@ export function SpreadsheetYearOverYearTable({
           </tbody>
         </table>
         {hasProrated && (
-          <p className="text-[10px] text-faint mt-2">
+          <p className="text-caption text-faint mt-2">
             * Prorated — comparison year scaled to match YTD period for
             contributions
           </p>

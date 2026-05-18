@@ -261,7 +261,7 @@ function PhaseIcon({
 
 function SettingsTip() {
   return (
-    <p className="text-[10px] text-faint whitespace-nowrap">
+    <p className="text-caption text-faint whitespace-nowrap">
       <a href="/settings" className="underline hover:text-muted">
         Settings → General
       </a>{" "}

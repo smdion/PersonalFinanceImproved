@@ -47,7 +47,7 @@ export function IncomeSection({
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
-        <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+        <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
           Income
         </h4>
         <div className="flex-1 border-t" />
@@ -60,7 +60,7 @@ export function IncomeSection({
           </span>
           <div className="font-medium">
             {combinedSalary != null ? formatCurrency(combinedSalary) : "—"}
-            <span className="text-[10px] text-faint font-normal ml-1">
+            <span className="text-caption text-faint font-normal ml-1">
               from jobs
             </span>
           </div>

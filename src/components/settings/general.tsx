@@ -260,7 +260,7 @@ function LivingCostMappingEditor() {
                   <span className="text-xs font-semibold text-primary">
                     {range.name}
                   </span>
-                  <span className="text-[10px] text-faint">
+                  <span className="text-caption text-faint">
                     {formatPercent(range.low, 0)}–{formatPercent(range.high, 0)}{" "}
                     of income
                   </span>
@@ -269,7 +269,7 @@ function LivingCostMappingEditor() {
                   onClick={() =>
                     setAddingTo(addingTo === range.name ? null : range.name)
                   }
-                  className="text-[10px] text-blue-600 hover:text-blue-800 font-medium"
+                  className="text-caption text-blue-600 hover:text-blue-800 font-medium"
                 >
                   + Add
                 </button>
@@ -277,14 +277,14 @@ function LivingCostMappingEditor() {
 
               <div className="flex flex-wrap gap-1.5">
                 {cats.length === 0 && (
-                  <span className="text-[10px] text-faint italic">
+                  <span className="text-caption text-faint italic">
                     No categories mapped
                   </span>
                 )}
                 {cats.map((cat) => (
                   <span
                     key={cat}
-                    className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-surface-elevated text-secondary"
+                    className="inline-flex items-center gap-1 text-caption px-1.5 py-0.5 rounded bg-surface-elevated text-secondary"
                   >
                     {cat}
                     <button
@@ -305,7 +305,7 @@ function LivingCostMappingEditor() {
                     <button
                       key={cat}
                       onClick={() => addCategory(range.name, cat)}
-                      className="text-[10px] px-1.5 py-0.5 rounded border border-dashed border-blue-300 text-blue-600 hover:bg-blue-50"
+                      className="text-caption px-1.5 py-0.5 rounded border border-dashed border-blue-300 text-blue-600 hover:bg-blue-50"
                     >
                       + {cat}
                     </button>
@@ -326,14 +326,14 @@ function LivingCostMappingEditor() {
                         }
                       }}
                       placeholder="Custom..."
-                      className="text-[10px] px-1.5 py-0.5 border border-strong rounded w-24 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                      className="text-caption px-1.5 py-0.5 border border-strong rounded w-24 focus:outline-none focus:ring-1 focus:ring-blue-400"
                     />
                     {customInput.trim() && (
                       <button
                         onClick={() =>
                           addCategory(range.name, customInput.trim())
                         }
-                        className="text-[10px] text-blue-600 font-medium"
+                        className="text-caption text-blue-600 font-medium"
                       >
                         Add
                       </button>

@@ -482,7 +482,7 @@ export function PortfolioContent() {
                               <td className="py-2 pr-4 font-medium">
                                 <span className="inline-flex items-center gap-1">
                                   <span
-                                    className={`text-[10px] text-faint transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                                    className={`text-caption text-faint transition-transform ${isExpanded ? "rotate-90" : ""}`}
                                   >
                                     &#9654;
                                   </span>

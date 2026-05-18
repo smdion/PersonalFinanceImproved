@@ -116,7 +116,7 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
               <button
                 key={tf}
                 onClick={() => setTimeFrame(tf)}
-                className={`px-2 py-0.5 text-[11px] rounded transition-colors ${
+                className={`px-2 py-0.5 text-label rounded transition-colors ${
                   timeFrame === tf
                     ? "bg-surface-primary text-primary shadow-sm font-medium"
                     : "text-muted hover:text-secondary"

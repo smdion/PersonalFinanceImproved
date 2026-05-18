@@ -149,7 +149,7 @@ export function DecumulationRow({
         <td className="py-1.5 px-2">{displayAge(yr.year) ?? yr.age}</td>
       </Tooltip>
       <td className="py-1.5 px-2">
-        <span className="text-amber-600 text-[10px] font-medium">DRAW</span>
+        <span className="text-amber-600 text-caption font-medium">DRAW</span>
       </td>
       <Tooltip content="No salary income during retirement" side="top">
         <td className="text-right py-1.5 px-2 text-faint">---</td>
@@ -843,7 +843,7 @@ export function DecumulationRow({
         deflate(dpt ? dpt.balance : yr.endBalance, yr.year),
         mcCellOpts,
       )}
-      <td className="py-1.5 pl-2 text-[10px] text-faint whitespace-nowrap border-l border-subtle">
+      <td className="py-1.5 pl-2 text-caption text-faint whitespace-nowrap border-l border-subtle">
         {dyr.taxCost > 0 && (
           <Tooltip
             content="Effective tax rate = total tax / total withdrawal. Traditional taxed at marginal rate, Brokerage at LTCG rate, Roth/HSA tax-free."

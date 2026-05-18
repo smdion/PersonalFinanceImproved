@@ -87,7 +87,7 @@ export function CoastFireCard({
       )}
       <div className="mt-auto pt-2">
         {coastFireMcLoading && !coastFireMcResult && (
-          <div className="text-[10px] text-muted animate-pulse">
+          <div className="text-caption text-muted animate-pulse">
             Running simulations...
           </div>
         )}
@@ -122,7 +122,7 @@ function CombinedStatus({
         <div className="text-xl font-bold tabular-nums text-red-500">
           Not reachable
         </div>
-        <div className="text-[10px] text-faint mt-1 leading-tight">
+        <div className="text-caption text-faint mt-1 leading-tight">
           {mc.status === "unreachable" && det.status !== "unreachable"
             ? "Baseline says reachable but simulated outcomes fail."
             : "Plan requires contributions through retirement."}
@@ -138,10 +138,10 @@ function CombinedStatus({
         <div className="text-xl font-bold tabular-nums text-green-500">
           Already ✓
         </div>
-        <div className="text-[10px] text-faint mt-1 leading-tight">
+        <div className="text-caption text-faint mt-1 leading-tight">
           {formatCurrency(det.sustainableWithdrawalToday)}/yr sustainable
         </div>
-        <div className="text-[10px] text-faint leading-tight">
+        <div className="text-caption text-faint leading-tight">
           vs {formatCurrency(det.projectedExpensesAtRetirementToday)} expenses
         </div>
       </>
@@ -157,7 +157,7 @@ function CombinedStatus({
         <div className="text-xl font-bold tabular-nums text-yellow-500">
           Age {mc.coastFireAge}
         </div>
-        <div className="text-[10px] text-faint mt-1 leading-tight">
+        <div className="text-caption text-faint mt-1 leading-tight">
           Baseline says today — simulated needs more margin.
         </div>
       </>
@@ -174,10 +174,10 @@ function CombinedStatus({
         <div className="text-xl font-bold tabular-nums text-primary">
           Age {headlineAge}
         </div>
-        <div className="text-[10px] text-faint mt-1 leading-tight">
+        <div className="text-caption text-faint mt-1 leading-tight">
           {formatCurrency(det.sustainableWithdrawalToday)}/yr sustainable
         </div>
-        <div className="text-[10px] text-faint leading-tight">
+        <div className="text-caption text-faint leading-tight">
           vs {formatCurrency(det.projectedExpensesAtRetirementToday)} expenses
         </div>
       </>
@@ -191,10 +191,10 @@ function CombinedStatus({
       <div className="text-xl font-bold tabular-nums text-primary">
         Age {det.coastFireAge}
       </div>
-      <div className="text-[10px] text-faint mt-1 leading-tight">
+      <div className="text-caption text-faint mt-1 leading-tight">
         {formatCurrency(det.sustainableWithdrawalToday)}/yr sustainable
       </div>
-      <div className="text-[10px] text-faint leading-tight">
+      <div className="text-caption text-faint leading-tight">
         vs {formatCurrency(det.projectedExpensesAtRetirementToday)} expenses
       </div>
     </>
@@ -233,7 +233,7 @@ function DeterministicStatus({
         <div className="text-xl font-bold tabular-nums text-red-500">
           Not reachable
         </div>
-        <div className="text-[10px] text-faint mt-1 leading-tight">
+        <div className="text-caption text-faint mt-1 leading-tight">
           Plan requires contributions through retirement.
         </div>
       </>
@@ -246,10 +246,10 @@ function DeterministicStatus({
         <div className="text-xl font-bold tabular-nums text-green-500">
           Already ✓
         </div>
-        <div className="text-[10px] text-faint mt-1 leading-tight">
+        <div className="text-caption text-faint mt-1 leading-tight">
           {formatCurrency(result.sustainableWithdrawalToday)}/yr sustainable
         </div>
-        <div className="text-[10px] text-faint leading-tight">
+        <div className="text-caption text-faint leading-tight">
           vs {formatCurrency(result.projectedExpensesAtRetirementToday)}{" "}
           expenses
         </div>
@@ -262,10 +262,10 @@ function DeterministicStatus({
       <div className="text-xl font-bold tabular-nums text-primary">
         Age {result.coastFireAge}
       </div>
-      <div className="text-[10px] text-faint mt-1 leading-tight">
+      <div className="text-caption text-faint mt-1 leading-tight">
         {formatCurrency(result.sustainableWithdrawalToday)}/yr sustainable
       </div>
-      <div className="text-[10px] text-faint leading-tight">
+      <div className="text-caption text-faint leading-tight">
         vs {formatCurrency(result.projectedExpensesAtRetirementToday)} expenses
       </div>
     </>
@@ -300,7 +300,7 @@ function SimulatedDetail({ mc }: { mc: CoastFireMcResult }) {
   }
 
   return (
-    <div className="text-[10px] leading-tight">
+    <div className="text-caption leading-tight">
       <span className="text-faint">Stopping today: </span>
       <span className={`font-semibold ${stopNowColor}`}>
         {formatPercent(mc.stopNowSuccessRate, 0)} simulated

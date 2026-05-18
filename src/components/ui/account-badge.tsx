@@ -9,7 +9,7 @@ export function AccountBadge({ type }: { type: string }) {
   const lightBg = accountBadgeBg(type);
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${lightBg} ${text}`}
+      className={`inline-flex items-center px-2 py-0.5 rounded text-caption font-semibold uppercase tracking-wide ${lightBg} ${text}`}
     >
       {type}
     </span>

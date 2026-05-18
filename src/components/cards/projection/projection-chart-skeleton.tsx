@@ -23,12 +23,12 @@ export function ProjectionChartSkeleton({
       <h5 className="text-xs font-medium text-muted uppercase mb-2">
         Balance Projection
         {phase === "simulation" && (
-          <span className="text-[9px] text-purple-400 animate-pulse ml-2 normal-case font-normal">
+          <span className="text-micro text-purple-400 animate-pulse ml-2 normal-case font-normal">
             Running simulation...
           </span>
         )}
         {phase === "engine" && (
-          <span className="text-[9px] text-blue-400 animate-pulse ml-2 normal-case font-normal">
+          <span className="text-micro text-blue-400 animate-pulse ml-2 normal-case font-normal">
             Running projection engine...
           </span>
         )}

@@ -562,7 +562,7 @@ export default function ContributionsPage() {
                                 }}
                               />
                             </div>
-                            <span className="text-[10px] text-muted w-10 text-right">
+                            <span className="text-caption text-muted w-10 text-right">
                               {a.priorYear.limit > 0
                                 ? formatPercent(
                                     a.priorYear.amount / a.priorYear.limit,

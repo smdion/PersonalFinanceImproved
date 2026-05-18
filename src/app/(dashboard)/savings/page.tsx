@@ -661,7 +661,7 @@ export default function SavingsPage() {
                             )
                           }
                           disabled={apiSync.pushToApiPending}
-                          className="px-2.5 py-1 text-[11px] rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors disabled:opacity-50"
+                          className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors disabled:opacity-50"
                           title="Push monthly allocation amounts as budget API goal targets"
                         >
                           {apiSync.pushToApiPending

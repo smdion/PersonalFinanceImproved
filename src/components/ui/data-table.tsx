@@ -180,7 +180,7 @@ export function DataTable<T extends { id: number | string }>({
                       {col.label}
                       {isActive && (
                         <>
-                          <span className="text-[10px]" aria-hidden="true">
+                          <span className="text-caption" aria-hidden="true">
                             {sortDir === "asc" ? "▲" : "▼"}
                           </span>
                           <span className="sr-only">

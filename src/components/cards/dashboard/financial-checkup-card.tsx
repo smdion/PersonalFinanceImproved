@@ -106,7 +106,7 @@ function CheckupRow({ step }: { step: CheckupStep }) {
         {step.helpTip && <HelpTip text={step.helpTip} />}
       </span>
       <span
-        className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap ${badgeColor}`}
+        className={`text-caption font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap ${badgeColor}`}
       >
         {step.text}
       </span>

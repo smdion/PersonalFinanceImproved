@@ -62,7 +62,7 @@ function TypeBadge({ type }: { type: string }) {
   const color =
     colors[type.toLowerCase()] ?? "bg-surface-strong text-secondary";
   return (
-    <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${color}`}>
+    <span className={`text-caption px-1.5 py-0.5 rounded font-mono ${color}`}>
       {type}
     </span>
   );

@@ -51,7 +51,7 @@ function ProjectionToolbar({
 
       {/* Annual raise */}
       <div className="flex items-center gap-1">
-        <span className="text-[10px] text-faint">Annual raise</span>
+        <span className="text-caption text-faint">Annual raise</span>
         <input
           type="number"
           min="0"
@@ -61,7 +61,7 @@ function ProjectionToolbar({
           onChange={(e) => setAnnualIncreaseRate(Number(e.target.value))}
           className="w-12 border rounded px-1 py-0.5 text-xs text-center bg-surface-primary text-primary"
         />
-        <span className="text-[10px] text-faint">%</span>
+        <span className="text-caption text-faint">%</span>
       </div>
 
       {/* Pct allocator toggle */}
@@ -240,7 +240,7 @@ function OverrideEditor({
           if (e.key === "Enter") (e.target as HTMLInputElement).blur();
           if (e.key === "Escape") onClose();
         }}
-        className="w-full max-w-[70px] text-right text-[10px] border border-blue-400 rounded px-1 py-0 tabular-nums ml-auto block bg-surface-primary text-primary"
+        className="w-full max-w-[70px] text-right text-caption border border-blue-400 rounded px-1 py-0 tabular-nums ml-auto block bg-surface-primary text-primary"
       />
       <div
         className="absolute right-0 top-full mt-0.5 z-20 flex gap-0.5"
@@ -260,7 +260,7 @@ function OverrideEditor({
             onBatchUpsert({ goalId, overrides });
             onClose();
           }}
-          className="px-1.5 py-0.5 text-[10px] bg-blue-600 text-white rounded whitespace-nowrap hover:bg-blue-700"
+          className="px-1.5 py-0.5 text-caption bg-blue-600 text-white rounded whitespace-nowrap hover:bg-blue-700"
           title="Apply to all months from here onward"
         >
           Fill &darr;
@@ -280,7 +280,7 @@ function OverrideEditor({
             onBatchUpsert({ goalId, overrides });
             onClose();
           }}
-          className="px-1.5 py-0.5 text-[10px] bg-surface-strong text-white rounded whitespace-nowrap hover:bg-surface-elevated"
+          className="px-1.5 py-0.5 text-caption bg-surface-strong text-white rounded whitespace-nowrap hover:bg-surface-elevated"
           title="Apply to next 6 months"
         >
           &times;6
@@ -376,7 +376,7 @@ function ProjectionCell({
         ) : (
           <button
             onClick={() => setEditingCell(cellKey)}
-            className={`text-[10px] tabular-nums leading-none ${
+            className={`text-caption tabular-nums leading-none ${
               isOverridden
                 ? "text-blue-600 font-semibold underline decoration-dotted"
                 : "text-faint hover:text-blue-500"
@@ -394,7 +394,7 @@ function ProjectionCell({
           {events.map((e) => (
             <div
               key={e.id}
-              className={`text-[10px] leading-tight truncate ${
+              className={`text-caption leading-tight truncate ${
                 e.amount < 0 ? "text-red-500" : "text-green-600"
               }`}
               title={`${e.description}: ${e.amount >= 0 ? "+" : ""}${formatCurrency(e.amount)}`}
@@ -649,7 +649,7 @@ export function ProjectionsTab({
                             setAddingTxForGoal(gp.goalId);
                             setTxForm(emptyTxForm(gp.goalId));
                           }}
-                          className="inline-flex items-center justify-center w-4 h-4 rounded bg-blue-100 text-blue-600 hover:bg-blue-200 text-[10px] font-bold"
+                          className="inline-flex items-center justify-center w-4 h-4 rounded bg-blue-100 text-blue-600 hover:bg-blue-200 text-caption font-bold"
                           title="Add planned transaction"
                         >
                           +

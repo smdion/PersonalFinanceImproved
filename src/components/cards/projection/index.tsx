@@ -245,7 +245,7 @@ export function ProjectionCard(props: {
                       key={key ?? label}
                       type="button"
                       onClick={onClick}
-                      className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${
+                      className={`px-2 py-1 text-caption font-medium rounded transition-colors ${
                         active
                           ? "bg-surface-primary text-primary shadow-sm border"
                           : "text-muted hover:text-secondary"
@@ -264,7 +264,7 @@ export function ProjectionCard(props: {
                         {pp && pp.length > 1 && (
                           <>
                             <div className="flex items-center gap-1.5">
-                              <span className="text-[10px] text-faint font-medium uppercase">
+                              <span className="text-caption text-faint font-medium uppercase">
                                 View
                               </span>
                               <div className="inline-flex rounded-md border bg-surface-primary/60 p-0.5">
@@ -287,7 +287,7 @@ export function ProjectionCard(props: {
                         )}
                         {/* Projection mode */}
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] text-faint font-medium uppercase">
+                          <span className="text-caption text-faint font-medium uppercase">
                             Projection
                             <HelpTip
                               maxWidth={420}
@@ -343,7 +343,7 @@ export function ProjectionCard(props: {
                                 onChange={(e) =>
                                   setMcPreset(e.target.value as typeof mcPreset)
                                 }
-                                className="text-[10px] h-6 px-1.5 rounded border bg-surface-primary text-muted cursor-pointer"
+                                className="text-caption h-6 px-1.5 rounded border bg-surface-primary text-muted cursor-pointer"
                                 title="Simulation preset"
                               >
                                 <option value="aggressive">Aggressive</option>
@@ -358,7 +358,7 @@ export function ProjectionCard(props: {
                                 onChange={(e) =>
                                   setMcTrials(Number(e.target.value))
                                 }
-                                className="text-[10px] h-6 px-1.5 rounded border bg-surface-primary text-muted cursor-pointer"
+                                className="text-caption h-6 px-1.5 rounded border bg-surface-primary text-muted cursor-pointer"
                                 title="Number of simulation trials"
                               >
                                 <option value={500}>500 trials</option>
@@ -400,7 +400,7 @@ export function ProjectionCard(props: {
                               <button
                                 type="button"
                                 onClick={() => setShowMethodology(true)}
-                                className="text-[10px] text-blue-500 hover:text-blue-600 underline whitespace-nowrap"
+                                className="text-caption text-blue-500 hover:text-blue-600 underline whitespace-nowrap"
                               >
                                 How does this work?
                               </button>
@@ -410,7 +410,7 @@ export function ProjectionCard(props: {
                         <div className="w-px h-4 bg-surface-strong" />
                         {/* Dollar mode */}
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] text-faint font-medium uppercase">
+                          <span className="text-caption text-faint font-medium uppercase">
                             Dollars
                             <HelpTip
                               maxWidth={400}
@@ -455,7 +455,7 @@ export function ProjectionCard(props: {
                                     </li>
                                     <li>Comparing scenarios across decades</li>
                                   </ul>
-                                  <div className="text-[10px] text-muted italic mt-0.5">
+                                  <div className="text-caption text-muted italic mt-0.5">
                                     Salary and withdrawals may appear flat or
                                     declining — that&apos;s not a bug, it means
                                     purchasing power isn&apos;t outpacing

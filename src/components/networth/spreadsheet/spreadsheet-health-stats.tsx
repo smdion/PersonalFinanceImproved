@@ -195,14 +195,14 @@ export function SpreadsheetHealthStats({
                   </td>
                   <td className="text-right py-1.5 px-2">
                     {row.isFlowMetric && isOutdatedA ? (
-                      <span className="text-amber-500 text-[10px]">
+                      <span className="text-amber-500 text-caption">
                         Outdated
                       </span>
                     ) : (
                       <div>
                         {row.format(valA)}
                         {yearA.isCurrent && priorRefValue !== null && (
-                          <div className="text-[10px] text-faint">
+                          <div className="text-caption text-faint">
                             was {row.format(priorRefValue)} at year-end{" "}
                             {priorFinalized!.year}
                           </div>
@@ -212,14 +212,14 @@ export function SpreadsheetHealthStats({
                   </td>
                   <td className="text-right py-1.5 pl-2">
                     {row.isFlowMetric && isOutdatedB ? (
-                      <span className="text-amber-500 text-[10px]">
+                      <span className="text-amber-500 text-caption">
                         Outdated
                       </span>
                     ) : (
                       <div>
                         {row.format(valB)}
                         {yearB.isCurrent && priorRefValue !== null && (
-                          <div className="text-[10px] text-faint">
+                          <div className="text-caption text-faint">
                             was {row.format(priorRefValue)} at year-end{" "}
                             {priorFinalized!.year}
                           </div>
@@ -242,12 +242,12 @@ export function SpreadsheetHealthStats({
               </td>
               <td className="text-right py-1.5 px-2">
                 <div>{formatPercent(yearA.fiProgress, 1)}</div>
-                <div className="text-[10px] text-faint">
+                <div className="text-caption text-faint">
                   {formatCurrency(yearA.portfolioTotal + yearA.cash)} /{" "}
                   {formatCurrency(yearA.fiTarget)}
                 </div>
                 {yearA.isCurrent && priorFinalized && (
-                  <div className="text-[10px] text-faint">
+                  <div className="text-caption text-faint">
                     was {formatPercent(priorFinalized.fiProgress, 1)} at
                     year-end {priorFinalized.year}
                   </div>
@@ -255,12 +255,12 @@ export function SpreadsheetHealthStats({
               </td>
               <td className="text-right py-1.5 pl-2">
                 <div>{formatPercent(yearB.fiProgress, 1)}</div>
-                <div className="text-[10px] text-faint">
+                <div className="text-caption text-faint">
                   {formatCurrency(yearB.portfolioTotal + yearB.cash)} /{" "}
                   {formatCurrency(yearB.fiTarget)}
                 </div>
                 {yearB.isCurrent && priorFinalized && (
-                  <div className="text-[10px] text-faint">
+                  <div className="text-caption text-faint">
                     was {formatPercent(priorFinalized.fiProgress, 1)} at
                     year-end {priorFinalized.year}
                   </div>
@@ -283,10 +283,10 @@ export function SpreadsheetHealthStats({
                     <div className="font-medium">
                       {formatFIProjection(fiProjectionFinalized.projection)}
                     </div>
-                    <div className="text-[10px] text-faint">
+                    <div className="text-caption text-faint">
                       Based on finalized {fiProjectionFinalized.asOfYear} data
                     </div>
-                    <div className="text-[10px] text-faint">
+                    <div className="text-caption text-faint">
                       YTD: {formatFIProjection(fiProjection)}
                       {fiProjection.status === "stalled" &&
                         " — partial year, may recover"}
@@ -297,7 +297,7 @@ export function SpreadsheetHealthStats({
                     <div className="font-medium">
                       {formatFIProjection(fiProjection)}
                     </div>
-                    <div className="text-[10px] text-faint">
+                    <div className="text-caption text-faint">
                       {fiProjection.status === "stalled"
                         ? `FI% declined: ${formatPercent(yearB.fiProgress, 1)} \u2192 ${formatPercent(yearA.fiProgress, 1)}`
                         : fiProjection.status === "projected"

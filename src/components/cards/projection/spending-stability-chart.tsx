@@ -164,7 +164,7 @@ export function SpendingStabilityChart({
       <div className="flex items-start justify-between mb-2 gap-2">
         <h5 className="text-xs font-medium text-muted uppercase">
           Spending Stability — vs {baselineLabel}
-          <span className="text-[9px] text-faint font-normal ml-2 normal-case">
+          <span className="text-micro text-faint font-normal ml-2 normal-case">
             Withdrawal as % of{" "}
             {isStrategy ? "year-1 plan" : "retirement budget"}{" "}
             (inflation-adjusted)

@@ -31,10 +31,10 @@ export function SocialSecuritySection({
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
       <div className="flex items-center gap-2 mb-2">
-        <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+        <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
           Social Security
         </h4>
-        <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
+        <span className="text-micro text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
           Baseline + Simulation
         </span>
         <div className="flex-1 border-t" />
@@ -71,7 +71,7 @@ export function SocialSecuritySection({
                   className="text-sm"
                   editable={!!settings}
                 />
-                <span className="text-[10px] text-faint">
+                <span className="text-caption text-faint">
                   {formatCurrency(Number(ps.socialSecurityMonthly) * 12)}
                   /yr
                 </span>
@@ -103,7 +103,7 @@ export function SocialSecuritySection({
                 className="text-sm"
                 editable={!!settings}
               />
-              <span className="text-[10px] text-faint">
+              <span className="text-caption text-faint">
                 {formatCurrency(Number(settings.socialSecurityMonthly) * 12)}
                 /yr
               </span>

@@ -66,7 +66,7 @@ export function PendingRollovers({
           {pendingRollovers.length} Pending Rollover
           {pendingRollovers.length > 1 ? "s" : ""}
         </span>
-        <span className="text-[10px] text-faint">
+        <span className="text-caption text-faint">
           — confirm when wire has cleared in destination account
         </span>
       </div>
@@ -143,7 +143,7 @@ function PendingRolloverRow({
     return (
       <div className="rounded border border-amber-400/60 bg-white dark:bg-neutral-900 p-2.5 space-y-2">
         <p className="text-xs font-semibold text-primary">Confirm rollover</p>
-        <div className="text-[11px] text-muted space-y-0.5">
+        <div className="text-label text-muted space-y-0.5">
           <div>
             <span className="font-medium">From:</span> {srcLabel}
           </div>
@@ -155,7 +155,7 @@ function PendingRolloverRow({
             {yearNote}
           </div>
         </div>
-        <div className="text-[11px] text-muted space-y-1">
+        <div className="text-label text-muted space-y-1">
           <p>
             Confirm the actual wire amount (edit if it differs from recorded):
           </p>
@@ -171,7 +171,7 @@ function PendingRolloverRow({
             />
           </div>
         </div>
-        <p className="text-[10px] text-faint">
+        <p className="text-caption text-faint">
           This will: reduce {srcLabel} ending balance by{" "}
           {formatCurrency(parseFloat(actualAmount) || 0)}, record rollover out.
           Add rollover in + ending balance to {destLabel} for{" "}
@@ -232,7 +232,7 @@ function PendingRolloverRow({
         <button
           type="button"
           onClick={() => setConfirming(true)}
-          className="text-[10px] text-amber-600 hover:text-amber-800 font-medium border border-amber-400/50 rounded px-1.5 py-0.5"
+          className="text-caption text-amber-600 hover:text-amber-800 font-medium border border-amber-400/50 rounded px-1.5 py-0.5"
         >
           Confirm received
         </button>
@@ -240,12 +240,12 @@ function PendingRolloverRow({
           <button
             type="button"
             onClick={() => setDeleting(true)}
-            className="text-[10px] text-faint hover:text-red-500"
+            className="text-caption text-faint hover:text-red-500"
           >
             cancel
           </button>
         ) : (
-          <span className="flex items-center gap-1 text-[10px]">
+          <span className="flex items-center gap-1 text-caption">
             <span className="text-red-600">Delete?</span>
             <button
               type="button"
@@ -294,7 +294,7 @@ export function PendingRolloverBadge({
 
   const total = relevant.reduce((s, pr) => s + pr.amount, 0);
   return (
-    <span className="inline-flex items-center gap-1 text-[9px] font-medium text-amber-600 border border-amber-400/50 rounded px-1 py-0.5 ml-1">
+    <span className="inline-flex items-center gap-1 text-micro font-medium text-amber-600 border border-amber-400/50 rounded px-1 py-0.5 ml-1">
       <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
       {direction === "out" ? "−" : "+"}
       {formatCurrency(total)} pending

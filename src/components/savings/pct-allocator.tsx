@@ -60,8 +60,8 @@ export function PctAllocator({
                 min="0"
                 max="100"
               />
-              <span className="text-[10px] text-faint">%</span>
-              <span className="text-[10px] text-muted w-14 text-right">
+              <span className="text-caption text-faint">%</span>
+              <span className="text-caption text-muted w-14 text-right">
                 {formatCurrency(amount)}
               </span>
             </div>

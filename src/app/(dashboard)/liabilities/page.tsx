@@ -20,7 +20,7 @@ import {
 
 function SyncBadge({ source }: { source: string }) {
   return (
-    <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600">
+    <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-caption font-medium bg-blue-50 text-blue-600">
       Synced from {source.toUpperCase()}
     </span>
   );

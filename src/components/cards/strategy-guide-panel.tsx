@@ -20,7 +20,7 @@ export function StrategyGuideButton({ className }: { className?: string }) {
         onClick={() => setOpen(true)}
         className={
           className ??
-          "text-[11px] text-sky-400 hover:text-sky-300 border border-sky-400/30 hover:border-sky-400/60 rounded px-2 py-0.5 whitespace-nowrap transition-colors"
+          "text-label text-sky-400 hover:text-sky-300 border border-sky-400/30 hover:border-sky-400/60 rounded px-2 py-0.5 whitespace-nowrap transition-colors"
         }
       >
         Strategy Guide →
@@ -71,7 +71,7 @@ export function StrategyGuidePanel({
                   {config.label}
                 </h3>
                 {isActive && (
-                  <span className="text-[9px] text-blue-400 bg-blue-900/40 px-1.5 py-0.5 rounded">
+                  <span className="text-micro text-blue-400 bg-blue-900/40 px-1.5 py-0.5 rounded">
                     ACTIVE
                   </span>
                 )}
@@ -84,14 +84,14 @@ export function StrategyGuidePanel({
 
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
-                  <h4 className="text-[10px] font-semibold text-green-400 uppercase tracking-wider mb-1">
+                  <h4 className="text-caption font-semibold text-green-400 uppercase tracking-wider mb-1">
                     Strengths
                   </h4>
                   <ul className="space-y-0.5">
                     {guide.strengths.map((s) => (
                       <li
                         key={s}
-                        className="text-[11px] text-secondary flex gap-1"
+                        className="text-label text-secondary flex gap-1"
                       >
                         <span className="text-green-500 shrink-0">+</span>
                         {s}
@@ -100,14 +100,14 @@ export function StrategyGuidePanel({
                   </ul>
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-semibold text-red-400 uppercase tracking-wider mb-1">
+                  <h4 className="text-caption font-semibold text-red-400 uppercase tracking-wider mb-1">
                     Weaknesses
                   </h4>
                   <ul className="space-y-0.5">
                     {guide.weaknesses.map((w) => (
                       <li
                         key={w}
-                        className="text-[11px] text-secondary flex gap-1"
+                        className="text-label text-secondary flex gap-1"
                       >
                         <span className="text-red-500 shrink-0">-</span>
                         {w}
@@ -117,11 +117,11 @@ export function StrategyGuidePanel({
                 </div>
               </div>
 
-              <p className="text-[11px] text-faint">
+              <p className="text-label text-faint">
                 <span className="font-medium text-secondary">Best for:</span>{" "}
                 {guide.bestFor}
               </p>
-              <p className="text-[11px] text-faint mt-1">
+              <p className="text-label text-faint mt-1">
                 <span className="font-medium text-secondary">
                   Stability note:
                 </span>{" "}

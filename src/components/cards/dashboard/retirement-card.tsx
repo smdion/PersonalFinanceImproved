@@ -153,7 +153,7 @@ function RetirementCardImpl() {
           <span className="text-muted">Years to retirement</span>
           <span className="text-primary">
             {yearsToRet} yrs{" "}
-            <span className="text-[10px] text-faint">
+            <span className="text-caption text-faint">
               (age {currentAge} → {retAge})
             </span>
           </span>
@@ -167,7 +167,7 @@ function RetirementCardImpl() {
           <span className="text-primary">
             {formatCurrency(totalWithMatch)}/yr
             {employerContributions > 0 && (
-              <span className="text-[10px] text-faint ml-1">
+              <span className="text-caption text-faint ml-1">
                 ({formatCurrency(annualContributions)} +{" "}
                 {formatCurrency(employerContributions)} match)
               </span>
@@ -221,7 +221,7 @@ function RetirementCardImpl() {
                 </span>
                 <span className="text-primary">
                   {formatCurrency(sustainableWd)}/yr
-                  <span className="text-[10px] text-faint ml-1">
+                  <span className="text-caption text-faint ml-1">
                     ({strategyLabel}
                     {isDynamic ? ", varies" : ""})
                   </span>

@@ -10,7 +10,7 @@ export function StatusBadge({
   const s = STATUS_STYLES[status];
   return (
     <span
-      className={`text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap ${s.bg} ${s.text}`}
+      className={`text-caption px-1.5 py-0.5 rounded whitespace-nowrap ${s.bg} ${s.text}`}
     >
       {s.label}
     </span>

@@ -30,14 +30,14 @@ export function SavingOverridesSection({ state: s }: OverridesSectionProps) {
   return (
     <div className="border-t border-subtle pt-3">
       <div className="flex items-center justify-between mb-2">
-        <h5 className="text-[11px] font-medium text-muted uppercase tracking-wide">
+        <h5 className="text-label font-medium text-muted uppercase tracking-wide">
           Pre-Retirement
           <HelpTip text="Overrides during the saving phase — change contribution rate, routing mode, account order, tax splits, caps, or add lump sums. Changes carry forward until the next override." />
         </h5>
         <button
           type="button"
           onClick={() => setShowAccumForm(!showAccumForm)}
-          className="text-[11px] text-emerald-600 hover:underline"
+          className="text-label text-emerald-600 hover:underline"
         >
           {showAccumForm ? "Cancel" : "+ Add"}
         </button>
@@ -56,12 +56,12 @@ export function SavingOverridesSection({ state: s }: OverridesSectionProps) {
                   {o.year}+
                 </span>
                 {o.personName && (
-                  <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
+                  <span className="text-caption bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
                     {o.personName}
                   </span>
                 )}
                 {!o.personName && enginePeople && enginePeople.length > 1 && (
-                  <span className="text-[10px] text-faint">all</span>
+                  <span className="text-caption text-faint">all</span>
                 )}
                 {o.reset ? (
                   <span className="text-amber-600 font-medium">
@@ -288,7 +288,7 @@ export function SavingOverridesSection({ state: s }: OverridesSectionProps) {
                               return { ...f, accountOrder: order };
                             })
                           }
-                          className="text-faint hover:text-secondary text-[10px]"
+                          className="text-faint hover:text-secondary text-caption"
                           title="Move up"
                         >
                           ←
@@ -469,7 +469,7 @@ export function SavingOverridesSection({ state: s }: OverridesSectionProps) {
                     ],
                   }))
                 }
-                className="text-[10px] text-emerald-600 hover:underline"
+                className="text-caption text-emerald-600 hover:underline"
               >
                 + Add Lump Sum
               </button>
@@ -480,7 +480,7 @@ export function SavingOverridesSection({ state: s }: OverridesSectionProps) {
                 className="grid grid-cols-[1fr_1fr_1fr_auto] gap-1 mt-1 items-end"
               >
                 <label className="block">
-                  <span className="text-[10px] text-muted">Amount</span>
+                  <span className="text-caption text-muted">Amount</span>
                   <input
                     type="number"
                     min={0}
@@ -498,7 +498,7 @@ export function SavingOverridesSection({ state: s }: OverridesSectionProps) {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-[10px] text-muted">Account</span>
+                  <span className="text-caption text-muted">Account</span>
                   <select
                     value={ls.targetAccountName || ls.targetAccount}
                     onChange={(e) => {
@@ -537,7 +537,7 @@ export function SavingOverridesSection({ state: s }: OverridesSectionProps) {
                   </select>
                 </label>
                 <label className="block">
-                  <span className="text-[10px] text-muted">Label</span>
+                  <span className="text-caption text-muted">Label</span>
                   <input
                     type="text"
                     placeholder="Inheritance"

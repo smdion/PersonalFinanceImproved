@@ -191,11 +191,11 @@ export function UpcomingGoals({
                   {/* Countdown row */}
                   <div className="flex items-end justify-between gap-2">
                     <div>
-                      <p className="text-[10px] text-faint">
+                      <p className="text-caption text-faint">
                         {formatMonthYear(nextExpense.date)}
                       </p>
                       <p
-                        className={`text-[10px] font-medium ${
+                        className={`text-caption font-medium ${
                           isShort ? "text-red-500" : "text-muted"
                         }`}
                       >
@@ -213,7 +213,7 @@ export function UpcomingGoals({
                           {monthsAway <= 0 ? "Now" : monthsAway}
                         </span>
                         {monthsAway > 0 && (
-                          <span className="text-[10px] text-faint ml-0.5">
+                          <span className="text-caption text-faint ml-0.5">
                             mo
                           </span>
                         )}

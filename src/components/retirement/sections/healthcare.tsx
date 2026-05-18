@@ -19,10 +19,10 @@ export function HealthcareSection({ settings, upsertSettings }: Props) {
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
       <div className="flex items-center gap-2 mb-2">
-        <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+        <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
           Healthcare
         </h4>
-        <span className="text-[9px] text-purple-400 bg-purple-50 px-1.5 py-0.5 rounded">
+        <span className="text-micro text-purple-400 bg-purple-50 px-1.5 py-0.5 rounded">
           Baseline + Simulation
         </span>
         <div className="flex-1 border-t" />

@@ -117,7 +117,7 @@ export function FinancialIndependenceCard({
               </span>
             </div>
             {fiProjectionFinalized && (
-              <div className="text-[10px] text-faint text-right mt-0.5">
+              <div className="text-caption text-faint text-right mt-0.5">
                 Based on {fiProjectionFinalized.asOfYear} data
                 {fiProjection && ` · YTD: ${formatFIProjection(fiProjection)}`}
               </div>

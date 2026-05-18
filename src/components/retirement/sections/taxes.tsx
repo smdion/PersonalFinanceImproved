@@ -34,11 +34,11 @@ export function TaxesSection({
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
       <div className="flex items-center gap-2 mb-2">
-        <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+        <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
           Taxes in Retirement
         </h4>
         <select
-          className="text-[10px] text-faint bg-transparent border border-transparent hover:border-border rounded px-1 py-0.5 cursor-pointer focus:outline-none focus:border-accent"
+          className="text-caption text-faint bg-transparent border border-transparent hover:border-border rounded px-1 py-0.5 cursor-pointer focus:outline-none focus:border-accent"
           value={settings.filingStatusExplicit ?? ""}
           onChange={(e) => {
             const val = e.target.value || null;
@@ -54,9 +54,9 @@ export function TaxesSection({
           <option value="Single">Single</option>
           <option value="HOH">HOH</option>
         </select>
-        <span className="text-[10px] text-faint">brackets</span>
+        <span className="text-caption text-faint">brackets</span>
         <HelpTip text="Tax filing status used for retirement tax estimates — affects federal brackets, LTCG rates, IRMAA thresholds, and Social Security taxation. 'Auto' inherits from your primary job's W-4. Override it here if your filing status will change in retirement." />
-        <span className="text-[9px] text-purple-400 bg-purple-50 px-1.5 py-0.5 rounded">
+        <span className="text-micro text-purple-400 bg-purple-50 px-1.5 py-0.5 rounded">
           Baseline + Simulation
         </span>
         <div className="flex-1 border-t" />
@@ -114,7 +114,7 @@ export function TaxesSection({
               className="text-sm"
               editable={!!settings}
             />
-            <span className="text-[10px] text-faint">
+            <span className="text-caption text-faint">
               {Number(settings.taxMultiplier) < 1
                 ? "lower rates expected"
                 : Number(settings.taxMultiplier) > 1

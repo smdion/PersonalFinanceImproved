@@ -297,7 +297,7 @@ export function JobsSettings() {
                             className={`w-2 h-2 rounded-full${isCurrent ? "bg-blue-500 ring-2 ring-blue-200" : "bg-surface-strong"}`}
                           />
                           {isCurrent && (
-                            <div className="text-[9px] text-blue-600 font-semibold mt-0.5">
+                            <div className="text-micro text-blue-600 font-semibold mt-0.5">
                               NOW
                             </div>
                           )}
@@ -329,7 +329,7 @@ export function JobsSettings() {
                               {formatCurrency(currentSalary)}
                             </span>
                             {totalRaise > 0 && (
-                              <span className="text-green-600 text-[10px]">
+                              <span className="text-green-600 text-caption">
                                 +{formatCurrency(totalRaise)} (
                                 {formatPercent(totalRaise / startingSalary, 1)})
                                 over {jobChanges.length} raise
@@ -337,7 +337,7 @@ export function JobsSettings() {
                               </span>
                             )}
                             {startingSalary !== currentSalary && (
-                              <span className="text-faint text-[10px]">
+                              <span className="text-faint text-caption">
                                 started at {formatCurrency(startingSalary)}
                               </span>
                             )}
@@ -348,7 +348,7 @@ export function JobsSettings() {
                               {jobChanges.map((sc: SalaryChange) => (
                                 <span
                                   key={sc.id}
-                                  className="text-[10px] text-faint"
+                                  className="text-caption text-faint"
                                 >
                                   {formatDate(sc.effectiveDate)}:{" "}
                                   {formatCurrency(Number(sc.newSalary))}

@@ -184,17 +184,17 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
         <h5 className="text-xs font-medium text-muted uppercase">
           Balance Projection
           {isPersonFiltered && (
-            <span className="text-[10px] text-faint font-normal normal-case ml-2">
+            <span className="text-caption text-faint font-normal normal-case ml-2">
               {personFilterName}
             </span>
           )}
           {!mcBandsByYear && mcPrefetchQuery.isFetching && (
-            <span className="text-[9px] text-purple-400 animate-pulse ml-2 normal-case font-normal">
+            <span className="text-micro text-purple-400 animate-pulse ml-2 normal-case font-normal">
               Simulating...
             </span>
           )}
           {hasMc && mcIsPrefetch && (
-            <span className="text-[9px] text-purple-400 ml-2 normal-case font-normal">
+            <span className="text-micro text-purple-400 ml-2 normal-case font-normal">
               Sim. preview
             </span>
           )}
@@ -299,7 +299,7 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
                         )}
                         {Number(d._ssStart) !== 1 &&
                           Number(d._ssIncome) > 0 && (
-                            <div className="flex justify-between gap-4 text-teal-400/70 text-[10px]">
+                            <div className="flex justify-between gap-4 text-teal-400/70 text-caption">
                               <span>Incl. SS income</span>
                               <span className="tabular-nums">
                                 {formatCurrency(Number(d._ssIncome))}/yr
@@ -308,7 +308,7 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
                           )}
                         {Number(d._rmdStart) !== 1 &&
                           Number(d._rmdAmount) > 0 && (
-                            <div className="flex justify-between gap-4 text-amber-400/70 text-[10px]">
+                            <div className="flex justify-between gap-4 text-amber-400/70 text-caption">
                               <span>RMD</span>
                               <span className="tabular-nums">
                                 {formatCurrency(Number(d._rmdAmount))}
@@ -472,7 +472,7 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
         </ResponsiveContainer>
       </div>
       {/* Legend */}
-      <div className="flex items-center gap-3 mt-2 text-[10px] text-faint flex-wrap">
+      <div className="flex items-center gap-3 mt-2 text-caption text-faint flex-wrap">
         {segmentKeys.map((seg) => (
           <span key={seg.key} className="flex items-center gap-1">
             <span

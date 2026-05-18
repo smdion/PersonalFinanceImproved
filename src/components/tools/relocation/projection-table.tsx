@@ -127,27 +127,27 @@ export function RelocationProjectionTable({
                     <td className="py-1 pr-3" title={ageTooltip(row.year)}>
                       {displayAge(row.year) ?? row.age}
                       {row.age === r.currentFiAge && (
-                        <span className="ml-1 text-green-600 text-[10px]">
+                        <span className="ml-1 text-green-600 text-caption">
                           FI
                         </span>
                       )}
                       {row.age === r.relocationFiAge && (
-                        <span className="ml-1 text-purple-600 text-[10px]">
+                        <span className="ml-1 text-purple-600 text-caption">
                           FI-R
                         </span>
                       )}
                       {row.age === r.earliestRelocateAge && (
-                        <span className="ml-1 text-cyan-600 text-[10px]">
+                        <span className="ml-1 text-cyan-600 text-caption">
                           MOVE
                         </span>
                       )}
                       {isLastRow && r.currentFiAge === null && (
-                        <span className="ml-1 text-red-500 text-[10px]">
+                        <span className="ml-1 text-red-500 text-caption">
                           FI not met
                         </span>
                       )}
                       {isLastRow && r.relocationFiAge === null && (
-                        <span className="ml-1 text-red-400 text-[10px]">
+                        <span className="ml-1 text-red-400 text-caption">
                           FI-R not met
                         </span>
                       )}
@@ -191,7 +191,7 @@ export function RelocationProjectionTable({
           </tbody>
         </table>
       </div>
-      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-[10px] text-faint">
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-caption text-faint">
         <span className="flex items-center gap-1">
           <span className="inline-block w-2 h-2 bg-green-200 dark:bg-green-800/60 rounded shrink-0" />
           <span className="text-green-600 font-medium">FI</span>

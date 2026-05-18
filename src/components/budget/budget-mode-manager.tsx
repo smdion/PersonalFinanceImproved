@@ -64,7 +64,7 @@ export function BudgetModeManager({
                     next[idx] = e.target.value ? Number(e.target.value) : null;
                     onUpdateContributionProfiles(next);
                   }}
-                  className="text-[10px] border rounded px-1.5 py-0.5 bg-surface-primary text-muted focus:border-blue-400 focus:outline-none"
+                  className="text-caption border rounded px-1.5 py-0.5 bg-surface-primary text-muted focus:border-blue-400 focus:outline-none"
                   title="Contribution profile for this mode's income calculations"
                 >
                   <option value="">
@@ -128,7 +128,7 @@ export function BudgetModeManager({
           Add
         </button>
       </div>
-      <p className="text-[10px] text-faint mt-2">
+      <p className="text-caption text-faint mt-2">
         Click a mode name to rename it. Each mode is a column of budget amounts.
         {hasContribProfiles &&
           " Use the dropdown to assign a contribution profile for income calculations per mode."}

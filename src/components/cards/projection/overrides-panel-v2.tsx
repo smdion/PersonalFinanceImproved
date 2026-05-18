@@ -593,12 +593,12 @@ export function OverridesPanelV2({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+          <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
             Overrides
           </h4>
           <HelpTip text="Change contributions, withdrawals, salary, budget, or add lump sums at specific future years. Changes carry forward until the next override." />
           {totalCount > 0 && (
-            <span className="text-[10px] text-faint">{totalCount} active</span>
+            <span className="text-caption text-faint">{totalCount} active</span>
           )}
         </div>
         <button
@@ -626,11 +626,11 @@ export function OverridesPanelV2({
         <div className="bg-surface-sunken rounded-lg p-3 space-y-3">
           {/* Step indicator */}
           {editingOverride && (
-            <div className="text-[10px] text-indigo-600 font-medium">
+            <div className="text-caption text-indigo-600 font-medium">
               Editing override for {selectedYear}
             </div>
           )}
-          <div className="flex items-center gap-2 text-[10px] text-muted">
+          <div className="flex items-center gap-2 text-caption text-muted">
             <span
               className={
                 wizardStep === "year" ? "text-indigo-600 font-semibold" : ""
@@ -669,7 +669,7 @@ export function OverridesPanelV2({
                 />
               </label>
               {retYear && (
-                <span className="text-[10px] text-faint pb-2">
+                <span className="text-caption text-faint pb-2">
                   {isPostRetirement
                     ? "Post-retirement (withdrawal phase)"
                     : `Pre-retirement (saving phase, retires ${retYear})`}
@@ -692,7 +692,7 @@ export function OverridesPanelV2({
                 <button
                   type="button"
                   onClick={() => setWizardStep("year")}
-                  className="text-[10px] text-indigo-600 hover:underline"
+                  className="text-caption text-indigo-600 hover:underline"
                 >
                   ← Back
                 </button>
@@ -715,7 +715,7 @@ export function OverridesPanelV2({
                     <div className="text-sm">
                       {opt.icon} {opt.label}
                     </div>
-                    <div className="text-[10px] text-faint mt-0.5">
+                    <div className="text-caption text-faint mt-0.5">
                       {opt.description}
                     </div>
                   </button>
@@ -731,7 +731,7 @@ export function OverridesPanelV2({
                 <button
                   type="button"
                   onClick={() => setWizardStep("type")}
-                  className="text-[10px] text-indigo-600 hover:underline"
+                  className="text-caption text-indigo-600 hover:underline"
                 >
                   ← Back
                 </button>
@@ -765,7 +765,7 @@ export function OverridesPanelV2({
               <div className="flex items-center gap-2 min-w-0">
                 <span className="font-semibold shrink-0">{item.year}</span>
                 <span
-                  className={`text-[9px] px-1.5 py-0.5 rounded font-medium shrink-0 ${
+                  className={`text-micro px-1.5 py-0.5 rounded font-medium shrink-0 ${
                     item.color === "emerald"
                       ? "bg-emerald-100 text-emerald-700"
                       : item.color === "amber"
@@ -1035,7 +1035,7 @@ function SalaryOverrideForm({
         </button>
       </div>
       {source === "profile" && selectedProfile?.summary && (
-        <p className="text-[10px] text-faint">
+        <p className="text-caption text-faint">
           Switches to {selectedProfile.name} contribution structure with{" "}
           {formatCurrency(selectedProfile.summary.combinedSalary)}/yr salary. To
           edit salary independently, use &quot;Custom salary amount&quot;
@@ -1180,7 +1180,7 @@ function BudgetOverrideForm({
         </button>
       </div>
       {source === "profile" && selectedProfile && (
-        <p className="text-[10px] text-faint">
+        <p className="text-caption text-faint">
           {selectedProfile.name} (
           {selectedProfile.columnLabels[columnIdx] ?? "Standard"}):{" "}
           {formatCurrency(monthlyBudget)}/mo · {formatCurrency(annualBudget)}/yr

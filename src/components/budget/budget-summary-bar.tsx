@@ -71,7 +71,6 @@ export function BudgetSummaryBar({
     apiService,
     apiLinkedProfileId,
     apiLinkedColumnIndex,
-    showApiColumn,
     canEdit,
     editMode,
   } = useBudgetPageContext();
@@ -86,26 +85,26 @@ export function BudgetSummaryBar({
         <div className="flex items-center gap-2">
           {isViewingNonActive ? (
             <>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-strong text-muted font-semibold uppercase">
+              <span className="text-micro px-1.5 py-0.5 rounded bg-surface-strong text-muted font-semibold uppercase">
                 Viewing
               </span>
               <span className="text-xs text-muted">{profileName}</span>
               {activeProfileName && (
-                <span className="text-[10px] text-faint">
+                <span className="text-caption text-faint">
                   (active: {activeProfileName})
                 </span>
               )}
             </>
           ) : (
             <>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-semibold uppercase">
+              <span className="text-micro px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-semibold uppercase">
                 Active
               </span>
               <span className="text-xs text-muted">{profileName}</span>
             </>
           )}
           {apiService && apiLinkedProfileId === profileId && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-600 font-semibold">
+            <span className="text-micro px-1.5 py-0.5 rounded bg-blue-100 text-blue-600 font-semibold">
               ⇄ {apiService.toUpperCase()} →{" "}
               {apiLinkedColumnIndex != null
                 ? (cols[apiLinkedColumnIndex] ?? "Unknown")
@@ -125,7 +124,7 @@ export function BudgetSummaryBar({
           {isWeighted && (
             <span className="text-faint">
               Weighted{" "}
-              <span className="text-[10px]">
+              <span className="text-caption">
                 ({columnMonths?.map((m, i) => `${m}mo ${cols[i]}`).join(" +")})
               </span>
             </span>
@@ -141,7 +140,7 @@ export function BudgetSummaryBar({
                     )
                   : (allColumnResults[activeColumn]?.totalMonthly ?? 0) * 12,
               )}
-              <span className="text-[10px] text-faint font-normal">/yr</span>
+              <span className="text-caption text-faint font-normal">/yr</span>
             </span>
           )}
         </div>
@@ -160,18 +159,18 @@ export function BudgetSummaryBar({
           <button
             type="button"
             onClick={onToggleModeManager}
-            className="px-2 py-1 text-[10px] font-medium rounded bg-surface-strong text-muted hover:bg-surface-strong"
+            className="px-2 py-1 text-caption font-medium rounded bg-surface-strong text-muted hover:bg-surface-strong"
           >
             Manage Modes
           </button>
         )}
-        {canEdit && showApiColumn && apiLinkedProfileId === profileId && (
+        {canEdit && apiService != null && apiLinkedProfileId === profileId && (
           <>
             <button
               type="button"
               onClick={onPullFromApi}
               disabled={isPulling}
-              className="px-2 py-1 text-[10px] font-medium rounded bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50"
+              className="px-2 py-1 text-caption font-medium rounded bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50"
               title={`Pull linked amounts from ${apiService?.toUpperCase()} into"${cols[activeColumn]}" mode`}
             >
               {isPulling
@@ -182,7 +181,7 @@ export function BudgetSummaryBar({
               type="button"
               onClick={onOpenPushPreview}
               disabled={isPushing}
-              className="px-2 py-1 text-[10px] font-medium rounded bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50"
+              className="px-2 py-1 text-caption font-medium rounded bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50"
               title={`Push"${cols[activeColumn]}" mode amounts to ${apiService?.toUpperCase()}`}
             >
               {isPushing ? "Pushing…" : `Push to ${apiService?.toUpperCase()}`}
@@ -190,11 +189,11 @@ export function BudgetSummaryBar({
           </>
         )}
         {canEdit &&
-          showApiColumn &&
+          apiService != null &&
           apiLinkedProfileId !== profileId &&
           apiLinkedProfileId != null && (
             <span
-              className="text-[10px] text-amber-600"
+              className="text-caption text-amber-600"
               title="Sync buttons are only available on the API-linked profile"
             >
               Sync: linked to another profile
@@ -205,7 +204,7 @@ export function BudgetSummaryBar({
             type="button"
             onClick={onToggleEditMode}
             disabled={isSavingBatch}
-            className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${
+            className={`px-2 py-1 text-caption font-medium rounded transition-colors ${
               editMode
                 ? "bg-green-600 text-white hover:bg-green-700"
                 : "bg-surface-strong text-muted hover:bg-surface-strong"
