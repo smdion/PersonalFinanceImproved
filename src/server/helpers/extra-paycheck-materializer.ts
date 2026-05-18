@@ -45,7 +45,27 @@ function projectedNetPay(
   return pay;
 }
 
+// Serializes concurrent materializer calls within the same Node.js process.
+// Prevents the delete→insert race when two mutations (e.g. two auto-upgrades)
+// fire simultaneously and each runs a full materialize cycle.
+let materializerLock: Promise<void> = Promise.resolve();
+
 export async function materializeExtraPaycheckOverrides(db: Db): Promise<void> {
+  const prev = materializerLock;
+  let unlock!: () => void;
+  materializerLock = new Promise<void>((r) => {
+    unlock = r;
+  });
+  await prev;
+
+  try {
+    await _materialize(db);
+  } finally {
+    unlock();
+  }
+}
+
+async function _materialize(db: Db): Promise<void> {
   const now = new Date();
 
   // Load all active jobs with routing data
@@ -151,23 +171,25 @@ export async function materializeExtraPaycheckOverrides(db: Db): Promise<void> {
     }
   }
 
-  // Atomically: delete all rule-sourced planned transactions, then insert fresh rows.
-  // Also clean up any stale rule rows from the old materializer (allocation overrides).
-  await db
-    .delete(schema.savingsPlannedTransactions)
-    .where(eq(schema.savingsPlannedTransactions.source, "rule"));
+  // Delete all rule-sourced rows then insert fresh ones inside a transaction
+  // so the replacement is atomic at the DB level.
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(schema.savingsPlannedTransactions)
+      .where(eq(schema.savingsPlannedTransactions.source, "rule"));
 
-  if (desired.size > 0) {
-    await db.insert(schema.savingsPlannedTransactions).values(
-      Array.from(desired.values()).map((row) => ({
-        ...row,
-        isRecurring: false,
-        recurrenceMonths: null,
-        transferPairId: null,
-        source: "rule" as const,
-      })),
-    );
-  }
+    if (desired.size > 0) {
+      await tx.insert(schema.savingsPlannedTransactions).values(
+        Array.from(desired.values()).map((row) => ({
+          ...row,
+          isRecurring: false,
+          recurrenceMonths: null,
+          transferPairId: null,
+          source: "rule" as const,
+        })),
+      );
+    }
+  });
 }
 
 function findActiveRule(
