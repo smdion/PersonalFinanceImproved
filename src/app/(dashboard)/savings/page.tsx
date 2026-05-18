@@ -323,7 +323,11 @@ export default function SavingsPage() {
       let projectedMonthlyNet = 0;
       for (const p of activeEarners) {
         const pc = p.paycheck as { netPay: number; periodsPerYear: number };
-        const perMonth = pc.periodsPerYear / 12;
+        // Use budgetPerMonth (regular checks only) to match how maxMonthlyFunding
+        // is computed — extra biweekly checks are routed separately, not budget income.
+        const perMonth =
+          (p as { budgetPerMonth?: number }).budgetPerMonth ??
+          pc.periodsPerYear / 12;
         const routing = (
           p.job as { extraPaycheckRouting?: ExtraPaycheckRoutingData | null }
         )?.extraPaycheckRouting;
