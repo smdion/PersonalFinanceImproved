@@ -983,14 +983,14 @@ export const savingsRouter = createTRPCRouter({
       for (const goal of toPush) {
         try {
           if (goal.isEmergencyFund) {
-            // Income Replacement = target-balance YNAB category: push computed dollar target
+            // E-fund: push computed total target via plan-level endpoint.
+            // YNAB infers goal_type "TB" from goal_target alone — no date needed.
             const targetMonths = goal.targetMonths ?? 4;
             const targetAmount = targetMonths * essentialExpenses;
             if (targetAmount > 0) {
-              await client.updateCategoryGoalTarget(
+              await client.updateCategoryTargetBalance(
                 goal.apiCategoryId!,
                 targetAmount,
-                "TB",
               );
               pushed++;
             }

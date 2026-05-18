@@ -44,12 +44,17 @@ export interface BudgetAPIClient {
     amount: number,
   ): Promise<void>;
 
-  /** Update the goal target for a category (plan-level, not month-specific).
-   * goalType: YNAB goal_type to set alongside the target (e.g. "TB" for target balance). */
+  /** Update the monthly-funding goal target for a category via the month-specific endpoint. */
   updateCategoryGoalTarget(
     categoryId: string,
     targetAmount: number,
-    goalType?: string,
+  ): Promise<void>;
+
+  /** Update the target-balance goal for a category via the plan-level endpoint.
+   * Sends goal_target only — the API infers goal_type: "TB" with no date required. */
+  updateCategoryTargetBalance(
+    categoryId: string,
+    targetAmount: number,
   ): Promise<void>;
 
   // -- Transactions --
