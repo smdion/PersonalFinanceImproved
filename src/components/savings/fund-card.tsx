@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import dynamic from "next/dynamic";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { InlineEdit } from "@/components/ui/inline-edit";
+import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 
@@ -324,7 +325,7 @@ export function FundCard({
           e.stopPropagation();
           setShowMenu(!showMenu);
         }}
-        className="text-faint hover:text-secondary text-sm px-1.5 py-0.5 rounded"
+        className="text-faint hover:text-secondary text-sm px-1.5 py-0.5 rounded transition-colors"
         title="Actions"
       >
         &#8943;
@@ -346,7 +347,7 @@ export function FundCard({
                   setShowMenu(false);
                   onLinkToApi(rawGoal.id);
                 }}
-                className="block w-full text-left px-3 py-1 text-xs text-blue-600 hover:bg-surface-elevated"
+                className="block w-full text-left px-3 py-1 text-xs text-blue-600 hover:bg-surface-elevated transition-colors"
               >
                 Link to API
               </button>
@@ -358,7 +359,7 @@ export function FundCard({
                   setShowMenu(false);
                   onUnlinkFromApi(rawGoal.id);
                 }}
-                className="block w-full text-left px-3 py-1 text-xs text-faint hover:bg-surface-elevated"
+                className="block w-full text-left px-3 py-1 text-xs text-faint hover:bg-surface-elevated transition-colors"
               >
                 Unlink API
               </button>
@@ -370,7 +371,7 @@ export function FundCard({
                   setShowMenu(false);
                   onGoalUpdate(projection.goalId, "targetMode", "fixed");
                 }}
-                className="block w-full text-left px-3 py-1 text-xs text-secondary hover:bg-surface-elevated"
+                className="block w-full text-left px-3 py-1 text-xs text-secondary hover:bg-surface-elevated transition-colors"
               >
                 Set Fixed Target
               </button>
@@ -390,7 +391,7 @@ export function FundCard({
                     onGoalUpdate(projection.goalId, "targetMode", "ongoing");
                   }
                 }}
-                className="block w-full text-left px-3 py-1 text-xs text-secondary hover:bg-surface-elevated"
+                className="block w-full text-left px-3 py-1 text-xs text-secondary hover:bg-surface-elevated transition-colors"
               >
                 Set Ongoing
               </button>
@@ -409,7 +410,7 @@ export function FundCard({
                       monthlyContribution: "0",
                     });
                   }}
-                  className="block w-full text-left px-3 py-1 text-xs text-secondary hover:bg-surface-elevated"
+                  className="block w-full text-left px-3 py-1 text-xs text-secondary hover:bg-surface-elevated transition-colors"
                 >
                   Set as Bucket
                 </button>
@@ -426,7 +427,7 @@ export function FundCard({
                   )
                     onConvertToBudgetItem(rawGoal.id, projection.name);
                 }}
-                className="block w-full text-left px-3 py-1 text-xs text-amber-600 hover:bg-surface-elevated"
+                className="block w-full text-left px-3 py-1 text-xs text-amber-600 hover:bg-surface-elevated transition-colors"
               >
                 → Budget Item
               </button>
@@ -438,7 +439,7 @@ export function FundCard({
                 if (await confirm(`Delete "${projection.name}"?`))
                   onDeleteGoal({ id: rawGoal.id });
               }}
-              className="block w-full text-left px-3 py-1 text-xs text-red-600 hover:bg-surface-elevated"
+              className="block w-full text-left px-3 py-1 text-xs text-red-600 hover:bg-surface-elevated transition-colors"
             >
               Delete Fund
             </button>
@@ -451,7 +452,7 @@ export function FundCard({
   return (
     <div
       id={`fund-card-${projection.goalId}`}
-      className="bg-surface-primary rounded-lg border shadow-sm hover:shadow-md transition-shadow"
+      className="bg-surface-elevated rounded-lg border shadow-sm hover:shadow-md transition-shadow"
     >
       {/* ── Compact summary row (always visible) ── */}
       <div
@@ -826,7 +827,7 @@ export function FundCard({
                                         : child.id,
                                     )
                                   }
-                                  className="text-blue-600/50 hover:text-blue-600 text-[10px]"
+                                  className="text-xs text-blue-600 hover:text-blue-700 transition-colors"
                                   title="Move to another fund"
                                 >
                                   &#8596;
@@ -838,7 +839,7 @@ export function FundCard({
                                   if (await confirm(`Delete "${child.name}"?`))
                                     onDeleteGoal({ id: child.id });
                                 }}
-                                className="text-red-600/50 hover:text-red-600 text-[10px]"
+                                className="text-xs text-faint hover:text-red-600 transition-colors"
                                 title="Delete goal"
                               >
                                 &times;
@@ -857,7 +858,7 @@ export function FundCard({
                           availableParents && (
                             <div className="flex items-center gap-1 mt-1">
                               <select
-                                className="border border-strong bg-surface-primary text-primary rounded px-1.5 py-0.5 text-[10px] flex-1"
+                                className="border border-default bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 defaultValue=""
                                 onChange={(e) => {
                                   const val = e.target.value;
@@ -885,7 +886,7 @@ export function FundCard({
                               </select>
                               <button
                                 onClick={() => setReassigningChildId(null)}
-                                className="text-muted hover:text-secondary text-[10px]"
+                                className="text-xs text-blue-600 hover:text-blue-700 transition-colors"
                               >
                                 Cancel
                               </button>
@@ -915,7 +916,7 @@ export function FundCard({
                       })
                     }
                     placeholder="Goal name..."
-                    className="border border-strong bg-surface-primary text-primary rounded px-2 py-0.5 text-xs flex-1"
+                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 flex-1"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") onCreateFund();
@@ -933,16 +934,19 @@ export function FundCard({
                       })
                     }
                     placeholder="Target $"
-                    className="border border-strong bg-surface-primary text-primary rounded px-2 py-0.5 text-xs w-24"
+                    className="border border-default rounded px-1.5 py-0.5 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 text-right tabular-nums w-24"
                   />
-                  <button
+                  <Button
+                    variant="primary"
+                    size="sm"
                     onClick={onCreateFund}
                     disabled={!newFund.name || createGoalPending}
-                    className="px-2 py-0.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50"
                   >
                     Add
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                       setAddingSubGoalForFund(null);
                       setNewFund({
@@ -954,10 +958,9 @@ export function FundCard({
                         parentGoalId: null,
                       });
                     }}
-                    className="text-muted hover:text-secondary text-xs"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <button
@@ -972,7 +975,7 @@ export function FundCard({
                       parentGoalId: rawGoal.id,
                     });
                   }}
-                  className="text-[10px] text-blue-600 hover:text-blue-700"
+                  className="text-xs text-blue-600 hover:text-blue-700 transition-colors"
                 >
                   + Add goal
                 </button>

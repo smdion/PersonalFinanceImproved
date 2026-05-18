@@ -1,9 +1,132 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "3de862cf-164b-4f95-886b-5ba6361e7bcf",
-  "prevId": "c3692f00-acf6-4be6-badf-9d1f8a63c84d",
+  "id": "ab2aa6b6-8107-481a-a504-00ab3a0ae96a",
+  "prevId": "d158a8f3-e8bf-4ac9-a4b2-1aaa7772f198",
   "tables": {
+    "account_holdings": {
+      "name": "account_holdings",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "performance_account_id": {
+          "name": "performance_account_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "snapshot_id": {
+          "name": "snapshot_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ticker": {
+          "name": "ticker",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "weight_bps": {
+          "name": "weight_bps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expense_ratio": {
+          "name": "expense_ratio",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "asset_class_id": {
+          "name": "asset_class_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "asset_class_source": {
+          "name": "asset_class_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'manual'"
+        }
+      },
+      "indexes": {
+        "account_holdings_acct_snap_ticker_idx": {
+          "name": "account_holdings_acct_snap_ticker_idx",
+          "columns": ["performance_account_id", "snapshot_id", "ticker"],
+          "isUnique": true
+        },
+        "account_holdings_perf_acct_idx": {
+          "name": "account_holdings_perf_acct_idx",
+          "columns": ["performance_account_id"],
+          "isUnique": false
+        },
+        "account_holdings_snapshot_idx": {
+          "name": "account_holdings_snapshot_idx",
+          "columns": ["snapshot_id"],
+          "isUnique": false
+        },
+        "account_holdings_asset_class_idx": {
+          "name": "account_holdings_asset_class_idx",
+          "columns": ["asset_class_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "account_holdings_performance_account_id_performance_accounts_id_fk": {
+          "name": "account_holdings_performance_account_id_performance_accounts_id_fk",
+          "tableFrom": "account_holdings",
+          "tableTo": "performance_accounts",
+          "columnsFrom": ["performance_account_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "account_holdings_snapshot_id_portfolio_snapshots_id_fk": {
+          "name": "account_holdings_snapshot_id_portfolio_snapshots_id_fk",
+          "tableFrom": "account_holdings",
+          "tableTo": "portfolio_snapshots",
+          "columnsFrom": ["snapshot_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "account_holdings_asset_class_id_asset_class_params_id_fk": {
+          "name": "account_holdings_asset_class_id_asset_class_params_id_fk",
+          "tableFrom": "account_holdings",
+          "tableTo": "asset_class_params",
+          "columnsFrom": ["asset_class_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "account_performance": {
       "name": "account_performance",
       "columns": {
@@ -1819,6 +1942,13 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "extra_paycheck_routing": {
+          "name": "extra_paycheck_routing",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -2746,14 +2876,6 @@
           "autoincrement": false,
           "default": "'0'"
         },
-        "home_improvements_cumulative": {
-          "name": "home_improvements_cumulative",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'0'"
-        },
         "property_taxes": {
           "name": "property_taxes",
           "type": "text",
@@ -2894,6 +3016,127 @@
           "columnsFrom": ["job_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "pending_rollovers": {
+      "name": "pending_rollovers",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "source_account_performance_id": {
+          "name": "source_account_performance_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "destination_performance_account_id": {
+          "name": "destination_performance_account_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "amount": {
+          "name": "amount",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sale_date": {
+          "name": "sale_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sale_year": {
+          "name": "sale_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "apply_year": {
+          "name": "apply_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "confirmed_at": {
+          "name": "confirmed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "pending_rollovers_source_idx": {
+          "name": "pending_rollovers_source_idx",
+          "columns": ["source_account_performance_id"],
+          "isUnique": false
+        },
+        "pending_rollovers_dest_idx": {
+          "name": "pending_rollovers_dest_idx",
+          "columns": ["destination_performance_account_id"],
+          "isUnique": false
+        },
+        "pending_rollovers_sale_year_idx": {
+          "name": "pending_rollovers_sale_year_idx",
+          "columns": ["sale_year"],
+          "isUnique": false
+        },
+        "pending_rollovers_confirmed_idx": {
+          "name": "pending_rollovers_confirmed_idx",
+          "columns": ["confirmed_at"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "pending_rollovers_source_account_performance_id_account_performance_id_fk": {
+          "name": "pending_rollovers_source_account_performance_id_account_performance_id_fk",
+          "tableFrom": "pending_rollovers",
+          "tableTo": "account_performance",
+          "columnsFrom": ["source_account_performance_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "pending_rollovers_destination_performance_account_id_performance_accounts_id_fk": {
+          "name": "pending_rollovers_destination_performance_account_id_performance_accounts_id_fk",
+          "tableFrom": "pending_rollovers",
+          "tableTo": "performance_accounts",
+          "columnsFrom": ["destination_performance_account_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
           "onUpdate": "no action"
         }
       },
@@ -4224,6 +4467,14 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'manual'"
         }
       },
       "indexes": {
@@ -4519,12 +4770,25 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'manual'"
         }
       },
       "indexes": {
         "savings_planned_tx_goal_id_idx": {
           "name": "savings_planned_tx_goal_id_idx",
           "columns": ["goal_id"],
+          "isUnique": false
+        },
+        "savings_planned_tx_source_idx": {
+          "name": "savings_planned_tx_source_idx",
+          "columns": ["source"],
           "isUnique": false
         }
       },

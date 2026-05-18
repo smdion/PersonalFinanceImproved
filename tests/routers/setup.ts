@@ -19,8 +19,8 @@ if (!process.env.ENCRYPTION_KEY) {
 }
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import type { Session } from "next-auth";
+import { applyMigrationsIdempotent } from "../helpers/db-harness";
 import type { Permission } from "@/server/auth";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 
@@ -112,8 +112,7 @@ export async function createTestCaller(
 
   const db = drizzle(sqlite, { schema: sqliteSchema });
 
-  // Apply SQLite migrations
-  migrate(db, { migrationsFolder: "./drizzle-sqlite" });
+  applyMigrationsIdempotent(sqlite);
 
   // Monkey-patch db.transaction so routers that use async transaction
   // callbacks (e.g. sync-core's C3 atomic write block) can run under the

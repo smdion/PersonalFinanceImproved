@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Button } from "@/components/ui/button";
 import { Card, ProgressBar } from "@/components/ui/card";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/utils/format";
@@ -170,7 +171,7 @@ export function FundDetailsTab({
                           if (await confirm(`Delete "${goal.name}"?`))
                             onDeleteGoal({ id: raw.id });
                         }}
-                        className="text-red-300 hover:text-red-500 text-xs ml-1"
+                        className="text-xs text-faint hover:text-red-600 transition-colors ml-1"
                         title="Delete fund"
                       >
                         ×
@@ -275,7 +276,7 @@ export function FundDetailsTab({
                                         )
                                           onDeleteGoal({ id: child.id });
                                       }}
-                                      className="text-red-300 hover:text-red-500 text-[10px]"
+                                      className="text-xs text-faint hover:text-red-600 transition-colors"
                                       title="Delete goal"
                                     >
                                       ×
@@ -313,7 +314,7 @@ export function FundDetailsTab({
                             })
                           }
                           placeholder="Goal name..."
-                          className="border rounded px-2 py-0.5 text-xs flex-1"
+                          className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 flex-1"
                           autoFocus
                           onKeyDown={(e) => {
                             if (e.key === "Enter") onCreateFund();
@@ -332,16 +333,19 @@ export function FundDetailsTab({
                             })
                           }
                           placeholder="Target $"
-                          className="border rounded px-2 py-0.5 text-xs w-24"
+                          className="border border-default rounded px-1.5 py-0.5 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 text-right tabular-nums w-24"
                         />
-                        <button
+                        <Button
+                          variant="primary"
+                          size="sm"
                           onClick={onCreateFund}
                           disabled={!newFund.name || createGoalPending}
-                          className="px-2 py-0.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50"
                         >
                           Add
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => {
                             setAddingSubGoalForFund(null);
                             setNewFund({
@@ -353,10 +357,9 @@ export function FundDetailsTab({
                               parentGoalId: null,
                             });
                           }}
-                          className="text-faint hover:text-muted text-xs"
                         >
                           Cancel
-                        </button>
+                        </Button>
                       </div>
                     ) : (
                       <button
@@ -371,7 +374,7 @@ export function FundDetailsTab({
                             parentGoalId: raw.id,
                           });
                         }}
-                        className="text-[10px] text-blue-500 hover:text-blue-700"
+                        className="text-xs text-blue-600 hover:text-blue-700 transition-colors"
                       >
                         + Add goal
                       </button>

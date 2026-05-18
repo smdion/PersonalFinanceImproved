@@ -106,7 +106,23 @@ for (const entry of entries) {
         // Skip enum type operations (PostgreSQL-only)
         continue;
       } else {
-        db.exec(stmt);
+        try {
+          db.exec(stmt);
+        } catch (stmtErr) {
+          const stmtMsg =
+            stmtErr instanceof Error ? stmtErr.message : String(stmtErr);
+          // Idempotent errors: db-migrate.ts handles these at runtime using
+          // savepoints. Treat as warnings, not failures, so the check script
+          // mirrors the actual migration runner behavior.
+          if (
+            stmtMsg.includes("already exists") ||
+            stmtMsg.includes("duplicate column")
+          ) {
+            warnings.push(`IDEMPOTENT: ${stmtMsg}`);
+          } else {
+            throw stmtErr;
+          }
+        }
       }
     }
 

@@ -581,6 +581,7 @@ function ProfileEditor({
   // Populate form when editing an existing profile
   React.useEffect(() => {
     if (existingProfile && profileId !== null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- populate form from server data when profile changes
       setName(existingProfile.name);
       setDescription(existingProfile.description ?? "");
 

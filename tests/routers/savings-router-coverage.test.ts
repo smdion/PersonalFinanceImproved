@@ -786,9 +786,9 @@ describe("savings.extraPaycheckRouting", () => {
           from: "2025-01",
           to: null,
           splits: [{ goalId, pct: 100 }],
-          netPaySnapshot: 3000,
         },
       ],
+      baseNetPayPerCheck: 3000,
     });
     expect(result).toEqual({ ok: true });
   });
@@ -802,9 +802,9 @@ describe("savings.extraPaycheckRouting", () => {
             from: "2025-01",
             to: null,
             splits: [{ goalId, pct: 50 }],
-            netPaySnapshot: 3000,
           },
         ],
+        baseNetPayPerCheck: 3000,
       }),
     ).rejects.toThrow();
   });

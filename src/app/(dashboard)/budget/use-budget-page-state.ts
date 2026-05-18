@@ -160,7 +160,6 @@ export function useBudgetPageState({
   useEffect(() => {
     if (categoryCount !== prevCatLenRef.current) {
       prevCatLenRef.current = categoryCount;
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync external data to local state
       setVisibleCount(INITIAL_VISIBLE);
     }
   }, [categoryCount]);

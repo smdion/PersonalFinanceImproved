@@ -12,6 +12,13 @@ vi.mock("@/lib/trpc", () => ({
         getPreview: { invalidate: vi.fn() },
       },
     }),
+    settings: {
+      appSettings: {
+        upsert: {
+          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        },
+      },
+    },
     sync: {
       getConnection: {
         useQuery: () => ({
@@ -20,6 +27,9 @@ vi.mock("@/lib/trpc", () => ({
             actual: { isConnected: false, lastSyncedAt: null },
           },
         }),
+      },
+      getSyncStatus: {
+        useQuery: () => ({ data: null }),
       },
       getPreview: {
         useQuery: () => ({ data: null }),
@@ -118,8 +128,18 @@ describe("IntegrationsSettings", () => {
             getPreview: { invalidate: vi.fn() },
           },
         }),
+        settings: {
+          appSettings: {
+            upsert: {
+              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+            },
+          },
+        },
         sync: {
           getConnection: {
+            useQuery: () => ({ data: null }),
+          },
+          getSyncStatus: {
             useQuery: () => ({ data: null }),
           },
           getPreview: {

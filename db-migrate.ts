@@ -406,20 +406,28 @@ async function runPostgres() {
       "./drizzle/meta/_journal.json",
     );
 
-    // Normal Drizzle migration — handles fresh installs and incremental upgrades.
-    // After a squash upgrade, this is a no-op (all hashes already recorded).
-    const db = drizzle(pool);
-    await migrate(db, { migrationsFolder: "./drizzle" });
-
-    // Backfill migration journal: if DB was bootstrapped via `drizzle-kit push`,
-    // migrations may exist on disk but not in __drizzle_migrations. For each
-    // un-recorded migration, apply the SQL (idempotent ALTERs) and record it.
+    // Apply any pending migrations idempotently before handing off to Drizzle's
+    // migrate(). This handles upgrade DBs that already have tables/columns from
+    // old pre-squash migrations — Drizzle's migrator has no savepoint support
+    // and would fail on "table already exists" or "column already exists" errors.
+    // Running idempotently first means migrate() below is always a no-op.
     const journal = JSON.parse(
       fs.readFileSync(path.resolve("./drizzle/meta/_journal.json"), "utf-8"),
     );
-    const client = await pool.connect();
+    const preClient = await pool.connect();
     try {
-      const { rows: recorded } = await client.query(
+      // Ensure drizzle schema + migrations table exist (migrate() normally does
+      // this, but we need it before our idempotent pre-apply step).
+      await preClient.query(`CREATE SCHEMA IF NOT EXISTS drizzle`);
+      await preClient.query(
+        `CREATE TABLE IF NOT EXISTS drizzle.__drizzle_migrations (
+          id serial PRIMARY KEY,
+          hash text NOT NULL,
+          created_at bigint
+        )`,
+      );
+
+      const { rows: recorded } = await preClient.query(
         "SELECT hash FROM drizzle.__drizzle_migrations",
       );
       const recordedHashes = new Set(
@@ -430,6 +438,7 @@ async function runPostgres() {
         "42701", // duplicate_column
         "42P07", // duplicate_table
         "42710", // duplicate_object (index, constraint, etc.)
+        "42704", // undefined_object (DROP CONSTRAINT/INDEX on missing object)
         "23505", // unique_violation
       ]);
       for (const entry of journal.entries) {
@@ -442,36 +451,41 @@ async function runPostgres() {
           .split("--> statement-breakpoint")
           .map((s: string) => s.trim())
           .filter(Boolean);
-        await client.query("BEGIN");
+        await preClient.query("BEGIN");
         try {
           for (const stmt of statements) {
-            await client.query("SAVEPOINT backfill_stmt");
+            await preClient.query("SAVEPOINT apply_stmt");
             try {
-              await client.query(stmt);
-              await client.query("RELEASE SAVEPOINT backfill_stmt");
+              await preClient.query(stmt);
+              await preClient.query("RELEASE SAVEPOINT apply_stmt");
             } catch (stmtErr) {
               const code = (stmtErr as { code?: string }).code;
               if (code && IGNORABLE_PG_CODES.has(code)) {
-                await client.query("ROLLBACK TO SAVEPOINT backfill_stmt");
+                await preClient.query("ROLLBACK TO SAVEPOINT apply_stmt");
               } else {
                 throw stmtErr;
               }
             }
           }
-          await client.query(
+          await preClient.query(
             "INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)",
             [hash, String(Date.now())],
           );
-          await client.query("COMMIT");
-          log("info", "migration_backfilled", { tag: entry.tag });
+          await preClient.query("COMMIT");
+          log("info", "migration_applied", { tag: entry.tag });
         } catch (txErr) {
-          await client.query("ROLLBACK");
+          await preClient.query("ROLLBACK");
           throw txErr;
         }
       }
     } finally {
-      client.release();
+      preClient.release();
     }
+
+    // Drizzle's own migrate() — always a no-op after the idempotent pre-apply
+    // above, but retained as a safety net for any edge cases.
+    const db = drizzle(pool);
+    await migrate(db, { migrationsFolder: "./drizzle" });
 
     log("info", "migrations_applied", { dialect: "postgresql" });
 
@@ -802,6 +816,68 @@ function runSQLite() {
     "./drizzle-sqlite/meta/_journal.json",
   );
 
+  // Apply any pending migrations idempotently. Mirrors the PostgreSQL pre-apply
+  // step: handles upgrade DBs that already have tables/columns from old pre-squash
+  // migrations (or a squash SQL that was generated from a later schema snapshot),
+  // causing newer migrations to re-add DDL that already exists.
+  {
+    const journal = JSON.parse(
+      fs.readFileSync(
+        path.resolve("./drizzle-sqlite/meta/_journal.json"),
+        "utf-8",
+      ),
+    );
+    sqlite.exec(
+      "CREATE TABLE IF NOT EXISTS __drizzle_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, hash TEXT NOT NULL, created_at NUMERIC)",
+    );
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const crypto = require("crypto") as typeof import("crypto");
+    const appliedHashes = new Set(
+      (
+        sqlite.prepare("SELECT hash FROM __drizzle_migrations").all() as {
+          hash: string;
+        }[]
+      ).map((r) => r.hash),
+    );
+    for (const entry of journal.entries) {
+      const sqlPath = path.resolve(`./drizzle-sqlite/${entry.tag}.sql`);
+      if (!fs.existsSync(sqlPath)) continue;
+      const sql = fs.readFileSync(sqlPath, "utf-8");
+      const hash = crypto.createHash("sha256").update(sql).digest("hex");
+      if (appliedHashes.has(hash)) continue;
+      const statements = sql
+        .split("--> statement-breakpoint")
+        .map((s: string) => s.trim())
+        .filter(Boolean);
+      const applyTx = sqlite.transaction(() => {
+        for (const stmt of statements) {
+          try {
+            sqlite.exec(stmt);
+          } catch (stmtErr) {
+            const msg = (stmtErr as Error).message ?? "";
+            if (
+              msg.includes("already exists") ||
+              msg.includes("duplicate column")
+            ) {
+              // idempotent — skip
+            } else {
+              throw stmtErr;
+            }
+          }
+        }
+        sqlite
+          .prepare(
+            "INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)",
+          )
+          .run(hash, String(Date.now()));
+      });
+      applyTx();
+      log("info", "migration_applied", { tag: entry.tag, dialect: "sqlite" });
+    }
+  }
+
+  // Drizzle's own migrate() — always a no-op after the idempotent pre-apply
+  // above, but retained as a safety net.
   const db = drizzle(sqlite);
   migrate(db, { migrationsFolder: "./drizzle-sqlite" });
   log("info", "migrations_applied", { dialect: "sqlite", path: dbPath });
