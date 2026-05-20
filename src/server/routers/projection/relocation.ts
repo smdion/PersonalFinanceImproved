@@ -252,7 +252,7 @@ export const relocationProjectionRouter = createTRPCRouter({
         input.yearAdjustments.map((a) => [a.year, a.monthlyExpenses]),
       );
       const baseMonthly = relocationAnnualExpenses / 12;
-      const inflationRate = toNumber(relocPayload.settings.inflationRate ?? 0);
+      const inflationRate = toNumber(relocPayload.settings.annualInflation ?? 0);
       const currentAge = currentPayload.age;
       const retirementAge = relocPayload.baseEngineInput.retirementAge;
       const retirementYear =
