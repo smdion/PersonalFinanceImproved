@@ -133,7 +133,7 @@ function SavingsRateCardImpl() {
       <div className="flex items-center gap-2">
         <Metric
           value={formatPercent(totalRate, 1)}
-          label={`Household savings rate${excludeMatch ? "" : " (incl. match)"}`}
+          label={`Household savings rate${excludeMatch ? "" : " (incl. match)"}${viewMode === "ytd" ? " — annualized YTD" : ""}`}
         />
         <button
           onClick={(e) => {

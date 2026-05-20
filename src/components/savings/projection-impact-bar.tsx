@@ -59,7 +59,7 @@ export function ProjectionImpactBar({
   );
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 border border-subtle rounded-lg p-3 bg-surface-sunken">
       <div className="flex items-center gap-2">
         <span className="text-xs font-medium text-muted">Fund Tracker</span>
         <span className="text-caption text-faint">Toggle columns</span>
@@ -110,16 +110,24 @@ export function ProjectionImpactBar({
                 key={gp.goalId}
                 onClick={() => onToggle(gp.goalId)}
                 aria-pressed={true}
-                className="grid grid-cols-[1fr_auto_auto] items-center gap-x-2 px-3 py-1.5 rounded-lg border bg-surface-elevated/30 text-xs transition-colors cursor-pointer hover:bg-surface-elevated min-w-0"
+                className="flex flex-col gap-0.5 px-3 py-1.5 rounded-lg border bg-surface-elevated/30 text-xs transition-colors cursor-pointer hover:bg-surface-elevated min-w-0"
                 style={{ borderLeftColor: color, borderLeftWidth: 3 }}
               >
-                <span className="font-medium text-secondary truncate text-left">
-                  {gp.name}
+                <span className="flex items-center justify-between gap-2 min-w-0">
+                  <span className="font-medium text-secondary truncate">
+                    {gp.name}
+                  </span>
+                  {statusEl}
                 </span>
-                <span className="tabular-nums text-primary whitespace-nowrap">
-                  {formatCompact(endBalance)}
+                <span className="flex items-center justify-between text-caption tabular-nums">
+                  <span className="text-faint">
+                    {formatCompact(gp.current)}
+                  </span>
+                  <span className="flex items-center gap-1 text-primary font-medium">
+                    <span className="text-faint">proj</span>
+                    {formatCompact(endBalance)}
+                  </span>
                 </span>
-                {statusEl}
               </button>
             );
           })}

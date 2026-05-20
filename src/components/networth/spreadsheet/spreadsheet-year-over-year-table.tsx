@@ -147,6 +147,8 @@ type Props = {
   annualize: boolean;
   /** When true, use market value for house/net worth; when false, use cost basis. */
   useMarketValue: boolean;
+  /** When true, show stale values instead of "Outdated" label. */
+  showOutdated: boolean;
 };
 
 export function SpreadsheetYearOverYearTable({
@@ -154,6 +156,7 @@ export function SpreadsheetYearOverYearTable({
   yearB,
   annualize,
   useMarketValue,
+  showOutdated,
 }: Props) {
   // Derive category keys from both years' data (union of all categories present)
   const categoryKeys = useMemo(() => {
@@ -186,6 +189,12 @@ export function SpreadsheetYearOverYearTable({
   const yearBOutdated = isPerformanceOutdated(yearB);
   const hasProrated = annualize && (yearA.isCurrent || yearB.isCurrent);
 
+  function fmtUpdated(iso: string | null): string | null {
+    if (!iso) return null;
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+
   return (
     <Card title="Net Worth Year over Year" className="mb-4">
       <div className="overflow-x-auto">
@@ -194,10 +203,20 @@ export function SpreadsheetYearOverYearTable({
             <tr className="border-b">
               <th className="text-left py-1.5 pr-2 text-muted font-medium" />
               <th className="text-right py-1.5 px-2 text-muted font-medium w-28">
-                {yearA.year}
+                <div>{yearA.year}</div>
+                {showOutdated && yearAOutdated && yearA.isCurrent && (
+                  <div className="text-caption font-normal text-amber-500">
+                    as of {fmtUpdated(yearA.perfLastUpdated) ?? "never synced"}
+                  </div>
+                )}
               </th>
               <th className="text-right py-1.5 px-2 text-muted font-medium w-28">
-                {yearB.year}
+                <div>{yearB.year}</div>
+                {showOutdated && yearBOutdated && yearB.isCurrent && (
+                  <div className="text-caption font-normal text-amber-500">
+                    as of {fmtUpdated(yearB.perfLastUpdated) ?? "never synced"}
+                  </div>
+                )}
               </th>
               <th className="text-right py-1.5 px-2 text-muted font-medium w-20">
                 % Chg
@@ -217,8 +236,10 @@ export function SpreadsheetYearOverYearTable({
                 config.flowType === "market";
 
               // "Outdated" on value cells when performance data is stale (>14 days)
-              const showOutdatedA = isFlow && yearA.isCurrent && yearAOutdated;
-              const showOutdatedB = isFlow && yearB.isCurrent && yearBOutdated;
+              const isStaleA = isFlow && yearA.isCurrent && yearAOutdated;
+              const isStaleB = isFlow && yearB.isCurrent && yearBOutdated;
+              const showOutdatedA = isStaleA && !showOutdated;
+              const showOutdatedB = isStaleB && !showOutdated;
 
               // "In Progress" on change columns only when either value is outdated
               const showInProgress = showOutdatedA || showOutdatedB;
@@ -283,7 +304,13 @@ export function SpreadsheetYearOverYearTable({
                       </span>
                     ) : valueA !== null ? (
                       <span
-                        className={valueA < 0 ? "text-red-600" : "text-primary"}
+                        className={
+                          isStaleA
+                            ? "text-amber-500"
+                            : valueA < 0
+                              ? "text-red-600"
+                              : "text-primary"
+                        }
                       >
                         {formatCurrency(valueA)}
                       </span>
@@ -298,7 +325,13 @@ export function SpreadsheetYearOverYearTable({
                       </span>
                     ) : valueB !== null ? (
                       <span
-                        className={valueB < 0 ? "text-red-600" : "text-primary"}
+                        className={
+                          isStaleB
+                            ? "text-amber-500"
+                            : valueB < 0
+                              ? "text-red-600"
+                              : "text-primary"
+                        }
                       >
                         {formatCurrency(valueB)}
                       </span>

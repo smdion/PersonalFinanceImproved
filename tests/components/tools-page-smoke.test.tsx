@@ -145,6 +145,26 @@ vi.mock("@/lib/trpc", () => ({
           data: { people: [{ id: 1, name: "Sean", birthYear: 1990 }] },
         }),
       },
+      computeRelocationFiProjection: {
+        useQuery: () => ({
+          data: {
+            currentBalanceAtRetirement: 1500000,
+            relocationBalanceAtRetirement: 1200000,
+            relocationFiTarget: 1150000,
+            isViableNow: false,
+            earliestRelocateAge: 50,
+            earliestRelocateYear: 2036,
+            recommendedPortfolioToRelocate: 900000,
+            projectionRows: [],
+            blendedRows: null,
+            blendedBalanceAtRetirement: null,
+            inflationRate: 0.035,
+            baseYear: 2026,
+          },
+          isPending: false,
+          isFetching: false,
+        }),
+      },
     },
     retirement: {
       computeRelocationAnalysis: {
@@ -164,7 +184,7 @@ describe("ToolsPage smoke", () => {
     render(<ToolsPage />);
 
     // Page header
-    expect(screen.getByText("Tools")).toBeInTheDocument();
+    expect(screen.getByText("Relocation")).toBeInTheDocument();
 
     // Form fields for current and target location
     expect(screen.getByText("Current Budget")).toBeInTheDocument();

@@ -87,7 +87,7 @@ const navStructure: NavEntry[] = [
       { href: "/retirement", label: "Retirement", Icon: Palmtree },
       { href: "/contributions", label: "Contributions", Icon: Layers },
       { href: "/analytics", label: "Analytics", Icon: PieChart },
-      { href: "/tools", label: "Tools", Icon: Wrench },
+      { href: "/tools", label: "Relocation", Icon: Wrench },
     ],
   },
   {

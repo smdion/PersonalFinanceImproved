@@ -45,7 +45,7 @@ describe("Sidebar", () => {
   it("renders nav groups", () => {
     render(<Sidebar {...defaultProps} />);
     expect(screen.getAllByText("Cash Flow").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Wealth").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Investments").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Net Worth").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Analysis").length).toBeGreaterThan(0);
     expect(screen.getAllByText("System").length).toBeGreaterThan(0);

@@ -253,6 +253,8 @@ export type YearEndRow = {
   annualExpenses: number;
   /** Withdrawal rate from retirement settings. */
   withdrawalRate: number;
+  /** True when withdrawalRate is the hardcoded default (no retirement settings configured). */
+  withdrawalRateIsDefault: boolean;
 };
 
 /**
@@ -651,6 +653,7 @@ export async function buildYearEndHistory(
       lifetimeEarnings: 0,
       annualExpenses: 0,
       withdrawalRate: 0,
+      withdrawalRateIsDefault: false,
     };
   });
 
@@ -906,6 +909,7 @@ export async function buildYearEndHistory(
       lifetimeEarnings: 0,
       annualExpenses: 0,
       withdrawalRate: 0,
+      withdrawalRateIsDefault: false,
     });
   }
 
@@ -1015,6 +1019,7 @@ export async function buildYearEndHistory(
     row.lifetimeEarnings = cumulativeEarnings;
     row.annualExpenses = annualExpensesBudget;
     row.withdrawalRate = withdrawalRate;
+    row.withdrawalRateIsDefault = !primaryRetSettings;
   }
 
   _yearEndCache = { data: history, expiresAt: Date.now() + 5_000 };

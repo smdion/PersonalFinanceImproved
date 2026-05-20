@@ -17,9 +17,11 @@ import {
 export function TaxLocationPie({
   byTaxType,
   portfolioTotal,
+  yearLabel,
 }: {
   byTaxType: Map<string, number>;
   portfolioTotal: number;
+  yearLabel?: number;
 }) {
   const data = useMemo(() => {
     return Array.from(byTaxType.entries())
@@ -42,6 +44,7 @@ export function TaxLocationPie({
           <HelpTip text="How your investment portfolio is distributed across tax treatments: Traditional (pre-tax), Roth (tax-free), HSA, and After-Tax (brokerage)" />
         </>
       }
+      subtitle={yearLabel != null ? `${yearLabel} data` : undefined}
     >
       <div className="flex flex-col sm:flex-row items-center gap-4">
         <div className="w-full sm:w-1/2">

@@ -143,7 +143,7 @@ export function SavingsTrajectoryTable({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between gap-4 text-label text-faint px-1">
+      <div className="flex items-center justify-between gap-4 text-label text-faint border border-subtle rounded-lg px-3 py-2 bg-surface-sunken">
         {hasAnyFixedTarget || hasAnyRevolving || hasAnyEvents ? (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             {hasAnyFixedTarget && (

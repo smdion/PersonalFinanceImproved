@@ -11,26 +11,17 @@ import {
   PERF_CATEGORY_DEFAULT,
   PERF_CATEGORY_BROKERAGE,
 } from "@/lib/config/display-labels";
-import {
-  projectFIYear,
-  formatFIProjection,
-} from "@/lib/calculators/fi-projection";
 import type { DetailedHistoryRow } from "./types";
 
 type Props = {
   yearA: DetailedHistoryRow;
   yearB: DetailedHistoryRow;
-  /** All history rows (for prior-year references). */
-  allYears: DetailedHistoryRow[];
   /** When true, annualize current-year contribution rates (Projected Year mode). */
   annualize: boolean;
   /** When true, use market value scores; when false, use cost basis scores. */
   useMarketValue: boolean;
-  /** Finalized-only FI projection (computed once in parent — single computation path). */
-  fiProjectionFinalized?: {
-    projection: import("@/lib/calculators/fi-projection").FIProjectionResult;
-    asOfYear: number;
-  };
+  /** When true, show stale values instead of "Outdated" label. */
+  showOutdated: boolean;
 };
 
 type RowDef = {
@@ -99,39 +90,31 @@ const STAT_ROWS: RowDef[] = [
 export function SpreadsheetHealthStats({
   yearA,
   yearB,
-  allYears,
   annualize,
   useMarketValue,
-  fiProjectionFinalized,
+  showOutdated,
 }: Props) {
-  const fiProjection = useMemo(
-    () =>
-      projectFIYear(yearA.fiProgress, yearB.fiProgress, yearA.year, yearB.year),
-    [yearA.fiProgress, yearB.fiProgress, yearA.year, yearB.year],
-  );
-
   const hasCurrentYear = yearA.isCurrent || yearB.isCurrent;
-
-  // Most recent finalized year for trajectory context ("was X at year-end YYYY")
-  const priorFinalized = useMemo(() => {
-    if (!hasCurrentYear) return null;
-    const finalized = allYears
-      .filter((h) => !h.isCurrent)
-      .sort((a, b) => b.year - a.year);
-    return finalized[0] ?? null;
-  }, [allYears, hasCurrentYear]);
 
   const staleCutoff = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() - PERFORMANCE_STALE_DAYS);
     return d.toISOString();
   }, []);
-  const isOutdatedA =
+
+  function fmtUpdated(iso: string | null): string | null {
+    if (!iso) return null;
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+  const isStaleA =
     yearA.isCurrent &&
     (!yearA.perfLastUpdated || yearA.perfLastUpdated < staleCutoff);
-  const isOutdatedB =
+  const isStaleB =
     yearB.isCurrent &&
     (!yearB.perfLastUpdated || yearB.perfLastUpdated < staleCutoff);
+  const isOutdatedA = isStaleA && !showOutdated;
+  const isOutdatedB = isStaleB && !showOutdated;
 
   return (
     <Card title="Financial Health Stats" className="mb-4">
@@ -141,10 +124,20 @@ export function SpreadsheetHealthStats({
             <tr className="border-b">
               <th className="text-left py-1.5 pr-2 text-muted font-medium" />
               <th className="text-right py-1.5 px-2 text-muted font-medium w-24">
-                {yearA.year}
+                <div>{yearA.year}</div>
+                {showOutdated && isStaleA && (
+                  <div className="text-caption font-normal text-amber-500">
+                    as of {fmtUpdated(yearA.perfLastUpdated) ?? "never synced"}
+                  </div>
+                )}
               </th>
               <th className="text-right py-1.5 pl-2 text-muted font-medium w-24">
-                {yearB.year}
+                <div>{yearB.year}</div>
+                {showOutdated && isStaleB && (
+                  <div className="text-caption font-normal text-amber-500">
+                    as of {fmtUpdated(yearB.perfLastUpdated) ?? "never synced"}
+                  </div>
+                )}
               </th>
             </tr>
           </thead>
@@ -168,20 +161,6 @@ export function SpreadsheetHealthStats({
                   ? yearB.aawScoreMarket
                   : yearB.aawScoreCostBasis;
               }
-              // Trajectory context for current year: show prior finalized value
-              const isWealthOrAAW =
-                row.label === "Wealth Score" || row.label === "AAW Score";
-              const priorRefValue =
-                isWealthOrAAW && priorFinalized
-                  ? row.label === "Wealth Score"
-                    ? useMarketValue
-                      ? priorFinalized.wealthScoreMarket
-                      : priorFinalized.wealthScoreCostBasis
-                    : useMarketValue
-                      ? priorFinalized.aawScoreMarket
-                      : priorFinalized.aawScoreCostBasis
-                  : null;
-
               return (
                 <tr
                   key={row.label}
@@ -199,14 +178,14 @@ export function SpreadsheetHealthStats({
                         Outdated
                       </span>
                     ) : (
-                      <div>
+                      <div
+                        className={
+                          row.isFlowMetric && isStaleA
+                            ? "text-amber-500"
+                            : undefined
+                        }
+                      >
                         {row.format(valA)}
-                        {yearA.isCurrent && priorRefValue !== null && (
-                          <div className="text-caption text-faint">
-                            was {row.format(priorRefValue)} at year-end{" "}
-                            {priorFinalized!.year}
-                          </div>
-                        )}
                       </div>
                     )}
                   </td>
@@ -216,14 +195,14 @@ export function SpreadsheetHealthStats({
                         Outdated
                       </span>
                     ) : (
-                      <div>
+                      <div
+                        className={
+                          row.isFlowMetric && isStaleB
+                            ? "text-amber-500"
+                            : undefined
+                        }
+                      >
                         {row.format(valB)}
-                        {yearB.isCurrent && priorRefValue !== null && (
-                          <div className="text-caption text-faint">
-                            was {row.format(priorRefValue)} at year-end{" "}
-                            {priorFinalized!.year}
-                          </div>
-                        )}
                       </div>
                     )}
                   </td>
@@ -246,12 +225,6 @@ export function SpreadsheetHealthStats({
                   {formatCurrency(yearA.portfolioTotal + yearA.cash)} /{" "}
                   {formatCurrency(yearA.fiTarget)}
                 </div>
-                {yearA.isCurrent && priorFinalized && (
-                  <div className="text-caption text-faint">
-                    was {formatPercent(priorFinalized.fiProgress, 1)} at
-                    year-end {priorFinalized.year}
-                  </div>
-                )}
               </td>
               <td className="text-right py-1.5 pl-2">
                 <div>{formatPercent(yearB.fiProgress, 1)}</div>
@@ -259,53 +232,6 @@ export function SpreadsheetHealthStats({
                   {formatCurrency(yearB.portfolioTotal + yearB.cash)} /{" "}
                   {formatCurrency(yearB.fiTarget)}
                 </div>
-                {yearB.isCurrent && priorFinalized && (
-                  <div className="text-caption text-faint">
-                    was {formatPercent(priorFinalized.fiProgress, 1)} at
-                    year-end {priorFinalized.year}
-                  </div>
-                )}
-              </td>
-            </tr>
-            {/* Projected FI Year row */}
-            <tr
-              className={`border-b border-subtle ${(STAT_ROWS.length + 1) % 2 === 0 ? "bg-surface-sunken/50" : ""}`}
-            >
-              <td className="py-1.5 pr-2 font-medium text-secondary">
-                Projected FI Year (Budget)
-                {hasCurrentYear && (
-                  <span className="text-faint font-normal"> - YTD</span>
-                )}
-              </td>
-              <td colSpan={2} className="text-right py-1.5 pl-2">
-                {hasCurrentYear && fiProjectionFinalized ? (
-                  <>
-                    <div className="font-medium">
-                      {formatFIProjection(fiProjectionFinalized.projection)}
-                    </div>
-                    <div className="text-caption text-faint">
-                      Based on finalized {fiProjectionFinalized.asOfYear} data
-                    </div>
-                    <div className="text-caption text-faint">
-                      YTD: {formatFIProjection(fiProjection)}
-                      {fiProjection.status === "stalled" &&
-                        " — partial year, may recover"}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="font-medium">
-                      {formatFIProjection(fiProjection)}
-                    </div>
-                    <div className="text-caption text-faint">
-                      {fiProjection.status === "stalled"
-                        ? `FI% declined: ${formatPercent(yearB.fiProgress, 1)} \u2192 ${formatPercent(yearA.fiProgress, 1)}`
-                        : fiProjection.status === "projected"
-                          ? `${formatPercent((yearA.fiProgress - yearB.fiProgress) / (yearA.year - yearB.year), 1)}/yr pace`
-                          : ""}
-                    </div>
-                  </>
-                )}
               </td>
             </tr>
           </tbody>

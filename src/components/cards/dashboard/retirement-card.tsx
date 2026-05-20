@@ -1,8 +1,9 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useRef, useEffect } from "react";
 
 import { trpc } from "@/lib/trpc";
+import { useFICache } from "@/lib/hooks/use-fi-cache";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
@@ -60,8 +61,31 @@ function RetirementCardImpl() {
       ? { decumulationExpenseOverride: parseFloat(decExpenseOverride) }
       : {}),
   };
-  const { data, isLoading, error } =
+  const [, writeFICache] = useFICache();
+  const lastCacheKey = useRef<string | null>(null);
+
+  const { data, isLoading, isFetching, error } =
     trpc.projection.computeProjection.useQuery(engineInput);
+
+  useEffect(() => {
+    if (!data?.result || isLoading || isFetching) return;
+    const withdrawalRate = Number(data.settings?.withdrawalRate ?? 0.04);
+    const expenses = data.annualExpenses ?? 0;
+    if (withdrawalRate <= 0 || expenses <= 0) return;
+    const fiTarget = expenses / withdrawalRate;
+    const hit = data.result.projectionByYear.find(
+      (y) => y.endBalance >= fiTarget,
+    );
+    const cacheKey = `${hit?.year ?? "null"}-${fiTarget}`;
+    if (lastCacheKey.current === cacheKey) return;
+    lastCacheKey.current = cacheKey;
+    writeFICache({
+      fiYear: hit?.year ?? null,
+      fiAge: hit?.age ?? null,
+      settingsHash: cacheKey,
+      computedAt: new Date().toISOString(),
+    });
+  }, [data, isLoading, isFetching, writeFICache]);
   const { data: coastFireData } = trpc.projection.computeCoastFire.useQuery(
     engineInput,
     {

@@ -19,11 +19,13 @@ export function NetWorthLocationPie({
   houseValue,
   cash,
   otherAssets,
+  yearLabel,
 }: {
   portfolioTotal: number;
   houseValue: number;
   cash: number;
   otherAssets: number;
+  yearLabel?: number;
 }) {
   const data = useMemo(() => {
     const items = [
@@ -55,6 +57,7 @@ export function NetWorthLocationPie({
           <HelpTip text="Where your net worth is held: portfolio investments, real estate, cash, and other assets" />
         </>
       }
+      subtitle={yearLabel != null ? `${yearLabel} data` : undefined}
     >
       <div className="flex flex-col sm:flex-row items-center gap-4">
         <div className="w-full sm:w-1/2">

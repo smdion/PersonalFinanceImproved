@@ -210,6 +210,7 @@ export const networthRouter = createTRPCRouter({
       otherAssetsSyncSource,
       otherLiabilities,
       withdrawalRate: currentRow?.withdrawalRate ?? DEFAULT_WITHDRAWAL_RATE,
+      withdrawalRateIsDefault: currentRow?.withdrawalRateIsDefault ?? true,
     };
   }),
 
