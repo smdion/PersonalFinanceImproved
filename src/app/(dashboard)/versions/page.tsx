@@ -573,7 +573,7 @@ export default function VersionsPage() {
                     </td>
                     <td className="px-3 py-2">
                       <span
-                        className={`inline-block text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                        className={`inline-block text-caption font-medium px-1.5 py-0.5 rounded ${
                           v.versionType === "auto"
                             ? "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300"
                             : "bg-purple-100 text-purple-700"

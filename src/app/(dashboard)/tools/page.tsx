@@ -83,6 +83,10 @@ export default function ToolsPage() {
   const [relocTargetContribProfileId, setRelocTargetContribProfileId] =
     useState<number | null>(null);
 
+  // User-controlled move year (null = show comparison table + earliest viable hint)
+  const [relocMoveYear, setRelocMoveYear] = useState<number | null>(null);
+  const [relocMoveYearInput, setRelocMoveYearInput] = useState<string>("");
+
   // Scenario persistence state
   const [selectedScenarioId, setSelectedScenarioId] = useState<number | null>(
     null,
@@ -172,6 +176,7 @@ export default function ToolsPage() {
       largePurchases: relocLargePurchases,
       currentContributionProfileId: effectiveCurrentContribProfileId,
       relocationContributionProfileId: effectiveTargetContribProfileId,
+      moveYear: relocMoveYear,
     }),
     [
       effectiveCurrentProfileId,
@@ -184,6 +189,7 @@ export default function ToolsPage() {
       relocLargePurchases,
       effectiveCurrentContribProfileId,
       effectiveTargetContribProfileId,
+      relocMoveYear,
     ],
   );
 
@@ -216,6 +222,9 @@ export default function ToolsPage() {
     );
     setRelocCurrentContribProfileId(params.currentContributionProfileId);
     setRelocTargetContribProfileId(params.relocationContributionProfileId);
+    const loadedMoveYear = params.moveYear ?? null;
+    setRelocMoveYear(loadedMoveYear);
+    setRelocMoveYearInput(loadedMoveYear != null ? String(loadedMoveYear) : "");
   }, []);
 
   // Save / Save As / Delete handlers wiring mutations.
@@ -289,6 +298,7 @@ export default function ToolsPage() {
       largePurchases: relocLargePurchases,
       currentContributionProfileId: effectiveCurrentContribProfileId,
       relocationContributionProfileId: effectiveTargetContribProfileId,
+      moveYear: relocMoveYear,
     }),
     [
       effectiveCurrentProfileId,
@@ -301,6 +311,7 @@ export default function ToolsPage() {
       relocLargePurchases,
       effectiveCurrentContribProfileId,
       effectiveTargetContribProfileId,
+      relocMoveYear,
     ],
   );
   const debouncedRelocInput = useDebouncedValue(relocInput, 600);
@@ -311,11 +322,43 @@ export default function ToolsPage() {
       placeholderData: (prev) => prev,
     },
   );
+  const relocFiQuery = trpc.projection.computeRelocationFiProjection.useQuery(
+    {
+      currentProfileId: debouncedRelocInput.currentProfileId,
+      currentBudgetColumn: debouncedRelocInput.currentBudgetColumn,
+      currentExpenseOverride: debouncedRelocInput.currentExpenseOverride,
+      currentContributionProfileId:
+        debouncedRelocInput.currentContributionProfileId,
+      relocationProfileId: debouncedRelocInput.relocationProfileId,
+      relocationBudgetColumn: debouncedRelocInput.relocationBudgetColumn,
+      relocationExpenseOverride: debouncedRelocInput.relocationExpenseOverride,
+      relocationContributionProfileId:
+        debouncedRelocInput.relocationContributionProfileId,
+      yearAdjustments: debouncedRelocInput.yearAdjustments.map((a) => ({
+        year: a.year,
+        monthlyExpenses: a.monthlyExpenses,
+      })),
+      largePurchases: debouncedRelocInput.largePurchases.map((p) => ({
+        purchaseYear: p.purchaseYear,
+        purchasePrice: p.purchasePrice,
+        downPaymentPercent: p.downPaymentPercent ?? null,
+        loanRate: p.loanRate ?? null,
+        loanTermYears: p.loanTermYears ?? null,
+        ongoingMonthlyCost: p.ongoingMonthlyCost ?? null,
+        saleProceeds: p.saleProceeds ?? null,
+      })),
+      moveYear: debouncedRelocInput.moveYear,
+    },
+    {
+      enabled: effectiveCurrentProfileId > 0 && effectiveTargetProfileId > 0,
+      placeholderData: (prev) => prev,
+    },
+  );
 
   return (
     <div>
       <PageHeader
-        title="Tools"
+        title="Relocation"
         subtitle="Financial analysis and decision-making tools."
       />
 
@@ -324,7 +367,7 @@ export default function ToolsPage() {
         title={
           <>
             Relocation Analysis
-            <HelpTip text="Compare how moving to a new area would affect your expenses, savings rate, and path to financial independence" />
+            <HelpTip text="Compare how moving to a new area would affect your expenses, savings rate, and retirement readiness" />
           </>
         }
         className="mb-6"
@@ -391,9 +434,62 @@ export default function ToolsPage() {
                   }
                 />
 
+                {/* Planned Move Year input */}
+                <div className="flex items-center gap-3">
+                  <label className="text-sm text-muted whitespace-nowrap">
+                    Planned Move Year
+                  </label>
+                  <input
+                    type="number"
+                    className="border rounded px-2 py-1 text-sm w-24"
+                    placeholder={
+                      relocFiQuery.data?.earliestRelocateYear != null
+                        ? String(relocFiQuery.data.earliestRelocateYear)
+                        : "—"
+                    }
+                    value={relocMoveYearInput}
+                    min={new Date().getFullYear()}
+                    max={2100}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setRelocMoveYearInput(raw);
+                      const parsed = parseInt(raw, 10);
+                      setRelocMoveYear(
+                        !isNaN(parsed) && parsed >= 1900 && parsed <= 2100
+                          ? parsed
+                          : null,
+                      );
+                    }}
+                  />
+                  {relocMoveYear !== null && (
+                    <button
+                      className="text-xs text-muted hover:text-secondary"
+                      onClick={() => {
+                        setRelocMoveYear(null);
+                        setRelocMoveYearInput("");
+                      }}
+                    >
+                      Clear
+                    </button>
+                  )}
+                  {relocFiQuery.data?.earliestRelocateYear != null &&
+                    relocMoveYear === null && (
+                      <span className="text-xs text-faint">
+                        Earliest viable:{" "}
+                        {relocFiQuery.data.earliestRelocateYear} (age{" "}
+                        {relocFiQuery.data.earliestRelocateAge})
+                      </span>
+                    )}
+                </div>
+
                 <RelocationMetricsAndBanner
                   result={r}
-                  displayAge={displayAge}
+                  engineResult={
+                    relocFiQuery.isPending || relocFiQuery.isFetching
+                      ? undefined
+                      : (relocFiQuery.data ?? null)
+                  }
+                  moveYear={relocMoveYear}
                 />
 
                 <RelocationLargePurchases
@@ -427,6 +523,12 @@ export default function ToolsPage() {
                   peopleLookup={peopleLookup}
                   displayAge={displayAge}
                   ageTooltip={ageTooltip}
+                  engineResult={
+                    relocFiQuery.isPending || relocFiQuery.isFetching
+                      ? undefined
+                      : (relocFiQuery.data ?? null)
+                  }
+                  moveYear={relocMoveYear}
                 />
               </div>
             );

@@ -178,7 +178,7 @@ export function BudgetSection({
         <span className="text-xs font-medium text-muted">
           Budget Category Matching
         </span>
-        <span className="flex gap-2 text-[10px]">
+        <span className="flex gap-2 text-caption">
           <span className="text-green-400">{budget.summary.linked}</span>
           <span className="text-yellow-400">{budget.summary.suggested}</span>
           <span className="text-faint">{budget.summary.unmatched}</span>
@@ -194,13 +194,13 @@ export function BudgetSection({
         <div className="flex items-center justify-between">
           <button
             onClick={() => setExpandedBudget(!expandedBudget)}
-            className="text-[10px] text-blue-500 hover:text-blue-700"
+            className="text-caption text-blue-500 hover:text-blue-700"
           >
             {expandedBudget ? "Hide items" : "Show items"}
           </button>
         </div>
 
-        <div className="flex items-center gap-2 text-[9px] text-faint flex-wrap">
+        <div className="flex items-center gap-2 text-micro text-faint flex-wrap">
           <span>Sync:</span>
           <span className="text-blue-500">→ pull</span>
           <span className="text-green-500">← push</span>
@@ -253,7 +253,7 @@ export function BudgetSection({
           <div className="space-y-2">
             {budgetByCategory.map(([category, items]) => (
               <div key={category}>
-                <p className="text-[10px] font-semibold text-muted uppercase tracking-wide mb-0.5">
+                <p className="text-caption font-semibold text-muted uppercase tracking-wide mb-0.5">
                   {category}
                 </p>
                 <div className="space-y-0.5 pl-1">
@@ -293,7 +293,7 @@ export function BudgetSection({
                               });
                             }}
                             disabled={setBudgetSyncDirMut.isPending}
-                            className={`text-[9px] px-1 py-0.5 rounded whitespace-nowrap disabled:opacity-50 ${
+                            className={`text-micro px-1 py-0.5 rounded whitespace-nowrap disabled:opacity-50 ${
                               m.syncDirection === "push"
                                 ? "bg-green-50 text-green-600 hover:bg-green-100"
                                 : m.syncDirection === "both"
@@ -318,7 +318,7 @@ export function BudgetSection({
                                     })
                                   }
                                   disabled={renameBudgetToApiMut.isPending}
-                                  className="text-[10px] px-1 py-0.5 bg-amber-50 text-amber-600 rounded hover:bg-amber-100 whitespace-nowrap disabled:opacity-50"
+                                  className="text-caption px-1 py-0.5 bg-amber-50 text-amber-600 rounded hover:bg-amber-100 whitespace-nowrap disabled:opacity-50"
                                   title={`Rename "${m.ledgrName}" → "${m.apiCategoryName}"`}
                                 >
                                   Name
@@ -333,7 +333,7 @@ export function BudgetSection({
                                     })
                                   }
                                   disabled={moveBudgetToApiGroupMut.isPending}
-                                  className="text-[10px] px-1 py-0.5 bg-purple-50 text-purple-600 rounded hover:bg-purple-100 whitespace-nowrap disabled:opacity-50"
+                                  className="text-caption px-1 py-0.5 bg-purple-50 text-purple-600 rounded hover:bg-purple-100 whitespace-nowrap disabled:opacity-50"
                                   title={`Move from "${m.ledgrCategory}" → "${m.apiGroupName}"`}
                                 >
                                   Group
@@ -347,7 +347,7 @@ export function BudgetSection({
                                     });
                                 }}
                                 disabled={renameBudgetApiNameMut.isPending}
-                                className="text-[10px] px-1 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
+                                className="text-caption px-1 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
                                 title="Keep Ledgr names"
                               >
                                 Keep
@@ -361,7 +361,7 @@ export function BudgetSection({
                               })
                             }
                             disabled={unlinkBudgetMut.isPending}
-                            className="text-red-400 hover:text-red-600 text-[10px] whitespace-nowrap"
+                            className="text-red-400 hover:text-red-600 text-caption whitespace-nowrap"
                             title="Unlink"
                           >
                             &times;
@@ -386,7 +386,7 @@ export function BudgetSection({
                                 )
                               }
                               disabled={linkBudgetMut.isPending}
-                              className="text-[10px] text-blue-500 hover:text-blue-700 whitespace-nowrap"
+                              className="text-caption text-blue-500 hover:text-blue-700 whitespace-nowrap"
                             >
                               Link
                             </button>
@@ -410,13 +410,13 @@ export function BudgetSection({
                       )}
 
                       {m.status === "unmatched" && !expandedBudget && (
-                        <span className="text-faint text-[10px] italic flex-1">
+                        <span className="text-faint text-caption italic flex-1">
                           unmapped
                         </span>
                       )}
 
                       {m.apiBudgeted != null && (
-                        <span className="text-faint tabular-nums whitespace-nowrap text-[10px]">
+                        <span className="text-faint tabular-nums whitespace-nowrap text-caption">
                           {formatCurrency(m.apiBudgeted)}
                         </span>
                       )}
@@ -431,18 +431,18 @@ export function BudgetSection({
         {/* Unmatched API categories — create new or link to existing Ledgr items */}
         {budget.unmatchedApiCategories.length > 0 && (
           <div className="border-t border-subtle pt-2 space-y-1">
-            <p className="text-[10px] font-medium text-muted">
+            <p className="text-caption font-medium text-muted">
               API categories not in Ledgr (
               {budget.unmatchedApiCategories.length})
             </p>
-            <p className="text-[10px] text-faint">
+            <p className="text-caption text-faint">
               Link to an existing Ledgr item, create a new one, or ignore.
             </p>
             <div className="space-y-1">
               {budget.unmatchedApiCategories.map((c) => (
                 <div key={c.id} className="space-y-0.5">
                   <div className="flex items-center gap-1.5 text-xs">
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 whitespace-nowrap">
+                    <span className="text-caption px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 whitespace-nowrap">
                       API only
                     </span>
                     <span
@@ -452,14 +452,14 @@ export function BudgetSection({
                       {c.groupName} &rsaquo; {c.name}
                     </span>
                     {c.budgeted !== 0 && (
-                      <span className="text-faint tabular-nums text-[10px] whitespace-nowrap">
+                      <span className="text-faint tabular-nums text-caption whitespace-nowrap">
                         {formatCurrency(c.budgeted)}
                       </span>
                     )}
                     <button
                       onClick={() => createFromApi(c)}
                       disabled={createItemMut.isPending}
-                      className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
+                      className="text-caption px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
                     >
                       + Budget item
                     </button>
@@ -473,7 +473,7 @@ export function BudgetSection({
                         }
                       }}
                       disabled={creatingSavingsFor === c.id}
-                      className="text-[10px] px-1.5 py-0.5 bg-green-50 text-green-700 rounded hover:bg-green-100 whitespace-nowrap disabled:opacity-50"
+                      className="text-caption px-1.5 py-0.5 bg-green-50 text-green-700 rounded hover:bg-green-100 whitespace-nowrap disabled:opacity-50"
                     >
                       + Sinking fund
                     </button>
@@ -485,7 +485,7 @@ export function BudgetSection({
                         })
                       }
                       disabled={skipCategoryMut.isPending}
-                      className="text-[10px] px-1.5 py-0.5 bg-surface-sunken text-muted rounded hover:bg-surface-elevated whitespace-nowrap disabled:opacity-50"
+                      className="text-caption px-1.5 py-0.5 bg-surface-sunken text-muted rounded hover:bg-surface-elevated whitespace-nowrap disabled:opacity-50"
                     >
                       Skip
                     </button>
@@ -505,7 +505,7 @@ export function BudgetSection({
                             [c.id]: e.target.value,
                           }))
                         }
-                        className="flex-1 px-1 py-0.5 text-[10px] border rounded bg-surface-primary"
+                        className="flex-1 px-1 py-0.5 text-caption border rounded bg-surface-primary"
                       >
                         <option value="">Link to existing...</option>
                         {unlinkedLedgrItems.length > 0 && (
@@ -553,7 +553,7 @@ export function BudgetSection({
                             }
                           }}
                           disabled={linkBudgetMut.isPending}
-                          className="text-[10px] px-1.5 py-0.5 bg-green-50 text-green-600 rounded hover:bg-green-100 whitespace-nowrap disabled:opacity-50"
+                          className="text-caption px-1.5 py-0.5 bg-green-50 text-green-600 rounded hover:bg-green-100 whitespace-nowrap disabled:opacity-50"
                         >
                           Link
                         </button>
@@ -571,7 +571,7 @@ export function BudgetSection({
           budget.skippedApiCategories.length > 0 && (
             <div className="border-t border-subtle pt-2">
               <details className="group">
-                <summary className="text-[10px] font-medium text-faint cursor-pointer hover:text-secondary">
+                <summary className="text-caption font-medium text-faint cursor-pointer hover:text-secondary">
                   Skipped ({budget.skippedApiCategories.length})
                 </summary>
                 <div className="mt-1 space-y-1">
@@ -580,7 +580,7 @@ export function BudgetSection({
                       key={c.id}
                       className="flex items-center gap-1.5 text-xs"
                     >
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-sunken text-faint whitespace-nowrap">
+                      <span className="text-caption px-1.5 py-0.5 rounded bg-surface-sunken text-faint whitespace-nowrap">
                         Skipped
                       </span>
                       <span
@@ -597,7 +597,7 @@ export function BudgetSection({
                           })
                         }
                         disabled={unskipCategoryMut.isPending}
-                        className="text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded hover:bg-amber-100 whitespace-nowrap disabled:opacity-50"
+                        className="text-caption px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded hover:bg-amber-100 whitespace-nowrap disabled:opacity-50"
                       >
                         Restore
                       </button>

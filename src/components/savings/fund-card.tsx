@@ -484,7 +484,7 @@ export function FundCard({
 
         {/* Status — fixed width column, colored text only */}
         <span
-          className={`text-[11px] font-medium w-[110px] text-right shrink-0 ${status.color}`}
+          className={`text-label font-medium w-[110px] text-right shrink-0 ${status.color}`}
         >
           {status.label}
         </span>
@@ -522,7 +522,7 @@ export function FundCard({
                   {rawGoal.apiCategoryName}
                 </span>
               </div>
-              <div className="space-y-0.5 text-[11px]">
+              <div className="space-y-0.5 text-label">
                 <div className="flex items-center justify-between">
                   <span className="text-blue-500/70">
                     ↓ Balance from {serviceLabel}
@@ -559,7 +559,7 @@ export function FundCard({
                 {rawGoal.isEmergencyFund && efundResult ? (
                   <>
                     <div>
-                      <div className="text-[10px] text-faint mb-0.5">
+                      <div className="text-caption text-faint mb-0.5">
                         still needed
                       </div>
                       <span className="text-3xl font-extrabold text-primary tabular-nums">
@@ -570,7 +570,7 @@ export function FundCard({
                     </div>
                     <span className="text-faint text-lg">/</span>
                     <div>
-                      <div className="text-[10px] text-faint mb-0.5">
+                      <div className="text-caption text-faint mb-0.5">
                         target
                       </div>
                       <span className="text-muted text-xl tabular-nums">
@@ -628,7 +628,7 @@ export function FundCard({
                         <div className="text-xs text-muted tabular-nums">
                           {formatCurrency(upcomingExpenses)} planned
                         </div>
-                        <div className="text-[10px] text-muted">
+                        <div className="text-caption text-muted">
                           in upcoming expenses
                         </div>
                       </div>
@@ -733,11 +733,13 @@ export function FundCard({
                 </span>
               )}
               {totalMonthlyAllocation > 0 && (
-                <span className="text-[10px] text-muted">({pct}% of pool)</span>
+                <span className="text-caption text-muted">
+                  ({pct}% of pool)
+                </span>
               )}
               {rawGoal.isApiSyncEnabled && (
                 <span
-                  className="text-[9px] text-blue-600/70"
+                  className="text-micro text-blue-600/70"
                   title="Monthly contribution pushes to budget API for current + next month"
                 >
                   → push
@@ -790,7 +792,7 @@ export function FundCard({
           {/* ── Sub-Goals ── */}
           {childGoals.length > 0 && (
             <div className="mt-3 border-t pt-2">
-              <p className="text-[10px] text-muted uppercase tracking-wide mb-1.5">
+              <p className="text-caption text-muted uppercase tracking-wide mb-1.5">
                 Goals in this fund
               </p>
               <div className="space-y-2">

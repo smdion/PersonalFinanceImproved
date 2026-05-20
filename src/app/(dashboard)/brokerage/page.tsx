@@ -303,7 +303,7 @@ export default function BrokeragePage() {
         <div className="border rounded-lg p-4 mt-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+              <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
                 Manage Goals
               </h4>
               <HelpTip text="Create, edit, or delete brokerage goals. Each goal defines a target amount and year — the engine automatically withdraws from your brokerage in that year." />
@@ -552,7 +552,7 @@ function ByAccountSummary({
               <span className="text-secondary font-medium">
                 {at.accountType}
                 {apiInfo?.source === "api" && (
-                  <span className="ml-1.5 inline-block px-1.5 py-0.5 text-[9px] font-semibold uppercase rounded bg-blue-100 text-blue-700">
+                  <span className="ml-1.5 inline-block px-1.5 py-0.5 text-micro font-semibold uppercase rounded bg-blue-100 text-blue-700">
                     YNAB
                   </span>
                 )}
@@ -564,12 +564,12 @@ function ByAccountSummary({
               </span>
             </div>
             {budgetLink && (
-              <p className="text-[10px] text-emerald-600 mt-0.5">
+              <p className="text-caption text-emerald-600 mt-0.5">
                 Linked to budget: {budgetLink.budgetItemName}
               </p>
             )}
             {apiInfo?.source === "api" && (
-              <p className="text-[10px] text-blue-600 mt-0.5">
+              <p className="text-caption text-blue-600 mt-0.5">
                 Balance from YNAB (snapshot:{" "}
                 {formatCurrency(apiInfo.snapshotBalance)})
               </p>
@@ -584,17 +584,17 @@ function ByAccountSummary({
                     }}
                   />
                 </div>
-                <p className="text-[10px] text-faint mt-0.5">
+                <p className="text-caption text-faint mt-0.5">
                   {formatPercent(at.totalContrib / at.targetAnnual)} of{" "}
                   {formatCurrency(at.targetAnnual)} target
                 </p>
               </div>
             )}
             {at.targetAnnual == null && (
-              <p className="text-[10px] text-faint mt-0.5">No target set</p>
+              <p className="text-caption text-faint mt-0.5">No target set</p>
             )}
             {at.employerMatch > 0 && (
-              <p className="text-[10px] text-muted mt-0.5">
+              <p className="text-caption text-muted mt-0.5">
                 +{formatCurrency(at.employerMatch)}/yr {at.employerMatchLabel}
               </p>
             )}
@@ -818,7 +818,7 @@ function YearByYearTable({
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
         <thead className="sticky top-0 bg-surface-primary z-10">
-          <tr className="text-left text-[10px] text-faint uppercase border-b">
+          <tr className="text-left text-caption text-faint uppercase border-b">
             <th className="py-2 pr-3">Year</th>
             <th className="py-2 pr-3 text-right">
               Contribution
@@ -861,7 +861,7 @@ function YearByYearTable({
                 <td className="py-1.5 pr-3 font-medium text-secondary">
                   {yr.year}
                   {yr.proRateFraction != null && (
-                    <span className="ml-1 text-[9px] text-faint">
+                    <span className="ml-1 text-micro text-faint">
                       ({Math.round(yr.proRateFraction * 12)} months)
                     </span>
                   )}

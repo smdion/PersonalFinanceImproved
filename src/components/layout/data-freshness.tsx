@@ -69,8 +69,8 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
   const oldestLabel = dates.length > 0 ? dates[dates.length - 1] : null;
 
   const tooltipContent = (
-    <div className="text-[11px] space-y-1">
-      <div className="font-medium text-slate-300 uppercase tracking-wider text-[10px] mb-1">
+    <div className="text-label space-y-1">
+      <div className="font-medium text-slate-300 uppercase tracking-wider text-caption mb-1">
         Data Updated
       </div>
       {data.balanceDate && (
@@ -92,7 +92,7 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
         </div>
       )}
       {syncAllMut.isPending && (
-        <div className="pt-1 text-[10px] text-slate-500 text-center">
+        <div className="pt-1 text-caption text-slate-500 text-center">
           Syncing…
         </div>
       )}
@@ -141,7 +141,7 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
           <RefreshCw
             className={`w-4 h-4 shrink-0 ${syncAllMut.isPending ? "animate-spin" : ""}`}
           />
-          <span className="text-[11px]">
+          <span className="text-label">
             Data{oldestLabel ? `: ${oldestLabel}` : ""}
           </span>
         </button>

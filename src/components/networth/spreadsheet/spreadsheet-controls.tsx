@@ -12,6 +12,8 @@ type Props = {
   onToggleMarketValue: () => void;
   useSalaryAverage: boolean;
   onToggleSalaryAverage: () => void;
+  showOutdated: boolean;
+  onToggleShowOutdated: () => void;
 };
 
 export function SpreadsheetControls({
@@ -24,6 +26,8 @@ export function SpreadsheetControls({
   onToggleMarketValue,
   useSalaryAverage,
   onToggleSalaryAverage,
+  showOutdated,
+  onToggleShowOutdated,
 }: Props) {
   const sorted = [...availableYears].sort((a, b) => b - a);
 
@@ -81,6 +85,18 @@ export function SpreadsheetControls({
           />
           <span className="text-muted whitespace-nowrap">
             Average Past 3 Years Salary for Stats
+          </span>
+        </label>
+
+        <label className="flex items-center gap-1.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showOutdated}
+            onChange={onToggleShowOutdated}
+            className="rounded border-default"
+          />
+          <span className="text-muted whitespace-nowrap">
+            Show Outdated Data
           </span>
         </label>
       </div>

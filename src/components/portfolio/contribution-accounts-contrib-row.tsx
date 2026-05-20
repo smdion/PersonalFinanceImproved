@@ -67,7 +67,7 @@ export function ContributionRow({
           <span className="text-secondary font-mono">
             {c.contributionValue}
           </span>
-          <span className="text-faint text-[10px]">
+          <span className="text-faint text-caption">
             {METHOD_LABELS[c.contributionMethod] ?? ""}
           </span>
           {c.employerMatchType !== "none" && c.employerMatchValue && (
@@ -87,7 +87,7 @@ export function ContributionRow({
           )}
           <span className="flex-1" />
           {!c.isActive && (
-            <span className="text-[10px] text-amber-500 font-medium">
+            <span className="text-caption text-amber-500 font-medium">
               Inactive
             </span>
           )}
@@ -97,7 +97,7 @@ export function ContributionRow({
                 e.stopPropagation();
                 onUpdate({ isActive: !c.isActive });
               }}
-              className={`text-[10px] shrink-0 ${c.isActive ? "text-red-400 hover:text-red-600" : "text-green-500 hover:text-green-700"}`}
+              className={`text-caption shrink-0 ${c.isActive ? "text-red-400 hover:text-red-600" : "text-green-500 hover:text-green-700"}`}
               title={c.isActive ? "Deactivate" : "Reactivate"}
             >
               {c.isActive ? "Deactivate" : "Reactivate"}
@@ -106,7 +106,7 @@ export function ContributionRow({
           {onUpdate && (
             <button
               onClick={() => setShowAdvanced(true)}
-              className="text-[10px] text-faint hover:text-secondary shrink-0"
+              className="text-caption text-faint hover:text-secondary shrink-0"
             >
               Edit
             </button>
@@ -118,12 +118,12 @@ export function ContributionRow({
       {showAdvanced && (
         <div className="px-3 py-2.5">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-semibold text-muted uppercase tracking-wider">
+            <span className="text-caption font-semibold text-muted uppercase tracking-wider">
               Edit Contribution
             </span>
             <button
               onClick={() => setShowAdvanced(false)}
-              className="text-[10px] text-indigo-500 hover:text-indigo-700"
+              className="text-caption text-indigo-500 hover:text-indigo-700"
             >
               Done
             </button>
@@ -311,7 +311,7 @@ export function ContributionRow({
             {cfg?.isOverflowTarget && (
               <div>
                 <div className="flex items-center gap-1 mb-0.5">
-                  <span className="text-[10px] text-muted">
+                  <span className="text-caption text-muted">
                     Overflow Priority
                   </span>
                   <HelpTip text="When contributions exceed IRS limits in tax-advantaged accounts (401k, IRA, HSA), the excess overflows to brokerage accounts. Lower number = filled first. Accounts with an Annual Target are filled up to that target before others. The lowest-priority account receives any remaining overflow." />
@@ -402,12 +402,12 @@ export function AddContribForm({
 
   return (
     <div className="border border-blue-200 rounded-lg p-3 bg-blue-50/30 space-y-2">
-      <div className="text-[10px] font-semibold text-muted uppercase tracking-wider">
+      <div className="text-caption font-semibold text-muted uppercase tracking-wider">
         New Contribution
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <div>
-          <label className="text-[10px] text-muted">Owner</label>
+          <label className="text-caption text-muted">Owner</label>
           <select
             value={personId}
             onChange={(e) => setPersonId(parseInt(e.target.value, 10))}
@@ -421,7 +421,7 @@ export function AddContribForm({
           </select>
         </div>
         <div>
-          <label className="text-[10px] text-muted">Job</label>
+          <label className="text-caption text-muted">Job</label>
           <select
             value={jobId ?? ""}
             onChange={(e) =>
@@ -438,7 +438,7 @@ export function AddContribForm({
           </select>
         </div>
         <div>
-          <label className="text-[10px] text-muted">Tax Treatment</label>
+          <label className="text-caption text-muted">Tax Treatment</label>
           <select
             value={taxTreatment}
             onChange={(e) => setTaxTreatment(e.target.value)}
@@ -452,7 +452,7 @@ export function AddContribForm({
           </select>
         </div>
         <div>
-          <label className="text-[10px] text-muted">Method</label>
+          <label className="text-caption text-muted">Method</label>
           <select
             value={method}
             onChange={(e) => setMethod(e.target.value)}
@@ -466,7 +466,7 @@ export function AddContribForm({
           </select>
         </div>
         <div>
-          <label className="text-[10px] text-muted">Value</label>
+          <label className="text-caption text-muted">Value</label>
           <input
             type="number"
             value={value}
@@ -478,7 +478,7 @@ export function AddContribForm({
           />
         </div>
         <div>
-          <label className="text-[10px] text-muted">Match Type</label>
+          <label className="text-caption text-muted">Match Type</label>
           <select
             value={matchType}
             onChange={(e) => setMatchType(e.target.value)}
@@ -494,7 +494,7 @@ export function AddContribForm({
         {matchType !== "none" && (
           <>
             <div>
-              <label className="text-[10px] text-muted">Match Value</label>
+              <label className="text-caption text-muted">Match Value</label>
               <input
                 type="number"
                 value={matchValue}
@@ -504,7 +504,7 @@ export function AddContribForm({
               />
             </div>
             <div>
-              <label className="text-[10px] text-muted">Max Match %</label>
+              <label className="text-caption text-muted">Max Match %</label>
               <input
                 type="number"
                 value={maxMatchPct}

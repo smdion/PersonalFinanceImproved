@@ -41,14 +41,14 @@ export function LifeChangesSection({
   return (
     <div className="border-t border-subtle pt-3">
       <div className="flex items-center justify-between mb-2">
-        <h5 className="text-[11px] font-medium text-muted uppercase tracking-wide">
+        <h5 className="text-label font-medium text-muted uppercase tracking-wide">
           Contribution &amp; Budget
           <HelpTip text="Per-year overrides for contribution profile (salary + contributions) and monthly budget. Each override sticks forward until the next one. These are saved to the database and persist across sessions." />
         </h5>
         <button
           type="button"
           onClick={() => setShowLifeOverrides(!showLifeOverrides)}
-          className="text-[11px] text-muted hover:underline"
+          className="text-label text-muted hover:underline"
         >
           {showLifeOverrides ? "Collapse" : "Expand"}
         </button>
@@ -80,7 +80,7 @@ export function LifeChangesSection({
           {/* Contribution Overrides */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-medium text-muted uppercase">
+              <span className="text-caption font-medium text-muted uppercase">
                 Contribution
                 <HelpTip text="Override the contribution profile (salary + contributions) at a specific future year. The salary from the selected profile is adjusted to future dollars using your Pre-Retirement Raise rate." />
                 {isPersonFiltered && (
@@ -92,7 +92,7 @@ export function LifeChangesSection({
               {!showSalaryForm && (
                 <button
                   type="button"
-                  className="text-[11px] text-blue-600 hover:underline"
+                  className="text-label text-blue-600 hover:underline"
                   onClick={() => setShowSalaryForm(true)}
                 >
                   + Add
@@ -120,7 +120,7 @@ export function LifeChangesSection({
                           })()
                         : `${formatCurrency(o.overrideSalary)}/yr`}
                       {enginePeople && enginePeople.length > 1 && (
-                        <span className="text-blue-500 text-[10px] ml-1">
+                        <span className="text-blue-500 text-caption ml-1">
                           [
                           {enginePeople.find((p) => p.id === o.personId)
                             ?.name ?? "?"}
@@ -148,7 +148,7 @@ export function LifeChangesSection({
               <div className="bg-surface-sunken border rounded-lg p-3 space-y-2">
                 <div className="flex gap-2 items-end flex-wrap">
                   <label className="block">
-                    <span className="text-[10px] text-muted">Year</span>
+                    <span className="text-caption text-muted">Year</span>
                     <input
                       type="number"
                       value={salaryForm.year}
@@ -162,7 +162,7 @@ export function LifeChangesSection({
                     />
                   </label>
                   <label className="block">
-                    <span className="text-[10px] text-muted">Source</span>
+                    <span className="text-caption text-muted">Source</span>
                     <select
                       value={salaryForm.source}
                       onChange={(e) =>
@@ -185,7 +185,7 @@ export function LifeChangesSection({
                   {salaryForm.source === "profile" &&
                     s.contribProfileSummaries && (
                       <label className="block">
-                        <span className="text-[10px] text-muted">Profile</span>
+                        <span className="text-caption text-muted">Profile</span>
                         <select
                           value={salaryForm.profileId}
                           onChange={(e) =>
@@ -219,7 +219,7 @@ export function LifeChangesSection({
                     )}
                   {salaryForm.source === "custom" && (
                     <label className="block flex-1">
-                      <span className="text-[10px] text-muted">
+                      <span className="text-caption text-muted">
                         Annual Salary ($)
                       </span>
                       <input
@@ -236,7 +236,7 @@ export function LifeChangesSection({
                     </label>
                   )}
                   <label className="block flex-1">
-                    <span className="text-[10px] text-muted">Notes</span>
+                    <span className="text-caption text-muted">Notes</span>
                     <input
                       type="text"
                       value={salaryForm.notes}
@@ -270,7 +270,7 @@ export function LifeChangesSection({
                     const futureSalary =
                       baseSalary * Math.pow(1 + raiseRate, yearsOut);
                     return (
-                      <p className="text-[10px] text-muted">
+                      <p className="text-caption text-muted">
                         {profile.name}: {formatCurrency(baseSalary)}/yr today
                         {yearsOut > 0 && raiseRate > 0 && (
                           <>
@@ -353,13 +353,13 @@ export function LifeChangesSection({
           {/* Budget Overrides */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-medium text-muted uppercase">
+              <span className="text-caption font-medium text-muted uppercase">
                 Budget (Monthly)
               </span>
               {!showBudgetForm && (
                 <button
                   type="button"
-                  className="text-[11px] text-blue-600 hover:underline"
+                  className="text-label text-blue-600 hover:underline"
                   onClick={() => setShowBudgetForm(true)}
                 >
                   + Add
@@ -381,7 +381,7 @@ export function LifeChangesSection({
                       {enginePeople &&
                         enginePeople.length > 1 &&
                         "personId" in o && (
-                          <span className="text-blue-500 text-[10px] ml-1">
+                          <span className="text-blue-500 text-caption ml-1">
                             [
                             {enginePeople.find(
                               (p) =>
@@ -411,7 +411,7 @@ export function LifeChangesSection({
               <div className="bg-surface-sunken border rounded-lg p-3 space-y-2">
                 <div className="flex gap-2 items-end flex-wrap">
                   <label className="block">
-                    <span className="text-[10px] text-muted">Year</span>
+                    <span className="text-caption text-muted">Year</span>
                     <input
                       type="number"
                       value={budgetForm.year}
@@ -425,7 +425,7 @@ export function LifeChangesSection({
                     />
                   </label>
                   <label className="block">
-                    <span className="text-[10px] text-muted">Source</span>
+                    <span className="text-caption text-muted">Source</span>
                     <select
                       value={budgetForm.source}
                       onChange={(e) =>
@@ -447,7 +447,7 @@ export function LifeChangesSection({
                     budgetProfileSummaries && (
                       <>
                         <label className="block">
-                          <span className="text-[10px] text-muted">
+                          <span className="text-caption text-muted">
                             Profile
                           </span>
                           <select
@@ -490,7 +490,7 @@ export function LifeChangesSection({
                               return null;
                             return (
                               <label className="block">
-                                <span className="text-[10px] text-muted">
+                                <span className="text-caption text-muted">
                                   Column
                                 </span>
                                 <select
@@ -523,7 +523,7 @@ export function LifeChangesSection({
                     )}
                   {budgetForm.source === "custom" && (
                     <label className="block flex-1">
-                      <span className="text-[10px] text-muted">
+                      <span className="text-caption text-muted">
                         Monthly Budget ($)
                       </span>
                       <input
@@ -540,7 +540,7 @@ export function LifeChangesSection({
                     </label>
                   )}
                   <label className="block flex-1">
-                    <span className="text-[10px] text-muted">Notes</span>
+                    <span className="text-caption text-muted">Notes</span>
                     <input
                       type="text"
                       value={budgetForm.notes}
@@ -576,7 +576,7 @@ export function LifeChangesSection({
                     const futureMonthly =
                       monthly * Math.pow(1 + inflationRate, yearsOut);
                     return (
-                      <p className="text-[10px] text-muted">
+                      <p className="text-caption text-muted">
                         {formatCurrency(monthly)}/mo today
                         {yearsOut > 0 && inflationRate > 0 && (
                           <>
@@ -676,7 +676,7 @@ export function LifeChangesSection({
           </div>
 
           {/* Current baseline info */}
-          <div className="text-[10px] text-faint border-t border-subtle pt-2">
+          <div className="text-caption text-faint border-t border-subtle pt-2">
             {isPersonFiltered && salaryByPerson && enginePeople
               ? (() => {
                   const person = enginePeople.find(

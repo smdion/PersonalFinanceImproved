@@ -100,7 +100,7 @@ export function PushPreviewModal({
           )}
 
           {unchanged.length > 0 && (
-            <p className="text-[10px] text-faint mt-2">
+            <p className="text-caption text-faint mt-2">
               {unchanged.length} item{unchanged.length !== 1 ? "s" : ""}{" "}
               unchanged (already match YNAB).
             </p>

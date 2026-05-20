@@ -67,7 +67,7 @@ export function ActiveLoanCard({
             <p className="font-medium">
               {formatCurrency(loan.totalInterestPaid)}
             </p>
-            <p className="text-[10px] text-faint">Interest paid so far</p>
+            <p className="text-caption text-faint">Interest paid so far</p>
           </div>
           <div>
             <p className="text-muted">
@@ -77,7 +77,7 @@ export function ActiveLoanCard({
             <p className="font-medium">
               {formatCurrency(loan.totalInterestLife)}
             </p>
-            <p className="text-[10px] text-faint">
+            <p className="text-caption text-faint">
               Total interest over loan life (with extra payments)
             </p>
           </div>
@@ -91,7 +91,7 @@ export function ActiveLoanCard({
                 ? formatCurrency(loan.totalInterestSaved)
                 : "$0.00"}
             </p>
-            <p className="text-[10px] text-faint">
+            <p className="text-caption text-faint">
               vs. original schedule (no extra payments)
             </p>
           </div>

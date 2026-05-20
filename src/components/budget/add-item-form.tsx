@@ -58,7 +58,7 @@ export function AddItemForm({
             }
           }}
         />
-        <label className="flex items-center gap-1 text-[10px] text-muted">
+        <label className="flex items-center gap-1 text-caption text-muted">
           <input
             type="checkbox"
             checked={isEssential}
@@ -70,7 +70,7 @@ export function AddItemForm({
         <button
           onClick={handleSubmit}
           disabled={isPending}
-          className="px-2 py-1 bg-blue-600 text-white rounded text-[10px] hover:bg-blue-700 disabled:opacity-50"
+          className="px-2 py-1 bg-blue-600 text-white rounded text-caption hover:bg-blue-700 disabled:opacity-50"
         >
           {isPending ? "Adding..." : "Add"}
         </button>

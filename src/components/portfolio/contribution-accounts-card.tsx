@@ -132,7 +132,7 @@ export function AccountCard({
           <div className="text-sm font-medium text-primary truncate">
             {accountDisplayName(pa)}
           </div>
-          <div className="text-[10px] text-faint">{pa.institution}</div>
+          <div className="text-caption text-faint">{pa.institution}</div>
         </div>
         {/* Account Type */}
         <div className="text-xs text-muted w-20 text-center">
@@ -153,7 +153,7 @@ export function AccountCard({
           {pa.parentCategory}
         </div>
         {/* Contrib count */}
-        <div className="text-[10px] text-faint w-16 text-center">
+        <div className="text-caption text-faint w-16 text-center">
           {activeContribs.length > 0
             ? `${activeContribs.length} contrib${activeContribs.length > 1 ? "s" : ""}`
             : ""}{" "}
@@ -176,7 +176,7 @@ export function AccountCard({
               {" "}
               <button
                 onClick={() => toggleSection("settings")}
-                className="w-full flex items-center justify-between px-4 py-2 text-[10px] font-semibold text-muted uppercase tracking-wider hover:bg-surface-elevated/50"
+                className="w-full flex items-center justify-between px-4 py-2 text-caption font-semibold text-muted uppercase tracking-wider hover:bg-surface-elevated/50"
               >
                 {" "}
                 <span>Account Settings</span>{" "}
@@ -190,7 +190,7 @@ export function AccountCard({
                 <div className="px-4 pb-3 space-y-4">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div>
-                      <label className="block text-[10px] text-muted mb-0.5">
+                      <label className="block text-caption text-muted mb-0.5">
                         Name (computed)
                       </label>
                       <div className="border border-subtle bg-surface-sunken rounded px-2 py-1 text-xs text-muted">
@@ -296,7 +296,7 @@ export function AccountCard({
                   <div className="border-t pt-2 mt-3">
                     <button
                       onClick={() => setShowDanger(!showDanger)}
-                      className="text-[10px] text-red-400 hover:text-red-500 font-semibold uppercase tracking-wider"
+                      className="text-caption text-red-400 hover:text-red-500 font-semibold uppercase tracking-wider"
                     >
                       {showDanger ? "▾" : "▸"} Danger Zone
                     </button>
@@ -335,7 +335,7 @@ export function AccountCard({
               {" "}
               <button
                 onClick={() => toggleSection("subs")}
-                className="w-full flex items-center justify-between px-4 py-2 text-[10px] font-semibold text-muted uppercase tracking-wider hover:bg-surface-elevated/50"
+                className="w-full flex items-center justify-between px-4 py-2 text-caption font-semibold text-muted uppercase tracking-wider hover:bg-surface-elevated/50"
               >
                 {" "}
                 <span>
@@ -410,7 +410,7 @@ export function AccountCard({
             {" "}
             <button
               onClick={() => toggleSection("contribs")}
-              className="w-full flex items-center justify-between px-4 py-2 text-[10px] font-semibold text-muted uppercase tracking-wider hover:bg-surface-elevated/50"
+              className="w-full flex items-center justify-between px-4 py-2 text-caption font-semibold text-muted uppercase tracking-wider hover:bg-surface-elevated/50"
             >
               {" "}
               <span>
@@ -453,7 +453,7 @@ export function AccountCard({
                       onClick={() =>
                         setShowInactiveContribs(!showInactiveContribs)
                       }
-                      className="text-[10px] text-faint hover:text-secondary"
+                      className="text-caption text-faint hover:text-secondary"
                     >
                       {showInactiveContribs ? "Hide" : "Show"}{" "}
                       {inactiveContribs.length} inactive

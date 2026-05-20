@@ -174,13 +174,13 @@ function FidelityMultiplierCardImpl() {
           ))}
         </select>
         {projectedAge !== null && (
-          <span className="text-[10px] text-blue-500 font-medium">
+          <span className="text-caption text-blue-500 font-medium">
             Projected
           </span>
         )}
       </div>
       {people.length > 1 && (
-        <p className="text-[10px] text-faint mb-1">
+        <p className="text-caption text-faint mb-1">
           Age is the average across {people.map((p) => p.name).join(" &")}
         </p>
       )}
@@ -242,7 +242,7 @@ function FidelityMultiplierCardImpl() {
         {FIDELITY_TARGETS.map((t) => (
           <span
             key={t.age}
-            className={`text-[10px] px-1.5 py-0.5 rounded ${
+            className={`text-caption px-1.5 py-0.5 rounded ${
               viewAge >= t.age && actualMultiplier >= t.multiplier
                 ? "bg-green-100 text-green-700"
                 : viewAge >= t.age

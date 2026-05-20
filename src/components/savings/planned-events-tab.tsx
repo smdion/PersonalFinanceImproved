@@ -37,7 +37,7 @@ function TransactionRow({
       </td>
       <td className="py-1.5 text-secondary">
         {tx.transferPairId && (
-          <span className="text-[9px] font-medium text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded mr-1.5">
+          <span className="text-micro font-medium text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded mr-1.5">
             Transfer
           </span>
         )}

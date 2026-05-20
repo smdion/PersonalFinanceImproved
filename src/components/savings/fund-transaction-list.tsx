@@ -114,7 +114,7 @@ export function FundTransactionList({
               setIsOpen(true);
               setTxForm(emptyTxForm(goalId));
             }}
-            className="text-[10px] text-blue-600 hover:text-blue-700"
+            className="text-caption text-blue-600 hover:text-blue-700"
           >
             + Add
           </button>
@@ -145,7 +145,7 @@ export function FundTransactionList({
             <>
               <button
                 onClick={() => setShowHistory(!showHistory)}
-                className="text-[10px] text-muted hover:text-primary mt-1"
+                className="text-caption text-muted hover:text-primary mt-1"
               >
                 {showHistory ? "Hide history" : `Show history (${past.length})`}
               </button>
@@ -331,13 +331,13 @@ function TransactionRow({
           {formatDate(tx.transactionDate, "short")}
         </span>
         {isTransfer && (
-          <span className="text-[9px] font-medium text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded shrink-0">
+          <span className="text-micro font-medium text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded shrink-0">
             {transferLabel}
           </span>
         )}
         <span className="text-secondary truncate">{tx.description}</span>
         {tx.isRecurring && (
-          <span className="text-[9px] text-muted shrink-0">
+          <span className="text-micro text-muted shrink-0">
             every {tx.recurrenceMonths}mo
           </span>
         )}

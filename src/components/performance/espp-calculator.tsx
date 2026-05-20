@@ -57,14 +57,14 @@ export function EsppCalculator({ onApply, onDismiss }: EsppCalculatorProps) {
         <button
           type="button"
           onClick={onDismiss}
-          className="text-[10px] text-faint hover:text-muted"
+          className="text-caption text-faint hover:text-muted"
         >
           dismiss
         </button>
       </div>
 
       {/* Field source guide */}
-      <div className="text-[10px] text-faint grid grid-cols-2 gap-x-4 gap-y-0.5 border-t border-teal-500/20 pt-2">
+      <div className="text-caption text-faint grid grid-cols-2 gap-x-4 gap-y-0.5 border-t border-teal-500/20 pt-2">
         <span>
           <span className="font-medium text-muted">Amount Withheld</span> —
           purchase confirmation
@@ -107,7 +107,7 @@ export function EsppCalculator({ onApply, onDismiss }: EsppCalculatorProps) {
 
       {/* YTD Summary */}
       <div className="border-t border-teal-500/20 pt-2 space-y-1">
-        <p className="text-[10px] font-semibold text-muted uppercase tracking-wide">
+        <p className="text-caption font-semibold text-muted uppercase tracking-wide">
           YTD Summary
         </p>
         <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
@@ -138,7 +138,7 @@ export function EsppCalculator({ onApply, onDismiss }: EsppCalculatorProps) {
 
       {/* Apply button */}
       <div className="flex items-center justify-end gap-2 border-t border-teal-500/20 pt-2">
-        <span className="text-[10px] text-faint flex-1">
+        <span className="text-caption text-faint flex-1">
           Ending balance comes from snapshot or manual entry above — not set by
           this calculator.
         </span>
@@ -170,12 +170,12 @@ function PeriodInputRow({
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-semibold text-muted">{label}</span>
+        <span className="text-caption font-semibold text-muted">{label}</span>
         {canRemove && (
           <button
             type="button"
             onClick={onRemove}
-            className="text-[10px] text-red-400 hover:text-red-600"
+            className="text-caption text-red-400 hover:text-red-600"
           >
             remove
           </button>
@@ -230,20 +230,20 @@ function EsppField({
 }) {
   return (
     <div>
-      <label className="block text-[10px] text-muted mb-0.5">{label}</label>
+      <label className="block text-caption text-muted mb-0.5">{label}</label>
       <div className="flex items-center border border-default rounded focus-within:ring-1 focus-within:ring-teal-500">
-        <span className="pl-1.5 text-[10px] text-muted select-none">$</span>
+        <span className="pl-1.5 text-caption text-muted select-none">$</span>
         <input
           type="number"
           step="0.01"
           min="0"
           defaultValue={value === 0 ? "" : value}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 min-w-0 bg-transparent px-1 py-0.5 text-[11px] text-right text-primary focus:outline-none"
+          className="flex-1 min-w-0 bg-transparent px-1 py-0.5 text-label text-right text-primary focus:outline-none"
         />
       </div>
       {hint && (
-        <div className="text-[9px] text-teal-600 text-right mt-0.5">{hint}</div>
+        <div className="text-micro text-teal-600 text-right mt-0.5">{hint}</div>
       )}
     </div>
   );

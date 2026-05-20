@@ -116,7 +116,7 @@ function ServiceCard({
             <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
             <span className="text-sm text-secondary">Connected</span>
             {isActive && (
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-50 text-green-700">
+              <span className="px-1.5 py-0.5 rounded text-caption font-medium bg-green-50 text-green-700">
                 Active
               </span>
             )}
@@ -324,7 +324,7 @@ function ServiceCard({
               {syncAllMut.data.counts.transactions} transactions from{" "}
               {service.toUpperCase()}
             </p>
-            <p className="text-[10px] text-faint">
+            <p className="text-caption text-faint">
               Data cached locally. To push changes back, use the Budget or
               Savings page.
             </p>

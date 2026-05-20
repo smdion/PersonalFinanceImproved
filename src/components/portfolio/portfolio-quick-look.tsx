@@ -87,7 +87,7 @@ export function PortfolioQuickLook({
       <div className="space-y-4 text-sm">
         {/* Section: Performance */}
         <div>
-          <div className="text-[10px] text-faint uppercase tracking-wider font-semibold mb-2 border-b border-subtle pb-1">
+          <div className="text-caption text-faint uppercase tracking-wider font-semibold mb-2 border-b border-subtle pb-1">
             Performance
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-2">
@@ -144,7 +144,7 @@ export function PortfolioQuickLook({
 
         {/* Section: Extremes */}
         <div>
-          <div className="text-[10px] text-faint uppercase tracking-wider font-semibold mb-2 border-b border-subtle pb-1">
+          <div className="text-caption text-faint uppercase tracking-wider font-semibold mb-2 border-b border-subtle pb-1">
             Extremes
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-2">
@@ -213,7 +213,7 @@ export function PortfolioQuickLook({
 
         {/* Section: Trends */}
         <div>
-          <div className="text-[10px] text-faint uppercase tracking-wider font-semibold mb-2 border-b border-subtle pb-1">
+          <div className="text-caption text-faint uppercase tracking-wider font-semibold mb-2 border-b border-subtle pb-1">
             Trends
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-2">
@@ -264,7 +264,7 @@ export function PortfolioQuickLook({
 
         {/* Section: Risk & Growth */}
         <div>
-          <div className="text-[10px] text-faint uppercase tracking-wider font-semibold mb-2 border-b border-subtle pb-1">
+          <div className="text-caption text-faint uppercase tracking-wider font-semibold mb-2 border-b border-subtle pb-1">
             Risk & Growth
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-2">

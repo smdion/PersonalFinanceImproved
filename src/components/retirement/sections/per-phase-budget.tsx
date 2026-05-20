@@ -121,7 +121,7 @@ export function PerPhaseBudgetSection({
                   <span className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-1">
                     Weighted: {formatCurrency(decWeighted ?? 0)}
                     /yr
-                    <span className="text-[10px] text-faint ml-1">
+                    <span className="text-caption text-faint ml-1">
                       (
                       {decMonths
                         .map((m, i) => `${m}mo ${decLabels[i] ?? ""}`)
@@ -170,7 +170,7 @@ export function PerPhaseBudgetSection({
             />
             {decExpenseOverride && (
               <button
-                className="text-[10px] text-red-400 hover:text-red-600"
+                className="text-caption text-red-400 hover:text-red-600"
                 onClick={() => setDecExpenseOverride(null)}
               >
                 clear

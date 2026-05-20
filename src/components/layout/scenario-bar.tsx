@@ -149,7 +149,7 @@ export function ScenarioBar() {
             aria-haspopup="listbox"
             aria-expanded={dropdownOpen}
             aria-labelledby="plan-label"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-[11px] transition-colors ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-label transition-colors ${
               isInScenario
                 ? "bg-amber-100 text-amber-800 shadow-sm"
                 : "bg-surface-primary text-primary shadow-sm"
@@ -173,7 +173,7 @@ export function ScenarioBar() {
             )}
             <span className="font-medium">{activeLabel}</span>
             {isInScenario && overrideCount > 0 && (
-              <span className="bg-amber-200 text-amber-700 px-1 rounded text-[10px]">
+              <span className="bg-amber-200 text-amber-700 px-1 rounded text-caption">
                 {overrideCount}
               </span>
             )}
@@ -216,7 +216,7 @@ export function ScenarioBar() {
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
                 Main Plan
                 {activeSelection.type === "main" && (
-                  <span className="ml-auto text-[10px] text-blue-500">
+                  <span className="ml-auto text-caption text-blue-500">
                     Active
                   </span>
                 )}
@@ -225,7 +225,7 @@ export function ScenarioBar() {
               {/* Persisted scenarios */}
               {persistedScenarios.length > 0 && (
                 <div className="border-t border-subtle">
-                  <div className="px-3 py-1 text-[10px] text-faint uppercase tracking-wider">
+                  <div className="px-3 py-1 text-caption text-faint uppercase tracking-wider">
                     Saved Scenarios
                   </div>
                   {persistedScenarios.map((s) => (
@@ -287,7 +287,7 @@ export function ScenarioBar() {
               {/* Session scenarios */}
               {sessionScenarios.length > 0 && (
                 <div className="border-t border-subtle">
-                  <div className="px-3 py-1 text-[10px] text-faint uppercase tracking-wider">
+                  <div className="px-3 py-1 text-caption text-faint uppercase tracking-wider">
                     Session Only (not saved)
                   </div>
                   {sessionScenarios.map((s) => (
@@ -314,7 +314,7 @@ export function ScenarioBar() {
                       >
                         <span className="w-1.5 h-1.5 rounded-full bg-surface-divider" />
                         {s.name}
-                        <span className="text-[10px] text-faint">
+                        <span className="text-caption text-faint">
                           (session)
                         </span>
                       </button>
@@ -368,13 +368,13 @@ export function ScenarioBar() {
                     <div className="flex gap-1">
                       <button
                         onClick={handleCreate}
-                        className="flex-1 px-2 py-1.5 bg-blue-600 text-white rounded text-[10px] hover:bg-blue-700"
+                        className="flex-1 px-2 py-1.5 bg-blue-600 text-white rounded text-caption hover:bg-blue-700"
                       >
                         {creating === "persisted" ? "Save" : "Create Temp"}
                       </button>
                       <button
                         onClick={() => setCreating(null)}
-                        className="px-2 py-1.5 text-muted text-[10px] hover:text-secondary"
+                        className="px-2 py-1.5 text-muted text-caption hover:text-secondary"
                       >
                         Cancel
                       </button>
@@ -443,7 +443,7 @@ export function ScenarioBar() {
             aria-selected={viewMode === "projected"}
             onClick={() => setViewMode("projected")}
             title="Current rate applied to all pay periods"
-            className={`px-3 py-1.5 rounded text-[11px] transition-colors ${
+            className={`px-3 py-1.5 rounded text-label transition-colors ${
               viewMode === "projected"
                 ? "bg-surface-primary text-primary shadow-sm"
                 : "text-muted hover:text-secondary "
@@ -457,7 +457,7 @@ export function ScenarioBar() {
             aria-selected={viewMode === "blended"}
             onClick={() => setViewMode("blended")}
             title="Year-end estimate using actual salary changes throughout the year"
-            className={`px-3 py-1.5 rounded text-[11px] transition-colors ${
+            className={`px-3 py-1.5 rounded text-label transition-colors ${
               viewMode === "blended"
                 ? "bg-surface-primary text-primary shadow-sm"
                 : "text-muted hover:text-secondary "
@@ -471,7 +471,7 @@ export function ScenarioBar() {
             aria-selected={viewMode === "ytd"}
             onClick={() => setViewMode("ytd")}
             title="Amounts earned so far based on elapsed pay periods"
-            className={`px-3 py-1.5 rounded text-[11px] transition-colors ${
+            className={`px-3 py-1.5 rounded text-label transition-colors ${
               viewMode === "ytd"
                 ? "bg-surface-primary text-primary shadow-sm"
                 : "text-muted hover:text-secondary "

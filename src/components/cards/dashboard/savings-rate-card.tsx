@@ -133,7 +133,7 @@ function SavingsRateCardImpl() {
       <div className="flex items-center gap-2">
         <Metric
           value={formatPercent(totalRate, 1)}
-          label={`Household savings rate${excludeMatch ? "" : " (incl. match)"}`}
+          label={`Household savings rate${excludeMatch ? "" : " (incl. match)"}${viewMode === "ytd" ? " — annualized YTD" : ""}`}
         />
         <button
           onClick={(e) => {
@@ -141,7 +141,7 @@ function SavingsRateCardImpl() {
             e.stopPropagation();
             setMatchOverride(excludeMatch ? false : true);
           }}
-          className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
+          className={`text-caption px-2 py-0.5 rounded transition-colors ${
             matchOverride !== null
               ? "bg-blue-100 text-blue-700 font-medium"
               : "text-faint hover:bg-surface-elevated"

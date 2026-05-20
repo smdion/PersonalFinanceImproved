@@ -166,14 +166,14 @@ export function DecumulationConfig({
       {/* Header — matches overrides panel style */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+          <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
             {isPersonFiltered
               ? `Withdrawal Routing — ${personFilterName}`
               : "Withdrawal Routing"}
           </h4>
           <HelpTip text="Determines WHICH accounts fund your spending. The spending amount comes from your strategy in Decumulation Plan above." />
           {!showDecumConfig && (
-            <span className="text-[10px] text-faint">
+            <span className="text-caption text-faint">
               {modeLabel} · {orderSummary}
             </span>
           )}
@@ -193,7 +193,7 @@ export function DecumulationConfig({
 
       {/* Spending strategy context — always visible when dynamic */}
       {isDynamic && (
-        <div className="text-[10px] text-indigo-700 bg-indigo-50 rounded px-2.5 py-1.5">
+        <div className="text-caption text-indigo-700 bg-indigo-50 rounded px-2.5 py-1.5">
           <span className="font-medium">{strategyCfg?.label}</span>
           {strategyCfg?.incomeSource === "formula"
             ? " determines HOW MUCH to withdraw. This section determines FROM WHICH accounts."
@@ -336,7 +336,7 @@ export function DecumulationConfig({
                         >
                           {getAccountTypeConfig(cat).displayLabel}
                         </span>
-                        <p className="text-[10px] text-faint">
+                        <p className="text-caption text-faint">
                           {getAccountTypeConfig(cat).taxPreferenceNote}
                         </p>
                       </div>

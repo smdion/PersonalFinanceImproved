@@ -29,10 +29,10 @@ export function TimelineSection({
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
-        <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+        <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
           Timeline
         </h4>
-        <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
+        <span className="text-micro text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
           Baseline + Simulation
         </span>
         <div className="flex-1 border-t" />
@@ -55,7 +55,7 @@ export function TimelineSection({
                     className="text-sm"
                     editable={!!settings}
                   />
-                  <span className="text-[10px] text-faint">
+                  <span className="text-caption text-faint">
                     (now {new Date().getFullYear() - ps.birthYear})
                   </span>
                 </div>
@@ -65,7 +65,7 @@ export function TimelineSection({
               <span className="text-muted">Household Retirement</span>
               <div className="font-medium text-blue-600">
                 {Math.max(...perPersonSettings.map((p) => p.retirementAge))}
-                <span className="text-[10px] text-faint font-normal ml-1">
+                <span className="text-caption text-faint font-normal ml-1">
                   when last person retires
                 </span>
               </div>

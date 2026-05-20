@@ -348,7 +348,7 @@ export function AllTransactionsTab({
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {/* Fund */}
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="text-[10px] text-faint block mb-0.5">
+                  <label className="text-caption text-faint block mb-0.5">
                     Fund
                   </label>
                   <select
@@ -371,7 +371,7 @@ export function AllTransactionsTab({
 
                 {/* Date */}
                 <div>
-                  <label className="text-[10px] text-faint block mb-0.5">
+                  <label className="text-caption text-faint block mb-0.5">
                     Date
                   </label>
                   <input
@@ -389,7 +389,7 @@ export function AllTransactionsTab({
 
                 {/* Amount */}
                 <div>
-                  <label className="text-[10px] text-faint block mb-0.5">
+                  <label className="text-caption text-faint block mb-0.5">
                     Amount
                   </label>
                   <div className="flex items-center gap-1">
@@ -424,7 +424,7 @@ export function AllTransactionsTab({
 
                 {/* Description */}
                 <div className="col-span-2 sm:col-span-3">
-                  <label className="text-[10px] text-faint block mb-0.5">
+                  <label className="text-caption text-faint block mb-0.5">
                     Description
                   </label>
                   <input
@@ -500,7 +500,7 @@ export function AllTransactionsTab({
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {/* From */}
                 <div>
-                  <label className="text-[10px] text-faint block mb-0.5">
+                  <label className="text-caption text-faint block mb-0.5">
                     From
                   </label>
                   <select
@@ -528,7 +528,7 @@ export function AllTransactionsTab({
 
                 {/* To */}
                 <div>
-                  <label className="text-[10px] text-faint block mb-0.5">
+                  <label className="text-caption text-faint block mb-0.5">
                     To
                   </label>
                   <select
@@ -552,7 +552,7 @@ export function AllTransactionsTab({
 
                 {/* Amount */}
                 <div>
-                  <label className="text-[10px] text-faint block mb-0.5">
+                  <label className="text-caption text-faint block mb-0.5">
                     Amount
                   </label>
                   <input
@@ -573,7 +573,7 @@ export function AllTransactionsTab({
 
                 {/* Date */}
                 <div>
-                  <label className="text-[10px] text-faint block mb-0.5">
+                  <label className="text-caption text-faint block mb-0.5">
                     Date
                   </label>
                   <input
@@ -591,7 +591,7 @@ export function AllTransactionsTab({
 
                 {/* Description */}
                 <div className="col-span-2">
-                  <label className="text-[10px] text-faint block mb-0.5">
+                  <label className="text-caption text-faint block mb-0.5">
                     Description
                   </label>
                   <input
@@ -651,7 +651,7 @@ export function AllTransactionsTab({
               {transferForm.fromGoalId > 0 &&
                 transferForm.toGoalId > 0 &&
                 Number(transferForm.amount) > 0 && (
-                  <p className="text-[10px] text-faint">
+                  <p className="text-caption text-faint">
                     {formatCurrency(Number(transferForm.amount))} from{" "}
                     <span className="text-red-500">
                       {fundNameMap.get(transferForm.fromGoalId)}
@@ -682,12 +682,12 @@ export function AllTransactionsTab({
       )}
 
       {/* Toolbar: add button + history selector + lock */}
-      <div className="flex items-center justify-between gap-4 text-[11px] text-faint px-1">
+      <div className="flex items-center justify-between gap-4 text-label text-faint px-1">
         <div className="flex items-center gap-2">
           {canEdit !== false && !adding && (
             <button
               onClick={() => setAdding(true)}
-              className="px-2.5 py-1 text-[11px] bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong rounded border"
+              className="px-2.5 py-1 text-label bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong rounded border"
             >
               + Add transaction
             </button>
@@ -695,7 +695,7 @@ export function AllTransactionsTab({
           {plannedTransactions.some((tx) => tx.source === "rule") && (
             <button
               onClick={() => setShowRuleTx(!showRuleTx)}
-              className={`px-2 py-0.5 text-[11px] rounded border transition-colors ${
+              className={`px-2 py-0.5 text-label rounded border transition-colors ${
                 showRuleTx
                   ? "border-blue-400 text-blue-600 bg-blue-50 dark:bg-blue-950/20"
                   : "border-surface-strong text-faint hover:text-primary"
@@ -720,7 +720,7 @@ export function AllTransactionsTab({
               );
             }}
             aria-label="History window"
-            className="text-[11px] border border-surface-strong rounded px-1.5 py-0.5 bg-surface-primary text-faint hover:text-primary"
+            className="text-label border border-surface-strong rounded px-1.5 py-0.5 bg-surface-primary text-faint hover:text-primary"
           >
             <option value="0">No history</option>
             <option value="3">3 months history</option>
@@ -803,7 +803,7 @@ export function AllTransactionsTab({
                   >
                     <td className="px-3 py-2 whitespace-nowrap">
                       {isTransfer ? (
-                        <span className="inline-flex items-center gap-1 text-[10px]">
+                        <span className="inline-flex items-center gap-1 text-caption">
                           <span
                             className="w-2 h-2 rounded-full shrink-0"
                             style={{
@@ -846,7 +846,7 @@ export function AllTransactionsTab({
                     </td>
                     <td className="px-3 py-2 text-faint">
                       {isTransfer && (
-                        <span className="inline-block text-[9px] font-medium text-blue-400/70 bg-blue-50/50 dark:bg-blue-950/20 rounded px-1 mr-1.5">
+                        <span className="inline-block text-micro font-medium text-blue-400/70 bg-blue-50/50 dark:bg-blue-950/20 rounded px-1 mr-1.5">
                           transfer
                         </span>
                       )}
@@ -866,7 +866,7 @@ export function AllTransactionsTab({
                         : `${tx.amount < 0 ? "−" : "+"}${formatCurrency(Math.abs(tx.amount))}`}
                     </td>
                     <td className="px-3 py-2 text-center text-faint/40">
-                      <span className="text-[10px]">—</span>
+                      <span className="text-caption">—</span>
                     </td>
                     {canEdit !== false && <td className="px-3 py-2" />}
                   </tr>
@@ -878,7 +878,7 @@ export function AllTransactionsTab({
                 <tr aria-hidden="true">
                   <td
                     colSpan={canEdit !== false ? 6 : 5}
-                    className="px-3 py-1 text-[10px] text-faint/50 text-center bg-surface-sunken border-b border-t tracking-widest"
+                    className="px-3 py-1 text-caption text-faint/50 text-center bg-surface-sunken border-b border-t tracking-widest"
                   >
                     ─── Upcoming ───
                   </td>
@@ -959,7 +959,7 @@ export function AllTransactionsTab({
                           </select>
                         </div>
                       ) : isTransfer ? (
-                        <span className="inline-flex items-center gap-1 text-[10px]">
+                        <span className="inline-flex items-center gap-1 text-caption">
                           <span
                             className="w-2 h-2 rounded-full shrink-0"
                             style={{
@@ -1056,12 +1056,12 @@ export function AllTransactionsTab({
                       ) : (
                         <>
                           {isTransfer && (
-                            <span className="inline-block text-[9px] font-medium text-blue-500 bg-blue-50 dark:bg-blue-950/30 rounded px-1 mr-1.5">
+                            <span className="inline-block text-micro font-medium text-blue-500 bg-blue-50 dark:bg-blue-950/30 rounded px-1 mr-1.5">
                               transfer
                             </span>
                           )}
                           {isRuleRow && (
-                            <span className="inline-block text-[9px] font-medium text-purple-500 bg-purple-50 dark:bg-purple-950/30 rounded px-1 mr-1.5">
+                            <span className="inline-block text-micro font-medium text-purple-500 bg-purple-50 dark:bg-purple-950/30 rounded px-1 mr-1.5">
                               extra paycheck
                             </span>
                           )}
@@ -1107,11 +1107,11 @@ export function AllTransactionsTab({
                     {/* Recurring */}
                     <td className="px-3 py-2 text-center text-faint">
                       {tx.isRecurring ? (
-                        <span className="text-[10px]">
+                        <span className="text-caption">
                           every {tx.recurrenceMonths}mo
                         </span>
                       ) : (
-                        <span className="text-[10px] text-faint/40">—</span>
+                        <span className="text-caption text-faint/40">—</span>
                       )}
                     </td>
 

@@ -62,7 +62,7 @@ export function AmortizationTable({ schedule }: { schedule: AmortEntry[] }) {
                 <td className="py-1 px-2">
                   {formatDate(entry.date, "short")}
                   {isToday && (
-                    <span className="ml-1 text-blue-600 text-[10px]">
+                    <span className="ml-1 text-blue-600 text-caption">
                       TODAY
                     </span>
                   )}

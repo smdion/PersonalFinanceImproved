@@ -61,7 +61,7 @@ export function BudgetProfileSidebar({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-[11px] font-semibold text-muted uppercase tracking-wide">
+        <h3 className="text-label font-semibold text-muted uppercase tracking-wide">
           Profiles
         </h3>
         {canEdit && (
@@ -74,7 +74,7 @@ export function BudgetProfileSidebar({
               );
               if (name) onCreateProfile(name);
             }}
-            className="text-[10px] font-medium text-blue-600 hover:text-blue-700"
+            className="text-caption font-medium text-blue-600 hover:text-blue-700"
           >
             + New
           </button>
@@ -123,12 +123,12 @@ export function BudgetProfileSidebar({
                   </span>
                 )}
                 {p.isActive && (
-                  <span className="text-[8px] px-1 py-0.5 rounded bg-green-100 text-green-700 font-semibold shrink-0">
+                  <span className="text-micro px-1 py-0.5 rounded bg-green-100 text-green-700 font-semibold shrink-0">
                     ACTIVE
                   </span>
                 )}
                 {apiService && apiLinkedProfileId === p.id && (
-                  <span className="text-[8px] px-1 py-0.5 rounded bg-blue-100 text-blue-700 font-semibold shrink-0">
+                  <span className="text-micro px-1 py-0.5 rounded bg-blue-100 text-blue-700 font-semibold shrink-0">
                     ⇄ {apiService.toUpperCase()} →{" "}
                     {(p.columnLabels as string[])?.[apiLinkedColumnIndex] ??
                       "Mode" + apiLinkedColumnIndex}
@@ -144,7 +144,7 @@ export function BudgetProfileSidebar({
                     <button
                       type="button"
                       onClick={() => onSetActiveProfile(p.id)}
-                      className="text-[10px] text-faint hover:text-green-600"
+                      className="text-caption text-faint hover:text-green-600"
                     >
                       activate
                     </button>
@@ -152,7 +152,7 @@ export function BudgetProfileSidebar({
                   <button
                     type="button"
                     onClick={() => onStartRename(p.id, p.name)}
-                    className="text-[10px] text-faint hover:text-blue-600"
+                    className="text-caption text-faint hover:text-blue-600"
                   >
                     edit
                   </button>
@@ -164,7 +164,7 @@ export function BudgetProfileSidebar({
                           onDeleteProfile(p.id);
                         }
                       }}
-                      className="text-[10px] text-faint hover:text-red-600"
+                      className="text-caption text-faint hover:text-red-600"
                     >
                       ×
                     </button>
@@ -172,7 +172,7 @@ export function BudgetProfileSidebar({
                 </div>
               )}
             </div>
-            <div className="flex gap-3 mt-1 text-[10px] text-muted">
+            <div className="flex gap-3 mt-1 text-caption text-muted">
               <span>{formatCurrency(p.annualTotal)}/yr</span>
               <span>
                 {p.columnCount} mode{p.columnCount !== 1 ? "s" : ""}

@@ -26,7 +26,7 @@ export function ApiCategorySelect({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full px-1.5 py-1 text-[11px] border border-strong rounded bg-surface-primary focus:ring-1 focus:ring-blue-500"
+      className="w-full px-1.5 py-1 text-label border border-strong rounded bg-surface-primary focus:ring-1 focus:ring-blue-500"
     >
       <option value="">{placeholder}</option>
       {Object.entries(grouped).map(([group, cats]) => (

@@ -154,7 +154,7 @@ export function ContributionSnapshot() {
       </div>
 
       {/* Color legend */}
-      <div className="flex flex-wrap items-center gap-3 mb-4 text-[10px] text-muted">
+      <div className="flex flex-wrap items-center gap-3 mb-4 text-caption text-muted">
         <span className="font-medium text-muted">Account types:</span>
         <span className="flex items-center gap-1">
           <span className={`w-2 h-2 rounded ${accountColor("401k")}`} />
@@ -285,7 +285,7 @@ export function ContributionSnapshot() {
                               title={`${employerMatchLabel}: ${formatCurrency(totalMatch)}${periodSuffix}`}
                             />
                           </div>
-                          <div className="flex justify-between text-[10px] mt-0.5">
+                          <div className="flex justify-between text-caption mt-0.5">
                             <span className={accountTextColor(categoryKey)}>
                               Total value:{" "}
                               {formatCurrency(
@@ -334,7 +334,7 @@ export function ContributionSnapshot() {
                               />
                             )}
                           </div>
-                          <div className="flex justify-between text-[10px] mt-0.5">
+                          <div className="flex justify-between text-caption mt-0.5">
                             <span className="text-faint">No IRS limit</span>
                             {jat.employerMatch > 0 && (
                               <span
@@ -461,7 +461,7 @@ export function ContributionSnapshot() {
                               {formatCurrency(at.limit)}
                               {at.views[viewMode].fundingPct >
                                 OVER_LIMIT_THRESHOLD && (
-                                <span className="ml-1 text-[10px] bg-red-100 text-red-700 px-1 rounded">
+                                <span className="ml-1 text-caption bg-red-100 text-red-700 px-1 rounded">
                                   Over limit
                                 </span>
                               )}
@@ -477,7 +477,7 @@ export function ContributionSnapshot() {
                           </div>
                           {/* Employer match IRS context */}
                           {at.employerMatch > 0 && (
-                            <p className="text-[10px] text-blue-500 mt-0.5">
+                            <p className="text-caption text-blue-500 mt-0.5">
                               Match
                               {matchCountsTowardLimit
                                 ? " counts toward IRS limit"
@@ -486,7 +486,7 @@ export function ContributionSnapshot() {
                           )}
                           {at.views[viewMode].fundingPct >
                             OVER_LIMIT_THRESHOLD && (
-                            <p className="text-[10px] text-red-600 mt-0.5">
+                            <p className="text-caption text-red-600 mt-0.5">
                               Over by{" "}
                               {formatCurrency(
                                 ((matchCountsTowardLimit
@@ -504,7 +504,7 @@ export function ContributionSnapshot() {
                             at.views[viewMode].pctOfSalaryToMax !== null &&
                             Math.floor(at.views[viewMode].pctOfSalaryToMax) >
                               0 && (
-                              <p className="text-[10px] text-amber-600 mt-0.5">
+                              <p className="text-caption text-amber-600 mt-0.5">
                                 Need +
                                 {Math.floor(
                                   at.views[viewMode].pctOfSalaryToMax,
@@ -517,13 +517,13 @@ export function ContributionSnapshot() {
                             at.views[viewMode].pctOfSalaryToMax !== null &&
                             Math.floor(at.views[viewMode].pctOfSalaryToMax) ===
                               0 && (
-                              <p className="text-[10px] text-green-600 mt-0.5">
+                              <p className="text-caption text-green-600 mt-0.5">
                                 Maxed out
                               </p>
                             )}
                           {/* Bonus 401k note */}
                           {at.bonusContrib > 0 && (
-                            <p className="text-[10px] text-amber-600 mt-0.5">
+                            <p className="text-caption text-amber-600 mt-0.5">
                               * Includes ~
                               {formatCurrency(at.bonusContrib * mult)}
                               {periodSuffix} estimated 401k from bonus
@@ -533,7 +533,7 @@ export function ContributionSnapshot() {
                           {(at.tradContrib > 0 || at.taxFreeContrib > 0) &&
                             at.tradContrib !== at.employeeContrib &&
                             at.taxFreeContrib !== at.employeeContrib && (
-                              <div className="flex gap-2 text-[10px] text-faint mt-0.5">
+                              <div className="flex gap-2 text-caption text-faint mt-0.5">
                                 {at.tradContrib > 0 && (
                                   <span>
                                     Pre-Tax:{" "}
@@ -576,7 +576,7 @@ export function ContributionSnapshot() {
                                     title={`${employerMatchLabel}: ${formatCurrency(at.views[viewMode].employerMatch * mult)}${periodSuffix}`}
                                   />
                                 </div>
-                                <div className="flex justify-between text-[10px] mt-0.5">
+                                <div className="flex justify-between text-caption mt-0.5">
                                   <span
                                     className={accountTextColor(categoryKey)}
                                   >
@@ -631,7 +631,7 @@ export function ContributionSnapshot() {
                             </div>
                           )}
                           {/* No limit note + match info */}
-                          <div className="flex justify-between text-[10px] mt-0.5">
+                          <div className="flex justify-between text-caption mt-0.5">
                             <span className="text-faint">No IRS limit</span>
                             {at.employerMatch > 0 && (
                               <span

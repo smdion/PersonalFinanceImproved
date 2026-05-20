@@ -259,7 +259,7 @@ export function YearRow({
                 <tr className="bg-surface-elevated">
                   <td
                     colSpan={13}
-                    className="px-8 py-1 text-[10px] text-faint uppercase tracking-wide font-medium"
+                    className="px-8 py-1 text-caption text-faint uppercase tracking-wide font-medium"
                   >
                     Historical Accounts
                   </td>

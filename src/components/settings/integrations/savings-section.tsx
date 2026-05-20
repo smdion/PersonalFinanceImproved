@@ -80,7 +80,7 @@ export function SavingsSection({
         <span className="text-xs font-medium text-muted">
           Sinking Fund Matching
         </span>
-        <span className="flex gap-2 text-[10px]">
+        <span className="flex gap-2 text-caption">
           <span className="text-green-400">{savings.summary.linked}</span>
           <span className="text-yellow-400">{savings.summary.suggested}</span>
           <span className="text-faint">{savings.summary.unmatched}</span>
@@ -116,7 +116,7 @@ export function SavingsSection({
                       {m.apiCategoryName}
                     </span>
                     <span
-                      className="text-[9px] px-1 py-0.5 rounded bg-purple-50 text-purple-600"
+                      className="text-micro px-1 py-0.5 rounded bg-purple-50 text-purple-600"
                       title="Balance pulled from API, monthly contribution pushed to API"
                     >
                       ⇄ pull balance / push contribution
@@ -130,7 +130,7 @@ export function SavingsSection({
                             })
                           }
                           disabled={renameSavingsToApiMut.isPending}
-                          className="text-[10px] px-1 py-0.5 bg-amber-50 text-amber-600 rounded hover:bg-amber-100 whitespace-nowrap disabled:opacity-50"
+                          className="text-caption px-1 py-0.5 bg-amber-50 text-amber-600 rounded hover:bg-amber-100 whitespace-nowrap disabled:opacity-50"
                           title={`Rename Ledgr "${m.goalName}" to "${m.apiCategoryName}"`}
                         >
                           Use API
@@ -142,7 +142,7 @@ export function SavingsSection({
                             })
                           }
                           disabled={renameSavingsApiNameMut.isPending}
-                          className="text-[10px] px-1 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
+                          className="text-caption px-1 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
                           title={`Keep Ledgr name "${m.goalName}"`}
                         >
                           Keep
@@ -154,7 +154,7 @@ export function SavingsSection({
                         unlinkSavingsMut.mutate({ goalId: m.goalId })
                       }
                       disabled={unlinkSavingsMut.isPending}
-                      className="text-red-400 hover:text-red-600 text-[10px] whitespace-nowrap"
+                      className="text-red-400 hover:text-red-600 text-caption whitespace-nowrap"
                       title="Unlink"
                     >
                       &times;
@@ -173,7 +173,7 @@ export function SavingsSection({
                           applySavingsLink(m.goalId, m.apiCategoryId!)
                         }
                         disabled={linkSavingsMut.isPending}
-                        className="text-[10px] text-blue-500 hover:text-blue-700 whitespace-nowrap"
+                        className="text-caption text-blue-500 hover:text-blue-700 whitespace-nowrap"
                       >
                         Link
                       </button>
@@ -197,13 +197,13 @@ export function SavingsSection({
                 )}
 
                 {m.status === "unmatched" && !expandedSavings && (
-                  <span className="text-faint text-[10px] italic flex-1">
+                  <span className="text-faint text-caption italic flex-1">
                     unmapped
                   </span>
                 )}
 
                 {m.apiBalance != null && (
-                  <span className="text-faint tabular-nums whitespace-nowrap text-[10px]">
+                  <span className="text-faint tabular-nums whitespace-nowrap text-caption">
                     {formatCurrency(m.apiBalance)}
                   </span>
                 )}
@@ -211,7 +211,7 @@ export function SavingsSection({
               {/* Reimbursement category link for e-fund goal */}
               {m.isEmergencyFund && m.status === "linked" && (
                 <div className="flex items-center gap-1.5 text-xs ml-4 min-h-[24px]">
-                  <span className="text-faint text-[10px]">
+                  <span className="text-faint text-caption">
                     ↳ Reimbursement category:
                   </span>
                   <div className="flex-1 max-w-[200px]">
@@ -235,7 +235,7 @@ export function SavingsSection({
                         })
                       }
                       disabled={linkReimbursementMut.isPending}
-                      className="text-red-400 hover:text-red-600 text-[10px]"
+                      className="text-red-400 hover:text-red-600 text-caption"
                       title="Unlink reimbursement category"
                     >
                       &times;

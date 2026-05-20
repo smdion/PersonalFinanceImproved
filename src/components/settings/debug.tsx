@@ -91,7 +91,7 @@ export function DebugSettings() {
                 className="block w-full rounded border border-strong px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
               {balancePlaceholder && (
-                <span className="text-[10px] text-faint whitespace-nowrap">
+                <span className="text-caption text-faint whitespace-nowrap">
                   Current: {balancePlaceholder}
                 </span>
               )}
@@ -110,7 +110,7 @@ export function DebugSettings() {
                 className="block w-full rounded border border-strong px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
               {perfPlaceholder && (
-                <span className="text-[10px] text-faint whitespace-nowrap">
+                <span className="text-caption text-faint whitespace-nowrap">
                   Current: {perfPlaceholder}
                 </span>
               )}

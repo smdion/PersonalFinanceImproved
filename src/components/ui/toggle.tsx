@@ -34,7 +34,7 @@ export function Toggle({
         onChange(!checked);
       }}
       title={title}
-      className={`inline-flex items-center gap-1.5 ${label ? "px-2 py-1 rounded text-[10px] font-medium" : ""} ${
+      className={`inline-flex items-center gap-1.5 ${label ? "px-2 py-1 rounded text-caption font-medium" : ""} ${
         label
           ? checked
             ? "bg-blue-50 text-blue-700 border border-blue-200"

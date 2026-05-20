@@ -1572,6 +1572,7 @@ export type RelocationScenarioParams = {
   }[];
   currentContributionProfileId: number | null;
   relocationContributionProfileId: number | null;
+  moveYear: number | null;
 };
 
 // ────────────────────────────────────────────────────────────────────────────

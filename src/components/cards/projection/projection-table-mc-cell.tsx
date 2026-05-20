@@ -116,7 +116,7 @@ export function renderMcCell(
       <td className="text-right py-1.5 px-2 text-purple-700 tabular-nums border-l border-subtle">
         {formatCurrency(Math.max(0, mcP50))}
         {showDelta && Math.abs(delta) > 1 && (
-          <div className={`text-[9px] ${deltaColor}`}>
+          <div className={`text-micro ${deltaColor}`}>
             {delta >= 0 ? "+" : ""}
             {formatCurrency(delta)}
           </div>

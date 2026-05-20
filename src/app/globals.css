@@ -24,6 +24,22 @@
 @theme {
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* ── Semantic font sizes ──────────────────────────────────────────
+   * text-micro  : 10px — absolute floor; badges, chart ticks, inline suffixes
+   * text-caption: 11px — secondary data values, helper text, footnotes
+   * text-label  : 13px — section eyebrows (uppercase+tracking), inline code
+   *
+   * Tailwind built-ins (unchanged):
+   *   text-xs : 12px — primary small text; table cells, inputs, pills
+   *   text-sm : 14px — body text, form labels, card prose
+   * ─────────────────────────────────────────────────────────────── */
+  --text-micro: 0.625rem;
+  --text-micro--line-height: 1rem;
+  --text-caption: 0.6875rem;
+  --text-caption--line-height: 1rem;
+  --text-label: 0.8125rem;
+  --text-label--line-height: 1.25rem;
 }
 
 @theme inline {

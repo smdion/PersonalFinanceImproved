@@ -960,7 +960,7 @@ export function HelpContent() {
           </li>
           <li>
             <strong>Help tips</strong> &mdash; Look for small{" "}
-            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-surface-sunken border border-default text-[10px] font-bold text-faint">
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-surface-sunken border border-default text-caption font-bold text-faint">
               ?
             </span>{" "}
             icons throughout the app. Hover over them for contextual

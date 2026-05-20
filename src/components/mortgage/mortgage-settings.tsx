@@ -380,7 +380,7 @@ export function MortgageSettings() {
                     }`}
                   >
                     {l.name}
-                    <span className="text-[10px] ml-1">
+                    <span className="text-caption ml-1">
                       ({formatPercent(Number(l.interestRate), 2)}, {l.termYears}
                       yr)
                     </span>
@@ -472,7 +472,7 @@ export function MortgageSettings() {
                   )}
                 </div>
                 {refinancedFrom && (
-                  <p className="text-[10px] text-muted mb-1">
+                  <p className="text-caption text-muted mb-1">
                     Refinanced from: {refinancedFrom.name}
                   </p>
                 )}
@@ -682,7 +682,7 @@ export function MortgageSettings() {
                     </td>
                     <td className="py-1 pr-2">
                       <span
-                        className={`text-[10px] px-1.5 py-0.5 rounded ${
+                        className={`text-caption px-1.5 py-0.5 rounded ${
                           ep.isActual
                             ? "bg-green-100 text-green-700"
                             : "bg-surface-elevated text-muted"

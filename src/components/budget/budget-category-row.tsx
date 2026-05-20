@@ -121,7 +121,7 @@ export function BudgetCategoryRow({
                     addingItemToCategory === categoryName ? null : categoryName,
                   );
                 }}
-                className="text-blue-500 hover:text-blue-700 text-[10px] font-medium"
+                className="text-blue-500 hover:text-blue-700 text-caption font-medium"
                 title={`Add item to ${categoryName}`}
               >
                 + item

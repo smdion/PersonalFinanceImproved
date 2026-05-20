@@ -216,7 +216,7 @@ export default function HistoricalPage() {
                 <button
                   key={key}
                   onClick={() => toggleGroup(key)}
-                  className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors ${
+                  className={`px-2 py-0.5 text-caption font-medium rounded transition-colors ${
                     hiddenGroups.has(key)
                       ? "bg-surface-elevated text-faint border border-default"
                       : "bg-surface-elevated text-blue-600 border border-blue-500/30"
@@ -374,7 +374,7 @@ function HistoricalTable({
                 <span className="inline-flex items-center gap-1">
                   Performance
                   {perfLastUpdatedDisplay && (
-                    <span className="ml-1 text-[9px] text-faint font-normal">
+                    <span className="ml-1 text-micro text-faint font-normal">
                       (updated {perfLastUpdatedDisplay})
                     </span>
                   )}
@@ -634,7 +634,7 @@ function HistoricalTable({
                 <StickyLeftCell offset={0} borderRight>
                   <span className="font-medium">{row.year}</span>
                   {row.isCurrent && (
-                    <span className="ml-1 text-[10px] font-medium text-blue-600 bg-blue-50 px-1 py-0.5 rounded">
+                    <span className="ml-1 text-caption font-medium text-blue-600 bg-blue-50 px-1 py-0.5 rounded">
                       YTD
                     </span>
                   )}

@@ -12,17 +12,20 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { CHART_COLORS } from "@/lib/utils/colors";
+import { CHART_FONT } from "@/components/charts/chart-defaults";
 
 export function NetWorthLocationPie({
   portfolioTotal,
   houseValue,
   cash,
   otherAssets,
+  yearLabel,
 }: {
   portfolioTotal: number;
   houseValue: number;
   cash: number;
   otherAssets: number;
+  yearLabel?: number;
 }) {
   const data = useMemo(() => {
     const items = [
@@ -54,6 +57,7 @@ export function NetWorthLocationPie({
           <HelpTip text="Where your net worth is held: portfolio investments, real estate, cash, and other assets" />
         </>
       }
+      subtitle={yearLabel != null ? `${yearLabel} data` : undefined}
     >
       <div className="flex flex-col sm:flex-row items-center gap-4">
         <div className="w-full sm:w-1/2">
@@ -75,7 +79,7 @@ export function NetWorthLocationPie({
               </Pie>
               <RechartsTooltip
                 formatter={(value) => formatCurrency(Number(value))}
-                contentStyle={{ fontSize: 12 }}
+                contentStyle={{ fontSize: CHART_FONT.tooltip }}
               />
             </PieChart>
           </ResponsiveContainer>

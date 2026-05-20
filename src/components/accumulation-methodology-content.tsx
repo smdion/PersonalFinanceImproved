@@ -153,14 +153,14 @@ export function AccumulationMethodologyContent() {
             </thead>
             <tbody className="divide-y ">
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-[11px]">
+                <td className="py-1.5 pr-3 font-mono text-label">
                   contributionRate
                 </td>
                 <td className="pr-3">Decimal</td>
                 <td>Fraction of gross salary to save (e.g. 0.25 = 25%)</td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-[11px]">
+                <td className="py-1.5 pr-3 font-mono text-label">
                   routingMode
                 </td>
                 <td className="pr-3">Enum</td>
@@ -170,7 +170,7 @@ export function AccumulationMethodologyContent() {
                 </td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-[11px]">
+                <td className="py-1.5 pr-3 font-mono text-label">
                   accountOrder
                 </td>
                 <td className="pr-3">Array</td>
@@ -180,7 +180,7 @@ export function AccumulationMethodologyContent() {
                 </td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-[11px]">
+                <td className="py-1.5 pr-3 font-mono text-label">
                   accountSplits
                 </td>
                 <td className="pr-3">Record</td>
@@ -189,7 +189,7 @@ export function AccumulationMethodologyContent() {
                 </td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-[11px]">taxSplits</td>
+                <td className="py-1.5 pr-3 font-mono text-label">taxSplits</td>
                 <td className="pr-3">Record</td>
                 <td>
                   Roth fraction per account type (e.g. {"{"}401k: 0.7, ira: 1.0
@@ -233,11 +233,11 @@ export function AccumulationMethodologyContent() {
           semantics: once set, a field stays at the overridden value until a
           later override changes it again. Each field is independent —
           overriding
-          <code className="text-[11px] bg-surface-elevated px-1 rounded">
+          <code className="text-label bg-surface-elevated px-1 rounded">
             contributionRate
           </code>{" "}
           in 2030 does not affect your{" "}
-          <code className="text-[11px] bg-surface-elevated px-1 rounded">
+          <code className="text-label bg-surface-elevated px-1 rounded">
             taxSplits
           </code>{" "}
           from a 2028 override.
@@ -254,35 +254,35 @@ export function AccumulationMethodologyContent() {
             </thead>
             <tbody className="divide-y ">
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-[11px]">
+                <td className="py-1.5 pr-3 font-mono text-label">
                   contributionRate
                 </td>
                 <td>New contribution rate from this year onward</td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-[11px]">
+                <td className="py-1.5 pr-3 font-mono text-label">
                   routingMode
                 </td>
                 <td>Switch routing mode (waterfall ↔ percentage)</td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-[11px]">
+                <td className="py-1.5 pr-3 font-mono text-label">
                   accountOrder
                 </td>
                 <td>New waterfall priority order</td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-[11px]">
+                <td className="py-1.5 pr-3 font-mono text-label">
                   accountSplits
                 </td>
                 <td>New percentage splits (merged with existing)</td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-[11px]">taxSplits</td>
+                <td className="py-1.5 pr-3 font-mono text-label">taxSplits</td>
                 <td>New Roth fractions (merged with existing)</td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-[11px]">
+                <td className="py-1.5 pr-3 font-mono text-label">
                   accountCaps
                 </td>
                 <td>
@@ -291,7 +291,7 @@ export function AccumulationMethodologyContent() {
                 </td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-[11px]">
+                <td className="py-1.5 pr-3 font-mono text-label">
                   taxTypeCaps
                 </td>
                 <td>
@@ -299,7 +299,7 @@ export function AccumulationMethodologyContent() {
                 </td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-[11px]">reset</td>
+                <td className="py-1.5 pr-3 font-mono text-label">reset</td>
                 <td>
                   When true, ALL fields revert to page-level defaults from this
                   year onward
@@ -340,7 +340,7 @@ export function AccumulationMethodologyContent() {
         <h4 className="font-semibold text-secondary mt-4">IRS limit growth</h4>
         <p>
           Each account&apos;s IRS limit scales by{" "}
-          <code className="text-[11px] bg-surface-elevated px-1 rounded">
+          <code className="text-label bg-surface-elevated px-1 rounded">
             (1 + limitGrowthRate)^year
           </code>{" "}
           each year. Catch-up contributions apply at age 50+ for most account
@@ -357,7 +357,7 @@ export function AccumulationMethodologyContent() {
           contribute $81k on a $280k salary, your rate is ~29%. This becomes a
           ceiling: each projected year, total contributions across all accounts
           cannot exceed{" "}
-          <code className="text-[11px] bg-surface-elevated px-1 rounded">
+          <code className="text-label bg-surface-elevated px-1 rounded">
             salary × contributionRate
           </code>
           .

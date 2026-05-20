@@ -47,6 +47,7 @@ import {
   Lock,
   LockOpen,
 } from "lucide-react";
+import { CHART_FONT } from "@/components/charts/chart-defaults";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -664,14 +665,17 @@ function HistoricalCharts({
       </div>
       <ResponsiveContainer width="100%" height={220}>
         <LineChart data={allocData}>
-          <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+          <XAxis dataKey="date" tick={{ fontSize: CHART_FONT.tick }} />
           <YAxis
             tickFormatter={(v: number) => `${v}%`}
-            tick={{ fontSize: 11 }}
+            tick={{ fontSize: CHART_FONT.tick }}
             width={36}
           />
           <Tooltip formatter={(v) => [formatPercent(Number(v) / 100, 1), ""]} />
-          <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
+          <Legend
+            iconSize={10}
+            wrapperStyle={{ fontSize: CHART_FONT.legend }}
+          />
           {classNames.map((name, i) => (
             <Line
               key={name}

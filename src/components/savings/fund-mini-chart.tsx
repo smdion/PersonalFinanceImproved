@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { formatCurrency, compactCurrency } from "@/lib/utils/format";
 import { CHART_COLORS } from "@/lib/utils/colors";
+import { CHART_FONT } from "@/components/charts/chart-defaults";
 import { monthKey } from "./types";
 
 interface FundMiniChartProps {
@@ -91,7 +92,7 @@ export function FundMiniChart({
 
           <XAxis
             dataKey="month"
-            tick={{ fontSize: 9, fill: CHART_COLORS.mcAxis }}
+            tick={{ fontSize: CHART_FONT.tiny, fill: CHART_COLORS.mcAxis }}
             tickLine={false}
             axisLine={false}
             interval="preserveStartEnd"
@@ -116,7 +117,7 @@ export function FundMiniChart({
           />
           <YAxis
             domain={[yMin, yMax]}
-            tick={{ fontSize: 9, fill: CHART_COLORS.mcAxis }}
+            tick={{ fontSize: CHART_FONT.tiny, fill: CHART_COLORS.mcAxis }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(v) => compactCurrency(Number(v))}
@@ -156,7 +157,7 @@ export function FundMiniChart({
                   {point.events?.map((ev) => (
                     <p
                       key={ev.id}
-                      className={`text-[10px] ${ev.amount < 0 ? "text-red-600" : "text-green-600"}`}
+                      className={`text-caption ${ev.amount < 0 ? "text-red-600" : "text-green-600"}`}
                     >
                       {ev.description}: {ev.amount >= 0 ? "+" : ""}
                       {formatCurrency(ev.amount)}
@@ -181,7 +182,7 @@ export function FundMiniChart({
                 value: `Target: ${formatCurrency(target)}`,
                 position: "right",
                 fill: "#10b981",
-                fontSize: 9,
+                fontSize: CHART_FONT.tiny,
               }}
             />
           )}

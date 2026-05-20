@@ -73,7 +73,7 @@ export function ApiCategoryPicker({
             <button
               onClick={() => unlinkMut.mutate({ budgetItemId })}
               disabled={unlinkMut.isPending}
-              className="text-red-500 hover:text-red-700 text-[10px]"
+              className="text-red-500 hover:text-red-700 text-caption"
             >
               Unlink
             </button>
@@ -87,7 +87,7 @@ export function ApiCategoryPicker({
           onChange={(e) =>
             setSyncDirection(e.target.value as "pull" | "push" | "both")
           }
-          className="w-full text-[10px] border rounded px-1.5 py-1"
+          className="w-full text-caption border rounded px-1.5 py-1"
         >
           <option value="pull">Pull (API is master)</option>
           <option value="push">Push (Ledgr is master)</option>
@@ -112,7 +112,7 @@ export function ApiCategoryPicker({
 
       {filtered.map((group) => (
         <div key={group.id} className="mb-1">
-          <div className="text-[10px] font-semibold text-muted uppercase tracking-wider px-1 py-0.5">
+          <div className="text-caption font-semibold text-muted uppercase tracking-wider px-1 py-0.5">
             {group.name}
           </div>
           {group.categories.map((cat) => (

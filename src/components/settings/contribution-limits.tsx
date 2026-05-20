@@ -383,7 +383,7 @@ export function ContributionLimitsSettings() {
                     <div className="flex items-center gap-1.5">
                       {changed && (
                         <span
-                          className={`text-[9px] ${currVal! > prevVal! ? "text-green-500" : "text-red-500"}`}
+                          className={`text-micro ${currVal! > prevVal! ? "text-green-500" : "text-red-500"}`}
                           title={`${prevYear}: ${type.format === "percent" ? formatPercent(prevVal!, 2) : formatCurrency(prevVal!)}`}
                         >
                           {currVal! > prevVal! ? "▲" : "▼"}

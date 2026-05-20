@@ -46,6 +46,12 @@ vi.mock("@/lib/utils/colors", () => ({
   taxTypeLabel: (k: string) => k,
   accountTextColor: () => "text-blue-500",
   categoryChartHex: () => "#aaa",
+  CHART_COLORS: {
+    income: "#aaa",
+    expenses: "#bbb",
+    net: "#ccc",
+    balance: "#ddd",
+  },
 }));
 
 const mockAccountConfig = {

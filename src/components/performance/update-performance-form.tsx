@@ -364,7 +364,7 @@ function AccountFormRow({
           <button
             type="button"
             onClick={() => setShowCalculator(true)}
-            className="text-[10px] text-teal-600 hover:text-teal-800 ml-auto"
+            className="text-caption text-teal-600 hover:text-teal-800 ml-auto"
           >
             ESPP Calculator
           </button>
@@ -413,7 +413,7 @@ function AccountFormRow({
         />
       </div>
       {/* Total contributions read-only display */}
-      <div className="text-[10px] text-muted mb-2">
+      <div className="text-caption text-muted mb-2">
         Total Contributions:{" "}
         <span className="font-medium text-primary">
           {formatCurrency(
@@ -433,7 +433,7 @@ function AccountFormRow({
             <span className="text-xs font-medium">
               {formatCurrency(row.snapshotEndingBalance)}
               {snapshotDate && (
-                <span className="text-faint text-[10px] ml-1">
+                <span className="text-faint text-caption ml-1">
                   ({snapshotDate})
                 </span>
               )}
@@ -453,7 +453,7 @@ function AccountFormRow({
                   className="w-24 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none"
                 />
               </div>
-              <span className="text-[10px] text-amber-600">(no snapshot)</span>
+              <span className="text-caption text-amber-600">(no snapshot)</span>
             </span>
           ) : (
             <div className="flex items-center border border-default rounded focus-within:ring-1 focus-within:ring-blue-500">
@@ -470,7 +470,7 @@ function AccountFormRow({
             </div>
           )}
           {row.original.endingBalance !== effectiveEndingBalance && (
-            <span className="text-[10px] text-faint">
+            <span className="text-caption text-faint">
               was {formatCurrency(row.original.endingBalance)}
             </span>
           )}
@@ -493,11 +493,11 @@ function AccountFormRow({
                   className="w-24 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none"
                 />
               </div>
-              <span className="text-[10px] text-amber-600 italic">manual</span>
+              <span className="text-caption text-amber-600 italic">manual</span>
               <button
                 type="button"
                 onClick={() => onFieldChange(id, "gainLossOverride", false)}
-                className="text-[10px] text-blue-600 hover:text-blue-800"
+                className="text-caption text-blue-600 hover:text-blue-800"
               >
                 reset
               </button>
@@ -563,7 +563,7 @@ function CompactCurrencyField({
 
   return (
     <div>
-      <label className="block text-[10px] font-medium text-muted mb-0.5">
+      <label className="block text-caption font-medium text-muted mb-0.5">
         {label}
       </label>
       <div
@@ -579,7 +579,7 @@ function CompactCurrencyField({
         />
       </div>
       {changed && originalValue !== 0 && (
-        <div className="text-[10px] text-faint text-right">
+        <div className="text-caption text-faint text-right">
           was {formatCurrency(originalValue)}
         </div>
       )}

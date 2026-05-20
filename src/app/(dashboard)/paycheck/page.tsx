@@ -501,12 +501,12 @@ export default function PaycheckPage() {
               ))}
             </select>
             {displayContribId !== contribProfileId && (
-              <span className="text-[10px] text-muted font-medium">
+              <span className="text-caption text-muted font-medium">
                 (viewing — not active)
               </span>
             )}
             {isProfileMode && (
-              <span className="text-[10px] text-amber-600 font-medium">
+              <span className="text-caption text-amber-600 font-medium">
                 Edits update profile
               </span>
             )}

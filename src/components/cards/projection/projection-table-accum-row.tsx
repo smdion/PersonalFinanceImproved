@@ -170,7 +170,7 @@ export function AccumulationRow({
             side="right"
             maxWidth={220}
           >
-            <span className="text-[9px] text-blue-500 align-super">*</span>
+            <span className="text-micro text-blue-500 align-super">*</span>
           </Tooltip>
         )}
       </td>
@@ -191,7 +191,7 @@ export function AccumulationRow({
         <td className="py-1.5 px-2">{displayAge(yr.year) ?? yr.age}</td>
       </Tooltip>
       <td className="py-1.5 px-2">
-        <span className="text-green-600 text-[10px] font-medium">SAVE</span>
+        <span className="text-green-600 text-caption font-medium">SAVE</span>
       </td>
       <Tooltip
         content={(() => {
@@ -502,7 +502,7 @@ export function AccumulationRow({
                   >
                     {formatCurrency(deflate(total, yr.year))}
                     {match > 0 && (
-                      <span className="text-[9px] text-green-600 align-super ml-px">
+                      <span className="text-micro text-green-600 align-super ml-px">
                         +m
                       </span>
                     )}
@@ -633,7 +633,7 @@ export function AccumulationRow({
                       ? formatCurrency(deflate(ofEmp + ofMatch, yr.year))
                       : "---"}
                     {ofMatch > 0 && (
-                      <span className="text-[9px] text-green-600 align-super ml-px">
+                      <span className="text-micro text-green-600 align-super ml-px">
                         +m
                       </span>
                     )}
@@ -790,7 +790,7 @@ export function AccumulationRow({
                 >
                   {total > 0 ? formatCurrency(deflate(total, yr.year)) : "---"}
                   {(bucketMatch > 0 || bucketAssocMatch > 0) && (
-                    <span className="text-[9px] text-green-600 align-super ml-px">
+                    <span className="text-micro text-green-600 align-super ml-px">
                       +m
                     </span>
                   )}
@@ -988,7 +988,7 @@ export function AccumulationRow({
             ),
           )}
           {yr.totalEmployer - pcfBrokAdj.match > 0 && (
-            <span className="text-[9px] text-green-600 align-super ml-px">
+            <span className="text-micro text-green-600 align-super ml-px">
               +m
             </span>
           )}
@@ -1334,7 +1334,7 @@ export function AccumulationRow({
         deflate(pt ? pt.balance : yr.endBalance, yr.year),
         mcCellOpts,
       )}
-      <td className="py-1.5 pl-2 text-[10px] text-faint whitespace-nowrap border-l border-subtle">
+      <td className="py-1.5 pl-2 text-caption text-faint whitespace-nowrap border-l border-subtle">
         {yr.proRateFraction != null && (
           <Tooltip
             content={`Partial year — only ${proRateMonths(yr.proRateFraction)} months remain. All dollar values in this row show what's left for the year, not a full 12-month amount.`}

@@ -143,7 +143,7 @@ export function SavingsTrajectoryTable({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between gap-4 text-[11px] text-faint px-1">
+      <div className="flex items-center justify-between gap-4 text-label text-faint border border-subtle rounded-lg px-3 py-2 bg-surface-sunken">
         {hasAnyFixedTarget || hasAnyRevolving || hasAnyEvents ? (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             {hasAnyFixedTarget && (
@@ -183,7 +183,7 @@ export function SavingsTrajectoryTable({
                 v === "all" ? "all" : (Number(v) as HistoryWindow),
               );
             }}
-            className="text-[11px] border border-surface-strong rounded px-1.5 py-0.5 bg-surface-primary text-faint hover:text-primary"
+            className="text-label border border-surface-strong rounded px-1.5 py-0.5 bg-surface-primary text-faint hover:text-primary"
           >
             <option value="0">No history</option>
             <option value="3">3 months history</option>
@@ -194,7 +194,7 @@ export function SavingsTrajectoryTable({
           {hasAnyEvents && (
             <button
               onClick={() => setShowEvents(!showEvents)}
-              className="flex items-center gap-1 px-2 py-0.5 rounded border border-surface-strong text-faint hover:text-primary hover:border-primary transition-colors text-[11px]"
+              className="flex items-center gap-1 px-2 py-0.5 rounded border border-surface-strong text-faint hover:text-primary hover:border-primary transition-colors text-label"
             >
               <span>{showEvents ? "▾" : "▸"}</span>
               <span>{showEvents ? "Hide" : "Show"} transactions</span>
@@ -203,10 +203,10 @@ export function SavingsTrajectoryTable({
         </div>
       </div>
       <div className="overflow-auto max-h-[480px] rounded-lg border">
-        <table className="w-full text-sm border-separate border-spacing-0">
+        <table className="table-fixed w-full text-sm border-separate border-spacing-0">
           <thead>
             <tr className="bg-surface-sunken border-b">
-              <th className="sticky top-0 left-0 z-20 bg-surface-sunken text-left px-3 py-2 font-medium text-muted text-xs whitespace-nowrap border-r">
+              <th className="sticky top-0 left-0 z-20 w-28 bg-surface-sunken text-left px-3 py-2 font-medium text-muted text-xs whitespace-nowrap border-r">
                 Month
               </th>
               {visibleProjections.map((gp) => {
@@ -214,7 +214,7 @@ export function SavingsTrajectoryTable({
                 return (
                   <th
                     key={gp.goalId}
-                    className="sticky top-0 z-10 bg-surface-sunken text-right px-3 py-2 font-medium text-xs whitespace-nowrap min-w-[110px] align-top"
+                    className="sticky top-0 z-10 bg-surface-sunken text-right px-3 py-2 font-medium text-xs whitespace-nowrap align-top"
                   >
                     <span className="inline-flex items-center gap-1.5 justify-end">
                       <span
@@ -227,15 +227,15 @@ export function SavingsTrajectoryTable({
                       <span className="text-muted">{gp.name}</span>
                     </span>
                     {gp.targetMode === "fixed" && gp.target > 0 ? (
-                      <div className="text-[10px] text-faint font-normal">
+                      <div className="text-caption text-faint font-normal">
                         target {formatCurrency(gp.target)}
                       </div>
                     ) : gp.targetMode === "ongoing" ? (
-                      <div className="text-[10px] text-faint/60 font-normal italic">
+                      <div className="text-caption text-faint/60 font-normal italic">
                         revolving
                       </div>
                     ) : (
-                      <div className="text-[10px] text-faint/40 font-normal">
+                      <div className="text-caption text-faint/40 font-normal">
                         no target
                       </div>
                     )}
@@ -243,7 +243,7 @@ export function SavingsTrajectoryTable({
                 );
               })}
               {hiddenProjections.length > 0 && (
-                <th className="sticky top-0 z-10 bg-surface-sunken text-right px-3 py-2 font-medium text-xs whitespace-nowrap min-w-[110px] align-top text-faint/60">
+                <th className="sticky top-0 z-10 bg-surface-sunken text-right px-3 py-2 font-medium text-xs whitespace-nowrap align-top text-faint/60">
                   {hiddenProjections.length} hidden
                 </th>
               )}
@@ -262,7 +262,7 @@ export function SavingsTrajectoryTable({
                 >
                   <td className="sticky left-0 z-10 bg-surface-elevated/20 px-3 py-1.5 text-xs text-faint whitespace-nowrap border-r">
                     {monthLabel(displayDate)}
-                    <span className="ml-1.5 text-[9px] text-faint/60 uppercase tracking-wide">
+                    <span className="ml-1.5 text-micro text-faint/60 uppercase tracking-wide">
                       actual
                     </span>
                   </td>
@@ -296,7 +296,7 @@ export function SavingsTrajectoryTable({
               <tr aria-hidden="true">
                 <td
                   colSpan={visibleProjections.length + 1}
-                  className="px-3 py-1 text-[10px] text-faint/50 text-center bg-surface-sunken border-b border-t tracking-widest"
+                  className="px-3 py-1 text-caption text-faint/50 text-center bg-surface-sunken border-b border-t tracking-widest"
                 >
                   ─── Projected ───
                 </td>
@@ -357,7 +357,7 @@ export function SavingsTrajectoryTable({
                         return (
                           <td key={gp.goalId} className={cls + bg}>
                             {isFirstFunded && !isNegative && (
-                              <span className="mr-1 text-green-500 text-[10px]">
+                              <span className="mr-1 text-green-500 text-caption">
                                 ✓
                               </span>
                             )}
@@ -452,7 +452,7 @@ export function SavingsTrajectoryTable({
                             className="sticky left-0 z-10 bg-surface-elevated/20 py-1 border-r"
                             style={{ borderLeft: `3px solid ${evColor}` }}
                           >
-                            <span className="text-[9px] text-faint/50 pl-3">
+                            <span className="text-micro text-faint/50 pl-3">
                               └
                             </span>
                           </td>
@@ -463,11 +463,11 @@ export function SavingsTrajectoryTable({
                             >
                               {gp.goalId === ev.goalId && (
                                 <div className="flex items-center justify-end gap-1.5">
-                                  <span className="text-[9px] text-faint truncate max-w-[80px] text-left">
+                                  <span className="text-micro text-faint truncate max-w-[80px] text-left">
                                     {ev.description}
                                   </span>
                                   <span
-                                    className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold tabular-nums ${
+                                    className={`inline-flex items-center px-1.5 py-0.5 rounded text-caption font-semibold tabular-nums ${
                                       ev.amount < 0
                                         ? "bg-red-500/10 text-red-500"
                                         : "bg-green-500/10 text-green-600"

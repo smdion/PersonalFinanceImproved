@@ -85,14 +85,14 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
           if (l.style === "meta")
             return (
               // eslint-disable-next-line react/no-array-index-key -- tooltip lines have no stable ID
-              <div key={`${i}-${l.text}`} className="text-faint text-[10px]">
+              <div key={`${i}-${l.text}`} className="text-faint text-caption">
                 {l.text}
               </div>
             );
           const noteCls = l.color ? tipColorClass[l.color] : "text-faint";
           return (
             // eslint-disable-next-line react/no-array-index-key -- tooltip lines have no stable ID
-            <div key={`${i}-${l.text}`} className={`text-[10px] ${noteCls}`}>
+            <div key={`${i}-${l.text}`} className={`text-caption ${noteCls}`}>
               {l.text}
             </div>
           );
@@ -111,12 +111,12 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       {/* 1. HEADER */}
       <div className="font-medium">{d.header}</div>
       {/* 2. META */}
-      {d.meta && <div className="text-faint text-[10px]">{d.meta}</div>}
+      {d.meta && <div className="text-faint text-caption">{d.meta}</div>}
       {/* 3. META2 */}
-      {d.meta2 && <div className="text-faint text-[10px]">{d.meta2}</div>}
+      {d.meta2 && <div className="text-faint text-caption">{d.meta2}</div>}
       {/* 4. OVERRIDE NOTE */}
       {d.overrideNote && (
-        <div className="text-[10px] text-emerald-300">{d.overrideNote}</div>
+        <div className="text-caption text-emerald-300">{d.overrideNote}</div>
       )}
       {/* 5. ITEMS */}
       {d.items && d.items.length > 0 && (
@@ -147,7 +147,7 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 7. TAX SPLIT */}
       {d.taxSplit && (d.taxSplit.traditional > 0 || d.taxSplit.roth > 0) && (
-        <div className="text-faint text-[10px] border-t pt-1">
+        <div className="text-faint text-caption border-t pt-1">
           {d.taxSplit.traditional > 0 && (
             <span>Trad: {formatCurrency(d.taxSplit.traditional)}</span>
           )}
@@ -161,20 +161,20 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 8. GROWTH */}
       {d.growth && Math.abs(d.growth.amount) > 1 && (
-        <div className={`text-[10px] ${growthColor}`}>
+        <div className={`text-caption ${growthColor}`}>
           Growth: {growthPrefix}
           {formatCurrency(d.growth.amount)}
         </div>
       )}
       {/* 9. CONTRIBUTIONS */}
       {d.contributions && d.contributions.amount > 0 && (
-        <div className="text-[10px] text-green-400">
+        <div className="text-caption text-green-400">
           Contributions: +{formatCurrency(d.contributions.amount)}
         </div>
       )}
       {/* 10. WITHDRAWALS */}
       {d.withdrawals && d.withdrawals.amount > 0 && (
-        <div className="text-[10px] text-red-300">
+        <div className="text-caption text-red-300">
           Withdrawn: -{formatCurrency(d.withdrawals.amount)}
           {d.withdrawals.taxCost != null && d.withdrawals.taxCost > 0 && (
             <span> (~{formatCurrency(d.withdrawals.taxCost)} tax)</span>
@@ -183,7 +183,7 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 11. YEAR CHANGE */}
       {d.yearChange && (
-        <div className="border-t pt-1 text-[11px] font-medium">
+        <div className="border-t pt-1 text-label font-medium">
           Total: {formatCurrency(d.yearChange.total)} · Change:{" "}
           <span
             className={
@@ -194,7 +194,7 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
             {formatCurrency(d.yearChange.change)}
           </span>
           {d.yearChange.parts && d.yearChange.parts.length > 0 && (
-            <span className="text-muted text-[10px] ml-1">
+            <span className="text-muted text-caption ml-1">
               (
               {d.yearChange.parts.map((p, i) => (
                 <span key={p.label}>
@@ -212,7 +212,7 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 12. RATE CEILING */}
       {d.rateCeiling && (
-        <div className="text-[10px] text-amber-300">
+        <div className="text-caption text-amber-300">
           Rate ceiling: {formatCurrency(d.rateCeiling.uncapped)} →{" "}
           {formatCurrency(d.rateCeiling.capped)} (
           {formatPercent(d.rateCeiling.pct, 1)} reduction)
@@ -220,17 +220,17 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 13. ROUTING NOTE */}
       {d.routingNote && (
-        <div className="text-faint text-[10px]">{d.routingNote}</div>
+        <div className="text-faint text-caption">{d.routingNote}</div>
       )}
       {/* 14. BUDGET */}
       {d.budget && (
-        <div className="border-t pt-1 text-faint text-[10px]">
+        <div className="border-t pt-1 text-faint text-caption">
           Budget: {d.budget.profile} — {formatCurrency(d.budget.amount)}/yr
         </div>
       )}
       {/* 15. IRS LIMIT */}
       {d.irsLimit && (
-        <div className="text-faint text-[10px]">
+        <div className="text-faint text-caption">
           {d.irsLimit.category} limit: {formatCurrency(d.irsLimit.used)} of{" "}
           {formatCurrency(d.irsLimit.limit)}
           {d.irsLimit.used >= d.irsLimit.limit && (
@@ -240,7 +240,7 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 16. PRO-RATE */}
       {d.proRate && (
-        <div className="text-faint text-[10px]">
+        <div className="text-faint text-caption">
           Pro-rated: {d.proRate.months}/12 mo ·{" "}
           {formatCurrency(d.proRate.annualAmount)}/yr →{" "}
           {formatCurrency(d.proRate.proRatedAmount)}
@@ -248,13 +248,13 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 16. BALANCE */}
       {d.balance != null && (
-        <div className="text-faint text-[10px]">
+        <div className="text-faint text-caption">
           Balance: {formatCurrency(d.balance)}
         </div>
       )}
       {/* 17. LEGEND */}
       {d.legend && d.legend.length > 0 && (
-        <div className="text-muted text-[10px]">
+        <div className="text-muted text-caption">
           {d.legend.map((e, ei) => (
             <span key={e.label}>
               {ei > 0 && " ·"}

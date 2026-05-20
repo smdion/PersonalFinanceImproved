@@ -16,6 +16,7 @@ import { formatCurrency, compactCurrency } from "@/lib/utils/format";
 import { useTheme } from "@/lib/hooks/use-theme";
 import { GoalProjection, monthKey } from "./types";
 import { FUND_COLORS } from "./fund-colors";
+import { CHART_FONT } from "@/components/charts/chart-defaults";
 
 interface TrajectoryDataPoint {
   month: string;
@@ -92,7 +93,7 @@ function EventTooltip({
         border: `1px solid ${p.tooltipBorder}`,
         borderRadius: 6,
         padding: "8px 10px",
-        fontSize: 11,
+        fontSize: CHART_FONT.tooltip,
         color: p.tooltipText,
         minWidth: 160,
       }}
@@ -118,7 +119,7 @@ function EventTooltip({
                 style={{
                   paddingLeft: 12,
                   color: ev.amount < 0 ? "#f87171" : "#4ade80",
-                  fontSize: 10,
+                  fontSize: CHART_FONT.label,
                   marginTop: 1,
                 }}
               >
@@ -165,7 +166,7 @@ export function SavingsTrajectoryChart({
           <h2 className={`text-sm font-semibold ${p.title}`}>
             Goal Trajectories
           </h2>
-          <p className={`text-[10px] ${p.subtitle} mt-0.5`}>
+          <p className={`text-caption ${p.subtitle} mt-0.5`}>
             Click a fund in the legend to scroll to its detail card ·{" "}
             <span className="inline-flex items-center gap-1">
               <span
@@ -183,7 +184,7 @@ export function SavingsTrajectoryChart({
         </div>
         {negativeInfo.length > 0 && (
           <span
-            className={`text-[10px] ${p.negBadgeText} ${p.negBadgeBg} px-2 py-0.5 rounded border ${p.negBadgeBorder}`}
+            className={`text-caption ${p.negBadgeText} ${p.negBadgeBg} px-2 py-0.5 rounded border ${p.negBadgeBorder}`}
           >
             {negativeInfo.join(", ")}{" "}
             {negativeInfo.length === 1 ? "goes" : "go"} negative
@@ -200,7 +201,7 @@ export function SavingsTrajectoryChart({
 
           <XAxis
             dataKey="month"
-            tick={{ fontSize: 10, fill: p.axis }}
+            tick={{ fontSize: CHART_FONT.tick, fill: p.axis }}
             tickLine={false}
             axisLine={{ stroke: p.axisLine }}
             interval="preserveStartEnd"
@@ -211,7 +212,7 @@ export function SavingsTrajectoryChart({
           />
 
           <YAxis
-            tick={{ fontSize: 10, fill: p.axis }}
+            tick={{ fontSize: CHART_FONT.tick, fill: p.axis }}
             tickLine={false}
             axisLine={{ stroke: p.axisLine }}
             tickFormatter={(v) => compactCurrency(Number(v))}
@@ -236,7 +237,7 @@ export function SavingsTrajectoryChart({
 
           <Legend
             wrapperStyle={{
-              fontSize: 11,
+              fontSize: CHART_FONT.legend,
               cursor: "pointer",
               lineHeight: "1.5",
               paddingTop: 4,

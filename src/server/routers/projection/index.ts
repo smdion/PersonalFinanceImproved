@@ -13,6 +13,7 @@
  * - `stress-test.ts`  — `computeStressTest`
  * - `presets.ts`      — `listPresets`, `createPreset`, `updatePreset`,
  *                       `deletePreset`, `updateInflationOverrides`
+ * - `relocation.ts`   — `computeRelocationFiProjection`
  *
  * Shared Zod schemas + helper builders live in `_shared.ts`.
  *
@@ -24,6 +25,7 @@ import { mergeRouters } from "../../trpc";
 import { coastFireRouter } from "./coast-fire";
 import { monteCarloRouter } from "./monte-carlo";
 import { presetsRouter } from "./presets";
+import { relocationProjectionRouter } from "./relocation";
 import { scenariosRouter } from "./scenarios";
 import { strategyRouter } from "./strategy";
 import { stressTestRouter } from "./stress-test";
@@ -35,4 +37,5 @@ export const projectionRouter = mergeRouters(
   strategyRouter,
   stressTestRouter,
   presetsRouter,
+  relocationProjectionRouter,
 );

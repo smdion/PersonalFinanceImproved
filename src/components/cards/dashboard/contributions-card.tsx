@@ -234,7 +234,7 @@ function ContributionsCardImpl() {
                         <span className="text-muted font-medium">
                           {at.accountType}
                           {at.isJoint && (
-                            <span className="text-faint text-[10px] font-normal ml-1">
+                            <span className="text-faint text-caption font-normal ml-1">
                               (Joint)
                             </span>
                           )}
@@ -247,7 +247,7 @@ function ContributionsCardImpl() {
                           </span>
                           {at.currentPctOfSalary !== null &&
                             contribPeriod === "annual" && (
-                              <span className="text-faint text-[10px] ml-1">
+                              <span className="text-faint text-caption ml-1">
                                 ({Math.round(at.currentPctOfSalary)}%)
                               </span>
                             )}
@@ -263,7 +263,7 @@ function ContributionsCardImpl() {
                             matchCountsTowardLimit={matchCountsTowardLimit}
                             accountType={at.categoryKey}
                           />
-                          <div className="flex justify-between text-[10px] mt-0.5">
+                          <div className="flex justify-between text-caption mt-0.5">
                             <span
                               className={
                                 at.views[viewMode].fundingPct >
@@ -294,7 +294,7 @@ function ContributionsCardImpl() {
                           </div>
                           {/* Employer match IRS context */}
                           {at.employerMatch > 0 && (
-                            <p className="text-[10px] text-blue-500 mt-0.5">
+                            <p className="text-caption text-blue-500 mt-0.5">
                               Match
                               {matchCountsTowardLimit
                                 ? " counts toward IRS limit"
@@ -307,7 +307,7 @@ function ContributionsCardImpl() {
                             at.views[viewMode].pctOfSalaryToMax !== null &&
                             Math.floor(at.views[viewMode].pctOfSalaryToMax) >
                               0 && (
-                              <p className="text-[10px] text-amber-600 mt-0.5">
+                              <p className="text-caption text-amber-600 mt-0.5">
                                 Need +
                                 {Math.floor(
                                   at.views[viewMode].pctOfSalaryToMax,
@@ -320,13 +320,13 @@ function ContributionsCardImpl() {
                             at.views[viewMode].pctOfSalaryToMax !== null &&
                             Math.floor(at.views[viewMode].pctOfSalaryToMax) ===
                               0 && (
-                              <p className="text-[10px] text-green-600 mt-0.5">
+                              <p className="text-caption text-green-600 mt-0.5">
                                 Maxed out
                               </p>
                             )}
                           {/* Bonus contrib note */}
                           {at.bonusContrib > 0 && (
-                            <p className="text-[10px] text-amber-600 mt-0.5">
+                            <p className="text-caption text-amber-600 mt-0.5">
                               * Incl. ~{formatCurrency(at.bonusContrib * mult)}
                               {suffix} from bonus
                             </p>
@@ -335,7 +335,7 @@ function ContributionsCardImpl() {
                           {(at.tradContrib > 0 || at.taxFreeContrib > 0) &&
                             at.tradContrib !== at.employeeContrib &&
                             at.taxFreeContrib !== at.employeeContrib && (
-                              <div className="flex gap-2 text-[10px] text-faint mt-0.5">
+                              <div className="flex gap-2 text-caption text-faint mt-0.5">
                                 {at.tradContrib > 0 && (
                                   <span>
                                     {taxTypeLabel("preTax")}:{" "}
@@ -375,7 +375,7 @@ function ContributionsCardImpl() {
                                 title={`${at.employerMatchLabel}: ${formatCurrency(at.views[viewMode].employerMatch * mult)}${suffix}`}
                               />
                             </div>
-                            <div className="flex justify-between text-[10px] mt-0.5">
+                            <div className="flex justify-between text-caption mt-0.5">
                               <span
                                 className={accountTextColor(at.categoryKey)}
                               >
@@ -430,7 +430,7 @@ function ContributionsCardImpl() {
                               />
                             )}
                           </div>
-                          <div className="flex justify-between text-[10px] mt-0.5">
+                          <div className="flex justify-between text-caption mt-0.5">
                             <span className="text-faint">No IRS limit</span>
                             {at.employerMatch > 0 && (
                               <span
@@ -491,7 +491,7 @@ function ContributionsCardImpl() {
                           title={`${at.employerMatchLabel}: ${formatCurrency(at.employerMatch * householdMult)}${suffix}`}
                         />
                       </div>
-                      <div className="flex justify-between text-[10px] mt-0.5">
+                      <div className="flex justify-between text-caption mt-0.5">
                         <span className={accountTextColor(at.categoryKey)}>
                           Value:{" "}
                           {formatCurrency(
@@ -538,7 +538,7 @@ function ContributionsCardImpl() {
                           />
                         )}
                       </div>
-                      <div className="flex justify-between text-[10px] mt-0.5">
+                      <div className="flex justify-between text-caption mt-0.5">
                         <span className="text-faint">No IRS limit</span>
                         {at.employerMatch > 0 && (
                           <span
@@ -560,7 +560,7 @@ function ContributionsCardImpl() {
       <div className="mt-3 pt-3 border-t border-subtle space-y-2">
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <p className="text-[10px] text-faint uppercase tracking-wide mb-0.5">
+            <p className="text-caption text-faint uppercase tracking-wide mb-0.5">
               {PERF_CATEGORY_RETIREMENT}
             </p>
             <div className="text-xs">
@@ -576,7 +576,7 @@ function ContributionsCardImpl() {
             </div>
           </div>
           <div>
-            <p className="text-[10px] text-faint uppercase tracking-wide mb-0.5">
+            <p className="text-caption text-faint uppercase tracking-wide mb-0.5">
               {PERF_CATEGORY_BROKERAGE}
             </p>
             <div className="text-xs">
@@ -592,7 +592,7 @@ function ContributionsCardImpl() {
             </div>
           </div>
           <div>
-            <p className="text-[10px] text-faint uppercase tracking-wide mb-0.5">
+            <p className="text-caption text-faint uppercase tracking-wide mb-0.5">
               Total Portfolio
               {viewMode === "ytd"
                 ? " (YTD)"
