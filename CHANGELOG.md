@@ -8,14 +8,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.6
 
-## [0.6.3] - 2026-05-18
+## [0.6.3] - 2026-05-20
+
+### Added
+
+- **Relocation: Today's $ toggle.** The projection table now has a "Today's $" / "Nominal $" toggle matching the Retirement page — all balances deflate by the configured inflation rate so future values are expressed in present-day purchasing power.
+- **Relocation: Side-by-side comparison table.** The projection view shows Current Path vs Move Path columns with a Gap column, making the impact of the move immediately visible year by year.
+- **Relocation: Planned move year.** Setting a move year in the scenario causes the comparison to use the blended projection (current path until the move, relocation path after) so the gap is $0 before the move date and reflects the true change from that point on.
+- **Savings: Fund Tracker shows current balance.** Each fund chip in the tracker now displays the fund's current actual balance alongside its projected end balance, in a two-row card layout with a left-side color bar.
+- **Trends: "Show Outdated Data" toggle.** A new checkbox in the spreadsheet controls reveals stale performance values (contributions, gains/losses) instead of showing "Outdated". When active, values render in amber and the column header shows "as of \<date\>" so the staleness is always visible in context.
+- **Trends: Pie chart year labels.** The Net Worth Location and Tax Location pie cards now show which year's data they represent as a subtitle.
+
+### Improved
+
+- **Relocation nav item renamed to "Relocation".** The Analysis → Tools nav entry previously said "Tools" even though it only contains the Relocation scenario tool.
+- **Savings: Fund Tracker and chart legend** are now contained in bordered, sunken panels so they read as structured controls rather than floating labels.
+- **Trends: Financial Health Stats** no longer shows a redundant "was X at year-end YYYY" sub-line in the current year column — the prior year's column already displays that value directly.
 
 ### Fixed
 
 - **Pay stub: "HSA" now renders in all caps.** The HSA deduction row was displaying as "hsa" in the per-period pay stub. It now shows "HSA" (alongside FSA and IRA, which receive the same treatment).
 - **Savings: Pushing monthly targets to YNAB now works for emergency fund goals.** Goals configured as "Target Balance" were silently failing when pushed — YNAB's month-specific budget endpoint ignores goal metadata, so the app now uses the correct plan-level endpoint for these goals. Monthly contribution goals were unaffected.
 
-### Improved
+### Improved (continued)
 
 - **Budget table no longer shows a YNAB column.** Actual spending data belongs on the Expenses page where it can be reviewed in context. The Pull from YNAB / Push to YNAB buttons remain on the Budget page.
 - **Savings moved to Cash Flow in the sidebar.** Savings sits alongside Paycheck, Budget, and Expenses — the section previously called "Wealth" is renamed "Investments" and now contains Portfolio, Performance, and Brokerage.
