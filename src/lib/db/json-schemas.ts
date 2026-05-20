@@ -145,7 +145,7 @@ export const relocationScenarioParamsSchema = z.object({
   largePurchases: z.array(largePurchaseSchema),
   currentContributionProfileId: z.number().nullable(),
   relocationContributionProfileId: z.number().nullable(),
-  moveYear: z.number().nullable().optional(),
+  moveYear: z.number().nullable().optional().default(null),
 });
 
 // ── contribution_profiles ───────────────────────────────────────
