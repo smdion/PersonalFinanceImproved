@@ -50,7 +50,7 @@ export function ContribSection({ budget, contribAccounts, mutations }: Props) {
         <span className="text-xs font-medium text-muted">
           Contribution Account Linking
         </span>
-        <span className="text-[10px] text-faint">
+        <span className="text-caption text-faint">
           {linkedItems.length} linked · {unlinkedContribs.length} unlinked
         </span>
       </summary>
@@ -67,7 +67,7 @@ export function ContribSection({ budget, contribAccounts, mutations }: Props) {
                   key={m.budgetItemId}
                   className="flex items-center gap-1.5 text-xs min-h-[24px]"
                 >
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-700 whitespace-nowrap">
+                  <span className="text-caption px-1.5 py-0.5 rounded bg-green-50 text-green-700 whitespace-nowrap">
                     Linked
                   </span>
                   <span
@@ -87,7 +87,7 @@ export function ContribSection({ budget, contribAccounts, mutations }: Props) {
                       })
                     }
                     disabled={unlinkContribMut.isPending}
-                    className="text-red-400 hover:text-red-600 text-[10px] whitespace-nowrap"
+                    className="text-red-400 hover:text-red-600 text-caption whitespace-nowrap"
                     title="Unlink contribution account"
                   >
                     &times;
@@ -101,7 +101,7 @@ export function ContribSection({ budget, contribAccounts, mutations }: Props) {
         {/* Unlinked contribution accounts — pick a budget item to link */}
         {unlinkedContribs.length > 0 && (
           <div className="space-y-0.5 border-t border-subtle pt-2">
-            <p className="text-[10px] text-faint mb-1">
+            <p className="text-caption text-faint mb-1">
               {unlinkedContribs.length} unlinked contribution{" "}
               {unlinkedContribs.length === 1 ? "account" : "accounts"}
             </p>
@@ -110,7 +110,7 @@ export function ContribSection({ budget, contribAccounts, mutations }: Props) {
                 key={ca.id}
                 className="flex items-center gap-1.5 text-xs min-h-[24px]"
               >
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-elevated text-faint whitespace-nowrap">
+                <span className="text-caption px-1.5 py-0.5 rounded bg-surface-elevated text-faint whitespace-nowrap">
                   Unlinked
                 </span>
                 <span className="text-secondary truncate min-w-[80px] max-w-[140px]">
@@ -127,7 +127,7 @@ export function ContribSection({ budget, contribAccounts, mutations }: Props) {
                       });
                     }
                   }}
-                  className="flex-1 px-1 py-0.5 text-[11px] border border-strong rounded bg-surface-primary"
+                  className="flex-1 px-1 py-0.5 text-label border border-strong rounded bg-surface-primary"
                 >
                   <option value="">Select budget item...</option>
                   {unlinkedBudgetItems.map((m) => (

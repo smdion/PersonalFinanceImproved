@@ -75,7 +75,7 @@ export function AssetsLiabilitiesCards({
                   <span>Total</span>
                   <span>{formatCurrency(portfolioTotal)}</span>
                 </div>
-                <p className="text-[10px] text-faint mt-1">
+                <p className="text-caption text-faint mt-1">
                   {portfolioAccounts.length} accounts
                 </p>
               </div>
@@ -85,7 +85,7 @@ export function AssetsLiabilitiesCards({
             <span className="text-muted">
               Cash
               {cashSource !== "manual" && (
-                <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600">
+                <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-caption font-medium bg-blue-50 text-blue-600">
                   Synced from {cashSource.toUpperCase()}
                 </span>
               )}
@@ -122,7 +122,7 @@ export function AssetsLiabilitiesCards({
                 <span className="text-muted">
                   {item.name}
                   {item.synced && otherAssetsSyncSource && (
-                    <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600">
+                    <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-caption font-medium bg-blue-50 text-blue-600">
                       Synced from {otherAssetsSyncSource.toUpperCase()}
                     </span>
                   )}

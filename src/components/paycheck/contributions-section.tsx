@@ -161,7 +161,7 @@ export function ContributionsSection({
           <span className="flex items-center gap-1.5">
             Contribution Accounts
             <HelpTip text="Retirement and investment accounts you contribute to from each paycheck (401k, IRA, HSA, etc.)" />
-            <span className="text-faint text-[10px] font-normal normal-case tracking-normal">
+            <span className="text-faint text-caption font-normal normal-case tracking-normal">
               ({rawContribs.length})
             </span>
             <svg
@@ -227,7 +227,7 @@ export function ContributionsSection({
                       ))}
                       {sharedLimitAmount !== undefined &&
                         sharedLimitAmount > 0 && (
-                          <span className="text-[10px] text-muted">
+                          <span className="text-caption text-muted">
                             Shared limit: {formatCurrency(sharedLimitAmount)}/yr
                             {contribs.length > 1 && (
                               <span
@@ -320,7 +320,7 @@ export function ContributionsSection({
                             </span>
                           </span>
                         </div>
-                        <p className="text-[10px] text-faint mt-1">
+                        <p className="text-caption text-faint mt-1">
                           Joint household contribution
                         </p>
                       </div>

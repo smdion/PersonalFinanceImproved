@@ -130,7 +130,7 @@ export function UnlinkedContribsBanner({
                 {taxLabel} {acctType} — {contribDetail}
                 {matchDetail} ({employer})
                 {!c.isActive && (
-                  <span className="ml-1 text-[9px] px-1 py-0.5 rounded bg-surface-strong text-muted font-semibold">
+                  <span className="ml-1 text-micro px-1 py-0.5 rounded bg-surface-strong text-muted font-semibold">
                     INACTIVE
                   </span>
                 )}

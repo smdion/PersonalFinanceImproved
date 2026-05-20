@@ -40,7 +40,7 @@ export function NoteIndicator({ note }: { note: string }) {
   return (
     <span className="relative group/note inline-block ml-0.5">
       <span className="inline-block w-0 h-0 border-l-[5px] border-l-amber-400 border-b-[5px] border-b-transparent cursor-help" />
-      <span className="absolute bottom-full left-0 mb-1 hidden group-hover/note:block bg-surface-primary text-white text-[10px] px-2 py-1 rounded shadow-lg max-w-[200px] whitespace-normal z-50">
+      <span className="absolute bottom-full left-0 mb-1 hidden group-hover/note:block bg-surface-primary text-white text-caption px-2 py-1 rounded shadow-lg max-w-[200px] whitespace-normal z-50">
         {note}
       </span>
     </span>
@@ -133,13 +133,13 @@ export function NoteButton({
         <div className="flex justify-end gap-1.5 mt-1.5">
           <button
             onClick={() => setEditing(false)}
-            className="text-[10px] text-faint hover:text-muted"
+            className="text-caption text-faint hover:text-muted"
           >
             Cancel
           </button>
           <button
             onClick={save}
-            className="text-[10px] text-blue-600 font-medium hover:text-blue-800"
+            className="text-caption text-blue-600 font-medium hover:text-blue-800"
           >
             Save
           </button>
@@ -154,7 +154,7 @@ export function NoteButton({
         e.stopPropagation();
         open();
       }}
-      className="hidden group-hover/cell:inline-block text-[9px] text-faint hover:text-amber-500 ml-0.5"
+      className="hidden group-hover/cell:inline-block text-micro text-faint hover:text-amber-500 ml-0.5"
       title={existingNote ? "Edit note" : "Add note"}
     >
       {existingNote ? "\u270E" : "\u2710"}
@@ -356,7 +356,7 @@ export function PerfEndBalCell({
       <span className="inline-flex items-center gap-0.5">
         <span>{value !== null ? formatCurrency(value) : "\u2014"}</span>
         <span
-          className="inline-block w-3 h-3 text-[8px] leading-3 text-center rounded-full bg-blue-100 text-blue-600 font-bold cursor-help"
+          className="inline-block w-3 h-3 text-micro leading-3 text-center rounded-full bg-blue-100 text-blue-600 font-bold cursor-help"
           onMouseEnter={() => setShowTip(true)}
           onMouseLeave={() => setShowTip(false)}
         >
@@ -364,7 +364,7 @@ export function PerfEndBalCell({
         </span>
         {showTip && (
           <span
-            className="fixed z-[100] bg-surface-primary text-white text-[10px] px-2.5 py-1.5 rounded shadow-lg w-[260px] whitespace-normal leading-relaxed pointer-events-none"
+            className="fixed z-[100] bg-surface-primary text-white text-caption px-2.5 py-1.5 rounded shadow-lg w-[260px] whitespace-normal leading-relaxed pointer-events-none"
             style={{
               transform: "translate(-100%, -100%)",
               marginLeft: "-8px",
@@ -741,7 +741,7 @@ export function LineItemCell({
             </div>
           ))}
           {items.length > 0 && (
-            <div className="flex justify-between text-[10px] font-semibold border-t pt-0.5 mt-0.5">
+            <div className="flex justify-between text-caption font-semibold border-t pt-0.5 mt-0.5">
               <span>Total</span>
               <span>{formatCurrency(value)}</span>
             </div>
@@ -749,7 +749,7 @@ export function LineItemCell({
           {!isCurrent && !adding && (
             <button
               onClick={() => setAdding(true)}
-              className="text-[10px] text-blue-600 hover:text-blue-800 mt-1"
+              className="text-caption text-blue-600 hover:text-blue-800 mt-1"
             >
               + Add item
             </button>
@@ -763,7 +763,7 @@ export function LineItemCell({
                 }
                 value={newDesc}
                 onChange={(e) => setNewDesc(e.target.value)}
-                className="w-full text-[10px] px-1 py-0.5 border rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                className="w-full text-caption px-1 py-0.5 border rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
                 autoFocus
               />
               <input
@@ -771,14 +771,14 @@ export function LineItemCell({
                 placeholder="Amount"
                 value={newCost}
                 onChange={(e) => setNewCost(e.target.value)}
-                className="w-full text-[10px] px-1 py-0.5 border rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                className="w-full text-caption px-1 py-0.5 border rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
               />
               <input
                 type="text"
                 placeholder="Note (optional)"
                 value={newNote}
                 onChange={(e) => setNewNote(e.target.value)}
-                className="w-full text-[10px] px-1 py-0.5 border rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                className="w-full text-caption px-1 py-0.5 border rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleAdd();
                 }}
@@ -786,13 +786,13 @@ export function LineItemCell({
               <div className="flex justify-end gap-1">
                 <button
                   onClick={() => setAdding(false)}
-                  className="text-[9px] text-faint hover:text-muted"
+                  className="text-micro text-faint hover:text-muted"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAdd}
-                  className="text-[9px] text-blue-600 font-medium hover:text-blue-800"
+                  className="text-micro text-blue-600 font-medium hover:text-blue-800"
                 >
                   Add
                 </button>

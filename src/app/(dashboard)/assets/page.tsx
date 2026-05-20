@@ -16,7 +16,7 @@ import Link from "next/link";
 
 function SyncBadge({ source }: { source: string }) {
   return (
-    <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600">
+    <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-caption font-medium bg-blue-50 text-blue-600">
       Synced from {source.toUpperCase()}
     </span>
   );
@@ -26,7 +26,7 @@ function ExternalLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="ml-1.5 text-blue-600 hover:text-blue-700 text-[10px] inline-flex items-center gap-0.5"
+      className="ml-1.5 text-blue-600 hover:text-blue-700 text-caption inline-flex items-center gap-0.5"
       title={label}
     >
       <svg
@@ -296,7 +296,7 @@ export default function AssetsPage() {
               </h4>
               <button
                 onClick={() => setAddingAsset(!addingAsset)}
-                className="px-2 py-0.5 text-[10px] font-medium rounded bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-colors"
+                className="px-2 py-0.5 text-caption font-medium rounded bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-colors"
               >
                 {addingAsset ? "Cancel" : "+ Add"}
               </button>
@@ -320,7 +320,7 @@ export default function AssetsPage() {
                     {item.synced && <SyncBadge source={apiLabel} />}
                   </span>
                   {item.note && !item.synced && (
-                    <p className="text-[10px] text-faint truncate">
+                    <p className="text-caption text-faint truncate">
                       {item.note}
                     </p>
                   )}

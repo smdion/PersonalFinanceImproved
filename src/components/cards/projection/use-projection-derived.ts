@@ -1,5 +1,5 @@
 /** Memoized derived data from engine query results — person filtering, visible column detection, deflation, contribution rate schedules, tooltip rendering, and milestone-based year filtering. */
-import { useMemo, useCallback, useEffect } from "react";
+import { useMemo, useCallback, useEffect, useRef } from "react";
 import type {
   EngineYearProjection,
   EngineAccumulationYear,
@@ -30,6 +30,7 @@ import {
   _singleBucketCategories,
   filterYearByParentCategory,
 } from "./utils";
+import { useFICache } from "@/lib/hooks/use-fi-cache";
 
 export function useProjectionDerived(
   form: ProjectionFormState,
@@ -118,6 +119,38 @@ export function useProjectionDerived(
     engineData && engineData.result ? engineData.settings : undefined;
   const annualExpenses =
     engineData && engineData.result ? engineData.annualExpenses : 0;
+
+  const [, writeFICache] = useFICache();
+  const lastProjCacheKey = useRef<string | null>(null);
+  useEffect(() => {
+    if (!engineData?.result || engineQuery.isLoading || engineQuery.isFetching)
+      return;
+    const withdrawalRate = Number(engineSettings?.withdrawalRate ?? 0.04);
+    const expenses = annualExpenses as number;
+    if (withdrawalRate <= 0 || expenses <= 0) return;
+    const fiTarget = expenses / withdrawalRate;
+    const hit = engineData.result.projectionByYear.find(
+      (y: { endBalance: number; year: number; age: number }) =>
+        y.endBalance >= fiTarget,
+    );
+    const cacheKey = `${hit?.year ?? "null"}-${fiTarget}`;
+    if (lastProjCacheKey.current === cacheKey) return;
+    lastProjCacheKey.current = cacheKey;
+    writeFICache({
+      fiYear: hit?.year ?? null,
+      fiAge: hit?.age ?? null,
+      settingsHash: cacheKey,
+      computedAt: new Date().toISOString(),
+    });
+  }, [
+    engineData,
+    engineQuery.isLoading,
+    engineQuery.isFetching,
+    engineSettings,
+    annualExpenses,
+    writeFICache,
+  ]);
+
   const decumulationExpenses =
     engineData && engineData.result
       ? ((engineData.decumulationExpenses as number | undefined) ?? null)

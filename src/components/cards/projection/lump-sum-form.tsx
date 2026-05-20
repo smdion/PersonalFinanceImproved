@@ -70,7 +70,7 @@ export function LumpSumForm({
       }`}
     >
       <label className="block">
-        <span className="text-[10px] text-muted">Year</span>
+        <span className="text-caption text-muted">Year</span>
         <input
           type="number"
           value={form.year}
@@ -80,7 +80,7 @@ export function LumpSumForm({
       </label>
       {allowWithdrawals && (
         <label className="block">
-          <span className="text-[10px] text-muted">Type</span>
+          <span className="text-caption text-muted">Type</span>
           <select
             value={form.direction}
             onChange={(e) =>
@@ -97,7 +97,7 @@ export function LumpSumForm({
         </label>
       )}
       <label className="block">
-        <span className="text-[10px] text-muted">Amount</span>
+        <span className="text-caption text-muted">Amount</span>
         <input
           type="number"
           min={0}
@@ -108,7 +108,7 @@ export function LumpSumForm({
         />
       </label>
       <label className="block">
-        <span className="text-[10px] text-muted">Account</span>
+        <span className="text-caption text-muted">Account</span>
         <select
           value={form.targetAccountName || form.targetAccount}
           onChange={(e) => {
@@ -132,7 +132,7 @@ export function LumpSumForm({
         </select>
       </label>
       <label className="block">
-        <span className="text-[10px] text-muted">Label</span>
+        <span className="text-caption text-muted">Label</span>
         <input
           type="text"
           placeholder={

@@ -70,7 +70,7 @@ export function AddContribInline({
         New contribution account
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <label className="text-[10px] text-muted">
+        <label className="text-caption text-muted">
           Account type
           <select
             value={accountType}
@@ -92,7 +92,7 @@ export function AddContribInline({
             ))}
           </select>
         </label>
-        <label className="text-[10px] text-muted">
+        <label className="text-caption text-muted">
           Tax treatment
           <select
             value={taxTreatment}
@@ -107,7 +107,7 @@ export function AddContribInline({
             <option value="hsa">HSA</option>
           </select>
         </label>
-        <label className="text-[10px] text-muted">
+        <label className="text-caption text-muted">
           Method
           <select
             value={method}
@@ -120,7 +120,7 @@ export function AddContribInline({
             <option value="fixed_annual">$/year</option>
           </select>
         </label>
-        <label className="text-[10px] text-muted">
+        <label className="text-caption text-muted">
           Value
           <input
             type="number"

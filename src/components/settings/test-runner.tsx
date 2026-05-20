@@ -67,7 +67,7 @@ export function TestRunner() {
             key={dir}
             onClick={() => handleRunFile(dir)}
             disabled={runTests.isPending}
-            className="px-2 py-1 text-[10px] font-medium text-muted border border-subtle rounded hover:bg-surface-elevated disabled:opacity-50"
+            className="px-2 py-1 text-caption font-medium text-muted border border-subtle rounded hover:bg-surface-elevated disabled:opacity-50"
           >
             {dir.replace("tests/", "")}
           </button>
@@ -159,7 +159,7 @@ function TestFileBlock({
         <div className="border-t border-subtle px-3 py-1.5 space-y-1">
           {file.tests.map((t) => (
             <div key={t.name}>
-              <div className="flex items-center gap-2 text-[11px]">
+              <div className="flex items-center gap-2 text-label">
                 <span
                   className={
                     t.status === "pass"
@@ -177,7 +177,7 @@ function TestFileBlock({
                 </span>
               </div>
               {t.error && (
-                <pre className="mt-1 p-2 bg-red-50 text-red-700 text-[10px] rounded overflow-x-auto max-h-40 overflow-y-auto whitespace-pre-wrap">
+                <pre className="mt-1 p-2 bg-red-50 text-red-700 text-caption rounded overflow-x-auto max-h-40 overflow-y-auto whitespace-pre-wrap">
                   {t.error}
                 </pre>
               )}

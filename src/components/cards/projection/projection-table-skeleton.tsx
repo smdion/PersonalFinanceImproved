@@ -130,7 +130,7 @@ export function ProjectionTableSkeleton() {
                   className="text-center"
                   style={{ flex: totalGrow }}
                 >
-                  <span className="text-[10px] text-faint/60 font-semibold uppercase tracking-wider">
+                  <span className="text-caption text-faint/60 font-semibold uppercase tracking-wider">
                     {label}
                   </span>
                 </div>

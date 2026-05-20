@@ -29,7 +29,7 @@ export function KpiCard({
     <div
       className={`rounded-lg border border-subtle bg-surface-primary/40 px-3 py-2.5 flex flex-col ${className}`}
     >
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-faint flex items-center gap-1">
+      <div className="text-caption font-semibold uppercase tracking-wider text-faint flex items-center gap-1">
         {label}
         {tooltip && <HelpTip maxWidth={420} lines={tooltip} />}
       </div>
@@ -222,7 +222,7 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
         >
           <div className="flex flex-col items-center justify-center flex-1 gap-1">
             <CompactRing rate={mc.successRate} size={68} />
-            <div className="text-[9px] text-faint">
+            <div className="text-micro text-faint">
               {mc.distributions.depletionAge
                 ? `depletes ~age ${Math.round(mc.distributions.depletionAge.median)}`
                 : `vs age ${engineSettings?.endAge ?? "?"}`}
@@ -243,7 +243,7 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
           <div className="flex items-center gap-4 justify-center flex-1">
             <div className="flex flex-col items-center gap-1">
               <CompactRing rate={mc.spendingStabilityRate} size={56} />
-              <div className="text-[9px] text-faint">vs strategy</div>
+              <div className="text-micro text-faint">vs strategy</div>
             </div>
             <div className="flex flex-col items-center gap-1">
               <CompactRing
@@ -254,7 +254,7 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
                 }
                 size={56}
               />
-              <div className="text-[9px] text-faint">vs budget</div>
+              <div className="text-micro text-faint">vs budget</div>
             </div>
           </div>
         </KpiCard>
@@ -275,12 +275,12 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
               : formatCurrency(nestEgg)}
           </div>
           {mcRetBand && (
-            <div className="text-[10px] text-faint mt-1 leading-tight">
+            <div className="text-caption text-faint mt-1 leading-tight">
               Range {formatCurrency(deflate(mcRetBand.p25, mcRetBand.year))} –{" "}
               {formatCurrency(deflate(mcRetBand.p75, mcRetBand.year))}
             </div>
           )}
-          <div className="text-[10px] text-faint leading-tight">
+          <div className="text-caption text-faint leading-tight">
             Baseline: {formatCurrency(nestEgg)}
           </div>
         </KpiCard>
@@ -290,10 +290,10 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
           <div className="text-xl font-bold tabular-nums text-primary">
             {formatCurrency(deflate(mc.medianEndBalance, terminalYear))}
           </div>
-          <div className="text-[10px] text-faint mt-1 leading-tight">
+          <div className="text-caption text-faint mt-1 leading-tight">
             Sim. median at age {engineSettings?.endAge ?? "?"}
           </div>
-          <div className="text-[10px] text-faint leading-tight">
+          <div className="text-caption text-faint leading-tight">
             {(() => {
               if (!result || result.projectionByYear.length === 0)
                 return "Baseline: $0";
@@ -331,7 +331,7 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
         <div className="text-xl font-bold tabular-nums text-primary">
           {formatCurrency(nestEgg)}
         </div>
-        <div className="text-[10px] text-faint mt-1">
+        <div className="text-caption text-faint mt-1">
           {alreadyRetired
             ? `Age ${currentAge} (today's $)`
             : `Avg age ${engineSettings?.retirementAge ?? "?"}`}
@@ -344,7 +344,7 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
         <div className="text-xl font-bold tabular-nums text-primary">
           {formatCurrency(peakBalance)}
         </div>
-        <div className="text-[10px] text-faint mt-1">
+        <div className="text-caption text-faint mt-1">
           Maximum projected balance
         </div>
       </KpiCard>
@@ -361,7 +361,7 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
         >
           {depl ? `Age ${depl.age}` : "Lasts ✓"}
         </div>
-        <div className="text-[10px] text-faint mt-1">
+        <div className="text-caption text-faint mt-1">
           {depl
             ? `Runs out ${depl.year}`
             : `Through age ${engineSettings?.endAge ?? "?"}`}

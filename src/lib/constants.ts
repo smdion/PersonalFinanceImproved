@@ -88,9 +88,6 @@ export const AAW_THRESHOLD = 0.5;
 /** FI progress ≥ 1.0 means fully financially independent. */
 export const FI_COMPLETE_THRESHOLD = 1.0;
 
-/** FI progress ≥ 0.5 shown as yellow (on track). */
-export const FI_ON_TRACK_THRESHOLD = 0.5;
-
 /** Performance data older than this many days is considered "Outdated". */
 export const PERFORMANCE_STALE_DAYS = 14;
 

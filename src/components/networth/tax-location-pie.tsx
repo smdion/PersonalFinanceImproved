@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { taxTypeLabel, TAX_PIE_COLORS, CHART_COLORS } from "@/lib/utils/colors";
+import { CHART_FONT } from "@/components/charts/chart-defaults";
 import {
   PieChart,
   Pie,
@@ -16,9 +17,11 @@ import {
 export function TaxLocationPie({
   byTaxType,
   portfolioTotal,
+  yearLabel,
 }: {
   byTaxType: Map<string, number>;
   portfolioTotal: number;
+  yearLabel?: number;
 }) {
   const data = useMemo(() => {
     return Array.from(byTaxType.entries())
@@ -41,6 +44,7 @@ export function TaxLocationPie({
           <HelpTip text="How your investment portfolio is distributed across tax treatments: Traditional (pre-tax), Roth (tax-free), HSA, and After-Tax (brokerage)" />
         </>
       }
+      subtitle={yearLabel != null ? `${yearLabel} data` : undefined}
     >
       <div className="flex flex-col sm:flex-row items-center gap-4">
         <div className="w-full sm:w-1/2">
@@ -62,7 +66,7 @@ export function TaxLocationPie({
               </Pie>
               <RechartsTooltip
                 formatter={(value) => formatCurrency(Number(value))}
-                contentStyle={{ fontSize: 12 }}
+                contentStyle={{ fontSize: CHART_FONT.tooltip }}
               />
             </PieChart>
           </ResponsiveContainer>

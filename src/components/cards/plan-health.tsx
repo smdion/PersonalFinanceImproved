@@ -274,7 +274,7 @@ function StressTestPanel({
                 <tr key={s.label} className="border-b border-subtle">
                   <td className="py-2 pr-2">
                     <div className="font-medium">{s.label}</div>
-                    <div className="text-faint text-[10px]">
+                    <div className="text-faint text-caption">
                       {s.description}
                     </div>
                   </td>
@@ -304,7 +304,7 @@ function StressTestPanel({
             })}
           </tbody>
         </table>
-        <p className="mt-2 text-[11px] text-faint italic">
+        <p className="mt-2 text-label text-faint italic">
           Conservative ≈ bottom-decile of historical 30-year outcomes. If your
           plan only works in the baseline or optimistic case, consider lowering
           your return rate or raising your withdrawal buffer.

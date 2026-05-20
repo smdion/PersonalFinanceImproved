@@ -83,7 +83,7 @@ export function ProjectionTable({
   return (
     <>
       {result && isPersonFiltered && (
-        <div className="text-[10px] text-faint mb-1">
+        <div className="text-caption text-faint mb-1">
           Showing {personFilterName}&apos;s accounts only.
         </div>
       )}
@@ -145,7 +145,7 @@ export function ProjectionTable({
                 <tr className="border-b border-subtle">
                   <th
                     colSpan={3}
-                    className="text-center py-1 text-[10px] text-faint font-semibold uppercase tracking-wider"
+                    className="text-center py-1 text-caption text-faint font-semibold uppercase tracking-wider"
                   >
                     Timeline
                   </th>
@@ -161,7 +161,7 @@ export function ProjectionTable({
                           ).filter((t) => visibleColumns.contribTaxTypes.has(t))
                             .length)
                     }
-                    className="text-center py-1 text-[10px] text-faint font-semibold uppercase tracking-wider border-l border-subtle"
+                    className="text-center py-1 text-caption text-faint font-semibold uppercase tracking-wider border-l border-subtle"
                   >
                     Contributions{" "}
                     {contribView === "taxType" ? "(by Tax Type)" : ""}
@@ -179,7 +179,7 @@ export function ProjectionTable({
                             .filter((a) => visibleColumns.balanceAccts.has(a))
                             .length)
                     }
-                    className="text-center py-1 text-[10px] text-faint font-semibold uppercase tracking-wider border-l border-subtle"
+                    className="text-center py-1 text-caption text-faint font-semibold uppercase tracking-wider border-l border-subtle"
                   >
                     Balances{" "}
                     {balanceView === "account"
@@ -187,11 +187,11 @@ export function ProjectionTable({
                       : "(by Tax Type)"}
                   </th>
                   {mcBandsByYear && (
-                    <th className="text-center py-1 text-[10px] text-faint font-semibold uppercase tracking-wider border-l border-subtle">
+                    <th className="text-center py-1 text-caption text-faint font-semibold uppercase tracking-wider border-l border-subtle">
                       Simulation
                     </th>
                   )}
-                  <th className="text-center py-1 text-[10px] text-faint font-semibold uppercase tracking-wider border-l border-subtle">
+                  <th className="text-center py-1 text-caption text-faint font-semibold uppercase tracking-wider border-l border-subtle">
                     Notes
                   </th>
                 </tr>

@@ -4,6 +4,9 @@ import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency } from "@/lib/utils/format";
 import type { DeductionRowData, CreateDeductionData } from "./types";
 
+const ACRONYMS: Record<string, string> = { hsa: "HSA", ira: "IRA", fsa: "FSA" };
+const displayName = (name: string) => ACRONYMS[name.toLowerCase()] ?? name;
+
 export function DeductionRow({
   row,
   onUpdateDeduction,
@@ -16,7 +19,7 @@ export function DeductionRow({
   if (row.type === "placeholder") {
     return (
       <div className="flex justify-between items-center text-faint">
-        <span>{row.name}</span>
+        <span>{displayName(row.name)}</span>
         <InlineEdit
           value=""
           onSave={(v) => {
@@ -43,7 +46,7 @@ export function DeductionRow({
 
   return (
     <div className="flex justify-between items-center text-muted">
-      <span>{row.name}</span>
+      <span>{displayName(row.name)}</span>
       {row.raw ? (
         <InlineEdit
           value={row.raw.amountPerPeriod}

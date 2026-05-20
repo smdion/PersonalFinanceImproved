@@ -50,7 +50,7 @@ export function ContribMethodologySection({
         <button
           type="button"
           onClick={() => setShowModels(!showModels)}
-          className="flex items-center gap-1.5 text-[11px] font-medium text-faint uppercase tracking-wide hover:text-secondary transition-colors mb-2"
+          className="flex items-center gap-1.5 text-label font-medium text-faint uppercase tracking-wide hover:text-secondary transition-colors mb-2"
         >
           How contributions &amp; distributions are projected
           <svg
@@ -86,7 +86,7 @@ export function ContribMethodologySection({
                 </h5>
                 <table className="w-full text-muted">
                   <thead>
-                    <tr className="text-[10px] text-faint uppercase">
+                    <tr className="text-caption text-faint uppercase">
                       <th className="text-left pb-1 font-medium">Account</th>
                       <th className="text-left pb-1 font-medium">Tax Type</th>
                       <th className="text-right pb-1 font-medium">Amount</th>
@@ -123,7 +123,7 @@ export function ContribMethodologySection({
                               </div>
                             </td>
                             <td
-                              className={`py-1 whitespace-nowrap text-[10px] ${taxTypeTextColor(bucket)}`}
+                              className={`py-1 whitespace-nowrap text-caption ${taxTypeTextColor(bucket)}`}
                             >
                               {taxTypeLabel(bucket)}
                             </td>
@@ -170,7 +170,7 @@ export function ContribMethodologySection({
                     ).reduce((s: number, v: number) => s + v, 0);
                     if (totalMatch <= 0) return null;
                     return (
-                      <div className="mt-2 pt-1.5 border-t border-blue-100 text-[10px] text-faint">
+                      <div className="mt-2 pt-1.5 border-t border-blue-100 text-caption text-faint">
                         Match grows with salary. Look for{" "}
                         <span className="font-bold text-green-600">+m</span> in
                         the table and hover for breakdown.

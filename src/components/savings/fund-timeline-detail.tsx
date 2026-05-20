@@ -52,7 +52,7 @@ export function FundTimelineDetail({
                 ` \u2022 ${formatCurrency(projection.target)} target`}
             </p>
             {canEdit !== false && (
-              <p className="text-[10px] text-muted mt-0.5">
+              <p className="text-caption text-muted mt-0.5">
                 Click &ldquo;Edit month&rdquo; to change allocations for all
                 funds in that month
               </p>
@@ -117,7 +117,7 @@ export function FundTimelineDetail({
 
                   {/* Year separator */}
                   {isYearBoundary && (
-                    <div className="text-[10px] text-muted font-semibold uppercase tracking-wider mb-1">
+                    <div className="text-caption text-muted font-semibold uppercase tracking-wider mb-1">
                       {d.getFullYear()}
                     </div>
                   )}
@@ -139,7 +139,7 @@ export function FundTimelineDetail({
                   {/* Allocation — read-only with edit link */}
                   <div className="flex items-center gap-2 mt-0.5">
                     <span
-                      className={`text-[10px] tabular-nums ${
+                      className={`text-caption tabular-nums ${
                         isOverride ? "text-blue-600 font-medium" : "text-muted"
                       }`}
                     >
@@ -149,7 +149,7 @@ export function FundTimelineDetail({
                     {canEdit !== false && (
                       <button
                         onClick={() => onEditMonth(d)}
-                        className="text-[10px] text-blue-600 hover:text-blue-700 underline underline-offset-2"
+                        className="text-caption text-blue-600 hover:text-blue-700 underline underline-offset-2"
                       >
                         Edit month
                       </button>

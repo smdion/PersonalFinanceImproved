@@ -44,7 +44,7 @@ export function ContribCard({
             )
               onDeleteContrib(c.id);
           }}
-          className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-red-100 text-red-500 hover:bg-red-200 text-[10px] leading-none flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity"
+          className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-red-100 text-red-500 hover:bg-red-200 text-caption leading-none flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity"
           title="Delete contribution account"
         >
           ×
@@ -88,7 +88,7 @@ export function ContribCard({
           </span>
           {c.jobId === null && (
             <span
-              className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 rounded px-0.5 leading-tight"
+              className="text-caption font-semibold text-indigo-600 bg-indigo-50 rounded px-0.5 leading-tight"
               title="Also tracked as a budget item. Values are independent — editing here won't change the budget."
             >
               BG
@@ -114,7 +114,7 @@ export function ContribCard({
             onChange={(e) =>
               onUpdateContrib(c.id, "contributionMethod", e.target.value)
             }
-            className="text-[10px] text-faint bg-transparent border-none cursor-pointer hover:text-secondary focus:outline-none appearance-none pr-3"
+            className="text-caption text-faint bg-transparent border-none cursor-pointer hover:text-secondary focus:outline-none appearance-none pr-3"
             style={{
               backgroundImage:
                 "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")",
@@ -133,7 +133,7 @@ export function ContribCard({
 
       {/* Joint account clarification */}
       {c.ownership === "joint" && (
-        <p className="text-[10px] text-faint mt-1">
+        <p className="text-caption text-faint mt-1">
           Shared contribution (total, not per person)
         </p>
       )}
@@ -200,7 +200,7 @@ export function ContribCard({
             onChange={(e) =>
               onUpdateContrib(c.id, "employerMatchType", e.target.value)
             }
-            className="text-[10px] text-faint bg-transparent border-none cursor-pointer hover:text-secondary focus:outline-none ml-1"
+            className="text-caption text-faint bg-transparent border-none cursor-pointer hover:text-secondary focus:outline-none ml-1"
           >
             <option value="none">No match</option>
             <option value="percent_of_contribution">% of contribution</option>
@@ -209,13 +209,13 @@ export function ContribCard({
         </div>
       )}
       {c.employerMatchType === "none" && (
-        <div className="text-[10px] text-faint mt-1">
+        <div className="text-caption text-faint mt-1">
           <select
             value="none"
             onChange={(e) =>
               onUpdateContrib(c.id, "employerMatchType", e.target.value)
             }
-            className="text-[10px] text-faint bg-transparent border-none cursor-pointer hover:text-secondary focus:outline-none"
+            className="text-caption text-faint bg-transparent border-none cursor-pointer hover:text-secondary focus:outline-none"
           >
             <option value="none">No employer match</option>
             <option value="percent_of_contribution">Add % match</option>
@@ -364,7 +364,7 @@ export function ContribCard({
                   size="xs"
                 />
                 {automaxPreview && !c.autoMaximize && (
-                  <span className="text-[10px] text-faint">
+                  <span className="text-caption text-faint">
                     &rarr; {automaxPreview.label}
                   </span>
                 )}
@@ -373,7 +373,7 @@ export function ContribCard({
               {!c.autoMaximize &&
                 automaxPreview &&
                 automaxPreview.wouldChange && (
-                  <div className="text-[10px] mt-1 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                  <div className="text-caption mt-1 bg-amber-50 border border-amber-200 rounded px-2 py-1">
                     <div className="flex justify-between">
                       <span className="text-muted">Current:</span>
                       <span className="text-secondary">
@@ -396,13 +396,13 @@ export function ContribCard({
               {!c.autoMaximize &&
                 automaxPreview &&
                 !automaxPreview.wouldChange && (
-                  <p className="text-[10px] text-green-600 mt-1">
+                  <p className="text-caption text-green-600 mt-1">
                     Already at max — no change needed
                   </p>
                 )}
               {/* Status when enabled */}
               {c.autoMaximize && (
-                <p className="text-[10px] text-green-600 mt-1">
+                <p className="text-caption text-green-600 mt-1">
                   {c.contributionMethod === "percent_of_salary"
                     ? `Set to ${formatPercent(currentValue / 100)} of salary (${formatCurrency(salary ? salary * (currentValue / 100) : 0)}/yr toward ${formatCurrency(annualLimit!)} limit)`
                     : c.contributionMethod === "fixed_per_period"

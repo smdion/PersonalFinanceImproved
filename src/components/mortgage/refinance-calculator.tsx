@@ -117,12 +117,12 @@ export function RefinanceCalculator({
                 {formatCurrency(newMonthly)}
               </p>
               {monthlySavings > 0 && (
-                <p className="text-[10px] text-green-600">
+                <p className="text-caption text-green-600">
                   Save {formatCurrency(monthlySavings)}/mo
                 </p>
               )}
               {monthlySavings < 0 && (
-                <p className="text-[10px] text-red-500">
+                <p className="text-caption text-red-500">
                   +{formatCurrency(Math.abs(monthlySavings))}/mo
                 </p>
               )}
@@ -153,13 +153,13 @@ export function RefinanceCalculator({
                 </span>
               </p>
               {closingCosts > 0 && breakEvenMonths > 0 && (
-                <p className="text-[10px] text-faint">
+                <p className="text-caption text-faint">
                   ~{formatNumber(breakEvenMonths)} months to break even
                 </p>
               )}
             </div>
           </div>
-          <p className="text-[10px] text-faint">
+          <p className="text-caption text-faint">
             Comparison: remaining interest on current loan (
             {currentLoan.remainingMonths} months left) vs. new {refiTerm}-year
             loan at {refiRate}% on {formatCurrency(balance)} balance.

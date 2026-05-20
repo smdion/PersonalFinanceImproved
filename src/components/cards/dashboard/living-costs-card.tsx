@@ -231,7 +231,7 @@ function LivingCostsCardImpl() {
           </div>
         ))}
       </div>
-      <div className="mt-2 flex gap-3 text-[10px] text-faint">
+      <div className="mt-2 flex gap-3 text-caption text-faint">
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-green-500" /> On target
         </span>

@@ -141,12 +141,12 @@ export function BudgetSummaryTable({
               >
                 {label}
                 {!isWeighted && colIdx === activeColumn && (
-                  <span className="ml-1 text-[10px] align-super text-blue-500">
+                  <span className="ml-1 text-caption align-super text-blue-500">
                     ●
                   </span>
                 )}
                 {apiService && apiLinkedColumnIndex === colIdx && (
-                  <span className="ml-1 text-[8px] px-1 py-0.5 rounded bg-blue-100 text-blue-600 font-semibold align-middle">
+                  <span className="ml-1 text-micro px-1 py-0.5 rounded bg-blue-100 text-blue-600 font-semibold align-middle">
                     ⇄ {apiService.toUpperCase()}
                   </span>
                 )}
@@ -191,13 +191,13 @@ export function BudgetSummaryTable({
                     key={line.name}
                     className="border-b border-subtle bg-surface-sunken/50"
                   >
-                    <td className="py-0.5 pr-3 pl-8 text-faint text-[10px]">
+                    <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
                       {line.name}
                     </td>
                     {line.amounts.map((amt, i) => (
                       <td
                         key={cols[i]}
-                        className="text-right py-0.5 px-2 tabular-nums text-green-700 text-[10px]"
+                        className="text-right py-0.5 px-2 tabular-nums text-green-700 text-caption"
                       >
                         {formatCurrency(amt ?? 0)}
                       </td>
@@ -228,13 +228,13 @@ export function BudgetSummaryTable({
               {showTaxes && (
                 <>
                   <tr className="border-b border-subtle bg-surface-sunken/50">
-                    <td className="py-0.5 pr-3 pl-8 text-faint text-[10px]">
+                    <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
                       Federal Withholding
                     </td>
                     {allColumnResults.map((_, i) => (
                       <td
                         key={cols[i]}
-                        className="text-right py-0.5 px-2 tabular-nums text-red-500 text-[10px]"
+                        className="text-right py-0.5 px-2 tabular-nums text-red-500 text-caption"
                       >
                         −
                         {formatCurrency(
@@ -244,26 +244,26 @@ export function BudgetSummaryTable({
                     ))}
                   </tr>
                   <tr className="border-b border-subtle bg-surface-sunken/50">
-                    <td className="py-0.5 pr-3 pl-8 text-faint text-[10px]">
+                    <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
                       Social Security
                     </td>
                     {allColumnResults.map((_, i) => (
                       <td
                         key={cols[i]}
-                        className="text-right py-0.5 px-2 tabular-nums text-red-500 text-[10px]"
+                        className="text-right py-0.5 px-2 tabular-nums text-red-500 text-caption"
                       >
                         −{formatCurrency(payrollBreakdowns[i]?.ficaSS ?? 0)}
                       </td>
                     ))}
                   </tr>
                   <tr className="border-b border-subtle bg-surface-sunken/50">
-                    <td className="py-0.5 pr-3 pl-8 text-faint text-[10px]">
+                    <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
                       Medicare
                     </td>
                     {allColumnResults.map((_, i) => (
                       <td
                         key={cols[i]}
-                        className="text-right py-0.5 px-2 tabular-nums text-red-500 text-[10px]"
+                        className="text-right py-0.5 px-2 tabular-nums text-red-500 text-caption"
                       >
                         −
                         {formatCurrency(
@@ -305,13 +305,13 @@ export function BudgetSummaryTable({
                         key={`pre-${line.name}`}
                         className="border-b border-subtle bg-surface-sunken/50"
                       >
-                        <td className="py-0.5 pr-3 pl-8 text-faint text-[10px]">
+                        <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
                           {line.name}
                         </td>
                         {line.amounts.map((amt, i) => (
                           <td
                             key={cols[i]}
-                            className="text-right py-0.5 px-2 tabular-nums text-red-500 text-[10px]"
+                            className="text-right py-0.5 px-2 tabular-nums text-red-500 text-caption"
                           >
                             −{formatCurrency(amt ?? 0)}
                           </td>
@@ -353,13 +353,13 @@ export function BudgetSummaryTable({
                         key={`post-${line.name}`}
                         className="border-b border-subtle bg-surface-sunken/50"
                       >
-                        <td className="py-0.5 pr-3 pl-8 text-faint text-[10px]">
+                        <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
                           {line.name}
                         </td>
                         {line.amounts.map((amt, i) => (
                           <td
                             key={cols[i]}
-                            className="text-right py-0.5 px-2 tabular-nums text-red-500 text-[10px]"
+                            className="text-right py-0.5 px-2 tabular-nums text-red-500 text-caption"
                           >
                             −{formatCurrency(amt ?? 0)}
                           </td>
@@ -406,13 +406,13 @@ export function BudgetSummaryTable({
                     key={line.name}
                     className="border-b border-subtle bg-surface-sunken/50"
                   >
-                    <td className="py-0.5 pr-3 pl-8 text-faint text-[10px]">
+                    <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
                       {line.name}
                     </td>
                     {line.amounts.map((amt, i) => (
                       <td
                         key={cols[i]}
-                        className="text-right py-0.5 px-2 tabular-nums text-green-600 text-[10px]"
+                        className="text-right py-0.5 px-2 tabular-nums text-green-600 text-caption"
                       >
                         {formatCurrency(amt ?? 0)}
                       </td>
@@ -501,7 +501,7 @@ export function BudgetSummaryTable({
                           >
                             {formatCurrency(totalSavings)}
                             {isOverCapacity && (
-                              <div className="text-[9px] text-red-500 leading-tight mt-0.5">
+                              <div className="text-micro text-red-500 leading-tight mt-0.5">
                                 ⚠ {formatCurrency(overage)} over → fix in
                                 Savings
                               </div>
@@ -517,13 +517,13 @@ export function BudgetSummaryTable({
                             key={fund.id}
                             className="border-b border-subtle bg-surface-sunken/50"
                           >
-                            <td className="py-0.5 pr-3 pl-8 text-faint text-[10px]">
+                            <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
                               {fund.name}
                             </td>
                             {allColumnResults.map((_, i) => (
                               <td
                                 key={cols[i]}
-                                className="text-right py-0.5 px-2 tabular-nums text-amber-500 text-[10px]"
+                                className="text-right py-0.5 px-2 tabular-nums text-amber-500 text-caption"
                               >
                                 {formatCurrency(fund.monthlyContribution)}
                               </td>
@@ -531,7 +531,7 @@ export function BudgetSummaryTable({
                           </tr>
                         ))}
                         <tr className="border-b border-subtle bg-surface-sunken/50">
-                          <td className="py-0.5 pr-3 pl-8 text-faint text-[10px]">
+                          <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
                             Unallocated
                           </td>
                           {allColumnResults.map((r, i) => {
@@ -542,7 +542,7 @@ export function BudgetSummaryTable({
                             return (
                               <td
                                 key={cols[i]}
-                                className={`text-right py-0.5 px-2 tabular-nums text-[10px] ${unallocated >= 0 ? "text-emerald-600" : "text-red-500"}`}
+                                className={`text-right py-0.5 px-2 tabular-nums text-caption ${unallocated >= 0 ? "text-emerald-600" : "text-red-500"}`}
                               >
                                 {formatCurrency(unallocated)}
                               </td>

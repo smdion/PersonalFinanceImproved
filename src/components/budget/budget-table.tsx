@@ -132,7 +132,7 @@ export function BudgetTable({
                 {apiService &&
                   apiLinkedProfileId === profileId &&
                   apiLinkedColumnIndex === colIdx && (
-                    <span className="ml-1 text-[8px] px-1 py-0.5 rounded bg-blue-100 text-blue-600 font-semibold align-middle">
+                    <span className="ml-1 text-micro px-1 py-0.5 rounded bg-blue-100 text-blue-600 font-semibold align-middle">
                       ⇄ {apiService.toUpperCase()}
                     </span>
                   )}

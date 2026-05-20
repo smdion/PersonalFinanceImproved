@@ -3,10 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import {
-  formatFIProjection,
-  type FIProjectionResult,
-} from "@/lib/calculators/fi-projection";
+import type { FICache } from "@/lib/hooks/use-fi-cache";
 
 export function FinancialIndependenceCard({
   fiTarget,
@@ -14,25 +11,22 @@ export function FinancialIndependenceCard({
   portfolioTotal,
   cash,
   withdrawalRate,
+  withdrawalRateIsDefault,
   budgetColumnLabels,
   currentExpenseColumn,
   onExpenseColumnChange,
-  fiProjection,
-  fiProjectionFinalized,
+  fiCache,
 }: {
   fiTarget: number;
   fiProgress: number;
   portfolioTotal: number;
   cash: number;
   withdrawalRate: number;
+  withdrawalRateIsDefault?: boolean;
   budgetColumnLabels?: string[];
   currentExpenseColumn: number;
   onExpenseColumnChange: (idx: number) => void;
-  fiProjection?: FIProjectionResult;
-  fiProjectionFinalized?: {
-    projection: FIProjectionResult;
-    asOfYear: number;
-  };
+  fiCache: FICache;
 }) {
   return (
     <Card
@@ -79,7 +73,15 @@ export function FinancialIndependenceCard({
             Withdrawal Rate{" "}
             <HelpTip text="Set in Retirement settings. Applied to your portfolio to determine FI target (expenses / rate)." />
           </span>
-          <span className="font-medium">{formatPercent(withdrawalRate)}</span>
+          <span className="font-medium text-right">
+            {formatPercent(withdrawalRate)}
+            {withdrawalRateIsDefault && (
+              <span className="block text-xs text-amber-600 dark:text-amber-400 font-normal">
+                using default {(withdrawalRate * 100).toFixed(1)}% — configure
+                in Retirement settings
+              </span>
+            )}
+          </span>
         </div>
         <div className="flex justify-between py-2 border-b border-subtle">
           <span className="text-muted">
@@ -101,29 +103,30 @@ export function FinancialIndependenceCard({
             {formatPercent(fiProgress)}
           </span>
         </div>
-        {(fiProjectionFinalized || fiProjection) && (
-          <div className="py-2 border-t border-subtle text-xs text-muted">
-            <div className="flex justify-between">
-              <span>
-                Projected FI Year{" "}
-                <HelpTip text="Linear projection based on year-over-year FI progress from finalized data." />
-              </span>
-              <span className="font-medium text-primary">
-                {fiProjectionFinalized
-                  ? formatFIProjection(fiProjectionFinalized.projection)
-                  : fiProjection
-                    ? formatFIProjection(fiProjection)
-                    : ""}
-              </span>
-            </div>
-            {fiProjectionFinalized && (
-              <div className="text-[10px] text-faint text-right mt-0.5">
-                Based on {fiProjectionFinalized.asOfYear} data
-                {fiProjection && ` · YTD: ${formatFIProjection(fiProjection)}`}
-              </div>
-            )}
+        <div className="py-2 border-t border-subtle text-xs text-muted">
+          <div className="flex justify-between">
+            <span>
+              Projected FI Year{" "}
+              <HelpTip text="Projected year your portfolio reaches your FI target, based on your retirement plan. Visit the Retirement page to run a projection." />
+            </span>
+            <span className="font-medium text-primary">
+              {fiCache === null ? (
+                <a href="/retirement" className="text-blue-600 hover:underline">
+                  Run projection →
+                </a>
+              ) : fiCache.fiYear === null ? (
+                "Unreachable"
+              ) : (
+                `${fiCache.fiYear}${fiCache.fiAge !== null ? ` (age ${fiCache.fiAge})` : ""}`
+              )}
+            </span>
           </div>
-        )}
+          {fiCache !== null && fiCache.fiYear !== null && (
+            <div className="text-caption text-faint text-right mt-0.5">
+              Based on retirement plan
+            </div>
+          )}
+        </div>
       </div>
     </Card>
   );

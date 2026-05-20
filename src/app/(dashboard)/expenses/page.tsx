@@ -392,7 +392,7 @@ export default function ExpensesPage() {
               {/* Essential vs Discretionary mini-bar */}
               {totalActual > 0 && (
                 <div className="mt-3 space-y-1">
-                  <div className="flex justify-between text-[10px] text-muted">
+                  <div className="flex justify-between text-caption text-muted">
                     <span>Essential {pct(essentialTotal, totalActual)}</span>
                     <span>
                       Discretionary {pct(discretionaryTotal, totalActual)}
@@ -631,11 +631,11 @@ function SummaryCard({
 }) {
   return (
     <div className="bg-surface-primary rounded-lg border p-3">
-      <div className="text-[10px] font-medium text-muted uppercase tracking-wider">
+      <div className="text-caption font-medium text-muted uppercase tracking-wider">
         {label}
       </div>
       <div className={`text-lg font-bold tabular-nums ${color}`}>{value}</div>
-      <div className="text-[10px] text-faint">{sub}</div>
+      <div className="text-caption text-faint">{sub}</div>
     </div>
   );
 }
@@ -691,7 +691,7 @@ function GroupRows({
               className={`w-2 h-2 rounded-full flex-shrink-0 ${group.isEssential ? "bg-blue-500" : "bg-purple-400"}`}
             />
             {group.name}
-            <span className="text-[10px] font-normal text-faint">
+            <span className="text-caption font-normal text-faint">
               ({items.length})
             </span>
           </span>
@@ -782,7 +782,7 @@ function ProgressBar({ value, small }: { value: number; small?: boolean }) {
         />
       </div>
       <span
-        className={`text-[10px] tabular-nums w-8 text-right ${isOver ? "text-red-600 font-semibold" : "text-muted"}`}
+        className={`text-caption tabular-nums w-8 text-right ${isOver ? "text-red-600 font-semibold" : "text-muted"}`}
       >
         {value >= 9.99 ? "—" : formatPercent(value)}
       </span>

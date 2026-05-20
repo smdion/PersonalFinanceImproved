@@ -40,11 +40,6 @@ type Props = {
   useMarketValue: boolean;
   /** Toggle market value. */
   onToggleMarketValue: () => void;
-  /** Finalized-only FI projection (from two most recent finalized years). */
-  fiProjectionFinalized?: {
-    projection: import("@/lib/calculators/fi-projection").FIProjectionResult;
-    asOfYear: number;
-  };
   /** Chart X-axis mode. */
   chartXAxis: "year" | "age";
   /** Chart X-axis toggle callback. */
@@ -61,7 +56,6 @@ export function SpreadsheetView({
   byTaxType,
   useMarketValue,
   onToggleMarketValue,
-  fiProjectionFinalized,
   chartXAxis,
   onChartXAxisChange,
 }: Props) {
@@ -100,6 +94,8 @@ export function SpreadsheetView({
 
   // Global view mode from scenario context (Projected Year vs Actual YTD)
   const { viewMode } = useScenario();
+
+  const [showOutdated, setShowOutdated] = useState(false);
 
   // Year selection state — default to two most recent years
   const [yearA, setYearA] = useState<number | null>(null);
@@ -152,6 +148,8 @@ export function SpreadsheetView({
         onToggleMarketValue={onToggleMarketValue}
         useSalaryAverage={useSalaryAverage}
         onToggleSalaryAverage={handleToggleSalaryAverage}
+        showOutdated={showOutdated}
+        onToggleShowOutdated={() => setShowOutdated((v) => !v)}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -162,15 +160,15 @@ export function SpreadsheetView({
             yearB={yearBRow}
             annualize={viewMode !== "ytd"}
             useMarketValue={useMarketValue}
+            showOutdated={showOutdated}
           />
 
           <SpreadsheetHealthStats
             yearA={yearARow}
             yearB={yearBRow}
-            allYears={detailedData.years as DetailedHistoryRow[]}
             annualize={viewMode !== "ytd"}
             useMarketValue={useMarketValue}
-            fiProjectionFinalized={fiProjectionFinalized}
+            showOutdated={showOutdated}
           />
 
           <SpreadsheetTaxLocation
@@ -230,10 +228,12 @@ export function SpreadsheetView({
               houseValue={displayHomeValue}
               cash={cash}
               otherAssets={otherAssets}
+              yearLabel={effectiveYearA}
             />
             <TaxLocationPie
               byTaxType={byTaxType}
               portfolioTotal={portfolioTotal}
+              yearLabel={effectiveYearA}
             />
           </div>
         </div>

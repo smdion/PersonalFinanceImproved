@@ -93,7 +93,7 @@ export function ApiSyncSection({
             ) : (
               apiCategoriesData.groups.map((group) => (
                 <div key={group.id} className="mb-2">
-                  <div className="text-[10px] font-semibold text-muted uppercase tracking-wider px-1 py-0.5">
+                  <div className="text-caption font-semibold text-muted uppercase tracking-wider px-1 py-0.5">
                     {group.name}
                   </div>
                   {group.categories.map((cat) => (

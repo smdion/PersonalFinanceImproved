@@ -47,7 +47,7 @@ export function ProfilePill({
           aria-haspopup="listbox"
           aria-expanded={open}
           disabled={isPending}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded text-[11px] bg-surface-primary text-primary shadow-sm transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded text-label bg-surface-primary text-primary shadow-sm transition-colors disabled:opacity-50"
         >
           <span className="font-medium">{activeName}</span>
           <svg
@@ -87,7 +87,7 @@ export function ProfilePill({
               >
                 <span className="truncate">{o.name}</span>
                 {o.isActive && (
-                  <span className="ml-auto text-[10px] text-blue-500 shrink-0">
+                  <span className="ml-auto text-caption text-blue-500 shrink-0">
                     Active
                   </span>
                 )}

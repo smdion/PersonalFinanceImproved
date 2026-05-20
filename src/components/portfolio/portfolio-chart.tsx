@@ -20,6 +20,7 @@ import {
   compactCurrency,
 } from "@/lib/utils/format";
 import { CHART_COLORS } from "@/lib/utils/colors";
+import { CHART_FONT } from "@/components/charts/chart-defaults";
 
 type TimeFrame = "YTD" | "3M" | "6M" | "1Y" | "3Y" | "All";
 const TIME_FRAMES: TimeFrame[] = ["YTD", "3M", "6M", "1Y", "3Y", "All"];
@@ -116,7 +117,7 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
               <button
                 key={tf}
                 onClick={() => setTimeFrame(tf)}
-                className={`px-2 py-0.5 text-[11px] rounded transition-colors ${
+                className={`px-2 py-0.5 text-label rounded transition-colors ${
                   timeFrame === tf
                     ? "bg-surface-primary text-primary shadow-sm font-medium"
                     : "text-muted hover:text-secondary"
@@ -152,12 +153,12 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
           <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.mcGrid} />
           <XAxis
             dataKey="label"
-            tick={{ fontSize: 11, fill: CHART_COLORS.mcAxis }}
+            tick={{ fontSize: CHART_FONT.tick, fill: CHART_COLORS.mcAxis }}
             interval="preserveStartEnd"
             minTickGap={40}
           />
           <YAxis
-            tick={{ fontSize: 11, fill: CHART_COLORS.mcAxis }}
+            tick={{ fontSize: CHART_FONT.tick, fill: CHART_COLORS.mcAxis }}
             tickFormatter={compactCurrency}
             width={65}
             domain={["auto", "auto"]}
@@ -210,7 +211,7 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
               label={{
                 value: compactCurrency(hoverValue),
                 position: "right",
-                fontSize: 10,
+                fontSize: CHART_FONT.label,
                 fill: CHART_COLORS.mcAxis,
               }}
             />

@@ -34,7 +34,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
         <button
           key={opt.value}
           onClick={() => setTheme(opt.value)}
-          className={`flex-1 flex items-center justify-center gap-1 px-1.5 py-1 rounded text-[11px] transition-colors ${
+          className={`flex-1 flex items-center justify-center gap-1 px-1.5 py-1 rounded text-label transition-colors ${
             theme === opt.value
               ? "bg-surface-elevated text-white"
               : "text-faint hover:text-primary hover:bg-surface-primary"

@@ -342,7 +342,7 @@ export function NewSnapshotForm({
                           </span>
                           {groupPrev > 0 && groupDelta !== 0 && (
                             <span
-                              className={`inline-flex items-center gap-0.5 text-[10px] font-medium tabular-nums ${
+                              className={`inline-flex items-center gap-0.5 text-caption font-medium tabular-nums ${
                                 groupDelta > 0
                                   ? "text-green-600"
                                   : "text-red-600"
@@ -391,11 +391,11 @@ export function NewSnapshotForm({
                                   />
                                 </div>
                                 {row.previousAmount === 0 ? (
-                                  <span className="text-[10px] px-1 py-0.5 rounded bg-surface-sunken text-faint font-medium">
+                                  <span className="text-caption px-1 py-0.5 rounded bg-surface-sunken text-faint font-medium">
                                     new
                                   </span>
                                 ) : changed ? (
-                                  <span className="text-[10px] text-faint tabular-nums">
+                                  <span className="text-caption text-faint tabular-nums">
                                     was {formatCurrency(row.previousAmount)}
                                   </span>
                                 ) : null}

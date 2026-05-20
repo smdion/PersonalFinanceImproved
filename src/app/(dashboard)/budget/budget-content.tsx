@@ -160,7 +160,7 @@ export function BudgetContent() {
   });
 
   // ---- API actuals display values ----
-  const showApiColumn = (apiActualsData?.actuals?.length ?? 0) > 0;
+  const showApiColumn = false;
   const apiService = apiActualsData?.service ?? null;
   const apiLinkedProfileId = apiActualsData?.linkedProfileId ?? null;
   const apiLinkedColumnIndex = apiActualsData?.linkedColumnIndex ?? null;

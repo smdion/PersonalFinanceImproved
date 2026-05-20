@@ -92,7 +92,7 @@ export function BudgetItemRow({
           </span>
           {contribMonthly !== null && (
             <span
-              className="flex-shrink-0 text-[10px] font-semibold text-indigo-600 bg-indigo-50 rounded px-0.5 leading-tight"
+              className="flex-shrink-0 text-caption font-semibold text-indigo-600 bg-indigo-50 rounded px-0.5 leading-tight"
               title={`Also tracked as paycheck contribution (${formatCurrency(contribMonthly)}/mo). Values are independent — editing here won't change the paycheck.`}
             >
               PC
@@ -100,7 +100,7 @@ export function BudgetItemRow({
           )}
           {isLinked && (
             <span
-              className="flex-shrink-0 text-[10px] font-semibold text-blue-600 bg-blue-50 rounded px-0.5 leading-tight cursor-pointer"
+              className="flex-shrink-0 text-caption font-semibold text-blue-600 bg-blue-50 rounded px-0.5 leading-tight cursor-pointer"
               title={`Linked to ${item.apiCategoryName} (${item.apiSyncDirection})`}
               onClick={(e) => {
                 e.stopPropagation();
@@ -112,7 +112,7 @@ export function BudgetItemRow({
           )}
           {canEdit && !isLinked && (
             <span
-              className="flex-shrink-0 text-[10px] text-faint hover:text-blue-500 cursor-pointer hidden group-hover:inline"
+              className="flex-shrink-0 text-caption text-faint hover:text-blue-500 cursor-pointer hidden group-hover:inline"
               title="Link to budget API category"
               onClick={(e) => {
                 e.stopPropagation();
@@ -140,7 +140,7 @@ export function BudgetItemRow({
                     onMoveItem(item.id, e.target.value);
                   }
                 }}
-                className="text-[10px] text-faint bg-transparent border-none cursor-pointer hover:text-secondary"
+                className="text-caption text-faint bg-transparent border-none cursor-pointer hover:text-secondary"
                 title="Move to category"
               >
                 <option value="">Move...</option>
@@ -163,7 +163,7 @@ export function BudgetItemRow({
                       onConvertToGoal(item.id, item.subcategory);
                     }
                   }}
-                  className="text-blue-400 hover:text-blue-600 text-[10px]"
+                  className="text-blue-400 hover:text-blue-600 text-caption"
                   title="Convert to sinking fund"
                 >
                   → Fund
@@ -175,7 +175,7 @@ export function BudgetItemRow({
                     onDeleteItem(item.id);
                   }
                 }}
-                className="text-red-400 hover:text-red-600 text-[10px]"
+                className="text-red-400 hover:text-red-600 text-caption"
                 title="Delete item"
               >
                 ×
@@ -249,7 +249,7 @@ export function BudgetItemRow({
               </span>
               {apiActual.activity !== 0 && (
                 <span
-                  className={`ml-1.5 text-[10px] ${
+                  className={`ml-1.5 text-caption ${
                     apiActual.activity < 0 ? "text-red-500" : "text-green-600"
                   }`}
                 >

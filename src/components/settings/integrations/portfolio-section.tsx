@@ -51,11 +51,11 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
           Tracking Account Mappings
         </span>
         {unmappedCount === 0 ? (
-          <span className="text-[10px] text-green-400">
+          <span className="text-caption text-green-400">
             {totalTracking}/{totalTracking} mapped
           </span>
         ) : (
-          <span className="text-[10px] text-amber-400">
+          <span className="text-caption text-amber-400">
             {mappedCount}/{totalTracking} mapped
           </span>
         )}
@@ -73,7 +73,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                   key={m.localId ?? m.localName}
                   className="flex items-center gap-1.5 text-xs bg-green-50 rounded px-2 py-1"
                 >
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 whitespace-nowrap">
+                  <span className="text-caption px-1.5 py-0.5 rounded bg-green-100 text-green-700 whitespace-nowrap">
                     Mapped
                   </span>
                   <span className="text-secondary truncate flex-1">
@@ -117,7 +117,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                       });
                     }}
                     disabled={updateMappingsMut.isPending}
-                    className={`text-[10px] px-1 py-0.5 rounded disabled:opacity-50 ${
+                    className={`text-caption px-1 py-0.5 rounded disabled:opacity-50 ${
                       m.syncDirection === "push"
                         ? "bg-green-100 text-green-600 hover:bg-green-200"
                         : m.syncDirection === "pull"
@@ -133,7 +133,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                         : "→ pull"}
                   </button>
                   {tracking && (
-                    <span className="text-faint tabular-nums text-[10px] whitespace-nowrap">
+                    <span className="text-faint tabular-nums text-caption whitespace-nowrap">
                       {formatCurrency(tracking.balance)}
                     </span>
                   )}
@@ -171,7 +171,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
             );
             if (multiRollups.length === 0) return null;
             return (
-              <div className="text-[10px] text-faint space-y-0.5">
+              <div className="text-caption text-faint space-y-0.5">
                 {multiRollups.map(([remoteId, names]) => {
                   const tracking = portfolio.trackingAccounts.find(
                     (a) => a.id === remoteId,
@@ -228,20 +228,20 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
 
           return (
             <div className="border-t border-subtle pt-2 space-y-1">
-              <p className="text-[10px] font-medium text-muted">
+              <p className="text-caption font-medium text-muted">
                 Unmapped tracking accounts ({unmappedTracking.length})
               </p>
               <div className="space-y-1">
                 {unmappedTracking.map((t) => (
                   <div key={t.id} className="space-y-0.5">
                     <div className="flex items-center gap-1.5 text-xs">
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 whitespace-nowrap">
+                      <span className="text-caption px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 whitespace-nowrap">
                         API only
                       </span>
                       <span className="text-muted truncate flex-1">
                         {t.name}
                       </span>
-                      <span className="text-faint tabular-nums text-[10px] whitespace-nowrap">
+                      <span className="text-faint tabular-nums text-caption whitespace-nowrap">
                         {formatCurrency(t.balance)}
                       </span>
                       <button
@@ -255,7 +255,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                           })
                         }
                         disabled={createAssetAndMapMut.isPending}
-                        className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
+                        className="text-caption px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
                       >
                         + Create Asset
                       </button>
@@ -284,7 +284,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                               mappings: mappingsWithTypedIds(updated),
                             });
                           }}
-                          className="flex-1 px-1 py-0.5 text-[10px] border rounded bg-surface-primary"
+                          className="flex-1 px-1 py-0.5 text-caption border rounded bg-surface-primary"
                         >
                           <option value="">Link to existing...</option>
                           {availableLocal.map((l) => (
@@ -305,13 +305,13 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
         {/* Add new mapping */}
         <div className="flex gap-1 items-end flex-wrap border-t border-subtle pt-2">
           <div className="flex-1 min-w-[100px]">
-            <label className="block text-[10px] font-medium text-muted mb-0.5">
+            <label className="block text-caption font-medium text-muted mb-0.5">
               Ledgr Account
             </label>
             <select
               value={newPortfolioLocal}
               onChange={(e) => setNewPortfolioLocal(e.target.value)}
-              className="w-full px-1 py-1 text-[11px] border border-strong rounded bg-surface-primary"
+              className="w-full px-1 py-1 text-label border border-strong rounded bg-surface-primary"
             >
               <option value="">Select...</option>
               {(() => {
@@ -383,13 +383,13 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
             </select>
           </div>
           <div className="flex-1 min-w-[100px]">
-            <label className="block text-[10px] font-medium text-muted mb-0.5">
+            <label className="block text-caption font-medium text-muted mb-0.5">
               Tracking Account
             </label>
             <select
               value={newPortfolioRemote}
               onChange={(e) => setNewPortfolioRemote(e.target.value)}
-              className="w-full px-1 py-1 text-[11px] border border-strong rounded bg-surface-primary"
+              className="w-full px-1 py-1 text-label border border-strong rounded bg-surface-primary"
             >
               <option value="">Select...</option>
               {portfolio.trackingAccounts.map((a) => (
@@ -400,7 +400,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
             </select>
           </div>
           <div className="w-16">
-            <label className="block text-[10px] font-medium text-muted mb-0.5">
+            <label className="block text-caption font-medium text-muted mb-0.5">
               Dir
             </label>
             <select
@@ -410,7 +410,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                   e.target.value as "push" | "pull" | "both",
                 )
               }
-              className="w-full px-1 py-1 text-[11px] border border-strong rounded bg-surface-primary"
+              className="w-full px-1 py-1 text-label border border-strong rounded bg-surface-primary"
             >
               <option value="push">Push</option>
               <option value="pull">Pull</option>
@@ -451,7 +451,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
               !newPortfolioRemote ||
               updateMappingsMut.isPending
             }
-            className="px-2 py-1 text-[11px] bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            className="px-2 py-1 text-label bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
           >
             Add
           </button>

@@ -8,9 +8,9 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { useFICache } from "@/lib/hooks/use-fi-cache";
 import {
   FI_COMPLETE_THRESHOLD,
-  FI_ON_TRACK_THRESHOLD,
   DEFAULT_HIGH_INCOME_THRESHOLD,
 } from "@/lib/constants";
 import { wealthScoreTier } from "@/lib/config/display-labels";
@@ -22,6 +22,7 @@ type CheckupStep = {
   helpTip?: string;
   status: "green" | "yellow" | "red" | "gray";
   text: string;
+  subText?: string;
   href: string;
 };
 
@@ -105,11 +106,16 @@ function CheckupRow({ step }: { step: CheckupStep }) {
         {step.label}
         {step.helpTip && <HelpTip text={step.helpTip} />}
       </span>
-      <span
-        className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap ${badgeColor}`}
-      >
-        {step.text}
-      </span>
+      <div className="text-right">
+        <span
+          className={`text-caption font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap ${badgeColor}`}
+        >
+          {step.text}
+        </span>
+        {step.subText && (
+          <div className="text-micro text-faint mt-0.5">{step.subText}</div>
+        )}
+      </div>
     </a>
   );
 }
@@ -143,6 +149,7 @@ function FinancialCheckupCardImpl() {
     efundBudgetColumn >= 0
       ? { budgetTierOverride: efundBudgetColumn }
       : undefined;
+  const [fiCache] = useFICache();
   const savings = trpc.savings.computeSummary.useQuery(efundTierInput);
   const contribs = trpc.contribution.computeSummary.useQuery(contribInput);
   const mortgage = trpc.mortgage.computeActiveSummary.useQuery();
@@ -288,19 +295,43 @@ function FinancialCheckupCardImpl() {
   // 6. FI Progress
   const fiProgress = networth.data?.result.fiProgress ?? 0;
   const fiTarget = networth.data?.result.fiTarget ?? 0;
-  const fiPortfolio = networth.data?.portfolioTotal ?? 0;
+  const currentYear = new Date().getFullYear();
   if (fiTarget > 0) {
+    let fiStatus: CheckupStep["status"];
+    let fiText: string;
+    let fiSubText: string | undefined;
+
+    const fiAchieved =
+      fiProgress >= FI_COMPLETE_THRESHOLD ||
+      (fiCache !== null &&
+        fiCache.fiYear !== null &&
+        fiCache.fiYear <= currentYear);
+
+    if (fiAchieved) {
+      fiStatus = "green";
+      fiText = "FI Achieved!";
+    } else if (fiCache === null) {
+      fiStatus = "gray";
+      fiText = "Run retirement projection";
+    } else if (fiCache.fiYear === null) {
+      fiStatus = "red";
+      fiText = "FI target unreachable";
+    } else {
+      fiStatus = "yellow";
+      fiText =
+        fiCache.fiAge !== null
+          ? `On pace for age ${fiCache.fiAge}`
+          : "On pace for FI";
+      fiSubText = `${fiCache.fiYear} · based on retirement plan`;
+    }
+
     steps.push({
       label: "FI Progress",
       helpTip:
         "Financial Independence target: annual expenses / withdrawal rate (set in Retirement settings). Portfolio value vs. FI number.",
-      status:
-        fiProgress >= FI_COMPLETE_THRESHOLD
-          ? "green"
-          : fiProgress >= FI_ON_TRACK_THRESHOLD
-            ? "yellow"
-            : "red",
-      text: `${formatPercent(fiProgress, 1)} — ${formatCurrency(fiPortfolio)} / ${formatCurrency(fiTarget)}`,
+      status: fiStatus,
+      text: fiText,
+      subText: fiSubText,
       href: "/networth",
     });
   }

@@ -228,7 +228,7 @@ export function NetWorthCompare({
               </p>
               {data.from.snapshotDate &&
                 data.from.snapshotDate !== data.from.date && (
-                  <p className="text-[10px] text-faint">
+                  <p className="text-caption text-faint">
                     Snapshot: {formatDate(data.from.snapshotDate, "medium")}
                   </p>
                 )}
@@ -260,7 +260,7 @@ export function NetWorthCompare({
               </p>
               {data.to.snapshotDate &&
                 data.to.snapshotDate !== data.to.date && (
-                  <p className="text-[10px] text-faint">
+                  <p className="text-caption text-faint">
                     Snapshot: {formatDate(data.to.snapshotDate, "medium")}
                   </p>
                 )}
@@ -372,7 +372,7 @@ export function NetWorthCompare({
 
           {/* Limitations note */}
           {data.limitations.length > 0 && (
-            <div className="text-[10px] text-faint pt-2 border-t border-subtle space-y-0.5">
+            <div className="text-caption text-faint pt-2 border-t border-subtle space-y-0.5">
               {data.limitations.map((l) => (
                 <p key={l}>{l}</p>
               ))}

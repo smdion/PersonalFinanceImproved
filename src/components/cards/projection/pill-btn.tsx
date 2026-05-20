@@ -15,7 +15,7 @@ export function PillBtn({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${
+      className={`px-2 py-1 text-caption font-medium rounded transition-colors ${
         disabled
           ? "text-faint cursor-not-allowed"
           : active
@@ -49,7 +49,7 @@ export function LabeledPillGroup({
 }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-[10px] text-faint font-medium uppercase">
+      <span className="text-caption text-faint font-medium uppercase">
         {label}
         {helpTip}
       </span>

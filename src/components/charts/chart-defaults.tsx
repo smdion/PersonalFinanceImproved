@@ -16,6 +16,26 @@
 
 import { CHART_COLORS } from "@/lib/utils/colors";
 
+/* ── Canonical font sizes ────────────────────────────────────────
+ * Mirrors the CSS token scale for SVG/inline-style contexts where
+ * Tailwind classes can't be applied to Recharts SVG text nodes.
+ *
+ *   CHART_FONT.tick    : 11px — axis ticks, legend items  (= text-caption)
+ *   CHART_FONT.xTick   : 12px — x-axis date/category ticks (= text-xs)
+ *   CHART_FONT.tooltip : 12px — tooltip content            (= text-xs)
+ *   CHART_FONT.legend  : 11px — legend labels              (= text-caption)
+ *   CHART_FONT.label   : 10px — inline bar/line labels     (= text-micro)
+ *   CHART_FONT.tiny    :  9px — mini charts / compressed space only
+ */
+export const CHART_FONT = {
+  xTick: 12,
+  tick: 11,
+  tooltip: 12,
+  legend: 11,
+  label: 10,
+  tiny: 9,
+} as const;
+
 /* ── Grid ───────────────────────────────────────────────────────── */
 
 export const gridProps = {
@@ -27,25 +47,29 @@ export const gridProps = {
 /* ── Axis ───────────────────────────────────────────────────────── */
 
 export const axisProps = {
-  tick: { fontSize: 12, fill: CHART_COLORS.mcAxis },
+  tick: { fontSize: CHART_FONT.xTick, fill: CHART_COLORS.mcAxis },
 } as const;
 
 export const yAxisProps = {
   ...axisProps,
-  tick: { fontSize: 11, fill: CHART_COLORS.mcAxis },
+  tick: { fontSize: CHART_FONT.tick, fill: CHART_COLORS.mcAxis },
   width: 65,
 } as const;
 
 /* ── Tooltip ────────────────────────────────────────────────────── */
 
 export const tooltipProps = {
-  contentStyle: { fontSize: 12 },
+  contentStyle: { fontSize: CHART_FONT.tooltip },
 } as const;
 
 /* ── Legend ──────────────────────────────────────────────────────── */
 
 export const legendProps = {
-  wrapperStyle: { fontSize: 11, lineHeight: "1.5", paddingTop: 4 },
+  wrapperStyle: {
+    fontSize: CHART_FONT.legend,
+    lineHeight: "1.5",
+    paddingTop: 4,
+  },
 } as const;
 
 /* ── Standard margins ───────────────────────────────────────────── */

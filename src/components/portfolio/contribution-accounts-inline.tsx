@@ -18,7 +18,7 @@ export function InlineText({
   return (
     <div>
       {label && (
-        <label className="block text-[10px] text-muted mb-0.5">{label}</label>
+        <label className="block text-caption text-muted mb-0.5">{label}</label>
       )}
       {disabled ? (
         <div className="border border-subtle bg-surface-sunken rounded px-2 py-1 text-xs text-muted">
@@ -58,7 +58,7 @@ export function InlineSelect({
 }) {
   return (
     <div>
-      <label className="block text-[10px] text-muted mb-0.5">{label}</label>
+      <label className="block text-caption text-muted mb-0.5">{label}</label>
       {disabled ? (
         <div className="border border-subtle bg-surface-sunken rounded px-2 py-1 text-xs text-muted">
           {options.find((o) => o.value === value)?.label ?? value}

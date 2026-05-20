@@ -19,6 +19,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { CHART_FONT } from "@/components/charts/chart-defaults";
 
 // 8 distinct colors for strategies
 const STRATEGY_COLORS = [
@@ -135,7 +136,7 @@ export function WithdrawalComparisonCard({
             <button
               type="button"
               onClick={() => onDollarModeChange("real")}
-              className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors ${
+              className={`px-2 py-0.5 text-caption font-medium rounded transition-colors ${
                 dollarMode === "real"
                   ? "bg-surface-primary text-primary shadow-sm border"
                   : "text-muted hover:text-secondary"
@@ -146,7 +147,7 @@ export function WithdrawalComparisonCard({
             <button
               type="button"
               onClick={() => onDollarModeChange("nominal")}
-              className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors ${
+              className={`px-2 py-0.5 text-caption font-medium rounded transition-colors ${
                 dollarMode === "nominal"
                   ? "bg-surface-primary text-primary shadow-sm border"
                   : "text-muted hover:text-secondary"
@@ -213,7 +214,7 @@ export function WithdrawalComparisonCard({
                         >
                           {s.shortLabel}
                           {isActive && (
-                            <span className="text-blue-400 text-[9px] ml-1">
+                            <span className="text-blue-400 text-micro ml-1">
                               (active)
                             </span>
                           )}
@@ -305,13 +306,13 @@ export function WithdrawalComparisonCard({
           <div className="flex justify-end gap-1 mb-3">
             <button
               onClick={() => setChartMetric("endBalance")}
-              className={`px-2 py-0.5 text-[10px] rounded ${chartMetric === "endBalance" ? "bg-blue-600 text-white" : "bg-surface-elevated text-faint"}`}
+              className={`px-2 py-0.5 text-caption rounded ${chartMetric === "endBalance" ? "bg-blue-600 text-white" : "bg-surface-elevated text-faint"}`}
             >
               Portfolio Balance
             </button>
             <button
               onClick={() => setChartMetric("withdrawal")}
-              className={`px-2 py-0.5 text-[10px] rounded ${chartMetric === "withdrawal" ? "bg-blue-600 text-white" : "bg-surface-elevated text-faint"}`}
+              className={`px-2 py-0.5 text-caption rounded ${chartMetric === "withdrawal" ? "bg-blue-600 text-white" : "bg-surface-elevated text-faint"}`}
             >
               Annual Withdrawal
             </button>
@@ -322,18 +323,18 @@ export function WithdrawalComparisonCard({
               <XAxis
                 dataKey="age"
                 stroke="#9ca3af"
-                tick={{ fontSize: 10 }}
+                tick={{ fontSize: CHART_FONT.tick }}
                 label={{
                   value: "Age",
                   position: "insideBottom",
                   offset: -5,
-                  fontSize: 10,
+                  fontSize: CHART_FONT.tick,
                   fill: "#9ca3af",
                 }}
               />
               <YAxis
                 stroke="#9ca3af"
-                tick={{ fontSize: 10 }}
+                tick={{ fontSize: CHART_FONT.tick }}
                 tickFormatter={(v: number) => compactCurrency(v)}
               />
               <Tooltip
@@ -341,13 +342,15 @@ export function WithdrawalComparisonCard({
                   backgroundColor: "#1f2937",
                   border: "1px solid #374151",
                   borderRadius: "6px",
-                  fontSize: 11,
+                  fontSize: CHART_FONT.tooltip,
                 }}
                 labelStyle={{ color: "#9ca3af" }}
                 formatter={(value) => formatCurrency(Number(value))}
                 labelFormatter={(age) => `Age ${age}`}
               />
-              <Legend wrapperStyle={{ fontSize: 10, paddingTop: 16 }} />
+              <Legend
+                wrapperStyle={{ fontSize: CHART_FONT.legend, paddingTop: 16 }}
+              />
               {strategies.map((s, i) => (
                 <Line
                   key={s.strategy}
@@ -372,7 +375,7 @@ export function WithdrawalComparisonCard({
           <div className="flex justify-end">
             <button
               onClick={() => setAnalyzerEnabled(true)}
-              className="text-[11px] text-sky-400 hover:text-sky-300 border border-sky-400/30 hover:border-sky-400/60 rounded px-2 py-0.5 transition-colors"
+              className="text-label text-sky-400 hover:text-sky-300 border border-sky-400/30 hover:border-sky-400/60 rounded px-2 py-0.5 transition-colors"
             >
               Analyze My Strategy →
             </button>
@@ -389,7 +392,7 @@ export function WithdrawalComparisonCard({
                 <h4 className="text-sm font-semibold text-primary">
                   Strategy Analysis — {analyzerQuery.data.strategyLabel}
                 </h4>
-                <p className="text-[11px] text-faint">
+                <p className="text-label text-faint">
                   Current plan:{" "}
                   {formatPercent(analyzerQuery.data.baseline?.successRate ?? 0)}{" "}
                   success ·{" "}
@@ -401,7 +404,7 @@ export function WithdrawalComparisonCard({
               </div>
               <button
                 onClick={() => setAnalyzerEnabled(false)}
-                className="text-[10px] text-faint hover:text-secondary"
+                className="text-caption text-faint hover:text-secondary"
               >
                 Dismiss
               </button>
@@ -459,7 +462,7 @@ export function WithdrawalComparisonCard({
               })}
             </div>
 
-            <p className="text-[10px] text-faint mt-3">
+            <p className="text-caption text-faint mt-3">
               Full engine assumptions used with only the stated change. 200
               Monte Carlo simulations each.
             </p>
@@ -472,7 +475,7 @@ export function WithdrawalComparisonCard({
             timeline.
             <button
               onClick={() => setAnalyzerEnabled(false)}
-              className="ml-2 text-[10px] text-faint hover:text-secondary"
+              className="ml-2 text-caption text-faint hover:text-secondary"
             >
               Dismiss
             </button>
@@ -482,7 +485,7 @@ export function WithdrawalComparisonCard({
             Analysis failed. Try again or adjust your inputs.
             <button
               onClick={() => setAnalyzerEnabled(false)}
-              className="ml-2 text-[10px] text-faint hover:text-secondary"
+              className="ml-2 text-caption text-faint hover:text-secondary"
             >
               Dismiss
             </button>
@@ -495,7 +498,7 @@ export function WithdrawalComparisonCard({
             retirement, increasing guaranteed income).
             <button
               onClick={() => setAnalyzerEnabled(false)}
-              className="ml-2 text-[10px] text-faint hover:text-secondary"
+              className="ml-2 text-caption text-faint hover:text-secondary"
             >
               Dismiss
             </button>

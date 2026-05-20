@@ -63,13 +63,13 @@ export function YearlyGrowthEditor({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-faint font-medium uppercase tracking-wide">
+        <span className="text-caption text-faint font-medium uppercase tracking-wide">
           Annual Growth by Year
         </span>
         {years.length > 0 && Object.keys(yearlyGrowth).length === 0 && (
           <button
             onClick={() => applyToAll({ type: "pct", value: 3 })}
-            className="text-[10px] text-blue-600 hover:text-blue-700"
+            className="text-caption text-blue-600 hover:text-blue-700"
           >
             Set 3% for all
           </button>
@@ -87,7 +87,7 @@ export function YearlyGrowthEditor({
             <div className="flex bg-surface-elevated rounded p-0.5">
               <button
                 onClick={() => updateEntry(yr, { type: "pct" })}
-                className={`px-1.5 py-0.5 rounded text-[10px] ${
+                className={`px-1.5 py-0.5 rounded text-caption ${
                   !entry || entry.type === "pct"
                     ? "bg-surface-strong text-primary"
                     : "text-faint hover:text-primary"
@@ -97,7 +97,7 @@ export function YearlyGrowthEditor({
               </button>
               <button
                 onClick={() => updateEntry(yr, { type: "dollar" })}
-                className={`px-1.5 py-0.5 rounded text-[10px] ${
+                className={`px-1.5 py-0.5 rounded text-caption ${
                   entry?.type === "dollar"
                     ? "bg-surface-strong text-primary"
                     : "text-faint hover:text-primary"
@@ -108,7 +108,7 @@ export function YearlyGrowthEditor({
             </div>
             <div className="flex items-center gap-0.5">
               {entry?.type === "dollar" && (
-                <span className="text-[10px] text-muted">+$</span>
+                <span className="text-caption text-muted">+$</span>
               )}
               <input
                 type="number"
@@ -124,19 +124,19 @@ export function YearlyGrowthEditor({
                 className="w-16 border border-default bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
               {(!entry || entry.type === "pct") && (
-                <span className="text-[10px] text-muted">%</span>
+                <span className="text-caption text-muted">%</span>
               )}
               {entry?.type === "dollar" && (
-                <span className="text-[10px] text-muted">/mo</span>
+                <span className="text-caption text-muted">/mo</span>
               )}
             </div>
-            <span className="text-[10px] text-muted tabular-nums">
+            <span className="text-caption text-muted tabular-nums">
               &rarr; {formatCurrency(projectedPool)}/mo
             </span>
             {hasEntry && (
               <button
                 onClick={() => removeEntry(yr)}
-                className="text-[10px] text-muted hover:text-faint"
+                className="text-caption text-muted hover:text-faint"
                 title="Remove growth for this year"
               >
                 &times;
@@ -153,13 +153,13 @@ export function YearlyGrowthEditor({
               const first = yearlyGrowth[years[0]!];
               if (first) applyToAll(first);
             }}
-            className="text-[10px] text-muted hover:text-faint"
+            className="text-caption text-muted hover:text-faint"
           >
             Apply first to all
           </button>
           <button
             onClick={() => setYearlyGrowth({})}
-            className="text-[10px] text-muted hover:text-red-600"
+            className="text-caption text-muted hover:text-red-600"
           >
             Clear all
           </button>

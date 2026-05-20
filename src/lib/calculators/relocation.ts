@@ -26,7 +26,7 @@ import type {
   RelocationResult,
   RelocationYearProjection,
 } from "./types";
-import { roundToCents } from "../utils/math";
+import { roundToCents, calculateLoanMonthlyPayment } from "../utils/math";
 
 /**
  * Simple portfolio growth model for a single year.
@@ -38,22 +38,6 @@ function growOneYear(
   returnRate: number,
 ): number {
   return (balance + annualContrib / 2) * (1 + returnRate) + annualContrib / 2;
-}
-
-/**
- * Standard amortization formula: fixed monthly payment for a loan.
- * Returns 0 if principal is 0 or term is 0.
- */
-function calculateMonthlyPayment(
-  principal: number,
-  annualRate: number,
-  termYears: number,
-): number {
-  if (principal <= 0 || termYears <= 0) return 0;
-  if (annualRate <= 0) return principal / (termYears * 12);
-  const r = annualRate / 12;
-  const n = termYears * 12;
-  return (principal * (r * Math.pow(1 + r, n))) / (Math.pow(1 + r, n) - 1);
 }
 
 /** Pre-computed per-purchase data used during the year-by-year loop. */
@@ -76,7 +60,11 @@ function precomputePurchases(
     const financedPrincipal = roundToCents(p.purchasePrice * (1 - downPct));
     const termYears = p.loanTermYears ?? 0;
     const monthlyPayment = roundToCents(
-      calculateMonthlyPayment(financedPrincipal, p.loanRate ?? 0, termYears),
+      calculateLoanMonthlyPayment(
+        financedPrincipal,
+        p.loanRate ?? 0,
+        termYears,
+      ),
     );
 
     return {

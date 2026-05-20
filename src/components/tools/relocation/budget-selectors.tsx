@@ -104,7 +104,7 @@ export function RelocationBudgetSelectors({
             {currentMonths ? (
               <span className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded px-2 py-1">
                 Weighted: {formatCurrency((currentWeighted ?? 0) / 12)}/mo
-                <span className="text-[10px] text-faint ml-1">
+                <span className="text-caption text-faint ml-1">
                   (
                   {currentMonths
                     .map(
@@ -132,7 +132,7 @@ export function RelocationBudgetSelectors({
             ) : null}
             {/* Override */}
             <div className="flex items-center gap-1">
-              <span className="text-[10px] text-faint">Override:</span>
+              <span className="text-caption text-faint">Override:</span>
               <input
                 type="number"
                 className="border rounded px-2 py-0.5 text-xs w-24"
@@ -142,7 +142,7 @@ export function RelocationBudgetSelectors({
               />
               {relocCurrentOverride && (
                 <button
-                  className="text-[10px] text-red-400 hover:text-red-600"
+                  className="text-caption text-red-400 hover:text-red-600"
                   onClick={() => setRelocCurrentOverride("")}
                 >
                   clear
@@ -178,7 +178,7 @@ export function RelocationBudgetSelectors({
             {targetMonths ? (
               <span className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded px-2 py-1">
                 Weighted: {formatCurrency((targetWeighted ?? 0) / 12)}/mo
-                <span className="text-[10px] text-faint ml-1">
+                <span className="text-caption text-faint ml-1">
                   (
                   {targetMonths
                     .map(
@@ -206,7 +206,7 @@ export function RelocationBudgetSelectors({
             ) : null}
             {/* Override */}
             <div className="flex items-center gap-1">
-              <span className="text-[10px] text-faint">Override:</span>
+              <span className="text-caption text-faint">Override:</span>
               <input
                 type="number"
                 className="border rounded px-2 py-0.5 text-xs w-24"
@@ -216,7 +216,7 @@ export function RelocationBudgetSelectors({
               />
               {relocTargetOverride && (
                 <button
-                  className="text-[10px] text-red-400 hover:text-red-600"
+                  className="text-caption text-red-400 hover:text-red-600"
                   onClick={() => setRelocTargetOverride("")}
                 >
                   clear
@@ -249,7 +249,7 @@ export function RelocationBudgetSelectors({
               ))}
             </select>
             {currentContribProfile && (
-              <div className="mt-1 text-[10px] text-faint flex gap-3">
+              <div className="mt-1 text-caption text-faint flex gap-3">
                 <span>
                   Salary: {formatCurrency(currentContribProfile.combinedSalary)}
                 </span>
@@ -285,7 +285,7 @@ export function RelocationBudgetSelectors({
               ))}
             </select>
             {relocationContribProfile && (
-              <div className="mt-1 text-[10px] text-faint flex gap-3">
+              <div className="mt-1 text-caption text-faint flex gap-3">
                 <span>
                   Salary:{" "}
                   {formatCurrency(relocationContribProfile.combinedSalary)}

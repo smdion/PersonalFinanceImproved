@@ -392,7 +392,7 @@ export function RetirementContent() {
           {snapshotId != null && (
             <button
               onClick={() => setSnapshotId(null)}
-              className="text-[10px] text-blue-400 hover:text-blue-300"
+              className="text-caption text-blue-400 hover:text-blue-300"
             >
               Reset to latest
             </button>
@@ -514,10 +514,10 @@ export function RetirementContent() {
                   {/* Right column: Decumulation Plan */}
                   <div className="bg-surface-sunken rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-2">
-                      <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+                      <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
                         Decumulation Plan
                       </h4>
-                      <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
+                      <span className="text-micro text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
                         Baseline + Simulation
                       </span>
                       <div className="flex-1 border-t" />
@@ -577,7 +577,7 @@ export function RetirementContent() {
                         </div>
                       </div>
                       <div>
-                        <span className="text-muted text-[10px]">
+                        <span className="text-muted text-caption">
                           {(() => {
                             const key = (settings?.withdrawalStrategy ??
                               "fixed") as WithdrawalStrategyType;
@@ -616,10 +616,10 @@ export function RetirementContent() {
                 {/* Plan Assumptions */}
                 <div className="bg-surface-sunken rounded-lg p-3">
                   <div className="flex items-center gap-2 mb-2">
-                    <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+                    <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
                       Plan Assumptions
                     </h4>
-                    <span className="text-[9px] text-purple-400 bg-purple-50 px-1.5 py-0.5 rounded">
+                    <span className="text-micro text-purple-400 bg-purple-50 px-1.5 py-0.5 rounded">
                       Baseline
                     </span>
                     <div className="flex-1 border-t" />

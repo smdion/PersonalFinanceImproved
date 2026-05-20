@@ -135,7 +135,7 @@ export function NewFundFormCard({
               }
               className="w-full border rounded px-2 py-1 text-sm"
             />
-            <p className="text-[10px] text-faint mt-0.5">
+            <p className="text-caption text-faint mt-0.5">
               No date = should be funded now
             </p>
           </div>

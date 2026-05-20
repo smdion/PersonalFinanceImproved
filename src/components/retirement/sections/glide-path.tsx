@@ -23,12 +23,12 @@ export function GlidePathSection({ returnRateSummary }: Props) {
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
       <div className="flex items-center gap-2 mb-2">
-        <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+        <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
           Returns
         </h4>
-        <span className="text-[10px] text-faint">age-based glide path</span>
+        <span className="text-caption text-faint">age-based glide path</span>
         <HelpTip text="Your portfolio return rate shifts with age based on the glide path configured in Settings. Deterministic mode uses these rates directly as fixed annual returns. Monte Carlo (Simple + Advanced) uses them as the mean of a probability distribution — each trial samples random returns around these rates, capturing real-world volatility and sequence-of-returns risk. Darker segments in the bar below indicate higher return rates (younger, more aggressive allocation)." />
-        <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
+        <span className="text-micro text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
           Baseline + Simulation
         </span>
         <div className="flex-1 border-t" />
@@ -66,7 +66,7 @@ export function GlidePathSection({ returnRateSummary }: Props) {
         </div>
       </div>
       {/* Glide path bar */}
-      <div className="flex items-center gap-2 text-[10px] text-faint">
+      <div className="flex items-center gap-2 text-caption text-faint">
         <span>{returnRateSummary.schedule[0]?.age ?? "—"}</span>
         <div className="flex-1 flex h-2.5 rounded-full overflow-hidden bg-surface-strong">
           {(() => {
@@ -99,7 +99,7 @@ export function GlidePathSection({ returnRateSummary }: Props) {
             ?.age ?? "—"}
         </span>
       </div>
-      <div className="flex justify-between text-[10px] text-faint mt-0.5 px-6">
+      <div className="flex justify-between text-caption text-faint mt-0.5 px-6">
         <span>
           {returnRateSummary.currentRate != null
             ? formatPercent(returnRateSummary.currentRate, 1)

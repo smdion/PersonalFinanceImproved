@@ -142,16 +142,16 @@ function OverrideRangeRow({
           {formatCurrency(range.amount)}/mo
         </span>
         {range.amount === 0 && (
-          <span className="text-yellow-500 text-[10px]">(paused)</span>
+          <span className="text-yellow-500 text-caption">(paused)</span>
         )}
-        <span className="text-muted text-[10px]">
+        <span className="text-muted text-caption">
           default: {formatCurrency(defaultAllocation)}
         </span>
       </div>
       {canEdit !== false && (
         <button
           onClick={onClear}
-          className="text-muted hover:text-red-600 text-[10px]"
+          className="text-muted hover:text-red-600 text-caption"
           title="Reset to default"
         >
           clear
@@ -235,7 +235,7 @@ export function FundOverridesSummary({
               // Open the month editor modal for the next upcoming month
               onEditMonth(new Date());
             }}
-            className="text-[10px] text-blue-600 hover:text-blue-700"
+            className="text-caption text-blue-600 hover:text-blue-700"
           >
             + Add
           </button>
@@ -271,7 +271,7 @@ export function FundOverridesSummary({
             <>
               <button
                 onClick={() => setShowHistory(!showHistory)}
-                className="text-[10px] text-muted hover:text-primary mt-1"
+                className="text-caption text-muted hover:text-primary mt-1"
               >
                 {showHistory
                   ? "Hide history"

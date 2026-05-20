@@ -54,8 +54,7 @@ const TaxLocationPie = dynamic(
 );
 import { SpreadsheetView } from "@/components/networth/spreadsheet";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
-import { projectFIYear } from "@/lib/calculators/fi-projection";
-import { safeDivide } from "@/lib/utils/math";
+import { useFICache } from "@/lib/hooks/use-fi-cache";
 
 export default function NetWorthPage() {
   const utils = trpc.useUtils();
@@ -126,46 +125,7 @@ export default function NetWorthPage() {
     [displayHistory],
   );
 
-  // Projected FI year from two most recent history years
-  const fiProjection = useMemo(() => {
-    if (!displayHistory || displayHistory.length < 2 || !data) return undefined;
-    const sorted = [...displayHistory].sort((a, b) => b.year - a.year);
-    const current = sorted[0]!;
-    const prior = sorted[1]!;
-    const fiTarget = data.result?.fiTarget ?? 0;
-    if (fiTarget <= 0) return undefined;
-    const currentFI = Number(
-      safeDivide(current.portfolioTotal + current.cash, fiTarget) ?? 0,
-    );
-    const priorFI = Number(
-      safeDivide(prior.portfolioTotal + prior.cash, fiTarget) ?? 0,
-    );
-    return projectFIYear(currentFI, priorFI, current.year, prior.year);
-  }, [displayHistory, data]);
-
-  // Finalized-only FI projection (from two most recent finalized years — excludes current partial year)
-  // Single computation, passed to both FI Card and SpreadsheetView health stats
-  const fiProjectionFinalized = useMemo(() => {
-    if (!displayHistory || !data) return undefined;
-    const finalized = displayHistory
-      .filter((h) => !h.isCurrent)
-      .sort((a, b) => b.year - a.year);
-    if (finalized.length < 2) return undefined;
-    const recent = finalized[0]!;
-    const prior = finalized[1]!;
-    const fiTarget = data.result?.fiTarget ?? 0;
-    if (fiTarget <= 0) return undefined;
-    const recentFI = Number(
-      safeDivide(recent.portfolioTotal + recent.cash, fiTarget) ?? 0,
-    );
-    const priorFI = Number(
-      safeDivide(prior.portfolioTotal + prior.cash, fiTarget) ?? 0,
-    );
-    return {
-      projection: projectFIYear(recentFI, priorFI, recent.year, prior.year),
-      asOfYear: recent.year,
-    };
-  }, [displayHistory, data]);
+  const [fiCache] = useFICache();
 
   const handleExpenseColumnChange = useCallback(
     (idx: number) => {
@@ -296,7 +256,6 @@ export default function NetWorthPage() {
           byTaxType={byTaxType}
           useMarketValue={useMarketValue}
           onToggleMarketValue={() => setUseMarketValue(!useMarketValue)}
-          fiProjectionFinalized={fiProjectionFinalized}
           chartXAxis={chartXAxis}
           onChartXAxisChange={setChartXAxis}
         />
@@ -435,11 +394,11 @@ export default function NetWorthPage() {
               portfolioTotal={portfolioTotal}
               cash={cash}
               withdrawalRate={data.withdrawalRate}
+              withdrawalRateIsDefault={data.withdrawalRateIsDefault}
               budgetColumnLabels={budgetData?.columnLabels}
               currentExpenseColumn={currentExpenseColumn}
               onExpenseColumnChange={handleExpenseColumnChange}
-              fiProjection={fiProjection}
-              fiProjectionFinalized={fiProjectionFinalized}
+              fiCache={fiCache}
             />
           </CardBoundary>
         </>

@@ -182,7 +182,7 @@ export function PoolDistributionEditor({
                     {fund.name}
                   </span>
                   {!isDefault && (
-                    <span className="text-[10px] text-blue-600 font-medium">
+                    <span className="text-caption text-blue-600 font-medium">
                       OVERRIDE
                     </span>
                   )}
@@ -192,7 +192,7 @@ export function PoolDistributionEditor({
                     onClick={() =>
                       updateFundAmount(fund.goalId, fund.defaultAmount)
                     }
-                    className="text-[10px] text-faint hover:text-muted"
+                    className="text-caption text-faint hover:text-muted"
                   >
                     Reset
                   </button>

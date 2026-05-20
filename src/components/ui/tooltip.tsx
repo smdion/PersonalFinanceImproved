@@ -60,7 +60,7 @@ export function Tooltip({
           sideOffset={6}
           avoidCollisions
           collisionPadding={12}
-          className="z-[9999] rounded-lg bg-slate-900 dark:bg-slate-700 px-3.5 py-2.5 text-[13px] leading-relaxed text-slate-100 shadow-xl animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95"
+          className="z-[9999] rounded-lg bg-slate-900 dark:bg-slate-700 px-3.5 py-2.5 text-label leading-relaxed text-slate-100 shadow-xl animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95"
           style={{ maxWidth }}
         >
           {resolvedContent}
