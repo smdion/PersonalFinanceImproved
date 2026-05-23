@@ -345,6 +345,7 @@ export function SavingsTrajectoryTable({
                           ? gp.current
                           : (gp.balances[rowIdx - 1] ?? 0);
                       const netChange = balance - prevBalance;
+                      const allocation = gp.monthlyAllocations[rowIdx] ?? 0;
                       const deltaEl = (
                         <div
                           className={`text-micro tabular-nums mt-0.5 ${
@@ -374,13 +375,20 @@ export function SavingsTrajectoryTable({
                             : "";
                         return (
                           <td key={gp.goalId} className={cls + bg}>
-                            <div>
-                              {isFirstFunded && !isNegative && (
-                                <span className="mr-1 text-green-500 text-caption">
-                                  ✓
+                            <div className="flex items-baseline justify-end gap-2">
+                              <div>
+                                {isFirstFunded && !isNegative && (
+                                  <span className="mr-1 text-green-500 text-caption">
+                                    ✓
+                                  </span>
+                                )}
+                                {formatCurrency(balance)}
+                              </div>
+                              {allocation > 0 && (
+                                <span className="text-micro text-faint/50 tabular-nums">
+                                  +{formatCurrency(allocation)}
                                 </span>
                               )}
-                              {formatCurrency(balance)}
                             </div>
                             {deltaEl}
                           </td>
@@ -399,7 +407,14 @@ export function SavingsTrajectoryTable({
                               key={gp.goalId}
                               className="text-right px-3 py-1.5 text-xs tabular-nums text-red-500"
                             >
-                              <div>{formatCurrency(balance)}</div>
+                              <div className="flex items-baseline justify-end gap-2">
+                                <span>{formatCurrency(balance)}</span>
+                                {allocation > 0 && (
+                                  <span className="text-micro text-faint/50 tabular-nums">
+                                    +{formatCurrency(allocation)}
+                                  </span>
+                                )}
+                              </div>
                               {deltaEl}
                             </td>
                           );
@@ -419,7 +434,14 @@ export function SavingsTrajectoryTable({
                               key={gp.goalId}
                               className="text-right px-3 py-1.5 text-xs tabular-nums text-amber-500"
                             >
-                              <div>{formatCurrency(balance)}</div>
+                              <div className="flex items-baseline justify-end gap-2">
+                                <span>{formatCurrency(balance)}</span>
+                                {allocation > 0 && (
+                                  <span className="text-micro text-faint/50 tabular-nums">
+                                    +{formatCurrency(allocation)}
+                                  </span>
+                                )}
+                              </div>
                               {deltaEl}
                             </td>
                           );
