@@ -12,6 +12,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
 import { Button } from "@/components/ui/button";
+import { getExtraPaycheckMonthKeys } from "@/lib/calculators/paycheck";
 import type {
   ExtraPaycheckRule,
   ExtraPaycheckOverride,
@@ -307,12 +308,14 @@ function PersonPanel({
   goals,
   netPayPerCheck,
   projectionMonthKeys,
+  monthDates,
   onSaved,
 }: {
   job: JobEntry;
   goals: Goal[];
   netPayPerCheck: number;
   projectionMonthKeys: Set<string>;
+  monthDates: Date[];
   onSaved: () => void;
 }) {
   const utils = trpc.useUtils();
@@ -332,6 +335,7 @@ function PersonPanel({
         utils.savings.invalidate();
         setOverrideMonth(null);
         setOverrideForm(null);
+        setIsNewOverride(false);
       },
     });
 
@@ -381,18 +385,38 @@ function PersonPanel({
     return maxYear - currentYear;
   }, [projectionMonthKeys]);
 
+  // Valid extra-paycheck months for the override selector
+  const extraPaycheckMonthOptions = useMemo(() => {
+    if (
+      job.payPeriod !== "biweekly" ||
+      !job.anchorPayDate ||
+      monthDates.length === 0
+    )
+      return [];
+    const anchor = new Date(job.anchorPayDate + "T00:00:00Z");
+    const keys = getExtraPaycheckMonthKeys(
+      anchor,
+      job.payPeriod,
+      monthDates[0]!,
+      monthDates.length,
+    );
+    return keys.map((k) => k.slice(0, 7)); // "YYYY-MM-01" → "YYYY-MM"
+  }, [job.anchorPayDate, job.payPeriod, monthDates]);
+
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [addForm, setAddForm] = useState<RuleForm | null>(null);
 
   // Override state: which month is open for override editing
   const [overrideMonth, setOverrideMonth] = useState<string | null>(null);
+  const [isNewOverride, setIsNewOverride] = useState(false);
   const [overrideForm, setOverrideForm] = useState<
     { goalId: number; pct: string }[] | null
   >(null);
 
   function openAddOverride() {
     setOverrideForm([{ goalId: 0, pct: "100" }]);
-    setOverrideMonth("");
+    setOverrideMonth(extraPaycheckMonthOptions[0] ?? "");
+    setIsNewOverride(true);
   }
 
   function openOverride(mk: string) {
@@ -412,6 +436,7 @@ function PersonPanel({
       );
     }
     setOverrideMonth(mk);
+    setIsNewOverride(false);
   }
 
   function saveOverride() {
@@ -672,7 +697,7 @@ function PersonPanel({
           <span className="text-caption text-faint font-medium uppercase tracking-wide">
             Month overrides
           </span>
-          {overrideMonth === null && (
+          {overrideMonth === null && extraPaycheckMonthOptions.length > 0 && (
             <button
               onClick={openAddOverride}
               className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors"
@@ -718,19 +743,29 @@ function PersonPanel({
         )}
         {overrideMonth !== null && overrideForm && (
           <div className="border border-subtle rounded-md p-3 space-y-2 bg-surface-sunken/50 text-xs">
-            {overrideMonth === "" ? (
+            {isNewOverride ? (
               <label className="space-y-0.5 block">
                 <span className="text-caption text-muted">Month</span>
-                <input
-                  type="month"
-                  value={overrideMonth}
+                <select
+                  value={overrideMonth ?? ""}
                   onChange={(e) => setOverrideMonth(e.target.value)}
                   className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
+                >
+                  <option value="">— pick a month —</option>
+                  {extraPaycheckMonthOptions.map((mk) => {
+                    const hasOverride = overrides.some((o) => o.month === mk);
+                    return (
+                      <option key={mk} value={mk}>
+                        {fmt(mk)}
+                        {hasOverride ? " ↺" : ""}
+                      </option>
+                    );
+                  })}
+                </select>
               </label>
             ) : (
               <p className="font-medium text-primary">
-                Override — {fmt(overrideMonth)}
+                Override — {fmt(overrideMonth!)}
               </p>
             )}
             <div className="space-y-1">
@@ -823,6 +858,7 @@ function PersonPanel({
                 onClick={() => {
                   setOverrideMonth(null);
                   setOverrideForm(null);
+                  setIsNewOverride(false);
                 }}
               >
                 Cancel
@@ -1032,6 +1068,7 @@ export function ExtraPaycheckRulesEditor({
                   goals={goals}
                   netPayPerCheck={netPayByPersonId.get(personId) ?? 0}
                   projectionMonthKeys={projectionMonthKeys}
+                  monthDates={monthDates}
                   onSaved={() => {}}
                 />
               </div>
