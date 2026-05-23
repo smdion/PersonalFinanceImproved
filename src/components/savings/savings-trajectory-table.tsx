@@ -340,6 +340,13 @@ export function SavingsTrajectoryTable({
                     {visibleProjections.map((gp) => {
                       const balance = gp.balances[rowIdx] ?? 0;
                       const isNegative = balance < 0;
+                      const allocation = gp.monthlyAllocations[rowIdx] ?? 0;
+                      const allocEl =
+                        allocation > 0 ? (
+                          <div className="text-micro text-faint/50 tabular-nums mt-0.5">
+                            +{formatCurrency(allocation)}
+                          </div>
+                        ) : null;
 
                       // Fixed-target mode
                       if (gp.targetMode === "fixed" && gp.target > 0) {
@@ -356,12 +363,15 @@ export function SavingsTrajectoryTable({
                             : "";
                         return (
                           <td key={gp.goalId} className={cls + bg}>
-                            {isFirstFunded && !isNegative && (
-                              <span className="mr-1 text-green-500 text-caption">
-                                ✓
-                              </span>
-                            )}
-                            {formatCurrency(balance)}
+                            <div>
+                              {isFirstFunded && !isNegative && (
+                                <span className="mr-1 text-green-500 text-caption">
+                                  ✓
+                                </span>
+                              )}
+                              {formatCurrency(balance)}
+                            </div>
+                            {allocEl}
                           </td>
                         );
                       }
@@ -378,7 +388,8 @@ export function SavingsTrajectoryTable({
                               key={gp.goalId}
                               className="text-right px-3 py-1.5 text-xs tabular-nums text-red-500"
                             >
-                              {formatCurrency(balance)}
+                              <div>{formatCurrency(balance)}</div>
+                              {allocEl}
                             </td>
                           );
                         }
@@ -397,7 +408,8 @@ export function SavingsTrajectoryTable({
                               key={gp.goalId}
                               className="text-right px-3 py-1.5 text-xs tabular-nums text-amber-500"
                             >
-                              {formatCurrency(balance)}
+                              <div>{formatCurrency(balance)}</div>
+                              {allocEl}
                             </td>
                           );
                         }
@@ -409,7 +421,8 @@ export function SavingsTrajectoryTable({
                             : " text-primary");
                         return (
                           <td key={gp.goalId} className={cls}>
-                            {formatCurrency(balance)}
+                            <div>{formatCurrency(balance)}</div>
+                            {allocEl}
                           </td>
                         );
                       }
@@ -422,7 +435,8 @@ export function SavingsTrajectoryTable({
                             isNegative ? "text-red-500" : "text-primary"
                           }`}
                         >
-                          {formatCurrency(balance)}
+                          <div>{formatCurrency(balance)}</div>
+                          {allocEl}
                         </td>
                       );
                     })}
