@@ -476,7 +476,10 @@ export function SavingsTrajectoryTable({
                               className="text-right px-3 py-1"
                             >
                               {gp.goalId === ev.goalId && (
-                                <div className="flex items-center justify-end gap-1.5">
+                                <div className="flex items-center justify-end gap-1 mr-3">
+                                  <span className="text-faint/30 text-micro select-none">
+                                    └
+                                  </span>
                                   <span className="text-micro text-faint truncate max-w-[80px] text-left">
                                     {ev.description}
                                   </span>
