@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.6
 
+## [0.6.4] - 2026-05-23
+
+### Added
+
+- **Savings: Projected "After" balance column.** The Transactions tab now shows a right-aligned "After" column for each upcoming transaction — the projected end-of-month balance for that fund, matching the Plan table. Balances that go negative are highlighted in red, making it easy to spot when a sinking fund runs short.
+
+---
+
 ## [0.6.3] - 2026-05-20
 
 ### Added
