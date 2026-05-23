@@ -519,7 +519,11 @@ export default function SavingsPage() {
       <CardBoundary title="Overview">
         <section className="space-y-4">
           <h2 className="text-base font-semibold text-primary">Overview</h2>
-          <SummaryCards savings={savings} efund={efund} />
+          <SummaryCards
+            savings={savings}
+            efund={efund}
+            goalProjections={goalProjections}
+          />
 
           {goalProjections.length > 0 && (
             <UpcomingGoals
@@ -699,6 +703,7 @@ export default function SavingsPage() {
                     goalProjections={goalProjections}
                     canEdit={canEdit}
                     projectionEndDate={monthDates[monthDates.length - 1]}
+                    hiddenGoalIds={hiddenGoalIds}
                   />
                 )}
 

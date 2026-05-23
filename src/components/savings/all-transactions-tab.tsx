@@ -57,11 +57,13 @@ export function AllTransactionsTab({
   goalProjections,
   canEdit,
   projectionEndDate,
+  hiddenGoalIds,
 }: {
   plannedTransactions: PlannedTransaction[];
   goalProjections: GoalProjection[];
   canEdit?: boolean;
   projectionEndDate?: Date;
+  hiddenGoalIds?: Set<number>;
 }) {
   const utils = trpc.useUtils();
   const [adding, setAdding] = useState(false);
@@ -156,6 +158,7 @@ export function AllTransactionsTab({
   const seenPairs = new Set<string>();
   const upcoming = plannedTransactions
     .filter((tx) => {
+      if (hiddenGoalIds?.has(tx.goalId)) return false;
       if (tx.source === "rule" && !showRuleTx) return false;
       const date = new Date(tx.transactionDate + "T00:00:00");
       if (!tx.isRecurring && date < today) return false;
@@ -212,6 +215,7 @@ export function AllTransactionsTab({
       ? []
       : plannedTransactions
           .filter((tx) => {
+            if (hiddenGoalIds?.has(tx.goalId)) return false;
             if (tx.source === "rule" && !showRuleTx) return false;
             if (tx.isRecurring) return false;
             const date = new Date(tx.transactionDate + "T00:00:00");
