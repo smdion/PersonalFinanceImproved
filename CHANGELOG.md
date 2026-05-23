@@ -13,6 +13,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - **Savings: Projected "After" balance column.** The Transactions tab now shows a right-aligned "After" column for each upcoming transaction — the projected end-of-month balance for that fund, matching the Plan table. Balances that go negative are highlighted in red, making it easy to spot when a sinking fund runs short.
+- **Savings: Plan table shows monthly contribution amounts.** A "Show allocations" toggle in the trajectory table toolbar reveals how much is contributed to each fund per month. On months without planned transactions the contribution appears inline next to the closing balance; on months that have transactions it appears in a dedicated sub-row so the two figures stay visually distinct.
+- **Savings: Extra paycheck override month picker shows only valid months.** When adding a month override under Paychecks & Growth, the month selector now lists only months that actually have a third paycheck. Previously any month could be chosen, but picking a non-extra-paycheck month was silently ignored.
+
+### Improved
+
+- **Savings: Plan table transaction sub-rows are visually indented.** Planned transaction rows now have a `└` prefix and a left-side indent, making it clear they belong to the month above rather than reading as standalone rows.
+- **Savings: Plan table flags months where a fund goes negative.** Any row where a visible fund's projected closing balance is negative receives a subtle red background, making potential shortfalls easy to spot without scanning every cell.
+- **Savings: Plan table transaction names show in full on hover.** Truncated transaction descriptions in the plan table now reveal the full name in a tooltip.
 
 ---
 
