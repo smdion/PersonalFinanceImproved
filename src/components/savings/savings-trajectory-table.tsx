@@ -340,13 +340,24 @@ export function SavingsTrajectoryTable({
                     {visibleProjections.map((gp) => {
                       const balance = gp.balances[rowIdx] ?? 0;
                       const isNegative = balance < 0;
-                      const allocation = gp.monthlyAllocations[rowIdx] ?? 0;
-                      const allocEl =
-                        allocation > 0 ? (
-                          <div className="text-micro text-faint/50 tabular-nums mt-0.5">
-                            +{formatCurrency(allocation)}
-                          </div>
-                        ) : null;
+                      const prevBalance =
+                        rowIdx === 0
+                          ? gp.current
+                          : (gp.balances[rowIdx - 1] ?? 0);
+                      const netChange = balance - prevBalance;
+                      const deltaEl = (
+                        <div
+                          className={`text-micro tabular-nums mt-0.5 ${
+                            netChange >= 0
+                              ? "text-green-500/60"
+                              : "text-red-400/70"
+                          }`}
+                        >
+                          {netChange >= 0 ? "▲" : "▼"}{" "}
+                          {netChange >= 0 ? "+" : "−"}
+                          {formatCurrency(Math.abs(netChange))}
+                        </div>
+                      );
 
                       // Fixed-target mode
                       if (gp.targetMode === "fixed" && gp.target > 0) {
@@ -371,7 +382,7 @@ export function SavingsTrajectoryTable({
                               )}
                               {formatCurrency(balance)}
                             </div>
-                            {allocEl}
+                            {deltaEl}
                           </td>
                         );
                       }
@@ -389,7 +400,7 @@ export function SavingsTrajectoryTable({
                               className="text-right px-3 py-1.5 text-xs tabular-nums text-red-500"
                             >
                               <div>{formatCurrency(balance)}</div>
-                              {allocEl}
+                              {deltaEl}
                             </td>
                           );
                         }
@@ -409,7 +420,7 @@ export function SavingsTrajectoryTable({
                               className="text-right px-3 py-1.5 text-xs tabular-nums text-amber-500"
                             >
                               <div>{formatCurrency(balance)}</div>
-                              {allocEl}
+                              {deltaEl}
                             </td>
                           );
                         }
@@ -422,7 +433,7 @@ export function SavingsTrajectoryTable({
                         return (
                           <td key={gp.goalId} className={cls}>
                             <div>{formatCurrency(balance)}</div>
-                            {allocEl}
+                            {deltaEl}
                           </td>
                         );
                       }
@@ -436,7 +447,7 @@ export function SavingsTrajectoryTable({
                           }`}
                         >
                           <div>{formatCurrency(balance)}</div>
-                          {allocEl}
+                          {deltaEl}
                         </td>
                       );
                     })}
