@@ -20,9 +20,28 @@ describe("safeDivide", () => {
 });
 
 describe("roundToCents", () => {
-  it("rounds to 2 decimal places", () => {
+  it("rounds .5-cent boundaries up (half-away-from-zero)", () => {
+    expect(roundToCents(1.005)).toBe(1.01);
+    expect(roundToCents(1.045)).toBe(1.05);
     expect(roundToCents(2879.105)).toBe(2879.11);
+  });
+
+  it("rounds non-.5 boundaries correctly (unchanged by fix)", () => {
+    expect(roundToCents(1.004)).toBe(1.0);
+    expect(roundToCents(1.006)).toBe(1.01);
     expect(roundToCents(2879.104)).toBe(2879.1);
+  });
+
+  it("rounds negatives half-away-from-zero", () => {
+    expect(roundToCents(-1.005)).toBe(-1.01);
+    expect(roundToCents(-1.004)).toBe(-1.0);
+    expect(roundToCents(-2879.105)).toBe(-2879.11);
+  });
+
+  it("handles zero and integer values", () => {
+    expect(roundToCents(0)).toBe(0);
+    expect(roundToCents(100)).toBe(100);
+    expect(roundToCents(-100)).toBe(-100);
   });
 });
 

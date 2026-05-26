@@ -16,12 +16,20 @@ export function safeDivide(
 }
 
 /**
- * Round to cents (2 decimal places) using standard half-up rounding.
- * Note: This is Math.round (half-up), not banker's rounding (half-to-even).
- * Validated by engine snapshot tests across 62 fixtures — any drift is caught.
+ * Round to cents (2 decimal places), half-away-from-zero.
+ * Uses Math.abs + Math.sign to correctly handle negatives (credits, refunds,
+ * negative cash flow). The EPSILON nudge avoids float multiplication bias at
+ * .5-cent boundaries (e.g. 1.005 * 100 = 100.49999... in IEEE-754).
  */
 export function roundToCents(value: number): number {
-  return Math.round(value * 100) / 100;
+  // EPSILON * 100 scales the nudge to the cents space (~2.22e-14), large enough
+  // to bridge the IEEE-754 float multiplication gap at .5-cent boundaries
+  // (e.g. 1.005 * 100 = 100.49999...e-14, gap = 1.42e-14 < 2.22e-14).
+  return (
+    (Math.sign(value) *
+      Math.round(Math.abs(value) * 100 + Number.EPSILON * 100)) /
+    100
+  );
 }
 
 /**
