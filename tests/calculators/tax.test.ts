@@ -1,11 +1,13 @@
 import { describe, it, expect } from "vitest";
+import fc from "fast-check";
 import { calculateTax } from "@/lib/calculators/tax";
+import { roundToCents } from "@/lib/utils/math";
 import {
   MFJ_NO_CHECKBOX_BRACKETS,
   MFJ_2C_BRACKETS,
   AS_OF_DATE,
 } from "./fixtures";
-import type { TaxInput } from "@/lib/calculators/types";
+import type { TaxInput, TaxBracketInput } from "@/lib/calculators/types";
 
 describe("calculateTax", () => {
   describe("household combined income (MFJ, no checkbox)", () => {
@@ -112,5 +114,135 @@ describe("calculateTax", () => {
       expect(result.totalTax).toBe(0);
       expect(result.effectiveRate).toBe(0);
     });
+  });
+});
+
+// Simplified bracket set for boundary testing.
+// standardDeduction: 0 so taxableIncome === annualGross — makes boundary math exact.
+// FICA rates zeroed so these tests only exercise the federal bracket walk.
+const BOUNDARY_BRACKETS: TaxBracketInput = {
+  filingStatus: "Single",
+  w4Checkbox: false,
+  standardDeduction: 0,
+  brackets: [
+    { min: 0, max: 10000, rate: 0.1 },
+    { min: 10000, max: 40000, rate: 0.12 },
+    { min: 40000, max: 100000, rate: 0.22 },
+    { min: 100000, max: null, rate: 0.24 },
+  ],
+  socialSecurityWageBase: 200000,
+  socialSecurityRate: 0,
+  medicareRate: 0,
+  medicareAdditionalRate: 0,
+  medicareAdditionalThreshold: 200000,
+};
+
+function taxAt(annualGross: number) {
+  return calculateTax({
+    annualGross,
+    preTaxDeductionsAnnual: 0,
+    filingStatus: "Single",
+    taxBrackets: BOUNDARY_BRACKETS,
+    w4CheckboxOverride: null,
+    asOfDate: AS_OF_DATE,
+  });
+}
+
+describe("calculateTax — bracket boundary cases", () => {
+  it("zero income produces all-zero result with no NaN", () => {
+    const r = taxAt(0);
+    expect(r.federalTax).toBe(0);
+    expect(r.marginalRate).toBe(0);
+    expect(r.effectiveRate).toBe(0);
+    expect(isNaN(r.federalTax)).toBe(false);
+    expect(isNaN(r.effectiveRate)).toBe(false);
+  });
+
+  it("income below standard deduction produces zero tax when deduction exceeds income", () => {
+    const r = calculateTax({
+      annualGross: 5000,
+      preTaxDeductionsAnnual: 0,
+      filingStatus: "Single",
+      taxBrackets: { ...BOUNDARY_BRACKETS, standardDeduction: 15000 },
+      w4CheckboxOverride: null,
+      asOfDate: AS_OF_DATE,
+    });
+    expect(r.federalTax).toBe(0);
+    expect(r.taxableIncome).toBe(0);
+  });
+
+  it("income at exact bracket boundary is in the lower bracket", () => {
+    const r = taxAt(10000);
+    expect(r.marginalRate).toBe(0.1);
+    expect(r.federalTax).toBe(1000.0); // 10000 * 0.10
+  });
+
+  it("income one cent above bracket boundary crosses into higher bracket", () => {
+    const r = taxAt(10000.01);
+    expect(r.marginalRate).toBe(0.12);
+    expect(r.federalTax).toBe(roundToCents(1000 + 0.01 * 0.12));
+  });
+
+  it("income at top finite bracket boundary is in the lower rate", () => {
+    const r = taxAt(100000);
+    expect(r.marginalRate).toBe(0.22);
+  });
+
+  it("income one cent into the open-ended top bracket uses top rate", () => {
+    const r = taxAt(100000.01);
+    expect(r.marginalRate).toBe(0.24);
+  });
+
+  it("second bracket boundary: $40,000", () => {
+    const r = taxAt(40000);
+    expect(r.marginalRate).toBe(0.12);
+    expect(r.federalTax).toBe(roundToCents(1000 + 30000 * 0.12)); // 4600.00
+  });
+});
+
+describe("calculateTax — fast-check properties", () => {
+  // Run locally with numRuns: 10000 to flush edge cases before committing.
+  // CI default (100 runs) is sufficient for regression guarding.
+
+  it("tax is monotone: higher income never produces lower federal tax", () => {
+    // Whole-dollar domain: avoids rounding-dominated edge cases at sub-cent values.
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 0, max: 500_000 }), // $0–$500k
+        fc.integer({ min: 1, max: 1_000 }), // $1–$1000 increment
+        (income, delta) => {
+          const base = taxAt(income);
+          const higher = taxAt(income + delta);
+          return higher.federalTax >= base.federalTax;
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  it("effective rate never exceeds marginal rate", () => {
+    // Whole-dollar domain: at sub-dollar amounts, rounding can push effective > marginal
+    // (e.g. $0.15 income at 10% → $0.015 rounds up to $0.02, effective = 13.3%).
+    // That's a rounding artifact, not a bracket-walk bug. Whole-dollar inputs avoid it.
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 500_000 }), // $1–$500k
+        (income) => {
+          const r = taxAt(income);
+          return r.effectiveRate <= r.marginalRate + 0.0001; // float tolerance
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  it("federal tax is always non-negative", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 0, max: 500_000 }), (income) => {
+        const r = taxAt(income);
+        return r.federalTax >= 0;
+      }),
+      { numRuns: 100 },
+    );
   });
 });
