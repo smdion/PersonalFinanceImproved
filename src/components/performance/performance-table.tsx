@@ -74,14 +74,15 @@ export function PerformanceTable({
             </th>
             <th className="text-right px-4 py-3 text-muted font-medium">
               Employer Match
+              <HelpTip text="Employer contributions matched during the year. For ESPP accounts this is the 15% purchase discount — not a cash contribution, but tracked here for consistency." />
             </th>
             <th className="text-right px-4 py-3 text-muted font-medium">
               Distributions
-              <HelpTip text="Withdrawals or money taken out of accounts during the year" />
+              <HelpTip text="Withdrawals or money taken out of accounts during the year. For ESPP this includes dividends kept at UBS rather than wired out." />
             </th>
             <th className="text-right px-4 py-3 text-muted font-medium">
               Rollovers
-              <HelpTip text="Internal transfers between accounts. Positive = money rolled in, negative = money rolled out. Should net to zero at Portfolio level." />
+              <HelpTip text="Internal transfers between accounts. Positive = money rolled in, negative = money rolled out. For ESPP, negative rollovers are share sale proceeds wired to the brokerage. Should net to zero at Portfolio level." />
             </th>
             <th className="text-right px-4 py-3 text-muted font-medium">
               Fees
