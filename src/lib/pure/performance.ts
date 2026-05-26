@@ -251,8 +251,13 @@ export function resolvePortfolioValues(
 
 /**
  * Compute gain/loss from flow fields.
- * gainLoss = endingBalance - beginningBalance - contributions - employer
- *            + distributions - rollovers + fees
+ * gainLoss = endingBalance - beginningBalance - contributions
+ *            + distributions - outgoingRollovers + fees
+ *
+ * Incoming rollovers (positive) are NOT subtracted: the brokerage ending
+ * balance already excludes them (the rollover arrived at the destination
+ * account, not here). Only outgoing rollovers (negative, e.g. ESPP→brokerage)
+ * reduce the ending balance and must be accounted for.
  */
 export function computeGainLoss(input: {
   endingBalance: number;
@@ -268,7 +273,7 @@ export function computeGainLoss(input: {
     input.beginningBalance -
     input.totalContributions +
     input.distributions -
-    input.rollovers +
+    Math.min(0, input.rollovers) +
     input.fees
   );
 }

@@ -320,7 +320,7 @@ describe("filterActiveJobsAtDate", () => {
 // ---------------------------------------------------------------------------
 
 describe("computeGainLoss", () => {
-  it("computes gain as ending minus beginning minus contributions plus distributions minus rollovers plus fees", () => {
+  it("computes gain as ending minus beginning minus contributions plus distributions plus fees", () => {
     const result = computeGainLoss({
       endingBalance: 110_000,
       beginningBalance: 100_000,
@@ -345,17 +345,36 @@ describe("computeGainLoss", () => {
     ).toBe(0);
   });
 
-  it("accounts for rollovers reducing gain", () => {
-    // Rollover out reduces apparent gain (money left the account)
+  it("outgoing rollovers (negative) reduce apparent gain", () => {
+    // Negative rollover = money left this account (e.g. ESPP → brokerage).
+    // The brokerage ending balance reflects the outflow, so we subtract it.
     const result = computeGainLoss({
       endingBalance: 50_000,
       beginningBalance: 100_000,
       totalContributions: 0,
       distributions: 0,
-      rollovers: -60_000, // negative rollover = outflow
+      rollovers: -60_000,
       fees: 0,
     });
-    expect(result).toBe(10_000); // 50k - 100k - 0 + 0 - (-60k) + 0
+    expect(result).toBe(10_000); // 50k - 100k - (-60k) = +10k
+  });
+
+  it("incoming rollovers (positive) are NOT subtracted — brokerage ending balance excludes them", () => {
+    // Real scenario: Retirement Brokerage received a $4,110.58 rollover from a pension.
+    // Vanguard's ending balance does NOT include the incoming rollover as investment
+    // return — they report the balance before the rollover arrived. So we must not
+    // subtract the incoming rollover when computing G/L.
+    // beginning=1264.76, ending=7997.03, contributions=6187.62, rollover=+4110.58
+    // G/L = 7997.03 - 1264.76 - 6187.62 = 544.65 (Vanguard's stated return)
+    const result = computeGainLoss({
+      endingBalance: 7_997.03,
+      beginningBalance: 1_264.76,
+      totalContributions: 6_187.62,
+      distributions: 0,
+      rollovers: 4_110.58,
+      fees: 0,
+    });
+    expect(result).toBeCloseTo(544.65, 2);
   });
 
   it("accounts for fees increasing loss", () => {
