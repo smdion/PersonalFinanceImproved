@@ -74,11 +74,11 @@ export function PerformanceTable({
             </th>
             <th className="text-right px-4 py-3 text-muted font-medium">
               Employer Match
-              <HelpTip text="Employer contributions matched during the year. For ESPP accounts this is the 15% purchase discount — not a cash contribution, but tracked here for consistency." />
+              <HelpTip text="Employer contributions matched during the year. For ESPP accounts this is the purchase discount — not a cash contribution, but tracked here for consistency." />
             </th>
             <th className="text-right px-4 py-3 text-muted font-medium">
               Distributions
-              <HelpTip text="Withdrawals or money taken out of accounts during the year. For ESPP this includes dividends kept at UBS rather than wired out." />
+              <HelpTip text="Withdrawals or money taken out of accounts during the year. For ESPP this includes dividends kept at the brokerage rather than wired out." />
             </th>
             <th className="text-right px-4 py-3 text-muted font-medium">
               Rollovers
