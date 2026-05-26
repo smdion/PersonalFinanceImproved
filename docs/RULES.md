@@ -532,7 +532,7 @@ These are true cross-cutting reference data that no single page owns.
 
 ### Source documents
 
-Raw UBS inputs (withheld, market value, gross proceeds, commission, dividends) are preserved in `.scratch/data/ESPP_calculations.md`. Verify DB values against that file before editing ESPP rows.
+Raw UBS inputs (withheld, market value, gross proceeds, commission, dividends) are preserved in `.scratch/docs/ESPP_calculations.md`. Verify DB values against that file before editing ESPP rows.
 
 ---
 
