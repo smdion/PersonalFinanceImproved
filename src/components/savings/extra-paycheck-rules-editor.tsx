@@ -394,10 +394,16 @@ function PersonPanel({
     )
       return [];
     const anchor = new Date(job.anchorPayDate + "T00:00:00Z");
+    // monthDates are local-midnight first-of-month dates; getExtraPaycheckMonthKeys
+    // reads asOfDate with UTC getters, so pass a UTC-midnight date built from the
+    // local year/month or it can be read as the prior month east of UTC.
+    const asOf = new Date(
+      Date.UTC(monthDates[0]!.getFullYear(), monthDates[0]!.getMonth(), 1),
+    );
     const keys = getExtraPaycheckMonthKeys(
       anchor,
       job.payPeriod,
-      monthDates[0]!,
+      asOf,
       monthDates.length,
     );
     return keys.map((k) => k.slice(0, 7)); // "YYYY-MM-01" → "YYYY-MM"

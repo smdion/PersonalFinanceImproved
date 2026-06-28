@@ -345,9 +345,11 @@ describe("computeGainLoss", () => {
     ).toBe(0);
   });
 
-  it("outgoing rollovers (negative) reduce apparent gain", () => {
-    // Negative rollover = money left this account (e.g. ESPP → brokerage).
-    // The brokerage ending balance reflects the outflow, so we subtract it.
+  it("outgoing rollovers (negative) on the source account are added back, not counted as a loss", () => {
+    // Negative rollover = money that left THIS (source) account, e.g. an ESPP
+    // wiring sale proceeds out to a brokerage. The source's ending balance
+    // already dropped by the outflow, so subtracting the negative rollover adds
+    // it back — the transfer is excluded from G/L rather than read as a loss.
     const result = computeGainLoss({
       endingBalance: 50_000,
       beginningBalance: 100_000,
