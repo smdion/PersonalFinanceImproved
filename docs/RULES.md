@@ -510,29 +510,29 @@ These are true cross-cutting reference data that no single page owns.
 
 ## ESPP Accounting
 
-> **ESPP data comes from UBS documents. These rules define how raw UBS figures map to `account_performance` fields.** Any change to ESPP data entry must be consistent with these decisions.
+> **ESPP data comes from the ESPP provider's statements. These rules define how those raw figures map to `account_performance` fields.** Any change to ESPP data entry must be consistent with these decisions.
 
 ### Accounting decisions
 
 1. **Payroll-year attribution.** Purchase lots belong to the year payroll was withheld, not the settlement year. The Dec 31 lot (shares settle in January) is a **prior-year** contribution. The Mar 31 lot is the current year.
 
-2. **`total_contributions` = market value at purchase.** UBS applies the 15% lookback discount before publishing figures. `total_contributions` is `cost_basis ÷ 0.85` (the market value UBS paid), not the employee's out-of-pocket cost. This is consistent with how 401k/HSA employer match is handled — total always includes both sides.
+2. **`total_contributions` = market value at purchase.** The provider applies the 15% lookback discount before publishing figures. `total_contributions` is `cost_basis ÷ 0.85` (the market value paid), not the employee's out-of-pocket cost. This is consistent with how 401k/HSA employer match is handled — total always includes both sides.
 
 3. **`employer_contributions` = the 15% discount.** `employer_contributions = total_contributions − cost_basis`. This is the "employer match equivalent" — it is not a cash contribution by the employer, just the discount portion tracked separately for reporting.
 
-4. **`rollovers` on the ESPP (source) account = negative.** Wire transfers from UBS to the brokerage are outgoing rollovers. Record as negative values (e.g. −$6,187.62). Use the YTD total from the UBS April statement, not individual transaction amounts.
+4. **`rollovers` on the ESPP (source) account = negative.** Wire transfers from the ESPP provider to the destination brokerage are outgoing rollovers. Record as negative values. Use the YTD total from the provider's statement, not individual transaction amounts.
 
-5. **`rollovers` on the destination brokerage account = positive.** The same dollar amount appears as a positive incoming rollover on the Vanguard Retirement Brokerage row. `total_contributions` on the destination must be `$0` — the incoming money is a rollover, not a new contribution.
+5. **`rollovers` on the destination brokerage account = positive.** The same dollar amount appears as a positive incoming rollover on the destination brokerage row. `total_contributions` on the destination must be `$0` — the incoming money is a rollover, not a new contribution.
 
 6. **`computeGainLoss` subtracts rollovers in both directions.** `gainLoss = ending − beginning − contributions + distributions − rollovers + fees`. Outgoing rollovers (negative) add back to G/L; incoming rollovers (positive) subtract from G/L. Both are correct — the ending balance at both accounts already reflects the transfer.
 
-7. **Dividends kept at UBS = `distributions`.** Small cash dividends not wired out (e.g. TRI dividend) go in `distributions`, not contributions.
+7. **Dividends kept in the ESPP account = `distributions`.** Small cash dividends not wired out go in `distributions`, not contributions.
 
 8. **Brokerage commissions = `fees`.** Foreign withholding tax on dividends also goes in `fees`.
 
 ### Source documents
 
-Raw UBS inputs (withheld, market value, gross proceeds, commission, dividends) are preserved in `.scratch/docs/ESPP_calculations.md`. Verify DB values against that file before editing ESPP rows.
+Raw provider inputs (withheld, market value, gross proceeds, commission, dividends) are preserved in `.scratch/docs/ESPP_calculations.md`. Verify DB values against that file before editing ESPP rows.
 
 ---
 
