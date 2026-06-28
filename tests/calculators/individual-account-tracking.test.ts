@@ -60,21 +60,21 @@ describe("buildSpecToAccountMapping", () => {
     const specs = [
       {
         category: "401k" as AccountCategory,
-        name: "Sean 401k",
+        name: "Alice 401k",
         method: "percent_of_salary" as const,
         value: 0.14,
         salaryFraction: 1,
         baseAnnual: 16800,
         taxTreatment: "pre_tax",
-        ownerName: "Sean",
+        ownerName: "Alice",
       },
     ];
     const accounts: IndividualAccountInput[] = [
       makeIndividualAccount({
-        name: "Sean 401k",
+        name: "Alice 401k",
         category: "401k",
         taxType: "preTax",
-        ownerName: "Sean",
+        ownerName: "Alice",
       }),
       makeIndividualAccount({
         name: "Other 401k",
@@ -90,8 +90,8 @@ describe("buildSpecToAccountMapping", () => {
       indKey,
       parentCat,
     );
-    expect(specToAccount.get("Sean 401k::pre_tax")).toBe(
-      "Sean 401k::401k::preTax",
+    expect(specToAccount.get("Alice 401k::pre_tax")).toBe(
+      "Alice 401k::401k::preTax",
     );
   });
 
@@ -345,13 +345,13 @@ describe("distributeContributions", () => {
         name: "Trad 401k",
         category: "401k",
         taxType: "preTax",
-        ownerName: "Sean",
+        ownerName: "Alice",
       }),
       makeIndividualAccount({
         name: "Roth 401k",
         category: "401k",
         taxType: "taxFree",
-        ownerName: "Sean",
+        ownerName: "Alice",
       }),
     ];
     const indBal = new Map<string, number>();
@@ -367,7 +367,7 @@ describe("distributeContributions", () => {
         salaryFraction: 1,
         baseAnnual: 12000,
         taxTreatment: "pre_tax",
-        ownerName: "Sean",
+        ownerName: "Alice",
       }),
       makeContributionSpec({
         category: "401k",
@@ -377,7 +377,7 @@ describe("distributeContributions", () => {
         salaryFraction: 1,
         baseAnnual: 7200,
         taxTreatment: "tax_free",
-        ownerName: "Sean",
+        ownerName: "Alice",
       }),
     ];
 
@@ -450,14 +450,14 @@ describe("distributeContributions", () => {
       name: "Brok A",
       category: "brokerage",
       taxType: "afterTax",
-      ownerName: "Sean",
+      ownerName: "Alice",
       startingBalance: 0,
     });
     const brokB = makeIndividualAccount({
       name: "Brok B",
       category: "brokerage",
       taxType: "afterTax",
-      ownerName: "Sean",
+      ownerName: "Alice",
       startingBalance: 0,
     });
     const accounts = [brokA, brokB];
@@ -473,7 +473,7 @@ describe("distributeContributions", () => {
         salaryFraction: 1,
         baseAnnual: 12000,
         taxTreatment: "after_tax",
-        ownerName: "Sean",
+        ownerName: "Alice",
       }),
       makeContributionSpec({
         category: "brokerage",
@@ -483,7 +483,7 @@ describe("distributeContributions", () => {
         salaryFraction: 1,
         baseAnnual: 6000,
         taxTreatment: "after_tax",
-        ownerName: "Sean",
+        ownerName: "Alice",
       }),
     ];
 
@@ -704,7 +704,7 @@ describe("buildIndividualYearBalances", () => {
         name: "401k",
         category: "401k",
         taxType: "preTax",
-        ownerName: "Sean",
+        ownerName: "Alice",
       }),
     ];
     const k = indKey(accounts[0]!);
@@ -795,7 +795,7 @@ describe("buildIndividualYearBalances", () => {
         name: "IRA",
         category: "ira",
         taxType: "preTax",
-        ownerName: "Sean",
+        ownerName: "Alice",
       }),
     ];
     const k = indKey(accounts[0]!);

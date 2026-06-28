@@ -92,7 +92,7 @@ function aggregateMappings(
       seenPerformanceAccountIds: new Set<number>(),
     };
     // Use the mapping's own localName for the contributor label so each
-    // ledger-side mapping appears in the memo (e.g. "Sean IRA" + "Joanna IRA"
+    // ledger-side mapping appears in the memo (e.g. "Alice IRA" + "Bob IRA"
     // when both reference the same shared perf account).
     if (!entry.contributorLabels.includes(mapping.localName)) {
       entry.contributorLabels.push(mapping.localName);
