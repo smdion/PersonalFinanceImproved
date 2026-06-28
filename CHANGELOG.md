@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.6
 
-## [0.6.4] - 2026-05-23
+## [0.6.4] - 2026-06-28
 
 ### Added
 
@@ -21,6 +21,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Savings: Plan table transaction sub-rows are visually indented.** Planned transaction rows now have a `└` prefix and a left-side indent, making it clear they belong to the month above rather than reading as standalone rows.
 - **Savings: Plan table flags months where a fund goes negative.** Any row where a visible fund's projected closing balance is negative receives a subtle red background, making potential shortfalls easy to spot without scanning every cell.
 - **Savings: Plan table transaction names show in full on hover.** Truncated transaction descriptions in the plan table now reveal the full name in a tooltip.
+- **Retirement: Clearer "Future $" vs "Today's $" explanation.** The projection's dollar-mode toggle help now spells out that Future $ does not double-count inflation — it's counted once, through your raise and return rates — and that the gap between the two views is your _real_ raise: the growth that actually outpaces inflation.
+
+### Changed
+
+- **Dependency maintenance.** Picked up all pending dependency updates: the runtime stack (tRPC 11.18, the Postgres driver, React Hook Form, and Lucide icons), the Node base image, and assorted build/test tooling (TypeScript ESLint, Vitest, Prettier, lint-staged, and `@types/node` 26). No user-facing behavior changes.
 
 ---
 
