@@ -61,6 +61,10 @@ export function SavingsTrajectoryTable({
     "ledgr:savings:showEvents",
     true,
   );
+  const [showAllocations, setShowAllocations] = useLocalStorage<boolean>(
+    "ledgr:savings:showAllocations",
+    false,
+  );
   const [historyWindow, setHistoryWindow] = useLocalStorage<HistoryWindow>(
     "ledgr:savings:historyWindow",
     0,
@@ -191,6 +195,13 @@ export function SavingsTrajectoryTable({
             <option value="12">1 year history</option>
             <option value="all">All history</option>
           </select>
+          <button
+            onClick={() => setShowAllocations(!showAllocations)}
+            className="flex items-center gap-1 px-2 py-0.5 rounded border border-surface-strong text-faint hover:text-primary hover:border-primary transition-colors text-label"
+          >
+            <span>{showAllocations ? "▾" : "▸"}</span>
+            <span>{showAllocations ? "Hide" : "Show"} allocations</span>
+          </button>
           {hasAnyEvents && (
             <button
               onClick={() => setShowEvents(!showEvents)}
@@ -206,7 +217,7 @@ export function SavingsTrajectoryTable({
         <table className="table-fixed w-full text-sm border-separate border-spacing-0">
           <thead>
             <tr className="bg-surface-sunken border-b">
-              <th className="sticky top-0 left-0 z-20 w-28 bg-surface-sunken text-left px-3 py-2 font-medium text-muted text-xs whitespace-nowrap border-r">
+              <th className="sticky top-0 left-0 z-20 w-48 bg-surface-sunken text-left px-3 py-2 font-medium text-muted text-xs whitespace-nowrap border-r">
                 Month
               </th>
               {visibleProjections.map((gp) => {
@@ -333,127 +344,188 @@ export function SavingsTrajectoryTable({
               return (
                 <React.Fragment key={date.toISOString()}>
                   {/* Main month row */}
-                  <tr className="border-b hover:bg-surface-elevated/40 transition-colors">
-                    <td className="sticky left-0 z-10 bg-surface-primary px-3 py-1.5 text-xs text-muted whitespace-nowrap border-r">
-                      {monthLabel(date)}
-                    </td>
-                    {visibleProjections.map((gp) => {
-                      const balance = gp.balances[rowIdx] ?? 0;
-                      const isNegative = balance < 0;
+                  {(() => {
+                    const anyNegative = visibleProjections.some(
+                      (gp) => (gp.balances[rowIdx] ?? 0) < 0,
+                    );
+                    return (
+                      <tr
+                        className={`border-b hover:bg-surface-elevated/40 transition-colors${anyNegative ? " bg-red-500/5" : ""}`}
+                      >
+                        <td className="sticky left-0 z-10 bg-surface-primary px-3 py-1.5 text-xs text-muted whitespace-nowrap border-r">
+                          {monthLabel(date)}
+                        </td>
+                        {visibleProjections.map((gp) => {
+                          const balance = gp.balances[rowIdx] ?? 0;
+                          const isNegative = balance < 0;
+                          const allocation = gp.monthlyAllocations[rowIdx] ?? 0;
+                          const fundHasEvents =
+                            (gp.monthEvents[rowIdx] ?? []).length > 0;
+                          const showInlineAlloc =
+                            showAllocations && !fundHasEvents && allocation > 0;
+                          const inlineAlloc = showInlineAlloc ? (
+                            <span className="text-micro text-green-500/60 tabular-nums ml-1">
+                              +{formatCurrency(allocation)}
+                            </span>
+                          ) : null;
 
-                      // Fixed-target mode
-                      if (gp.targetMode === "fixed" && gp.target > 0) {
-                        const isFirstFunded =
-                          firstFundedIndex[gp.goalId] === rowIdx;
-                        const isFunded = balance >= gp.target;
-                        let cls = "text-right px-3 py-1.5 text-xs tabular-nums";
-                        if (isNegative) cls += " text-red-500";
-                        else if (isFunded) cls += " text-green-600";
-                        else cls += " text-primary";
-                        const bg =
-                          isFirstFunded && !isNegative
-                            ? " bg-green-50/60 dark:bg-green-950/20"
-                            : "";
+                          // Fixed-target mode
+                          if (gp.targetMode === "fixed" && gp.target > 0) {
+                            const isFirstFunded =
+                              firstFundedIndex[gp.goalId] === rowIdx;
+                            const isFunded = balance >= gp.target;
+                            let cls =
+                              "text-right px-3 py-1.5 text-xs tabular-nums";
+                            if (isNegative) cls += " text-red-500";
+                            else if (isFunded) cls += " text-green-600";
+                            else cls += " text-primary";
+                            const bg =
+                              isFirstFunded && !isNegative
+                                ? " bg-green-50/60 dark:bg-green-950/20"
+                                : "";
+                            return (
+                              <td key={gp.goalId} className={cls + bg}>
+                                {isFirstFunded && !isNegative && (
+                                  <span className="mr-1 text-green-500 text-caption">
+                                    ✓
+                                  </span>
+                                )}
+                                {formatCurrency(balance)}
+                                {inlineAlloc}
+                              </td>
+                            );
+                          }
+
+                          // Revolving mode (ongoing, no fixed target)
+                          if (gp.targetMode === "ongoing") {
+                            const hasWithdrawalThisMonth = (
+                              gp.monthEvents[rowIdx] ?? []
+                            ).some((ev) => ev.amount < 0);
+
+                            if (isNegative) {
+                              return (
+                                <td
+                                  key={gp.goalId}
+                                  className="text-right px-3 py-1.5 text-xs tabular-nums text-red-500"
+                                >
+                                  {formatCurrency(balance)}
+                                  {inlineAlloc}
+                                </td>
+                              );
+                            }
+
+                            const futureWithdrawalBal = nextWithdrawalBalance(
+                              gp,
+                              rowIdx,
+                            );
+                            const isAtRisk =
+                              futureWithdrawalBal !== null &&
+                              futureWithdrawalBal < 0;
+
+                            if (isAtRisk) {
+                              return (
+                                <td
+                                  key={gp.goalId}
+                                  className="text-right px-3 py-1.5 text-xs tabular-nums text-amber-500"
+                                >
+                                  {formatCurrency(balance)}
+                                  {inlineAlloc}
+                                </td>
+                              );
+                            }
+
+                            const cls =
+                              "text-right px-3 py-1.5 text-xs tabular-nums" +
+                              (hasWithdrawalThisMonth
+                                ? " text-green-600"
+                                : " text-primary");
+                            return (
+                              <td key={gp.goalId} className={cls}>
+                                {formatCurrency(balance)}
+                                {inlineAlloc}
+                              </td>
+                            );
+                          }
+
+                          // No target, no ongoing mode — neutral
+                          return (
+                            <td
+                              key={gp.goalId}
+                              className={`text-right px-3 py-1.5 text-xs tabular-nums ${
+                                isNegative ? "text-red-500" : "text-primary"
+                              }`}
+                            >
+                              {formatCurrency(balance)}
+                              {inlineAlloc}
+                            </td>
+                          );
+                        })}
+                        {hiddenProjections.length > 0 && (
+                          <td className="text-right px-3 py-1.5 text-xs tabular-nums text-faint/50 bg-surface-sunken/40">
+                            {formatCurrency(
+                              hiddenProjections.reduce(
+                                (s, gp) => s + (gp.balances[rowIdx] ?? 0),
+                                0,
+                              ),
+                            )}
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })()}
+
+                  {/* Allocation sub-row — only when at least one visible fund has events this month */}
+                  {showAllocations && rowEvents.length > 0 && (
+                    <tr className="border-b bg-surface-elevated/20">
+                      <td
+                        className="sticky left-0 z-10 bg-surface-elevated/20 py-1 border-r"
+                        style={{ borderLeft: "3px solid #22c55e66" }}
+                      >
+                        <span className="text-micro text-faint/50 pl-3">└</span>
+                        <span className="text-micro text-green-500/50 pl-1">
+                          contrib
+                        </span>
+                      </td>
+                      {visibleProjections.map((gp) => {
+                        const allocation = gp.monthlyAllocations[rowIdx] ?? 0;
+                        const fundHasEvents =
+                          (gp.monthEvents[rowIdx] ?? []).length > 0;
                         return (
-                          <td key={gp.goalId} className={cls + bg}>
-                            {isFirstFunded && !isNegative && (
-                              <span className="mr-1 text-green-500 text-caption">
-                                ✓
+                          <td key={gp.goalId} className="text-right px-3 py-1">
+                            {allocation > 0 && fundHasEvents && (
+                              <span className="text-micro text-green-500/70 tabular-nums font-medium">
+                                +{formatCurrency(allocation)}
                               </span>
                             )}
-                            {formatCurrency(balance)}
                           </td>
                         );
-                      }
-
-                      // Revolving mode (ongoing, no fixed target)
-                      if (gp.targetMode === "ongoing") {
-                        const hasWithdrawalThisMonth = (
-                          gp.monthEvents[rowIdx] ?? []
-                        ).some((ev) => ev.amount < 0);
-
-                        if (isNegative) {
-                          return (
-                            <td
-                              key={gp.goalId}
-                              className="text-right px-3 py-1.5 text-xs tabular-nums text-red-500"
-                            >
-                              {formatCurrency(balance)}
-                            </td>
-                          );
-                        }
-
-                        const futureWithdrawalBal = nextWithdrawalBalance(
-                          gp,
-                          rowIdx,
-                        );
-                        const isAtRisk =
-                          futureWithdrawalBal !== null &&
-                          futureWithdrawalBal < 0;
-
-                        if (isAtRisk) {
-                          return (
-                            <td
-                              key={gp.goalId}
-                              className="text-right px-3 py-1.5 text-xs tabular-nums text-amber-500"
-                            >
-                              {formatCurrency(balance)}
-                            </td>
-                          );
-                        }
-
-                        const cls =
-                          "text-right px-3 py-1.5 text-xs tabular-nums" +
-                          (hasWithdrawalThisMonth
-                            ? " text-green-600"
-                            : " text-primary");
-                        return (
-                          <td key={gp.goalId} className={cls}>
-                            {formatCurrency(balance)}
-                          </td>
-                        );
-                      }
-
-                      // No target, no ongoing mode — neutral
-                      return (
-                        <td
-                          key={gp.goalId}
-                          className={`text-right px-3 py-1.5 text-xs tabular-nums ${
-                            isNegative ? "text-red-500" : "text-primary"
-                          }`}
-                        >
-                          {formatCurrency(balance)}
-                        </td>
-                      );
-                    })}
-                    {hiddenProjections.length > 0 && (
-                      <td className="text-right px-3 py-1.5 text-xs tabular-nums text-faint/50 bg-surface-sunken/40">
-                        {formatCurrency(
-                          hiddenProjections.reduce(
-                            (s, gp) => s + (gp.balances[rowIdx] ?? 0),
-                            0,
-                          ),
-                        )}
-                      </td>
-                    )}
-                  </tr>
+                      })}
+                      {hiddenProjections.length > 0 && <td />}
+                    </tr>
+                  )}
 
                   {/* Event sub-rows */}
                   {showEvents &&
                     rowEvents.map((ev) => {
-                      const evColor =
-                        FUND_COLORS[ev.colorIdx % FUND_COLORS.length]!;
                       return (
                         <tr
                           key={`ev-${ev.goalId}-${ev.id}`}
                           className="border-b last:border-0 bg-surface-elevated/20"
                         >
                           <td
-                            className="sticky left-0 z-10 bg-surface-elevated/20 py-1 border-r"
-                            style={{ borderLeft: `3px solid ${evColor}` }}
+                            className="sticky left-0 z-10 bg-surface-elevated/20 py-1 border-r overflow-hidden"
+                            style={{
+                              borderLeft: "3px solid rgba(120,120,120,0.35)",
+                            }}
                           >
                             <span className="text-micro text-faint/50 pl-3">
                               └
+                            </span>
+                            <span
+                              className="text-micro text-faint/70 pl-1 truncate"
+                              title={ev.description}
+                            >
+                              {ev.description}
                             </span>
                           </td>
                           {visibleProjections.map((gp) => (
@@ -462,21 +534,16 @@ export function SavingsTrajectoryTable({
                               className="text-right px-3 py-1"
                             >
                               {gp.goalId === ev.goalId && (
-                                <div className="flex items-center justify-end gap-1.5">
-                                  <span className="text-micro text-faint truncate max-w-[80px] text-left">
-                                    {ev.description}
-                                  </span>
-                                  <span
-                                    className={`inline-flex items-center px-1.5 py-0.5 rounded text-caption font-semibold tabular-nums ${
-                                      ev.amount < 0
-                                        ? "bg-red-500/10 text-red-500"
-                                        : "bg-green-500/10 text-green-600"
-                                    }`}
-                                  >
-                                    {ev.amount < 0 ? "−" : "+"}
-                                    {formatCurrency(Math.abs(ev.amount))}
-                                  </span>
-                                </div>
+                                <span
+                                  className={`text-micro tabular-nums font-medium ${
+                                    ev.amount < 0
+                                      ? "text-red-500/70"
+                                      : "text-green-500/70"
+                                  }`}
+                                >
+                                  {ev.amount < 0 ? "−" : "+"}
+                                  {formatCurrency(Math.abs(ev.amount))}
+                                </span>
                               )}
                             </td>
                           ))}

@@ -320,7 +320,7 @@ describe("filterActiveJobsAtDate", () => {
 // ---------------------------------------------------------------------------
 
 describe("computeGainLoss", () => {
-  it("computes gain as ending minus beginning minus contributions plus distributions minus rollovers plus fees", () => {
+  it("computes gain as ending minus beginning minus contributions plus distributions plus fees", () => {
     const result = computeGainLoss({
       endingBalance: 110_000,
       beginningBalance: 100_000,
@@ -345,17 +345,42 @@ describe("computeGainLoss", () => {
     ).toBe(0);
   });
 
-  it("accounts for rollovers reducing gain", () => {
-    // Rollover out reduces apparent gain (money left the account)
+  it("outgoing rollovers (negative) on the source account are added back, not counted as a loss", () => {
+    // Negative rollover = money that left THIS (source) account, e.g. an ESPP
+    // wiring sale proceeds out to a brokerage. The source's ending balance
+    // already dropped by the outflow, so subtracting the negative rollover adds
+    // it back — the transfer is excluded from G/L rather than read as a loss.
     const result = computeGainLoss({
       endingBalance: 50_000,
       beginningBalance: 100_000,
       totalContributions: 0,
       distributions: 0,
-      rollovers: -60_000, // negative rollover = outflow
+      rollovers: -60_000,
       fees: 0,
     });
-    expect(result).toBe(10_000); // 50k - 100k - 0 + 0 - (-60k) + 0
+    expect(result).toBe(10_000); // 50k - 100k - (-60k) = +10k
+  });
+
+  it("incoming rollovers (positive) ARE subtracted — destination ending balance includes the wired-in principal", () => {
+    // Scenario: a destination account received a +6,187.62 rollover from a
+    // tracked ESPP source account (which records the mirror -6,187.62 outflow).
+    // The destination's ending balance INCLUDES the wired-in money, so that
+    // transferred principal must be subtracted to leave only true investment
+    // return.
+    //   beginning=1264.76, contributions=0, rollover=+6187.62, ending=7818.67
+    //   G/L = 7818.67 - 1264.76 - 0 - 6187.62 = 366.29
+    // NOTE: the rollover lives in `rollovers` ONLY — not also in contributions.
+    // Putting it in both would double-count the principal (the old phantom-loss
+    // bug). computeGainLoss subtracting it once here is the correct behavior.
+    const result = computeGainLoss({
+      endingBalance: 7_818.67,
+      beginningBalance: 1_264.76,
+      totalContributions: 0,
+      distributions: 0,
+      rollovers: 6_187.62,
+      fees: 0,
+    });
+    expect(result).toBeCloseTo(366.29, 2);
   });
 
   it("accounts for fees increasing loss", () => {

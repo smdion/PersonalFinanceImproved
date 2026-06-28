@@ -4,6 +4,7 @@ import React from "react";
 import { Card, Metric, ProgressBar } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
+import type { GoalProjection } from "./types";
 
 interface SavingsGoalSummary {
   name: string;
@@ -25,6 +26,7 @@ interface EfundData {
 export function SummaryCards({
   savings,
   efund,
+  goalProjections,
 }: {
   savings: {
     totalSaved: number;
@@ -32,8 +34,16 @@ export function SummaryCards({
     warnings: string[];
   };
   efund: EfundData | null;
+  goalProjections?: GoalProjection[];
 }) {
-  const pool = savings.goals.reduce((s, g) => s + g.monthlyAllocation, 0);
+  const poolGoals: { name: string; monthlyAllocation: number }[] =
+    goalProjections && goalProjections.length > 0
+      ? goalProjections.map((gp) => ({
+          name: gp.name,
+          monthlyAllocation: gp.monthlyAllocation,
+        }))
+      : savings.goals;
+  const pool = poolGoals.reduce((s, g) => s + g.monthlyAllocation, 0);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -69,7 +79,7 @@ export function SummaryCards({
           label="Total monthly contributions"
         />
         <div className="mt-2 space-y-1">
-          {savings.goals
+          {poolGoals
             .filter((g) => g.monthlyAllocation > 0)
             .map((g) => {
               const pct = pool > 0 ? (g.monthlyAllocation / pool) * 100 : 0;

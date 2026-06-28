@@ -107,7 +107,7 @@ const basePaycheck: PaycheckResult = {
 };
 
 const defaultProps = {
-  person: { name: "Sean", id: 1 },
+  person: { name: "Alice", id: 1 },
   job: baseJob,
   salary: 120000,
   futureSalaryChanges: [],
@@ -127,7 +127,7 @@ const defaultProps = {
 describe("PersonPaycheck", () => {
   it("renders person name", () => {
     render(<PersonPaycheck {...defaultProps} />);
-    expect(screen.getByText("Sean")).toBeInTheDocument();
+    expect(screen.getByText("Alice")).toBeInTheDocument();
   });
 
   it("renders employer and title", () => {

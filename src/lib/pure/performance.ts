@@ -251,8 +251,28 @@ export function resolvePortfolioValues(
 
 /**
  * Compute gain/loss from flow fields.
- * gainLoss = endingBalance - beginningBalance - contributions - employer
+ * gainLoss = endingBalance - beginningBalance - contributions
  *            + distributions - rollovers + fees
+ *
+ * ROLLOVERS ARE ALWAYS SUBTRACTED, in BOTH directions. A rollover moves
+ * principal between accounts — it is never investment return — so it must be
+ * removed from G/L on whichever side records it. Sign handles the direction:
+ *
+ * - Outgoing (negative, e.g. ESPP → brokerage on the ESPP side): subtracting a
+ *   negative adds it back, cancelling the outflow that shrank the ending balance.
+ * - Incoming (positive, e.g. a destination account receiving ESPP proceeds): the
+ *   destination's ending balance ALREADY INCLUDES the wired-in money, so
+ *   subtracting it strips out the transferred principal and leaves only true
+ *   return. Worked example: a destination account receives a +6,187.62 rollover
+ *   from a tracked ESPP source; begin 1,264.76 + rollover 6,187.62 + 366.29 gain
+ *   = ending 7,818.67. Without the subtraction the 6,187.62 of transferred
+ *   principal would be mis-reported as a gain.
+ *
+ * GOTCHA: a rollover from another tracked account belongs in `rollovers` ONLY —
+ * never also in `totalContributions`. Recording it in both double-counts the
+ * principal and produces a phantom loss. (An earlier "fix" stopped subtracting
+ * incoming rollovers to mask exactly that mis-entry; the real fix is to enter
+ * the transfer once, as a rollover. See tests/pure/performance.test.ts.)
  */
 export function computeGainLoss(input: {
   endingBalance: number;

@@ -9,7 +9,7 @@ describe("mappingWithTypedIds", () => {
   it("populates performanceAccountId from legacy localId", () => {
     const input: AccountMapping = {
       localId: "performance:42",
-      localName: "Sean 401k",
+      localName: "Alice 401k",
       remoteAccountId: "remote-1",
       syncDirection: "push",
     };

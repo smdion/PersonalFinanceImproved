@@ -8,6 +8,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.6
 
+## [0.6.4] - 2026-06-28
+
+### Added
+
+- **Savings: Projected "After" balance column.** The Transactions tab now shows a right-aligned "After" column for each upcoming transaction — the projected end-of-month balance for that fund, matching the Plan table. Balances that go negative are highlighted in red, making it easy to spot when a sinking fund runs short.
+- **Savings: Plan table shows monthly contribution amounts.** A "Show allocations" toggle in the trajectory table toolbar reveals how much is contributed to each fund per month. On months without planned transactions the contribution appears inline next to the closing balance; on months that have transactions it appears in a dedicated sub-row so the two figures stay visually distinct.
+- **Savings: Extra paycheck override month picker shows only valid months.** When adding a month override under Paychecks & Growth, the month selector now lists only months that actually have a third paycheck. Previously any month could be chosen, but picking a non-extra-paycheck month was silently ignored.
+
+### Improved
+
+- **Savings: Plan table transaction sub-rows are visually indented.** Planned transaction rows now have a `└` prefix and a left-side indent, making it clear they belong to the month above rather than reading as standalone rows.
+- **Savings: Plan table flags months where a fund goes negative.** Any row where a visible fund's projected closing balance is negative receives a subtle red background, making potential shortfalls easy to spot without scanning every cell.
+- **Savings: Plan table transaction names show in full on hover.** Truncated transaction descriptions in the plan table now reveal the full name in a tooltip.
+- **Retirement: Clearer "Future $" vs "Today's $" explanation.** The projection's dollar-mode toggle help now spells out that Future $ does not double-count inflation — it's counted once, through your raise and return rates — and that the gap between the two views is your _real_ raise: the growth that actually outpaces inflation.
+
+### Changed
+
+- **Dependency maintenance.** Picked up all pending dependency updates: the runtime stack (tRPC 11.18, the Postgres driver, React Hook Form, and Lucide icons), the Node base image, and assorted build/test tooling (TypeScript ESLint, Vitest, Prettier, lint-staged, and `@types/node` 26). No user-facing behavior changes.
+
+---
+
 ## [0.6.3] - 2026-05-20
 
 ### Added
@@ -314,7 +335,7 @@ Feature release — Analytics page, performance formula fix, contribution entry 
 
 - **Gain/loss calculation was understating investment returns for accounts with employer contributions.** The formula was subtracting the employer match twice (once inside total contributions, once as a separate deduction). Any gain/loss computed by the app's update form was off by the employer match amount. Historical imported data was unaffected.
 - **Retirement contribution rate in the historical spreadsheet view was overstating the savings rate** by double-counting the employer match.
-- **Joint accounts were showing an individual owner's name** (e.g., "Sean IRA (Vanguard)" instead of "IRA (Vanguard)"). The display name now correctly derives the "Joint" prefix from account ownership type without requiring a data migration.
+- **Joint accounts were showing an individual owner's name** (e.g., "Alice IRA (Brokerage)" instead of "IRA (Brokerage)"). The display name now correctly derives the "Joint" prefix from account ownership type without requiring a data migration.
 - **Saving a portfolio snapshot no longer advances the performance "last updated" date.** The two timestamps are now independent.
 - **YNAB-synced data no longer falls back to manual values after 24 hours.** Synced data now persists until you manually trigger a resync.
 - **SQLite migration hash-mismatch detection no longer triggers false squash recovery.** The check was iterating all journal entries including unapplied ones. Now only previously-applied entries are checked.

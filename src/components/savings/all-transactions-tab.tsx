@@ -57,11 +57,13 @@ export function AllTransactionsTab({
   goalProjections,
   canEdit,
   projectionEndDate,
+  hiddenGoalIds,
 }: {
   plannedTransactions: PlannedTransaction[];
   goalProjections: GoalProjection[];
   canEdit?: boolean;
   projectionEndDate?: Date;
+  hiddenGoalIds?: Set<number>;
 }) {
   const utils = trpc.useUtils();
   const [adding, setAdding] = useState(false);
@@ -156,6 +158,7 @@ export function AllTransactionsTab({
   const seenPairs = new Set<string>();
   const upcoming = plannedTransactions
     .filter((tx) => {
+      if (hiddenGoalIds?.has(tx.goalId)) return false;
       if (tx.source === "rule" && !showRuleTx) return false;
       const date = new Date(tx.transactionDate + "T00:00:00");
       if (!tx.isRecurring && date < today) return false;
@@ -168,6 +171,31 @@ export function AllTransactionsTab({
       return true;
     })
     .sort((a, b) => a.transactionDate.localeCompare(b.transactionDate));
+
+  // "After" balance: use the pre-computed GoalProjection.balances[] which already
+  // includes contributions, recurring expansion, and overrides — matching the Plan table.
+  // Map from goalId for O(1) lookup.
+  const gpByGoalId = new Map(goalProjections.map((gp) => [gp.goalId, gp]));
+  // Projection months start on the 1st of the current month, or next month once
+  // the 1st has passed — mirror the same logic used on the savings page.
+  const projectionStart = new Date(
+    today.getFullYear(),
+    today.getMonth() + (today.getDate() > 1 ? 1 : 0),
+    1,
+  );
+  const getBalanceAfter = (
+    goalId: number,
+    dateStr: string,
+  ): number | undefined => {
+    const gp = gpByGoalId.get(goalId);
+    if (!gp) return undefined;
+    const d = new Date(dateStr + "T00:00:00");
+    const mi =
+      (d.getFullYear() - projectionStart.getFullYear()) * 12 +
+      (d.getMonth() - projectionStart.getMonth());
+    if (mi < 0 || mi >= gp.balances.length) return undefined;
+    return gp.balances[mi];
+  };
 
   // Past non-recurring transactions for the history window.
   const historyWindowStart =
@@ -187,6 +215,7 @@ export function AllTransactionsTab({
       ? []
       : plannedTransactions
           .filter((tx) => {
+            if (hiddenGoalIds?.has(tx.goalId)) return false;
             if (tx.source === "rule" && !showRuleTx) return false;
             if (tx.isRecurring) return false;
             const date = new Date(tx.transactionDate + "T00:00:00");
@@ -767,6 +796,12 @@ export function AllTransactionsTab({
                 <th className="text-right px-3 py-2 font-medium text-muted whitespace-nowrap">
                   Amount
                 </th>
+                <th
+                  className="text-right px-3 py-2 font-medium text-muted whitespace-nowrap"
+                  title="Projected end-of-month balance for this fund — includes contributions, recurring expenses, and overrides (matches the Plan table)"
+                >
+                  After
+                </th>
                 <th className="text-center px-3 py-2 font-medium text-muted whitespace-nowrap">
                   Recurring
                 </th>
@@ -865,6 +900,9 @@ export function AllTransactionsTab({
                         ? formatCurrency(Math.abs(tx.amount))
                         : `${tx.amount < 0 ? "−" : "+"}${formatCurrency(Math.abs(tx.amount))}`}
                     </td>
+                    <td className="px-3 py-2 text-right text-faint/40 tabular-nums">
+                      <span className="text-caption">—</span>
+                    </td>
                     <td className="px-3 py-2 text-center text-faint/40">
                       <span className="text-caption">—</span>
                     </td>
@@ -877,7 +915,7 @@ export function AllTransactionsTab({
               {past.length > 0 && upcoming.length > 0 && (
                 <tr aria-hidden="true">
                   <td
-                    colSpan={canEdit !== false ? 6 : 5}
+                    colSpan={canEdit !== false ? 7 : 6}
                     className="px-3 py-1 text-caption text-faint/50 text-center bg-surface-sunken border-b border-t tracking-widest"
                   >
                     ─── Upcoming ───
@@ -1103,6 +1141,39 @@ export function AllTransactionsTab({
                         `${tx.amount < 0 ? "−" : "+"}${formatCurrency(Math.abs(tx.amount))}`
                       )}
                     </td>
+
+                    {/* Balance after — end-of-month projected balance for this fund */}
+                    {(() => {
+                      // Transfer rows are collapsed to a single leg (deduped by
+                      // transferPairId), so a per-fund balance here would reflect
+                      // only whichever leg survived. Suppress it to avoid showing
+                      // an ambiguous balance for a two-fund movement.
+                      if (isTransfer)
+                        return (
+                          <td className="px-3 py-2 text-right text-faint/40 tabular-nums text-xs">
+                            —
+                          </td>
+                        );
+                      const bal = getBalanceAfter(
+                        tx.goalId,
+                        tx.transactionDate,
+                      );
+                      if (bal === undefined)
+                        return (
+                          <td className="px-3 py-2 text-right text-faint/40 tabular-nums text-xs">
+                            —
+                          </td>
+                        );
+                      return (
+                        <td
+                          className={`px-3 py-2 text-right tabular-nums text-xs font-medium whitespace-nowrap ${
+                            bal < 0 ? "text-red-500" : "text-muted"
+                          }`}
+                        >
+                          {formatCurrency(bal)}
+                        </td>
+                      );
+                    })()}
 
                     {/* Recurring */}
                     <td className="px-3 py-2 text-center text-faint">

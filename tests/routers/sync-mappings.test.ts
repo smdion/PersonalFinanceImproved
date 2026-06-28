@@ -449,7 +449,7 @@ describe("sync mappings — pushPortfolioToApi", () => {
   });
 
   it("dedupes by performanceAccountId so two mappings sharing one perf account are counted once", async () => {
-    // Models the user's IRA case: two ledger-side mappings (Sean IRA, Joanna IRA)
+    // Models the user's IRA case: two ledger-side mappings (Alice IRA, Bob IRA)
     // both reference the same performance account (one IRA perf row that
     // aggregates both holders). The group total should equal one perf balance,
     // not double it.
@@ -470,14 +470,14 @@ describe("sync mappings — pushPortfolioToApi", () => {
       accountMappings: [
         {
           localId: `performance:${sharedPerfId}`,
-          localName: "Sean IRA",
+          localName: "Alice IRA",
           remoteAccountId: "ynab-ira",
           syncDirection: "push",
           performanceAccountId: sharedPerfId,
         },
         {
           localId: `performance:${sharedPerfId}`,
-          localName: "Joanna IRA",
+          localName: "Bob IRA",
           remoteAccountId: "ynab-ira",
           syncDirection: "push",
           performanceAccountId: sharedPerfId,
