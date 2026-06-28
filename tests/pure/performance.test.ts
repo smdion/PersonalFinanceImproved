@@ -362,11 +362,11 @@ describe("computeGainLoss", () => {
   });
 
   it("incoming rollovers (positive) ARE subtracted — destination ending balance includes the wired-in principal", () => {
-    // Real scenario (verified against prod data, 2026): Retirement Brokerage
-    // received a +6,187.62 rollover from a tracked account (Joanna ESPP, which
-    // records the mirror -6,187.62 outflow). The brokerage's ending balance
-    // INCLUDES the wired-in money, so that transferred principal must be
-    // subtracted to leave only true investment return.
+    // Scenario: a destination account received a +6,187.62 rollover from a
+    // tracked ESPP source account (which records the mirror -6,187.62 outflow).
+    // The destination's ending balance INCLUDES the wired-in money, so that
+    // transferred principal must be subtracted to leave only true investment
+    // return.
     //   beginning=1264.76, contributions=0, rollover=+6187.62, ending=7818.67
     //   G/L = 7818.67 - 1264.76 - 0 - 6187.62 = 366.29
     // NOTE: the rollover lives in `rollovers` ONLY — not also in contributions.
