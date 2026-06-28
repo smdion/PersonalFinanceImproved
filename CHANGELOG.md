@@ -335,7 +335,7 @@ Feature release — Analytics page, performance formula fix, contribution entry 
 
 - **Gain/loss calculation was understating investment returns for accounts with employer contributions.** The formula was subtracting the employer match twice (once inside total contributions, once as a separate deduction). Any gain/loss computed by the app's update form was off by the employer match amount. Historical imported data was unaffected.
 - **Retirement contribution rate in the historical spreadsheet view was overstating the savings rate** by double-counting the employer match.
-- **Joint accounts were showing an individual owner's name** (e.g., "Sean IRA (Vanguard)" instead of "IRA (Vanguard)"). The display name now correctly derives the "Joint" prefix from account ownership type without requiring a data migration.
+- **Joint accounts were showing an individual owner's name** (e.g., "Alice IRA (Brokerage)" instead of "IRA (Brokerage)"). The display name now correctly derives the "Joint" prefix from account ownership type without requiring a data migration.
 - **Saving a portfolio snapshot no longer advances the performance "last updated" date.** The two timestamps are now independent.
 - **YNAB-synced data no longer falls back to manual values after 24 hours.** Synced data now persists until you manually trigger a resync.
 - **SQLite migration hash-mismatch detection no longer triggers false squash recovery.** The check was iterating all journal entries including unapplied ones. Now only previously-applied entries are checked.
