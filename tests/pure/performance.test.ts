@@ -359,22 +359,26 @@ describe("computeGainLoss", () => {
     expect(result).toBe(10_000); // 50k - 100k - (-60k) = +10k
   });
 
-  it("incoming rollovers (positive) are NOT subtracted — brokerage ending balance excludes them", () => {
-    // Real scenario: Retirement Brokerage received a $4,110.58 rollover from a pension.
-    // Vanguard's ending balance does NOT include the incoming rollover as investment
-    // return — they report the balance before the rollover arrived. So we must not
-    // subtract the incoming rollover when computing G/L.
-    // beginning=1264.76, ending=7997.03, contributions=6187.62, rollover=+4110.58
-    // G/L = 7997.03 - 1264.76 - 6187.62 = 544.65 (Vanguard's stated return)
+  it("incoming rollovers (positive) ARE subtracted — destination ending balance includes the wired-in principal", () => {
+    // Real scenario (verified against prod data, 2026): Retirement Brokerage
+    // received a +6,187.62 rollover from a tracked account (Joanna ESPP, which
+    // records the mirror -6,187.62 outflow). The brokerage's ending balance
+    // INCLUDES the wired-in money, so that transferred principal must be
+    // subtracted to leave only true investment return.
+    //   beginning=1264.76, contributions=0, rollover=+6187.62, ending=7818.67
+    //   G/L = 7818.67 - 1264.76 - 0 - 6187.62 = 366.29
+    // NOTE: the rollover lives in `rollovers` ONLY — not also in contributions.
+    // Putting it in both would double-count the principal (the old phantom-loss
+    // bug). computeGainLoss subtracting it once here is the correct behavior.
     const result = computeGainLoss({
-      endingBalance: 7_997.03,
+      endingBalance: 7_818.67,
       beginningBalance: 1_264.76,
-      totalContributions: 6_187.62,
+      totalContributions: 0,
       distributions: 0,
-      rollovers: 4_110.58,
+      rollovers: 6_187.62,
       fees: 0,
     });
-    expect(result).toBeCloseTo(544.65, 2);
+    expect(result).toBeCloseTo(366.29, 2);
   });
 
   it("accounts for fees increasing loss", () => {
