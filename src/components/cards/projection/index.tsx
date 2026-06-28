@@ -472,10 +472,11 @@ export function ProjectionCard(props: {
                                     </strong>
                                   </div>
                                   <div className="text-faint text-xs">
-                                    Actual dollar amounts as they&apos;ll appear
-                                    on statements, tax forms, and paychecks.
-                                    Numbers grow larger because they include
-                                    inflation.
+                                    The actual amounts as they&apos;ll appear on
+                                    statements, tax forms, and paychecks. They
+                                    grow because your raise and return rates
+                                    already include inflation — it&apos;s
+                                    counted once, not stacked on top.
                                   </div>
                                   <div className="text-xs text-faint mt-0.5">
                                     Use when:
@@ -536,6 +537,16 @@ export function ProjectionCard(props: {
                                   <strong className="text-faint">
                                     &quot;what will the statement say?&quot;
                                   </strong>
+                                  <div className="mt-1">
+                                    The gap between the two is your{" "}
+                                    <strong className="text-faint">
+                                      real raise
+                                    </strong>
+                                    : the part of your growth that actually
+                                    outpaces inflation. If they line up, your
+                                    raises are only keeping you even with
+                                    prices.
+                                  </div>
                                 </div>,
                               ]}
                             />
