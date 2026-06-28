@@ -50,6 +50,12 @@ export const KNOWN_SCHEMA_VERSIONS = [
   "v0.2_final",
   "v0.3_final",
   "v0.5_final",
+  // v0.6.x series — squashed v6 baseline + incremental migrations
+  "0000_v6_initial_schema",
+  "0001_melodic_thaddeus_ross", // PG: account_holdings/pending_rollovers + extra_paycheck_routing reshape
+  "0002_blue_moon_knight", // PG: utilities tracker tables
+  "0001_moaning_abomination", // SQLite counterpart of 0001
+  "0002_nervous_major_mapleleaf", // SQLite counterpart of 0002
 ] as const;
 
 export type KnownSchemaVersion = (typeof KNOWN_SCHEMA_VERSIONS)[number];
@@ -145,10 +151,21 @@ function versionIndex(tag: string): number {
 // ---------------------------------------------------------------------------
 
 /** Returns the broad era for a schema version tag. */
-function schemaEra(tag: string): "v0.1" | "v0.2" | "v0.3" | "v0.5" {
+function schemaEra(tag: string): "v0.1" | "v0.2" | "v0.3" | "v0.5" | "v0.6" {
   if (tag === "v0.5_final") return "v0.5";
   if (tag === "v0.3_final") return "v0.3";
   if (tag === "v0.2_final") return "v0.2";
+
+  // v0.6.x tags (squashed v6 baseline + incremental). Routed to a minimal
+  // transform that only backfills tables added within the v0.6 line.
+  const v06Tags = new Set([
+    "0000_v6_initial_schema",
+    "0001_melodic_thaddeus_ross", // PG
+    "0002_blue_moon_knight", // PG
+    "0001_moaning_abomination", // SQLite
+    "0002_nervous_major_mapleleaf", // SQLite
+  ]);
+  if (v06Tags.has(tag)) return "v0.6";
 
   // v0.2.x PG tags
   const v02PgTags = new Set([
@@ -336,6 +353,14 @@ function transformV02xV03xToV040(tables: TableData): TableData {
     null,
   );
 
+  // v0.6.x: utilities tracker tables — absent from all older backups
+  if (!tables["utility_service"]) {
+    tables["utility_service"] = [];
+  }
+  if (!tables["utility_reading"]) {
+    tables["utility_reading"] = [];
+  }
+
   return tables;
 }
 
@@ -355,6 +380,51 @@ function transformV02xV03xToV040(tables: TableData): TableData {
 function transformV05xToV060(tables: TableData): TableData {
   if (!tables["pending_rollovers"]) {
     tables["pending_rollovers"] = [];
+  }
+  // v0.6.x: utilities tracker tables — absent from v0.5 backups
+  if (!tables["utility_service"]) {
+    tables["utility_service"] = [];
+  }
+  if (!tables["utility_reading"]) {
+    tables["utility_reading"] = [];
+  }
+  return tables;
+}
+
+// ---------------------------------------------------------------------------
+// The v0.6.x → current transformer
+// ---------------------------------------------------------------------------
+
+/**
+ * Transform a v0.6.x backup to match the current schema.
+ *
+ * Backfills everything added across the v0.6 line so older v0.6 backups (down
+ * to the v0.6.0 baseline) import cleanly:
+ *  - v0.6.2 (0001_melodic_thaddeus_ross): `account_holdings` + `pending_rollovers`
+ *    tables, `source` column on the two savings tables.
+ *  - this change: `utility_service` + `utility_reading` tables.
+ *
+ * All helpers are idempotent (only add what's missing), so a current-era v0.6
+ * backup that already has these passes through unchanged.
+ */
+function transformV06xToCurrent(tables: TableData): TableData {
+  // Tables added in v0.6.2
+  if (!tables["account_holdings"]) {
+    tables["account_holdings"] = [];
+  }
+  if (!tables["pending_rollovers"]) {
+    tables["pending_rollovers"] = [];
+  }
+  // Columns added in v0.6.2 (NOT NULL default 'manual')
+  addColumnDefault(tables, "savings_allocation_overrides", "source", "manual");
+  addColumnDefault(tables, "savings_planned_transactions", "source", "manual");
+
+  // Utilities tracker tables (this change)
+  if (!tables["utility_service"]) {
+    tables["utility_service"] = [];
+  }
+  if (!tables["utility_reading"]) {
+    tables["utility_reading"] = [];
   }
   return tables;
 }
@@ -409,7 +479,10 @@ export function transformBackupToCurrentSchema(
 
   const era = schemaEra(schemaVersion);
 
-  if (era === "v0.5") {
+  if (era === "v0.6") {
+    // v0.6.x → current: backfill v0.6-line tables/columns + utilities tables
+    transformV06xToCurrent(cloned);
+  } else if (era === "v0.5") {
     // v0.5.x → v0.6.0: no column renames, only pending_rollovers table added
     transformV05xToV060(cloned);
   } else {

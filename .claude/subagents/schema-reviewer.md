@@ -69,9 +69,11 @@ Every schema change must follow the project's established conventions.
 
 **Decimal precision:**
 
-- Dollar amounts: `decimal(12, 2)` — two decimal places, enough range for the app
-- Rates (percentages, return rates): `decimal(12, 6)` — six decimal places
-- Using `decimal(10, 2)` or other widths is a violation unless justified
+- Dollar amounts: `decimal(14, 2)` — two decimal places; this is the project's
+  established width (46 such columns; zero `decimal(12, 2)`)
+- Rates (percentages, return rates): `decimal(12, 6)` or `decimal(8, 6)` — six decimal places
+- Using `decimal(12, 2)`, `decimal(10, 2)`, or other widths for dollar amounts is a
+  violation unless justified
 
 **Enum-like columns:**
 

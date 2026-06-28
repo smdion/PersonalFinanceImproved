@@ -13,6 +13,7 @@ import { projectionRouter } from "./projection";
 import { performanceRouter } from "./performance";
 import { historicalRouter } from "./historical";
 import { assetsRouter } from "./assets";
+import { utilitiesRouter } from "./utilities";
 import { apiDocsRouter } from "./api-docs";
 import { versionRouter } from "./version";
 import { contributionProfileRouter } from "./contribution-profiles";
@@ -36,6 +37,7 @@ export const appRouter = createTRPCRouter({
   performance: performanceRouter,
   historical: historicalRouter,
   assets: assetsRouter,
+  utilities: utilitiesRouter,
   apiDocs: apiDocsRouter,
   version: versionRouter,
   contributionProfile: contributionProfileRouter,

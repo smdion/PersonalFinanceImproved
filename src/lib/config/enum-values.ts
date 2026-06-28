@@ -133,3 +133,15 @@ export const PORTFOLIO_TAX_TYPE_VALUES = [
 ] as const;
 export type PortfolioTaxType = (typeof PORTFOLIO_TAX_TYPE_VALUES)[number];
 export const portfolioTaxTypeSchema = z.enum(PORTFOLIO_TAX_TYPE_VALUES);
+
+// ── Utility Kind ──
+
+export const UTILITY_KIND_VALUES = ["gas", "water", "electric"] as const;
+export type UtilityKind = (typeof UTILITY_KIND_VALUES)[number];
+export const utilityKindSchema = z.enum(UTILITY_KIND_VALUES);
+
+// ── Utility Usage Unit ──
+
+export const UTILITY_UNIT_VALUES = ["ccf", "gallon", "kWh"] as const;
+export type UtilityUnit = (typeof UTILITY_UNIT_VALUES)[number];
+export const utilityUnitSchema = z.enum(UTILITY_UNIT_VALUES);

@@ -139,9 +139,9 @@ export function HelpContent() {
       <Section title="Navigation & Layout">
         <p>
           The app is organized into a <strong>sidebar</strong> on the left with
-          five groups: <em>Cash Flow</em>, <em>Wealth</em>, <em>Net Worth</em>,{" "}
-          <em>Analysis</em>, and <em>System</em>, plus the Dashboard at the top
-          and Help at the bottom.
+          six groups: <em>Cash Flow</em>, <em>Wealth</em>, <em>Net Worth</em>,{" "}
+          <em>Upkeep</em>, <em>Analysis</em>, and <em>System</em>, plus the
+          Dashboard at the top and Help at the bottom.
         </p>
         <ul className="list-disc list-inside space-y-1 ml-2">
           <li>
@@ -523,6 +523,11 @@ export function HelpContent() {
             <strong>Property taxes</strong> &mdash; Track assessed values and
             tax amounts year over year.
           </li>
+          <li>
+            <strong>Utilities</strong> &mdash; Gas, water, and electric history
+            now lives in the <NavLink href="/upkeep/utilities">Upkeep</NavLink>{" "}
+            section (see below).
+          </li>
         </ul>
       </Section>
 
@@ -660,6 +665,39 @@ export function HelpContent() {
           <li>
             <strong>Notes</strong> &mdash; Add context to any year (e.g.
             &ldquo;bought house&rdquo; or &ldquo;changed jobs&rdquo;).
+          </li>
+        </ul>
+      </Section>
+
+      {/* ━━ UPKEEP ━━ */}
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">
+        Upkeep
+      </h3>
+
+      {/* ── Utilities ── */}
+      <Section title="Utilities" icon={Wrench}>
+        <p>
+          The <NavLink href="/upkeep/utilities">Utilities</NavLink> tracker
+          keeps monthly gas, water, and electric cost &amp; usage as standalone
+          home-management records. It is independent of the budget and
+          projection &mdash; purely historical reference.
+        </p>
+        <ul className="list-disc list-inside space-y-1 ml-2">
+          <li>
+            <strong>Annual trend</strong> &mdash; A per-utility chart of yearly
+            cost, so spikes and long-term creep are obvious at a glance.
+          </li>
+          <li>
+            <strong>Collapsed by year</strong> &mdash; The latest year is open
+            by default; click any year to expand its monthly detail.
+          </li>
+          <li>
+            <strong>$ / unit</strong> &mdash; Cost per ccf (gas), gallon
+            (water), or kWh (electric), computed automatically.
+          </li>
+          <li>
+            <strong>Editing</strong> &mdash; Unlock a service to add, edit, or
+            delete a monthly reading.
           </li>
         </ul>
       </Section>

@@ -376,7 +376,11 @@ describe("KNOWN_SCHEMA_VERSIONS completeness", () => {
     expect(KNOWN_SCHEMA_VERSIONS).toContain("v0.2_final");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("v0.3_final");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("v0.5_final");
-    expect(KNOWN_SCHEMA_VERSIONS.length).toBe(28);
+    // v0.6.x tags
+    expect(KNOWN_SCHEMA_VERSIONS).toContain("0001_melodic_thaddeus_ross");
+    expect(KNOWN_SCHEMA_VERSIONS).toContain("0002_blue_moon_knight");
+    expect(KNOWN_SCHEMA_VERSIONS).toContain("0002_nervous_major_mapleleaf");
+    expect(KNOWN_SCHEMA_VERSIONS.length).toBe(33);
   });
 
   it("SQLite tags transform correctly (same as PG equivalents)", () => {
