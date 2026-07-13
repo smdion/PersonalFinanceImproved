@@ -1,5 +1,5 @@
 # Stage 1: Install dependencies
-FROM node:26.4.0-alpine@sha256:725aeba2364a9b16beae49e180d83bd597dbd0b15c47f1f28875c290bfd255b9 AS deps
+FROM node:26.5.0-alpine@sha256:e88a35be04478413b7c71c455cd9865de9b9360e1f43456be5951032d7ac1a66 AS deps
 RUN apk add --no-cache python3 make g++
 RUN npm install -g pnpm@10.32.1
 WORKDIR /app
@@ -7,7 +7,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # Stage 2: Build
-FROM node:26.4.0-alpine@sha256:725aeba2364a9b16beae49e180d83bd597dbd0b15c47f1f28875c290bfd255b9 AS builder
+FROM node:26.5.0-alpine@sha256:e88a35be04478413b7c71c455cd9865de9b9360e1f43456be5951032d7ac1a66 AS builder
 RUN npm install -g pnpm@10.32.1
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -43,7 +43,7 @@ RUN pnpm exec tsc db-migrate.ts \
   --ignoreConfig
 
 # Stage 3: Production runner
-FROM node:26.4.0-alpine@sha256:725aeba2364a9b16beae49e180d83bd597dbd0b15c47f1f28875c290bfd255b9 AS runner
+FROM node:26.5.0-alpine@sha256:e88a35be04478413b7c71c455cd9865de9b9360e1f43456be5951032d7ac1a66 AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
