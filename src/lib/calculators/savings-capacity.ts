@@ -47,3 +47,27 @@ export function computeTotalMonthlyAllocation(
     .filter((g) => g.isActive && Number(g.monthlyContribution) > 0)
     .reduce((s, g) => s + Number(g.monthlyContribution), 0);
 }
+
+/**
+ * Effective monthly contribution for a savings goal: percentage-of-pool
+ * when the goal has allocationPercent set, otherwise the flat fallback
+ * amount (the goal's stored monthlyContribution).
+ *
+ * Shared by the savings page display (what you see) and the push-to-API
+ * server logic (what gets pushed to YNAB) — a percentage-based goal's
+ * dollar amount moves whenever the underlying pool (paycheck/budget
+ * totals) changes, but `savings_goals.monthly_contribution` is only a
+ * point-in-time snapshot, last written whenever the goal was edited. If
+ * push read that stale column directly, it would silently push an amount
+ * that no longer matches what's shown on screen — this keeps both
+ * derivations identical so they can't drift apart.
+ */
+export function resolveEffectiveMonthlyContribution(
+  allocationPercent: number | null,
+  maxMonthlyFunding: number | null,
+  fallbackAmount: number,
+): number {
+  return allocationPercent !== null && maxMonthlyFunding !== null
+    ? (allocationPercent / 100) * maxMonthlyFunding
+    : fallbackAmount;
+}

@@ -4,6 +4,7 @@ import React, { useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/hooks/use-toast";
 import { formatSyncResultToast } from "@/lib/utils/format";
+import { resolveEffectiveMonthlyContribution } from "@/lib/calculators/savings-capacity";
 import {
   PushPreviewModal,
   type PushPreviewItem,
@@ -17,6 +18,7 @@ interface RawGoal {
   apiCategoryId?: string | null;
   isApiSyncEnabled?: boolean | null;
   isEmergencyFund?: boolean | null;
+  allocationPercent?: string | null;
 }
 
 interface ApiCategoryGroup {
@@ -246,7 +248,12 @@ export function useApiSync() {
     onPushPreview,
     // Callback for FundManagementSection → FundCard → FundOverridesSummary
     onDeleteOverride,
-    // Build push-all preview from current goals
+    // Build push-all preview from current goals. maxMonthlyFunding must be
+    // the same live pool the savings page already computes for display —
+    // passing it through here (rather than re-deriving it) is what keeps
+    // this preview's "newValue" matching what pushContributionsToApi will
+    // actually send (see resolveEffectiveMonthlyContribution for why the
+    // stored monthlyContribution alone isn't enough for a % goal).
     buildPushAllPreview: (
       rawGoals: RawGoal[],
       apiBalanceMap: Map<
@@ -259,6 +266,7 @@ export function useApiSync() {
         }
       >,
       efundComputedTarget?: number,
+      maxMonthlyFunding?: number | null,
     ) => {
       const items: PushPreviewItem[] = [];
       for (const g of rawGoals) {
@@ -278,7 +286,15 @@ export function useApiSync() {
             });
           }
         } else {
-          const amount = parseFloat(g.monthlyContribution ?? "0") || 0;
+          const allocationPercent =
+            g.allocationPercent != null
+              ? parseFloat(g.allocationPercent)
+              : null;
+          const amount = resolveEffectiveMonthlyContribution(
+            allocationPercent,
+            maxMonthlyFunding ?? null,
+            parseFloat(g.monthlyContribution ?? "0") || 0,
+          );
           if (amount > 0) {
             items.push({
               name: g.name,

@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import {
   createTRPCRouter,
+  createCallerFactory,
   protectedProcedure,
   savingsProcedure,
 } from "../trpc";
@@ -11,6 +12,13 @@ import * as schema from "@/lib/db/schema";
 import { calculateSavings } from "@/lib/calculators/savings";
 import { calculateEFund } from "@/lib/calculators/efund";
 import { calculatePaycheck } from "@/lib/calculators/paycheck";
+import {
+  computeMaxMonthlyFunding,
+  resolveEffectiveMonthlyContribution,
+  type CapacityPerson,
+} from "@/lib/calculators/savings-capacity";
+import { paycheckRouter } from "./paycheck";
+import { budgetRouter } from "./budget";
 import {
   toNumber,
   computeBudgetAnnualTotal,
@@ -995,6 +1003,34 @@ export const savingsRouter = createTRPCRouter({
           )
         : 0;
 
+      // Percentage-based goals (allocationPercent set) display a LIVE
+      // dollar amount on the savings page — (pct/100) * maxMonthlyFunding,
+      // where maxMonthlyFunding derives from current paycheck + budget
+      // totals — but savings_goals.monthly_contribution is only a
+      // point-in-time snapshot from whenever the goal was last edited.
+      // Pushing that stale column directly means YNAB can silently drift
+      // from what's shown on screen. Compute the same live pool here (via
+      // the actual paycheck/budget routers — not a re-derived shortcut) so
+      // push always sends what the user is currently looking at.
+      const paycheckCaller = createCallerFactory(paycheckRouter)(ctx);
+      const budgetCaller = createCallerFactory(budgetRouter)(ctx);
+      const [paycheckData, budgetSummary] = await Promise.all([
+        paycheckCaller.computeSummary(),
+        budgetCaller.computeActiveSummary(),
+      ]);
+      const budgetMonthlyTotal = budgetSummary?.result
+        ? budgetSummary.columnMonths
+          ? (budgetSummary.weightedAnnualTotal ?? 0) / 12
+          : (budgetSummary.result.totalMonthly ?? 0)
+        : null;
+      const maxMonthlyFunding =
+        paycheckData && budgetMonthlyTotal !== null
+          ? computeMaxMonthlyFunding(
+              paycheckData.people as CapacityPerson[],
+              budgetMonthlyTotal,
+            )
+          : null;
+
       let pushed = 0;
       for (const goal of toPush) {
         try {
@@ -1014,7 +1050,15 @@ export const savingsRouter = createTRPCRouter({
               pushed++;
             }
           } else {
-            const monthly = toNumber(goal.monthlyContribution);
+            const allocationPercent =
+              goal.allocationPercent != null
+                ? toNumber(goal.allocationPercent)
+                : null;
+            const monthly = resolveEffectiveMonthlyContribution(
+              allocationPercent,
+              maxMonthlyFunding,
+              toNumber(goal.monthlyContribution),
+            );
             if (monthly > 0) {
               await client.updateCategoryGoalTarget(
                 goal.apiCategoryId!,

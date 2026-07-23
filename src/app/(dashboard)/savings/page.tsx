@@ -57,6 +57,7 @@ import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { useUpdatePlannedTx } from "@/components/savings/use-update-planned-tx";
 import {
   computeMaxMonthlyFunding,
+  resolveEffectiveMonthlyContribution,
   type CapacityPerson,
 } from "@/lib/calculators/savings-capacity";
 
@@ -378,10 +379,11 @@ export default function SavingsPage() {
     const pct = raw?.allocationPercent
       ? parseFloat(raw.allocationPercent)
       : null;
-    const baseAllocation =
-      pct !== null && maxMonthlyFunding !== null
-        ? (pct / 100) * maxMonthlyFunding
-        : goal.monthlyAllocation;
+    const baseAllocation = resolveEffectiveMonthlyContribution(
+      pct,
+      maxMonthlyFunding,
+      goal.monthlyAllocation,
+    );
     for (let i = 0; i < projectionMonths; i++) {
       const mk = monthKey(monthDates[i]!);
       const events = goalTxMap?.get(mk) ?? null;
@@ -662,6 +664,7 @@ export default function SavingsPage() {
                               rawGoals,
                               apiBalanceMap,
                               efund?.targetAmount ?? undefined,
+                              maxMonthlyFunding,
                             )
                           }
                           disabled={apiSync.pushToApiPending}
