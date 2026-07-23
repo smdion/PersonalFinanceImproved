@@ -21,7 +21,13 @@ export {
   getActiveBudgetApi,
   getApiConnection,
 } from "./factory";
-export { cacheGet, cacheSet, cacheDelete, cacheClear } from "./cache";
+export {
+  cacheGet,
+  cacheSet,
+  cacheDelete,
+  cacheClear,
+  refreshCategoryCache,
+} from "./cache";
 export {
   fromMilliunits,
   toMilliunits,

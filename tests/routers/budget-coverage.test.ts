@@ -24,6 +24,7 @@ vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
   cacheGet: vi.fn().mockResolvedValue(null),
   getClientForService: vi.fn().mockResolvedValue(null),
+  refreshCategoryCache: vi.fn().mockResolvedValue(undefined),
   YNAB_INTERNAL_GROUPS: new Set([
     "Internal Master Category",
     "Credit Card Payments",
@@ -844,7 +845,7 @@ describe("budget router — syncBudgetToApi", () => {
   });
 
   it("pushes budget amounts to API for linked push items", async () => {
-    const { getActiveBudgetApi, getClientForService } =
+    const { getActiveBudgetApi, getClientForService, refreshCategoryCache } =
       await import("@/lib/budget-api");
     const mockUpdateGoal = vi.fn().mockResolvedValue(undefined);
     (getActiveBudgetApi as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
@@ -853,6 +854,7 @@ describe("budget router — syncBudgetToApi", () => {
     (getClientForService as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       updateCategoryGoalTarget: mockUpdateGoal,
     });
+    (refreshCategoryCache as ReturnType<typeof vi.fn>).mockClear();
 
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
@@ -869,6 +871,34 @@ describe("budget router — syncBudgetToApi", () => {
       });
       expect(result.pushed).toBe(1);
       expect(mockUpdateGoal).toHaveBeenCalledWith("api-push-cat", 2000);
+      // Push must refresh budget_api_cache so subsequent previews don't
+      // show stale pre-push diffs (see refreshCategoryCache doc comment).
+      expect(refreshCategoryCache).toHaveBeenCalledTimes(1);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("does not refresh the cache when nothing was pushed", async () => {
+    const { getActiveBudgetApi, getClientForService, refreshCategoryCache } =
+      await import("@/lib/budget-api");
+    (getActiveBudgetApi as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      "ynab",
+    );
+    (getClientForService as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      updateCategoryGoalTarget: vi.fn(),
+    });
+    (refreshCategoryCache as ReturnType<typeof vi.fn>).mockClear();
+
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedStandardDataset(db);
+      // No items linked with push/both direction — nothing to push.
+      const result = await caller.budget.syncBudgetToApi({
+        selectedColumn: 0,
+      });
+      expect(result.pushed).toBe(0);
+      expect(refreshCategoryCache).not.toHaveBeenCalled();
     } finally {
       cleanup();
     }

@@ -30,6 +30,7 @@ import {
   getActiveBudgetApi,
   getBudgetAPIClient,
   cacheGet,
+  refreshCategoryCache,
 } from "@/lib/budget-api";
 import type { BudgetCategoryGroup } from "@/lib/budget-api";
 
@@ -983,8 +984,11 @@ export const savingsRouter = createTRPCRouter({
       for (const goal of toPush) {
         try {
           if (goal.isEmergencyFund) {
-            // E-fund: push computed total target via plan-level endpoint.
-            // YNAB infers goal_type "TB" from goal_target alone — no date needed.
+            // E-fund: push the computed total target amount only. The
+            // goal's type/cadence (target-balance vs. recurring) has to be
+            // configured once, manually, in YNAB — updateCategoryTargetBalance
+            // intentionally only updates goal_target and never touches the
+            // goal's shape (see its implementation for why).
             const targetMonths = goal.targetMonths ?? 4;
             const targetAmount = targetMonths * essentialExpenses;
             if (targetAmount > 0) {
@@ -1009,6 +1013,16 @@ export const savingsRouter = createTRPCRouter({
             goalId: goal.id,
             error: err instanceof Error ? err.message : String(err),
           });
+        }
+      }
+
+      // Refresh the cache so subsequent previews reflect what was just
+      // pushed instead of stale pre-push data (see budget.syncBudgetToApi
+      // for the same fix and full rationale).
+      if (pushed > 0) {
+        const active = await getActiveBudgetApi(ctx.db);
+        if (active !== "none") {
+          await refreshCategoryCache(ctx.db, active, client);
         }
       }
 

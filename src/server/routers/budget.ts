@@ -29,6 +29,7 @@ import {
   getActiveBudgetApi,
   getClientForService,
   cacheGet,
+  refreshCategoryCache,
 } from "@/lib/budget-api";
 import type { BudgetCategoryGroup, BudgetMonthDetail } from "@/lib/budget-api";
 import { YNAB_INTERNAL_GROUPS } from "@/lib/budget-api";
@@ -1072,6 +1073,14 @@ export const budgetRouter = createTRPCRouter({
           .set({ apiLastSyncedAt: new Date() })
           .where(eq(schema.budgetItems.id, item.id));
         pushed++;
+      }
+
+      // Push writes directly to YNAB but doesn't touch budget_api_cache —
+      // refresh it so the next preview/comparison reflects what was just
+      // pushed instead of showing stale pre-push diffs until the next
+      // manual Sync.
+      if (pushed > 0) {
+        await refreshCategoryCache(ctx.db, active, client);
       }
 
       return { pushed };

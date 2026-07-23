@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { formatCurrency } from "@/lib/utils/format";
 
 export type PushPreviewItem = {
@@ -38,6 +39,22 @@ export function PushPreviewModal({
   const actionVerb = isPull ? "Pull" : "Push";
   const pendingVerb = isPull ? "Pulling..." : "Pushing...";
 
+  // Push sends one request per changed item to YNAB, so a full push can
+  // take well over 30 seconds — show elapsed time so it's clear the app is
+  // still working, not stuck. setState only ever happens from the
+  // interval's own callback (never synchronously in the effect body) — the
+  // parent unmounts this modal once the mutation settles (see
+  // BudgetPushYnabModal/BudgetPullYnabModal), so a fresh mount next time
+  // already starts elapsedSeconds back at 0 with no explicit reset needed.
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  useEffect(() => {
+    if (!isPending) return;
+    const interval = setInterval(() => {
+      setElapsedSeconds((s) => s + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isPending]);
+
   return (
     <div
       className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 print:hidden"
@@ -56,6 +73,15 @@ export function PushPreviewModal({
           {changed.length === 0
             ? `No changes to ${actionVerb.toLowerCase()} — all values match ${applyTarget}.`
             : `${changed.length} item${changed.length !== 1 ? "s" : ""} will be updated in ${applyTarget}.`}
+          {!isPull && changed.length > 0 && (
+            <>
+              {" "}
+              <span className="text-faint">
+                Each item is a separate request to YNAB, so this can take 30
+                seconds or more — keep this window open until it finishes.
+              </span>
+            </>
+          )}
         </p>
 
         <div className="overflow-auto flex-1 mb-4">
@@ -116,10 +142,16 @@ export function PushPreviewModal({
           )}
         </div>
 
-        <div className="flex justify-end gap-2">
+        <div className="flex items-center justify-end gap-2">
           <button
             onClick={onCancel}
-            className="px-3 py-1.5 text-sm text-muted hover:bg-surface-elevated rounded transition-colors"
+            disabled={isPending}
+            title={
+              isPending
+                ? "Already in progress — closing this won't stop it"
+                : undefined
+            }
+            className="px-3 py-1.5 text-sm text-muted hover:bg-surface-elevated rounded transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
@@ -129,7 +161,7 @@ export function PushPreviewModal({
             className="px-3 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded transition-colors disabled:opacity-50"
           >
             {isPending
-              ? pendingVerb
+              ? `${pendingVerb} (${elapsedSeconds}s)`
               : `${actionVerb} ${changed.length} Change${changed.length !== 1 ? "s" : ""}`}
           </button>
         </div>
