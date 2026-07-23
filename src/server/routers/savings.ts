@@ -28,7 +28,7 @@ import { log } from "@/lib/logger";
 import type { SavingsInput, EFundInput } from "@/lib/calculators/types";
 import {
   getActiveBudgetApi,
-  getBudgetAPIClient,
+  getClientForService,
   cacheGet,
   refreshCategoryCache,
 } from "@/lib/budget-api";
@@ -169,6 +169,35 @@ function getEssentialExpenses(
   return annualTotal / 12;
 }
 
+/**
+ * Resolve which budget tier/column the emergency fund's essential-expenses
+ * total should be computed against. Shared by computeSummary (display) and
+ * pushContributionsToApi (push) — they were independently re-deriving this
+ * from app_settings with near-identical code, which risked the two drifting
+ * apart (e.g. one honoring a future new override, or a fallback change, the
+ * other not) — the E-fund target shown on screen must always match what
+ * gets pushed to YNAB.
+ *
+ * Precedence: an explicit override (computeSummary's budgetTierOverride
+ * input, e.g. "preview this tier without saving") > the e-fund's own saved
+ * column setting > the shared budget-page active column > 0.
+ */
+function resolveEfundTierIndex(
+  appSettings: { key: string; value: unknown }[],
+  overrideTierIndex?: number,
+): number {
+  const settingsMap = new Map(appSettings.map((s) => [s.key, s.value]));
+  const budgetActiveColumn =
+    typeof settingsMap.get("budget_active_column") === "number"
+      ? (settingsMap.get("budget_active_column") as number)
+      : 0;
+  const efundSavedColumn =
+    typeof settingsMap.get("efund_budget_column") === "number"
+      ? (settingsMap.get("efund_budget_column") as number)
+      : null;
+  return overrideTierIndex ?? efundSavedColumn ?? budgetActiveColumn;
+}
+
 const plannedTransactionInput = z.object({
   goalId: z.number().int(),
   transactionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -282,26 +311,11 @@ export const savingsRouter = createTRPCRouter({
       const activeProfile = budgetProfiles[0];
       const budgetTierLabels = activeProfile?.columnLabels ?? [];
 
-      // Read shared budget_active_column from app_settings
-      const settingsMap = new Map(
-        appSettings.map((s: { key: string; value: unknown }) => [
-          s.key,
-          s.value,
-        ]),
-      );
-      const budgetActiveColumn =
-        typeof settingsMap.get("budget_active_column") === "number"
-          ? (settingsMap.get("budget_active_column") as number)
-          : 0;
-
-      // E-Fund uses its own budget tier setting; falls back to shared budget column
       const efundGoal = activeGoals.find((g) => g.isEmergencyFund);
-      const efundSavedColumn =
-        typeof settingsMap.get("efund_budget_column") === "number"
-          ? (settingsMap.get("efund_budget_column") as number)
-          : null;
-      const efundTierIndex =
-        input?.budgetTierOverride ?? efundSavedColumn ?? budgetActiveColumn;
+      const efundTierIndex = resolveEfundTierIndex(
+        appSettings,
+        input?.budgetTierOverride,
+      );
 
       // Essential expenses for e-fund tier
       let essentialMonthlyExpenses = 0;
@@ -915,16 +929,31 @@ export const savingsRouter = createTRPCRouter({
   }),
 
   /**
-   * Push goal targets to the budget API for linked sinking funds.
-   * - Sinking funds: pushes monthlyContribution as the YNAB monthly-funding target.
-   * - Emergency fund: pushes computed targetAmount (targetMonths × essentials) with
-   *   goal_type "TB" (Target Balance) — matching the Income Replacement category semantics.
+   * Push goal target amounts to the budget API for linked sinking funds.
+   * - Sinking funds: pushes monthlyContribution via updateCategoryGoalTarget
+   *   (recurring monthly-assignment amount).
+   * - Emergency fund: pushes computed targetAmount (targetMonths × essentials)
+   *   via updateCategoryTargetBalance — amount only, never touches the
+   *   goal's type/cadence (that has to be configured once, manually, in
+   *   YNAB; see updateCategoryTargetBalance's implementation for why).
    * Can optionally push a single goal by ID.
    */
   pushContributionsToApi: savingsProcedure
     .input(z.object({ goalId: z.number().int().optional() }).optional())
     .mutation(async ({ ctx, input }) => {
-      const client = await getBudgetAPIClient(ctx.db);
+      // Resolve the active service once (not via getBudgetAPIClient, which
+      // wraps this same lookup but doesn't hand back which service it
+      // resolved) — mirrors budget.syncBudgetToApi, and avoids querying
+      // active_budget_api twice in one request (once here, again at the
+      // end to know which cache to refresh).
+      const active = await getActiveBudgetApi(ctx.db);
+      if (active === "none") {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "No budget API active",
+        });
+      }
+      const client = await getClientForService(ctx.db, active);
       if (!client) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
@@ -950,23 +979,9 @@ export const savingsRouter = createTRPCRouter({
 
       if (toPush.length === 0) return { pushed: 0 };
 
-      // Compute essential expenses using the e-fund's saved column (same logic as computeSummary)
+      // Same tier resolution as computeSummary — see resolveEfundTierIndex.
       const activeProfile = budgetProfiles[0];
-      const settingsMap = new Map(
-        appSettings.map((s: { key: string; value: unknown }) => [
-          s.key,
-          s.value,
-        ]),
-      );
-      const budgetActiveColumn =
-        typeof settingsMap.get("budget_active_column") === "number"
-          ? (settingsMap.get("budget_active_column") as number)
-          : 0;
-      const efundSavedColumn =
-        typeof settingsMap.get("efund_budget_column") === "number"
-          ? (settingsMap.get("efund_budget_column") as number)
-          : null;
-      const efundTierIndex = efundSavedColumn ?? budgetActiveColumn;
+      const efundTierIndex = resolveEfundTierIndex(appSettings);
       const essentialExpenses = activeProfile
         ? getEssentialExpenses(
             budgetItems as {
@@ -1020,10 +1035,7 @@ export const savingsRouter = createTRPCRouter({
       // pushed instead of stale pre-push data (see budget.syncBudgetToApi
       // for the same fix and full rationale).
       if (pushed > 0) {
-        const active = await getActiveBudgetApi(ctx.db);
-        if (active !== "none") {
-          await refreshCategoryCache(ctx.db, active, client);
-        }
+        await refreshCategoryCache(ctx.db, active, client);
       }
 
       return { pushed };

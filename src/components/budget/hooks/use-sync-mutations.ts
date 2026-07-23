@@ -14,16 +14,24 @@
  */
 
 import { trpc } from "@/lib/trpc";
+import { toast } from "@/lib/hooks/use-toast";
+import { formatSyncResultToast } from "@/lib/utils/format";
 import { useInvalidateBudget } from "./use-invalidate-budget";
 
 export function useSyncMutations() {
   const { invalidateSummary } = useInvalidateBudget();
 
   const syncFromApi = trpc.budget.syncBudgetFromApi.useMutation({
-    onSuccess: invalidateSummary,
+    onSuccess: (data) => {
+      invalidateSummary();
+      toast.success(formatSyncResultToast(data.updated, "pull", "YNAB"));
+    },
   });
   const syncToApi = trpc.budget.syncBudgetToApi.useMutation({
-    onSuccess: invalidateSummary,
+    onSuccess: (data) => {
+      invalidateSummary();
+      toast.success(formatSyncResultToast(data.pushed, "push", "YNAB"));
+    },
   });
 
   return { syncFromApi, syncToApi };

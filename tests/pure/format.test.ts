@@ -9,6 +9,7 @@ import {
   formatNumber,
   buildAccountLabel,
   accountDisplayName,
+  formatSyncResultToast,
 } from "@/lib/utils/format";
 
 /**
@@ -298,5 +299,34 @@ describe("accountDisplayName", () => {
     // but for types like "hsa" → "HSA" the lookup matters. Verify the
     // lookup path is taken for a type where casing differs.
     expect(accountDisplayName({ accountType: "hsa" })).toBe("HSA");
+  });
+});
+
+describe("formatSyncResultToast", () => {
+  it("reports zero changes as already up to date", () => {
+    expect(formatSyncResultToast(0, "push", "YNAB")).toBe(
+      "No changes to push — already up to date",
+    );
+    expect(formatSyncResultToast(0, "pull", "YNAB")).toBe(
+      "No changes to pull — already up to date",
+    );
+  });
+
+  it("pluralizes singular vs. plural counts", () => {
+    expect(formatSyncResultToast(1, "push", "YNAB")).toBe(
+      "Pushed 1 item to YNAB",
+    );
+    expect(formatSyncResultToast(2, "push", "YNAB")).toBe(
+      "Pushed 2 items to YNAB",
+    );
+  });
+
+  it("uses the correct preposition per direction", () => {
+    expect(formatSyncResultToast(3, "push", "YNAB")).toBe(
+      "Pushed 3 items to YNAB",
+    );
+    expect(formatSyncResultToast(3, "pull", "YNAB")).toBe(
+      "Pulled 3 items from YNAB",
+    );
   });
 });

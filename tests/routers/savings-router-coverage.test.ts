@@ -28,13 +28,17 @@ import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 
 const mockGetActiveBudgetApi = vi.fn().mockResolvedValue("none");
 const mockGetBudgetAPIClient = vi.fn().mockResolvedValue(null);
+const mockGetClientForService = vi.fn().mockResolvedValue(null);
 const mockCacheGet = vi.fn().mockResolvedValue(null);
+const mockRefreshCategoryCache = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: (...args: unknown[]) => mockGetActiveBudgetApi(...args),
   getBudgetAPIClient: (...args: unknown[]) => mockGetBudgetAPIClient(...args),
+  getClientForService: (...args: unknown[]) => mockGetClientForService(...args),
   cacheGet: (...args: unknown[]) => mockCacheGet(...args),
-  getClientForService: vi.fn().mockResolvedValue(null),
+  refreshCategoryCache: (...args: unknown[]) =>
+    mockRefreshCategoryCache(...args),
 }));
 
 /** Patch rawDb.execute so computeSummary's raw balance query works in SQLite. */
@@ -276,7 +280,8 @@ describe("savings.pushContributionsToApi", () => {
       });
 
       const mockUpdateGoal = vi.fn().mockResolvedValue(undefined);
-      mockGetBudgetAPIClient.mockResolvedValueOnce({
+      mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+      mockGetClientForService.mockResolvedValueOnce({
         updateCategoryGoalTarget: mockUpdateGoal,
       });
 
@@ -285,7 +290,8 @@ describe("savings.pushContributionsToApi", () => {
       expect(mockUpdateGoal).toHaveBeenCalledWith("cat-push-001", 200);
     } finally {
       ctx.cleanup();
-      mockGetBudgetAPIClient.mockResolvedValue(null);
+      mockGetActiveBudgetApi.mockResolvedValue("none");
+      mockGetClientForService.mockResolvedValue(null);
     }
   });
 
@@ -299,7 +305,8 @@ describe("savings.pushContributionsToApi", () => {
         isApiSyncEnabled: false,
       });
 
-      mockGetBudgetAPIClient.mockResolvedValueOnce({
+      mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+      mockGetClientForService.mockResolvedValueOnce({
         updateCategoryGoalTarget: vi.fn(),
       });
 
@@ -307,7 +314,8 @@ describe("savings.pushContributionsToApi", () => {
       expect(result.pushed).toBe(0);
     } finally {
       ctx.cleanup();
-      mockGetBudgetAPIClient.mockResolvedValue(null);
+      mockGetActiveBudgetApi.mockResolvedValue("none");
+      mockGetClientForService.mockResolvedValue(null);
     }
   });
 
@@ -328,7 +336,8 @@ describe("savings.pushContributionsToApi", () => {
       });
 
       const mockUpdateGoal = vi.fn().mockResolvedValue(undefined);
-      mockGetBudgetAPIClient.mockResolvedValueOnce({
+      mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+      mockGetClientForService.mockResolvedValueOnce({
         updateCategoryGoalTarget: mockUpdateGoal,
       });
 
@@ -339,7 +348,8 @@ describe("savings.pushContributionsToApi", () => {
       expect(mockUpdateGoal).toHaveBeenCalledWith("cat-a", 100);
     } finally {
       ctx.cleanup();
-      mockGetBudgetAPIClient.mockResolvedValue(null);
+      mockGetActiveBudgetApi.mockResolvedValue("none");
+      mockGetClientForService.mockResolvedValue(null);
     }
   });
 
@@ -354,7 +364,8 @@ describe("savings.pushContributionsToApi", () => {
       });
 
       const mockUpdateGoal = vi.fn().mockRejectedValue(new Error("API fail"));
-      mockGetBudgetAPIClient.mockResolvedValueOnce({
+      mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+      mockGetClientForService.mockResolvedValueOnce({
         updateCategoryGoalTarget: mockUpdateGoal,
       });
 
@@ -362,7 +373,8 @@ describe("savings.pushContributionsToApi", () => {
       expect(result.pushed).toBe(0);
     } finally {
       ctx.cleanup();
-      mockGetBudgetAPIClient.mockResolvedValue(null);
+      mockGetActiveBudgetApi.mockResolvedValue("none");
+      mockGetClientForService.mockResolvedValue(null);
     }
   });
 });

@@ -853,6 +853,7 @@ export default function SavingsPage() {
         setPushPreviewItems={apiSync.setPushPreviewItems}
         pendingPushGoalId={apiSync.pendingPushGoalId}
         setPendingPushGoalId={apiSync.setPendingPushGoalId}
+        pushMutation={apiSync.pushToApi}
       />
     </div>
   );

@@ -2,6 +2,8 @@
 
 import React, { useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
+import { toast } from "@/lib/hooks/use-toast";
+import { formatSyncResultToast } from "@/lib/utils/format";
 import {
   PushPreviewModal,
   type PushPreviewItem,
@@ -22,6 +24,13 @@ interface ApiCategoryGroup {
   name: string;
   categories: { id: string; name: string }[];
 }
+
+/** The single pushContributionsToApi mutation instance, owned by useApiSync()
+ *  and passed down here — see useApiSync for why this must not be a second,
+ *  independent useMutation() call. */
+type PushMutation = ReturnType<
+  typeof trpc.savings.pushContributionsToApi.useMutation
+>;
 
 export interface ApiSyncSectionProps {
   rawGoals: RawGoal[];
@@ -46,6 +55,7 @@ export interface ApiSyncSectionProps {
   setPushPreviewItems: (items: PushPreviewItem[] | null) => void;
   pendingPushGoalId: number | undefined;
   setPendingPushGoalId: (id: number | undefined) => void;
+  pushMutation: PushMutation;
 }
 
 export function ApiSyncSection({
@@ -60,6 +70,7 @@ export function ApiSyncSection({
   setPushPreviewItems,
   pendingPushGoalId,
   setPendingPushGoalId,
+  pushMutation,
 }: ApiSyncSectionProps) {
   const utils = trpc.useUtils();
 
@@ -67,7 +78,6 @@ export function ApiSyncSection({
   const linkGoalToApi = trpc.savings.linkGoalToApi.useMutation({
     onSuccess: () => utils.savings.invalidate(),
   });
-  const pushToApi = trpc.savings.pushContributionsToApi.useMutation();
 
   return (
     <>
@@ -125,7 +135,7 @@ export function ApiSyncSection({
           title={`Push contributions to ${apiBalancesData?.service?.toUpperCase() ?? "API"}`}
           items={pushPreviewItems}
           onConfirm={() => {
-            pushToApi.mutate(
+            pushMutation.mutate(
               pendingPushGoalId ? { goalId: pendingPushGoalId } : {},
               {
                 onSettled: () => {
@@ -139,7 +149,7 @@ export function ApiSyncSection({
             setPushPreviewItems(null);
             setPendingPushGoalId(undefined);
           }}
-          isPending={pushToApi.isPending}
+          isPending={pushMutation.isPending}
         />
       )}
     </>
@@ -163,7 +173,17 @@ export function useApiSync() {
       utils.budget.invalidate();
     },
   });
-  const pushToApi = trpc.savings.pushContributionsToApi.useMutation();
+  // Single instance — also passed down to ApiSyncSection as `pushMutation`
+  // so the toolbar button's pending state and the modal's confirm button
+  // stay in sync. Previously ApiSyncSection created its own second,
+  // independent useMutation() call, so the toolbar button's disabled/label
+  // state never reflected an in-flight push at all.
+  const pushToApi = trpc.savings.pushContributionsToApi.useMutation({
+    onSuccess: (data) => {
+      utils.savings.invalidate();
+      toast.success(formatSyncResultToast(data.pushed, "push", "YNAB"));
+    },
+  });
   const deleteOverride = trpc.savings.allocationOverrides.delete.useMutation({
     onSuccess: () => utils.savings.invalidate(),
   });
@@ -216,6 +236,9 @@ export function useApiSync() {
     setPendingPushGoalId,
     // Callbacks for header buttons
     pushToApiPending: pushToApi.isPending,
+    // Single mutation instance — pass straight through to ApiSyncSection
+    // (its `pushMutation` prop) so both consumers share the same state.
+    pushToApi,
     // Callbacks for FundManagementSection
     onLinkToApi,
     onUnlinkFromApi,
