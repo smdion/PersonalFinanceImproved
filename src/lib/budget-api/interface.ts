@@ -44,7 +44,9 @@ export interface BudgetAPIClient {
     amount: number,
   ): Promise<void>;
 
-  /** Update the monthly-funding goal target for a category via the month-specific endpoint. */
+  /** Update the monthly-funding ("MF") goal target for a category via the
+   * plan-level endpoint. Sends goal_type "MF" + goal_target explicitly —
+   * goal fields don't exist on the month-specific endpoint. */
   updateCategoryGoalTarget(
     categoryId: string,
     targetAmount: number,

@@ -338,12 +338,21 @@ export class YnabClient implements BudgetAPIClient {
     categoryId: string,
     targetAmount: number,
   ): Promise<void> {
-    const now = new Date();
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-    await this.request(`/months/${currentMonth}/categories/${categoryId}`, {
+    // Goal fields (goal_type/goal_target) only exist on the plan-level
+    // category endpoint — YNAB has no month-specific goal_target field, so
+    // PATCHing /months/{month}/categories/{id} with goal_target 400s with
+    // "param is missing or the value is empty or invalid: category" (the
+    // month-category schema only accepts `budgeted`). goal_type "MF"
+    // (monthly funding) must be sent explicitly — omitting it makes YNAB
+    // infer "TB" (target balance), which is the wrong goal semantics for a
+    // recurring monthly amount (see updateCategoryTargetBalance for TB).
+    await this.request(`/categories/${categoryId}`, {
       method: "PATCH",
       body: JSON.stringify({
-        category: { goal_target: toMilliunits(targetAmount) },
+        category: {
+          goal_type: "MF",
+          goal_target: toMilliunits(targetAmount),
+        },
       }),
     });
   }

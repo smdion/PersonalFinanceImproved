@@ -146,6 +146,23 @@ export function BudgetSection({
     });
   };
 
+  // Set sync direction on every currently-linked item in a set (global "Set
+  // all" or a single category group's "Set all").
+  const setAllSyncDirection = (
+    items: BudgetMatch[],
+    dir: "pull" | "push" | "both",
+  ) => {
+    const linked = items.filter(
+      (m) => m.status === "linked" && m.syncDirection !== dir,
+    );
+    for (const m of linked) {
+      setBudgetSyncDirMut.mutate({
+        budgetItemId: m.budgetItemId,
+        syncDirection: dir,
+      });
+    }
+  };
+
   // Unlinked Ledgr items for the "link to existing" dropdown
   const unlinkedLedgrItems = budget.matches
     .filter((m) => m.status === "unmatched")
@@ -210,17 +227,7 @@ export function BudgetSection({
           {(["pull", "push", "both"] as const).map((dir) => (
             <button
               key={dir}
-              onClick={() => {
-                const linked = budget.matches.filter(
-                  (m) => m.status === "linked" && m.syncDirection !== dir,
-                );
-                for (const m of linked) {
-                  setBudgetSyncDirMut.mutate({
-                    budgetItemId: m.budgetItemId,
-                    syncDirection: dir,
-                  });
-                }
-              }}
+              onClick={() => setAllSyncDirection(budget.matches, dir)}
               disabled={setBudgetSyncDirMut.isPending}
               className={`px-1 py-0.5 rounded disabled:opacity-50 ${
                 dir === "push"
@@ -251,180 +258,206 @@ export function BudgetSection({
         {/* Grouped by category */}
         {expandedBudget && (
           <div className="space-y-2">
-            {budgetByCategory.map(([category, items]) => (
-              <div key={category}>
-                <p className="text-caption font-semibold text-muted uppercase tracking-wide mb-0.5">
-                  {category}
-                </p>
-                <div className="space-y-0.5 pl-1">
-                  {items.map((m) => (
-                    <div
-                      key={m.budgetItemId}
-                      className="flex items-center gap-1 text-xs min-h-[24px]"
-                    >
-                      <StatusBadge status={m.status} />
-                      <span
-                        className="text-secondary truncate min-w-[80px] max-w-[120px]"
-                        title={m.ledgrName}
-                      >
-                        {m.ledgrName}
-                      </span>
-                      <span className="text-faint">&rarr;</span>
-
-                      {m.status === "linked" && (
-                        <>
-                          <span
-                            className="text-muted truncate flex-1"
-                            title={`${m.apiGroupName} > ${m.apiCategoryName}`}
-                          >
-                            {m.apiCategoryName}
-                          </span>
+            {budgetByCategory.map(([category, items]) => {
+              const linkedInGroup = items.filter((m) => m.status === "linked");
+              return (
+                <div key={category}>
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <p className="text-caption font-semibold text-muted uppercase tracking-wide">
+                      {category}
+                    </p>
+                    {linkedInGroup.length > 0 && (
+                      <span className="flex items-center gap-1 text-micro text-faint">
+                        <span>Set all:</span>
+                        {(["pull", "push", "both"] as const).map((dir) => (
                           <button
-                            onClick={() => {
-                              const next =
-                                m.syncDirection === "pull"
-                                  ? "push"
-                                  : m.syncDirection === "push"
-                                    ? "both"
-                                    : "pull";
-                              setBudgetSyncDirMut.mutate({
-                                budgetItemId: m.budgetItemId,
-                                syncDirection: next,
-                              });
-                            }}
+                            key={dir}
+                            onClick={() => setAllSyncDirection(items, dir)}
                             disabled={setBudgetSyncDirMut.isPending}
-                            className={`text-micro px-1 py-0.5 rounded whitespace-nowrap disabled:opacity-50 ${
-                              m.syncDirection === "push"
-                                ? "bg-green-50 text-green-600 hover:bg-green-100"
-                                : m.syncDirection === "both"
-                                  ? "bg-purple-50 text-purple-600 hover:bg-purple-100"
-                                  : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                            className={`px-1 py-0.5 rounded disabled:opacity-50 ${
+                              dir === "push"
+                                ? "text-green-500 hover:bg-green-50"
+                                : dir === "both"
+                                  ? "text-purple-500 hover:bg-purple-50"
+                                  : "text-blue-500 hover:bg-blue-50"
                             }`}
-                            title={`Sync: ${m.syncDirection ?? "pull"} (click to change)`}
                           >
-                            {m.syncDirection === "push"
-                              ? "← push"
-                              : m.syncDirection === "both"
-                                ? "⇄ both"
-                                : "→ pull"}
+                            {dir}
                           </button>
-                          {(m.nameDrifted || m.categoryDrifted) && (
-                            <span className="flex gap-0.5">
-                              {m.nameDrifted && (
-                                <button
-                                  onClick={() =>
-                                    renameBudgetToApiMut.mutate({
-                                      budgetItemId: m.budgetItemId,
-                                    })
-                                  }
-                                  disabled={renameBudgetToApiMut.isPending}
-                                  className="text-caption px-1 py-0.5 bg-amber-50 text-amber-600 rounded hover:bg-amber-100 whitespace-nowrap disabled:opacity-50"
-                                  title={`Rename "${m.ledgrName}" → "${m.apiCategoryName}"`}
-                                >
-                                  Name
-                                </button>
-                              )}
-                              {m.categoryDrifted && m.apiGroupName && (
-                                <button
-                                  onClick={() =>
-                                    moveBudgetToApiGroupMut.mutate({
-                                      budgetItemId: m.budgetItemId,
-                                      apiGroupName: m.apiGroupName!,
-                                    })
-                                  }
-                                  disabled={moveBudgetToApiGroupMut.isPending}
-                                  className="text-caption px-1 py-0.5 bg-purple-50 text-purple-600 rounded hover:bg-purple-100 whitespace-nowrap disabled:opacity-50"
-                                  title={`Move from "${m.ledgrCategory}" → "${m.apiGroupName}"`}
-                                >
-                                  Group
-                                </button>
-                              )}
-                              <button
-                                onClick={() => {
-                                  if (m.nameDrifted)
-                                    renameBudgetApiNameMut.mutate({
-                                      budgetItemId: m.budgetItemId,
-                                    });
-                                }}
-                                disabled={renameBudgetApiNameMut.isPending}
-                                className="text-caption px-1 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
-                                title="Keep Ledgr names"
-                              >
-                                Keep
-                              </button>
-                            </span>
-                          )}
-                          <button
-                            onClick={() =>
-                              unlinkBudgetMut.mutate({
-                                budgetItemId: m.budgetItemId,
-                              })
-                            }
-                            disabled={unlinkBudgetMut.isPending}
-                            className="text-red-400 hover:text-red-600 text-caption whitespace-nowrap"
-                            title="Unlink"
-                          >
-                            &times;
-                          </button>
-                        </>
-                      )}
+                        ))}
+                      </span>
+                    )}
+                  </div>
+                  <div className="space-y-0.5 pl-1">
+                    {items.map((m) => (
+                      <div
+                        key={m.budgetItemId}
+                        className="flex items-center gap-1 text-xs min-h-[24px]"
+                      >
+                        <StatusBadge status={m.status} />
+                        <span
+                          className="text-secondary truncate min-w-[80px] max-w-[120px]"
+                          title={m.ledgrName}
+                        >
+                          {m.ledgrName}
+                        </span>
+                        <span className="text-faint">&rarr;</span>
 
-                      {m.status === "suggested" && (
-                        <>
-                          <span
-                            className="text-yellow-700 truncate flex-1"
-                            title={`${m.apiGroupName} > ${m.apiCategoryName}`}
-                          >
-                            {m.apiCategoryName}
-                          </span>
-                          {expandedBudget && (
+                        {m.status === "linked" && (
+                          <>
+                            <span
+                              className="text-muted truncate flex-1"
+                              title={`${m.apiGroupName} > ${m.apiCategoryName}`}
+                            >
+                              {m.apiCategoryName}
+                            </span>
+                            <button
+                              onClick={() => {
+                                const next =
+                                  m.syncDirection === "pull"
+                                    ? "push"
+                                    : m.syncDirection === "push"
+                                      ? "both"
+                                      : "pull";
+                                setBudgetSyncDirMut.mutate({
+                                  budgetItemId: m.budgetItemId,
+                                  syncDirection: next,
+                                });
+                              }}
+                              disabled={setBudgetSyncDirMut.isPending}
+                              className={`text-micro px-1 py-0.5 rounded whitespace-nowrap disabled:opacity-50 ${
+                                m.syncDirection === "push"
+                                  ? "bg-green-50 text-green-600 hover:bg-green-100"
+                                  : m.syncDirection === "both"
+                                    ? "bg-purple-50 text-purple-600 hover:bg-purple-100"
+                                    : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                              }`}
+                              title={`Sync: ${m.syncDirection ?? "pull"} (click to change)`}
+                            >
+                              {m.syncDirection === "push"
+                                ? "← push"
+                                : m.syncDirection === "both"
+                                  ? "⇄ both"
+                                  : "→ pull"}
+                            </button>
+                            {(m.nameDrifted || m.categoryDrifted) && (
+                              <span className="flex gap-0.5">
+                                {m.nameDrifted && (
+                                  <button
+                                    onClick={() =>
+                                      renameBudgetToApiMut.mutate({
+                                        budgetItemId: m.budgetItemId,
+                                      })
+                                    }
+                                    disabled={renameBudgetToApiMut.isPending}
+                                    className="text-caption px-1 py-0.5 bg-amber-50 text-amber-600 rounded hover:bg-amber-100 whitespace-nowrap disabled:opacity-50"
+                                    title={`Rename "${m.ledgrName}" → "${m.apiCategoryName}"`}
+                                  >
+                                    Name
+                                  </button>
+                                )}
+                                {m.categoryDrifted && m.apiGroupName && (
+                                  <button
+                                    onClick={() =>
+                                      moveBudgetToApiGroupMut.mutate({
+                                        budgetItemId: m.budgetItemId,
+                                        apiGroupName: m.apiGroupName!,
+                                      })
+                                    }
+                                    disabled={moveBudgetToApiGroupMut.isPending}
+                                    className="text-caption px-1 py-0.5 bg-purple-50 text-purple-600 rounded hover:bg-purple-100 whitespace-nowrap disabled:opacity-50"
+                                    title={`Move from "${m.ledgrCategory}" → "${m.apiGroupName}"`}
+                                  >
+                                    Group
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    if (m.nameDrifted)
+                                      renameBudgetApiNameMut.mutate({
+                                        budgetItemId: m.budgetItemId,
+                                      });
+                                  }}
+                                  disabled={renameBudgetApiNameMut.isPending}
+                                  className="text-caption px-1 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
+                                  title="Keep Ledgr names"
+                                >
+                                  Keep
+                                </button>
+                              </span>
+                            )}
                             <button
                               onClick={() =>
-                                applyBudgetLink(
-                                  m.budgetItemId,
-                                  m.apiCategoryId!,
-                                )
+                                unlinkBudgetMut.mutate({
+                                  budgetItemId: m.budgetItemId,
+                                })
                               }
-                              disabled={linkBudgetMut.isPending}
-                              className="text-caption text-blue-500 hover:text-blue-700 whitespace-nowrap"
+                              disabled={unlinkBudgetMut.isPending}
+                              className="text-red-400 hover:text-red-600 text-caption whitespace-nowrap"
+                              title="Unlink"
                             >
-                              Link
+                              &times;
                             </button>
-                          )}
-                        </>
-                      )}
+                          </>
+                        )}
 
-                      {m.status === "unmatched" && expandedBudget && (
-                        <div className="flex-1">
-                          <ApiCategorySelect
-                            value={budgetOverrides[m.budgetItemId] ?? ""}
-                            options={allApiCats}
-                            onChange={(v) =>
-                              setBudgetOverrides((prev) => ({
-                                ...prev,
-                                [m.budgetItemId]: v,
-                              }))
-                            }
-                          />
-                        </div>
-                      )}
+                        {m.status === "suggested" && (
+                          <>
+                            <span
+                              className="text-yellow-700 truncate flex-1"
+                              title={`${m.apiGroupName} > ${m.apiCategoryName}`}
+                            >
+                              {m.apiCategoryName}
+                            </span>
+                            {expandedBudget && (
+                              <button
+                                onClick={() =>
+                                  applyBudgetLink(
+                                    m.budgetItemId,
+                                    m.apiCategoryId!,
+                                  )
+                                }
+                                disabled={linkBudgetMut.isPending}
+                                className="text-caption text-blue-500 hover:text-blue-700 whitespace-nowrap"
+                              >
+                                Link
+                              </button>
+                            )}
+                          </>
+                        )}
 
-                      {m.status === "unmatched" && !expandedBudget && (
-                        <span className="text-faint text-caption italic flex-1">
-                          unmapped
-                        </span>
-                      )}
+                        {m.status === "unmatched" && expandedBudget && (
+                          <div className="flex-1">
+                            <ApiCategorySelect
+                              value={budgetOverrides[m.budgetItemId] ?? ""}
+                              options={allApiCats}
+                              onChange={(v) =>
+                                setBudgetOverrides((prev) => ({
+                                  ...prev,
+                                  [m.budgetItemId]: v,
+                                }))
+                              }
+                            />
+                          </div>
+                        )}
 
-                      {m.apiBudgeted != null && (
-                        <span className="text-faint tabular-nums whitespace-nowrap text-caption">
-                          {formatCurrency(m.apiBudgeted)}
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                        {m.status === "unmatched" && !expandedBudget && (
+                          <span className="text-faint text-caption italic flex-1">
+                            unmapped
+                          </span>
+                        )}
+
+                        {m.apiBudgeted != null && (
+                          <span className="text-faint tabular-nums whitespace-nowrap text-caption">
+                            {formatCurrency(m.apiBudgeted)}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
