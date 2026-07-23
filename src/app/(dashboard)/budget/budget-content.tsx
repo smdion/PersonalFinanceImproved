@@ -41,6 +41,7 @@ import {
   type SavingsGoalEntry,
 } from "./use-budget-derived-data";
 import { BudgetDetailPanel } from "./budget-detail-panel";
+import { computeMaxMonthlyFunding } from "@/lib/calculators/savings-capacity";
 
 export function BudgetContent() {
   const user = useUser();
@@ -72,6 +73,20 @@ export function BudgetContent() {
   );
   const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
   const { data: savingsGoals } = trpc.settings.savingsGoals.list.useQuery();
+  const { data: paycheckData } = trpc.paycheck.computeSummary.useQuery();
+
+  // Live savings-capacity pool, matching the savings page's own computation
+  // exactly — needed so the sinking-fund row here shows the same live
+  // percentage-based amount that push-to-YNAB sends, not a stale snapshot.
+  const budgetMonthlyTotal = data?.result
+    ? data.columnMonths
+      ? (data.weightedAnnualTotal ?? 0) / 12
+      : (data.result.totalMonthly ?? 0)
+    : null;
+  const maxMonthlyFunding =
+    paycheckData && budgetMonthlyTotal !== null
+      ? computeMaxMonthlyFunding(paycheckData.people, budgetMonthlyTotal)
+      : null;
 
   // ---- Mutations ----
   const { setActiveProfile, createProfile, deleteProfile, renameProfile } =
@@ -156,6 +171,7 @@ export function BudgetContent() {
   } = useBudgetDerivedData({
     data,
     savingsGoals: savingsGoals as SavingsGoalEntry[] | undefined,
+    maxMonthlyFunding,
     apiActualsData,
     salaryOverrides,
     activeContribProfileId,
