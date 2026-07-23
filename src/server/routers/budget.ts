@@ -21,6 +21,8 @@ import {
   getCurrentSalary,
   computeAnnualContribution,
   loadAndApplyContribProfile,
+  resolveJoblessPeriodsPerYear,
+  applyContributionAccountEdit,
 } from "@/server/helpers";
 import { accountDisplayName } from "@/lib/utils/format";
 import {
@@ -230,10 +232,7 @@ export const budgetRouter = createTRPCRouter({
 
       if (linkedContribIds.size > 0) {
         const activeJobs = effectiveJobs.filter((j) => !j.endDate);
-        const defaultPeriodsPerYear =
-          activeJobs.length > 0
-            ? getPeriodsPerYear(activeJobs[0]!.payPeriod)
-            : 26;
+        const defaultPeriodsPerYear = resolveJoblessPeriodsPerYear(activeJobs);
 
         const salaryByJobId = new Map<number, number>();
         for (const j of activeJobs) {
@@ -353,6 +352,20 @@ export const budgetRouter = createTRPCRouter({
         .where(eq(schema.budgetItems.id, input.id))
         .then((r) => r[0]);
       if (!item) throw new Error("Item not found");
+
+      // Linked items: the amount IS the budget amount from the user's
+      // perspective, so budgetProcedure is intentionally allowed to write
+      // through to the linked contribution account rather than the dead
+      // budget_items.amounts field it would otherwise shadow.
+      if (item.contributionAccountId) {
+        await applyContributionAccountEdit(
+          ctx.db,
+          item.contributionAccountId,
+          input.amount,
+        );
+        return item;
+      }
+
       const amounts = budgetAmountsSchema.parse(item.amounts);
       if (input.colIndex < 0 || input.colIndex >= amounts.length) {
         throw new Error("Column index out of bounds");
@@ -393,6 +406,21 @@ export const budgetRouter = createTRPCRouter({
           .where(eq(schema.budgetItems.id, id))
           .then((r) => r[0]);
         if (!item) continue;
+
+        // Linked items: write through to the contribution account instead
+        // of the dead budget_items.amounts field (see updateItemAmount for
+        // the permission-scope rationale). If a batch somehow carries more
+        // than one distinct amount for the same linked item, last one wins.
+        if (item.contributionAccountId) {
+          const amount = changes[changes.length - 1]!.amount;
+          await applyContributionAccountEdit(
+            ctx.db,
+            item.contributionAccountId,
+            amount,
+          );
+          continue;
+        }
+
         const amounts = budgetAmountsSchema.parse(item.amounts);
         for (const c of changes) {
           if (c.colIndex >= 0 && c.colIndex < amounts.length) {
@@ -1110,6 +1138,7 @@ export const budgetRouter = createTRPCRouter({
           budgeted: cat?.budgeted ?? 0,
           activity: cat?.activity ?? 0,
           balance: cat?.balance ?? 0,
+          goalTarget: cat?.goalTarget ?? 0,
         };
       });
 

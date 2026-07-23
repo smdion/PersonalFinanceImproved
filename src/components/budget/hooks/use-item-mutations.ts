@@ -36,8 +36,11 @@ type UseItemMutationsOpts = {
 
 export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
   const utils = trpc.useUtils();
-  const { invalidateSummary, invalidateSummaryAndSavings } =
-    useInvalidateBudget();
+  const {
+    invalidateSummary,
+    invalidateSummaryAndSavings,
+    invalidateSummaryAndContributions,
+  } = useInvalidateBudget();
 
   // --- Optimistic mutations ---
 
@@ -52,6 +55,11 @@ export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
           rawItems: previous.rawItems.map(
             (item: (typeof previous.rawItems)[number]) => {
               if (item.id !== variables.id) return item;
+              // Linked items display contribAmount, not amounts[col] — patch
+              // both so the optimistic update is actually visible.
+              if (item.contributionAccountId) {
+                return { ...item, contribAmount: variables.amount };
+              }
               const newAmounts = [...item.amounts];
               newAmounts[variables.colIndex] = variables.amount;
               return { ...item, amounts: newAmounts };
@@ -69,7 +77,7 @@ export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
         );
       }
     },
-    onSettled: () => utils.budget.computeActiveSummary.invalidate(),
+    onSettled: () => invalidateSummaryAndContributions(),
   });
 
   const deleteItem = trpc.budget.deleteItem.useMutation({
@@ -161,7 +169,7 @@ export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
   // --- Simple-invalidate mutations ---
 
   const updateBatch = trpc.budget.updateItemAmounts.useMutation({
-    onSuccess: invalidateSummary,
+    onSuccess: invalidateSummaryAndContributions,
   });
   const moveItem = trpc.budget.moveItem.useMutation({
     onSuccess: invalidateSummary,

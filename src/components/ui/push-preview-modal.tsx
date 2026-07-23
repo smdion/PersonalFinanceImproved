@@ -15,12 +15,16 @@ export function PushPreviewModal({
   onConfirm,
   onCancel,
   isPending,
+  direction = "push",
+  destinationLabel = "YNAB",
 }: {
   title: string;
   items: PushPreviewItem[];
   onConfirm: () => void;
   onCancel: () => void;
   isPending?: boolean;
+  direction?: "push" | "pull";
+  destinationLabel?: string;
 }) {
   const changed = items.filter(
     (i) => Math.abs(i.newValue - i.currentYnab) >= 0.01,
@@ -28,6 +32,11 @@ export function PushPreviewModal({
   const unchanged = items.filter(
     (i) => Math.abs(i.newValue - i.currentYnab) < 0.01,
   );
+  const isPull = direction === "pull";
+  const beforeColumnLabel = isPull ? "Ledgr Now" : `${destinationLabel} Now`;
+  const applyTarget = isPull ? "Ledgr" : destinationLabel;
+  const actionVerb = isPull ? "Pull" : "Push";
+  const pendingVerb = isPull ? "Pulling..." : "Pushing...";
 
   return (
     <div
@@ -45,8 +54,8 @@ export function PushPreviewModal({
         <h3 className="text-sm font-semibold text-primary mb-1">{title}</h3>
         <p className="text-xs text-muted mb-3">
           {changed.length === 0
-            ? "No changes to push — all values match YNAB."
-            : `${changed.length} item${changed.length !== 1 ? "s" : ""} will be updated in YNAB.`}
+            ? `No changes to ${actionVerb.toLowerCase()} — all values match ${applyTarget}.`
+            : `${changed.length} item${changed.length !== 1 ? "s" : ""} will be updated in ${applyTarget}.`}
         </p>
 
         <div className="overflow-auto flex-1 mb-4">
@@ -57,7 +66,7 @@ export function PushPreviewModal({
                   <th className="py-1.5 pr-2 font-medium">Item</th>
                   <th className="py-1.5 pr-2 font-medium">Field</th>
                   <th className="py-1.5 pr-2 font-medium text-right">
-                    YNAB Now
+                    {beforeColumnLabel}
                   </th>
                   <th className="py-1.5 pr-2 font-medium text-right">
                     New Value
@@ -102,7 +111,7 @@ export function PushPreviewModal({
           {unchanged.length > 0 && (
             <p className="text-caption text-faint mt-2">
               {unchanged.length} item{unchanged.length !== 1 ? "s" : ""}{" "}
-              unchanged (already match YNAB).
+              unchanged (already match {applyTarget}).
             </p>
           )}
         </div>
@@ -120,8 +129,8 @@ export function PushPreviewModal({
             className="px-3 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded transition-colors disabled:opacity-50"
           >
             {isPending
-              ? "Pushing..."
-              : `Push ${changed.length} Change${changed.length !== 1 ? "s" : ""}`}
+              ? pendingVerb
+              : `${actionVerb} ${changed.length} Change${changed.length !== 1 ? "s" : ""}`}
           </button>
         </div>
       </div>

@@ -38,6 +38,7 @@ type ApiActualsData =
         activity: number;
         balance: number;
         budgeted: number;
+        goalTarget: number;
       }> | null;
     }
   | null
@@ -239,7 +240,12 @@ export function useBudgetDerivedData({
   const apiActualsMap = useMemo(() => {
     const map = new Map<
       number,
-      { activity: number; balance: number; budgeted: number }
+      {
+        activity: number;
+        balance: number;
+        budgeted: number;
+        goalTarget: number;
+      }
     >();
     if (apiActualsData?.actuals) {
       for (const a of apiActualsData.actuals) {
@@ -247,6 +253,7 @@ export function useBudgetDerivedData({
           activity: a.activity,
           balance: a.balance,
           budgeted: a.budgeted,
+          goalTarget: a.goalTarget,
         });
       }
     }
@@ -254,7 +261,9 @@ export function useBudgetDerivedData({
   }, [apiActualsData]);
 
   // ---- Push-preview builder ----
-  // Returns the diff items needed to render the "push to API" confirmation modal.
+  // Returns the diff items needed to render the "push to API" confirmation
+  // modal. Ledgr's budget amount maps to YNAB's goal target (not the
+  // month-specific "budgeted" field), matching what syncBudgetToApi writes.
   const buildPushPreviewItems = (activeColumn: number): PushPreviewItem[] => {
     const items: PushPreviewItem[] = [];
     for (const item of rawItems) {
@@ -267,9 +276,33 @@ export function useBudgetDerivedData({
       const actual = apiActualsMap.get(item.id);
       items.push({
         name: item.subcategory,
-        field: "Budgeted",
-        currentYnab: actual?.budgeted ?? 0,
+        field: "Goal Target",
+        currentYnab: actual?.goalTarget ?? 0,
         newValue,
+      });
+    }
+    return items;
+  };
+
+  // ---- Pull-preview builder ----
+  // Returns the diff items needed to render the "pull from API" confirmation
+  // modal: current Ledgr amount vs. what it will become after pulling YNAB's
+  // goal target, matching what syncBudgetFromApi reads.
+  const buildPullPreviewItems = (activeColumn: number): PushPreviewItem[] => {
+    const items: PushPreviewItem[] = [];
+    for (const item of rawItems) {
+      if (!item.apiCategoryId) continue;
+      if (item.apiSyncDirection !== "pull" && item.apiSyncDirection !== "both")
+        continue;
+      const amounts = item.amounts as number[];
+      const colIdx = Math.min(activeColumn, amounts.length - 1);
+      const currentValue = amounts[colIdx] ?? 0;
+      const actual = apiActualsMap.get(item.id);
+      items.push({
+        name: item.subcategory,
+        field: "Goal Target",
+        currentYnab: currentValue,
+        newValue: actual?.goalTarget ?? 0,
       });
     }
     return items;
@@ -296,5 +329,6 @@ export function useBudgetDerivedData({
     sinkingFunds,
     apiActualsMap,
     buildPushPreviewItems,
+    buildPullPreviewItems,
   };
 }

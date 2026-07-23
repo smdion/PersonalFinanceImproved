@@ -9,13 +9,43 @@
  */
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
+import { eq } from "drizzle-orm";
+import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import {
   createTestCaller,
   seedStandardDataset,
   seedBudgetItem,
+  seedPerson,
   viewerSession,
   createViewerSessionWithPermissions,
 } from "./setup";
+
+/** Seed a jobless (budget-linkable) contribution account with correct schema field names. */
+function seedLinkableContributionAccount(
+  db: Awaited<ReturnType<typeof createTestCaller>>["db"],
+  personId: number,
+  overrides: Partial<
+    typeof sqliteSchema.contributionAccounts.$inferInsert
+  > = {},
+): number {
+  const result = db
+    .insert(sqliteSchema.contributionAccounts)
+    .values({
+      personId,
+      jobId: null,
+      accountType: "brokerage",
+      parentCategory: "Portfolio",
+      taxTreatment: "after_tax",
+      contributionMethod: "fixed_monthly",
+      contributionValue: "75.00",
+      employerMatchType: "none",
+      isActive: true,
+      ...overrides,
+    })
+    .returning({ id: sqliteSchema.contributionAccounts.id })
+    .get();
+  return result.id;
+}
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -940,6 +970,152 @@ describe("budget router", () => {
           expect(item.contribAmount).toBeNull();
         }
       }
+    });
+  });
+
+  // =========================================================================
+  // Linked-item amount edits write through to contribution_accounts
+  // =========================================================================
+
+  describe("amount edits on contribution-linked items", () => {
+    let linkedItemCounter = 0;
+
+    async function seedLinkedItem(
+      overrides: Partial<
+        typeof sqliteSchema.contributionAccounts.$inferInsert
+      > = {},
+    ) {
+      linkedItemCounter += 1;
+      const personId = await seedPerson(db);
+      const contribAccountId = seedLinkableContributionAccount(
+        db,
+        personId,
+        overrides,
+      );
+      const itemId = seedBudgetItem(db, profileId, {
+        category: "Investing",
+        subcategory: `LT Brokerage Test ${linkedItemCounter}`,
+        amounts: [999], // should never be read once linked
+        contributionAccountId: contribAccountId,
+      });
+      return { contribAccountId, itemId };
+    }
+
+    function getContributionValue(contribAccountId: number): number {
+      const row = db
+        .select()
+        .from(sqliteSchema.contributionAccounts)
+        .where(eq(sqliteSchema.contributionAccounts.id, contribAccountId))
+        .get()!;
+      return Number(row.contributionValue);
+    }
+
+    function getBudgetItemAmounts(itemId: number): number[] {
+      const row = db
+        .select()
+        .from(sqliteSchema.budgetItems)
+        .where(eq(sqliteSchema.budgetItems.id, itemId))
+        .get()!;
+      return row.amounts as number[];
+    }
+
+    it("updateItemAmount writes through to contribution_accounts.contribution_value, not budget_items.amounts (fixed_monthly)", async () => {
+      const { contribAccountId, itemId } = await seedLinkedItem({
+        contributionMethod: "fixed_monthly",
+        contributionValue: "75.00",
+      });
+
+      await caller.budget.updateItemAmount({
+        id: itemId,
+        colIndex: 0,
+        amount: 100,
+      });
+
+      expect(getContributionValue(contribAccountId)).toBeCloseTo(100);
+      expect(getBudgetItemAmounts(itemId)[0]).toBe(999); // untouched
+    });
+
+    it("updateItemAmounts (batch) writes through to contribution_accounts for linked items and amounts for unlinked items", async () => {
+      const { contribAccountId, itemId: linkedItemId } = await seedLinkedItem({
+        contributionMethod: "fixed_monthly",
+        contributionValue: "75.00",
+      });
+      const unlinkedItemId = seedBudgetItem(db, profileId, {
+        category: "Essentials",
+        subcategory: "Batch Test Unlinked",
+        amounts: [50],
+      });
+
+      await caller.budget.updateItemAmounts({
+        updates: [
+          { id: linkedItemId, colIndex: 0, amount: 120 },
+          { id: unlinkedItemId, colIndex: 0, amount: 80 },
+        ],
+      });
+
+      expect(getContributionValue(contribAccountId)).toBeCloseTo(120);
+      expect(getBudgetItemAmounts(linkedItemId)[0]).toBe(999); // untouched
+      expect(getBudgetItemAmounts(unlinkedItemId)[0]).toBe(80);
+    });
+
+    it("fixed_annual round-trips: editing to the currently-displayed monthly value is a no-op", async () => {
+      const { contribAccountId, itemId } = await seedLinkedItem({
+        contributionMethod: "fixed_annual",
+        contributionValue: "1000.00", // monthly = 1000/12 = 83.333... -> displayed as 83.33
+      });
+
+      const before = await caller.budget.computeActiveSummary();
+      const linked = before.rawItems!.find((i) => i.id === itemId)!;
+      expect(linked.contribAmount).toBeCloseTo(83.33, 2);
+
+      await caller.budget.updateItemAmount({
+        id: itemId,
+        colIndex: 0,
+        amount: linked.contribAmount!,
+      });
+
+      // Should not drift (e.g. to 999.96) from re-saving the displayed value.
+      expect(getContributionValue(contribAccountId)).toBeCloseTo(1000, 2);
+    });
+
+    it("fixed_per_period converts correctly", async () => {
+      // No jobs seeded in this suite's dataset besides the one from
+      // seedStandardDataset (biweekly, 26 periods/year).
+      const { contribAccountId, itemId } = await seedLinkedItem({
+        contributionMethod: "fixed_per_period",
+        contributionValue: "50.00", // monthly = 50*26/12 = 108.33
+      });
+
+      const before = await caller.budget.computeActiveSummary();
+      const linked = before.rawItems!.find((i) => i.id === itemId)!;
+      expect(linked.contribAmount).toBeCloseTo((50 * 26) / 12, 2);
+
+      await caller.budget.updateItemAmount({
+        id: itemId,
+        colIndex: 0,
+        amount: 200, // new monthly target
+      });
+
+      // value = 200 * 12 / 26
+      expect(getContributionValue(contribAccountId)).toBeCloseTo(
+        (200 * 12) / 26,
+        2,
+      );
+    });
+
+    it("rejects editing a percent_of_salary-linked item with a clear error", async () => {
+      const { itemId } = await seedLinkedItem({
+        contributionMethod: "percent_of_salary",
+        contributionValue: "10",
+      });
+
+      await expect(
+        caller.budget.updateItemAmount({
+          id: itemId,
+          colIndex: 0,
+          amount: 100,
+        }),
+      ).rejects.toThrow(/percent_of_salary/);
     });
   });
 });

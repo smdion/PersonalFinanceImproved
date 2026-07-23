@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import type { PayrollBreakdown, ColumnResult, SinkingFundLine } from "./types";
+import { computeTotalSinking, computeUnallocated } from "./helpers";
 
 type BudgetSummaryTableProps = {
   cols: string[];
@@ -458,11 +459,7 @@ export function BudgetSummaryTable({
 
               {/* Savings — combines sinking funds + unallocated remainder */}
               {(() => {
-                const totalSinking =
-                  sinkingFunds?.reduce(
-                    (s, f) => s + f.monthlyContribution,
-                    0,
-                  ) ?? 0;
+                const totalSinking = computeTotalSinking(sinkingFunds);
                 const hasSinkingFunds = sinkingFunds && sinkingFunds.length > 0;
                 return (
                   <>
@@ -535,10 +532,11 @@ export function BudgetSummaryTable({
                             Unallocated
                           </td>
                           {allColumnResults.map((r, i) => {
-                            const unallocated =
-                              (payrollBreakdowns[i]?.netMonthly ?? 0) -
-                              r.totalMonthly -
-                              totalSinking;
+                            const unallocated = computeUnallocated(
+                              payrollBreakdowns[i]?.netMonthly ?? 0,
+                              r.totalMonthly,
+                              totalSinking,
+                            );
                             return (
                               <td
                                 key={cols[i]}

@@ -22,6 +22,7 @@ export function useInvalidateBudget(): {
   invalidateSummaryAndProfiles: () => void;
   invalidateProfiles: () => void;
   invalidateSummaryAndSavings: () => void;
+  invalidateSummaryAndContributions: () => void;
 } {
   const utils = trpc.useUtils();
 
@@ -43,10 +44,26 @@ export function useInvalidateBudget(): {
     utils.savings.invalidate();
   }, [utils]);
 
+  // Amount edits on a contribution-linked budget item write through to
+  // contribution_accounts, which Paycheck/Contribution/Retirement/
+  // Projection/Savings/Brokerage/settings all read from — bust all of
+  // them so a linked edit shows up everywhere without a manual reload.
+  const invalidateSummaryAndContributions = useCallback(() => {
+    utils.budget.computeActiveSummary.invalidate();
+    utils.paycheck.invalidate();
+    utils.contribution.invalidate();
+    utils.retirement.invalidate();
+    utils.projection.invalidate();
+    utils.savings.invalidate();
+    utils.brokerage.invalidate();
+    utils.settings.contributionAccounts.invalidate();
+  }, [utils]);
+
   return {
     invalidateSummary,
     invalidateSummaryAndProfiles,
     invalidateProfiles,
     invalidateSummaryAndSavings,
+    invalidateSummaryAndContributions,
   };
 }

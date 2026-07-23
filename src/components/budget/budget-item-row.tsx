@@ -93,7 +93,11 @@ export function BudgetItemRow({
           {contribMonthly !== null && (
             <span
               className="flex-shrink-0 text-caption font-semibold text-indigo-600 bg-indigo-50 rounded px-0.5 leading-tight"
-              title={`Also tracked as paycheck contribution (${formatCurrency(contribMonthly)}/mo). Values are independent — editing here won't change the paycheck.`}
+              title={
+                item.contributionAccountId
+                  ? `Linked to paycheck contribution (${formatCurrency(contribMonthly)}/mo) — editing here updates it everywhere.`
+                  : `Also tracked as paycheck contribution (${formatCurrency(contribMonthly)}/mo). Values are independent — editing here won't change the paycheck.`
+              }
             >
               PC
             </span>
@@ -189,9 +193,8 @@ export function BudgetItemRow({
           item.contribAmount != null
             ? item.contribAmount
             : (item.amounts[col] ?? 0);
-        const dbAmt = item.amounts[col] ?? 0;
         if (editMode && canEdit) {
-          const draftVal = getDraft(item.id, col, dbAmt);
+          const draftVal = getDraft(item.id, col, amt);
           return (
             <td key={col} className="text-right py-1 px-2">
               <input
@@ -222,7 +225,7 @@ export function BudgetItemRow({
             className="text-right py-1.5 px-3 tabular-nums text-secondary"
           >
             <InlineEdit
-              value={String(dbAmt)}
+              value={String(amt)}
               type="number"
               formatDisplay={() => {
                 const n = parseFloat(String(amt));
@@ -231,7 +234,7 @@ export function BudgetItemRow({
               parseInput={(v) => String(parseFloat(v) || 0)}
               onSave={(newVal) => {
                 const newAmt = parseFloat(newVal);
-                if (newAmt !== dbAmt) {
+                if (newAmt !== amt) {
                   onUpdateCell(item.id, col, newAmt);
                 }
               }}

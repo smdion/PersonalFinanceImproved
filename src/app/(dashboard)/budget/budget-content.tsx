@@ -20,6 +20,7 @@ import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { ContributionProfileManager } from "@/components/budget";
 import type { ColumnResult } from "@/components/budget";
 import { BudgetPushYnabModal } from "@/components/budget/budget-push-ynab-modal";
+import { BudgetPullYnabModal } from "@/components/budget/budget-pull-ynab-modal";
 import { BudgetSummaryBar } from "@/components/budget/budget-summary-bar";
 import {
   BudgetProfileSidebar,
@@ -109,6 +110,9 @@ export function BudgetContent() {
   const [pushPreviewItems, setPushPreviewItems] = useState<ReturnType<
     typeof buildPushPreviewItems
   > | null>(null);
+  const [pullPreviewItems, setPullPreviewItems] = useState<ReturnType<
+    typeof buildPullPreviewItems
+  > | null>(null);
   const [renamingProfileId, setRenamingProfileId] = useState<number | null>(
     null,
   );
@@ -148,6 +152,7 @@ export function BudgetContent() {
     sinkingFunds,
     apiActualsMap,
     buildPushPreviewItems,
+    buildPullPreviewItems,
   } = useBudgetDerivedData({
     data,
     savingsGoals: savingsGoals as SavingsGoalEntry[] | undefined,
@@ -285,6 +290,8 @@ export function BudgetContent() {
                 isWeighted,
                 columnMonths,
                 allColumnResults: allColumnResults as ColumnResult[] | null,
+                payrollBreakdowns,
+                sinkingFunds,
               }}
               syncErrors={{
                 saveError: updateBatch.error,
@@ -295,7 +302,7 @@ export function BudgetContent() {
                 isPulling: syncFromApi.isPending,
                 isPushing: syncToApi.isPending,
                 onPullFromApi: () =>
-                  syncFromApi.mutate({ selectedColumn: activeColumn }),
+                  setPullPreviewItems(buildPullPreviewItems(activeColumn)),
                 onOpenPushPreview: () =>
                   setPushPreviewItems(buildPushPreviewItems(activeColumn)),
               }}
@@ -390,6 +397,22 @@ export function BudgetContent() {
               )
             }
             onCancel={() => setPushPreviewItems(null)}
+          />
+        )}
+
+        {pullPreviewItems && (
+          <BudgetPullYnabModal
+            items={pullPreviewItems}
+            activeColumnLabel={cols[activeColumn]}
+            apiService={apiService}
+            isPending={syncFromApi.isPending}
+            onConfirm={() =>
+              syncFromApi.mutate(
+                { selectedColumn: activeColumn },
+                { onSettled: () => setPullPreviewItems(null) },
+              )
+            }
+            onCancel={() => setPullPreviewItems(null)}
           />
         )}
       </div>
