@@ -44,16 +44,26 @@ export interface BudgetAPIClient {
     amount: number,
   ): Promise<void>;
 
-  /** Update the monthly-funding ("MF") goal target for a category via the
-   * plan-level endpoint. Sends goal_type "MF" + goal_target explicitly —
-   * goal fields don't exist on the month-specific endpoint. */
+  /** Set a recurring monthly-assignment goal (displays in YNAB as goal_type
+   * "NEED"/"MF" — same concept, old vs. new name) via the plan-level
+   * endpoint: goal_target + goal_frequency: "monthly". Note goal_type
+   * itself is a read-only, derived field in YNAB's API — it cannot be set
+   * directly; see the implementation for the full explanation. */
   updateCategoryGoalTarget(
     categoryId: string,
     targetAmount: number,
   ): Promise<void>;
 
-  /** Update the target-balance goal for a category via the plan-level endpoint.
-   * Sends goal_target only — the API infers goal_type: "TB" with no date required. */
+  /** Update a target-balance goal's dollar amount ONLY — does not create or
+   * change the goal's type/cadence. YNAB's public API cannot create the
+   * "Custom cadence, no repeat" goal shape (confirmed by live testing and
+   * against the OpenAPI spec: `goal_frequency` only accepts monthly/weekly/
+   * yearly); every attempt to do so via this endpoint either no-opped or
+   * actively corrupted the goal into a recurring monthly re-assignment.
+   * The goal's type must be configured once, manually, in the YNAB app —
+   * this sends a single `goal_target` PATCH and nothing else, which per the
+   * spec updates only the amount and leaves the existing shape untouched.
+   * See the implementation for the full history of what was tried. */
   updateCategoryTargetBalance(
     categoryId: string,
     targetAmount: number,
