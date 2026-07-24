@@ -661,11 +661,14 @@ export default function SavingsPage() {
                           ) && (
                             <button
                               onClick={() =>
-                                apiSync.recalculateAllocation.mutate({})
+                                apiSync.buildRecalculateAllPreview(
+                                  rawGoals,
+                                  maxMonthlyFunding,
+                                )
                               }
                               disabled={apiSync.recalculateAllocation.isPending}
                               className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors disabled:opacity-50"
-                              title="Recompute every percentage-based goal's dollar amount from current income"
+                              title="Preview and recompute every percentage-based goal's dollar amount from current income"
                             >
                               {apiSync.recalculateAllocation.isPending
                                 ? "Recalculating..."
@@ -874,6 +877,11 @@ export default function SavingsPage() {
         pendingPushGoalId={apiSync.pendingPushGoalId}
         setPendingPushGoalId={apiSync.setPendingPushGoalId}
         pushMutation={apiSync.pushToApi}
+        recalcPreviewItems={apiSync.recalcPreviewItems}
+        setRecalcPreviewItems={apiSync.setRecalcPreviewItems}
+        pendingRecalcGoalId={apiSync.pendingRecalcGoalId}
+        setPendingRecalcGoalId={apiSync.setPendingRecalcGoalId}
+        recalculateMutation={apiSync.recalculateAllocation}
       />
     </div>
   );

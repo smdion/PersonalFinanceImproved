@@ -29,7 +29,7 @@ export function PushPreviewModal({
   onConfirm: () => void;
   onCancel: () => void;
   isPending?: boolean;
-  direction?: "push" | "pull";
+  direction?: "push" | "pull" | "recalculate";
   destinationLabel?: string;
 }) {
   const changed = items.filter(
@@ -40,10 +40,23 @@ export function PushPreviewModal({
   );
   const staleItems = items.filter((i) => i.stale);
   const isPull = direction === "pull";
-  const beforeColumnLabel = isPull ? "Ledgr Now" : `${destinationLabel} Now`;
-  const applyTarget = isPull ? "Ledgr" : destinationLabel;
-  const actionVerb = isPull ? "Pull" : "Push";
-  const pendingVerb = isPull ? "Pulling..." : "Pushing...";
+  const isRecalculate = direction === "recalculate";
+  const beforeColumnLabel = isRecalculate
+    ? "Current"
+    : isPull
+      ? "Ledgr Now"
+      : `${destinationLabel} Now`;
+  const applyTarget = isRecalculate
+    ? "the live calculation"
+    : isPull
+      ? "Ledgr"
+      : destinationLabel;
+  const actionVerb = isRecalculate ? "Recalculate" : isPull ? "Pull" : "Push";
+  const pendingVerb = isRecalculate
+    ? "Recalculating..."
+    : isPull
+      ? "Pulling..."
+      : "Pushing...";
 
   // Push sends one request per changed item to YNAB, so a full push can
   // take well over 30 seconds — show elapsed time so it's clear the app is
@@ -77,9 +90,13 @@ export function PushPreviewModal({
         <h3 className="text-sm font-semibold text-primary mb-1">{title}</h3>
         <p className="text-xs text-muted mb-3">
           {changed.length === 0
-            ? `No changes to ${actionVerb.toLowerCase()} — all values match ${applyTarget}.`
-            : `${changed.length} item${changed.length !== 1 ? "s" : ""} will be updated in ${applyTarget}.`}
-          {!isPull && changed.length > 0 && (
+            ? isRecalculate
+              ? "No changes — all goals already match the live calculation."
+              : `No changes to ${actionVerb.toLowerCase()} — all values match ${applyTarget}.`
+            : isRecalculate
+              ? `${changed.length} goal${changed.length !== 1 ? "s" : ""} will be recalculated from ${applyTarget}.`
+              : `${changed.length} item${changed.length !== 1 ? "s" : ""} will be updated in ${applyTarget}.`}
+          {direction === "push" && changed.length > 0 && (
             <>
               {" "}
               <span className="text-faint">
@@ -90,7 +107,7 @@ export function PushPreviewModal({
           )}
         </p>
 
-        {!isPull && staleItems.length > 0 && (
+        {direction === "push" && staleItems.length > 0 && (
           <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-1.5 mb-3">
             ⚠ {staleItems.length} percentage-based goal
             {staleItems.length !== 1 ? "s" : ""} below{" "}

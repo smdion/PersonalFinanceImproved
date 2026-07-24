@@ -19,6 +19,7 @@ interface RawGoal {
   isApiSyncEnabled?: boolean | null;
   isEmergencyFund?: boolean | null;
   allocationPercent?: string | null;
+  isActive?: boolean;
 }
 
 interface ApiCategoryGroup {
@@ -32,6 +33,12 @@ interface ApiCategoryGroup {
  *  independent useMutation() call. */
 type PushMutation = ReturnType<
   typeof trpc.savings.pushContributionsToApi.useMutation
+>;
+
+/** Same single-instance rule as PushMutation — shared with the page's bulk
+ *  "Recalculate All %" button and FundManagementSection's per-goal buttons. */
+type RecalculateMutation = ReturnType<
+  typeof trpc.savings.recalculateAllocation.useMutation
 >;
 
 export interface ApiSyncSectionProps {
@@ -58,6 +65,11 @@ export interface ApiSyncSectionProps {
   pendingPushGoalId: number | undefined;
   setPendingPushGoalId: (id: number | undefined) => void;
   pushMutation: PushMutation;
+  recalcPreviewItems: PushPreviewItem[] | null;
+  setRecalcPreviewItems: (items: PushPreviewItem[] | null) => void;
+  pendingRecalcGoalId: number | undefined;
+  setPendingRecalcGoalId: (id: number | undefined) => void;
+  recalculateMutation: RecalculateMutation;
 }
 
 export function ApiSyncSection({
@@ -73,6 +85,11 @@ export function ApiSyncSection({
   pendingPushGoalId,
   setPendingPushGoalId,
   pushMutation,
+  recalcPreviewItems,
+  setRecalcPreviewItems,
+  pendingRecalcGoalId,
+  setPendingRecalcGoalId,
+  recalculateMutation,
 }: ApiSyncSectionProps) {
   const utils = trpc.useUtils();
 
@@ -154,6 +171,33 @@ export function ApiSyncSection({
           isPending={pushMutation.isPending}
         />
       )}
+
+      {/* Recalculate percentage-based goals preview modal */}
+      {recalcPreviewItems && (
+        <PushPreviewModal
+          title="Recalculate percentage-based savings goals"
+          items={recalcPreviewItems}
+          direction="recalculate"
+          onConfirm={() => {
+            recalculateMutation.mutate(
+              pendingRecalcGoalId !== undefined
+                ? { goalId: pendingRecalcGoalId }
+                : {},
+              {
+                onSettled: () => {
+                  setRecalcPreviewItems(null);
+                  setPendingRecalcGoalId(undefined);
+                },
+              },
+            );
+          }}
+          onCancel={() => {
+            setRecalcPreviewItems(null);
+            setPendingRecalcGoalId(undefined);
+          }}
+          isPending={recalculateMutation.isPending}
+        />
+      )}
     </>
   );
 }
@@ -212,6 +256,12 @@ export function useApiSync() {
   const [pendingPushGoalId, setPendingPushGoalId] = useState<
     number | undefined
   >(undefined);
+  const [recalcPreviewItems, setRecalcPreviewItems] = useState<
+    PushPreviewItem[] | null
+  >(null);
+  const [pendingRecalcGoalId, setPendingRecalcGoalId] = useState<
+    number | undefined
+  >(undefined);
 
   const onLinkToApi = useCallback(
     (goalId: number) => setLinkingGoalId(goalId),
@@ -242,6 +292,35 @@ export function useApiSync() {
       deleteOverride.mutate(params),
     [deleteOverride],
   );
+  const buildRecalculateAllPreview = useCallback(
+    (
+      rawGoals: RawGoal[],
+      maxMonthlyFunding: number | null,
+      goalId?: number,
+    ) => {
+      const items: PushPreviewItem[] = [];
+      for (const g of rawGoals) {
+        if (!g.isActive || g.allocationPercent == null) continue;
+        if (goalId !== undefined && g.id !== goalId) continue;
+        const pct = parseFloat(g.allocationPercent);
+        const stored = parseFloat(g.monthlyContribution ?? "0") || 0;
+        const live = resolveEffectiveMonthlyContribution(
+          pct,
+          maxMonthlyFunding,
+          stored,
+        );
+        items.push({
+          name: g.name,
+          field: "Monthly Contribution",
+          currentYnab: stored,
+          newValue: live,
+        });
+      }
+      setPendingRecalcGoalId(goalId);
+      setRecalcPreviewItems(items);
+    },
+    [],
+  );
 
   return {
     // State for ApiSyncSection component
@@ -251,6 +330,11 @@ export function useApiSync() {
     setPushPreviewItems,
     pendingPushGoalId,
     setPendingPushGoalId,
+    recalcPreviewItems,
+    setRecalcPreviewItems,
+    pendingRecalcGoalId,
+    setPendingRecalcGoalId,
+    buildRecalculateAllPreview,
     // Callbacks for header buttons
     pushToApiPending: pushToApi.isPending,
     // Single mutation instance — pass straight through to ApiSyncSection
