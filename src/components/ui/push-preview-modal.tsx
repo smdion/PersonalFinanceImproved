@@ -23,6 +23,7 @@ export function PushPreviewModal({
   isPending,
   direction = "push",
   destinationLabel = "YNAB",
+  valueFormat = "currency",
 }: {
   title: string;
   items: PushPreviewItem[];
@@ -31,7 +32,12 @@ export function PushPreviewModal({
   isPending?: boolean;
   direction?: "push" | "pull" | "recalculate";
   destinationLabel?: string;
+  /** How to render currentYnab/newValue/delta — "currency" (default) or
+   *  "percent" for previews of allocation_percent changes. */
+  valueFormat?: "currency" | "percent";
 }) {
+  const formatValue = (n: number) =>
+    valueFormat === "percent" ? `${n.toFixed(3)}%` : formatCurrency(n);
   const changed = items.filter(
     (i) => Math.abs(i.newValue - i.currentYnab) >= 0.01,
   );
@@ -157,16 +163,16 @@ export function PushPreviewModal({
                       </td>
                       <td className="py-1.5 pr-2 text-muted">{item.field}</td>
                       <td className="py-1.5 pr-2 text-right tabular-nums text-muted">
-                        {formatCurrency(item.currentYnab)}
+                        {formatValue(item.currentYnab)}
                       </td>
                       <td className="py-1.5 pr-2 text-right tabular-nums font-medium text-primary">
-                        {formatCurrency(item.newValue)}
+                        {formatValue(item.newValue)}
                       </td>
                       <td
                         className={`py-1.5 text-right tabular-nums font-medium ${delta >= 0 ? "text-green-600" : "text-red-600"}`}
                       >
                         {delta >= 0 ? "+" : ""}
-                        {formatCurrency(delta)}
+                        {formatValue(delta)}
                       </td>
                     </tr>
                   );

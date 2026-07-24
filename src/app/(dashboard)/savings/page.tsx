@@ -659,21 +659,42 @@ export default function SavingsPage() {
                           {rawGoals.some(
                             (g) => g.allocationPercent != null,
                           ) && (
-                            <button
-                              onClick={() =>
-                                apiSync.buildRecalculateAllPreview(
-                                  rawGoals,
-                                  maxMonthlyFunding,
-                                )
-                              }
-                              disabled={apiSync.recalculateAllocation.isPending}
-                              className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors disabled:opacity-50"
-                              title="Preview and recompute every percentage-based goal's dollar amount from current income"
-                            >
-                              {apiSync.recalculateAllocation.isPending
-                                ? "Recalculating..."
-                                : "Recalculate All %"}
-                            </button>
+                            <>
+                              <button
+                                onClick={() =>
+                                  apiSync.buildLockInAllPreview(
+                                    rawGoals,
+                                    maxMonthlyFunding,
+                                  )
+                                }
+                                disabled={
+                                  apiSync.lockInAllocationPercent.isPending
+                                }
+                                className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors disabled:opacity-50"
+                                title="Keep every percentage-based goal's dollar amount as-is; just update its % to reflect current income"
+                              >
+                                {apiSync.lockInAllocationPercent.isPending
+                                  ? "Updating..."
+                                  : "Update % (dollar unchanged)"}
+                              </button>
+                              <button
+                                onClick={() =>
+                                  apiSync.buildRecalculateAllPreview(
+                                    rawGoals,
+                                    maxMonthlyFunding,
+                                  )
+                                }
+                                disabled={
+                                  apiSync.recalculateAllocation.isPending
+                                }
+                                className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors disabled:opacity-50"
+                                title="Preview and recompute every percentage-based goal's dollar amount from current income"
+                              >
+                                {apiSync.recalculateAllocation.isPending
+                                  ? "Pulling in pay..."
+                                  : "Pull In New Pay →"}
+                              </button>
+                            </>
                           )}
                           {apiBalancesData?.service && (
                             <button
@@ -849,6 +870,7 @@ export default function SavingsPage() {
               onConvertToBudgetItem={apiSync.onConvertToBudgetItem}
               onPushPreview={apiSync.onPushPreview}
               recalculateAllocation={apiSync.recalculateAllocation}
+              lockInAllocationPercent={apiSync.lockInAllocationPercent}
               callbacksRef={fundCallbacksRef}
               showNewFund={showNewFund}
               setShowNewFund={setShowNewFund}
@@ -882,6 +904,11 @@ export default function SavingsPage() {
         pendingRecalcGoalId={apiSync.pendingRecalcGoalId}
         setPendingRecalcGoalId={apiSync.setPendingRecalcGoalId}
         recalculateMutation={apiSync.recalculateAllocation}
+        lockInPreviewItems={apiSync.lockInPreviewItems}
+        setLockInPreviewItems={apiSync.setLockInPreviewItems}
+        pendingLockInGoalId={apiSync.pendingLockInGoalId}
+        setPendingLockInGoalId={apiSync.setPendingLockInGoalId}
+        lockInMutation={apiSync.lockInAllocationPercent}
       />
     </div>
   );

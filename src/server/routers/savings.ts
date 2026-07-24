@@ -7,6 +7,7 @@ import {
   createCallerFactory,
   protectedProcedure,
   savingsProcedure,
+  type Context,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateSavings } from "@/lib/calculators/savings";
@@ -204,6 +205,36 @@ function resolveEfundTierIndex(
       ? (settingsMap.get("efund_budget_column") as number)
       : null;
   return overrideTierIndex ?? efundSavedColumn ?? budgetActiveColumn;
+}
+
+/**
+ * Live savings-capacity pool ((take-home - budgeted) across earners), via
+ * the actual paycheck/budget routers — not a re-derived shortcut. Shared by
+ * recalculateAllocation and lockInAllocationPercent, the only two mutations
+ * allowed to move a percentage-based goal's dollar/percent (see
+ * recalculateAllocation's doc comment for why display/push never do this
+ * live automatically).
+ */
+async function computeLiveMaxMonthlyFunding(
+  ctx: Context,
+): Promise<number | null> {
+  const paycheckCaller = createCallerFactory(paycheckRouter)(ctx);
+  const budgetCaller = createCallerFactory(budgetRouter)(ctx);
+  const [paycheckData, budgetSummary] = await Promise.all([
+    paycheckCaller.computeSummary(),
+    budgetCaller.computeActiveSummary(),
+  ]);
+  const budgetMonthlyTotal = budgetSummary?.result
+    ? budgetSummary.columnMonths
+      ? (budgetSummary.weightedAnnualTotal ?? 0) / 12
+      : (budgetSummary.result.totalMonthly ?? 0)
+    : null;
+  return paycheckData && budgetMonthlyTotal !== null
+    ? computeMaxMonthlyFunding(
+        paycheckData.people as CapacityPerson[],
+        budgetMonthlyTotal,
+      )
+    : null;
 }
 
 const plannedTransactionInput = z.object({
@@ -1081,25 +1112,7 @@ export const savingsRouter = createTRPCRouter({
       );
       if (targets.length === 0) return { updated: 0 };
 
-      const paycheckCaller = createCallerFactory(paycheckRouter)(ctx);
-      const budgetCaller = createCallerFactory(budgetRouter)(ctx);
-      const [paycheckData, budgetSummary] = await Promise.all([
-        paycheckCaller.computeSummary(),
-        budgetCaller.computeActiveSummary(),
-      ]);
-      const budgetMonthlyTotal = budgetSummary?.result
-        ? budgetSummary.columnMonths
-          ? (budgetSummary.weightedAnnualTotal ?? 0) / 12
-          : (budgetSummary.result.totalMonthly ?? 0)
-        : null;
-      const maxMonthlyFunding =
-        paycheckData && budgetMonthlyTotal !== null
-          ? computeMaxMonthlyFunding(
-              paycheckData.people as CapacityPerson[],
-              budgetMonthlyTotal,
-            )
-          : null;
-
+      const maxMonthlyFunding = await computeLiveMaxMonthlyFunding(ctx);
       if (maxMonthlyFunding === null) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
@@ -1117,6 +1130,59 @@ export const savingsRouter = createTRPCRouter({
           await tx
             .update(schema.savingsGoals)
             .set({ monthlyContribution: newAmount.toFixed(2) })
+            .where(eq(schema.savingsGoals.id, g.id));
+        }
+      });
+
+      return { updated: targets.length };
+    }),
+
+  /**
+   * Inverse of recalculateAllocation: holds monthly_contribution (the
+   * dollar amount) fixed and recomputes allocation_percent to match what
+   * share of the CURRENT live pool that dollar amount represents. Use this
+   * after a raise when you want to keep sending the same dollar amount to
+   * a goal (not sweep the raise into it) while keeping the stored percent
+   * an accurate description of "what % of current income this is" rather
+   * than a stale figure computed against a smaller pool.
+   * allocation_percent is decimal(6,3) — rounded to 3 decimals, which at
+   * typical pool sizes is sub-dollar precision (accepted trade-off; see
+   * recalculateAllocation for the shared live-pool computation this reuses).
+   */
+  lockInAllocationPercent: savingsProcedure
+    .input(z.object({ goalId: z.number().int().optional() }).optional())
+    .mutation(async ({ ctx, input }) => {
+      const goals = await ctx.db.select().from(schema.savingsGoals);
+      const targets = goals.filter(
+        (g) =>
+          g.isActive &&
+          g.allocationPercent != null &&
+          (input?.goalId === undefined || g.id === input.goalId),
+      );
+      if (targets.length === 0) return { updated: 0 };
+
+      const maxMonthlyFunding = await computeLiveMaxMonthlyFunding(ctx);
+      if (maxMonthlyFunding === null) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "No live paycheck/budget data available to recalculate from",
+        });
+      }
+      if (maxMonthlyFunding <= 0) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message:
+            "Current income pool is zero or negative — can't compute a percent",
+        });
+      }
+
+      await ctx.db.transaction(async (tx) => {
+        for (const g of targets) {
+          const newPercent =
+            (toNumber(g.monthlyContribution) / maxMonthlyFunding) * 100;
+          await tx
+            .update(schema.savingsGoals)
+            .set({ allocationPercent: newPercent.toFixed(3) })
             .where(eq(schema.savingsGoals.id, g.id));
         }
       });

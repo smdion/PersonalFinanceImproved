@@ -121,10 +121,15 @@ export interface FundManagementSectionProps {
   onPushPreview: (items: PushPreviewItem[], goalId?: number) => void;
   /** Single shared mutation instance from useApiSync() — see pushMutation
    *  in ApiSyncSection for why this must not be a second, independent
-   *  useMutation() call (the page's bulk "Recalculate All %" button and
+   *  useMutation() call (the page's bulk "Pull In New Pay →" button and
    *  this section's per-goal buttons need to share one pending state). */
   recalculateAllocation: ReturnType<
     typeof trpc.savings.recalculateAllocation.useMutation
+  >;
+  /** Same single-instance rule, for the "Update % (dollar unchanged)" bulk
+   *  button and this section's per-goal buttons. */
+  lockInAllocationPercent: ReturnType<
+    typeof trpc.savings.lockInAllocationPercent.useMutation
   >;
   /** Ref exposing goal update callbacks for the page to pipe to other sections */
   callbacksRef: React.MutableRefObject<FundManagementCallbacks | null>;
@@ -176,6 +181,7 @@ export function FundManagementSection({
   onConvertToBudgetItem,
   onPushPreview,
   recalculateAllocation,
+  lockInAllocationPercent,
   callbacksRef,
   showNewFund: _showNewFund,
   setShowNewFund: _setShowNewFund,
@@ -499,6 +505,12 @@ export function FundManagementSection({
                     recalculateAllocation.mutate({ goalId: raw.id })
                   }
                   recalculateAllocationPending={recalculateAllocation.isPending}
+                  onLockInAllocationPercent={() =>
+                    lockInAllocationPercent.mutate({ goalId: raw.id })
+                  }
+                  lockInAllocationPercentPending={
+                    lockInAllocationPercent.isPending
+                  }
                   onDeleteGoal={(p) => deleteGoal.mutate(p)}
                   onDeleteTx={deleteTx}
                   onDeleteTransfer={(p) => deleteTransfer.mutate(p)}

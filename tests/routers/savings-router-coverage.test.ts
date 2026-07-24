@@ -549,6 +549,170 @@ describe("savings.recalculateAllocation", () => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
+// lockInAllocationPercent
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe("savings.lockInAllocationPercent", () => {
+  it("recomputes a percentage-based goal's allocationPercent from the live pool without touching monthlyContribution", async () => {
+    const ctx = await createTestCaller();
+    try {
+      seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Percent Goal",
+        monthlyContribution: "150",
+        allocationPercent: "10",
+        isActive: true,
+      });
+
+      const result = await ctx.caller.savings.lockInAllocationPercent({
+        goalId,
+      });
+      expect(result.updated).toBe(1);
+
+      const [row] = await ctx.db
+        .select()
+        .from(sqliteSchemaTables.savingsGoals)
+        .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
+      expect(row).toBeDefined();
+      expect(row!.monthlyContribution).toBe("150");
+      expect(row!.allocationPercent).not.toBe("10");
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("leaves non-percentage goals untouched and reports updated:0 when no percentage-based goals exist", async () => {
+    const ctx = await createTestCaller();
+    try {
+      seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Flat Goal",
+        monthlyContribution: "150",
+        allocationPercent: null,
+        isActive: true,
+      });
+
+      const result = await ctx.caller.savings.lockInAllocationPercent();
+      expect(result.updated).toBe(0);
+
+      const [row] = await ctx.db
+        .select()
+        .from(sqliteSchemaTables.savingsGoals)
+        .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
+      expect(row!.allocationPercent).toBeNull();
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("only updates the specified goalId, leaving other percentage-based goals untouched", async () => {
+    const ctx = await createTestCaller();
+    try {
+      seedStandardDataset(ctx.db);
+      const goalA = seedSavingsGoal(ctx.db, {
+        name: "Goal A",
+        monthlyContribution: "150",
+        allocationPercent: "10",
+        isActive: true,
+      });
+      const goalB = seedSavingsGoal(ctx.db, {
+        name: "Goal B",
+        monthlyContribution: "250",
+        allocationPercent: "20",
+        isActive: true,
+      });
+
+      const result = await ctx.caller.savings.lockInAllocationPercent({
+        goalId: goalA,
+      });
+      expect(result.updated).toBe(1);
+
+      const [rowB] = await ctx.db
+        .select()
+        .from(sqliteSchemaTables.savingsGoals)
+        .where(eq(sqliteSchemaTables.savingsGoals.id, goalB));
+      expect(rowB!.allocationPercent).toBe("20");
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("skips inactive percentage-based goals", async () => {
+    const ctx = await createTestCaller();
+    try {
+      seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Inactive Percent Goal",
+        monthlyContribution: "150",
+        allocationPercent: "10",
+        isActive: false,
+      });
+
+      const result = await ctx.caller.savings.lockInAllocationPercent();
+      expect(result.updated).toBe(0);
+
+      const [row] = await ctx.db
+        .select()
+        .from(sqliteSchemaTables.savingsGoals)
+        .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
+      expect(row!.allocationPercent).toBe("10");
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("updates every active percentage-based goal when goalId is omitted", async () => {
+    const ctx = await createTestCaller();
+    try {
+      seedStandardDataset(ctx.db);
+      seedSavingsGoal(ctx.db, {
+        name: "Goal A",
+        monthlyContribution: "150",
+        allocationPercent: "10",
+        isActive: true,
+      });
+      seedSavingsGoal(ctx.db, {
+        name: "Goal B",
+        monthlyContribution: "250",
+        allocationPercent: "20",
+        isActive: true,
+      });
+
+      const result = await ctx.caller.savings.lockInAllocationPercent();
+      expect(result.updated).toBe(2);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("round-trips with recalculateAllocation: locking in % then pulling in pay recovers the original dollar amount within a cent", async () => {
+    const ctx = await createTestCaller();
+    try {
+      seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Round Trip Goal",
+        monthlyContribution: "289.90",
+        allocationPercent: "13",
+        isActive: true,
+      });
+
+      await ctx.caller.savings.lockInAllocationPercent({ goalId });
+      await ctx.caller.savings.recalculateAllocation({ goalId });
+
+      const [row] = await ctx.db
+        .select()
+        .from(sqliteSchemaTables.savingsGoals)
+        .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
+      expect(Math.abs(Number(row!.monthlyContribution) - 289.9)).toBeLessThan(
+        1,
+      );
+    } finally {
+      ctx.cleanup();
+    }
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
 // listEfundReimbursements
 // ══════════════════════════════════════════════════════════════════════════════
 
