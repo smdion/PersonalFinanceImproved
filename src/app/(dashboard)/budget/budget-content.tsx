@@ -114,6 +114,8 @@ export function BudgetContent() {
     updateCategoryEssential,
     updateBatch,
     moveItem,
+    reorderItem,
+    reorderCategory,
     createItem,
     convertToGoal,
   } = useItemMutations({ selectedColumnRef });
@@ -256,6 +258,14 @@ export function BudgetContent() {
       updateCategoryEssential.mutate({ category, isEssential }),
     onMoveItem: (id: number, newCategory: string) =>
       moveItem.mutate({ id, newCategory }),
+    onReorderItem: (id: number, direction: "up" | "down") =>
+      reorderItem.mutate({ id, direction }),
+    onReorderCategory: (category: string, direction: "up" | "down") =>
+      reorderCategory.mutate({
+        category,
+        direction,
+        ...(displayProfileId != null ? { profileId: displayProfileId } : {}),
+      }),
     onDeleteItem: (id: number) => deleteItem.mutate({ id }),
     onConvertToGoal: (id: number, name: string) =>
       convertToGoal.mutate({

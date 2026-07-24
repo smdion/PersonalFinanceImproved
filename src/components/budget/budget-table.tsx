@@ -46,6 +46,8 @@ export type RowHandlers = {
   onMoveItem: (id: number, newCategory: string) => void;
   onDeleteItem: (id: number) => void;
   onConvertToGoal: (id: number, name: string) => void;
+  onReorderItem: (id: number, direction: "up" | "down") => void;
+  onReorderCategory: (category: string, direction: "up" | "down") => void;
   onAddItem: (
     category: string,
     subcategory: string,
@@ -162,6 +164,12 @@ export function BudgetTable({
               onMoveItem={rowHandlers.onMoveItem}
               onDeleteItem={rowHandlers.onDeleteItem}
               onConvertToGoal={rowHandlers.onConvertToGoal}
+              onReorderItem={rowHandlers.onReorderItem}
+              onReorderCategory={rowHandlers.onReorderCategory}
+              isFirstCategory={categoryNames[0] === catName}
+              isLastCategory={
+                categoryNames[categoryNames.length - 1] === catName
+              }
               onAddItem={rowHandlers.onAddItem}
               addItemPending={rowHandlers.addItemPending}
               addItemError={rowHandlers.addItemError}

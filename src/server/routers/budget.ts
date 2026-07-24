@@ -34,6 +34,52 @@ import {
 import type { BudgetCategoryGroup, BudgetMonthDetail } from "@/lib/budget-api";
 import { YNAB_INTERNAL_GROUPS } from "@/lib/budget-api";
 
+type BudgetItemRow = typeof schema.budgetItems.$inferSelect;
+
+/**
+ * Group a profile's budget items (already sort_order-ordered) into ordered
+ * category blocks, preserving both the categories' relative order and each
+ * category's internal item order. Mirrors the client-side grouping in
+ * useBudgetDerivedData's categoryMap (use-budget-derived-data.ts) — same
+ * logic, server-side, used by the reorder mutations below.
+ */
+function groupItemsByCategory(
+  items: BudgetItemRow[],
+): { category: string; items: BudgetItemRow[] }[] {
+  const map = new Map<string, BudgetItemRow[]>();
+  for (const item of items) {
+    const list = map.get(item.category) ?? [];
+    list.push(item);
+    map.set(item.category, list);
+  }
+  return Array.from(map.entries()).map(([category, categoryItems]) => ({
+    category,
+    items: categoryItems,
+  }));
+}
+
+/**
+ * Flatten ordered category blocks back into a single item list and write a
+ * clean, gapless 0..N-1 sort_order sequence. Used after every reorder so
+ * any pre-existing sort_order gaps/duplicates get cleaned up as a side
+ * effect (self-healing) instead of accumulating drift over time.
+ */
+async function renumberItems(
+  db: typeof import("@/lib/db").db,
+  blocks: { category: string; items: BudgetItemRow[] }[],
+): Promise<void> {
+  let sortOrder = 0;
+  for (const block of blocks) {
+    for (const item of block.items) {
+      await db
+        .update(schema.budgetItems)
+        .set({ sortOrder })
+        .where(eq(schema.budgetItems.id, item.id));
+      sortOrder++;
+    }
+  }
+}
+
 export const budgetRouter = createTRPCRouter({
   /** List all budget profiles with summary totals (for profile sidebar). */
   listProfiles: protectedProcedure.query(async ({ ctx }) => {
@@ -622,6 +668,93 @@ export const budgetRouter = createTRPCRouter({
         .where(eq(schema.budgetItems.id, input.id))
         .returning()
         .then((r) => r[0]);
+    }),
+
+  /** Swap a category's whole block of items with an adjacent category's
+   *  block. No-ops at the first/last category boundary. */
+  reorderCategory: budgetProcedure
+    .input(
+      z.object({
+        profileId: z.number().optional(),
+        category: z.string(),
+        direction: z.enum(["up", "down"]),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      let profile;
+      if (input.profileId) {
+        const rows = await ctx.db
+          .select()
+          .from(schema.budgetProfiles)
+          .where(eq(schema.budgetProfiles.id, input.profileId));
+        profile = rows[0];
+      } else {
+        const rows = await ctx.db
+          .select()
+          .from(schema.budgetProfiles)
+          .where(eq(schema.budgetProfiles.isActive, true));
+        profile = rows[0];
+      }
+      if (!profile) throw new Error("No active profile");
+
+      const items = await ctx.db
+        .select()
+        .from(schema.budgetItems)
+        .where(eq(schema.budgetItems.profileId, profile.id))
+        .orderBy(asc(schema.budgetItems.sortOrder));
+
+      const blocks = groupItemsByCategory(items);
+      const idx = blocks.findIndex((b) => b.category === input.category);
+      if (idx === -1) return { ok: true };
+
+      const swapWith = input.direction === "up" ? idx - 1 : idx + 1;
+      if (swapWith < 0 || swapWith >= blocks.length) return { ok: true };
+
+      [blocks[idx], blocks[swapWith]] = [blocks[swapWith]!, blocks[idx]!];
+      await renumberItems(ctx.db, blocks);
+      return { ok: true };
+    }),
+
+  /** Swap an item's position with an adjacent item within the same
+   *  category. No-ops at the category's first/last item boundary — moving
+   *  an item into a different category is the "Move..." dropdown's job
+   *  (moveItem above), not this. */
+  reorderItem: budgetProcedure
+    .input(
+      z.object({
+        id: z.number().int(),
+        direction: z.enum(["up", "down"]),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [target] = await ctx.db
+        .select()
+        .from(schema.budgetItems)
+        .where(eq(schema.budgetItems.id, input.id));
+      if (!target) throw new Error("Item not found");
+
+      const items = await ctx.db
+        .select()
+        .from(schema.budgetItems)
+        .where(eq(schema.budgetItems.profileId, target.profileId))
+        .orderBy(asc(schema.budgetItems.sortOrder));
+
+      const blocks = groupItemsByCategory(items);
+      const block = blocks.find((b) => b.category === target.category);
+      if (!block) return { ok: true };
+
+      const idx = block.items.findIndex((i) => i.id === target.id);
+      if (idx === -1) return { ok: true };
+
+      const swapWith = input.direction === "up" ? idx - 1 : idx + 1;
+      if (swapWith < 0 || swapWith >= block.items.length) return { ok: true };
+
+      [block.items[idx], block.items[swapWith]] = [
+        block.items[swapWith]!,
+        block.items[idx]!,
+      ];
+      await renumberItems(ctx.db, blocks);
+      return { ok: true };
     }),
 
   /** Update a budget item's essential flag. */

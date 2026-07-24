@@ -174,6 +174,12 @@ export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
   const moveItem = trpc.budget.moveItem.useMutation({
     onSuccess: invalidateSummary,
   });
+  const reorderItem = trpc.budget.reorderItem.useMutation({
+    onSuccess: invalidateSummary,
+  });
+  const reorderCategory = trpc.budget.reorderCategory.useMutation({
+    onSuccess: invalidateSummary,
+  });
   const createItem = trpc.budget.createItem.useMutation({
     onSuccess: invalidateSummary,
   });
@@ -188,6 +194,8 @@ export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
     updateCategoryEssential,
     updateBatch,
     moveItem,
+    reorderItem,
+    reorderCategory,
     createItem,
     convertToGoal,
   };

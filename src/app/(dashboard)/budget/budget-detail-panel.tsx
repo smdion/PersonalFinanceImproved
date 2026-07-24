@@ -109,6 +109,7 @@ export function BudgetDetailPanel({
     cols,
     activeColumn,
     canEdit,
+    editMode,
     apiService,
     apiLinkedProfileId,
     apiLinkedColumnIndex,
@@ -183,6 +184,7 @@ export function BudgetDetailPanel({
       />
 
       {canEdit &&
+        editMode &&
         addingItemToCategory &&
         !categoryMap.has(addingItemToCategory) && (
           <AddItemForm
@@ -199,7 +201,7 @@ export function BudgetDetailPanel({
           />
         )}
 
-      {canEdit && (
+      {canEdit && editMode && (
         <AddCategoryForm
           onCreateCategory={(name) => onSetAddingItemToCategory(name)}
         />

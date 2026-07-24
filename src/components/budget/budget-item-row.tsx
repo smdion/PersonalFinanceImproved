@@ -10,6 +10,7 @@ import type { RawItem } from "./types";
 type BudgetItemRowProps = {
   item: RawItem;
   index: number;
+  itemsInCategory: number;
   numCols: number;
   editMode: boolean;
   getDraft: (id: number, colIndex: number, original: number) => number;
@@ -19,6 +20,7 @@ type BudgetItemRowProps = {
   onMoveItem: (id: number, newCategory: string) => void;
   onDeleteItem: (id: number) => void;
   onConvertToGoal?: (id: number, name: string) => void;
+  onReorderItem: (id: number, direction: "up" | "down") => void;
   categoryNames: string[];
   currentCategory: string;
   contribMonthly: number | null;
@@ -31,6 +33,7 @@ type BudgetItemRowProps = {
 export function BudgetItemRow({
   item,
   index,
+  itemsInCategory,
   numCols,
   editMode,
   getDraft,
@@ -40,6 +43,7 @@ export function BudgetItemRow({
   onMoveItem,
   onDeleteItem,
   onConvertToGoal,
+  onReorderItem,
   categoryNames,
   currentCategory,
   contribMonthly,
@@ -49,6 +53,7 @@ export function BudgetItemRow({
   nameColWidth,
 }: BudgetItemRowProps) {
   const [showPicker, setShowPicker] = useState(false);
+  const [pickerAnchor, setPickerAnchor] = useState<DOMRect | null>(null);
   const isLinked = !!item.apiCategoryId;
 
   return (
@@ -63,7 +68,7 @@ export function BudgetItemRow({
             : { maxWidth: "12rem" }
         }
       >
-        <span className="flex items-center gap-1.5 min-w-0">
+        <span className="flex flex-wrap items-center gap-1.5 min-w-0">
           {canEdit ? (
             <button
               onClick={() => onToggleEssential(item.id, !item.isEssential)}
@@ -87,7 +92,10 @@ export function BudgetItemRow({
               }`}
             />
           )}
-          <span className="truncate" title={item.subcategory}>
+          <span
+            className="truncate max-w-[10rem] flex-shrink-0"
+            title={item.subcategory}
+          >
             {item.subcategory}
           </span>
           {contribMonthly !== null && (
@@ -108,7 +116,10 @@ export function BudgetItemRow({
               title={`Linked to ${item.apiCategoryName} (${item.apiSyncDirection})`}
               onClick={(e) => {
                 e.stopPropagation();
-                if (canEdit) setShowPicker(!showPicker);
+                if (canEdit) {
+                  setPickerAnchor(e.currentTarget.getBoundingClientRect());
+                  setShowPicker(!showPicker);
+                }
               }}
             >
               API
@@ -120,23 +131,41 @@ export function BudgetItemRow({
               title="Link to budget API category"
               onClick={(e) => {
                 e.stopPropagation();
+                setPickerAnchor(e.currentTarget.getBoundingClientRect());
                 setShowPicker(!showPicker);
               }}
             >
               +API
             </span>
           )}
-          {showPicker && (
+          {showPicker && pickerAnchor && (
             <ApiCategoryPicker
               budgetItemId={item.id}
               currentApiCategoryId={item.apiCategoryId}
               currentApiCategoryName={item.apiCategoryName}
               currentSyncDirection={item.apiSyncDirection}
+              anchorRect={pickerAnchor}
               onClose={() => setShowPicker(false)}
             />
           )}
-          {canEdit && (
-            <span className="flex-shrink-0 hidden group-hover:inline-flex items-center gap-1 whitespace-nowrap ml-1">
+          {canEdit && editMode && (
+            <span className="flex-shrink-0 inline-flex items-center gap-1 whitespace-nowrap ml-1">
+              <button
+                onClick={() => onReorderItem(item.id, "up")}
+                disabled={index === 0}
+                className="text-faint hover:text-secondary disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Move up"
+              >
+                ↑
+              </button>
+              <button
+                onClick={() => onReorderItem(item.id, "down")}
+                disabled={index === itemsInCategory - 1}
+                className="text-faint hover:text-secondary disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Move down"
+              >
+                ↓
+              </button>
               <select
                 value=""
                 onChange={(e) => {

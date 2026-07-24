@@ -9,12 +9,13 @@
  */
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
-import { eq } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import {
   createTestCaller,
   seedStandardDataset,
   seedBudgetItem,
+  seedBudgetProfile,
   seedPerson,
   viewerSession,
   createViewerSessionWithPermissions,
@@ -540,6 +541,191 @@ describe("budget router", () => {
       await expect(
         caller.budget.moveItem({ id: itemIds[0]!, newCategory: "  " }),
       ).rejects.toThrow();
+    });
+  });
+
+  // =========================================================================
+  // reorderCategory / reorderItem
+  // =========================================================================
+
+  describe("reorderCategory / reorderItem", () => {
+    // Isolated profile + explicitly-ordered items — the shared fixture's
+    // items all default to sortOrder 0, which leaves tie-break order
+    // unspecified and unsuitable for asserting exact positions.
+    let reorderProfileId: number;
+    let a1: number, a2: number, b1: number, c1: number, c2: number, c3: number;
+
+    beforeAll(async () => {
+      reorderProfileId = await seedBudgetProfile(db, "Reorder Test", false);
+      a1 = seedBudgetItem(db, reorderProfileId, {
+        category: "A",
+        subcategory: "A1",
+        amounts: [100],
+        sortOrder: 0,
+      });
+      a2 = seedBudgetItem(db, reorderProfileId, {
+        category: "A",
+        subcategory: "A2",
+        amounts: [100],
+        sortOrder: 1,
+      });
+      b1 = seedBudgetItem(db, reorderProfileId, {
+        category: "B",
+        subcategory: "B1",
+        amounts: [100],
+        sortOrder: 2,
+      });
+      c1 = seedBudgetItem(db, reorderProfileId, {
+        category: "C",
+        subcategory: "C1",
+        amounts: [100],
+        sortOrder: 3,
+      });
+      c2 = seedBudgetItem(db, reorderProfileId, {
+        category: "C",
+        subcategory: "C2",
+        amounts: [100],
+        sortOrder: 4,
+      });
+      c3 = seedBudgetItem(db, reorderProfileId, {
+        category: "C",
+        subcategory: "C3",
+        amounts: [100],
+        sortOrder: 5,
+      });
+    });
+
+    function getOrdered() {
+      return db
+        .select()
+        .from(sqliteSchema.budgetItems)
+        .where(eq(sqliteSchema.budgetItems.profileId, reorderProfileId))
+        .orderBy(asc(sqliteSchema.budgetItems.sortOrder))
+        .all();
+    }
+
+    it("orderBy sort_order reflects the seeded A, B, C order initially", () => {
+      const rows = getOrdered();
+      expect(rows.map((r) => r.category)).toEqual([
+        "A",
+        "A",
+        "B",
+        "C",
+        "C",
+        "C",
+      ]);
+      expect(rows.map((r) => r.id)).toEqual([a1, a2, b1, c1, c2, c3]);
+    });
+
+    it("reorderCategory no-ops when the first category tries to move up", async () => {
+      const before = getOrdered().map((r) => r.id);
+      await caller.budget.reorderCategory({
+        profileId: reorderProfileId,
+        category: "A",
+        direction: "up",
+      });
+      expect(getOrdered().map((r) => r.id)).toEqual(before);
+    });
+
+    it("reorderCategory no-ops when the last category tries to move down", async () => {
+      const before = getOrdered().map((r) => r.id);
+      await caller.budget.reorderCategory({
+        profileId: reorderProfileId,
+        category: "C",
+        direction: "down",
+      });
+      expect(getOrdered().map((r) => r.id)).toEqual(before);
+    });
+
+    it("reorderCategory swaps the whole block with the adjacent category, preserving internal item order", async () => {
+      await caller.budget.reorderCategory({
+        profileId: reorderProfileId,
+        category: "B",
+        direction: "up",
+      });
+      const rows = getOrdered();
+      // B (1 item) swapped above A (2 items): B, A, A, C, C, C
+      expect(rows.map((r) => r.category)).toEqual([
+        "B",
+        "A",
+        "A",
+        "C",
+        "C",
+        "C",
+      ]);
+      expect(rows.map((r) => r.id)).toEqual([b1, a1, a2, c1, c2, c3]);
+      // Restore
+      await caller.budget.reorderCategory({
+        profileId: reorderProfileId,
+        category: "B",
+        direction: "down",
+      });
+      expect(getOrdered().map((r) => r.id)).toEqual([a1, a2, b1, c1, c2, c3]);
+    });
+
+    it("reorderCategory renumbers sort_order as a clean gapless 0..N-1 sequence", async () => {
+      await caller.budget.reorderCategory({
+        profileId: reorderProfileId,
+        category: "B",
+        direction: "up",
+      });
+      const rows = getOrdered();
+      expect(rows.map((r) => r.sortOrder)).toEqual([0, 1, 2, 3, 4, 5]);
+      // Restore
+      await caller.budget.reorderCategory({
+        profileId: reorderProfileId,
+        category: "B",
+        direction: "down",
+      });
+    });
+
+    it("reorderCategory is a no-op (still ok) for an unknown category name", async () => {
+      const before = getOrdered().map((r) => r.id);
+      const result = await caller.budget.reorderCategory({
+        profileId: reorderProfileId,
+        category: "Nonexistent",
+        direction: "up",
+      });
+      expect(result).toEqual({ ok: true });
+      expect(getOrdered().map((r) => r.id)).toEqual(before);
+    });
+
+    it("reorderItem no-ops for the first item in its category (does not cross into the previous category)", async () => {
+      const before = getOrdered().map((r) => r.id);
+      await caller.budget.reorderItem({ id: a1, direction: "up" });
+      expect(getOrdered().map((r) => r.id)).toEqual(before);
+    });
+
+    it("reorderItem no-ops for the last item in its category (does not cross into the next category)", async () => {
+      // a2 is the last item in category A, but NOT the last item overall
+      // (B follows) — must not bleed into B.
+      const before = getOrdered().map((r) => r.id);
+      await caller.budget.reorderItem({ id: a2, direction: "down" });
+      expect(getOrdered().map((r) => r.id)).toEqual(before);
+    });
+
+    it("reorderItem swaps with the adjacent item within the same category", async () => {
+      await caller.budget.reorderItem({ id: a1, direction: "down" });
+      const rows = getOrdered();
+      expect(rows.map((r) => r.id)).toEqual([a2, a1, b1, c1, c2, c3]);
+      // Restore
+      await caller.budget.reorderItem({ id: a1, direction: "up" });
+      expect(getOrdered().map((r) => r.id)).toEqual([a1, a2, b1, c1, c2, c3]);
+    });
+
+    it("reorderItem on a middle item of a 3-item category only swaps with its neighbor", async () => {
+      await caller.budget.reorderItem({ id: c2, direction: "up" });
+      const rows = getOrdered();
+      expect(rows.map((r) => r.id)).toEqual([a1, a2, b1, c2, c1, c3]);
+      // Restore
+      await caller.budget.reorderItem({ id: c2, direction: "down" });
+      expect(getOrdered().map((r) => r.id)).toEqual([a1, a2, b1, c1, c2, c3]);
+    });
+
+    it("reorderItem throws for an unknown item id", async () => {
+      await expect(
+        caller.budget.reorderItem({ id: 9_999_999, direction: "up" }),
+      ).rejects.toThrow("Item not found");
     });
   });
 

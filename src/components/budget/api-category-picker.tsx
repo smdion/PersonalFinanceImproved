@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { trpc } from "@/lib/trpc";
 
 type ApiCategoryPickerProps = {
@@ -8,6 +9,7 @@ type ApiCategoryPickerProps = {
   currentApiCategoryId?: string | null;
   currentApiCategoryName?: string | null;
   currentSyncDirection?: "pull" | "push" | "both" | null;
+  anchorRect: DOMRect;
   onClose: () => void;
 };
 
@@ -16,6 +18,7 @@ export function ApiCategoryPicker({
   currentApiCategoryId,
   currentApiCategoryName,
   currentSyncDirection,
+  anchorRect,
   onClose,
 }: ApiCategoryPickerProps) {
   const utils = trpc.useUtils();
@@ -50,8 +53,14 @@ export function ApiCategoryPicker({
         .filter((g) => g.categories.length > 0)
     : groups;
 
-  return (
-    <div className="absolute z-50 bg-surface-primary border rounded-lg shadow-lg p-3 w-72 max-h-80 overflow-y-auto">
+  return createPortal(
+    <div
+      className="fixed z-50 bg-surface-primary border rounded-lg shadow-lg p-3 w-72 max-h-80 overflow-y-auto"
+      style={{
+        top: anchorRect.bottom + 4,
+        left: Math.min(anchorRect.left, window.innerWidth - 300),
+      }}
+    >
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-medium text-muted">
           Link to API Category
@@ -138,6 +147,7 @@ export function ApiCategoryPicker({
           ))}
         </div>
       ))}
-    </div>
+    </div>,
+    document.body,
   );
 }
