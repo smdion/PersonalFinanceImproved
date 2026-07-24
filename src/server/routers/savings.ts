@@ -1003,34 +1003,6 @@ export const savingsRouter = createTRPCRouter({
           )
         : 0;
 
-      // Percentage-based goals (allocationPercent set) display a LIVE
-      // dollar amount on the savings page — (pct/100) * maxMonthlyFunding,
-      // where maxMonthlyFunding derives from current paycheck + budget
-      // totals — but savings_goals.monthly_contribution is only a
-      // point-in-time snapshot from whenever the goal was last edited.
-      // Pushing that stale column directly means YNAB can silently drift
-      // from what's shown on screen. Compute the same live pool here (via
-      // the actual paycheck/budget routers — not a re-derived shortcut) so
-      // push always sends what the user is currently looking at.
-      const paycheckCaller = createCallerFactory(paycheckRouter)(ctx);
-      const budgetCaller = createCallerFactory(budgetRouter)(ctx);
-      const [paycheckData, budgetSummary] = await Promise.all([
-        paycheckCaller.computeSummary(),
-        budgetCaller.computeActiveSummary(),
-      ]);
-      const budgetMonthlyTotal = budgetSummary?.result
-        ? budgetSummary.columnMonths
-          ? (budgetSummary.weightedAnnualTotal ?? 0) / 12
-          : (budgetSummary.result.totalMonthly ?? 0)
-        : null;
-      const maxMonthlyFunding =
-        paycheckData && budgetMonthlyTotal !== null
-          ? computeMaxMonthlyFunding(
-              paycheckData.people as CapacityPerson[],
-              budgetMonthlyTotal,
-            )
-          : null;
-
       let pushed = 0;
       for (const goal of toPush) {
         try {
@@ -1050,15 +1022,14 @@ export const savingsRouter = createTRPCRouter({
               pushed++;
             }
           } else {
-            const allocationPercent =
-              goal.allocationPercent != null
-                ? toNumber(goal.allocationPercent)
-                : null;
-            const monthly = resolveEffectiveMonthlyContribution(
-              allocationPercent,
-              maxMonthlyFunding,
-              toNumber(goal.monthlyContribution),
-            );
+            // Push the stored snapshot, not a live percentage-of-income
+            // recompute — a percentage-based goal's dollar amount should
+            // only move when the user explicitly hits "Recalculate"
+            // (recalculateAllocation), not silently whenever paycheck/
+            // budget data changes underneath it. See recalculateAllocation
+            // for the live derivation and resolveEffectiveMonthlyContribution
+            // for the shared formula it uses.
+            const monthly = toNumber(goal.monthlyContribution);
             if (monthly > 0) {
               await client.updateCategoryGoalTarget(
                 goal.apiCategoryId!,
@@ -1083,6 +1054,74 @@ export const savingsRouter = createTRPCRouter({
       }
 
       return { pushed };
+    }),
+
+  /**
+   * Recompute a percentage-based savings goal's monthly_contribution from
+   * the CURRENT live pool ((allocationPercent/100) * maxMonthlyFunding) and
+   * persist it as the new snapshot. This is the only path that lets a
+   * percentage-based goal's dollar amount move — display and push both
+   * read the stored snapshot directly (see pushContributionsToApi), so a
+   * salary/budget change never silently changes what's shown or sent to
+   * the budget API until the user explicitly asks for it here.
+   * Omitting goalId recalculates every active percentage-based goal from
+   * one shared live-pool snapshot (a single fetch applied to all rows, so
+   * a batch recalc can't see the pool shift mid-batch the way N separate
+   * live reads could).
+   */
+  recalculateAllocation: savingsProcedure
+    .input(z.object({ goalId: z.number().int().optional() }).optional())
+    .mutation(async ({ ctx, input }) => {
+      const goals = await ctx.db.select().from(schema.savingsGoals);
+      const targets = goals.filter(
+        (g) =>
+          g.isActive &&
+          g.allocationPercent != null &&
+          (input?.goalId === undefined || g.id === input.goalId),
+      );
+      if (targets.length === 0) return { updated: 0 };
+
+      const paycheckCaller = createCallerFactory(paycheckRouter)(ctx);
+      const budgetCaller = createCallerFactory(budgetRouter)(ctx);
+      const [paycheckData, budgetSummary] = await Promise.all([
+        paycheckCaller.computeSummary(),
+        budgetCaller.computeActiveSummary(),
+      ]);
+      const budgetMonthlyTotal = budgetSummary?.result
+        ? budgetSummary.columnMonths
+          ? (budgetSummary.weightedAnnualTotal ?? 0) / 12
+          : (budgetSummary.result.totalMonthly ?? 0)
+        : null;
+      const maxMonthlyFunding =
+        paycheckData && budgetMonthlyTotal !== null
+          ? computeMaxMonthlyFunding(
+              paycheckData.people as CapacityPerson[],
+              budgetMonthlyTotal,
+            )
+          : null;
+
+      if (maxMonthlyFunding === null) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "No live paycheck/budget data available to recalculate from",
+        });
+      }
+
+      await ctx.db.transaction(async (tx) => {
+        for (const g of targets) {
+          const newAmount = resolveEffectiveMonthlyContribution(
+            toNumber(g.allocationPercent),
+            maxMonthlyFunding,
+            toNumber(g.monthlyContribution),
+          );
+          await tx
+            .update(schema.savingsGoals)
+            .set({ monthlyContribution: newAmount.toFixed(2) })
+            .where(eq(schema.savingsGoals.id, g.id));
+        }
+      });
+
+      return { updated: targets.length };
     }),
 
   // ══ REIMBURSEMENT CATEGORY ══

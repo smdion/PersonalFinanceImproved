@@ -13,7 +13,8 @@
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import { SQLiteSyncDialect } from "drizzle-orm/sqlite-core";
-import type { SQL } from "drizzle-orm";
+import { eq, type SQL } from "drizzle-orm";
+import * as sqliteSchemaTables from "@/lib/db/schema-sqlite";
 import {
   createTestCaller,
   seedSavingsGoal,
@@ -375,6 +376,174 @@ describe("savings.pushContributionsToApi", () => {
       ctx.cleanup();
       mockGetActiveBudgetApi.mockResolvedValue("none");
       mockGetClientForService.mockResolvedValue(null);
+    }
+  });
+
+  it("pushes the stored monthlyContribution snapshot for percentage-based goals, not a live recompute — even when live paycheck/budget data is available and would produce a different amount", async () => {
+    const ctx = await createTestCaller();
+    try {
+      // seedStandardDataset gives a real job/salary + budget items, so a live
+      // pool computation (if push still did one) would very likely differ
+      // from this arbitrary stored snapshot.
+      seedStandardDataset(ctx.db);
+      seedSavingsGoal(ctx.db, {
+        name: "Percent Goal",
+        monthlyContribution: "150",
+        allocationPercent: "10",
+        isApiSyncEnabled: true,
+        apiCategoryId: "cat-pct",
+      });
+
+      const mockUpdateGoal = vi.fn().mockResolvedValue(undefined);
+      mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+      mockGetClientForService.mockResolvedValueOnce({
+        updateCategoryGoalTarget: mockUpdateGoal,
+      });
+
+      const result = await ctx.caller.savings.pushContributionsToApi();
+      expect(result.pushed).toBe(1);
+      expect(mockUpdateGoal).toHaveBeenCalledWith("cat-pct", 150);
+    } finally {
+      ctx.cleanup();
+      mockGetActiveBudgetApi.mockResolvedValue("none");
+      mockGetClientForService.mockResolvedValue(null);
+    }
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// recalculateAllocation
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe("savings.recalculateAllocation", () => {
+  it("recomputes a percentage-based goal's monthlyContribution from the live pool and persists it", async () => {
+    const ctx = await createTestCaller();
+    try {
+      seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Percent Goal",
+        monthlyContribution: "150",
+        allocationPercent: "10",
+        isActive: true,
+      });
+
+      const result = await ctx.caller.savings.recalculateAllocation({
+        goalId,
+      });
+      expect(result.updated).toBe(1);
+
+      const [row] = await ctx.db
+        .select()
+        .from(sqliteSchemaTables.savingsGoals)
+        .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
+      expect(row).toBeDefined();
+      expect(Number(row!.monthlyContribution)).not.toBe(150);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("leaves non-percentage goals untouched and reports updated:0 when no percentage-based goals exist", async () => {
+    const ctx = await createTestCaller();
+    try {
+      seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Flat Goal",
+        monthlyContribution: "150",
+        allocationPercent: null,
+        isActive: true,
+      });
+
+      const result = await ctx.caller.savings.recalculateAllocation();
+      expect(result.updated).toBe(0);
+
+      const [row] = await ctx.db
+        .select()
+        .from(sqliteSchemaTables.savingsGoals)
+        .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
+      expect(row!.monthlyContribution).toBe("150");
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("only recalculates the specified goalId, leaving other percentage-based goals untouched", async () => {
+    const ctx = await createTestCaller();
+    try {
+      seedStandardDataset(ctx.db);
+      const goalA = seedSavingsGoal(ctx.db, {
+        name: "Goal A",
+        monthlyContribution: "150",
+        allocationPercent: "10",
+        isActive: true,
+      });
+      const goalB = seedSavingsGoal(ctx.db, {
+        name: "Goal B",
+        monthlyContribution: "250",
+        allocationPercent: "20",
+        isActive: true,
+      });
+
+      const result = await ctx.caller.savings.recalculateAllocation({
+        goalId: goalA,
+      });
+      expect(result.updated).toBe(1);
+
+      const [rowB] = await ctx.db
+        .select()
+        .from(sqliteSchemaTables.savingsGoals)
+        .where(eq(sqliteSchemaTables.savingsGoals.id, goalB));
+      expect(rowB!.monthlyContribution).toBe("250");
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("skips inactive percentage-based goals", async () => {
+    const ctx = await createTestCaller();
+    try {
+      seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Inactive Percent Goal",
+        monthlyContribution: "150",
+        allocationPercent: "10",
+        isActive: false,
+      });
+
+      const result = await ctx.caller.savings.recalculateAllocation();
+      expect(result.updated).toBe(0);
+
+      const [row] = await ctx.db
+        .select()
+        .from(sqliteSchemaTables.savingsGoals)
+        .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
+      expect(row!.monthlyContribution).toBe("150");
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("recalculates every active percentage-based goal when goalId is omitted", async () => {
+    const ctx = await createTestCaller();
+    try {
+      seedStandardDataset(ctx.db);
+      seedSavingsGoal(ctx.db, {
+        name: "Goal A",
+        monthlyContribution: "150",
+        allocationPercent: "10",
+        isActive: true,
+      });
+      seedSavingsGoal(ctx.db, {
+        name: "Goal B",
+        monthlyContribution: "250",
+        allocationPercent: "20",
+        isActive: true,
+      });
+
+      const result = await ctx.caller.savings.recalculateAllocation();
+      expect(result.updated).toBe(2);
+    } finally {
+      ctx.cleanup();
     }
   });
 });

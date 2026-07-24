@@ -32,6 +32,7 @@ interface RawGoal {
   id: number;
   name: string;
   monthlyContribution: string | null;
+  allocationPercent?: string | null;
   isActive: boolean;
   isEmergencyFund: boolean;
   targetDate: string | null;
@@ -211,6 +212,8 @@ export function FundCard({
   onGoalUpdate,
   onGoalUpdateMulti,
   maxMonthlyFunding,
+  onRecalculateAllocation,
+  recalculateAllocationPending,
   onDeleteGoal,
   onDeleteTx,
   onDeleteTransfer,
@@ -255,6 +258,8 @@ export function FundCard({
     fields: Record<string, string | null>,
   ) => void;
   maxMonthlyFunding?: number | null;
+  onRecalculateAllocation?: () => void;
+  recalculateAllocationPending?: boolean;
   onDeleteGoal: (params: { id: number }) => void;
   onDeleteTx: (params: { id: number }) => void;
   onDeleteTransfer?: (params: { transferPairId: string }) => void;
@@ -737,6 +742,20 @@ export function FundCard({
                   ({pct}% of pool)
                 </span>
               )}
+              {canEdit !== false &&
+                rawGoal.allocationPercent != null &&
+                onRecalculateAllocation && (
+                  <button
+                    onClick={onRecalculateAllocation}
+                    disabled={recalculateAllocationPending}
+                    className="text-caption text-blue-600 hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={`Recompute this goal's dollar amount from its ${rawGoal.allocationPercent}% allocation and current income`}
+                  >
+                    {recalculateAllocationPending
+                      ? "Recalculating..."
+                      : "Recalculate"}
+                  </button>
+                )}
               {rawGoal.isApiSyncEnabled && (
                 <span
                   className="text-micro text-blue-600/70"

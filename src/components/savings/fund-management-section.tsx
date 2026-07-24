@@ -119,6 +119,13 @@ export interface FundManagementSectionProps {
   onUnlinkFromApi: (goalId: number) => void;
   onConvertToBudgetItem: (goalId: number, name: string) => void;
   onPushPreview: (items: PushPreviewItem[], goalId?: number) => void;
+  /** Single shared mutation instance from useApiSync() — see pushMutation
+   *  in ApiSyncSection for why this must not be a second, independent
+   *  useMutation() call (the page's bulk "Recalculate All %" button and
+   *  this section's per-goal buttons need to share one pending state). */
+  recalculateAllocation: ReturnType<
+    typeof trpc.savings.recalculateAllocation.useMutation
+  >;
   /** Ref exposing goal update callbacks for the page to pipe to other sections */
   callbacksRef: React.MutableRefObject<FundManagementCallbacks | null>;
   /** Shared new fund form state — page owns for top-level form, shared for sub-goal creation */
@@ -168,6 +175,7 @@ export function FundManagementSection({
   onUnlinkFromApi,
   onConvertToBudgetItem,
   onPushPreview,
+  recalculateAllocation,
   callbacksRef,
   showNewFund: _showNewFund,
   setShowNewFund: _setShowNewFund,
@@ -487,6 +495,10 @@ export function FundManagementSection({
                   onGoalUpdate={handleGoalUpdate}
                   onGoalUpdateMulti={handleGoalUpdateMulti}
                   maxMonthlyFunding={maxMonthlyFunding}
+                  onRecalculateAllocation={() =>
+                    recalculateAllocation.mutate({ goalId: raw.id })
+                  }
+                  recalculateAllocationPending={recalculateAllocation.isPending}
                   onDeleteGoal={(p) => deleteGoal.mutate(p)}
                   onDeleteTx={deleteTx}
                   onDeleteTransfer={(p) => deleteTransfer.mutate(p)}

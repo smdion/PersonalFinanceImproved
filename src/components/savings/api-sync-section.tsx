@@ -189,6 +189,21 @@ export function useApiSync() {
   const deleteOverride = trpc.savings.allocationOverrides.delete.useMutation({
     onSuccess: () => utils.savings.invalidate(),
   });
+  // Single instance — shared between the page's bulk "Recalculate All %"
+  // button and FundManagementSection's per-goal buttons via a prop (same
+  // reason as pushToApi above).
+  const recalculateAllocation = trpc.savings.recalculateAllocation.useMutation({
+    onSuccess: (result) => {
+      utils.savings.invalidate();
+      utils.budget.computeActiveSummary.invalidate();
+      toast.success(
+        result.updated > 0
+          ? `Recalculated ${result.updated} goal${result.updated !== 1 ? "s" : ""} from current income.`
+          : "Nothing to recalculate.",
+      );
+    },
+    onError: (err) => toast.error(err.message || "Recalculate failed"),
+  });
 
   const [linkingGoalId, setLinkingGoalId] = useState<number | null>(null);
   const [pushPreviewItems, setPushPreviewItems] = useState<
@@ -241,6 +256,9 @@ export function useApiSync() {
     // Single mutation instance — pass straight through to ApiSyncSection
     // (its `pushMutation` prop) so both consumers share the same state.
     pushToApi,
+    // Single mutation instance — shared between the page's bulk button and
+    // FundManagementSection's per-goal buttons (see declaration above).
+    recalculateAllocation,
     // Callbacks for FundManagementSection
     onLinkToApi,
     onUnlinkFromApi,
@@ -248,12 +266,14 @@ export function useApiSync() {
     onPushPreview,
     // Callback for FundManagementSection → FundCard → FundOverridesSummary
     onDeleteOverride,
-    // Build push-all preview from current goals. maxMonthlyFunding must be
-    // the same live pool the savings page already computes for display —
-    // passing it through here (rather than re-deriving it) is what keeps
-    // this preview's "newValue" matching what pushContributionsToApi will
-    // actually send (see resolveEffectiveMonthlyContribution for why the
-    // stored monthlyContribution alone isn't enough for a % goal).
+    // Build push-all preview from current goals. Pushes the STORED
+    // monthlyContribution snapshot (matches what pushContributionsToApi
+    // actually sends — see recalculateAllocation for the only path that's
+    // allowed to move a percentage-based goal's amount). maxMonthlyFunding
+    // is only used here to flag a percentage-based goal as "stale" when its
+    // snapshot no longer matches what a live recalc would produce, so the
+    // user gets a warning in the preview instead of silently pushing an
+    // outdated amount.
     buildPushAllPreview: (
       rawGoals: RawGoal[],
       apiBalanceMap: Map<
@@ -290,17 +310,20 @@ export function useApiSync() {
             g.allocationPercent != null
               ? parseFloat(g.allocationPercent)
               : null;
-          const amount = resolveEffectiveMonthlyContribution(
+          const amount = parseFloat(g.monthlyContribution ?? "0") || 0;
+          const liveAmount = resolveEffectiveMonthlyContribution(
             allocationPercent,
             maxMonthlyFunding ?? null,
-            parseFloat(g.monthlyContribution ?? "0") || 0,
+            amount,
           );
+          const stale = Math.abs(liveAmount - amount) >= 0.01;
           if (amount > 0) {
             items.push({
               name: g.name,
               field: "Monthly Goal Target",
               currentYnab,
               newValue: amount,
+              stale,
             });
           }
         }

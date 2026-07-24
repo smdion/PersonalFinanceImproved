@@ -18,7 +18,6 @@ import {
   buildNonPayrollContribs,
 } from "@/components/budget/helpers";
 import { normalizeContribKey } from "@/lib/config/account-types";
-import { resolveEffectiveMonthlyContribution } from "@/lib/calculators/savings-capacity";
 import type {
   RawItem,
   PayrollBreakdown,
@@ -71,7 +70,6 @@ type DataShape =
 export function useBudgetDerivedData({
   data,
   savingsGoals,
-  maxMonthlyFunding,
   apiActualsData,
   salaryOverrides,
   activeContribProfileId,
@@ -81,13 +79,6 @@ export function useBudgetDerivedData({
 }: {
   data: DataShape;
   savingsGoals: SavingsGoalEntry[] | undefined;
-  /** Live savings-capacity pool ((take-home - budgeted) across earners) —
-   *  needed to compute a percentage-based sinking fund's live dollar
-   *  amount instead of its stale stored monthlyContribution snapshot. See
-   *  resolveEffectiveMonthlyContribution. Pass null while paycheck/budget
-   *  data hasn't loaded yet; percentage-based funds fall back to their
-   *  stored amount until it resolves. */
-  maxMonthlyFunding: number | null;
   apiActualsData: ApiActualsData;
   salaryOverrides: SalaryOverride[];
   activeContribProfileId: number | null;
@@ -232,28 +223,22 @@ export function useBudgetDerivedData({
   );
 
   // ---- Sinking funds (savings goals with monthly contributions) ----
-  // Uses the live percentage-computed amount for goals with allocationPercent
-  // set (see resolveEffectiveMonthlyContribution) — this is the same fix
-  // applied to the savings page's push-to-API path; without it, this row
-  // kept showing the stale monthlyContribution snapshot even after a push
-  // correctly sent the live amount to YNAB.
+  // Reads the stored monthlyContribution snapshot directly, even for
+  // percentage-based goals — it should only change when the user
+  // explicitly hits "Recalculate" on the savings page (recalculateAllocation),
+  // not whenever paycheck/budget data shifts underneath it.
 
   const sinkingFunds: SinkingFundLine[] = useMemo(
     () =>
       (savingsGoals ?? [])
         .filter((g) => g.isActive)
-        .map((g) => {
-          const allocationPercent =
-            g.allocationPercent != null ? Number(g.allocationPercent) : null;
-          const monthlyContribution = resolveEffectiveMonthlyContribution(
-            allocationPercent,
-            maxMonthlyFunding,
-            Number(g.monthlyContribution),
-          );
-          return { id: g.id, name: g.name, monthlyContribution };
-        })
+        .map((g) => ({
+          id: g.id,
+          name: g.name,
+          monthlyContribution: Number(g.monthlyContribution),
+        }))
         .filter((f) => f.monthlyContribution > 0),
-    [savingsGoals, maxMonthlyFunding],
+    [savingsGoals],
   );
 
   // ---- API actuals map ----

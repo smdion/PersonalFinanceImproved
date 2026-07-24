@@ -57,7 +57,6 @@ import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { useUpdatePlannedTx } from "@/components/savings/use-update-planned-tx";
 import {
   computeMaxMonthlyFunding,
-  resolveEffectiveMonthlyContribution,
   type CapacityPerson,
 } from "@/lib/calculators/savings-capacity";
 
@@ -376,14 +375,11 @@ export default function SavingsPage() {
     const monthlyAllocations: number[] = [];
     const hasOverride: boolean[] = [];
     let balance = goal.current;
-    const pct = raw?.allocationPercent
-      ? parseFloat(raw.allocationPercent)
-      : null;
-    const baseAllocation = resolveEffectiveMonthlyContribution(
-      pct,
-      maxMonthlyFunding,
-      goal.monthlyAllocation,
-    );
+    // The stored snapshot (goal.monthlyAllocation) is the source of truth
+    // even for percentage-based goals — it only moves when the user
+    // explicitly hits "Recalculate" (recalculateAllocation), not whenever
+    // paycheck/budget data shifts underneath it.
+    const baseAllocation = goal.monthlyAllocation;
     for (let i = 0; i < projectionMonths; i++) {
       const mk = monthKey(monthDates[i]!);
       const events = goalTxMap?.get(mk) ?? null;
@@ -656,27 +652,47 @@ export default function SavingsPage() {
 
                 {editTab === "allocations" && (
                   <div className="space-y-3">
-                    {canEdit && apiBalancesData?.service && (
-                      <div className="flex justify-end">
-                        <button
-                          onClick={() =>
-                            apiSync.buildPushAllPreview(
-                              rawGoals,
-                              apiBalanceMap,
-                              efund?.targetAmount ?? undefined,
-                              maxMonthlyFunding,
-                            )
-                          }
-                          disabled={apiSync.pushToApiPending}
-                          className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors disabled:opacity-50"
-                          title="Push monthly allocation amounts as budget API goal targets"
-                        >
-                          {apiSync.pushToApiPending
-                            ? "Pushing..."
-                            : "Push Monthly Targets →"}
-                        </button>
-                      </div>
-                    )}
+                    {canEdit &&
+                      (apiBalancesData?.service ||
+                        rawGoals.some((g) => g.allocationPercent != null)) && (
+                        <div className="flex justify-end gap-2">
+                          {rawGoals.some(
+                            (g) => g.allocationPercent != null,
+                          ) && (
+                            <button
+                              onClick={() =>
+                                apiSync.recalculateAllocation.mutate({})
+                              }
+                              disabled={apiSync.recalculateAllocation.isPending}
+                              className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors disabled:opacity-50"
+                              title="Recompute every percentage-based goal's dollar amount from current income"
+                            >
+                              {apiSync.recalculateAllocation.isPending
+                                ? "Recalculating..."
+                                : "Recalculate All %"}
+                            </button>
+                          )}
+                          {apiBalancesData?.service && (
+                            <button
+                              onClick={() =>
+                                apiSync.buildPushAllPreview(
+                                  rawGoals,
+                                  apiBalanceMap,
+                                  efund?.targetAmount ?? undefined,
+                                  maxMonthlyFunding,
+                                )
+                              }
+                              disabled={apiSync.pushToApiPending}
+                              className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors disabled:opacity-50"
+                              title="Push monthly allocation amounts as budget API goal targets"
+                            >
+                              {apiSync.pushToApiPending
+                                ? "Pushing..."
+                                : "Push Monthly Targets →"}
+                            </button>
+                          )}
+                        </div>
+                      )}
                     <AllocationEditorSection
                       goalProjections={goalProjections}
                       monthDates={monthDates}
@@ -829,6 +845,7 @@ export default function SavingsPage() {
               onUnlinkFromApi={apiSync.onUnlinkFromApi}
               onConvertToBudgetItem={apiSync.onConvertToBudgetItem}
               onPushPreview={apiSync.onPushPreview}
+              recalculateAllocation={apiSync.recalculateAllocation}
               callbacksRef={fundCallbacksRef}
               showNewFund={showNewFund}
               setShowNewFund={setShowNewFund}

@@ -8,6 +8,11 @@ export type PushPreviewItem = {
   field: string;
   currentYnab: number;
   newValue: number;
+  /** True when this is a percentage-based savings goal whose stored amount
+   *  no longer matches what a live recalc would produce (e.g. income
+   *  changed since it was last recalculated) — surfaced so the user can
+   *  go recalculate before pushing an outdated number. */
+  stale?: boolean;
 };
 
 export function PushPreviewModal({
@@ -33,6 +38,7 @@ export function PushPreviewModal({
   const unchanged = items.filter(
     (i) => Math.abs(i.newValue - i.currentYnab) < 0.01,
   );
+  const staleItems = items.filter((i) => i.stale);
   const isPull = direction === "pull";
   const beforeColumnLabel = isPull ? "Ledgr Now" : `${destinationLabel} Now`;
   const applyTarget = isPull ? "Ledgr" : destinationLabel;
@@ -84,6 +90,16 @@ export function PushPreviewModal({
           )}
         </p>
 
+        {!isPull && staleItems.length > 0 && (
+          <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-1.5 mb-3">
+            ⚠ {staleItems.length} percentage-based goal
+            {staleItems.length !== 1 ? "s" : ""} below{" "}
+            {staleItems.length !== 1 ? "don't" : "doesn't"} match current income
+            — go to Savings and hit Recalculate first if you want the latest
+            amount pushed.
+          </p>
+        )}
+
         <div className="overflow-auto flex-1 mb-4">
           {changed.length > 0 && (
             <table className="w-full text-xs">
@@ -113,6 +129,14 @@ export function PushPreviewModal({
                         title={item.name}
                       >
                         {item.name}
+                        {item.stale && (
+                          <span
+                            className="ml-1 text-amber-600"
+                            title="Stale vs. current income — recalculate before pushing"
+                          >
+                            ⚠
+                          </span>
+                        )}
                       </td>
                       <td className="py-1.5 pr-2 text-muted">{item.field}</td>
                       <td className="py-1.5 pr-2 text-right tabular-nums text-muted">
