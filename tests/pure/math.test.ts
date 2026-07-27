@@ -28,8 +28,9 @@ describe("roundToCents", () => {
     expect(roundToCents(-1.234)).toBe(-1.23);
     // Math.round(-1.235 * 100) = -124 due to float representation
     expect(roundToCents(-1.235)).toBe(-1.24);
-    // Math.round(-0.005 * 100) = 0 (rounds toward +∞ at 0.5 boundary)
-    expect(roundToCents(-0.005)).toBe(-0);
+    // Symmetric round-half-away-from-zero (see -1.235 above and 0.005 below) —
+    // -0.005 rounds to -0.01, not -0.
+    expect(roundToCents(-0.005)).toBe(-0.01);
   });
 
   it("handles very small values near zero", () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
 
 export type PushPreviewItem = {
   name: string;
@@ -37,7 +37,7 @@ export function PushPreviewModal({
   valueFormat?: "currency" | "percent";
 }) {
   const formatValue = (n: number) =>
-    valueFormat === "percent" ? `${n.toFixed(3)}%` : formatCurrency(n);
+    valueFormat === "percent" ? formatPercent(n / 100, 3) : formatCurrency(n);
   const changed = items.filter(
     (i) => Math.abs(i.newValue - i.currentYnab) >= 0.01,
   );

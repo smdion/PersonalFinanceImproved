@@ -16,7 +16,12 @@ import {
   filterActiveJobsAtDate,
   computeEsppSummary,
   computeGainLoss,
+  aggregateAccountsByYear,
+  chainReturns,
+  sumAccounts,
+  computeReturn,
 } from "@/lib/pure/performance";
+import type { AccountRowLike } from "@/lib/pure/performance";
 import type {
   CategoryOverride,
   LifetimeBaseline,
@@ -468,5 +473,149 @@ describe("computeEsppSummary", () => {
     ]);
     expect(result.rollovers).toBe(0);
     expect(result.employerMatch).toBe(120);
+  });
+});
+
+describe("aggregateAccountsByYear", () => {
+  const row = (
+    performanceAccountId: number | null,
+    year: number,
+    overrides: Partial<AccountRowLike> = {},
+  ): AccountRowLike => ({
+    performanceAccountId,
+    year,
+    beginningBalance: "1000",
+    totalContributions: "100",
+    yearlyGainLoss: "50",
+    endingBalance: "1150",
+    employerContributions: "0",
+    distributions: "0",
+    fees: "0",
+    rollovers: "0",
+    ...overrides,
+  });
+
+  it("sums the selected account subset per year, matching sumAccounts + computeReturn", () => {
+    const rows: AccountRowLike[] = [
+      row(1, 2023, { beginningBalance: "1000", yearlyGainLoss: "50" }),
+      row(2, 2023, { beginningBalance: "2000", yearlyGainLoss: "80" }),
+      row(1, 2024, { beginningBalance: "1150", yearlyGainLoss: "60" }),
+      row(2, 2024, { beginningBalance: "2080", yearlyGainLoss: "90" }),
+    ];
+
+    const result = aggregateAccountsByYear(rows, new Set([1]), {
+      start: 2023,
+      end: 2024,
+    });
+
+    expect(result.map((r) => r.year)).toEqual([2023, 2024]);
+    const expected2023 = sumAccounts([rows[0]!]);
+    expect(result[0]).toMatchObject(expected2023);
+    expect(result[0]!.returnPct).toBe(
+      computeReturn(
+        expected2023.beginBal,
+        expected2023.contribs,
+        expected2023.gainLoss,
+        expected2023.distributions,
+        expected2023.fees,
+        expected2023.rollovers,
+      ),
+    );
+  });
+
+  it("clamps to the requested year range, excluding years outside it", () => {
+    const rows: AccountRowLike[] = [row(1, 2022), row(1, 2023), row(1, 2024)];
+    const result = aggregateAccountsByYear(rows, new Set([1]), {
+      start: 2023,
+      end: 2024,
+    });
+    expect(result.map((r) => r.year)).toEqual([2023, 2024]);
+  });
+
+  it("returns an empty array for an empty selection", () => {
+    const rows: AccountRowLike[] = [row(1, 2023)];
+    const result = aggregateAccountsByYear(rows, new Set(), {
+      start: 2020,
+      end: 2025,
+    });
+    expect(result).toEqual([]);
+  });
+
+  it("omits a year entirely when no selected account has a row that year (account closed/opened mid-range)", () => {
+    const rows: AccountRowLike[] = [
+      row(1, 2023),
+      row(2, 2023),
+      row(2, 2024), // account 1 has no 2024 row (e.g. closed)
+    ];
+    const result = aggregateAccountsByYear(rows, new Set([1]), {
+      start: 2023,
+      end: 2024,
+    });
+    expect(result.map((r) => r.year)).toEqual([2023]);
+  });
+
+  it("excludes rows with a null performanceAccountId", () => {
+    const rows: AccountRowLike[] = [row(null, 2023), row(1, 2023)];
+    const result = aggregateAccountsByYear(rows, new Set([1]), {
+      start: 2023,
+      end: 2023,
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0]!.beginBal).toBe(1000);
+  });
+});
+
+describe("chainReturns", () => {
+  it("passes a single value through unchanged for both cumulative and annualized", () => {
+    const result = chainReturns([0.1]);
+    expect(result.cumulativeReturn).toBeCloseTo(0.1);
+    expect(result.annualizedReturn).toBeCloseTo(0.1);
+    expect(result.yearsIncluded).toBe(1);
+  });
+
+  it("chain-links two equal positive years correctly", () => {
+    const result = chainReturns([0.1, 0.1]);
+    // (1.1 * 1.1) - 1 = 0.21
+    expect(result.cumulativeReturn).toBeCloseTo(0.21);
+    expect(result.annualizedReturn).toBeCloseTo(0.1);
+    expect(result.yearsIncluded).toBe(2);
+  });
+
+  it("chain-links mixed-sign years against a hand-computed value", () => {
+    const result = chainReturns([0.2, -0.1]);
+    // (1.2 * 0.9) - 1 = 0.08
+    expect(result.cumulativeReturn).toBeCloseTo(0.08);
+    expect(result.annualizedReturn).toBeCloseTo(Math.sqrt(1.08) - 1);
+    expect(result.yearsIncluded).toBe(2);
+  });
+
+  it("excludes null years from the chain rather than treating them as 0%", () => {
+    const withNull = chainReturns([0.1, null, 0.1]);
+    const withoutNull = chainReturns([0.1, 0.1]);
+    expect(withNull.cumulativeReturn).toBeCloseTo(
+      withoutNull.cumulativeReturn!,
+    );
+    expect(withNull.yearsIncluded).toBe(2);
+  });
+
+  it("returns all-null fields when every year is null or the input is empty", () => {
+    expect(chainReturns([])).toEqual({
+      cumulativeReturn: null,
+      annualizedReturn: null,
+      yearsIncluded: 0,
+    });
+    expect(chainReturns([null, null])).toEqual({
+      cumulativeReturn: null,
+      annualizedReturn: null,
+      yearsIncluded: 0,
+    });
+  });
+
+  it("returns a null annualizedReturn but a defined cumulativeReturn when growth goes negative", () => {
+    // (1 + -1.5) * (1 + 0.1) = -0.5 * 1.1 = -0.55 (negative growth product)
+    const result = chainReturns([-1.5, 0.1]);
+    expect(result.annualizedReturn).toBeNull();
+    expect(result.cumulativeReturn).toBeCloseTo(-1.55);
+    expect(result.yearsIncluded).toBe(2);
   });
 });

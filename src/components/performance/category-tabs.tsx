@@ -10,7 +10,7 @@ import {
   PERF_CATEGORY_PORTFOLIO,
 } from "@/lib/config/display-labels";
 
-const CATEGORY_HELP: Record<string, string> = {
+export const CATEGORY_HELP: Record<string, string> = {
   [PERF_CATEGORY_DEFAULT]: "401k, 403b, and IRA accounts",
   [PERF_CATEGORY_HSA]: "Health Savings Accounts",
   [PERF_CATEGORY_BROKERAGE]: "Taxable brokerage and ESPP accounts",
@@ -19,7 +19,7 @@ const CATEGORY_HELP: Record<string, string> = {
   [PERF_CATEGORY_PORTFOLIO]: "Grand total across all investment accounts",
 };
 
-function TabGroup({
+export function TabGroup({
   label,
   helpText,
   categories,
