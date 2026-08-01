@@ -64,11 +64,7 @@ function buildRowConfigs(
     });
     rows.push({
       label: `${category} - Contributions`,
-      accessor: (r) => {
-        const cat = r.performanceByCategory[category];
-        if (!cat) return null;
-        return cat.contributions + cat.employerMatch;
-      },
+      accessor: (r) => r.performanceByCategory[category]?.contributions ?? null,
       flowType: "contribution",
     });
     rows.push({
@@ -103,11 +99,8 @@ function buildRowConfigs(
     });
     rows.push({
       label: `${parentCat} - Contributions`,
-      accessor: (r) => {
-        const cat = r.performanceByParentCategory[parentCat];
-        if (!cat) return null;
-        return cat.contributions + cat.employerMatch;
-      },
+      accessor: (r) =>
+        r.performanceByParentCategory[parentCat]?.contributions ?? null,
       flowType: "contribution",
     });
     rows.push({
@@ -188,6 +181,20 @@ export function SpreadsheetYearOverYearTable({
   const yearAOutdated = isPerformanceOutdated(yearA);
   const yearBOutdated = isPerformanceOutdated(yearB);
   const hasProrated = annualize && (yearA.isCurrent || yearB.isCurrent);
+
+  // True when one side is a partial (in-progress) year and the other is a
+  // finalized full year — market flows (gains/losses/distributions) are
+  // never scaled to match, so callers need a distinct signal from "*"
+  // (which marks contributions that WERE scaled).
+  const hasPartialYearMismatch =
+    (yearA.isCurrent &&
+      yearA.ytdRatio > 0 &&
+      yearA.ytdRatio < 1 &&
+      !yearB.isCurrent) ||
+    (yearB.isCurrent &&
+      yearB.ytdRatio > 0 &&
+      yearB.ytdRatio < 1 &&
+      !yearA.isCurrent);
 
   function fmtUpdated(iso: string | null): string | null {
     if (!iso) return null;
@@ -286,6 +293,12 @@ export function SpreadsheetYearOverYearTable({
                 }
               }
 
+              // Market flows (gains/losses/distributions) are never prorated —
+              // if one side is a partial year, flag it so the change columns
+              // aren't misread as a like-for-like comparison.
+              const isUnproratedMarket =
+                config.flowType === "market" && hasPartialYearMismatch;
+
               return (
                 <tr
                   key={config.label}
@@ -352,6 +365,7 @@ export function SpreadsheetYearOverYearTable({
                       >
                         {formatPercent(percentChange, 1)}
                         {isProrated && "*"}
+                        {isUnproratedMarket && "†"}
                       </span>
                     ) : (
                       <span className="text-faint">&mdash;</span>
@@ -371,6 +385,7 @@ export function SpreadsheetYearOverYearTable({
                         {dollarChange >= 0 ? "+" : ""}
                         {formatCurrency(dollarChange)}
                         {isProrated && "*"}
+                        {isUnproratedMarket && "†"}
                       </span>
                     ) : (
                       <span className="text-faint">&mdash;</span>
@@ -385,6 +400,15 @@ export function SpreadsheetYearOverYearTable({
           <p className="text-caption text-faint mt-2">
             * Prorated — comparison year scaled to match YTD period for
             contributions
+          </p>
+        )}
+        {hasPartialYearMismatch && (
+          <p className="text-caption text-faint mt-1">
+            † Not prorated — compares a partial year to a full year as-is.
+            Gains/losses and distributions track actual market activity, not a
+            payroll schedule, so they aren&apos;t scaled like contributions. A
+            lower $/% change here can simply mean the year isn&apos;t over yet,
+            not that performance is worse.
           </p>
         )}
       </div>
