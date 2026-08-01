@@ -535,7 +535,8 @@ export async function buildYearEndHistory(
       distributions += toNumber(a.distributions);
       fees += toNumber(a.fees);
     }
-    const denom = beginBal + (contribs + employer - distributions - fees) / 2;
+    // contribs (totalContributions) already includes employer money — don't add employer again
+    const denom = beginBal + (contribs - distributions - fees) / 2;
     perfSummaryByYear.set(year, {
       beginningBalance: beginBal,
       contributions: contribs,
@@ -738,7 +739,8 @@ export async function buildYearEndHistory(
         distributions += toNumber(a.distributions);
         fees += toNumber(a.fees);
       }
-      const denom = beginBal + (contribs + employer - distributions - fees) / 2;
+      // contribs (totalContributions) already includes employer money — don't add employer again
+      const denom = beginBal + (contribs - distributions - fees) / 2;
       perfSummary = {
         beginningBalance: beginBal,
         contributions: contribs,

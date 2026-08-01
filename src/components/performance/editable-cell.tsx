@@ -42,7 +42,7 @@ export function EditableCell({
 
   return (
     <td
-      className={`text-right px-4 py-3 cursor-pointer hover:bg-blue-50 rounded transition-colors ${className}`}
+      className={`text-right px-4 py-3 cursor-pointer hover:bg-blue-50 rounded transition-colors whitespace-nowrap ${className}`}
       onClick={onStartEdit}
       title="Click to edit"
     >

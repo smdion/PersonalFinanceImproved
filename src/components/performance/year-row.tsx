@@ -8,7 +8,12 @@ import {
 } from "@/lib/utils/format";
 import { EditableCell } from "./editable-cell";
 import { PERF_CATEGORY_BROKERAGE } from "@/lib/config/display-labels";
+import { getDisplayConfig } from "@/lib/config/account-types";
+import { HelpTip } from "@/components/ui/help-tip";
 import type { YearRowProps } from "./types";
+
+const CASH_BASIS_HELP =
+  "vs. cash paid — ESPP shares are purchased at a discount, so this figure measures against what was actually paid rather than full market value.";
 
 export function YearRow({
   row,
@@ -28,6 +33,16 @@ export function YearRow({
   canEdit = true,
 }: YearRowProps) {
   const gainColor = row.yearlyGainLoss >= 0 ? "text-green-600" : "text-red-600";
+  // Brokerage is the only category where employerContributions is guaranteed
+  // to be pure ESPP discount (no other brokerage sub-type ever has employer
+  // money) — safe to annotate here. Retirement/Portfolio rollups mix in real
+  // 401k/HSA match, so they're intentionally left alone.
+  const yearCashBasisAnnotation =
+    row.category === PERF_CATEGORY_BROKERAGE ? (
+      <HelpTip
+        text={`${formatCurrency(row.yearlyGainLoss + row.employerContributions)} ${CASH_BASIS_HELP}`}
+      />
+    ) : undefined;
   const isEditable = canEdit;
   const isEditingAnnual = (field: string) =>
     editingCell?.type === "annual" &&
@@ -187,10 +202,14 @@ export function YearRow({
             onSaveEdit={onSaveEdit}
             onKeyDown={onKeyDown}
             className={`font-medium ${gainColor}`}
+            annotation={yearCashBasisAnnotation}
           />
         ) : (
-          <td className={`text-right px-4 py-3 font-medium ${gainColor}`}>
+          <td
+            className={`text-right px-4 py-3 font-medium whitespace-nowrap ${gainColor}`}
+          >
             {formatCurrency(row.yearlyGainLoss)}
+            {yearCashBasisAnnotation}
           </td>
         )}
         {isEditable ? (
@@ -252,6 +271,16 @@ export function YearRow({
             activeAccountCount !== undefined &&
             idx === activeAccountCount &&
             idx > 0;
+          const hasDiscountBar = getDisplayConfig(
+            a.accountType ?? "",
+            a.subType,
+          ).hasDiscountBar;
+          const cashBasisGainLoss = a.yearlyGainLoss + a.employerContributions;
+          const cashBasisAnnotation = hasDiscountBar ? (
+            <HelpTip
+              text={`${formatCurrency(cashBasisGainLoss)} ${CASH_BASIS_HELP}`}
+            />
+          ) : undefined;
 
           return (
             <React.Fragment key={a.id}>
@@ -409,10 +438,14 @@ export function YearRow({
                     onSaveEdit={onSaveEdit}
                     onKeyDown={onKeyDown}
                     className={acctGainColor}
+                    annotation={cashBasisAnnotation}
                   />
                 ) : (
-                  <td className={`text-right px-4 py-2 ${acctGainColor}`}>
+                  <td
+                    className={`text-right px-4 py-2 whitespace-nowrap ${acctGainColor}`}
+                  >
                     {formatCurrency(a.yearlyGainLoss)}
+                    {cashBasisAnnotation}
                   </td>
                 )}
                 {acctEditable ? (

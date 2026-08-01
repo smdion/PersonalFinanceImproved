@@ -7,9 +7,16 @@
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { PERF_CATEGORY_HSA } from "@/lib/config/display-labels";
+import {
+  PERF_CATEGORY_HSA,
+  PERF_CATEGORY_BROKERAGE,
+} from "@/lib/config/display-labels";
 import { PERFORMANCE_STALE_DAYS } from "@/lib/constants";
+import { HelpTip } from "@/components/ui/help-tip";
 import type { DetailedHistoryRow } from "./types";
+
+const CASH_BASIS_HELP =
+  "vs. cash paid — Brokerage includes ESPP, which is purchased at a discount. That discount isn't a cash contribution, so this measures against what was actually paid rather than full market value.";
 
 /** How a row's comparison should be handled for current-year data. */
 type FlowType =
@@ -21,6 +28,11 @@ type RowConfig = {
   label: string;
   accessor: (row: DetailedHistoryRow) => number | null;
   flowType: FlowType;
+  /** Cash-basis figure (gainLoss + employerMatch) for rows where employer
+   *  money is guaranteed to be a purchase discount, not a real match — only
+   *  set on the Brokerage category, since that's the one category where no
+   *  other sub-type ever carries employer money besides ESPP. */
+  cashBasisAccessor?: (row: DetailedHistoryRow) => number | null;
 };
 
 /** Check if performance data is stale (>14 days since last update). */
@@ -71,6 +83,14 @@ function buildRowConfigs(
       label: `${category} - Gains/Losses`,
       accessor: (r) => r.performanceByCategory[category]?.gainLoss ?? null,
       flowType: "market",
+      cashBasisAccessor:
+        category === PERF_CATEGORY_BROKERAGE
+          ? (r) => {
+              const cat = r.performanceByCategory[category];
+              if (!cat) return null;
+              return cat.gainLoss + cat.employerMatch;
+            }
+          : undefined,
     });
     // Add distributions row for categories that have them (e.g., HSA)
     if (category === PERF_CATEGORY_HSA) {
@@ -299,6 +319,11 @@ export function SpreadsheetYearOverYearTable({
               const isUnproratedMarket =
                 config.flowType === "market" && hasPartialYearMismatch;
 
+              // Cash-basis figure — only set on rows where employer money is
+              // guaranteed to be a purchase discount (see cashBasisAccessor).
+              const cashBasisA = config.cashBasisAccessor?.(yearA) ?? null;
+              const cashBasisB = config.cashBasisAccessor?.(yearB) ?? null;
+
               return (
                 <tr
                   key={config.label}
@@ -310,44 +335,58 @@ export function SpreadsheetYearOverYearTable({
                       <span className="text-faint font-normal"> - YTD</span>
                     )}
                   </td>
-                  <td className="text-right py-1.5 px-2">
+                  <td className="text-right py-1.5 px-2 whitespace-nowrap">
                     {showOutdatedA ? (
                       <span className="text-amber-500 text-caption">
                         Outdated
                       </span>
                     ) : valueA !== null ? (
-                      <span
-                        className={
-                          isStaleA
-                            ? "text-amber-500"
-                            : valueA < 0
-                              ? "text-red-600"
-                              : "text-primary"
-                        }
-                      >
-                        {formatCurrency(valueA)}
-                      </span>
+                      <>
+                        <span
+                          className={
+                            isStaleA
+                              ? "text-amber-500"
+                              : valueA < 0
+                                ? "text-red-600"
+                                : "text-primary"
+                          }
+                        >
+                          {formatCurrency(valueA)}
+                        </span>
+                        {cashBasisA !== null && (
+                          <HelpTip
+                            text={`${formatCurrency(cashBasisA)} ${CASH_BASIS_HELP}`}
+                          />
+                        )}
+                      </>
                     ) : (
                       <span className="text-faint">&mdash;</span>
                     )}
                   </td>
-                  <td className="text-right py-1.5 px-2">
+                  <td className="text-right py-1.5 px-2 whitespace-nowrap">
                     {showOutdatedB ? (
                       <span className="text-amber-500 text-caption">
                         Outdated
                       </span>
                     ) : valueB !== null ? (
-                      <span
-                        className={
-                          isStaleB
-                            ? "text-amber-500"
-                            : valueB < 0
-                              ? "text-red-600"
-                              : "text-primary"
-                        }
-                      >
-                        {formatCurrency(valueB)}
-                      </span>
+                      <>
+                        <span
+                          className={
+                            isStaleB
+                              ? "text-amber-500"
+                              : valueB < 0
+                                ? "text-red-600"
+                                : "text-primary"
+                          }
+                        >
+                          {formatCurrency(valueB)}
+                        </span>
+                        {cashBasisB !== null && (
+                          <HelpTip
+                            text={`${formatCurrency(cashBasisB)} ${CASH_BASIS_HELP}`}
+                          />
+                        )}
+                      </>
                     ) : (
                       <span className="text-faint">&mdash;</span>
                     )}
