@@ -25,6 +25,8 @@ import {
   buildCategoryRecord,
   accountCategoryEnum,
   DEFAULT_WITHDRAWAL_SPLITS,
+  getDisplayConfig,
+  isDiscountBasisEmployerContrib,
   type AccountCategory,
   type AccountBalance,
 } from "@/lib/config/account-types";
@@ -71,6 +73,7 @@ describe("ACCOUNT_TYPE_CONFIG", () => {
       "colors",
       "employerMatchLabel",
       "hasDiscountBar",
+      "employerContribKind",
       "taxPreferenceNote",
       "subTypeOptions",
       "supportsPriorYearContrib",
@@ -81,6 +84,18 @@ describe("ACCOUNT_TYPE_CONFIG", () => {
         expect(cfg).toHaveProperty(key);
       }
     }
+  });
+
+  it("only ESPP subtype has discount-kind employer contributions", () => {
+    for (const cat of getAllCategories()) {
+      expect(ACCOUNT_TYPE_CONFIG[cat].employerContribKind).toBe("match");
+    }
+    expect(getDisplayConfig("brokerage", "ESPP").employerContribKind).toBe(
+      "discount",
+    );
+    expect(isDiscountBasisEmployerContrib("brokerage", "ESPP")).toBe(true);
+    expect(isDiscountBasisEmployerContrib("brokerage", null)).toBe(false);
+    expect(isDiscountBasisEmployerContrib("401k", null)).toBe(false);
   });
 });
 

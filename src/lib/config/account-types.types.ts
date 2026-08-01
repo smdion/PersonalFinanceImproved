@@ -89,6 +89,11 @@ export type AccountTypeConfig = {
   colors: ColorSet;
   employerMatchLabel: string;
   hasDiscountBar: boolean;
+  /** Whether this account type's employer_contributions represents real cash
+   *  ("match") or a non-cash purchase-price discount ("discount", e.g. ESPP).
+   *  Drives the cash-basis (gainLoss + employerContributions) annotations —
+   *  distinct from hasDiscountBar, which only controls progress-bar rendering. */
+  employerContribKind: "match" | "discount";
   taxPreferenceNote: string;
   subTypeOptions: readonly string[];
 
@@ -104,6 +109,7 @@ export type AccountTypeConfig = {
         description: string;
         hasDiscountBar: boolean;
         employerMatchLabel: string;
+        employerContribKind: "match" | "discount";
         colors: ColorSet;
         /** Show the ESPP purchase-period calculator in the update performance flyout. */
         hasPurchasePeriodCalculator?: boolean;

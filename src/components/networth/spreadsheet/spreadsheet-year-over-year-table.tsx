@@ -9,14 +9,12 @@ import { Card } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import {
   PERF_CATEGORY_HSA,
-  PERF_CATEGORY_BROKERAGE,
+  CASH_BASIS_HELP,
+  combineCashBasisGainLoss,
 } from "@/lib/config/display-labels";
 import { PERFORMANCE_STALE_DAYS } from "@/lib/constants";
 import { HelpTip } from "@/components/ui/help-tip";
 import type { DetailedHistoryRow } from "./types";
-
-const CASH_BASIS_HELP =
-  "vs. cash paid — Brokerage includes ESPP, which is purchased at a discount. That discount isn't a cash contribution, so this measures against what was actually paid rather than full market value.";
 
 /** How a row's comparison should be handled for current-year data. */
 type FlowType =
@@ -28,10 +26,11 @@ type RowConfig = {
   label: string;
   accessor: (row: DetailedHistoryRow) => number | null;
   flowType: FlowType;
-  /** Cash-basis figure (gainLoss + employerMatch) for rows where employer
-   *  money is guaranteed to be a purchase discount, not a real match — only
-   *  set on the Brokerage category, since that's the one category where no
-   *  other sub-type ever carries employer money besides ESPP. */
+  /** Cash-basis figure (gainLoss + discount-only employer money) for rows
+   *  where a discount-kind account (e.g. ESPP) contributes — computed
+   *  per-account server-side (employerMatchDiscount), never assumed by
+   *  category, since a category can mix discount-type and match-type
+   *  employer money. */
   cashBasisAccessor?: (row: DetailedHistoryRow) => number | null;
 };
 
@@ -83,14 +82,14 @@ function buildRowConfigs(
       label: `${category} - Gains/Losses`,
       accessor: (r) => r.performanceByCategory[category]?.gainLoss ?? null,
       flowType: "market",
-      cashBasisAccessor:
-        category === PERF_CATEGORY_BROKERAGE
-          ? (r) => {
-              const cat = r.performanceByCategory[category];
-              if (!cat) return null;
-              return cat.gainLoss + cat.employerMatch;
-            }
-          : undefined,
+      cashBasisAccessor: (r) => {
+        const cat = r.performanceByCategory[category];
+        if (!cat || !cat.employerMatchDiscount) return null;
+        return combineCashBasisGainLoss(
+          cat.gainLoss,
+          cat.employerMatchDiscount,
+        );
+      },
     });
     // Add distributions row for categories that have them (e.g., HSA)
     if (category === PERF_CATEGORY_HSA) {

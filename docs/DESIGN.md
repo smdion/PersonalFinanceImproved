@@ -245,8 +245,13 @@ For years with `account_performance` data but missing `annual_performance` categ
 ### Return % (Modified Dietz)
 
 ```
-return = gain_loss / (beginning_balance + (contributions + employer_contributions - distributions) / 2)
+return = gain_loss / (beginning_balance + (contributions + rollovers - distributions - fees) / 2)
 ```
+
+`contributions` (total_contributions) already includes employer money for
+every account type — do not add employer_contributions again. See
+`computeReturn()` in `src/lib/pure/performance.ts`, the single canonical
+implementation.
 
 Stored values trusted. Null values computed. Division-by-zero returns null.
 

@@ -111,6 +111,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     },
     employerMatchLabel: "match",
     hasDiscountBar: false,
+    employerContribKind: "match",
     taxPreferenceNote:
       "Can be split between Traditional (pre-tax) and Roth (after-tax)",
     subTypeOptions: ["Rollover", "Employer Match", "Profit Sharing"],
@@ -154,6 +155,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     },
     employerMatchLabel: "match",
     hasDiscountBar: false,
+    employerContribKind: "match",
     taxPreferenceNote:
       "Can be split between Traditional (pre-tax) and Roth (after-tax)",
     subTypeOptions: ["Rollover", "Employer Match"],
@@ -196,6 +198,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     },
     employerMatchLabel: "match",
     hasDiscountBar: false,
+    employerContribKind: "match",
     taxPreferenceNote:
       "Can be split between Traditional (pre-tax) and Roth (after-tax)",
     subTypeOptions: ["Rollover"],
@@ -239,6 +242,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     },
     employerMatchLabel: "match",
     hasDiscountBar: false,
+    employerContribKind: "match",
     taxPreferenceNote: "Always pre-tax — no Roth/Traditional split",
     subTypeOptions: [],
     subTypeDisplay: {},
@@ -285,6 +289,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     },
     employerMatchLabel: "match",
     hasDiscountBar: false,
+    employerContribKind: "match",
     taxPreferenceNote: "Always after-tax — no Roth/Traditional split",
     subTypeOptions: ["ESPP"],
     subTypeDisplay: {
@@ -293,6 +298,7 @@ export const ACCOUNT_TYPE_CONFIG = {
         description:
           "Employee stock purchase plan — employer discount on company stock",
         hasDiscountBar: true,
+        employerContribKind: "discount",
         hasPurchasePeriodCalculator: true,
         employerMatchLabel: "disc.",
         colors: {
@@ -357,11 +363,13 @@ export function getDisplayConfig(
   hasPurchasePeriodCalculator: boolean;
   employerMatchLabel: string;
   displayLabel: string;
+  employerContribKind: "match" | "discount";
 } {
   const cfg = ACCOUNT_TYPE_CONFIG[accountType as AccountCategory];
   if (!cfg)
     return {
       hasDiscountBar: false,
+      employerContribKind: "match",
       hasPurchasePeriodCalculator: false,
       employerMatchLabel: "match",
       displayLabel: accountType,
@@ -375,6 +383,7 @@ export function getDisplayConfig(
           hasPurchasePeriodCalculator?: boolean;
           employerMatchLabel: string;
           displayLabel: string;
+          employerContribKind: "match" | "discount";
         }
       | undefined
     >
@@ -385,6 +394,20 @@ export function getDisplayConfig(
       hasPurchasePeriodCalculator: sub.hasPurchasePeriodCalculator ?? false,
     };
   return { ...cfg, hasPurchasePeriodCalculator: false };
+}
+
+/** True if this account (type+subtype)'s employer_contributions represents
+ *  a purchase-price discount (e.g. ESPP) rather than real cash — i.e. the
+ *  cash-basis figure (gainLoss + employerContributions) is meaningful for it.
+ *  Always resolve per-account, never assume by category (Brokerage mixes
+ *  discount-type ESPP with cash-type sub-types like mega-backdoor/after-tax). */
+export function isDiscountBasisEmployerContrib(
+  accountType: string,
+  subType?: string | null,
+): boolean {
+  return (
+    getDisplayConfig(accountType, subType).employerContribKind === "discount"
+  );
 }
 
 // ---------------------------------------------------------------------------

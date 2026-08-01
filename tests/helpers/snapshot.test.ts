@@ -348,6 +348,74 @@ describe("buildYearEndHistory", () => {
     expect(row2023.perfReturnPct).not.toBeNull();
   });
 
+  it("includes rollovers in the Modified-Dietz return% denominator", async () => {
+    // Regression test: snapshot.ts previously hand-rolled the denominator
+    // without `rollovers`, diverging from computeReturn() in
+    // src/lib/pure/performance.ts. Uses a fresh year (2021) to avoid
+    // interfering with the 2023 fixtures shared across this describe block.
+    // A net_worth_annual row is required for the year to appear in
+    // buildYearEndHistory's output at all — historical rows are built from
+    // net_worth_annual, then enriched with perf* fields from account_performance.
+    ctx.db
+      .insert(ctx.schema.netWorthAnnual)
+      .values({
+        yearEndDate: "2021-12-31",
+        portfolioTotal: "5000",
+        retirementTotal: "0",
+        hsa: "0",
+        ltBrokerage: "0",
+        espp: "5000",
+        rBrokerage: "0",
+        cash: "0",
+        houseValue: "0",
+        otherAssets: "0",
+        mortgageBalance: "0",
+        otherLiabilities: "0",
+        grossIncome: "0",
+        combinedAgi: "0",
+        portfolioByTaxLocation: { retirement: {}, portfolio: {} },
+      })
+      .run();
+
+    const perfAcct = ctx.db
+      .insert(ctx.schema.performanceAccounts)
+      .values({
+        institution: "UBS",
+        accountType: "brokerage",
+        accountLabel: "ESPP",
+        ownershipType: "individual",
+        parentCategory: "Portfolio",
+      })
+      .returning()
+      .get();
+
+    ctx.db
+      .insert(ctx.schema.accountPerformance)
+      .values({
+        year: 2021,
+        performanceAccountId: perfAcct.id,
+        institution: "UBS",
+        accountLabel: "ESPP",
+        parentCategory: "Portfolio",
+        beginningBalance: "10000",
+        endingBalance: "5000",
+        totalContributions: "3000",
+        employerContributions: "500",
+        yearlyGainLoss: "-2000",
+        distributions: "0",
+        fees: "0",
+        rollovers: "-4000",
+      })
+      .run();
+
+    const rows = await buildYearEndHistory(ctx.rawDb);
+    const row2021 = rows.find((r) => r.year === 2021)!;
+    // Modified Dietz: denom = beginBal + (contribs + rollovers - distributions - fees) / 2
+    //                       = 10000 + (3000 + (-4000) - 0 - 0) / 2 = 9500
+    // returnPct = gainLoss / denom = -2000 / 9500
+    expect(row2021.perfReturnPct).toBeCloseTo(-2000 / 9500, 4);
+  });
+
   it("prefers finalized annual_performance over computed", async () => {
     // Seed a finalized annual_performance row for 2023
     ctx.db

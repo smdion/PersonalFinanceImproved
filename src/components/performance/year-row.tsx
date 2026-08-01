@@ -7,13 +7,15 @@ import {
   accountDisplayName,
 } from "@/lib/utils/format";
 import { EditableCell } from "./editable-cell";
-import { PERF_CATEGORY_BROKERAGE } from "@/lib/config/display-labels";
-import { getDisplayConfig } from "@/lib/config/account-types";
+import {
+  PERF_CATEGORY_BROKERAGE,
+  PARENT_CATEGORY_ROLLUPS,
+  CASH_BASIS_HELP,
+  combineCashBasisGainLoss,
+} from "@/lib/config/display-labels";
+import { isDiscountBasisEmployerContrib } from "@/lib/config/account-types";
 import { HelpTip } from "@/components/ui/help-tip";
 import type { YearRowProps } from "./types";
-
-const CASH_BASIS_HELP =
-  "vs. cash paid — ESPP shares are purchased at a discount, so this figure measures against what was actually paid rather than full market value.";
 
 export function YearRow({
   row,
@@ -33,14 +35,30 @@ export function YearRow({
   canEdit = true,
 }: YearRowProps) {
   const gainColor = row.yearlyGainLoss >= 0 ? "text-green-600" : "text-red-600";
-  // Brokerage is the only category where employerContributions is guaranteed
-  // to be pure ESPP discount (no other brokerage sub-type ever has employer
-  // money) — safe to annotate here. Retirement/Portfolio rollups mix in real
-  // 401k/HSA match, so they're intentionally left alone.
+  // Per-account, data-driven gate — never assume a whole category is pure
+  // ESPP discount (Brokerage can mix in cash-type sub-types like
+  // mega-backdoor/after-tax). Rollup categories (Retirement/Portfolio) are
+  // explicitly excluded: they blend discount-type and match-type employer
+  // money, and showing this annotation there would need a visibly-labeled
+  // basis toggle (deferred), not a silent always-on figure.
+  const discountAccountsForYear = accounts.filter((a) =>
+    isDiscountBasisEmployerContrib(a.accountType ?? "", a.subType),
+  );
+  const isRollupCategory = (
+    PARENT_CATEGORY_ROLLUPS as readonly string[]
+  ).includes(row.category);
   const yearCashBasisAnnotation =
-    row.category === PERF_CATEGORY_BROKERAGE ? (
+    !isRollupCategory && discountAccountsForYear.length > 0 ? (
       <HelpTip
-        text={`${formatCurrency(row.yearlyGainLoss + row.employerContributions)} ${CASH_BASIS_HELP}`}
+        text={`${formatCurrency(
+          combineCashBasisGainLoss(
+            row.yearlyGainLoss,
+            discountAccountsForYear.reduce(
+              (s, a) => s + a.employerContributions,
+              0,
+            ),
+          ),
+        )} ${CASH_BASIS_HELP}`}
       />
     ) : undefined;
   const isEditable = canEdit;
@@ -271,12 +289,15 @@ export function YearRow({
             activeAccountCount !== undefined &&
             idx === activeAccountCount &&
             idx > 0;
-          const hasDiscountBar = getDisplayConfig(
+          const isDiscountBasis = isDiscountBasisEmployerContrib(
             a.accountType ?? "",
             a.subType,
-          ).hasDiscountBar;
-          const cashBasisGainLoss = a.yearlyGainLoss + a.employerContributions;
-          const cashBasisAnnotation = hasDiscountBar ? (
+          );
+          const cashBasisGainLoss = combineCashBasisGainLoss(
+            a.yearlyGainLoss,
+            a.employerContributions,
+          );
+          const cashBasisAnnotation = isDiscountBasis ? (
             <HelpTip
               text={`${formatCurrency(cashBasisGainLoss)} ${CASH_BASIS_HELP}`}
             />

@@ -136,6 +136,23 @@ export const FULLY_RETIREMENT_PERF_CATEGORIES = [
 /** Parent-category rollup names used in performance data. */
 export const PARENT_CATEGORY_ROLLUPS = ["Retirement", "Portfolio"] as const;
 
+/** HelpTip copy for the ESPP cash-basis annotation (gainLoss + employer
+ *  contributions on a discount-kind account, e.g. ESPP). The employer amount
+ *  there is a purchase-price discount, not cash paid — this figure measures
+ *  against actual cash paid rather than full market value. */
+export const CASH_BASIS_HELP =
+  "vs. cash paid — ESPP shares are purchased at a discount, so this figure measures against what was actually paid rather than full market value.";
+
+/** Combine a Gain/Loss figure with the discount-only portion of employer
+ *  contributions to get the cash-basis Gain/Loss. Single source of truth so
+ *  this formula can't silently diverge between the pages that show it. */
+export function combineCashBasisGainLoss(
+  gainLoss: number,
+  discountEmployerSum: number,
+): number {
+  return gainLoss + discountEmployerSum;
+}
+
 /**
  * Bridge map: DB tax_treatment (snake_case) → portfolio tax_type (camelCase).
  * Single source of truth — imported by projection, retirement, and engine routers.
