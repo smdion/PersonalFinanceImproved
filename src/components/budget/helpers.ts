@@ -11,7 +11,7 @@
  * 44-64.
  */
 
-import type { PayrollBreakdown } from "./types";
+import type { PayrollBreakdown, SinkingFundLine } from "./types";
 
 export function buildPayrollBreakdown(
   paycheckData: unknown,
@@ -154,4 +154,24 @@ export function buildNonPayrollContribs(
     }
   }
   return map;
+}
+
+/** Sum of all sinking-fund monthly commitments. */
+export function computeTotalSinking(
+  sinkingFunds: SinkingFundLine[] | null | undefined,
+): number {
+  return sinkingFunds?.reduce((s, f) => s + f.monthlyContribution, 0) ?? 0;
+}
+
+/**
+ * Take-home pay minus budgeted expenses minus sinking-fund commitments —
+ * what's left over each month with nowhere assigned. Shared by the Savings
+ * row breakdown and the summary bar's headline figure so they can't drift.
+ */
+export function computeUnallocated(
+  netMonthly: number,
+  totalMonthly: number,
+  totalSinking: number,
+): number {
+  return netMonthly - totalMonthly - totalSinking;
 }

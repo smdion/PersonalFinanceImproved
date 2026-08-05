@@ -32,6 +32,7 @@ interface RawGoal {
   id: number;
   name: string;
   monthlyContribution: string | null;
+  allocationPercent?: string | null;
   isActive: boolean;
   isEmergencyFund: boolean;
   targetDate: string | null;
@@ -211,6 +212,10 @@ export function FundCard({
   onGoalUpdate,
   onGoalUpdateMulti,
   maxMonthlyFunding,
+  onRecalculateAllocation,
+  recalculateAllocationPending,
+  onLockInAllocationPercent,
+  lockInAllocationPercentPending,
   onDeleteGoal,
   onDeleteTx,
   onDeleteTransfer,
@@ -255,6 +260,10 @@ export function FundCard({
     fields: Record<string, string | null>,
   ) => void;
   maxMonthlyFunding?: number | null;
+  onRecalculateAllocation?: () => void;
+  recalculateAllocationPending?: boolean;
+  onLockInAllocationPercent?: () => void;
+  lockInAllocationPercentPending?: boolean;
   onDeleteGoal: (params: { id: number }) => void;
   onDeleteTx: (params: { id: number }) => void;
   onDeleteTransfer?: (params: { transferPairId: string }) => void;
@@ -736,6 +745,34 @@ export function FundCard({
                 <span className="text-caption text-muted">
                   ({pct}% of pool)
                 </span>
+              )}
+              {canEdit !== false && rawGoal.allocationPercent != null && (
+                <>
+                  {onLockInAllocationPercent && (
+                    <button
+                      onClick={onLockInAllocationPercent}
+                      disabled={lockInAllocationPercentPending}
+                      className="text-caption text-blue-600 hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Keep this goal's dollar amount as-is; just update its % to reflect current income"
+                    >
+                      {lockInAllocationPercentPending
+                        ? "Updating..."
+                        : "Update %"}
+                    </button>
+                  )}
+                  {onRecalculateAllocation && (
+                    <button
+                      onClick={onRecalculateAllocation}
+                      disabled={recalculateAllocationPending}
+                      className="text-caption text-blue-600 hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={`Recompute this goal's dollar amount from its ${rawGoal.allocationPercent}% allocation and current income`}
+                    >
+                      {recalculateAllocationPending
+                        ? "Pulling in pay..."
+                        : "Pull In Pay"}
+                    </button>
+                  )}
+                </>
               )}
               {rawGoal.isApiSyncEnabled && (
                 <span

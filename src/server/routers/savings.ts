@@ -4,13 +4,22 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import {
   createTRPCRouter,
+  createCallerFactory,
   protectedProcedure,
   savingsProcedure,
+  type Context,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateSavings } from "@/lib/calculators/savings";
 import { calculateEFund } from "@/lib/calculators/efund";
 import { calculatePaycheck } from "@/lib/calculators/paycheck";
+import {
+  computeMaxMonthlyFunding,
+  resolveEffectiveMonthlyContribution,
+  type CapacityPerson,
+} from "@/lib/calculators/savings-capacity";
+import { paycheckRouter } from "./paycheck";
+import { budgetRouter } from "./budget";
 import {
   toNumber,
   computeBudgetAnnualTotal,
@@ -28,8 +37,9 @@ import { log } from "@/lib/logger";
 import type { SavingsInput, EFundInput } from "@/lib/calculators/types";
 import {
   getActiveBudgetApi,
-  getBudgetAPIClient,
+  getClientForService,
   cacheGet,
+  refreshCategoryCache,
 } from "@/lib/budget-api";
 import type { BudgetCategoryGroup } from "@/lib/budget-api";
 
@@ -168,6 +178,65 @@ function getEssentialExpenses(
   return annualTotal / 12;
 }
 
+/**
+ * Resolve which budget tier/column the emergency fund's essential-expenses
+ * total should be computed against. Shared by computeSummary (display) and
+ * pushContributionsToApi (push) — they were independently re-deriving this
+ * from app_settings with near-identical code, which risked the two drifting
+ * apart (e.g. one honoring a future new override, or a fallback change, the
+ * other not) — the E-fund target shown on screen must always match what
+ * gets pushed to YNAB.
+ *
+ * Precedence: an explicit override (computeSummary's budgetTierOverride
+ * input, e.g. "preview this tier without saving") > the e-fund's own saved
+ * column setting > the shared budget-page active column > 0.
+ */
+function resolveEfundTierIndex(
+  appSettings: { key: string; value: unknown }[],
+  overrideTierIndex?: number,
+): number {
+  const settingsMap = new Map(appSettings.map((s) => [s.key, s.value]));
+  const budgetActiveColumn =
+    typeof settingsMap.get("budget_active_column") === "number"
+      ? (settingsMap.get("budget_active_column") as number)
+      : 0;
+  const efundSavedColumn =
+    typeof settingsMap.get("efund_budget_column") === "number"
+      ? (settingsMap.get("efund_budget_column") as number)
+      : null;
+  return overrideTierIndex ?? efundSavedColumn ?? budgetActiveColumn;
+}
+
+/**
+ * Live savings-capacity pool ((take-home - budgeted) across earners), via
+ * the actual paycheck/budget routers — not a re-derived shortcut. Shared by
+ * recalculateAllocation and lockInAllocationPercent, the only two mutations
+ * allowed to move a percentage-based goal's dollar/percent (see
+ * recalculateAllocation's doc comment for why display/push never do this
+ * live automatically).
+ */
+async function computeLiveMaxMonthlyFunding(
+  ctx: Context,
+): Promise<number | null> {
+  const paycheckCaller = createCallerFactory(paycheckRouter)(ctx);
+  const budgetCaller = createCallerFactory(budgetRouter)(ctx);
+  const [paycheckData, budgetSummary] = await Promise.all([
+    paycheckCaller.computeSummary(),
+    budgetCaller.computeActiveSummary(),
+  ]);
+  const budgetMonthlyTotal = budgetSummary?.result
+    ? budgetSummary.columnMonths
+      ? (budgetSummary.weightedAnnualTotal ?? 0) / 12
+      : (budgetSummary.result.totalMonthly ?? 0)
+    : null;
+  return paycheckData && budgetMonthlyTotal !== null
+    ? computeMaxMonthlyFunding(
+        paycheckData.people as CapacityPerson[],
+        budgetMonthlyTotal,
+      )
+    : null;
+}
+
 const plannedTransactionInput = z.object({
   goalId: z.number().int(),
   transactionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -281,26 +350,11 @@ export const savingsRouter = createTRPCRouter({
       const activeProfile = budgetProfiles[0];
       const budgetTierLabels = activeProfile?.columnLabels ?? [];
 
-      // Read shared budget_active_column from app_settings
-      const settingsMap = new Map(
-        appSettings.map((s: { key: string; value: unknown }) => [
-          s.key,
-          s.value,
-        ]),
-      );
-      const budgetActiveColumn =
-        typeof settingsMap.get("budget_active_column") === "number"
-          ? (settingsMap.get("budget_active_column") as number)
-          : 0;
-
-      // E-Fund uses its own budget tier setting; falls back to shared budget column
       const efundGoal = activeGoals.find((g) => g.isEmergencyFund);
-      const efundSavedColumn =
-        typeof settingsMap.get("efund_budget_column") === "number"
-          ? (settingsMap.get("efund_budget_column") as number)
-          : null;
-      const efundTierIndex =
-        input?.budgetTierOverride ?? efundSavedColumn ?? budgetActiveColumn;
+      const efundTierIndex = resolveEfundTierIndex(
+        appSettings,
+        input?.budgetTierOverride,
+      );
 
       // Essential expenses for e-fund tier
       let essentialMonthlyExpenses = 0;
@@ -914,16 +968,31 @@ export const savingsRouter = createTRPCRouter({
   }),
 
   /**
-   * Push goal targets to the budget API for linked sinking funds.
-   * - Sinking funds: pushes monthlyContribution as the YNAB monthly-funding target.
-   * - Emergency fund: pushes computed targetAmount (targetMonths × essentials) with
-   *   goal_type "TB" (Target Balance) — matching the Income Replacement category semantics.
+   * Push goal target amounts to the budget API for linked sinking funds.
+   * - Sinking funds: pushes monthlyContribution via updateCategoryGoalTarget
+   *   (recurring monthly-assignment amount).
+   * - Emergency fund: pushes computed targetAmount (targetMonths × essentials)
+   *   via updateCategoryTargetBalance — amount only, never touches the
+   *   goal's type/cadence (that has to be configured once, manually, in
+   *   YNAB; see updateCategoryTargetBalance's implementation for why).
    * Can optionally push a single goal by ID.
    */
   pushContributionsToApi: savingsProcedure
     .input(z.object({ goalId: z.number().int().optional() }).optional())
     .mutation(async ({ ctx, input }) => {
-      const client = await getBudgetAPIClient(ctx.db);
+      // Resolve the active service once (not via getBudgetAPIClient, which
+      // wraps this same lookup but doesn't hand back which service it
+      // resolved) — mirrors budget.syncBudgetToApi, and avoids querying
+      // active_budget_api twice in one request (once here, again at the
+      // end to know which cache to refresh).
+      const active = await getActiveBudgetApi(ctx.db);
+      if (active === "none") {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "No budget API active",
+        });
+      }
+      const client = await getClientForService(ctx.db, active);
       if (!client) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
@@ -949,23 +1018,9 @@ export const savingsRouter = createTRPCRouter({
 
       if (toPush.length === 0) return { pushed: 0 };
 
-      // Compute essential expenses using the e-fund's saved column (same logic as computeSummary)
+      // Same tier resolution as computeSummary — see resolveEfundTierIndex.
       const activeProfile = budgetProfiles[0];
-      const settingsMap = new Map(
-        appSettings.map((s: { key: string; value: unknown }) => [
-          s.key,
-          s.value,
-        ]),
-      );
-      const budgetActiveColumn =
-        typeof settingsMap.get("budget_active_column") === "number"
-          ? (settingsMap.get("budget_active_column") as number)
-          : 0;
-      const efundSavedColumn =
-        typeof settingsMap.get("efund_budget_column") === "number"
-          ? (settingsMap.get("efund_budget_column") as number)
-          : null;
-      const efundTierIndex = efundSavedColumn ?? budgetActiveColumn;
+      const efundTierIndex = resolveEfundTierIndex(appSettings);
       const essentialExpenses = activeProfile
         ? getEssentialExpenses(
             budgetItems as {
@@ -983,8 +1038,11 @@ export const savingsRouter = createTRPCRouter({
       for (const goal of toPush) {
         try {
           if (goal.isEmergencyFund) {
-            // E-fund: push computed total target via plan-level endpoint.
-            // YNAB infers goal_type "TB" from goal_target alone — no date needed.
+            // E-fund: push the computed total target amount only. The
+            // goal's type/cadence (target-balance vs. recurring) has to be
+            // configured once, manually, in YNAB — updateCategoryTargetBalance
+            // intentionally only updates goal_target and never touches the
+            // goal's shape (see its implementation for why).
             const targetMonths = goal.targetMonths ?? 4;
             const targetAmount = targetMonths * essentialExpenses;
             if (targetAmount > 0) {
@@ -995,6 +1053,13 @@ export const savingsRouter = createTRPCRouter({
               pushed++;
             }
           } else {
+            // Push the stored snapshot, not a live percentage-of-income
+            // recompute — a percentage-based goal's dollar amount should
+            // only move when the user explicitly hits "Recalculate"
+            // (recalculateAllocation), not silently whenever paycheck/
+            // budget data changes underneath it. See recalculateAllocation
+            // for the live derivation and resolveEffectiveMonthlyContribution
+            // for the shared formula it uses.
             const monthly = toNumber(goal.monthlyContribution);
             if (monthly > 0) {
               await client.updateCategoryGoalTarget(
@@ -1012,7 +1077,117 @@ export const savingsRouter = createTRPCRouter({
         }
       }
 
+      // Refresh the cache so subsequent previews reflect what was just
+      // pushed instead of stale pre-push data (see budget.syncBudgetToApi
+      // for the same fix and full rationale).
+      if (pushed > 0) {
+        await refreshCategoryCache(ctx.db, active, client);
+      }
+
       return { pushed };
+    }),
+
+  /**
+   * Recompute a percentage-based savings goal's monthly_contribution from
+   * the CURRENT live pool ((allocationPercent/100) * maxMonthlyFunding) and
+   * persist it as the new snapshot. This is the only path that lets a
+   * percentage-based goal's dollar amount move — display and push both
+   * read the stored snapshot directly (see pushContributionsToApi), so a
+   * salary/budget change never silently changes what's shown or sent to
+   * the budget API until the user explicitly asks for it here.
+   * Omitting goalId recalculates every active percentage-based goal from
+   * one shared live-pool snapshot (a single fetch applied to all rows, so
+   * a batch recalc can't see the pool shift mid-batch the way N separate
+   * live reads could).
+   */
+  recalculateAllocation: savingsProcedure
+    .input(z.object({ goalId: z.number().int().optional() }).optional())
+    .mutation(async ({ ctx, input }) => {
+      const goals = await ctx.db.select().from(schema.savingsGoals);
+      const targets = goals.filter(
+        (g) =>
+          g.isActive &&
+          g.allocationPercent != null &&
+          (input?.goalId === undefined || g.id === input.goalId),
+      );
+      if (targets.length === 0) return { updated: 0 };
+
+      const maxMonthlyFunding = await computeLiveMaxMonthlyFunding(ctx);
+      if (maxMonthlyFunding === null) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "No live paycheck/budget data available to recalculate from",
+        });
+      }
+
+      await ctx.db.transaction(async (tx) => {
+        for (const g of targets) {
+          const newAmount = resolveEffectiveMonthlyContribution(
+            toNumber(g.allocationPercent),
+            maxMonthlyFunding,
+            toNumber(g.monthlyContribution),
+          );
+          await tx
+            .update(schema.savingsGoals)
+            .set({ monthlyContribution: newAmount.toFixed(2) })
+            .where(eq(schema.savingsGoals.id, g.id));
+        }
+      });
+
+      return { updated: targets.length };
+    }),
+
+  /**
+   * Inverse of recalculateAllocation: holds monthly_contribution (the
+   * dollar amount) fixed and recomputes allocation_percent to match what
+   * share of the CURRENT live pool that dollar amount represents. Use this
+   * after a raise when you want to keep sending the same dollar amount to
+   * a goal (not sweep the raise into it) while keeping the stored percent
+   * an accurate description of "what % of current income this is" rather
+   * than a stale figure computed against a smaller pool.
+   * allocation_percent is decimal(6,3) — rounded to 3 decimals, which at
+   * typical pool sizes is sub-dollar precision (accepted trade-off; see
+   * recalculateAllocation for the shared live-pool computation this reuses).
+   */
+  lockInAllocationPercent: savingsProcedure
+    .input(z.object({ goalId: z.number().int().optional() }).optional())
+    .mutation(async ({ ctx, input }) => {
+      const goals = await ctx.db.select().from(schema.savingsGoals);
+      const targets = goals.filter(
+        (g) =>
+          g.isActive &&
+          g.allocationPercent != null &&
+          (input?.goalId === undefined || g.id === input.goalId),
+      );
+      if (targets.length === 0) return { updated: 0 };
+
+      const maxMonthlyFunding = await computeLiveMaxMonthlyFunding(ctx);
+      if (maxMonthlyFunding === null) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "No live paycheck/budget data available to recalculate from",
+        });
+      }
+      if (maxMonthlyFunding <= 0) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message:
+            "Current income pool is zero or negative — can't compute a percent",
+        });
+      }
+
+      await ctx.db.transaction(async (tx) => {
+        for (const g of targets) {
+          const newPercent =
+            (toNumber(g.monthlyContribution) / maxMonthlyFunding) * 100;
+          await tx
+            .update(schema.savingsGoals)
+            .set({ allocationPercent: newPercent.toFixed(3) })
+            .where(eq(schema.savingsGoals.id, g.id));
+        }
+      });
+
+      return { updated: targets.length };
     }),
 
   // ══ REIMBURSEMENT CATEGORY ══

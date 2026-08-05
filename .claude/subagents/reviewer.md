@@ -376,7 +376,7 @@ DB (live data) → contribution profile → budget profile → scenario
 **Schema rules:**
 
 - Every financial amount column: `NOT NULL` unless explicitly nullable
-- Dollar amounts: `decimal(12,2)`, rates: `decimal(12,6)`
+- Dollar amounts: `decimal(14,2)`, rates: `decimal(12,6)` or `decimal(8,6)`
 - All enums: `pgEnum()` for DB-level validation
 - JSONB columns: `.$type<T>()` for type inference
 - ON DELETE: default `RESTRICT`; CASCADE only for tightly-coupled parent-child

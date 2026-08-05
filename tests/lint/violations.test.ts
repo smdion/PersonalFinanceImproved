@@ -414,6 +414,21 @@ function findEngineInternalImportViolations(): Violation[] {
   );
 }
 
+// Rule 12: hand-rolled Modified-Dietz denominators outside computeReturn().
+// The shape `beginBal + (... - distributions - fees) / 2` must live in
+// exactly one place — src/lib/pure/performance.ts — so a formula fix (e.g.
+// adding a missing term like rollovers) doesn't need to be applied in N
+// places again. This regex is name-dependent (keyed on `beginBal`), not
+// structural — it catches the exact shape previously duplicated in
+// snapshot.ts, not a differently-named future reimplementation.
+function findHandRolledDietzDenominatorViolations(): Violation[] {
+  return findPatternViolations(
+    /\bbeginBal\s*\+\s*\([^)]*distributions[^)]*fees[^)]*\)\s*\/\s*2/,
+    "no-hand-rolled-dietz-denominator",
+    { additionalExempt: new Set(["src/lib/pure/performance.ts"]) },
+  );
+}
+
 // ── Tests ───────────────────────────────────────────────────────────
 
 function formatViolations(label: string, violations: Violation[]): string {
@@ -557,6 +572,18 @@ describe("RULES.md violations sweep", () => {
           `public functions (calculateProjection, estimateEffectiveTaxRate, ` +
           `incomeCapForMarginalRate, computeTaxableSS) are part of the public ` +
           `API. Relative imports between engine siblings are fine.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no hand-rolled Modified-Dietz denominators (use computeReturn()/sumAccounts() from src/lib/pure/performance.ts)", () => {
+    const violations = findHandRolledDietzDenominatorViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} hand-rolled-dietz-denominator violations. ` +
+          `Use computeReturn()/sumAccounts() from src/lib/pure/performance.ts ` +
+          `instead of reimplementing the return formula.\n` +
           formatViolations("Violations", violations),
       );
     }

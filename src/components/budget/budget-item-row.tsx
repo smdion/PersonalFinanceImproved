@@ -10,6 +10,7 @@ import type { RawItem } from "./types";
 type BudgetItemRowProps = {
   item: RawItem;
   index: number;
+  itemsInCategory: number;
   numCols: number;
   editMode: boolean;
   getDraft: (id: number, colIndex: number, original: number) => number;
@@ -19,6 +20,7 @@ type BudgetItemRowProps = {
   onMoveItem: (id: number, newCategory: string) => void;
   onDeleteItem: (id: number) => void;
   onConvertToGoal?: (id: number, name: string) => void;
+  onReorderItem: (id: number, direction: "up" | "down") => void;
   categoryNames: string[];
   currentCategory: string;
   contribMonthly: number | null;
@@ -31,6 +33,7 @@ type BudgetItemRowProps = {
 export function BudgetItemRow({
   item,
   index,
+  itemsInCategory,
   numCols,
   editMode,
   getDraft,
@@ -40,6 +43,7 @@ export function BudgetItemRow({
   onMoveItem,
   onDeleteItem,
   onConvertToGoal,
+  onReorderItem,
   categoryNames,
   currentCategory,
   contribMonthly,
@@ -49,6 +53,7 @@ export function BudgetItemRow({
   nameColWidth,
 }: BudgetItemRowProps) {
   const [showPicker, setShowPicker] = useState(false);
+  const [pickerAnchor, setPickerAnchor] = useState<DOMRect | null>(null);
   const isLinked = !!item.apiCategoryId;
 
   return (
@@ -63,7 +68,7 @@ export function BudgetItemRow({
             : { maxWidth: "12rem" }
         }
       >
-        <span className="flex items-center gap-1.5 min-w-0">
+        <span className="flex flex-wrap items-center gap-1.5 min-w-0">
           {canEdit ? (
             <button
               onClick={() => onToggleEssential(item.id, !item.isEssential)}
@@ -87,13 +92,20 @@ export function BudgetItemRow({
               }`}
             />
           )}
-          <span className="truncate" title={item.subcategory}>
+          <span
+            className="truncate max-w-[10rem] flex-shrink-0"
+            title={item.subcategory}
+          >
             {item.subcategory}
           </span>
           {contribMonthly !== null && (
             <span
               className="flex-shrink-0 text-caption font-semibold text-indigo-600 bg-indigo-50 rounded px-0.5 leading-tight"
-              title={`Also tracked as paycheck contribution (${formatCurrency(contribMonthly)}/mo). Values are independent — editing here won't change the paycheck.`}
+              title={
+                item.contributionAccountId
+                  ? `Linked to paycheck contribution (${formatCurrency(contribMonthly)}/mo) — editing here updates it everywhere.`
+                  : `Also tracked as paycheck contribution (${formatCurrency(contribMonthly)}/mo). Values are independent — editing here won't change the paycheck.`
+              }
             >
               PC
             </span>
@@ -104,7 +116,10 @@ export function BudgetItemRow({
               title={`Linked to ${item.apiCategoryName} (${item.apiSyncDirection})`}
               onClick={(e) => {
                 e.stopPropagation();
-                if (canEdit) setShowPicker(!showPicker);
+                if (canEdit) {
+                  setPickerAnchor(e.currentTarget.getBoundingClientRect());
+                  setShowPicker(!showPicker);
+                }
               }}
             >
               API
@@ -116,23 +131,41 @@ export function BudgetItemRow({
               title="Link to budget API category"
               onClick={(e) => {
                 e.stopPropagation();
+                setPickerAnchor(e.currentTarget.getBoundingClientRect());
                 setShowPicker(!showPicker);
               }}
             >
               +API
             </span>
           )}
-          {showPicker && (
+          {showPicker && pickerAnchor && (
             <ApiCategoryPicker
               budgetItemId={item.id}
               currentApiCategoryId={item.apiCategoryId}
               currentApiCategoryName={item.apiCategoryName}
               currentSyncDirection={item.apiSyncDirection}
+              anchorRect={pickerAnchor}
               onClose={() => setShowPicker(false)}
             />
           )}
-          {canEdit && (
-            <span className="flex-shrink-0 hidden group-hover:inline-flex items-center gap-1 whitespace-nowrap ml-1">
+          {canEdit && editMode && (
+            <span className="flex-shrink-0 inline-flex items-center gap-1 whitespace-nowrap ml-1">
+              <button
+                onClick={() => onReorderItem(item.id, "up")}
+                disabled={index === 0}
+                className="text-faint hover:text-secondary disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Move up"
+              >
+                ↑
+              </button>
+              <button
+                onClick={() => onReorderItem(item.id, "down")}
+                disabled={index === itemsInCategory - 1}
+                className="text-faint hover:text-secondary disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Move down"
+              >
+                ↓
+              </button>
               <select
                 value=""
                 onChange={(e) => {
@@ -189,9 +222,8 @@ export function BudgetItemRow({
           item.contribAmount != null
             ? item.contribAmount
             : (item.amounts[col] ?? 0);
-        const dbAmt = item.amounts[col] ?? 0;
         if (editMode && canEdit) {
-          const draftVal = getDraft(item.id, col, dbAmt);
+          const draftVal = getDraft(item.id, col, amt);
           return (
             <td key={col} className="text-right py-1 px-2">
               <input
@@ -222,7 +254,7 @@ export function BudgetItemRow({
             className="text-right py-1.5 px-3 tabular-nums text-secondary"
           >
             <InlineEdit
-              value={String(dbAmt)}
+              value={String(amt)}
               type="number"
               formatDisplay={() => {
                 const n = parseFloat(String(amt));
@@ -231,7 +263,7 @@ export function BudgetItemRow({
               parseInput={(v) => String(parseFloat(v) || 0)}
               onSave={(newVal) => {
                 const newAmt = parseFloat(newVal);
-                if (newAmt !== dbAmt) {
+                if (newAmt !== amt) {
                   onUpdateCell(item.id, col, newAmt);
                 }
               }}

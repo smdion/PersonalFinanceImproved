@@ -367,14 +367,35 @@ describe("YnabClient", () => {
   });
 
   describe("updateCategoryGoalTarget", () => {
-    it("PATCHes the current month with milliunits conversion (plan-level)", async () => {
+    it("PATCHes the plan-level category endpoint with goal_frequency monthly and milliunits conversion", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({}));
       await client.updateCategoryGoalTarget("cat-1", 500);
       const [url, init] = mockFetch.mock.calls[0]!;
-      expect(url).toMatch(/\/months\/\d{4}-\d{2}-01\/categories\/cat-1/);
+      expect(url).toContain("/categories/cat-1");
+      expect(url).not.toMatch(/\/months\//);
       expect(init.method).toBe("PATCH");
       const body = JSON.parse(init.body);
+      expect(body.category.goal_frequency).toBe("monthly");
       expect(body.category.goal_target).toBe(500_000);
+      // goal_type is a read-only, derived field in YNAB's API — never sent.
+      expect(body.category.goal_type).toBeUndefined();
+    });
+  });
+
+  describe("updateCategoryTargetBalance", () => {
+    it("PATCHes only goal_target, in a single request, touching nothing else", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({}));
+      await client.updateCategoryTargetBalance("cat-1", 1200);
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      const [url, init] = mockFetch.mock.calls[0]!;
+      expect(url).toContain("/categories/cat-1");
+      expect(url).not.toMatch(/\/months\//);
+      expect(init.method).toBe("PATCH");
+      const body = JSON.parse(init.body);
+      expect(body.category.goal_target).toBe(1_200_000);
+      expect(Object.keys(body.category)).toEqual(["goal_target"]);
     });
   });
 

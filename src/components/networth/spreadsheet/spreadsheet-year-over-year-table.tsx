@@ -7,8 +7,13 @@
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { PERF_CATEGORY_HSA } from "@/lib/config/display-labels";
+import {
+  PERF_CATEGORY_HSA,
+  CASH_BASIS_HELP,
+  combineCashBasisGainLoss,
+} from "@/lib/config/display-labels";
 import { PERFORMANCE_STALE_DAYS } from "@/lib/constants";
+import { HelpTip } from "@/components/ui/help-tip";
 import type { DetailedHistoryRow } from "./types";
 
 /** How a row's comparison should be handled for current-year data. */
@@ -21,6 +26,12 @@ type RowConfig = {
   label: string;
   accessor: (row: DetailedHistoryRow) => number | null;
   flowType: FlowType;
+  /** Cash-basis figure (gainLoss + discount-only employer money) for rows
+   *  where a discount-kind account (e.g. ESPP) contributes — computed
+   *  per-account server-side (employerMatchDiscount), never assumed by
+   *  category, since a category can mix discount-type and match-type
+   *  employer money. */
+  cashBasisAccessor?: (row: DetailedHistoryRow) => number | null;
 };
 
 /** Check if performance data is stale (>14 days since last update). */
@@ -64,17 +75,21 @@ function buildRowConfigs(
     });
     rows.push({
       label: `${category} - Contributions`,
-      accessor: (r) => {
-        const cat = r.performanceByCategory[category];
-        if (!cat) return null;
-        return cat.contributions + cat.employerMatch;
-      },
+      accessor: (r) => r.performanceByCategory[category]?.contributions ?? null,
       flowType: "contribution",
     });
     rows.push({
       label: `${category} - Gains/Losses`,
       accessor: (r) => r.performanceByCategory[category]?.gainLoss ?? null,
       flowType: "market",
+      cashBasisAccessor: (r) => {
+        const cat = r.performanceByCategory[category];
+        if (!cat || !cat.employerMatchDiscount) return null;
+        return combineCashBasisGainLoss(
+          cat.gainLoss,
+          cat.employerMatchDiscount,
+        );
+      },
     });
     // Add distributions row for categories that have them (e.g., HSA)
     if (category === PERF_CATEGORY_HSA) {
@@ -103,11 +118,8 @@ function buildRowConfigs(
     });
     rows.push({
       label: `${parentCat} - Contributions`,
-      accessor: (r) => {
-        const cat = r.performanceByParentCategory[parentCat];
-        if (!cat) return null;
-        return cat.contributions + cat.employerMatch;
-      },
+      accessor: (r) =>
+        r.performanceByParentCategory[parentCat]?.contributions ?? null,
       flowType: "contribution",
     });
     rows.push({
@@ -188,6 +200,20 @@ export function SpreadsheetYearOverYearTable({
   const yearAOutdated = isPerformanceOutdated(yearA);
   const yearBOutdated = isPerformanceOutdated(yearB);
   const hasProrated = annualize && (yearA.isCurrent || yearB.isCurrent);
+
+  // True when one side is a partial (in-progress) year and the other is a
+  // finalized full year — market flows (gains/losses/distributions) are
+  // never scaled to match, so callers need a distinct signal from "*"
+  // (which marks contributions that WERE scaled).
+  const hasPartialYearMismatch =
+    (yearA.isCurrent &&
+      yearA.ytdRatio > 0 &&
+      yearA.ytdRatio < 1 &&
+      !yearB.isCurrent) ||
+    (yearB.isCurrent &&
+      yearB.ytdRatio > 0 &&
+      yearB.ytdRatio < 1 &&
+      !yearA.isCurrent);
 
   function fmtUpdated(iso: string | null): string | null {
     if (!iso) return null;
@@ -286,6 +312,17 @@ export function SpreadsheetYearOverYearTable({
                 }
               }
 
+              // Market flows (gains/losses/distributions) are never prorated —
+              // if one side is a partial year, flag it so the change columns
+              // aren't misread as a like-for-like comparison.
+              const isUnproratedMarket =
+                config.flowType === "market" && hasPartialYearMismatch;
+
+              // Cash-basis figure — only set on rows where employer money is
+              // guaranteed to be a purchase discount (see cashBasisAccessor).
+              const cashBasisA = config.cashBasisAccessor?.(yearA) ?? null;
+              const cashBasisB = config.cashBasisAccessor?.(yearB) ?? null;
+
               return (
                 <tr
                   key={config.label}
@@ -297,44 +334,58 @@ export function SpreadsheetYearOverYearTable({
                       <span className="text-faint font-normal"> - YTD</span>
                     )}
                   </td>
-                  <td className="text-right py-1.5 px-2">
+                  <td className="text-right py-1.5 px-2 whitespace-nowrap">
                     {showOutdatedA ? (
                       <span className="text-amber-500 text-caption">
                         Outdated
                       </span>
                     ) : valueA !== null ? (
-                      <span
-                        className={
-                          isStaleA
-                            ? "text-amber-500"
-                            : valueA < 0
-                              ? "text-red-600"
-                              : "text-primary"
-                        }
-                      >
-                        {formatCurrency(valueA)}
-                      </span>
+                      <>
+                        <span
+                          className={
+                            isStaleA
+                              ? "text-amber-500"
+                              : valueA < 0
+                                ? "text-red-600"
+                                : "text-primary"
+                          }
+                        >
+                          {formatCurrency(valueA)}
+                        </span>
+                        {cashBasisA !== null && (
+                          <HelpTip
+                            text={`${formatCurrency(cashBasisA)} ${CASH_BASIS_HELP}`}
+                          />
+                        )}
+                      </>
                     ) : (
                       <span className="text-faint">&mdash;</span>
                     )}
                   </td>
-                  <td className="text-right py-1.5 px-2">
+                  <td className="text-right py-1.5 px-2 whitespace-nowrap">
                     {showOutdatedB ? (
                       <span className="text-amber-500 text-caption">
                         Outdated
                       </span>
                     ) : valueB !== null ? (
-                      <span
-                        className={
-                          isStaleB
-                            ? "text-amber-500"
-                            : valueB < 0
-                              ? "text-red-600"
-                              : "text-primary"
-                        }
-                      >
-                        {formatCurrency(valueB)}
-                      </span>
+                      <>
+                        <span
+                          className={
+                            isStaleB
+                              ? "text-amber-500"
+                              : valueB < 0
+                                ? "text-red-600"
+                                : "text-primary"
+                          }
+                        >
+                          {formatCurrency(valueB)}
+                        </span>
+                        {cashBasisB !== null && (
+                          <HelpTip
+                            text={`${formatCurrency(cashBasisB)} ${CASH_BASIS_HELP}`}
+                          />
+                        )}
+                      </>
                     ) : (
                       <span className="text-faint">&mdash;</span>
                     )}
@@ -352,6 +403,7 @@ export function SpreadsheetYearOverYearTable({
                       >
                         {formatPercent(percentChange, 1)}
                         {isProrated && "*"}
+                        {isUnproratedMarket && "†"}
                       </span>
                     ) : (
                       <span className="text-faint">&mdash;</span>
@@ -371,6 +423,7 @@ export function SpreadsheetYearOverYearTable({
                         {dollarChange >= 0 ? "+" : ""}
                         {formatCurrency(dollarChange)}
                         {isProrated && "*"}
+                        {isUnproratedMarket && "†"}
                       </span>
                     ) : (
                       <span className="text-faint">&mdash;</span>
@@ -385,6 +438,15 @@ export function SpreadsheetYearOverYearTable({
           <p className="text-caption text-faint mt-2">
             * Prorated — comparison year scaled to match YTD period for
             contributions
+          </p>
+        )}
+        {hasPartialYearMismatch && (
+          <p className="text-caption text-faint mt-1">
+            † Not prorated — compares a partial year to a full year as-is.
+            Gains/losses and distributions track actual market activity, not a
+            payroll schedule, so they aren&apos;t scaled like contributions. A
+            lower $/% change here can simply mean the year isn&apos;t over yet,
+            not that performance is worse.
           </p>
         )}
       </div>

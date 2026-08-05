@@ -20,6 +20,10 @@ type BudgetCategoryRowProps = {
   onMoveItem: (id: number, newCategory: string) => void;
   onDeleteItem: (id: number) => void;
   onConvertToGoal?: (id: number, name: string) => void;
+  onReorderItem: (id: number, direction: "up" | "down") => void;
+  onReorderCategory: (category: string, direction: "up" | "down") => void;
+  isFirstCategory: boolean;
+  isLastCategory: boolean;
   onAddItem: (
     category: string,
     subcategory: string,
@@ -54,6 +58,10 @@ export function BudgetCategoryRow({
   onMoveItem,
   onDeleteItem,
   onConvertToGoal,
+  onReorderItem,
+  onReorderCategory,
+  isFirstCategory,
+  isLastCategory,
   onAddItem,
   addItemPending,
   addItemError,
@@ -81,7 +89,7 @@ export function BudgetCategoryRow({
               : { maxWidth: "12rem" }
           }
         >
-          <span className="flex items-center gap-2 min-w-0">
+          <span className="flex flex-wrap items-center gap-2 min-w-0">
             {canEdit ? (
               <button
                 onClick={() =>
@@ -111,21 +119,44 @@ export function BudgetCategoryRow({
                 }`}
               />
             )}
-            <span className="truncate" title={categoryName}>
+            <span
+              className="truncate max-w-[10rem] flex-shrink-0"
+              title={categoryName}
+            >
               {categoryName}
             </span>
-            {canEdit && (
-              <button
-                onClick={() => {
-                  onSetAddingItemToCategory(
-                    addingItemToCategory === categoryName ? null : categoryName,
-                  );
-                }}
-                className="text-blue-500 hover:text-blue-700 text-caption font-medium"
-                title={`Add item to ${categoryName}`}
-              >
-                + item
-              </button>
+            {canEdit && editMode && (
+              <>
+                <button
+                  onClick={() => onReorderCategory(categoryName, "up")}
+                  disabled={isFirstCategory}
+                  className="text-faint hover:text-secondary disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Move category up"
+                >
+                  ↑
+                </button>
+                <button
+                  onClick={() => onReorderCategory(categoryName, "down")}
+                  disabled={isLastCategory}
+                  className="text-faint hover:text-secondary disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Move category down"
+                >
+                  ↓
+                </button>
+                <button
+                  onClick={() => {
+                    onSetAddingItemToCategory(
+                      addingItemToCategory === categoryName
+                        ? null
+                        : categoryName,
+                    );
+                  }}
+                  className="text-blue-500 hover:text-blue-700 text-caption font-medium"
+                  title={`Add item to ${categoryName}`}
+                >
+                  + item
+                </button>
+              </>
             )}
           </span>
         </td>
@@ -141,7 +172,7 @@ export function BudgetCategoryRow({
         {showApiColumn && <td />}
       </tr>
       {/* Add item form */}
-      {canEdit && addingItemToCategory === categoryName && (
+      {canEdit && editMode && addingItemToCategory === categoryName && (
         <AddItemForm
           category={categoryName}
           onAdd={onAddItem}
@@ -157,6 +188,7 @@ export function BudgetCategoryRow({
           key={item.id}
           item={item}
           index={idx}
+          itemsInCategory={items.length}
           numCols={numCols}
           editMode={editMode}
           getDraft={getDraft}
@@ -166,6 +198,7 @@ export function BudgetCategoryRow({
           onMoveItem={onMoveItem}
           onDeleteItem={onDeleteItem}
           onConvertToGoal={onConvertToGoal}
+          onReorderItem={onReorderItem}
           categoryNames={categoryNames}
           currentCategory={categoryName}
           contribMonthly={matchContrib(item.subcategory)}

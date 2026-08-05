@@ -174,3 +174,9 @@ export type LifetimeTotals = {
   match: number;
   fees: number;
 };
+
+export type AccountFilterState = {
+  selectedAccountIds: Set<number>;
+  /** null = "Since Inception" */
+  yearRange: { start: number; end: number } | null;
+};

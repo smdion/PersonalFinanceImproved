@@ -2,6 +2,9 @@
 
 import React, { useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
+import { toast } from "@/lib/hooks/use-toast";
+import { formatSyncResultToast } from "@/lib/utils/format";
+import { resolveEffectiveMonthlyContribution } from "@/lib/calculators/savings-capacity";
 import {
   PushPreviewModal,
   type PushPreviewItem,
@@ -15,6 +18,8 @@ interface RawGoal {
   apiCategoryId?: string | null;
   isApiSyncEnabled?: boolean | null;
   isEmergencyFund?: boolean | null;
+  allocationPercent?: string | null;
+  isActive?: boolean;
 }
 
 interface ApiCategoryGroup {
@@ -22,6 +27,26 @@ interface ApiCategoryGroup {
   name: string;
   categories: { id: string; name: string }[];
 }
+
+/** The single pushContributionsToApi mutation instance, owned by useApiSync()
+ *  and passed down here — see useApiSync for why this must not be a second,
+ *  independent useMutation() call. */
+type PushMutation = ReturnType<
+  typeof trpc.savings.pushContributionsToApi.useMutation
+>;
+
+/** Same single-instance rule as PushMutation — shared with the page's bulk
+ *  "Pull In New Pay →" button and FundManagementSection's per-goal buttons. */
+type RecalculateMutation = ReturnType<
+  typeof trpc.savings.recalculateAllocation.useMutation
+>;
+
+/** Same single-instance rule as PushMutation — shared with the page's bulk
+ *  "Update % (dollar unchanged)" button and FundManagementSection's
+ *  per-goal buttons. */
+type LockInMutation = ReturnType<
+  typeof trpc.savings.lockInAllocationPercent.useMutation
+>;
 
 export interface ApiSyncSectionProps {
   rawGoals: RawGoal[];
@@ -46,6 +71,17 @@ export interface ApiSyncSectionProps {
   setPushPreviewItems: (items: PushPreviewItem[] | null) => void;
   pendingPushGoalId: number | undefined;
   setPendingPushGoalId: (id: number | undefined) => void;
+  pushMutation: PushMutation;
+  recalcPreviewItems: PushPreviewItem[] | null;
+  setRecalcPreviewItems: (items: PushPreviewItem[] | null) => void;
+  pendingRecalcGoalId: number | undefined;
+  setPendingRecalcGoalId: (id: number | undefined) => void;
+  recalculateMutation: RecalculateMutation;
+  lockInPreviewItems: PushPreviewItem[] | null;
+  setLockInPreviewItems: (items: PushPreviewItem[] | null) => void;
+  pendingLockInGoalId: number | undefined;
+  setPendingLockInGoalId: (id: number | undefined) => void;
+  lockInMutation: LockInMutation;
 }
 
 export function ApiSyncSection({
@@ -60,6 +96,17 @@ export function ApiSyncSection({
   setPushPreviewItems,
   pendingPushGoalId,
   setPendingPushGoalId,
+  pushMutation,
+  recalcPreviewItems,
+  setRecalcPreviewItems,
+  pendingRecalcGoalId,
+  setPendingRecalcGoalId,
+  recalculateMutation,
+  lockInPreviewItems,
+  setLockInPreviewItems,
+  pendingLockInGoalId,
+  setPendingLockInGoalId,
+  lockInMutation,
 }: ApiSyncSectionProps) {
   const utils = trpc.useUtils();
 
@@ -67,7 +114,6 @@ export function ApiSyncSection({
   const linkGoalToApi = trpc.savings.linkGoalToApi.useMutation({
     onSuccess: () => utils.savings.invalidate(),
   });
-  const pushToApi = trpc.savings.pushContributionsToApi.useMutation();
 
   return (
     <>
@@ -125,7 +171,7 @@ export function ApiSyncSection({
           title={`Push contributions to ${apiBalancesData?.service?.toUpperCase() ?? "API"}`}
           items={pushPreviewItems}
           onConfirm={() => {
-            pushToApi.mutate(
+            pushMutation.mutate(
               pendingPushGoalId ? { goalId: pendingPushGoalId } : {},
               {
                 onSettled: () => {
@@ -139,7 +185,62 @@ export function ApiSyncSection({
             setPushPreviewItems(null);
             setPendingPushGoalId(undefined);
           }}
-          isPending={pushToApi.isPending}
+          isPending={pushMutation.isPending}
+        />
+      )}
+
+      {/* Pull In New Pay preview modal — percent stays, dollar moves to match current income */}
+      {recalcPreviewItems && (
+        <PushPreviewModal
+          title="Pull in new pay"
+          items={recalcPreviewItems}
+          direction="recalculate"
+          onConfirm={() => {
+            recalculateMutation.mutate(
+              pendingRecalcGoalId !== undefined
+                ? { goalId: pendingRecalcGoalId }
+                : {},
+              {
+                onSettled: () => {
+                  setRecalcPreviewItems(null);
+                  setPendingRecalcGoalId(undefined);
+                },
+              },
+            );
+          }}
+          onCancel={() => {
+            setRecalcPreviewItems(null);
+            setPendingRecalcGoalId(undefined);
+          }}
+          isPending={recalculateMutation.isPending}
+        />
+      )}
+
+      {/* Update % preview modal — dollar stays, percent moves to describe it against current income */}
+      {lockInPreviewItems && (
+        <PushPreviewModal
+          title="Update % (dollar amounts unchanged)"
+          items={lockInPreviewItems}
+          direction="recalculate"
+          valueFormat="percent"
+          onConfirm={() => {
+            lockInMutation.mutate(
+              pendingLockInGoalId !== undefined
+                ? { goalId: pendingLockInGoalId }
+                : {},
+              {
+                onSettled: () => {
+                  setLockInPreviewItems(null);
+                  setPendingLockInGoalId(undefined);
+                },
+              },
+            );
+          }}
+          onCancel={() => {
+            setLockInPreviewItems(null);
+            setPendingLockInGoalId(undefined);
+          }}
+          isPending={lockInMutation.isPending}
         />
       )}
     </>
@@ -163,16 +264,68 @@ export function useApiSync() {
       utils.budget.invalidate();
     },
   });
-  const pushToApi = trpc.savings.pushContributionsToApi.useMutation();
+  // Single instance — also passed down to ApiSyncSection as `pushMutation`
+  // so the toolbar button's pending state and the modal's confirm button
+  // stay in sync. Previously ApiSyncSection created its own second,
+  // independent useMutation() call, so the toolbar button's disabled/label
+  // state never reflected an in-flight push at all.
+  const pushToApi = trpc.savings.pushContributionsToApi.useMutation({
+    onSuccess: (data) => {
+      utils.savings.invalidate();
+      toast.success(formatSyncResultToast(data.pushed, "push", "YNAB"));
+    },
+  });
   const deleteOverride = trpc.savings.allocationOverrides.delete.useMutation({
     onSuccess: () => utils.savings.invalidate(),
   });
+  // Single instance — shared between the page's bulk "Pull In New Pay →"
+  // button and FundManagementSection's per-goal buttons via a prop (same
+  // reason as pushToApi above).
+  const recalculateAllocation = trpc.savings.recalculateAllocation.useMutation({
+    onSuccess: (result) => {
+      utils.savings.invalidate();
+      utils.budget.computeActiveSummary.invalidate();
+      toast.success(
+        result.updated > 0
+          ? `Pulled in new pay for ${result.updated} goal${result.updated !== 1 ? "s" : ""}.`
+          : "Nothing to update.",
+      );
+    },
+    onError: (err) => toast.error(err.message || "Recalculate failed"),
+  });
+  // Single instance — shared between the page's bulk "Update % (dollar
+  // unchanged)" button and FundManagementSection's per-goal buttons.
+  const lockInAllocationPercent =
+    trpc.savings.lockInAllocationPercent.useMutation({
+      onSuccess: (result) => {
+        utils.savings.invalidate();
+        utils.budget.computeActiveSummary.invalidate();
+        toast.success(
+          result.updated > 0
+            ? `Updated % for ${result.updated} goal${result.updated !== 1 ? "s" : ""} — dollar amounts unchanged.`
+            : "Nothing to update.",
+        );
+      },
+      onError: (err) => toast.error(err.message || "Update % failed"),
+    });
 
   const [linkingGoalId, setLinkingGoalId] = useState<number | null>(null);
   const [pushPreviewItems, setPushPreviewItems] = useState<
     PushPreviewItem[] | null
   >(null);
   const [pendingPushGoalId, setPendingPushGoalId] = useState<
+    number | undefined
+  >(undefined);
+  const [recalcPreviewItems, setRecalcPreviewItems] = useState<
+    PushPreviewItem[] | null
+  >(null);
+  const [pendingRecalcGoalId, setPendingRecalcGoalId] = useState<
+    number | undefined
+  >(undefined);
+  const [lockInPreviewItems, setLockInPreviewItems] = useState<
+    PushPreviewItem[] | null
+  >(null);
+  const [pendingLockInGoalId, setPendingLockInGoalId] = useState<
     number | undefined
   >(undefined);
 
@@ -205,6 +358,63 @@ export function useApiSync() {
       deleteOverride.mutate(params),
     [deleteOverride],
   );
+  const buildRecalculateAllPreview = useCallback(
+    (
+      rawGoals: RawGoal[],
+      maxMonthlyFunding: number | null,
+      goalId?: number,
+    ) => {
+      const items: PushPreviewItem[] = [];
+      for (const g of rawGoals) {
+        if (!g.isActive || g.allocationPercent == null) continue;
+        if (goalId !== undefined && g.id !== goalId) continue;
+        const pct = parseFloat(g.allocationPercent);
+        const stored = parseFloat(g.monthlyContribution ?? "0") || 0;
+        const live = resolveEffectiveMonthlyContribution(
+          pct,
+          maxMonthlyFunding,
+          stored,
+        );
+        items.push({
+          name: g.name,
+          field: "Monthly Contribution",
+          currentYnab: stored,
+          newValue: live,
+        });
+      }
+      setPendingRecalcGoalId(goalId);
+      setRecalcPreviewItems(items);
+    },
+    [],
+  );
+  const buildLockInAllPreview = useCallback(
+    (
+      rawGoals: RawGoal[],
+      maxMonthlyFunding: number | null,
+      goalId?: number,
+    ) => {
+      const items: PushPreviewItem[] = [];
+      for (const g of rawGoals) {
+        if (!g.isActive || g.allocationPercent == null) continue;
+        if (goalId !== undefined && g.id !== goalId) continue;
+        const currentPct = parseFloat(g.allocationPercent);
+        const stored = parseFloat(g.monthlyContribution ?? "0") || 0;
+        const newPct =
+          maxMonthlyFunding != null && maxMonthlyFunding > 0
+            ? (stored / maxMonthlyFunding) * 100
+            : currentPct;
+        items.push({
+          name: g.name,
+          field: "Allocation %",
+          currentYnab: currentPct,
+          newValue: newPct,
+        });
+      }
+      setPendingLockInGoalId(goalId);
+      setLockInPreviewItems(items);
+    },
+    [],
+  );
 
   return {
     // State for ApiSyncSection component
@@ -214,8 +424,27 @@ export function useApiSync() {
     setPushPreviewItems,
     pendingPushGoalId,
     setPendingPushGoalId,
+    recalcPreviewItems,
+    setRecalcPreviewItems,
+    pendingRecalcGoalId,
+    setPendingRecalcGoalId,
+    buildRecalculateAllPreview,
+    lockInPreviewItems,
+    setLockInPreviewItems,
+    pendingLockInGoalId,
+    setPendingLockInGoalId,
+    buildLockInAllPreview,
     // Callbacks for header buttons
     pushToApiPending: pushToApi.isPending,
+    // Single mutation instance — pass straight through to ApiSyncSection
+    // (its `pushMutation` prop) so both consumers share the same state.
+    pushToApi,
+    // Single mutation instance — shared between the page's bulk button and
+    // FundManagementSection's per-goal buttons (see declaration above).
+    recalculateAllocation,
+    // Single mutation instance — shared between the page's bulk button and
+    // FundManagementSection's per-goal buttons (see declaration above).
+    lockInAllocationPercent,
     // Callbacks for FundManagementSection
     onLinkToApi,
     onUnlinkFromApi,
@@ -223,7 +452,14 @@ export function useApiSync() {
     onPushPreview,
     // Callback for FundManagementSection → FundCard → FundOverridesSummary
     onDeleteOverride,
-    // Build push-all preview from current goals
+    // Build push-all preview from current goals. Pushes the STORED
+    // monthlyContribution snapshot (matches what pushContributionsToApi
+    // actually sends — see recalculateAllocation for the only path that's
+    // allowed to move a percentage-based goal's amount). maxMonthlyFunding
+    // is only used here to flag a percentage-based goal as "stale" when its
+    // snapshot no longer matches what a live recalc would produce, so the
+    // user gets a warning in the preview instead of silently pushing an
+    // outdated amount.
     buildPushAllPreview: (
       rawGoals: RawGoal[],
       apiBalanceMap: Map<
@@ -236,6 +472,7 @@ export function useApiSync() {
         }
       >,
       efundComputedTarget?: number,
+      maxMonthlyFunding?: number | null,
     ) => {
       const items: PushPreviewItem[] = [];
       for (const g of rawGoals) {
@@ -255,13 +492,24 @@ export function useApiSync() {
             });
           }
         } else {
+          const allocationPercent =
+            g.allocationPercent != null
+              ? parseFloat(g.allocationPercent)
+              : null;
           const amount = parseFloat(g.monthlyContribution ?? "0") || 0;
+          const liveAmount = resolveEffectiveMonthlyContribution(
+            allocationPercent,
+            maxMonthlyFunding ?? null,
+            amount,
+          );
+          const stale = Math.abs(liveAmount - amount) >= 0.01;
           if (amount > 0) {
             items.push({
               name: g.name,
               field: "Monthly Goal Target",
               currentYnab,
               newValue: amount,
+              stale,
             });
           }
         }

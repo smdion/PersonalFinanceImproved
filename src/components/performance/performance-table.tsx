@@ -89,6 +89,7 @@ export function PerformanceTable({
             </th>
             <th className="text-right px-4 py-3 text-muted font-medium">
               Gain/Loss
+              <HelpTip text="Change in value after contributions, distributions, and fees. For ESPP accounts, this measures against the full market value at purchase — since shares are bought at a discount, your loss relative to what you actually paid is smaller than this figure alone shows." />
             </th>
             <th className="text-right px-4 py-3 text-muted font-medium">
               Ending

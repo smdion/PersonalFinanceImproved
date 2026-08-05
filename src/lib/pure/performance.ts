@@ -23,6 +23,45 @@ export function computeReturn(
   return gainLoss / denominator;
 }
 
+export type ChainedReturn = {
+  /** Cumulative total return across all included years: ∏(1+rᵢ) - 1 */
+  cumulativeReturn: number | null;
+  /** Annualized/CAGR: ∏(1+rᵢ)^(1/n) - 1, using n = number of included years */
+  annualizedReturn: number | null;
+  /** Count of years actually included in the chain (nulls excluded) */
+  yearsIncluded: number;
+};
+
+/**
+ * Chain-link a sequence of per-year returns (e.g. from computeReturn) into a
+ * cumulative total return and an annualized (CAGR) return. Null per-year
+ * returns (no capital at risk that year — computeReturn's zero-denominator
+ * case) are excluded from the chain, not treated as 0%.
+ *
+ * Geometric-linking (∏(1+rᵢ)) is the standard way to combine period returns
+ * regardless of the intra-period methodology — here that's Simple Dietz, so
+ * the result compounds that same approximation rather than introducing a new
+ * error class. Worth disclosing in the UI, not worth avoiding.
+ */
+export function chainReturns(yearlyReturns: (number | null)[]): ChainedReturn {
+  const usable = yearlyReturns.filter((r): r is number => r !== null);
+  if (usable.length === 0) {
+    return { cumulativeReturn: null, annualizedReturn: null, yearsIncluded: 0 };
+  }
+  const growth = usable.reduce((acc, r) => acc * (1 + r), 1);
+  const cumulativeReturn = growth - 1;
+  // Math.pow of a negative base with a fractional exponent is NaN — a single
+  // year worse than -100% (possible when fees/distributions dominate) can
+  // push growth negative. Cumulative is still well-defined; CAGR isn't.
+  const annualizedReturn =
+    growth < 0
+      ? null
+      : usable.length === 1
+        ? usable[0]!
+        : Math.pow(growth, 1 / usable.length) - 1;
+  return { cumulativeReturn, annualizedReturn, yearsIncluded: usable.length };
+}
+
 export type AccountLike = {
   beginningBalance: string | null;
   totalContributions: string | null;
@@ -64,6 +103,52 @@ export function sumAccounts(accts: AccountLike[]) {
     fees,
     rollovers,
   };
+}
+
+export type AccountRowLike = AccountLike & {
+  performanceAccountId: number | null;
+  year: number;
+};
+
+/**
+ * Filter+bucket account rows by a selected account-ID subset and inclusive
+ * year range, then sum each year into a per-year aggregate via sumAccounts
+ * + computeReturn. Years with zero matching accounts are omitted from the
+ * result (no synthetic zero rows) — an account closed mid-range simply has
+ * no row in later years, same as the router's own year-by-year data shape.
+ */
+export function aggregateAccountsByYear(
+  rows: AccountRowLike[],
+  selectedAccountIds: Set<number>,
+  yearRange: { start: number; end: number },
+): Array<
+  { year: number } & ReturnType<typeof sumAccounts> & {
+      returnPct: number | null;
+    }
+> {
+  const matches = (r: AccountRowLike) =>
+    r.performanceAccountId != null &&
+    selectedAccountIds.has(r.performanceAccountId) &&
+    r.year >= yearRange.start &&
+    r.year <= yearRange.end;
+
+  const years = Array.from(
+    new Set(rows.filter(matches).map((r) => r.year)),
+  ).sort((a, b) => a - b);
+
+  return years.map((year) => {
+    const yearRows = rows.filter((r) => r.year === year && matches(r));
+    const sums = sumAccounts(yearRows);
+    const returnPct = computeReturn(
+      sums.beginBal,
+      sums.contribs,
+      sums.gainLoss,
+      sums.distributions,
+      sums.fees,
+      sums.rollovers,
+    );
+    return { year, ...sums, returnPct };
+  });
 }
 
 export type AnnualRowLike = {

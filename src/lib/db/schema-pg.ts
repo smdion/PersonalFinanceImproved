@@ -40,6 +40,8 @@ import type {
   BudgetApiService,
   ApiSyncDirection,
   PortfolioTaxType,
+  UtilityKind,
+  UtilityUnit,
 } from "@/lib/config/enum-values";
 
 /** One date-ranged rule directing an extra paycheck to one or more savings goals. */
@@ -109,7 +111,8 @@ export type ExtraPaycheckRoutingData = {
 //   8.  Net worth (annual) ......... netWorthAnnual, homeImprovementItems,
 //                                    otherAssetItems, historicalNotes
 //   9.  Mortgages .................. mortgageLoans, mortgageWhatIfScenarios,
-//                                    mortgageExtraPayments, propertyTaxes
+//                                    mortgageExtraPayments, propertyTaxes,
+//                                    utilityService, utilityReading
 //  10.  Retirement settings ........ retirementSettings, retirementSalaryOverrides,
 //                                    retirementBudgetOverrides, projectionOverrides,
 //                                    retirementScenarios
@@ -1108,6 +1111,54 @@ export const propertyTaxes = pgTable(
   },
   (table) => [
     uniqueIndex("property_taxes_loan_year_idx").on(table.loanId, table.year),
+  ],
+);
+
+// Utility services — one row per metered house utility (gas / water / electric).
+// Standalone tracker; not yet wired into the budget/projection (additive-ready).
+export const utilityService = pgTable(
+  "utility_service",
+  {
+    id: serial("id").primaryKey(),
+    kind: text("kind").$type<UtilityKind>().notNull(),
+    providerName: text("provider_name").notNull(),
+    // Nullable for forward-compat with future utilities that may lack a metered
+    // usage unit; seeded gas=ccf, water=gallon, electric=kWh.
+    usageUnit: text("usage_unit").$type<UtilityUnit>(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    active: boolean("active").notNull().default(true),
+  },
+  (table) => [
+    // Unique by kind makes the spreadsheet import idempotent (one service per kind).
+    uniqueIndex("utility_service_kind_idx").on(table.kind),
+  ],
+);
+
+// Utility readings — one row per service per month (the only stored facts).
+// Derived values ($/unit, avg, min/max, totals, YoY) are computed in the router.
+export const utilityReading = pgTable(
+  "utility_reading",
+  {
+    id: serial("id").primaryKey(),
+    serviceId: integer("service_id")
+      .notNull()
+      .references(() => utilityService.id, { onDelete: "cascade" }),
+    year: integer("year").notNull(),
+    month: integer("month").notNull(), // 1–12, app-validated (no CHECK; sqlite codegen strips them)
+    cost: decimal("cost", { precision: 14, scale: 2 }).notNull(),
+    // Nullable: some bills are cost-only (e.g. 2018 move-in year). scale 4 keeps
+    // fractional meter reads (e.g. ccf/kWh sub-unit precision) lossless.
+    usage: decimal("usage", { precision: 14, scale: 4 }),
+    note: text("note"),
+  },
+  (table) => [
+    // Composite unique drives idempotent upserts AND covers the serviceId FK as
+    // its leading column, so no separate serviceId index is needed.
+    uniqueIndex("utility_reading_service_year_month_idx").on(
+      table.serviceId,
+      table.year,
+      table.month,
+    ),
   ],
 );
 

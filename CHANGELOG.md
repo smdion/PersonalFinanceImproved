@@ -8,6 +8,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.6
 
+## [0.6.5] - 2026-08-05
+
+### Added
+
+- **New Upkeep page for tracking home utilities.** Log electric, gas, water, and other recurring utility bills over time, with an import option for bringing in existing records.
+- **Annual Performance: custom account/year-range filtering.** Pick a specific set of accounts (not just an account type) and a year range — Since Inception, YTD, Last N Years, or a custom range — to see an annualized (CAGR) and cumulative return for exactly the accounts you care about.
+- **Savings: "Update %" action.** For percentage-based goals (Car, Travel, Home Project), locks in the goal's current dollar amount and recalculates its stored percentage from that — handy after a raise, when you want to keep sending the same dollar amount instead of automatically pulling in the higher income.
+- **Savings: preview before "Recalculate All %".** Bulk recalculating percentage-based goals now shows the current vs. recalculated amount for every goal, with Confirm/Cancel, instead of applying immediately.
+- **Budget: reorder categories and items.** Move categories and items up/down within the Budget tab.
+- **Budget: bulk sync-direction control per category group.** Set pull/push/both for an entire category group at once in Settings, instead of one category at a time.
+
+### Fixed
+
+- **Percentage-based savings goals no longer silently drift with income changes.** Previously, a salary or budget edit would immediately change what a Car/Travel/Home Project goal contributed, with no visibility into it. These goals now hold a fixed dollar amount until you explicitly recalculate, and the push preview flags any goal whose amount is out of date.
+- **Savings amounts pushed to YNAB now match what's shown on screen**, in the Budget page's Savings row, the Savings page, and the push preview — previously these three could disagree.
+- **Pushing budget or savings targets to YNAB no longer fails or writes to the wrong field.** Goal amounts now go to the correct field, and push/pull confirmation screens compare against the value that's actually being read and written.
+- **Editing a budget item linked to a contribution account now correctly updates your paycheck/retirement contribution** instead of a disconnected copy of the amount.
+- **Corrected several places where employer contributions or match were counted twice** in return% figures (Portfolio, year-over-year category rows, and the current in-progress year), which had been understating returns on accounts with employer money.
+- **Corrected rollover accounting** so a transfer between two of your own tracked accounts (and ESPP or pension-to-brokerage transfers) nets to zero instead of skewing gain/loss.
+- **Employer match and distribution tooltips no longer show a hardcoded discount percentage or broker name.**
+- **Budget item and category names no longer get squeezed to nothing** by the always-visible action icons on narrow screens.
+
+### Improved
+
+- **Pushing or pulling budget/savings data to YNAB now shows a success toast with the item count**, and the confirmation modal shows elapsed time during longer pushes so it's clear it's still working.
+
+---
+
 ## [0.6.4] - 2026-06-28
 
 ### Added

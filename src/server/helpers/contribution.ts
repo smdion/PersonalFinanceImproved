@@ -1,7 +1,7 @@
 /**
  * Contribution computation, aggregation, and profile resolution helpers.
  */
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
 import { isTaxFree } from "@/lib/config/account-types";
@@ -42,6 +42,87 @@ export function computeAnnualContribution(
     default: // fixed_annual
       return value;
   }
+}
+
+/**
+ * Fallback periods-per-year for a jobless contribution account: the first
+ * active job's pay period, or 26 (biweekly) if there are none. Shared by
+ * computeActiveSummary's forward computation and
+ * applyContributionAccountEdit's inverse so the two can't drift apart.
+ */
+export function resolveJoblessPeriodsPerYear(
+  activeJobs: { payPeriod: string }[],
+): number {
+  return activeJobs.length > 0
+    ? getPeriodsPerYear(activeJobs[0]!.payPeriod)
+    : 26;
+}
+
+/**
+ * Inverse of computeAnnualContribution for the flat-dollar methods a
+ * budget-linked contribution account can use (linking is restricted to
+ * jobId === null, so percent_of_salary — which needs a salary — never
+ * applies here; reject it loudly rather than silently writing $0).
+ */
+export function computeContributionValueFromMonthly(
+  method: string,
+  monthlyAmount: number,
+  periodsPerYear: number,
+): number {
+  switch (method) {
+    case "fixed_monthly":
+      return monthlyAmount;
+    case "fixed_per_period":
+      return (monthlyAmount * 12) / periodsPerYear;
+    case "fixed_annual":
+      return monthlyAmount * 12;
+    default:
+      throw new Error(
+        `Cannot edit a "${method}" contribution account from a flat monthly amount`,
+      );
+  }
+}
+
+/**
+ * Write-through for editing a budget-linked contribution account's value
+ * from a monthly dollar amount (what the Budget page displays/edits).
+ * Converts into the account's native unit and skips the write if the
+ * account is already at that value (avoids float/rounding drift on
+ * fixed_annual / fixed_per_period round-trips).
+ */
+export async function applyContributionAccountEdit(
+  db: Db,
+  contributionAccountId: number,
+  monthlyAmount: number,
+): Promise<void> {
+  const [account] = await db
+    .select()
+    .from(schema.contributionAccounts)
+    .where(eq(schema.contributionAccounts.id, contributionAccountId));
+  if (!account) return; // stale FK — nothing to update
+
+  const activeJobs = await db
+    .select()
+    .from(schema.jobs)
+    .where(isNull(schema.jobs.endDate));
+  const periodsPerYear = resolveJoblessPeriodsPerYear(activeJobs);
+
+  const newValue = roundToCents(
+    computeContributionValueFromMonthly(
+      account.contributionMethod,
+      monthlyAmount,
+      periodsPerYear,
+    ),
+  );
+
+  if (Math.abs(newValue - toNumber(account.contributionValue)) < 0.005) {
+    return;
+  }
+
+  await db
+    .update(schema.contributionAccounts)
+    .set({ contributionValue: String(newValue) })
+    .where(eq(schema.contributionAccounts.id, contributionAccountId));
 }
 
 /**

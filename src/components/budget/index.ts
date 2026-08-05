@@ -10,6 +10,7 @@ export { BudgetSummaryBar } from "./budget-summary-bar";
 export { BudgetProfileSidebar } from "./budget-profile-sidebar";
 export { BudgetTable } from "./budget-table";
 export { BudgetPushYnabModal } from "./budget-push-ynab-modal";
+export { BudgetPullYnabModal } from "./budget-pull-ynab-modal";
 export type {
   RawItem,
   PayrollBreakdown,

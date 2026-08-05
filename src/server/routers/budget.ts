@@ -21,15 +21,64 @@ import {
   getCurrentSalary,
   computeAnnualContribution,
   loadAndApplyContribProfile,
+  resolveJoblessPeriodsPerYear,
+  applyContributionAccountEdit,
 } from "@/server/helpers";
 import { accountDisplayName } from "@/lib/utils/format";
 import {
   getActiveBudgetApi,
   getClientForService,
   cacheGet,
+  refreshCategoryCache,
 } from "@/lib/budget-api";
 import type { BudgetCategoryGroup, BudgetMonthDetail } from "@/lib/budget-api";
 import { YNAB_INTERNAL_GROUPS } from "@/lib/budget-api";
+
+type BudgetItemRow = typeof schema.budgetItems.$inferSelect;
+
+/**
+ * Group a profile's budget items (already sort_order-ordered) into ordered
+ * category blocks, preserving both the categories' relative order and each
+ * category's internal item order. Mirrors the client-side grouping in
+ * useBudgetDerivedData's categoryMap (use-budget-derived-data.ts) — same
+ * logic, server-side, used by the reorder mutations below.
+ */
+function groupItemsByCategory(
+  items: BudgetItemRow[],
+): { category: string; items: BudgetItemRow[] }[] {
+  const map = new Map<string, BudgetItemRow[]>();
+  for (const item of items) {
+    const list = map.get(item.category) ?? [];
+    list.push(item);
+    map.set(item.category, list);
+  }
+  return Array.from(map.entries()).map(([category, categoryItems]) => ({
+    category,
+    items: categoryItems,
+  }));
+}
+
+/**
+ * Flatten ordered category blocks back into a single item list and write a
+ * clean, gapless 0..N-1 sort_order sequence. Used after every reorder so
+ * any pre-existing sort_order gaps/duplicates get cleaned up as a side
+ * effect (self-healing) instead of accumulating drift over time.
+ */
+async function renumberItems(
+  db: typeof import("@/lib/db").db,
+  blocks: { category: string; items: BudgetItemRow[] }[],
+): Promise<void> {
+  let sortOrder = 0;
+  for (const block of blocks) {
+    for (const item of block.items) {
+      await db
+        .update(schema.budgetItems)
+        .set({ sortOrder })
+        .where(eq(schema.budgetItems.id, item.id));
+      sortOrder++;
+    }
+  }
+}
 
 export const budgetRouter = createTRPCRouter({
   /** List all budget profiles with summary totals (for profile sidebar). */
@@ -230,10 +279,7 @@ export const budgetRouter = createTRPCRouter({
 
       if (linkedContribIds.size > 0) {
         const activeJobs = effectiveJobs.filter((j) => !j.endDate);
-        const defaultPeriodsPerYear =
-          activeJobs.length > 0
-            ? getPeriodsPerYear(activeJobs[0]!.payPeriod)
-            : 26;
+        const defaultPeriodsPerYear = resolveJoblessPeriodsPerYear(activeJobs);
 
         const salaryByJobId = new Map<number, number>();
         for (const j of activeJobs) {
@@ -353,6 +399,20 @@ export const budgetRouter = createTRPCRouter({
         .where(eq(schema.budgetItems.id, input.id))
         .then((r) => r[0]);
       if (!item) throw new Error("Item not found");
+
+      // Linked items: the amount IS the budget amount from the user's
+      // perspective, so budgetProcedure is intentionally allowed to write
+      // through to the linked contribution account rather than the dead
+      // budget_items.amounts field it would otherwise shadow.
+      if (item.contributionAccountId) {
+        await applyContributionAccountEdit(
+          ctx.db,
+          item.contributionAccountId,
+          input.amount,
+        );
+        return item;
+      }
+
       const amounts = budgetAmountsSchema.parse(item.amounts);
       if (input.colIndex < 0 || input.colIndex >= amounts.length) {
         throw new Error("Column index out of bounds");
@@ -393,6 +453,21 @@ export const budgetRouter = createTRPCRouter({
           .where(eq(schema.budgetItems.id, id))
           .then((r) => r[0]);
         if (!item) continue;
+
+        // Linked items: write through to the contribution account instead
+        // of the dead budget_items.amounts field (see updateItemAmount for
+        // the permission-scope rationale). If a batch somehow carries more
+        // than one distinct amount for the same linked item, last one wins.
+        if (item.contributionAccountId) {
+          const amount = changes[changes.length - 1]!.amount;
+          await applyContributionAccountEdit(
+            ctx.db,
+            item.contributionAccountId,
+            amount,
+          );
+          continue;
+        }
+
         const amounts = budgetAmountsSchema.parse(item.amounts);
         for (const c of changes) {
           if (c.colIndex >= 0 && c.colIndex < amounts.length) {
@@ -593,6 +668,93 @@ export const budgetRouter = createTRPCRouter({
         .where(eq(schema.budgetItems.id, input.id))
         .returning()
         .then((r) => r[0]);
+    }),
+
+  /** Swap a category's whole block of items with an adjacent category's
+   *  block. No-ops at the first/last category boundary. */
+  reorderCategory: budgetProcedure
+    .input(
+      z.object({
+        profileId: z.number().optional(),
+        category: z.string(),
+        direction: z.enum(["up", "down"]),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      let profile;
+      if (input.profileId) {
+        const rows = await ctx.db
+          .select()
+          .from(schema.budgetProfiles)
+          .where(eq(schema.budgetProfiles.id, input.profileId));
+        profile = rows[0];
+      } else {
+        const rows = await ctx.db
+          .select()
+          .from(schema.budgetProfiles)
+          .where(eq(schema.budgetProfiles.isActive, true));
+        profile = rows[0];
+      }
+      if (!profile) throw new Error("No active profile");
+
+      const items = await ctx.db
+        .select()
+        .from(schema.budgetItems)
+        .where(eq(schema.budgetItems.profileId, profile.id))
+        .orderBy(asc(schema.budgetItems.sortOrder));
+
+      const blocks = groupItemsByCategory(items);
+      const idx = blocks.findIndex((b) => b.category === input.category);
+      if (idx === -1) return { ok: true };
+
+      const swapWith = input.direction === "up" ? idx - 1 : idx + 1;
+      if (swapWith < 0 || swapWith >= blocks.length) return { ok: true };
+
+      [blocks[idx], blocks[swapWith]] = [blocks[swapWith]!, blocks[idx]!];
+      await renumberItems(ctx.db, blocks);
+      return { ok: true };
+    }),
+
+  /** Swap an item's position with an adjacent item within the same
+   *  category. No-ops at the category's first/last item boundary — moving
+   *  an item into a different category is the "Move..." dropdown's job
+   *  (moveItem above), not this. */
+  reorderItem: budgetProcedure
+    .input(
+      z.object({
+        id: z.number().int(),
+        direction: z.enum(["up", "down"]),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [target] = await ctx.db
+        .select()
+        .from(schema.budgetItems)
+        .where(eq(schema.budgetItems.id, input.id));
+      if (!target) throw new Error("Item not found");
+
+      const items = await ctx.db
+        .select()
+        .from(schema.budgetItems)
+        .where(eq(schema.budgetItems.profileId, target.profileId))
+        .orderBy(asc(schema.budgetItems.sortOrder));
+
+      const blocks = groupItemsByCategory(items);
+      const block = blocks.find((b) => b.category === target.category);
+      if (!block) return { ok: true };
+
+      const idx = block.items.findIndex((i) => i.id === target.id);
+      if (idx === -1) return { ok: true };
+
+      const swapWith = input.direction === "up" ? idx - 1 : idx + 1;
+      if (swapWith < 0 || swapWith >= block.items.length) return { ok: true };
+
+      [block.items[idx], block.items[swapWith]] = [
+        block.items[swapWith]!,
+        block.items[idx]!,
+      ];
+      await renumberItems(ctx.db, blocks);
+      return { ok: true };
     }),
 
   /** Update a budget item's essential flag. */
@@ -1046,6 +1208,14 @@ export const budgetRouter = createTRPCRouter({
         pushed++;
       }
 
+      // Push writes directly to YNAB but doesn't touch budget_api_cache —
+      // refresh it so the next preview/comparison reflects what was just
+      // pushed instead of showing stale pre-push diffs until the next
+      // manual Sync.
+      if (pushed > 0) {
+        await refreshCategoryCache(ctx.db, active, client);
+      }
+
       return { pushed };
     }),
 
@@ -1110,6 +1280,7 @@ export const budgetRouter = createTRPCRouter({
           budgeted: cat?.budgeted ?? 0,
           activity: cat?.activity ?? 0,
           balance: cat?.balance ?? 0,
+          goalTarget: cat?.goalTarget ?? 0,
         };
       });
 

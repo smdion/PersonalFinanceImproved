@@ -9,13 +9,44 @@
  */
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
+import { eq, asc } from "drizzle-orm";
+import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import {
   createTestCaller,
   seedStandardDataset,
   seedBudgetItem,
+  seedBudgetProfile,
+  seedPerson,
   viewerSession,
   createViewerSessionWithPermissions,
 } from "./setup";
+
+/** Seed a jobless (budget-linkable) contribution account with correct schema field names. */
+function seedLinkableContributionAccount(
+  db: Awaited<ReturnType<typeof createTestCaller>>["db"],
+  personId: number,
+  overrides: Partial<
+    typeof sqliteSchema.contributionAccounts.$inferInsert
+  > = {},
+): number {
+  const result = db
+    .insert(sqliteSchema.contributionAccounts)
+    .values({
+      personId,
+      jobId: null,
+      accountType: "brokerage",
+      parentCategory: "Portfolio",
+      taxTreatment: "after_tax",
+      contributionMethod: "fixed_monthly",
+      contributionValue: "75.00",
+      employerMatchType: "none",
+      isActive: true,
+      ...overrides,
+    })
+    .returning({ id: sqliteSchema.contributionAccounts.id })
+    .get();
+  return result.id;
+}
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -514,6 +545,191 @@ describe("budget router", () => {
   });
 
   // =========================================================================
+  // reorderCategory / reorderItem
+  // =========================================================================
+
+  describe("reorderCategory / reorderItem", () => {
+    // Isolated profile + explicitly-ordered items — the shared fixture's
+    // items all default to sortOrder 0, which leaves tie-break order
+    // unspecified and unsuitable for asserting exact positions.
+    let reorderProfileId: number;
+    let a1: number, a2: number, b1: number, c1: number, c2: number, c3: number;
+
+    beforeAll(async () => {
+      reorderProfileId = await seedBudgetProfile(db, "Reorder Test", false);
+      a1 = seedBudgetItem(db, reorderProfileId, {
+        category: "A",
+        subcategory: "A1",
+        amounts: [100],
+        sortOrder: 0,
+      });
+      a2 = seedBudgetItem(db, reorderProfileId, {
+        category: "A",
+        subcategory: "A2",
+        amounts: [100],
+        sortOrder: 1,
+      });
+      b1 = seedBudgetItem(db, reorderProfileId, {
+        category: "B",
+        subcategory: "B1",
+        amounts: [100],
+        sortOrder: 2,
+      });
+      c1 = seedBudgetItem(db, reorderProfileId, {
+        category: "C",
+        subcategory: "C1",
+        amounts: [100],
+        sortOrder: 3,
+      });
+      c2 = seedBudgetItem(db, reorderProfileId, {
+        category: "C",
+        subcategory: "C2",
+        amounts: [100],
+        sortOrder: 4,
+      });
+      c3 = seedBudgetItem(db, reorderProfileId, {
+        category: "C",
+        subcategory: "C3",
+        amounts: [100],
+        sortOrder: 5,
+      });
+    });
+
+    function getOrdered() {
+      return db
+        .select()
+        .from(sqliteSchema.budgetItems)
+        .where(eq(sqliteSchema.budgetItems.profileId, reorderProfileId))
+        .orderBy(asc(sqliteSchema.budgetItems.sortOrder))
+        .all();
+    }
+
+    it("orderBy sort_order reflects the seeded A, B, C order initially", () => {
+      const rows = getOrdered();
+      expect(rows.map((r) => r.category)).toEqual([
+        "A",
+        "A",
+        "B",
+        "C",
+        "C",
+        "C",
+      ]);
+      expect(rows.map((r) => r.id)).toEqual([a1, a2, b1, c1, c2, c3]);
+    });
+
+    it("reorderCategory no-ops when the first category tries to move up", async () => {
+      const before = getOrdered().map((r) => r.id);
+      await caller.budget.reorderCategory({
+        profileId: reorderProfileId,
+        category: "A",
+        direction: "up",
+      });
+      expect(getOrdered().map((r) => r.id)).toEqual(before);
+    });
+
+    it("reorderCategory no-ops when the last category tries to move down", async () => {
+      const before = getOrdered().map((r) => r.id);
+      await caller.budget.reorderCategory({
+        profileId: reorderProfileId,
+        category: "C",
+        direction: "down",
+      });
+      expect(getOrdered().map((r) => r.id)).toEqual(before);
+    });
+
+    it("reorderCategory swaps the whole block with the adjacent category, preserving internal item order", async () => {
+      await caller.budget.reorderCategory({
+        profileId: reorderProfileId,
+        category: "B",
+        direction: "up",
+      });
+      const rows = getOrdered();
+      // B (1 item) swapped above A (2 items): B, A, A, C, C, C
+      expect(rows.map((r) => r.category)).toEqual([
+        "B",
+        "A",
+        "A",
+        "C",
+        "C",
+        "C",
+      ]);
+      expect(rows.map((r) => r.id)).toEqual([b1, a1, a2, c1, c2, c3]);
+      // Restore
+      await caller.budget.reorderCategory({
+        profileId: reorderProfileId,
+        category: "B",
+        direction: "down",
+      });
+      expect(getOrdered().map((r) => r.id)).toEqual([a1, a2, b1, c1, c2, c3]);
+    });
+
+    it("reorderCategory renumbers sort_order as a clean gapless 0..N-1 sequence", async () => {
+      await caller.budget.reorderCategory({
+        profileId: reorderProfileId,
+        category: "B",
+        direction: "up",
+      });
+      const rows = getOrdered();
+      expect(rows.map((r) => r.sortOrder)).toEqual([0, 1, 2, 3, 4, 5]);
+      // Restore
+      await caller.budget.reorderCategory({
+        profileId: reorderProfileId,
+        category: "B",
+        direction: "down",
+      });
+    });
+
+    it("reorderCategory is a no-op (still ok) for an unknown category name", async () => {
+      const before = getOrdered().map((r) => r.id);
+      const result = await caller.budget.reorderCategory({
+        profileId: reorderProfileId,
+        category: "Nonexistent",
+        direction: "up",
+      });
+      expect(result).toEqual({ ok: true });
+      expect(getOrdered().map((r) => r.id)).toEqual(before);
+    });
+
+    it("reorderItem no-ops for the first item in its category (does not cross into the previous category)", async () => {
+      const before = getOrdered().map((r) => r.id);
+      await caller.budget.reorderItem({ id: a1, direction: "up" });
+      expect(getOrdered().map((r) => r.id)).toEqual(before);
+    });
+
+    it("reorderItem no-ops for the last item in its category (does not cross into the next category)", async () => {
+      // a2 is the last item in category A, but NOT the last item overall
+      // (B follows) — must not bleed into B.
+      const before = getOrdered().map((r) => r.id);
+      await caller.budget.reorderItem({ id: a2, direction: "down" });
+      expect(getOrdered().map((r) => r.id)).toEqual(before);
+    });
+
+    it("reorderItem swaps with the adjacent item within the same category", async () => {
+      await caller.budget.reorderItem({ id: a1, direction: "down" });
+      const rows = getOrdered();
+      expect(rows.map((r) => r.id)).toEqual([a2, a1, b1, c1, c2, c3]);
+      // Restore
+      await caller.budget.reorderItem({ id: a1, direction: "up" });
+      expect(getOrdered().map((r) => r.id)).toEqual([a1, a2, b1, c1, c2, c3]);
+    });
+
+    it("reorderItem on a middle item of a 3-item category only swaps with its neighbor", async () => {
+      await caller.budget.reorderItem({ id: c2, direction: "up" });
+      const rows = getOrdered();
+      expect(rows.map((r) => r.id)).toEqual([a1, a2, b1, c2, c1, c3]);
+      // Restore
+      await caller.budget.reorderItem({ id: c2, direction: "down" });
+      expect(getOrdered().map((r) => r.id)).toEqual([a1, a2, b1, c1, c2, c3]);
+    });
+
+    it("reorderItem throws for an unknown item id", async () => {
+      await expect(
+        caller.budget.reorderItem({ id: 9_999_999, direction: "up" }),
+      ).rejects.toThrow("Item not found");
+    });
+  });
+
+  // =========================================================================
   // addColumn
   // =========================================================================
 
@@ -940,6 +1156,152 @@ describe("budget router", () => {
           expect(item.contribAmount).toBeNull();
         }
       }
+    });
+  });
+
+  // =========================================================================
+  // Linked-item amount edits write through to contribution_accounts
+  // =========================================================================
+
+  describe("amount edits on contribution-linked items", () => {
+    let linkedItemCounter = 0;
+
+    async function seedLinkedItem(
+      overrides: Partial<
+        typeof sqliteSchema.contributionAccounts.$inferInsert
+      > = {},
+    ) {
+      linkedItemCounter += 1;
+      const personId = await seedPerson(db);
+      const contribAccountId = seedLinkableContributionAccount(
+        db,
+        personId,
+        overrides,
+      );
+      const itemId = seedBudgetItem(db, profileId, {
+        category: "Investing",
+        subcategory: `LT Brokerage Test ${linkedItemCounter}`,
+        amounts: [999], // should never be read once linked
+        contributionAccountId: contribAccountId,
+      });
+      return { contribAccountId, itemId };
+    }
+
+    function getContributionValue(contribAccountId: number): number {
+      const row = db
+        .select()
+        .from(sqliteSchema.contributionAccounts)
+        .where(eq(sqliteSchema.contributionAccounts.id, contribAccountId))
+        .get()!;
+      return Number(row.contributionValue);
+    }
+
+    function getBudgetItemAmounts(itemId: number): number[] {
+      const row = db
+        .select()
+        .from(sqliteSchema.budgetItems)
+        .where(eq(sqliteSchema.budgetItems.id, itemId))
+        .get()!;
+      return row.amounts as number[];
+    }
+
+    it("updateItemAmount writes through to contribution_accounts.contribution_value, not budget_items.amounts (fixed_monthly)", async () => {
+      const { contribAccountId, itemId } = await seedLinkedItem({
+        contributionMethod: "fixed_monthly",
+        contributionValue: "75.00",
+      });
+
+      await caller.budget.updateItemAmount({
+        id: itemId,
+        colIndex: 0,
+        amount: 100,
+      });
+
+      expect(getContributionValue(contribAccountId)).toBeCloseTo(100);
+      expect(getBudgetItemAmounts(itemId)[0]).toBe(999); // untouched
+    });
+
+    it("updateItemAmounts (batch) writes through to contribution_accounts for linked items and amounts for unlinked items", async () => {
+      const { contribAccountId, itemId: linkedItemId } = await seedLinkedItem({
+        contributionMethod: "fixed_monthly",
+        contributionValue: "75.00",
+      });
+      const unlinkedItemId = seedBudgetItem(db, profileId, {
+        category: "Essentials",
+        subcategory: "Batch Test Unlinked",
+        amounts: [50],
+      });
+
+      await caller.budget.updateItemAmounts({
+        updates: [
+          { id: linkedItemId, colIndex: 0, amount: 120 },
+          { id: unlinkedItemId, colIndex: 0, amount: 80 },
+        ],
+      });
+
+      expect(getContributionValue(contribAccountId)).toBeCloseTo(120);
+      expect(getBudgetItemAmounts(linkedItemId)[0]).toBe(999); // untouched
+      expect(getBudgetItemAmounts(unlinkedItemId)[0]).toBe(80);
+    });
+
+    it("fixed_annual round-trips: editing to the currently-displayed monthly value is a no-op", async () => {
+      const { contribAccountId, itemId } = await seedLinkedItem({
+        contributionMethod: "fixed_annual",
+        contributionValue: "1000.00", // monthly = 1000/12 = 83.333... -> displayed as 83.33
+      });
+
+      const before = await caller.budget.computeActiveSummary();
+      const linked = before.rawItems!.find((i) => i.id === itemId)!;
+      expect(linked.contribAmount).toBeCloseTo(83.33, 2);
+
+      await caller.budget.updateItemAmount({
+        id: itemId,
+        colIndex: 0,
+        amount: linked.contribAmount!,
+      });
+
+      // Should not drift (e.g. to 999.96) from re-saving the displayed value.
+      expect(getContributionValue(contribAccountId)).toBeCloseTo(1000, 2);
+    });
+
+    it("fixed_per_period converts correctly", async () => {
+      // No jobs seeded in this suite's dataset besides the one from
+      // seedStandardDataset (biweekly, 26 periods/year).
+      const { contribAccountId, itemId } = await seedLinkedItem({
+        contributionMethod: "fixed_per_period",
+        contributionValue: "50.00", // monthly = 50*26/12 = 108.33
+      });
+
+      const before = await caller.budget.computeActiveSummary();
+      const linked = before.rawItems!.find((i) => i.id === itemId)!;
+      expect(linked.contribAmount).toBeCloseTo((50 * 26) / 12, 2);
+
+      await caller.budget.updateItemAmount({
+        id: itemId,
+        colIndex: 0,
+        amount: 200, // new monthly target
+      });
+
+      // value = 200 * 12 / 26
+      expect(getContributionValue(contribAccountId)).toBeCloseTo(
+        (200 * 12) / 26,
+        2,
+      );
+    });
+
+    it("rejects editing a percent_of_salary-linked item with a clear error", async () => {
+      const { itemId } = await seedLinkedItem({
+        contributionMethod: "percent_of_salary",
+        contributionValue: "10",
+      });
+
+      await expect(
+        caller.budget.updateItemAmount({
+          id: itemId,
+          colIndex: 0,
+          amount: 100,
+        }),
+      ).rejects.toThrow(/percent_of_salary/);
     });
   });
 });

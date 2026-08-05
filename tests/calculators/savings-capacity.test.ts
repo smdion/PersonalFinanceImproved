@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   computeMaxMonthlyFunding,
   computeTotalMonthlyAllocation,
+  resolveEffectiveMonthlyContribution,
   type CapacityPerson,
   type SavingsGoalForAllocation,
 } from "@/lib/calculators/savings-capacity";
@@ -115,5 +116,27 @@ describe("computeTotalMonthlyAllocation", () => {
       { isActive: true, monthlyContribution: "100" },
     ];
     expect(computeTotalMonthlyAllocation(goals)).toBeCloseTo(350.5, 2);
+  });
+});
+
+describe("resolveEffectiveMonthlyContribution", () => {
+  it("computes percentage of the pool when allocationPercent is set", () => {
+    // 37% of a $2229.98 pool — the Home Project drift case that motivated this.
+    expect(resolveEffectiveMonthlyContribution(37, 2229.98, 825)).toBeCloseTo(
+      825.0926,
+      3,
+    );
+  });
+
+  it("falls back to the flat amount when allocationPercent is null", () => {
+    expect(resolveEffectiveMonthlyContribution(null, 2229.98, 825)).toBe(825);
+  });
+
+  it("falls back to the flat amount when maxMonthlyFunding is null", () => {
+    expect(resolveEffectiveMonthlyContribution(37, null, 825)).toBe(825);
+  });
+
+  it("returns 0 for a 0% allocation regardless of pool size", () => {
+    expect(resolveEffectiveMonthlyContribution(0, 5000, 825)).toBe(0);
   });
 });

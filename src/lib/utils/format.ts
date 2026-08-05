@@ -200,3 +200,22 @@ export function accountDisplayName(
   }
   return "Unknown";
 }
+
+/**
+ * Success-toast wording for a push/pull-to-external-API result. Shared by
+ * the budget page's sync mutations and the savings page's push-to-API
+ * mutation so "Pushed N items to YNAB" / "No changes — already up to date"
+ * reads identically everywhere instead of two independently-worded copies.
+ */
+export function formatSyncResultToast(
+  count: number,
+  action: "push" | "pull",
+  destination: string,
+): string {
+  if (count === 0) {
+    return `No changes to ${action} — already up to date`;
+  }
+  const verb = action === "push" ? "Pushed" : "Pulled";
+  const preposition = action === "push" ? "to" : "from";
+  return `${verb} ${count} item${count !== 1 ? "s" : ""} ${preposition} ${destination}`;
+}

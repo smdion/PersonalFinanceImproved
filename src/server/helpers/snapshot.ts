@@ -23,6 +23,8 @@ import {
   accountTypeToPerformanceCategory,
   PERF_CATEGORY_PORTFOLIO,
 } from "@/lib/config/display-labels";
+import { sumAccounts, computeReturn } from "@/lib/pure/performance";
+import { isDiscountBasisEmployerContrib } from "@/lib/config/account-types";
 
 // ---------------------------------------------------------------------------
 // Snapshot account grouping
@@ -155,6 +157,10 @@ export type CategoryPerformance = {
   employerMatch: number;
   gainLoss: number;
   distributions: number;
+  /** Portion of employerMatch that is a purchase-price discount (e.g. ESPP),
+   *  not real cash — see isDiscountBasisEmployerContrib(). 0 when no
+   *  discount-kind account contributes to this category/year. */
+  employerMatchDiscount: number;
 };
 
 /** Tax-type distribution within a parent category. */
@@ -368,6 +374,27 @@ export async function buildYearEndHistory(
     return master;
   }
 
+  // Sum employer_contributions per performance category, but only for
+  // accounts whose employer money is a purchase-price discount (e.g. ESPP),
+  // not a real cash match. Used to backfill CategoryPerformance.employerMatchDiscount
+  // without touching the existing employerMatch accumulation logic.
+  function sumDiscountEmployerByCategory(
+    rows: typeof accountPerfRows,
+  ): Map<string, number> {
+    const sums = new Map<string, number>();
+    for (const acct of rows) {
+      const master = resolveHistoryMaster(acct);
+      if (!isDiscountBasisEmployerContrib(master.accountType, master.subType))
+        continue;
+      const category = accountTypeToPerformanceCategory(master.accountType);
+      sums.set(
+        category,
+        (sums.get(category) ?? 0) + toNumber(acct.employerContributions),
+      );
+    }
+    return sums;
+  }
+
   // Build performance portfolio breakdown by year
   // (from account_performance ending balances, grouped by accountType)
   // Includes ALL years with account data, not just finalized — so historical page
@@ -428,6 +455,7 @@ export async function buildYearEndHistory(
       employerMatch: toNumber(row.employerContributions),
       gainLoss: toNumber(row.yearlyGainLoss),
       distributions: toNumber(row.distributions),
+      employerMatchDiscount: 0, // backfilled below from account_performance rows
     };
     perfByCategoryByYear.set(row.year, yearMap);
   }
@@ -446,6 +474,7 @@ export async function buildYearEndHistory(
         employerMatch: 0,
         gainLoss: 0,
         distributions: 0,
+        employerMatchDiscount: 0, // backfilled below from account_performance rows
       };
       existing.endingBalance += toNumber(acct.endingBalance);
       existing.contributions += toNumber(acct.totalContributions);
@@ -455,6 +484,31 @@ export async function buildYearEndHistory(
       yearMap[category] = existing;
     }
     perfByCategoryByYear.set(year, yearMap);
+  }
+
+  // 3. Backfill employerMatchDiscount onto perfByCategoryByYear for every
+  // year, regardless of whether it was populated by branch 1 (finalized) or
+  // branch 2 (fallback) above — a finalized annual_performance row has no
+  // per-account breakdown to derive this from, so it's always recomputed
+  // fresh from account_performance rows here instead. Every other field
+  // (contributions, employerMatch, gainLoss, endingBalance) keeps reading
+  // from its original source untouched.
+  //
+  // Only merges onto category keys that already exist in a year's map —
+  // never creates a new partial CategoryPerformance object (which would be
+  // missing gainLoss/endingBalance and produce NaN downstream). Note: a
+  // partially-finalized year can already drop an entire non-finalized
+  // category from this map (see the year-level `.has(year)` check in branch
+  // 2 above) — this backfill doesn't fix that pre-existing gap, just avoids
+  // making it worse.
+  for (const [year, yearMap] of perfByCategoryByYear.entries()) {
+    const yearAccounts = accountPerfRows.filter((a) => a.year === year);
+    const discountSums = sumDiscountEmployerByCategory(yearAccounts);
+    for (const [category, discountAmount] of discountSums.entries()) {
+      const existing = yearMap[category];
+      if (!existing) continue;
+      existing.employerMatchDiscount = discountAmount;
+    }
   }
 
   // Build performance breakdown by parentCategory (Retirement / Portfolio) per year.
@@ -475,6 +529,10 @@ export async function buildYearEndHistory(
         employerMatch: 0,
         gainLoss: 0,
         distributions: 0,
+        // Type symmetry only — nothing currently reads a parent-category
+        // employerMatchDiscount (the Trends table's cashBasisAccessor only
+        // sits on per-category rows), so this isn't backfilled.
+        employerMatchDiscount: 0,
       };
       existing.endingBalance += toNumber(acct.endingBalance);
       existing.contributions += toNumber(acct.totalContributions);
@@ -519,30 +577,21 @@ export async function buildYearEndHistory(
     if (perfSummaryByYear.has(year)) continue; // already have finalized data
     const yearAccounts = accountPerfRows.filter((a) => a.year === year);
     if (yearAccounts.length === 0) continue;
-    let beginBal = 0,
-      contribs = 0,
-      employer = 0,
-      gainLoss = 0,
-      endBal = 0,
-      distributions = 0,
-      fees = 0;
-    for (const a of yearAccounts) {
-      beginBal += toNumber(a.beginningBalance);
-      contribs += toNumber(a.totalContributions);
-      employer += toNumber(a.employerContributions);
-      gainLoss += toNumber(a.yearlyGainLoss);
-      endBal += toNumber(a.endingBalance);
-      distributions += toNumber(a.distributions);
-      fees += toNumber(a.fees);
-    }
-    const denom = beginBal + (contribs + employer - distributions - fees) / 2;
+    const sums = sumAccounts(yearAccounts);
     perfSummaryByYear.set(year, {
-      beginningBalance: beginBal,
-      contributions: contribs,
-      employerMatch: employer,
-      gainLoss,
-      endingBalance: endBal,
-      returnPct: denom !== 0 ? gainLoss / denom : null,
+      beginningBalance: sums.beginBal,
+      contributions: sums.contribs,
+      employerMatch: sums.employer,
+      gainLoss: sums.gainLoss,
+      endingBalance: sums.endBal,
+      returnPct: computeReturn(
+        sums.beginBal,
+        sums.contribs,
+        sums.gainLoss,
+        sums.distributions,
+        sums.fees,
+        sums.rollovers,
+      ),
     });
   }
 
@@ -724,29 +773,22 @@ export async function buildYearEndHistory(
 
     if (currentYearAcctPerf.length > 0) {
       // Sum from account_performance (same logic as performance page getSummary)
-      let beginBal = 0,
-        contribs = 0,
-        employer = 0,
-        gainLoss = 0,
-        distributions = 0,
-        fees = 0;
-      for (const a of currentYearAcctPerf) {
-        beginBal += toNumber(a.beginningBalance);
-        contribs += toNumber(a.totalContributions);
-        employer += toNumber(a.employerContributions);
-        gainLoss += toNumber(a.yearlyGainLoss);
-        distributions += toNumber(a.distributions);
-        fees += toNumber(a.fees);
-      }
-      const denom = beginBal + (contribs + employer - distributions - fees) / 2;
+      const sums = sumAccounts(currentYearAcctPerf);
       perfSummary = {
-        beginningBalance: beginBal,
-        contributions: contribs,
-        employerMatch: employer,
-        gainLoss,
+        beginningBalance: sums.beginBal,
+        contributions: sums.contribs,
+        employerMatch: sums.employer,
+        gainLoss: sums.gainLoss,
         // Use snapshot total (most current) instead of stale performance ending balance
         endingBalance: portfolioTotal,
-        returnPct: denom !== 0 ? gainLoss / denom : null,
+        returnPct: computeReturn(
+          sums.beginBal,
+          sums.contribs,
+          sums.gainLoss,
+          sums.distributions,
+          sums.fees,
+          sums.rollovers,
+        ),
       };
     } else if (currentPortfolioRow) {
       // Fallback to annual_performance row if no account data
@@ -821,18 +863,29 @@ export async function buildYearEndHistory(
               employerMatch: 0,
               gainLoss: 0,
               distributions: 0,
+              employerMatchDiscount: 0,
             };
             existing.endingBalance += toNumber(acct.endingBalance);
             existing.contributions += toNumber(acct.totalContributions);
             existing.employerMatch += toNumber(acct.employerContributions);
             existing.gainLoss += toNumber(acct.yearlyGainLoss);
             existing.distributions += toNumber(acct.distributions);
+            // This catMap is a separate, throwaway object that never merges
+            // into perfByCategoryByYear — safe to compute inline here too.
+            if (
+              isDiscountBasisEmployerContrib(master.accountType, master.subType)
+            ) {
+              existing.employerMatchDiscount += toNumber(
+                acct.employerContributions,
+              );
+            }
             catMap[category] = existing;
           }
           return catMap;
         }
         // Final fallback: derive ending balances from snapshot portfolioByType
-        // (no contribution/gain data available — only balances)
+        // (no contribution/gain data available — only balances, so no way to
+        // compute employerMatchDiscount here)
         const catMap: Record<string, CategoryPerformance> = {};
         for (const [accountType, amount] of Object.entries(portfolioByType)) {
           const category = accountTypeToPerformanceCategory(accountType);
@@ -842,6 +895,7 @@ export async function buildYearEndHistory(
             employerMatch: 0,
             gainLoss: 0,
             distributions: 0,
+            employerMatchDiscount: 0,
           };
           existing.endingBalance += amount;
           catMap[category] = existing;

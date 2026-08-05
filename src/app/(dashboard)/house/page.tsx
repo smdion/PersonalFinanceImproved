@@ -534,6 +534,23 @@ export default function HousePage() {
         )}
       </Card>
 
+      {/* Utilities — lives in the Upkeep domain; linked here for convenience */}
+      <Link href="/upkeep/utilities" className="block">
+        <Card className="hover:bg-surface-sunken transition-colors">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">Utilities</p>
+              <p className="text-sm text-faint">
+                Gas, water &amp; electric cost and usage history
+              </p>
+            </div>
+            <span className="text-sm text-blue-600 hover:underline">
+              View tracker →
+            </span>
+          </div>
+        </Card>
+      </Link>
+
       {/* Home Improvements */}
       <Card
         title={

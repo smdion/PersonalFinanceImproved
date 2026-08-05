@@ -15,6 +15,13 @@
       "when": 1779047443849,
       "tag": "0001_moaning_abomination",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1782014401784,
+      "tag": "0002_nervous_major_mapleleaf",
+      "breakpoints": true
     }
   ]
 }

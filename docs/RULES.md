@@ -177,6 +177,18 @@ All other modules are internal — not imported outside `engine/`.
 
 ---
 
+## Pure Business Logic Boundary
+
+**All business logic must live in `src/lib/pure/` — never inside database transactions, API handlers, or router procedures.** This is a hard architectural rule, not a style preference: `better-sqlite3` cannot use async transactions, and coupling logic to I/O makes it untestable regardless of database.
+
+1. **Pure functions** (`src/lib/pure/`): compute values, validate rules, resolve limits, transform data. No imports from `@/lib/db`, `drizzle-orm`, or any I/O module. Import helpers only from specific submodules (e.g. `@/server/helpers/transforms`), never from barrel re-exports that pull in DB code.
+2. **Routers/handlers** (`src/server/routers/`): fetch data, call pure functions, persist results. Thin wrappers only — if you're writing an `if` or a `for` loop that computes a value, it belongs in a pure function.
+3. **Tests** (`tests/pure/`): every pure function gets a unit test that runs without any database, network, or environment setup.
+
+**How to tell if logic is in the wrong place:** it's in a `.transaction()` callback; it's in a `protectedProcedure` handler doing math/validation/aggregation; it needs `import * as schema` or `import { eq } from "drizzle-orm"` to work; or it can't be tested without mocking the database.
+
+Full contributor-facing writeup (existing pure modules table, import-discipline examples) lives in `CONTRIBUTING.md` § Pure Business Logic Boundary — this section is the authoritative rule; that one is the onboarding-friendly version. Keep them consistent if either changes.
+
 ## The Holistic Rule
 
 > Everything interacts with everything as a holistic plan unless specifically called out as a scenario.
@@ -275,6 +287,7 @@ Portfolio Snapshots + Performance Data + Settings
 - An API route that bypasses `DEMO_ONLY` checks
 - A numeric fallback (`0.04`, `0.07`, `200000`) that doesn't reference its constant from `constants.ts`
 - Stored computed values without a documented sync/cascade mechanism
+- Business logic (math, validation, aggregation) written inline in a `.transaction()` callback or a router procedure handler instead of extracted to `src/lib/pure/`
 
 ---
 

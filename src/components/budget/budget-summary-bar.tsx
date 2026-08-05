@@ -20,7 +20,8 @@
 import { formatCurrency } from "@/lib/utils/format";
 import { FormError } from "@/components/ui/form-error";
 import { useBudgetPageContext } from "./budget-page-context";
-import type { ColumnResult } from "./types";
+import { computeTotalSinking, computeUnallocated } from "./helpers";
+import type { ColumnResult, PayrollBreakdown, SinkingFundLine } from "./types";
 
 type Props = {
   // Profile display data (not in context — changes when viewing non-active)
@@ -34,6 +35,8 @@ type Props = {
     isWeighted: boolean;
     columnMonths: number[] | null;
     allColumnResults: ColumnResult[] | null | undefined;
+    payrollBreakdowns: (PayrollBreakdown | null)[];
+    sinkingFunds: SinkingFundLine[];
   };
   // Mutation errors (structural shape for FormError)
   syncErrors: {
@@ -75,7 +78,23 @@ export function BudgetSummaryBar({
     editMode,
   } = useBudgetPageContext();
   const { profileName, activeProfileName, isViewingNonActive } = profileDisplay;
-  const { isWeighted, columnMonths, allColumnResults } = columnDisplay;
+  const {
+    isWeighted,
+    columnMonths,
+    allColumnResults,
+    payrollBreakdowns,
+    sinkingFunds,
+  } = columnDisplay;
+  const totalSinking = computeTotalSinking(sinkingFunds);
+  const activeResult = allColumnResults?.[activeColumn];
+  const unallocated =
+    activeResult && !isWeighted
+      ? computeUnallocated(
+          payrollBreakdowns[activeColumn]?.netMonthly ?? 0,
+          activeResult.totalMonthly,
+          totalSinking,
+        )
+      : null;
   const { saveError, pullError, pushError } = syncErrors;
   const { isPulling, isPushing, onPullFromApi, onOpenPushPreview } =
     syncActions;
@@ -129,18 +148,35 @@ export function BudgetSummaryBar({
               </span>
             </span>
           )}
+          {unallocated != null && (
+            <span
+              className="text-faint"
+              title="Take-home pay minus budgeted expenses minus sinking funds — what's left unassigned this month"
+            >
+              Unallocated:{" "}
+              <span
+                className={`font-medium ${unallocated >= 0 ? "text-emerald-600" : "text-red-600"}`}
+              >
+                {formatCurrency(unallocated)}
+                <span className="text-caption font-normal">/mo</span>
+              </span>
+            </span>
+          )}
           {allColumnResults && (
-            <span className="font-semibold text-secondary">
-              {formatCurrency(
-                isWeighted && columnMonths
-                  ? allColumnResults.reduce(
-                      (sum, r, i) =>
-                        sum + r.totalMonthly * (columnMonths[i] ?? 0),
-                      0,
-                    )
-                  : (allColumnResults[activeColumn]?.totalMonthly ?? 0) * 12,
-              )}
-              <span className="text-caption text-faint font-normal">/yr</span>
+            <span className="text-faint">
+              Total:{" "}
+              <span className="font-semibold text-secondary">
+                {formatCurrency(
+                  isWeighted && columnMonths
+                    ? allColumnResults.reduce(
+                        (sum, r, i) =>
+                          sum + r.totalMonthly * (columnMonths[i] ?? 0),
+                        0,
+                      )
+                    : (allColumnResults[activeColumn]?.totalMonthly ?? 0) * 12,
+                )}
+                <span className="text-caption text-faint font-normal">/yr</span>
+              </span>
             </span>
           )}
         </div>

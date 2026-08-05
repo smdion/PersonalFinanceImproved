@@ -38,6 +38,7 @@ type ApiActualsData =
         activity: number;
         balance: number;
         budgeted: number;
+        goalTarget: number;
       }> | null;
     }
   | null
@@ -48,6 +49,7 @@ export type SavingsGoalEntry = {
   name: string;
   isActive: boolean;
   monthlyContribution: string | number;
+  allocationPercent?: string | number | null;
 };
 
 type DataShape =
@@ -221,16 +223,21 @@ export function useBudgetDerivedData({
   );
 
   // ---- Sinking funds (savings goals with monthly contributions) ----
+  // Reads the stored monthlyContribution snapshot directly, even for
+  // percentage-based goals — it should only change when the user
+  // explicitly hits "Recalculate" on the savings page (recalculateAllocation),
+  // not whenever paycheck/budget data shifts underneath it.
 
   const sinkingFunds: SinkingFundLine[] = useMemo(
     () =>
       (savingsGoals ?? [])
-        .filter((g) => g.isActive && Number(g.monthlyContribution) > 0)
+        .filter((g) => g.isActive)
         .map((g) => ({
           id: g.id,
           name: g.name,
           monthlyContribution: Number(g.monthlyContribution),
-        })),
+        }))
+        .filter((f) => f.monthlyContribution > 0),
     [savingsGoals],
   );
 
@@ -239,7 +246,12 @@ export function useBudgetDerivedData({
   const apiActualsMap = useMemo(() => {
     const map = new Map<
       number,
-      { activity: number; balance: number; budgeted: number }
+      {
+        activity: number;
+        balance: number;
+        budgeted: number;
+        goalTarget: number;
+      }
     >();
     if (apiActualsData?.actuals) {
       for (const a of apiActualsData.actuals) {
@@ -247,6 +259,7 @@ export function useBudgetDerivedData({
           activity: a.activity,
           balance: a.balance,
           budgeted: a.budgeted,
+          goalTarget: a.goalTarget,
         });
       }
     }
@@ -254,7 +267,9 @@ export function useBudgetDerivedData({
   }, [apiActualsData]);
 
   // ---- Push-preview builder ----
-  // Returns the diff items needed to render the "push to API" confirmation modal.
+  // Returns the diff items needed to render the "push to API" confirmation
+  // modal. Ledgr's budget amount maps to YNAB's goal target (not the
+  // month-specific "budgeted" field), matching what syncBudgetToApi writes.
   const buildPushPreviewItems = (activeColumn: number): PushPreviewItem[] => {
     const items: PushPreviewItem[] = [];
     for (const item of rawItems) {
@@ -267,9 +282,33 @@ export function useBudgetDerivedData({
       const actual = apiActualsMap.get(item.id);
       items.push({
         name: item.subcategory,
-        field: "Budgeted",
-        currentYnab: actual?.budgeted ?? 0,
+        field: "Goal Target",
+        currentYnab: actual?.goalTarget ?? 0,
         newValue,
+      });
+    }
+    return items;
+  };
+
+  // ---- Pull-preview builder ----
+  // Returns the diff items needed to render the "pull from API" confirmation
+  // modal: current Ledgr amount vs. what it will become after pulling YNAB's
+  // goal target, matching what syncBudgetFromApi reads.
+  const buildPullPreviewItems = (activeColumn: number): PushPreviewItem[] => {
+    const items: PushPreviewItem[] = [];
+    for (const item of rawItems) {
+      if (!item.apiCategoryId) continue;
+      if (item.apiSyncDirection !== "pull" && item.apiSyncDirection !== "both")
+        continue;
+      const amounts = item.amounts as number[];
+      const colIdx = Math.min(activeColumn, amounts.length - 1);
+      const currentValue = amounts[colIdx] ?? 0;
+      const actual = apiActualsMap.get(item.id);
+      items.push({
+        name: item.subcategory,
+        field: "Goal Target",
+        currentYnab: currentValue,
+        newValue: actual?.goalTarget ?? 0,
       });
     }
     return items;
@@ -296,5 +335,6 @@ export function useBudgetDerivedData({
     sinkingFunds,
     apiActualsMap,
     buildPushPreviewItems,
+    buildPullPreviewItems,
   };
 }

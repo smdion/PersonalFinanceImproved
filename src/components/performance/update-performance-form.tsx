@@ -5,6 +5,11 @@ import { trpc } from "@/lib/trpc";
 import { formatCurrency, accountDisplayName } from "@/lib/utils/format";
 import { computeGainLoss } from "@/lib/pure/performance";
 import { getDisplayConfig } from "@/lib/config/account-types";
+import {
+  CASH_BASIS_HELP,
+  combineCashBasisGainLoss,
+} from "@/lib/config/display-labels";
+import { HelpTip } from "@/components/ui/help-tip";
 import { EsppCalculator } from "./espp-calculator";
 import type { UpdateFormRow, UpdatePerformanceFormProps } from "./types";
 import type { EsppSummary } from "@/lib/pure/performance";
@@ -538,6 +543,16 @@ function AccountFormRow({
                 </svg>
               </button>
             </>
+          )}
+          {displayCfg.employerContribKind === "discount" && (
+            <HelpTip
+              text={`${formatCurrency(
+                combineCashBasisGainLoss(
+                  gainLoss,
+                  parseFloat(row.employerContributions) || 0,
+                ),
+              )} ${CASH_BASIS_HELP}`}
+            />
           )}
         </div>
       </div>

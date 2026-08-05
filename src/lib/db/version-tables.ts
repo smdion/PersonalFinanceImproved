@@ -41,6 +41,7 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "historical_notes", tier: 0 },
   { name: "relocation_scenarios", tier: 0 },
   { name: "mc_user_presets", tier: 0 },
+  { name: "utility_service", tier: 0 },
 
   // Tier 1 — depends on tier 0
   { name: "jobs", tier: 1 },
@@ -61,6 +62,7 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "brokerage_planned_transactions", tier: 1 },
   { name: "annual_performance", tier: 1 },
   { name: "property_taxes", tier: 1 },
+  { name: "utility_reading", tier: 1 },
 
   // Tier 2 — depends on tier 1
   { name: "salary_changes", tier: 2 },

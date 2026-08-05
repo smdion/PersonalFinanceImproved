@@ -35,6 +35,8 @@ import {
   Layers,
   Database,
   PieChart,
+  Gauge,
+  Hammer,
   type LucideIcon,
 } from "lucide-react";
 
@@ -46,6 +48,10 @@ type NavEntry = NavItem | NavGroup;
 
 function isGroup(entry: NavEntry): entry is NavGroup {
   return "items" in entry;
+}
+
+function hrefMatches(href: string, pathname: string): boolean {
+  return pathname === href || (href !== "/" && pathname.startsWith(href + "/"));
 }
 
 const navStructure: NavEntry[] = [
@@ -81,6 +87,11 @@ const navStructure: NavEntry[] = [
     ],
   },
   {
+    label: "Upkeep",
+    Icon: Hammer,
+    items: [{ href: "/upkeep/utilities", label: "Utilities", Icon: Gauge }],
+  },
+  {
     label: "Analysis",
     Icon: Search,
     items: [
@@ -101,6 +112,28 @@ const navStructure: NavEntry[] = [
   },
 ];
 
+// Flat list of every nav href, for longest-prefix active matching: the most
+// specific nav href wins, while parent items still light up on their un-navved
+// subpaths (e.g. /retirement/methodology → /retirement). Also keeps any future
+// nested nav items (one href a prefix of another) from both highlighting.
+const allNavHrefs: string[] = navStructure.flatMap((entry) =>
+  isGroup(entry) ? entry.items.map((i) => i.href) : [entry.href],
+);
+
+/** The single best (longest) nav href that matches the current pathname. */
+function activeNavHref(pathname: string): string | null {
+  let best: string | null = null;
+  for (const href of allNavHrefs) {
+    if (
+      hrefMatches(href, pathname) &&
+      (best === null || href.length > best.length)
+    ) {
+      best = href;
+    }
+  }
+  return best;
+}
+
 // ── Components ──
 
 function NavLink({
@@ -118,9 +151,7 @@ function NavLink({
   onMobileClose: () => void;
   indent?: boolean;
 }) {
-  const isActive =
-    pathname === item.href ||
-    (item.href !== "/" && pathname.startsWith(item.href + "/"));
+  const isActive = activeNavHref(pathname) === item.href;
   return (
     <Link
       href={item.href}
@@ -155,8 +186,8 @@ function CollapsibleNavGroup({
   showLabels: boolean;
   onMobileClose: () => void;
 }) {
-  const hasActiveChild = group.items.some(
-    (item) => pathname === item.href || pathname.startsWith(item.href + "/"),
+  const hasActiveChild = group.items.some((item) =>
+    hrefMatches(item.href, pathname),
   );
   const [isOpen, setIsOpen] = useState(hasActiveChild);
 
