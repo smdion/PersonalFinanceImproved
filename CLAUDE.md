@@ -27,6 +27,10 @@ to push back. Use it before committing when:
 Frame the question as "here's what I plan to do and why" — not "is this ok?"
 The advisor should have enough context to disagree.
 
+## Local docs & planning
+
+`.scratch/docs/INDEX.md` (gitignored, not shipped) is the index for everything not covered above: `TODO.md`/`FEATURE-ROADMAP.md` (what's next), `OPS.md` (deploy/release/CI/security), per-feature implementation plans, and the other five subagents beyond `advisor` (`planner`, `release`, `reviewer`, `schema-reviewer`, `test-writer`). Check it before starting new feature work or asking "has this already been designed."
+
 ## Project shortcuts
 
 - **Schema is generated.** `src/lib/db/schema-pg.ts` is the source of truth.
