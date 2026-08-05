@@ -10,6 +10,7 @@ import {
   RetirementCard,
   MortgageCard,
   NetWorthCard,
+  LinkedBalanceCard,
   ContributionsCard,
   TaxesCard,
   FinancialCheckupCard,
@@ -42,6 +43,9 @@ export function DashboardContent() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mb-3">
         <CardBoundary title="Net Worth">
           <NetWorthCard />
+        </CardBoundary>
+        <CardBoundary title="Linked Balance">
+          <LinkedBalanceCard />
         </CardBoundary>
         <CardBoundary title="Household Income">
           <HouseholdIncomeCard />

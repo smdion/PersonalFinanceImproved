@@ -2,9 +2,26 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**260 procedures across 28 routers.**
+**300 procedures across 34 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
+
+## `analytics`
+
+| Procedure                | Kind     | Auth                 | Description                                                                                                                                                                                           |
+| ------------------------ | -------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bulkUpsertHoldings`     | mutation | `portfolioProcedure` | Bulk upsert holdings for one account+snapshot in a single round-trip. Replaces the entire set for that account+snapshot (delete-then-insert in a transaction).                                        |
+| `copyHoldingsToSnapshot` | mutation | `portfolioProcedure` | Snapshot-copy: duplicate all holdings from snapshot A to snapshot B. Returns { count: 0 } (not an error) when the source snapshot has no holdings.                                                    |
+| `deleteHolding`          | mutation | `portfolioProcedure` | Delete one holding by id.                                                                                                                                                                             |
+| `getAccounts`            | query    | `portfolioProcedure` | Get all active performance accounts (used to build the account list on the page).                                                                                                                     |
+| `getAssetClasses`        | query    | `portfolioProcedure` | Get all asset class params (for the asset class dropdown).                                                                                                                                            |
+| `getGlidePathForAge`     | query    | `portfolioProcedure` | Get glide path allocations for a specific age (for drift computation). Returns an empty array if no glide path is configured.                                                                         |
+| `getHoldings`            | query    | `portfolioProcedure` | Get all holdings for a given snapshot (or the latest snapshot that has holdings). Only returns holdings for isActive = true performance_accounts.                                                     |
+| `getHoldingsHistory`     | query    | `portfolioProcedure` | Fetch holdings across multiple snapshots for historical allocation/drift charts. Only returns snapshots that actually have ≥1 holding.                                                                |
+| `getSnapshotBalances`    | query    | `portfolioProcedure` | Get portfolio account balances for a given snapshot (to compute dollar values from weights).                                                                                                          |
+| `getSnapshots`           | query    | `portfolioProcedure` | Get all portfolio snapshots (for the snapshot selector).                                                                                                                                              |
+| `hasFmpKey`              | query    | `portfolioProcedure` | Check whether an FMP connection is configured (used to show/hide the Look up button). Returns true if a key exists, false otherwise.                                                                  |
+| `lookupTicker`           | query    | `portfolioProcedure` | Distinguishes error types so the UI can show the right message: no_key — FMP connection not configured (suppress "Look up" button on the client) not_found — ticker not found in FMP rate_limit — FMP |
 
 ## `api-docs`
 
@@ -58,6 +75,8 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `removeColumn`                       | mutation | `budgetProcedure`    | Remove a column (budget mode) from the active profile.                                                                                                                                      |
 | `renameColumn`                       | mutation | `budgetProcedure`    | Rename a column (budget mode).                                                                                                                                                              |
 | `renameProfile`                      | mutation | `budgetProcedure`    | Rename a budget profile.                                                                                                                                                                    |
+| `reorderCategory`                    | mutation | `budgetProcedure`    | block. No-ops at the first/last category boundary.                                                                                                                                          |
+| `reorderItem`                        | mutation | `budgetProcedure`    | category. No-ops at the category's first/last item boundary — moving an item into a different category is the "Move..." dropdown's job (moveItem above), not this.                          |
 | `setActiveProfile`                   | mutation | `budgetProcedure`    | Set a profile as the active one (deactivate all others).                                                                                                                                    |
 | `setSyncDirection`                   | mutation | `budgetProcedure`    | Change sync direction on a linked budget item.                                                                                                                                              |
 | `syncBudgetFromApi`                  | mutation | `budgetProcedure`    | Pull budgeted amounts from API for all linked items (API -> Ledgr).                                                                                                                         |
@@ -140,95 +159,123 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `performance`
 
-| Procedure             | Kind     | Auth                   | Description                                                                                                                                                                                              |
-| --------------------- | -------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `batchUpdateAccounts` | mutation | `performanceProcedure` | Batch-update account_performance rows for the current year. Used by the Update Performance form to save all flow fields in one pass. Annual rollups are recomputed automatically by computeSummary on ne |
-| `computeSummary`      | query    | `protectedProcedure`   | computeSummary — returns all performance data joined through the master performance_accounts table. Includes: annual rollups, account-level detail, master account list, and current-year status.        |
-| `createAccount`       | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
-| `deleteAccount`       | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
-| `finalizeYear`        | mutation | `performanceProcedure` | Finalize a year: marks all account_performance and annual_performance rows for that year as finalized, then auto-creates next year's rows for active accounts.                                           |
-| `updateAccount`       | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
-| `updateAnnual`        | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
-| `updateCostBasis`     | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
+| Procedure                | Kind     | Auth                   | Description                                                                                                                                                                                              |
+| ------------------------ | -------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `batchUpdateAccounts`    | mutation | `performanceProcedure` | Batch-update account_performance rows for the current year. Used by the Update Performance form to save all flow fields in one pass. Annual rollups are recomputed automatically by computeSummary on ne |
+| `computeSummary`         | query    | `protectedProcedure`   | computeSummary — returns all performance data joined through the master performance_accounts table. Includes: annual rollups, account-level detail, master account list, and current-year status.        |
+| `confirmPendingRollover` | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
+| `createAccount`          | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
+| `createPendingRollover`  | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
+| `deleteAccount`          | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
+| `deletePendingRollover`  | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
+| `editPendingRollover`    | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
+| `finalizeYear`           | mutation | `performanceProcedure` | Finalize a year: marks all account_performance and annual_performance rows for that year as finalized, then auto-creates next year's rows for active accounts.                                           |
+| `updateAccount`          | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
+| `updateAnnual`           | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
+| `updateCostBasis`        | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
 
-## `projection`
+## `projection/monte-carlo`
 
-| Procedure                    | Kind     | Auth                 | Description                                                                                                                                                               |
-| ---------------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `analyzeStrategy`            | query    | `protectedProcedure` | Analyze the active strategy — run what-if MC scenarios and return ranked recommendations.                                                                                 |
-| `computeStrategyComparison`  | query    | `protectedProcedure` | Compare all withdrawal strategies side-by-side. Fetches DB data once, then runs calculateProjection() for each strategy varying only withdrawalStrategy + strategyParams. |
-| `createPreset`               | mutation | `scenarioProcedure`  | Create a new user Monte Carlo simulation preset.                                                                                                                          |
-| `deletePreset`               | mutation | `scenarioProcedure`  | Delete a user Monte Carlo simulation preset.                                                                                                                              |
-| `listPresets`                | query    | `protectedProcedure` | List all user-created Monte Carlo simulation presets.                                                                                                                     |
-| `updateAssetClassOverrides`  | mutation | `scenarioProcedure`  | Persist MC asset class return/volatility overrides to appSettings.                                                                                                        |
-| `updateClampBounds`          | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                          |
-| `updateGlidePathAllocations` | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                          |
-| `updateInflationOverrides`   | mutation | `scenarioProcedure`  | Persist MC stochastic inflation overrides to appSettings.                                                                                                                 |
-| `updateInflationRisk`        | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                          |
-| `updatePreset`               | mutation | `scenarioProcedure`  | Update an existing user Monte Carlo simulation preset.                                                                                                                    |
-| `updateReturnRateTable`      | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                          |
+| Procedure                    | Kind     | Auth                | Description      |
+| ---------------------------- | -------- | ------------------- | ---------------- |
+| `updateClampBounds`          | mutation | `scenarioProcedure` | (no description) |
+| `updateGlidePathAllocations` | mutation | `scenarioProcedure` | (no description) |
+| `updateReturnRateTable`      | mutation | `scenarioProcedure` | (no description) |
+
+## `projection/presets`
+
+| Procedure                  | Kind     | Auth                 | Description                                               |
+| -------------------------- | -------- | -------------------- | --------------------------------------------------------- |
+| `createPreset`             | mutation | `scenarioProcedure`  | Create a new user Monte Carlo simulation preset.          |
+| `deletePreset`             | mutation | `scenarioProcedure`  | Delete a user Monte Carlo simulation preset.              |
+| `listPresets`              | query    | `protectedProcedure` | (no description)                                          |
+| `updateInflationOverrides` | mutation | `scenarioProcedure`  | Persist MC stochastic inflation overrides to appSettings. |
+| `updatePreset`             | mutation | `scenarioProcedure`  | Update an existing user Monte Carlo simulation preset.    |
+
+## `projection/strategy`
+
+| Procedure                   | Kind     | Auth                 | Description                                                                                                                                                               |
+| --------------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `analyzeStrategy`           | query    | `protectedProcedure` | Analyze the active strategy — run what-if MC scenarios and return ranked recommendations.                                                                                 |
+| `computeStrategyComparison` | query    | `protectedProcedure` | Compare all withdrawal strategies side-by-side. Fetches DB data once, then runs calculateProjection() for each strategy varying only withdrawalStrategy + strategyParams. |
+| `updateAssetClassOverrides` | mutation | `scenarioProcedure`  | Persist MC asset class return/volatility overrides to appSettings.                                                                                                        |
+| `updateInflationRisk`       | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                          |
+
+## `projection/stress-test`
+
+| Procedure           | Kind  | Auth                 | Description                                                                                                                                                                                              |
+| ------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `computeStressTest` | query | `protectedProcedure` | returnRates / inflationRate / salaryGrowthRate / withdrawalRate before calling calculateProjection. Returns summary metrics (nest egg at retirement, sustainable withdrawal, depletion age) so the PlanH |
 
 ## `savings`
 
-| Procedure                   | Kind     | Auth                 | Description                                                                                                                                                                                    |
-| --------------------------- | -------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `batchUpsert`               | mutation | `savingsProcedure`   | Batch upsert overrides for a single goal (fill-down, change-all-after).                                                                                                                        |
-| `computeSummary`            | query    | `protectedProcedure` | (no description)                                                                                                                                                                               |
-| `convertBudgetItemToGoal`   | mutation | `savingsProcedure`   | Convert a budget item into a savings goal, transferring the API category link.                                                                                                                 |
-| `convertGoalToBudgetItem`   | mutation | `savingsProcedure`   | Convert a savings goal into a budget item, transferring the API category link.                                                                                                                 |
-| `create`                    | mutation | `savingsProcedure`   | ══ PLANNED TRANSACTIONS ══                                                                                                                                                                     |
-| `create`                    | mutation | `savingsProcedure`   | ══ TRANSFERS (paired planned transactions) ══                                                                                                                                                  |
-| `delete`                    | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                               |
-| `delete`                    | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                               |
-| `delete`                    | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                               |
-| `deleteMonth`               | mutation | `savingsProcedure`   | Delete all overrides for ALL goals in one or more months.                                                                                                                                      |
-| `linkGoalToApi`             | mutation | `savingsProcedure`   | Link a savings goal to a budget API category.                                                                                                                                                  |
-| `linkReimbursementCategory` | mutation | `savingsProcedure`   | Link a reimbursement tracking category to the e-fund goal.                                                                                                                                     |
-| `listApiBalances`           | query    | `protectedProcedure` | Get API category balances for linked savings goals (for display).                                                                                                                              |
-| `listEfundReimbursements`   | query    | `protectedProcedure` | Get parsed reimbursement items from the linked YNAB category's note field.                                                                                                                     |
-| `pushContributionsToApi`    | mutation | `savingsProcedure`   | Push monthly contributions as budget API goal targets for linked sinking funds. Sets the goal target at the plan/category level (not month-specific). Can optionally push a single goal by ID. |
-| `unlinkGoalFromApi`         | mutation | `savingsProcedure`   | Unlink a savings goal from a budget API category.                                                                                                                                              |
-| `update`                    | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                               |
-| `upsert`                    | mutation | `savingsProcedure`   | ══ ALLOCATION OVERRIDES ══                                                                                                                                                                     |
-| `upsertMonth`               | mutation | `savingsProcedure`   | Atomically upsert overrides for ALL goals in a single month (pool-constrained).                                                                                                                |
-| `upsertMonthRange`          | mutation | `savingsProcedure`   | Atomically upsert overrides for ALL goals across a month range (fill-forward).                                                                                                                 |
+| Procedure                   | Kind     | Auth                 | Description                                                                                                                                                                                              |
+| --------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `batchUpsert`               | mutation | `savingsProcedure`   | Batch upsert overrides for a single goal (fill-down, change-all-after).                                                                                                                                  |
+| `computeSummary`            | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
+| `convertBudgetItemToGoal`   | mutation | `savingsProcedure`   | Convert a budget item into a savings goal, transferring the API category link.                                                                                                                           |
+| `convertGoalToBudgetItem`   | mutation | `savingsProcedure`   | Convert a savings goal into a budget item, transferring the API category link.                                                                                                                           |
+| `create`                    | mutation | `savingsProcedure`   | ══ PLANNED TRANSACTIONS ══                                                                                                                                                                               |
+| `create`                    | mutation | `savingsProcedure`   | ══ TRANSFERS (paired planned transactions) ══                                                                                                                                                            |
+| `delete`                    | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
+| `delete`                    | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
+| `delete`                    | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
+| `deleteMonth`               | mutation | `savingsProcedure`   | Delete all overrides for ALL goals in one or more months.                                                                                                                                                |
+| `getMonthlyHistory`         | query    | `protectedProcedure` | All recorded monthly balances for active savings goals (for history view).                                                                                                                               |
+| `linkGoalToApi`             | mutation | `savingsProcedure`   | Link a savings goal to a budget API category.                                                                                                                                                            |
+| `linkReimbursementCategory` | mutation | `savingsProcedure`   | Link a reimbursement tracking category to the e-fund goal.                                                                                                                                               |
+| `list`                      | query    | `protectedProcedure` | Load routing rules for all jobs.                                                                                                                                                                         |
+| `listApiBalances`           | query    | `protectedProcedure` | Get API category balances for linked savings goals (for display).                                                                                                                                        |
+| `listEfundReimbursements`   | query    | `protectedProcedure` | Get parsed reimbursement items from the linked YNAB category's note field.                                                                                                                               |
+| `lockInAllocationPercent`   | mutation | `savingsProcedure`   | an accurate description of "what % of current income this is" rather than a stale figure computed against a smaller pool. allocation_percent is decimal(6,3) — rounded to 3 decimals, which at typical p |
+| `pushContributionsToApi`    | mutation | `savingsProcedure`   | - Emergency fund: pushes computed targetAmount (targetMonths × essentials) via updateCategoryTargetBalance — amount only, never touches the goal's type/cadence (that has to be configured once, manuall |
+| `recalculateAllocation`     | mutation | `savingsProcedure`   | the budget API until the user explicitly asks for it here. Omitting goalId recalculates every active percentage-based goal from one shared live-pool snapshot (a single fetch applied to all rows, so a  |
+| `rematerialize`             | mutation | `savingsProcedure`   | Re-run materializer without changing rules (e.g. after goal rename).                                                                                                                                     |
+| `save`                      | mutation | `savingsProcedure`   | Save routing rules for a single job and re-materialize. Preserves existing overrides and growth settings.                                                                                                |
+| `saveGrowth`                | mutation | `savingsProcedure`   | Persist growth rates for a job, then re-materialize. Net pay is always recomputed server-side.                                                                                                           |
+| `saveOverride`              | mutation | `savingsProcedure`   | Upsert or delete a one-time override for a specific extra-paycheck month.                                                                                                                                |
+| `unlinkGoalFromApi`         | mutation | `savingsProcedure`   | Unlink a savings goal from a budget API category.                                                                                                                                                        |
+| `update`                    | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
+| `upsert`                    | mutation | `savingsProcedure`   | ══ ALLOCATION OVERRIDES ══                                                                                                                                                                               |
+| `upsertMonth`               | mutation | `savingsProcedure`   | Atomically upsert overrides for ALL goals in a single month (pool-constrained).                                                                                                                          |
+| `upsertMonthRange`          | mutation | `savingsProcedure`   | Atomically upsert overrides for ALL goals across a month range (fill-forward).                                                                                                                           |
 
 ## `settings/admin`
 
-| Procedure                       | Kind     | Auth                   | Description                                                                      |
-| ------------------------------- | -------- | ---------------------- | -------------------------------------------------------------------------------- |
-| `backfillPerformanceAccountIds` | mutation | `adminProcedure`       | ══ BACKFILL PERFORMANCE ACCOUNT IDS ══                                           |
-| `clearOverride`                 | mutation | `scenarioProcedure`    | Remove a single override from a scenario                                         |
-| `create`                        | mutation | `scenarioProcedure`    | ══ SCENARIOS (global what-if system) ══                                          |
-| `create`                        | mutation | `savingsProcedure`     | (no description)                                                                 |
-| `create`                        | mutation | `performanceProcedure` | (no description)                                                                 |
-| `create`                        | mutation | `portfolioProcedure`   | Create a new snapshot with all its accounts in a single call.                    |
-| `createAccount`                 | mutation | `portfolioProcedure`   | Create a new sub-account row in the latest snapshot.                             |
-| `delete`                        | mutation | `adminProcedure`       | Invalidate year-end cache when settings change (e.g. salary averaging toggle)    |
-| `delete`                        | mutation | `scenarioProcedure`    | (no description)                                                                 |
-| `delete`                        | mutation | `adminProcedure`       | (no description)                                                                 |
-| `delete`                        | mutation | `savingsProcedure`     | (no description)                                                                 |
-| `delete`                        | mutation | `adminProcedure`       | (no description)                                                                 |
-| `delete`                        | mutation | `performanceProcedure` | (no description)                                                                 |
-| `delete`                        | mutation | `portfolioProcedure`   | Delete a snapshot (cascades to its accounts).                                    |
-| `get`                           | query    | `adminProcedure`       | Get current RBAC group mapping (DB overrides merged with defaults).              |
-| `getDataFreshness`              | query    | `protectedProcedure`   | ══ DATA FRESHNESS ══                                                             |
-| `getLatest`                     | query    | `protectedProcedure`   | Get the latest snapshot with its accounts (for pre-filling a new snapshot form). |
-| `list`                          | query    | `protectedProcedure`   | ══ APP SETTINGS ══                                                               |
-| `list`                          | query    | `protectedProcedure`   | ══ SCENARIOS (global what-if system) ══                                          |
-| `list`                          | query    | `protectedProcedure`   | ══ API CONNECTIONS ══                                                            |
-| `list`                          | query    | `protectedProcedure`   | ══ SAVINGS GOALS ══                                                              |
-| `list`                          | query    | `protectedProcedure`   | ══ RELOCATION SCENARIOS ══                                                       |
-| `list`                          | query    | `protectedProcedure`   | ══ PERFORMANCE ACCOUNTS (master registry) ══                                     |
-| `save`                          | mutation | `adminProcedure`       | (no description)                                                                 |
-| `setOverride`                   | mutation | `scenarioProcedure`    | Update a single override within a scenario's overrides JSONB                     |
-| `update`                        | mutation | `scenarioProcedure`    | (no description)                                                                 |
-| `update`                        | mutation | `savingsProcedure`     | (no description)                                                                 |
-| `update`                        | mutation | `performanceProcedure` | (no description)                                                                 |
-| `updateAccount`                 | mutation | `portfolioProcedure`   | Update a single portfolio account row (e.g. change owner or toggle active).      |
-| `updateDataFreshness`           | mutation | `adminProcedure`       | (no description)                                                                 |
-| `upsert`                        | mutation | `adminProcedure`       | (no description)                                                                 |
-| `upsert`                        | mutation | `adminProcedure`       | (no description)                                                                 |
+| Procedure                       | Kind     | Auth                   | Description                                                                                           |
+| ------------------------------- | -------- | ---------------------- | ----------------------------------------------------------------------------------------------------- |
+| `backfillPerformanceAccountIds` | mutation | `adminProcedure`       | ══ BACKFILL PERFORMANCE ACCOUNT IDS ══                                                                |
+| `clearOverride`                 | mutation | `scenarioProcedure`    | Remove a single override from a scenario                                                              |
+| `create`                        | mutation | `scenarioProcedure`    | ══ SCENARIOS (global what-if system) ══                                                               |
+| `create`                        | mutation | `savingsProcedure`     | (no description)                                                                                      |
+| `create`                        | mutation | `performanceProcedure` | (no description)                                                                                      |
+| `create`                        | mutation | `portfolioProcedure`   | Create a new snapshot with all its accounts in a single call.                                         |
+| `createAccount`                 | mutation | `portfolioProcedure`   | Create a new sub-account row in the latest snapshot.                                                  |
+| `delete`                        | mutation | `adminProcedure`       | Invalidate year-end cache when settings change (e.g. salary averaging toggle)                         |
+| `delete`                        | mutation | `scenarioProcedure`    | (no description)                                                                                      |
+| `delete`                        | mutation | `adminProcedure`       | (no description)                                                                                      |
+| `delete`                        | mutation | `savingsProcedure`     | (no description)                                                                                      |
+| `delete`                        | mutation | `adminProcedure`       | (no description)                                                                                      |
+| `delete`                        | mutation | `performanceProcedure` | (no description)                                                                                      |
+| `delete`                        | mutation | `portfolioProcedure`   | Delete a snapshot (cascades to its accounts).                                                         |
+| `get`                           | query    | `adminProcedure`       | Get current RBAC group mapping (DB overrides merged with defaults).                                   |
+| `getDataFreshness`              | query    | `protectedProcedure`   | ══ DATA FRESHNESS ══                                                                                  |
+| `getLatest`                     | query    | `protectedProcedure`   | Get the latest snapshot with its accounts (for pre-filling a new snapshot form).                      |
+| `list`                          | query    | `protectedProcedure`   | ══ APP SETTINGS ══                                                                                    |
+| `list`                          | query    | `protectedProcedure`   | ══ SCENARIOS (global what-if system) ══                                                               |
+| `list`                          | query    | `protectedProcedure`   | ══ API CONNECTIONS ══                                                                                 |
+| `list`                          | query    | `protectedProcedure`   | ══ SAVINGS GOALS ══                                                                                   |
+| `list`                          | query    | `protectedProcedure`   | ══ RELOCATION SCENARIOS ══                                                                            |
+| `list`                          | query    | `protectedProcedure`   | ══ PERFORMANCE ACCOUNTS (master registry) ══                                                          |
+| `save`                          | mutation | `adminProcedure`       | (no description)                                                                                      |
+| `setOverride`                   | mutation | `scenarioProcedure`    | Update a single override within a scenario's overrides JSONB                                          |
+| `update`                        | mutation | `scenarioProcedure`    | (no description)                                                                                      |
+| `update`                        | mutation | `savingsProcedure`     | (no description)                                                                                      |
+| `update`                        | mutation | `performanceProcedure` | (no description)                                                                                      |
+| `updateAccount`                 | mutation | `portfolioProcedure`   | Update a single portfolio account row (e.g. change owner, toggle active, set label, change tax type). |
+| `updateDataFreshness`           | mutation | `adminProcedure`       | (no description)                                                                                      |
+| `upsert`                        | mutation | `adminProcedure`       | (no description)                                                                                      |
+| `upsert`                        | mutation | `adminProcedure`       | (no description)                                                                                      |
 
 ## `settings/mortgage`
 
@@ -328,29 +375,40 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `update`  | mutation | `adminProcedure`     | (no description) |
 | `update`  | mutation | `adminProcedure`     | (no description) |
 
-## `sync-config`
+## `simplefin`
 
-| Procedure            | Kind     | Auth                 | Description                                               |
-| -------------------- | -------- | -------------------- | --------------------------------------------------------- |
-| `getActiveBudgetApi` | query    | `protectedProcedure` | Get the current active_budget_api setting                 |
-| `setActiveBudgetApi` | mutation | `adminProcedure`     | Set the active_budget_api setting                         |
-| `setLinkedColumn`    | mutation | `adminProcedure`     | Set which budget column (mode) syncs with the budget API. |
-| `setLinkedProfile`   | mutation | `adminProcedure`     | Set which Ledgr budget profile syncs with the budget API. |
-| `skipCategory`       | mutation | `adminProcedure`     | Skip an API category — hide from "not in Ledgr" list      |
-| `unskipCategory`     | mutation | `adminProcedure`     | Unskip an API category — restore to "not in Ledgr" list   |
+| Procedure            | Kind     | Auth                 | Description                                                                         |
+| -------------------- | -------- | -------------------- | ----------------------------------------------------------------------------------- |
+| `getStatus`          | query    | `protectedProcedure` | Connection status for the Settings integrations card.                               |
+| `listBalanceHistory` | query    | `protectedProcedure` | Snapshot history for the dashboard sparkline.                                       |
+| `removeConnection`   | mutation | `syncProcedure`      | Remove the stored connection (history in simplefin_balance_snapshots is preserved). |
+| `saveToken`          | mutation | `syncProcedure`      | Claim a one-time setup token and store the resulting access URL.                    |
+| `syncNow`            | mutation | `syncProcedure`      | Manual sync trigger — calls the same runSimplefinSync the daily cron calls.         |
+| `testConnection`     | mutation | `syncProcedure`      | Test the stored connection without writing a snapshot.                              |
 
-## `sync-connections`
+## `sync/config`
+
+| Procedure            | Kind     | Auth                 | Description                                                          |
+| -------------------- | -------- | -------------------- | -------------------------------------------------------------------- |
+| `getActiveBudgetApi` | query    | `protectedProcedure` | Get the current active_budget_api setting                            |
+| `setActiveBudgetApi` | mutation | `syncProcedure`      | Set the active_budget_api setting                                    |
+| `setLinkedColumn`    | mutation | `syncProcedure`      | Set which budget column (mode) syncs with the budget API.            |
+| `setLinkedProfile`   | mutation | `syncProcedure`      | Set (or clear) which Ledgr budget profile syncs with the budget API. |
+| `skipCategory`       | mutation | `syncProcedure`      | Skip an API category — hide from "not in Ledgr" list                 |
+| `unskipCategory`     | mutation | `syncProcedure`      | Unskip an API category — restore to "not in Ledgr" list              |
+
+## `sync/connections`
 
 | Procedure          | Kind     | Auth                 | Description                                                          |
 | ------------------ | -------- | -------------------- | -------------------------------------------------------------------- |
-| `deleteConnection` | mutation | `adminProcedure`     | Delete a connection and clear its cache                              |
-| `fetchYnabBudgets` | mutation | `adminProcedure`     | Fetch YNAB budgets list using a raw token (before saving connection) |
+| `deleteConnection` | mutation | `syncProcedure`      | Delete a connection and clear its cache                              |
+| `fetchYnabBudgets` | mutation | `syncProcedure`      | Fetch YNAB budgets list using a raw token (before saving connection) |
 | `getConnection`    | query    | `protectedProcedure` | Get connection status for each service (not just the active one)     |
 | `getSyncStatus`    | query    | `protectedProcedure` | Get sync status for the active API                                   |
-| `saveConnection`   | mutation | `adminProcedure`     | Save (upsert) a budget API connection                                |
-| `testConnection`   | mutation | `adminProcedure`     | Test a specific service connection (works before activation)         |
+| `saveConnection`   | mutation | `syncProcedure`      | Save (upsert) a budget API connection                                |
+| `testConnection`   | mutation | `syncProcedure`      | Test a specific service connection (works before activation)         |
 
-## `sync-core`
+## `sync/core`
 
 | Procedure                  | Kind     | Auth                 | Description                                                                                                                                                    |
 | -------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -358,35 +416,47 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `getPreview`               | query    | `protectedProcedure` | Preview: read cached data for a service and compare against current manual values. Works before activation — shows what will change when the API is activated. |
 | `syncAll`                  | mutation | `syncProcedure`      | Full sync for a specific service — works independently of active_budget_api. Pulls accounts, categories, current month, and transactions into cache.           |
 
-## `sync-mappings`
+## `sync/mappings`
 
 | Procedure                     | Kind     | Auth                 | Description                                                                                                                                                                                              |
 | ----------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `createAssetAndMap`           | mutation | `adminProcedure`     | Create a new Ledgr asset item and add a mapping to a tracking account.                                                                                                                                   |
+| `createAssetAndMap`           | mutation | `syncProcedure`      | Create a new Ledgr asset item and add a mapping to a tracking account.                                                                                                                                   |
 | `listAccountMappings`         | query    | `protectedProcedure` | Get account mappings for a service.                                                                                                                                                                      |
-| `migrateAccountMappingsToIds` | mutation | `adminProcedure`     | One-time migration: backfill `localId` on account mappings that only have `localName`. For each mapping without `localId`: - mortgage: pattern already uses "mortgage:{id}:{type}" in localName → copy t |
-| `pullAssetsFromApi`           | mutation | `adminProcedure`     | Pull tracking account balances from budget API into Ledgr asset values.                                                                                                                                  |
-| `pullPortfolioFromApi`        | mutation | `adminProcedure`     | Pull portfolio balances from budget API tracking accounts into the latest snapshot.                                                                                                                      |
-| `pushPortfolioToApi`          | mutation | `adminProcedure`     | Push portfolio snapshot balances to budget API tracking accounts.                                                                                                                                        |
-| `resyncSnapshot`              | mutation | `adminProcedure`     | fresh tagged transactions. Resyncing a non-latest snapshot causes historical drift (later snapshot deltas were computed against the old state). Pass `confirmNonLatest` after warning the user.          |
-| `updateAccountMappings`       | mutation | `adminProcedure`     | Update account mappings for a service (works pre-activation).                                                                                                                                            |
+| `migrateAccountMappingsToIds` | mutation | `syncProcedure`      | One-time migration: backfill `localId` on account mappings that only have `localName`. For each mapping without `localId`: - mortgage: pattern already uses "mortgage:{id}:{type}" in localName → copy t |
+| `pullAssetsFromApi`           | mutation | `syncProcedure`      | Pull tracking account balances from budget API into Ledgr asset values.                                                                                                                                  |
+| `pullPortfolioFromApi`        | mutation | `syncProcedure`      | Pull portfolio balances from budget API tracking accounts into the latest snapshot.                                                                                                                      |
+| `pushPortfolioToApi`          | mutation | `syncProcedure`      | Push portfolio snapshot balances to budget API tracking accounts.                                                                                                                                        |
+| `resyncSnapshot`              | mutation | `syncProcedure`      | fresh tagged transactions. Resyncing a non-latest snapshot causes historical drift (later snapshot deltas were computed against the old state). Pass `confirmNonLatest` after warning the user.          |
+| `updateAccountMappings`       | mutation | `syncProcedure`      | Update account mappings for a service (works pre-activation).                                                                                                                                            |
 
-## `sync-names`
+## `sync/names`
 
-| Procedure                  | Kind     | Auth             | Description                                                                                   |
-| -------------------------- | -------- | ---------------- | --------------------------------------------------------------------------------------------- |
-| `moveBudgetItemToApiGroup` | mutation | `adminProcedure` | Move a budget item to the API's category group.                                               |
-| `renameBudgetItemApiName`  | mutation | `adminProcedure` | Rename a budget item's API category name to match the Ledgr subcategory (update stored name). |
-| `renameBudgetItemToApi`    | mutation | `adminProcedure` | Rename a budget item's subcategory to match the API category name.                            |
-| `renameSavingsGoalApiName` | mutation | `adminProcedure` | Update a savings goal's stored API name to match its current Ledgr name.                      |
-| `renameSavingsGoalToApi`   | mutation | `adminProcedure` | Rename a savings goal to match the API category name.                                         |
-| `syncAllNames`             | mutation | `adminProcedure` | Batch rename all drifted items in one direction.                                              |
+| Procedure                  | Kind     | Auth            | Description                                                                                   |
+| -------------------------- | -------- | --------------- | --------------------------------------------------------------------------------------------- |
+| `moveBudgetItemToApiGroup` | mutation | `syncProcedure` | Move a budget item to the API's category group.                                               |
+| `renameBudgetItemApiName`  | mutation | `syncProcedure` | Rename a budget item's API category name to match the Ledgr subcategory (update stored name). |
+| `renameBudgetItemToApi`    | mutation | `syncProcedure` | Rename a budget item's subcategory to match the API category name.                            |
+| `renameSavingsGoalApiName` | mutation | `syncProcedure` | Update a savings goal's stored API name to match its current Ledgr name.                      |
+| `renameSavingsGoalToApi`   | mutation | `syncProcedure` | Rename a savings goal to match the API category name.                                         |
+| `syncAllNames`             | mutation | `syncProcedure` | Batch rename all drifted items in one direction.                                              |
 
 ## `testing`
 
 | Procedure  | Kind     | Auth             | Description      |
 | ---------- | -------- | ---------------- | ---------------- |
 | `runTests` | mutation | `adminProcedure` | (no description) |
+
+## `utilities`
+
+| Procedure        | Kind     | Auth                 | Description                                                                                                                                                                      |
+| ---------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `computeSummary` | query    | `protectedProcedure` | Full per-service, per-year summary. Loads the stored readings and computes every derived value (total/avg/min/max cost & usage, $/unit, YoY) here. Nothing derived is persisted. |
+| `deleteReading`  | mutation | `adminProcedure`     | (no description)                                                                                                                                                                 |
+| `listServices`   | query    | `protectedProcedure` | All utility services ordered for display.                                                                                                                                        |
+| `updateReading`  | mutation | `adminProcedure`     | Update a reading's values by id (key fields stay fixed).                                                                                                                         |
+| `updateService`  | mutation | `adminProcedure`     | Update editable fields of an existing service by id (kind is immutable).                                                                                                         |
+| `upsertReading`  | mutation | `adminProcedure`     | Create or update a reading by its natural key (serviceId, year, month).                                                                                                          |
+| `upsertService`  | mutation | `adminProcedure`     | Create or update a service by its kind (unique).                                                                                                                                 |
 
 ## `version`
 

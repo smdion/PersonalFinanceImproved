@@ -77,6 +77,7 @@ const VERSION_TABLE_NAMES = [
   "mc_user_presets",
   "account_holdings",
   "pending_rollovers",
+  "simplefin_balance_snapshots",
 ];
 
 // ---------------------------------------------------------------------------

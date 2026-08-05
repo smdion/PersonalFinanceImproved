@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**54 tables.**
+**59 tables.**
 
 ## Mermaid diagram
 
@@ -68,6 +68,12 @@ erDiagram
   account_performance {
     int id PK
   }
+  pending_rollovers {
+    int id PK
+  }
+  account_holdings {
+    int id PK
+  }
   net_worth_annual {
     int id PK
   }
@@ -90,6 +96,12 @@ erDiagram
     int id PK
   }
   property_taxes {
+    int id PK
+  }
+  utility_service {
+    int id PK
+  }
+  utility_reading {
     int id PK
   }
   retirement_settings {
@@ -123,6 +135,9 @@ erDiagram
     int id PK
   }
   budget_api_cache {
+    int id PK
+  }
+  simplefin_balance_snapshots {
     int id PK
   }
   app_settings {
@@ -187,9 +202,14 @@ erDiagram
   portfolio_accounts }o--|| people : references
   account_performance }o--|| people : references
   account_performance }o--|| performance_accounts : references
+  pending_rollovers }o--|| account_performance : references
+  pending_rollovers }o--|| performance_accounts : references
+  account_holdings }o--|| performance_accounts : references
+  account_holdings }o--|| portfolio_snapshots : references
   mortgage_what_if_scenarios }o--|| mortgage_loans : references
   mortgage_extra_payments }o--|| mortgage_loans : references
   property_taxes }o--|| mortgage_loans : references
+  utility_reading }o--|| utility_service : references
   retirement_settings }o--|| people : references
   retirement_salary_overrides }o--|| people : references
   retirement_budget_overrides }o--|| people : references
@@ -205,6 +225,7 @@ erDiagram
 
 ## Tables
 
+- **account_holdings** → performance_accounts, portfolio_snapshots
 - **account_performance** → people, performance_accounts
 - **annual_performance**
 - **api_connections**
@@ -237,6 +258,7 @@ erDiagram
 - **net_worth_annual**
 - **other_asset_items**
 - **paycheck_deductions** → jobs
+- **pending_rollovers** → account_performance, performance_accounts
 - **people**
 - **performance_accounts** → people
 - **portfolio_accounts** → portfolio_snapshots, people
@@ -256,6 +278,9 @@ erDiagram
 - **savings_planned_transactions** → savings_goals
 - **scenarios**
 - **self_loans** → savings_goals, savings_goals
+- **simplefin_balance_snapshots**
 - **state_version_tables** → state_versions
 - **state_versions**
 - **tax_brackets**
+- **utility_reading** → utility_service
+- **utility_service**

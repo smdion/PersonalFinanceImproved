@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import type { Service, PreviewData } from "./integrations-types";
 import { PreviewPanel } from "./integrations-preview-panel";
+import { SimplefinCard } from "./integrations-simplefin";
 
 function ServiceCard({
   service,
@@ -464,6 +465,8 @@ export function IntegrationsSettings() {
             : null
         }
       />
+
+      <SimplefinCard />
 
       {/* Sync Behavior */}
       <Card className="p-4 space-y-3">

@@ -22,6 +22,13 @@
       "when": 1782014223320,
       "tag": "0002_blue_moon_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785957760633,
+      "tag": "0003_chubby_katie_power",
+      "breakpoints": true
     }
   ]
 }

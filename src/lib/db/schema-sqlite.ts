@@ -110,7 +110,8 @@ export type ExtraPaycheckRoutingData = {
 //                                    retirementScenarios
 //  11.  Return rates & tax tables .. returnRateTable, taxBrackets, ltcgBrackets,
 //                                    irmaaBrackets
-//  12.  API sync .................. apiConnections, budgetApiCache
+//  12.  API sync .................. apiConnections, budgetApiCache,
+//                                    simplefinBalanceSnapshots
 //  13.  App config / admin ......... appSettings, localAdmins
 //  14.  Scenarios (relocation) ..... relocationScenarios, scenarios
 //  15.  Monte Carlo ................ assetClassParams, assetClassCorrelations,
@@ -1353,6 +1354,22 @@ export const budgetApiCache = sqliteTable(
       table.service,
       table.cacheKey,
     ),
+  ],
+);
+
+export const simplefinBalanceSnapshots = sqliteTable(
+  "simplefin_balance_snapshots",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    snapshotDate: text("snapshot_date").notNull().unique(),
+    totalBalance: text("total_balance").notNull(),
+    accountCount: integer("account_count").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    index("simplefin_balance_snapshots_date_idx").on(table.snapshotDate),
   ],
 );
 

@@ -6,6 +6,7 @@ export { SavingsGoalsCard } from "./savings-goals-card";
 export { RetirementCard } from "./retirement-card";
 export { MortgageCard } from "./mortgage-card";
 export { NetWorthCard } from "./net-worth-card";
+export { LinkedBalanceCard } from "./linked-balance-card";
 export { ContributionsCard } from "./contributions-card";
 export { TaxesCard } from "./taxes-card";
 export { FinancialCheckupCard } from "./financial-checkup-card";

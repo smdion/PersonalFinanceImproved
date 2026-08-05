@@ -42,6 +42,7 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "relocation_scenarios", tier: 0 },
   { name: "mc_user_presets", tier: 0 },
   { name: "utility_service", tier: 0 },
+  { name: "simplefin_balance_snapshots", tier: 0 },
 
   // Tier 1 — depends on tier 0
   { name: "jobs", tier: 1 },

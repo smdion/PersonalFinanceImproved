@@ -18,6 +18,7 @@ import { apiDocsRouter } from "./api-docs";
 import { versionRouter } from "./version";
 import { contributionProfileRouter } from "./contribution-profiles";
 import { syncRouter } from "./sync";
+import { simplefinRouter } from "./simplefin";
 import { demoRouter } from "./demo";
 import { dataBrowserRouter } from "./data-browser";
 import { testingRouter } from "./testing";
@@ -42,6 +43,7 @@ export const appRouter = createTRPCRouter({
   version: versionRouter,
   contributionProfile: contributionProfileRouter,
   sync: syncRouter,
+  simplefin: simplefinRouter,
   demo: demoRouter,
   dataBrowser: dataBrowserRouter,
   testing: testingRouter,

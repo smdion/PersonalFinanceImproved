@@ -118,7 +118,8 @@ export type ExtraPaycheckRoutingData = {
 //                                    retirementScenarios
 //  11.  Return rates & tax tables .. returnRateTable, taxBrackets, ltcgBrackets,
 //                                    irmaaBrackets
-//  12.  API sync .................. apiConnections, budgetApiCache
+//  12.  API sync .................. apiConnections, budgetApiCache,
+//                                    simplefinBalanceSnapshots
 //  13.  App config / admin ......... appSettings, localAdmins
 //  14.  Scenarios (relocation) ..... relocationScenarios, scenarios
 //  15.  Monte Carlo ................ assetClassParams, assetClassCorrelations,
@@ -1570,6 +1571,25 @@ export const budgetApiCache = pgTable(
       table.service,
       table.cacheKey,
     ),
+  ],
+);
+
+export const simplefinBalanceSnapshots = pgTable(
+  "simplefin_balance_snapshots",
+  {
+    id: serial("id").primaryKey(),
+    snapshotDate: date("snapshot_date").notNull().unique(),
+    totalBalance: decimal("total_balance", {
+      precision: 14,
+      scale: 2,
+    }).notNull(),
+    accountCount: integer("account_count").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("simplefin_balance_snapshots_date_idx").on(table.snapshotDate),
   ],
 );
 

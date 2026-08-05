@@ -74,6 +74,7 @@ export const ltcgBrackets = active.ltcgBrackets;
 export const irmaaBrackets = active.irmaaBrackets;
 export const apiConnections = active.apiConnections;
 export const budgetApiCache = active.budgetApiCache;
+export const simplefinBalanceSnapshots = active.simplefinBalanceSnapshots;
 export const appSettings = active.appSettings;
 export const localAdmins = active.localAdmins;
 export const relocationScenarios = active.relocationScenarios;
