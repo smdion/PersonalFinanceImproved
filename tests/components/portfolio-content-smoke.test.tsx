@@ -186,7 +186,7 @@ vi.mock("@/lib/trpc", () => ({
         list: { useQuery: () => ({ data: mockPerfAccounts }) },
       },
       people: {
-        list: { useQuery: () => ({ data: [{ id: 1, name: "Sean" }] }) },
+        list: { useQuery: () => ({ data: [{ id: 1, name: "Alice" }] }) },
       },
     },
     sync: {

@@ -142,7 +142,7 @@ vi.mock("@/lib/trpc", () => ({
     projection: {
       computeProjection: {
         useQuery: () => ({
-          data: { people: [{ id: 1, name: "Sean", birthYear: 1990 }] },
+          data: { people: [{ id: 1, name: "Alice", birthYear: 1990 }] },
         }),
       },
       computeRelocationFiProjection: {

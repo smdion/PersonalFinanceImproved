@@ -339,27 +339,25 @@ export function resolvePortfolioValues(
  * gainLoss = endingBalance - beginningBalance - contributions
  *            + distributions - rollovers + fees
  *
- * Rollovers are subtracted regardless of direction:
- * - Outgoing (negative, e.g. ESPP→brokerage): subtracting a negative adds it
- *   back, correctly excluding the outflow from G/L.
- * - Incoming (positive, e.g. brokerage receiving ESPP proceeds, or one
- *   tracked account transferring into another): subtracting a positive
- *   removes it from G/L, since the destination's ending balance already
- *   includes the wired-in principal but it is not an investment gain. This
- *   matters most for internal transfers between two tracked accounts — the
- *   source's outgoing rollover already gets added back, so if the
- *   destination's incoming rollover weren't also subtracted, every internal
- *   transfer would inflate portfolio-level gain/loss by the transferred
- *   amount instead of netting to zero.
+ * ROLLOVERS ARE ALWAYS SUBTRACTED, in BOTH directions. A rollover moves
+ * principal between accounts — it is never investment return — so it must be
+ * removed from G/L on whichever side records it. Sign handles the direction:
  *
- * (History: an earlier version special-cased incoming rollovers as NOT
- * subtracted, reasoning that some institutions report ending balance as of
- * before a rollover posts. That's wrong for the overwhelming common case —
- * transfers between two of the user's own tracked accounts, where both
- * balances already reflect the transfer — and was reverted. An institution
- * that genuinely reports balance pre-transfer needs the `gainLossOverride`
- * escape hatch in the update-performance form, not a change to this shared
- * formula.)
+ * - Outgoing (negative, e.g. ESPP → brokerage on the ESPP side): subtracting a
+ *   negative adds it back, cancelling the outflow that shrank the ending balance.
+ * - Incoming (positive, e.g. a destination account receiving ESPP proceeds): the
+ *   destination's ending balance ALREADY INCLUDES the wired-in money, so
+ *   subtracting it strips out the transferred principal and leaves only true
+ *   return. Worked example: a destination account receives a +6,187.62 rollover
+ *   from a tracked ESPP source; begin 1,264.76 + rollover 6,187.62 + 366.29 gain
+ *   = ending 7,818.67. Without the subtraction the 6,187.62 of transferred
+ *   principal would be mis-reported as a gain.
+ *
+ * GOTCHA: a rollover from another tracked account belongs in `rollovers` ONLY —
+ * never also in `totalContributions`. Recording it in both double-counts the
+ * principal and produces a phantom loss. (An earlier "fix" stopped subtracting
+ * incoming rollovers to mask exactly that mis-entry; the real fix is to enter
+ * the transfer once, as a rollover. See tests/pure/performance.test.ts.)
  */
 export function computeGainLoss(input: {
   endingBalance: number;

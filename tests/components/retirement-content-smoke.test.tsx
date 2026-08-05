@@ -97,11 +97,11 @@ const mockSettings = {
 
 const mockProjectionData = {
   settings: mockSettings,
-  people: [{ id: 1, name: "Sean", birthYear: 1990 }],
+  people: [{ id: 1, name: "Alice", birthYear: 1990 }],
   perPersonSettings: [
     {
       personId: 1,
-      name: "Sean",
+      name: "Alice",
       birthYear: 1990,
       retirementAge: 65,
       endAge: 95,

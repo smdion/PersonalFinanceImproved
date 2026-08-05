@@ -25,12 +25,12 @@ describe("roundToCents", () => {
   });
 
   it("handles negative values", () => {
+    // roundToCents rounds half AWAY from zero, symmetrically with the positive
+    // side (see the 0.005 -> 0.01 case below). It is sign * round(abs(x)), so
+    // magnitude is rounded identically regardless of sign.
     expect(roundToCents(-1.234)).toBe(-1.23);
-    // Math.round(-1.235 * 100) = -124 due to float representation
-    expect(roundToCents(-1.235)).toBe(-1.24);
-    // Symmetric round-half-away-from-zero (see -1.235 above and 0.005 below) —
-    // -0.005 rounds to -0.01, not -0.
-    expect(roundToCents(-0.005)).toBe(-0.01);
+    expect(roundToCents(-1.235)).toBe(-1.24); // mirrors 1.235 -> 1.24
+    expect(roundToCents(-0.005)).toBe(-0.01); // mirrors 0.005 -> 0.01
   });
 
   it("handles very small values near zero", () => {
