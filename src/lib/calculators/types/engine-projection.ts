@@ -386,8 +386,7 @@ export type EngineDecumulationYear = {
 
 /** A single year in the engine projection — either accumulation or decumulation. */
 export type EngineYearProjection =
-  | EngineAccumulationYear
-  | EngineDecumulationYear;
+  EngineAccumulationYear | EngineDecumulationYear;
 
 /**
  * Full result from the contribution/distribution engine.

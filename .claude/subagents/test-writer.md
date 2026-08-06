@@ -89,21 +89,15 @@ describe("routerName", () => {
 
   it("procedure returns expected shape", async () => {
     const caller = appRouter.createCaller(ctx);
-    const result = await caller.routerName.procedureName({
-      /* input */
-    });
-    expect(result).toMatchObject({
-      /* expected shape */
-    });
+    const result = await caller.routerName.procedureName({/* input */});
+    expect(result).toMatchObject({/* expected shape */});
   });
 
   it("viewer cannot call admin mutation", async () => {
     const viewerCtx = await createTestContext({ role: "viewer" });
     const caller = appRouter.createCaller(viewerCtx);
     await expect(
-      caller.routerName.adminMutation({
-        /* input */
-      }),
+      caller.routerName.adminMutation({/* input */}),
     ).rejects.toThrow(); // auth rejection
   });
 });
@@ -176,16 +170,11 @@ import { describe, it, expect } from "vitest";
 describe("engine invariants", () => {
   it("balance conservation holds for any valid input", () => {
     fc.assert(
-      fc.property(
-        fc.record({
-          /* arbitrary valid input */
-        }),
-        (input) => {
-          const result = calculateProjection(input);
-          // Assert the invariant — use expect() inside fc.property
-          expect(result.finalBalance).toBeGreaterThanOrEqual(0);
-        },
-      ),
+      fc.property(fc.record({/* arbitrary valid input */}), (input) => {
+        const result = calculateProjection(input);
+        // Assert the invariant — use expect() inside fc.property
+        expect(result.finalBalance).toBeGreaterThanOrEqual(0);
+      }),
       { numRuns: 20 }, // keep fast; 20 runs catches most failures
     );
   });

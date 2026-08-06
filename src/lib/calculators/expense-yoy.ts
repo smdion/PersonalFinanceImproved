@@ -40,8 +40,7 @@ export function calculateExpenseYoY(input: ExpenseYoYInput): ExpenseYoYResult {
       const priorTotal = roundToCents(sumBy(priorItems, (i) => i.amount));
       const dollarChange = roundToCents(currentTotal - priorTotal);
       const percentChange = safeDivide(dollarChange, priorTotal, null) as
-        | number
-        | null;
+        number | null;
 
       // Subcategory breakdown
       const allSubcats = new Set<string>();
@@ -70,8 +69,7 @@ export function calculateExpenseYoY(input: ExpenseYoYInput): ExpenseYoYResult {
             prior,
             dollarChange: roundToCents(current - prior),
             percentChange: safeDivide(current - prior, prior, null) as
-              | number
-              | null,
+              number | null,
           };
         });
 

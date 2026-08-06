@@ -314,9 +314,9 @@ export const adminProcedures = {
         // Use transaction + FOR UPDATE to prevent lost-write race conditions
         return ctx.db.transaction(async (tx) => {
           const [existing] = await tx
-            .execute<
-              typeof schema.scenarios.$inferSelect
-            >(sql`SELECT * FROM scenarios WHERE id = ${input.id}`)
+            .execute<typeof schema.scenarios.$inferSelect>(
+              sql`SELECT * FROM scenarios WHERE id = ${input.id}`,
+            )
             .then((r) => r.rows);
           if (!existing) throw new Error("Scenario not found");
           const overrides = (existing.overrides ?? {}) as Record<
@@ -349,9 +349,9 @@ export const adminProcedures = {
         // Use transaction + FOR UPDATE to prevent lost-write race conditions
         return ctx.db.transaction(async (tx) => {
           const [existing] = await tx
-            .execute<
-              typeof schema.scenarios.$inferSelect
-            >(sql`SELECT * FROM scenarios WHERE id = ${input.id}`)
+            .execute<typeof schema.scenarios.$inferSelect>(
+              sql`SELECT * FROM scenarios WHERE id = ${input.id}`,
+            )
             .then((r) => r.rows);
           if (!existing) throw new Error("Scenario not found");
           const overrides = (existing.overrides ?? {}) as Record<

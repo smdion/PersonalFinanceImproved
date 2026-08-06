@@ -133,8 +133,7 @@ export function BudgetDetailPanel({
           contributionProfiles={contribProfiles}
           columnContributionProfileIds={
             (profile?.columnContributionProfileIds as
-              | (number | null)[]
-              | null) ?? null
+              (number | null)[] | null) ?? null
           }
           onUpdateContributionProfiles={(ids) =>
             columnMutations.updateColumnContribProfiles.mutate({

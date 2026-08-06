@@ -55,8 +55,7 @@ import {
 
 /** Accepts both the main db instance and transaction handles. */
 type DbType =
-  | typeof appDb
-  | Parameters<Parameters<typeof appDb.transaction>[0]>[0];
+  typeof appDb | Parameters<Parameters<typeof appDb.transaction>[0]>[0];
 type PerfAccount = typeof schema.performanceAccounts.$inferSelect;
 
 function buildPerfAcctLookups(perfAccounts: PerfAccount[]) {
@@ -691,8 +690,7 @@ export const performanceRouter = createTRPCRouter({
       .from(schema.appSettings)
       .where(eq(schema.appSettings.key, "performance_last_updated"));
     const performanceLastUpdated = perfUpdatedSetting[0]?.value as
-      | string
-      | null;
+      string | null;
 
     // Master account list for reference
     const masterAccounts = perfAccounts.map((pa) => ({

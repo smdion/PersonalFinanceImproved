@@ -6,6 +6,95 @@ import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils/format";
 
+type SimplefinAccountListItem = {
+  id: number;
+  orgName: string;
+  accountName: string;
+  lastBalance: number;
+  isIncluded: boolean;
+  linkedPerformanceAccountId: number | null;
+  snapshotBalance: number | null;
+  change: number | null;
+};
+
+type MatchableAccount = { id: number; label: string };
+
+/** Group accounts by institution, preserving the orgName/accountName order the query already returns. */
+function groupAccountsByOrg(
+  accounts: SimplefinAccountListItem[],
+): Array<[string, SimplefinAccountListItem[]]> {
+  const groups = new Map<string, SimplefinAccountListItem[]>();
+  for (const account of accounts) {
+    const existing = groups.get(account.orgName);
+    if (existing) existing.push(account);
+    else groups.set(account.orgName, [account]);
+  }
+  return Array.from(groups.entries());
+}
+
+function AccountRow({
+  account,
+  matchableAccounts,
+  onToggleIncluded,
+  onMatch,
+}: {
+  account: SimplefinAccountListItem;
+  matchableAccounts: MatchableAccount[];
+  onToggleIncluded: (isIncluded: boolean) => void;
+  onMatch: (performanceAccountId: number | null) => void;
+}) {
+  const change = account.change;
+  return (
+    <div className="text-sm">
+      <label className="flex items-center justify-between gap-2 cursor-pointer">
+        <span className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={account.isIncluded}
+            onChange={(e) => onToggleIncluded(e.target.checked)}
+            className="w-4 h-4 accent-blue-600"
+          />
+          <span
+            className={
+              account.isIncluded ? "text-primary" : "text-faint line-through"
+            }
+          >
+            {account.accountName}
+          </span>
+        </span>
+        <span className="text-muted">
+          {formatCurrency(account.lastBalance)}
+        </span>
+      </label>
+      <div className="flex items-center justify-between gap-2 mt-1 pl-6">
+        <select
+          value={account.linkedPerformanceAccountId ?? ""}
+          onChange={(e) =>
+            onMatch(e.target.value ? Number(e.target.value) : null)
+          }
+          className="text-caption border border-strong rounded px-1.5 py-0.5 bg-surface-primary text-muted"
+        >
+          <option value="">Not linked to a tracked account</option>
+          {matchableAccounts.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.label}
+            </option>
+          ))}
+        </select>
+        {change !== null && (
+          <span
+            className={`text-caption ${change === 0 ? "text-faint" : change > 0 ? "text-green-600" : "text-red-600"}`}
+          >
+            {change === 0
+              ? "matches last snapshot"
+              : `${change > 0 ? "↑" : "↓"} ${formatCurrency(Math.abs(change))} vs. last snapshot`}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function SimplefinCard() {
   const utils = trpc.useUtils();
   const [setupToken, setSetupToken] = useState("");
@@ -13,11 +102,26 @@ export function SimplefinCard() {
 
   const { data: status } = trpc.simplefin.getStatus.useQuery();
   const isConnected = status?.connected ?? false;
+  const { data: accounts } = trpc.simplefin.listAccounts.useQuery(undefined, {
+    enabled: isConnected,
+  });
+  const { data: matchableAccounts } =
+    trpc.simplefin.listMatchableAccounts.useQuery(undefined, {
+      enabled: isConnected,
+    });
 
   const invalidate = () => {
     utils.simplefin.getStatus.invalidate();
     utils.simplefin.listBalanceHistory.invalidate();
+    utils.simplefin.listAccounts.invalidate();
   };
+
+  const setAccountIncludedMut = trpc.simplefin.setAccountIncluded.useMutation({
+    onSuccess: invalidate,
+  });
+  const setAccountMappingMut = trpc.simplefin.setAccountMapping.useMutation({
+    onSuccess: invalidate,
+  });
 
   const saveTokenMut = trpc.simplefin.saveToken.useMutation({
     onSuccess: () => {
@@ -170,6 +274,48 @@ export function SimplefinCard() {
         )}
         {syncNowMut.isError && (
           <p className="text-xs text-red-600">{syncNowMut.error.message}</p>
+        )}
+
+        {isConnected && accounts && accounts.length > 0 && (
+          <div className="space-y-3 border-t border-subtle pt-3">
+            <p className="text-caption text-faint">
+              Unchecking an account removes it from today&apos;s total
+              immediately — it doesn&apos;t change any prior day&apos;s history.
+              Matching an account to an existing tracked account shows how its
+              live balance compares to your last snapshot — it never writes to
+              the snapshot. You can match more than one SimpleFIN account to the
+              same tracked account (e.g. a historical split) — the comparison
+              uses their combined balance.
+            </p>
+            {groupAccountsByOrg(accounts).map(([orgName, orgAccounts]) => (
+              <div key={orgName}>
+                <p className="text-xs font-medium text-muted mb-1">
+                  {orgName || "Unknown institution"}
+                </p>
+                <div className="space-y-2">
+                  {orgAccounts.map((account) => (
+                    <AccountRow
+                      key={account.id}
+                      account={account}
+                      matchableAccounts={matchableAccounts ?? []}
+                      onToggleIncluded={(isIncluded) =>
+                        setAccountIncludedMut.mutate({
+                          id: account.id,
+                          isIncluded,
+                        })
+                      }
+                      onMatch={(performanceAccountId) =>
+                        setAccountMappingMut.mutate({
+                          id: account.id,
+                          performanceAccountId,
+                        })
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </Card>

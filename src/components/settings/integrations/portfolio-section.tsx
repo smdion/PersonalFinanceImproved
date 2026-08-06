@@ -70,7 +70,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
               );
               return (
                 <div
-                  key={m.localId ?? m.localName}
+                  key={`${m.localId ?? ""}|${m.localName}`}
                   className="flex items-center gap-1.5 text-xs bg-green-50 rounded px-2 py-1"
                 >
                   <span className="text-caption px-1.5 py-0.5 rounded bg-green-100 text-green-700 whitespace-nowrap">

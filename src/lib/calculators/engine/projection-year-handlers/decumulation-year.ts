@@ -136,8 +136,7 @@ export function runDecumulationYear(
   // Per-person SS: each person's SS kicks in at their own age
   let ssIncome: number;
   let ssIncomeByPerson:
-    | { personId: number; personName: string; amount: number }[]
-    | undefined;
+    { personId: number; personName: string; amount: number }[] | undefined;
   if (input.socialSecurityEntries && input.socialSecurityEntries.length > 0) {
     ssIncomeByPerson = input.socialSecurityEntries.map((entry) => {
       const personAge = year - entry.birthYear;
@@ -269,8 +268,7 @@ export function runDecumulationYear(
   // Per-person RMD: compute each person's RMD from their own Traditional balance and age.
   let perPersonRmdTotal: number | undefined;
   let rmdByPerson:
-    | { personId: number; personName: string; amount: number }[]
-    | undefined;
+    { personId: number; personName: string; amount: number }[] | undefined;
   if (rmdStartAgeByPerson.size > 0 && priorYearEndTradByPerson.size > 0) {
     rmdByPerson = [];
     let total = 0;

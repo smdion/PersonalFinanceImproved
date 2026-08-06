@@ -218,8 +218,7 @@ export default function BrokeragePage() {
     (yr) => yr.phase === "accumulation",
   );
   const firstAccYear = accYears[0] as
-    | import("@/lib/calculators/types").EngineAccumulationYear
-    | undefined;
+    import("@/lib/calculators/types").EngineAccumulationYear | undefined;
   const brokerageRamp = firstAccYear?.brokerageRampContribution ?? 0;
 
   const activeProfileName =

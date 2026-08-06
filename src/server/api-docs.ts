@@ -27,8 +27,7 @@ export function walkRouter(
     const topRouter = prefix ? prefix.split(".")[0]! : key;
 
     const def = (value as Record<string, unknown>)._def as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
 
     if (def?.procedure) {
       // It's a procedure — extract metadata

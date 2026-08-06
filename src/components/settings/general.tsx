@@ -141,8 +141,7 @@ function LivingCostMappingEditor() {
     (s: { key: string }) => s.key === "living_cost_mapping",
   );
   const savedMapping = savedEntry?.value as
-    | Record<string, string[]>
-    | undefined;
+    Record<string, string[]> | undefined;
   const baseMapping = savedMapping ?? DEFAULT_LIVING_COST_MAPPING;
 
   // Local draft state

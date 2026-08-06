@@ -30,7 +30,7 @@ Framework: [Vitest](https://vitest.dev/) with globals enabled. E2E: [Playwright]
 | **Helpers**       | 10    | ~193  | Server helper unit tests (budget, contribution, salary, snapshot, transforms, settings) |
 | **E2E**           | 9     | 35    | Playwright smoke tests (health, navigation, page flows)                                 |
 
-Total: **<!-- AUTO-GEN:totalTests -->2752<!-- /AUTO-GEN --> tests** across **<!-- AUTO-GEN:vitestFiles -->162<!-- /AUTO-GEN --> vitest files** + **35 Playwright E2E tests** (<!-- AUTO-GEN:e2eFiles -->13<!-- /AUTO-GEN --> files).
+Total: **<!-- AUTO-GEN:totalTests -->2752<!-- /AUTO-GEN --> tests** across **<!-- AUTO-GEN:vitestFiles -->164<!-- /AUTO-GEN --> vitest files** + **35 Playwright E2E tests** (<!-- AUTO-GEN:e2eFiles -->13<!-- /AUTO-GEN --> files).
 
 ### Coverage
 
@@ -242,7 +242,7 @@ Documents return/volatility assumptions against institutional published data.
 - Asset class returns vs Vanguard VCMM, Morningstar, Ibbotson ranges
 - Volatility within published bounds
 - Correlation matrix is positive semi-definite (Cholesky succeeds)
-- Equity-equity correlation positive (~0.75), equity-bond negative (~-0.10)
+- Equity-equity correlation positive (~~0.75), equity-bond negative (~~-0.10)
 - Deterministic return schedule monotonically declining
 
 ### cfiresim-comparison.test.ts — 4 tests

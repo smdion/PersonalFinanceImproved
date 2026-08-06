@@ -335,14 +335,9 @@ export function ContributionAccountsSettings() {
                             accountType:
                               data.accountType as import("@/lib/config/account-types").AccountCategory,
                             taxType: data.taxType as
-                              | "preTax"
-                              | "taxFree"
-                              | "hsa"
-                              | "afterTax",
+                              "preTax" | "taxFree" | "hsa" | "afterTax",
                             parentCategory: data.parentCategory as
-                              | "Retirement"
-                              | "Portfolio"
-                              | undefined,
+                              "Retirement" | "Portfolio" | undefined,
                             snapshotId: latestSnap.snapshot.id,
                             performanceAccountId: pa.id,
                           })

@@ -657,10 +657,7 @@ export default function PaycheckPage() {
                   personId: raw.personId,
                   accountType: raw.accountType,
                   taxTreatment: raw.taxTreatment as
-                    | "pre_tax"
-                    | "tax_free"
-                    | "after_tax"
-                    | "hsa",
+                    "pre_tax" | "tax_free" | "after_tax" | "hsa",
                   contributionMethod: raw.contributionMethod as
                     | "percent_of_salary"
                     | "fixed_per_period"
@@ -733,14 +730,9 @@ export default function PaycheckPage() {
                   personId: raw.personId,
                   accountType: raw.accountType,
                   taxTreatment: raw.taxTreatment as
-                    | "pre_tax"
-                    | "tax_free"
-                    | "after_tax"
-                    | "hsa",
+                    "pre_tax" | "tax_free" | "after_tax" | "hsa",
                   contributionMethod: raw.contributionMethod as
-                    | "percent_of_salary"
-                    | "fixed_per_period"
-                    | "fixed_annual",
+                    "percent_of_salary" | "fixed_per_period" | "fixed_annual",
                   contributionValue:
                     value && targetContribValue != null
                       ? String(targetContribValue)

@@ -121,8 +121,7 @@ function SavingsGoalsCardImpl() {
       }[] = [];
       let balance = current;
       const lastTx = goalTxs[goalTxs.length - 1] as
-        | { transactionDate: string; amount: number }
-        | undefined;
+        { transactionDate: string; amount: number } | undefined;
       if (!lastTx) continue;
       const lastTxDate = new Date(lastTx.transactionDate);
       const monthsToSimulate = Math.max(

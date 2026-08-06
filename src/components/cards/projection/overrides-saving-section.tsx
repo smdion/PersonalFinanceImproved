@@ -250,9 +250,7 @@ export function SavingOverridesSection({ state: s }: OverridesSectionProps) {
                       setAccumForm((f) => ({
                         ...f,
                         routingMode: e.target.value as
-                          | ""
-                          | "waterfall"
-                          | "percentage",
+                          "" | "waterfall" | "percentage",
                       }))
                     }
                     className="mt-1 block w-full rounded border border-strong px-2 py-1 text-sm"

@@ -29,6 +29,20 @@
       "when": 1785957788639,
       "tag": "0003_common_crusher_hogan",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1785963891195,
+      "tag": "0004_calm_dazzler",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1785965074997,
+      "tag": "0005_zippy_warlock",
+      "breakpoints": true
     }
   ]
 }

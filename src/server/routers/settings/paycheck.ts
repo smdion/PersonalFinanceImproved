@@ -239,8 +239,7 @@ export const paycheckProcedures = {
             );
           if (master)
             resolvedParentCategory = master.parentCategory as
-              | "Retirement"
-              | "Portfolio";
+              "Retirement" | "Portfolio";
         }
         const [created] = await ctx.db
           .insert(schema.contributionAccounts)
@@ -279,10 +278,7 @@ export const paycheckProcedures = {
                 accountType: input.accountType,
                 parentCategory: resolvedParentCategory,
                 taxTreatment: taxTreatment as
-                  | "pre_tax"
-                  | "tax_free"
-                  | "after_tax"
-                  | "hsa",
+                  "pre_tax" | "tax_free" | "after_tax" | "hsa",
                 contributionMethod: "percent_of_salary" as const,
                 contributionValue: "0",
                 employerMatchType: "none" as const,
@@ -340,8 +336,7 @@ export const paycheckProcedures = {
             .where(eq(schema.performanceAccounts.id, perfAccountId));
           if (master)
             resolvedData.parentCategory = master.parentCategory as
-              | "Retirement"
-              | "Portfolio";
+              "Retirement" | "Portfolio";
         }
 
         return ctx.db

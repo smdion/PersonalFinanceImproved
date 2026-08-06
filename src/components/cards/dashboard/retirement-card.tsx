@@ -222,8 +222,7 @@ function RetirementCardImpl() {
         {sustainableWd > 0 &&
           (() => {
             const strategyKey = settings.withdrawalStrategy as
-              | string
-              | undefined;
+              string | undefined;
             const strategyLabel = strategyKey
               ? (WITHDRAWAL_STRATEGY_LABELS[
                   strategyKey as WithdrawalStrategyType

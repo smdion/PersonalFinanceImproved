@@ -99,8 +99,7 @@ export const syncConnectionsRouter = createTRPCRouter({
       // factory.ts handles the read side.
       // eslint-disable-next-line no-restricted-syntax -- see block comment above
       const storedConfig = encryptedConfig as unknown as
-        | YnabConfig
-        | ActualConfig;
+        YnabConfig | ActualConfig;
       await ctx.db
         .insert(schema.apiConnections)
         .values({ service: input.service, config: storedConfig })

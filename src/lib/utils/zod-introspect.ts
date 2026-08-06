@@ -33,8 +33,7 @@ function walkDef(
   switch (type) {
     case "object": {
       const shape = def.shape as
-        | Record<string, { def?: Record<string, unknown> }>
-        | undefined;
+        Record<string, { def?: Record<string, unknown> }> | undefined;
       if (!shape) return [];
       const fields: SchemaField[] = [];
       for (const [key, value] of Object.entries(shape)) {
@@ -49,8 +48,7 @@ function walkDef(
 
     case "optional": {
       const inner = def.innerType as
-        | { def?: Record<string, unknown> }
-        | undefined;
+        { def?: Record<string, unknown> } | undefined;
       if (inner?.def) {
         return walkDef(
           inner.def as Record<string, unknown>,
@@ -64,8 +62,7 @@ function walkDef(
 
     case "default": {
       const inner = def.innerType as
-        | { def?: Record<string, unknown> }
-        | undefined;
+        { def?: Record<string, unknown> } | undefined;
       const defVal = def.defaultValue;
       if (inner?.def) {
         return walkDef(
@@ -80,8 +77,7 @@ function walkDef(
 
     case "nullable": {
       const inner = def.innerType as
-        | { def?: Record<string, unknown> }
-        | undefined;
+        { def?: Record<string, unknown> } | undefined;
       if (inner?.def) {
         const resolved = walkDef(
           inner.def as Record<string, unknown>,
@@ -130,8 +126,7 @@ function walkDef(
 
     case "union": {
       const options = def.options as
-        | Array<{ def?: Record<string, unknown> }>
-        | undefined;
+        Array<{ def?: Record<string, unknown> }> | undefined;
       if (options) {
         const types = options
           .map((o) => {
@@ -160,8 +155,7 @@ function walkDef(
 
     case "array": {
       const element = def.element as
-        | { def?: Record<string, unknown> }
-        | undefined;
+        { def?: Record<string, unknown> } | undefined;
       let elementType = "unknown";
       if (element?.def) {
         const resolved = walkDef(
@@ -183,11 +177,9 @@ function walkDef(
 
     case "record": {
       const keySchema = def.keyType as
-        | { def?: Record<string, unknown> }
-        | undefined;
+        { def?: Record<string, unknown> } | undefined;
       const valueSchema = def.valueType as
-        | { def?: Record<string, unknown> }
-        | undefined;
+        { def?: Record<string, unknown> } | undefined;
       let keyType = "string";
       let valueType = "unknown";
       if (keySchema?.def) {

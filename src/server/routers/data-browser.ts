@@ -62,14 +62,12 @@ export const dataBrowserRouter = createTRPCRouter({
               WHERE table_schema = 'public' AND table_name = ${input.tableName}
               ORDER BY ordinal_position`,
         );
-        return res.rows.map(
-          (r): ColumnInfo => ({
-            name: r.column_name,
-            type: r.data_type,
-            nullable: r.is_nullable === "YES",
-            defaultValue: r.column_default,
-          }),
-        );
+        return res.rows.map((r): ColumnInfo => ({
+          name: r.column_name,
+          type: r.data_type,
+          nullable: r.is_nullable === "YES",
+          defaultValue: r.column_default,
+        }));
       }
 
       // SQLite
@@ -79,14 +77,12 @@ export const dataBrowserRouter = createTRPCRouter({
         notnull: number;
         dflt_value: string | null;
       }>(sql.raw(`PRAGMA table_info("${input.tableName}")`));
-      return res.rows.map(
-        (r): ColumnInfo => ({
-          name: r.name,
-          type: r.type,
-          nullable: r.notnull === 0,
-          defaultValue: r.dflt_value,
-        }),
-      );
+      return res.rows.map((r): ColumnInfo => ({
+        name: r.name,
+        type: r.type,
+        nullable: r.notnull === 0,
+        defaultValue: r.dflt_value,
+      }));
     }),
 
   /** Get paginated rows from a table. */

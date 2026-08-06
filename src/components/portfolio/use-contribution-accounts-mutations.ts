@@ -168,8 +168,7 @@ export function useContributionAccountsMutations({
       contributionScaling: (updates.contributionScaling !== undefined
         ? updates.contributionScaling
         : (pa.contributionScaling ?? "scales_with_salary")) as
-        | "scales_with_salary"
-        | "fixed_amount",
+        "scales_with_salary" | "fixed_amount",
     });
   };
 
@@ -202,16 +201,9 @@ export function useContributionAccountsMutations({
       personId: updates.personId ?? c.personId,
       jobId: updates.jobId !== undefined ? updates.jobId : c.jobId,
       accountType: (updates.accountType ?? c.accountType) as
-        | "401k"
-        | "403b"
-        | "ira"
-        | "hsa"
-        | "brokerage",
+        "401k" | "403b" | "ira" | "hsa" | "brokerage",
       taxTreatment: (updates.taxTreatment ?? c.taxTreatment) as
-        | "pre_tax"
-        | "tax_free"
-        | "after_tax"
-        | "hsa",
+        "pre_tax" | "tax_free" | "after_tax" | "hsa",
       contributionMethod: (updates.contributionMethod ??
         c.contributionMethod) as
         | "percent_of_salary"
@@ -220,10 +212,7 @@ export function useContributionAccountsMutations({
         | "fixed_annual",
       contributionValue: updates.contributionValue ?? c.contributionValue,
       employerMatchType: (updates.employerMatchType ?? c.employerMatchType) as
-        | "none"
-        | "percent_of_contribution"
-        | "dollar_match"
-        | "fixed_annual",
+        "none" | "percent_of_contribution" | "dollar_match" | "fixed_annual",
       employerMatchValue:
         updates.employerMatchValue !== undefined
           ? updates.employerMatchValue

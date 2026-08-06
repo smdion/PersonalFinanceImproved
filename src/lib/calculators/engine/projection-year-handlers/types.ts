@@ -64,8 +64,7 @@ export type ProjectionLoopState = {
   activeBaseYearContributions: Record<AccountCategory, number> | undefined;
   activeBaseYearEmployerMatch: Record<AccountCategory, number> | undefined;
   activeEmployerMatchByParentCat:
-    | Map<AccountCategory, Map<string, number>>
-    | undefined;
+    Map<AccountCategory, Map<string, number>> | undefined;
   accumulationDefaults: AccumulationDefaults;
 
   // Spending strategy

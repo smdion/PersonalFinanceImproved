@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**59 tables.**
+**60 tables.**
 
 ## Mermaid diagram
 
@@ -140,6 +140,9 @@ erDiagram
   simplefin_balance_snapshots {
     int id PK
   }
+  simplefin_accounts {
+    int id PK
+  }
   app_settings {
     int id PK
   }
@@ -213,6 +216,7 @@ erDiagram
   retirement_settings }o--|| people : references
   retirement_salary_overrides }o--|| people : references
   retirement_budget_overrides }o--|| people : references
+  simplefin_accounts }o--|| performance_accounts : references
   asset_class_correlations }o--|| asset_class_params : references
   asset_class_correlations }o--|| asset_class_params : references
   glide_path_allocations }o--|| asset_class_params : references
@@ -278,6 +282,7 @@ erDiagram
 - **savings_planned_transactions** → savings_goals
 - **scenarios**
 - **self_loans** → savings_goals, savings_goals
+- **simplefin_accounts** → performance_accounts
 - **simplefin_balance_snapshots**
 - **state_version_tables** → state_versions
 - **state_versions**

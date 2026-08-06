@@ -314,11 +314,7 @@ export default function VersionsPage() {
               value={scheduleData?.schedule ?? "daily"}
               onChange={(e) => {
                 const val = e.target.value as
-                  | "off"
-                  | "daily"
-                  | "weekly"
-                  | "monthly"
-                  | "custom";
+                  "off" | "daily" | "weekly" | "monthly" | "custom";
                 if (val !== "custom") {
                   setScheduleMutation.mutate({ schedule: val });
                   setCronExpression("");

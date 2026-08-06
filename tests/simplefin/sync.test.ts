@@ -29,11 +29,14 @@ afterAll(() => {
 });
 
 import { getAccounts } from "@/lib/simplefin/client";
+import { eq } from "drizzle-orm";
 import {
   getSimplefinConnection,
   saveSimplefinConnection,
   removeSimplefinConnection,
   runSimplefinSync,
+  upsertSimplefinAccounts,
+  recomputeTodaySnapshotFromLocal,
 } from "@/lib/simplefin/sync";
 
 const mockGetAccounts = vi.mocked(getAccounts);
@@ -188,6 +191,120 @@ describe("simplefin/sync", () => {
         .all()
         .filter((r) => r.snapshotDate === "2026-04-01");
       expect(rows).toHaveLength(0);
+    });
+
+    // Critical assertion (per plan): this is the one test that would catch a
+    // decimal-string-concatenation regression in the summation, since it
+    // requires a real numeric sum across mixed included/excluded accounts
+    // read back from the DB's decimal column rather than the client's number.
+    it("sums only accounts currently marked included, as a real number not a concatenated string", async () => {
+      await saveSimplefinConnection(
+        ctx.rawDb,
+        "https://u:p@bridge.simplefin.org",
+      );
+      const asOfDate = new Date(2026, 4, 1);
+
+      // Seed: exclude "excluded-1" before the sync that would otherwise sum it in.
+      await upsertSimplefinAccounts(ctx.rawDb, [
+        {
+          id: "excluded-1",
+          name: "Old Credit Card",
+          balance: 999.99,
+          orgName: "Bank",
+        },
+      ]);
+      await ctx.rawDb
+        .update(ctx.schema.simplefinAccounts)
+        .set({ isIncluded: false })
+        .where(
+          eq(ctx.schema.simplefinAccounts.externalAccountId, "excluded-1"),
+        );
+
+      mockGetAccounts.mockResolvedValueOnce([
+        {
+          id: "excluded-1",
+          name: "Old Credit Card",
+          balance: 999.99,
+          orgName: "Bank",
+        },
+        { id: "included-1", name: "Checking", balance: 100.5, orgName: "Bank" },
+        { id: "included-2", name: "Savings", balance: 25.25, orgName: "Bank" },
+      ]);
+
+      const result = await runSimplefinSync(ctx.rawDb, asOfDate);
+
+      expect(result.accountCount).toBe(2);
+      expect(typeof result.totalBalance).toBe("number");
+      expect(result.totalBalance).toBeCloseTo(125.75);
+      expect(result.totalBalance).not.toBe("100.5025.25"); // string-concat regression guard
+    });
+  });
+
+  describe("upsertSimplefinAccounts", () => {
+    it("defaults a brand-new account to included", async () => {
+      const [row] = await upsertSimplefinAccounts(ctx.rawDb, [
+        { id: "new-acct-1", name: "New Account", balance: 50, orgName: "Bank" },
+      ]);
+      expect(row!.isIncluded).toBe(true);
+      expect(row!.lastBalance).toBe(50);
+    });
+
+    it("preserves a manually-excluded account's flag across re-upserts, but refreshes its balance", async () => {
+      await upsertSimplefinAccounts(ctx.rawDb, [
+        { id: "toggle-1", name: "Toggle Me", balance: 10, orgName: "Bank" },
+      ]);
+      await ctx.rawDb
+        .update(ctx.schema.simplefinAccounts)
+        .set({ isIncluded: false })
+        .where(eq(ctx.schema.simplefinAccounts.externalAccountId, "toggle-1"));
+
+      const [row] = await upsertSimplefinAccounts(ctx.rawDb, [
+        { id: "toggle-1", name: "Toggle Me", balance: 99, orgName: "Bank" },
+      ]);
+
+      expect(row!.isIncluded).toBe(false);
+      expect(row!.lastBalance).toBe(99);
+    });
+  });
+
+  describe("recomputeTodaySnapshotFromLocal", () => {
+    it("sums included accounts from local data without calling the SimpleFIN client", async () => {
+      // Table is shared across this file's tests, so assert against a
+      // delta rather than an absolute count: seed two new accounts, exclude
+      // one, and confirm the total moves by exactly the included account's
+      // balance relative to whatever was already in the table.
+      const before = await recomputeTodaySnapshotFromLocal(
+        ctx.rawDb,
+        new Date(2026, 5, 1),
+      );
+
+      await upsertSimplefinAccounts(ctx.rawDb, [
+        { id: "local-1", name: "A", balance: 40, orgName: "Bank" },
+        { id: "local-2", name: "B", balance: 60, orgName: "Bank" },
+      ]);
+      await ctx.rawDb
+        .update(ctx.schema.simplefinAccounts)
+        .set({ isIncluded: false })
+        .where(eq(ctx.schema.simplefinAccounts.externalAccountId, "local-2"));
+
+      mockGetAccounts.mockReset();
+      const asOfDate = new Date(2026, 5, 1);
+      const result = await recomputeTodaySnapshotFromLocal(ctx.rawDb, asOfDate);
+
+      expect(mockGetAccounts).not.toHaveBeenCalled();
+      expect(result.accountCount).toBe(before.accountCount + 1);
+      expect(result.totalBalance).toBeCloseTo(before.totalBalance + 40);
+      expect(result.snapshotDate).toBe("2026-06-01");
+
+      const rows = ctx.db
+        .select()
+        .from(ctx.schema.simplefinBalanceSnapshots)
+        .all()
+        .filter((r) => r.snapshotDate === "2026-06-01");
+      expect(rows).toHaveLength(1);
+      expect(Number(rows[0]!.totalBalance)).toBeCloseTo(
+        before.totalBalance + 40,
+      );
     });
   });
 });
