@@ -69,9 +69,10 @@ export function SpendingStabilityChart({
   }
 
   const year1Withdrawal = decYears[0]!.totalWithdrawal;
-  const inflationRate = engineSettings?.annualInflation
-    ? parseFloat(engineSettings.annualInflation)
-    : DEFAULT_INFLATION_RATE;
+  const inflationRate =
+    engineSettings?.annualInflation != null
+      ? parseFloat(engineSettings.annualInflation)
+      : DEFAULT_INFLATION_RATE;
 
   // Budget baseline
   const retirementAge = engineSettings?.retirementAge ?? 65;

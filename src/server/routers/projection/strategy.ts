@@ -20,6 +20,7 @@ import {
   createTRPCRouter,
   protectedProcedure,
   scenarioProcedure,
+  expensiveRateLimitMiddleware,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateProjection } from "@/lib/calculators/engine";
@@ -228,6 +229,7 @@ export const strategyRouter = createTRPCRouter({
 
   /** Analyze the active strategy — run what-if MC scenarios and return ranked recommendations. */
   analyzeStrategy: protectedProcedure
+    .use(expensiveRateLimitMiddleware)
     .input(
       z
         .object({
