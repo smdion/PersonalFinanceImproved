@@ -34,18 +34,27 @@ function assertSafeRemoteUrl(rawUrl: string, context: string): URL {
   if (url.protocol !== "https:") {
     throw new Error(`Invalid ${context}: must be HTTPS`);
   }
-  const hostname = url.hostname.toLowerCase();
+  // url.hostname keeps brackets for IPv6 literals ("[::1]") — strip them so
+  // the checks below actually match the address.
+  const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
   const isBlockedHost =
     hostname === "localhost" ||
     hostname === "0.0.0.0" ||
-    hostname === "::1" ||
     hostname.endsWith(".localhost") ||
     hostname.endsWith(".internal") ||
     /^127\./.test(hostname) ||
     /^10\./.test(hostname) ||
     /^169\.254\./.test(hostname) ||
     /^192\.168\./.test(hostname) ||
-    /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname);
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname) ||
+    // IPv6 loopback (::1), link-local (fe80::/10), unique-local (fc00::/7),
+    // and IPv4-mapped private ranges (::ffff:10.x, ::ffff:192.168.x, etc.)
+    hostname === "::1" ||
+    /^fe80:/.test(hostname) ||
+    /^f[cd][0-9a-f]{2}:/.test(hostname) ||
+    /^::ffff:(127\.|10\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(
+      hostname,
+    );
   if (isBlockedHost) {
     throw new Error(`Invalid ${context}: private/internal host not allowed`);
   }
