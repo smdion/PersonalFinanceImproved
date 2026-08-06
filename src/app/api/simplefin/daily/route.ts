@@ -1,7 +1,11 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { runSimplefinSync, getSimplefinConnection } from "@/lib/simplefin/sync";
+import {
+  runSimplefinSync,
+  getSimplefinConnection,
+  hasSyncedToday,
+} from "@/lib/simplefin/sync";
 import { log } from "@/lib/logger";
 
 export async function GET(request: Request) {
@@ -31,6 +35,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Resolved once and threaded through both the "already synced today"
+  // check and the sync call itself — two independent `new Date()` calls in
+  // one request can disagree right at a midnight boundary (docs/RULES.md
+  // Time Resolution).
+  const asOfDate = new Date();
+
   try {
     const conn = await getSimplefinConnection(db);
     if (!conn) {
@@ -40,7 +50,19 @@ export async function GET(request: Request) {
       });
     }
 
-    const result = await runSimplefinSync(db);
+    // This route is polled hourly by instrumentation.node.ts; skip once
+    // today's real sync has already happened so we don't burn SimpleFIN's
+    // ~24-requests/day quota on repeat calls. Deliberately not applied
+    // inside runSimplefinSync itself — the "Sync Now" button must always
+    // be able to force a fresh pull, even on a day the cron already ran.
+    if (await hasSyncedToday(db, asOfDate)) {
+      return NextResponse.json({
+        skipped: true,
+        reason: "Already synced today",
+      });
+    }
+
+    const result = await runSimplefinSync(db, asOfDate);
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     log("error", "simplefin_daily_failed", {

@@ -206,7 +206,7 @@ function LinkedBalanceCardImpl() {
       title={
         <>
           Live Balance
-          <HelpTip text="Daily total of accounts linked via SimpleFIN Bridge. Updates once a day and is separate from the manually-curated Net Worth figure above." />
+          <HelpTip text="Daily total of accounts linked via SimpleFIN Bridge. Updates once a day and is separate from the manually-curated Net Worth figure above. Balances reflect what each institution last reported to SimpleFIN, which can itself lag your bank by a day or more — this is not a real-time figure." />
         </>
       }
       href="/settings"
@@ -258,14 +258,6 @@ function LinkedBalanceCardImpl() {
         </p>
       )}
 
-      <p className="text-caption text-faint mt-1">
-        {status?.lastSyncedAt
-          ? `Updated ${new Date(status.lastSyncedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
-          : "Not yet synced"}
-        {" · "}
-        {latest.accountCount} account{latest.accountCount === 1 ? "" : "s"}
-      </p>
-
       {/* Account-type breakdown is reference detail, not the headline —
           kept small/muted so it doesn't compete with the drift figure above. */}
       {accounts && accountTypeGroups.length > 0 && (
@@ -289,6 +281,16 @@ function LinkedBalanceCardImpl() {
           )}
         </div>
       )}
+
+      {/* Freshness footer — same position (bottom of card) and format
+          ("Updated <medium date>") as the Net Worth card's footer. */}
+      <p className="text-caption text-faint mt-1">
+        {status?.lastSyncedAt
+          ? `As of ${formatDate(status.lastSyncedAt.toString(), "medium")}`
+          : "Not yet synced"}
+        {" · "}
+        {latest.accountCount} account{latest.accountCount === 1 ? "" : "s"}
+      </p>
     </Card>
   );
 }

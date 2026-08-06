@@ -24,6 +24,7 @@ import {
   upsertSimplefinAccounts,
   recomputeTodaySnapshotFromLocal,
   localDateStr,
+  getSimplefinLastError,
 } from "@/lib/simplefin/sync";
 import { claimSetupToken, getAccounts } from "@/lib/simplefin/client";
 import { readMaybeEncrypted } from "@/lib/crypto";
@@ -68,9 +69,13 @@ export const simplefinRouter = createTRPCRouter({
     }
     try {
       const { accessUrl } = readMaybeEncrypted<SimplefinConfig>(conn.config);
-      const accounts = await getAccounts(accessUrl);
+      const { accounts, providerErrors } = await getAccounts(accessUrl);
       await upsertSimplefinAccounts(ctx.db, accounts);
-      return { success: true as const, accountCount: accounts.length };
+      return {
+        success: true as const,
+        accountCount: accounts.length,
+        providerErrors,
+      };
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unknown error";
       return { success: false as const, error: msg.slice(0, 200) };
@@ -96,15 +101,16 @@ export const simplefinRouter = createTRPCRouter({
     return { success: true as const };
   }),
 
-  /** Connection status for the Settings integrations card. */
+  /** Connection status for the Settings integrations card and the sidebar's Data Updated tooltip. */
   getStatus: protectedProcedure.query(async ({ ctx }) => {
     const conn = await getSimplefinConnection(ctx.db);
     if (!conn) {
-      return { connected: false as const, lastSyncedAt: null };
+      return { connected: false as const, lastSyncedAt: null, lastError: null };
     }
     return {
       connected: true as const,
       lastSyncedAt: conn.lastSyncedAt,
+      lastError: await getSimplefinLastError(ctx.db),
     };
   }),
 

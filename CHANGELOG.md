@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.6
 
+## [0.6.7] - 2026-08-06
+
+### Fixed
+
+- **SimpleFIN balances now actually sync automatically, once a day.** The daily sync endpoint existed since v0.6.6 but was never wired up to run on its own — balances only updated when you manually clicked "Sync Now." It's now checked hourly (at a randomized offset, per SimpleFIN's own guidance on spreading out request timing) and only calls SimpleFIN's API once real syncing is actually due for the day, so it stays well under their daily request quota.
+- **A partial SimpleFIN provider error (e.g. one linked institution needing re-authentication) no longer silently discards balances that did come back successfully** — and any sync error is now visible in the sidebar's Data Updated tooltip instead of only reaching a server log.
+- **The sidebar's "Data" freshness label now shows the actual oldest date across sources** instead of just whichever source happened to be listed last.
+
+### Added
+
+- **SimpleFIN's last sync time now shows in the sidebar's Data Updated tooltip**, alongside Balance, Performance, and the budget-API sync time.
+
+---
+
 ## [0.6.6] - 2026-08-05
 
 ### Added

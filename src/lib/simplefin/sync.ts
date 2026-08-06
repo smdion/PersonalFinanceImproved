@@ -25,7 +25,11 @@ export type SimplefinSyncResult = {
   snapshotDate: string;
   totalBalance: number;
   accountCount: number;
+  /** Non-fatal provider errors from this sync (e.g. one institution needs re-auth), for the UI to surface. */
+  providerErrors: string[];
 };
+
+const LAST_ERROR_SETTING_KEY = "simplefin_last_error";
 
 /** Get the api_connections row for the simplefin service, or null if not configured. */
 export async function getSimplefinConnection(db: Db) {
@@ -35,6 +39,52 @@ export async function getSimplefinConnection(db: Db) {
     .where(eq(schema.apiConnections.service, "simplefin"))
     .limit(1);
   return rows[0] ?? null;
+}
+
+/**
+ * True if the SimpleFIN connection's lastSyncedAt already falls on
+ * `asOfDate`'s local calendar day — the daily cron uses this to skip
+ * calling the external API a second time today. Deliberately reads
+ * api_connections.lastSyncedAt (set only by a real runSimplefinSync API
+ * call) rather than simplefin_balance_snapshots (also written by the
+ * zero-API-cost recomputeTodaySnapshotFromLocal path, which would make
+ * this guard skip the real sync on any day a user merely toggles an
+ * account's inclusion).
+ */
+export async function hasSyncedToday(
+  db: Db,
+  asOfDate: Date = new Date(),
+): Promise<boolean> {
+  const conn = await getSimplefinConnection(db);
+  if (!conn?.lastSyncedAt) return false;
+  return localDateStr(conn.lastSyncedAt) === localDateStr(asOfDate);
+}
+
+/** Record (or clear) the last SimpleFIN sync error for display in the UI. */
+async function setSimplefinLastError(db: Db, message: string | null) {
+  if (message == null) {
+    await db
+      .delete(schema.appSettings)
+      .where(eq(schema.appSettings.key, LAST_ERROR_SETTING_KEY));
+    return;
+  }
+  await db
+    .insert(schema.appSettings)
+    .values({ key: LAST_ERROR_SETTING_KEY, value: message })
+    .onConflictDoUpdate({
+      target: schema.appSettings.key,
+      set: { value: message },
+    });
+}
+
+/** Read the last recorded SimpleFIN sync error, if any. */
+export async function getSimplefinLastError(db: Db): Promise<string | null> {
+  const rows = await db
+    .select({ value: schema.appSettings.value })
+    .from(schema.appSettings)
+    .where(eq(schema.appSettings.key, LAST_ERROR_SETTING_KEY))
+    .limit(1);
+  return (rows[0]?.value as string | undefined) ?? null;
 }
 
 /** Store (upsert) the SimpleFIN access URL, encrypted at rest. */
@@ -170,22 +220,33 @@ export async function runSimplefinSync(
     throw new Error("No SimpleFIN connection configured");
   }
 
-  const { accessUrl } = readMaybeEncrypted<SimplefinConfig>(conn.config);
-  const fetched = await getAccounts(accessUrl);
-  const accounts = await upsertSimplefinAccounts(db, fetched);
-  const included = accounts.filter((a) => a.isIncluded);
-  const totalBalance = included.reduce((sum, a) => sum + a.lastBalance, 0);
-  const accountCount = included.length;
-  const snapshotDate = localDateStr(asOfDate);
+  try {
+    const { accessUrl } = readMaybeEncrypted<SimplefinConfig>(conn.config);
+    const { accounts: fetched, providerErrors } = await getAccounts(accessUrl);
+    const accounts = await upsertSimplefinAccounts(db, fetched);
+    const included = accounts.filter((a) => a.isIncluded);
+    const totalBalance = included.reduce((sum, a) => sum + a.lastBalance, 0);
+    const accountCount = included.length;
+    const snapshotDate = localDateStr(asOfDate);
 
-  await writeSnapshot(db, snapshotDate, totalBalance, accountCount);
+    await writeSnapshot(db, snapshotDate, totalBalance, accountCount);
 
-  await db
-    .update(schema.apiConnections)
-    .set({ lastSyncedAt: new Date() })
-    .where(eq(schema.apiConnections.service, "simplefin"));
+    await db
+      .update(schema.apiConnections)
+      .set({ lastSyncedAt: asOfDate })
+      .where(eq(schema.apiConnections.service, "simplefin"));
 
-  return { snapshotDate, totalBalance, accountCount };
+    await setSimplefinLastError(
+      db,
+      providerErrors.length > 0 ? providerErrors.join("; ") : null,
+    );
+
+    return { snapshotDate, totalBalance, accountCount, providerErrors };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await setSimplefinLastError(db, message);
+    throw err;
+  }
 }
 
 /**
@@ -211,5 +272,5 @@ export async function recomputeTodaySnapshotFromLocal(
 
   await writeSnapshot(db, snapshotDate, totalBalance, accountCount);
 
-  return { snapshotDate, totalBalance, accountCount };
+  return { snapshotDate, totalBalance, accountCount, providerErrors: [] };
 }
