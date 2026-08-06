@@ -187,7 +187,13 @@ function LinkedBalanceCardImpl() {
   // here. This line only answers "how much of my net worth does this
   // total actually represent."
   const totalTracked = matchableAccounts?.length ?? 0;
-  const linkedCount = drift?.groupCount ?? 0;
+  const linkedCount = accounts
+    ? new Set(
+        accounts
+          .map((a) => a.linkedPerformanceAccountId)
+          .filter((id): id is number => id != null),
+      ).size
+    : 0;
 
   const groupsTotal = accountTypeGroups.reduce((s, g) => s + g.balance, 0);
   const driftPercent =

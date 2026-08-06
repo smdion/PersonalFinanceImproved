@@ -143,21 +143,28 @@ export default function PerformancePage() {
   // whether to show inactive accounts in the checkbox list — independent
   // of whether they're included in the default selection.
   const allAccountIds = new Set(typedMasterAccounts.map((m) => m.id));
+  // "" = never chosen (default to all); "none" = explicitly empty selection.
   const selectedAccountIds =
-    typeof selectedAccountIdsStr === "string" && selectedAccountIdsStr
-      ? new Set(
-          selectedAccountIdsStr
-            .split(",")
-            .map(Number)
-            .filter((n) => !Number.isNaN(n)),
-        )
-      : allAccountIds;
+    selectedAccountIdsStr === "none"
+      ? new Set<number>()
+      : typeof selectedAccountIdsStr === "string" && selectedAccountIdsStr
+        ? new Set(
+            selectedAccountIdsStr
+              .split(",")
+              .map(Number)
+              .filter((n) => !Number.isNaN(n)),
+          )
+        : allAccountIds;
   const setSelectedAccountIds = (ids: Set<number>) => {
     const isDefault =
       ids.size === allAccountIds.size &&
       [...allAccountIds].every((id) => ids.has(id));
     setSelectedAccountIdsStr(
-      isDefault ? "" : [...ids].sort((a, b) => a - b).join(","),
+      isDefault
+        ? ""
+        : ids.size === 0
+          ? "none"
+          : [...ids].sort((a, b) => a - b).join(","),
     );
   };
 

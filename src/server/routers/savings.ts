@@ -201,7 +201,8 @@ function resolveEfundTierIndex(
       ? (settingsMap.get("budget_active_column") as number)
       : 0;
   const efundSavedColumn =
-    typeof settingsMap.get("efund_budget_column") === "number"
+    typeof settingsMap.get("efund_budget_column") === "number" &&
+    (settingsMap.get("efund_budget_column") as number) >= 0
       ? (settingsMap.get("efund_budget_column") as number)
       : null;
   return overrideTierIndex ?? efundSavedColumn ?? budgetActiveColumn;
@@ -1117,6 +1118,13 @@ export const savingsRouter = createTRPCRouter({
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
           message: "No live paycheck/budget data available to recalculate from",
+        });
+      }
+      if (maxMonthlyFunding <= 0) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message:
+            "Current income pool is zero or negative — can't recalculate allocations",
         });
       }
 

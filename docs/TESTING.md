@@ -242,7 +242,7 @@ Documents return/volatility assumptions against institutional published data.
 - Asset class returns vs Vanguard VCMM, Morningstar, Ibbotson ranges
 - Volatility within published bounds
 - Correlation matrix is positive semi-definite (Cholesky succeeds)
-- Equity-equity correlation positive (~~0.75), equity-bond negative (~~-0.10)
+- Equity-equity correlation positive (≈0.75), equity-bond negative (≈-0.10)
 - Deterministic return schedule monotonically declining
 
 ### cfiresim-comparison.test.ts — 4 tests

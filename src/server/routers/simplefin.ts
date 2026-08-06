@@ -23,6 +23,7 @@ import {
   runSimplefinSync,
   upsertSimplefinAccounts,
   recomputeTodaySnapshotFromLocal,
+  localDateStr,
 } from "@/lib/simplefin/sync";
 import { claimSetupToken, getAccounts } from "@/lib/simplefin/client";
 import { readMaybeEncrypted } from "@/lib/crypto";
@@ -219,13 +220,13 @@ export const simplefinRouter = createTRPCRouter({
         };
       }
       const snapshotBalance =
-        snapshotBalanceByPerfId.get(r.linkedPerformanceAccountId) ?? 0;
+        snapshotBalanceByPerfId.get(r.linkedPerformanceAccountId) ?? null;
       const linkedTotal =
         linkedTotalByPerfId.get(r.linkedPerformanceAccountId) ?? lastBalance;
       return {
         ...base,
         snapshotBalance,
-        change: linkedTotal - snapshotBalance,
+        change: snapshotBalance == null ? null : linkedTotal - snapshotBalance,
         taxType: taxTypeByPerfId.get(r.linkedPerformanceAccountId) ?? null,
         parentCategory:
           parentCategoryByPerfId.get(r.linkedPerformanceAccountId) ?? null,
@@ -301,9 +302,16 @@ export const simplefinRouter = createTRPCRouter({
         .where(eq(schema.simplefinAccounts.id, input.id))
         .returning();
 
+      if (!row) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "SimpleFIN account not found",
+        });
+      }
+
       return {
         success: true as const,
-        linkedPerformanceAccountId: row?.linkedPerformanceAccountId ?? null,
+        linkedPerformanceAccountId: row.linkedPerformanceAccountId,
       };
     }),
 
@@ -315,10 +323,19 @@ export const simplefinRouter = createTRPCRouter({
   setAccountIncluded: syncProcedure
     .input(z.object({ id: z.number().int(), isIncluded: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
+      const [row] = await ctx.db
         .update(schema.simplefinAccounts)
         .set({ isIncluded: input.isIncluded })
-        .where(eq(schema.simplefinAccounts.id, input.id));
+        .where(eq(schema.simplefinAccounts.id, input.id))
+        .returning();
+
+      if (!row) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "SimpleFIN account not found",
+        });
+      }
+
       return {
         success: true as const,
         ...(await recomputeTodaySnapshotFromLocal(ctx.db)),
@@ -331,7 +348,7 @@ export const simplefinRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const since = new Date();
       since.setDate(since.getDate() - input.days);
-      const sinceStr = since.toISOString().slice(0, 10);
+      const sinceStr = localDateStr(since);
 
       const rows = await ctx.db
         .select()

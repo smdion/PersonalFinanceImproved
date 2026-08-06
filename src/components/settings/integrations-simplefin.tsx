@@ -187,10 +187,14 @@ export function SimplefinCard() {
         {(!isConnected || showUpdateToken) && (
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-medium text-muted mb-1">
+              <label
+                htmlFor="simplefin-setup-token"
+                className="block text-xs font-medium text-muted mb-1"
+              >
                 Setup Token
               </label>
               <input
+                id="simplefin-setup-token"
                 type="password"
                 value={setupToken}
                 onChange={(e) => setSetupToken(e.target.value)}

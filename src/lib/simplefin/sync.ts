@@ -10,7 +10,7 @@
 // transaction/category/budget concepts, so it queries api_connections
 // directly instead of widening that union.
 
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
 import { getAccounts, type SimplefinAccount } from "./client";
@@ -58,7 +58,7 @@ export async function removeSimplefinConnection(db: Db) {
 }
 
 /** Local (not UTC) calendar date as YYYY-MM-DD, matching the version-cron convention. */
-function localDateStr(date: Date): string {
+export function localDateStr(date: Date): string {
   return [
     date.getFullYear(),
     String(date.getMonth() + 1).padStart(2, "0"),
@@ -89,31 +89,29 @@ export async function upsertSimplefinAccounts(
   db: Db,
   accounts: SimplefinAccount[],
 ): Promise<SimplefinAccountRow[]> {
-  const rows = await Promise.all(
-    accounts.map(async (a) => {
-      const now = new Date();
-      const [row] = await db
-        .insert(schema.simplefinAccounts)
-        .values({
-          externalAccountId: a.id,
-          orgName: a.orgName,
-          accountName: a.name,
-          lastBalance: a.balance.toFixed(2),
-          lastSeenAt: now,
-        })
-        .onConflictDoUpdate({
-          target: schema.simplefinAccounts.externalAccountId,
-          set: {
-            orgName: a.orgName,
-            accountName: a.name,
-            lastBalance: a.balance.toFixed(2),
-            lastSeenAt: now,
-          },
-        })
-        .returning();
-      return row!;
-    }),
-  );
+  if (accounts.length === 0) return [];
+  const now = new Date();
+  const rows = await db
+    .insert(schema.simplefinAccounts)
+    .values(
+      accounts.map((a) => ({
+        externalAccountId: a.id,
+        orgName: a.orgName,
+        accountName: a.name,
+        lastBalance: a.balance.toFixed(2),
+        lastSeenAt: now,
+      })),
+    )
+    .onConflictDoUpdate({
+      target: schema.simplefinAccounts.externalAccountId,
+      set: {
+        orgName: sql`excluded.org_name`,
+        accountName: sql`excluded.account_name`,
+        lastBalance: sql`excluded.last_balance`,
+        lastSeenAt: sql`excluded.last_seen_at`,
+      },
+    })
+    .returning();
   // Drizzle returns decimal columns as strings — convert before any caller sums lastBalance.
   return rows.map((r) => ({
     id: r.id,

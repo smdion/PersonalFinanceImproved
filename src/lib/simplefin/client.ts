@@ -17,6 +17,40 @@ import {
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
+/**
+ * Reject decoded claim/access URLs that don't point at a real external
+ * HTTPS host — the setup token is base64-decoded straight into a fetch()
+ * target, so a malformed or tampered token must not be able to make the
+ * server reach internal/private/loopback/link-local/metadata addresses.
+ */
+function assertSafeRemoteUrl(rawUrl: string, context: string): URL {
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    throw new Error(`Invalid ${context}: not a URL`);
+  }
+  if (url.protocol !== "https:") {
+    throw new Error(`Invalid ${context}: must be HTTPS`);
+  }
+  const hostname = url.hostname.toLowerCase();
+  const isBlockedHost =
+    hostname === "localhost" ||
+    hostname === "0.0.0.0" ||
+    hostname === "::1" ||
+    hostname.endsWith(".localhost") ||
+    hostname.endsWith(".internal") ||
+    /^127\./.test(hostname) ||
+    /^10\./.test(hostname) ||
+    /^169\.254\./.test(hostname) ||
+    /^192\.168\./.test(hostname) ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname);
+  if (isBlockedHost) {
+    throw new Error(`Invalid ${context}: private/internal host not allowed`);
+  }
+  return url;
+}
+
 export type SimplefinAccount = {
   id: string;
   name: string;
@@ -41,7 +75,7 @@ type ParsedAccessUrl = {
 
 /** Split a SimpleFIN access URL into its base URL and a Basic Auth header. */
 function parseAccessUrl(accessUrl: string): ParsedAccessUrl {
-  const url = new URL(accessUrl);
+  const url = assertSafeRemoteUrl(accessUrl, "SimpleFIN access URL");
   const username = decodeURIComponent(url.username);
   const password = decodeURIComponent(url.password);
   url.username = "";
@@ -96,6 +130,7 @@ function requestText(url: string, init?: RequestInit): Promise<string> {
  */
 export async function claimSetupToken(setupToken: string): Promise<string> {
   const claimUrl = Buffer.from(setupToken, "base64").toString("utf8");
+  assertSafeRemoteUrl(claimUrl, "SimpleFIN setup token");
   const accessUrl = await requestText(claimUrl, { method: "POST" });
   return accessUrl.trim();
 }
@@ -112,6 +147,9 @@ export async function getAccounts(
     `${baseUrl}/accounts?balances-only=1`,
     { headers: { Authorization: authHeader } },
   );
+  if (json.errors && json.errors.length > 0) {
+    throw new Error(`SimpleFIN provider error: ${json.errors.join("; ")}`);
+  }
   return (json.accounts ?? []).map((a) => ({
     id: a.id,
     name: a.name,
