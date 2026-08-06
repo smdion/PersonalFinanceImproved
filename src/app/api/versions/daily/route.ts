@@ -7,6 +7,13 @@ import { log } from "@/lib/logger";
 import { getValidCronSecret, timingSafeSecretMatch } from "@/lib/auth/cron";
 
 export async function GET(request: Request) {
+  if (process.env.DEMO_ONLY === "true") {
+    return NextResponse.json(
+      { error: "Forbidden: demo mode is read-only" },
+      { status: 403 },
+    );
+  }
+
   // Validate cron secret (must be at least 32 characters when set)
   const cronSecret = getValidCronSecret();
 

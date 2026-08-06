@@ -41,8 +41,14 @@ export function usePersistedSetting<T extends string | number | boolean | null>(
     return defaultValue;
   });
 
-  // Track whether the user has made a local change that hasn't been confirmed by the query yet
+  // Track whether the user has made a local change that hasn't been
+  // confirmed by the query yet. Per-write generation counter (not a single
+  // shared boolean) — if write A settles after write B has already started,
+  // A's onSettled must NOT clear the guard while B is still pending, or a
+  // stale DB-echoed value can briefly clobber the user's latest input (M42,
+  // .scratch/docs/review-findings.md).
   const pendingWrite = useRef(false);
+  const writeGeneration = useRef(0);
 
   // Once DB settings load (or refresh), adopt DB value — unless we have a pending optimistic write.
   useEffect(() => {
@@ -58,13 +64,19 @@ export function usePersistedSetting<T extends string | number | boolean | null>(
   const setValue = useCallback(
     (newValue: T) => {
       pendingWrite.current = true;
+      const myGeneration = ++writeGeneration.current;
       setLocalValue(newValue);
       localStorage.setItem(`setting:${key}`, JSON.stringify(newValue));
       upsert.mutate(
         { key, value: newValue },
         {
           onSettled: () => {
-            pendingWrite.current = false;
+            // Only the most recent write may clear the guard — an older
+            // write settling late must not reopen the window for a stale
+            // refetch to overwrite a newer, still-pending edit.
+            if (myGeneration === writeGeneration.current) {
+              pendingWrite.current = false;
+            }
           },
         },
       );

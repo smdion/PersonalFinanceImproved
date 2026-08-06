@@ -13,6 +13,7 @@ import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { HelpTip } from "@/components/ui/help-tip";
+import { useUser, isAdmin } from "@/lib/context/user-context";
 import type { RelocationScenarioParams } from "@/lib/db/schema";
 
 import { RelocationScenariosControls } from "@/components/tools/relocation/scenarios-controls";
@@ -33,6 +34,8 @@ import type {
 } from "@/components/tools/relocation/types";
 
 export default function ToolsPage() {
+  const user = useUser();
+
   // Relocation analysis state
   const [relocCurrentProfileId, setRelocCurrentProfileId] = useState<
     number | null
@@ -377,6 +380,7 @@ export default function ToolsPage() {
           selectedScenarioId={selectedScenarioId}
           setSelectedScenarioId={setSelectedScenarioId}
           loadScenario={loadScenario}
+          isAdmin={isAdmin(user)}
           saveIsPending={saveMutation.isPending}
           deleteIsPending={deleteMutation.isPending}
           onSaveClick={handleSaveClick}

@@ -7,19 +7,7 @@ import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { FUND_COLORS } from "./fund-colors";
-import type { GoalProjection } from "./types";
-
-interface PlannedTransaction {
-  id: number;
-  goalId: number;
-  transactionDate: string;
-  description: string;
-  amount: number;
-  isRecurring: boolean;
-  recurrenceMonths: number | null;
-  transferPairId?: string | null;
-  source?: string;
-}
+import type { GoalProjection, PlannedTransaction } from "./types";
 
 interface EditForm {
   goalId: number;

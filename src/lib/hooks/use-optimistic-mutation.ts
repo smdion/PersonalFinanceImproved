@@ -50,10 +50,6 @@ interface OptimisticMutationOptions<TInput, TPrevious> {
    */
   rollback: (previousData: TPrevious) => void;
   /**
-   * Optional callback after the mutation settles (success OR error).
-   */
-  onSettled?: () => void;
-  /**
    * If true (default), shows a generic "Save failed — change rolled back"
    * toast on error. Set to false if the call site renders its own error UI.
    */
@@ -131,7 +127,6 @@ export function useOptimisticMutation<TInput, TOutput, TPrevious>(
         },
         onSettled: () => {
           inflightRef.current.delete(ordinal);
-          options.onSettled?.();
         },
       });
     },

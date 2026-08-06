@@ -17,7 +17,6 @@ import {
   getApiConnection,
   cacheGet,
   cacheSet,
-  YNAB_EXPENSE_EXCLUDED_CATEGORIES,
 } from "@/lib/budget-api";
 import { detectDrift, hasDrift } from "@/lib/budget-api/drift-detection";
 import type {
@@ -927,11 +926,14 @@ export const syncCoreRouter = createTRPCRouter({
       );
       if (!txCache) return { categories: [], service: active };
 
+      const client = await getClientForService(ctx.db, active);
+      const excludedCategories =
+        client?.getExcludedCategoryNames() ?? new Set();
       const transactions = txCache.data.filter(
         (t) =>
           !t.deleted &&
           t.categoryName &&
-          !YNAB_EXPENSE_EXCLUDED_CATEGORIES.has(t.categoryName),
+          !excludedCategories.has(t.categoryName),
       );
 
       // Group by category, split into current vs prior

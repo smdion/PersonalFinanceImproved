@@ -78,7 +78,17 @@ const ENGINE_CATEGORIES = new Set<string>(PARENT_CATEGORY_VALUES);
  */
 export async function fetchRetirementData(
   db: Db,
-  opts?: { snapshotId?: number; contributionProfileId?: number },
+  opts?: {
+    snapshotId?: number;
+    contributionProfileId?: number;
+    /** Reference date for the IRS-limits-by-tax-year lookup. Defaults to
+     *  today. NOTE: for snapshotId-based historical calls, the snapshot's
+     *  own date isn't known until this same Promise.all resolves (it's one
+     *  of the parallel fetches), so it can't retroactively affect this
+     *  query — this only helps callers that already know their target date
+     *  up front (M23, .scratch/docs/review-findings.md). */
+    asOfDate?: Date;
+  },
 ) {
   const [
     people,
@@ -115,7 +125,12 @@ export async function fetchRetirementData(
     db
       .select()
       .from(schema.contributionLimits)
-      .where(eq(schema.contributionLimits.taxYear, new Date().getFullYear())),
+      .where(
+        eq(
+          schema.contributionLimits.taxYear,
+          (opts?.asOfDate ?? new Date()).getFullYear(),
+        ),
+      ),
     getLatestSnapshot(db, opts?.snapshotId),
     getAnnualExpensesFromBudget(db),
     db

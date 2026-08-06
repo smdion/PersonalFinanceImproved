@@ -113,7 +113,7 @@ export function SummaryCards({
           <div className="mt-2">
             <ProgressBar
               value={efund.progress}
-              color={efund.progress >= 1 ? "bg-green-500" : "bg-amber-500"}
+              variant={efund.progress >= 1 ? "success" : "warning"}
             />
           </div>
         </Card>

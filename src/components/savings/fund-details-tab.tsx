@@ -6,7 +6,7 @@ import { Card, ProgressBar } from "@/components/ui/card";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/utils/format";
 import { confirm } from "@/components/ui/confirm-dialog";
-import { NewFundForm } from "./types";
+import { NewFundForm, RawGoal, PlannedTransaction } from "./types";
 
 interface SavingsGoalSummary {
   goalId: number;
@@ -16,27 +16,6 @@ interface SavingsGoalSummary {
   target: number;
   progress: number;
   monthsToTarget: number | null;
-}
-
-interface RawGoal {
-  id: number;
-  name: string;
-  monthlyContribution: string | null;
-  isActive: boolean;
-  isEmergencyFund: boolean;
-  targetDate: string | null;
-  targetAmount: string | null;
-  targetMode: string;
-  parentGoalId: number | null;
-  priority: number;
-}
-
-interface PlannedTransaction {
-  id: number;
-  goalId: number;
-  transactionDate: string;
-  description: string;
-  amount: number;
 }
 
 export function FundDetailsTab({
@@ -206,7 +185,7 @@ export function FundDetailsTab({
                       <span>/mo</span>
                     </span>
                   }
-                  color={goal.progress >= 1 ? "bg-green-500" : "bg-blue-600"}
+                  variant={goal.progress >= 1 ? "success" : "default"}
                 />
 
                 {/* Last activity */}
@@ -228,6 +207,11 @@ export function FundDetailsTab({
                           ({lastTx.amount >= 0 ? "+" : ""}
                           {formatCurrency(lastTx.amount)})
                         </span>
+                        {lastTx.isRecurring && (
+                          <span className="text-micro text-muted ml-1">
+                            every {lastTx.recurrenceMonths}mo
+                          </span>
+                        )}
                       </p>
                     );
                   })()}

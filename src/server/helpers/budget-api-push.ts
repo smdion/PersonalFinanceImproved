@@ -23,6 +23,7 @@ import type { AccountMapping } from "@/lib/db/schema";
 import type { BudgetAPIClient } from "@/lib/budget-api";
 import type { Db } from "./transforms";
 import { log } from "@/lib/logger";
+import { toNumber } from "./transforms";
 
 export type PushSnapshotMode = "create" | "resync";
 
@@ -132,7 +133,7 @@ async function loadSnapshotBalancesByPerformanceAccountId(
     balanceByPerformanceAccountId.set(
       account.performanceAccountId,
       (balanceByPerformanceAccountId.get(account.performanceAccountId) ?? 0) +
-        Number(account.amount),
+        toNumber(account.amount),
     );
   }
   return balanceByPerformanceAccountId;

@@ -45,21 +45,17 @@ export function useBudgetMutations() {
   });
 
   return {
-    mutations: {
-      linkBudget,
-      unlinkBudget,
-      createItem,
-      skipCategory,
-      unskipCategory,
-      renameBudgetToApi,
-      renameBudgetApiName,
-      moveBudgetToApiGroup,
-      setBudgetSyncDir,
-    },
+    linkBudget,
+    unlinkBudget,
+    createItem,
+    skipCategory,
+    unskipCategory,
+    renameBudgetToApi,
+    renameBudgetApiName,
+    moveBudgetToApiGroup,
+    setBudgetSyncDir,
     invalidate,
   };
 }
 
-export type BudgetMutations = ReturnType<
-  typeof useBudgetMutations
->["mutations"];
+export type BudgetMutations = ReturnType<typeof useBudgetMutations>;

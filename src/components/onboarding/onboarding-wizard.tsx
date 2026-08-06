@@ -666,6 +666,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const createJob = trpc.settings.jobs.create.useMutation();
   const completeOnboarding = trpc.settings.completeOnboarding.useMutation();
   const syncAll = trpc.sync.syncAll.useMutation();
+  const utils = trpc.useUtils();
 
   const handleRestore = () => {
     fileInputRef.current?.click();
@@ -694,7 +695,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
       // Sync budget API after restore (silently — may not be configured)
       try {
-        await syncAll.mutateAsync({ service: "ynab" });
+        const activeService = await utils.sync.getActiveBudgetApi.fetch();
+        if (activeService !== "none") {
+          await syncAll.mutateAsync({ service: activeService });
+        }
       } catch {
         // No API connection configured or sync failed — not critical
       }

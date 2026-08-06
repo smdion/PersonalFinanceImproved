@@ -35,18 +35,14 @@ export function useSavingsMutations() {
   });
 
   return {
-    mutations: {
-      linkSavings,
-      unlinkSavings,
-      renameSavingsToApi,
-      renameSavingsApiName,
-      linkReimbursement,
-      createGoal,
-    },
+    linkSavings,
+    unlinkSavings,
+    renameSavingsToApi,
+    renameSavingsApiName,
+    linkReimbursement,
+    createGoal,
     invalidate,
   };
 }
 
-export type SavingsMutations = ReturnType<
-  typeof useSavingsMutations
->["mutations"];
+export type SavingsMutations = ReturnType<typeof useSavingsMutations>;

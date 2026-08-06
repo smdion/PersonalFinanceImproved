@@ -15,6 +15,7 @@ import { eq, asc } from "drizzle-orm";
 import { toNumber } from "@/server/helpers";
 import * as schema from "@/lib/db/schema";
 import type { db as _db } from "@/lib/db";
+import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 import type {
   AccountCategory,
   DecumulationDefaults,
@@ -24,6 +25,8 @@ import type {
 import {
   accountCategoryEnum,
   getAllCategories,
+  getDefaultDecumulationOrder,
+  DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
 } from "@/lib/config/account-types";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 
@@ -69,6 +72,36 @@ export const accumulationOverrideSchema = z
     }),
   )
   .default([]);
+
+/**
+ * Top-level `decumulationDefaults` query input — the live withdrawal-strategy
+ * settings a client can send to override DB defaults. Was byte-identical
+ * across scenarios.ts, monte-carlo.ts, and coast-fire.ts (x2) — M19,
+ * .scratch/docs/review-findings.md.
+ */
+export const decumulationDefaultsInputSchema = z
+  .object({
+    withdrawalRate: z.number().min(0).max(1).default(DEFAULT_WITHDRAWAL_RATE),
+    withdrawalRoutingMode: z
+      .enum(["bracket_filling", "waterfall", "percentage"])
+      .default("bracket_filling"),
+    withdrawalOrder: z
+      .array(z.enum(accountCategoryEnum()))
+      .default(getDefaultDecumulationOrder()),
+    withdrawalSplits: z
+      .record(z.enum(accountCategoryEnum()), z.number())
+      .default({ ...CONFIG_WITHDRAWAL_SPLITS }),
+    withdrawalTaxPreference: z
+      .record(z.string(), z.enum(["traditional", "roth"]))
+      .default({}),
+  })
+  .default({
+    withdrawalRate: DEFAULT_WITHDRAWAL_RATE,
+    withdrawalRoutingMode: "bracket_filling",
+    withdrawalOrder: getDefaultDecumulationOrder(),
+    withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS },
+    withdrawalTaxPreference: {},
+  });
 
 export const decumulationOverrideSchema = z
   .array(

@@ -1,6 +1,42 @@
 import { formatDate } from "@/lib/utils/format";
 import type { TargetMode } from "@/lib/config/enum-values";
 
+/** Canonical savings-goal row shape — was independently redeclared (as
+ *  narrower subsets) across ~4 files (M13, .scratch/docs/review-findings.md).
+ *  Import this instead of re-declaring a local `RawGoal`. */
+export interface RawGoal {
+  id: number;
+  name: string;
+  monthlyContribution: string | null;
+  allocationPercent?: string | null;
+  isActive: boolean;
+  isEmergencyFund: boolean;
+  targetDate: string | null;
+  targetAmount: string | null;
+  targetMode: string;
+  parentGoalId: number | null;
+  priority: number;
+  apiCategoryId?: string | null;
+  apiCategoryName?: string | null;
+  isApiSyncEnabled?: boolean | null;
+}
+
+/** Canonical planned-transaction row shape — was independently redeclared
+ *  across ~7 files (M13). One redeclaration (fund-details-tab.tsx) was
+ *  missing isRecurring/recurrenceMonths/transferPairId, a real display gap
+ *  now closed by importing this instead. */
+export interface PlannedTransaction {
+  id: number;
+  goalId: number;
+  transactionDate: string;
+  description: string;
+  amount: number;
+  isRecurring: boolean;
+  recurrenceMonths: number | null;
+  transferPairId?: string | null;
+  source?: string;
+}
+
 export interface PlannedTxForm {
   goalId: number;
   transactionDate: string;

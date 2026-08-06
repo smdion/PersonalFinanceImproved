@@ -74,6 +74,14 @@ export interface GuytonKlingerResult {
  *
  * Returns adjusted expenses and updated cross-year state.
  * Does NOT mutate any input.
+ *
+ * Exported for direct unit testing only (see guyton-klinger.test.ts's
+ * lower-level state/guardrail coverage) — production code must go through
+ * `applyGuytonKlingerStrategy`, the only function that conforms to the
+ * spending-strategy dispatcher contract. Every other strategy module
+ * exposes exactly one public function; importing this one outside a test
+ * file creates a second, non-conforming entry point (M17,
+ * .scratch/docs/review-findings.md).
  */
 export function applyGuytonKlinger(
   input: GuytonKlingerInput,

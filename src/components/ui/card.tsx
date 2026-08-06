@@ -125,19 +125,28 @@ export function Metric({ value, label, trend }: MetricProps) {
   );
 }
 
+const PROGRESS_BAR_VARIANT_COLORS = {
+  default: "bg-blue-600",
+  info: "bg-indigo-600",
+  success: "bg-green-500",
+  warning: "bg-amber-500",
+  danger: "bg-red-500",
+} as const;
+
 type ProgressBarProps = {
   value: number; // 0–1
   label?: ReactNode;
-  color?: string;
+  variant?: keyof typeof PROGRESS_BAR_VARIANT_COLORS;
   tooltip?: string;
 };
 
 export function ProgressBar({
   value,
   label,
-  color = "bg-blue-600",
+  variant = "default",
   tooltip,
 }: ProgressBarProps) {
+  const color = PROGRESS_BAR_VARIANT_COLORS[variant];
   const pct = Math.min(100, Math.max(0, value * 100));
   const defaultTooltip = `${formatPercent(pct / 100)} progress`;
   return (

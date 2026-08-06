@@ -32,7 +32,6 @@ export default function LiabilitiesPage() {
   const [showManageLoans, setShowManageLoans] = useState(false);
   const { data, isLoading, error } =
     trpc.mortgage.computeActiveSummary.useQuery();
-  const utils = trpc.useUtils();
 
   if (isLoading) {
     return (
@@ -161,7 +160,6 @@ export default function LiabilitiesPage() {
           <WhatIfSection
             whatIfResults={result.whatIfResults}
             whatIfScenarios={data!.whatIfScenarios}
-            utils={utils}
           />
 
           {/* Refinance Impact Comparison */}

@@ -377,7 +377,7 @@ export const syncMappingsRouter = createTRPCRouter({
           ctx.db
             .select()
             .from(schema.portfolioSnapshots)
-            .orderBy(sql`snapshot_date DESC`)
+            .orderBy(sql`${schema.portfolioSnapshots.snapshotDate} DESC`)
             .limit(1),
         ]);
 

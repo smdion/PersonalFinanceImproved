@@ -36,7 +36,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
           onClick={() => setTheme(opt.value)}
           className={`flex-1 flex items-center justify-center gap-1 px-1.5 py-1 rounded text-label transition-colors ${
             theme === opt.value
-              ? "bg-surface-elevated text-white"
+              ? "bg-blue-600 text-white"
               : "text-faint hover:text-primary hover:bg-surface-primary"
           }`}
           aria-label={`${opt.label} theme`}

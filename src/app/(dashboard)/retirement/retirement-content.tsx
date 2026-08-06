@@ -444,13 +444,7 @@ export function RetirementContent() {
             onDollarModeChange={setDollarMode}
             inflationRate={parseFloat(settings.annualInflation)}
             currentAge={
-              perPersonSettings && perPersonSettings.length > 0
-                ? Math.min(
-                    ...perPersonSettings.map(
-                      (p) => new Date().getFullYear() - p.birthYear,
-                    ),
-                  )
-                : settings.retirementAge - 20
+              data.planHealth?.currentAge ?? settings.retirementAge - 20
             }
             analyzerInput={comparisonInput ?? undefined}
           />

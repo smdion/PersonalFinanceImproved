@@ -15,7 +15,7 @@ import type {
   NewBudgetTransaction,
 } from "./types";
 import { fromCents, toCents } from "./conversions";
-import { classifyResponse, classifyThrown, retryWithBackoff } from "./errors";
+import { budgetApiRequest } from "./errors";
 import { transactionIdempotencyKey } from "./idempotency";
 
 // -- Actual API response types --
@@ -161,6 +161,10 @@ function mapTransaction(t: ActualTransaction): BudgetTransaction {
 export class ActualClient implements BudgetAPIClient {
   readonly supportsDeltaSync = false;
 
+  getExcludedCategoryNames(): Set<string> {
+    return new Set();
+  }
+
   private readonly headers: Record<string, string>;
   private readonly budgetPath: string;
 
@@ -178,36 +182,10 @@ export class ActualClient implements BudgetAPIClient {
     this.budgetPath = `${base}/v1/budgets/${budgetSyncId}`;
   }
 
-  /**
-   * Internal fetch wrapper. v0.5 expert-review M19/M22:
-   * - Throws typed BudgetApiError instead of generic Error so call sites
-   *   can distinguish auth/rate-limit/server/network/timeout failures.
-   * - Wrapped in retryWithBackoff which honors Retry-After on 429 and
-   *   does exponential backoff (1s/2s/4s capped at 30s) for retryable
-   *   errors. Auth + client errors are NOT retried.
-   */
+  /** Internal fetch wrapper — see budgetApiRequest in ./errors (M45). */
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
     const url = `${this.budgetPath}${path}`;
-    return retryWithBackoff(async () => {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15_000);
-      try {
-        const res = await fetch(url, {
-          ...init,
-          headers: { ...this.headers, ...init?.headers },
-          signal: controller.signal,
-        });
-        if (!res.ok) {
-          const body = await res.text().catch(() => "");
-          throw classifyResponse(res, body);
-        }
-        return (await res.json()) as T;
-      } catch (e) {
-        throw classifyThrown(e);
-      } finally {
-        clearTimeout(timeout);
-      }
-    });
+    return budgetApiRequest<T>(url, this.headers, init);
   }
 
   async testConnection(): Promise<boolean> {

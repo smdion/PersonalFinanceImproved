@@ -47,7 +47,7 @@ function MortgageCardImpl() {
       <ProgressBar
         value={primaryLoan.payoffPercent}
         label="Payoff progress"
-        color="bg-green-500"
+        variant="success"
         tooltip={`${formatPercent(primaryLoan.payoffPercent)} of original balance paid off — ${formatCurrency(primaryLoan.currentBalance)} remaining`}
       />
       <div className="mt-2 flex justify-between text-sm">

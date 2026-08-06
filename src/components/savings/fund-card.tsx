@@ -26,35 +26,13 @@ const FundMiniChart = dynamic(
 );
 import { FundTransactionList } from "./fund-transaction-list";
 import { FundOverridesSummary } from "./fund-overrides-summary";
-import { GoalProjection, PlannedTxForm, NewFundForm } from "./types";
-
-interface RawGoal {
-  id: number;
-  name: string;
-  monthlyContribution: string | null;
-  allocationPercent?: string | null;
-  isActive: boolean;
-  isEmergencyFund: boolean;
-  targetDate: string | null;
-  targetAmount: string | null;
-  targetMode: string;
-  parentGoalId: number | null;
-  priority: number;
-  apiCategoryId?: string | null;
-  apiCategoryName?: string | null;
-  isApiSyncEnabled?: boolean | null;
-}
-
-interface PlannedTransaction {
-  id: number;
-  goalId: number;
-  transactionDate: string;
-  description: string;
-  amount: number;
-  isRecurring: boolean;
-  recurrenceMonths: number | null;
-  transferPairId?: string | null;
-}
+import {
+  GoalProjection,
+  PlannedTxForm,
+  NewFundForm,
+  RawGoal,
+  PlannedTransaction,
+} from "./types";
 
 interface EfundResult {
   neededAfterRepay: number;

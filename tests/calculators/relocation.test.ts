@@ -46,8 +46,8 @@ describe("calculateRelocation", () => {
 
     it("computes percent increase", () => {
       const result = calculateRelocation(makeInput());
-      // (24000 / 60000) * 100 = 40
-      expect(result.percentExpenseIncrease).toBe(40);
+      // 24000 / 60000 = 0.4 (decimal fraction, not percentage points)
+      expect(result.percentExpenseIncrease).toBe(0.4);
     });
 
     it("returns 0 percent increase when current expenses are 0", () => {

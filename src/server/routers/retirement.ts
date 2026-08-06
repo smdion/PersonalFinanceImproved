@@ -13,6 +13,7 @@ import {
   getLatestSnapshot,
   computeAnnualContribution,
   computeEmployerMatch,
+  fetchNonDefaultContributionProfile,
 } from "@/server/helpers";
 import { isRetirementParent } from "@/lib/config/account-types";
 import { getAge } from "@/lib/utils/date";
@@ -312,12 +313,11 @@ export const retirementRouter = createTRPCRouter({
           };
         }
 
-        const profiles = await ctx.db
-          .select()
-          .from(schema.contributionProfiles)
-          .where(eq(schema.contributionProfiles.id, profileId));
-        const profile = profiles[0];
-        if (!profile || profile.isDefault) {
+        const profile = await fetchNonDefaultContributionProfile(
+          ctx.db,
+          profileId,
+        );
+        if (!profile) {
           const totals = computeContribTotals(activeContribs, jobSalaries);
           return {
             combinedSalary: liveCombinedSalary,

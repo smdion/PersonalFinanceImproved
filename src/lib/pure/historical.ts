@@ -35,12 +35,14 @@ export function resolveSalaryForYear(job: JobTimeline, year: number): number {
 
 /**
  * Build the salary-by-year lookup for a set of job timelines.
- * Returns a Map of year → Map of personName → salary.
+ * Returns a Map of year → Map of personId → salary. Keyed by the stable DB
+ * ID, not the mutable display name (Discipline 9) — two people sharing a
+ * name would otherwise collide into one entry.
  */
 export function buildSalaryByYear(
-  people: { personName: string; timeline: JobTimeline[] }[],
-): Map<number, Map<string, number>> {
-  const result = new Map<number, Map<string, number>>();
+  people: { personId: number; timeline: JobTimeline[] }[],
+): Map<number, Map<number, number>> {
+  const result = new Map<number, Map<number, number>>();
   for (const person of people) {
     for (const job of person.timeline) {
       const startYear = parseInt(job.startDate.slice(0, 4), 10);
@@ -49,7 +51,7 @@ export function buildSalaryByYear(
         : new Date().getFullYear();
       for (let y = startYear; y <= endYear; y++) {
         if (!result.has(y)) result.set(y, new Map());
-        result.get(y)!.set(person.personName, resolveSalaryForYear(job, y));
+        result.get(y)!.set(person.personId, resolveSalaryForYear(job, y));
       }
     }
   }

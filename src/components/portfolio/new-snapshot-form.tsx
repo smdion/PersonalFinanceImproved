@@ -12,6 +12,7 @@ import {
   personDisplayName,
 } from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";
+import { getDisplayConfig } from "@/lib/config/account-types";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
 type PortfolioTaxType = "preTax" | "taxFree" | "hsa" | "afterTax";
@@ -71,7 +72,10 @@ function groupFormRows(
       const perfName = accountDisplayName(
         pa ?? {
           displayName: null,
-          accountLabel: `${row.accountType} (${row.institution})`,
+          // null, not a hand-built fallback string — lets accountDisplayName
+          // fall through to its casing-aware construction instead of
+          // returning a raw lowercase DB key verbatim (M40).
+          accountLabel: null,
           accountType: row.accountType,
           institution: row.institution,
         },
@@ -108,7 +112,7 @@ function groupFormRows(
         const rawType = row.accountType.toLowerCase();
         typeLabel =
           rawType !== perfAccountType && rawType !== row.taxType.toLowerCase()
-            ? row.accountType
+            ? getDisplayConfig(row.accountType).displayLabel
             : taxLabel;
       }
 

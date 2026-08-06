@@ -238,7 +238,7 @@ function SavingsGoalsCardImpl() {
           <ProgressBar
             value={efund.progress}
             label={`${efund.targetMonths}mo target: ${formatCurrency(efund.targetAmount)}`}
-            color={efund.progress >= 1 ? "bg-green-500" : "bg-amber-500"}
+            variant={efund.progress >= 1 ? "success" : "warning"}
             tooltip={`Emergency fund: ${formatCurrency(efund.trueBalance)} true balance toward ${formatCurrency(efund.targetAmount)} (${efund.targetMonths} months of essential expenses)`}
           />
           <div className="mt-2 space-y-0.5 text-sm">

@@ -18,6 +18,7 @@ import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
 import { OVER_LIMIT_THRESHOLD } from "@/lib/constants";
+import { safeDivide } from "@/lib/utils/math";
 import {
   ContribPeriodToggle,
   getContribMultiplier,
@@ -392,7 +393,11 @@ function ContributionsCardImpl() {
                               >
                                 +
                                 {formatPercent(
-                                  at.employerMatch / at.employeeContrib,
+                                  safeDivide(
+                                    at.employerMatch,
+                                    at.employeeContrib,
+                                    0,
+                                  )!,
                                 )}{" "}
                                 {at.employerMatchLabel}
                               </span>
@@ -504,7 +509,13 @@ function ContributionsCardImpl() {
                           className={`${accountTextColor(at.categoryKey)} font-medium`}
                         >
                           +
-                          {formatPercent(at.employerMatch / at.employeeContrib)}{" "}
+                          {formatPercent(
+                            safeDivide(
+                              at.employerMatch,
+                              at.employeeContrib,
+                              0,
+                            )!,
+                          )}{" "}
                           {at.employerMatchLabel}
                         </span>
                       </div>

@@ -64,7 +64,7 @@ export function StrategyGuidePanel({
           return (
             <div
               key={key}
-              className={`rounded-lg border p-4 ${isActive ? "border-blue-500/50 bg-blue-900/10" : "border-border"}`}
+              className={`rounded-lg border p-4 ${isActive ? "border-blue-500/50 bg-blue-900/10" : "border-default"}`}
             >
               <div className="flex items-center gap-2 mb-1.5">
                 <h3 className="text-sm font-semibold text-primary">

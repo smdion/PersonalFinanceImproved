@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { AddTransactionForm } from "./add-transaction-form";
-import { PlannedTxForm, emptyTxForm } from "./types";
+import { PlannedTxForm, emptyTxForm, PlannedTransaction } from "./types";
 
 function txToForm(tx: PlannedTransaction): PlannedTxForm {
   return {
@@ -15,17 +15,6 @@ function txToForm(tx: PlannedTransaction): PlannedTxForm {
     recurrenceMonths:
       tx.recurrenceMonths != null ? String(tx.recurrenceMonths) : "",
   };
-}
-
-interface PlannedTransaction {
-  id: number;
-  goalId: number;
-  transactionDate: string;
-  description: string;
-  amount: number;
-  isRecurring: boolean;
-  recurrenceMonths: number | null;
-  transferPairId?: string | null;
 }
 
 export function FundTransactionList({

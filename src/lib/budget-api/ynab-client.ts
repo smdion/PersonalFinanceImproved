@@ -15,7 +15,7 @@ import type {
   DeltaSyncResult,
 } from "./types";
 import { fromMilliunits, toMilliunits } from "./conversions";
-import { classifyResponse, classifyThrown, retryWithBackoff } from "./errors";
+import { budgetApiRequest } from "./errors";
 import { transactionIdempotencyKey } from "./idempotency";
 
 const YNAB_BASE = "https://api.ynab.com/v1";
@@ -209,6 +209,10 @@ function mapTransaction(t: YnabTransaction): BudgetTransaction {
 export class YnabClient implements BudgetAPIClient {
   readonly supportsDeltaSync = true;
 
+  getExcludedCategoryNames(): Set<string> {
+    return YNAB_EXPENSE_EXCLUDED_CATEGORIES;
+  }
+
   private readonly headers: Record<string, string>;
   private readonly budgetPath: string;
 
@@ -223,38 +227,10 @@ export class YnabClient implements BudgetAPIClient {
     this.budgetPath = `${YNAB_BASE}/budgets/${budgetId}`;
   }
 
-  /**
-   * Internal fetch wrapper. v0.5 expert-review M19/M22:
-   * - Throws typed BudgetApiError instead of generic Error so call sites
-   *   can distinguish auth/rate-limit/server/network/timeout failures.
-   * - Wrapped in retryWithBackoff which honors Retry-After on 429 and
-   *   does exponential backoff (1s/2s/4s capped at 30s) for retryable
-   *   errors. Auth + client errors are NOT retried.
-   */
+  /** Internal fetch wrapper — see budgetApiRequest in ./errors (M45). */
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
     const url = path.startsWith("http") ? path : `${this.budgetPath}${path}`;
-    return retryWithBackoff(async () => {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15_000);
-      try {
-        const res = await fetch(url, {
-          ...init,
-          headers: { ...this.headers, ...init?.headers },
-          signal: controller.signal,
-        });
-        if (!res.ok) {
-          const body = await res.text().catch(() => "");
-          throw classifyResponse(res, body);
-        }
-        return (await res.json()) as T;
-      } catch (e) {
-        // classifyThrown preserves BudgetApiError + classifies AbortError
-        // / network errors, so the retry logic can decide whether to retry.
-        throw classifyThrown(e);
-      } finally {
-        clearTimeout(timeout);
-      }
-    });
+    return budgetApiRequest<T>(url, this.headers, init);
   }
 
   async testConnection(): Promise<boolean> {

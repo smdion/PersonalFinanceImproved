@@ -436,8 +436,9 @@ export function OverridesPanelV2({
             personId={s.salaryOverridePersonId ?? 1}
             initialValue={editingOverride?.initialValue}
             onSubmit={(salary, profileId, notes) => {
+              if (!s.salaryOverridePersonId) return;
               s.createSalaryOverride.mutate({
-                personId: s.salaryOverridePersonId ?? 1,
+                personId: s.salaryOverridePersonId,
                 projectionYear: year,
                 overrideSalary: String(salary),
                 contributionProfileId: profileId,
@@ -456,8 +457,9 @@ export function OverridesPanelV2({
             personId={s.salaryOverridePersonId ?? 1}
             initialValue={editingOverride?.initialValue}
             onSubmit={(annualBudget, notes) => {
+              if (!s.salaryOverridePersonId) return;
               s.createBudgetOverride.mutate({
-                personId: s.salaryOverridePersonId ?? 1,
+                personId: s.salaryOverridePersonId,
                 projectionYear: year,
                 overrideMonthlyBudget: String(
                   Math.round((annualBudget / 12) * 100) / 100,

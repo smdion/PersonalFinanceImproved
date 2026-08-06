@@ -4,7 +4,14 @@ import { auth } from "@/server/auth";
 import { exportBackup } from "@/lib/db/version-logic";
 import { log } from "@/lib/logger";
 
-const allowDev = process.env.ALLOW_DEV_MODE === "true";
+// ALLOW_DEV_MODE is only honored in non-production environments — mirrors
+// the guard in src/server/trpc.ts (M16, .scratch/docs/review-findings.md).
+// The primary protection is validateEnv() at process startup (src/lib/env.ts),
+// which refuses to boot with both set; this is defense-in-depth for that
+// guard being bypassed (misconfigured process manager, env set post-boot).
+const allowDev =
+  process.env.ALLOW_DEV_MODE === "true" &&
+  process.env.NODE_ENV !== "production";
 
 export async function GET() {
   if (process.env.DEMO_ONLY === "true") {

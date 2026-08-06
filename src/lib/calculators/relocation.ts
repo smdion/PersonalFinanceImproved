@@ -181,8 +181,9 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
   const monthlyDelta = roundToCents(
     relocationMonthlyExpenses - currentMonthlyExpenses,
   );
-  const pctIncrease =
-    currentAnnual > 0 ? roundToCents((annualDelta / currentAnnual) * 100) : 0;
+  // Decimal fraction (0.40 = 40%), consistent with every other *Percent/*Rate
+  // field in the engine — the display site uses formatPercent() (M32).
+  const pctIncrease = currentAnnual > 0 ? annualDelta / currentAnnual : 0;
 
   // Pre-compute large purchase data
   const purchaseData = precomputePurchases(largePurchases);

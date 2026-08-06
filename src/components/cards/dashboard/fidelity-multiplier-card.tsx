@@ -198,7 +198,7 @@ function FidelityMultiplierCardImpl() {
       <ProgressBar
         value={Math.min(progress, 1)}
         label={`Target: ${formatNumber(target.multiplier, 1)}x at age ${viewAge}`}
-        color={isOnTrack ? "bg-green-500" : "bg-amber-500"}
+        variant={isOnTrack ? "success" : "warning"}
       />
       <div className="mt-3 space-y-1 text-sm">
         <div className="flex justify-between">

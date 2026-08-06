@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { accountColor } from "@/lib/utils/colors";
+import { categoryChartHex } from "@/lib/utils/colors";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { useScenario } from "@/lib/context/scenario-context";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
@@ -347,7 +347,10 @@ export default function ContributionsPage() {
                           <span
                             className="w-2 h-2 rounded-full shrink-0"
                             style={{
-                              backgroundColor: accountColor(a.categoryKey),
+                              backgroundColor: categoryChartHex(
+                                a.categoryKey,
+                                false,
+                              ),
                             }}
                           />
                           {a.accountType}
@@ -400,7 +403,10 @@ export default function ContributionsPage() {
                         <span
                           className="w-2 h-2 rounded-full shrink-0"
                           style={{
-                            backgroundColor: accountColor(a.categoryKey),
+                            backgroundColor: categoryChartHex(
+                              a.categoryKey,
+                              false,
+                            ),
                           }}
                         />
                         {a.accountType}
@@ -482,7 +488,10 @@ export default function ContributionsPage() {
                           <span
                             className="w-2 h-2 rounded-full shrink-0"
                             style={{
-                              backgroundColor: accountColor(a.categoryKey),
+                              backgroundColor: categoryChartHex(
+                                a.categoryKey,
+                                false,
+                              ),
                             }}
                           />
                           <span>{a.accountType}</span>
@@ -694,7 +703,12 @@ export default function ContributionsPage() {
                     <span className="flex items-center gap-2">
                       <span
                         className="w-2 h-2 rounded-full shrink-0"
-                        style={{ backgroundColor: accountColor(a.categoryKey) }}
+                        style={{
+                          backgroundColor: categoryChartHex(
+                            a.categoryKey,
+                            false,
+                          ),
+                        }}
                       />
                       <span>{a.accountType}</span>
                     </span>

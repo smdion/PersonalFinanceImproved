@@ -58,7 +58,7 @@ export function ActiveLoanCard({
         <ProgressBar
           value={loan.payoffPercent}
           label="Paid off"
-          color="bg-green-500"
+          variant="success"
         />
 
         <div className="grid grid-cols-3 gap-4 mt-4 text-sm">

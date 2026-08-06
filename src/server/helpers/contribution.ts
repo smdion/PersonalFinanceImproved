@@ -648,6 +648,29 @@ export function applyJobOverrides(
  * Merges profile salary overrides into the provided map (lower priority than existing entries).
  * Returns modified contribs, jobs, and salary map — or originals if profile is null/default.
  */
+/**
+ * Fetch a contribution profile by ID, returning null when unset, not found,
+ * or the default profile (callers treat all three as "no profile
+ * resolution needed"). Was duplicated between this file's
+ * loadAndApplyContribProfile and retirement.ts's own scenario-comparison
+ * resolver (M26, .scratch/docs/review-findings.md) — retirement.ts applies
+ * salary overrides with different layering semantics (no existing-override
+ * priority), so it keeps its own override-application logic and only
+ * shares this fetch+isDefault check.
+ */
+export async function fetchNonDefaultContributionProfile(
+  db: Db,
+  profileId: number | null | undefined,
+): Promise<typeof schema.contributionProfiles.$inferSelect | null> {
+  if (!profileId) return null;
+  const profiles = await db
+    .select()
+    .from(schema.contributionProfiles)
+    .where(eq(schema.contributionProfiles.id, profileId));
+  const profile = profiles[0];
+  return profile && !profile.isDefault ? profile : null;
+}
+
 export async function loadAndApplyContribProfile(
   db: Db,
   profileId: number | undefined | null,
@@ -659,19 +682,8 @@ export async function loadAndApplyContribProfile(
   jobs: (typeof schema.jobs.$inferSelect)[];
   salaryMap: Map<number, number>;
 }> {
-  if (!profileId)
-    return {
-      contribs: allContribs,
-      jobs: allJobs,
-      salaryMap: salaryOverrideMap,
-    };
-
-  const profileRows = await db
-    .select()
-    .from(schema.contributionProfiles)
-    .where(eq(schema.contributionProfiles.id, profileId));
-  const profile = profileRows[0];
-  if (!profile || profile.isDefault) {
+  const profile = await fetchNonDefaultContributionProfile(db, profileId);
+  if (!profile) {
     return {
       contribs: allContribs,
       jobs: allJobs,

@@ -3,18 +3,12 @@
 import React from "react";
 import { formatCurrency } from "@/lib/utils/format";
 import { FUND_COLORS } from "./fund-colors";
-import { GoalProjection, monthKey, PlannedTxForm } from "./types";
-
-interface PlannedTransaction {
-  id: number;
-  goalId: number;
-  transactionDate: string;
-  amount: number;
-  description: string;
-  isRecurring: boolean;
-  recurrenceMonths: number | null;
-  transferPairId?: string | null;
-}
+import {
+  GoalProjection,
+  monthKey,
+  PlannedTxForm,
+  PlannedTransaction,
+} from "./types";
 
 interface SavingsGoalSummary {
   goalId: number;

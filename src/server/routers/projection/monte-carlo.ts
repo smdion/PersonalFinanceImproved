@@ -18,7 +18,6 @@ import {
   expensiveRateLimitMiddleware,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
 import {
   interpolateAllocations,
@@ -32,12 +31,9 @@ import type {
   DecumulationOverride,
 } from "@/lib/calculators/types";
 import {
-  accountCategoryEnum,
   getAllCategories,
-  getDefaultDecumulationOrder,
   isOverflowTarget,
   zeroBalance,
-  DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
 } from "@/lib/config/account-types";
 import {
   fetchRetirementData,
@@ -46,6 +42,7 @@ import {
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
+  decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   buildMcInputs,
 } from "./_shared";
@@ -90,33 +87,7 @@ export const monteCarloRouter = createTRPCRouter({
           .optional(),
 
         // --- Decumulation defaults (mirrors getProjection) ---
-        decumulationDefaults: z
-          .object({
-            withdrawalRate: z
-              .number()
-              .min(0)
-              .max(1)
-              .default(DEFAULT_WITHDRAWAL_RATE),
-            withdrawalRoutingMode: z
-              .enum(["bracket_filling", "waterfall", "percentage"])
-              .default("bracket_filling"),
-            withdrawalOrder: z
-              .array(z.enum(accountCategoryEnum()))
-              .default(getDefaultDecumulationOrder()),
-            withdrawalSplits: z
-              .record(z.enum(accountCategoryEnum()), z.number())
-              .default({ ...CONFIG_WITHDRAWAL_SPLITS }),
-            withdrawalTaxPreference: z
-              .record(z.string(), z.enum(["traditional", "roth"]))
-              .default({}),
-          })
-          .default({
-            withdrawalRate: DEFAULT_WITHDRAWAL_RATE,
-            withdrawalRoutingMode: "bracket_filling",
-            withdrawalOrder: getDefaultDecumulationOrder(),
-            withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS },
-            withdrawalTaxPreference: {},
-          }),
+        decumulationDefaults: decumulationDefaultsInputSchema,
 
         // --- Accumulation overrides (mirrors getProjection) ---
         accumulationOverrides: accumulationOverrideSchema,

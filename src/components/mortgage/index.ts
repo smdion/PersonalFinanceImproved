@@ -11,5 +11,4 @@ export type {
   LoanHistoryEntry,
   WhatIfScenarioRow,
   WhatIfResultRow,
-  TrpcUtils,
 } from "./types";
