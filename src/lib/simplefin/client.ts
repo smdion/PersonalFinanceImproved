@@ -14,6 +14,7 @@ import {
   classifyThrown,
   retryWithBackoff,
 } from "@/lib/budget-api/errors";
+import { log } from "@/lib/logger";
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
@@ -147,8 +148,18 @@ export async function getAccounts(
     `${baseUrl}/accounts?balances-only=1`,
     { headers: { Authorization: authHeader } },
   );
-  if (json.errors && json.errors.length > 0) {
-    throw new Error(`SimpleFIN provider error: ${json.errors.join("; ")}`);
+  const hasErrors = json.errors && json.errors.length > 0;
+  const hasAccounts = json.accounts && json.accounts.length > 0;
+  if (hasErrors && !hasAccounts) {
+    throw new Error(`SimpleFIN provider error: ${json.errors!.join("; ")}`);
+  }
+  // Per the SimpleFIN protocol, `errors` can be non-empty alongside a
+  // populated `accounts` array — one linked institution failing (e.g. needs
+  // re-auth) doesn't invalidate balances successfully fetched for others.
+  if (hasErrors) {
+    log("warn", "simplefin_partial_provider_error", {
+      errors: json.errors,
+    });
   }
   return (json.accounts ?? []).map((a) => ({
     id: a.id,

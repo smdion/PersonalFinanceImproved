@@ -91,10 +91,15 @@ export async function upsertSimplefinAccounts(
 ): Promise<SimplefinAccountRow[]> {
   if (accounts.length === 0) return [];
   const now = new Date();
+  // Postgres rejects a multi-row ON CONFLICT DO UPDATE batch if the same
+  // conflict target appears twice ("cannot affect row a second time") —
+  // dedupe defensively so a provider response with a repeated account id
+  // can't crash the whole sync. Keep the last occurrence (most current).
+  const deduped = [...new Map(accounts.map((a) => [a.id, a])).values()];
   const rows = await db
     .insert(schema.simplefinAccounts)
     .values(
-      accounts.map((a) => ({
+      deduped.map((a) => ({
         externalAccountId: a.id,
         orgName: a.orgName,
         accountName: a.name,
