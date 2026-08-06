@@ -29,7 +29,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [0.6.4] - 2026-05-23
+## [0.6.5] - 2026-08-05
+
+### Added
+
+- **New Upkeep page for tracking home utilities.** Log electric, gas, water, and other recurring utility bills over time, with an import option for bringing in existing records.
+- **Annual Performance: custom account/year-range filtering.** Pick a specific set of accounts (not just an account type) and a year range — Since Inception, YTD, Last N Years, or a custom range — to see an annualized (CAGR) and cumulative return for exactly the accounts you care about.
+- **Savings: "Update %" action.** For percentage-based goals (Car, Travel, Home Project), locks in the goal's current dollar amount and recalculates its stored percentage from that — handy after a raise, when you want to keep sending the same dollar amount instead of automatically pulling in the higher income.
+- **Savings: preview before "Recalculate All %".** Bulk recalculating percentage-based goals now shows the current vs. recalculated amount for every goal, with Confirm/Cancel, instead of applying immediately.
+- **Budget: reorder categories and items.** Move categories and items up/down within the Budget tab.
+- **Budget: bulk sync-direction control per category group.** Set pull/push/both for an entire category group at once in Settings, instead of one category at a time.
+
+### Fixed
+
+- **Percentage-based savings goals no longer silently drift with income changes.** Previously, a salary or budget edit would immediately change what a Car/Travel/Home Project goal contributed, with no visibility into it. These goals now hold a fixed dollar amount until you explicitly recalculate, and the push preview flags any goal whose amount is out of date.
+- **Savings amounts pushed to YNAB now match what's shown on screen**, in the Budget page's Savings row, the Savings page, and the push preview — previously these three could disagree.
+- **Pushing budget or savings targets to YNAB no longer fails or writes to the wrong field.** Goal amounts now go to the correct field, and push/pull confirmation screens compare against the value that's actually being read and written.
+- **Editing a budget item linked to a contribution account now correctly updates your paycheck/retirement contribution** instead of a disconnected copy of the amount.
+- **Corrected several places where employer contributions or match were counted twice** in return% figures (Portfolio, year-over-year category rows, and the current in-progress year), which had been understating returns on accounts with employer money.
+- **Corrected rollover accounting** so a transfer between two of your own tracked accounts (and ESPP or pension-to-brokerage transfers) nets to zero instead of skewing gain/loss.
+- **Employer match and distribution tooltips no longer show a hardcoded discount percentage or broker name.**
+- **Budget item and category names no longer get squeezed to nothing** by the always-visible action icons on narrow screens.
+
+### Improved
+
+- **Pushing or pulling budget/savings data to YNAB now shows a success toast with the item count**, and the confirmation modal shows elapsed time during longer pushes so it's clear it's still working.
+
+---
+
+## [0.6.4] - 2026-06-28
 
 ### Added
 
@@ -42,6 +70,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Savings: Plan table transaction sub-rows are visually indented.** Planned transaction rows now have a `└` prefix and a left-side indent, making it clear they belong to the month above rather than reading as standalone rows.
 - **Savings: Plan table flags months where a fund goes negative.** Any row where a visible fund's projected closing balance is negative receives a subtle red background, making potential shortfalls easy to spot without scanning every cell.
 - **Savings: Plan table transaction names show in full on hover.** Truncated transaction descriptions in the plan table now reveal the full name in a tooltip.
+- **Retirement: Clearer "Future $" vs "Today's $" explanation.** The projection's dollar-mode toggle help now spells out that Future $ does not double-count inflation — it's counted once, through your raise and return rates — and that the gap between the two views is your _real_ raise: the growth that actually outpaces inflation.
+
+### Changed
+
+- **Dependency maintenance.** Picked up all pending dependency updates: the runtime stack (tRPC 11.18, the Postgres driver, React Hook Form, and Lucide icons), the Node base image, and assorted build/test tooling (TypeScript ESLint, Vitest, Prettier, lint-staged, and `@types/node` 26). No user-facing behavior changes.
 
 ---
 
@@ -351,7 +384,7 @@ Feature release — Analytics page, performance formula fix, contribution entry 
 
 - **Gain/loss calculation was understating investment returns for accounts with employer contributions.** The formula was subtracting the employer match twice (once inside total contributions, once as a separate deduction). Any gain/loss computed by the app's update form was off by the employer match amount. Historical imported data was unaffected.
 - **Retirement contribution rate in the historical spreadsheet view was overstating the savings rate** by double-counting the employer match.
-- **Joint accounts were showing an individual owner's name** (e.g., "Sean IRA (Vanguard)" instead of "IRA (Vanguard)"). The display name now correctly derives the "Joint" prefix from account ownership type without requiring a data migration.
+- **Joint accounts were showing an individual owner's name** (e.g., "Alice IRA (Brokerage)" instead of "IRA (Brokerage)"). The display name now correctly derives the "Joint" prefix from account ownership type without requiring a data migration.
 - **Saving a portfolio snapshot no longer advances the performance "last updated" date.** The two timestamps are now independent.
 - **YNAB-synced data no longer falls back to manual values after 24 hours.** Synced data now persists until you manually trigger a resync.
 - **SQLite migration hash-mismatch detection no longer triggers false squash recovery.** The check was iterating all journal entries including unapplied ones. Now only previously-applied entries are checked.

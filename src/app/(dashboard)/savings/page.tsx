@@ -809,7 +809,7 @@ export default function SavingsPage() {
                       })()}
                     </div>
 
-                    {/* Extra paycheck rules — Sean / Joanna side by side */}
+                    {/* Extra paycheck rules — one column per earner */}
                     <ExtraPaycheckRulesEditor
                       goals={rawGoals
                         .filter((g) => g.isActive && !g.parentGoalId)

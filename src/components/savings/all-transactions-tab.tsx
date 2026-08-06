@@ -798,7 +798,7 @@ export function AllTransactionsTab({
                 </th>
                 <th
                   className="text-right px-3 py-2 font-medium text-muted whitespace-nowrap"
-                  title="Spending only – contributions not included"
+                  title="Projected end-of-month balance for this fund — includes contributions, recurring expenses, and overrides (matches the Plan table)"
                 >
                   After
                 </th>
@@ -1144,6 +1144,16 @@ export function AllTransactionsTab({
 
                     {/* Balance after — end-of-month projected balance for this fund */}
                     {(() => {
+                      // Transfer rows are collapsed to a single leg (deduped by
+                      // transferPairId), so a per-fund balance here would reflect
+                      // only whichever leg survived. Suppress it to avoid showing
+                      // an ambiguous balance for a two-fund movement.
+                      if (isTransfer)
+                        return (
+                          <td className="px-3 py-2 text-right text-faint/40 tabular-nums text-xs">
+                            —
+                          </td>
+                        );
                       const bal = getBalanceAfter(
                         tx.goalId,
                         tx.transactionDate,

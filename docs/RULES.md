@@ -177,6 +177,18 @@ All other modules are internal — not imported outside `engine/`.
 
 ---
 
+## Pure Business Logic Boundary
+
+**All business logic must live in `src/lib/pure/` — never inside database transactions, API handlers, or router procedures.** This is a hard architectural rule, not a style preference: `better-sqlite3` cannot use async transactions, and coupling logic to I/O makes it untestable regardless of database.
+
+1. **Pure functions** (`src/lib/pure/`): compute values, validate rules, resolve limits, transform data. No imports from `@/lib/db`, `drizzle-orm`, or any I/O module. Import helpers only from specific submodules (e.g. `@/server/helpers/transforms`), never from barrel re-exports that pull in DB code.
+2. **Routers/handlers** (`src/server/routers/`): fetch data, call pure functions, persist results. Thin wrappers only — if you're writing an `if` or a `for` loop that computes a value, it belongs in a pure function.
+3. **Tests** (`tests/pure/`): every pure function gets a unit test that runs without any database, network, or environment setup.
+
+**How to tell if logic is in the wrong place:** it's in a `.transaction()` callback; it's in a `protectedProcedure` handler doing math/validation/aggregation; it needs `import * as schema` or `import { eq } from "drizzle-orm"` to work; or it can't be tested without mocking the database.
+
+Full contributor-facing writeup (existing pure modules table, import-discipline examples) lives in `CONTRIBUTING.md` § Pure Business Logic Boundary — this section is the authoritative rule; that one is the onboarding-friendly version. Keep them consistent if either changes.
+
 ## The Holistic Rule
 
 > Everything interacts with everything as a holistic plan unless specifically called out as a scenario.
@@ -275,6 +287,7 @@ Portfolio Snapshots + Performance Data + Settings
 - An API route that bypasses `DEMO_ONLY` checks
 - A numeric fallback (`0.04`, `0.07`, `200000`) that doesn't reference its constant from `constants.ts`
 - Stored computed values without a documented sync/cascade mechanism
+- Business logic (math, validation, aggregation) written inline in a `.transaction()` callback or a router procedure handler instead of extracted to `src/lib/pure/`
 
 ---
 
@@ -510,29 +523,29 @@ These are true cross-cutting reference data that no single page owns.
 
 ## ESPP Accounting
 
-> **ESPP data comes from UBS documents. These rules define how raw UBS figures map to `account_performance` fields.** Any change to ESPP data entry must be consistent with these decisions.
+> **ESPP data comes from the ESPP provider's statements. These rules define how those raw figures map to `account_performance` fields.** Any change to ESPP data entry must be consistent with these decisions.
 
 ### Accounting decisions
 
 1. **Payroll-year attribution.** Purchase lots belong to the year payroll was withheld, not the settlement year. The Dec 31 lot (shares settle in January) is a **prior-year** contribution. The Mar 31 lot is the current year.
 
-2. **`total_contributions` = market value at purchase.** UBS applies the 15% lookback discount before publishing figures. `total_contributions` is `cost_basis ÷ 0.85` (the market value UBS paid), not the employee's out-of-pocket cost. This is consistent with how 401k/HSA employer match is handled — total always includes both sides.
+2. **`total_contributions` = market value at purchase.** The provider applies the 15% lookback discount before publishing figures. `total_contributions` is `cost_basis ÷ 0.85` (the market value paid), not the employee's out-of-pocket cost. This is consistent with how 401k/HSA employer match is handled — total always includes both sides.
 
 3. **`employer_contributions` = the 15% discount.** `employer_contributions = total_contributions − cost_basis`. This is the "employer match equivalent" — it is not a cash contribution by the employer, just the discount portion tracked separately for reporting.
 
-4. **`rollovers` on the ESPP (source) account = negative.** Wire transfers from UBS to the brokerage are outgoing rollovers. Record as negative values (e.g. −$6,187.62). Use the YTD total from the UBS April statement, not individual transaction amounts.
+4. **`rollovers` on the ESPP (source) account = negative.** Wire transfers from the ESPP provider to the destination brokerage are outgoing rollovers. Record as negative values. Use the YTD total from the provider's statement, not individual transaction amounts.
 
-5. **`rollovers` on the destination brokerage account = positive.** The same dollar amount appears as a positive incoming rollover on the Vanguard Retirement Brokerage row. `total_contributions` on the destination must be `$0` — the incoming money is a rollover, not a new contribution.
+5. **`rollovers` on the destination brokerage account = positive.** The same dollar amount appears as a positive incoming rollover on the destination brokerage row. `total_contributions` on the destination must be `$0` — the incoming money is a rollover, not a new contribution.
 
 6. **`computeGainLoss` subtracts rollovers in both directions.** `gainLoss = ending − beginning − contributions + distributions − rollovers + fees`. Outgoing rollovers (negative) add back to G/L; incoming rollovers (positive) subtract from G/L. Both are correct — the ending balance at both accounts already reflects the transfer.
 
-7. **Dividends kept at UBS = `distributions`.** Small cash dividends not wired out (e.g. TRI dividend) go in `distributions`, not contributions.
+7. **Dividends kept in the ESPP account = `distributions`.** Small cash dividends not wired out go in `distributions`, not contributions.
 
 8. **Brokerage commissions = `fees`.** Foreign withholding tax on dividends also goes in `fees`.
 
 ### Source documents
 
-Raw UBS inputs (withheld, market value, gross proceeds, commission, dividends) are preserved in `.scratch/docs/ESPP_calculations.md`. Verify DB values against that file before editing ESPP rows.
+Raw provider inputs (withheld, market value, gross proceeds, commission, dividends) are preserved in `.scratch/docs/ESPP_calculations.md`. Verify DB values against that file before editing ESPP rows.
 
 ---
 

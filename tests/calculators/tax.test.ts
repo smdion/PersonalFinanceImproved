@@ -177,20 +177,27 @@ describe("calculateTax — bracket boundary cases", () => {
     expect(r.federalTax).toBe(1000.0); // 10000 * 0.10
   });
 
-  it("income one cent above bracket boundary crosses into higher bracket", () => {
-    const r = taxAt(10000.01);
+  it("income just above bracket boundary crosses into higher bracket", () => {
+    // $1 over the boundary: the marginal rate flips to 12% AND the rounded tax
+    // visibly reflects the higher bracket (1000.00 -> 1000.12). A sub-cent delta
+    // would round back to 1000.00 and silently pass even if the bracket walk broke.
+    const r = taxAt(10001);
     expect(r.marginalRate).toBe(0.12);
-    expect(r.federalTax).toBe(roundToCents(1000 + 0.01 * 0.12));
+    expect(r.federalTax).toBe(roundToCents(1000 + 1 * 0.12)); // 1000.12
   });
 
   it("income at top finite bracket boundary is in the lower rate", () => {
     const r = taxAt(100000);
     expect(r.marginalRate).toBe(0.22);
+    expect(r.federalTax).toBe(roundToCents(1000 + 30000 * 0.12 + 60000 * 0.22)); // 17800.00
   });
 
-  it("income one cent into the open-ended top bracket uses top rate", () => {
-    const r = taxAt(100000.01);
+  it("income just into the open-ended top bracket uses top rate", () => {
+    // $1 into the top bracket: 24% marginal rate and a visible tax delta over
+    // the finite-bracket boundary (17800.00 -> 17800.24).
+    const r = taxAt(100001);
     expect(r.marginalRate).toBe(0.24);
+    expect(r.federalTax).toBe(roundToCents(17800 + 1 * 0.24)); // 17800.24
   });
 
   it("second bracket boundary: $40,000", () => {
