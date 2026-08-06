@@ -1,5 +1,21 @@
 import { getDisplayConfig } from "@/lib/config/account-types";
 
+/** Short month labels (index 0 = January), for compact axis/table labels. */
+export const MONTH_NAMES_SHORT = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const;
+
 /**
  * Strip trailing institution suffix from an account label.
  * e.g. "Alice 401k (Fidelity)" → "Alice 401k"

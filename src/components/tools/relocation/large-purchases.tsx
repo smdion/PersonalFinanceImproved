@@ -8,6 +8,11 @@
 import { Button } from "@/components/ui/button";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  DEFAULT_LOAN_DOWN_PAYMENT_PERCENT,
+  DEFAULT_LOAN_RATE,
+  DEFAULT_LOAN_TERM_YEARS,
+} from "@/lib/constants";
 import type { LargePurchaseRow, RelocationResult } from "./types";
 
 export type PurchaseFormState = {
@@ -334,12 +339,14 @@ export function RelocationLargePurchases({
                   purchase.downPaymentPercent =
                     (Number.isFinite(rawDownPaymentPercent)
                       ? rawDownPaymentPercent
-                      : 20) / 100;
+                      : DEFAULT_LOAN_DOWN_PAYMENT_PERCENT) / 100;
                   purchase.loanRate =
-                    (Number.isFinite(rawLoanRate) ? rawLoanRate : 6.5) / 100;
+                    (Number.isFinite(rawLoanRate)
+                      ? rawLoanRate
+                      : DEFAULT_LOAN_RATE) / 100;
                   purchase.loanTermYears = Number.isFinite(rawLoanTermYears)
                     ? rawLoanTermYears
-                    : 30;
+                    : DEFAULT_LOAN_TERM_YEARS;
                 }
 
                 const ongoing = parseFloat(purchaseForm.ongoingMonthlyCost);
@@ -360,9 +367,9 @@ export function RelocationLargePurchases({
                   purchasePrice: "",
                   purchaseYear: String(year),
                   financed: false,
-                  downPaymentPercent: "20",
-                  loanRate: "6.5",
-                  loanTermYears: "30",
+                  downPaymentPercent: String(DEFAULT_LOAN_DOWN_PAYMENT_PERCENT),
+                  loanRate: String(DEFAULT_LOAN_RATE),
+                  loanTermYears: String(DEFAULT_LOAN_TERM_YEARS),
                   ongoingMonthlyCost: "",
                   saleProceeds: "",
                 });

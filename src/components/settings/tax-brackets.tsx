@@ -6,6 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { TAX_YEAR_MIN, TAX_YEAR_MAX } from "@/lib/constants";
 
 type BracketEntry = {
   threshold: number;
@@ -112,7 +113,7 @@ export function TaxBracketsSettings() {
 
   const handleAddYear = async () => {
     const yr = parseInt(newYear);
-    if (isNaN(yr) || yr < 2020 || yr > 2040) return;
+    if (isNaN(yr) || yr < TAX_YEAR_MIN || yr > TAX_YEAR_MAX) return;
     if (years.includes(yr)) return;
 
     if (copyFrom) {

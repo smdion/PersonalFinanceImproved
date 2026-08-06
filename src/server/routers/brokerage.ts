@@ -13,6 +13,10 @@ import {
   resolveAccountBalance,
 } from "@/server/helpers/api-balance-resolution";
 import { getActiveBudgetApi, getApiConnection } from "@/lib/budget-api";
+import { zDecimal } from "@/server/routers/settings/_shared";
+
+/** Positive decimal amount — brokerage goal targets must be > 0. */
+const zPositiveDecimal = zDecimal.refine((v) => Number(v) > 0);
 
 export const brokerageRouter = createTRPCRouter({
   // ══ GOALS ══
@@ -41,9 +45,7 @@ export const brokerageRouter = createTRPCRouter({
     .input(
       z.object({
         name: z.string().min(1),
-        targetAmount: z
-          .string()
-          .refine((v) => !isNaN(Number(v)) && Number(v) > 0),
+        targetAmount: zPositiveDecimal,
         targetYear: z.number().int().min(new Date().getFullYear()),
         priority: z.number().int().default(0),
         notes: z.string().nullable().optional(),
@@ -68,10 +70,7 @@ export const brokerageRouter = createTRPCRouter({
       z.object({
         id: z.number().int(),
         name: z.string().min(1).optional(),
-        targetAmount: z
-          .string()
-          .refine((v) => !isNaN(Number(v)) && Number(v) > 0)
-          .optional(),
+        targetAmount: zPositiveDecimal.optional(),
         targetYear: z.number().int().optional(),
         priority: z.number().int().optional(),
         isActive: z.boolean().optional(),

@@ -192,7 +192,6 @@ export function runAccumulationYear(
     );
   } else if (contributionSpecs && contributionSpecs.length > 0) {
     // Sum projected per-account contributions (before IRS capping)
-    const lgf = Math.pow(1 + limitGrowthRate, y);
     targetContribution = roundToCents(
       contributionSpecs.reduce((sum, spec) => {
         if (spec.method === "percent_of_salary") {

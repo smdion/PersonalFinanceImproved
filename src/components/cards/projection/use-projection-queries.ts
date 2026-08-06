@@ -9,6 +9,11 @@ import {
   SK_RETIREMENT_MC_AUTOLOAD,
   SK_RETIREMENT_COASTFIRE_MC_AUTOLOAD,
 } from "@/lib/constants/settings-keys";
+import {
+  PROJECTION_STALE_TIME_MS,
+  PROJECTION_DEBOUNCE_MS,
+  MC_DEFAULT_TRIALS,
+} from "@/lib/constants";
 import type {
   MonteCarloPercentileBand,
   MonteCarloResult,
@@ -109,10 +114,13 @@ export function useProjectionQueries(
   // Coast FIRE query — always fires on baseline input so the age is available
   // regardless of scenario view. Used by the hero KPI Coast FIRE card AND to
   // derive the override age for the scenario toggle.
-  const debouncedBaseInput = useDebouncedValue(baseSharedInput, 600);
+  const debouncedBaseInput = useDebouncedValue(
+    baseSharedInput,
+    PROJECTION_DEBOUNCE_MS,
+  );
   const coastFireQuery = trpc.projection.computeCoastFire.useQuery(
     debouncedBaseInput,
-    { placeholderData: (prev) => prev, staleTime: 60_000 },
+    { placeholderData: (prev) => prev, staleTime: PROJECTION_STALE_TIME_MS },
   );
   const coastFireAge = coastFireQuery.data?.result?.coastFireAge ?? null;
 
@@ -126,7 +134,7 @@ export function useProjectionQueries(
   // coastFireMcResult.deterministicProjection at the derived layer, which
   // switches atomically alongside the MC bands.
   const sharedInput = baseSharedInput;
-  const debouncedInput = useDebouncedValue(sharedInput, 600);
+  const debouncedInput = useDebouncedValue(sharedInput, PROJECTION_DEBOUNCE_MS);
 
   // --- Autoload settings ---
   const [autoloadEnabled] = usePersistedToggle(
@@ -207,7 +215,7 @@ export function useProjectionQueries(
   // baseline MC cache.
   const mcPrefetchQuery = trpc.projection.computeMonteCarloProjection.useQuery(
     {
-      numTrials: 1000,
+      numTrials: MC_DEFAULT_TRIALS,
       preset: "default" as const,
       taxMode: mcTaxMode,
       ...debouncedBaseInput,
@@ -260,7 +268,7 @@ export function useProjectionQueries(
         engineQuery.isSuccess &&
         !engineQuery.isFetching,
       placeholderData: (prev) => prev,
-      staleTime: 5 * 60_000,
+      staleTime: 5 * PROJECTION_STALE_TIME_MS,
     },
   );
   // Cast to MonteCarloResult — tRPC's return-type inference widens the

@@ -20,6 +20,7 @@ import * as schema from "@/lib/db/schema";
 import { findCoastFireAge } from "@/lib/calculators/coast-fire";
 import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
 import { toNumber } from "@/server/helpers";
+import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import type {
   AccumulationOverride,
   DecumulationOverride,
@@ -245,7 +246,7 @@ export const coastFireRouter = createTRPCRouter({
             successRate: 0,
             stopNowSuccessRate: 0,
             spendingStabilityRate: 0,
-            confidenceThreshold: 0.9,
+            confidenceThreshold: MC_CONFIDENCE_THRESHOLD,
             probesRun: 0,
             warning: "Default MC preset not found in database.",
             mcResult: null,
@@ -279,7 +280,7 @@ export const coastFireRouter = createTRPCRouter({
         stdDev: toNumber(preset.inflationStdDev),
       };
 
-      const CONFIDENCE = 0.9;
+      const CONFIDENCE = MC_CONFIDENCE_THRESHOLD;
       const NUM_TRIALS = 1000;
       const SEED = 42;
 

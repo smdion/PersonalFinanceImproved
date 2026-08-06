@@ -32,6 +32,11 @@ import type {
   LargePurchaseRow,
   YearAdjustmentRow,
 } from "@/components/tools/relocation/types";
+import {
+  DEFAULT_LOAN_DOWN_PAYMENT_PERCENT,
+  DEFAULT_LOAN_RATE,
+  DEFAULT_LOAN_TERM_YEARS,
+} from "@/lib/constants";
 
 export default function ToolsPage() {
   const user = useUser();
@@ -73,9 +78,9 @@ export default function ToolsPage() {
     purchasePrice: "",
     purchaseYear: String(new Date().getFullYear() + 1),
     financed: false,
-    downPaymentPercent: "20",
-    loanRate: "6.5",
-    loanTermYears: "30",
+    downPaymentPercent: String(DEFAULT_LOAN_DOWN_PAYMENT_PERCENT),
+    loanRate: String(DEFAULT_LOAN_RATE),
+    loanTermYears: String(DEFAULT_LOAN_TERM_YEARS),
     ongoingMonthlyCost: "",
     saleProceeds: "",
   });

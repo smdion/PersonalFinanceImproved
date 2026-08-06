@@ -15,7 +15,10 @@ import { eq, asc } from "drizzle-orm";
 import { toNumber } from "@/server/helpers";
 import * as schema from "@/lib/db/schema";
 import type { db as _db } from "@/lib/db";
-import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
+import {
+  DEFAULT_WITHDRAWAL_RATE,
+  DEFAULT_MC_INFLATION_RISK,
+} from "@/lib/constants";
 import type {
   AccountCategory,
   DecumulationDefaults,
@@ -291,7 +294,7 @@ export async function buildMcInputs(db: Db): Promise<{
    *  this to the client (e.g. computeMonteCarloProjection) use this as-is. */
   savedInflationOverrides: { meanRate?: number; stdDev?: number } | null;
 }> {
-  const BASE_INFLATION_RISK = { meanRate: 0.025, stdDev: 0.012 };
+  const BASE_INFLATION_RISK = DEFAULT_MC_INFLATION_RISK;
 
   const [assetClasses, assetCorrelations, glidePathRows, savedInflationRow] =
     await Promise.all([

@@ -16,6 +16,11 @@
  */
 
 import { formatPercent } from "@/lib/utils/format";
+import {
+  DEFAULT_RETURN_RATE,
+  DEFAULT_INFLATION_RATE,
+  DEFAULT_WITHDRAWAL_RATE,
+} from "@/lib/constants";
 
 export interface StressTestParams {
   /** Nominal annual return rate (e.g. 0.05 = 5%). */
@@ -69,10 +74,10 @@ export const STRESS_TEST_OPTIMISTIC: StressTestParams = {
  * The default-good scenario most users start from. Uses long-run averages.
  */
 export const STRESS_TEST_BASELINE: StressTestParams = {
-  returnRate: 0.07, // 7% nominal — long-run real ~5% + inflation 2%
-  inflationRate: 0.03, // 3% — long-run US average
+  returnRate: DEFAULT_RETURN_RATE, // 7% nominal — long-run real ~5% + inflation 2%
+  inflationRate: DEFAULT_INFLATION_RATE, // 3% — long-run US average
   salaryGrowthRate: 0.01, // 1% real
-  withdrawalRate: 0.04,
+  withdrawalRate: DEFAULT_WITHDRAWAL_RATE,
   label: "Long-run baseline",
   description:
     "Long-run US averages: 7% nominal return, 3% inflation, 1% real salary " +

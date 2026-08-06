@@ -14,6 +14,7 @@ import {
   getTraditionalBalance,
 } from "../../config/account-types";
 import { getRmdFactor } from "../../config/rmd-tables";
+import { RMD_EXCISE_TAX_RATE } from "../../constants";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -153,7 +154,7 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
         totalWithdrawal = roundToCents(totalWithdrawal + distributed);
         if (distributed < rmdShortfall - 0.01) {
           const penalty = roundToCents(
-            (rmdRequired - totalTraditionalWithdrawal) * 0.25,
+            (rmdRequired - totalTraditionalWithdrawal) * RMD_EXCISE_TAX_RATE,
           );
           warnings.push(
             `RMD SHORTFALL: Required $${rmdRequired.toFixed(0)} but only $${totalTraditionalWithdrawal.toFixed(0)} Traditional available. ` +

@@ -12,7 +12,11 @@ import {
   ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
-import { formatCurrency, compactCurrency } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  compactCurrency,
+  MONTH_NAMES_SHORT,
+} from "@/lib/utils/format";
 import { useTheme } from "@/lib/hooks/use-theme";
 import { GoalProjection, monthKey } from "./types";
 import { FUND_COLORS } from "@/lib/utils/colors";
@@ -46,24 +50,9 @@ function useChartPalette() {
   };
 }
 
-const MONTH_LABELS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
 function formatMonthKey(mk: string): string {
   const [y, m] = mk.split("-");
-  return `${MONTH_LABELS[parseInt(m!) - 1]} ${y}`;
+  return `${MONTH_NAMES_SHORT[parseInt(m!) - 1]} ${y}`;
 }
 
 // Custom tooltip showing balances + any events that month
@@ -207,7 +196,7 @@ export function SavingsTrajectoryChart({
             interval="preserveStartEnd"
             tickFormatter={(v: string) => {
               const [y, m] = v.split("-");
-              return `${MONTH_LABELS[parseInt(m!) - 1]} '${y!.slice(2)}`;
+              return `${MONTH_NAMES_SHORT[parseInt(m!) - 1]} '${y!.slice(2)}`;
             }}
           />
 

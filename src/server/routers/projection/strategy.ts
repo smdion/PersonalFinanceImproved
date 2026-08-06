@@ -30,6 +30,7 @@ import {
   geometricMean,
 } from "@/lib/calculators/random";
 import { formatPercent } from "@/lib/utils/format";
+import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import { toNumber } from "@/server/helpers";
 import type { AccountCategory } from "@/lib/calculators/types";
 import {
@@ -351,7 +352,8 @@ export const strategyRouter = createTRPCRouter({
       // --- Diagnose ---
       type DiagnosisGoal = "survival" | "smoothness" | "healthy";
       let primaryGoal: DiagnosisGoal = "healthy";
-      if (baseline.successRate < 0.9) primaryGoal = "survival";
+      if (baseline.successRate < MC_CONFIDENCE_THRESHOLD)
+        primaryGoal = "survival";
       else if (baseline.stabilityRate < 0.5) primaryGoal = "smoothness";
       const targetMetric: "survival" | "smoothness" =
         primaryGoal === "healthy" ? "smoothness" : primaryGoal;

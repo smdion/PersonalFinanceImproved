@@ -25,6 +25,7 @@ import {
 } from "@/lib/calculators/random";
 import { toNumber } from "@/server/helpers";
 import { sumBy } from "@/lib/utils/math";
+import { DEFAULT_MC_INFLATION_RISK } from "@/lib/constants";
 import type {
   AccountBalance,
   AccountCategory,
@@ -365,7 +366,7 @@ export const monteCarloRouter = createTRPCRouter({
             meanRate: toNumber(preset.inflationMean),
             stdDev: toNumber(preset.inflationStdDev),
           }
-        : { meanRate: 0.025, stdDev: 0.012 };
+        : DEFAULT_MC_INFLATION_RISK;
       const effectiveInflationRisk =
         input.inflationRisk ??
         (savedInflationOverrides

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { CHANGE_DETECTION_THRESHOLD } from "@/lib/constants";
 
 export type PushPreviewItem = {
   name: string;
@@ -39,10 +40,10 @@ export function PushPreviewModal({
   const formatValue = (n: number) =>
     valueFormat === "percent" ? formatPercent(n / 100, 3) : formatCurrency(n);
   const changed = items.filter(
-    (i) => Math.abs(i.newValue - i.currentYnab) >= 0.01,
+    (i) => Math.abs(i.newValue - i.currentYnab) >= CHANGE_DETECTION_THRESHOLD,
   );
   const unchanged = items.filter(
-    (i) => Math.abs(i.newValue - i.currentYnab) < 0.01,
+    (i) => Math.abs(i.newValue - i.currentYnab) < CHANGE_DETECTION_THRESHOLD,
   );
   const staleItems = items.filter((i) => i.stale);
   const isPull = direction === "pull";

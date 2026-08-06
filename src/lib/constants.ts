@@ -54,6 +54,9 @@ export const DEFAULT_HIGH_INCOME_THRESHOLD = 200_000;
  *  silently contributing 0% for users who haven't fully configured their profile. */
 export const FALLBACK_CONTRIBUTION_RATE = 0.25;
 
+/** Fallback pay periods per year (biweekly) when a job's schedule can't be resolved. */
+export const DEFAULT_PAY_PERIODS_PER_YEAR = 26;
+
 // ---------------------------------------------------------------------------
 // Distribution Tax Rates (defaults for new retirement scenarios)
 // ---------------------------------------------------------------------------
@@ -75,12 +78,6 @@ export const WEALTH_FORMULA_BASE_DENOMINATOR = 10;
 /** Multiplier applied to the wealth target formula. */
 export const WEALTH_FORMULA_MULTIPLIER = 2;
 
-/** Wealth score ≥ 1.0 = PAW (Prodigious Accumulator of Wealth). */
-export const PAW_THRESHOLD = 1.0;
-
-/** Wealth score ≥ 0.5 = AAW (Average Accumulator of Wealth). */
-export const AAW_THRESHOLD = 0.5;
-
 // ---------------------------------------------------------------------------
 // Financial Independence
 // ---------------------------------------------------------------------------
@@ -97,6 +94,42 @@ export const PERFORMANCE_STALE_DAYS = 14;
 
 /** Assumed annual growth rate for IRS contribution limits. */
 export const IRS_LIMIT_GROWTH_RATE = 0.02;
+
+// ---------------------------------------------------------------------------
+// RMD / Excise Tax
+// ---------------------------------------------------------------------------
+
+/** IRS excise tax rate on a missed/shortfalled RMD (25% under SECURE 2.0). */
+export const RMD_EXCISE_TAX_RATE = 0.25;
+
+// ---------------------------------------------------------------------------
+// Withdrawal Strategy Defaults
+// ---------------------------------------------------------------------------
+
+/** Default withdrawal percentage shared by constant-percentage, Vanguard
+ *  dynamic, and endowment withdrawal strategies. */
+export const DEFAULT_STRATEGY_WITHDRAWAL_PERCENT = 0.05;
+
+// ---------------------------------------------------------------------------
+// Monte Carlo / Projection
+// ---------------------------------------------------------------------------
+
+/** Success-rate threshold above which a Monte Carlo plan is considered
+ *  "confident" (e.g. Coast FIRE reachability, strategy diagnosis). */
+export const MC_CONFIDENCE_THRESHOLD = 0.9;
+
+/** Default inflation risk assumption for Monte Carlo simulations when no
+ *  preset-specific value is configured. */
+export const DEFAULT_MC_INFLATION_RISK = { meanRate: 0.025, stdDev: 0.012 };
+
+/** Default number of trials for a Monte Carlo simulation run. */
+export const MC_DEFAULT_TRIALS = 1000;
+
+/** React Query staleTime for projection queries (1 minute). */
+export const PROJECTION_STALE_TIME_MS = 60_000;
+
+/** Debounce delay applied to projection engine inputs before firing queries. */
+export const PROJECTION_DEBOUNCE_MS = 600;
 
 // ---------------------------------------------------------------------------
 // Tolerances
@@ -116,9 +149,6 @@ export const MAX_EFFECTIVE_TAX_RATE = 0.5;
 
 /** Funding ratio above which an account is considered over the IRS limit (filters rounding noise). */
 export const OVER_LIMIT_THRESHOLD = 1.005;
-
-/** Minimum bar width percentage for contribution visualization. */
-export const MIN_BAR_WIDTH_PCT = 0.005;
 
 /** Change detection threshold for contribution warnings (1 cent). */
 export const CHANGE_DETECTION_THRESHOLD = 0.01;
@@ -162,3 +192,33 @@ export const ANALYTICS_WEIGHT_COVERAGE_WARN_BPS = 500; // 5%
 
 /** Default number of snapshots to fetch for historical allocation/drift charts. */
 export const ANALYTICS_HISTORY_SNAPSHOT_LIMIT = 12;
+
+// ---------------------------------------------------------------------------
+// Settings Forms
+// ---------------------------------------------------------------------------
+
+/** Minimum tax year selectable/editable across bracket and limit settings editors. */
+export const TAX_YEAR_MIN = 2020;
+
+/** Maximum tax year selectable/editable across bracket and limit settings editors. */
+export const TAX_YEAR_MAX = 2040;
+
+// ---------------------------------------------------------------------------
+// Mortgage
+// ---------------------------------------------------------------------------
+
+/** Default closing costs assumption ($) for the refinance calculator. */
+export const DEFAULT_REFI_CLOSING_COSTS = "5000";
+
+// ---------------------------------------------------------------------------
+// Loan Defaults (relocation large-purchase planning)
+// ---------------------------------------------------------------------------
+
+/** Default down payment, as a whole-number percent (20 = 20%). */
+export const DEFAULT_LOAN_DOWN_PAYMENT_PERCENT = 20;
+
+/** Default loan interest rate, as a whole-number percent (6.5 = 6.5%). */
+export const DEFAULT_LOAN_RATE = 6.5;
+
+/** Default loan term in years. */
+export const DEFAULT_LOAN_TERM_YEARS = 30;

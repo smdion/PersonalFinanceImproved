@@ -11,6 +11,7 @@ import {
   getAccountTypeConfig,
   getLimitGroup,
 } from "@/lib/config/account-types";
+import { TAX_YEAR_MIN, TAX_YEAR_MAX } from "@/lib/constants";
 
 // Build account-type limit groups from config
 type LimitGroupEntry = {
@@ -186,7 +187,7 @@ export function ContributionLimitsSettings() {
 
   const handleAddYear = async () => {
     const yr = parseInt(newYear);
-    if (isNaN(yr) || yr < 2020 || yr > 2040) return;
+    if (isNaN(yr) || yr < TAX_YEAR_MIN || yr > TAX_YEAR_MAX) return;
     if (years.includes(yr)) return;
 
     if (copyFrom) {

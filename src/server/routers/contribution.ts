@@ -22,6 +22,7 @@ import {
   getSalaryTimelineForYear,
 } from "@/server/helpers";
 import { roundToCents } from "@/lib/utils/math";
+import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import { getAge, isPriorYearContribWindow } from "@/lib/utils/date";
 import {
   resolveIrsLimit,
@@ -333,7 +334,8 @@ export const contributionRouter = createTRPCRouter({
           }
         } else {
           // Fixed methods: scale by elapsed fraction
-          const periodsPerYear = jd?.periodsPerYear ?? 26;
+          const periodsPerYear =
+            jd?.periodsPerYear ?? DEFAULT_PAY_PERIODS_PER_YEAR;
           const periodsElapsed = jd?.periodsElapsed ?? 0;
           const annual = computeAnnualContribution(
             c.contributionMethod,
@@ -384,7 +386,7 @@ export const contributionRouter = createTRPCRouter({
               salary: 0,
               totalCompensation: 0,
               bonusGross: 0,
-              periodsPerYear: 26,
+              periodsPerYear: DEFAULT_PAY_PERIODS_PER_YEAR,
               periodsElapsedYtd: 0,
               accountTypes: [],
               perContribData: [],
@@ -1028,7 +1030,8 @@ export const contributionRouter = createTRPCRouter({
       const jointAccountTypes: AccountTypeSnapshot[] = [];
       for (const c of jointContribs) {
         const val = toNumber(c.contributionValue);
-        const periodsPerYear = results[0]?.periodsPerYear ?? 26;
+        const periodsPerYear =
+          results[0]?.periodsPerYear ?? DEFAULT_PAY_PERIODS_PER_YEAR;
         const salary = 0;
         const annual =
           c.contributionMethod === "percent_of_salary"

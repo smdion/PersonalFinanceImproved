@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, MONTH_NAMES_SHORT } from "@/lib/utils/format";
 import { FUND_COLORS } from "@/lib/utils/colors";
 import {
   GoalProjection,
@@ -19,21 +19,6 @@ interface SavingsGoalSummary {
   progress: number;
   monthsToTarget: number | null;
 }
-
-const MONTH_NAMES_SHORT = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
 
 function formatMonthYear(d: Date): string {
   return `${MONTH_NAMES_SHORT[d.getMonth()]} ${d.getFullYear()}`;

@@ -130,7 +130,7 @@ export function buildProjectionContext(
   // Otherwise include it (e.g., Jan 1 → 12 months, Jul 1 → 6 months, Mar 30 → 9 months).
   const pastMidMonth = input.asOfDate.getDate() > 15;
   const monthsRemaining =
-    12 - input.asOfDate.getMonth() - (pastMidMonth ? 1 : 0);
+    MONTHS_PER_YEAR - input.asOfDate.getMonth() - (pastMidMonth ? 1 : 0);
   const firstYearFraction = monthsRemaining / MONTHS_PER_YEAR;
 
   const rmdStartAge =
