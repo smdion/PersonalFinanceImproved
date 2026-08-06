@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
-import { FUND_COLORS } from "./fund-colors";
+import { FUND_COLORS } from "@/lib/utils/colors";
 import type { GoalProjection, PlannedTransaction } from "./types";
 
 interface EditForm {

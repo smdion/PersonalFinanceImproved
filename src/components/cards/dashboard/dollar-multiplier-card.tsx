@@ -10,6 +10,7 @@ import {
   formatPercent,
 } from "@/lib/utils/format";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { sumBy } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
 
 function DollarMultiplierCardImpl() {
@@ -35,8 +36,7 @@ function DollarMultiplierCardImpl() {
   const { settings, returnRateSummary, people } = data;
   const currentYear = new Date().getFullYear();
   const currentAge = Math.round(
-    people.reduce((s, p) => s + (currentYear - p.birthYear), 0) /
-      (people.length || 1),
+    sumBy(people, (p) => currentYear - p.birthYear) / (people.length || 1),
   );
   const yearsToRetirement = Math.max(0, settings.retirementAge - currentAge);
   const avgReturn = returnRateSummary.avgAccumulation;

@@ -15,7 +15,7 @@ import {
 import { formatCurrency, compactCurrency } from "@/lib/utils/format";
 import { useTheme } from "@/lib/hooks/use-theme";
 import { GoalProjection, monthKey } from "./types";
-import { FUND_COLORS } from "./fund-colors";
+import { FUND_COLORS } from "@/lib/utils/colors";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
 
 interface TrajectoryDataPoint {

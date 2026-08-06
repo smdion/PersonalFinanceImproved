@@ -2,7 +2,7 @@
 
 import React from "react";
 import { formatCurrency } from "@/lib/utils/format";
-import { FUND_COLORS } from "./fund-colors";
+import { FUND_COLORS } from "@/lib/utils/colors";
 import {
   GoalProjection,
   monthKey,

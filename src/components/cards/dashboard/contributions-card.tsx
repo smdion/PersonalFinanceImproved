@@ -18,7 +18,7 @@ import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
 import { OVER_LIMIT_THRESHOLD } from "@/lib/constants";
-import { safeDivide } from "@/lib/utils/math";
+import { safeDivide, sumBy } from "@/lib/utils/math";
 import {
   ContribPeriodToggle,
   getContribMultiplier,
@@ -139,54 +139,34 @@ function ContributionsCardImpl() {
   const jointPortfolio = jointAts.filter((a) =>
     isPortfolioParent(a.parentCategory),
   );
-  const jointRetNoMatch = jointRetirement.reduce(
-    (s, a) => s + a.employeeContrib,
-    0,
-  );
-  const jointRetWithMatch = jointRetirement.reduce(
-    (s, a) => s + a.totalContrib,
-    0,
-  );
-  const jointPortNoMatch = jointPortfolio.reduce(
-    (s, a) => s + a.employeeContrib,
-    0,
-  );
-  const jointPortWithMatch = jointPortfolio.reduce(
-    (s, a) => s + a.totalContrib,
-    0,
-  );
+  const jointRetNoMatch = sumBy(jointRetirement, (a) => a.employeeContrib);
+  const jointRetWithMatch = sumBy(jointRetirement, (a) => a.totalContrib);
+  const jointPortNoMatch = sumBy(jointPortfolio, (a) => a.employeeContrib);
+  const jointPortWithMatch = sumBy(jointPortfolio, (a) => a.totalContrib);
   // Household totals from server-computed view-aware data
   const householdRetNoMatch =
-    people.reduce(
-      (s, p) => s + p.totals.views[viewMode].retirementWithoutMatch,
-      0,
-    ) + jointRetNoMatch;
+    sumBy(people, (p) => p.totals.views[viewMode].retirementWithoutMatch) +
+    jointRetNoMatch;
   const householdRetWithMatch =
-    people.reduce(
-      (s, p) => s + p.totals.views[viewMode].retirementWithMatch,
-      0,
-    ) + jointRetWithMatch;
+    sumBy(people, (p) => p.totals.views[viewMode].retirementWithMatch) +
+    jointRetWithMatch;
   const householdPortNoMatch =
-    people.reduce(
-      (s, p) => s + p.totals.views[viewMode].portfolioWithoutMatch,
-      0,
-    ) + jointPortNoMatch;
+    sumBy(people, (p) => p.totals.views[viewMode].portfolioWithoutMatch) +
+    jointPortNoMatch;
   const householdPortWithMatch =
-    people.reduce(
-      (s, p) => s + p.totals.views[viewMode].portfolioWithMatch,
-      0,
-    ) + jointPortWithMatch;
+    sumBy(people, (p) => p.totals.views[viewMode].portfolioWithMatch) +
+    jointPortWithMatch;
   const householdTotalNoMatch =
-    people.reduce((s, p) => s + p.totals.views[viewMode].totalWithoutMatch, 0) +
+    sumBy(people, (p) => p.totals.views[viewMode].totalWithoutMatch) +
     jt.totalWithoutMatch;
   const householdTotalWithMatch =
-    people.reduce((s, p) => s + p.totals.views[viewMode].totalWithMatch, 0) +
+    sumBy(people, (p) => p.totals.views[viewMode].totalWithMatch) +
     jt.totalWithMatch;
 
   // Use average periodsPerYear for household-level multiplier
   const avgPeriodsPerYear =
     people.length > 0
-      ? people.reduce((s, p) => s + p.periodsPerYear!, 0) / people.length
+      ? sumBy(people, (p) => p.periodsPerYear!) / people.length
       : 26;
   const householdMult = getContribMultiplier(contribPeriod, avgPeriodsPerYear);
   const suffix = getPeriodSuffix(contribPeriod);

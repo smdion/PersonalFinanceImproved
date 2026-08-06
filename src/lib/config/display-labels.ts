@@ -1,6 +1,13 @@
 // Consolidated display label maps.
 // Components import from here — never define local label maps.
 
+export const PAY_PERIOD_LABELS: Record<string, string> = {
+  weekly: "Weekly",
+  biweekly: "Biweekly",
+  semimonthly: "Semi-Monthly",
+  monthly: "Monthly",
+};
+
 export const CONTRIBUTION_METHOD_LABELS: Record<string, string> = {
   percent_of_salary: "% of Salary",
   fixed_per_period: "Fixed/Period",

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@/lib/db";
 import { auth } from "@/server/auth";
 import { importBackup, type BackupData } from "@/lib/db/version-logic";

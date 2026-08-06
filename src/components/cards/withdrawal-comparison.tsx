@@ -20,18 +20,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
-
-// 8 distinct colors for strategies
-const STRATEGY_COLORS = [
-  "#4f46e5", // indigo-600
-  "#ef4444", // red-500
-  "#10b981", // emerald-500
-  "#f59e0b", // amber-500
-  "#8b5cf6", // violet-500
-  "#3b82f6", // blue-500
-  "#ec4899", // pink-500
-  "#14b8a6", // teal-500
-];
+import { STRATEGY_COMPARISON_COLORS, CHART_COLORS } from "@/lib/utils/colors";
 
 type StrategyResult = {
   strategy: string;
@@ -206,7 +195,9 @@ export function WithdrawalComparisonCard({
                           className="inline-block w-2 h-2 rounded-full flex-shrink-0"
                           style={{
                             backgroundColor:
-                              STRATEGY_COLORS[i % STRATEGY_COLORS.length],
+                              STRATEGY_COMPARISON_COLORS[
+                                i % STRATEGY_COMPARISON_COLORS.length
+                              ],
                           }}
                         />
                         <span
@@ -319,32 +310,35 @@ export function WithdrawalComparisonCard({
           </div>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke={CHART_COLORS.wdComparisonGrid}
+              />
               <XAxis
                 dataKey="age"
-                stroke="#9ca3af"
+                stroke={CHART_COLORS.wdComparisonAxis}
                 tick={{ fontSize: CHART_FONT.tick }}
                 label={{
                   value: "Age",
                   position: "insideBottom",
                   offset: -5,
                   fontSize: CHART_FONT.tick,
-                  fill: "#9ca3af",
+                  fill: CHART_COLORS.wdComparisonAxis,
                 }}
               />
               <YAxis
-                stroke="#9ca3af"
+                stroke={CHART_COLORS.wdComparisonAxis}
                 tick={{ fontSize: CHART_FONT.tick }}
                 tickFormatter={(v: number) => compactCurrency(v)}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#1f2937",
-                  border: "1px solid #374151",
+                  backgroundColor: CHART_COLORS.wdComparisonTooltipBg,
+                  border: `1px solid ${CHART_COLORS.wdComparisonGrid}`,
                   borderRadius: "6px",
                   fontSize: CHART_FONT.tooltip,
                 }}
-                labelStyle={{ color: "#9ca3af" }}
+                labelStyle={{ color: CHART_COLORS.wdComparisonAxis }}
                 formatter={(value) => formatCurrency(Number(value))}
                 labelFormatter={(age) => `Age ${age}`}
               />
@@ -357,7 +351,11 @@ export function WithdrawalComparisonCard({
                   type="monotone"
                   dataKey={s.strategy}
                   name={s.shortLabel}
-                  stroke={STRATEGY_COLORS[i % STRATEGY_COLORS.length]}
+                  stroke={
+                    STRATEGY_COMPARISON_COLORS[
+                      i % STRATEGY_COMPARISON_COLORS.length
+                    ]
+                  }
                   strokeWidth={s.strategy === activeStrategy ? 2.5 : 1.5}
                   dot={false}
                   strokeDasharray={

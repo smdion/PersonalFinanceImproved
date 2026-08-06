@@ -30,7 +30,7 @@ import type {
   BonusEstimate,
 } from "./types";
 import { formatPercent } from "../utils/format";
-import { roundToCents, safeDivide } from "../utils/math";
+import { roundToCents, safeDivide, sumBy } from "../utils/math";
 import { MS_PER_DAY } from "../constants";
 
 /** Maps pay frequency to the number of pay periods per year. */
@@ -182,16 +182,17 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     }
   }
 
-  const totalPreTax = preTaxDeductions.reduce((s, d) => s + d.amount, 0);
-  const totalPostTax = postTaxDeductions.reduce((s, d) => s + d.amount, 0);
+  const totalPreTax = sumBy(preTaxDeductions, (d) => d.amount);
+  const totalPostTax = sumBy(postTaxDeductions, (d) => d.amount);
 
   // ── Step 2: Compute FICA base ──
   // FICA base = gross minus ONLY FICA-exempt deductions (Section 125 health/dental/vision).
   // This is different from federal taxable gross because 401k and HSA reduce income tax but NOT FICA.
   // Only items from input.deductions can be FICA-exempt; contribution accounts never are.
-  const ficaExemptFromDeductions = input.deductions
-    .filter((d) => d.ficaExempt)
-    .reduce((s, d) => s + d.amount, 0);
+  const ficaExemptFromDeductions = sumBy(
+    input.deductions.filter((d) => d.ficaExempt),
+    (d) => d.amount,
+  );
   const ficaBase = gross - ficaExemptFromDeductions;
 
   // ── Step 3: Federal withholding (IRS annualized method) ──
@@ -1035,12 +1036,13 @@ export function calculateBlendedAnnual(
     // Per-period values from this segment's paycheck (at this salary rate)
     const segGross = pc.gross;
     const segFederal = pc.federalWithholding;
-    const segPreTax = pc.preTaxDeductions.reduce((s, d) => s + d.amount, 0);
-    const segPostTax = pc.postTaxDeductions.reduce((s, d) => s + d.amount, 0);
+    const segPreTax = sumBy(pc.preTaxDeductions, (d) => d.amount);
+    const segPostTax = sumBy(pc.postTaxDeductions, (d) => d.amount);
     // FICA base: gross minus only FICA-exempt deductions (same logic as calculatePaycheck)
-    const ficaExempt = pc.preTaxDeductions
-      .filter((d) => d.ficaExempt)
-      .reduce((s, d) => s + d.amount, 0);
+    const ficaExempt = sumBy(
+      pc.preTaxDeductions.filter((d) => d.ficaExempt),
+      (d) => d.amount,
+    );
     const segFicaBase = segGross - ficaExempt;
 
     for (let p = seg.startPeriod; p <= seg.endPeriod; p++) {
@@ -1076,15 +1078,15 @@ export function calculateBlendedAnnual(
     totalPostTax;
 
   // Weighted average salary
-  const totalPeriods = segments.reduce(
-    (s, seg) => s + (seg.endPeriod - seg.startPeriod + 1),
-    0,
+  const totalPeriods = sumBy(
+    segments,
+    (seg) => seg.endPeriod - seg.startPeriod + 1,
   );
   const blendedSalary =
     totalPeriods > 0
-      ? segments.reduce(
-          (s, seg) => s + seg.salary * (seg.endPeriod - seg.startPeriod + 1),
-          0,
+      ? sumBy(
+          segments,
+          (seg) => seg.salary * (seg.endPeriod - seg.startPeriod + 1),
         ) / totalPeriods
       : 0;
 

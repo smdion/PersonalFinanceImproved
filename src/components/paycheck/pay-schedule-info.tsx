@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { PaycheckResult } from "./types";
 import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
+import { PAY_PERIOD_LABELS } from "@/lib/config/display-labels";
 
 export function PayScheduleInfo({
   job,
@@ -20,12 +21,7 @@ export function PayScheduleInfo({
 }) {
   const [expanded, setExpanded] = useState(false);
 
-  const periodLabel: Record<string, string> = {
-    weekly: "Weekly",
-    biweekly: "Biweekly",
-    semimonthly: "Semi-Monthly",
-    monthly: "Monthly",
-  };
+  const periodLabel = PAY_PERIOD_LABELS;
 
   return (
     <div className="mt-2">

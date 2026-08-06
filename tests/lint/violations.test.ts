@@ -17,6 +17,13 @@
  *    9. Inline `.toFixed(N) + "%"` instead of formatPercent()
  *   10. Mutation using `z.string()` for enum-typed fields (accountType, service) instead of z.enum()
  *   11. Absolute imports from engine internals instead of the barrel
+ *   12. Hand-rolled Modified-Dietz denominators outside performance.ts
+ *   13. Raw division inside formatPercent() instead of safeDivide() (H1/M1/M36/L9 class)
+ *   14. Tailwind-class-returning color helper passed to inline style backgroundColor (M18 class)
+ *   15. `import { z } from "zod"` instead of "zod/v4"
+ *   16. taxYear/projectionYear z.number().int() field missing .min()/.max() bounds (M10 class)
+ *   17. accountLabel fallback built from a template literal instead of null (M40 class)
+ *   18. Hook file under src/lib/hooks/ using React hooks without a "use client" directive (H4 class)
  *
  * Intentionally NOT checked (needs semantic analysis, not string matching):
  *   - "Router computing budget expenses with different column index" (#1)
@@ -429,6 +436,95 @@ function findHandRolledDietzDenominatorViolations(): Violation[] {
   );
 }
 
+// Rule 13: raw division inside formatPercent() instead of safeDivide().
+// formatPercent(a / b) renders Infinity/NaN when b is 0 (the M1/M36/L9 bug
+// class). Matches `formatPercent(<ident> / <ident-starting-with-a-letter>` —
+// the denominator must start with a letter/underscore (not a digit), so
+// `formatPercent(pct / 100)`-style percentage-point-to-fraction scale
+// conversions (divisor is a literal, can never be 0) don't false-positive;
+// only genuine identifier/identifier divisions (where the divisor could
+// plausibly be a runtime 0) are flagged.
+function findRawDivisionInFormatPercentViolations(): Violation[] {
+  return findPatternViolations(
+    /formatPercent\(\s*[\w.]+\s*\/\s*[a-zA-Z_][\w.]*/,
+    "no-raw-division-in-format-percent",
+    { additionalExempt: new Set(["src/lib/utils/format.ts"]) },
+  );
+}
+
+// Rule 14: a Tailwind-class-returning color helper (accountColor,
+// accountMatchColor, accountBorderColor, accountTextColor — all defined in
+// colors.ts to return strings like "bg-blue-500") passed to an inline style
+// backgroundColor. Silently renders no color (M18) — inline styles need a
+// real hex value (categoryChartHex, CHART_COLORS, BRAND_COLORS, etc.).
+function findColorHelperAsInlineStyleViolations(): Violation[] {
+  return findPatternViolations(
+    /backgroundColor:\s*(?:account(?:Color|MatchColor|BorderColor|TextColor))\(/,
+    "no-tailwind-color-helper-as-inline-style",
+  );
+}
+
+// Rule 15: `import { z } from "zod"` instead of "zod/v4". Recurred
+// independently at least twice (L39, L124) — every other file in the repo
+// uses the v4 import.
+function findLegacyZodImportViolations(): Violation[] {
+  return findPatternViolations(/from\s+["']zod["']/, "no-legacy-zod-import");
+}
+
+// Rule 16: taxYear/projectionYear z.number().int() fields with no bounds.
+// The same unbounded-year bug (M10) was found independently in two
+// different router files (settings/retirement.ts, projection/_shared.ts)
+// months apart — the pattern recurs because there's no default. Only
+// matches the exact `z.number().int()` shape with nothing chained after,
+// so a field that already has `.min(...)` doesn't false-positive.
+function findUnboundedYearFieldViolations(): Violation[] {
+  return findPatternViolations(
+    /\b(?:taxYear|projectionYear)\s*:\s*z\.number\(\)\.int\(\)\s*[,)]/,
+    "no-unbounded-year-field",
+  );
+}
+
+// Rule 17: accountLabel built from a template literal containing
+// accountType, passed as a fallback into accountDisplayName(). Skips its
+// casing-aware Priority-3 construction and returns the raw lowercase DB key
+// verbatim (M40) — pass `accountLabel: null` instead and let
+// accountDisplayName() build the label itself.
+function findAccountLabelTemplateFallbackViolations(): Violation[] {
+  return findPatternViolations(
+    /accountLabel:\s*(?:[\w.?? ]*)?`\$\{[\w.]*accountType\}/,
+    "no-account-label-template-fallback",
+  );
+}
+
+// Rule 18: a file under src/lib/hooks/ that calls a React hook
+// (useState/useEffect/useRef/useCallback/useMemo/useContext) but doesn't
+// start with a "use client" directive. Crashes at runtime if imported from
+// a Server Component (H4 — found 4 instances in this exact directory).
+function findMissingUseClientOnHookViolations(): Violation[] {
+  const violations: Violation[] = [];
+  const HOOKS_DIR = path.join(SRC_DIR, "lib/hooks");
+  if (!fs.existsSync(HOOKS_DIR)) return violations;
+  const reactHookPattern =
+    /\buse(?:State|Effect|Ref|Callback|Memo|Context|Reducer|LayoutEffect)\(/;
+  for (const file of walkTsFiles(HOOKS_DIR)) {
+    const rel = relPath(file);
+    if (isExempt(rel)) continue;
+    const lines = readFileLines(file);
+    const usesReactHook = lines.some((l) => reactHookPattern.test(l));
+    if (!usesReactHook) continue;
+    const firstContentLine = lines.find((l) => l.trim().length > 0) ?? "";
+    if (!firstContentLine.trim().startsWith('"use client"')) {
+      violations.push({
+        file: rel,
+        line: 1,
+        rule: "no-missing-use-client-on-hook",
+        snippet: firstContentLine.trim().slice(0, 100),
+      });
+    }
+  }
+  return violations;
+}
+
 // ── Tests ───────────────────────────────────────────────────────────
 
 function formatViolations(label: string, violations: Violation[]): string {
@@ -584,6 +680,79 @@ describe("RULES.md violations sweep", () => {
         `Found ${violations.length} hand-rolled-dietz-denominator violations. ` +
           `Use computeReturn()/sumAccounts() from src/lib/pure/performance.ts ` +
           `instead of reimplementing the return formula.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no raw division inside formatPercent() (use safeDivide())", () => {
+    const violations = findRawDivisionInFormatPercentViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} raw-division-in-formatPercent violations. ` +
+          `Wrap the division in safeDivide() from src/lib/utils/math.ts — an ` +
+          `unguarded divisor of 0 renders Infinity/NaN.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no Tailwind-class-returning color helper passed to inline style backgroundColor", () => {
+    const violations = findColorHelperAsInlineStyleViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} color-helper-as-inline-style violations. ` +
+          `accountColor()/accountMatchColor()/accountBorderColor()/accountTextColor() ` +
+          `return Tailwind class strings, not hex — use categoryChartHex() or a ` +
+          `CHART_COLORS/BRAND_COLORS hex value for inline styles instead.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it('no `import { z } from "zod"` (use "zod/v4")', () => {
+    const violations = findLegacyZodImportViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} legacy-zod-import violations. ` +
+          `Import from "zod/v4" like every other file in the repo.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no unbounded taxYear/projectionYear z.number().int() fields", () => {
+    const violations = findUnboundedYearFieldViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} unbounded-year-field violations. ` +
+          `Add .min(1900).max(2100) (or similar) — this exact gap was found ` +
+          `independently in two different router files.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no accountLabel fallback built from a template literal (use null)", () => {
+    const violations = findAccountLabelTemplateFallbackViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} accountLabel-template-fallback violations. ` +
+          `Pass accountLabel: null instead — accountDisplayName() falls through ` +
+          `to its own casing-aware construction; a hand-built fallback string can ` +
+          `get returned verbatim (raw lowercase DB key) instead.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it('no hook in src/lib/hooks/ using React hooks without a "use client" directive', () => {
+    const violations = findMissingUseClientOnHookViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} missing-use-client-on-hook violations. ` +
+          `Add "use client"; as the first line — importing a hook that calls ` +
+          `React hooks from a Server Component crashes at runtime.\n` +
           formatViolations("Violations", violations),
       );
     }

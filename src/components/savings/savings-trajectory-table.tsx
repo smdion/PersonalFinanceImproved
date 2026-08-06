@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import { formatCurrency } from "@/lib/utils/format";
-import { FUND_COLORS } from "./fund-colors";
+import { FUND_COLORS } from "@/lib/utils/colors";
 import type { GoalProjection } from "./types";
 import { trpc } from "@/lib/trpc";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";

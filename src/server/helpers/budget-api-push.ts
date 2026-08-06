@@ -18,6 +18,7 @@
 
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { roundToCents } from "@/lib/utils/math";
 import * as schema from "@/lib/db/schema";
 import type { AccountMapping } from "@/lib/db/schema";
 import type { BudgetAPIClient } from "@/lib/budget-api";
@@ -258,7 +259,7 @@ export async function pushSnapshotToBudgetApi(input: {
       const currentBalance = await client.getAccountBalance(
         group.remoteAccountId,
       );
-      const difference = Math.round((group.total - currentBalance) * 100) / 100;
+      const difference = roundToCents(group.total - currentBalance);
       const memo = buildMemo(snapshotId, group.contributorLabels);
       const transactionId = await client.createTransaction({
         accountId: group.remoteAccountId,

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { formatCurrency, formatNumber } from "@/lib/utils/format";
+import { safeDivide } from "@/lib/utils/math";
 import { HelpTip } from "@/components/ui/help-tip";
 import type { LoanSummary } from "./types";
 
@@ -55,7 +56,7 @@ export function RefinanceCalculator({
   const monthlySavings = currentMonthly - newMonthly;
   const breakEvenMonths =
     closingCosts > 0 && monthlySavings > 0
-      ? Math.ceil(closingCosts / monthlySavings)
+      ? Math.ceil(safeDivide(closingCosts, monthlySavings, 0)!)
       : 0;
 
   return (

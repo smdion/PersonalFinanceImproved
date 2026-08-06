@@ -3,6 +3,7 @@
  * Extracted from historical router — no DB or I/O dependency.
  */
 import { toNumber } from "@/server/helpers/transforms";
+import { sumBy } from "@/lib/utils/math";
 
 /** A job's salary change record. */
 export type SalaryChange = {
@@ -103,7 +104,7 @@ export function resolveOtherAssetsForYear(
       items.push({ name, value: resolved.value, note: resolved.note });
     }
   }
-  return { items, total: items.reduce((s, i) => s + i.value, 0) };
+  return { items, total: sumBy(items, (i) => i.value) };
 }
 
 /**
@@ -113,7 +114,8 @@ export function computeHomeImpCumulative(
   items: { year: number; cost: string | null }[],
   upToYear: number,
 ): number {
-  return items
-    .filter((hi) => hi.year <= upToYear)
-    .reduce((sum, hi) => sum + toNumber(hi.cost), 0);
+  return sumBy(
+    items.filter((hi) => hi.year <= upToYear),
+    (hi) => toNumber(hi.cost),
+  );
 }

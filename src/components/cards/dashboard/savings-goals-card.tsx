@@ -4,8 +4,9 @@ import { memo } from "react";
 
 import { trpc } from "@/lib/trpc";
 import { Card, ProgressBar } from "@/components/ui/card";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, formatNumber } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { sumBy } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
 
 function SavingsGoalsCardImpl() {
@@ -267,7 +268,7 @@ function SavingsGoalsCardImpl() {
             <div className="flex justify-between">
               <span className="text-muted">Current Months</span>
               <span className="text-primary">
-                {efund.monthsCovered!.toFixed(2)}
+                {formatNumber(efund.monthsCovered!, 2)}
               </span>
             </div>
             {efund.outstandingSelfLoans > 0 &&
@@ -275,7 +276,7 @@ function SavingsGoalsCardImpl() {
                 <div className="flex justify-between">
                   <span className="text-muted">Repaid Months</span>
                   <span className="text-primary">
-                    {efund.monthsCoveredWithRepay.toFixed(2)}
+                    {formatNumber(efund.monthsCoveredWithRepay, 2)}
                   </span>
                 </div>
               )}
@@ -403,9 +404,7 @@ function SavingsGoalsCardImpl() {
       <div className="mt-3 pt-3 border-t border-subtle flex justify-between text-sm">
         <span className="text-muted">Monthly pool</span>
         <span className="text-primary font-medium">
-          {formatCurrency(
-            savings.goals.reduce((s, g) => s + g.monthlyAllocation, 0),
-          )}
+          {formatCurrency(sumBy(savings.goals, (g) => g.monthlyAllocation))}
           /mo
         </span>
       </div>

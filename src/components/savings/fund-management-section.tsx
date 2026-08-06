@@ -7,7 +7,7 @@ import { FundCardGrid } from "./fund-card-grid";
 import { FundCard } from "./fund-card";
 import { FundTimelineDetail } from "./fund-timeline-detail";
 import { EmergencyFundDetail } from "./emergency-fund-detail";
-import { FUND_COLORS } from "./fund-colors";
+import { FUND_COLORS } from "@/lib/utils/colors";
 import type {
   GoalProjection,
   PlannedTxForm,

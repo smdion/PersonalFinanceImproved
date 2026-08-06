@@ -22,6 +22,7 @@ import {
   RBAC_ADMIN_GROUP_KEY,
 } from "@/server/auth";
 import { buildAccountLabel } from "@/lib/utils/format";
+import { roundToCents } from "@/lib/utils/math";
 import {
   accountCategoryEnum,
   getAccountTypeConfig,
@@ -947,7 +948,7 @@ export const adminProcedures = {
                       await ctx.db
                         .update(schema.portfolioAccounts)
                         .set({
-                          amount: String(Math.round(scaled * 100) / 100),
+                          amount: String(roundToCents(scaled)),
                         })
                         .where(eq(schema.portfolioAccounts.id, row.id));
                     }

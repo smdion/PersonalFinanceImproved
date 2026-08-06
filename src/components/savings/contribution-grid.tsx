@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { GoalProjection, monthKey } from "./types";
-import { FUND_COLORS } from "./fund-colors";
+import { FUND_COLORS } from "@/lib/utils/colors";
 
 interface ContributionGridProps {
   goalProjections: GoalProjection[];

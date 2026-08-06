@@ -55,7 +55,7 @@ import {
   isTaxFreeBucket,
   tracksCostBasis,
 } from "@/lib/config/account-types";
-import { roundToCents } from "@/lib/utils/math";
+import { roundToCents, sumBy } from "@/lib/utils/math";
 import {
   IRS_LIMIT_GROWTH_RATE,
   FALLBACK_CONTRIBUTION_RATE,
@@ -307,12 +307,11 @@ export async function buildEnginePayload(
     : new Date();
   const currentYear = referenceDate.getFullYear();
   const avgAge = Math.round(
-    perPersonSettings.reduce((s, p) => s + (currentYear - p.birthYear), 0) /
+    sumBy(perPersonSettings, (p) => currentYear - p.birthYear) /
       perPersonSettings.length,
   );
   const avgRetirementAge = Math.round(
-    perPersonSettings.reduce((s, p) => s + p.retirementAge, 0) /
-      perPersonSettings.length,
+    sumBy(perPersonSettings, (p) => p.retirementAge) / perPersonSettings.length,
   );
   // Household retirement age: when the last person retires (full decumulation)
   const householdRetirementAge =
@@ -327,14 +326,14 @@ export async function buildEnginePayload(
     const labels = p.columnLabels as string[];
     const months = (p.columnMonths as number[] | null) ?? null;
     const totals = labels.map((_: string, colIdx: number) =>
-      items.reduce(
-        (sum: number, item) => sum + ((item.amounts as number[])[colIdx] ?? 0),
-        0,
-      ),
+      sumBy(items, (item) => (item.amounts as number[])[colIdx] ?? 0),
     );
     const weightedAnnualTotal = months
       ? roundToCents(
-          totals.reduce((sum, t, i) => sum + t * (months[i] ?? 0), 0),
+          sumBy(
+            totals.map((t, i) => t * (months[i] ?? 0)),
+            (v) => v,
+          ),
         )
       : null;
     return {
@@ -382,7 +381,7 @@ export async function buildEnginePayload(
   // combinedSalary = effective income (respects includeBonusInContributions flag)
   // Used for contribution calculations where percent_of_salary uses the payroll basis
   // totalCompensation = always includes bonus — used for display and rate calculations
-  const totalCompensation = jobSalaries.reduce((s, js) => s + js.totalComp, 0);
+  const totalCompensation = sumBy(jobSalaries, (js) => js.totalComp);
 
   // Portfolio by tax bucket + per-account balances (combined for engine)
   const portfolioByTaxType: TaxBuckets = {
@@ -516,10 +515,7 @@ export async function buildEnginePayload(
       totalByCategory[cat] = (totalByCategory[cat] ?? 0) + amt;
     }
   }
-  const portfolioTotal = Object.values(totalByCategory).reduce(
-    (s, v) => s + v,
-    0,
-  );
+  const portfolioTotal = sumBy(Object.values(totalByCategory), (v) => v);
   const ownershipByPerson: Record<string, Record<string, number>> = {};
   for (const [name, personBals] of Object.entries(balanceByPersonByCategory)) {
     ownershipByPerson[name] = {};
@@ -539,9 +535,10 @@ export async function buildEnginePayload(
       s.value,
     ]),
   );
-  const costBasisVal = perfAccounts
-    .filter((p) => p.isActive && tracksCostBasis(p.accountType))
-    .reduce((sum, p) => sum + toNumber(String(p.costBasis ?? "0")), 0);
+  const costBasisVal = sumBy(
+    perfAccounts.filter((p) => p.isActive && tracksCostBasis(p.accountType)),
+    (p) => toNumber(String(p.costBasis ?? "0")),
+  );
   portfolioByTaxType.afterTaxBasis = costBasisVal;
   // Distribute cost basis to per-parentCategory buckets proportionally by afterTax balance
   const totalAfterTax = portfolioByTaxType.afterTax;
@@ -867,7 +864,7 @@ export async function buildEnginePayload(
       // Also add to household-level overrides for single-person fallback
       if (!hasMultiplePeople) {
         const totalGrown =
-          Object.values(salaryOvr).reduce((s, v) => s + v, 0) *
+          sumBy(Object.values(salaryOvr), (v) => v) *
           Math.pow(1 + raiseRate, override.projectionYear - currentYear);
         dbSalaryOverrides.push({
           year: override.projectionYear,
@@ -896,13 +893,11 @@ export async function buildEnginePayload(
     );
 
     // Compute per-profile contribution rate ceiling
-    const switchedTotalComp = resolved.jobSalaries.reduce(
-      (s, js) => s + js.totalComp,
-      0,
+    const switchedTotalComp = sumBy(resolved.jobSalaries, (js) => js.totalComp);
+    const switchedTotalContrib = sumBy(
+      Object.values(data.baseYearContributions),
+      (v) => v,
     );
-    const switchedTotalContrib = Object.values(
-      data.baseYearContributions,
-    ).reduce((s, v) => s + v, 0);
     const switchedContribRate =
       switchedTotalComp > 0 ? switchedTotalContrib / switchedTotalComp : 0;
 
@@ -936,9 +931,9 @@ export async function buildEnginePayload(
   profileSwitches.sort((a, b) => a.year - b.year);
 
   // Derive accumulation defaults from real paycheck/contribution data
-  const totalRealContrib = Object.values(contribByCategory).reduce(
-    (s, c) => s + c.annual,
-    0,
+  const totalRealContrib = sumBy(
+    Object.values(contribByCategory),
+    (c) => c.annual,
   );
   // Rate based on total compensation (always includes bonus)
   const displayContribRate =

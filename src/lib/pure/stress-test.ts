@@ -15,6 +15,8 @@
  * the projection with these inputs and rendering a comparison view.
  */
 
+import { formatPercent } from "@/lib/utils/format";
+
 export interface StressTestParams {
   /** Nominal annual return rate (e.g. 0.05 = 5%). */
   returnRate: number;
@@ -120,7 +122,7 @@ export function detectRosyAssumptions(
       userValue: returnRate,
       threshold: 0.08,
       message:
-        `Your assumed return rate (${(returnRate * 100).toFixed(1)}%) is above ` +
+        `Your assumed return rate (${formatPercent(returnRate, 1)}) is above ` +
         `the long-run historical average for US equities (~7% nominal). ` +
         `Sustained 8%+ over 30 years is in the top quartile of history. ` +
         `Run the Conservative Stress Test to see how the plan holds up if ` +
@@ -134,7 +136,7 @@ export function detectRosyAssumptions(
       userValue: inflationRate,
       threshold: 0.025,
       message:
-        `Your inflation assumption (${(inflationRate * 100).toFixed(1)}%) is ` +
+        `Your inflation assumption (${formatPercent(inflationRate, 1)}) is ` +
         `below the long-run US historical average (~3%). The 1970s saw ` +
         `9–14%; 2021–2023 saw 6–9%. Consider running the stress test at ` +
         `4% inflation to see the downside.`,
@@ -147,7 +149,7 @@ export function detectRosyAssumptions(
       userValue: salaryGrowthRate,
       threshold: 0.04,
       message:
-        `Your assumed salary growth rate (${(salaryGrowthRate * 100).toFixed(1)}%) ` +
+        `Your assumed salary growth rate (${formatPercent(salaryGrowthRate, 1)}) ` +
         `is above 4% per year. Career growth slows after early career and ` +
         `can stall during recessions. Consider running the stress test at ` +
         `0% real growth.`,

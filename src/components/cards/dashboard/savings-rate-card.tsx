@@ -6,6 +6,7 @@ import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";
+import { sumBy } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
@@ -74,8 +75,7 @@ function SavingsRateCardImpl() {
     ? (data?.jointTotals?.totalWithoutMatch ?? 0)
     : (data?.jointTotals?.totalWithMatch ?? 0);
   const totalContribs =
-    people.reduce((s, d) => s + d.totals.views[viewMode][totalKey], 0) +
-    jointTotal;
+    sumBy(people, (d) => d.totals.views[viewMode][totalKey]) + jointTotal;
 
   // Derive group totals from view-aware per-person totals (single computation path)
   const retKey = excludeMatch

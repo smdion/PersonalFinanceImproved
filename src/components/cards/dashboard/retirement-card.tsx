@@ -12,6 +12,7 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { sumBy } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import {
@@ -130,12 +131,14 @@ function RetirementCardImpl() {
       retPortfolio.hsa +
       retPortfolio.afterTax
     : 0;
-  const annualContributions = Object.values(
-    realDefaults.annualByCategory,
-  ).reduce((s, v) => s + v, 0);
-  const employerContributions = Object.values(
-    realDefaults.employerMatchByCategory,
-  ).reduce((s, v) => s + v, 0);
+  const annualContributions = sumBy(
+    Object.values(realDefaults.annualByCategory),
+    (v) => v,
+  );
+  const employerContributions = sumBy(
+    Object.values(realDefaults.employerMatchByCategory),
+    (v) => v,
+  );
   // Sum limits per unique group (401k/403b share a group — avoid double-counting)
   const retLimits = (() => {
     const seen = new Set<string>();

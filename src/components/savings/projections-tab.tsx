@@ -681,6 +681,7 @@ export function ProjectionsTab({
                       ) : (
                         <span className="text-xs">
                           {formatCurrency(gp.monthlyAllocation)}/mo
+                          {/* lint-violation-ok: guarded by totalMonthlyAllocation > 0 above */}
                           {totalMonthlyAllocation > 0 &&
                             ` (${formatPercent(gp.monthlyAllocation / totalMonthlyAllocation)})`}
                         </span>

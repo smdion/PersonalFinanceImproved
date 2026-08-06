@@ -24,6 +24,7 @@ import {
   geometricMean,
 } from "@/lib/calculators/random";
 import { toNumber } from "@/server/helpers";
+import { sumBy } from "@/lib/utils/math";
 import type {
   AccountBalance,
   AccountCategory,
@@ -392,12 +393,10 @@ export const monteCarloRouter = createTRPCRouter({
         a++
       ) {
         const allocations = interpolateAllocations(mcGlidePath, a);
-        const blended = mcAssetClasses.reduce((sum, ac) => {
+        const blended = sumBy(mcAssetClasses, (ac) => {
           const w = allocations[ac.id] ?? 0;
-          return w > 0
-            ? sum + w * geometricMean(ac.meanReturn, ac.stdDev)
-            : sum;
-        }, 0);
+          return w > 0 ? w * geometricMean(ac.meanReturn, ac.stdDev) : 0;
+        });
         mcDeterministicRates.push({ label: `Age ${a}`, rate: blended });
       }
       const mcEngineInput = {
@@ -423,13 +422,13 @@ export const monteCarloRouter = createTRPCRouter({
 
       // Compute blended portfolio return/vol for display (geometric mean = realistic compounding rate)
       const currentAlloc = currentGpEntry?.allocations ?? {};
-      const blendedReturn = mcAssetClasses.reduce((sum, ac) => {
+      const blendedReturn = sumBy(mcAssetClasses, (ac) => {
         const w = currentAlloc[ac.id] ?? 0;
-        return w > 0 ? sum + w * geometricMean(ac.meanReturn, ac.stdDev) : sum;
-      }, 0);
-      const blendedVol = mcAssetClasses.reduce(
-        (sum, ac) => sum + ac.stdDev * (currentAlloc[ac.id] ?? 0),
-        0,
+        return w > 0 ? w * geometricMean(ac.meanReturn, ac.stdDev) : 0;
+      });
+      const blendedVol = sumBy(
+        mcAssetClasses,
+        (ac) => ac.stdDev * (currentAlloc[ac.id] ?? 0),
       );
 
       // Build DB (raw) asset class values for comparison
@@ -453,7 +452,7 @@ export const monteCarloRouter = createTRPCRouter({
             portfolioByTaxType.afterTax,
           annualContributions:
             totalRealContrib +
-            Object.values(employerMatchByCategory).reduce((s, v) => s + v, 0),
+            sumBy(Object.values(employerMatchByCategory), (v) => v),
           annualExpenses: annualExpensesVal,
           inflationRate: toNumber(settings.annualInflation),
           salary: totalCompensation,

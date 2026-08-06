@@ -18,6 +18,10 @@ import {
   isTaxFreeBucket,
 } from "@/lib/config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
+import {
+  roundToCents,
+  safeDivide as canonicalSafeDivide,
+} from "@/lib/utils/math";
 import type {
   TipColor,
   AccountSplitsResult,
@@ -168,7 +172,7 @@ export function filterYearByParentCategory(
   const origBasis = yr.balanceByTaxType.afterTaxBasis;
   byTax.afterTaxBasis =
     origAfterTax > 0
-      ? Math.round(origBasis * (byTax.afterTax / origAfterTax) * 100) / 100
+      ? roundToCents(origBasis * (byTax.afterTax / origAfterTax))
       : 0;
   const byAcct = { ...yr.balanceByAccount };
   for (const cat of getAllCategories()) {
@@ -197,7 +201,7 @@ export function filterYearByParentCategory(
       byAcct[cat] = {
         structure: "basis_tracking" as const,
         balance: bal,
-        basis: Math.round(origCatBasis * ratio * 100) / 100,
+        basis: roundToCents(origCatBasis * ratio),
       };
     } else {
       byAcct[cat] = {
@@ -206,10 +210,9 @@ export function filterYearByParentCategory(
       };
     }
   }
-  const endBalance =
-    Math.round(
-      (byTax.preTax + byTax.taxFree + byTax.hsa + byTax.afterTax) * 100,
-    ) / 100;
+  const endBalance = roundToCents(
+    byTax.preTax + byTax.taxFree + byTax.hsa + byTax.afterTax,
+  );
   return {
     ...yr,
     individualAccountBalances: filtered,
@@ -273,9 +276,16 @@ export function colBalance(
   return getTotalBalance(bal);
 }
 
-/** Safe division — returns 0 when divisor is 0 or near-zero. */
+/**
+ * Safe division — returns 0 when divisor is 0.
+ * Thin wrapper around the canonical `safeDivide` in `@/lib/utils/math`
+ * (previously a local reimplementation with a 1e-9 epsilon threshold instead
+ * of an exact `=== 0` check). All call sites in this module already guard
+ * their denominators with an explicit `> 0` check before calling, so the
+ * epsilon vs. exact-zero difference is not reachable here.
+ */
 export function safeDivide(numerator: number, denominator: number): number {
-  return Math.abs(denominator) > 1e-9 ? numerator / denominator : 0;
+  return canonicalSafeDivide(numerator, denominator, 0)!;
 }
 
 /** Sum withdrawals for a column key across all slots — data-driven, no if-chains. */

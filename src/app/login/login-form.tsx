@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import { BRAND_COLORS } from "@/lib/utils/colors";
 
 const ERROR_MESSAGES: Record<string, string> = {
   CredentialsSignin: "Invalid email or password.",
@@ -28,7 +29,7 @@ function LedgrLogo() {
       />
       <path
         d="M10 6 L10 24 L22 24"
-        stroke="#38bdf8"
+        stroke={BRAND_COLORS.logoAccent}
         strokeWidth="3.5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -39,7 +40,7 @@ function LedgrLogo() {
         y1="14"
         x2="20"
         y2="14"
-        stroke="#38bdf8"
+        stroke={BRAND_COLORS.logoAccent}
         strokeWidth="2"
         strokeLinecap="round"
         opacity="0.5"
@@ -49,7 +50,7 @@ function LedgrLogo() {
         y1="18"
         x2="18"
         y2="18"
-        stroke="#38bdf8"
+        stroke={BRAND_COLORS.logoAccent}
         strokeWidth="2"
         strokeLinecap="round"
         opacity="0.5"

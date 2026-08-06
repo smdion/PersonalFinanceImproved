@@ -7,6 +7,7 @@ import { formatCurrency } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
+import { sumBy } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
 
 function HouseholdIncomeCardImpl() {
@@ -47,28 +48,22 @@ function HouseholdIncomeCardImpl() {
       | undefined;
   const totalBonusGross = isYtd
     ? 0
-    : people.reduce((s, d) => s + d.paycheck!.bonusEstimate.bonusGross, 0);
+    : sumBy(people, (d) => d.paycheck!.bonusEstimate.bonusGross);
   const totalBonusNet = isYtd
     ? 0
-    : people.reduce((s, d) => s + d.paycheck!.bonusEstimate.bonusNet, 0);
+    : sumBy(people, (d) => d.paycheck!.bonusEstimate.bonusNet);
   const totalGrossAnnual = isBlended
-    ? people.reduce((s, d) => {
+    ? sumBy(people, (d) => {
         const ba = blendedOf(d);
-        return (
-          s + (ba ? ba.gross : d.paycheck!.gross * d.paycheck!.periodsPerYear)
-        );
-      }, 0) + totalBonusGross
-    : people.reduce((s, d) => s + d.paycheck!.gross * periods(d), 0) +
-      totalBonusGross;
+        return ba ? ba.gross : d.paycheck!.gross * d.paycheck!.periodsPerYear;
+      }) + totalBonusGross
+    : sumBy(people, (d) => d.paycheck!.gross * periods(d)) + totalBonusGross;
   const totalNetAnnual = isBlended
-    ? people.reduce((s, d) => {
+    ? sumBy(people, (d) => {
         const ba = blendedOf(d);
-        return (
-          s + (ba ? ba.netPay : d.paycheck!.netPay * d.paycheck!.periodsPerYear)
-        );
-      }, 0) + totalBonusNet
-    : people.reduce((s, d) => s + d.paycheck!.netPay * periods(d), 0) +
-      totalBonusNet;
+        return ba ? ba.netPay : d.paycheck!.netPay * d.paycheck!.periodsPerYear;
+      }) + totalBonusNet
+    : sumBy(people, (d) => d.paycheck!.netPay * periods(d)) + totalBonusNet;
   const modeLabel = isYtd
     ? "Year-to-date"
     : isBlended

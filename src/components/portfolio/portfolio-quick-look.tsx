@@ -177,7 +177,8 @@ export function PortfolioQuickLook({
                   <div className="font-medium text-green-500">
                     {isDollar
                       ? `+${formatCurrency(sharpestGain.delta / sharpestGain.days)}/day`
-                      : `+${formatPercent(sharpestGain.deltaPct / sharpestGain.days / 100, 2)}/day`}
+                      : // lint-violation-ok: sharpestGain always has days > 0 (filtered upstream in portfolio-quick-look-stats.ts)
+                        `+${formatPercent(sharpestGain.deltaPct / sharpestGain.days / 100, 2)}/day`}
                   </div>
                   <div className="text-xs text-faint">
                     {formatDate(sharpestGain.date, "medium")} ·{" "}
@@ -196,7 +197,8 @@ export function PortfolioQuickLook({
                   <div className="font-medium text-red-500">
                     {isDollar
                       ? `${formatCurrency(sharpestLoss.delta / sharpestLoss.days)}/day`
-                      : `${formatPercent(sharpestLoss.deltaPct / sharpestLoss.days / 100, 2)}/day`}
+                      : // lint-violation-ok: sharpestLoss always has days > 0 (filtered upstream in portfolio-quick-look-stats.ts)
+                        `${formatPercent(sharpestLoss.deltaPct / sharpestLoss.days / 100, 2)}/day`}
                   </div>
                   <div className="text-xs text-faint">
                     {formatDate(sharpestLoss.date, "medium")} ·{" "}

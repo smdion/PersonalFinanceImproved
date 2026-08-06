@@ -33,7 +33,7 @@ import {
   getLimitGroup,
 } from "@/lib/config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
-import { roundToCents } from "@/lib/utils/math";
+import { roundToCents, sumBy } from "@/lib/utils/math";
 import {
   fetchRetirementData,
   buildEnginePayload,
@@ -361,7 +361,7 @@ export const scenariosRouter = createTRPCRouter({
               null,
             avgAccumulation:
               accRates.length > 0
-                ? accRates.reduce((s, r) => s + r.rate, 0) / accRates.length
+                ? sumBy(accRates, (r) => r.rate) / accRates.length
                 : DEFAULT_RETURN_RATE,
             schedule,
           };

@@ -2,6 +2,7 @@
 
 import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils/format";
+import { sumBy } from "@/lib/utils/math";
 import { HelpTip } from "@/components/ui/help-tip";
 import type { LoanSummary, LoanHistoryEntry } from "./types";
 
@@ -49,13 +50,11 @@ export function RefinanceImpact({
   const remainingOldInterest = fullTermInterest - standardInterestToEndDate;
 
   // New path: intermediate historical loan interest + active loan interest
-  const intermediateInterest = historicalLoans
-    .filter((l) => l !== originalLoan)
-    .reduce((s, l) => s + l.totalInterestLife, 0);
-  const activeLoanInterest = activeLoans.reduce(
-    (s, l) => s + l.totalInterestLife,
-    0,
+  const intermediateInterest = sumBy(
+    historicalLoans.filter((l) => l !== originalLoan),
+    (l) => l.totalInterestLife,
   );
+  const activeLoanInterest = sumBy(activeLoans, (l) => l.totalInterestLife);
   const newPathTotalInterest = intermediateInterest + activeLoanInterest;
 
   // Net savings = old path remaining - new path total

@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { sumBy } from "@/lib/utils/math";
 import {
   PieChart,
   Pie,
@@ -47,7 +48,7 @@ export function NetWorthLocationPie({
     return items.filter((d) => d.value > 0);
   }, [portfolioTotal, houseValue, cash, otherAssets]);
 
-  const total = data.reduce((s, d) => s + d.value, 0);
+  const total = sumBy(data, (d) => d.value);
 
   return (
     <Card

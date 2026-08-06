@@ -8,6 +8,7 @@ import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types.types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
+import { sumBy } from "@/lib/utils/math";
 import { LoadingCard } from "./utils";
 
 // Only need enough history to compute yesterday-vs-today for the trend arrow.
@@ -195,7 +196,7 @@ function LinkedBalanceCardImpl() {
       ).size
     : 0;
 
-  const groupsTotal = accountTypeGroups.reduce((s, g) => s + g.balance, 0);
+  const groupsTotal = sumBy(accountTypeGroups, (g) => g.balance);
   const driftPercent =
     drift && drift.totalDrift !== 0 && latest.totalBalance !== 0
       ? drift.totalDrift / latest.totalBalance
@@ -272,6 +273,7 @@ function LinkedBalanceCardImpl() {
                 <span className="flex items-center gap-1.5">
                   {formatCurrency(balance)}
                   {groupsTotal > 0 && (
+                    // lint-violation-ok: guarded by groupsTotal > 0 above
                     <span>({formatPercent(balance / groupsTotal, 1)})</span>
                   )}
                   <DriftBadge drift={groupDrift} />

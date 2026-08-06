@@ -8,10 +8,16 @@ import { SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { PageHeader } from "@/components/ui/page-header";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { safeDivide } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { YNAB_EXPENSE_EXCLUDED_GROUPS } from "@/lib/budget-api";
+import {
+  EXPENSE_PIE_COLORS,
+  essentialColor,
+  discretionaryColor,
+} from "@/lib/utils/colors";
 
 // Code-split the recharts-heavy chart row (v0.5 expert-review M8). Both
 // charts share a single chunk so the recharts payload is fetched once on
@@ -58,24 +64,9 @@ type BudgetItem = {
 
 // ── Helpers ──
 
-const PIE_COLORS = [
-  "#3b82f6",
-  "#22c55e",
-  "#f59e0b",
-  "#ef4444",
-  "#a855f7",
-  "#06b6d4",
-  "#ec4899",
-  "#14b8a6",
-  "#f97316",
-  "#6366f1",
-  "#84cc16",
-  "#e11d48",
-];
-
-function pct(value: number, total: number): string {
+function formatSafePercent(value: number, total: number): string {
   if (total === 0) return "—";
-  return formatPercent(value / total, 1);
+  return formatPercent(safeDivide(value, total, 0)!, 1);
 }
 
 // ── Component ──
@@ -274,7 +265,7 @@ export default function ExpensesPage() {
       .map((g, i) => ({
         name: g.name,
         value: g.actual,
-        color: PIE_COLORS[i % PIE_COLORS.length],
+        color: EXPENSE_PIE_COLORS[i % EXPENSE_PIE_COLORS.length],
       }));
   }, [groupSummary]);
 
@@ -403,20 +394,23 @@ export default function ExpensesPage() {
               {totalActual > 0 && (
                 <div className="mt-3 space-y-1">
                   <div className="flex justify-between text-caption text-muted">
-                    <span>Essential {pct(essentialTotal, totalActual)}</span>
                     <span>
-                      Discretionary {pct(discretionaryTotal, totalActual)}
+                      Essential {formatSafePercent(essentialTotal, totalActual)}
+                    </span>
+                    <span>
+                      Discretionary{" "}
+                      {formatSafePercent(discretionaryTotal, totalActual)}
                     </span>
                   </div>
                   <div className="flex h-2 rounded-full overflow-hidden bg-surface-elevated">
                     <div
-                      className="bg-blue-500 transition-all"
+                      className={`${essentialColor()} transition-all`}
                       style={{
                         width: `${(essentialTotal / totalActual) * 100}%`,
                       }}
                     />
                     <div
-                      className="bg-purple-400 transition-all"
+                      className={`${discretionaryColor()} transition-all`}
                       style={{
                         width: `${(discretionaryTotal / totalActual) * 100}%`,
                       }}
@@ -463,7 +457,7 @@ export default function ExpensesPage() {
                     const groupItems = budgetVsActual.filter(
                       (r) => r.group === group.name,
                     );
-                    const pctUsed =
+                    const percentUsed =
                       group.budgeted > 0
                         ? group.actual / group.budgeted
                         : group.actual > 0
@@ -476,7 +470,7 @@ export default function ExpensesPage() {
                         items={groupItems}
                         isExpanded={isExpanded}
                         onToggle={() => toggleGroup(group.name)}
-                        pctUsed={pctUsed}
+                        percentUsed={percentUsed}
                       />
                     );
                   })}
@@ -655,7 +649,7 @@ function GroupRows({
   items,
   isExpanded,
   onToggle,
-  pctUsed,
+  percentUsed,
 }: {
   group: {
     name: string;
@@ -673,7 +667,7 @@ function GroupRows({
   }[];
   isExpanded: boolean;
   onToggle: () => void;
-  pctUsed: number;
+  percentUsed: number;
 }) {
   return (
     <>
@@ -698,7 +692,7 @@ function GroupRows({
               />
             </svg>
             <span
-              className={`w-2 h-2 rounded-full flex-shrink-0 ${group.isEssential ? "bg-blue-500" : "bg-purple-400"}`}
+              className={`w-2 h-2 rounded-full flex-shrink-0 ${group.isEssential ? essentialColor() : discretionaryColor()}`}
             />
             {group.name}
             <span className="text-caption font-normal text-faint">
@@ -719,7 +713,7 @@ function GroupRows({
           {group.diff > 0 ? " over" : " under"}
         </td>
         <td className="text-right py-1.5 px-3">
-          <ProgressBar value={pctUsed} />
+          <ProgressBar value={percentUsed} />
         </td>
       </tr>
       {isExpanded &&

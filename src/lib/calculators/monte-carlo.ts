@@ -26,7 +26,7 @@ import type {
   DistributionSummary,
   ProjectionInput,
 } from "./types";
-import { roundToCents } from "../utils/math";
+import { roundToCents, sumBy } from "../utils/math";
 import { DEFAULT_RETURN_RATE } from "../constants";
 import type { EngineDecumulationYear } from "./types";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "../config/withdrawal-strategies";
@@ -68,9 +68,8 @@ function computeDistribution(values: number[]): DistributionSummary {
     };
   }
   const sorted = [...values].sort((a, b) => a - b);
-  const mean = values.reduce((s, v) => s + v, 0) / values.length;
-  const variance =
-    values.reduce((s, v) => s + (v - mean) ** 2, 0) / values.length;
+  const mean = sumBy(values, (v) => v) / values.length;
+  const variance = sumBy(values, (v) => (v - mean) ** 2) / values.length;
   return {
     min: sorted[0]!,
     p5: percentile(sorted, 5),
@@ -368,7 +367,7 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
     const balances = balancesByYear[yearIdx]!;
     if (balances.length === 0) continue;
     const sorted = [...balances].sort((a, b) => a - b);
-    const mean = balances.reduce((s, v) => s + v, 0) / balances.length;
+    const mean = sumBy(balances, (v) => v) / balances.length;
 
     percentileBands.push({
       year: engineInput.asOfDate.getFullYear() + yearIdx,
@@ -395,8 +394,7 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
     const stratRatios = stratRatiosByDecYear[di]!;
     if (stratRatios.length === 0) continue;
     const sortedStrat = [...stratRatios].sort((a, b) => a - b);
-    const stratMean =
-      stratRatios.reduce((s, v) => s + v, 0) / stratRatios.length;
+    const stratMean = sumBy(stratRatios, (v) => v) / stratRatios.length;
     stratRatioBands.push({
       year: retirementStartYear + di,
       age: retirementStartAge + di,
@@ -413,8 +411,7 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
     const budgetRatios = budgetRatiosByDecYear[di]!;
     if (budgetRatios.length > 0) {
       const sortedBudget = [...budgetRatios].sort((a, b) => a - b);
-      const budgetMean =
-        budgetRatios.reduce((s, v) => s + v, 0) / budgetRatios.length;
+      const budgetMean = sumBy(budgetRatios, (v) => v) / budgetRatios.length;
       budgetRatioBands.push({
         year: retirementStartYear + di,
         age: retirementStartAge + di,
@@ -456,8 +453,7 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
   const sortedTerminal = [...terminalBalances].sort((a, b) => a - b);
   const medianEndBalance = percentile(sortedTerminal, 50);
   const meanEndBalance =
-    terminalBalances.reduce((s, v) => s + v, 0) /
-    Math.max(terminalBalances.length, 1);
+    sumBy(terminalBalances, (v) => v) / Math.max(terminalBalances.length, 1);
 
   // Depletion age distribution (null if fewer than 5% of trials deplete)
   const depletionDist =

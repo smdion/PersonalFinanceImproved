@@ -52,6 +52,7 @@ export function renderLineItem(
           {formatCurrency(item.amount)}
         </span>
         {item.pct != null && (
+          // item.pct is already on a 0-100 scale (not 0-1) — render directly, no *100.
           <span className="text-faint ml-1">({item.pct}%)</span>
         )}
       </div>

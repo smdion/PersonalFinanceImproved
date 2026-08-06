@@ -15,6 +15,7 @@ import {
   getApiConnection,
 } from "@/lib/budget-api";
 import { accountDisplayName } from "@/lib/utils/format";
+import { roundToCents } from "@/lib/utils/math";
 import { mappingsWithTypedIds } from "@/lib/utils/account-mapping";
 import { accountMappingSchema } from "@/lib/db/json-schemas";
 import { getApiAccountBalanceMap } from "@/server/helpers/api-balance-resolution";
@@ -595,7 +596,7 @@ export const syncMappingsRouter = createTRPCRouter({
             const scaled = Number(row.amount) * ratio;
             await ctx.db
               .update(schema.portfolioAccounts)
-              .set({ amount: String(Math.round(scaled * 100) / 100) })
+              .set({ amount: String(roundToCents(scaled)) })
               .where(eq(schema.portfolioAccounts.id, row.id));
           }
         }

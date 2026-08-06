@@ -12,6 +12,7 @@
 
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatPercent } from "@/lib/utils/format";
+import { glidePathHsl } from "@/lib/utils/colors";
 import type { ReturnRateSummary } from "./types";
 
 type Props = {
@@ -80,13 +81,12 @@ export function GlidePathSection({ returnRateSummary }: Props) {
             );
             return samples.map((s) => {
               const intensity = (s.rate - minRate) / range;
-              const lightness = 78 - intensity * 38;
               return (
                 <div
                   key={s.age}
                   className="flex-1 transition-all"
                   style={{
-                    backgroundColor: `hsl(210, 70%, ${lightness}%)`,
+                    backgroundColor: glidePathHsl(intensity),
                   }}
                   title={`Age ${s.age}: ${formatPercent(s.rate, 1)}`}
                 />

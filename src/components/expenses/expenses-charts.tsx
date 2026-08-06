@@ -19,12 +19,7 @@ import {
 } from "recharts";
 import { formatCurrency, compactCurrency } from "@/lib/utils/format";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
-
-const COLORS = {
-  budgeted: "#94a3b8",
-  under: "#22c55e",
-  over: "#ef4444",
-};
+import { CHART_COLORS } from "@/lib/utils/colors";
 
 export type GroupSummaryRow = {
   name: string;
@@ -62,7 +57,7 @@ export function BudgetVsActualBar({
           dataKey="name"
           width={120}
           fontSize={CHART_FONT.tick}
-          tick={{ fill: "#6b7280" }}
+          tick={{ fill: CHART_COLORS.axisMuted }}
         />
         <RechartsTooltip
           formatter={(value: unknown, name: unknown) => [
@@ -74,7 +69,7 @@ export function BudgetVsActualBar({
         />
         <Bar
           dataKey="budgeted"
-          fill={COLORS.budgeted}
+          fill={CHART_COLORS.expenseBudgeted}
           barSize={12}
           radius={[0, 2, 2, 0]}
           name="Budgeted"
@@ -83,7 +78,11 @@ export function BudgetVsActualBar({
           {data.map((entry) => (
             <Cell
               key={entry.name}
-              fill={entry.diff > 0 ? COLORS.over : COLORS.under}
+              fill={
+                entry.diff > 0
+                  ? CHART_COLORS.expenseOver
+                  : CHART_COLORS.expenseUnder
+              }
             />
           ))}
         </Bar>

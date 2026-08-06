@@ -1,5 +1,5 @@
 /** Version router for creating, listing, restoring, and deleting full database state snapshots used for undo/backup. */
-import { z } from "zod";
+import { z } from "zod/v4";
 import { eq, sql, desc } from "drizzle-orm";
 import {
   createTRPCRouter,

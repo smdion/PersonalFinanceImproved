@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { sumBy } from "@/lib/utils/math";
 
 export function PctAllocator({
   goals,
@@ -14,7 +15,7 @@ export function PctAllocator({
 }) {
   const [pool, setPool] = useState(String(Math.round(defaultPool)));
   const [pcts, setPcts] = useState<Record<string, string>>(() => {
-    const total = goals.reduce((s, g) => s + g.monthlyAllocation, 0);
+    const total = sumBy(goals, (g) => g.monthlyAllocation);
     const result: Record<string, string> = {};
     for (const g of goals) {
       result[g.name] =

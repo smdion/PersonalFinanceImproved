@@ -11,6 +11,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
+import { sumBy } from "@/lib/utils/math";
 import { Button } from "@/components/ui/button";
 import { getExtraPaycheckMonthKeys } from "@/lib/calculators/paycheck";
 import type {
@@ -467,7 +468,7 @@ function PersonPanel({
   }
 
   const overrideSplitTotal = overrideForm
-    ? overrideForm.reduce((s, sp) => s + Number(sp.pct), 0)
+    ? sumBy(overrideForm, (sp) => Number(sp.pct))
     : 0;
 
   function openAdd() {
@@ -563,7 +564,7 @@ function PersonPanel({
   }
 
   const splitTotal = addForm
-    ? addForm.splits.reduce((s, sp) => s + Number(sp.pct), 0)
+    ? sumBy(addForm.splits, (sp) => Number(sp.pct))
     : 0;
   const formValid =
     addForm &&

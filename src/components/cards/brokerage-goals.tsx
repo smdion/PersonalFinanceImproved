@@ -7,6 +7,7 @@ import { Card, Metric } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { confirm } from "@/components/ui/confirm-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface NewGoalForm {
   name: string;
@@ -55,7 +56,7 @@ export function BrokerageGoalsSection() {
   if (isLoading) {
     return (
       <Card title="Long-Term Goals" className="mb-6">
-        <div className="animate-pulse h-20 bg-surface-elevated rounded" />
+        <Skeleton className="h-20" />
       </Card>
     );
   }
