@@ -53,7 +53,7 @@ export function TimelineSection({
                     }
                     type="number"
                     className="text-sm"
-                    editable={!!settings}
+                    isEditable={!!settings}
                   />
                   <span className="text-caption text-faint">
                     (now {new Date().getFullYear() - ps.birthYear})
@@ -85,7 +85,7 @@ export function TimelineSection({
                 }
                 type="number"
                 className="text-sm"
-                editable={!!settings}
+                isEditable={!!settings}
               />
             </div>
           </div>
@@ -101,7 +101,7 @@ export function TimelineSection({
               onSave={(v) => handleRetirementSettingUpdate("endAge", v)}
               type="number"
               className="text-sm"
-              editable={!!settings}
+              isEditable={!!settings}
             />
           </div>
         </div>

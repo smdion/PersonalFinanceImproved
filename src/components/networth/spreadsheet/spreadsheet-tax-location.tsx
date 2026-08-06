@@ -9,7 +9,7 @@ import { sumBy } from "@/lib/utils/math";
 import { TAX_TYPE_LABELS } from "@/lib/config/display-labels";
 import type { TaxLocationBreakdown } from "./types";
 
-type Props = {
+type SpreadsheetTaxLocationProps = {
   yearA: TaxLocationBreakdown | null;
   yearB: TaxLocationBreakdown | null;
   yearALabel: number;
@@ -102,7 +102,7 @@ export function SpreadsheetTaxLocation({
   yearB,
   yearALabel,
   yearBLabel,
-}: Props) {
+}: SpreadsheetTaxLocationProps) {
   const emptyBreakdown = { retirement: {}, portfolio: {} };
   const a = yearA ?? emptyBreakdown;
   const b = yearB ?? emptyBreakdown;

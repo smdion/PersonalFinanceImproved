@@ -152,7 +152,7 @@ function buildRowConfigs(
   return rows;
 }
 
-type Props = {
+type SpreadsheetYearOverYearTableProps = {
   yearA: DetailedHistoryRow;
   yearB: DetailedHistoryRow;
   /** When true, prorate contribution comparisons for current year (Projected Year mode). */
@@ -169,7 +169,7 @@ export function SpreadsheetYearOverYearTable({
   annualize,
   useMarketValue,
   showOutdated,
-}: Props) {
+}: SpreadsheetYearOverYearTableProps) {
   // Derive category keys from both years' data (union of all categories present)
   const categoryKeys = useMemo(() => {
     const keys = new Set<string>();

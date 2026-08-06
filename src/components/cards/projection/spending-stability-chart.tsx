@@ -32,10 +32,10 @@ import type { useProjectionState } from "./use-projection-state";
 type ProjectionState = ReturnType<typeof useProjectionState>;
 
 export function SpendingStabilityChart({
-  s,
+  state,
   view,
 }: {
-  s: ProjectionState;
+  state: ProjectionState;
   view: "strategy" | "budget";
 }) {
   const {
@@ -45,7 +45,7 @@ export function SpendingStabilityChart({
     decumulationExpenses,
     mcStabilityBands,
     fanBandRange,
-  } = s;
+  } = state;
 
   if (!result) return null;
 
@@ -90,7 +90,7 @@ export function SpendingStabilityChart({
     ? mcStabilityBands?.stratRatio
     : mcStabilityBands?.budgetRatio;
   const showMc = hasMcData && !!mcBandMap && fanBandRange !== "off";
-  const { showBars } = s;
+  const { showBars } = state;
 
   // Fan band range — same selector as Balance chart
   const bandKeys =
@@ -175,7 +175,7 @@ export function SpendingStabilityChart({
             (inflation-adjusted)
           </span>
         </h5>
-        <ChartControls s={s} />
+        <ChartControls state={state} />
       </div>
       <ResponsiveContainer width="100%" height={320}>
         <ComposedChart

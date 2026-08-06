@@ -35,29 +35,31 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import { LoadingCard, ErrorCard } from "./utils";
 
 function FundingBar({
-  pct,
-  matchPct,
+  percent,
+  matchPercent,
   matchCountsTowardLimit,
   accountType,
 }: {
-  pct: number;
-  matchPct?: number;
+  percent: number;
+  matchPercent?: number;
   matchCountsTowardLimit?: boolean;
   accountType?: string;
 }) {
-  const showMatchBeyond = (matchPct ?? 0) > 0 && !matchCountsTowardLimit;
-  const employeeClamped = Math.min(pct, 1);
-  const totalPct = showMatchBeyond ? pct + (matchPct ?? 0) : pct;
+  const showMatchBeyond = (matchPercent ?? 0) > 0 && !matchCountsTowardLimit;
+  const employeeClamped = Math.min(percent, 1);
+  const totalPercent = showMatchBeyond
+    ? percent + (matchPercent ?? 0)
+    : percent;
   const typeColor = accountType ? accountColor(accountType) : null;
   const color =
-    pct > OVER_LIMIT_THRESHOLD
+    percent > OVER_LIMIT_THRESHOLD
       ? "bg-red-500"
       : (typeColor ??
-        (pct >= 1
+        (percent >= 1
           ? "bg-green-500"
-          : pct >= 0.75
+          : percent >= 0.75
             ? "bg-blue-500"
-            : pct >= 0.5
+            : percent >= 0.5
               ? "bg-yellow-500"
               : "bg-red-400"));
   const matchBarColor = accountType
@@ -70,7 +72,7 @@ function FundingBar({
         <div
           className={`${color} h-2 rounded-full transition-all`}
           style={{ width: `${employeeClamped * 100}%` }}
-          title={`Employee contribution: ${formatPercent(pct)} of IRS limit`}
+          title={`Employee contribution: ${formatPercent(percent)} of IRS limit`}
         />
         {/* IRS limit marker at 100% */}
         <div
@@ -82,9 +84,9 @@ function FundingBar({
     );
   }
 
-  const scale = totalPct > 1 ? 1 / totalPct : 1;
+  const scale = totalPercent > 1 ? 1 / totalPercent : 1;
   const employeeWidth = employeeClamped * scale * 100;
-  const matchWidth = (matchPct ?? 0) * scale * 100;
+  const matchWidth = (matchPercent ?? 0) * scale * 100;
   const limitPosition = 1 * scale * 100;
 
   return (
@@ -92,7 +94,7 @@ function FundingBar({
       <div
         className={`${color} h-2 rounded-l-full transition-all absolute left-0 top-0`}
         style={{ width: `${employeeWidth}%` }}
-        title={`Employee contribution: ${formatPercent(pct)} of IRS limit`}
+        title={`Employee contribution: ${formatPercent(percent)} of IRS limit`}
       />
       <div
         className={`${matchBarColor} h-2 rounded-r-full transition-all absolute top-0`}
@@ -183,12 +185,12 @@ function ContributionsCardImpl() {
       }
     >
       <div className="space-y-3">
-        {people.map((p, pIdx) => {
+        {people.map((p, personIndex) => {
           const mult = getContribMultiplier(contribPeriod, p.periodsPerYear!);
           return (
             <div
               key={p.person.id}
-              className={pIdx > 0 ? "pt-3 border-t border-subtle" : ""}
+              className={personIndex > 0 ? "pt-3 border-t border-subtle" : ""}
             >
               <p className="text-xs font-medium text-muted uppercase mb-1">
                 {p.person.name}
@@ -239,8 +241,8 @@ function ContributionsCardImpl() {
                       {hasLimit && (
                         <div className="mt-1">
                           <FundingBar
-                            pct={at.views[viewMode].fundingPct}
-                            matchPct={matchPctOfLimit}
+                            percent={at.views[viewMode].fundingPct}
+                            matchPercent={matchPctOfLimit}
                             matchCountsTowardLimit={matchCountsTowardLimit}
                             accountType={at.categoryKey}
                           />

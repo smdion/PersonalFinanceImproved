@@ -117,8 +117,8 @@ export function WithdrawalComparisonCard({
       title="Withdrawal Strategy Comparison"
       subtitle={`Comparing ${strategies.length} strategies from age ${retirementAge} · Success % via Monte Carlo`}
       className="mb-6"
-      collapsible
-      defaultOpen={true}
+      isCollapsible
+      isDefaultOpen={true}
       headerRight={
         <div className="flex items-center gap-2">
           <div className="inline-flex rounded-md border bg-surface-primary/60 p-0.5">

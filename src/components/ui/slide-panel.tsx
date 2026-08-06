@@ -4,23 +4,23 @@ import { useEffect, useRef, useCallback } from "react";
 import { useFocusTrap } from "@/lib/hooks/use-focus-trap";
 
 export function SlidePanel({
-  open,
+  isOpen,
   onClose,
   title,
   children,
 }: {
-  open: boolean;
+  isOpen: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
 }) {
   const backdropRef = useRef<HTMLDivElement>(null);
-  const trapRef = useFocusTrap<HTMLDivElement>(open);
+  const trapRef = useFocusTrap<HTMLDivElement>(isOpen);
 
   const handleClose = useCallback(() => onClose(), [onClose]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
@@ -29,26 +29,26 @@ export function SlidePanel({
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [open, handleClose]);
+  }, [isOpen, handleClose]);
 
   // Move focus into the panel when it opens
   useEffect(() => {
-    if (open && trapRef.current) {
+    if (isOpen && trapRef.current) {
       trapRef.current.focus();
     }
-  }, [open, trapRef]);
+  }, [isOpen, trapRef]);
 
   // Prevent body scroll when open
   useEffect(() => {
-    if (open) {
+    if (isOpen) {
       document.body.style.overflow = "hidden";
       return () => {
         document.body.style.overflow = "";
       };
     }
-  }, [open]);
+  }, [isOpen]);
 
-  if (!open) return null;
+  if (!isOpen) return null;
 
   return (
     <div

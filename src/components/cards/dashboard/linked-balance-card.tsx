@@ -217,7 +217,7 @@ function LinkedBalanceCardImpl() {
         trend={
           delta !== null && delta !== 0
             ? {
-                positive: delta > 0,
+                isPositive: delta > 0,
                 value: formatCurrency(Math.abs(delta)),
               }
             : undefined

@@ -331,7 +331,7 @@ export function ContribCard({
             <div className="mt-2 pt-2 border-t border-subtle">
               <div className="flex items-center gap-2">
                 <Toggle
-                  checked={c.autoMaximize}
+                  isChecked={c.autoMaximize}
                   onChange={(v) => {
                     // When toggling ON, compute the target contribution value
                     let targetValue: number | undefined;

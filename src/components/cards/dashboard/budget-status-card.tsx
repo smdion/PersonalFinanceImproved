@@ -48,7 +48,7 @@ function BudgetStatusCardImpl() {
       </div>
       <div className="mt-2 flex gap-3 text-xs text-muted">
         <span>Essential: {formatCurrency(result.essentialTotal)}</span>
-        <span>Disc: {formatCurrency(result.discretionaryTotal)}</span>
+        <span>Discretionary: {formatCurrency(result.discretionaryTotal)}</span>
       </div>
     </Card>
   );

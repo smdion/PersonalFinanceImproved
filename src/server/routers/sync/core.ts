@@ -961,7 +961,7 @@ export const syncCoreRouter = createTRPCRouter({
           current,
           prior,
           diff: current - prior,
-          pctChange:
+          percentChange:
             prior !== 0 ? ((current - prior) / Math.abs(prior)) * 100 : null,
         }))
         .filter((c) => c.current !== 0 || c.prior !== 0)

@@ -117,8 +117,8 @@ export function NetWorthCompare({
         </>
       }
       className="mb-8"
-      collapsible
-      defaultOpen={false}
+      isCollapsible
+      isDefaultOpen={false}
     >
       {/* Preset buttons */}
       <div className="flex flex-wrap gap-1.5 mb-4">

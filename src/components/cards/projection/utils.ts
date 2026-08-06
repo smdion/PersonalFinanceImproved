@@ -6,7 +6,7 @@ import type {
   IndividualAccountYearBalance,
 } from "@/lib/calculators/types";
 import {
-  type AccountCategory as AcctCat,
+  type AccountCategory,
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
@@ -158,7 +158,7 @@ export function filterYearByParentCategory(
     } else {
       const cfg =
         ia.category in ACCOUNT_TYPE_CONFIG
-          ? ACCOUNT_TYPE_CONFIG[ia.category as AcctCat]
+          ? ACCOUNT_TYPE_CONFIG[ia.category as AccountCategory]
           : null;
       const bucket = cfg ? cfg.taxBucketKey : "preTax";
       if (bucket in byTax) {
@@ -238,7 +238,7 @@ export function itemTaxType(
 ): "roth" | "traditional" | undefined {
   const cfg =
     category in ACCOUNT_TYPE_CONFIG
-      ? ACCOUNT_TYPE_CONFIG[category as AcctCat]
+      ? ACCOUNT_TYPE_CONFIG[category as AccountCategory]
       : null;
   if (!cfg || !cfg.supportsRothSplit) return undefined;
   if (taxField === "roth" || taxField === "tax_free" || taxField === "taxFree")
@@ -268,7 +268,7 @@ export function colBalance(
   key: string,
 ): number {
   const { category, treatment } = colKeyParts(key);
-  const bal = ba[category as AcctCat];
+  const bal = ba[category as AccountCategory];
   if (!bal) return 0;
   if (treatment === "roth") return getRothBalance(bal);
   if (treatment === "traditional" || treatment === "trad")
@@ -428,7 +428,7 @@ export function iaBelongsToBucket(
 
 // --- Shared calculation helpers ---
 
-export function pctOf(value: number, total: number): number {
+export function percentOf(value: number, total: number): number {
   return total > 0 ? Math.round((value / total) * 100) : 0;
 }
 
@@ -544,7 +544,7 @@ export function lumpSumsForBucket(
 /** Sum lump sums targeting a specific account category. */
 export function lumpSumsForCategory(
   lumpSums: LumpSum[],
-  category: AcctCat,
+  category: AccountCategory,
 ): LumpSum[] {
   return lumpSums.filter((ls) => ls.targetAccount === category);
 }

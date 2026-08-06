@@ -48,8 +48,8 @@ export default function PaycheckPage() {
     number | null
   >("paycheck_tax_year", null);
   const taxYearOverride = taxYearSetting ?? undefined;
-  const setTaxYearOverride = (yr: number | undefined) =>
-    setTaxYearSetting(yr ?? null);
+  const setTaxYearOverride = (year: number | undefined) =>
+    setTaxYearSetting(year ?? null);
   const [contribProfileId] = useActiveContribProfile();
   const utils = trpc.useUtils();
 
@@ -456,19 +456,21 @@ export default function PaycheckPage() {
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted">Tax Year:</span>
               <div className="flex gap-1">
-                {availableYears.map((yr) => (
+                {availableYears.map((year) => (
                   <button
-                    key={yr}
+                    key={year}
                     onClick={() =>
-                      setTaxYearOverride(yr === currentYear ? undefined : yr)
+                      setTaxYearOverride(
+                        year === currentYear ? undefined : year,
+                      )
                     }
                     className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-                      (taxYearOverride ?? currentYear) === yr
+                      (taxYearOverride ?? currentYear) === year
                         ? "bg-blue-600 text-white"
                         : "bg-surface-elevated text-muted hover:bg-surface-strong"
                     }`}
                   >
-                    {yr}
+                    {year}
                   </button>
                 ))}
               </div>
@@ -523,7 +525,7 @@ export default function PaycheckPage() {
         <div
           className={`grid grid-cols-1 ${people.length > 1 ? "lg:grid-cols-2" : ""} gap-6 grid-rows-[auto_auto_auto]`}
         >
-          {people.map((d, idx) => (
+          {people.map((d, index) => (
             <PersonPaycheck
               key={d.person.id}
               person={d.person}
@@ -546,11 +548,11 @@ export default function PaycheckPage() {
               }
               rawDeductions={d.rawDeductions as RawDeduction[]}
               rawContribs={d.rawContribs as RawContrib[]}
-              alignedPreTax={alignedData?.preTax[idx as 0 | 1]}
-              alignedPostTax={alignedData?.postTax[idx as 0 | 1]}
-              coverageNote={alignedData?.coverageNotes[idx as 0 | 1]?.note}
+              alignedPreTax={alignedData?.preTax[index as 0 | 1]}
+              alignedPostTax={alignedData?.postTax[index as 0 | 1]}
+              coverageNote={alignedData?.coverageNotes[index as 0 | 1]?.note}
               coverageNoteGroup={
-                alignedData?.coverageNotes[idx as 0 | 1]?.group
+                alignedData?.coverageNotes[index as 0 | 1]?.group
               }
               otherJointContribs={(rawData?.jointContribs ?? []).map((c) => ({
                 id: c.id,

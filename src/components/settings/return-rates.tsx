@@ -154,7 +154,7 @@ export function ReturnRatesSettings() {
                       parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                       type="number"
                       className="font-medium"
-                      editable={admin}
+                      isEditable={admin}
                     />
                   </td>
                   {admin && (

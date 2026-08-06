@@ -80,7 +80,7 @@ export function IncomeSection({
               parseInput={(v) => v.replace(/[^0-9.]/g, "")}
               type="number"
               className="text-sm"
-              editable={!!settings}
+              isEditable={!!settings}
             />
           </div>
         </div>
@@ -109,7 +109,7 @@ export function IncomeSection({
               parseInput={(v) => v.replace(/[^0-9]/g, "")}
               type="number"
               className="text-sm"
-              editable={!!settings}
+              isEditable={!!settings}
             />
           </div>
         </div>

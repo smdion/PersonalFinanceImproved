@@ -578,10 +578,10 @@ export default function ExpensesPage() {
                         {cat.diff < 0 ? " less" : cat.diff > 0 ? " more" : ""}
                       </td>
                       <td
-                        className={`text-right py-1.5 px-3 tabular-nums ${(cat.pctChange ?? 0) < 0 ? "text-green-600" : (cat.pctChange ?? 0) > 0 ? "text-red-600" : ""}`}
+                        className={`text-right py-1.5 px-3 tabular-nums ${(cat.percentChange ?? 0) < 0 ? "text-green-600" : (cat.percentChange ?? 0) > 0 ? "text-red-600" : ""}`}
                       >
-                        {cat.pctChange !== null
-                          ? `${cat.pctChange > 0 ? "+" : ""}${formatPercent(cat.pctChange / 100, 1)}`
+                        {cat.percentChange !== null
+                          ? `${cat.percentChange > 0 ? "+" : ""}${formatPercent(cat.percentChange / 100, 1)}`
                           : "—"}
                       </td>
                     </tr>

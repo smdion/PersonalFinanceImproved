@@ -30,7 +30,7 @@ type ProjectionState = ReturnType<typeof useProjectionState>;
 // can render it without pulling recharts in via this module's import graph.
 export { ProjectionChartSkeleton } from "./projection-chart-skeleton";
 
-export function ProjectionChart({ s }: { s: ProjectionState }) {
+export function ProjectionChart({ state }: { state: ProjectionState }) {
   const {
     result,
     engineSettings,
@@ -45,7 +45,7 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
     columnLabel,
     balanceView,
     fanBandRange,
-  } = s;
+  } = state;
 
   if (!result) return null;
 
@@ -175,7 +175,7 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
 
   const hasMcData = mcBandsByYear != null;
   const showMc = hasMcData && fanBandRange !== "off";
-  const { showBars } = s;
+  const { showBars } = state;
   // Keep hasMc for backward compat in data building (always build MC data points)
   const hasMc = hasMcData;
 
@@ -200,7 +200,7 @@ export function ProjectionChart({ s }: { s: ProjectionState }) {
             </span>
           )}
         </h5>
-        <ChartControls s={s} />
+        <ChartControls state={state} />
       </div>
       <div className="h-[320px]">
         <ResponsiveContainer width="100%" height="100%">

@@ -13,7 +13,6 @@ import type {
   AccumulationSlot,
 } from "@/lib/calculators/types";
 import {
-  type AccountCategory as AcctCat,
   getAccountSegments,
   getSegmentBalance,
   getAllCategories,
@@ -37,7 +36,7 @@ import {
   slotsBucketBalanceInflow,
   filterSpecsForBucket,
   iaBelongsToBucket,
-  pctOf,
+  percentOf,
   proRateMonths,
   specFrac,
   matchFracOf,
@@ -68,7 +67,7 @@ export type AccumulationRowProps = {
 
 export function AccumulationRow({
   yr,
-  state: s,
+  state,
   parentCategoryFilter,
   isPhaseTransition,
   hasOverride,
@@ -101,7 +100,7 @@ export function AccumulationRow({
     contribSpecs,
     budgetProfileSummaries,
     result,
-  } = s;
+  } = state;
 
   if (!result) return null;
 
@@ -117,8 +116,8 @@ export function AccumulationRow({
         const iabs = yr.individualAccountBalances ?? [];
         const matching = iabs.filter(
           (ia) =>
-            ACCOUNT_TYPE_CONFIG[ia.category as AcctCat]?.isOverflowTarget &&
-            ia.parentCategory === parentCategoryFilter,
+            ACCOUNT_TYPE_CONFIG[ia.category as AccountCategory]
+              ?.isOverflowTarget && ia.parentCategory === parentCategoryFilter,
         );
         if (matching.length === 0) return null;
         return {
@@ -134,7 +133,8 @@ export function AccumulationRow({
           const iabs = yr.individualAccountBalances ?? [];
           const allBrok = iabs.filter(
             (ia) =>
-              ACCOUNT_TYPE_CONFIG[ia.category as AcctCat]?.isOverflowTarget,
+              ACCOUNT_TYPE_CONFIG[ia.category as AccountCategory]
+                ?.isOverflowTarget,
           );
           const matchBrok = allBrok.filter(
             (ia) => ia.parentCategory === parentCategoryFilter,
@@ -662,7 +662,7 @@ export function AccumulationRow({
               );
               // Determine which specs and slot amounts apply to this bucket (data-driven via bucketSlotMap)
               const isOFTarget =
-                ACCOUNT_TYPE_CONFIG[cat as AcctCat]?.isOverflowTarget;
+                ACCOUNT_TYPE_CONFIG[cat as AccountCategory]?.isOverflowTarget;
               // When parentCategoryFilter active, use filtered brokerage data
               const slotEmp =
                 parentCategoryFilter && isOFTarget
@@ -1000,7 +1000,7 @@ export function AccumulationRow({
           .map((bucket) => {
             const bal = pt ? pt.byTaxType[bucket] : yr.balanceByTaxType[bucket];
             const totalBal = pt ? pt.balance : yr.endBalance;
-            const pct = pctOf(bal, totalBal);
+            const pct = percentOf(bal, totalBal);
             // Compute authoritative total change from engine's year-over-year balance
             const prevYr = result.projectionByYear.find(
               (y) => y.year === yr.year - 1,
@@ -1136,7 +1136,7 @@ export function AccumulationRow({
               const catKey = colKeyParts(col.key).category;
               const bal = pt ? (pt.byAccount[col.key] ?? 0) : col.val;
               const totalBal = pt ? pt.balance : yr.endBalance;
-              const pct = pctOf(bal, totalBal);
+              const pct = percentOf(bal, totalBal);
               // Filter by the exact taxType this column represents
               const colTaxType = colEngineTaxType(col.key);
               // Use engine's individualAccountBalances — includes all accounts
@@ -1219,7 +1219,7 @@ export function AccumulationRow({
                           contribution: spContrib,
                           growth: spGrowth,
                         }) => {
-                          const entryPct = pctOf(spBal, colSplitsTotal);
+                          const entryPct = percentOf(spBal, colSplitsTotal);
                           const subItems: TooltipLineItem[] = [];
                           if (spContrib > 1)
                             subItems.push({
@@ -1238,7 +1238,7 @@ export function AccumulationRow({
                           return {
                             label: acctName,
                             amount: deflate(spBal, yr.year),
-                            pct: entryPct,
+                            percent: entryPct,
                             taxType: itemTaxType(catKey, spTaxType),
                             sub: subItems.length > 0 ? subItems : undefined,
                           };
@@ -1292,7 +1292,7 @@ export function AccumulationRow({
                   return {
                     label: taxTypeLabel(b),
                     amount: deflate(bVal, yr.year),
-                    pct: pctOf(bVal, ptBal),
+                    percent: percentOf(bVal, ptBal),
                   };
                 });
                 return renderTooltip({

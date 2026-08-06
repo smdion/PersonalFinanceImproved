@@ -78,7 +78,7 @@ import { applyLumpSums } from "./lump-sum";
 export function runDecumulationYear(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
-  y: number,
+  yearIndex: number,
   setup: PreYearSetup,
 ): void {
   const { age, year, returnRate, strategyAction, totalBalance } = setup;
@@ -278,15 +278,15 @@ export function runDecumulationYear(
       if (personAge >= startAge && personTrad > 0) {
         const factor = getRmdFactor(personAge);
         if (factor != null && factor > 0) {
-          const amt = roundToCents(personTrad / factor);
+          const rmdAmount = roundToCents(personTrad / factor);
           rmdByPerson.push({
             personId,
             personName:
               input.socialSecurityEntries?.find((e) => e.personId === personId)
                 ?.personName ?? `Person ${personId}`,
-            amount: amt,
+            amount: rmdAmount,
           });
-          total += amt;
+          total += rmdAmount;
         }
       }
     }
@@ -534,7 +534,7 @@ export function runDecumulationYear(
   // are read-only balance inputs in the retirement engine.
   // parentCategory (user-editable) controls the boundary, not account type.
   const { brokerageContributionRamp, limitGrowthRate } = input;
-  const lgf = Math.pow(1 + limitGrowthRate, y);
+  const lgf = Math.pow(1 + limitGrowthRate, yearIndex);
   let decumBrokerageContrib = 0;
   const decumContribByAccount = new Map<string, number>();
   if (state.contributionSpecs) {
@@ -563,9 +563,9 @@ export function runDecumulationYear(
     }
   }
   // Portfolio contribution ramp (report-only — not applied to balances)
-  const rampYear = Math.min(y, MAX_BROKERAGE_RAMP_YEARS);
+  const rampYear = Math.min(yearIndex, MAX_BROKERAGE_RAMP_YEARS);
   const decumRampAmount =
-    (brokerageContributionRamp ?? 0) > 0 && y > 0
+    (brokerageContributionRamp ?? 0) > 0 && yearIndex > 0
       ? roundToCents(brokerageContributionRamp! * rampYear)
       : 0;
   if (decumRampAmount > 0) {

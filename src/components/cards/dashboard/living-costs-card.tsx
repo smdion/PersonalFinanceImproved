@@ -20,7 +20,7 @@ function LivingCostsCardImpl() {
   const isYtd = viewMode === "ytd";
   const isBlended = viewMode === "blended";
   const [budgetColumn] = usePersistedSetting<number>("budget_active_column", 0);
-  const { data: budgetData, isLoading: bLoading } =
+  const { data: budgetData, isLoading: isBudgetLoading } =
     trpc.budget.computeActiveSummary.useQuery({
       selectedColumn: budgetColumn,
     });
@@ -36,13 +36,14 @@ function LivingCostsCardImpl() {
       ? { contributionProfileId: activeContribProfileId }
       : {}),
   };
-  const { data: paycheckData, isLoading: pLoading } =
+  const { data: paycheckData, isLoading: isPaycheckLoading } =
     trpc.paycheck.computeSummary.useQuery(
       Object.keys(lcQueryInput).length > 0 ? lcQueryInput : undefined,
     );
   const [useGross, setUseGross] = useState(false);
 
-  if (bLoading || pLoading) return <LoadingCard title="Living Costs" />;
+  if (isBudgetLoading || isPaycheckLoading)
+    return <LoadingCard title="Living Costs" />;
 
   const budget = budgetData?.result;
   const blendedOf = (p: NonNullable<typeof paycheckData>["people"][0]) =>

@@ -66,7 +66,7 @@ import { applyLumpSums } from "./lump-sum";
 export function runAccumulationYear(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
-  y: number,
+  yearIndex: number,
   setup: PreYearSetup,
 ): void {
   const { age, year, returnRate } = setup;
@@ -121,7 +121,7 @@ export function runAccumulationYear(
   );
 
   // IRS limits grow annually
-  const lgf = Math.pow(1 + limitGrowthRate, y);
+  const lgf = Math.pow(1 + limitGrowthRate, yearIndex);
   const yearLimits: Record<AccountCategory, number> = Object.fromEntries(
     getAllCategories().map((cat) => {
       if (!getAccountTypeConfig(cat).hasIrsLimit) return [cat, 0];
@@ -171,7 +171,7 @@ export function runAccumulationYear(
           addCatchupForAge(cat, year - participant.birthYear);
         }
       } else {
-        addCatchupForAge(cat, currentAge + y);
+        addCatchupForAge(cat, currentAge + yearIndex);
       }
     }
   }
@@ -179,10 +179,12 @@ export function runAccumulationYear(
   // Year 0 with real contribution data: use actual per-account amounts
   // instead of salary x rate which can create artificial overflow
   const useRealContribs =
-    y === 0 && activeBaseYearContributions && activeBaseYearEmployerMatch;
+    yearIndex === 0 &&
+    activeBaseYearContributions &&
+    activeBaseYearEmployerMatch;
 
   // Pro-rate year 0 contributions/match based on months remaining in the year
-  const proRate = y === 0 ? firstYearFraction : 1;
+  const proRate = yearIndex === 0 ? firstYearFraction : 1;
 
   let targetContribution: number;
   if (useRealContribs) {
@@ -275,7 +277,7 @@ export function runAccumulationYear(
     routeWarnings = [];
   } else if (contributionSpecs && contributionSpecs.length > 0) {
     // Per-account routing from DB specs -- respects each account's method
-    const limitGrowthFactor = Math.pow(1 + limitGrowthRate, y);
+    const limitGrowthFactor = Math.pow(1 + limitGrowthRate, yearIndex);
     const routed = routeFromSpecs(
       contributionSpecs,
       projectedSalary,
@@ -417,9 +419,9 @@ export function runAccumulationYear(
   }
 
   // Apply brokerage contribution ramp (additional $X x year index, starting year 1)
-  const rampYear = Math.min(y, MAX_BROKERAGE_RAMP_YEARS);
+  const rampYear = Math.min(yearIndex, MAX_BROKERAGE_RAMP_YEARS);
   const rampAmount =
-    (brokerageContributionRamp ?? 0) > 0 && y > 0
+    (brokerageContributionRamp ?? 0) > 0 && yearIndex > 0
       ? roundToCents(brokerageContributionRamp! * rampYear)
       : 0;
   if (rampAmount > 0) {
@@ -452,7 +454,7 @@ export function runAccumulationYear(
       projectedSalary,
       currentSalary,
       limitGrowthRate,
-      yearIndex: y,
+      yearIndex,
       proRate,
       overflowToBrokerage,
       rampAmount,
@@ -468,7 +470,9 @@ export function runAccumulationYear(
   // Apply growth to each bucket (pro-rated for year 0)
   // Extracted to growth-application.ts -- applies return rate to all balance structures.
   const effectiveReturn =
-    y === 0 ? Math.pow(1 + returnRate, firstYearFraction) - 1 : returnRate;
+    yearIndex === 0
+      ? Math.pow(1 + returnRate, firstYearFraction) - 1
+      : returnRate;
   applyGrowth({ effectiveReturn, balances, acctBal });
   // Per-individual-account growth -- extracted to individual-account-tracking.ts
   const indGrowth = hasIndividualAccounts
@@ -587,7 +591,7 @@ export function runAccumulationYear(
       salaryOverrideMap.has(year) || perPersonSalaryOverrides.has(year),
     hasBudgetOverride: budgetOverrideMap.has(year),
     proRateFraction:
-      y === 0 && firstYearFraction < 1 ? firstYearFraction : null,
+      yearIndex === 0 && firstYearFraction < 1 ? firstYearFraction : null,
     targetContribution,
     config,
     slots,
@@ -606,7 +610,7 @@ export function runAccumulationYear(
     individualAccountBalances: indYearBalances,
     returnRate: effectiveReturn,
     annualizedReturnRate:
-      y === 0 && firstYearFraction < 1
+      yearIndex === 0 && firstYearFraction < 1
         ? Math.pow(1 + effectiveReturn, 1 / firstYearFraction) - 1
         : returnRate,
     warnings: routeWarnings,

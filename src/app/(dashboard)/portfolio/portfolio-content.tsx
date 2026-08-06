@@ -303,7 +303,7 @@ export function PortfolioContent() {
       {/* New Snapshot Form */}
       {canEdit && (
         <SlidePanel
-          open={showNewSnapshot}
+          isOpen={showNewSnapshot}
           onClose={() => setShowNewSnapshot(false)}
           title="New Snapshot"
         >

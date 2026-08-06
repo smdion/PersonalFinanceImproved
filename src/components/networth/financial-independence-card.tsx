@@ -25,7 +25,7 @@ export function FinancialIndependenceCard({
   withdrawalRateIsDefault?: boolean;
   budgetColumnLabels?: string[];
   currentExpenseColumn: number;
-  onExpenseColumnChange: (idx: number) => void;
+  onExpenseColumnChange: (index: number) => void;
   fiCache: FICache;
 }) {
   return (
@@ -46,12 +46,12 @@ export function FinancialIndependenceCard({
               <HelpTip text="Choose which budget scenario to use for calculating your FI target" />
             </span>
             <div className="flex gap-1">
-              {budgetColumnLabels.map((label: string, idx: number) => (
+              {budgetColumnLabels.map((label: string, index: number) => (
                 <button
                   key={label}
-                  onClick={() => onExpenseColumnChange(idx)}
+                  onClick={() => onExpenseColumnChange(index)}
                   className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-                    idx === currentExpenseColumn
+                    index === currentExpenseColumn
                       ? "bg-blue-600 text-white"
                       : "bg-surface-elevated text-muted hover:bg-surface-strong"
                   }`}

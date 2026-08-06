@@ -8,8 +8,9 @@ import type { useProjectionState } from "./use-projection-state";
 type ProjectionState = ReturnType<typeof useProjectionState>;
 
 /** Compact depletion callout (1-liner) shown when MC has a depletion age. */
-export function McDepletionCallout({ s }: { s: ProjectionState }) {
-  const { result, engineSettings, deflate, baseYear, mcQuery, mcLoading } = s;
+export function McDepletionCallout({ state }: { state: ProjectionState }) {
+  const { result, engineSettings, deflate, baseYear, mcQuery, mcLoading } =
+    state;
 
   if (!result || !mcQuery.data?.result || mcLoading) return null;
   if (!mcQuery.data.result.distributions.depletionAge) return null;
@@ -53,8 +54,8 @@ export function McDepletionCallout({ s }: { s: ProjectionState }) {
 }
 
 /** MC loading, errors, warnings, and compact summary bar. */
-export function McResultsSection({ s }: { s: ProjectionState }) {
-  const { projectionMode, mcLoading, mcQuery, setShowAssumptions } = s;
+export function McResultsSection({ state }: { state: ProjectionState }) {
+  const { projectionMode, mcLoading, mcQuery, setShowAssumptions } = state;
 
   if (projectionMode !== "monteCarlo") return null;
 

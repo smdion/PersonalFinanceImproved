@@ -30,7 +30,7 @@ import type {
 export function runPreYearSetup(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
-  y: number,
+  yearIndex: number,
 ): PreYearSetup {
   const {
     input,
@@ -51,16 +51,18 @@ export function runPreYearSetup(
     activeStrategyParams,
   } = ctx;
 
-  const age = input.currentAge + y;
-  const year = input.asOfDate.getFullYear() + y;
-  // Treat y=0 as a final partial accumulation year when the person is
+  const age = input.currentAge + yearIndex;
+  const year = input.asOfDate.getFullYear() + yearIndex;
+  // Treat yearIndex=0 as a final partial accumulation year when the person is
   // retiring mid-calendar-year (retirementAge === currentAge and the as-of
-  // date is before year-end). This defers decumulation to y=1 so that
+  // date is before year-end). This defers decumulation to yearIndex=1 so that
   // accumulation-year.ts can pro-rate contributions and growth by
   // firstYearFraction before the phase boundary is crossed.
   const isAccumulation =
     age < input.retirementAge ||
-    (y === 0 && age === input.retirementAge && ctx.firstYearFraction < 1);
+    (yearIndex === 0 &&
+      age === input.retirementAge &&
+      ctx.firstYearFraction < 1);
 
   // Get return rate for this age (fall back to last available)
   let returnRate = returnRateMap.get(age);
@@ -128,7 +130,7 @@ export function runPreYearSetup(
             pid,
             Math.max(0, yearOverrides.get(pid)!),
           );
-        } else if (y > 0 && salaryGrowthRate > 0) {
+        } else if (yearIndex > 0 && salaryGrowthRate > 0) {
           let newSal = prevSal * (1 + salaryGrowthRate);
           if (input.salaryCap !== null)
             newSal = Math.min(newSal, input.salaryCap);
@@ -154,7 +156,7 @@ export function runPreYearSetup(
       // Household-level salary tracking (original behavior)
       if (salaryOverrideMap.has(year)) {
         state.projectedSalary = Math.max(0, salaryOverrideMap.get(year)!);
-      } else if (y > 0 && salaryGrowthRate > 0) {
+      } else if (yearIndex > 0 && salaryGrowthRate > 0) {
         state.projectedSalary = Math.max(
           0,
           state.projectedSalary * (1 + salaryGrowthRate),
@@ -171,7 +173,7 @@ export function runPreYearSetup(
 
   // Reset expenses to decumulation budget on the FIRST decumulation year.
   // Do NOT key on `age === retirementAge`: that check fails in the mid-year
-  // case (retirementAge === currentAge) because by y=1 the age has already
+  // case (retirementAge === currentAge) because by yearIndex=1 the age has already
   // advanced past retirementAge. Instead, fire exactly once on the first year
   // isAccumulation is false, tracked by state.decumulationExpensesSet.
   // Budget values are in today's dollars -- inflate to retirement-year nominal
@@ -182,7 +184,8 @@ export function runPreYearSetup(
     input.decumulationAnnualExpenses != null;
   if (decumulationExpensesJustSet) {
     state.projectedExpenses =
-      input.decumulationAnnualExpenses! * Math.pow(1 + inflationRate, y);
+      input.decumulationAnnualExpenses! *
+      Math.pow(1 + inflationRate, yearIndex);
     state.decumulationExpensesSet = true;
   }
 
@@ -199,7 +202,7 @@ export function runPreYearSetup(
     !isAccumulation && !strategyUsesRaise ? 0 : effectiveInflation;
   if (budgetOverrideMap.has(year)) {
     state.projectedExpenses = budgetOverrideMap.get(year)!;
-  } else if (y > 0 && !decumulationExpensesJustSet) {
+  } else if (yearIndex > 0 && !decumulationExpensesJustSet) {
     state.projectedExpenses = state.projectedExpenses * (1 + expenseInflation);
   }
 
@@ -221,7 +224,7 @@ export function runPreYearSetup(
       effectiveInflation,
       cpiInflation: inflationRate,
       hasBudgetOverride: budgetOverrideMap.has(year),
-      yearIndex: y,
+      yearIndex,
       age,
       primaryPersonAge: primaryAge,
       crossYearState: state.spendingState,

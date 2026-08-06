@@ -21,7 +21,7 @@ import {
 import type { HistoryRow } from "@/components/networth/types";
 import type { DetailedHistoryRow } from "./types";
 
-type Props = {
+type SpreadsheetViewProps = {
   /** Chart-ready history rows (from listHistory). */
   displayHistory: HistoryRow[] | undefined;
   /** Primary person's birth year for Journey to Abundance and age calculations. */
@@ -58,7 +58,7 @@ export function SpreadsheetView({
   onToggleMarketValue,
   chartXAxis,
   onChartXAxisChange,
-}: Props) {
+}: SpreadsheetViewProps) {
   const utils = trpc.useUtils();
   const { data: detailedData } =
     trpc.networth.computeDetailedHistory.useQuery();

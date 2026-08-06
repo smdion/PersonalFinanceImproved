@@ -17,7 +17,7 @@ import { useProjectionDerived } from "./use-projection-derived";
 export type EngineContribRate = { year: number; rate: number };
 
 /** Per-category account breakdown with display names (for balance tooltips). */
-export type AcctBreakdown = {
+export type AccountBreakdown = {
   name: string;
   amount: number;
   taxType: string;

@@ -299,7 +299,7 @@ export function IrmaaBracketsSettings() {
                             }
                             type="number"
                             className="text-sm"
-                            editable={admin}
+                            isEditable={admin}
                           />
                         </td>
                         <td className="py-1 px-2 text-right">
@@ -320,7 +320,7 @@ export function IrmaaBracketsSettings() {
                             }
                             type="number"
                             className="text-sm"
-                            editable={admin}
+                            isEditable={admin}
                           />
                         </td>
                         <td className="py-1 pl-2 text-right text-muted text-xs">

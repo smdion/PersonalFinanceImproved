@@ -407,7 +407,7 @@ export function ContributionLimitsSettings() {
                           parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                           type="number"
                           className="font-medium"
-                          editable={admin}
+                          isEditable={admin}
                         />
                       ) : admin ? (
                         <button
@@ -466,7 +466,7 @@ export function ContributionLimitsSettings() {
                     parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                     type="number"
                     className="font-medium"
-                    editable={admin}
+                    isEditable={admin}
                   />
                 </div>
               );

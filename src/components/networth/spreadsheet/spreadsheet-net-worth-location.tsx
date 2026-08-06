@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { formatPercent, formatCurrency } from "@/lib/utils/format";
 import type { DetailedHistoryRow } from "./types";
 
-type Props = {
+type SpreadsheetNetWorthLocationProps = {
   yearA: DetailedHistoryRow;
   yearB: DetailedHistoryRow;
   useMarketValue: boolean;
@@ -35,7 +35,7 @@ export function SpreadsheetNetWorthLocation({
   yearA,
   yearB,
   useMarketValue,
-}: Props) {
+}: SpreadsheetNetWorthLocationProps) {
   const locationRows = useMemo(
     () => buildLocationRows(useMarketValue),
     [useMarketValue],

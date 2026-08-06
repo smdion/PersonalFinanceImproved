@@ -107,7 +107,7 @@ function CompactRing({ rate, size = 48 }: { rate: number; size?: number }) {
 // Main component
 // ---------------------------------------------------------------------------
 
-export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
+export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
   const {
     result,
     engineSettings,
@@ -123,7 +123,7 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
     scenarioView,
     coastFireMcQuery,
     coastFireMcResult,
-  } = s;
+  } = state;
 
   if (!result) return null;
 

@@ -115,7 +115,7 @@ export function TaxesSection({
               parseInput={(v) => v.replace(/[^0-9.]/g, "")}
               type="number"
               className="text-sm"
-              editable={!!settings}
+              isEditable={!!settings}
             />
             <span className="text-caption text-faint">
               {Number(settings.taxMultiplier) < 1

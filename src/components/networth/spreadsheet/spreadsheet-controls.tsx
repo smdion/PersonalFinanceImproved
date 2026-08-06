@@ -2,7 +2,7 @@
 
 /** Settings bar for the spreadsheet view: year selectors + display toggles. */
 
-type Props = {
+type SpreadsheetControlsProps = {
   availableYears: number[];
   yearA: number;
   yearB: number;
@@ -28,7 +28,7 @@ export function SpreadsheetControls({
   onToggleSalaryAverage,
   showOutdated,
   onToggleShowOutdated,
-}: Props) {
+}: SpreadsheetControlsProps) {
   const sorted = [...availableYears].sort((a, b) => b - a);
 
   return (

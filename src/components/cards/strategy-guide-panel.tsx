@@ -47,7 +47,11 @@ export function StrategyGuidePanel({
     (Object.keys(WITHDRAWAL_STRATEGY_CONFIG) as WithdrawalStrategyType[]);
 
   return (
-    <SlidePanel open={open} onClose={onClose} title="Withdrawal Strategy Guide">
+    <SlidePanel
+      isOpen={open}
+      onClose={onClose}
+      title="Withdrawal Strategy Guide"
+    >
       <p className="text-secondary text-sm mb-6">
         Each strategy makes a different tradeoff between income stability,
         portfolio preservation, and spending flexibility. There is no single

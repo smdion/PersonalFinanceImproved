@@ -14,7 +14,7 @@ import { ALL_CATEGORIES, catDisplayLabel } from "./utils";
 import type { OverridesSectionProps } from "./overrides-panel";
 import { accumOverrideToForm } from "./types";
 
-export function SavingOverridesSection({ state: s }: OverridesSectionProps) {
+export function SavingOverridesSection({ state }: OverridesSectionProps) {
   const {
     accumOverrides,
     setAccumOverrides,
@@ -25,7 +25,7 @@ export function SavingOverridesSection({ state: s }: OverridesSectionProps) {
     enginePeople,
     handleAddAccumOverride,
     individualAccountNames,
-  } = s;
+  } = state;
 
   return (
     <div className="border-t border-subtle pt-3">

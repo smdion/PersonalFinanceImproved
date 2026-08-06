@@ -102,7 +102,7 @@ const OVERRIDE_OPTIONS: {
 ];
 
 export function OverridesPanelV2({
-  state: s,
+  state,
   accumulationExpenseOverride: _accumulationExpenseOverride,
 }: OverridesPanelV2Props) {
   const [showWizard, setShowWizard] = useState(false);
@@ -122,8 +122,8 @@ export function OverridesPanelV2({
   } | null>(null);
 
   // Determine if selected year is pre or post retirement
-  const retAge = s.engineSettings?.retirementAge;
-  const currentAge = s.result?.projectionByYear?.[0]?.age ?? 0;
+  const retAge = state.engineSettings?.retirementAge;
+  const currentAge = state.result?.projectionByYear?.[0]?.age ?? 0;
   const baseYear = new Date().getFullYear();
   const retYear =
     retAge != null && currentAge > 0 ? baseYear + (retAge - currentAge) : null;
@@ -143,8 +143,8 @@ export function OverridesPanelV2({
     }[] = [];
 
     // Accumulation overrides
-    for (let i = 0; i < s.accumOverrides.length; i++) {
-      const o = s.accumOverrides[i]!;
+    for (let i = 0; i < state.accumOverrides.length; i++) {
+      const o = state.accumOverrides[i]!;
       const parts: string[] = [];
       if (o.contributionRate != null)
         parts.push(`Rate: ${formatPercent(o.contributionRate, 1)}`);
@@ -175,7 +175,7 @@ export function OverridesPanelV2({
         summary: parts.join(" · ") || "Override",
         color: "emerald",
         onDelete: () =>
-          s.setAccumOverrides((prev) => prev.filter((_, j) => j !== idx)),
+          state.setAccumOverrides((prev) => prev.filter((_, j) => j !== idx)),
         onEdit: () => {
           setSelectedYear(String(o.year));
           setSelectedType(
@@ -193,7 +193,9 @@ export function OverridesPanelV2({
             phase: "pre",
             index: idx,
             deleteFirst: () =>
-              s.setAccumOverrides((prev) => prev.filter((_, j) => j !== idx)),
+              state.setAccumOverrides((prev) =>
+                prev.filter((_, j) => j !== idx),
+              ),
             initialValue:
               o.contributionRate != null
                 ? String(o.contributionRate * 100)
@@ -206,8 +208,8 @@ export function OverridesPanelV2({
     }
 
     // Decumulation overrides
-    for (let i = 0; i < s.decumOverrides.length; i++) {
-      const o = s.decumOverrides[i]!;
+    for (let i = 0; i < state.decumOverrides.length; i++) {
+      const o = state.decumOverrides[i]!;
       const parts: string[] = [];
       if (o.withdrawalRate != null)
         parts.push(`Rate: ${formatPercent(o.withdrawalRate, 1)}`);
@@ -241,7 +243,7 @@ export function OverridesPanelV2({
         summary: parts.join(" · ") || "Override",
         color: "amber",
         onDelete: () =>
-          s.setDecumOverrides((prev) => prev.filter((_, j) => j !== idx)),
+          state.setDecumOverrides((prev) => prev.filter((_, j) => j !== idx)),
         onEdit: () => {
           setSelectedYear(String(o.year));
           setSelectedType(
@@ -261,7 +263,9 @@ export function OverridesPanelV2({
             phase: "post",
             index: idx,
             deleteFirst: () =>
-              s.setDecumOverrides((prev) => prev.filter((_, j) => j !== idx)),
+              state.setDecumOverrides((prev) =>
+                prev.filter((_, j) => j !== idx),
+              ),
             initialValue:
               o.withdrawalRate != null
                 ? String(o.withdrawalRate * 100)
@@ -276,7 +280,7 @@ export function OverridesPanelV2({
     }
 
     // Salary overrides
-    for (const o of s.dbSalaryOverrides ?? []) {
+    for (const o of state.dbSalaryOverrides ?? []) {
       items.push({
         id: `salary-${o.id}`,
         year: o.projectionYear,
@@ -284,12 +288,12 @@ export function OverridesPanelV2({
         type: o.contributionProfileId ? "Contribution" : "Salary",
         summary: `${formatCurrency(o.overrideSalary)}/yr${o.notes ? ` (${o.notes})` : ""}`,
         color: "blue",
-        onDelete: () => s.deleteSalaryOverride.mutate({ id: o.id }),
+        onDelete: () => state.deleteSalaryOverride.mutate({ id: o.id }),
       });
     }
 
     // Budget overrides
-    for (const o of s.dbBudgetOverrides ?? []) {
+    for (const o of state.dbBudgetOverrides ?? []) {
       items.push({
         id: `budget-${o.id}`,
         year: o.projectionYear,
@@ -297,12 +301,12 @@ export function OverridesPanelV2({
         type: "Budget",
         summary: `${formatCurrency(o.overrideMonthlyBudget * 12)}/yr${o.notes ? ` (${o.notes})` : ""}`,
         color: "indigo",
-        onDelete: () => s.deleteBudgetOverride.mutate({ id: o.id }),
+        onDelete: () => state.deleteBudgetOverride.mutate({ id: o.id }),
       });
     }
 
     return items.sort((a, b) => a.year - b.year);
-  }, [s]);
+  }, [state]);
 
   const totalCount = allOverrides.length;
 
@@ -332,7 +336,7 @@ export function OverridesPanelV2({
                 contributionRate: val / 100,
                 ...(notes ? { notes } : {}),
               };
-              s.setAccumOverrides((prev) =>
+              state.setAccumOverrides((prev) =>
                 [
                   ...prev.filter(
                     (x) => x.year !== year || x.contributionRate == null,
@@ -346,7 +350,7 @@ export function OverridesPanelV2({
         );
 
       case "withdrawal_rate": {
-        const strategy = (s.engineSettings?.withdrawalStrategy ??
+        const strategy = (state.engineSettings?.withdrawalStrategy ??
           "fixed") as WithdrawalStrategyType;
         const strategyCfg = WITHDRAWAL_STRATEGY_CONFIG[strategy];
         const isDynamic = strategy !== "fixed";
@@ -374,7 +378,7 @@ export function OverridesPanelV2({
                   withdrawalRate: val / 100,
                   ...(notes ? { notes } : {}),
                 };
-                s.setDecumOverrides((prev) =>
+                state.setDecumOverrides((prev) =>
                   [
                     ...prev.filter(
                       (x) => x.year !== year || x.withdrawalRate == null,
@@ -393,7 +397,7 @@ export function OverridesPanelV2({
         return (
           <div className="space-y-2">
             <LumpSumForm
-              accounts={s.individualAccountNames ?? []}
+              accounts={state.individualAccountNames ?? []}
               onAdd={(ls) => {
                 const lumpEntry = {
                   id: ls.id,
@@ -409,7 +413,7 @@ export function OverridesPanelV2({
                     year,
                     lumpSums: [lumpEntry],
                   };
-                  s.setDecumOverrides((prev) =>
+                  state.setDecumOverrides((prev) =>
                     [...prev, o].sort((a, b) => a.year - b.year),
                   );
                 } else {
@@ -417,7 +421,7 @@ export function OverridesPanelV2({
                     year,
                     lumpSums: [lumpEntry],
                   };
-                  s.setAccumOverrides((prev) =>
+                  state.setAccumOverrides((prev) =>
                     [...prev, o].sort((a, b) => a.year - b.year),
                   );
                 }
@@ -432,13 +436,13 @@ export function OverridesPanelV2({
         return (
           <SalaryOverrideForm
             year={year}
-            contribProfiles={s.contribProfileSummaries ?? []}
-            personId={s.salaryOverridePersonId ?? 1}
+            contribProfiles={state.contribProfileSummaries ?? []}
+            personId={state.salaryOverridePersonId ?? 1}
             initialValue={editingOverride?.initialValue}
             onSubmit={(salary, profileId, notes) => {
-              if (!s.salaryOverridePersonId) return;
-              s.createSalaryOverride.mutate({
-                personId: s.salaryOverridePersonId,
+              if (!state.salaryOverridePersonId) return;
+              state.createSalaryOverride.mutate({
+                personId: state.salaryOverridePersonId,
                 projectionYear: year,
                 overrideSalary: String(salary),
                 contributionProfileId: profileId,
@@ -453,13 +457,13 @@ export function OverridesPanelV2({
         return (
           <BudgetOverrideForm
             year={year}
-            budgetProfiles={s.budgetProfileSummaries ?? []}
-            personId={s.salaryOverridePersonId ?? 1}
+            budgetProfiles={state.budgetProfileSummaries ?? []}
+            personId={state.salaryOverridePersonId ?? 1}
             initialValue={editingOverride?.initialValue}
             onSubmit={(annualBudget, notes) => {
-              if (!s.salaryOverridePersonId) return;
-              s.createBudgetOverride.mutate({
-                personId: s.salaryOverridePersonId,
+              if (!state.salaryOverridePersonId) return;
+              state.createBudgetOverride.mutate({
+                personId: state.salaryOverridePersonId,
                 projectionYear: year,
                 overrideMonthlyBudget: String(
                   Math.round((annualBudget / 12) * 100) / 100,
@@ -483,7 +487,7 @@ export function OverridesPanelV2({
                 rothConversionTarget: val / 100,
                 ...(notes ? { notes } : {}),
               };
-              s.setDecumOverrides((prev) =>
+              state.setDecumOverrides((prev) =>
                 [
                   ...prev.filter(
                     (x) => x.year !== year || x.rothConversionTarget == null,
@@ -507,7 +511,7 @@ export function OverridesPanelV2({
                   withdrawalRoutingMode: mode as "waterfall" | "percentage",
                   ...(notes ? { notes } : {}),
                 };
-                s.setDecumOverrides((prev) =>
+                state.setDecumOverrides((prev) =>
                   [
                     ...prev.filter(
                       (x) => x.year !== year || x.withdrawalRoutingMode == null,
@@ -521,7 +525,7 @@ export function OverridesPanelV2({
                   routingMode: mode as "waterfall" | "percentage",
                   ...(notes ? { notes } : {}),
                 };
-                s.setAccumOverrides((prev) =>
+                state.setAccumOverrides((prev) =>
                   [
                     ...prev.filter(
                       (x) => x.year !== year || x.routingMode == null,
@@ -548,13 +552,13 @@ export function OverridesPanelV2({
                 type="button"
                 onClick={() => {
                   if (isPostRetirement) {
-                    s.setDecumOverrides((prev) =>
+                    state.setDecumOverrides((prev) =>
                       [...prev, { year, reset: true }].sort(
                         (a, b) => a.year - b.year,
                       ),
                     );
                   } else {
-                    s.setAccumOverrides((prev) =>
+                    state.setAccumOverrides((prev) =>
                       [...prev, { year, reset: true }].sort(
                         (a, b) => a.year - b.year,
                       ),

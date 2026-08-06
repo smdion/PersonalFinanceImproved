@@ -8,9 +8,7 @@ import { ALL_CATEGORIES, catDisplayLabel } from "./utils";
 import type { OverridesSectionProps } from "./overrides-panel";
 import { decumOverrideToForm } from "./types";
 
-export function WithdrawalOverridesSection({
-  state: s,
-}: OverridesSectionProps) {
+export function WithdrawalOverridesSection({ state }: OverridesSectionProps) {
   const {
     decumOverrides,
     setDecumOverrides,
@@ -22,7 +20,7 @@ export function WithdrawalOverridesSection({
     rothBracketPresets,
     handleAddDecumOverride,
     individualAccountNames,
-  } = s;
+  } = state;
 
   return (
     <div className="border-t border-subtle pt-3">

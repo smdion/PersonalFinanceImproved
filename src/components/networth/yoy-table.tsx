@@ -60,7 +60,7 @@ export function YoYTable({
             {sorted.map((h, i) => {
               const prev = sorted[i + 1];
               const dollarChange = prev ? h.netWorth - prev.netWorth : null;
-              const pctChange =
+              const percentChange =
                 prev && prev.netWorth !== 0
                   ? (h.netWorth - prev.netWorth) / Math.abs(prev.netWorth)
                   : null;
@@ -105,15 +105,15 @@ export function YoYTable({
                   </td>
                   <td
                     className={`text-right py-2 pl-3 text-xs ${
-                      pctChange !== null
-                        ? pctChange >= 0
+                      percentChange !== null
+                        ? percentChange >= 0
                           ? "text-green-600"
                           : "text-red-600"
                         : "text-faint"
                     }`}
                   >
-                    {pctChange !== null
-                      ? `${pctChange >= 0 ? "+" : ""}${formatPercent(pctChange, 1)}`
+                    {percentChange !== null
+                      ? `${percentChange >= 0 ? "+" : ""}${formatPercent(percentChange, 1)}`
                       : "\u2014"}
                   </td>
                 </tr>

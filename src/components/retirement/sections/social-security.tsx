@@ -69,7 +69,7 @@ export function SocialSecuritySection({
                   parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                   type="number"
                   className="text-sm"
-                  editable={!!settings}
+                  isEditable={!!settings}
                 />
                 <span className="text-caption text-faint">
                   {formatCurrency(Number(ps.socialSecurityMonthly) * 12)}
@@ -101,7 +101,7 @@ export function SocialSecuritySection({
                 parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                 type="number"
                 className="text-sm"
-                editable={!!settings}
+                isEditable={!!settings}
               />
               <span className="text-caption text-faint">
                 {formatCurrency(Number(settings.socialSecurityMonthly) * 12)}
@@ -128,7 +128,7 @@ export function SocialSecuritySection({
               }}
               type="number"
               className="text-sm"
-              editable={!!settings}
+              isEditable={!!settings}
             />
           </div>
         </div>

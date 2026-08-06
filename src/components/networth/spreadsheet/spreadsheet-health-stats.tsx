@@ -13,7 +13,7 @@ import {
 } from "@/lib/config/display-labels";
 import type { DetailedHistoryRow } from "./types";
 
-type Props = {
+type SpreadsheetHealthStatsProps = {
   yearA: DetailedHistoryRow;
   yearB: DetailedHistoryRow;
   /** When true, annualize current-year contribution rates (Projected Year mode). */
@@ -93,7 +93,7 @@ export function SpreadsheetHealthStats({
   annualize,
   useMarketValue,
   showOutdated,
-}: Props) {
+}: SpreadsheetHealthStatsProps) {
   const hasCurrentYear = yearA.isCurrent || yearB.isCurrent;
 
   const staleCutoff = useMemo(() => {

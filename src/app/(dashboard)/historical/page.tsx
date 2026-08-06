@@ -189,7 +189,7 @@ export default function HistoricalPage() {
             label={`Since ${earliest.year}`}
             trend={{
               value: formatCurrency(totalGrowth),
-              positive: totalGrowth >= 0,
+              isPositive: totalGrowth >= 0,
             }}
           />
         </Card>

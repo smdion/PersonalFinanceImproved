@@ -33,7 +33,7 @@ import { ContribMethodologySection } from "./projection-table-contrib-methodolog
  * Row rendering delegated to AccumulationRow and DecumulationRow components.
  */
 export function ProjectionTable({
-  state: s,
+  state,
   people,
   parentCategoryFilter,
   accumulationBudgetProfileId,
@@ -67,7 +67,7 @@ export function ProjectionTable({
     result,
     deflate,
     renderTooltip,
-  } = s;
+  } = state;
 
   // Shared MC cell rendering options — passed to row components
   const mcCellOpts: RenderMcCellOptions = {
@@ -118,7 +118,7 @@ export function ProjectionTable({
             <div className="w-px h-4 bg-surface-strong" />
             <Toggle
               label="All years"
-              checked={showAllYears}
+              isChecked={showAllYears}
               onChange={setShowAllYears}
               size="xs"
             />
@@ -340,7 +340,7 @@ export function ProjectionTable({
                       <AccumulationRow
                         key={yr.year}
                         yr={yr}
-                        state={s}
+                        state={state}
                         parentCategoryFilter={parentCategoryFilter}
                         isPhaseTransition={isPhaseTransition}
                         hasOverride={hasOverride}
@@ -364,7 +364,7 @@ export function ProjectionTable({
                     <DecumulationRow
                       key={yr.year}
                       yr={yr as EngineDecumulationYear}
-                      state={s}
+                      state={state}
                       parentCategoryFilter={parentCategoryFilter}
                       isPhaseTransition={isPhaseTransition}
                       hasOverride={hasOverride}
@@ -385,7 +385,7 @@ export function ProjectionTable({
         </>
       )}
 
-      <ContribMethodologySection state={s} />
+      <ContribMethodologySection state={state} />
     </>
   );
 }

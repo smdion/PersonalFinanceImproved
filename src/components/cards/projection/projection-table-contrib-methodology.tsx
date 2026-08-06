@@ -8,7 +8,7 @@ import {
 } from "@/lib/utils/colors";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import {
-  type AccountCategory as AcctCat,
+  type AccountCategory,
   getAccountTypeConfig,
   ACCOUNT_TYPE_CONFIG,
 } from "@/lib/config/account-types";
@@ -19,9 +19,7 @@ export type ContribMethodologyProps = {
   state: ProjectionState;
 };
 
-export function ContribMethodologySection({
-  state: s,
-}: ContribMethodologyProps) {
+export function ContribMethodologySection({ state }: ContribMethodologyProps) {
   const {
     showModels,
     setShowModels,
@@ -40,7 +38,7 @@ export function ContribMethodologySection({
     result,
     baseYear,
     deflate,
-  } = s;
+  } = state;
 
   if (!result) return null;
 
@@ -145,12 +143,13 @@ export function ContribMethodologySection({
                                   spec.method === "percent_of_salary" ||
                                   (spec.category in ACCOUNT_TYPE_CONFIG &&
                                     ACCOUNT_TYPE_CONFIG[
-                                      spec.category as AcctCat
+                                      spec.category as AccountCategory
                                     ].fixedContribScalesWithSalary);
                                 const hasIrsLimit =
                                   spec.category in ACCOUNT_TYPE_CONFIG &&
-                                  ACCOUNT_TYPE_CONFIG[spec.category as AcctCat]
-                                    .hasIrsLimit;
+                                  ACCOUNT_TYPE_CONFIG[
+                                    spec.category as AccountCategory
+                                  ].hasIrsLimit;
                                 if (scalesWithSalary && hasIrsLimit)
                                   return "Salary + IRS cap";
                                 if (scalesWithSalary) return "Scales w/ salary";

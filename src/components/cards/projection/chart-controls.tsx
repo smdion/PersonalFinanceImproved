@@ -8,7 +8,7 @@ import type { useProjectionState } from "./use-projection-state";
 
 type ProjectionState = ReturnType<typeof useProjectionState>;
 
-export function ChartControls({ s }: { s: ProjectionState }) {
+export function ChartControls({ state }: { state: ProjectionState }) {
   const {
     chartView,
     setChartView,
@@ -20,7 +20,7 @@ export function ChartControls({ s }: { s: ProjectionState }) {
     scenarioView,
     setScenarioView,
     coastFireAge,
-  } = s;
+  } = state;
 
   const hasMc = mcBandsByYear != null;
   const coastFireAvailable = coastFireAge != null;

@@ -42,7 +42,7 @@ export function BonusSection({
         <div className="space-y-1 mb-1">
           <div className="flex items-center gap-1">
             <Toggle
-              checked={job.include401kInBonus}
+              isChecked={job.include401kInBonus}
               onChange={(v) => onUpdateJob("include401kInBonus", String(v))}
               label="Deduct 401k from bonus"
               size="xs"
@@ -51,7 +51,7 @@ export function BonusSection({
           </div>
           <div className="flex items-center gap-1">
             <Toggle
-              checked={job.includeBonusInContributions}
+              isChecked={job.includeBonusInContributions}
               onChange={(v) =>
                 onUpdateJob("includeBonusInContributions", String(v))
               }

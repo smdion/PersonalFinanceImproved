@@ -63,7 +63,7 @@ export function ProjectionCard(props: {
   dollarMode?: "nominal" | "real";
   onDollarModeChange?: (mode: "nominal" | "real") => void;
 }) {
-  const s = useProjectionState({
+  const state = useProjectionState({
     people: props.people,
     onContributionRates: props.onContributionRates,
     withdrawalRate: props.withdrawalRate,
@@ -139,7 +139,7 @@ export function ProjectionCard(props: {
     coastFireMcAutoloadEnabled,
     runCoastFireMc,
     coastFireMcQuery,
-  } = s;
+  } = state;
 
   // Allow page-level dollarMode override (for shared toggle across tabs).
   // Sync the prop into internal state so derived data (deflate) reads the correct value.
@@ -203,7 +203,7 @@ export function ProjectionCard(props: {
                   ))}
                 </div>
               ) : (
-                <ProjectionHeroKpis s={s} />
+                <ProjectionHeroKpis state={state} />
               )}
 
               {/* MC auto-load disabled notice — only when real data */}
@@ -222,7 +222,7 @@ export function ProjectionCard(props: {
               )}
 
               {/* MC assumptions summary — only when real data */}
-              {result && <McResultsSection s={s} />}
+              {result && <McResultsSection state={state} />}
 
               {/* Toolbar — skeleton during engine load, real controls once data arrives */}
               {engineQuery.isLoading ? (
@@ -574,11 +574,11 @@ export function ProjectionCard(props: {
               {engineQuery.isLoading ? (
                 <ProjectionChartSkeleton phase="engine" />
               ) : chartView === "strategy" || chartView === "budget" ? (
-                <SpendingStabilityChart s={s} view={chartView} />
+                <SpendingStabilityChart state={state} view={chartView} />
               ) : mcChartPending && chartView === "balance" ? (
                 <ProjectionChartSkeleton phase="simulation" />
               ) : (
-                <ProjectionChart s={s} />
+                <ProjectionChart state={state} />
               )}
             </div>
           )}
@@ -632,7 +632,7 @@ export function ProjectionCard(props: {
             <ProjectionTableSkeleton />
           ) : (
             <ProjectionTable
-              state={s}
+              state={state}
               people={people}
               parentCategoryFilter={parentCategoryFilter}
               accumulationBudgetProfileId={accumulationBudgetProfileId}
@@ -663,41 +663,41 @@ export function ProjectionCard(props: {
 
           {/* UNIFIED OVERRIDES */}
           <OverridesPanel
-            state={s}
+            state={state}
             accumulationExpenseOverride={accumulationExpenseOverride}
           />
         </div>
       </div>
       <SlidePanel
-        open={showMethodology}
+        isOpen={showMethodology}
         onClose={() => setShowMethodology(false)}
         title="Monte Carlo Methodology"
       >
         <MethodologyContent />
       </SlidePanel>
       <SlidePanel
-        open={showAccumMethodology}
+        isOpen={showAccumMethodology}
         onClose={() => setShowAccumMethodology(false)}
         title="Accumulation Methodology"
       >
         <AccumulationMethodologyContent />
       </SlidePanel>
       <SlidePanel
-        open={showDecumMethodology}
+        isOpen={showDecumMethodology}
         onClose={() => setShowDecumMethodology(false)}
         title="Decumulation Methodology"
       >
         <DecumulationMethodologyContent />
       </SlidePanel>
       <SlidePanel
-        open={showValidation}
+        isOpen={showValidation}
         onClose={() => setShowValidation(false)}
         title="Why Trust These Numbers?"
       >
         <ValidationContent />
       </SlidePanel>
       <SlidePanel
-        open={showAssumptions}
+        isOpen={showAssumptions}
         onClose={() => setShowAssumptions(false)}
         title="Simulation Assumptions"
       >

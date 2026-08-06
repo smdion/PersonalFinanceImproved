@@ -312,7 +312,7 @@ export function LtcgBracketsSettings() {
                               }
                               type="number"
                               className="text-sm"
-                              editable={admin}
+                              isEditable={admin}
                             />
                           )}
                         </td>
@@ -332,7 +332,7 @@ export function LtcgBracketsSettings() {
                             }
                             type="number"
                             className="text-sm"
-                            editable={admin}
+                            isEditable={admin}
                           />
                         </td>
                       </tr>

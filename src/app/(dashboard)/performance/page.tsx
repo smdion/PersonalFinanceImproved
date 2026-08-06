@@ -510,7 +510,7 @@ export default function PerformancePage() {
 
       {canEdit && currentYear && (
         <SlidePanel
-          open={showUpdatePerformance}
+          isOpen={showUpdatePerformance}
           onClose={() => setShowUpdatePerformance(false)}
           title={`Update Performance (${currentYear})`}
         >
