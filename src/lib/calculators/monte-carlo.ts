@@ -256,7 +256,9 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
       ...engineInput,
       returnRates: trialReturnRates,
       inflationRate: trialInflationRate,
-      postRetirementInflationRate: trialInflationRate,
+      postRetirementInflationRate: inflationRisk
+        ? trialInflationRate
+        : engineInput.postRetirementInflationRate,
     };
 
     // Run the engine

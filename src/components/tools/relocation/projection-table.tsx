@@ -393,8 +393,8 @@ function Legend({ isBlended }: { isBlended: boolean }) {
         <span>A large purchase hits this year</span>
         <HelpTip
           lines={[
-            "The down payment amount is shown in the Portfolio column tooltip for reference, but is not deducted from the Move Path Balance (to avoid corrupting the projection with a large one-time withdrawal).",
-            "Loan payments and ongoing costs (maintenance, HOA, etc.) are modeled in the Move Path Balance from this year forward via the relocation expense budget.",
+            "The down payment (cash outlay) is subtracted from the Move Path Balance in the purchase year.",
+            "Loan payments are modeled in the Move Path Balance only through the loan term. Ongoing costs (maintenance, HOA, etc.) continue permanently from the purchase year forward via the relocation expense budget.",
           ]}
         />
       </span>

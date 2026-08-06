@@ -369,7 +369,7 @@ function PersonPanel({
     autoUpgradeFiredRef.current = true;
     saveGrowthMutation.mutate({
       jobId: job.id,
-      yearlyGrowth: {},
+      yearlyGrowth,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job.id, routing?.baseNetPayPerCheck]);
@@ -853,7 +853,8 @@ function PersonPanel({
                 disabled={
                   !overrideMonth.match(/^\d{4}-\d{2}$/) ||
                   Math.abs(overrideSplitTotal - 100) >= 0.01 ||
-                  saveOverrideMutation.isPending
+                  saveOverrideMutation.isPending ||
+                  !overrideForm.every((s) => s.goalId > 0)
                 }
               >
                 {saveOverrideMutation.isPending ? "Saving…" : "Save override"}

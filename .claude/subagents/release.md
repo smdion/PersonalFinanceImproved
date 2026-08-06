@@ -93,13 +93,12 @@ Only proceed when the browser smoke test passes.
 
 ### Step 6 — Push and open PR
 
-If the branch name matches the version tag (e.g., `v0.5.3`), delete the branch BEFORE pushing — git cannot have a branch and tag with the same name:
+If the branch name matches the version tag (e.g., `v0.5.3`), rename the branch BEFORE pushing — git cannot have a branch and tag with the same name, and you cannot delete the branch you currently have checked out:
 
 ```bash
 # Only if branch name = version tag
-git branch -d v0.5.3
-git push origin --delete v0.5.3
-git checkout -b release-0.5.3   # rename and push under new name
+git branch -m release-0.5.3   # rename current branch in place
+git push -u origin release-0.5.3
 ```
 
 Otherwise just push:

@@ -465,12 +465,12 @@ export function PortfolioContent() {
                       {sortedSnapshots.map((snap, _i) => {
                         const delta = snap.delta;
                         const isExpanded = expandedSnapshot === snap.id;
-                        const firstSnap = rawSnapshots[0];
+                        // Compare against the globally-latest snapshot date
+                        // (from computeSummary) rather than array position —
+                        // rawSnapshots[0] is only the latest when sorted by
+                        // date, and sortCol can be Total/Change/etc.
                         const isLatest =
-                          snapshotPage === 1 &&
-                          !snapshotDateFrom &&
-                          !snapshotDateTo &&
-                          firstSnap?.id === snap.id;
+                          !!snapshotDate && snap.snapshotDate === snapshotDate;
                         return (
                           <React.Fragment key={snap.id}>
                             <tr

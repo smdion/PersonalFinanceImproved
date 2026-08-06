@@ -388,6 +388,54 @@ export default function ContributionsPage() {
                     </tr>
                   )),
               )}
+              {jointAccountTypes
+                .filter((a) => a.employerMatch > 0)
+                .map((a) => (
+                  <tr
+                    key={`joint-${a.accountType}`}
+                    className="border-b border-subtle"
+                  >
+                    <td className="py-1.5">
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{
+                            backgroundColor: accountColor(a.categoryKey),
+                          }}
+                        />
+                        {a.accountType}
+                        <span className="text-xs text-muted">(Joint)</span>
+                      </span>
+                    </td>
+                    <td className="text-right py-1.5">
+                      {formatCurrency(
+                        toDisplay(
+                          a.views[viewMode].employeeContrib,
+                          avgPeriodsPerYear,
+                          period,
+                        ),
+                      )}
+                    </td>
+                    <td className="text-right py-1.5 text-emerald-600">
+                      {formatCurrency(
+                        toDisplay(
+                          a.views[viewMode].employerMatch,
+                          avgPeriodsPerYear,
+                          period,
+                        ),
+                      )}
+                    </td>
+                    <td className="text-right py-1.5 font-medium">
+                      {formatCurrency(
+                        toDisplay(
+                          a.views[viewMode].totalContrib,
+                          avgPeriodsPerYear,
+                          period,
+                        ),
+                      )}
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </Card>
@@ -624,7 +672,7 @@ export default function ContributionsPage() {
       {/* Joint accounts */}
       {jointAccountTypes.length > 0 && (
         <Card
-          title={`Joint — ${formatCurrency(toDisplay(jointTotals.totalWithMatch, avgPeriodsPerYear, period))}/yr`}
+          title={`Joint — ${formatCurrency(toDisplay(jointTotals.totalWithMatch, avgPeriodsPerYear, period))}${pl}`}
           className="mb-6"
         >
           <table className="w-full text-sm">

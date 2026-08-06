@@ -439,8 +439,8 @@ export function runDecumulationYear(
   // Roth conversions are taxed as ordinary income and push total taxable income
   // into potentially higher LTCG brackets (0%/15%/20%).
   let postConversionLtcgRate: number;
+  const revisedOrdinary = actualTaxableIncome + rothConversionAmount;
   if (rothConversionAmount > 0 && filingStatus && brokerageGainsPortion > 0) {
-    const revisedOrdinary = actualTaxableIncome + rothConversionAmount;
     brokerageTaxCost = roundToCents(
       computeLtcgTax(revisedOrdinary, brokerageGainsPortion, filingStatus),
     );
@@ -461,11 +461,11 @@ export function runDecumulationYear(
     // No tax is actually computed from this value.
     postConversionLtcgRate =
       brokerageGainsPortion > 0 && filingStatus
-        ? getLtcgRate(actualTaxableIncome + brokerageGainsPortion, filingStatus)
+        ? getLtcgRate(revisedOrdinary + brokerageGainsPortion, filingStatus)
         : brokerageGainsPortion > 0
           ? taxRates.brokerage
           : filingStatus
-            ? getLtcgRate(actualTaxableIncome, filingStatus)
+            ? getLtcgRate(revisedOrdinary, filingStatus)
             : taxRates.brokerage;
   }
 
@@ -570,6 +570,25 @@ export function runDecumulationYear(
       : 0;
   if (decumRampAmount > 0) {
     decumBrokerageContrib += decumRampAmount;
+    // Attribute the ramp to individual overflow-target (brokerage) accounts,
+    // weighted by balance, so the per-account breakdown sums to the total.
+    // Mirrors accumulation-year.ts's ramp attribution — report-only here,
+    // matching the rest of this block (must NOT affect balances).
+    const rampAccts = indAccts.filter((ia) => isOverflowTarget(ia.category));
+    const rampTotal = rampAccts.reduce(
+      (s, ia) => s + (indBal.get(indKey(ia)) ?? 0),
+      0,
+    );
+    for (const ia of rampAccts) {
+      const k = indKey(ia);
+      const weight =
+        rampTotal > 0 ? (indBal.get(k) ?? 0) / rampTotal : 1 / rampAccts.length;
+      const portion = roundToCents(decumRampAmount * weight);
+      decumContribByAccount.set(
+        k,
+        (decumContribByAccount.get(k) ?? 0) + portion,
+      );
+    }
   }
 
   // Apply growth -- extracted to growth-application.ts

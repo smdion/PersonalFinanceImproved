@@ -11,6 +11,12 @@ If no change is provided, ask: "What schema change are you reviewing? Paste the 
 
 ---
 
+## Step 0 — Consult the advisor
+
+Before committing, run the proposed change past `.claude/subagents/advisor.md`. Per `CLAUDE.md`'s "When to consult the advisor" section, changes to `lib/db/schema-pg.ts` are exactly the kind of change that should go through the advisor before committing. Frame it as "here's what I plan to do and why," with enough context for the advisor to disagree.
+
+---
+
 ## Step 1 — Read the current schema
 
 Read `src/lib/db/schema-pg.ts` in full. Understand the existing tables, columns, relationships, and conventions before evaluating any change.
@@ -137,7 +143,7 @@ The migration journal at `drizzle/meta/_journal.json` must be updated with the n
 
 If the change adds a new column to an existing table, existing backup files (`.json` exports) won't have that column. `src/lib/db/backup-transforms.ts` must be updated to handle the missing column with an appropriate default.
 
-Check the existing transform registry — it handles 27+ known schema versions. The new transform must handle all prior versions that lack the new column.
+Check the existing transform registry. The new transform must handle all prior versions that lack the new column.
 
 ### 4. Run docs:verify
 

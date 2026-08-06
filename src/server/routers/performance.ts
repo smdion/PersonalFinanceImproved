@@ -1459,7 +1459,7 @@ export const performanceRouter = createTRPCRouter({
       z.object({
         sourceAccountPerformanceId: z.number().int(),
         destinationPerformanceAccountId: z.number().int(),
-        amount: z.string(),
+        amount: zDecimal,
         saleDate: z.string(),
         saleYear: z.number().int(),
         applyYear: z.number().int(),
@@ -1487,7 +1487,7 @@ export const performanceRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.number().int(),
-        amount: z.string().optional(),
+        amount: zDecimalOpt,
         saleDate: z.string().optional(),
         applyYear: z.number().int().optional(),
         notes: z.string().nullable().optional(),
@@ -1544,7 +1544,7 @@ export const performanceRouter = createTRPCRouter({
       z.object({
         id: z.number().int(),
         /** Override amount if actual wire differed from recorded amount. */
-        actualAmount: z.string().optional(),
+        actualAmount: zDecimalOpt,
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -1631,7 +1631,20 @@ export const performanceRouter = createTRPCRouter({
             })
             .where(eq(schema.accountPerformance.id, destRows[0].id));
         } else {
-          // No row for this year yet — get prior year ending balance as beginning balance
+          // No row for this year yet — check the year isn't finalized before crediting
+          const [applyYearAnnual] = await tx
+            .select({ isFinalized: schema.annualPerformance.isFinalized })
+            .from(schema.annualPerformance)
+            .where(eq(schema.annualPerformance.year, pr.applyYear))
+            .limit(1);
+          if (applyYearAnnual?.isFinalized)
+            throw new TRPCError({
+              code: "PRECONDITION_FAILED",
+              message:
+                "Destination year is finalized — cannot apply rollover. Edit manually after unlocking.",
+            });
+
+          // Get prior year ending balance as beginning balance
           const [priorRow] = await tx
             .select({ endingBalance: schema.accountPerformance.endingBalance })
             .from(schema.accountPerformance)

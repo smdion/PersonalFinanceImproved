@@ -232,7 +232,7 @@ export function WithdrawalComparisonCard({
                           className={
                             s.successRate >= 0.9
                               ? "text-green-400"
-                              : s.successRate >= 0.7
+                              : s.successRate >= 0.75
                                 ? "text-yellow-400"
                                 : "text-red-400"
                           }
@@ -249,7 +249,7 @@ export function WithdrawalComparisonCard({
                           className={
                             s.spendingStabilityRate >= 0.9
                               ? "text-green-400"
-                              : s.spendingStabilityRate >= 0.7
+                              : s.spendingStabilityRate >= 0.75
                                 ? "text-yellow-400"
                                 : "text-red-400"
                           }
@@ -266,7 +266,7 @@ export function WithdrawalComparisonCard({
                           className={
                             s.budgetStabilityRate >= 0.9
                               ? "text-green-400"
-                              : s.budgetStabilityRate >= 0.7
+                              : s.budgetStabilityRate >= 0.75
                                 ? "text-yellow-400"
                                 : "text-red-400"
                           }

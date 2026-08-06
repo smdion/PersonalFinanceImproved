@@ -219,9 +219,15 @@ export const syncConnectionsRouter = createTRPCRouter({
         .then((r) => r[0]?.value ?? null),
     ]);
 
+    const parsedStaleHours = Number(staleHoursRow);
     const autoSync = {
       enabled: autoEnabledRow !== "false",
-      staleHours: Math.max(1, Number(staleHoursRow ?? "4") || 4),
+      staleHours: Math.max(
+        1,
+        staleHoursRow == null || !Number.isFinite(parsedStaleHours)
+          ? 4
+          : parsedStaleHours,
+      ),
     };
 
     if (active === "none") {

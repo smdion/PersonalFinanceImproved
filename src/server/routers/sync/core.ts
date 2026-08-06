@@ -736,6 +736,7 @@ export const syncCoreRouter = createTRPCRouter({
               institution: a.institution,
               displayName: perf?.displayName,
               accountLabel: perf?.accountLabel,
+              ownershipType: perf?.ownershipType,
             },
             ownerName ?? undefined,
           );

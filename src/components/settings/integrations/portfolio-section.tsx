@@ -177,10 +177,19 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                     (a) => a.id === remoteId,
                   );
                   const localTotal = names.reduce((sum, n) => {
-                    const acct = portfolio.localAccounts.find(
+                    const localAcct = portfolio.localAccounts.find(
                       (a) => a.label === n,
                     );
-                    return sum + (acct?.balance ?? 0);
+                    if (localAcct) return sum + localAcct.balance;
+                    const assetAcct = portfolio.assetAccounts?.find(
+                      (a) => a.label === n,
+                    );
+                    if (assetAcct) return sum + assetAcct.balance;
+                    const mortgageAcct = portfolio.mortgageAccounts?.find(
+                      (a) => a.label === n,
+                    );
+                    if (mortgageAcct) return sum + mortgageAcct.value;
+                    return sum;
                   }, 0);
                   return (
                     <div key={remoteId}>

@@ -28,9 +28,9 @@ Framework: [Vitest](https://vitest.dev/) with globals enabled. E2E: [Playwright]
 | **Integration**   | 1     | ~40   | Zod schema validation for tRPC inputs and JSONB columns                                 |
 | **Routers**       | 39    | ~1246 | tRPC router integration tests (all routers + auth enforcement)                          |
 | **Helpers**       | 10    | ~193  | Server helper unit tests (budget, contribution, salary, snapshot, transforms, settings) |
-| **E2E**           | 9     | 35    | Playwright smoke tests (health, navigation, page flows)                                 |
+| **E2E**           | 13    | 38    | Playwright smoke tests (health, navigation, page flows)                                 |
 
-Total: **<!-- AUTO-GEN:totalTests -->2752<!-- /AUTO-GEN --> tests** across **<!-- AUTO-GEN:vitestFiles -->164<!-- /AUTO-GEN --> vitest files** + **35 Playwright E2E tests** (<!-- AUTO-GEN:e2eFiles -->13<!-- /AUTO-GEN --> files).
+Total: **<!-- AUTO-GEN:totalTests -->2752<!-- /AUTO-GEN --> tests** across **<!-- AUTO-GEN:vitestFiles -->164<!-- /AUTO-GEN --> vitest files** + **38 Playwright E2E tests** (<!-- AUTO-GEN:e2eFiles -->13<!-- /AUTO-GEN --> files).
 
 ### Coverage
 
@@ -599,7 +599,7 @@ Validates Zod schemas from `src/lib/db/json-schemas.ts` used by tRPC routers.
 
 ## E2E Tests
 
-`tests/e2e/` — Playwright E2E smoke tests across 9 spec files, 35 tests.
+`tests/e2e/` — Playwright E2E smoke tests across 13 spec files, 38 tests.
 
 **Setup:** Node.js 20+, install browsers with `pnpm exec playwright install chromium --with-deps`, start dev server.
 
@@ -673,7 +673,7 @@ pnpm exec playwright test --headed                         # debug with visible 
 | **Schema validation**        | zod-schemas                                                             | Verify tRPC input schemas accept/reject correctly        |
 | **Router integration**       | All 39 router test files                                                | Test tRPC procedures directly with isolated SQLite DB    |
 | **Helper unit tests**        | All 10 helper test files                                                | Test server helpers in isolation                         |
-| **E2E smoke**                | 9 Playwright spec files                                                 | Verify app loads and navigates in a real browser         |
+| **E2E smoke**                | 13 Playwright spec files                                                | Verify app loads and navigates in a real browser         |
 
 ### Snapshot Maintenance
 

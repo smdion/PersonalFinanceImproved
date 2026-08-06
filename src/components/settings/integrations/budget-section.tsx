@@ -34,7 +34,10 @@ type Props = {
   allApiCats: ApiCategoryOption[];
   mutations: BudgetMutations;
   onLinkSavings: (goalId: number, apiCategoryId: string) => void;
-  onCreateSavingsGoalFromApi: (apiCat: { id: string; name: string }) => void;
+  onCreateSavingsGoalFromApi: (apiCat: {
+    id: string;
+    name: string;
+  }) => Promise<void>;
   /**
    * Number of savings-section overrides the user has queued up. The
    * "Apply all suggested matches" button counter displays
@@ -500,7 +503,7 @@ export function BudgetSection({
                       onClick={async () => {
                         setCreatingSavingsFor(c.id);
                         try {
-                          await Promise.resolve(onCreateSavingsGoalFromApi(c));
+                          await onCreateSavingsGoalFromApi(c);
                         } finally {
                           setCreatingSavingsFor(null);
                         }

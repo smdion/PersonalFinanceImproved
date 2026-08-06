@@ -481,6 +481,7 @@ export function IntegrationsSettings() {
           <input
             type="checkbox"
             checked={autoEnabled}
+            disabled={upsertSetting.isPending}
             onChange={(e) =>
               upsertSetting.mutate({
                 key: "sync_auto_enabled",
@@ -494,7 +495,7 @@ export function IntegrationsSettings() {
           <div className="text-sm text-muted">Consider stale after</div>
           <select
             value={String(staleHours)}
-            disabled={!autoEnabled}
+            disabled={!autoEnabled || upsertSetting.isPending}
             onChange={(e) =>
               upsertSetting.mutate({
                 key: "sync_auto_stale_hours",

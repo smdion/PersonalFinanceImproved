@@ -496,12 +496,16 @@ export function AllTransactionsTab({
                         type="number"
                         min={1}
                         value={addForm.recurrenceMonths}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const parsed = Number(e.target.value);
                           setAddForm({
                             ...addForm,
-                            recurrenceMonths: Number(e.target.value),
-                          })
-                        }
+                            recurrenceMonths:
+                              Number.isFinite(parsed) && parsed >= 1
+                                ? Math.floor(parsed)
+                                : 1,
+                          });
+                        }}
                         className="w-12 border border-default rounded px-1.5 py-0.5 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 text-center"
                       />
                       <span>months</span>
@@ -663,12 +667,16 @@ export function AllTransactionsTab({
                         type="number"
                         min={1}
                         value={transferForm.recurrenceMonths}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const parsed = Number(e.target.value);
                           setTransferForm({
                             ...transferForm,
-                            recurrenceMonths: Number(e.target.value),
-                          })
-                        }
+                            recurrenceMonths:
+                              Number.isFinite(parsed) && parsed >= 1
+                                ? Math.floor(parsed)
+                                : 1,
+                          });
+                        }}
                         className="w-12 border border-default rounded px-1.5 py-0.5 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 text-center"
                       />
                       <span>months</span>

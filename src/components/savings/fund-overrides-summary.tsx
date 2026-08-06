@@ -71,6 +71,65 @@ function collapseOverrides(overrides: AllocationOverride[]): OverrideRange[] {
   return ranges;
 }
 
+/** Count months spanned by a "YYYY-MM-01" range, inclusive of both ends. */
+function monthsBetween(startMonth: string, endMonth: string): number {
+  const s = new Date(startMonth + "T00:00:00");
+  const e = new Date(endMonth + "T00:00:00");
+  return (
+    (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth()) + 1
+  );
+}
+
+/** Add (or subtract, if negative) whole months to a "YYYY-MM-01" string. */
+function addMonths(monthStr: string, n: number): string {
+  const d = new Date(monthStr + "T00:00:00");
+  d.setMonth(d.getMonth() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+}
+
+/**
+ * Split ranges into past and current pieces at the `thisMonth` boundary.
+ * A range that starts before `thisMonth` and ends on/after it straddles the
+ * boundary and must be cut into two ranges so `handleClearRange` never
+ * deletes past months when clearing a "current" range (and vice versa).
+ */
+function splitRangesByMonth(
+  ranges: OverrideRange[],
+  thisMonth: Date,
+): { currentRanges: OverrideRange[]; pastRanges: OverrideRange[] } {
+  const thisMonthStr = `${thisMonth.getFullYear()}-${String(thisMonth.getMonth() + 1).padStart(2, "0")}-01`;
+  const currentRanges: OverrideRange[] = [];
+  const pastRanges: OverrideRange[] = [];
+
+  for (const r of ranges) {
+    const startDate = new Date(r.startMonth + "T00:00:00");
+    const endDate = new Date(r.endMonth + "T00:00:00");
+
+    if (endDate < thisMonth) {
+      pastRanges.push(r);
+    } else if (startDate >= thisMonth) {
+      currentRanges.push(r);
+    } else {
+      // Straddles the boundary — split into a past piece and a current piece.
+      const pastEndMonth = addMonths(thisMonthStr, -1);
+      pastRanges.push({
+        startMonth: r.startMonth,
+        endMonth: pastEndMonth,
+        amount: r.amount,
+        monthCount: monthsBetween(r.startMonth, pastEndMonth),
+      });
+      currentRanges.push({
+        startMonth: thisMonthStr,
+        endMonth: r.endMonth,
+        amount: r.amount,
+        monthCount: monthsBetween(thisMonthStr, r.endMonth),
+      });
+    }
+  }
+
+  return { currentRanges, pastRanges };
+}
+
 function formatMonthShort(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
   const months = [
@@ -185,12 +244,7 @@ export function FundOverridesSummary({
   const thisMonth = new Date();
   thisMonth.setDate(1);
   thisMonth.setHours(0, 0, 0, 0);
-  const currentRanges = ranges.filter(
-    (r) => new Date(r.endMonth + "T00:00:00") >= thisMonth,
-  );
-  const pastRanges = ranges.filter(
-    (r) => new Date(r.endMonth + "T00:00:00") < thisMonth,
-  );
+  const { currentRanges, pastRanges } = splitRangesByMonth(ranges, thisMonth);
 
   if (ranges.length === 0 && canEdit === false) return null;
 

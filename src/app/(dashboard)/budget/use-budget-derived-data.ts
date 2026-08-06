@@ -101,7 +101,8 @@ export function useBudgetDerivedData({
   // ---- Per-column contribution profile resolution ----
 
   const columnContribProfileIds = useMemo(() => {
-    if (!profile || numCols === 0) return [activeContribProfileId];
+    if (numCols === 0) return [];
+    if (!profile) return cols.map(() => activeContribProfileId);
     const stored =
       (profile.columnContributionProfileIds as (number | null)[] | null) ??
       null;
@@ -204,8 +205,6 @@ export function useBudgetDerivedData({
           let val: number;
           if (editMode) {
             val = getDraft(it.id, col, it.amounts[col] ?? 0);
-          } else if (it.contribAmount != null) {
-            val = it.contribAmount;
           } else {
             // Look up the per-column contribution profile before falling back
             // to the raw amounts array, so each column reflects its own
@@ -214,7 +213,11 @@ export function useBudgetDerivedData({
             const key =
               map && map.size > 0 ? normalizeContribKey(it.subcategory) : null;
             const fromContrib = key != null ? (map!.get(key) ?? null) : null;
-            val = fromContrib ?? it.amounts[col] ?? 0;
+            val =
+              fromContrib ??
+              (it.contribAmount != null
+                ? it.contribAmount
+                : (it.amounts[col] ?? 0));
           }
           return s + val;
         }, 0),

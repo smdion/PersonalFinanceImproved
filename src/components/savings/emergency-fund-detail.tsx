@@ -176,8 +176,9 @@ export function EmergencyFundDetail({
               ))}
               <div className="border-t pt-1.5 flex justify-between text-xs text-faint">
                 <span>
-                  Shown for reference — track these in Self-Loans to include in
-                  balance calculations
+                  Shown for reference — already reflected in balance
+                  calculations via the linked {reimbursements.categoryName}{" "}
+                  category
                 </span>
               </div>
             </div>

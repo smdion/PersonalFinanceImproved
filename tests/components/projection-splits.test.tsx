@@ -226,7 +226,7 @@ function baseMockState(overrides: Record<string, unknown> = {}): any {
     },
     coastFireMcResult: null,
     debouncedBaseInput: null,
-    scenarioView: "default",
+    scenarioView: "baseline",
 
     // Derived
     result: null,
@@ -241,7 +241,7 @@ function baseMockState(overrides: Record<string, unknown> = {}): any {
     deflate: (v: number) => v,
 
     // View state
-    projectionMode: "deterministic" as const,
+    projectionMode: "monteCarlo" as const,
     setProjectionMode: vi.fn(),
     mcTrials: 1000,
     setMcTrials: vi.fn(),
