@@ -463,9 +463,10 @@ export function useProjectionDerived(
   }, [filteredBreakdown]);
 
   // --- Deflation ---
-  const inflationRate = engineSettings?.annualInflation
-    ? Number(engineSettings.annualInflation)
-    : DEFAULT_INFLATION_RATE;
+  const inflationRate =
+    engineSettings?.annualInflation != null
+      ? Number(engineSettings.annualInflation)
+      : DEFAULT_INFLATION_RATE;
   const baseYear = new Date().getFullYear();
   const deflate = (value: number, year: number) => {
     if (dollarMode === "nominal") return value;

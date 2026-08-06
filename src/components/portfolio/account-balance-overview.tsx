@@ -71,26 +71,42 @@ export function AccountBalanceOverview() {
       .map(([inst, amt]) => ({ label: inst, amount: amt }));
 
     // --- Per Person (detail: person + taxType) ---
-    const byPersonTaxType = new Map<string, number>();
+    // Keyed by raw ownerPersonId (not the rendered display name) — person
+    // names have no DB uniqueness constraint, so two different people could
+    // collide onto the same string key.
+    const byPersonTaxType = new Map<string, { name: string; amount: number }>();
     for (const a of accounts) {
       const name = personDisplayName(a.ownerPersonId, peopleMap);
       const taxLabel = taxTypeLabel(a.taxType);
-      const key = `${name} ${taxLabel}`;
-      byPersonTaxType.set(key, (byPersonTaxType.get(key) ?? 0) + a.amt);
+      const key = `${a.ownerPersonId ?? "null"}:${a.taxType}`;
+      const existing = byPersonTaxType.get(key);
+      const label = `${name} ${taxLabel}`;
+      byPersonTaxType.set(key, {
+        name: label,
+        amount: (existing?.amount ?? 0) + a.amt,
+      });
     }
-    const personDetailRows = Array.from(byPersonTaxType.entries())
-      .sort((a, b) => b[1] - a[1])
-      .map(([label, amt]) => ({ label, amount: amt }));
+    const personDetailRows = Array.from(byPersonTaxType.values())
+      .sort((a, b) => b.amount - a.amount)
+      .map(({ name, amount }) => ({ label: name, amount }));
 
     // --- Per Person (totals) ---
-    const byPerson = new Map<string, number>();
+    const byPerson = new Map<
+      string | number,
+      { name: string; amount: number }
+    >();
     for (const a of accounts) {
       const name = personDisplayName(a.ownerPersonId, peopleMap);
-      byPerson.set(name, (byPerson.get(name) ?? 0) + a.amt);
+      const key = a.ownerPersonId ?? "null";
+      const existing = byPerson.get(key);
+      byPerson.set(key, {
+        name,
+        amount: (existing?.amount ?? 0) + a.amt,
+      });
     }
-    const personRows = Array.from(byPerson.entries())
-      .sort((a, b) => b[1] - a[1])
-      .map(([name, amt]) => ({ label: name, amount: amt }));
+    const personRows = Array.from(byPerson.values())
+      .sort((a, b) => b.amount - a.amount)
+      .map(({ name, amount }) => ({ label: name, amount }));
 
     // --- By Tax Bucket ---
     const byTaxType = new Map<string, number>();

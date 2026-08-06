@@ -70,7 +70,9 @@ export function PerPhaseBudgetSection({
             incomeSource === "formula"
               ? "your portfolio balance using IRS/endowment formulas"
               : incomeSource === "rate"
-                ? "withdrawal rate × portfolio"
+                ? usesWithdrawalRate
+                  ? "your initial withdrawal rate × portfolio"
+                  : "a strategy-specific portfolio percentage"
                 : "your retirement budget"
           }.`}
           {(() => {

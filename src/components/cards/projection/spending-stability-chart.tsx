@@ -69,9 +69,10 @@ export function SpendingStabilityChart({
   }
 
   const year1Withdrawal = decYears[0]!.totalWithdrawal;
-  const inflationRate = engineSettings?.annualInflation
-    ? parseFloat(engineSettings.annualInflation)
-    : DEFAULT_INFLATION_RATE;
+  const inflationRate =
+    engineSettings?.annualInflation != null
+      ? parseFloat(engineSettings.annualInflation)
+      : DEFAULT_INFLATION_RATE;
 
   // Budget baseline
   const retirementAge = engineSettings?.retirementAge ?? 65;
@@ -108,7 +109,10 @@ export function SpendingStabilityChart({
       const baseline = isStrategy
         ? year1Withdrawal * inflationFactor
         : budgetAtRetirement * inflationFactor;
-      const ratio = baseline > 0 ? yr.totalWithdrawal / baseline : 1;
+      // Matches monte-carlo.ts's own convention for a zero baseline (e.g.
+      // Social Security fully covers year-1 spending): 0%, not a misleading
+      // 100% that would hide real spending variability in later years.
+      const ratio = baseline > 0 ? yr.totalWithdrawal / baseline : 0;
 
       const band = mcBandMap?.get(yr.age);
 

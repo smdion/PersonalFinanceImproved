@@ -241,8 +241,7 @@ export const contributionProfileRouter = createTRPCRouter({
           sameName.length > 0 ? `${accountName} — ${taxLabel}` : accountName;
 
         const displayNameOvr = override?.displayNameOverride as
-          | string
-          | undefined;
+          string | undefined;
 
         return {
           id: row.id,
@@ -298,8 +297,7 @@ export const contributionProfileRouter = createTRPCRouter({
           jobOverrides: jobOverridesMap[String(j.id)] ?? null,
           employerNameOverride:
             (jobOverridesMap[String(j.id)]?.employerName as
-              | string
-              | undefined) ?? null,
+              string | undefined) ?? null,
         };
       });
 

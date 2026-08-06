@@ -417,6 +417,7 @@ export function FundCard({
                       targetAmount: null,
                       targetDate: null,
                       monthlyContribution: "0",
+                      allocationPercent: null,
                     });
                   }}
                   className="block w-full text-left px-3 py-1 text-xs text-secondary hover:bg-surface-elevated transition-colors"
@@ -628,7 +629,7 @@ export function FundCard({
                     .filter(
                       (t) =>
                         t.amount < 0 &&
-                        new Date(t.transactionDate) > new Date(),
+                        new Date(t.transactionDate + "T00:00:00") > new Date(),
                     )
                     .reduce((s, t) => s + Math.abs(t.amount), 0);
                   if (upcomingExpenses > 0) {

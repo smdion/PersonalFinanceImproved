@@ -323,12 +323,23 @@ export function RelocationLargePurchases({
                 };
 
                 if (purchaseForm.financed) {
+                  const rawDownPaymentPercent = parseFloat(
+                    purchaseForm.downPaymentPercent,
+                  );
+                  const rawLoanRate = parseFloat(purchaseForm.loanRate);
+                  const rawLoanTermYears = parseInt(
+                    purchaseForm.loanTermYears,
+                    10,
+                  );
                   purchase.downPaymentPercent =
-                    (parseFloat(purchaseForm.downPaymentPercent) || 20) / 100;
+                    (Number.isFinite(rawDownPaymentPercent)
+                      ? rawDownPaymentPercent
+                      : 20) / 100;
                   purchase.loanRate =
-                    (parseFloat(purchaseForm.loanRate) || 6.5) / 100;
-                  purchase.loanTermYears =
-                    parseInt(purchaseForm.loanTermYears) || 30;
+                    (Number.isFinite(rawLoanRate) ? rawLoanRate : 6.5) / 100;
+                  purchase.loanTermYears = Number.isFinite(rawLoanTermYears)
+                    ? rawLoanTermYears
+                    : 30;
                 }
 
                 const ongoing = parseFloat(purchaseForm.ongoingMonthlyCost);

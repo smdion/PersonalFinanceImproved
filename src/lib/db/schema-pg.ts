@@ -118,7 +118,8 @@ export type ExtraPaycheckRoutingData = {
 //                                    retirementScenarios
 //  11.  Return rates & tax tables .. returnRateTable, taxBrackets, ltcgBrackets,
 //                                    irmaaBrackets
-//  12.  API sync .................. apiConnections, budgetApiCache
+//  12.  API sync .................. apiConnections, budgetApiCache,
+//                                    simplefinBalanceSnapshots, simplefinAccounts
 //  13.  App config / admin ......... appSettings, localAdmins
 //  14.  Scenarios (relocation) ..... relocationScenarios, scenarios
 //  15.  Monte Carlo ................ assetClassParams, assetClassCorrelations,
@@ -1569,6 +1570,55 @@ export const budgetApiCache = pgTable(
     uniqueIndex("budget_api_cache_service_key_idx").on(
       table.service,
       table.cacheKey,
+    ),
+  ],
+);
+
+export const simplefinBalanceSnapshots = pgTable(
+  "simplefin_balance_snapshots",
+  {
+    id: serial("id").primaryKey(),
+    snapshotDate: date("snapshot_date").notNull().unique(),
+    totalBalance: decimal("total_balance", {
+      precision: 14,
+      scale: 2,
+    }).notNull(),
+    accountCount: integer("account_count").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("simplefin_balance_snapshots_date_idx").on(table.snapshotDate),
+  ],
+);
+
+export const simplefinAccounts = pgTable(
+  "simplefin_accounts",
+  {
+    id: serial("id").primaryKey(),
+    externalAccountId: text("external_account_id").notNull().unique(),
+    orgName: text("org_name").notNull(),
+    accountName: text("account_name").notNull(),
+    lastBalance: decimal("last_balance", {
+      precision: 14,
+      scale: 2,
+    }).notNull(),
+    isIncluded: boolean("is_included").notNull().default(true),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    linkedPerformanceAccountId: integer(
+      "linked_performance_account_id",
+    ).references(() => performanceAccounts.id, { onDelete: "set null" }),
+  },
+  (table) => [
+    index("simplefin_accounts_org_name_idx").on(
+      table.orgName,
+      table.accountName,
+    ),
+    index("simplefin_accounts_linked_perf_account_idx").on(
+      table.linkedPerformanceAccountId,
     ),
   ],
 );

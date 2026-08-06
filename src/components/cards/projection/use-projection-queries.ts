@@ -268,8 +268,7 @@ export function useProjectionQueries(
   // (already_coast / found / unreachable). The calculator authors this field
   // directly from calculateMonteCarlo() so the runtime shape is guaranteed.
   const coastFireMcResult = coastFireMcQuery.data?.result?.mcResult as
-    | MonteCarloResult
-    | undefined;
+    MonteCarloResult | undefined;
 
   // Initialize asset class overrides from saved DB values on first MC query success
   const mcOverridesInitialized = useRef(false);

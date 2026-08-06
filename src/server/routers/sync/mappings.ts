@@ -15,6 +15,7 @@ import {
   getApiConnection,
 } from "@/lib/budget-api";
 import { accountDisplayName } from "@/lib/utils/format";
+import { mappingsWithTypedIds } from "@/lib/utils/account-mapping";
 import { accountMappingSchema } from "@/lib/db/json-schemas";
 import { getApiAccountBalanceMap } from "@/server/helpers/api-balance-resolution";
 import { pushSnapshotToBudgetApi } from "@/server/helpers/budget-api-push";
@@ -44,7 +45,7 @@ export const syncMappingsRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       await ctx.db
         .update(schema.apiConnections)
-        .set({ accountMappings: input.mappings })
+        .set({ accountMappings: mappingsWithTypedIds(input.mappings) })
         .where(eq(schema.apiConnections.service, input.service));
 
       return { success: true };
@@ -132,7 +133,11 @@ export const syncMappingsRouter = createTRPCRouter({
       const conn = await getApiConnection(ctx.db, active);
       const mappings = conn?.accountMappings ?? [];
       if (mappings.length === 0) {
-        return { pushed: 0, message: "No account mappings configured" };
+        return {
+          pushed: 0,
+          skipped: 0,
+          message: "No account mappings configured",
+        };
       }
 
       // Get the snapshot — latest if not specified
@@ -409,6 +414,7 @@ export const syncMappingsRouter = createTRPCRouter({
               institution: acct.institution,
               displayName: perf?.displayName,
               accountLabel: perf?.accountLabel,
+              ownershipType: perf?.ownershipType,
             },
             ownerName ?? undefined,
           );

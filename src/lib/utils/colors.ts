@@ -161,6 +161,8 @@ export const CHART_COLORS = {
   perfRetirement: "#3b82f6", // blue-500
   perfBrokerage: "#f97316", // orange-500
   perfHsa: "#10b981", // emerald-500
+  // Linked balance sparkline (SimpleFIN)
+  linkedBalance: "#0d9488", // teal-600
 };
 
 /** Hex colors for tax-type pie/chart segments (Recharts needs hex, not Tailwind classes) */

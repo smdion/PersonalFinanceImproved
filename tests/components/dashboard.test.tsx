@@ -12,6 +12,9 @@ vi.mock("@/components/cards/dashboard", () => ({
   RetirementCard: () => <div data-testid="retirement">Retirement</div>,
   MortgageCard: () => <div data-testid="mortgage">Mortgage</div>,
   NetWorthCard: () => <div data-testid="net-worth">NetWorth</div>,
+  LinkedBalanceCard: () => (
+    <div data-testid="linked-balance">LinkedBalance</div>
+  ),
   ContributionsCard: () => <div data-testid="contributions">Contributions</div>,
   TaxesCard: () => <div data-testid="taxes">Taxes</div>,
   FinancialCheckupCard: () => (
@@ -83,6 +86,7 @@ describe("DashboardPage", () => {
     render(<DashboardPage />);
 
     expect(screen.getByTestId("net-worth")).toBeInTheDocument();
+    expect(screen.getByTestId("linked-balance")).toBeInTheDocument();
     expect(screen.getByTestId("household-income")).toBeInTheDocument();
     expect(screen.getByTestId("financial-checkup")).toBeInTheDocument();
     expect(screen.getByTestId("savings-goals")).toBeInTheDocument();

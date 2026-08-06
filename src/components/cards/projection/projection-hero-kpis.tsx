@@ -214,7 +214,7 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
             "Below 75% — Elevated risk. Review your assumptions.",
             ...(retSpan > 30
               ? [
-                  "Your plan spans 40 years — longer than the classic 30-year 4% rule. Early retirees often need a lower withdrawal rate (3-3.5%).",
+                  `Your plan spans ${retSpan} years — longer than the classic 30-year 4% rule. Early retirees often need a lower withdrawal rate (3-3.5%).`,
                 ]
               : []),
             "For dynamic strategies that reduce spending, see Spending Stability for the full picture.",
@@ -299,7 +299,12 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
                 return "Baseline: $0";
               const last =
                 result.projectionByYear[result.projectionByYear.length - 1]!;
-              return `Baseline: ${formatCurrency(deflate(last.endBalance, last.year))}`;
+              const lastPt = getPersonYearTotals(last);
+              const detEndBalance = deflate(
+                lastPt ? lastPt.balance : last.endBalance,
+                last.year,
+              );
+              return `Baseline: ${formatCurrency(detEndBalance)}`;
             })()}
           </div>
         </KpiCard>

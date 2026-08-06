@@ -4,11 +4,12 @@ import React, { useState, memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { LoadingCard, ErrorCard } from "./utils";
 
 function NetWorthCardImpl() {
   const { data, isLoading, error } = trpc.networth.computeSummary.useQuery();
+  const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
   const [useMarket, setUseMarket] = useState(true);
   if (isLoading) return <LoadingCard title="Net Worth" />;
   if (error) return <ErrorCard title="Net Worth" message="Failed to load" />;
@@ -28,6 +29,24 @@ function NetWorthCardImpl() {
   const homeValue = useMarket
     ? data.homeValueEstimated
     : data.homeValueConservative;
+
+  // Freshness footer, matching the pattern established by the Linked
+  // Balance card. Snapshot half always shows when a snapshot exists;
+  // the budget-API half only shows when a budget API actually drives
+  // the cash figure (cashSource !== "manual") — otherwise there's
+  // nothing to report and showing a sync claim would be misleading.
+  const freshnessParts: string[] = [];
+  if (data.snapshotDate) {
+    freshnessParts.push(`Snapshot ${formatDate(data.snapshotDate, "medium")}`);
+  }
+  if (data.cashSource !== "manual" && syncStatus?.lastSynced) {
+    const serviceLabel = syncStatus.service === "ynab" ? "YNAB" : "Actual";
+    const time = new Date(syncStatus.lastSynced).toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    freshnessParts.push(`${serviceLabel} synced ${time}`);
+  }
 
   return (
     <Card
@@ -87,7 +106,11 @@ function NetWorthCardImpl() {
           </div>
         )}
       </div>
-      {/* Data freshness dates moved to sidebar global indicator */}
+      {freshnessParts.length > 0 && (
+        <p className="text-caption text-faint mt-1">
+          {freshnessParts.join(" · ")}
+        </p>
+      )}
     </Card>
   );
 }

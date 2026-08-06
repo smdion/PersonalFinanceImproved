@@ -199,9 +199,10 @@ export default function BrokeragePage() {
   const budgetLinks = brokerageData?.budgetLinks ?? [];
 
   // Deflation (Today's $ / Future $) — same pattern as retirement
-  const inflationRate = data.settings?.annualInflation
-    ? Number(data.settings.annualInflation)
-    : DEFAULT_INFLATION_RATE;
+  const inflationRate =
+    data.settings?.annualInflation != null
+      ? Number(data.settings.annualInflation)
+      : DEFAULT_INFLATION_RATE;
   const baseYear = new Date().getFullYear();
   const deflate = (value: number, year: number) => {
     if (dollarMode === "nominal") return value;
@@ -218,8 +219,7 @@ export default function BrokeragePage() {
     (yr) => yr.phase === "accumulation",
   );
   const firstAccYear = accYears[0] as
-    | import("@/lib/calculators/types").EngineAccumulationYear
-    | undefined;
+    import("@/lib/calculators/types").EngineAccumulationYear | undefined;
   const brokerageRamp = firstAccYear?.brokerageRampContribution ?? 0;
 
   const activeProfileName =

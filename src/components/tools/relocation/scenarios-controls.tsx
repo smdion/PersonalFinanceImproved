@@ -111,7 +111,11 @@ export function RelocationScenariosControls({
             onChange={(e) => setSaveScenarioName(e.target.value)}
             autoFocus
             onKeyDown={(e) => {
-              if (e.key === "Enter" && saveScenarioName.trim()) {
+              if (
+                e.key === "Enter" &&
+                saveScenarioName.trim() &&
+                !saveIsPending
+              ) {
                 onSaveDialogSubmit();
               }
               if (e.key === "Escape") setShowSaveDialog(false);

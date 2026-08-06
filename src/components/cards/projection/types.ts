@@ -13,13 +13,7 @@ import {
 // ---------------------------------------------------------------------------
 
 export type TipColor =
-  | "green"
-  | "blue"
-  | "red"
-  | "amber"
-  | "emerald"
-  | "violet"
-  | "gray";
+  "green" | "blue" | "red" | "amber" | "emerald" | "violet" | "gray";
 
 /** A single line item — contribution, withdrawal, balance component, etc. */
 export type TooltipLineItem = {

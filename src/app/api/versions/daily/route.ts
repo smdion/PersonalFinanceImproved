@@ -21,13 +21,13 @@ export async function GET(request: Request) {
     );
   }
 
+  const headerBuf = headerSecret
+    ? Buffer.from(headerSecret, "utf8")
+    : Buffer.alloc(0);
+  const secretBuf = Buffer.from(cronSecret, "utf8");
   if (
-    !headerSecret ||
-    headerSecret.length !== cronSecret.length ||
-    !timingSafeEqual(
-      Buffer.from(headerSecret, "utf8"),
-      Buffer.from(cronSecret, "utf8"),
-    )
+    headerBuf.length !== secretBuf.length ||
+    !timingSafeEqual(headerBuf, secretBuf)
   ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

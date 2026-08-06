@@ -77,29 +77,27 @@ export function PreviewPanel({
     });
   };
 
-  const handleCreateSavingsGoalFromApi = (apiCat: {
+  const handleCreateSavingsGoalFromApi = async (apiCat: {
     id: string;
     name: string;
   }) => {
-    savingsMutations.mutations.createGoal.mutate(
-      {
+    try {
+      const created = await savingsMutations.mutations.createGoal.mutateAsync({
         name: apiCat.name,
         targetMode: "ongoing",
         isActive: true,
         monthlyContribution: "0",
-      },
-      {
-        onSuccess: (created) => {
-          if (created) {
-            savingsMutations.mutations.linkSavings.mutate({
-              goalId: created.id,
-              apiCategoryId: apiCat.id,
-              apiCategoryName: apiCat.name,
-            });
-          }
-        },
-      },
-    );
+      });
+      if (created) {
+        await savingsMutations.mutations.linkSavings.mutateAsync({
+          goalId: created.id,
+          apiCategoryId: apiCat.id,
+          apiCategoryName: apiCat.name,
+        });
+      }
+    } catch (err) {
+      console.warn("Failed to create savings goal from API category:", err);
+    }
   };
 
   // Count drifted items (name or category) — pure derived state, kept in

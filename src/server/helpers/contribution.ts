@@ -264,14 +264,12 @@ export function aggregateContributionsByCategory(
   /** Employer match broken down by category → parentCategory → amount. */
   employerMatchByParentCat: Map<AccountCategory, Map<string, number>>;
 } {
-  const contribByCategory = buildCategoryRecord(
-    (): ContribCategorySummary => ({
-      annual: 0,
-      rothFraction: 0,
-      rothAnnual: 0,
-      tradAnnual: 0,
-    }),
-  );
+  const contribByCategory = buildCategoryRecord((): ContribCategorySummary => ({
+    annual: 0,
+    rothFraction: 0,
+    rothAnnual: 0,
+    tradAnnual: 0,
+  }));
   const employerMatchByCategory = buildCategoryRecord(() => 0);
   const employerMatchByParentCat = new Map<
     AccountCategory,

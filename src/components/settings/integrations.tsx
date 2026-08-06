@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import type { Service, PreviewData } from "./integrations-types";
 import { PreviewPanel } from "./integrations-preview-panel";
+import { SimplefinCard } from "./integrations-simplefin";
 
 function ServiceCard({
   service,
@@ -465,6 +466,8 @@ export function IntegrationsSettings() {
         }
       />
 
+      <SimplefinCard />
+
       {/* Sync Behavior */}
       <Card className="p-4 space-y-3">
         <div className="text-sm font-medium">Sync Behavior</div>
@@ -478,6 +481,7 @@ export function IntegrationsSettings() {
           <input
             type="checkbox"
             checked={autoEnabled}
+            disabled={upsertSetting.isPending}
             onChange={(e) =>
               upsertSetting.mutate({
                 key: "sync_auto_enabled",
@@ -491,7 +495,7 @@ export function IntegrationsSettings() {
           <div className="text-sm text-muted">Consider stale after</div>
           <select
             value={String(staleHours)}
-            disabled={!autoEnabled}
+            disabled={!autoEnabled || upsertSetting.isPending}
             onChange={(e) =>
               upsertSetting.mutate({
                 key: "sync_auto_stale_hours",

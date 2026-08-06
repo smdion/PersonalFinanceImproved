@@ -140,9 +140,10 @@ export function NewSnapshotForm({
 }) {
   const { data: latestSnap, isLoading: loadingLatest } =
     trpc.settings.portfolioSnapshots.getLatest.useQuery();
-  const { data: perfAccounts } =
+  const { data: perfAccounts, isLoading: loadingPerfAccounts } =
     trpc.settings.performanceAccounts.list.useQuery();
-  const { data: people } = trpc.settings.people.list.useQuery();
+  const { data: people, isLoading: loadingPeople } =
+    trpc.settings.people.list.useQuery();
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const createMutation = trpc.settings.portfolioSnapshots.create.useMutation({
     onSuccess: (data) => {
@@ -231,7 +232,7 @@ export function NewSnapshotForm({
   const prevTotal = currentRows.reduce((s, r) => s + r.previousAmount, 0);
   const totalDelta = newTotal - prevTotal;
 
-  if (loadingLatest) {
+  if (loadingLatest || loadingPeople || loadingPerfAccounts) {
     return (
       <p className="text-sm text-muted">Loading latest snapshot data...</p>
     );

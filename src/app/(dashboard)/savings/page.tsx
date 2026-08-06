@@ -100,8 +100,7 @@ export default function SavingsPage() {
   const linkedProfileId =
     (
       budgetData?.profile?.columnContributionProfileIds as
-        | (number | null)[]
-        | null
+        (number | null)[] | null
     )?.[budgetColumn] ?? null;
   const effectiveContribProfileId = linkedProfileId ?? activeContribProfileId;
 
@@ -369,8 +368,7 @@ export default function SavingsPage() {
     const goalTxMap = txByGoalMonth.get(goalId);
     const balances: number[] = [];
     const monthEvents: (
-      | { id: string; amount: number; description: string }[]
-      | null
+      { id: string; amount: number; description: string }[] | null
     )[] = [];
     const monthlyAllocations: number[] = [];
     const hasOverride: boolean[] = [];

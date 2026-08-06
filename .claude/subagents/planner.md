@@ -34,7 +34,7 @@ Assign each root cause a letter (A, B, C...). Name it clearly: "No shared conven
 
 Build the root cause table:
 
-```
+```text
 | # | Root cause | Primary symptoms | Group |
 |---|---|---|---|
 | R1 | ... | file:line, file:line | A |

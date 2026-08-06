@@ -271,43 +271,65 @@ function HoldingsTable({
 
   async function handleLookup(key: string, ticker: string) {
     if (!ticker) return;
+    // Capture the requested ticker so a later, faster-completing lookup for a
+    // changed ticker can't be clobbered by this one resolving after it.
+    const requestedTicker = ticker;
     updateRow(key, { lookupState: "loading" });
     try {
       const result = await utils.analytics.lookupTicker.fetch({ ticker });
-      if ("error" in result && result.error) {
-        const messages: Record<string, string> = {
-          no_key: "No FMP key configured",
-          not_found: "Ticker not found",
-          rate_limit: "FMP rate limit reached (250/day)",
-          error: "Lookup failed",
-        };
-        updateRow(key, {
-          lookupState: "error",
-          lookupError: messages[result.error] ?? "Lookup failed",
-        });
-        return;
-      }
-      // Find assetClassId from suggested name
-      let assetClassId: number | null = null;
-      if (result.suggestedAssetClassName) {
-        const match = assetClasses.find(
-          (c) => c.name === result.suggestedAssetClassName,
-        );
-        assetClassId = match?.id ?? null;
-      }
-      updateRow(key, {
-        name: result.name ?? ticker,
-        expenseRatioStr:
-          result.expenseRatio !== undefined
-            ? (result.expenseRatio * 100).toFixed(3)
-            : "",
-        assetClassId,
-        assetClassSource: assetClassId !== null ? "fmp" : "manual",
-        lookupState: "done",
-        lookupError: undefined,
-      });
+      setDrafts((d) =>
+        d.map((r) => {
+          if (r.key !== key || r.ticker !== requestedTicker) return r;
+          if ("error" in result && result.error) {
+            const messages: Record<string, string> = {
+              no_key: "No FMP key configured",
+              not_found: "Ticker not found",
+              rate_limit: "FMP rate limit reached (250/day)",
+              error: "Lookup failed",
+            };
+            return {
+              ...r,
+              lookupState: "error",
+              lookupError: messages[result.error] ?? "Lookup failed",
+            };
+          }
+          // Find assetClassId from suggested name; only defined when the
+          // response actually gives us a matching class, so we never
+          // clobber a manually-entered value with null.
+          let matchedAssetClassId: number | undefined;
+          if (result.suggestedAssetClassName) {
+            const match = assetClasses.find(
+              (c) => c.name === result.suggestedAssetClassName,
+            );
+            if (match) matchedAssetClassId = match.id;
+          }
+          const hasExpenseRatio =
+            result.expenseRatio !== undefined && result.expenseRatio !== null;
+          return {
+            ...r,
+            name: result.name ?? ticker,
+            expenseRatioStr: hasExpenseRatio
+              ? (result.expenseRatio! * 100).toFixed(3)
+              : r.expenseRatioStr,
+            assetClassId:
+              matchedAssetClassId !== undefined
+                ? matchedAssetClassId
+                : r.assetClassId,
+            assetClassSource:
+              matchedAssetClassId !== undefined ? "fmp" : r.assetClassSource,
+            lookupState: "done",
+            lookupError: undefined,
+          };
+        }),
+      );
     } catch {
-      updateRow(key, { lookupState: "error", lookupError: "Lookup failed" });
+      setDrafts((d) =>
+        d.map((r) =>
+          r.key === key && r.ticker === requestedTicker
+            ? { ...r, lookupState: "error", lookupError: "Lookup failed" }
+            : r,
+        ),
+      );
     }
   }
 
@@ -320,9 +342,11 @@ function HoldingsTable({
           ticker: d.ticker.trim(),
           name: d.name.trim() || d.ticker.trim(),
           weightBps: d.weightBps,
-          expenseRatio: d.expenseRatioStr
-            ? String(Number(d.expenseRatioStr) / 100)
-            : null,
+          expenseRatio: (() => {
+            if (!d.expenseRatioStr) return null;
+            const parsed = Number(d.expenseRatioStr) / 100;
+            return Number.isFinite(parsed) ? String(parsed) : null;
+          })(),
           assetClassId: d.assetClassId,
           assetClassSource: d.assetClassSource,
         }));
@@ -451,14 +475,15 @@ function HoldingsTable({
                     value={bpsToPercent(row.weightBps) || ""}
                     placeholder="0"
                     readOnly={locked}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const parsed = Number(e.target.value);
+                      if (!Number.isFinite(parsed)) return;
                       updateRow(row.key, {
                         weightBps: Math.round(
-                          Math.min(100, Math.max(0, Number(e.target.value))) *
-                            100,
+                          Math.min(100, Math.max(0, parsed)) * 100,
                         ),
-                      })
-                    }
+                      });
+                    }}
                   />
                 </td>
                 <td className="py-1 pr-2">

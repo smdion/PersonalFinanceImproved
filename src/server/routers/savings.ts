@@ -60,7 +60,11 @@ async function computeJobNetPayPerCheck(
     .select()
     .from(schema.jobs)
     .where(eq(schema.jobs.id, jobId));
-  if (!job) return 0;
+  if (!job)
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Job not found",
+    });
 
   const [allBrackets, jobDeductions, jobContribs, personalContribs, allLimits] =
     await Promise.all([
@@ -110,7 +114,11 @@ async function computeJobNetPayPerCheck(
       b.filingStatus === job.w4FilingStatus &&
       b.w4Checkbox === job.w4Box2cChecked,
   );
-  if (!bracketRow) return 0;
+  if (!bracketRow)
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "No tax bracket data found for this job's filing status",
+    });
 
   const currentSalary = await getCurrentSalary(
     db,
@@ -201,7 +209,8 @@ function resolveEfundTierIndex(
       ? (settingsMap.get("budget_active_column") as number)
       : 0;
   const efundSavedColumn =
-    typeof settingsMap.get("efund_budget_column") === "number"
+    typeof settingsMap.get("efund_budget_column") === "number" &&
+    (settingsMap.get("efund_budget_column") as number) >= 0
       ? (settingsMap.get("efund_budget_column") as number)
       : null;
   return overrideTierIndex ?? efundSavedColumn ?? budgetActiveColumn;
@@ -243,7 +252,7 @@ const plannedTransactionInput = z.object({
   amount: zDecimal, // positive = deposit, negative = withdrawal
   description: z.string().min(1),
   isRecurring: z.boolean().default(false),
-  recurrenceMonths: z.number().int().nullable().optional(),
+  recurrenceMonths: z.number().int().min(1).nullable().optional(),
 });
 
 export const savingsRouter = createTRPCRouter({
@@ -1117,6 +1126,13 @@ export const savingsRouter = createTRPCRouter({
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
           message: "No live paycheck/budget data available to recalculate from",
+        });
+      }
+      if (maxMonthlyFunding <= 0) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message:
+            "Current income pool is zero or negative — can't recalculate allocations",
         });
       }
 

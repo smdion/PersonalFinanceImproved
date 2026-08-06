@@ -1,5 +1,6 @@
 /** Budget router for multi-profile budget management including category items, column tiers, contribution profile linking, and budget API integration. */
 import { eq, asc } from "drizzle-orm";
+import { log } from "@/lib/logger";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure, budgetProcedure } from "../trpc";
@@ -1213,7 +1214,15 @@ export const budgetRouter = createTRPCRouter({
       // pushed instead of showing stale pre-push diffs until the next
       // manual Sync.
       if (pushed > 0) {
-        await refreshCategoryCache(ctx.db, active, client);
+        try {
+          await refreshCategoryCache(ctx.db, active, client);
+        } catch (err) {
+          // Pushes already succeeded remotely — a stale cache must not turn
+          // a successful push into a client-visible failure.
+          log("error", "post_push_cache_refresh_failed", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
       }
 
       return { pushed };

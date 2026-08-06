@@ -165,10 +165,7 @@ export function DataTable<T extends { id: number | string }>({
                   const isSortable = !!col.sortable;
                   const isActive = sortKey === col.key;
                   const ariaSort:
-                    | "ascending"
-                    | "descending"
-                    | "none"
-                    | undefined = isSortable
+                    "ascending" | "descending" | "none" | undefined = isSortable
                     ? isActive
                       ? sortDir === "asc"
                         ? "ascending"

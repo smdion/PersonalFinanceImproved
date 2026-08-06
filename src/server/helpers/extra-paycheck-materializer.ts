@@ -76,9 +76,11 @@ async function _materialize(db: Db): Promise<void> {
       payPeriod: schema.jobs.payPeriod,
       extraPaycheckRouting: schema.jobs.extraPaycheckRouting,
       personId: schema.jobs.personId,
+      endDate: schema.jobs.endDate,
     })
     .from(schema.jobs);
 
+  const todayStr = now.toISOString().slice(0, 10);
   const jobsWithRules = (
     allJobs as {
       id: number;
@@ -86,8 +88,14 @@ async function _materialize(db: Db): Promise<void> {
       payPeriod: string;
       extraPaycheckRouting: ExtraPaycheckRoutingData | null;
       personId: number;
+      endDate: string | null;
     }[]
-  ).filter((j) => j.extraPaycheckRouting?.rules?.length && j.anchorPayDate);
+  ).filter(
+    (j) =>
+      j.extraPaycheckRouting?.rules?.length &&
+      j.anchorPayDate &&
+      (!j.endDate || j.endDate >= todayStr),
+  );
 
   // Load active goal ids
   const activeGoals = await db

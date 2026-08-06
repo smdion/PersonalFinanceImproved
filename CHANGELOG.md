@@ -8,6 +8,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.6
 
+## [0.6.6] - 2026-08-05
+
+### Added
+
+- **SimpleFIN Bridge integration — daily linked-balance pulse.** Connect a SimpleFIN Bridge setup token in Settings to automatically pull balances from your linked financial institutions once a day, independent of your weekly manual portfolio snapshot.
+- **Per-account include/exclude control.** Each SimpleFIN-reported account has a checkbox to control whether it counts toward the synced total — useful for excluding accounts you don't want reflected in the linked balance.
+- **Many-to-one account matching.** Link multiple SimpleFIN-reported accounts to a single tracked Ledgr account, for cases where historical data splits one real-world account across more than one SimpleFIN entry.
+- **"Live Balance" dashboard card.** Shows drift between your synced SimpleFIN total and your last manual snapshot, broken out by account type, with the actual snapshot date and coverage ("N of M tracked accounts linked via SimpleFIN").
+- **Net Worth card now shows an "Updated" footer**, combining the portfolio snapshot date and the last YNAB/Actual budget-API sync time, matching the new Live Balance card.
+
+### Fixed
+
+- **Duplicate React key warning in the YNAB account mapping list** when two people share one tracked performance account at the same institution.
+
+### Improved
+
+- **Dashboard grid now reflows automatically** instead of relying on hardcoded column-count breakpoints, so cards that only appear once an integration is connected (like Live Balance) never leave a gap or misalign the layout.
+- **Dependencies updated** (Next.js, React, and other packages) via Dependabot.
+
+---
+
 ## [0.6.5] - 2026-08-05
 
 ### Added

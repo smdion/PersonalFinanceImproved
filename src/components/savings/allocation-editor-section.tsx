@@ -240,7 +240,15 @@ export function AllocationEditorSection({
           monthDate={editingMonth}
           monthDates={monthDates}
           goalProjections={goalProjections}
-          pool={basePool}
+          pool={
+            monthlyPools[
+              monthDates.findIndex(
+                (d) =>
+                  d.getFullYear() === editingMonth.getFullYear() &&
+                  d.getMonth() === editingMonth.getMonth(),
+              )
+            ] ?? basePool
+          }
           onUpsertMonth={(p) => upsertMonth.mutate(p)}
           onUpsertMonthRange={(p) => upsertMonthRange.mutate(p)}
           onDeleteMonthOverrides={(monthDates) => {

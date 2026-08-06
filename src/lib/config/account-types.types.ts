@@ -4,9 +4,7 @@
 
 /** How an account type stores its balances. */
 export type BalanceStructure =
-  | "roth_traditional"
-  | "single_bucket"
-  | "basis_tracking";
+  "roth_traditional" | "single_bucket" | "basis_tracking";
 
 /** How withdrawals from this account type are taxed. */
 export type WithdrawalTaxType = "income" | "none" | "capital_gains";

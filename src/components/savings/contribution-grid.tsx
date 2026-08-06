@@ -61,7 +61,8 @@ function DefaultContributionCell({
   const pct = pool > 0 ? (gp.monthlyAllocation / pool) * 100 : 0;
 
   // Already-funded funds show a special indicator instead of editable $0
-  const isFunded = gp.target > 0 && gp.current >= gp.target;
+  const isFunded =
+    gp.targetMode === "fixed" && gp.target > 0 && gp.current >= gp.target;
 
   const startEditDollar = () => {
     setEditing("dollar");

@@ -194,8 +194,7 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
     // Smoke: every hook exports a factory that returns { mutations, invalidate }
     for (const mod of [drift, budget, savings, contrib, portfolio]) {
       const hookName = Object.keys(mod).find((k) => k.startsWith("use")) as
-        | string
-        | undefined;
+        string | undefined;
       expect(hookName).toBeDefined();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const hook = (mod as any)[hookName!];

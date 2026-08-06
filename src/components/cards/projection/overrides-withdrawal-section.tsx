@@ -443,9 +443,7 @@ export function WithdrawalOverridesSection({
                             withdrawalTaxPreference: {
                               ...f.withdrawalTaxPreference,
                               [cat]: e.target.value as
-                                | "traditional"
-                                | "roth"
-                                | "",
+                                "traditional" | "roth" | "",
                             },
                           }))
                         }

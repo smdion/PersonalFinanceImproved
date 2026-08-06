@@ -25,7 +25,7 @@ Run a directory listing of the target area. Count files and identify sub-directo
 
 A decomposition plan looks like this:
 
-```
+```text
 This area is too large for a single review. Recommended sub-reviews (run in parallel):
 
 1. src/server/routers/sync/ — 6 files, router conventions + validation
@@ -311,7 +311,7 @@ The engine (`src/lib/calculators/engine/`) is a modular pipeline. The orchestrat
 
 **Profile and scenario layering — 4-layer resolution order:**
 
-```
+```text
 DB (live data) → contribution profile → budget profile → scenario
 ```
 

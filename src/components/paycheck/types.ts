@@ -132,16 +132,10 @@ export type CreateContribData = {
   parentCategory?: "Retirement" | "Portfolio";
   taxTreatment: "pre_tax" | "tax_free" | "after_tax" | "hsa";
   contributionMethod:
-    | "percent_of_salary"
-    | "fixed_per_period"
-    | "fixed_monthly"
-    | "fixed_annual";
+    "percent_of_salary" | "fixed_per_period" | "fixed_monthly" | "fixed_annual";
   contributionValue: string;
   employerMatchType:
-    | "none"
-    | "percent_of_contribution"
-    | "dollar_match"
-    | "fixed_annual";
+    "none" | "percent_of_contribution" | "dollar_match" | "fixed_annual";
   isActive: boolean;
 };
 

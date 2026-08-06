@@ -7,8 +7,7 @@ import { settingValueSchema } from "@/lib/db/json-schemas";
 
 /** Accepts both the main db instance and transaction handles. */
 export type DbType =
-  | typeof appDb
-  | Parameters<Parameters<typeof appDb.transaction>[0]>[0];
+  typeof appDb | Parameters<Parameters<typeof appDb.transaction>[0]>[0];
 
 /** Validates a string represents a valid decimal number. */
 export const zDecimal = z

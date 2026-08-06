@@ -361,6 +361,16 @@ function transformV02xV03xToV040(tables: TableData): TableData {
     tables["utility_reading"] = [];
   }
 
+  // v0.6.x: tables and columns added after v0.4 — absent from all older backups
+  if (!tables["account_holdings"]) {
+    tables["account_holdings"] = [];
+  }
+  if (!tables["pending_rollovers"]) {
+    tables["pending_rollovers"] = [];
+  }
+  addColumnDefault(tables, "savings_allocation_overrides", "source", "manual");
+  addColumnDefault(tables, "savings_planned_transactions", "source", "manual");
+
   return tables;
 }
 

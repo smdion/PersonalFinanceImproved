@@ -11,6 +11,11 @@ vi.mock("@/lib/trpc", () => ({
         getActiveBudgetApi: { invalidate: vi.fn() },
         getPreview: { invalidate: vi.fn() },
       },
+      simplefin: {
+        getStatus: { invalidate: vi.fn() },
+        listBalanceHistory: { invalidate: vi.fn() },
+        listAccounts: { invalidate: vi.fn() },
+      },
     }),
     settings: {
       appSettings: {
@@ -68,6 +73,46 @@ vi.mock("@/lib/trpc", () => ({
         }),
       },
       setActiveBudgetApi: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
+    },
+    simplefin: {
+      getStatus: {
+        useQuery: () => ({ data: { connected: false, lastSyncedAt: null } }),
+      },
+      listAccounts: {
+        useQuery: () => ({ data: undefined }),
+      },
+      listMatchableAccounts: {
+        useQuery: () => ({ data: undefined }),
+      },
+      saveToken: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
+      testConnection: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          isPending: false,
+          isSuccess: false,
+          data: null,
+        }),
+      },
+      syncNow: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          isPending: false,
+          isSuccess: false,
+          isError: false,
+          data: null,
+        }),
+      },
+      removeConnection: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
+      setAccountIncluded: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
+      setAccountMapping: {
         useMutation: () => ({ mutate: vi.fn(), isPending: false }),
       },
     },

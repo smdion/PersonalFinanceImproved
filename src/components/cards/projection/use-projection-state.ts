@@ -119,8 +119,7 @@ export function useProjectionState(props: UseProjectionStateProps) {
         o.contributionRate = parseFloat(form.accumForm.contributionRate) / 100;
       if (form.accumForm.routingMode !== "")
         o.routingMode = form.accumForm.routingMode as
-          | "waterfall"
-          | "percentage";
+          "waterfall" | "percentage";
       const defaultOrder = getDefaultAccumulationOrder();
       if (
         form.accumForm.accountOrder.length !== defaultOrder.length ||
@@ -245,8 +244,7 @@ export function useProjectionState(props: UseProjectionStateProps) {
       for (const cat of ALL_CATEGORIES) {
         if (form.decumForm.withdrawalTaxPreference[cat] !== "") {
           prefs[cat] = form.decumForm.withdrawalTaxPreference[cat] as
-            | "traditional"
-            | "roth";
+            "traditional" | "roth";
         }
       }
       if (Object.keys(prefs).length > 0) o.withdrawalTaxPreference = prefs;

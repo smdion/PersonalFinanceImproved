@@ -116,15 +116,13 @@ export function SpreadsheetView({
   const yearARow = useMemo(
     () =>
       detailedData?.years.find((h) => h.year === effectiveYearA) as
-        | DetailedHistoryRow
-        | undefined,
+        DetailedHistoryRow | undefined,
     [detailedData, effectiveYearA],
   );
   const yearBRow = useMemo(
     () =>
       detailedData?.years.find((h) => h.year === effectiveYearB) as
-        | DetailedHistoryRow
-        | undefined,
+        DetailedHistoryRow | undefined,
     [detailedData, effectiveYearB],
   );
 

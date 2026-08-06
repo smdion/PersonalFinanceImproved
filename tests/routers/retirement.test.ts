@@ -445,8 +445,7 @@ describe("retirement router -- populated data", () => {
     expect(cp.annualContributions).toBeGreaterThan(0);
     // Projection balance must grow beyond the seeded starting balance ($250,000)
     const lastYear = r.projectionByYear[r.projectionByYear.length - 1] as
-      | { currentBalance: number }
-      | undefined;
+      { currentBalance: number } | undefined;
     expect(lastYear?.currentBalance ?? 0).toBeGreaterThan(250000);
   });
 });
