@@ -21,6 +21,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - **Duplicate React key warning in the YNAB account mapping list** when two people share one tracked performance account at the same institution.
+- **SimpleFIN setup token and account data are now validated before use**, blocking non-HTTPS and private/internal network addresses (including bracketed IPv6) from being reached through the connection flow.
+- **A SimpleFIN sync no longer discards every linked balance** just because one institution reported an error — balances that did come back successfully are still saved.
+- **SimpleFIN's "N of M tracked accounts linked" coverage line no longer undercounts** accounts that don't yet have a matching snapshot row, and a missing snapshot now shows as unknown rather than a misleadingly large balance swing.
+- **Corrected two more places where employer contributions could be double-counted** or miscategorized: ESPP/401(k) rollover amounts now use the same validated decimal handling as the rest of the performance router, and applying a rollover into an already-finalized year is now blocked consistently whether or not the destination account already has a row for that year.
+- **Decumulation-year Roth conversions now consistently affect the capital-gains bracket calculation**, and ramp contributions during decumulation are now attributed to the correct account instead of only the portfolio-level total.
+- **Monte Carlo no longer silently discards a configured post-retirement inflation rate** when inflation-risk randomization isn't enabled, and the strategy analyzer is now rate-limited like the app's other expensive simulation endpoints.
+- **Savings allocation percentage no longer keeps contributing to a goal after it's converted to a free-form "bucket."**
+- **"Recalculate allocation %" now rejects a zero or negative income pool** instead of silently saving a negative monthly contribution.
+- **Joint accounts synced through the budget-API integration no longer lose their "Joint" label**, and the Contributions page's employer-match table now includes joint accounts in its total instead of just its displayed rows.
+- **Per-person totals on the Portfolio page are no longer keyed by display name**, which could silently merge two different people who happen to share a name.
+- **Fixed several places where an explicitly-entered 0 was silently replaced with a default** (0% inflation, 0% down payment, 0% interest rate) instead of being respected.
+- **Analytics ticker lookups no longer let a slow response overwrite a newer one**, or persist an invalid number as "NaN" into expense ratio or portfolio weight fields.
 
 ### Improved
 
