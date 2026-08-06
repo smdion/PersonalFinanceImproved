@@ -568,10 +568,18 @@ export async function buildEnginePayload(
     personAccountTypes.get(c.personId)!.add(c.accountType);
   }
 
-  // Aggregate IRS limits per limit group across people
+  // Aggregate IRS limits per limit group across people. catchupByGroup /
+  // superCatchupByGroup hold the flat per-person IRS catchup dollar figure
+  // (not summed across people) — groupParticipants records WHO participates
+  // in each group so the engine can gate that figure by each participant's
+  // own projected age each year (see catchupGroupParticipants below / H10).
   const limitByGroup: Record<string, number> = {};
   const catchupByGroup: Record<string, number> = {};
   const superCatchupByGroup: Record<string, number> = {};
+  const groupParticipants = new Map<string, Map<number, number>>(); // group -> personId -> birthYear
+  const birthYearByPersonId = new Map(
+    perPersonSettings.map((p) => [p.personId, p.birthYear]),
+  );
   const groupCounted = new Set<string>();
   for (const p of people) {
     const types = personAccountTypes.get(p.id);
@@ -594,13 +602,17 @@ export async function buildEnginePayload(
       }
       limitByGroup[group] =
         (limitByGroup[group] ?? 0) + requireLimit(limitsMap, baseKey);
-      if (keys.catchup)
-        catchupByGroup[group] =
-          (catchupByGroup[group] ?? 0) + (limitsMap[keys.catchup] ?? 0);
+      if (keys.catchup) catchupByGroup[group] = limitsMap[keys.catchup] ?? 0;
       if (keys.superCatchup)
-        superCatchupByGroup[group] =
-          (superCatchupByGroup[group] ?? 0) +
-          (limitsMap[keys.superCatchup] ?? 0);
+        superCatchupByGroup[group] = limitsMap[keys.superCatchup] ?? 0;
+      if (keys.catchup || keys.superCatchup) {
+        const birthYear = birthYearByPersonId.get(p.id);
+        if (birthYear != null) {
+          if (!groupParticipants.has(group))
+            groupParticipants.set(group, new Map());
+          groupParticipants.get(group)!.set(p.id, birthYear);
+        }
+      }
       groupCounted.add(group);
     }
   }
@@ -1037,6 +1049,15 @@ export async function buildEnginePayload(
         ]),
       ),
     },
+    catchupGroupParticipants: Object.fromEntries(
+      Array.from(groupParticipants.entries()).map(([group, byPerson]) => [
+        group,
+        Array.from(byPerson.entries()).map(([personId, birthYear]) => ({
+          personId,
+          birthYear,
+        })),
+      ]),
+    ),
     employerMatchRateByCategory: defaultContribData.employerMatchRateByCategory,
     contributionSpecs,
     baseYearContributions: defaultContribData.baseYearContributions,

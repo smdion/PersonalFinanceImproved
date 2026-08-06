@@ -107,6 +107,7 @@ export function runAccumulationYear(
     limitGrowthRate,
     baseLimits,
     catchupLimits,
+    catchupGroupParticipants,
     currentAge,
     brokerageContributionRamp,
     decumulationDefaults,
@@ -133,10 +134,18 @@ export function runAccumulationYear(
     }),
   ) as Record<AccountCategory, number>;
 
-  // Add age-based catchup limits (grown at the same rate as base limits)
+  // Add age-based catchup limits (grown at the same rate as base limits).
+  // Gated per PERSON: catchupGroupParticipants (built by build-engine-payload.ts)
+  // lists who holds an account in each group, with their birth year, so each
+  // individual's own projected age this year determines their eligibility —
+  // not one shared household-average age (H10). Without this, a group either
+  // gets catch-up room for everyone or no one, and the super-catchup AGE
+  // WINDOW (60-63) can't be represented for a multi-person household at all.
+  // Falls back to the household-average age only when catchupGroupParticipants
+  // isn't provided (hand-built EngineInput in calculator-level tests) — the
+  // same fallback shape as perPersonBirthYears elsewhere in this type.
   if (catchupLimits) {
-    const projectedAge = currentAge + y;
-    for (const cat of categoriesWithIrsLimit()) {
+    const addCatchupForAge = (cat: AccountCategory, projectedAge: number) => {
       const cfg = getAccountTypeConfig(cat);
       const group = getLimitGroup(cat) ?? cat;
       const superRange = cfg.superCatchupAgeRange;
@@ -146,10 +155,23 @@ export function runAccumulationYear(
         projectedAge >= superRange[0] &&
         projectedAge <= superRange[1]
       ) {
-        const superKey = `${group}_super`;
-        yearLimits[cat] += roundToCents((catchupLimits[superKey] ?? 0) * lgf);
+        yearLimits[cat] += roundToCents(
+          (catchupLimits[`${group}_super`] ?? 0) * lgf,
+        );
       } else if (cfg.catchupAge !== null && projectedAge >= cfg.catchupAge) {
         yearLimits[cat] += roundToCents((catchupLimits[group] ?? 0) * lgf);
+      }
+    };
+
+    for (const cat of categoriesWithIrsLimit()) {
+      const group = getLimitGroup(cat) ?? cat;
+      const participants = catchupGroupParticipants?.[group];
+      if (participants) {
+        for (const participant of participants) {
+          addCatchupForAge(cat, year - participant.birthYear);
+        }
+      } else {
+        addCatchupForAge(cat, currentAge + y);
       }
     }
   }

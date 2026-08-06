@@ -24,6 +24,12 @@ export async function recomputeAnnualRollups(db: DbType, year: number) {
     .from(schema.accountPerformance)
     .where(eq(schema.accountPerformance.year, year));
 
+  // No account data for this year — don't create a spurious zero-value
+  // Portfolio row for a year that shouldn't have an annual_performance
+  // entry at all. Existing category rows (if any, from a year that later
+  // lost all its account_performance rows) are left untouched here too.
+  if (acctRows.length === 0) return;
+
   // Group by parentCategory
   const categoryMap = new Map<
     string,
@@ -79,6 +85,15 @@ export async function recomputeAnnualRollups(db: DbType, year: number) {
   });
   categoryMap.set("Portfolio", portfolio);
 
+  // Prior-year rows, keyed by category, so a newly-appearing category (e.g.
+  // after a performance account's category is reassigned) carries forward
+  // lifetime totals the same way finalizeYear does in performance.ts.
+  const prevYearRows = await db
+    .select()
+    .from(schema.annualPerformance)
+    .where(eq(schema.annualPerformance.year, year - 1));
+  const prevByCategory = new Map(prevYearRows.map((r) => [r.category, r]));
+
   // Upsert annual_performance rows
   for (const [category, totals] of Array.from(categoryMap.entries())) {
     const existing = await db
@@ -106,6 +121,16 @@ export async function recomputeAnnualRollups(db: DbType, year: number) {
         .update(schema.annualPerformance)
         .set(values)
         .where(eq(schema.annualPerformance.id, existing[0]!.id));
+    } else {
+      const prev = prevByCategory.get(category);
+      await db.insert(schema.annualPerformance).values({
+        year,
+        category,
+        ...values,
+        lifetimeGains: prev?.lifetimeGains ?? "0",
+        lifetimeContributions: prev?.lifetimeContributions ?? "0",
+        lifetimeMatch: prev?.lifetimeMatch ?? "0",
+      });
     }
   }
 }

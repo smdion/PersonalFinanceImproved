@@ -3,7 +3,12 @@
 import { memo, useRef, useEffect } from "react";
 
 import { trpc } from "@/lib/trpc";
-import { useFICache } from "@/lib/hooks/use-fi-cache";
+import {
+  useFICache,
+  deriveFI,
+  isLivePlanInput,
+} from "@/lib/hooks/use-fi-cache";
+import { useScenario } from "@/lib/context/scenario-context";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
@@ -62,6 +67,7 @@ function RetirementCardImpl() {
       : {}),
   };
   const [, writeFICache] = useFICache();
+  const { isInScenario } = useScenario();
   const lastCacheKey = useRef<string | null>(null);
 
   const { data, isLoading, isFetching, error } =
@@ -69,23 +75,26 @@ function RetirementCardImpl() {
 
   useEffect(() => {
     if (!data?.result || isLoading || isFetching) return;
+    // This card never sets snapshot/profile/category-filter/override params
+    // (see engineInput above) — only the scenario axis can pollute it.
+    if (!isLivePlanInput({ isInScenario })) return;
     const withdrawalRate = Number(data.settings?.withdrawalRate ?? 0.04);
     const expenses = data.annualExpenses ?? 0;
     if (withdrawalRate <= 0 || expenses <= 0) return;
-    const fiTarget = expenses / withdrawalRate;
-    const hit = data.result.projectionByYear.find(
-      (y) => y.endBalance >= fiTarget,
+    const derived = deriveFI(
+      data.result.projectionByYear,
+      expenses,
+      withdrawalRate,
     );
-    const cacheKey = `${hit?.year ?? "null"}-${fiTarget}`;
-    if (lastCacheKey.current === cacheKey) return;
-    lastCacheKey.current = cacheKey;
+    if (lastCacheKey.current === derived.inputKey) return;
+    lastCacheKey.current = derived.inputKey;
     writeFICache({
-      fiYear: hit?.year ?? null,
-      fiAge: hit?.age ?? null,
-      settingsHash: cacheKey,
+      fiYear: derived.fiYear,
+      fiAge: derived.fiAge,
+      inputKey: derived.inputKey,
       computedAt: new Date().toISOString(),
     });
-  }, [data, isLoading, isFetching, writeFICache]);
+  }, [data, isLoading, isFetching, writeFICache, isInScenario]);
   const { data: coastFireData } = trpc.projection.computeCoastFire.useQuery(
     engineInput,
     {

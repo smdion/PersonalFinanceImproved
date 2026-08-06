@@ -3,19 +3,14 @@ import { db, pool, isPostgres } from "@/lib/db";
 import { sql } from "drizzle-orm";
 import { getActiveBudgetApi, getApiConnection } from "@/lib/budget-api";
 import { log } from "@/lib/logger";
+import { validateCronBearerRequest } from "@/lib/auth/cron";
 
 /**
  * Detailed health endpoint with database pool stats and budget API status.
  * Requires CRON_SECRET as Bearer token for authentication.
  */
 export async function GET(request: NextRequest) {
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret || cronSecret.length < 32) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const auth = request.headers.get("authorization");
-  if (auth !== `Bearer ${cronSecret}`) {
+  if (!validateCronBearerRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

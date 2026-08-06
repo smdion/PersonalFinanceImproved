@@ -197,7 +197,7 @@ export const versionRouter = createTRPCRouter({
       return { ok: true, schedule: input.schedule };
     }),
 
-  /** Reset all user data — truncates every table except state_versions and app_settings. */
+  /** Reset all user data — truncates every table except state_versions, state_version_tables, app_settings, and local_admins. */
   resetAllData: adminProcedure
     .input(z.object({ confirmation: z.literal("delete") }))
     .mutation(async ({ ctx }) => {
@@ -208,10 +208,15 @@ export const versionRouter = createTRPCRouter({
       );
 
       // Tables to preserve (versioning system + app config)
+      // local_admins is preserved: it's app auth, not user financial data, and
+      // wiping it (while app_settings.onboarding_completed survives) opens an
+      // unauthenticated admin-takeover window via createLocalAdmin (see H9,
+      // .scratch/docs/review-findings.md). Manage/delete accounts via Settings.
       const preserve = new Set([
         "state_versions",
         "state_version_tables",
         "app_settings",
+        "local_admins",
       ]);
 
       // Truncate all user data tables

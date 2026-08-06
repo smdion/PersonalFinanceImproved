@@ -140,6 +140,7 @@ describe("engine input snapshot guard", () => {
         "brokerageContributionRamp",
         "brokerageGoals",
         "budgetOverrides",
+        "catchupGroupParticipants",
         "catchupLimits",
         "contributionSpecs",
         "currentAge",
@@ -237,6 +238,15 @@ describe("engine input snapshot guard", () => {
     // TABLE value is what we assert here — application of catchup is age-gated
     // in the engine, not in the payload.
     expect(bei.catchupLimits["401k"]).toBe(8000); // 401k_catchup_limit 2026
+    // catchupGroupParticipants records WHO holds an account in each group
+    // (with birth year) so the engine can gate catchupLimits by each
+    // person's own projected age at runtime — fixture person id=1, born 1990.
+    // birthYear here matches bei.birthYear (both from the same
+    // new Date(dateOfBirth).getFullYear() computation, so both shift the
+    // same way with any local-timezone date parsing).
+    expect(bei.catchupGroupParticipants!["401k"]).toEqual([
+      { personId: 1, birthYear: bei.birthYear },
+    ]);
 
     // contributionSpecs — derived from the seeded 401k account
     expect(Array.isArray(bei.contributionSpecs)).toBe(true);

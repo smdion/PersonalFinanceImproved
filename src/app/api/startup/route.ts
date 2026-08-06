@@ -1,19 +1,18 @@
-import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { backfillPerformanceAccountIds } from "@/lib/db/backfill-perf-ids";
 import { backfillMappingLocalIds } from "@/lib/db/backfill-local-ids";
 import { log } from "@/lib/logger";
+import { getValidCronSecret, timingSafeSecretMatch } from "@/lib/auth/cron";
 
 /**
  * Internal startup route called by instrumentation.ts after server init.
  * Runs idempotent backfill tasks that migrate legacy null FKs.
  */
 export async function GET(request: Request) {
-  const cronSecret = process.env.CRON_SECRET;
-  const headerSecret = request.headers.get("X-Cron-Secret");
+  const cronSecret = getValidCronSecret();
 
-  if (!cronSecret || cronSecret.length < 32) {
+  if (!cronSecret) {
     return NextResponse.json(
       { error: "Server misconfiguration" },
       { status: 500 },
@@ -21,12 +20,7 @@ export async function GET(request: Request) {
   }
 
   if (
-    !headerSecret ||
-    headerSecret.length !== cronSecret.length ||
-    !timingSafeEqual(
-      Buffer.from(headerSecret, "utf8"),
-      Buffer.from(cronSecret, "utf8"),
-    )
+    !timingSafeSecretMatch(request.headers.get("X-Cron-Secret"), cronSecret)
   ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

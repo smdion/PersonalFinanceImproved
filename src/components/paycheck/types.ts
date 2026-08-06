@@ -60,44 +60,6 @@ export type DeductionRowData =
       ficaExempt: boolean;
     };
 
-export type AccountTypeSnapshot = {
-  accountType: string;
-  categoryKey: string;
-  parentCategory: string;
-  limit: number;
-  employeeContrib: number;
-  employerMatch: number;
-  totalContrib: number;
-  fundingPct: number;
-  fundingMissing: number;
-  pctOfSalaryToMax: number | null;
-  currentPctOfSalary: number | null;
-  tradContrib: number;
-  taxFreeContrib: number;
-  bonusContrib: number;
-  isJoint: boolean;
-  hasDiscountBar: boolean;
-  employerMatchLabel: string;
-  targetAnnual: number | null;
-  allocationPriority: number;
-};
-
-export type PersonSnapshot = {
-  person: { id: number; name: string };
-  salary: number;
-  bonusGross: number;
-  periodsPerYear: number;
-  accountTypes: AccountTypeSnapshot[];
-  totals: {
-    retirementWithoutMatch: number;
-    retirementWithMatch: number;
-    portfolioWithoutMatch: number;
-    portfolioWithMatch: number;
-    totalWithoutMatch: number;
-    totalWithMatch: number;
-  };
-};
-
 export type ContribCardProps = {
   contrib: RawContrib;
   onUpdateContrib: (id: number, field: string, value: string) => void;

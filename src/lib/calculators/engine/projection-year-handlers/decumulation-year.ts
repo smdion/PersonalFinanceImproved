@@ -523,7 +523,7 @@ export function runDecumulationYear(
     totalTraditionalWithdrawal,
     rothConversionAmount,
     brokerageGainsPortion,
-    taxableSS,
+    ssIncome,
   });
   const { acaSubsidyPreserved, acaMagiHeadroom } = acaResult;
   routeWarnings.push(...acaResult.warnings);

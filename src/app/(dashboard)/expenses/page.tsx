@@ -9,6 +9,7 @@ import { trpc } from "@/lib/trpc";
 import { PageHeader } from "@/components/ui/page-header";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { YNAB_EXPENSE_EXCLUDED_GROUPS } from "@/lib/budget-api";
 
@@ -102,12 +103,21 @@ export default function ExpensesPage() {
     selectedColumn: activeColumn,
   });
 
-  const paycheckInput =
-    activeContribProfileId != null
+  // Salary overrides from scenario context (used by all pages) — mirrors
+  // paycheck/page.tsx so a what-if salary scenario stays holistic across pages.
+  const scenarioSalaryOverrides = useSalaryOverrides();
+
+  const paycheckInput = {
+    ...(scenarioSalaryOverrides.length > 0
+      ? { salaryOverrides: scenarioSalaryOverrides }
+      : {}),
+    ...(activeContribProfileId != null
       ? { contributionProfileId: activeContribProfileId }
-      : {};
-  const { data: paycheckData } =
-    trpc.paycheck.computeSummary.useQuery(paycheckInput);
+      : {}),
+  };
+  const { data: paycheckData } = trpc.paycheck.computeSummary.useQuery(
+    Object.keys(paycheckInput).length > 0 ? paycheckInput : undefined,
+  );
 
   // Year-over-year comparison dates
   const { currentStart, currentEnd, priorStart, priorEnd, periodLabel } =

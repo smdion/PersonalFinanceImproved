@@ -1,3 +1,5 @@
+"use client";
+
 import { useScenario } from "@/lib/context/scenario-context";
 
 /**

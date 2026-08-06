@@ -90,7 +90,10 @@ export interface AcaInput {
   totalTraditionalWithdrawal: number;
   rothConversionAmount: number;
   brokerageGainsPortion: number;
-  taxableSS: number;
+  /** Full gross Social Security benefit (not the 0-85% taxable slice) — ACA
+   *  MAGI per 26 U.S.C. §36B(d)(2)(B) requires adding back the entire
+   *  benefit, unlike income-tax provisional income or IRMAA MAGI. */
+  ssIncome: number;
 }
 
 export interface AcaResult {
@@ -350,7 +353,7 @@ export function checkAca(input: AcaInput): AcaResult {
     totalTraditionalWithdrawal,
     rothConversionAmount,
     brokerageGainsPortion,
-    taxableSS,
+    ssIncome,
   } = input;
 
   const warnings: string[] = [];
@@ -360,12 +363,13 @@ export function checkAca(input: AcaInput): AcaResult {
   }
 
   const acaCliff = getAcaSubsidyCliff(householdSize);
-  // Use taxableSS (0–85% per IRS) for MAGI, not flat 50%.
+  // ACA MAGI (§36B(d)(2)(B)) adds back the FULL gross SS benefit — unlike
+  // IRMAA MAGI, which correctly uses the 0-85% taxable slice (taxableSS).
   const projectedMagi =
     totalTraditionalWithdrawal +
     rothConversionAmount +
     brokerageGainsPortion +
-    taxableSS;
+    ssIncome;
   const acaMagiHeadroom = roundToCents(Math.max(0, acaCliff - projectedMagi));
   const acaSubsidyPreserved = projectedMagi < acaCliff;
 

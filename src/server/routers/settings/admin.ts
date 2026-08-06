@@ -507,59 +507,80 @@ export const adminProcedures = {
   }),
 
   // ══ BACKFILL PERFORMANCE ACCOUNT IDS ══
-  backfillPerformanceAccountIds: adminProcedure.mutation(async ({ ctx }) => {
-    const [allContribs, allPerfAccounts, allPeople] = await Promise.all([
-      ctx.db.select().from(schema.contributionAccounts),
-      ctx.db.select().from(schema.performanceAccounts),
-      ctx.db.select().from(schema.people),
-    ]);
+  backfillPerformanceAccountIds: adminProcedure
+    .input(
+      z.object({ dryRun: z.boolean().optional().default(false) }).optional(),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const dryRun = input?.dryRun ?? false;
+      const [allContribs, allPerfAccounts, allPeople] = await Promise.all([
+        ctx.db.select().from(schema.contributionAccounts),
+        ctx.db.select().from(schema.performanceAccounts),
+        ctx.db.select().from(schema.people),
+      ]);
 
-    const peopleMap = new Map(allPeople.map((p) => [p.id, p]));
-    const needsBackfill = allContribs.filter(
-      (c) => c.performanceAccountId === null,
-    );
-
-    let updated = 0;
-    const unmatched: string[] = [];
-
-    for (const contrib of needsBackfill) {
-      const person = peopleMap.get(contrib.personId);
-      const personName = person?.name?.toLowerCase() ?? "";
-      const display = getAccountTypeConfig(
-        contrib.accountType as AccountCategory,
+      const peopleMap = new Map(allPeople.map((p) => [p.id, p]));
+      const needsBackfill = allContribs.filter(
+        (c) => c.performanceAccountId === null,
       );
-      const typeLabel =
-        display?.displayLabel?.toLowerCase() ??
-        contrib.accountType.toLowerCase();
 
-      const match = allPerfAccounts.find((pa) => {
-        const labelLower = (pa.accountLabel ?? "").toLowerCase();
-        return (
-          labelLower.includes(typeLabel) &&
-          (pa.ownerPersonId === contrib.personId ||
-            labelLower.includes(personName))
+      let updated = 0;
+      const unmatched: string[] = [];
+      const matches: {
+        contribAccountId: number;
+        performanceAccountId: number;
+        description: string;
+      }[] = [];
+
+      for (const contrib of needsBackfill) {
+        const person = peopleMap.get(contrib.personId);
+        const personName = person?.name?.toLowerCase() ?? "";
+        const display = getAccountTypeConfig(
+          contrib.accountType as AccountCategory,
         );
-      });
+        const typeLabel =
+          display?.displayLabel?.toLowerCase() ??
+          contrib.accountType.toLowerCase();
 
-      if (match) {
-        await ctx.db
-          .update(schema.contributionAccounts)
-          .set({ performanceAccountId: match.id })
-          .where(eq(schema.contributionAccounts.id, contrib.id));
-        updated++;
-      } else {
-        const desc = `contrib_account id=${contrib.id} (${contrib.accountType}, person=${person?.name ?? contrib.personId})`;
-        unmatched.push(desc);
-        log("warn", "admin_backfill_perf_id_unmatched", { description: desc });
+        const match = allPerfAccounts.find((pa) => {
+          const labelLower = (pa.accountLabel ?? "").toLowerCase();
+          return (
+            labelLower.includes(typeLabel) &&
+            (pa.ownerPersonId === contrib.personId ||
+              labelLower.includes(personName))
+          );
+        });
+
+        if (match) {
+          matches.push({
+            contribAccountId: contrib.id,
+            performanceAccountId: match.id,
+            description: `contrib_account id=${contrib.id} (${contrib.accountType}, person=${person?.name ?? contrib.personId}) -> performance_account id=${match.id} (${match.accountLabel})`,
+          });
+          if (!dryRun) {
+            await ctx.db
+              .update(schema.contributionAccounts)
+              .set({ performanceAccountId: match.id })
+              .where(eq(schema.contributionAccounts.id, contrib.id));
+          }
+          updated++;
+        } else {
+          const desc = `contrib_account id=${contrib.id} (${contrib.accountType}, person=${person?.name ?? contrib.personId})`;
+          unmatched.push(desc);
+          log("warn", "admin_backfill_perf_id_unmatched", {
+            description: desc,
+          });
+        }
       }
-    }
 
-    return {
-      updated,
-      unmatched,
-      alreadyLinked: allContribs.length - needsBackfill.length,
-    };
-  }),
+      return {
+        dryRun,
+        updated,
+        matches,
+        unmatched,
+        alreadyLinked: allContribs.length - needsBackfill.length,
+      };
+    }),
 
   // ══ PERFORMANCE ACCOUNTS (master registry) ══
   performanceAccounts: createTRPCRouter({
