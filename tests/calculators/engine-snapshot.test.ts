@@ -219,6 +219,14 @@ describe("engine snapshot parity", () => {
     expect(metrics.retirementYear).not.toBeNull();
     expect(metrics.finalYear).not.toBeNull();
 
+    // T13: explicit numeric assertions on the key financial values, so a
+    // failing diff reads as "sustainable withdrawal changed from X to Y"
+    // instead of an opaque snapshot blob. Values spot-checked per the
+    // freshness guard above (LAST_REVIEWED_AT).
+    expect(result.sustainableWithdrawal).toBe(301849.59);
+    expect(result.portfolioDepletionYear).toBeNull();
+    expect(metrics.finalYear?.endBalance).toBe(26132822.45);
+
     // Snapshot the key metrics
     expect(metrics).toMatchSnapshot();
   });
@@ -745,6 +753,12 @@ describe("engine snapshot parity", () => {
     });
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
+
+    // T13: explicit numeric assertions (see fixture 1 comment).
+    expect(result.sustainableWithdrawal).toBe(40262.82);
+    expect(result.portfolioDepletionYear).toBeNull();
+    expect(metrics.finalYear?.endBalance).toBe(1858627.87);
+
     expect(metrics).toMatchSnapshot();
   });
 
@@ -784,6 +798,15 @@ describe("engine snapshot parity", () => {
     });
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
+
+    // T13: explicit numeric assertions (see fixture 1 comment). This
+    // fixture is the depletion case — portfolio hits $0 before projection
+    // end, so both depletion fields are non-null.
+    expect(result.sustainableWithdrawal).toBe(32595.14);
+    expect(result.portfolioDepletionYear).toBe(2054);
+    expect(result.portfolioDepletionAge).toBe(89);
+    expect(metrics.finalYear?.endBalance).toBe(0);
+
     expect(metrics).toMatchSnapshot();
   });
 
@@ -842,6 +865,12 @@ describe("engine snapshot parity", () => {
     });
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
+
+    // T13: explicit numeric assertions (see fixture 1 comment).
+    expect(result.sustainableWithdrawal).toBe(54480.98);
+    expect(result.portfolioDepletionYear).toBeNull();
+    expect(metrics.finalYear?.endBalance).toBe(3285682.55);
+
     expect(metrics).toMatchSnapshot();
   });
 
@@ -888,6 +917,12 @@ describe("engine snapshot parity", () => {
     });
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
+
+    // T13: explicit numeric assertions (see fixture 1 comment).
+    expect(result.sustainableWithdrawal).toBe(43206.6);
+    expect(result.portfolioDepletionYear).toBeNull();
+    expect(metrics.finalYear?.endBalance).toBe(1939020.8);
+
     expect(metrics).toMatchSnapshot();
   });
 
@@ -921,6 +956,16 @@ describe("engine snapshot parity", () => {
     });
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
+
+    // T13: explicit numeric assertions (see fixture 1 comment). Despite the
+    // fixture name, the portfolio stays barely positive through the end of
+    // the projection window rather than fully depleting — a low but
+    // nonzero final balance, not a null-vs-actual-depletion edge case
+    // (fixture 15 covers actual depletion).
+    expect(result.sustainableWithdrawal).toBe(5713.21);
+    expect(result.portfolioDepletionYear).toBeNull();
+    expect(metrics.finalYear?.endBalance).toBe(53665.66);
+
     expect(metrics).toMatchSnapshot();
   });
 
@@ -988,6 +1033,12 @@ describe("engine snapshot parity", () => {
     });
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
+
+    // T13: explicit numeric assertions (see fixture 1 comment).
+    expect(result.sustainableWithdrawal).toBe(86898.21);
+    expect(result.portfolioDepletionYear).toBeNull();
+    expect(metrics.finalYear?.endBalance).toBe(3788674.62);
+
     expect(metrics).toMatchSnapshot();
   });
 

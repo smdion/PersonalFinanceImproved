@@ -1,0 +1,274 @@
+/**
+ * T15 — build-engine-payload.ts had zero test coverage. This is the module
+ * that turns raw DB rows into the engine's ProjectionInput; every retirement/
+ * projection router endpoint depends on it. Covers the core wiring for
+ * single- and two-person households: currentAge/retirementAge resolution,
+ * startingBalances aggregation from the latest snapshot, contributionSpecs
+ * construction (incl. per-person personId — see T24/H10), and
+ * catchupGroupParticipants population.
+ *
+ * Not exhaustive of all 1197 lines (contribution-profile batching, bracket
+ * rate estimation, and profile-switch salary logic — called out in the
+ * review as the riskiest untested branches — still have no dedicated
+ * coverage here; this locks in the base wiring only).
+ */
+import "../routers/setup-mocks";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import {
+  createTestCaller,
+  seedPerson,
+  seedJob,
+  seedPerformanceAccount,
+  seedSnapshot,
+} from "../routers/setup";
+import {
+  fetchRetirementData,
+  buildEnginePayload,
+} from "@/server/retirement/build-engine-payload";
+import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import type * as sqliteSchema from "@/lib/db/schema-sqlite";
+
+async function getSchema() {
+  return await import("@/lib/db/schema");
+}
+
+async function markPrimary(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  personId: number,
+) {
+  const schema = await getSchema();
+  const { eq } = await import("drizzle-orm");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+  (db as any)
+    .update(schema.people)
+    .set({ isPrimaryUser: true })
+    .where(eq(schema.people.id, personId))
+    .run();
+}
+
+async function insertBudgetProfile(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  name: string,
+) {
+  const schema = await getSchema();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+  return (db as any)
+    .insert(schema.budgetProfiles)
+    .values({ name, isActive: true, columnLabels: ["Standard"] })
+    .returning({ id: schema.budgetProfiles.id })
+    .get().id as number;
+}
+
+async function insertBudgetItem(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  profileId: number,
+  category: string,
+  subcategory: string,
+  amounts: number[],
+) {
+  const schema = await getSchema();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+  (db as any)
+    .insert(schema.budgetItems)
+    .values({ profileId, category, subcategory, amounts })
+    .run();
+}
+
+async function seedRetirementSettings(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  personId: number,
+  overrides: Record<string, unknown> = {},
+) {
+  const schema = await getSchema();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+  (db as any)
+    .insert(schema.retirementSettings)
+    .values({
+      personId,
+      retirementAge: 65,
+      endAge: 95,
+      returnAfterRetirement: "0.04",
+      annualInflation: "0.03",
+      salaryAnnualIncrease: "0.03",
+      withdrawalRate: "0.04",
+      socialSecurityMonthly: "2500",
+      ssStartAge: 67,
+      ...overrides,
+    })
+    .run();
+}
+
+async function seedContributionAccount(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  personId: number,
+  jobId: number | null,
+  perfAccountId: number,
+  overrides: Record<string, unknown> = {},
+) {
+  const schema = await getSchema();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+  (db as any)
+    .insert(schema.contributionAccounts)
+    .values({
+      personId,
+      jobId,
+      accountType: "401k",
+      parentCategory: "Retirement",
+      taxTreatment: "pre_tax",
+      contributionMethod: "percent_of_salary",
+      contributionValue: "0.10",
+      employerMatchType: "percent_of_contrib",
+      employerMatchValue: "0.50",
+      employerMaxMatchPct: "0.06",
+      isActive: true,
+      performanceAccountId: perfAccountId,
+      ...overrides,
+    })
+    .run();
+}
+
+describe("buildEnginePayload — single-person household", () => {
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+  let personId: number;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+
+    personId = await seedPerson(db, "Alex", "1985-06-15");
+    await markPrimary(db, personId);
+    await seedRetirementSettings(db, personId);
+    const jobId = seedJob(db, personId, { annualSalary: "150000" });
+
+    const profileId = await insertBudgetProfile(db, "Main Budget");
+    await insertBudgetItem(db, profileId, "Essentials", "Rent", [3000]);
+
+    const perfAcctId = seedPerformanceAccount(db, {
+      parentCategory: "Retirement",
+      accountType: "401k",
+      ownerPersonId: personId,
+    });
+    seedSnapshot(db, "2025-06-15", [
+      { performanceAccountId: perfAcctId, amount: "250000", taxType: "preTax" },
+    ]);
+    await seedContributionAccount(db, personId, jobId, perfAcctId);
+  });
+
+  afterAll(() => cleanup());
+
+  it("resolves currentAge and retirementAge from settings", async () => {
+    const data = await fetchRetirementData(db);
+    const payload = await buildEnginePayload(db, data, {});
+
+    // Age is derived from dateOfBirth at fetch time — assert it's in the
+    // right ballpark rather than hardcoding an exact age that drifts with
+    // "today"'s date.
+    expect(payload.age).toBeGreaterThanOrEqual(39);
+    expect(payload.age).toBeLessThanOrEqual(41);
+    expect(payload.baseEngineInput.retirementAge).toBe(65);
+    expect(payload.hasMultiplePeople).toBe(false);
+  });
+
+  it("aggregates starting balances from the latest snapshot", async () => {
+    const data = await fetchRetirementData(db);
+    const payload = await buildEnginePayload(db, data, {});
+
+    expect(payload.portfolioTotal).toBe(250000);
+    expect(payload.baseEngineInput.startingBalances.preTax).toBe(250000);
+  });
+
+  it("builds a contribution spec with the seeded personId", async () => {
+    const data = await fetchRetirementData(db);
+    const payload = await buildEnginePayload(db, data, {});
+
+    expect(payload.contributionSpecs.length).toBeGreaterThan(0);
+    expect(payload.contributionSpecs[0]?.personId).toBe(personId);
+    expect(payload.contributionSpecs[0]?.category).toBe("401k");
+  });
+});
+
+describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+  let personAId: number;
+  let personBId: number;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+
+    // Person A: age ~40. Person B: age ~61 (catch-up eligible territory).
+    personAId = await seedPerson(db, "Alex", "1985-01-01");
+    personBId = await seedPerson(db, "Sam", "1964-01-01");
+    await markPrimary(db, personAId);
+    await seedRetirementSettings(db, personAId);
+    await seedRetirementSettings(db, personBId);
+
+    const jobAId = seedJob(db, personAId, { annualSalary: "150000" });
+    const jobBId = seedJob(db, personBId, { annualSalary: "120000" });
+
+    const profileId = await insertBudgetProfile(db, "Main Budget");
+    await insertBudgetItem(db, profileId, "Essentials", "Rent", [3000]);
+
+    const perfAcctA = seedPerformanceAccount(db, {
+      parentCategory: "Retirement",
+      accountType: "401k",
+      ownerPersonId: personAId,
+      name: "401k A",
+    });
+    const perfAcctB = seedPerformanceAccount(db, {
+      parentCategory: "Retirement",
+      accountType: "401k",
+      ownerPersonId: personBId,
+      name: "401k B",
+    });
+    seedSnapshot(db, "2025-06-15", [
+      { performanceAccountId: perfAcctA, amount: "250000", taxType: "preTax" },
+      { performanceAccountId: perfAcctB, amount: "400000", taxType: "preTax" },
+    ]);
+    await seedContributionAccount(db, personAId, jobAId, perfAcctA);
+    await seedContributionAccount(db, personBId, jobBId, perfAcctB);
+  });
+
+  afterAll(() => cleanup());
+
+  it("marks hasMultiplePeople and includes both people in perPersonSettings", async () => {
+    const data = await fetchRetirementData(db);
+    const payload = await buildEnginePayload(db, data, {});
+
+    expect(payload.hasMultiplePeople).toBe(true);
+    expect(payload.perPersonSettings.length).toBe(2);
+  });
+
+  it("populates catchupGroupParticipants with both people's birth years (H10)", async () => {
+    const data = await fetchRetirementData(db);
+    const payload = await buildEnginePayload(db, data, {});
+
+    const participants =
+      payload.baseEngineInput.catchupGroupParticipants?.["401k"];
+    expect(participants).toBeDefined();
+    expect(participants?.length).toBe(2);
+    const personIds = participants?.map((p) => p.personId).sort();
+    expect(personIds).toEqual([personAId, personBId].sort());
+  });
+
+  it("builds one contribution spec per person, each tagged with its own personId", async () => {
+    const data = await fetchRetirementData(db);
+    const payload = await buildEnginePayload(db, data, {});
+
+    const specPersonIds = payload.contributionSpecs
+      .map((s) => s.personId)
+      .sort();
+    expect(specPersonIds).toEqual([personAId, personBId].sort());
+  });
+
+  it("aggregates starting balances across both people", async () => {
+    const data = await fetchRetirementData(db);
+    const payload = await buildEnginePayload(db, data, {});
+
+    expect(payload.portfolioTotal).toBe(650000);
+  });
+});
