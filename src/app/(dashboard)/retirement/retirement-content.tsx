@@ -86,6 +86,7 @@ export function RetirementContent() {
     "projection" | "comparison" | "planHealth"
   >("projection");
   const [dollarMode, setDollarMode] = useState<"nominal" | "real">("real");
+  const currentYear = new Date().getFullYear();
   const utils = trpc.useUtils();
   const salaryOverrides = useSalaryOverrides();
   const [decBudgetProfileId, setDecBudgetProfileId] = usePersistedSetting<
@@ -467,6 +468,7 @@ export function RetirementContent() {
                   <div className="bg-surface-sunken rounded-lg p-3 space-y-4">
                     <TimelineSection
                       settings={settings}
+                      currentYear={currentYear}
                       perPersonSettings={perPersonSettings}
                       handlePerPersonRetirementAge={
                         handlePerPersonRetirementAge

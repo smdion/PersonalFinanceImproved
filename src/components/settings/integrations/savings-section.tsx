@@ -43,10 +43,6 @@ export function SavingsSection({
     linkReimbursement: linkReimbursementMut,
   } = mutations;
 
-  // savings section uses <details> for collapse — matches pre-split behavior
-  // where `expandedSavings` was hard-coded to true for the inner rendering.
-  const expandedSavings = true;
-
   // Apply a single savings match
   const applySavingsLink = (goalId: number, apiId: string) => {
     const cat = allApiCats.find((c) => c.id === apiId);
@@ -167,21 +163,19 @@ export function SavingsSection({
                     <span className="text-yellow-700 truncate flex-1">
                       {m.apiCategoryName}
                     </span>
-                    {expandedSavings && (
-                      <button
-                        onClick={() =>
-                          applySavingsLink(m.goalId, m.apiCategoryId!)
-                        }
-                        disabled={linkSavingsMut.isPending}
-                        className="text-caption text-blue-500 hover:text-blue-700 whitespace-nowrap"
-                      >
-                        Link
-                      </button>
-                    )}
+                    <button
+                      onClick={() =>
+                        applySavingsLink(m.goalId, m.apiCategoryId!)
+                      }
+                      disabled={linkSavingsMut.isPending}
+                      className="text-caption text-blue-500 hover:text-blue-700 whitespace-nowrap"
+                    >
+                      Link
+                    </button>
                   </>
                 )}
 
-                {m.status === "unmatched" && expandedSavings && (
+                {m.status === "unmatched" && (
                   <div className="flex-1">
                     <ApiCategorySelect
                       value={savingsOverrides[m.goalId] ?? ""}
@@ -194,12 +188,6 @@ export function SavingsSection({
                       }
                     />
                   </div>
-                )}
-
-                {m.status === "unmatched" && !expandedSavings && (
-                  <span className="text-faint text-caption italic flex-1">
-                    unmapped
-                  </span>
                 )}
 
                 {m.apiBalance != null && (

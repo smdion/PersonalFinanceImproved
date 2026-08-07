@@ -112,6 +112,16 @@ export function compactCurrency(value: number): string {
 }
 
 /**
+ * Format a large number in compact form without a currency sign
+ * (e.g., 1200000 → "1.2M", 450000 → "450k"). Suitable for chart axis ticks.
+ */
+export function compactNumber(value: number): string {
+  if (Math.abs(value) >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (Math.abs(value) >= 1_000) return `${(value / 1_000).toFixed(0)}k`;
+  return value.toFixed(0);
+}
+
+/**
  * Format a number with commas (e.g., 1234567 → "1,234,567").
  */
 export function formatNumber(value: number, decimals = 0): string {

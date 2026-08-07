@@ -56,7 +56,6 @@ export default function ToolsPage() {
     YearAdjustmentRow[]
   >([]);
   const [showRelocAllYears, setShowRelocAllYears] = useState(false);
-  const [showRelocAdjForm, setShowRelocAdjForm] = useState(false);
   const [relocAdjMode, setRelocAdjMode] = useState<"manual" | "profile">(
     "manual",
   );
@@ -72,7 +71,6 @@ export default function ToolsPage() {
   const [relocLargePurchases, setRelocLargePurchases] = useState<
     LargePurchaseRow[]
   >([]);
-  const [showPurchaseForm, setShowPurchaseForm] = useState(false);
   const [purchaseForm, setPurchaseForm] = useState<PurchaseFormState>({
     name: "",
     purchasePrice: "",
@@ -505,8 +503,6 @@ export default function ToolsPage() {
                   result={r}
                   relocLargePurchases={relocLargePurchases}
                   setRelocLargePurchases={setRelocLargePurchases}
-                  showPurchaseForm={showPurchaseForm}
-                  setShowPurchaseForm={setShowPurchaseForm}
                   purchaseForm={purchaseForm}
                   setPurchaseForm={setPurchaseForm}
                 />
@@ -515,8 +511,6 @@ export default function ToolsPage() {
                   budgetInfo={bi}
                   relocYearAdjustments={relocYearAdjustments}
                   setRelocYearAdjustments={setRelocYearAdjustments}
-                  showRelocAdjForm={showRelocAdjForm}
-                  setShowRelocAdjForm={setShowRelocAdjForm}
                   relocAdjMode={relocAdjMode}
                   setRelocAdjMode={setRelocAdjMode}
                   relocAdjForm={relocAdjForm}

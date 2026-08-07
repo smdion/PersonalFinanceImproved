@@ -464,6 +464,13 @@ export function categoriesWithTaxPreference(): AccountCategory[] {
   );
 }
 
+/** Categories that do NOT support Traditional/Roth split. */
+export function categoriesWithoutTaxPreference(): AccountCategory[] {
+  return getAllCategories().filter(
+    (c) => !ACCOUNT_TYPE_CONFIG[c].supportsRothSplit,
+  );
+}
+
 /** Categories that have IRS contribution limits. */
 export function categoriesWithIrsLimit(): AccountCategory[] {
   return getAllCategories().filter((c) => ACCOUNT_TYPE_CONFIG[c].hasIrsLimit);

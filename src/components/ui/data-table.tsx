@@ -249,27 +249,29 @@ export function DataTable<T extends { id: number | string }>({
                     {hasActions && (
                       <td className={`${cellPad} text-right space-x-2`}>
                         {renderForm && (
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="xs"
                             onClick={() => {
                               setEditing(row);
                               setShowForm(true);
                             }}
-                            className="text-blue-600 hover:text-blue-800 text-xs"
                           >
                             Edit
-                          </button>
+                          </Button>
                         )}
                         {onDelete && (
-                          <button
+                          <Button
+                            variant="danger"
+                            size="xs"
                             onClick={async () => {
                               if (await confirm("Delete this record?"))
                                 onDelete(row.id);
                             }}
                             disabled={isDeleting}
-                            className="text-red-600 hover:text-red-800 text-xs disabled:opacity-50"
                           >
                             Delete
-                          </button>
+                          </Button>
                         )}
                       </td>
                     )}

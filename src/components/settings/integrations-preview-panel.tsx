@@ -131,7 +131,7 @@ export function PreviewPanel({
       />
 
       {/* Dashboard — compact overview row */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-surface-sunken rounded-lg p-3">
           <p className="text-caption font-medium text-muted uppercase tracking-wide">
             Cash

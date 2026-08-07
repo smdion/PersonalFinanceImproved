@@ -5,6 +5,7 @@
  *  refactor. Stateless — all state flows via props.
  */
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
@@ -33,8 +34,6 @@ type Props = {
   setRelocLargePurchases: React.Dispatch<
     React.SetStateAction<LargePurchaseRow[]>
   >;
-  showPurchaseForm: boolean;
-  setShowPurchaseForm: React.Dispatch<React.SetStateAction<boolean>>;
   purchaseForm: PurchaseFormState;
   setPurchaseForm: React.Dispatch<React.SetStateAction<PurchaseFormState>>;
 };
@@ -43,11 +42,10 @@ export function RelocationLargePurchases({
   result: r,
   relocLargePurchases,
   setRelocLargePurchases,
-  showPurchaseForm,
-  setShowPurchaseForm,
   purchaseForm,
   setPurchaseForm,
 }: Props) {
+  const [showPurchaseForm, setShowPurchaseForm] = useState(false);
   return (
     <>
       {/* Large purchase summary KPIs (only when purchases exist) */}
@@ -119,7 +117,8 @@ export function RelocationLargePurchases({
                   {isFinanced && (
                     <span className="text-orange-400">
                       ({formatPercent(p.downPaymentPercent ?? 0)} down,{" "}
-                      {p.loanTermYears}yr @{formatPercent(p.loanRate ?? 0, 1)})
+                      {p.loanTermYears}-year @
+                      {formatPercent(p.loanRate ?? 0, 1)})
                     </span>
                   )}
                   {(p.ongoingMonthlyCost ?? 0) > 0 && (

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { InlineEdit } from "@/components/ui/inline-edit";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import {
   categoriesWithIrsLimit,
@@ -12,6 +13,7 @@ import {
   getLimitGroup,
 } from "@/lib/config/account-types";
 import { TAX_YEAR_MIN, TAX_YEAR_MAX } from "@/lib/constants";
+import { YearSelector } from "@/components/settings/year-selector";
 
 // Build account-type limit groups from config
 type LimitGroupEntry = {
@@ -138,7 +140,7 @@ export function ContributionLimitsSettings() {
     null,
   );
 
-  if (isLoading) return <div className="text-muted">Loading limits...</div>;
+  if (isLoading) return <Skeleton className="h-6 w-48" />;
 
   // Get unique years, sorted descending (newest first)
   const years = Array.from(new Set((data ?? []).map((l) => l.taxYear))).sort(
@@ -248,41 +250,18 @@ export function ContributionLimitsSettings() {
       {/* Year tabs + controls */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">Contribution & Tax Limits</h2>
-        <div className="flex items-center gap-2">
-          <div
-            className="flex gap-1"
-            role="tablist"
-            aria-label="Contribution limits year"
-          >
-            {years.map((yr) => (
-              <button
-                key={yr}
-                role="tab"
-                aria-selected={yr === activeYear}
-                onClick={() => setSelectedYear(yr)}
-                className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                  yr === activeYear
-                    ? "bg-blue-600 text-white"
-                    : "bg-surface-elevated text-muted hover:bg-surface-strong"
-                }`}
-              >
-                {yr}
-              </button>
-            ))}
-          </div>
-          {admin && (
-            <button
-              onClick={() => {
-                setShowAddYear(!showAddYear);
-                setNewYear(String((years[0] ?? new Date().getFullYear()) + 1));
-                setCopyFrom(years[0] ?? null);
-              }}
-              className="px-2 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded-full hover:bg-blue-50 transition-colors"
-            >
-              + Year
-            </button>
-          )}
-        </div>
+        <YearSelector
+          years={years}
+          activeYear={activeYear}
+          onSelectYear={setSelectedYear}
+          admin={admin}
+          ariaLabel="Contribution limits year"
+          onAddYearClick={() => {
+            setShowAddYear(!showAddYear);
+            setNewYear(String((years[0] ?? new Date().getFullYear()) + 1));
+            setCopyFrom(years[0] ?? null);
+          }}
+        />
       </div>
 
       {/* Add year dialog */}

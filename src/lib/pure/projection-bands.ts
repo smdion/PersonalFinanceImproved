@@ -14,6 +14,8 @@
  * available.
  */
 
+import { compactCurrency } from "@/lib/utils/format";
+
 export interface ProjectionBand {
   /** Point estimate (deterministic projection result). */
   point: number;
@@ -63,7 +65,7 @@ export function deriveProjectionBand(
     low,
     high,
     rangeFraction,
-    label: `Most likely $${formatCompact(point)} (range $${formatCompact(low)}–$${formatCompact(high)})`,
+    label: `Most likely ${compactCurrency(point)} (range ${compactCurrency(low)}–${compactCurrency(high)})`,
   };
 }
 
@@ -81,11 +83,4 @@ export function bandFractionForPortfolio(
   if (equityPercent > 80) fraction += 0.05; // heavy equity → wider
   if (equityPercent < 40) fraction -= 0.05; // bond-heavy → narrower
   return Math.max(0.1, Math.min(0.5, fraction));
-}
-
-/** Compact dollar formatting for the label. Avoids importing format helpers. */
-function formatCompact(n: number): string {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
-  if (n >= 1_000) return (n / 1_000).toFixed(0) + "K";
-  return n.toFixed(0);
 }

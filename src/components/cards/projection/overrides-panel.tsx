@@ -7,7 +7,7 @@ import { SavingOverridesSection } from "./overrides-saving-section";
 import { WithdrawalOverridesSection } from "./overrides-withdrawal-section";
 import { LifeChangesSection } from "./overrides-life-section";
 
-function SectionHeader({
+export function SectionHeader({
   title,
   help,
   children,

@@ -1338,7 +1338,11 @@ export const performanceRouter = createTRPCRouter({
         const asOfDate = new Date(yearEndDate);
 
         const { cash } = await getEffectiveCash(tx, allSettings);
-        const otherAssets = await getEffectiveOtherAssets(tx, allSettings);
+        const otherAssets = await getEffectiveOtherAssets(
+          tx,
+          allSettings,
+          asOfDate,
+        );
         const otherLiabilities = setting("current_other_liabilities", 0);
 
         // Compute cumulative home improvements from items table (not app_settings scalar)

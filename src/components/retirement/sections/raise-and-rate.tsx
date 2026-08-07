@@ -9,9 +9,8 @@
  * flip between "Withdrawal Rate" / "Initial Withdrawal Rate" depending on
  * the strategy's `incomeSource`.
  *
- * The `decToWhole` helper is duplicated locally so the component is
- * self-contained; the parent still owns its own copy for the other (non-
- * extracted) InlineEdit call sites.
+ * The `decToWhole` helper lives in `./helpers` and is shared across the
+ * retirement sections that need it (not duplicated locally).
  */
 "use client";
 

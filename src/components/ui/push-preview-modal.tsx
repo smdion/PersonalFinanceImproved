@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { CHANGE_DETECTION_THRESHOLD } from "@/lib/constants";
+import { Button } from "./button";
 
 export type PushPreviewItem = {
   name: string;
@@ -191,7 +192,8 @@ export function PushPreviewModal({
         </div>
 
         <div className="flex items-center justify-end gap-2">
-          <button
+          <Button
+            variant="ghost"
             onClick={onCancel}
             disabled={isPending}
             title={
@@ -199,19 +201,18 @@ export function PushPreviewModal({
                 ? "Already in progress — closing this won't stop it"
                 : undefined
             }
-            className="px-3 py-1.5 text-sm text-muted hover:bg-surface-elevated rounded transition-colors disabled:opacity-50"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
             onClick={onConfirm}
             disabled={changed.length === 0 || isPending}
-            className="px-3 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded transition-colors disabled:opacity-50"
           >
             {isPending
               ? `${pendingVerb} (${elapsedSeconds}s)`
               : `${actionVerb} ${changed.length} Change${changed.length !== 1 ? "s" : ""}`}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

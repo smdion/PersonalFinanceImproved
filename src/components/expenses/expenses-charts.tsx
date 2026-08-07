@@ -18,7 +18,14 @@ import {
   Legend,
 } from "recharts";
 import { formatCurrency, compactCurrency } from "@/lib/utils/format";
-import { CHART_FONT } from "@/components/charts/chart-defaults";
+import {
+  CHART_FONT,
+  gridProps,
+  axisProps,
+  yAxisProps,
+  tooltipProps,
+  legendProps,
+} from "@/components/charts/chart-defaults";
 import { CHART_COLORS } from "@/lib/utils/colors";
 
 export type GroupSummaryRow = {
@@ -46,18 +53,18 @@ export function BudgetVsActualBar({
         layout="vertical"
         margin={{ top: 0, right: 20, left: 0, bottom: 0 }}
       >
-        <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+        <CartesianGrid {...gridProps} horizontal={false} />
         <XAxis
           type="number"
           tickFormatter={(v: number) => compactCurrency(v)}
-          fontSize={CHART_FONT.tick}
+          {...axisProps}
         />
         <YAxis
           type="category"
           dataKey="name"
+          {...yAxisProps}
           width={120}
-          fontSize={CHART_FONT.tick}
-          tick={{ fill: CHART_COLORS.axisMuted }}
+          tick={{ ...yAxisProps.tick, fill: CHART_COLORS.axisMuted }}
         />
         <RechartsTooltip
           formatter={(value: unknown, name: unknown) => [
@@ -65,7 +72,7 @@ export function BudgetVsActualBar({
             String(name),
           ]}
           labelStyle={{ fontSize: CHART_FONT.legend, fontWeight: 600 }}
-          contentStyle={{ fontSize: CHART_FONT.tooltip }}
+          {...tooltipProps}
         />
         <Bar
           dataKey="budgeted"
@@ -111,9 +118,9 @@ export function SpendingPie({ data }: { data: readonly SpendingPieSlice[] }) {
         </Pie>
         <RechartsTooltip
           formatter={(value: unknown) => formatCurrency(Number(value))}
-          contentStyle={{ fontSize: CHART_FONT.tooltip }}
+          {...tooltipProps}
         />
-        <Legend wrapperStyle={{ fontSize: CHART_FONT.legend }} iconSize={8} />
+        <Legend {...legendProps} iconSize={8} />
       </PieChart>
     </ResponsiveContainer>
   );

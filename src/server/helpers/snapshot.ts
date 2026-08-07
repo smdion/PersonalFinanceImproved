@@ -22,6 +22,7 @@ import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
 import {
   accountTypeToPerformanceCategory,
   PERF_CATEGORY_PORTFOLIO,
+  PERF_CATEGORY_RETIREMENT,
 } from "@/lib/config/display-labels";
 import { sumAccounts, computeReturn } from "@/lib/pure/performance";
 import { isDiscountBasisEmployerContrib } from "@/lib/config/account-types";
@@ -722,7 +723,7 @@ export async function buildYearEndHistory(
 
     const setting = parseAppSettings(settings);
     const { cash } = await getEffectiveCash(db, settings);
-    const otherAssets = await getEffectiveOtherAssets(db, settings);
+    const otherAssets = await getEffectiveOtherAssets(db, settings, asOfDate);
     const otherLiabilities = setting("current_other_liabilities", 0);
 
     const mortgageBalance = computeMortgageBalance(
@@ -912,7 +913,7 @@ export async function buildYearEndHistory(
           portfolio: {},
         };
         for (const a of snapshotData.accounts) {
-          const parentCat = a.parentCategory ?? "Retirement";
+          const parentCat = a.parentCategory ?? PERF_CATEGORY_RETIREMENT;
           const taxType = a.taxType ?? "preTax";
           const bucket =
             parentCat === PERF_CATEGORY_PORTFOLIO

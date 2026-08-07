@@ -5,8 +5,6 @@ import {
   MutationCache,
   QueryClient,
   QueryClientProvider,
-  HydrationBoundary,
-  type DehydratedState,
 } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
 import { trpc } from "@/lib/trpc";
@@ -20,13 +18,7 @@ function getBaseUrl() {
   return `http://localhost:${process.env.PORT ?? 3000}`;
 }
 
-export function Providers({
-  children,
-  dehydratedState,
-}: {
-  children: React.ReactNode;
-  dehydratedState?: DehydratedState;
-}) {
+export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -57,13 +49,11 @@ export function Providers({
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
-        <HydrationBoundary state={dehydratedState}>
-          <TooltipProvider delayDuration={200} skipDelayDuration={100}>
-            {children}
-            <ToastContainer />
-            <ConfirmDialog />
-          </TooltipProvider>
-        </HydrationBoundary>
+        <TooltipProvider delayDuration={200} skipDelayDuration={100}>
+          {children}
+          <ToastContainer />
+          <ConfirmDialog />
+        </TooltipProvider>
       </QueryClientProvider>
     </trpc.Provider>
   );

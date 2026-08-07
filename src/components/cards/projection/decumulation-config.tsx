@@ -7,38 +7,16 @@ import type { AccountCategory } from "@/lib/calculators/types";
 import { accountTextColor, taxTypeLabel } from "@/lib/utils/colors";
 import { formatPercent } from "@/lib/utils/format";
 import {
-  getAllCategories,
   getAccountTypeConfig,
   categoriesWithTaxPreference,
-  ACCOUNT_TYPE_CONFIG,
+  categoriesWithoutTaxPreference,
 } from "@/lib/config/account-types";
 import { ALL_CATEGORIES } from "./utils";
 import {
   WITHDRAWAL_STRATEGY_CONFIG,
   type WithdrawalStrategyType,
 } from "@/lib/config/withdrawal-strategies";
-
-// Re-use SectionHeader and OrderEditor from index — import them
-// For now we define a lightweight SectionHeader inline to avoid circular deps.
-function SectionHeader({
-  title,
-  help,
-  children,
-}: {
-  title: string;
-  help?: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center justify-between mb-2">
-      <h4 className="text-xs font-medium text-muted uppercase tracking-wide">
-        {title}
-        {help && <HelpTip text={help} />}
-      </h4>
-      {children}
-    </div>
-  );
-}
+import { SectionHeader } from "./overrides-panel";
 
 function OrderEditor({
   order,
@@ -326,22 +304,20 @@ export function DecumulationConfig({
                     </select>
                   </label>
                 ))}
-                {getAllCategories()
-                  .filter((cat) => !ACCOUNT_TYPE_CONFIG[cat].supportsRothSplit)
-                  .map((cat) => (
-                    <div key={cat} className="flex items-center">
-                      <div>
-                        <span
-                          className={`text-xs font-medium ${accountTextColor(cat)}`}
-                        >
-                          {getAccountTypeConfig(cat).displayLabel}
-                        </span>
-                        <p className="text-caption text-faint">
-                          {getAccountTypeConfig(cat).taxPreferenceNote}
-                        </p>
-                      </div>
+                {categoriesWithoutTaxPreference().map((cat) => (
+                  <div key={cat} className="flex items-center">
+                    <div>
+                      <span
+                        className={`text-xs font-medium ${accountTextColor(cat)}`}
+                      >
+                        {getAccountTypeConfig(cat).displayLabel}
+                      </span>
+                      <p className="text-caption text-faint">
+                        {getAccountTypeConfig(cat).taxPreferenceNote}
+                      </p>
                     </div>
-                  ))}
+                  </div>
+                ))}
               </div>
             </div>
           )}

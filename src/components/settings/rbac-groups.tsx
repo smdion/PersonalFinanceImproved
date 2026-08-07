@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function RbacGroupsSettings() {
   const utils = trpc.useUtils();
@@ -39,9 +40,7 @@ export function RbacGroupsSettings() {
   }, [data]);
 
   if (isLoading || !data) {
-    return (
-      <div className="text-sm text-muted">Loading RBAC configuration...</div>
-    );
+    return <Skeleton className="h-6 w-48" />;
   }
 
   const handleSave = async () => {

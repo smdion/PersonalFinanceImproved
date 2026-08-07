@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { confirm } from "@/components/ui/confirm-dialog";
+import { Button } from "@/components/ui/button";
 
 type LoanForm = {
   name: string;
@@ -348,16 +349,16 @@ export function MortgageSettings() {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">Mortgage Loans</h2>
         {admin && (
-          <button
+          <Button
+            size="sm"
             onClick={() => {
               setAdding(true);
               setEditingId(null);
               setForm(emptyLoan);
             }}
-            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
           >
             + Add Loan
-          </button>
+          </Button>
         )}
       </div>
 
@@ -406,15 +407,15 @@ export function MortgageSettings() {
             editId={editingId ?? undefined}
           />
           <div className="flex gap-2 mt-3">
-            <button
+            <Button
+              size="sm"
               onClick={handleSave}
               disabled={
                 createLoan.isPending || updateLoan.isPending || !form.name
               }
-              className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
             >
               {editingId ? "Save" : "Create"}
-            </button>
+            </Button>
             <button
               onClick={() => {
                 setAdding(false);
@@ -509,7 +510,8 @@ export function MortgageSettings() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Extra Payments</h2>
           {admin && (
-            <button
+            <Button
+              size="sm"
               onClick={() => {
                 setAddingExtra(true);
                 setExtraForm({
@@ -523,10 +525,9 @@ export function MortgageSettings() {
                   isRange: false,
                 });
               }}
-              className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
             >
               + Add Extra Payment
-            </button>
+            </Button>
           )}
         </div>
 
@@ -636,13 +637,13 @@ export function MortgageSettings() {
               </div>
             </div>
             <div className="flex gap-2 mt-3">
-              <button
+              <Button
+                size="sm"
                 onClick={handleAddExtra}
                 disabled={createExtra.isPending}
-                className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
               >
                 Add
-              </button>
+              </Button>
               <button
                 onClick={() => setAddingExtra(false)}
                 className="px-3 py-1 border rounded text-sm hover:bg-surface-sunken"

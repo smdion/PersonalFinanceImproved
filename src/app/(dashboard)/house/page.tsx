@@ -13,14 +13,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import { Lock, LockOpen } from "lucide-react";
-
-function SyncBadge({ source }: { source: string }) {
-  return (
-    <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-caption font-medium bg-blue-50 text-blue-600">
-      Synced from {source.toUpperCase()}
-    </span>
-  );
-}
+import { SyncBadge } from "@/components/ui/sync-badge";
 
 export default function HousePage() {
   const { data: assetData, isLoading: assetsLoading } =
