@@ -41,15 +41,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Rapid changes to a setting could occasionally get overwritten by a slightly-stale background refresh** — fixed with better tracking of which change is actually the latest.
 - **A house's equity percentage no longer shows a nonsensical large negative number when the home's value hasn't been entered yet.**
 - Several demo-profile-only data issues (investment return figures stored at the wrong scale, a mismatched account link) that only affected the built-in demo personas, not real data.
+- **Taxable-brokerage and HSA contributions were being silently counted as "Traditional" on the Paycheck page, Contributions card, and Contributions page.** Your actual retirement projections (nest egg, withdrawals, RMDs, taxes) were never affected — this was a display-only mislabeling. The Savings Rate card's breakdown has also been restructured: "Retirement" and "Portfolio" now correctly represent whether an account counts toward retirement projections (not whether it's taxed), with Traditional/Roth/After-tax/HSA shown as their own sub-lines under each, since tax treatment and retirement goal are independent of each other — a taxable brokerage account can be earmarked for retirement, and vice versa.
+- New performance accounts now default their Category (Retirement vs. Portfolio) to match the Account Type you picked instead of always defaulting to Retirement, so brokerage accounts don't need a manual fix after creation.
 
 ### Improved
 
 - **A broad internal consistency pass**: centralized color definitions, number/percentage formatting, and category-name handling that had drifted across the app into single shared sources, so future changes only need to happen in one place. No visible behavior change.
 - **22 new automated checks now run on every change** to catch several of the bug patterns above (unsafe secret comparisons, unguarded math that could show "Infinity," raw account keys leaking into the UI, and more) before they can ship again.
+- Several dashboard cards now surface data that was already being fetched but never shown: Mortgage's payoff date, Retirement's Pre-tax/Roth/HSA/After-tax balance breakdown, and Budget's actual-spend-vs-budgeted progress bar (from your linked YNAB/Actual data) with a top-category breakdown.
 
 ### Added
 
 - **SimpleFIN's last sync time now shows in the sidebar's Data Updated tooltip**, alongside Balance, Performance, and the budget-API sync time.
+- **The Growth Factor card's "age" is now editable** — it defaulted to your configured retirement age with no way to see the multiplier at a different age; now you can type any age and reset back to the default.
 
 ---
 
