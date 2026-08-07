@@ -10,6 +10,9 @@
  * `allowDev` is computed once at module load from process.env, so each
  * case needs vi.resetModules() + a fresh dynamic import to pick up the
  * env vars set for that test (same pattern as tests/pure/env.test.ts).
+ *
+ * Also covers the T3 DEMO_ONLY-guard gap for these same two routes (see
+ * "T3 — DEMO_ONLY guard" below).
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
@@ -106,5 +109,34 @@ describe("T27 — /api/versions/import ALLOW_DEV_MODE bypass", () => {
     const body = await res.clone().json();
     expect(res.status, JSON.stringify(body)).toBe(400);
     expect(body.error).toBe("No file uploaded");
+  });
+});
+
+// T3 — src/app/api/ non-tRPC routes had no DEMO_ONLY-guard coverage.
+// DEMO_ONLY is checked before auth on both routes, so a demo deployment
+// (read-only by design) must 403 regardless of session/ALLOW_DEV_MODE state.
+describe("T3 — DEMO_ONLY guard", () => {
+  it("export route rejects with 403 when DEMO_ONLY=true, even with ALLOW_DEV_MODE=true", async () => {
+    process.env.DEMO_ONLY = "true";
+    process.env.ALLOW_DEV_MODE = "true";
+    process.env.NODE_ENV = "development";
+
+    const { GET } = await import("@/app/api/versions/export/route");
+    const res = await GET();
+    expect(res.status).toBe(403);
+  });
+
+  it("import route rejects with 403 when DEMO_ONLY=true, even with ALLOW_DEV_MODE=true", async () => {
+    process.env.DEMO_ONLY = "true";
+    process.env.ALLOW_DEV_MODE = "true";
+    process.env.NODE_ENV = "development";
+
+    const { POST } = await import("@/app/api/versions/import/route");
+    const request = new Request("http://localhost/api/versions/import", {
+      method: "POST",
+      body: emptyFormData(),
+    });
+    const res = await POST(request);
+    expect(res.status).toBe(403);
   });
 });
