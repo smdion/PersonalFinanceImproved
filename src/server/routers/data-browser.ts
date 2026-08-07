@@ -31,10 +31,11 @@ export const dataBrowserRouter = createTRPCRouter({
 
     for (const name of KNOWN_TABLE_LIST) {
       try {
-        const res = await ctx.db.execute<{ count: string | number }>(
+        const res = await queryRaw<{ count: string | number }>(
+          ctx.db,
           sql.raw(`SELECT COUNT(*) AS count FROM "${name}"`),
         );
-        const count = Number(res.rows[0]?.count ?? 0);
+        const count = Number(res[0]?.count ?? 0);
         results.push({ tableName: name, rowCount: count });
       } catch {
         // Table might not exist yet (migration not run)
@@ -52,18 +53,19 @@ export const dataBrowserRouter = createTRPCRouter({
       assertKnownTable(input.tableName);
 
       if (isPostgres()) {
-        const res = await ctx.db.execute<{
+        const res = await queryRaw<{
           column_name: string;
           data_type: string;
           is_nullable: string;
           column_default: string | null;
         }>(
+          ctx.db,
           sql`SELECT column_name, data_type, is_nullable, column_default
               FROM information_schema.columns
               WHERE table_schema = 'public' AND table_name = ${input.tableName}
               ORDER BY ordinal_position`,
         );
-        return res.rows.map((r): ColumnInfo => ({
+        return res.map((r): ColumnInfo => ({
           name: r.column_name,
           type: r.data_type,
           nullable: r.is_nullable === "YES",
@@ -72,13 +74,13 @@ export const dataBrowserRouter = createTRPCRouter({
       }
 
       // SQLite
-      const res = await ctx.db.execute<{
+      const res = await queryRaw<{
         name: string;
         type: string;
         notnull: number;
         dflt_value: string | null;
-      }>(sql.raw(`PRAGMA table_info("${input.tableName}")`));
-      return res.rows.map((r): ColumnInfo => ({
+      }>(ctx.db, sql.raw(`PRAGMA table_info("${input.tableName}")`));
+      return res.map((r): ColumnInfo => ({
         name: r.name,
         type: r.type,
         nullable: r.notnull === 0,

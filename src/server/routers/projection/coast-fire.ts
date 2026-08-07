@@ -10,6 +10,7 @@
  * schemas + helpers remain in `_shared.ts`.
  */
 import { eq, asc, sql } from "drizzle-orm";
+import { queryRaw } from "@/lib/db/compat";
 import { z } from "zod/v4";
 import {
   createTRPCRouter,
@@ -195,19 +196,18 @@ export const coastFireRouter = createTRPCRouter({
             .select()
             .from(schema.mcPresets)
             .where(eq(schema.mcPresets.key, "default")),
-          ctx.db
-            .execute<{
-              age: number;
-              asset_class_id: number;
-              allocation: string;
-            }>(
-              sql`SELECT gp.age, gp.asset_class_id, gp.allocation
+          queryRaw<{
+            age: number;
+            asset_class_id: number;
+            allocation: string;
+          }>(
+            ctx.db,
+            sql`SELECT gp.age, gp.asset_class_id, gp.allocation
                 FROM mc_preset_glide_paths gp
                 JOIN mc_presets p ON p.id = gp.preset_id
                 WHERE p.key = 'default'
                 ORDER BY gp.age, gp.asset_class_id`,
-            )
-            .then((r) => r.rows),
+          ),
         ]);
 
       const payload = await buildEnginePayload(ctx.db, data, {
