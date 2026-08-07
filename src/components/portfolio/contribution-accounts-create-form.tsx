@@ -6,8 +6,13 @@ import React, { useState } from "react";
 import {
   ACCOUNT_TYPE_CONFIG,
   getAllCategories,
+  getParentCategory,
   type AccountCategory,
 } from "@/lib/config/account-types";
+import {
+  PERF_CATEGORY_RETIREMENT,
+  PERF_CATEGORY_PORTFOLIO,
+} from "@/lib/config/display-labels";
 
 export function CreateAccountForm({
   people,
@@ -40,9 +45,15 @@ export function CreateAccountForm({
   const [ownershipType, setOwnershipType] = useState<"individual" | "joint">(
     "individual",
   );
+  // Category defaults from the account type (e.g. Brokerage -> Portfolio) and
+  // re-derives whenever the type changes, until the user manually overrides
+  // it — otherwise accounts silently get mistagged (e.g. a taxable brokerage
+  // account left under "Retirement"), which corrupts the savings-rate
+  // breakdown downstream in contribution.ts's computeSummary.
   const [parentCategory, setParentCategory] = useState<
     "Retirement" | "Portfolio"
-  >("Retirement");
+  >(getParentCategory(accountType));
+  const [categoryTouched, setCategoryTouched] = useState(false);
 
   const typeOptions = getAllCategories().map((c) => ({
     value: c,
@@ -68,7 +79,11 @@ export function CreateAccountForm({
           <span className="text-xs text-muted">Account Type</span>
           <select
             value={accountType}
-            onChange={(e) => setAccountType(e.target.value as AccountCategory)}
+            onChange={(e) => {
+              const next = e.target.value as AccountCategory;
+              setAccountType(next);
+              if (!categoryTouched) setParentCategory(getParentCategory(next));
+            }}
             className="mt-1 block w-full text-sm border border-strong rounded px-2 py-1.5"
           >
             {typeOptions.map((o) => (
@@ -134,13 +149,18 @@ export function CreateAccountForm({
           <span className="text-xs text-muted">Category</span>
           <select
             value={parentCategory}
-            onChange={(e) =>
-              setParentCategory(e.target.value as "Retirement" | "Portfolio")
-            }
+            onChange={(e) => {
+              setParentCategory(e.target.value as "Retirement" | "Portfolio");
+              setCategoryTouched(true);
+            }}
             className="mt-1 block w-full text-sm border border-strong rounded px-2 py-1.5"
           >
-            <option value="Retirement">Retirement</option>
-            <option value="Portfolio">Portfolio</option>
+            <option value={PERF_CATEGORY_RETIREMENT}>
+              {PERF_CATEGORY_RETIREMENT}
+            </option>
+            <option value={PERF_CATEGORY_PORTFOLIO}>
+              {PERF_CATEGORY_PORTFOLIO}
+            </option>
           </select>
         </label>
         <label className="block">

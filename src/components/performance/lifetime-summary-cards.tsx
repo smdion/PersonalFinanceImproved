@@ -6,13 +6,15 @@ import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import type { LifetimeTotals } from "./types";
 
+type LifetimeSummaryCardsProps = {
+  totals: LifetimeTotals;
+  snapshotDate?: string | null;
+};
+
 export function LifetimeSummaryCards({
   totals,
   snapshotDate,
-}: {
-  totals: LifetimeTotals;
-  snapshotDate?: string | null;
-}) {
+}: LifetimeSummaryCardsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
       <Card
@@ -44,7 +46,7 @@ export function LifetimeSummaryCards({
           value={formatCurrency(totals.gains)}
           trend={{
             value: totals.gains >= 0 ? "Investment gains" : "Investment losses",
-            positive: totals.gains >= 0,
+            isPositive: totals.gains >= 0,
           }}
         />
       </Card>

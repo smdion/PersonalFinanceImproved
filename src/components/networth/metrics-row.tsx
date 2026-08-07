@@ -48,7 +48,7 @@ export function MetricsRow({
           <ProgressBar
             value={Math.min(aawScore, 4) / 4}
             label={tier.label}
-            color={tier.tier === "uaw" ? "bg-red-500" : "bg-green-500"}
+            variant={tier.tier === "uaw" ? "danger" : "success"}
           />
         </div>
       </Card>
@@ -68,7 +68,7 @@ export function MetricsRow({
         <div className="mt-2">
           <ProgressBar
             value={fiProgress}
-            color={fiProgress >= 1 ? "bg-green-500" : "bg-indigo-600"}
+            variant={fiProgress >= 1 ? "success" : "info"}
           />
         </div>
       </Card>

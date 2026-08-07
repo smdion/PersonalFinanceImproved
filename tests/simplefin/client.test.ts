@@ -63,7 +63,7 @@ describe("getAccounts", () => {
       }),
     );
 
-    const accounts = await getAccounts(
+    const { accounts, providerErrors } = await getAccounts(
       "https://myuser:mypass@bridge.simplefin.org/simplefin",
     );
 
@@ -75,6 +75,7 @@ describe("getAccounts", () => {
         orgName: "Test Bank",
       },
     ]);
+    expect(providerErrors).toEqual([]);
     const [url, init] = mockFetch.mock.calls[0]!;
     expect(url).toBe(
       "https://bridge.simplefin.org/simplefin/accounts?balances-only=1",
@@ -90,13 +91,13 @@ describe("getAccounts", () => {
         accounts: [{ id: "a1", name: "Savings", balance: "0" }],
       }),
     );
-    const accounts = await getAccounts("https://u:p@bridge.simplefin.org");
+    const { accounts } = await getAccounts("https://u:p@bridge.simplefin.org");
     expect(accounts[0]!.orgName).toBe("");
   });
 
   it("returns an empty array when the response has no accounts", async () => {
     mockFetch.mockReturnValueOnce(jsonResponse({}));
-    const accounts = await getAccounts("https://u:p@bridge.simplefin.org");
+    const { accounts } = await getAccounts("https://u:p@bridge.simplefin.org");
     expect(accounts).toEqual([]);
   });
 
@@ -105,5 +106,29 @@ describe("getAccounts", () => {
     await expect(
       getAccounts("https://u:p@bridge.simplefin.org"),
     ).rejects.toThrow(/Authentication failed.*401/);
+  });
+
+  it("returns accounts alongside providerErrors on a partial provider failure, instead of discarding them", async () => {
+    mockFetch.mockReturnValueOnce(
+      jsonResponse({
+        errors: ["Institution X needs re-authentication"],
+        accounts: [{ id: "a1", name: "Checking", balance: "500" }],
+      }),
+    );
+    const { accounts, providerErrors } = await getAccounts(
+      "https://u:p@bridge.simplefin.org",
+    );
+    expect(accounts).toHaveLength(1);
+    expect(accounts[0]!.balance).toBe(500);
+    expect(providerErrors).toEqual(["Institution X needs re-authentication"]);
+  });
+
+  it("throws when errors are present and no accounts came back", async () => {
+    mockFetch.mockReturnValueOnce(
+      jsonResponse({ errors: ["Institution X needs re-authentication"] }),
+    );
+    await expect(
+      getAccounts("https://u:p@bridge.simplefin.org"),
+    ).rejects.toThrow(/Institution X needs re-authentication/);
   });
 });

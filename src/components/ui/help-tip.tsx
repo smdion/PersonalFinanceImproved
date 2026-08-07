@@ -18,7 +18,8 @@ export function HelpTip({
 }) {
   const [open, setOpen] = useState(false);
   const label =
-    text ?? (lines ? lines.filter((l) => typeof l === "string").join(" ") : "");
+    text ??
+    (lines ? lines.filter((line) => typeof line === "string").join(" ") : "");
   const resolvedMaxWidth = maxWidth ?? 280;
 
   const resolvedContent =

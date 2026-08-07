@@ -3,10 +3,16 @@
 import { memo, useRef, useEffect } from "react";
 
 import { trpc } from "@/lib/trpc";
-import { useFICache } from "@/lib/hooks/use-fi-cache";
+import {
+  useFICache,
+  deriveFI,
+  isLivePlanInput,
+} from "@/lib/hooks/use-fi-cache";
+import { useScenario } from "@/lib/context/scenario-context";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { sumBy } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import {
@@ -62,6 +68,7 @@ function RetirementCardImpl() {
       : {}),
   };
   const [, writeFICache] = useFICache();
+  const { isInScenario } = useScenario();
   const lastCacheKey = useRef<string | null>(null);
 
   const { data, isLoading, isFetching, error } =
@@ -69,23 +76,26 @@ function RetirementCardImpl() {
 
   useEffect(() => {
     if (!data?.result || isLoading || isFetching) return;
+    // This card never sets snapshot/profile/category-filter/override params
+    // (see engineInput above) — only the scenario axis can pollute it.
+    if (!isLivePlanInput({ isInScenario })) return;
     const withdrawalRate = Number(data.settings?.withdrawalRate ?? 0.04);
     const expenses = data.annualExpenses ?? 0;
     if (withdrawalRate <= 0 || expenses <= 0) return;
-    const fiTarget = expenses / withdrawalRate;
-    const hit = data.result.projectionByYear.find(
-      (y) => y.endBalance >= fiTarget,
+    const derived = deriveFI(
+      data.result.projectionByYear,
+      expenses,
+      withdrawalRate,
     );
-    const cacheKey = `${hit?.year ?? "null"}-${fiTarget}`;
-    if (lastCacheKey.current === cacheKey) return;
-    lastCacheKey.current = cacheKey;
+    if (lastCacheKey.current === derived.inputKey) return;
+    lastCacheKey.current = derived.inputKey;
     writeFICache({
-      fiYear: hit?.year ?? null,
-      fiAge: hit?.age ?? null,
-      settingsHash: cacheKey,
+      fiYear: derived.fiYear,
+      fiAge: derived.fiAge,
+      inputKey: derived.inputKey,
       computedAt: new Date().toISOString(),
     });
-  }, [data, isLoading, isFetching, writeFICache]);
+  }, [data, isLoading, isFetching, writeFICache, isInScenario]);
   const { data: coastFireData } = trpc.projection.computeCoastFire.useQuery(
     engineInput,
     {
@@ -121,12 +131,14 @@ function RetirementCardImpl() {
       retPortfolio.hsa +
       retPortfolio.afterTax
     : 0;
-  const annualContributions = Object.values(
-    realDefaults.annualByCategory,
-  ).reduce((s, v) => s + v, 0);
-  const employerContributions = Object.values(
-    realDefaults.employerMatchByCategory,
-  ).reduce((s, v) => s + v, 0);
+  const annualContributions = sumBy(
+    Object.values(realDefaults.annualByCategory),
+    (v) => v,
+  );
+  const employerContributions = sumBy(
+    Object.values(realDefaults.employerMatchByCategory),
+    (v) => v,
+  );
   // Sum limits per unique group (401k/403b share a group — avoid double-counting)
   const retLimits = (() => {
     const seen = new Set<string>();
@@ -186,6 +198,34 @@ function RetirementCardImpl() {
           <span className="text-muted">Retirement accounts</span>
           <span className="text-primary">{formatCurrency(portfolioTotal)}</span>
         </div>
+        {retPortfolio && portfolioTotal > 0 && (
+          <div className="ml-3 space-y-0.5 text-xs text-faint">
+            {retPortfolio.preTax > 0 && (
+              <div className="flex justify-between">
+                <span>Pre-tax</span>
+                <span>{formatCurrency(retPortfolio.preTax)}</span>
+              </div>
+            )}
+            {retPortfolio.taxFree > 0 && (
+              <div className="flex justify-between">
+                <span>Roth</span>
+                <span>{formatCurrency(retPortfolio.taxFree)}</span>
+              </div>
+            )}
+            {retPortfolio.hsa > 0 && (
+              <div className="flex justify-between">
+                <span>HSA</span>
+                <span>{formatCurrency(retPortfolio.hsa)}</span>
+              </div>
+            )}
+            {retPortfolio.afterTax > 0 && (
+              <div className="flex justify-between">
+                <span>After-tax</span>
+                <span>{formatCurrency(retPortfolio.afterTax)}</span>
+              </div>
+            )}
+          </div>
+        )}
         <div className="flex justify-between">
           <span className="text-muted">Contributions</span>
           <span className="text-primary">
@@ -237,7 +277,7 @@ function RetirementCardImpl() {
                     text={
                       isDynamic
                         ? `${strategyLabel} strategy — withdrawal varies year-to-year based on portfolio performance. This is a projected starting amount in today's dollars.`
-                        : "Your projected nest egg × withdrawal rate in today's dollars. Does not account for volatility or taxes — see Monte Carlo on the Retirement page for a realistic range."
+                        : "Your projected nest egg × withdrawal rate in today's dollars. Does not account for volatility or taxes — see Simulation on the Retirement page for a realistic range."
                     }
                     learnMoreHref="/retirement/decumulation-methodology"
                   />

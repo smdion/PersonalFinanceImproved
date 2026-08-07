@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import { BRAND_COLORS } from "@/lib/utils/colors";
 
 const ERROR_MESSAGES: Record<string, string> = {
   CredentialsSignin: "Invalid email or password.",
@@ -28,7 +29,7 @@ function LedgrLogo() {
       />
       <path
         d="M10 6 L10 24 L22 24"
-        stroke="#38bdf8"
+        stroke={BRAND_COLORS.logoAccent}
         strokeWidth="3.5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -39,7 +40,7 @@ function LedgrLogo() {
         y1="14"
         x2="20"
         y2="14"
-        stroke="#38bdf8"
+        stroke={BRAND_COLORS.logoAccent}
         strokeWidth="2"
         strokeLinecap="round"
         opacity="0.5"
@@ -49,7 +50,7 @@ function LedgrLogo() {
         y1="18"
         x2="18"
         y2="18"
-        stroke="#38bdf8"
+        stroke={BRAND_COLORS.logoAccent}
         strokeWidth="2"
         strokeLinecap="round"
         opacity="0.5"
@@ -65,7 +66,7 @@ export function LoginForm({ hasOidc }: { hasOidc: boolean }) {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const errorMessage = errorCode
@@ -74,7 +75,7 @@ export function LoginForm({ hasOidc }: { hasOidc: boolean }) {
 
   async function handleLocalLogin(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
+    setIsLoading(true);
     setLocalError(null);
 
     const result = await signIn("local-admin", {
@@ -86,7 +87,7 @@ export function LoginForm({ hasOidc }: { hasOidc: boolean }) {
 
     if (result?.error) {
       setLocalError("Invalid email or password.");
-      setLoading(false);
+      setIsLoading(false);
     } else if (result?.url) {
       window.location.href = result.url;
     }
@@ -190,10 +191,10 @@ export function LoginForm({ hasOidc }: { hasOidc: boolean }) {
             </div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={isLoading}
               className="w-full px-4 py-2.5 rounded-lg border border-default text-primary font-medium hover:bg-surface-secondary transition-colors disabled:opacity-50"
             >
-              {loading ? "Signing in..." : "Sign in"}
+              {isLoading ? "Signing in..." : "Sign in"}
             </button>
           </form>
         </div>

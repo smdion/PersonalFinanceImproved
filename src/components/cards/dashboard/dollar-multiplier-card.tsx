@@ -10,6 +10,7 @@ import {
   formatPercent,
 } from "@/lib/utils/format";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { sumBy } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
 
 function DollarMultiplierCardImpl() {
@@ -19,6 +20,7 @@ function DollarMultiplierCardImpl() {
     trpc.projection.computeProjection.useQuery(engineInput);
   const [calcAmount, setCalcAmount] = useState("");
   const [calcYears, setCalcYears] = useState("");
+  const [ageOverride, setAgeOverride] = useState("");
   if (isLoading) return <LoadingCard title="Growth Factor" />;
   if (error)
     return <ErrorCard title="Growth Factor" message="Failed to load" />;
@@ -35,10 +37,10 @@ function DollarMultiplierCardImpl() {
   const { settings, returnRateSummary, people } = data;
   const currentYear = new Date().getFullYear();
   const currentAge = Math.round(
-    people.reduce((s, p) => s + (currentYear - p.birthYear), 0) /
-      (people.length || 1),
+    sumBy(people, (p) => currentYear - p.birthYear) / (people.length || 1),
   );
-  const yearsToRetirement = Math.max(0, settings.retirementAge - currentAge);
+  const targetAge = parseFloat(ageOverride) || settings.retirementAge;
+  const yearsToRetirement = Math.max(0, targetAge - currentAge);
   const avgReturn = returnRateSummary.avgAccumulation;
   const multiplier = Math.pow(1 + avgReturn, yearsToRetirement);
 
@@ -64,13 +66,39 @@ function DollarMultiplierCardImpl() {
         <span className="text-2xl font-bold text-green-600">
           ${formatNumber(multiplier, 2)}
         </span>
-        <span className="text-sm text-muted">
-          per $1 at age {settings.retirementAge}
+        <span className="text-sm text-muted flex items-center gap-1">
+          per $1 at age
+          <input
+            type="number"
+            placeholder={String(settings.retirementAge)}
+            value={ageOverride}
+            onChange={(e) => setAgeOverride(e.target.value)}
+            onClick={(e) => e.preventDefault()}
+            className="w-14 px-1.5 py-0.5 border rounded bg-surface-primary text-sm"
+          />
+          {ageOverride && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                setAgeOverride("");
+              }}
+              className="text-xs text-faint hover:text-muted underline"
+            >
+              reset
+            </button>
+          )}
         </span>
       </div>
       <p className="text-xs text-faint mb-3">
-        {yearsToRetirement} yrs to retirement (age {settings.retirementAge}) at{" "}
+        {yearsToRetirement} yrs to age {targetAge} at{" "}
         {formatPercent(avgReturn, 1)} avg return
+        {ageOverride && (
+          <span className="text-faint">
+            {" "}
+            (retirement age is {settings.retirementAge})
+          </span>
+        )}
         {people.length > 1 && (
           <span className="block">
             Based on avg age {currentAge} across{" "}

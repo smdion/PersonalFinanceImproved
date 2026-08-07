@@ -4,11 +4,9 @@
  *  Contains: Balance/Strategy/Budget toggle, Baseline On/Off, Confidence Band range. */
 import { HelpTip } from "@/components/ui/help-tip";
 import { PillBtn, LabeledPillGroup } from "./pill-btn";
-import type { useProjectionState } from "./use-projection-state";
+import type { ProjectionState } from "./projection-table-types";
 
-type ProjectionState = ReturnType<typeof useProjectionState>;
-
-export function ChartControls({ s }: { s: ProjectionState }) {
+export function ChartControls({ state }: { state: ProjectionState }) {
   const {
     chartView,
     setChartView,
@@ -20,7 +18,7 @@ export function ChartControls({ s }: { s: ProjectionState }) {
     scenarioView,
     setScenarioView,
     coastFireAge,
-  } = s;
+  } = state;
 
   const hasMc = mcBandsByYear != null;
   const coastFireAvailable = coastFireAge != null;
@@ -101,7 +99,7 @@ export function ChartControls({ s }: { s: ProjectionState }) {
               <HelpTip
                 maxWidth={360}
                 lines={[
-                  "Confidence bands show the range of Monte Carlo simulation outcomes.",
+                  "Confidence bands show the range of simulation outcomes.",
                   <span key="p25">
                     <strong className="text-purple-300">50%</strong> — Middle
                     50% of outcomes. Tightest view, shows the most likely range.

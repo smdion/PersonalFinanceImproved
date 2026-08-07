@@ -19,19 +19,21 @@ export const CATEGORY_HELP: Record<string, string> = {
   [PERF_CATEGORY_PORTFOLIO]: "Grand total across all investment accounts",
 };
 
+type TabGroupProps = {
+  label: string;
+  helpText: string;
+  categories: string[];
+  activeCategory: string;
+  onCategoryChange: (category: string) => void;
+};
+
 export function TabGroup({
   label,
   helpText,
   categories,
   activeCategory,
   onCategoryChange,
-}: {
-  label: string;
-  helpText: string;
-  categories: string[];
-  activeCategory: string;
-  onCategoryChange: (category: string) => void;
-}) {
+}: TabGroupProps) {
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs text-muted uppercase tracking-wide font-medium inline-flex items-center gap-1">
@@ -58,17 +60,19 @@ export function TabGroup({
   );
 }
 
+type CategoryTabsProps = {
+  accountTypeCategories: string[];
+  parentCategories: string[];
+  activeCategory: string;
+  onCategoryChange: (category: string) => void;
+};
+
 export function CategoryTabs({
   accountTypeCategories,
   parentCategories,
   activeCategory,
   onCategoryChange,
-}: {
-  accountTypeCategories: string[];
-  parentCategories: string[];
-  activeCategory: string;
-  onCategoryChange: (category: string) => void;
-}) {
+}: CategoryTabsProps) {
   return (
     <div className="flex flex-wrap items-center gap-4 mb-6">
       <TabGroup

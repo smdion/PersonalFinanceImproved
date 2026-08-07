@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { formatCurrency, formatNumber } from "@/lib/utils/format";
+import { safeDivide } from "@/lib/utils/math";
 import { HelpTip } from "@/components/ui/help-tip";
+import { DEFAULT_REFI_CLOSING_COSTS } from "@/lib/constants";
 import type { LoanSummary } from "./types";
 
 export function RefinanceCalculator({
@@ -14,7 +16,9 @@ export function RefinanceCalculator({
   const [showRefi, setShowRefi] = useState(false);
   const [refiRate, setRefiRate] = useState("");
   const [refiTerm, setRefiTerm] = useState("30");
-  const [refiClosingCosts, setRefiClosingCosts] = useState("5000");
+  const [refiClosingCosts, setRefiClosingCosts] = useState(
+    DEFAULT_REFI_CLOSING_COSTS,
+  );
 
   if (!showRefi) {
     return (
@@ -55,7 +59,7 @@ export function RefinanceCalculator({
   const monthlySavings = currentMonthly - newMonthly;
   const breakEvenMonths =
     closingCosts > 0 && monthlySavings > 0
-      ? Math.ceil(closingCosts / monthlySavings)
+      ? Math.ceil(safeDivide(closingCosts, monthlySavings, 0)!)
       : 0;
 
   return (

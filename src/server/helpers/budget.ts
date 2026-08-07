@@ -71,18 +71,22 @@ export async function getEffectiveCash(
 export async function getEffectiveOtherAssets(
   db: Db,
   settings: { key: string; value: unknown }[],
+  asOfDate: Date = new Date(),
 ): Promise<number> {
-  const result = await getEffectiveOtherAssetsDetailed(db, settings);
+  const result = await getEffectiveOtherAssetsDetailed(db, settings, asOfDate);
   return result.total;
 }
 
 /** Returns individual other-asset items (carry-forward) plus total.
  *  Each item includes `sourceYear` — the year the value was last entered.
  *  When sourceYear < currentYear, the value is carried forward and may be stale.
- *  `id` is included so callers can check API sync mappings. */
+ *  `id` is included so callers can check API sync mappings.
+ *  `asOfDate` defaults to now; pass it explicitly when the caller already has
+ *  a resolved date (e.g. a year-end snapshot) to avoid a fresh `new Date()`. */
 export async function getEffectiveOtherAssetsDetailed(
   db: Db,
   settings: { key: string; value: unknown }[],
+  asOfDate: Date = new Date(),
 ): Promise<{
   items: {
     id: number | null;
@@ -92,7 +96,7 @@ export async function getEffectiveOtherAssetsDetailed(
   }[];
   total: number;
 }> {
-  const currentYear = new Date().getFullYear();
+  const currentYear = asOfDate.getFullYear();
   const allItems = await db.select().from(schema.otherAssetItems);
 
   // Carry-forward: for each unique name, find the latest entry where year <= currentYear

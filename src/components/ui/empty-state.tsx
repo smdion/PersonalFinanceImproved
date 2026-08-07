@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { Button } from "./button";
 
 type EmptyStateProps = {
   message: string;
@@ -38,12 +39,9 @@ export function EmptyState({
       {(action || link) && (
         <div className="mt-4 flex items-center justify-center gap-3">
           {action && (
-            <button
-              onClick={action.onClick}
-              className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
+            <Button variant="primary" size="sm" onClick={action.onClick}>
               {action.label}
-            </button>
+            </Button>
           )}
           {link && (
             <Link

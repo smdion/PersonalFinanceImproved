@@ -2,12 +2,12 @@
 
 /** Unified overrides panel — thin shell that delegates to section components. */
 import { HelpTip } from "@/components/ui/help-tip";
-import type { useProjectionState } from "./use-projection-state";
+import type { ProjectionState } from "./projection-table-types";
 import { SavingOverridesSection } from "./overrides-saving-section";
 import { WithdrawalOverridesSection } from "./overrides-withdrawal-section";
 import { LifeChangesSection } from "./overrides-life-section";
 
-function SectionHeader({
+export function SectionHeader({
   title,
   help,
   children,
@@ -27,8 +27,6 @@ function SectionHeader({
   );
 }
 
-type ProjectionState = ReturnType<typeof useProjectionState>;
-
 export type OverridesSectionProps = {
   state: ProjectionState;
   accumulationExpenseOverride?: number;
@@ -41,7 +39,7 @@ export type OverridesPanelProps = OverridesSectionProps;
  * Extracted from ProjectionCard to reduce file size.
  */
 export function OverridesPanel({
-  state: s,
+  state,
   accumulationExpenseOverride,
 }: OverridesPanelProps) {
   return (
@@ -55,29 +53,29 @@ export function OverridesPanel({
       <div className="flex flex-wrap gap-3 text-xs text-muted">
         <span>
           <span className="font-medium text-emerald-700">
-            {s.accumOverrides.length}
+            {state.accumOverrides.length}
           </span>{" "}
           pre-retirement
         </span>
         <span>
           <span className="font-medium text-amber-700">
-            {s.decumOverrides.length}
+            {state.decumOverrides.length}
           </span>{" "}
           post-retirement
         </span>
         <span>
           <span className="font-medium text-secondary">
-            {(s.dbSalaryOverrides?.length ?? 0) +
-              (s.dbBudgetOverrides?.length ?? 0)}
+            {(state.dbSalaryOverrides?.length ?? 0) +
+              (state.dbBudgetOverrides?.length ?? 0)}
           </span>{" "}
           life change
         </span>
       </div>
 
-      <SavingOverridesSection state={s} />
-      <WithdrawalOverridesSection state={s} />
+      <SavingOverridesSection state={state} />
+      <WithdrawalOverridesSection state={state} />
       <LifeChangesSection
-        state={s}
+        state={state}
         accumulationExpenseOverride={accumulationExpenseOverride}
       />
     </div>

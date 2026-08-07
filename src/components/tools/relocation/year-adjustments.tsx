@@ -5,6 +5,7 @@
  *  Stateless — all state flows via props.
  */
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils/format";
 import type { RelocationBudgetInfo, YearAdjustmentRow } from "./types";
@@ -23,8 +24,6 @@ type Props = {
   setRelocYearAdjustments: React.Dispatch<
     React.SetStateAction<YearAdjustmentRow[]>
   >;
-  showRelocAdjForm: boolean;
-  setShowRelocAdjForm: React.Dispatch<React.SetStateAction<boolean>>;
   relocAdjMode: "manual" | "profile";
   setRelocAdjMode: React.Dispatch<React.SetStateAction<"manual" | "profile">>;
   relocAdjForm: RelocAdjFormState;
@@ -35,13 +34,12 @@ export function RelocationYearAdjustments({
   budgetInfo,
   relocYearAdjustments,
   setRelocYearAdjustments,
-  showRelocAdjForm,
-  setShowRelocAdjForm,
   relocAdjMode,
   setRelocAdjMode,
   relocAdjForm,
   setRelocAdjForm,
 }: Props) {
+  const [showRelocAdjForm, setShowRelocAdjForm] = useState(false);
   return (
     <div className="border-t pt-3">
       <div className="flex items-center justify-between mb-2">

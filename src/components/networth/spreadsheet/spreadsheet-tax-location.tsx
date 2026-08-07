@@ -5,10 +5,11 @@
 
 import { Card } from "@/components/ui/card";
 import { formatPercent } from "@/lib/utils/format";
+import { sumBy } from "@/lib/utils/math";
 import { TAX_TYPE_LABELS } from "@/lib/config/display-labels";
 import type { TaxLocationBreakdown } from "./types";
 
-type Props = {
+type SpreadsheetTaxLocationProps = {
   yearA: TaxLocationBreakdown | null;
   yearB: TaxLocationBreakdown | null;
   yearALabel: number;
@@ -34,8 +35,8 @@ function TaxLocationMiniTable({
     new Set([...Object.keys(yearAData), ...Object.keys(yearBData)]),
   ).sort();
 
-  const totalA = Object.values(yearAData).reduce((s, v) => s + v, 0);
-  const totalB = Object.values(yearBData).reduce((s, v) => s + v, 0);
+  const totalA = sumBy(Object.values(yearAData), (v) => v);
+  const totalB = sumBy(Object.values(yearBData), (v) => v);
 
   if (taxTypes.length === 0) return null;
 
@@ -101,7 +102,7 @@ export function SpreadsheetTaxLocation({
   yearB,
   yearALabel,
   yearBLabel,
-}: Props) {
+}: SpreadsheetTaxLocationProps) {
   const emptyBreakdown = { retirement: {}, portfolio: {} };
   const a = yearA ?? emptyBreakdown;
   const b = yearB ?? emptyBreakdown;

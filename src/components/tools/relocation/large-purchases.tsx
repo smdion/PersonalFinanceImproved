@@ -5,9 +5,15 @@
  *  refactor. Stateless — all state flows via props.
  */
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  DEFAULT_LOAN_DOWN_PAYMENT_PERCENT,
+  DEFAULT_LOAN_RATE,
+  DEFAULT_LOAN_TERM_YEARS,
+} from "@/lib/constants";
 import type { LargePurchaseRow, RelocationResult } from "./types";
 
 export type PurchaseFormState = {
@@ -28,8 +34,6 @@ type Props = {
   setRelocLargePurchases: React.Dispatch<
     React.SetStateAction<LargePurchaseRow[]>
   >;
-  showPurchaseForm: boolean;
-  setShowPurchaseForm: React.Dispatch<React.SetStateAction<boolean>>;
   purchaseForm: PurchaseFormState;
   setPurchaseForm: React.Dispatch<React.SetStateAction<PurchaseFormState>>;
 };
@@ -38,11 +42,10 @@ export function RelocationLargePurchases({
   result: r,
   relocLargePurchases,
   setRelocLargePurchases,
-  showPurchaseForm,
-  setShowPurchaseForm,
   purchaseForm,
   setPurchaseForm,
 }: Props) {
+  const [showPurchaseForm, setShowPurchaseForm] = useState(false);
   return (
     <>
       {/* Large purchase summary KPIs (only when purchases exist) */}
@@ -114,7 +117,8 @@ export function RelocationLargePurchases({
                   {isFinanced && (
                     <span className="text-orange-400">
                       ({formatPercent(p.downPaymentPercent ?? 0)} down,{" "}
-                      {p.loanTermYears}yr @{formatPercent(p.loanRate ?? 0, 1)})
+                      {p.loanTermYears}-year @
+                      {formatPercent(p.loanRate ?? 0, 1)})
                     </span>
                   )}
                   {(p.ongoingMonthlyCost ?? 0) > 0 && (
@@ -334,12 +338,14 @@ export function RelocationLargePurchases({
                   purchase.downPaymentPercent =
                     (Number.isFinite(rawDownPaymentPercent)
                       ? rawDownPaymentPercent
-                      : 20) / 100;
+                      : DEFAULT_LOAN_DOWN_PAYMENT_PERCENT) / 100;
                   purchase.loanRate =
-                    (Number.isFinite(rawLoanRate) ? rawLoanRate : 6.5) / 100;
+                    (Number.isFinite(rawLoanRate)
+                      ? rawLoanRate
+                      : DEFAULT_LOAN_RATE) / 100;
                   purchase.loanTermYears = Number.isFinite(rawLoanTermYears)
                     ? rawLoanTermYears
-                    : 30;
+                    : DEFAULT_LOAN_TERM_YEARS;
                 }
 
                 const ongoing = parseFloat(purchaseForm.ongoingMonthlyCost);
@@ -360,9 +366,9 @@ export function RelocationLargePurchases({
                   purchasePrice: "",
                   purchaseYear: String(year),
                   financed: false,
-                  downPaymentPercent: "20",
-                  loanRate: "6.5",
-                  loanTermYears: "30",
+                  downPaymentPercent: String(DEFAULT_LOAN_DOWN_PAYMENT_PERCENT),
+                  loanRate: String(DEFAULT_LOAN_RATE),
+                  loanTermYears: String(DEFAULT_LOAN_TERM_YEARS),
                   ongoingMonthlyCost: "",
                   saleProceeds: "",
                 });

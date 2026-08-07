@@ -8,8 +8,11 @@ import {
   formatCurrency,
   formatPercent,
   compactCurrency,
+  formatDate,
 } from "@/lib/utils/format";
 import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
+import { safeDivide } from "@/lib/utils/math";
+import { PERSON_COLORS } from "@/lib/utils/colors";
 import {
   AreaChart,
   Area,
@@ -54,14 +57,6 @@ type SalaryChange = {
   raisePercent: string | null;
   notes: string | null;
 };
-
-const PERSON_COLORS = ["#3b82f6", "#a855f7", "#22c55e", "#f59e0b"];
-
-function formatDate(d: string | null | undefined): string {
-  if (!d) return "";
-  const date = new Date(d + "T00:00:00");
-  return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
-}
 
 function duration(start: string, end: string | null): string {
   const s = new Date(start + "T00:00:00");
@@ -218,14 +213,14 @@ export function JobsSettings() {
               <XAxis
                 dataKey="date"
                 fontSize={CHART_FONT.tick}
-                tickFormatter={(d: string) => formatDate(d)}
+                tickFormatter={(d: string) => formatDate(d, "short")}
               />
               <YAxis
                 fontSize={CHART_FONT.tick}
                 tickFormatter={(v: number) => compactCurrency(v)}
               />
               <RechartsTooltip
-                labelFormatter={(d: unknown) => formatDate(String(d))}
+                labelFormatter={(d: unknown) => formatDate(String(d), "short")}
                 formatter={(value: unknown, name: unknown) => [
                   formatCurrency(Number(value)),
                   String(name),
@@ -319,8 +314,10 @@ export function JobsSettings() {
                           </div>
                           <div className="flex items-center gap-3 mt-1 text-muted">
                             <span>
-                              {formatDate(job.startDate)} —{" "}
-                              {isCurrent ? "Present" : formatDate(job.endDate)}
+                              {formatDate(job.startDate, "short")} —{" "}
+                              {isCurrent
+                                ? "Present"
+                                : formatDate(job.endDate!, "short")}
                             </span>
                             <span className="text-faint">·</span>
                             <span>{duration(job.startDate, job.endDate)}</span>
@@ -332,8 +329,11 @@ export function JobsSettings() {
                             {totalRaise > 0 && (
                               <span className="text-green-600 text-caption">
                                 +{formatCurrency(totalRaise)} (
-                                {formatPercent(totalRaise / startingSalary, 1)})
-                                over {jobChanges.length} raise
+                                {formatPercent(
+                                  safeDivide(totalRaise, startingSalary, 0)!,
+                                  1,
+                                )}
+                                ) over {jobChanges.length} raise
                                 {jobChanges.length !== 1 ? "s" : ""}
                               </span>
                             )}
@@ -351,7 +351,7 @@ export function JobsSettings() {
                                   key={sc.id}
                                   className="text-caption text-faint"
                                 >
-                                  {formatDate(sc.effectiveDate)}:{" "}
+                                  {formatDate(sc.effectiveDate, "short")}:{" "}
                                   {formatCurrency(Number(sc.newSalary))}
                                   {sc.raisePercent
                                     ? ` (+${formatPercent(Number(sc.raisePercent), 1)})`
@@ -391,12 +391,13 @@ export function JobsSettings() {
           {
             key: "startDate",
             label: "Start",
-            render: (r) => formatDate(r.startDate),
+            render: (r) => formatDate(r.startDate, "short"),
           },
           {
             key: "endDate",
             label: "End",
-            render: (r) => (r.endDate ? formatDate(r.endDate) : "Current"),
+            render: (r) =>
+              r.endDate ? formatDate(r.endDate, "short") : "Current",
           },
           { key: "w4FilingStatus", label: "W4 Status" },
         ]}
@@ -467,7 +468,7 @@ export function JobsSettings() {
                         : `Job #${sc.jobId}`}
                     </td>
                     <td className="px-3 py-1.5 text-muted">
-                      {formatDate(sc.effectiveDate)}
+                      {formatDate(sc.effectiveDate, "short")}
                     </td>
                     <td className="text-right px-3 py-1.5 tabular-nums font-medium">
                       {formatCurrency(Number(sc.newSalary))}

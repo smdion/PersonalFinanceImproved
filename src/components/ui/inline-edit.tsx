@@ -14,7 +14,7 @@ type InlineEditProps = {
   /** CSS class for the display span */
   className?: string;
   /** Whether editing is allowed. Default: true */
-  editable?: boolean;
+  isEditable?: boolean;
 };
 
 /**
@@ -28,7 +28,7 @@ export function InlineEdit({
   parseInput,
   type = "text",
   className = "",
-  editable = true,
+  isEditable = true,
 }: InlineEditProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -72,7 +72,7 @@ export function InlineEdit({
     }
   };
 
-  if (!editable) {
+  if (!isEditable) {
     const display = formatDisplay ? formatDisplay(value) : value;
     return <span className={className}>{display}</span>;
   }
@@ -126,7 +126,7 @@ type InlineSelectProps = {
   options: { label: string; value: string }[];
   onSave: (newValue: string) => void;
   className?: string;
-  editable?: boolean;
+  isEditable?: boolean;
 };
 
 /**
@@ -137,7 +137,7 @@ export function InlineSelect({
   options,
   onSave,
   className = "",
-  editable = true,
+  isEditable = true,
 }: InlineSelectProps) {
   const [editing, setEditing] = useState(false);
   const selectRef = useRef<HTMLSelectElement>(null);
@@ -148,7 +148,7 @@ export function InlineSelect({
     }
   }, [editing]);
 
-  if (!editable) {
+  if (!isEditable) {
     const label = options.find((o) => o.value === value)?.label ?? value;
     return <span className={className}>{label}</span>;
   }

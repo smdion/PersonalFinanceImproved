@@ -20,8 +20,6 @@ export type {
   RawDeduction,
   RawContrib,
   DeductionRowData,
-  AccountTypeSnapshot,
-  PersonSnapshot,
   ContribCardProps,
   CreateDeductionData,
   CreateContribData,

@@ -10,7 +10,7 @@
  */
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
-import { DEFAULT_RETURN_RATE, DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
+import { DEFAULT_RETURN_RATE } from "@/lib/constants";
 import { calculateProjection } from "@/lib/calculators/engine";
 import {
   buildAccumulationOrder,
@@ -27,16 +27,13 @@ import type {
   DecumulationOverride,
 } from "@/lib/calculators/types";
 import {
-  accountCategoryEnum,
   getAllCategories,
   categoriesWithIrsLimit,
   categoriesWithTaxPreference,
   getLimitGroup,
-  getDefaultDecumulationOrder,
-  DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
 } from "@/lib/config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
-import { roundToCents } from "@/lib/utils/math";
+import { roundToCents, sumBy } from "@/lib/utils/math";
 import {
   fetchRetirementData,
   buildEnginePayload,
@@ -44,6 +41,7 @@ import {
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
+  decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   buildCoastFireProfileSwitches,
 } from "./_shared";
@@ -67,33 +65,7 @@ export const scenariosRouter = createTRPCRouter({
         // No client-side accumulation defaults input.
 
         // --- Decumulation defaults ---
-        decumulationDefaults: z
-          .object({
-            withdrawalRate: z
-              .number()
-              .min(0)
-              .max(1)
-              .default(DEFAULT_WITHDRAWAL_RATE),
-            withdrawalRoutingMode: z
-              .enum(["bracket_filling", "waterfall", "percentage"])
-              .default("bracket_filling"),
-            withdrawalOrder: z
-              .array(z.enum(accountCategoryEnum()))
-              .default(getDefaultDecumulationOrder()),
-            withdrawalSplits: z
-              .record(z.enum(accountCategoryEnum()), z.number())
-              .default({ ...CONFIG_WITHDRAWAL_SPLITS }),
-            withdrawalTaxPreference: z
-              .record(z.string(), z.enum(["traditional", "roth"]))
-              .default({}),
-          })
-          .default({
-            withdrawalRate: DEFAULT_WITHDRAWAL_RATE,
-            withdrawalRoutingMode: "bracket_filling",
-            withdrawalOrder: getDefaultDecumulationOrder(),
-            withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS },
-            withdrawalTaxPreference: {},
-          }),
+        decumulationDefaults: decumulationDefaultsInputSchema,
 
         // --- Accumulation overrides ---
         accumulationOverrides: accumulationOverrideSchema,
@@ -389,7 +361,7 @@ export const scenariosRouter = createTRPCRouter({
               null,
             avgAccumulation:
               accRates.length > 0
-                ? accRates.reduce((s, r) => s + r.rate, 0) / accRates.length
+                ? sumBy(accRates, (r) => r.rate) / accRates.length
                 : DEFAULT_RETURN_RATE,
             schedule,
           };

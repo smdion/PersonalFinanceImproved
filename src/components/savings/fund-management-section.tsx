@@ -7,39 +7,17 @@ import { FundCardGrid } from "./fund-card-grid";
 import { FundCard } from "./fund-card";
 import { FundTimelineDetail } from "./fund-timeline-detail";
 import { EmergencyFundDetail } from "./emergency-fund-detail";
-import { FUND_COLORS } from "./fund-colors";
-import type { GoalProjection, PlannedTxForm, NewFundForm } from "./types";
+import { FUND_COLORS } from "@/lib/utils/colors";
+import type {
+  GoalProjection,
+  PlannedTxForm,
+  NewFundForm,
+  RawGoal,
+  PlannedTransaction,
+} from "./types";
 import type { TargetMode } from "@/lib/config/enum-values";
 import type { PushPreviewItem } from "@/components/ui/push-preview-modal";
 import { useUpdatePlannedTx } from "./use-update-planned-tx";
-
-interface RawGoal {
-  id: number;
-  name: string;
-  monthlyContribution: string | null;
-  allocationPercent: string | null;
-  isActive: boolean;
-  isEmergencyFund: boolean;
-  targetDate: string | null;
-  targetAmount: string | null;
-  targetMode: string;
-  parentGoalId: number | null;
-  priority: number;
-  apiCategoryId?: string | null;
-  apiCategoryName?: string | null;
-  isApiSyncEnabled?: boolean | null;
-}
-
-interface PlannedTransaction {
-  id: number;
-  goalId: number;
-  transactionDate: string;
-  description: string;
-  amount: number;
-  isRecurring: boolean;
-  recurrenceMonths: number | null;
-  transferPairId?: string | null;
-}
 
 interface AllocationOverride {
   goalId: number;

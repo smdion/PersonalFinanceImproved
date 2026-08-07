@@ -7,6 +7,7 @@ import { InlineEdit } from "@/components/ui/inline-edit";
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
+import { sumBy, safeDivide } from "@/lib/utils/math";
 
 // Code-split the per-fund Recharts mini chart (v0.5 expert-review M8). All
 // FundCard instances on the page share a single chunk, so the recharts
@@ -26,35 +27,13 @@ const FundMiniChart = dynamic(
 );
 import { FundTransactionList } from "./fund-transaction-list";
 import { FundOverridesSummary } from "./fund-overrides-summary";
-import { GoalProjection, PlannedTxForm, NewFundForm } from "./types";
-
-interface RawGoal {
-  id: number;
-  name: string;
-  monthlyContribution: string | null;
-  allocationPercent?: string | null;
-  isActive: boolean;
-  isEmergencyFund: boolean;
-  targetDate: string | null;
-  targetAmount: string | null;
-  targetMode: string;
-  parentGoalId: number | null;
-  priority: number;
-  apiCategoryId?: string | null;
-  apiCategoryName?: string | null;
-  isApiSyncEnabled?: boolean | null;
-}
-
-interface PlannedTransaction {
-  id: number;
-  goalId: number;
-  transactionDate: string;
-  description: string;
-  amount: number;
-  isRecurring: boolean;
-  recurrenceMonths: number | null;
-  transferPairId?: string | null;
-}
+import {
+  GoalProjection,
+  PlannedTxForm,
+  NewFundForm,
+  RawGoal,
+  PlannedTransaction,
+} from "./types";
 
 interface EfundResult {
   neededAfterRepay: number;
@@ -309,19 +288,14 @@ export function FundCard({
     transactions,
     efundResult,
   );
-  const pct =
-    totalMonthlyAllocation > 0
-      ? ((projection.monthlyAllocation / totalMonthlyAllocation) * 100).toFixed(
-          0,
-        )
-      : "0";
+  const pct = (
+    safeDivide(projection.monthlyAllocation, totalMonthlyAllocation, 0)! * 100
+  ).toFixed(0);
   // E-fund uses Ledgr-computed progress (balanceWithRepay / target); others use raw balance
   const progress =
     rawGoal.isEmergencyFund && efundResult
       ? Math.min(efundResult.progress, 1)
-      : savingsGoal.target > 0
-        ? Math.min(savingsGoal.current / savingsGoal.target, 1)
-        : 0;
+      : Math.min(safeDivide(savingsGoal.current, savingsGoal.target, 0)!, 1);
   const progressPct = (progress * 100).toFixed(0);
 
   const serviceLabel = (apiServiceName ?? "API").toUpperCase();
@@ -625,13 +599,14 @@ export function FundCard({
               {/* Upcoming expenses */}
               <div className="text-right">
                 {(() => {
-                  const upcomingExpenses = transactions
-                    .filter(
+                  const upcomingExpenses = sumBy(
+                    transactions.filter(
                       (t) =>
                         t.amount < 0 &&
                         new Date(t.transactionDate + "T00:00:00") > new Date(),
-                    )
-                    .reduce((s, t) => s + Math.abs(t.amount), 0);
+                    ),
+                    (t) => Math.abs(t.amount),
+                  );
                   if (upcomingExpenses > 0) {
                     return (
                       <div>
@@ -719,7 +694,7 @@ export function FundCard({
                     const dollar = v.replace(/[^0-9.]/g, "");
                     const pool = maxMonthlyFunding;
                     if (pool && pool > 0 && onGoalUpdateMulti) {
-                      const pct = (Number(dollar) / pool) * 100;
+                      const pct = safeDivide(Number(dollar), pool, 0)! * 100;
                       onGoalUpdateMulti(projection.goalId, {
                         monthlyContribution: dollar,
                         allocationPercent: pct.toFixed(3),
@@ -840,10 +815,10 @@ export function FundCard({
                     (g) => g.goalId === child.id,
                   );
                   const childCurrent = childGoalCalc?.current ?? 0;
-                  const childProgress =
-                    childTarget > 0
-                      ? Math.min(childCurrent / childTarget, 1)
-                      : 0;
+                  const childProgress = Math.min(
+                    safeDivide(childCurrent, childTarget, 0)!,
+                    1,
+                  );
                   return (
                     <div key={child.id} className="flex items-center gap-2">
                       <div className="flex-1 min-w-0">

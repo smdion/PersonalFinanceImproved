@@ -1,17 +1,23 @@
-import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { eq, and, like } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { appSettings, stateVersions } from "@/lib/db/schema";
 import { createVersion } from "@/lib/db/version-logic";
 import { log } from "@/lib/logger";
+import { getValidCronSecret, timingSafeSecretMatch } from "@/lib/auth/cron";
 
 export async function GET(request: Request) {
-  // Validate cron secret (must be at least 32 characters when set)
-  const cronSecret = process.env.CRON_SECRET;
-  const headerSecret = request.headers.get("X-Cron-Secret");
+  if (process.env.DEMO_ONLY === "true") {
+    return NextResponse.json(
+      { error: "Forbidden: demo mode is read-only" },
+      { status: 403 },
+    );
+  }
 
-  if (!cronSecret || cronSecret.length < 32) {
+  // Validate cron secret (must be at least 32 characters when set)
+  const cronSecret = getValidCronSecret();
+
+  if (!cronSecret) {
     log("error", "cron_secret_misconfigured", {
       message: "CRON_SECRET is missing or too short",
     });
@@ -21,13 +27,8 @@ export async function GET(request: Request) {
     );
   }
 
-  const headerBuf = headerSecret
-    ? Buffer.from(headerSecret, "utf8")
-    : Buffer.alloc(0);
-  const secretBuf = Buffer.from(cronSecret, "utf8");
   if (
-    headerBuf.length !== secretBuf.length ||
-    !timingSafeEqual(headerBuf, secretBuf)
+    !timingSafeSecretMatch(request.headers.get("X-Cron-Secret"), cronSecret)
   ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

@@ -9,6 +9,22 @@ import type { Service, PreviewData } from "./integrations-types";
 import { PreviewPanel } from "./integrations-preview-panel";
 import { SimplefinCard } from "./integrations-simplefin";
 
+/** Credential-form field labels/placeholders per service — the two services'
+ *  forms otherwise differ too much (YNAB has a budget-fetch selector, Actual
+ *  has three plain fields) to fully unify, but the labels/placeholders
+ *  themselves are genuinely parallel data. */
+const SERVICE_CREDENTIAL_FIELDS = {
+  ynab: {
+    token: { label: "Personal Access Token", placeholder: "Enter YNAB token" },
+    budget: { label: "Budget" },
+  },
+  actual: {
+    url: { label: "Server URL", placeholder: "https://actual.example.com" },
+    apiKey: { label: "API Key", placeholder: "Enter API key" },
+    budgetSyncId: { label: "Budget Sync ID", placeholder: "Budget sync UUID" },
+  },
+} as const;
+
 function ServiceCard({
   service,
   label,
@@ -131,19 +147,21 @@ function ServiceCard({
               <>
                 <div>
                   <label className="block text-xs font-medium text-muted mb-1">
-                    Personal Access Token
+                    {SERVICE_CREDENTIAL_FIELDS.ynab.token.label}
                   </label>
                   <input
                     type="password"
                     value={ynabToken}
                     onChange={(e) => setYnabToken(e.target.value)}
-                    placeholder="Enter YNAB token"
+                    placeholder={
+                      SERVICE_CREDENTIAL_FIELDS.ynab.token.placeholder
+                    }
                     className="w-full px-3 py-1.5 text-sm border border-strong rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted mb-1">
-                    Budget
+                    {SERVICE_CREDENTIAL_FIELDS.ynab.budget.label}
                   </label>
                   <div className="flex gap-2">
                     {ynabBudgets.length > 0 ? (
@@ -191,37 +209,43 @@ function ServiceCard({
               <>
                 <div>
                   <label className="block text-xs font-medium text-muted mb-1">
-                    Server URL
+                    {SERVICE_CREDENTIAL_FIELDS.actual.url.label}
                   </label>
                   <input
                     type="text"
                     value={actualUrl}
                     onChange={(e) => setActualUrl(e.target.value)}
-                    placeholder="https://actual.example.com"
+                    placeholder={
+                      SERVICE_CREDENTIAL_FIELDS.actual.url.placeholder
+                    }
                     className="w-full px-3 py-1.5 text-sm border border-strong rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted mb-1">
-                    API Key
+                    {SERVICE_CREDENTIAL_FIELDS.actual.apiKey.label}
                   </label>
                   <input
                     type="password"
                     value={actualApiKey}
                     onChange={(e) => setActualApiKey(e.target.value)}
-                    placeholder="Enter API key"
+                    placeholder={
+                      SERVICE_CREDENTIAL_FIELDS.actual.apiKey.placeholder
+                    }
                     className="w-full px-3 py-1.5 text-sm border border-strong rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted mb-1">
-                    Budget Sync ID
+                    {SERVICE_CREDENTIAL_FIELDS.actual.budgetSyncId.label}
                   </label>
                   <input
                     type="text"
                     value={actualBudgetSyncId}
                     onChange={(e) => setActualBudgetSyncId(e.target.value)}
-                    placeholder="Budget sync UUID"
+                    placeholder={
+                      SERVICE_CREDENTIAL_FIELDS.actual.budgetSyncId.placeholder
+                    }
                     className="w-full px-3 py-1.5 text-sm border border-strong rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>

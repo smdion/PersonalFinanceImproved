@@ -1,27 +1,12 @@
 "use client";
 
 import React from "react";
-import { formatCurrency } from "@/lib/utils/format";
-import { FUND_COLORS } from "./fund-colors";
+import { formatCurrency, MONTH_NAMES_SHORT } from "@/lib/utils/format";
+import { FUND_COLORS } from "@/lib/utils/colors";
 import type { GoalProjection } from "./types";
 
-const MONTH_NAMES = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
 function shortMonth(d: Date): string {
-  return `${MONTH_NAMES[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
+  return `${MONTH_NAMES_SHORT[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
 }
 
 function formatCompact(n: number): string {

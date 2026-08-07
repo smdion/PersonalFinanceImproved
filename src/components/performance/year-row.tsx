@@ -15,6 +15,7 @@ import {
 } from "@/lib/config/display-labels";
 import { isDiscountBasisEmployerContrib } from "@/lib/config/account-types";
 import { HelpTip } from "@/components/ui/help-tip";
+import { Badge } from "@/components/ui/badge";
 import type { YearRowProps } from "./types";
 
 export function YearRow({
@@ -97,9 +98,9 @@ export function YearRow({
             )}
             {row.year}
             {row.isCurrentYear && (
-              <span className="text-xs bg-blue-100 text-blue-700 rounded-full px-2 py-0.5">
+              <Badge color="blue" className="rounded-full">
                 In Progress
-              </span>
+              </Badge>
             )}
           </span>
         </td>

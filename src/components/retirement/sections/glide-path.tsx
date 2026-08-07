@@ -12,6 +12,7 @@
 
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatPercent } from "@/lib/utils/format";
+import { glidePathHsl } from "@/lib/utils/colors";
 import type { ReturnRateSummary } from "./types";
 
 type Props = {
@@ -27,7 +28,7 @@ export function GlidePathSection({ returnRateSummary }: Props) {
           Returns
         </h4>
         <span className="text-caption text-faint">age-based glide path</span>
-        <HelpTip text="Your portfolio return rate shifts with age based on the glide path configured in Settings. Deterministic mode uses these rates directly as fixed annual returns. Monte Carlo (Simple + Advanced) uses them as the mean of a probability distribution — each trial samples random returns around these rates, capturing real-world volatility and sequence-of-returns risk. Darker segments in the bar below indicate higher return rates (younger, more aggressive allocation)." />
+        <HelpTip text="Your portfolio return rate shifts with age based on the glide path configured in Settings. Deterministic mode uses these rates directly as fixed annual returns. Simulation (Simple + Advanced) uses them as the mean of a probability distribution — each trial samples random returns around these rates, capturing real-world volatility and sequence-of-returns risk. Darker segments in the bar below indicate higher return rates (younger, more aggressive allocation)." />
         <span className="text-micro text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
           Baseline + Simulation
         </span>
@@ -80,13 +81,12 @@ export function GlidePathSection({ returnRateSummary }: Props) {
             );
             return samples.map((s) => {
               const intensity = (s.rate - minRate) / range;
-              const lightness = 78 - intensity * 38;
               return (
                 <div
                   key={s.age}
                   className="flex-1 transition-all"
                   style={{
-                    backgroundColor: `hsl(210, 70%, ${lightness}%)`,
+                    backgroundColor: glidePathHsl(intensity),
                   }}
                   title={`Age ${s.age}: ${formatPercent(s.rate, 1)}`}
                 />

@@ -5,10 +5,8 @@
  *  visual pattern as the MC summary bar in projection-mc-results.tsx. */
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency } from "@/lib/utils/format";
-import type { useProjectionState } from "./use-projection-state";
+import type { ProjectionState } from "./projection-table-types";
 import { CoastFireCard } from "@/components/cards/coast-fire-card";
-
-type ProjectionState = ReturnType<typeof useProjectionState>;
 
 // ---------------------------------------------------------------------------
 // Unified card chrome — matches projection-mc-results.tsx summary bar
@@ -107,7 +105,7 @@ function CompactRing({ rate, size = 48 }: { rate: number; size?: number }) {
 // Main component
 // ---------------------------------------------------------------------------
 
-export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
+export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
   const {
     result,
     engineSettings,
@@ -123,7 +121,7 @@ export function ProjectionHeroKpis({ s }: { s: ProjectionState }) {
     scenarioView,
     coastFireMcQuery,
     coastFireMcResult,
-  } = s;
+  } = state;
 
   if (!result) return null;
 

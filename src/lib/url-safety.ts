@@ -19,6 +19,16 @@
  * points to a private IP. For self-hosted homelab scope, the env-var
  * allowlist is the right tradeoff (admins explicitly opt in to specific
  * hostnames).
+ *
+ * Note (L130, 2026-08-06): `http://` is intentionally permitted above (not
+ * just `https://`) for LAN-friendly self-hosted use — most homelab Actual
+ * Budget instances aren't behind TLS. The tradeoff: a server configured with
+ * `http://` transmits its `x-api-key` (see actual-client.ts) in cleartext
+ * over the network. This is accepted, not a bug. If it ever needs
+ * mitigating, the cheap next step is a setup-time warning (not a hard
+ * block) shown when `serverUrl` is `http://` and the host is NOT a private/
+ * loopback address per the patterns above — i.e. warn only when the
+ * cleartext key would actually leave the LAN.
  */
 
 const PRIVATE_IPV4_PATTERNS: RegExp[] = [

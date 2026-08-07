@@ -77,7 +77,7 @@ export function FilteredSummary({
           }
           trend={{
             value: formatCurrency(totalGainLoss),
-            positive: totalGainLoss >= 0,
+            isPositive: totalGainLoss >= 0,
           }}
         />
       </Card>

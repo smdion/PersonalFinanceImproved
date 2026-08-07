@@ -1,7 +1,7 @@
 /** Net worth router that aggregates account snapshots, mortgage balances, cash, and other assets into a current and projected net worth summary. */
 import { eq, asc, desc, sql, gte, lte, and } from "drizzle-orm";
 import { z } from "zod/v4";
-import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
+import { DEFAULT_WITHDRAWAL_RATE, MS_PER_DAY } from "@/lib/constants";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { accountDisplayName } from "@/lib/utils/format";
@@ -403,7 +403,7 @@ export const networthRouter = createTRPCRouter({
             ? Math.round(
                 (new Date(byDate[i]!.snapshotDate).getTime() -
                   new Date(byDate[i - 1]!.snapshotDate).getTime()) /
-                  86400000,
+                  MS_PER_DAY,
               )
             : null;
         deltaMap.set(byDate[i]!.id, { delta, deltaPct, daysSincePrev });

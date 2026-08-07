@@ -51,7 +51,7 @@ export default function PerformancePage() {
   const canEdit = hasPermission(user, "performance");
   const { data, isLoading, error } = trpc.performance.computeSummary.useQuery();
   const utils = trpc.useUtils();
-  const [activeCategory, setActiveCategory] = useState("Portfolio");
+  const [activeCategory, setActiveCategory] = useState(PERF_CATEGORY_PORTFOLIO);
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
   const [editingCell, setEditingCell] = useState<EditingCell>(null);
   const [editValue, setEditValue] = useState("");
@@ -510,7 +510,7 @@ export default function PerformancePage() {
 
       {canEdit && currentYear && (
         <SlidePanel
-          open={showUpdatePerformance}
+          isOpen={showUpdatePerformance}
           onClose={() => setShowUpdatePerformance(false)}
           title={`Update Performance (${currentYear})`}
         >

@@ -5,11 +5,13 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { RefreshCw } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { formatDate } from "@/lib/utils/format";
+import { findOldestDateSource } from "@/lib/pure/data-freshness";
 
 export function DataFreshness({ compact }: { compact?: boolean }) {
   const utils = trpc.useUtils();
   const { data } = trpc.settings.getDataFreshness.useQuery();
   const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
+  const { data: simplefinStatus } = trpc.simplefin.getStatus.useQuery();
   const hasFiredAutoSync = useRef(false);
 
   const syncAllMut = trpc.sync.syncAll.useMutation({
@@ -22,6 +24,13 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
       utils.assets.invalidate();
       utils.mortgage.invalidate();
       utils.networth.invalidate();
+    },
+  });
+  const simplefinSyncMut = trpc.simplefin.syncNow.useMutation({
+    onSuccess: () => {
+      utils.simplefin.getStatus.invalidate();
+      utils.simplefin.listAccounts.invalidate();
+      utils.simplefin.listBalanceHistory.invalidate();
     },
   });
 
@@ -53,20 +62,40 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
     ? formatDate(syncStatus.lastSynced.toString())
     : null;
 
-  const canSync = !!(syncStatus?.service && syncStatus.connected);
+  const budgetApiCanSync = !!(syncStatus?.service && syncStatus.connected);
+  const simplefinCanSync = !!simplefinStatus?.connected;
+  const canSync = budgetApiCanSync || simplefinCanSync;
+  const isSyncing = syncAllMut.isPending || simplefinSyncMut.isPending;
 
   const handleSync = () => {
-    if (!canSync || syncAllMut.isPending) return;
-    syncAllMut.mutate({
-      service: syncStatus!.service! as "ynab" | "actual",
-    });
+    if (!canSync || isSyncing) return;
+    if (budgetApiCanSync) {
+      syncAllMut.mutate({
+        service: syncStatus!.service! as "ynab" | "actual",
+      });
+    }
+    if (simplefinCanSync) {
+      simplefinSyncMut.mutate();
+    }
   };
 
-  // Oldest date across all sources
-  const dates = [data.balanceDate, data.performanceDate, syncDate].filter(
-    Boolean,
-  ) as string[];
-  const oldestLabel = dates.length > 0 ? dates[dates.length - 1] : null;
+  const simplefinDate =
+    simplefinStatus?.connected && simplefinStatus.lastSyncedAt
+      ? formatDate(simplefinStatus.lastSyncedAt.toString())
+      : null;
+  const simplefinHasError = !!(
+    simplefinStatus?.connected && simplefinStatus.lastError
+  );
+
+  const oldestRaw = findOldestDateSource([
+    data.balanceDate,
+    data.performanceDate,
+    syncStatus?.lastSynced?.toString(),
+    simplefinStatus?.connected
+      ? simplefinStatus.lastSyncedAt?.toString()
+      : null,
+  ]);
+  const oldestLabel = oldestRaw ? formatDate(oldestRaw) : null;
 
   const tooltipContent = (
     <div className="text-label space-y-1">
@@ -91,7 +120,23 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
           <span>{syncDate ?? "never"}</span>
         </div>
       )}
-      {syncAllMut.isPending && (
+      {simplefinStatus?.connected && (
+        <div className="flex justify-between gap-4">
+          <span className="text-slate-400">
+            SimpleFIN
+            {simplefinHasError && (
+              <span
+                className="text-amber-400 ml-1"
+                title={simplefinStatus.lastError ?? undefined}
+              >
+                ⚠
+              </span>
+            )}
+          </span>
+          <span>{simplefinDate ?? "never"}</span>
+        </div>
+      )}
+      {isSyncing && (
         <div className="pt-1 text-caption text-slate-500 text-center">
           Syncing…
         </div>
@@ -106,11 +151,11 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
           <button
             className="w-full flex items-center justify-center p-2 text-faint hover:text-primary transition-colors disabled:opacity-50"
             onClick={handleSync}
-            disabled={syncAllMut.isPending}
+            disabled={isSyncing}
             title={canSync ? "Sync data" : "Data freshness"}
           >
             <RefreshCw
-              className={`w-4 h-4 ${syncAllMut.isPending ? "animate-spin" : ""}`}
+              className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`}
             />
           </button>
         </TooltipPrimitive.Trigger>
@@ -135,11 +180,11 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
         <button
           className="w-full flex items-center gap-3 px-3 py-2 rounded text-sm text-faint hover:text-primary hover:bg-surface-elevated transition-colors min-h-[44px] disabled:opacity-50"
           onClick={handleSync}
-          disabled={syncAllMut.isPending}
+          disabled={isSyncing}
           title={canSync ? "Sync data" : "Data freshness"}
         >
           <RefreshCw
-            className={`w-4 h-4 shrink-0 ${syncAllMut.isPending ? "animate-spin" : ""}`}
+            className={`w-4 h-4 shrink-0 ${isSyncing ? "animate-spin" : ""}`}
           />
           <span className="text-label">
             Data{oldestLabel ? `: ${oldestLabel}` : ""}

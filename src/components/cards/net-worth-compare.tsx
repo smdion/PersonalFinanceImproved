@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type PresetKey = "1m" | "3m" | "6m" | "ytd" | "1y" | "yoy" | "custom";
 
@@ -116,8 +117,8 @@ export function NetWorthCompare({
         </>
       }
       className="mb-8"
-      collapsible
-      defaultOpen={false}
+      isCollapsible
+      isDefaultOpen={false}
     >
       {/* Preset buttons */}
       <div className="flex flex-wrap gap-1.5 mb-4">
@@ -197,9 +198,9 @@ export function NetWorthCompare({
 
       {/* Loading / error */}
       {isLoading && (
-        <div className="animate-pulse space-y-2">
-          <div className="h-16 bg-surface-elevated rounded" />
-          <div className="h-32 bg-surface-elevated rounded" />
+        <div className="space-y-2">
+          <Skeleton className="h-16" />
+          <Skeleton className="h-32" />
         </div>
       )}
       {error && (

@@ -6,7 +6,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import type { OverridesSectionProps } from "./overrides-panel";
 
 export function LifeChangesSection({
-  state: s,
+  state,
   accumulationExpenseOverride,
 }: OverridesSectionProps) {
   const {
@@ -36,7 +36,7 @@ export function LifeChangesSection({
     deleteSalaryOverride,
     createBudgetOverride,
     deleteBudgetOverride,
-  } = s;
+  } = state;
 
   return (
     <div className="border-t border-subtle pt-3">
@@ -111,7 +111,7 @@ export function LifeChangesSection({
                       {" → "}
                       {o.contributionProfileId
                         ? (() => {
-                            const profile = s.contribProfileSummaries?.find(
+                            const profile = state.contribProfileSummaries?.find(
                               (p) => p.id === o.contributionProfileId,
                             );
                             return profile
@@ -173,8 +173,8 @@ export function LifeChangesSection({
                       }
                       className="mt-0.5 block rounded border border-strong px-2 py-1 text-xs"
                     >
-                      {s.contribProfileSummaries &&
-                        s.contribProfileSummaries.length > 0 && (
+                      {state.contribProfileSummaries &&
+                        state.contribProfileSummaries.length > 0 && (
                           <option value="profile">
                             From contribution profile
                           </option>
@@ -183,7 +183,7 @@ export function LifeChangesSection({
                     </select>
                   </label>
                   {salaryForm.source === "profile" &&
-                    s.contribProfileSummaries && (
+                    state.contribProfileSummaries && (
                       <label className="block">
                         <span className="text-caption text-muted">Profile</span>
                         <select
@@ -197,7 +197,7 @@ export function LifeChangesSection({
                           className="mt-0.5 block rounded border border-strong px-2 py-1 text-xs"
                         >
                           <option value="">Select...</option>
-                          {s.contribProfileSummaries
+                          {state.contribProfileSummaries
                             .slice()
                             .sort((a, b) =>
                               a.isDefault === b.isDefault
@@ -256,7 +256,7 @@ export function LifeChangesSection({
                   salaryForm.profileId &&
                   salaryForm.year &&
                   (() => {
-                    const profile = s.contribProfileSummaries?.find(
+                    const profile = state.contribProfileSummaries?.find(
                       (p) => String(p.id) === salaryForm.profileId,
                     );
                     if (!profile) return null;
@@ -264,8 +264,8 @@ export function LifeChangesSection({
                     const yr = parseInt(salaryForm.year);
                     const currentYear = new Date().getFullYear();
                     const yearsOut = Math.max(0, yr - currentYear);
-                    const raiseRate = s.engineSettings?.salaryAnnualIncrease
-                      ? Number(s.engineSettings.salaryAnnualIncrease)
+                    const raiseRate = state.engineSettings?.salaryAnnualIncrease
+                      ? Number(state.engineSettings.salaryAnnualIncrease)
                       : 0;
                     const futureSalary =
                       baseSalary * Math.pow(1 + raiseRate, yearsOut);
@@ -302,7 +302,7 @@ export function LifeChangesSection({
                       let contributionProfileId: number | null = null;
 
                       if (salaryForm.source === "profile") {
-                        const profile = s.contribProfileSummaries?.find(
+                        const profile = state.contribProfileSummaries?.find(
                           (p) => String(p.id) === salaryForm.profileId,
                         );
                         if (!profile) return;
@@ -570,8 +570,8 @@ export function LifeChangesSection({
                     const yearsOut = !isNaN(yr)
                       ? Math.max(0, yr - currentYear)
                       : 0;
-                    const inflationRate = s.engineSettings?.annualInflation
-                      ? Number(s.engineSettings.annualInflation)
+                    const inflationRate = state.engineSettings?.annualInflation
+                      ? Number(state.engineSettings.annualInflation)
                       : 0;
                     const futureMonthly =
                       monthly * Math.pow(1 + inflationRate, yearsOut);
@@ -622,8 +622,9 @@ export function LifeChangesSection({
                         const todayMonthly = profile.columnTotals[colIdx] ?? 0;
                         const currentYear = new Date().getFullYear();
                         const yearsOut = Math.max(0, yr - currentYear);
-                        const inflationRate = s.engineSettings?.annualInflation
-                          ? Number(s.engineSettings.annualInflation)
+                        const inflationRate = state.engineSettings
+                          ?.annualInflation
+                          ? Number(state.engineSettings.annualInflation)
                           : 0;
                         resolvedValue =
                           todayMonthly * Math.pow(1 + inflationRate, yearsOut);

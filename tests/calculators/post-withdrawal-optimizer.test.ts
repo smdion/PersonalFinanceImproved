@@ -299,7 +299,7 @@ function makeAcaInput(overrides: Partial<AcaInput> = {}): AcaInput {
     totalTraditionalWithdrawal: 30000,
     rothConversionAmount: 0,
     brokerageGainsPortion: 5000,
-    taxableSS: 0,
+    ssIncome: 0,
     ...overrides,
   };
 }
@@ -347,10 +347,12 @@ describe("checkAca", () => {
     expect(result.acaSubsidyPreserved).toBe(false);
   });
 
-  it("includes taxable SS in MAGI calculation", () => {
+  it("includes full gross SS benefit (not just the taxable slice) in MAGI calculation", () => {
     // Base MAGI = 30000 + 5000 = 35000 (under cliff)
-    // With SS: 35000 + 50000 = 85000 (over 84600 cliff)
-    const result = checkAca(makeAcaInput({ taxableSS: 50000 }));
+    // ACA MAGI must add back the FULL SS benefit (§36B(d)(2)(B)), not the
+    // 0-85% taxable slice used for IRMAA/income tax: 35000 + 50000 = 85000
+    // (over 84600 cliff)
+    const result = checkAca(makeAcaInput({ ssIncome: 50000 }));
     expect(result.acaSubsidyPreserved).toBe(false);
   });
 

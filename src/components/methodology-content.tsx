@@ -53,10 +53,10 @@ export function MethodologyContent() {
 
       <Section title="How It Works">
         <p>
-          A Monte Carlo simulation runs thousands of possible futures for your
-          portfolio. Instead of assuming a single fixed return every year, each
-          trial draws random annual returns from a statistical model calibrated
-          to historical market data. The result is a <strong>fan chart</strong>{" "}
+          A simulation runs thousands of possible futures for your portfolio.
+          Instead of assuming a single fixed return every year, each trial draws
+          random annual returns from a statistical model calibrated to
+          historical market data. The result is a <strong>fan chart</strong>{" "}
           showing the range of outcomes and a <strong>success rate</strong> —
           the percentage of trials where your portfolio lasted through
           retirement.
@@ -141,12 +141,12 @@ export function MethodologyContent() {
           had decades of growth first.
         </p>
         <p>
-          This is why Monte Carlo simulation matters: a single average return
-          (deterministic mode) tells you nothing about sequence risk. By running
-          thousands of randomized return sequences, Monte Carlo reveals how
-          sensitive your plan is to unlucky timing. Success rates below 85%
-          often indicate that sequence risk could derail your plan if early
-          retirement years coincide with a downturn.
+          This is why simulation matters: a single average return (deterministic
+          mode) tells you nothing about sequence risk. By running thousands of
+          randomized return sequences, simulation reveals how sensitive your
+          plan is to unlucky timing. Success rates below 85% often indicate that
+          sequence risk could derail your plan if early retirement years
+          coincide with a downturn.
         </p>
         <p>
           <strong>How our engine models it:</strong> Each MC trial draws
@@ -181,8 +181,7 @@ export function MethodologyContent() {
           Paid tools like Boldin (formerly NewRetirement), ProjectionLab, and
           Pralana Gold offer more comprehensive financial planning (estate
           planning, Roth conversions, healthcare costs) but use deterministic or
-          simple Monte Carlo models without our multi-asset correlation
-          modeling.
+          simple simulation models without our multi-asset correlation modeling.
         </p>
       </Section>
 

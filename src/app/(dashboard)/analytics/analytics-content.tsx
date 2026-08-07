@@ -684,7 +684,7 @@ function HistoricalCharts({
   );
 
   return (
-    <Card title="Historical Allocation" collapsible defaultOpen={false}>
+    <Card title="Historical Allocation" isCollapsible isDefaultOpen={false}>
       <div className="text-xs text-faint mb-2">
         % allocation by asset class across snapshots
       </div>
@@ -879,8 +879,8 @@ export function AnalyticsContent() {
             <Card
               key={acct.id}
               title={accountDisplayName(acct)}
-              collapsible
-              defaultOpen
+              isCollapsible
+              isDefaultOpen
             >
               <HoldingsTable
                 accountId={acct.id}

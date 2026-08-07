@@ -11,15 +11,9 @@ import { Card, Metric } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { safeDivide } from "@/lib/utils/math";
 import { Lock, LockOpen } from "lucide-react";
-
-function SyncBadge({ source }: { source: string }) {
-  return (
-    <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-caption font-medium bg-blue-50 text-blue-600">
-      Synced from {source.toUpperCase()}
-    </span>
-  );
-}
+import { SyncBadge } from "@/components/ui/sync-badge";
 
 export default function HousePage() {
   const { data: assetData, isLoading: assetsLoading } =
@@ -203,7 +197,7 @@ export default function HousePage() {
             )}
             label={
               loanResult
-                ? `${formatPercent(1 - loanResult.currentBalance / (current?.houseValue ?? 1), 1)} equity`
+                ? `${formatPercent(1 - safeDivide(loanResult.currentBalance, current?.houseValue ?? 0, 0)!, 1)} equity`
                 : undefined
             }
           />
@@ -493,7 +487,10 @@ export default function HousePage() {
                     </td>
                     <td className="py-1.5 text-right tabular-nums text-muted">
                       {pt.assessedValue != null && pt.assessedValue > 0
-                        ? formatPercent(pt.taxAmount / pt.assessedValue, 2)
+                        ? formatPercent(
+                            safeDivide(pt.taxAmount, pt.assessedValue, 0)!,
+                            2,
+                          )
                         : "—"}
                     </td>
                     <td className="py-1.5 text-muted text-xs truncate max-w-[120px]">

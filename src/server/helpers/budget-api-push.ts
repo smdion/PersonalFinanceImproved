@@ -18,11 +18,13 @@
 
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { roundToCents } from "@/lib/utils/math";
 import * as schema from "@/lib/db/schema";
 import type { AccountMapping } from "@/lib/db/schema";
 import type { BudgetAPIClient } from "@/lib/budget-api";
 import type { Db } from "./transforms";
 import { log } from "@/lib/logger";
+import { toNumber } from "./transforms";
 
 export type PushSnapshotMode = "create" | "resync";
 
@@ -132,7 +134,7 @@ async function loadSnapshotBalancesByPerformanceAccountId(
     balanceByPerformanceAccountId.set(
       account.performanceAccountId,
       (balanceByPerformanceAccountId.get(account.performanceAccountId) ?? 0) +
-        Number(account.amount),
+        toNumber(account.amount),
     );
   }
   return balanceByPerformanceAccountId;
@@ -257,7 +259,7 @@ export async function pushSnapshotToBudgetApi(input: {
       const currentBalance = await client.getAccountBalance(
         group.remoteAccountId,
       );
-      const difference = Math.round((group.total - currentBalance) * 100) / 100;
+      const difference = roundToCents(group.total - currentBalance);
       const memo = buildMemo(snapshotId, group.contributorLabels);
       const transactionId = await client.createTransaction({
         accountId: group.remoteAccountId,
@@ -303,7 +305,7 @@ export async function pushSnapshotToBudgetApi(input: {
           rollbackFailures
             .map((f) => `${f.transactionId} (${f.error})`)
             .join("; ") +
-          ". Reconcile manually in YNAB.";
+          ". Reconcile manually in your budget app.";
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
       message: baseMessage + rollbackMessage,

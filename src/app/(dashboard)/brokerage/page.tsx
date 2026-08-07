@@ -585,6 +585,7 @@ function ByAccountSummary({
                   />
                 </div>
                 <p className="text-caption text-faint mt-0.5">
+                  {/* lint-violation-ok: guarded by at.targetAnnual > 0 above */}
                   {formatPercent(at.totalContrib / at.targetAnnual)} of{" "}
                   {formatCurrency(at.targetAnnual)} target
                 </p>

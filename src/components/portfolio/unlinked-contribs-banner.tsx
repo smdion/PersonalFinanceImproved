@@ -9,7 +9,10 @@
  */
 
 import React from "react";
-import { TAX_TREATMENT_LABELS as TAX_LABELS } from "@/lib/config/display-labels";
+import {
+  TAX_TREATMENT_LABELS as TAX_LABELS,
+  CONTRIBUTION_METHOD_AMOUNT_SUFFIXES,
+} from "@/lib/config/display-labels";
 import {
   formatPercent,
   formatCurrency,
@@ -86,13 +89,7 @@ export function UnlinkedContribsBanner({
           const contribDetail =
             c.contributionMethod === "percent_of_salary"
               ? `${c.contributionValue}% of salary`
-              : c.contributionMethod === "fixed_per_period"
-                ? `${contribAmount}/period`
-                : c.contributionMethod === "fixed_monthly"
-                  ? `${contribAmount}/mo`
-                  : c.contributionMethod === "fixed_annual"
-                    ? `${contribAmount}/yr`
-                    : contribAmount;
+              : `${contribAmount}${CONTRIBUTION_METHOD_AMOUNT_SUFFIXES[c.contributionMethod] ?? ""}`;
           const matchDetail =
             c.employerMatchType !== "none" && c.employerMatchValue
               ? `, ${c.employerMatchValue}% match${c.employerMaxMatchPct ? ` up to ${formatPercent(parseFloat(c.employerMaxMatchPct))}` : ""}`

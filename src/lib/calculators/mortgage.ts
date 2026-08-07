@@ -32,7 +32,7 @@ import type {
   MortgageExtraPayment,
 } from "./types";
 import { formatPercent } from "../utils/format";
-import { roundToCents, safeDivide } from "../utils/math";
+import { roundToCents, safeDivide, sumBy } from "../utils/math";
 import { MONTHS_PER_YEAR, AMORTIZATION_BALANCE_TOLERANCE } from "../constants";
 
 export function calculateMortgage(input: MortgageInput): MortgageResult {
@@ -215,7 +215,7 @@ function amortizeLoan(
   // For historical loans that ended before today, balance should reflect the last entry
   if (endDate && endDate < asOfDate && schedule.length > 0) {
     currentBalance = schedule[schedule.length - 1]!.balance;
-    totalInterestPaid = schedule.reduce((s, e) => s + e.interest, 0);
+    totalInterestPaid = sumBy(schedule, (e) => e.interest);
   }
 
   // API balance override: when YNAB provides a more accurate balance, use it as current
@@ -240,11 +240,8 @@ function amortizeLoan(
   );
 
   // Compare actual vs. standard to show impact of extra payments
-  const totalInterestLife = schedule.reduce((s, e) => s + e.interest, 0);
-  const standardInterestLife = standardSchedule.reduce(
-    (s, e) => s + e.interest,
-    0,
-  );
+  const totalInterestLife = sumBy(schedule, (e) => e.interest);
+  const standardInterestLife = sumBy(standardSchedule, (e) => e.interest);
   const totalInterestSaved = roundToCents(
     standardInterestLife - totalInterestLife,
   );
@@ -262,7 +259,7 @@ function amortizeLoan(
   // For historical loans, provide the full-term standard interest and remaining months
   // for Refinance Impact comparison and totalMonthsSaved computation.
   const fullTermStandardInterest = endDate
-    ? roundToCents(fullStandardSchedule.reduce((s, e) => s + e.interest, 0))
+    ? roundToCents(sumBy(fullStandardSchedule, (e) => e.interest))
     : undefined;
   // Count entries after asOfDate using the same method as remainingMonths — avoids off-by-1 at month boundaries.
   const fullTermStandardRemainingMonths = endDate
@@ -317,7 +314,7 @@ function amortizeWhatIf(
   }
 
   const schedule = buildAmortization(loan, whatIfExtras);
-  const totalInterestLife = schedule.reduce((s, e) => s + e.interest, 0);
+  const totalInterestLife = sumBy(schedule, (e) => e.interest);
   const lastEntry = schedule[schedule.length - 1];
 
   return {
@@ -364,9 +361,12 @@ function buildAmortization(
     );
 
     // Sum all extra payments that fall in this month (skip negative amounts)
-    const extraForMonth = extraPayments
-      .filter((ep) => isSameMonth(ep.date, paymentDate) && ep.amount > 0)
-      .reduce((sum, ep) => sum + ep.amount, 0);
+    const extraForMonth = sumBy(
+      extraPayments.filter(
+        (ep) => isSameMonth(ep.date, paymentDate) && ep.amount > 0,
+      ),
+      (ep) => ep.amount,
+    );
     // Extra principal can't exceed what's left after base principal
     const extraPrincipal = Math.min(
       roundToCents(extraForMonth),

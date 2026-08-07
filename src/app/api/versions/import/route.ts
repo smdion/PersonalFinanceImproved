@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@/lib/db";
 import { auth } from "@/server/auth";
 import { importBackup, type BackupData } from "@/lib/db/version-logic";
 import { log } from "@/lib/logger";
 
-const allowDev = process.env.ALLOW_DEV_MODE === "true";
+// ALLOW_DEV_MODE is only honored in non-production environments — mirrors
+// the guard in src/server/trpc.ts (M16, .scratch/docs/review-findings.md).
+// The primary protection is validateEnv() at process startup (src/lib/env.ts),
+// which refuses to boot with both set; this is defense-in-depth for that
+// guard being bypassed (misconfigured process manager, env set post-boot).
+const allowDev =
+  process.env.ALLOW_DEV_MODE === "true" &&
+  process.env.NODE_ENV !== "production";
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const MAX_STRING_LENGTH = 10_000; // guard against oversized string values in imported data
 const MAX_JSON_DEPTH = 10; // guard against deeply nested JSONB structures

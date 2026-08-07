@@ -17,6 +17,17 @@
  *    9. Inline `.toFixed(N) + "%"` instead of formatPercent()
  *   10. Mutation using `z.string()` for enum-typed fields (accountType, service) instead of z.enum()
  *   11. Absolute imports from engine internals instead of the barrel
+ *   12. Hand-rolled Modified-Dietz denominators outside performance.ts
+ *   13. Raw division inside formatPercent() instead of safeDivide() (H1/M1/M36/L9 class)
+ *   14. Tailwind-class-returning color helper passed to inline style backgroundColor (M18 class)
+ *   15. `import { z } from "zod"` instead of "zod/v4"
+ *   16. taxYear/projectionYear z.number().int() field missing .min()/.max() bounds (M10 class)
+ *   17. accountLabel fallback built from a template literal instead of null (M40 class)
+ *   18. Hook file under src/lib/hooks/ using React hooks without a "use client" directive (H4 class)
+ *   19. Local `type X = ReturnType<typeof useYState>` redeclaration instead of importing the canonical type (L37 class)
+ *   20. "Monte Carlo" in user-facing .tsx text (JSX text/string literals) — use "Simulation"/"Simulations" (L126 class)
+ *   21. `process.env.CRON_SECRET` read outside src/lib/auth/cron.ts (H1 class)
+ *   22. API route under src/app/api/ that writes to the DB with no DEMO_ONLY guard (M5 class)
  *
  * Intentionally NOT checked (needs semantic analysis, not string matching):
  *   - "Router computing budget expenses with different column index" (#1)
@@ -429,6 +440,223 @@ function findHandRolledDietzDenominatorViolations(): Violation[] {
   );
 }
 
+// Rule 13: raw division inside formatPercent() instead of safeDivide().
+// formatPercent(a / b) renders Infinity/NaN when b is 0 (the M1/M36/L9 bug
+// class). Matches `formatPercent(<ident> / <ident-starting-with-a-letter>` —
+// the denominator must start with a letter/underscore (not a digit), so
+// `formatPercent(pct / 100)`-style percentage-point-to-fraction scale
+// conversions (divisor is a literal, can never be 0) don't false-positive;
+// only genuine identifier/identifier divisions (where the divisor could
+// plausibly be a runtime 0) are flagged.
+function findRawDivisionInFormatPercentViolations(): Violation[] {
+  return findPatternViolations(
+    /formatPercent\(\s*[\w.]+\s*\/\s*[a-zA-Z_][\w.]*/,
+    "no-raw-division-in-format-percent",
+    { additionalExempt: new Set(["src/lib/utils/format.ts"]) },
+  );
+}
+
+// Rule 14: a Tailwind-class-returning color helper (accountColor,
+// accountMatchColor, accountBorderColor, accountTextColor — all defined in
+// colors.ts to return strings like "bg-blue-500") passed to an inline style
+// backgroundColor. Silently renders no color (M18) — inline styles need a
+// real hex value (categoryChartHex, CHART_COLORS, BRAND_COLORS, etc.).
+function findColorHelperAsInlineStyleViolations(): Violation[] {
+  return findPatternViolations(
+    /backgroundColor:\s*(?:account(?:Color|MatchColor|BorderColor|TextColor))\(/,
+    "no-tailwind-color-helper-as-inline-style",
+  );
+}
+
+// Rule 15: `import { z } from "zod"` instead of "zod/v4". Recurred
+// independently at least twice (L39, L124) — every other file in the repo
+// uses the v4 import.
+function findLegacyZodImportViolations(): Violation[] {
+  return findPatternViolations(/from\s+["']zod["']/, "no-legacy-zod-import");
+}
+
+// Rule 16: taxYear/projectionYear z.number().int() fields with no bounds.
+// The same unbounded-year bug (M10) was found independently in two
+// different router files (settings/retirement.ts, projection/_shared.ts)
+// months apart — the pattern recurs because there's no default. Only
+// matches the exact `z.number().int()` shape with nothing chained after,
+// so a field that already has `.min(...)` doesn't false-positive.
+function findUnboundedYearFieldViolations(): Violation[] {
+  return findPatternViolations(
+    /\b(?:taxYear|projectionYear)\s*:\s*z\.number\(\)\.int\(\)\s*[,)]/,
+    "no-unbounded-year-field",
+  );
+}
+
+// Rule 17: accountLabel built from a template literal containing
+// accountType, passed as a fallback into accountDisplayName(). Skips its
+// casing-aware Priority-3 construction and returns the raw lowercase DB key
+// verbatim (M40) — pass `accountLabel: null` instead and let
+// accountDisplayName() build the label itself.
+function findAccountLabelTemplateFallbackViolations(): Violation[] {
+  return findPatternViolations(
+    /accountLabel:\s*(?:[\w.?? ]*)?`\$\{[\w.]*accountType\}/,
+    "no-account-label-template-fallback",
+  );
+}
+
+// Rule 18: a file under src/lib/hooks/ that calls a React hook
+// (useState/useEffect/useRef/useCallback/useMemo/useContext) but doesn't
+// start with a "use client" directive. Crashes at runtime if imported from
+// a Server Component (H4 — found 4 instances in this exact directory).
+function findMissingUseClientOnHookViolations(): Violation[] {
+  const violations: Violation[] = [];
+  const HOOKS_DIR = path.join(SRC_DIR, "lib/hooks");
+  if (!fs.existsSync(HOOKS_DIR)) return violations;
+  const reactHookPattern =
+    /\buse(?:State|Effect|Ref|Callback|Memo|Context|Reducer|LayoutEffect)\(/;
+  for (const file of walkTsFiles(HOOKS_DIR)) {
+    const rel = relPath(file);
+    if (isExempt(rel)) continue;
+    const lines = readFileLines(file);
+    const usesReactHook = lines.some((l) => reactHookPattern.test(l));
+    if (!usesReactHook) continue;
+    const firstContentLine = lines.find((l) => l.trim().length > 0) ?? "";
+    if (!firstContentLine.trim().startsWith('"use client"')) {
+      violations.push({
+        file: rel,
+        line: 1,
+        rule: "no-missing-use-client-on-hook",
+        snippet: firstContentLine.trim().slice(0, 100),
+      });
+    }
+  }
+  return violations;
+}
+
+// Rule 19: local `type X = ReturnType<typeof useYState>` redeclaration.
+// Found independently in 7 files (L37, .scratch/docs/review-findings.md) —
+// each copy is a second source of truth for the same type. If the source
+// hook's return shape changes, a stale local alias can mask a type error in
+// whichever file didn't get the memo, instead of surfacing it everywhere at
+// once. Import the canonical type instead of re-deriving it.
+function findLocalReturnTypeAliasViolations(): Violation[] {
+  return findPatternViolations(
+    /^\s*type\s+\w+\s*=\s*ReturnType<typeof use\w+>/,
+    "no-local-return-type-alias",
+  );
+}
+
+// Rule 20: "Monte Carlo" (exact phrase, case-sensitive) in .tsx files —
+// user-facing text must say "Simulation"/"Simulations" instead (mandatory
+// terminology rule; internal code/variable/procedure names like
+// `calculateMonteCarlo()` or `mcTrials` are unaffected — those live in .ts
+// files or are identifiers, not this literal two-word phrase).
+//
+// Restricted to .tsx (where JSX text and display strings actually live).
+// Does NOT use findPatternViolations directly: the shared walker's comment
+// filter only recognizes `//`- and `*`-prefixed lines (block-comment
+// continuation style), but this codebase also has single-line JSDoc like
+// `/** ...Monte Carlo... */` (projection-mc-results.tsx, projection-table.tsx,
+// projection-table-mc-cell.tsx, projection-loader.tsx) which starts with "/"
+// and would slip through. This walks the same way but additionally skips
+// lines whose trimmed content starts with "/*" or "/**".
+const MONTE_CARLO_PATTERN = /\bMonte Carlo\b/;
+function findMonteCarloUserFacingTextViolations(): Violation[] {
+  const violations: Violation[] = [];
+  for (const file of walkTsFiles(SRC_DIR)) {
+    if (!file.endsWith(".tsx")) continue;
+    const rel = relPath(file);
+    if (isExempt(rel)) continue;
+    const lines = readFileLines(file);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]!;
+      const trimmed = line.trim();
+      if (
+        trimmed.startsWith("//") ||
+        trimmed.startsWith("*") ||
+        trimmed.startsWith("/*")
+      ) {
+        continue;
+      }
+      if (
+        line.includes("lint-violation-ok") ||
+        (i > 0 && lines[i - 1]!.includes("lint-violation-ok")) ||
+        (i > 1 && lines[i - 2]!.includes("lint-violation-ok")) ||
+        (i > 2 && lines[i - 3]!.includes("lint-violation-ok"))
+      ) {
+        continue;
+      }
+      if (MONTE_CARLO_PATTERN.test(line)) {
+        violations.push({
+          file: rel,
+          line: i + 1,
+          rule: "no-monte-carlo-user-facing-text",
+          snippet: trimmed.slice(0, 100),
+        });
+      }
+    }
+  }
+  return violations;
+}
+
+// Rule 21: `process.env.CRON_SECRET` read outside src/lib/auth/cron.ts.
+// H1 fixed a timing-unsafe secret comparison by centralizing every
+// cron-route secret check into that one file's getValidCronSecret() /
+// validateCronBearerRequest() / validateCronHeaderRequest(). A new route
+// reading the env var directly reopens the door to a hand-rolled (and
+// possibly timing-unsafe) comparison. env.ts (startup validation, no
+// comparison) and instrumentation.node.ts (sends the secret as an outgoing
+// header to call our own routes, doesn't compare it) are legitimate direct
+// readers and stay exempt.
+function findDirectCronSecretReadViolations(): Violation[] {
+  return findPatternViolations(
+    /process\.env\.CRON_SECRET/,
+    "no-direct-cron-secret-read",
+    {
+      additionalExempt: new Set([
+        "src/lib/auth/cron.ts",
+        "src/lib/env.ts",
+        "src/instrumentation.node.ts",
+      ]),
+    },
+  );
+}
+
+// Rule 22: an API route under src/app/api/ that writes to the DB with no
+// DEMO_ONLY guard. M5 found one cron route missing the guard every sibling
+// write route had; while scoping this rule, the same gap turned up
+// independently in two MORE sibling routes (startup/route.ts,
+// simplefin/daily/route.ts) that the original review never flagged — fixed
+// alongside adding this rule. Detecting "does this route write" precisely
+// would need semantic analysis (writes often happen via an imported helper,
+// not an inline `.insert(`), so this uses an explicit allowlist of the
+// routes that are read-only or enforce demo-mode elsewhere (health checks,
+// the tRPC catch-all — per-procedure enforcement, not per-route; NextAuth)
+// instead of a content heuristic. Every other route.ts must contain the
+// string "DEMO_ONLY" somewhere.
+const DEMO_GUARD_EXEMPT_ROUTES = new Set([
+  "src/app/api/health/route.ts",
+  "src/app/api/health/detailed/route.ts",
+  "src/app/api/trpc/[trpc]/route.ts",
+  "src/app/api/auth/[...nextauth]/route.ts",
+]);
+function findMissingDemoOnlyGuardViolations(): Violation[] {
+  const violations: Violation[] = [];
+  const API_DIR = path.join(SRC_DIR, "app/api");
+  if (!fs.existsSync(API_DIR)) return violations;
+  for (const file of walkTsFiles(API_DIR)) {
+    if (!file.endsWith("route.ts")) continue;
+    const rel = relPath(file);
+    if (DEMO_GUARD_EXEMPT_ROUTES.has(rel)) continue;
+    const content = fs.readFileSync(file, "utf8");
+    if (!content.includes("DEMO_ONLY")) {
+      violations.push({
+        file: rel,
+        line: 1,
+        rule: "no-missing-demo-only-guard",
+        snippet: "(no DEMO_ONLY check found anywhere in file)",
+      });
+    }
+  }
+  return violations;
+}
+
 // ── Tests ───────────────────────────────────────────────────────────
 
 function formatViolations(label: string, violations: Violation[]): string {
@@ -584,6 +812,135 @@ describe("RULES.md violations sweep", () => {
         `Found ${violations.length} hand-rolled-dietz-denominator violations. ` +
           `Use computeReturn()/sumAccounts() from src/lib/pure/performance.ts ` +
           `instead of reimplementing the return formula.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no raw division inside formatPercent() (use safeDivide())", () => {
+    const violations = findRawDivisionInFormatPercentViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} raw-division-in-formatPercent violations. ` +
+          `Wrap the division in safeDivide() from src/lib/utils/math.ts — an ` +
+          `unguarded divisor of 0 renders Infinity/NaN.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no Tailwind-class-returning color helper passed to inline style backgroundColor", () => {
+    const violations = findColorHelperAsInlineStyleViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} color-helper-as-inline-style violations. ` +
+          `accountColor()/accountMatchColor()/accountBorderColor()/accountTextColor() ` +
+          `return Tailwind class strings, not hex — use categoryChartHex() or a ` +
+          `CHART_COLORS/BRAND_COLORS hex value for inline styles instead.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it('no `import { z } from "zod"` (use "zod/v4")', () => {
+    const violations = findLegacyZodImportViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} legacy-zod-import violations. ` +
+          `Import from "zod/v4" like every other file in the repo.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no unbounded taxYear/projectionYear z.number().int() fields", () => {
+    const violations = findUnboundedYearFieldViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} unbounded-year-field violations. ` +
+          `Add .min(1900).max(2100) (or similar) — this exact gap was found ` +
+          `independently in two different router files.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no accountLabel fallback built from a template literal (use null)", () => {
+    const violations = findAccountLabelTemplateFallbackViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} accountLabel-template-fallback violations. ` +
+          `Pass accountLabel: null instead — accountDisplayName() falls through ` +
+          `to its own casing-aware construction; a hand-built fallback string can ` +
+          `get returned verbatim (raw lowercase DB key) instead.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it('no hook in src/lib/hooks/ using React hooks without a "use client" directive', () => {
+    const violations = findMissingUseClientOnHookViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} missing-use-client-on-hook violations. ` +
+          `Add "use client"; as the first line — importing a hook that calls ` +
+          `React hooks from a Server Component crashes at runtime.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no local `type X = ReturnType<typeof useYState>` redeclaration", () => {
+    const violations = findLocalReturnTypeAliasViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} local-return-type-alias violations. ` +
+          `Import the canonical type instead of re-deriving it locally — a ` +
+          `stale local alias can mask a type error when the source hook's ` +
+          `return shape changes.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it('no "Monte Carlo" in user-facing .tsx text (use "Simulation"/"Simulations")', () => {
+    const violations = findMonteCarloUserFacingTextViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} Monte-Carlo-user-facing-text violations. ` +
+          `User-facing text (JSX text, tooltips, labels, titles) must say ` +
+          `"Simulation"/"Simulations" instead of "Monte Carlo" — internal code ` +
+          `(variable names, function names like calculateMonteCarlo(), tRPC ` +
+          `procedure names, .ts-only comments) may keep "monteCarlo"/"mc" naming.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no direct process.env.CRON_SECRET read outside src/lib/auth/cron.ts", () => {
+    const violations = findDirectCronSecretReadViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} direct-cron-secret-read violations. ` +
+          `Use getValidCronSecret()/validateCronBearerRequest()/` +
+          `validateCronHeaderRequest() from src/lib/auth/cron.ts instead of ` +
+          `reading and comparing the secret directly — a hand-rolled ` +
+          `comparison can reintroduce a timing oracle (H1).\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no API route under src/app/api/ missing a DEMO_ONLY guard", () => {
+    const violations = findMissingDemoOnlyGuardViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} missing-demo-only-guard violations. ` +
+          `Add a DEMO_ONLY check (return 403 "Forbidden: demo mode is ` +
+          `read-only" when process.env.DEMO_ONLY === "true") before any DB ` +
+          `write, matching every sibling write route. If this route is ` +
+          `genuinely read-only or enforces demo-mode elsewhere, add it to ` +
+          `DEMO_GUARD_EXEMPT_ROUTES in this file instead.\n` +
           formatViolations("Violations", violations),
       );
     }

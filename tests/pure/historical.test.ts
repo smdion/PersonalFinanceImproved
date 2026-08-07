@@ -44,7 +44,7 @@ describe("buildSalaryByYear", () => {
   it("builds lookup across multiple people and jobs", () => {
     const people = [
       {
-        personName: "Alice",
+        personId: 1,
         timeline: [
           {
             startDate: "2022-01-01",
@@ -55,7 +55,7 @@ describe("buildSalaryByYear", () => {
         ],
       },
       {
-        personName: "Bob",
+        personId: 2,
         timeline: [
           {
             startDate: "2023-01-01",
@@ -67,10 +67,10 @@ describe("buildSalaryByYear", () => {
       },
     ];
     const result = buildSalaryByYear(people);
-    expect(result.get(2022)?.get("Alice")).toBe(100000);
-    expect(result.get(2023)?.get("Alice")).toBe(120000);
-    expect(result.get(2023)?.get("Bob")).toBe(80000);
-    expect(result.get(2022)?.has("Bob")).toBe(false);
+    expect(result.get(2022)?.get(1)).toBe(100000);
+    expect(result.get(2023)?.get(1)).toBe(120000);
+    expect(result.get(2023)?.get(2)).toBe(80000);
+    expect(result.get(2022)?.has(2)).toBe(false);
   });
 });
 

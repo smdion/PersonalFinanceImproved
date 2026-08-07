@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { sumBy } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
@@ -19,7 +20,7 @@ function LivingCostsCardImpl() {
   const isYtd = viewMode === "ytd";
   const isBlended = viewMode === "blended";
   const [budgetColumn] = usePersistedSetting<number>("budget_active_column", 0);
-  const { data: budgetData, isLoading: bLoading } =
+  const { data: budgetData, isLoading: isBudgetLoading } =
     trpc.budget.computeActiveSummary.useQuery({
       selectedColumn: budgetColumn,
     });
@@ -35,13 +36,14 @@ function LivingCostsCardImpl() {
       ? { contributionProfileId: activeContribProfileId }
       : {}),
   };
-  const { data: paycheckData, isLoading: pLoading } =
+  const { data: paycheckData, isLoading: isPaycheckLoading } =
     trpc.paycheck.computeSummary.useQuery(
       Object.keys(lcQueryInput).length > 0 ? lcQueryInput : undefined,
     );
   const [useGross, setUseGross] = useState(false);
 
-  if (bLoading || pLoading) return <LoadingCard title="Living Costs" />;
+  if (isBudgetLoading || isPaycheckLoading)
+    return <LoadingCard title="Living Costs" />;
 
   const budget = budgetData?.result;
   const blendedOf = (p: NonNullable<typeof paycheckData>["people"][0]) =>
@@ -49,33 +51,37 @@ function LivingCostsCardImpl() {
       | import("@/lib/calculators/types/calculators").BlendedAnnualTotals
       | undefined;
 
-  const netIncome =
-    paycheckData?.people?.reduce((s, p) => {
-      if (!p.paycheck) return s;
-      if (isBlended) {
-        const ba = blendedOf(p);
-        return (
-          s + (ba ? ba.netPay : p.paycheck.netPay * p.paycheck.periodsPerYear)
-        );
-      }
-      const mult = isYtd
-        ? p.paycheck.periodsElapsedYtd
-        : p.paycheck.periodsPerYear;
-      return s + p.paycheck.netPay * mult;
-    }, 0) ?? 0;
+  const netIncome = paycheckData?.people
+    ? sumBy(paycheckData.people, (p) => {
+        if (!p.paycheck) return 0;
+        if (isBlended) {
+          const ba = blendedOf(p);
+          return ba ? ba.netPay : p.paycheck.netPay * p.paycheck.periodsPerYear;
+        }
+        const mult = isYtd
+          ? p.paycheck.periodsElapsedYtd
+          : p.paycheck.periodsPerYear;
+        return p.paycheck.netPay * mult;
+      })
+    : 0;
 
   const grossIncome = isYtd
-    ? (paycheckData?.people?.reduce((s, p) => {
-        if (!p.paycheck) return s;
-        return s + p.paycheck.gross * p.paycheck.periodsElapsedYtd;
-      }, 0) ?? 0)
+    ? paycheckData?.people
+      ? sumBy(paycheckData.people, (p) =>
+          p.paycheck ? p.paycheck.gross * p.paycheck.periodsElapsedYtd : 0,
+        )
+      : 0
     : isBlended
-      ? (paycheckData?.people?.reduce((s, p) => {
-          if (!p.paycheck) return s;
-          const ba = blendedOf(p);
-          return s + (ba ? ba.gross : (p.salary ?? 0));
-        }, 0) ?? 0)
-      : (paycheckData?.people?.reduce((s, p) => s + (p.salary ?? 0), 0) ?? 0);
+      ? paycheckData?.people
+        ? sumBy(paycheckData.people, (p) => {
+            if (!p.paycheck) return 0;
+            const ba = blendedOf(p);
+            return ba ? ba.gross : (p.salary ?? 0);
+          })
+        : 0
+      : paycheckData?.people
+        ? sumBy(paycheckData.people, (p) => p.salary ?? 0)
+        : 0;
   const incomeBase = useGross ? grossIncome : netIncome;
   const incomeLabel = useGross ? "gross" : "net";
 

@@ -1,9 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  MONTH_NAMES_SHORT,
+} from "@/lib/utils/format";
 import { GoalProjection, monthKey } from "./types";
-import { FUND_COLORS } from "./fund-colors";
+import { FUND_COLORS } from "@/lib/utils/colors";
 
 interface ContributionGridProps {
   goalProjections: GoalProjection[];
@@ -20,23 +24,8 @@ interface ContributionGridProps {
   hiddenGoalIds?: Set<number>;
 }
 
-const MONTH_NAMES = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
 function monthLabel(d: Date): string {
-  return `${MONTH_NAMES[d.getMonth()]} 1 '${String(d.getFullYear()).slice(2)}`;
+  return `${MONTH_NAMES_SHORT[d.getMonth()]} 1 '${String(d.getFullYear()).slice(2)}`;
 }
 
 /* ── Default contribution cell: $ and % that drive each other ── */

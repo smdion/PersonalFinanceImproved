@@ -5,7 +5,7 @@ import type {
   EngineAccumulationYear,
 } from "@/lib/calculators/types";
 import {
-  type AccountCategory as AcctCat,
+  type AccountCategory,
   getAccountSegments,
   getSegmentBalance,
   getAllCategories,
@@ -22,7 +22,7 @@ import type { ProjectionQueries } from "./use-projection-queries";
 import type {
   UseProjectionStateProps,
   EngineContribRate,
-  AcctBreakdown,
+  AccountBreakdown,
 } from "./use-projection-state";
 import { renderTooltip as _renderTooltip } from "./tooltip-renderer";
 import {
@@ -30,7 +30,12 @@ import {
   _singleBucketCategories,
   filterYearByParentCategory,
 } from "./utils";
-import { useFICache } from "@/lib/hooks/use-fi-cache";
+import {
+  useFICache,
+  deriveFI,
+  isLivePlanInput,
+} from "@/lib/hooks/use-fi-cache";
+import { useScenario } from "@/lib/context/scenario-context";
 
 export function useProjectionDerived(
   form: ProjectionFormState,
@@ -49,7 +54,14 @@ export function useProjectionDerived(
 
   const { engineQuery, contribProfilesQuery, coastFireMcResult } = queries;
 
-  const { parentCategoryFilter, people, onContributionRates } = props;
+  const {
+    parentCategoryFilter,
+    people,
+    onContributionRates,
+    contributionProfileId,
+    snapshotId,
+  } = props;
+  const { isInScenario } = useScenario();
 
   // --- Engine data narrowing ---
   // In Coast FIRE scenario, swap the deterministic projection source from
@@ -125,21 +137,38 @@ export function useProjectionDerived(
   useEffect(() => {
     if (!engineData?.result || engineQuery.isLoading || engineQuery.isFetching)
       return;
+    // Only the live, no-override retirement plan may populate the
+    // dashboard-wide FI cache — a scenario, historical snapshot, per-profile,
+    // per-category, or per-person filtered view is a DIFFERENT projection
+    // than what the rest of the dashboard shows (H12). Note: dragging the
+    // withdrawal-rate/order/split controls away from their stored defaults
+    // isn't caught here yet — deferred, see review-findings.md H12.
+    if (
+      !isLivePlanInput({
+        isInScenario,
+        snapshotId,
+        accumulationOverrides: accumOverrides,
+        decumulationOverrides: decumOverrides,
+        contributionProfileId,
+        parentCategoryFilter,
+        isPersonFiltered,
+      })
+    )
+      return;
     const withdrawalRate = Number(engineSettings?.withdrawalRate ?? 0.04);
     const expenses = annualExpenses as number;
     if (withdrawalRate <= 0 || expenses <= 0) return;
-    const fiTarget = expenses / withdrawalRate;
-    const hit = engineData.result.projectionByYear.find(
-      (y: { endBalance: number; year: number; age: number }) =>
-        y.endBalance >= fiTarget,
+    const derived = deriveFI(
+      engineData.result.projectionByYear,
+      expenses,
+      withdrawalRate,
     );
-    const cacheKey = `${hit?.year ?? "null"}-${fiTarget}`;
-    if (lastProjCacheKey.current === cacheKey) return;
-    lastProjCacheKey.current = cacheKey;
+    if (lastProjCacheKey.current === derived.inputKey) return;
+    lastProjCacheKey.current = derived.inputKey;
     writeFICache({
-      fiYear: hit?.year ?? null,
-      fiAge: hit?.age ?? null,
-      settingsHash: cacheKey,
+      fiYear: derived.fiYear,
+      fiAge: derived.fiAge,
+      inputKey: derived.inputKey,
       computedAt: new Date().toISOString(),
     });
   }, [
@@ -149,6 +178,13 @@ export function useProjectionDerived(
     engineSettings,
     annualExpenses,
     writeFICache,
+    isInScenario,
+    snapshotId,
+    accumOverrides,
+    decumOverrides,
+    contributionProfileId,
+    parentCategoryFilter,
+    isPersonFiltered,
   ]);
 
   const decumulationExpenses =
@@ -220,7 +256,7 @@ export function useProjectionDerived(
         } else {
           const cfg =
             ia.category in ACCOUNT_TYPE_CONFIG
-              ? ACCOUNT_TYPE_CONFIG[ia.category as AcctCat]
+              ? ACCOUNT_TYPE_CONFIG[ia.category as AccountCategory]
               : null;
           const bucket = cfg ? cfg.taxBucketKey : "preTax";
           if (bucket in byTaxType) {
@@ -234,7 +270,7 @@ export function useProjectionDerived(
         getAccountSegments().map((seg) => [seg.key, 0]),
       );
       for (const ia of mine) {
-        const cat = ia.category as AcctCat;
+        const cat = ia.category as AccountCategory;
         const cfg =
           cat in ACCOUNT_TYPE_CONFIG ? ACCOUNT_TYPE_CONFIG[cat] : null;
         if (cfg && cfg.supportsRothSplit) {
@@ -281,14 +317,14 @@ export function useProjectionDerived(
   })();
 
   // --- Account breakdown ---
-  const accountBreakdown = useMemo<Record<string, AcctBreakdown[]>>(
+  const accountBreakdown = useMemo<Record<string, AccountBreakdown[]>>(
     () =>
       engineData &&
       engineData.result &&
       "accountBreakdownByCategory" in engineData
         ? (engineData.accountBreakdownByCategory as Record<
             string,
-            AcctBreakdown[]
+            AccountBreakdown[]
           >)
         : {},
     [engineData],
@@ -297,7 +333,7 @@ export function useProjectionDerived(
   const filteredBreakdown = useMemo(() => {
     let base = accountBreakdown;
     if (parentCategoryFilter) {
-      const out: Record<string, AcctBreakdown[]> = {};
+      const out: Record<string, AccountBreakdown[]> = {};
       for (const [cat, accts] of Object.entries(base)) {
         const f = accts.filter(
           (a) => a.parentCategory === parentCategoryFilter,
@@ -307,7 +343,7 @@ export function useProjectionDerived(
       base = out;
     }
     if (!isPersonFiltered) return base;
-    const out: Record<string, AcctBreakdown[]> = {};
+    const out: Record<string, AccountBreakdown[]> = {};
     for (const [cat, accts] of Object.entries(base)) {
       const filtered = accts.filter((a) => a.ownerPersonId === personFilter);
       if (filtered.length > 0) out[cat] = filtered;
@@ -340,7 +376,7 @@ export function useProjectionDerived(
               if (
                 parentCategoryFilter &&
                 slotCat in ACCOUNT_TYPE_CONFIG &&
-                ACCOUNT_TYPE_CONFIG[slotCat as AcctCat].isOverflowTarget
+                ACCOUNT_TYPE_CONFIG[slotCat as AccountCategory].isOverflowTarget
               ) {
                 const iabs = (
                   yr as {
@@ -377,7 +413,8 @@ export function useProjectionDerived(
               (hasContrib || hasWithdrawal) &&
               _singleBucketCategories.has(slot.category as string)
             ) {
-              const slotCfg = ACCOUNT_TYPE_CONFIG[slot.category as AcctCat];
+              const slotCfg =
+                ACCOUNT_TYPE_CONFIG[slot.category as AccountCategory];
               contribTaxTypes.add(slotCfg.taxBucketKey);
             }
           }
@@ -431,7 +468,9 @@ export function useProjectionDerived(
     };
     for (const [cat, accts] of Object.entries(filteredBreakdown)) {
       const cfg =
-        cat in ACCOUNT_TYPE_CONFIG ? ACCOUNT_TYPE_CONFIG[cat as AcctCat] : null;
+        cat in ACCOUNT_TYPE_CONFIG
+          ? ACCOUNT_TYPE_CONFIG[cat as AccountCategory]
+          : null;
       for (const a of accts) {
         let colKey: string;
         if (cfg && cfg.supportsRothSplit) {

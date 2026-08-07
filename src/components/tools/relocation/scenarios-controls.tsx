@@ -21,6 +21,10 @@ type Props = {
   setSelectedScenarioId: (id: number | null) => void;
   loadScenario: (params: RelocationScenarioParams) => void;
 
+  /** Save/delete are backed by adminProcedure server-side — hide the
+   *  controls for non-admins instead of letting them hit an auth error. */
+  isAdmin: boolean;
+
   saveIsPending: boolean;
   deleteIsPending: boolean;
 
@@ -44,6 +48,7 @@ export function RelocationScenariosControls({
   selectedScenarioId,
   setSelectedScenarioId,
   loadScenario,
+  isAdmin,
   saveIsPending,
   deleteIsPending,
   onSaveClick,
@@ -78,24 +83,28 @@ export function RelocationScenariosControls({
             </option>
           ))}
         </select>
-        <Button size="sm" disabled={saveIsPending} onClick={onSaveClick}>
-          {selectedScenarioId ? "Update" : "Save"}
-        </Button>
-        {selectedScenarioId && (
+        {isAdmin && (
           <>
-            <button
-              className="px-3 py-1 bg-surface-strong text-secondary rounded text-sm hover:bg-surface-strong"
-              onClick={onSaveAsClick}
-            >
-              Save As
-            </button>
-            <button
-              className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 disabled:opacity-50"
-              disabled={deleteIsPending}
-              onClick={onDeleteClick}
-            >
-              Delete
-            </button>
+            <Button size="sm" disabled={saveIsPending} onClick={onSaveClick}>
+              {selectedScenarioId ? "Update" : "Save"}
+            </Button>
+            {selectedScenarioId && (
+              <>
+                <button
+                  className="px-3 py-1 bg-surface-strong text-secondary rounded text-sm hover:bg-surface-strong"
+                  onClick={onSaveAsClick}
+                >
+                  Save As
+                </button>
+                <button
+                  className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 disabled:opacity-50"
+                  disabled={deleteIsPending}
+                  onClick={onDeleteClick}
+                >
+                  Delete
+                </button>
+              </>
+            )}
           </>
         )}
       </div>

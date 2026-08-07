@@ -104,6 +104,18 @@ export type ProjectionInput = {
    * All amounts grow at limitGrowthRate alongside base limits.
    */
   catchupLimits?: Record<string, number>;
+  /**
+   * Per-group list of the people who hold an account in that IRS limit
+   * group, with their birth year — used to gate `catchupLimits` by each
+   * individual's OWN projected age each year, instead of one shared
+   * household-average age. Without this, either everyone in a group gets
+   * catch-up room or nobody does, and the super-catchup age WINDOW
+   * (60-63) can't be represented at all for a multi-person household.
+   */
+  catchupGroupParticipants?: Record<
+    string,
+    { personId: number; birthYear: number }[]
+  >;
 
   // --- Employer match ---
   /** Employer match as rate of salary per category (for salary-linked growth). */

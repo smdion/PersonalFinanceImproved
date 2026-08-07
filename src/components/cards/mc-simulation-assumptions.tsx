@@ -391,7 +391,7 @@ export function SimulationAssumptions({
                   <AssumptionRow
                     label="Stochastic Inflation"
                     value={`${formatPercent(inputs.inflationRisk.meanRate, 1)} \u00B1 ${formatPercent(inputs.inflationRisk.stdDev, 1)}`}
-                    tip="Monte Carlo inflation: each simulated year draws a random rate from a normal distribution with this mean and standard deviation. Models inflation uncertainty — some futures have low inflation, others high. Typical mean: 2-3%."
+                    tip="Simulation inflation: each simulated year draws a random rate from a normal distribution with this mean and standard deviation. Models inflation uncertainty — some futures have low inflation, others high. Typical mean: 2-3%."
                   />
                   {onInflationRiskChange && (
                     <button
@@ -1018,7 +1018,7 @@ export function SimulationAssumptions({
             <AssumptionRow
               label="Simulated Withdrawal Range (p25–p75)"
               value={`${formatCurrency(outcomeDistribution.sustainableWithdrawalPV.p25)} – ${formatCurrency(outcomeDistribution.sustainableWithdrawalPV.p75)}`}
-              tip="25th–75th percentile range of annual withdrawals across all Monte Carlo trials, in today's purchasing power. Unlike the deterministic estimate, this accounts for market volatility, sequence-of-returns risk, and tax gross-up."
+              tip="25th–75th percentile range of annual withdrawals across all simulation trials, in today's purchasing power. Unlike the deterministic estimate, this accounts for market volatility, sequence-of-returns risk, and tax gross-up."
             />
             <div className="border-t border-subtle pt-2 mt-2">
               <div className="text-label font-medium text-muted mb-1.5">

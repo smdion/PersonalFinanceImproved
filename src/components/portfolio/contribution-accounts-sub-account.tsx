@@ -5,6 +5,7 @@
 import React, { useState } from "react";
 import { formatCurrency } from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";
+import { TAX_TYPE_LABELS } from "@/lib/config/display-labels";
 import type { PortfolioSub } from "./contribution-accounts-types";
 
 export function SubAccountRow({
@@ -123,10 +124,11 @@ export function SubAccountRow({
             className={`text-caption text-faint bg-transparent border-none p-0 focus:ring-0${onUpdate ? "cursor-pointer hover:text-secondary" : "cursor-default"}`}
             title="Tax type"
           >
-            <option value="preTax">Pre-Tax</option>
-            <option value="taxFree">Tax-Free</option>
-            <option value="afterTax">After-Tax</option>
-            <option value="hsa">HSA</option>
+            {Object.entries(TAX_TYPE_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
           </select>
         </div>
         {onUpdate && (
@@ -235,10 +237,11 @@ export function AddSubAccountForm({
             onChange={(e) => setTaxType(e.target.value)}
             className="w-full border rounded px-1.5 py-1 text-xs bg-surface-primary"
           >
-            <option value="preTax">Pre-Tax</option>
-            <option value="taxFree">Tax-Free</option>
-            <option value="afterTax">After-Tax</option>
-            <option value="hsa">HSA</option>
+            {Object.entries(TAX_TYPE_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
           </select>
         </div>
         <div>

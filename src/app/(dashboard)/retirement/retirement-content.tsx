@@ -86,6 +86,7 @@ export function RetirementContent() {
     "projection" | "comparison" | "planHealth"
   >("projection");
   const [dollarMode, setDollarMode] = useState<"nominal" | "real">("real");
+  const currentYear = new Date().getFullYear();
   const utils = trpc.useUtils();
   const salaryOverrides = useSalaryOverrides();
   const [decBudgetProfileId, setDecBudgetProfileId] = usePersistedSetting<
@@ -107,9 +108,11 @@ export function RetirementContent() {
   );
   const snapshotTotalsQuery = trpc.networth.listSnapshotTotals.useQuery();
   const snapshotOptions = snapshotTotalsQuery.data ?? [];
-  const engineInput = useMemo(
+  // Shared across engineInput and comparisonInput below — both projection
+  // queries take the same set of optional overrides, differing only in
+  // whether metadataOnly is set.
+  const baseInput = useMemo(
     () => ({
-      metadataOnly: true as const,
       ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
       ...(contribProfileId != null
         ? { contributionProfileId: contribProfileId }
@@ -133,6 +136,10 @@ export function RetirementContent() {
       decExpenseOverride,
       snapshotId,
     ],
+  );
+  const engineInput = useMemo(
+    () => ({ metadataOnly: true as const, ...baseInput }),
+    [baseInput],
   );
   const debouncedEngineInput = useDebouncedValue(engineInput, 600);
   const { data, isLoading, isFetching, error } =
@@ -173,32 +180,7 @@ export function RetirementContent() {
   // Lazy-load strategy comparison only when expanded
   const [comparisonExpanded, setComparisonExpanded] =
     usePersistedSetting<boolean>("retirement_comparison_expanded", false);
-  const comparisonInput = useMemo(
-    () => ({
-      ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
-      ...(contribProfileId != null
-        ? { contributionProfileId: contribProfileId }
-        : {}),
-      ...(decBudgetProfileId != null
-        ? { decumulationBudgetProfileId: decBudgetProfileId }
-        : {}),
-      ...(decBudgetCol != null
-        ? { decumulationBudgetColumn: decBudgetCol }
-        : {}),
-      ...(decExpenseOverride
-        ? { decumulationExpenseOverride: parseFloat(decExpenseOverride) }
-        : {}),
-      ...(snapshotId != null ? { snapshotId } : {}),
-    }),
-    [
-      salaryOverrides,
-      contribProfileId,
-      decBudgetProfileId,
-      decBudgetCol,
-      decExpenseOverride,
-      snapshotId,
-    ],
-  );
+  const comparisonInput = baseInput;
   const { data: comparisonData, isLoading: comparisonLoading } =
     trpc.projection.computeStrategyComparison.useQuery(comparisonInput, {
       enabled:
@@ -416,6 +398,7 @@ export function RetirementContent() {
           salaryGrowthRate={parseFloat(settings.salaryAnnualIncrease)}
           retirementHorizonYears={settings.endAge - settings.retirementAge}
           hasBudgetLink={!!data.accumulationBudgetProfileId}
+          hasSocialSecurity={Number(settings.socialSecurityMonthly) > 0}
           deterministicNestEgg={
             data.result?.projectionByYear.find(
               (p: { age: number }) => p.age === settings.retirementAge,
@@ -444,13 +427,7 @@ export function RetirementContent() {
             onDollarModeChange={setDollarMode}
             inflationRate={parseFloat(settings.annualInflation)}
             currentAge={
-              perPersonSettings && perPersonSettings.length > 0
-                ? Math.min(
-                    ...perPersonSettings.map(
-                      (p) => new Date().getFullYear() - p.birthYear,
-                    ),
-                  )
-                : settings.retirementAge - 20
+              data.planHealth?.currentAge ?? settings.retirementAge - 20
             }
             analyzerInput={comparisonInput ?? undefined}
           />
@@ -491,6 +468,7 @@ export function RetirementContent() {
                   <div className="bg-surface-sunken rounded-lg p-3 space-y-4">
                     <TimelineSection
                       settings={settings}
+                      currentYear={currentYear}
                       perPersonSettings={perPersonSettings}
                       handlePerPersonRetirementAge={
                         handlePerPersonRetirementAge
@@ -556,7 +534,8 @@ export function RetirementContent() {
                                   settings.endAge - settings.retirementAge,
                                 hasBudgetLink:
                                   !!data.accumulationBudgetProfileId,
-                                hasSocialSecurity: false,
+                                hasSocialSecurity:
+                                  Number(settings.socialSecurityMonthly) > 0,
                                 mostlyTaxAdvantaged: false,
                               });
                               const recKey =
@@ -628,7 +607,7 @@ export function RetirementContent() {
                     <div>
                       <span className="text-muted">
                         Inflation
-                        <HelpTip text="Constant CPI rate used for the deterministic projection — expense growth, real-dollar conversions, and IRS limit growth. In Monte Carlo mode, this is replaced by the Stochastic Inflation setting from your MC preset (View Assumptions)." />
+                        <HelpTip text="Constant CPI rate used for the deterministic projection — expense growth, real-dollar conversions, and IRS limit growth. In simulation mode, this is replaced by the Stochastic Inflation setting from your simulation preset (View Assumptions)." />
                       </span>
                       <div className="font-medium">
                         <InlineEdit
@@ -642,7 +621,7 @@ export function RetirementContent() {
                           parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                           type="number"
                           className="text-sm"
-                          editable={!!settings}
+                          isEditable={!!settings}
                         />
                       </div>
                     </div>

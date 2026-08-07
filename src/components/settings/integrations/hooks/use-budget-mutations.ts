@@ -13,7 +13,7 @@
 import { trpc } from "@/lib/trpc";
 import { useInvalidatePreview } from "./use-invalidate-preview";
 
-export function useBudgetMutations() {
+export function useBudgetIntegrationsMutations() {
   const invalidate = useInvalidatePreview();
 
   const linkBudget = trpc.budget.linkToApi.useMutation({
@@ -61,5 +61,5 @@ export function useBudgetMutations() {
 }
 
 export type BudgetMutations = ReturnType<
-  typeof useBudgetMutations
+  typeof useBudgetIntegrationsMutations
 >["mutations"];

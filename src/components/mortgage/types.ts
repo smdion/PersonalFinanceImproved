@@ -1,5 +1,3 @@
-import { trpc } from "@/lib/trpc";
-
 export type AmortEntry = {
   month: number;
   date: string;
@@ -56,5 +54,3 @@ export type WhatIfResultRow = {
   interestSaved: number;
   monthsSaved: number;
 };
-
-export type TrpcUtils = ReturnType<typeof trpc.useUtils>;

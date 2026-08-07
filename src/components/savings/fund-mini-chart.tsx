@@ -10,7 +10,11 @@ import {
   ResponsiveContainer,
   Tooltip as RechartsTooltip,
 } from "recharts";
-import { formatCurrency, compactCurrency } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  compactCurrency,
+  MONTH_NAMES_SHORT,
+} from "@/lib/utils/format";
 import { CHART_COLORS } from "@/lib/utils/colors";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
 import { monthKey } from "./types";
@@ -98,21 +102,7 @@ export function FundMiniChart({
             interval="preserveStartEnd"
             tickFormatter={(v: string) => {
               const [y, m] = v.split("-");
-              const months = [
-                "Jan",
-                "Feb",
-                "Mar",
-                "Apr",
-                "May",
-                "Jun",
-                "Jul",
-                "Aug",
-                "Sep",
-                "Oct",
-                "Nov",
-                "Dec",
-              ];
-              return `${months[parseInt(m!) - 1]} '${y!.slice(2)}`;
+              return `${MONTH_NAMES_SHORT[parseInt(m!) - 1]} '${y!.slice(2)}`;
             }}
           />
           <YAxis
@@ -130,24 +120,10 @@ export function FundMiniChart({
               const point = payload[0]?.payload as ChartDataPoint;
               const labelStr = String(label);
               const [y, m] = labelStr.split("-");
-              const months = [
-                "Jan",
-                "Feb",
-                "Mar",
-                "Apr",
-                "May",
-                "Jun",
-                "Jul",
-                "Aug",
-                "Sep",
-                "Oct",
-                "Nov",
-                "Dec",
-              ];
               return (
                 <div className="bg-surface-primary border rounded-md px-2.5 py-1.5 text-xs shadow-lg">
                   <p className="text-secondary font-medium">
-                    {months[parseInt(m!) - 1]} {y}
+                    {MONTH_NAMES_SHORT[parseInt(m!) - 1]} {y}
                   </p>
                   <p
                     className={`font-semibold ${point.balance < 0 ? "text-red-600" : "text-primary"}`}

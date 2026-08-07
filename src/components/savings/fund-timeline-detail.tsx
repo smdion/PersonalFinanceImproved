@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, MONTH_NAMES_SHORT } from "@/lib/utils/format";
 import { GoalProjection, monthKey } from "./types";
 
 interface FundTimelineDetailProps {
@@ -82,21 +82,7 @@ export function FundTimelineDetail({
               const isYearBoundary = d.getMonth() === 0 && i > 0;
               const isHighlighted = i === initialMonthIndex;
 
-              const months = [
-                "Jan",
-                "Feb",
-                "Mar",
-                "Apr",
-                "May",
-                "Jun",
-                "Jul",
-                "Aug",
-                "Sep",
-                "Oct",
-                "Nov",
-                "Dec",
-              ];
-              const monthLabel = `${months[d.getMonth()]} ${d.getFullYear()}`;
+              const monthLabel = `${MONTH_NAMES_SHORT[d.getMonth()]} ${d.getFullYear()}`;
 
               return (
                 <div

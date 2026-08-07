@@ -145,13 +145,26 @@ export async function claimSetupToken(setupToken: string): Promise<string> {
   return accessUrl.trim();
 }
 
+export type GetAccountsResult = {
+  accounts: SimplefinAccount[];
+  /**
+   * Non-fatal provider errors (e.g. one linked institution needs re-auth)
+   * that arrived alongside a usable accounts list — per the SimpleFIN
+   * protocol, `errors` and `accounts` can both be populated in the same
+   * response. Callers should surface these to the user (SimpleFIN's own
+   * developer docs ask API consumers to display `errlist`/`errors`, not
+   * just log them), not silently drop them.
+   */
+  providerErrors: string[];
+};
+
 /**
  * Fetch balances-only account data for every account linked in SimpleFIN
  * Bridge under this access URL.
  */
 export async function getAccounts(
   accessUrl: string,
-): Promise<SimplefinAccount[]> {
+): Promise<GetAccountsResult> {
   const { baseUrl, authHeader } = parseAccessUrl(accessUrl);
   const json = await requestJson<SimplefinAccountsResponse>(
     `${baseUrl}/accounts?balances-only=1`,
@@ -170,10 +183,13 @@ export async function getAccounts(
       errors: json.errors,
     });
   }
-  return (json.accounts ?? []).map((a) => ({
-    id: a.id,
-    name: a.name,
-    balance: Number(a.balance),
-    orgName: a.org?.name ?? "",
-  }));
+  return {
+    accounts: (json.accounts ?? []).map((a) => ({
+      id: a.id,
+      name: a.name,
+      balance: Number(a.balance),
+      orgName: a.org?.name ?? "",
+    })),
+    providerErrors: json.errors ?? [],
+  };
 }

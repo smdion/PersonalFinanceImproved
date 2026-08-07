@@ -1,4 +1,8 @@
 import type { DemoProfile } from "../types";
+import {
+  PERF_CATEGORY_RETIREMENT,
+  PERF_CATEGORY_DEFAULT,
+} from "@/lib/config/display-labels";
 
 export const dualIncomeFamilyProfile: DemoProfile = {
   slug: "dual-income-family",
@@ -357,7 +361,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       accountType: "401k",
       accountLabel: "401(k) - BigCo",
       ownershipType: "individual",
-      parentCategory: "Retirement",
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       label: null,
       isActive: true,
     },
@@ -366,7 +370,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       accountType: "401k",
       accountLabel: "401(k) - AdAgency",
       ownershipType: "individual",
-      parentCategory: "Retirement",
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       label: null,
       isActive: true,
     },
@@ -375,7 +379,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       accountType: "ira",
       accountLabel: "Roth IRA - Jordan",
       ownershipType: "individual",
-      parentCategory: "Retirement",
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       label: null,
       isActive: true,
     },
@@ -384,7 +388,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       accountType: "hsa",
       accountLabel: "HSA",
       ownershipType: "individual",
-      parentCategory: "Retirement",
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       label: null,
       isActive: true,
     },
@@ -393,7 +397,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       accountType: "brokerage",
       accountLabel: "Brokerage",
       ownershipType: "individual",
-      parentCategory: "Portfolio",
+      parentCategory: "Portfolio" as const,
       label: null,
       isActive: true,
     },
@@ -401,7 +405,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
 
   annualPerformance: [
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT,
       year: 2023,
       beginningBalance: "240000",
       totalContributions: "42000",
@@ -429,7 +433,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       lifetimeMatch: "0",
     },
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT,
       year: 2024,
       beginningBalance: "320000",
       totalContributions: "47750",
@@ -443,7 +447,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       lifetimeMatch: "35000",
     },
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT,
       year: 2025,
       beginningBalance: "380000",
       totalContributions: "49000",
@@ -535,7 +539,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       annualReturnPct: "0.065",
       employerContributions: "5000",
       fees: "90",
-      parentCategory: "Retirement",
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "401(k) - BigCo",
     },
     {
@@ -550,7 +554,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       annualReturnPct: "0.072",
       employerContributions: "0",
       fees: "0",
-      parentCategory: "Retirement",
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "Roth IRA - Jordan",
     },
     {
@@ -565,7 +569,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       annualReturnPct: "0.068",
       employerContributions: "2100",
       fees: "60",
-      parentCategory: "Retirement",
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "401(k) - AdAgency",
     },
     {
@@ -580,7 +584,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       annualReturnPct: "0.044",
       employerContributions: "0",
       fees: "25",
-      parentCategory: "Retirement",
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "HSA",
     },
     {
@@ -595,7 +599,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       annualReturnPct: "0.061",
       employerContributions: "0",
       fees: "35",
-      parentCategory: "Portfolio",
+      parentCategory: "Portfolio" as const,
       perfAccountLabel: "Brokerage",
     },
     // 2025
@@ -611,7 +615,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       annualReturnPct: "0.042",
       employerContributions: "5200",
       fees: "95",
-      parentCategory: "Retirement",
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "401(k) - BigCo",
     },
     {
@@ -626,7 +630,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       annualReturnPct: "0.042",
       employerContributions: "0",
       fees: "0",
-      parentCategory: "Retirement",
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "Roth IRA - Jordan",
     },
     {
@@ -641,7 +645,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       annualReturnPct: "0.039",
       employerContributions: "2160",
       fees: "65",
-      parentCategory: "Retirement",
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "401(k) - AdAgency",
     },
     {
@@ -656,7 +660,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       annualReturnPct: "0.020",
       employerContributions: "0",
       fees: "25",
-      parentCategory: "Retirement",
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "HSA",
     },
     {
@@ -671,7 +675,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       annualReturnPct: "0.035",
       employerContributions: "0",
       fees: "40",
-      parentCategory: "Portfolio",
+      parentCategory: "Portfolio" as const,
       perfAccountLabel: "Brokerage",
     },
     // 2026 YTD (Q1)
@@ -687,7 +691,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       annualReturnPct: "0.013",
       employerContributions: "1300",
       fees: "24",
-      parentCategory: "Retirement",
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "401(k) - BigCo",
     },
     {
@@ -702,7 +706,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       annualReturnPct: "0.012",
       employerContributions: "0",
       fees: "0",
-      parentCategory: "Retirement",
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "Roth IRA - Jordan",
     },
     {
@@ -717,7 +721,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       annualReturnPct: "0.013",
       employerContributions: "540",
       fees: "16",
-      parentCategory: "Retirement",
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "401(k) - AdAgency",
     },
     {
@@ -732,7 +736,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       annualReturnPct: "0.011",
       employerContributions: "0",
       fees: "6",
-      parentCategory: "Retirement",
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "HSA",
     },
     {
@@ -747,7 +751,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       annualReturnPct: "0.011",
       employerContributions: "0",
       fees: "10",
-      parentCategory: "Portfolio",
+      parentCategory: "Portfolio" as const,
       perfAccountLabel: "Brokerage",
     },
   ],

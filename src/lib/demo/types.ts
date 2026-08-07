@@ -1,4 +1,7 @@
 import type { PerfCategory } from "@/lib/config/display-labels";
+import type { AccountCategory } from "@/lib/config/account-types";
+import type { TaxTreatment } from "@/lib/config/enum-values";
+import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 
 /**
  * DemoProfile — complete, holistic dataset for a demo persona.
@@ -78,8 +81,8 @@ export type DemoProfile = {
 
   contributionAccounts: {
     personName: string;
-    accountType: string;
-    taxTreatment: string;
+    accountType: AccountCategory;
+    taxTreatment: TaxTreatment;
     contributionMethod: string;
     contributionValue: string;
     employerMatchType: string;
@@ -87,7 +90,7 @@ export type DemoProfile = {
     employerMaxMatchPct: string | null;
     /** accountLabel of the performance account to link to */
     perfAccountLabel?: string;
-    parentCategory?: string;
+    parentCategory?: PerfCategory;
   }[];
 
   portfolioSnapshots: {
@@ -96,21 +99,21 @@ export type DemoProfile = {
 
   portfolioAccounts: {
     institution: string;
-    accountType: string;
+    accountType: AccountCategory;
     taxType: "preTax" | "taxFree" | "afterTax" | "hsa";
     amount: string;
     label: string | null;
     ownerPersonName: string | null;
-    parentCategory?: string;
+    parentCategory?: PerfCategory;
     perfAccountLabel?: string;
   }[];
 
   performanceAccounts: {
     institution: string;
-    accountType: string;
+    accountType: AccountCategory;
     accountLabel: string;
     ownershipType: "individual" | "joint";
-    parentCategory: string;
+    parentCategory: PerfCategory;
     label: string | null;
     isActive: boolean;
     /** Resolves to ownerPersonId FK */
@@ -142,7 +145,7 @@ export type DemoProfile = {
     annualInflation: string;
     salaryAnnualIncrease: string;
     withdrawalRate: string;
-    withdrawalStrategy: string;
+    withdrawalStrategy: WithdrawalStrategyType;
     socialSecurityMonthly: string;
     ssStartAge: number;
   };
@@ -188,7 +191,7 @@ export type DemoProfile = {
     annualReturnPct: string | null;
     employerContributions: string;
     fees: string;
-    parentCategory: string;
+    parentCategory: PerfCategory;
     /** Links to performanceAccounts.accountLabel for FK resolution */
     perfAccountLabel?: string;
   }[];

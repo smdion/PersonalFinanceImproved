@@ -37,6 +37,8 @@ import {
   runSimplefinSync,
   upsertSimplefinAccounts,
   recomputeTodaySnapshotFromLocal,
+  hasSyncedToday,
+  getSimplefinLastError,
 } from "@/lib/simplefin/sync";
 
 const mockGetAccounts = vi.mocked(getAccounts);
@@ -111,10 +113,13 @@ describe("simplefin/sync", () => {
         ctx.rawDb,
         "https://u:p@bridge.simplefin.org",
       );
-      mockGetAccounts.mockResolvedValueOnce([
-        { id: "a1", name: "Checking", balance: 1200.5, orgName: "Bank" },
-        { id: "a2", name: "Savings", balance: 340.25, orgName: "Bank" },
-      ]);
+      mockGetAccounts.mockResolvedValueOnce({
+        accounts: [
+          { id: "a1", name: "Checking", balance: 1200.5, orgName: "Bank" },
+          { id: "a2", name: "Savings", balance: 340.25, orgName: "Bank" },
+        ],
+        providerErrors: [],
+      });
 
       const asOfDate = new Date(2026, 0, 15); // local Jan 15, 2026
       const result = await runSimplefinSync(ctx.rawDb, asOfDate);
@@ -139,14 +144,20 @@ describe("simplefin/sync", () => {
       );
       const asOfDate = new Date(2026, 1, 1);
 
-      mockGetAccounts.mockResolvedValueOnce([
-        { id: "a1", name: "Checking", balance: 100, orgName: "Bank" },
-      ]);
+      mockGetAccounts.mockResolvedValueOnce({
+        accounts: [
+          { id: "a1", name: "Checking", balance: 100, orgName: "Bank" },
+        ],
+        providerErrors: [],
+      });
       await runSimplefinSync(ctx.rawDb, asOfDate);
 
-      mockGetAccounts.mockResolvedValueOnce([
-        { id: "a1", name: "Checking", balance: 250, orgName: "Bank" },
-      ]);
+      mockGetAccounts.mockResolvedValueOnce({
+        accounts: [
+          { id: "a1", name: "Checking", balance: 250, orgName: "Bank" },
+        ],
+        providerErrors: [],
+      });
       const second = await runSimplefinSync(ctx.rawDb, asOfDate);
 
       expect(second.totalBalance).toBe(250);
@@ -164,7 +175,10 @@ describe("simplefin/sync", () => {
         ctx.rawDb,
         "https://u:p@bridge.simplefin.org",
       );
-      mockGetAccounts.mockResolvedValueOnce([]);
+      mockGetAccounts.mockResolvedValueOnce({
+        accounts: [],
+        providerErrors: [],
+      });
 
       await runSimplefinSync(ctx.rawDb, new Date(2026, 2, 1));
 
@@ -191,6 +205,47 @@ describe("simplefin/sync", () => {
         .all()
         .filter((r) => r.snapshotDate === "2026-04-01");
       expect(rows).toHaveLength(0);
+    });
+
+    it("records the failure message via getSimplefinLastError, and clears it on the next successful sync", async () => {
+      await saveSimplefinConnection(
+        ctx.rawDb,
+        "https://u:p@bridge.simplefin.org",
+      );
+      mockGetAccounts.mockRejectedValueOnce(new Error("Connection refused"));
+      await expect(
+        runSimplefinSync(ctx.rawDb, new Date(2026, 3, 2)),
+      ).rejects.toThrow(/Connection refused/);
+      expect(await getSimplefinLastError(ctx.rawDb)).toBe("Connection refused");
+
+      mockGetAccounts.mockResolvedValueOnce({
+        accounts: [],
+        providerErrors: [],
+      });
+      await runSimplefinSync(ctx.rawDb, new Date(2026, 3, 3));
+      expect(await getSimplefinLastError(ctx.rawDb)).toBeNull();
+    });
+
+    it("records non-fatal providerErrors even though the sync itself succeeds", async () => {
+      await saveSimplefinConnection(
+        ctx.rawDb,
+        "https://u:p@bridge.simplefin.org",
+      );
+      mockGetAccounts.mockResolvedValueOnce({
+        accounts: [
+          { id: "a1", name: "Checking", balance: 10, orgName: "Bank" },
+        ],
+        providerErrors: ["Institution X needs re-authentication"],
+      });
+
+      const result = await runSimplefinSync(ctx.rawDb, new Date(2026, 3, 4));
+
+      expect(result.providerErrors).toEqual([
+        "Institution X needs re-authentication",
+      ]);
+      expect(await getSimplefinLastError(ctx.rawDb)).toBe(
+        "Institution X needs re-authentication",
+      );
     });
 
     // Critical assertion (per plan): this is the one test that would catch a
@@ -220,16 +275,29 @@ describe("simplefin/sync", () => {
           eq(ctx.schema.simplefinAccounts.externalAccountId, "excluded-1"),
         );
 
-      mockGetAccounts.mockResolvedValueOnce([
-        {
-          id: "excluded-1",
-          name: "Old Credit Card",
-          balance: 999.99,
-          orgName: "Bank",
-        },
-        { id: "included-1", name: "Checking", balance: 100.5, orgName: "Bank" },
-        { id: "included-2", name: "Savings", balance: 25.25, orgName: "Bank" },
-      ]);
+      mockGetAccounts.mockResolvedValueOnce({
+        accounts: [
+          {
+            id: "excluded-1",
+            name: "Old Credit Card",
+            balance: 999.99,
+            orgName: "Bank",
+          },
+          {
+            id: "included-1",
+            name: "Checking",
+            balance: 100.5,
+            orgName: "Bank",
+          },
+          {
+            id: "included-2",
+            name: "Savings",
+            balance: 25.25,
+            orgName: "Bank",
+          },
+        ],
+        providerErrors: [],
+      });
 
       const result = await runSimplefinSync(ctx.rawDb, asOfDate);
 
@@ -237,6 +305,51 @@ describe("simplefin/sync", () => {
       expect(typeof result.totalBalance).toBe("number");
       expect(result.totalBalance).toBeCloseTo(125.75);
       expect(result.totalBalance).not.toBe("100.5025.25"); // string-concat regression guard
+    });
+  });
+
+  describe("hasSyncedToday", () => {
+    it("is false when there is no connection configured", async () => {
+      await removeSimplefinConnection(ctx.rawDb);
+      expect(await hasSyncedToday(ctx.rawDb, new Date(2026, 5, 10))).toBe(
+        false,
+      );
+    });
+
+    it("is false when the connection has never synced", async () => {
+      await saveSimplefinConnection(
+        ctx.rawDb,
+        "https://u:p@bridge.simplefin.org",
+      );
+      expect(await hasSyncedToday(ctx.rawDb, new Date(2026, 5, 10))).toBe(
+        false,
+      );
+    });
+
+    it("is true only on the same local calendar day as the last real sync, and does not follow the zero-API-cost local-recompute path", async () => {
+      await saveSimplefinConnection(
+        ctx.rawDb,
+        "https://u:p@bridge.simplefin.org",
+      );
+      mockGetAccounts.mockResolvedValueOnce({
+        accounts: [],
+        providerErrors: [],
+      });
+      const asOfDate = new Date(2026, 5, 10);
+      await runSimplefinSync(ctx.rawDb, asOfDate);
+
+      expect(await hasSyncedToday(ctx.rawDb, asOfDate)).toBe(true);
+      expect(await hasSyncedToday(ctx.rawDb, new Date(2026, 5, 11))).toBe(
+        false,
+      );
+
+      // recomputeTodaySnapshotFromLocal writes simplefin_balance_snapshots
+      // but never touches api_connections.lastSyncedAt — hasSyncedToday
+      // must not be fooled by that table into skipping a real sync.
+      await recomputeTodaySnapshotFromLocal(ctx.rawDb, new Date(2026, 5, 11));
+      expect(await hasSyncedToday(ctx.rawDb, new Date(2026, 5, 11))).toBe(
+        false,
+      );
     });
   });
 

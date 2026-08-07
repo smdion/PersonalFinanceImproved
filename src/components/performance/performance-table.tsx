@@ -18,23 +18,7 @@ import {
 } from "@/lib/config/display-labels";
 import { isRetirementParent } from "@/lib/config/account-types";
 
-export function PerformanceTable({
-  filtered,
-  accountRows,
-  masterAccounts,
-  activeCategory,
-  expandedYears,
-  onToggleYear,
-  editingCell,
-  editValue,
-  onStartEdit,
-  onEditValueChange,
-  onSaveEdit,
-  onKeyDown,
-  canEdit,
-  locked,
-  onToggleLock,
-}: {
+type PerformanceTableProps = {
   filtered: AnnualRow[];
   accountRows: AccountRow[];
   masterAccounts: MasterAccount[];
@@ -55,7 +39,25 @@ export function PerformanceTable({
   canEdit?: boolean;
   locked?: boolean;
   onToggleLock?: () => void;
-}) {
+};
+
+export function PerformanceTable({
+  filtered,
+  accountRows,
+  masterAccounts,
+  activeCategory,
+  expandedYears,
+  onToggleYear,
+  editingCell,
+  editValue,
+  onStartEdit,
+  onEditValueChange,
+  onSaveEdit,
+  onKeyDown,
+  canEdit,
+  locked,
+  onToggleLock,
+}: PerformanceTableProps) {
   const years = Array.from(new Set(filtered.map((r) => r.year))).sort(
     (a, b) => b - a,
   );

@@ -15,6 +15,7 @@ import type { Settings, PerPersonSettings } from "./types";
 
 type Props = {
   settings: Settings;
+  currentYear: number;
   perPersonSettings: PerPersonSettings;
   handlePerPersonRetirementAge: (personId: number, newAge: number) => void;
   handleRetirementSettingUpdate: (field: string, value: string) => void;
@@ -22,6 +23,7 @@ type Props = {
 
 export function TimelineSection({
   settings,
+  currentYear,
   perPersonSettings,
   handlePerPersonRetirementAge,
   handleRetirementSettingUpdate,
@@ -53,10 +55,10 @@ export function TimelineSection({
                     }
                     type="number"
                     className="text-sm"
-                    editable={!!settings}
+                    isEditable={!!settings}
                   />
                   <span className="text-caption text-faint">
-                    (now {new Date().getFullYear() - ps.birthYear})
+                    (now {currentYear - ps.birthYear})
                   </span>
                 </div>
               </div>
@@ -85,7 +87,7 @@ export function TimelineSection({
                 }
                 type="number"
                 className="text-sm"
-                editable={!!settings}
+                isEditable={!!settings}
               />
             </div>
           </div>
@@ -101,7 +103,7 @@ export function TimelineSection({
               onSave={(v) => handleRetirementSettingUpdate("endAge", v)}
               type="number"
               className="text-sm"
-              editable={!!settings}
+              isEditable={!!settings}
             />
           </div>
         </div>

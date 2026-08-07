@@ -43,7 +43,7 @@ type Props<T extends { id: number | string }> = {
   /* -- Styling ----------------------------------------------------- */
   className?: string;
   /** Compact mode reduces cell padding. */
-  compact?: boolean;
+  isCompact?: boolean;
 };
 
 /* ------------------------------------------------------------------ */
@@ -61,7 +61,7 @@ export function DataTable<T extends { id: number | string }>({
   onDelete,
   isDeleting,
   className = "",
-  compact = false,
+  isCompact = false,
 }: Props<T>) {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<T | null>(null);
@@ -69,7 +69,7 @@ export function DataTable<T extends { id: number | string }>({
   const [sortDir, setSortDir] = useState<SortDirection>("asc");
 
   const hasActions = !!(onDelete || renderForm);
-  const cellPad = compact ? "px-2 py-1" : "px-3 py-2";
+  const cellPad = isCompact ? "px-2 py-1" : "px-3 py-2";
 
   /* -- Sorting ----------------------------------------------------- */
   const sortedData = useMemo(() => {
@@ -249,27 +249,29 @@ export function DataTable<T extends { id: number | string }>({
                     {hasActions && (
                       <td className={`${cellPad} text-right space-x-2`}>
                         {renderForm && (
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="xs"
                             onClick={() => {
                               setEditing(row);
                               setShowForm(true);
                             }}
-                            className="text-blue-600 hover:text-blue-800 text-xs"
                           >
                             Edit
-                          </button>
+                          </Button>
                         )}
                         {onDelete && (
-                          <button
+                          <Button
+                            variant="danger"
+                            size="xs"
                             onClick={async () => {
                               if (await confirm("Delete this record?"))
                                 onDelete(row.id);
                             }}
                             disabled={isDeleting}
-                            className="text-red-600 hover:text-red-800 text-xs disabled:opacity-50"
                           >
                             Delete
-                          </button>
+                          </Button>
                         )}
                       </td>
                     )}

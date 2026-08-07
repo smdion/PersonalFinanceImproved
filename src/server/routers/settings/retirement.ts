@@ -126,7 +126,7 @@ export const retirementProcedures = {
       .input(
         z.object({
           personId: z.number().int(),
-          projectionYear: z.number().int(),
+          projectionYear: z.number().int().min(1900).max(2100),
           overrideSalary: zDecimal,
           contributionProfileId: z.number().int().nullable().optional(),
           notes: z.string().nullable().optional(),
@@ -144,7 +144,7 @@ export const retirementProcedures = {
         z.object({
           id: z.number().int(),
           personId: z.number().int(),
-          projectionYear: z.number().int(),
+          projectionYear: z.number().int().min(1900).max(2100),
           overrideSalary: zDecimal,
           contributionProfileId: z.number().int().nullable().optional(),
           notes: z.string().nullable().optional(),
@@ -178,7 +178,7 @@ export const retirementProcedures = {
       .input(
         z.object({
           personId: z.number().int(),
-          projectionYear: z.number().int(),
+          projectionYear: z.number().int().min(1900).max(2100),
           overrideMonthlyBudget: zDecimal,
           notes: z.string().nullable().optional(),
         }),
@@ -195,7 +195,7 @@ export const retirementProcedures = {
         z.object({
           id: z.number().int(),
           personId: z.number().int(),
-          projectionYear: z.number().int(),
+          projectionYear: z.number().int().min(1900).max(2100),
           overrideMonthlyBudget: zDecimal,
           notes: z.string().nullable().optional(),
         }),

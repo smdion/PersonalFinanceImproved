@@ -9,6 +9,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
+import { sumBy } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
 
 function TaxesCardImpl() {
@@ -61,24 +62,23 @@ function TaxesCardImpl() {
   let totalFica: number;
   if (isYtd) {
     const periods = (d: (typeof people)[0]) => d.paycheck!.periodsElapsedYtd;
-    totalFederal = people.reduce(
-      (s, d) => s + d.paycheck!.federalWithholding * periods(d),
-      0,
+    totalFederal = sumBy(
+      people,
+      (d) => d.paycheck!.federalWithholding * periods(d),
     );
-    totalFica = people.reduce(
-      (s, d) =>
-        s + (d.paycheck!.ficaSS + d.paycheck!.ficaMedicare) * periods(d),
-      0,
+    totalFica = sumBy(
+      people,
+      (d) => (d.paycheck!.ficaSS + d.paycheck!.ficaMedicare) * periods(d),
     );
   } else if (householdTax) {
     totalFederal = householdTax.federalTax;
     totalFica = householdTax.ficaSS + householdTax.ficaMedicare;
   } else {
     // Fallback to per-person sum if household calc unavailable
-    totalFederal = people.reduce((s, d) => s + (d.tax?.federalTax ?? 0), 0);
-    totalFica = people.reduce(
-      (s, d) => s + (d.tax?.ficaSS ?? 0) + (d.tax?.ficaMedicare ?? 0),
-      0,
+    totalFederal = sumBy(people, (d) => d.tax?.federalTax ?? 0);
+    totalFica = sumBy(
+      people,
+      (d) => (d.tax?.ficaSS ?? 0) + (d.tax?.ficaMedicare ?? 0),
     );
   }
 

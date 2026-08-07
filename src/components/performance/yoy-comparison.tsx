@@ -58,9 +58,9 @@ export function YoYComparison({ years, data }: YoYComparisonProps) {
   ];
 
   return (
-    <div className="mt-6 bg-surface-primary rounded-lg border border-indigo-200 shadow-sm overflow-x-auto">
-      <div className="px-4 py-3 bg-indigo-50 border-b border-indigo-200">
-        <h3 className="text-sm font-semibold text-indigo-900">
+    <div className="mt-6 bg-surface-primary rounded-lg border border-subtle shadow-sm overflow-x-auto">
+      <div className="px-4 py-3 bg-surface-secondary border-b border-subtle">
+        <h3 className="text-sm font-semibold text-primary">
           Year-over-Year Comparison
         </h3>
       </div>

@@ -12,15 +12,8 @@ import { formatCurrency } from "@/lib/utils/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
+import { SyncBadge } from "@/components/ui/sync-badge";
 import Link from "next/link";
-
-function SyncBadge({ source }: { source: string }) {
-  return (
-    <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-caption font-medium bg-blue-50 text-blue-600">
-      Synced from {source.toUpperCase()}
-    </span>
-  );
-}
 
 function ExternalLink({ href, label }: { href: string; label: string }) {
   return (
@@ -311,7 +304,7 @@ export default function AssetsPage() {
 
             {current.otherAssetItems.map((item) => (
               <div
-                key={item.name}
+                key={item.id ?? item.name}
                 className="group flex justify-between items-center py-1.5 border-b border-subtle"
               >
                 <div className="flex-1 min-w-0">

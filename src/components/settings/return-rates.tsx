@@ -5,6 +5,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { InlineEdit } from "@/components/ui/inline-edit";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatPercent } from "@/lib/utils/format";
 
 export function ReturnRatesSettings() {
@@ -24,8 +25,7 @@ export function ReturnRatesSettings() {
   const [newRate, setNewRate] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
-  if (isLoading)
-    return <div className="text-muted">Loading return rates...</div>;
+  if (isLoading) return <Skeleton className="h-6 w-48" />;
 
   const rows = data ?? [];
 
@@ -154,7 +154,7 @@ export function ReturnRatesSettings() {
                       parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                       type="number"
                       className="font-medium"
-                      editable={admin}
+                      isEditable={admin}
                     />
                   </td>
                   {admin && (

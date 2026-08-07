@@ -66,7 +66,7 @@ import { applyLumpSums } from "./lump-sum";
 export function runAccumulationYear(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
-  y: number,
+  yearIndex: number,
   setup: PreYearSetup,
 ): void {
   const { age, year, returnRate } = setup;
@@ -107,6 +107,7 @@ export function runAccumulationYear(
     limitGrowthRate,
     baseLimits,
     catchupLimits,
+    catchupGroupParticipants,
     currentAge,
     brokerageContributionRamp,
     decumulationDefaults,
@@ -120,7 +121,7 @@ export function runAccumulationYear(
   );
 
   // IRS limits grow annually
-  const lgf = Math.pow(1 + limitGrowthRate, y);
+  const lgf = Math.pow(1 + limitGrowthRate, yearIndex);
   const yearLimits: Record<AccountCategory, number> = Object.fromEntries(
     getAllCategories().map((cat) => {
       if (!getAccountTypeConfig(cat).hasIrsLimit) return [cat, 0];
@@ -133,10 +134,18 @@ export function runAccumulationYear(
     }),
   ) as Record<AccountCategory, number>;
 
-  // Add age-based catchup limits (grown at the same rate as base limits)
+  // Add age-based catchup limits (grown at the same rate as base limits).
+  // Gated per PERSON: catchupGroupParticipants (built by build-engine-payload.ts)
+  // lists who holds an account in each group, with their birth year, so each
+  // individual's own projected age this year determines their eligibility —
+  // not one shared household-average age (H10). Without this, a group either
+  // gets catch-up room for everyone or no one, and the super-catchup AGE
+  // WINDOW (60-63) can't be represented for a multi-person household at all.
+  // Falls back to the household-average age only when catchupGroupParticipants
+  // isn't provided (hand-built EngineInput in calculator-level tests) — the
+  // same fallback shape as perPersonBirthYears elsewhere in this type.
   if (catchupLimits) {
-    const projectedAge = currentAge + y;
-    for (const cat of categoriesWithIrsLimit()) {
+    const addCatchupForAge = (cat: AccountCategory, projectedAge: number) => {
       const cfg = getAccountTypeConfig(cat);
       const group = getLimitGroup(cat) ?? cat;
       const superRange = cfg.superCatchupAgeRange;
@@ -146,10 +155,23 @@ export function runAccumulationYear(
         projectedAge >= superRange[0] &&
         projectedAge <= superRange[1]
       ) {
-        const superKey = `${group}_super`;
-        yearLimits[cat] += roundToCents((catchupLimits[superKey] ?? 0) * lgf);
+        yearLimits[cat] += roundToCents(
+          (catchupLimits[`${group}_super`] ?? 0) * lgf,
+        );
       } else if (cfg.catchupAge !== null && projectedAge >= cfg.catchupAge) {
         yearLimits[cat] += roundToCents((catchupLimits[group] ?? 0) * lgf);
+      }
+    };
+
+    for (const cat of categoriesWithIrsLimit()) {
+      const group = getLimitGroup(cat) ?? cat;
+      const participants = catchupGroupParticipants?.[group];
+      if (participants) {
+        for (const participant of participants) {
+          addCatchupForAge(cat, year - participant.birthYear);
+        }
+      } else {
+        addCatchupForAge(cat, currentAge + yearIndex);
       }
     }
   }
@@ -157,10 +179,12 @@ export function runAccumulationYear(
   // Year 0 with real contribution data: use actual per-account amounts
   // instead of salary x rate which can create artificial overflow
   const useRealContribs =
-    y === 0 && activeBaseYearContributions && activeBaseYearEmployerMatch;
+    yearIndex === 0 &&
+    activeBaseYearContributions &&
+    activeBaseYearEmployerMatch;
 
   // Pro-rate year 0 contributions/match based on months remaining in the year
-  const proRate = y === 0 ? firstYearFraction : 1;
+  const proRate = yearIndex === 0 ? firstYearFraction : 1;
 
   let targetContribution: number;
   if (useRealContribs) {
@@ -170,7 +194,6 @@ export function runAccumulationYear(
     );
   } else if (contributionSpecs && contributionSpecs.length > 0) {
     // Sum projected per-account contributions (before IRS capping)
-    const lgf = Math.pow(1 + limitGrowthRate, y);
     targetContribution = roundToCents(
       contributionSpecs.reduce((sum, spec) => {
         if (spec.method === "percent_of_salary") {
@@ -254,7 +277,7 @@ export function runAccumulationYear(
     routeWarnings = [];
   } else if (contributionSpecs && contributionSpecs.length > 0) {
     // Per-account routing from DB specs -- respects each account's method
-    const limitGrowthFactor = Math.pow(1 + limitGrowthRate, y);
+    const limitGrowthFactor = Math.pow(1 + limitGrowthRate, yearIndex);
     const routed = routeFromSpecs(
       contributionSpecs,
       projectedSalary,
@@ -396,9 +419,9 @@ export function runAccumulationYear(
   }
 
   // Apply brokerage contribution ramp (additional $X x year index, starting year 1)
-  const rampYear = Math.min(y, MAX_BROKERAGE_RAMP_YEARS);
+  const rampYear = Math.min(yearIndex, MAX_BROKERAGE_RAMP_YEARS);
   const rampAmount =
-    (brokerageContributionRamp ?? 0) > 0 && y > 0
+    (brokerageContributionRamp ?? 0) > 0 && yearIndex > 0
       ? roundToCents(brokerageContributionRamp! * rampYear)
       : 0;
   if (rampAmount > 0) {
@@ -431,7 +454,7 @@ export function runAccumulationYear(
       projectedSalary,
       currentSalary,
       limitGrowthRate,
-      yearIndex: y,
+      yearIndex,
       proRate,
       overflowToBrokerage,
       rampAmount,
@@ -447,7 +470,9 @@ export function runAccumulationYear(
   // Apply growth to each bucket (pro-rated for year 0)
   // Extracted to growth-application.ts -- applies return rate to all balance structures.
   const effectiveReturn =
-    y === 0 ? Math.pow(1 + returnRate, firstYearFraction) - 1 : returnRate;
+    yearIndex === 0
+      ? Math.pow(1 + returnRate, firstYearFraction) - 1
+      : returnRate;
   applyGrowth({ effectiveReturn, balances, acctBal });
   // Per-individual-account growth -- extracted to individual-account-tracking.ts
   const indGrowth = hasIndividualAccounts
@@ -566,7 +591,7 @@ export function runAccumulationYear(
       salaryOverrideMap.has(year) || perPersonSalaryOverrides.has(year),
     hasBudgetOverride: budgetOverrideMap.has(year),
     proRateFraction:
-      y === 0 && firstYearFraction < 1 ? firstYearFraction : null,
+      yearIndex === 0 && firstYearFraction < 1 ? firstYearFraction : null,
     targetContribution,
     config,
     slots,
@@ -585,7 +610,7 @@ export function runAccumulationYear(
     individualAccountBalances: indYearBalances,
     returnRate: effectiveReturn,
     annualizedReturnRate:
-      y === 0 && firstYearFraction < 1
+      yearIndex === 0 && firstYearFraction < 1
         ? Math.pow(1 + effectiveReturn, 1 / firstYearFraction) - 1
         : returnRate,
     warnings: routeWarnings,

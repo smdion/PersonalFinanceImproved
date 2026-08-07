@@ -12,6 +12,11 @@ vi.mock("@/lib/hooks/use-debounced-value", () => ({
   useDebouncedValue: <T,>(v: T) => v,
 }));
 
+vi.mock("@/lib/context/user-context", () => ({
+  useUser: () => ({ role: "admin" }),
+  isAdmin: () => true,
+}));
+
 vi.mock("@/components/ui/page-header", () => ({
   PageHeader: ({ title }: { title: string }) => <h1>{title}</h1>,
 }));

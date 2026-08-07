@@ -13,7 +13,6 @@ import type {
   DecumulationSlot,
 } from "@/lib/calculators/types";
 import {
-  type AccountCategory as AcctCat,
   getAccountSegments,
   getSegmentBalance,
   getAllCategories,
@@ -32,7 +31,7 @@ import {
   colEngineTaxType,
   slotBucketWithdrawal,
   iaBelongsToBucket,
-  pctOf,
+  percentOf,
   lumpSumsForBucket,
   lumpSumsForCategory,
   lumpSumTotal,
@@ -61,7 +60,7 @@ export type DecumulationRowProps = {
 
 export function DecumulationRow({
   yr: dyr,
-  state: s,
+  state,
   parentCategoryFilter: _parentCategoryFilter,
   isPhaseTransition,
   hasOverride,
@@ -92,7 +91,7 @@ export function DecumulationRow({
     withdrawalRoutingMode: _withdrawalRoutingMode,
     budgetProfileSummaries,
     result,
-  } = s;
+  } = state;
   if (!result) return null;
 
   // Alias for code extracted from inline — uses `yr` throughout
@@ -548,7 +547,7 @@ export function DecumulationRow({
               ? dpt.byTaxType[bucket]
               : yr.balanceByTaxType[bucket];
             const dptTotal = dpt ? dpt.balance : yr.endBalance;
-            const pct = pctOf(bal, dptTotal);
+            const pct = percentOf(bal, dptTotal);
             // Compute growth for this tax bucket from individualAccountBalances
             const bucketIabs = yr.individualAccountBalances ?? [];
             const bucketAccts = (
@@ -643,7 +642,7 @@ export function DecumulationRow({
               const catKey = colKeyParts(col.key).category;
               const bal = dpt ? (dpt.byAccount[col.key] ?? 0) : col.val;
               const dptTotalBal = dpt ? dpt.balance : yr.endBalance;
-              const pct = pctOf(bal, dptTotalBal);
+              const pct = percentOf(bal, dptTotalBal);
               // Compute authoritative total change from engine
               const decPrevYr = result.projectionByYear.find(
                 (y) => y.year === yr.year - 1,
@@ -711,7 +710,7 @@ export function DecumulationRow({
                   decAcctItems.push({
                     label: acctName,
                     amount: deflate(Math.max(0, spBal), yr.year),
-                    pct: Math.round(frac * 100),
+                    percent: Math.round(frac * 100),
                     taxType: itemTaxType(catKey, entryTaxType),
                     sub: subItems.length > 0 ? subItems : undefined,
                   });
@@ -815,7 +814,7 @@ export function DecumulationRow({
             return {
               label: taxTypeLabel(b),
               amount: deflate(bVal, yr.year),
-              pct: pctOf(bVal, tb),
+              percent: percentOf(bVal, tb),
             };
           });
           return renderTooltip({
@@ -887,10 +886,12 @@ export function DecumulationRow({
                 ? getAllCategories()
                     .filter(
                       (c) =>
-                        ACCOUNT_TYPE_CONFIG[c as AcctCat]?.supportsRothSplit,
+                        ACCOUNT_TYPE_CONFIG[c as AccountCategory]
+                          ?.supportsRothSplit,
                     )
                     .map((c) => {
-                      const bal = dyr.preWithdrawalAcctBal![c as AcctCat];
+                      const bal =
+                        dyr.preWithdrawalAcctBal![c as AccountCategory];
                       return bal && "roth" in bal
                         ? // eslint-disable-next-line no-restricted-syntax -- type narrowing for untyped API response
                           ` ${c} pre-wd: trad=${formatCurrency(deflate((bal as unknown as Record<string, number>).traditional ?? 0, yr.year))}, roth=${formatCurrency(deflate((bal as unknown as Record<string, number>).roth ?? 0, yr.year))}`

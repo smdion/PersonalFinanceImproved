@@ -18,6 +18,7 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { taxTypeLabel } from "@/lib/utils/colors";
+import { getDisplayConfig } from "@/lib/config/account-types";
 import dynamic from "next/dynamic";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { ContributionAccountsSettings } from "@/components/portfolio/contribution-accounts";
@@ -81,8 +82,11 @@ function groupByPerformanceAccount(
     if (!group) {
       const perfName = accountDisplayName({
         displayName: a.perfDisplayName ?? null,
-        accountLabel:
-          a.perfAccountLabel ?? `${a.accountType} (${a.institution})`,
+        // null (not a hand-built fallback string) when there's no real
+        // linked label — lets accountDisplayName fall through to its
+        // casing-aware Priority-3 construction instead of returning a raw
+        // lowercase DB key like "ira (Vanguard)" verbatim (M40).
+        accountLabel: a.perfAccountLabel ?? null,
         accountType: a.accountType,
         institution: a.institution,
       });
@@ -132,7 +136,7 @@ function buildSubRowLabel(
     const perfType = (group.perfAccountType ?? "").toLowerCase();
     typeLabel =
       rawType !== perfType && rawType !== a.taxType.toLowerCase()
-        ? a.accountType
+        ? getDisplayConfig(a.accountType).displayLabel
         : taxLabel;
   }
 
@@ -299,7 +303,7 @@ export function PortfolioContent() {
       {/* New Snapshot Form */}
       {canEdit && (
         <SlidePanel
-          open={showNewSnapshot}
+          isOpen={showNewSnapshot}
           onClose={() => setShowNewSnapshot(false)}
           title="New Snapshot"
         >

@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useScenario } from "@/lib/context/scenario-context";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { sumBy } from "@/lib/utils/math";
 import { HelpTip } from "@/components/ui/help-tip";
 import {
   accountColor,
@@ -72,67 +73,58 @@ export function ContributionSnapshot() {
   // Use average periodsPerYear for household totals
   const avgPeriodsPerYear =
     activePeople.length > 0
-      ? activePeople.reduce((s, p) => s + p.periodsPerYear!, 0) /
-        activePeople.length
+      ? sumBy(activePeople, (p) => p.periodsPerYear!) / activePeople.length
       : 26;
   const householdMult = getContribMultiplier(contribPeriod, avgPeriodsPerYear);
 
   // Household totals (apply multiplier) — include joint, non-overlapping groups by parentCategory
   const jt = jointTotals ?? { totalWithoutMatch: 0, totalWithMatch: 0 };
-  const jointRetNoMatch = jointAccountTypes
-    .filter((a) => isRetirementParent(a.parentCategory))
-    .reduce((s, a) => s + a.employeeContrib, 0);
-  const jointRetWithMatch = jointAccountTypes
-    .filter((a) => isRetirementParent(a.parentCategory))
-    .reduce((s, a) => s + a.totalContrib, 0);
-  const jointPortNoMatch = jointAccountTypes
-    .filter((a) => isPortfolioParent(a.parentCategory))
-    .reduce((s, a) => s + a.employeeContrib, 0);
-  const jointPortWithMatch = jointAccountTypes
-    .filter((a) => isPortfolioParent(a.parentCategory))
-    .reduce((s, a) => s + a.totalContrib, 0);
+  const jointRetNoMatch = sumBy(
+    jointAccountTypes.filter((a) => isRetirementParent(a.parentCategory)),
+    (a) => a.employeeContrib,
+  );
+  const jointRetWithMatch = sumBy(
+    jointAccountTypes.filter((a) => isRetirementParent(a.parentCategory)),
+    (a) => a.totalContrib,
+  );
+  const jointPortNoMatch = sumBy(
+    jointAccountTypes.filter((a) => isPortfolioParent(a.parentCategory)),
+    (a) => a.employeeContrib,
+  );
+  const jointPortWithMatch = sumBy(
+    jointAccountTypes.filter((a) => isPortfolioParent(a.parentCategory)),
+    (a) => a.totalContrib,
+  );
 
   // Household totals from server-computed view-mode values
   const householdRetNoMatch =
-    (activePeople.reduce(
-      (s, p) => s + p.totals.views[viewMode].retirementWithoutMatch,
-      0,
+    (sumBy(
+      activePeople,
+      (p) => p.totals.views[viewMode].retirementWithoutMatch,
     ) +
       jointRetNoMatch) *
     householdMult;
   const householdRetWithMatch =
-    (activePeople.reduce(
-      (s, p) => s + p.totals.views[viewMode].retirementWithMatch,
-      0,
-    ) +
+    (sumBy(activePeople, (p) => p.totals.views[viewMode].retirementWithMatch) +
       jointRetWithMatch) *
     householdMult;
   const householdPortNoMatch =
-    (activePeople.reduce(
-      (s, p) => s + p.totals.views[viewMode].portfolioWithoutMatch,
-      0,
+    (sumBy(
+      activePeople,
+      (p) => p.totals.views[viewMode].portfolioWithoutMatch,
     ) +
       jointPortNoMatch) *
     householdMult;
   const householdPortWithMatch =
-    (activePeople.reduce(
-      (s, p) => s + p.totals.views[viewMode].portfolioWithMatch,
-      0,
-    ) +
+    (sumBy(activePeople, (p) => p.totals.views[viewMode].portfolioWithMatch) +
       jointPortWithMatch) *
     householdMult;
   const householdTotalNoMatch =
-    (activePeople.reduce(
-      (s, p) => s + p.totals.views[viewMode].totalWithoutMatch,
-      0,
-    ) +
+    (sumBy(activePeople, (p) => p.totals.views[viewMode].totalWithoutMatch) +
       jt.totalWithoutMatch) *
     householdMult;
   const householdTotalWithMatch =
-    (activePeople.reduce(
-      (s, p) => s + p.totals.views[viewMode].totalWithMatch,
-      0,
-    ) +
+    (sumBy(activePeople, (p) => p.totals.views[viewMode].totalWithMatch) +
       jt.totalWithMatch) *
     householdMult;
 

@@ -6,6 +6,7 @@ import {
   type FundAllocation,
 } from "./pool-distribution-editor";
 import { formatCurrency } from "@/lib/utils/format";
+import { sumBy } from "@/lib/utils/math";
 import { type GoalProjection, monthKey } from "./types";
 
 const MONTH_NAMES = [
@@ -94,7 +95,7 @@ export function MonthOverrideModal({
   const visibleFunds = funds.filter((f) => visibleFundIds.has(f.goalId));
   const hiddenFunds = funds.filter((f) => !visibleFundIds.has(f.goalId));
 
-  const total = visibleFunds.reduce((s, f) => s + f.amount, 0);
+  const total = sumBy(visibleFunds, (f) => f.amount);
   const isOverAllocated = total > localPool + 1;
   const isUnderAllocated = total < localPool - 1;
 

@@ -15,6 +15,7 @@ import {
   getApiConnection,
 } from "@/lib/budget-api";
 import { accountDisplayName } from "@/lib/utils/format";
+import { roundToCents } from "@/lib/utils/math";
 import { mappingsWithTypedIds } from "@/lib/utils/account-mapping";
 import { accountMappingSchema } from "@/lib/db/json-schemas";
 import { getApiAccountBalanceMap } from "@/server/helpers/api-balance-resolution";
@@ -365,7 +366,7 @@ export const syncMappingsRouter = createTRPCRouter({
       const mappings = conn.accountMappings ?? [];
       if (mappings.length === 0) continue;
 
-      let changed = false;
+      let hasChanges = false;
       const updated = [...mappings];
 
       // Load reference data for resolution
@@ -377,7 +378,7 @@ export const syncMappingsRouter = createTRPCRouter({
           ctx.db
             .select()
             .from(schema.portfolioSnapshots)
-            .orderBy(sql`snapshot_date DESC`)
+            .orderBy(sql`${schema.portfolioSnapshots.snapshotDate} DESC`)
             .limit(1),
         ]);
 
@@ -444,7 +445,7 @@ export const syncMappingsRouter = createTRPCRouter({
             loanId: Number(mParts[1]),
             loanMapType: mParts[2] as "propertyValue" | "loanBalance",
           };
-          changed = true;
+          hasChanges = true;
           report.push({
             service: conn.service,
             mapping: m.localName,
@@ -461,7 +462,7 @@ export const syncMappingsRouter = createTRPCRouter({
             localId: `asset:${assetMatch.id}`,
             assetId: assetMatch.id,
           };
-          changed = true;
+          hasChanges = true;
           report.push({
             service: conn.service,
             mapping: m.localName,
@@ -478,7 +479,7 @@ export const syncMappingsRouter = createTRPCRouter({
             localId: `performance:${perfId}`,
             performanceAccountId: perfId,
           };
-          changed = true;
+          hasChanges = true;
           report.push({
             service: conn.service,
             mapping: m.localName,
@@ -494,7 +495,7 @@ export const syncMappingsRouter = createTRPCRouter({
         });
       }
 
-      if (changed) {
+      if (hasChanges) {
         await ctx.db
           .update(schema.apiConnections)
           .set({ accountMappings: updated })
@@ -595,7 +596,7 @@ export const syncMappingsRouter = createTRPCRouter({
             const scaled = Number(row.amount) * ratio;
             await ctx.db
               .update(schema.portfolioAccounts)
-              .set({ amount: String(Math.round(scaled * 100) / 100) })
+              .set({ amount: String(roundToCents(scaled)) })
               .where(eq(schema.portfolioAccounts.id, row.id));
           }
         }

@@ -6,6 +6,8 @@
  * Returns null when there are fewer than 2 snapshots (no change to derive).
  */
 
+import { MS_PER_DAY } from "@/lib/constants";
+
 export type PortfolioSnapshot = {
   id: number;
   date: string;
@@ -107,7 +109,7 @@ export function derivePortfolioQuickLookStats(
     const prev = sorted[i]!;
     const delta = s.total - prev.total;
     const days = Math.round(
-      (new Date(s.date).getTime() - new Date(prev.date).getTime()) / 86400000,
+      (new Date(s.date).getTime() - new Date(prev.date).getTime()) / MS_PER_DAY,
     );
     const periodReturn = prev.total > 0 ? delta / prev.total : 0;
     const deltaPct = periodReturn * 100;

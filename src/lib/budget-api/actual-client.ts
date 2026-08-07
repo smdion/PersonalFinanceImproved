@@ -15,8 +15,9 @@ import type {
   NewBudgetTransaction,
 } from "./types";
 import { fromCents, toCents } from "./conversions";
-import { classifyResponse, classifyThrown, retryWithBackoff } from "./errors";
+import { budgetApiRequest } from "./errors";
 import { transactionIdempotencyKey } from "./idempotency";
+import { log } from "@/lib/logger";
 
 // -- Actual API response types --
 
@@ -161,6 +162,10 @@ function mapTransaction(t: ActualTransaction): BudgetTransaction {
 export class ActualClient implements BudgetAPIClient {
   readonly supportsDeltaSync = false;
 
+  getExcludedCategoryNames(): Set<string> {
+    return new Set();
+  }
+
   private readonly headers: Record<string, string>;
   private readonly budgetPath: string;
 
@@ -169,6 +174,10 @@ export class ActualClient implements BudgetAPIClient {
     apiKey: string,
     private readonly budgetSyncId: string,
   ) {
+    // L130 (2026-08-06): serverUrl may be http:// (see url-safety.ts —
+    // permitted for LAN-friendly self-hosted use), in which case this
+    // x-api-key header is sent in cleartext. Accepted tradeoff, documented
+    // in validateOutboundUrl()'s doc comment; not fixed here.
     this.headers = {
       "x-api-key": apiKey,
       "Content-Type": "application/json",
@@ -178,36 +187,10 @@ export class ActualClient implements BudgetAPIClient {
     this.budgetPath = `${base}/v1/budgets/${budgetSyncId}`;
   }
 
-  /**
-   * Internal fetch wrapper. v0.5 expert-review M19/M22:
-   * - Throws typed BudgetApiError instead of generic Error so call sites
-   *   can distinguish auth/rate-limit/server/network/timeout failures.
-   * - Wrapped in retryWithBackoff which honors Retry-After on 429 and
-   *   does exponential backoff (1s/2s/4s capped at 30s) for retryable
-   *   errors. Auth + client errors are NOT retried.
-   */
+  /** Internal fetch wrapper — see budgetApiRequest in ./errors (M45). */
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
     const url = `${this.budgetPath}${path}`;
-    return retryWithBackoff(async () => {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15_000);
-      try {
-        const res = await fetch(url, {
-          ...init,
-          headers: { ...this.headers, ...init?.headers },
-          signal: controller.signal,
-        });
-        if (!res.ok) {
-          const body = await res.text().catch(() => "");
-          throw classifyResponse(res, body);
-        }
-        return (await res.json()) as T;
-      } catch (e) {
-        throw classifyThrown(e);
-      } finally {
-        clearTimeout(timeout);
-      }
-    });
+    return budgetApiRequest<T>(url, this.headers, init);
   }
 
   async testConnection(): Promise<boolean> {
@@ -232,18 +215,27 @@ export class ActualClient implements BudgetAPIClient {
     const res = await this.request<{ data: ActualAccount[] }>("/accounts");
     // Fetch balances for each account
     const accounts = res.data.map(mapAccount);
-    // Try to get balances individually
-    for (const acct of accounts) {
-      try {
-        const balRes = await this.request<{ data: { balance: number } }>(
-          `/accounts/${acct.id}/balance`,
-        );
-        acct.balance = fromCents(balRes.data.balance);
-        acct.clearedBalance = acct.balance;
-      } catch {
-        // Balance may already be included in the account data
-      }
-    }
+    // Try to get balances individually (parallelized — each call already
+    // retries up to 3x with exponential backoff via budgetApiRequest).
+    await Promise.all(
+      accounts.map(async (acct) => {
+        try {
+          const balRes = await this.request<{ data: { balance: number } }>(
+            `/accounts/${acct.id}/balance`,
+          );
+          acct.balance = fromCents(balRes.data.balance);
+          acct.clearedBalance = acct.balance;
+        } catch (err) {
+          // Balance may already be included in the account data, but this
+          // could also be a real failure (auth, network, etc.) — log it so
+          // it's debuggable instead of failing silently.
+          log("warn", "actual_client.balance_fetch_failed", {
+            accountId: acct.id,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }),
+    );
     return accounts;
   }
 

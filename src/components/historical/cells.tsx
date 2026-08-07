@@ -40,7 +40,7 @@ export function NoteIndicator({ note }: { note: string }) {
   return (
     <span className="relative group/note inline-block ml-0.5">
       <span className="inline-block w-0 h-0 border-l-[5px] border-l-amber-400 border-b-[5px] border-b-transparent cursor-help" />
-      <span className="absolute bottom-full left-0 mb-1 hidden group-hover/note:block bg-surface-primary text-white text-caption px-2 py-1 rounded shadow-lg max-w-[200px] whitespace-normal z-50">
+      <span className="absolute bottom-full left-0 mb-1 hidden group-hover/note:block bg-slate-900 text-slate-100 text-caption px-2 py-1 rounded shadow-lg max-w-[200px] whitespace-normal z-50">
         {note}
       </span>
     </span>
@@ -364,7 +364,7 @@ export function PerfEndBalCell({
         </span>
         {showTip && (
           <span
-            className="fixed z-[100] bg-surface-primary text-white text-caption px-2.5 py-1.5 rounded shadow-lg w-[260px] whitespace-normal leading-relaxed pointer-events-none"
+            className="fixed z-[100] bg-slate-900 text-slate-100 text-caption px-2.5 py-1.5 rounded shadow-lg w-[260px] whitespace-normal leading-relaxed pointer-events-none"
             style={{
               transform: "translate(-100%, -100%)",
               marginLeft: "-8px",

@@ -115,9 +115,9 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
   });
 
   it("useBudgetMutations returns the expected 9-mutation shape", async () => {
-    const { useBudgetMutations } =
+    const { useBudgetIntegrationsMutations } =
       await import("@/components/settings/integrations/hooks/use-budget-mutations");
-    const { result } = renderHook(() => useBudgetMutations());
+    const { result } = renderHook(() => useBudgetIntegrationsMutations());
     const keys = Object.keys(result.current.mutations).sort();
     expect(keys).toEqual(
       [

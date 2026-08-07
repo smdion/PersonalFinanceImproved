@@ -6,7 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import type { PreviewData, Service } from "./integrations-types";
 import { useDriftMutations } from "./integrations/hooks/use-drift-mutations";
-import { useBudgetMutations } from "./integrations/hooks/use-budget-mutations";
+import { useBudgetIntegrationsMutations } from "./integrations/hooks/use-budget-mutations";
 import { useSavingsMutations } from "./integrations/hooks/use-savings-mutations";
 import { useContribMutations } from "./integrations/hooks/use-contrib-mutations";
 import { usePortfolioMutations } from "./integrations/hooks/use-portfolio-mutations";
@@ -42,7 +42,7 @@ export function PreviewPanel({
   // only so a pending flip in one section does not re-render the other four
   // once PR 6 section components land with `React.memo`.
   const driftMutations = useDriftMutations();
-  const budgetMutations = useBudgetMutations();
+  const budgetMutations = useBudgetIntegrationsMutations();
   const savingsMutations = useSavingsMutations();
   const contribMutations = useContribMutations();
   const portfolioMutations = usePortfolioMutations();
@@ -131,7 +131,7 @@ export function PreviewPanel({
       />
 
       {/* Dashboard — compact overview row */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-surface-sunken rounded-lg p-3">
           <p className="text-caption font-medium text-muted uppercase tracking-wide">
             Cash

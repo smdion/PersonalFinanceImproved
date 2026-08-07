@@ -6,13 +6,13 @@
  * On state: blue track, white dot flush-right — clearly "on".
  */
 export function Toggle({
-  checked,
+  isChecked,
   onChange,
   label,
   size = "sm",
   title,
 }: {
-  checked: boolean;
+  isChecked: boolean;
   onChange: (checked: boolean) => void;
   label?: string;
   size?: "xs" | "sm";
@@ -27,16 +27,16 @@ export function Toggle({
     <button
       type="button"
       role="switch"
-      aria-checked={checked}
+      aria-checked={isChecked}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        onChange(!checked);
+        onChange(!isChecked);
       }}
       title={title}
       className={`inline-flex items-center gap-1.5 ${label ? "px-2 py-1 rounded text-caption font-medium" : ""} ${
         label
-          ? checked
+          ? isChecked
             ? "bg-blue-50 text-blue-700 border border-blue-200"
             : "bg-surface-sunken text-muted border hover:bg-surface-elevated"
           : ""
@@ -44,14 +44,14 @@ export function Toggle({
     >
       <span
         className={`inline-block ${track} rounded-full relative transition-colors duration-200 ${
-          checked ? "bg-blue-500" : "bg-surface-strong border border-strong"
+          isChecked ? "bg-blue-500" : "bg-surface-strong border border-strong"
         }`}
       >
         <span
           className={`absolute top-0.5 ${dot} rounded-full shadow-sm transition-all duration-200 ${
             // v0.5 M26: design tokens, not hardcoded grays. Off-state dot was
             // bg-gray-400 (invisible on light surfaces in some themes).
-            checked
+            isChecked
               ? `${dotOn} bg-white`
               : `${dotOff} bg-surface-elevated dark:bg-surface-primary border border-default`
           }`}

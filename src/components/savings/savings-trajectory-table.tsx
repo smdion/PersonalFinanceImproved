@@ -1,29 +1,14 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { formatCurrency } from "@/lib/utils/format";
-import { FUND_COLORS } from "./fund-colors";
+import { formatCurrency, MONTH_NAMES_SHORT } from "@/lib/utils/format";
+import { FUND_COLORS } from "@/lib/utils/colors";
 import type { GoalProjection } from "./types";
 import { trpc } from "@/lib/trpc";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 
-const MONTH_NAMES = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
 function monthLabel(d: Date): string {
-  return `${MONTH_NAMES[d.getMonth()]} 1 '${String(d.getFullYear()).slice(2)}`;
+  return `${MONTH_NAMES_SHORT[d.getMonth()]} 1 '${String(d.getFullYear()).slice(2)}`;
 }
 
 function monthKeyStr(d: Date): string {

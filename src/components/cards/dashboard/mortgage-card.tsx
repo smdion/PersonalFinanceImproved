@@ -4,7 +4,7 @@ import { memo } from "react";
 
 import { trpc } from "@/lib/trpc";
 import { Card, Metric, ProgressBar } from "@/components/ui/card";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { LoadingCard, ErrorCard } from "./utils";
 
 function formatDuration(months: number): string {
@@ -47,13 +47,19 @@ function MortgageCardImpl() {
       <ProgressBar
         value={primaryLoan.payoffPercent}
         label="Payoff progress"
-        color="bg-green-500"
+        variant="success"
         tooltip={`${formatPercent(primaryLoan.payoffPercent)} of original balance paid off — ${formatCurrency(primaryLoan.currentBalance)} remaining`}
       />
       <div className="mt-2 flex justify-between text-sm">
         <span className="text-muted">Remaining</span>
         <span className="text-primary">
           {Math.ceil(primaryLoan.remainingMonths / 12)} years
+        </span>
+      </div>
+      <div className="flex justify-between text-sm">
+        <span className="text-muted">Payoff date</span>
+        <span className="text-primary">
+          {formatDate(primaryLoan.payoffDate, "short")}
         </span>
       </div>
       {(data?.result.totalMonthsSaved ?? 0) > 0 && (

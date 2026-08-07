@@ -7,7 +7,7 @@ import { MethodologyContent } from "@/components/methodology-content";
 export default function MethodologyPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
-      <PageHeader title="Monte Carlo Methodology" />
+      <PageHeader title="Simulation Methodology" />
       <MethodologyContent />
       <div className="text-center pt-4">
         <Link

@@ -94,7 +94,7 @@ export function AccumulationMethodologyContent() {
           </li>
           <li>
             <strong>Balance growth</strong> — all account balances grow by the
-            year&apos;s simulated return (deterministic or Monte Carlo sampled).
+            year&apos;s simulated return (deterministic or simulation sampled).
           </li>
         </ol>
 

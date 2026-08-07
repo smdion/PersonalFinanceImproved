@@ -5,7 +5,7 @@
  * Profiles are managed on the budget page (the what-if control center)
  * and consumed by the relocation tool and potentially the retirement page.
  */
-import { z } from "zod";
+import { z } from "zod/v4";
 import { eq } from "drizzle-orm";
 import { createTRPCRouter } from "../trpc";
 import { canDeleteContribProfile } from "@/lib/pure/profiles";

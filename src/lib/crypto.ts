@@ -115,8 +115,8 @@ export function decryptString(envelope: EncryptedEnvelope): string {
  * Encrypt a JSON-serializable object. Returns an envelope.
  * Use this for api_connections.config and similar JSONB columns.
  */
-export function encryptJson(value: unknown): EncryptedEnvelope {
-  return encryptString(JSON.stringify(value));
+export function encryptJson(jsonPayload: unknown): EncryptedEnvelope {
+  return encryptString(JSON.stringify(jsonPayload));
 }
 
 /**
@@ -137,9 +137,9 @@ export function decryptJson<T>(envelope: EncryptedEnvelope): T {
  * The next write should always re-encrypt via encryptJson() so legacy
  * values get upgraded transparently.
  */
-export function readMaybeEncrypted<T>(value: unknown): T {
-  if (isEncryptedEnvelope(value)) {
-    return decryptJson<T>(value);
+export function readMaybeEncrypted<T>(storedValue: unknown): T {
+  if (isEncryptedEnvelope(storedValue)) {
+    return decryptJson<T>(storedValue);
   }
-  return value as T;
+  return storedValue as T;
 }

@@ -163,6 +163,16 @@ export const CHART_COLORS = {
   perfHsa: "#10b981", // emerald-500
   // Linked balance sparkline (SimpleFIN)
   linkedBalance: "#0d9488", // teal-600
+  // Expenses: budget-vs-actual bar chart
+  expenseBudgeted: "#94a3b8", // slate-400
+  expenseUnder: "#22c55e", // green-500
+  expenseOver: "#ef4444", // red-500
+  // Generic muted axis tick color (Recharts)
+  axisMuted: "#6b7280", // gray-500
+  // Withdrawal strategy comparison chart (fixed dark-styled tooltip/axes)
+  wdComparisonGrid: "#374151", // gray-700
+  wdComparisonAxis: "#9ca3af", // gray-400
+  wdComparisonTooltipBg: "#1f2937", // gray-800
 };
 
 /** Hex colors for tax-type pie/chart segments (Recharts needs hex, not Tailwind classes) */
@@ -189,4 +199,82 @@ const DEFAULT_CHART_HEX = { standard: "#6b7280", roth: "#9ca3af" }; // gray-500 
 export function categoryChartHex(category: string, isRoth: boolean): string {
   const entry = CATEGORY_CHART_HEX[category] ?? DEFAULT_CHART_HEX;
   return isRoth ? entry.roth : entry.standard;
+}
+
+// ── Brand colors (logo, marketing surfaces) ──
+
+export const BRAND_COLORS = {
+  /** Ledgr logo accent (sky-400) — used by the login-page mark. */
+  logoAccent: "#38bdf8",
+};
+
+// ── Fund palette (sinking-fund / savings-goal charts) ──
+// Index by fund order. Shared by every savings component that colors funds
+// consistently (chart lines, table cells, legend chips).
+
+export const FUND_COLORS = [
+  "#3b82f6", // blue-500
+  "#10b981", // emerald-500
+  "#f59e0b", // amber-500
+  "#8b5cf6", // violet-500
+  "#ef4444", // red-500
+  "#06b6d4", // cyan-500
+  "#ec4899", // pink-500
+  "#14b8a6", // teal-500
+  "#f97316", // orange-500
+  "#6366f1", // indigo-500
+];
+
+// ── Withdrawal-strategy comparison palette ──
+// 8 distinct colors for the strategy comparison chart/table.
+
+export const STRATEGY_COMPARISON_COLORS = [
+  "#4f46e5", // indigo-600
+  "#ef4444", // red-500
+  "#10b981", // emerald-500
+  "#f59e0b", // amber-500
+  "#8b5cf6", // violet-500
+  "#3b82f6", // blue-500
+  "#ec4899", // pink-500
+  "#14b8a6", // teal-500
+];
+
+// ── Person palette (historical jobs/salary charts) ──
+
+export const PERSON_COLORS = ["#3b82f6", "#a855f7", "#22c55e", "#f59e0b"];
+
+// ── Expense pie-chart palette ──
+
+export const EXPENSE_PIE_COLORS = [
+  "#3b82f6",
+  "#22c55e",
+  "#f59e0b",
+  "#ef4444",
+  "#a855f7",
+  "#06b6d4",
+  "#ec4899",
+  "#14b8a6",
+  "#f97316",
+  "#6366f1",
+  "#84cc16",
+  "#e11d48",
+];
+
+/** Dot/bar color for "essential" spending (blue-500). */
+export function essentialColor(): string {
+  return "bg-blue-500";
+}
+
+/** Dot/bar color for "discretionary" spending (purple-400). */
+export function discretionaryColor(): string {
+  return "bg-purple-400";
+}
+
+/**
+ * Age-based glide-path gradient — darker (lower lightness) means a higher
+ * return rate. `intensity` is 0–1 (typically `(rate - min) / (max - min)`).
+ */
+export function glidePathHsl(intensity: number): string {
+  const lightness = 78 - intensity * 38;
+  return `hsl(210, 70%, ${lightness}%)`;
 }

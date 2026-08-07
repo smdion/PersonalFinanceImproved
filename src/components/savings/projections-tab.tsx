@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { PctAllocator } from "./pct-allocator";
+import { AddTransactionForm } from "./add-transaction-form";
 import {
   GoalProjection,
   PlannedTxForm,
@@ -409,105 +410,6 @@ function ProjectionCell({
   );
 }
 
-/* ── Add Transaction Form ── */
-
-function AddTransactionForm({
-  goalName,
-  txForm,
-  setTxForm,
-  onAddTx,
-  createTxPending,
-  onCancel,
-}: {
-  goalName: string;
-  txForm: PlannedTxForm;
-  setTxForm: (form: PlannedTxForm) => void;
-  onAddTx: () => void;
-  createTxPending: boolean;
-  onCancel: () => void;
-}) {
-  return (
-    <Card title={`Add Transaction — ${goalName}`} className="mb-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div>
-          <label className="block text-xs text-muted mb-1">Date</label>
-          <input
-            type="date"
-            value={txForm.transactionDate}
-            onChange={(e) =>
-              setTxForm({ ...txForm, transactionDate: e.target.value })
-            }
-            className="w-full border rounded px-2 py-1 text-sm bg-surface-primary text-primary"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-muted mb-1">
-            Amount (negative = spending)
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            value={txForm.amount}
-            onChange={(e) => setTxForm({ ...txForm, amount: e.target.value })}
-            placeholder="-5000"
-            className="w-full border rounded px-2 py-1 text-sm bg-surface-primary text-primary"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-muted mb-1">Description</label>
-          <input
-            type="text"
-            value={txForm.description}
-            onChange={(e) =>
-              setTxForm({ ...txForm, description: e.target.value })
-            }
-            placeholder="Spain trip"
-            className="w-full border rounded px-2 py-1 text-sm bg-surface-primary text-primary"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-muted mb-1">Recurring?</label>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={txForm.isRecurring}
-              onChange={(e) =>
-                setTxForm({ ...txForm, isRecurring: e.target.checked })
-              }
-            />
-            {txForm.isRecurring && (
-              <input
-                type="number"
-                value={txForm.recurrenceMonths}
-                onChange={(e) =>
-                  setTxForm({ ...txForm, recurrenceMonths: e.target.value })
-                }
-                placeholder="every N months"
-                className="border rounded px-2 py-1 text-sm w-24 bg-surface-primary text-primary"
-              />
-            )}
-          </div>
-        </div>
-      </div>
-      <div className="flex gap-2 mt-3">
-        <button
-          onClick={onAddTx}
-          disabled={createTxPending}
-          className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
-        >
-          {createTxPending ? "Saving..." : "Add"}
-        </button>
-        <button
-          onClick={onCancel}
-          className="px-3 py-1 border rounded text-sm hover:bg-surface-sunken"
-        >
-          Cancel
-        </button>
-      </div>
-    </Card>
-  );
-}
-
 /* ── Main component ── */
 
 export function ProjectionsTab({
@@ -681,6 +583,7 @@ export function ProjectionsTab({
                       ) : (
                         <span className="text-xs">
                           {formatCurrency(gp.monthlyAllocation)}/mo
+                          {/* lint-violation-ok: guarded by totalMonthlyAllocation > 0 above */}
                           {totalMonthlyAllocation > 0 &&
                             ` (${formatPercent(gp.monthlyAllocation / totalMonthlyAllocation)})`}
                         </span>

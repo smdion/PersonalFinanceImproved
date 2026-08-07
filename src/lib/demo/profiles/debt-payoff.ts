@@ -1,4 +1,8 @@
 import type { DemoProfile } from "../types";
+import {
+  PERF_CATEGORY_RETIREMENT,
+  PERF_CATEGORY_DEFAULT,
+} from "@/lib/config/display-labels";
 
 export const debtPayoffProfile: DemoProfile = {
   slug: "debt-payoff",
@@ -216,7 +220,7 @@ export const debtPayoffProfile: DemoProfile = {
       accountType: "401k",
       accountLabel: "401(k) - ConsultingFirm",
       ownershipType: "individual",
-      parentCategory: "Retirement",
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       label: null,
       isActive: true,
     },
@@ -224,7 +228,7 @@ export const debtPayoffProfile: DemoProfile = {
 
   annualPerformance: [
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT,
       year: 2023,
       beginningBalance: "0",
       totalContributions: "3720",
@@ -238,7 +242,7 @@ export const debtPayoffProfile: DemoProfile = {
       lifetimeMatch: "1240",
     },
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT,
       year: 2024,
       beginningBalance: "4000",
       totalContributions: "5580",
@@ -252,7 +256,7 @@ export const debtPayoffProfile: DemoProfile = {
       lifetimeMatch: "3000",
     },
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT,
       year: 2025,
       beginningBalance: "8500",
       totalContributions: "5580",
@@ -314,7 +318,7 @@ export const debtPayoffProfile: DemoProfile = {
       annualReturnPct: "0.032",
       employerContributions: "1860",
       fees: "30",
-      parentCategory: "Retirement",
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "401(k) - ConsultingFirm",
     },
     {
@@ -329,7 +333,7 @@ export const debtPayoffProfile: DemoProfile = {
       annualReturnPct: "0.035",
       employerContributions: "1860",
       fees: "35",
-      parentCategory: "Retirement",
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "401(k) - ConsultingFirm",
     },
     // 2026 YTD (Q1)
@@ -345,7 +349,7 @@ export const debtPayoffProfile: DemoProfile = {
       annualReturnPct: "1.1",
       employerContributions: "465",
       fees: "8",
-      parentCategory: "Retirement",
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "401(k) - ConsultingFirm",
     },
   ],

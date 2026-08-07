@@ -12,6 +12,7 @@
 import { HelpTip } from "@/components/ui/help-tip";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatPercent } from "@/lib/utils/format";
+import { taxTypeTextColor } from "@/lib/utils/colors";
 import type {
   Settings,
   SelectedScenario,
@@ -69,7 +70,9 @@ export function TaxesSection({
         </div>
         <div className="flex items-baseline gap-1.5">
           <span className="text-muted">Roth</span>
-          <span className="font-medium text-green-600">0%</span>
+          <span className={`font-medium ${taxTypeTextColor("taxFree")}`}>
+            0%
+          </span>
         </div>
         <div className="flex items-baseline gap-1.5">
           <span className="text-muted">HSA</span>
@@ -112,7 +115,7 @@ export function TaxesSection({
               parseInput={(v) => v.replace(/[^0-9.]/g, "")}
               type="number"
               className="text-sm"
-              editable={!!settings}
+              isEditable={!!settings}
             />
             <span className="text-caption text-faint">
               {Number(settings.taxMultiplier) < 1

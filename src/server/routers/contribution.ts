@@ -22,6 +22,7 @@ import {
   getSalaryTimelineForYear,
 } from "@/server/helpers";
 import { roundToCents } from "@/lib/utils/math";
+import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import { getAge, isPriorYearContribWindow } from "@/lib/utils/date";
 import {
   resolveIrsLimit,
@@ -70,8 +71,15 @@ type AccountTypeSnapshot = {
   views: Record<ViewMode, AccountViewMetrics>;
   ytdDataStale: boolean; // true when YTD actual < expected — performance data may be behind
   currentPctOfSalary: number | null; // current employee % of salary (whole number)
+  /** True pre-tax (Traditional) contributions only — hsa/afterTax are NOT
+   *  folded in here; see afterTaxContrib/hsaContrib below. */
   tradContrib: number;
-  taxFreeContrib: number;
+  taxFreeContrib: number; // Roth
+  /** Taxable/brokerage contributions (taxTreatment: "after_tax"). */
+  afterTaxContrib: number;
+  /** HSA contributions (taxTreatment: "hsa"). Tracked separately from
+   *  tradContrib since HSA isn't Traditional/pre-tax retirement money. */
+  hsaContrib: number;
   bonusContrib: number; // estimated 401k from bonus
   isJoint: boolean;
   hasDiscountBar: boolean; // config-driven: ESPP-style discount bar rendering
@@ -333,7 +341,8 @@ export const contributionRouter = createTRPCRouter({
           }
         } else {
           // Fixed methods: scale by elapsed fraction
-          const periodsPerYear = jd?.periodsPerYear ?? 26;
+          const periodsPerYear =
+            jd?.periodsPerYear ?? DEFAULT_PAY_PERIODS_PER_YEAR;
           const periodsElapsed = jd?.periodsElapsed ?? 0;
           const annual = computeAnnualContribution(
             c.contributionMethod,
@@ -384,7 +393,7 @@ export const contributionRouter = createTRPCRouter({
               salary: 0,
               totalCompensation: 0,
               bonusGross: 0,
-              periodsPerYear: 26,
+              periodsPerYear: DEFAULT_PAY_PERIODS_PER_YEAR,
               periodsElapsedYtd: 0,
               accountTypes: [],
               perContribData: [],
@@ -591,6 +600,8 @@ export const contributionRouter = createTRPCRouter({
               match: number;
               trad: number;
               taxFree: number;
+              afterTax: number;
+              hsa: number;
               isJoint: boolean;
               parentCategory: string;
               hasDiscountBar: boolean;
@@ -675,6 +686,8 @@ export const contributionRouter = createTRPCRouter({
               match: 0,
               trad: 0,
               taxFree: 0,
+              afterTax: 0,
+              hsa: 0,
               isJoint: false,
               parentCategory: rawContrib.parentCategory,
               hasDiscountBar: display.hasDiscountBar,
@@ -755,8 +768,16 @@ export const contributionRouter = createTRPCRouter({
             entry.priorYearContribs.push({ id: rawContrib.id, amount: pyAmt });
             entry.employee += acct.annualContribution;
             entry.match += acct.employerMatch;
+            // Four-way tax-treatment split — after_tax and hsa must NOT be
+            // folded into "trad" (that used to silently mislabel taxable
+            // brokerage and HSA dollars as Traditional/pre-tax).
             if (isTaxFree(acct.taxTreatment))
               entry.taxFree += acct.annualContribution;
+            else if (acct.taxTreatment === "after_tax")
+              entry.afterTax += acct.annualContribution;
+            // lint-violation-ok: taxTreatment value, not an accountType/category comparison
+            else if (acct.taxTreatment === "hsa")
+              entry.hsa += acct.annualContribution;
             else entry.trad += acct.annualContribution;
             if (rawContrib.ownership === "joint") entry.isJoint = true;
             categoryMap.set(cat, entry);
@@ -853,6 +874,8 @@ export const contributionRouter = createTRPCRouter({
               currentPctOfSalary,
               tradContrib: roundToCents(data.trad),
               taxFreeContrib: roundToCents(data.taxFree),
+              afterTaxContrib: roundToCents(data.afterTax),
+              hsaContrib: roundToCents(data.hsa),
               bonusContrib: bonusAdd,
               isJoint: data.isJoint,
               hasDiscountBar: data.hasDiscountBar,
@@ -1028,7 +1051,8 @@ export const contributionRouter = createTRPCRouter({
       const jointAccountTypes: AccountTypeSnapshot[] = [];
       for (const c of jointContribs) {
         const val = toNumber(c.contributionValue);
-        const periodsPerYear = results[0]?.periodsPerYear ?? 26;
+        const periodsPerYear =
+          results[0]?.periodsPerYear ?? DEFAULT_PAY_PERIODS_PER_YEAR;
         const salary = 0;
         const annual =
           c.contributionMethod === "percent_of_salary"
@@ -1097,8 +1121,12 @@ export const contributionRouter = createTRPCRouter({
           },
           ytdDataStale: false,
           currentPctOfSalary: null,
-          tradContrib: isTaxFree(c.taxTreatment) ? 0 : roundToCents(annual),
+          tradContrib: c.taxTreatment === "pre_tax" ? roundToCents(annual) : 0,
           taxFreeContrib: isTaxFree(c.taxTreatment) ? roundToCents(annual) : 0,
+          afterTaxContrib:
+            c.taxTreatment === "after_tax" ? roundToCents(annual) : 0,
+          // lint-violation-ok: taxTreatment value, not an accountType/category comparison
+          hsaContrib: c.taxTreatment === "hsa" ? roundToCents(annual) : 0,
           bonusContrib: 0,
           isJoint: true,
           hasDiscountBar: jDisplay.hasDiscountBar,

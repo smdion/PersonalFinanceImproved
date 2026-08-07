@@ -15,6 +15,13 @@
  * the projection with these inputs and rendering a comparison view.
  */
 
+import { formatPercent } from "@/lib/utils/format";
+import {
+  DEFAULT_RETURN_RATE,
+  DEFAULT_INFLATION_RATE,
+  DEFAULT_WITHDRAWAL_RATE,
+} from "@/lib/constants";
+
 export interface StressTestParams {
   /** Nominal annual return rate (e.g. 0.05 = 5%). */
   returnRate: number;
@@ -67,10 +74,10 @@ export const STRESS_TEST_OPTIMISTIC: StressTestParams = {
  * The default-good scenario most users start from. Uses long-run averages.
  */
 export const STRESS_TEST_BASELINE: StressTestParams = {
-  returnRate: 0.07, // 7% nominal — long-run real ~5% + inflation 2%
-  inflationRate: 0.03, // 3% — long-run US average
+  returnRate: DEFAULT_RETURN_RATE, // 7% nominal — long-run real ~5% + inflation 2%
+  inflationRate: DEFAULT_INFLATION_RATE, // 3% — long-run US average
   salaryGrowthRate: 0.01, // 1% real
-  withdrawalRate: 0.04,
+  withdrawalRate: DEFAULT_WITHDRAWAL_RATE,
   label: "Long-run baseline",
   description:
     "Long-run US averages: 7% nominal return, 3% inflation, 1% real salary " +
@@ -120,7 +127,7 @@ export function detectRosyAssumptions(
       userValue: returnRate,
       threshold: 0.08,
       message:
-        `Your assumed return rate (${(returnRate * 100).toFixed(1)}%) is above ` +
+        `Your assumed return rate (${formatPercent(returnRate, 1)}) is above ` +
         `the long-run historical average for US equities (~7% nominal). ` +
         `Sustained 8%+ over 30 years is in the top quartile of history. ` +
         `Run the Conservative Stress Test to see how the plan holds up if ` +
@@ -134,7 +141,7 @@ export function detectRosyAssumptions(
       userValue: inflationRate,
       threshold: 0.025,
       message:
-        `Your inflation assumption (${(inflationRate * 100).toFixed(1)}%) is ` +
+        `Your inflation assumption (${formatPercent(inflationRate, 1)}) is ` +
         `below the long-run US historical average (~3%). The 1970s saw ` +
         `9–14%; 2021–2023 saw 6–9%. Consider running the stress test at ` +
         `4% inflation to see the downside.`,
@@ -147,7 +154,7 @@ export function detectRosyAssumptions(
       userValue: salaryGrowthRate,
       threshold: 0.04,
       message:
-        `Your assumed salary growth rate (${(salaryGrowthRate * 100).toFixed(1)}%) ` +
+        `Your assumed salary growth rate (${formatPercent(salaryGrowthRate, 1)}) ` +
         `is above 4% per year. Career growth slows after early career and ` +
         `can stall during recessions. Consider running the stress test at ` +
         `0% real growth.`,

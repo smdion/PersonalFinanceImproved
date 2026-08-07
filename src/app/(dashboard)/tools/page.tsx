@@ -13,6 +13,7 @@ import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { HelpTip } from "@/components/ui/help-tip";
+import { useUser, isAdmin } from "@/lib/context/user-context";
 import type { RelocationScenarioParams } from "@/lib/db/schema";
 
 import { RelocationScenariosControls } from "@/components/tools/relocation/scenarios-controls";
@@ -31,8 +32,15 @@ import type {
   LargePurchaseRow,
   YearAdjustmentRow,
 } from "@/components/tools/relocation/types";
+import {
+  DEFAULT_LOAN_DOWN_PAYMENT_PERCENT,
+  DEFAULT_LOAN_RATE,
+  DEFAULT_LOAN_TERM_YEARS,
+} from "@/lib/constants";
 
 export default function ToolsPage() {
+  const user = useUser();
+
   // Relocation analysis state
   const [relocCurrentProfileId, setRelocCurrentProfileId] = useState<
     number | null
@@ -48,7 +56,6 @@ export default function ToolsPage() {
     YearAdjustmentRow[]
   >([]);
   const [showRelocAllYears, setShowRelocAllYears] = useState(false);
-  const [showRelocAdjForm, setShowRelocAdjForm] = useState(false);
   const [relocAdjMode, setRelocAdjMode] = useState<"manual" | "profile">(
     "manual",
   );
@@ -64,15 +71,14 @@ export default function ToolsPage() {
   const [relocLargePurchases, setRelocLargePurchases] = useState<
     LargePurchaseRow[]
   >([]);
-  const [showPurchaseForm, setShowPurchaseForm] = useState(false);
   const [purchaseForm, setPurchaseForm] = useState<PurchaseFormState>({
     name: "",
     purchasePrice: "",
     purchaseYear: String(new Date().getFullYear() + 1),
     financed: false,
-    downPaymentPercent: "20",
-    loanRate: "6.5",
-    loanTermYears: "30",
+    downPaymentPercent: String(DEFAULT_LOAN_DOWN_PAYMENT_PERCENT),
+    loanRate: String(DEFAULT_LOAN_RATE),
+    loanTermYears: String(DEFAULT_LOAN_TERM_YEARS),
     ongoingMonthlyCost: "",
     saleProceeds: "",
   });
@@ -377,6 +383,7 @@ export default function ToolsPage() {
           selectedScenarioId={selectedScenarioId}
           setSelectedScenarioId={setSelectedScenarioId}
           loadScenario={loadScenario}
+          isAdmin={isAdmin(user)}
           saveIsPending={saveMutation.isPending}
           deleteIsPending={deleteMutation.isPending}
           onSaveClick={handleSaveClick}
@@ -496,8 +503,6 @@ export default function ToolsPage() {
                   result={r}
                   relocLargePurchases={relocLargePurchases}
                   setRelocLargePurchases={setRelocLargePurchases}
-                  showPurchaseForm={showPurchaseForm}
-                  setShowPurchaseForm={setShowPurchaseForm}
                   purchaseForm={purchaseForm}
                   setPurchaseForm={setPurchaseForm}
                 />
@@ -506,8 +511,6 @@ export default function ToolsPage() {
                   budgetInfo={bi}
                   relocYearAdjustments={relocYearAdjustments}
                   setRelocYearAdjustments={setRelocYearAdjustments}
-                  showRelocAdjForm={showRelocAdjForm}
-                  setShowRelocAdjForm={setShowRelocAdjForm}
                   relocAdjMode={relocAdjMode}
                   setRelocAdjMode={setRelocAdjMode}
                   relocAdjForm={relocAdjForm}

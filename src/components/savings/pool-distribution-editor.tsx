@@ -2,7 +2,8 @@
 
 import React, { useState, useCallback } from "react";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { FUND_COLORS } from "./fund-colors";
+import { FUND_COLORS } from "@/lib/utils/colors";
+import { sumBy } from "@/lib/utils/math";
 
 export interface FundAllocation {
   goalId: number;
@@ -35,7 +36,7 @@ export function PoolDistributionEditor({
   const [editValue, setEditValue] = useState("");
   const [poolEditValue, setPoolEditValue] = useState("");
 
-  const total = funds.reduce((s, f) => s + f.amount, 0);
+  const total = sumBy(funds, (f) => f.amount);
   const isBalanced = Math.abs(total - pool) < 1;
   const isUnderAllocated = total < pool - 1;
   const isOverAllocated = total > pool + 1;
@@ -62,7 +63,7 @@ export function PoolDistributionEditor({
 
   const distributeRemaining = useCallback(() => {
     if (Math.abs(remaining) < 0.01) return;
-    const totalCurrent = funds.reduce((s, f) => s + f.amount, 0);
+    const totalCurrent = sumBy(funds, (f) => f.amount);
     if (totalCurrent === 0) {
       // Distribute equally
       const perFund = roundToCents(pool / funds.length);
@@ -81,7 +82,7 @@ export function PoolDistributionEditor({
         amount: roundToCents((f.amount / totalCurrent) * pool),
       }));
       // Fix rounding on last fund
-      const newTotal = updated.reduce((s, f) => s + f.amount, 0);
+      const newTotal = sumBy(updated, (f) => f.amount);
       if (updated.length > 0) {
         updated[updated.length - 1]!.amount += roundToCents(pool - newTotal);
       }

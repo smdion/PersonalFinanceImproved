@@ -5,12 +5,8 @@
  * covering Household Salary (read-only), Pre-Retirement Raise, Salary Cap,
  * and the Contribution Profile picker.
  *
- * The `decToWhole` helper is duplicated locally from retirement-content.tsx
- * so this component is self-contained. It's a 4-line pure function — cheaper
- * than wiring up a shared helper module for a single consumer (and the other
- * consumers still live in retirement-content.tsx, so we haven't created
- * drift). The helper can be factored out in a later cleanup pass if more
- * sections end up needing it.
+ * The `decToWhole` helper lives in `./helpers` and is shared across the
+ * retirement sections that need it (not duplicated locally).
  */
 "use client";
 
@@ -80,7 +76,7 @@ export function IncomeSection({
               parseInput={(v) => v.replace(/[^0-9.]/g, "")}
               type="number"
               className="text-sm"
-              editable={!!settings}
+              isEditable={!!settings}
             />
           </div>
         </div>
@@ -109,7 +105,7 @@ export function IncomeSection({
               parseInput={(v) => v.replace(/[^0-9]/g, "")}
               type="number"
               className="text-sm"
-              editable={!!settings}
+              isEditable={!!settings}
             />
           </div>
         </div>

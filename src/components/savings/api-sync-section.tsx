@@ -9,18 +9,7 @@ import {
   PushPreviewModal,
   type PushPreviewItem,
 } from "@/components/ui/push-preview-modal";
-
-interface RawGoal {
-  id: number;
-  name: string;
-  monthlyContribution: string | null;
-  targetAmount: string | null;
-  apiCategoryId?: string | null;
-  isApiSyncEnabled?: boolean | null;
-  isEmergencyFund?: boolean | null;
-  allocationPercent?: string | null;
-  isActive?: boolean;
-}
+import type { RawGoal } from "./types";
 
 interface ApiCategoryGroup {
   id: string;

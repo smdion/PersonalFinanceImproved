@@ -5,7 +5,7 @@
 // The engine handles the actual balance tracking and goal withdrawals;
 // this calculator provides the goal-oriented analysis layer.
 
-import { roundToCents } from "@/lib/utils/math";
+import { roundToCents, sumBy } from "@/lib/utils/math";
 import {
   isOverflowTarget,
   isPortfolioParent,
@@ -148,7 +148,7 @@ export function calculateBrokerageGoals(
           "No Portfolio-category accounts found — brokerage goals will show as shortfalls",
         );
       }
-      afterTax = roundToCents(filtered.reduce((s, ia) => s + ia.balance, 0));
+      afterTax = roundToCents(sumBy(filtered, (ia) => ia.balance));
       // Basis not tracked per individual account; fall back to proportional estimate
       const totalAfterTax = yr.balanceByTaxType.afterTax;
       const ratio = totalAfterTax > 0 ? afterTax / totalAfterTax : 0;
@@ -176,16 +176,14 @@ export function calculateBrokerageGoals(
           isPortfolioParent(ia.parentCategory),
         );
         contribution = roundToCents(
-          filtered.reduce(
-            (s, ia) => s + (ia.intentionalContribution ?? ia.contribution),
-            0,
+          sumBy(
+            filtered,
+            (ia) => ia.intentionalContribution ?? ia.contribution,
           ),
         );
-        employerMatch = roundToCents(
-          filtered.reduce((s, ia) => s + ia.employerMatch, 0),
-        );
+        employerMatch = roundToCents(sumBy(filtered, (ia) => ia.employerMatch));
         overflow = roundToCents(
-          filtered.reduce((s, ia) => s + (ia.overflowContribution ?? 0), 0),
+          sumBy(filtered, (ia) => ia.overflowContribution ?? 0),
         );
       } else {
         // Brokerage contribution = brokerage slot's employee + employer + ramp
@@ -214,12 +212,8 @@ export function calculateBrokerageGoals(
         gainsPortion: gw.gainsPortion,
         taxCost: gw.taxCost,
       }));
-      totalWithdrawal = roundToCents(
-        goalWithdrawals.reduce((s, gw) => s + gw.amount, 0),
-      );
-      totalTaxCost = roundToCents(
-        goalWithdrawals.reduce((s, gw) => s + gw.taxCost, 0),
-      );
+      totalWithdrawal = roundToCents(sumBy(goalWithdrawals, (gw) => gw.amount));
+      totalTaxCost = roundToCents(sumBy(goalWithdrawals, (gw) => gw.taxCost));
 
       // Update goal statuses
       for (const gw of accYr.brokerageGoalWithdrawals) {
@@ -241,9 +235,7 @@ export function calculateBrokerageGoals(
         const filtered = yr.individualAccountBalances.filter((ia) =>
           isPortfolioParent(ia.parentCategory),
         );
-        employerMatch = roundToCents(
-          filtered.reduce((s, ia) => s + ia.employerMatch, 0),
-        );
+        employerMatch = roundToCents(sumBy(filtered, (ia) => ia.employerMatch));
       }
     }
 
@@ -254,7 +246,7 @@ export function calculateBrokerageGoals(
       const filtered = yr.individualAccountBalances.filter((ia) =>
         isPortfolioParent(ia.parentCategory),
       );
-      growth = roundToCents(filtered.reduce((s, ia) => s + ia.growth, 0));
+      growth = roundToCents(sumBy(filtered, (ia) => ia.growth));
     } else {
       const netInflow = contribution - totalWithdrawal;
       growth = roundToCents(afterTax - prevBalance - netInflow);

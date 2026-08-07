@@ -4,7 +4,12 @@
 
 import React, { useState } from "react";
 import { formatCurrency, accountDisplayName } from "@/lib/utils/format";
-import { ACCOUNT_TYPE_CONFIG } from "@/lib/config/account-types";
+import {
+  accountBorderColor,
+  accountMatchColor,
+  accountColor,
+} from "@/lib/utils/colors";
+import { getAccountTypeConfig } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { ContribRow, PortfolioSub } from "./contribution-accounts-types";
 import { InlineText, InlineSelect } from "./contribution-accounts-inline";
@@ -101,9 +106,9 @@ export function AccountCard({
 
   // Account type from the master record (no resolution needed)
   const acctType = pa.accountType as AccountCategory | null;
-  const cfg = acctType ? ACCOUNT_TYPE_CONFIG[acctType] : null;
-  const borderColor = cfg?.colors.border ?? "";
-  const bgLight = cfg?.colors.bgLight ?? "";
+  const cfg = acctType ? getAccountTypeConfig(acctType) : null;
+  const borderColor = acctType ? accountBorderColor(acctType) : "";
+  const bgLight = acctType ? accountMatchColor(acctType) : "";
 
   const activeContribs = contributions.filter((c) => c.isActive);
   const inactiveContribs = contributions.filter((c) => !c.isActive);
@@ -115,17 +120,17 @@ export function AccountCard({
 
   return (
     <div
-      className={`border rounded-lg overflow-hidden ${!pa.isActive ? "opacity-50" : ""}${borderColor}`}
+      className={`border rounded-lg overflow-hidden ${!pa.isActive ? "opacity-50" : ""} ${borderColor}`}
     >
       {" "}
       {/* Header row — always visible fields */}{" "}
       <div
-        className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-surface-sunken${isExpanded ? bgLight : "bg-surface-primary"}`}
+        className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-surface-sunken ${isExpanded ? bgLight : "bg-surface-primary"}`}
         onClick={onToggleExpand}
       >
         {/* Color indicator */}
         <div
-          className={`w-1.5 h-8 rounded-full ${cfg?.colors.bg ?? "bg-surface-strong"} flex-shrink-0`}
+          className={`w-1.5 h-8 rounded-full ${acctType ? accountColor(acctType) : "bg-surface-strong"} flex-shrink-0`}
         />
         {/* Name */}
         <div className="flex-1 min-w-0">

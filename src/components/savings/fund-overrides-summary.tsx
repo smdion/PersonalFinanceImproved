@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, MONTH_NAMES_SHORT } from "@/lib/utils/format";
 
 interface OverrideRange {
   startMonth: string;
@@ -132,21 +132,7 @@ function splitRangesByMonth(
 
 function formatMonthShort(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-  return `${months[d.getMonth()]} ${d.getFullYear()}`;
+  return `${MONTH_NAMES_SHORT[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 function formatRangeLabel(range: OverrideRange): string {
@@ -156,21 +142,7 @@ function formatRangeLabel(range: OverrideRange): string {
   const startDate = new Date(range.startMonth + "T00:00:00");
   const endDate = new Date(range.endMonth + "T00:00:00");
   if (startDate.getFullYear() === endDate.getFullYear()) {
-    const months = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-    return `${months[startDate.getMonth()]}\u2013${months[endDate.getMonth()]} ${startDate.getFullYear()}`;
+    return `${MONTH_NAMES_SHORT[startDate.getMonth()]}\u2013${MONTH_NAMES_SHORT[endDate.getMonth()]} ${startDate.getFullYear()}`;
   }
   return `${formatMonthShort(range.startMonth)}\u2013${formatMonthShort(range.endMonth)}`;
 }

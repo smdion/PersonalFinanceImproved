@@ -1,5 +1,21 @@
 import { getDisplayConfig } from "@/lib/config/account-types";
 
+/** Short month labels (index 0 = January), for compact axis/table labels. */
+export const MONTH_NAMES_SHORT = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const;
+
 /**
  * Strip trailing institution suffix from an account label.
  * e.g. "Alice 401k (Fidelity)" → "Alice 401k"
@@ -93,6 +109,16 @@ export function compactCurrency(value: number): string {
   if (abs >= 1_000_000) return `${sign}$${(abs / 1_000_000).toFixed(1)}M`;
   if (abs >= 1_000) return `${sign}$${(abs / 1_000).toFixed(0)}k`;
   return `${sign}$${abs.toFixed(0)}`;
+}
+
+/**
+ * Format a large number in compact form without a currency sign
+ * (e.g., 1200000 → "1.2M", 450000 → "450k"). Suitable for chart axis ticks.
+ */
+export function compactNumber(value: number): string {
+  if (Math.abs(value) >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (Math.abs(value) >= 1_000) return `${(value / 1_000).toFixed(0)}k`;
+  return value.toFixed(0);
 }
 
 /**

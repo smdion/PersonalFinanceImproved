@@ -69,12 +69,12 @@ export function RelocationProjectionTable({
         <div className="flex items-center gap-3">
           <Toggle
             label="Today's $"
-            checked={dollarMode === "real"}
+            isChecked={dollarMode === "real"}
             onChange={(v) => setDollarMode(v ? "real" : "nominal")}
           />
           <Toggle
             label="All years"
-            checked={showRelocAllYears}
+            isChecked={showRelocAllYears}
             onChange={setShowRelocAllYears}
           />
         </div>

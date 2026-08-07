@@ -17,19 +17,14 @@ import {
   expensiveRateLimitMiddleware,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 import { findCoastFireAge } from "@/lib/calculators/coast-fire";
 import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
 import { toNumber } from "@/server/helpers";
+import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import type {
   AccumulationOverride,
   DecumulationOverride,
 } from "@/lib/calculators/types";
-import {
-  accountCategoryEnum,
-  getDefaultDecumulationOrder,
-  DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
-} from "@/lib/config/account-types";
 import {
   fetchRetirementData,
   buildEnginePayload,
@@ -37,6 +32,7 @@ import {
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
+  decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   buildCoastFireProfileSwitches,
 } from "./_shared";
@@ -58,33 +54,7 @@ export const coastFireRouter = createTRPCRouter({
     .input(
       z.object({
         // Mirrors the computeProjection input subset that affects the engine.
-        decumulationDefaults: z
-          .object({
-            withdrawalRate: z
-              .number()
-              .min(0)
-              .max(1)
-              .default(DEFAULT_WITHDRAWAL_RATE),
-            withdrawalRoutingMode: z
-              .enum(["bracket_filling", "waterfall", "percentage"])
-              .default("bracket_filling"),
-            withdrawalOrder: z
-              .array(z.enum(accountCategoryEnum()))
-              .default(getDefaultDecumulationOrder()),
-            withdrawalSplits: z
-              .record(z.enum(accountCategoryEnum()), z.number())
-              .default({ ...CONFIG_WITHDRAWAL_SPLITS }),
-            withdrawalTaxPreference: z
-              .record(z.string(), z.enum(["traditional", "roth"]))
-              .default({}),
-          })
-          .default({
-            withdrawalRate: DEFAULT_WITHDRAWAL_RATE,
-            withdrawalRoutingMode: "bracket_filling",
-            withdrawalOrder: getDefaultDecumulationOrder(),
-            withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS },
-            withdrawalTaxPreference: {},
-          }),
+        decumulationDefaults: decumulationDefaultsInputSchema,
         accumulationOverrides: accumulationOverrideSchema,
         decumulationOverrides: decumulationOverrideSchema,
         salaryOverrides: z
@@ -188,33 +158,7 @@ export const coastFireRouter = createTRPCRouter({
     .use(expensiveRateLimitMiddleware)
     .input(
       z.object({
-        decumulationDefaults: z
-          .object({
-            withdrawalRate: z
-              .number()
-              .min(0)
-              .max(1)
-              .default(DEFAULT_WITHDRAWAL_RATE),
-            withdrawalRoutingMode: z
-              .enum(["bracket_filling", "waterfall", "percentage"])
-              .default("bracket_filling"),
-            withdrawalOrder: z
-              .array(z.enum(accountCategoryEnum()))
-              .default(getDefaultDecumulationOrder()),
-            withdrawalSplits: z
-              .record(z.enum(accountCategoryEnum()), z.number())
-              .default({ ...CONFIG_WITHDRAWAL_SPLITS }),
-            withdrawalTaxPreference: z
-              .record(z.string(), z.enum(["traditional", "roth"]))
-              .default({}),
-          })
-          .default({
-            withdrawalRate: DEFAULT_WITHDRAWAL_RATE,
-            withdrawalRoutingMode: "bracket_filling",
-            withdrawalOrder: getDefaultDecumulationOrder(),
-            withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS },
-            withdrawalTaxPreference: {},
-          }),
+        decumulationDefaults: decumulationDefaultsInputSchema,
         accumulationOverrides: accumulationOverrideSchema,
         decumulationOverrides: decumulationOverrideSchema,
         salaryOverrides: z
@@ -302,7 +246,7 @@ export const coastFireRouter = createTRPCRouter({
             successRate: 0,
             stopNowSuccessRate: 0,
             spendingStabilityRate: 0,
-            confidenceThreshold: 0.9,
+            confidenceThreshold: MC_CONFIDENCE_THRESHOLD,
             probesRun: 0,
             warning: "Default MC preset not found in database.",
             mcResult: null,
@@ -336,7 +280,7 @@ export const coastFireRouter = createTRPCRouter({
         stdDev: toNumber(preset.inflationStdDev),
       };
 
-      const CONFIDENCE = 0.9;
+      const CONFIDENCE = MC_CONFIDENCE_THRESHOLD;
       const NUM_TRIALS = 1000;
       const SEED = 42;
 

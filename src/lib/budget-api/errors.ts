@@ -169,3 +169,46 @@ export async function retryWithBackoff<T>(
   // Should never reach — TS demands a return path.
   throw lastErr;
 }
+
+/**
+ * Shared fetch wrapper for budget API clients (YNAB, Actual Budget).
+ * Was structurally duplicated between YnabClient.request() and
+ * ActualClient.request() (M45, .scratch/docs/review-findings.md) — same
+ * timeout/AbortController/retry wiring, so a future fix to either had to
+ * be applied twice and could silently drift.
+ *
+ * - Throws typed BudgetApiError instead of generic Error so call sites
+ *   can distinguish auth/rate-limit/server/network/timeout failures.
+ * - Wrapped in retryWithBackoff which honors Retry-After on 429 and does
+ *   exponential backoff (1s/2s/4s capped at 30s) for retryable errors.
+ *   Auth + client errors are NOT retried.
+ */
+export async function budgetApiRequest<T>(
+  url: string,
+  headers: Record<string, string>,
+  init?: RequestInit,
+  timeoutMs = 15_000,
+): Promise<T> {
+  return retryWithBackoff(async () => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, {
+        ...init,
+        headers: { ...headers, ...init?.headers },
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        throw classifyResponse(res, body);
+      }
+      return (await res.json()) as T;
+    } catch (e) {
+      // classifyThrown preserves BudgetApiError + classifies AbortError
+      // / network errors, so the retry logic can decide whether to retry.
+      throw classifyThrown(e);
+    } finally {
+      clearTimeout(timeout);
+    }
+  });
+}

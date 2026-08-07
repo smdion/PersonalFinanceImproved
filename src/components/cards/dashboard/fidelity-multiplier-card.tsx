@@ -7,6 +7,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatNumber } from "@/lib/utils/format";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { sumBy } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
 
 /**
@@ -88,8 +89,7 @@ function FidelityMultiplierCardImpl() {
   const currentYear = new Date().getFullYear();
   // Average age across all people (matches engine calculation)
   const currentAge = Math.round(
-    people.reduce((s, p) => s + (currentYear - p.birthYear), 0) /
-      (people.length || 1),
+    sumBy(people, (p) => currentYear - p.birthYear) / (people.length || 1),
   );
   const currentPortfolio = retPortfolio
     ? retPortfolio.preTax +
@@ -198,7 +198,7 @@ function FidelityMultiplierCardImpl() {
       <ProgressBar
         value={Math.min(progress, 1)}
         label={`Target: ${formatNumber(target.multiplier, 1)}x at age ${viewAge}`}
-        color={isOnTrack ? "bg-green-500" : "bg-amber-500"}
+        variant={isOnTrack ? "success" : "warning"}
       />
       <div className="mt-3 space-y-1 text-sm">
         <div className="flex justify-between">

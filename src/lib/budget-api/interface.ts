@@ -92,6 +92,11 @@ export interface BudgetAPIClient {
     sinceDate: string,
   ): Promise<BudgetTransaction[]>;
 
+  /** Category names that should never surface in expense comparisons
+   *  (system/non-expense categories — e.g. YNAB's "Split", "Uncategorized").
+   *  Returns an empty set for services with no such concept. */
+  getExcludedCategoryNames(): Set<string>;
+
   // -- Delta sync --
 
   /** Whether this client supports incremental delta sync */

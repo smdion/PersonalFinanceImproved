@@ -133,7 +133,7 @@ describe("Accessibility — axe-core", () => {
 
   it("Toggle renders without violations", async () => {
     const { container } = render(
-      <Toggle checked={false} onChange={() => {}} label="Include taxes" />,
+      <Toggle isChecked={false} onChange={() => {}} label="Include taxes" />,
     );
     const violations = await getViolations(container);
     expect(violations, formatViolations(violations)).toHaveLength(0);
@@ -141,7 +141,7 @@ describe("Accessibility — axe-core", () => {
 
   it("Toggle without label renders without violations", async () => {
     const { container } = render(
-      <Toggle checked={true} onChange={() => {}} title="Dark mode" />,
+      <Toggle isChecked={true} onChange={() => {}} title="Dark mode" />,
     );
     const violations = await getViolations(container);
     expect(violations, formatViolations(violations)).toHaveLength(0);

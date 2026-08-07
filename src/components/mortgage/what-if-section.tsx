@@ -6,17 +6,16 @@ import { Card } from "@/components/ui/card";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { confirm } from "@/components/ui/confirm-dialog";
-import type { WhatIfResultRow, WhatIfScenarioRow, TrpcUtils } from "./types";
+import type { WhatIfResultRow, WhatIfScenarioRow } from "./types";
 
 export function WhatIfSection({
   whatIfResults,
   whatIfScenarios,
-  utils,
 }: {
   whatIfResults: WhatIfResultRow[];
   whatIfScenarios: WhatIfScenarioRow[];
-  utils: TrpcUtils;
 }) {
+  const utils = trpc.useUtils();
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [label, setLabel] = useState("");
@@ -69,19 +68,20 @@ export function WhatIfSection({
     resetForm();
   }
 
-  function handleSwap(indexA: number, indexB: number) {
+  async function handleSwap(indexA: number, indexB: number) {
     const a = whatIfScenarios[indexA];
     const b = whatIfScenarios[indexB];
     if (!a || !b) return;
-    // Swap sortOrder values
-    reorderMut.mutate({
+    // Swap sortOrder values — sequenced (not fired concurrently) so the
+    // server can't process the pair out of order.
+    await reorderMut.mutateAsync({
       id: a.id,
       label: a.label,
       extraMonthlyPrincipal: a.extraMonthlyPrincipal,
       extraOneTimePayment: a.extraOneTimePayment,
       sortOrder: b.sortOrder,
     });
-    reorderMut.mutate({
+    await reorderMut.mutateAsync({
       id: b.id,
       label: b.label,
       extraMonthlyPrincipal: b.extraMonthlyPrincipal,

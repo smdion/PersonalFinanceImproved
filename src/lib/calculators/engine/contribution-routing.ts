@@ -201,13 +201,13 @@ export function routePercentage(
     requested: number;
     allocated: number;
     overflow: number;
-    pct: number;
+    percent: number;
   }[] = [];
   let totalOverflow = 0;
 
   for (const category of ACCOUNT_CATEGORIES) {
-    const pct = config.accountSplits[category] ?? 0;
-    const requested = roundToCents(targetContribution * pct);
+    const percent = config.accountSplits[category] ?? 0;
+    const requested = roundToCents(targetContribution * percent);
     const irsLimit = yearLimits[category];
     const accountCap = config.accountCaps[category];
     const effectiveLimit = configGetEffectiveLimit(
@@ -227,7 +227,7 @@ export function routePercentage(
       requested,
       allocated: roundToCents(allocated),
       overflow,
-      pct,
+      percent,
     });
 
     if (overflow >= OVERFLOW_TOLERANCE && !isOverflowTarget(category)) {
@@ -256,12 +256,12 @@ export function routePercentage(
       return a.allocated < effectiveLimit;
     });
 
-    const uncappedTotalPct = uncapped.reduce((s, a) => s + a.pct, 0);
+    const uncappedTotalPercent = uncapped.reduce((s, a) => s + a.percent, 0);
 
     for (const a of uncapped) {
       const share =
-        uncappedTotalPct > 0
-          ? roundToCents(totalOverflow * (a.pct / uncappedTotalPct))
+        uncappedTotalPercent > 0
+          ? roundToCents(totalOverflow * (a.percent / uncappedTotalPercent))
           : roundToCents(totalOverflow / uncapped.length);
 
       if (isOverflowTarget(a.category)) {
@@ -298,7 +298,7 @@ export function routePercentage(
           requested: 0,
           allocated: stillRemaining,
           overflow: 0,
-          pct: 0,
+          percent: 0,
         });
       }
     }

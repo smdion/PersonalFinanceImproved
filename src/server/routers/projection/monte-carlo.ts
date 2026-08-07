@@ -18,13 +18,14 @@ import {
   expensiveRateLimitMiddleware,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
 import {
   interpolateAllocations,
   geometricMean,
 } from "@/lib/calculators/random";
 import { toNumber } from "@/server/helpers";
+import { sumBy } from "@/lib/utils/math";
+import { DEFAULT_MC_INFLATION_RISK } from "@/lib/constants";
 import type {
   AccountBalance,
   AccountCategory,
@@ -32,12 +33,9 @@ import type {
   DecumulationOverride,
 } from "@/lib/calculators/types";
 import {
-  accountCategoryEnum,
   getAllCategories,
-  getDefaultDecumulationOrder,
   isOverflowTarget,
   zeroBalance,
-  DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
 } from "@/lib/config/account-types";
 import {
   fetchRetirementData,
@@ -46,6 +44,7 @@ import {
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
+  decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   buildMcInputs,
 } from "./_shared";
@@ -90,33 +89,7 @@ export const monteCarloRouter = createTRPCRouter({
           .optional(),
 
         // --- Decumulation defaults (mirrors getProjection) ---
-        decumulationDefaults: z
-          .object({
-            withdrawalRate: z
-              .number()
-              .min(0)
-              .max(1)
-              .default(DEFAULT_WITHDRAWAL_RATE),
-            withdrawalRoutingMode: z
-              .enum(["bracket_filling", "waterfall", "percentage"])
-              .default("bracket_filling"),
-            withdrawalOrder: z
-              .array(z.enum(accountCategoryEnum()))
-              .default(getDefaultDecumulationOrder()),
-            withdrawalSplits: z
-              .record(z.enum(accountCategoryEnum()), z.number())
-              .default({ ...CONFIG_WITHDRAWAL_SPLITS }),
-            withdrawalTaxPreference: z
-              .record(z.string(), z.enum(["traditional", "roth"]))
-              .default({}),
-          })
-          .default({
-            withdrawalRate: DEFAULT_WITHDRAWAL_RATE,
-            withdrawalRoutingMode: "bracket_filling",
-            withdrawalOrder: getDefaultDecumulationOrder(),
-            withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS },
-            withdrawalTaxPreference: {},
-          }),
+        decumulationDefaults: decumulationDefaultsInputSchema,
 
         // --- Accumulation overrides (mirrors getProjection) ---
         accumulationOverrides: accumulationOverrideSchema,
@@ -393,7 +366,7 @@ export const monteCarloRouter = createTRPCRouter({
             meanRate: toNumber(preset.inflationMean),
             stdDev: toNumber(preset.inflationStdDev),
           }
-        : { meanRate: 0.025, stdDev: 0.012 };
+        : DEFAULT_MC_INFLATION_RISK;
       const effectiveInflationRisk =
         input.inflationRisk ??
         (savedInflationOverrides
@@ -421,12 +394,10 @@ export const monteCarloRouter = createTRPCRouter({
         a++
       ) {
         const allocations = interpolateAllocations(mcGlidePath, a);
-        const blended = mcAssetClasses.reduce((sum, ac) => {
+        const blended = sumBy(mcAssetClasses, (ac) => {
           const w = allocations[ac.id] ?? 0;
-          return w > 0
-            ? sum + w * geometricMean(ac.meanReturn, ac.stdDev)
-            : sum;
-        }, 0);
+          return w > 0 ? w * geometricMean(ac.meanReturn, ac.stdDev) : 0;
+        });
         mcDeterministicRates.push({ label: `Age ${a}`, rate: blended });
       }
       const mcEngineInput = {
@@ -452,13 +423,13 @@ export const monteCarloRouter = createTRPCRouter({
 
       // Compute blended portfolio return/vol for display (geometric mean = realistic compounding rate)
       const currentAlloc = currentGpEntry?.allocations ?? {};
-      const blendedReturn = mcAssetClasses.reduce((sum, ac) => {
+      const blendedReturn = sumBy(mcAssetClasses, (ac) => {
         const w = currentAlloc[ac.id] ?? 0;
-        return w > 0 ? sum + w * geometricMean(ac.meanReturn, ac.stdDev) : sum;
-      }, 0);
-      const blendedVol = mcAssetClasses.reduce(
-        (sum, ac) => sum + ac.stdDev * (currentAlloc[ac.id] ?? 0),
-        0,
+        return w > 0 ? w * geometricMean(ac.meanReturn, ac.stdDev) : 0;
+      });
+      const blendedVol = sumBy(
+        mcAssetClasses,
+        (ac) => ac.stdDev * (currentAlloc[ac.id] ?? 0),
       );
 
       // Build DB (raw) asset class values for comparison
@@ -482,7 +453,7 @@ export const monteCarloRouter = createTRPCRouter({
             portfolioByTaxType.afterTax,
           annualContributions:
             totalRealContrib +
-            Object.values(employerMatchByCategory).reduce((s, v) => s + v, 0),
+            sumBy(Object.values(employerMatchByCategory), (v) => v),
           annualExpenses: annualExpensesVal,
           inflationRate: toNumber(settings.annualInflation),
           salary: totalCompensation,

@@ -17,14 +17,7 @@ import {
   RefinanceImpact,
   WhatIfSection,
 } from "@/components/mortgage";
-
-function SyncBadge({ source }: { source: string }) {
-  return (
-    <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-caption font-medium bg-blue-50 text-blue-600">
-      Synced from {source.toUpperCase()}
-    </span>
-  );
-}
+import { SyncBadge } from "@/components/ui/sync-badge";
 
 export default function LiabilitiesPage() {
   const [showSchedule, setShowSchedule] = useState<number | null>(null);
@@ -32,7 +25,6 @@ export default function LiabilitiesPage() {
   const [showManageLoans, setShowManageLoans] = useState(false);
   const { data, isLoading, error } =
     trpc.mortgage.computeActiveSummary.useQuery();
-  const utils = trpc.useUtils();
 
   if (isLoading) {
     return (
@@ -161,7 +153,6 @@ export default function LiabilitiesPage() {
           <WhatIfSection
             whatIfResults={result.whatIfResults}
             whatIfScenarios={data!.whatIfScenarios}
-            utils={utils}
           />
 
           {/* Refinance Impact Comparison */}

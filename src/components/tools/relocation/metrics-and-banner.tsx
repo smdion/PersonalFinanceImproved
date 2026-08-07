@@ -47,7 +47,7 @@ export function RelocationMetricsAndBanner({
           </div>
           <div className="text-xs text-faint">
             {r.percentExpenseIncrease > 0 ? "+" : ""}
-            {r.percentExpenseIncrease}%{" "}
+            {formatPercent(r.percentExpenseIncrease, 1)}{" "}
             {r.percentExpenseIncrease > 0
               ? "increase"
               : r.percentExpenseIncrease < 0

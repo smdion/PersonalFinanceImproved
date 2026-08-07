@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { safeDivide } from "@/lib/utils/math";
 
 export type ContribPeriod = "annual" | "monthly" | "paycheck";
 
@@ -30,7 +31,7 @@ export function getContribMultiplier(
 ): number {
   switch (period) {
     case "paycheck":
-      return 1 / periodsPerYear;
+      return safeDivide(1, periodsPerYear, 0)!;
     case "monthly":
       return 1 / 12;
     case "annual":

@@ -5,7 +5,10 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { InlineEdit } from "@/components/ui/inline-edit";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/utils/format";
+import { TAX_YEAR_MIN, TAX_YEAR_MAX } from "@/lib/constants";
+import { YearSelector } from "@/components/settings/year-selector";
 
 type IrmaaEntry = { magiThreshold: number; annualSurcharge: number };
 
@@ -42,8 +45,7 @@ export function IrmaaBracketsSettings() {
   const [copyFrom, setCopyFrom] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
-  if (isLoading)
-    return <div className="text-muted">Loading IRMAA tables...</div>;
+  if (isLoading) return <Skeleton className="h-6 w-48" />;
   if (!data || data.length === 0) {
     return (
       <div>
@@ -100,7 +102,7 @@ export function IrmaaBracketsSettings() {
 
   const handleAddYear = async () => {
     const yr = parseInt(newYear);
-    if (isNaN(yr) || yr < 2020 || yr > 2040) return;
+    if (isNaN(yr) || yr < TAX_YEAR_MIN || yr > TAX_YEAR_MAX) return;
     if (years.includes(yr)) return;
 
     if (copyFrom) {
@@ -141,41 +143,18 @@ export function IrmaaBracketsSettings() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">IRMAA Tables</h2>
-        <div className="flex items-center gap-2">
-          <div
-            className="flex gap-1"
-            role="tablist"
-            aria-label="IRMAA bracket year"
-          >
-            {years.map((yr) => (
-              <button
-                key={yr}
-                role="tab"
-                aria-selected={yr === activeYear}
-                onClick={() => setSelectedYear(yr)}
-                className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                  yr === activeYear
-                    ? "bg-blue-600 text-white"
-                    : "bg-surface-elevated text-muted hover:bg-surface-strong"
-                }`}
-              >
-                {yr}
-              </button>
-            ))}
-          </div>
-          {admin && (
-            <button
-              onClick={() => {
-                setShowAddYear(!showAddYear);
-                setNewYear(String((years[0] ?? new Date().getFullYear()) + 1));
-                setCopyFrom(years[0] ?? null);
-              }}
-              className="px-2 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded-full hover:bg-blue-50 transition-colors"
-            >
-              + Year
-            </button>
-          )}
-        </div>
+        <YearSelector
+          years={years}
+          activeYear={activeYear}
+          onSelectYear={setSelectedYear}
+          admin={admin}
+          ariaLabel="IRMAA bracket year"
+          onAddYearClick={() => {
+            setShowAddYear(!showAddYear);
+            setNewYear(String((years[0] ?? new Date().getFullYear()) + 1));
+            setCopyFrom(years[0] ?? null);
+          }}
+        />
       </div>
 
       <p className="text-xs text-muted mb-4">
@@ -298,7 +277,7 @@ export function IrmaaBracketsSettings() {
                             }
                             type="number"
                             className="text-sm"
-                            editable={admin}
+                            isEditable={admin}
                           />
                         </td>
                         <td className="py-1 px-2 text-right">
@@ -319,7 +298,7 @@ export function IrmaaBracketsSettings() {
                             }
                             type="number"
                             className="text-sm"
-                            editable={admin}
+                            isEditable={admin}
                           />
                         </td>
                         <td className="py-1 pl-2 text-right text-muted text-xs">

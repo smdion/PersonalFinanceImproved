@@ -8,10 +8,10 @@ import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import {
-  PERF_CATEGORY_HSA,
   CASH_BASIS_HELP,
   combineCashBasisGainLoss,
 } from "@/lib/config/display-labels";
+import { categoryHasDistributions } from "@/lib/config/account-types";
 import { PERFORMANCE_STALE_DAYS } from "@/lib/constants";
 import { HelpTip } from "@/components/ui/help-tip";
 import type { DetailedHistoryRow } from "./types";
@@ -92,7 +92,7 @@ function buildRowConfigs(
       },
     });
     // Add distributions row for categories that have them (e.g., HSA)
-    if (category === PERF_CATEGORY_HSA) {
+    if (categoryHasDistributions(category)) {
       rows.push({
         label: `${category} - Distributions`,
         accessor: (r) =>
@@ -152,7 +152,7 @@ function buildRowConfigs(
   return rows;
 }
 
-type Props = {
+type SpreadsheetYearOverYearTableProps = {
   yearA: DetailedHistoryRow;
   yearB: DetailedHistoryRow;
   /** When true, prorate contribution comparisons for current year (Projected Year mode). */
@@ -169,7 +169,7 @@ export function SpreadsheetYearOverYearTable({
   annualize,
   useMarketValue,
   showOutdated,
-}: Props) {
+}: SpreadsheetYearOverYearTableProps) {
   // Derive category keys from both years' data (union of all categories present)
   const categoryKeys = useMemo(() => {
     const keys = new Set<string>();

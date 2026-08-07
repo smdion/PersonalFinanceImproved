@@ -3,6 +3,7 @@
  * These functions compute values without any DB or I/O dependency.
  */
 import { toNumber } from "@/server/helpers/transforms";
+import { sumBy } from "@/lib/utils/math";
 
 /**
  * Modified Dietz return: gainLoss / (beginBal + netFlows/2).
@@ -589,7 +590,7 @@ export function assembleNetWorthValues(data: {
 export function computePortfolioTotal(
   accounts: { endingBalance: string | null }[],
 ): number {
-  return accounts.reduce((sum, a) => sum + toNumber(a.endingBalance), 0);
+  return sumBy(accounts, (a) => toNumber(a.endingBalance));
 }
 
 /**
@@ -599,9 +600,10 @@ export function computeHomeImprovementsCumulative(
   items: { year: number; cost: string | null }[],
   upToYear: number,
 ): number {
-  return items
-    .filter((hi) => hi.year <= upToYear)
-    .reduce((sum, hi) => sum + toNumber(hi.cost), 0);
+  return sumBy(
+    items.filter((hi) => hi.year <= upToYear),
+    (hi) => toNumber(hi.cost),
+  );
 }
 
 /**

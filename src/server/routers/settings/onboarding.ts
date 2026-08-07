@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 import { eq } from "drizzle-orm";
 import {
   protectedProcedure,
@@ -7,28 +7,28 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { hashPassword } from "@/lib/auth/password";
+import type { DbType } from "./_shared";
+
+/** Shared by isOnboardingComplete and createLocalAdmin's guard — these two
+ *  checks must never drift apart, or one can be tricked into believing
+ *  onboarding hasn't happened when the other says it has. */
+async function checkOnboardingComplete(db: DbType): Promise<boolean> {
+  const peopleRows = await db
+    .select({ id: schema.people.id })
+    .from(schema.people)
+    .limit(1);
+  if (peopleRows.length > 0) return true;
+
+  const setting = await db
+    .select({ value: schema.appSettings.value })
+    .from(schema.appSettings)
+    .where(eq(schema.appSettings.key, "onboarding_completed"));
+  return setting.length > 0 && setting[0]!.value === true;
+}
 
 export const onboardingProcedures = {
   isOnboardingComplete: protectedProcedure.query(async ({ ctx }) => {
-    // Check if any people exist
-    const peopleRows = await ctx.db
-      .select({ id: schema.people.id })
-      .from(schema.people)
-      .limit(1);
-    if (peopleRows.length > 0) {
-      return { complete: true };
-    }
-
-    // Check if onboarding_completed flag is set in app_settings
-    const setting = await ctx.db
-      .select({ value: schema.appSettings.value })
-      .from(schema.appSettings)
-      .where(eq(schema.appSettings.key, "onboarding_completed"));
-    if (setting.length > 0 && setting[0]!.value === true) {
-      return { complete: true };
-    }
-
-    return { complete: false };
+    return { complete: await checkOnboardingComplete(ctx.db) };
   }),
 
   completeOnboarding: adminProcedure.mutation(async ({ ctx }) => {
@@ -44,7 +44,12 @@ export const onboardingProcedures = {
 
   /**
    * Create the initial local admin account during onboarding.
-   * Guard: only callable when no local admins exist yet.
+   * Guard: only callable when no local admins exist yet AND onboarding
+   * hasn't otherwise been completed (e.g. via OIDC) — an OIDC-only install
+   * never creates a local_admins row, so table-emptiness alone would leave
+   * this endpoint permanently open. Runs inside a transaction so the
+   * check-then-insert can't race two concurrent first-run requests into
+   * both succeeding.
    * Uses publicProcedure because no session exists before the first admin is created.
    */
   createLocalAdmin: publicProcedure
@@ -62,28 +67,36 @@ export const onboardingProcedures = {
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      // Guard: only allow creation when no local admins exist
-      const existing = await ctx.db
-        .select({ id: schema.localAdmins.id })
-        .from(schema.localAdmins)
-        .limit(1);
-      if (existing.length > 0) {
-        throw new Error(
-          "A local admin account already exists. Use Settings to manage accounts.",
-        );
-      }
+      const admin = await ctx.db.transaction(async (tx) => {
+        if (await checkOnboardingComplete(tx)) {
+          throw new Error(
+            "Onboarding has already been completed. Use Settings to manage accounts.",
+          );
+        }
+        const existing = await tx
+          .select({ id: schema.localAdmins.id })
+          .from(schema.localAdmins)
+          .limit(1);
+        if (existing.length > 0) {
+          throw new Error(
+            "A local admin account already exists. Use Settings to manage accounts.",
+          );
+        }
 
-      const passwordHash = await hashPassword(input.password);
-      const [admin] = await ctx.db
-        .insert(schema.localAdmins)
-        .values({
-          name: input.name.trim(),
-          email: input.email.toLowerCase().trim(),
-          passwordHash,
-        })
-        .returning({ id: schema.localAdmins.id });
+        const passwordHash = await hashPassword(input.password);
+        const [created] = await tx
+          .insert(schema.localAdmins)
+          .values({
+            name: input.name.trim(),
+            email: input.email.toLowerCase().trim(),
+            passwordHash,
+          })
+          .returning({ id: schema.localAdmins.id });
 
-      return { id: admin!.id };
+        return created!;
+      });
+
+      return { id: admin.id };
     }),
 
   /**

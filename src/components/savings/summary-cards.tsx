@@ -3,6 +3,7 @@
 import React from "react";
 import { Card, Metric, ProgressBar } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { sumBy } from "@/lib/utils/math";
 import { HelpTip } from "@/components/ui/help-tip";
 import type { GoalProjection } from "./types";
 
@@ -43,7 +44,7 @@ export function SummaryCards({
           monthlyAllocation: gp.monthlyAllocation,
         }))
       : savings.goals;
-  const pool = poolGoals.reduce((s, g) => s + g.monthlyAllocation, 0);
+  const pool = sumBy(poolGoals, (g) => g.monthlyAllocation);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -113,7 +114,7 @@ export function SummaryCards({
           <div className="mt-2">
             <ProgressBar
               value={efund.progress}
-              color={efund.progress >= 1 ? "bg-green-500" : "bg-amber-500"}
+              variant={efund.progress >= 1 ? "success" : "warning"}
             />
           </div>
         </Card>

@@ -3,13 +3,12 @@
 /** Monte Carlo results — loading spinner, errors, warnings, depletion callout, and compact summary bar. */
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import type { useProjectionState } from "./use-projection-state";
-
-type ProjectionState = ReturnType<typeof useProjectionState>;
+import type { ProjectionState } from "./projection-table-types";
 
 /** Compact depletion callout (1-liner) shown when MC has a depletion age. */
-export function McDepletionCallout({ s }: { s: ProjectionState }) {
-  const { result, engineSettings, deflate, baseYear, mcQuery, mcLoading } = s;
+export function McDepletionCallout({ state }: { state: ProjectionState }) {
+  const { result, engineSettings, deflate, baseYear, mcQuery, mcLoading } =
+    state;
 
   if (!result || !mcQuery.data?.result || mcLoading) return null;
   if (!mcQuery.data.result.distributions.depletionAge) return null;
@@ -53,8 +52,8 @@ export function McDepletionCallout({ s }: { s: ProjectionState }) {
 }
 
 /** MC loading, errors, warnings, and compact summary bar. */
-export function McResultsSection({ s }: { s: ProjectionState }) {
-  const { projectionMode, mcLoading, mcQuery, setShowAssumptions } = s;
+export function McResultsSection({ state }: { state: ProjectionState }) {
+  const { projectionMode, mcLoading, mcQuery, setShowAssumptions } = state;
 
   if (projectionMode !== "monteCarlo") return null;
 
@@ -63,7 +62,7 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
       {/* MC loading state is handled by the unified ProjectionLoader slim strip */}
       {mcQuery.error && (
         <div className="text-sm text-red-500 py-4">
-          Monte Carlo failed: {mcQuery.error.message}
+          Simulation failed: {mcQuery.error.message}
         </div>
       )}
       {mcQuery.data?.result && !mcLoading && (
@@ -203,7 +202,7 @@ export function McResultsSection({ s }: { s: ProjectionState }) {
       )}
       {!mcQuery.data?.result && !mcLoading && !mcQuery.error && (
         <div className="text-sm text-muted py-4">
-          No Monte Carlo data available. Ensure asset classes and glide path are
+          No simulation data available. Ensure asset classes and glide path are
           configured.
         </div>
       )}

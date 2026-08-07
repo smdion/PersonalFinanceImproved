@@ -100,7 +100,7 @@ export function SalaryTracker({
                   className="group flex items-center gap-2 text-xs text-blue-600 py-0.5"
                 >
                   <Toggle
-                    checked={isActive}
+                    isChecked={isActive}
                     onChange={() => onToggleSalary(scSalary)}
                     size="sm"
                     title={

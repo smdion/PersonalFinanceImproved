@@ -29,7 +29,8 @@ export function SummaryTable({
               {formatCurrency(r.amount)}
               {showPct && total > 0 && (
                 <span className="text-faint ml-1">
-                  ({formatPercent(r.amount / total, 1)})
+                  {/* lint-violation-ok: guarded by total > 0 above */}(
+                  {formatPercent(r.amount / total, 1)})
                 </span>
               )}
             </span>

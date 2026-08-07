@@ -21,7 +21,7 @@ export type TooltipLineItem = {
   amount: number;
   prefix?: "+" | "-";
   taxType?: "roth" | "traditional";
-  pct?: number;
+  percent?: number;
   match?: number;
   matchLabel?: string;
   associatedMatch?: number;

@@ -3,16 +3,20 @@
 import { memo } from "react";
 
 import { trpc } from "@/lib/trpc";
-import { Card } from "@/components/ui/card";
-import { formatCurrency } from "@/lib/utils/format";
+import { Card, ProgressBar } from "@/components/ui/card";
+import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { safeDivide, sumBy } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
+
+const TOP_CATEGORY_COUNT = 3;
 
 function BudgetStatusCardImpl() {
   const [activeColumn] = usePersistedSetting<number>("budget_active_column", 0);
   const { data, isLoading, error } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
   });
+  const { data: actualsData } = trpc.budget.listApiActuals.useQuery();
   if (isLoading) return <LoadingCard title="Budget" />;
   if (error) return <ErrorCard title="Budget" message="Failed to load" />;
   if (!data?.result)
@@ -32,6 +36,19 @@ function BudgetStatusCardImpl() {
     ? (weightedAnnualTotal ?? 0) / 12
     : result.totalMonthly;
 
+  // Actual spend this month, from linked API categories (YNAB/Actual) — a
+  // "how am I actually doing" signal alongside the static plan total above.
+  const actuals = actualsData?.actuals ?? [];
+  const actualBudgeted = sumBy(actuals, (a) => a.budgeted);
+  const actualSpent = sumBy(actuals, (a) => Math.max(0, -a.activity));
+  const spentPercent = safeDivide(actualSpent, actualBudgeted, null);
+  const isOverBudget = spentPercent !== null && spentPercent > 1;
+
+  const topCategories = [...result.categories]
+    .sort((a, b) => b.total - a.total)
+    .slice(0, TOP_CATEGORY_COUNT);
+  const categoriesTotal = sumBy(result.categories, (c) => c.total);
+
   return (
     <Card
       title="Budget"
@@ -48,8 +65,45 @@ function BudgetStatusCardImpl() {
       </div>
       <div className="mt-2 flex gap-3 text-xs text-muted">
         <span>Essential: {formatCurrency(result.essentialTotal)}</span>
-        <span>Disc: {formatCurrency(result.discretionaryTotal)}</span>
+        <span>Discretionary: {formatCurrency(result.discretionaryTotal)}</span>
       </div>
+
+      {actualsData?.service && actuals.length > 0 && (
+        <div className="mt-3">
+          <ProgressBar
+            value={spentPercent ?? 0}
+            label="Spent this month"
+            variant={isOverBudget ? "danger" : "success"}
+            tooltip={`${formatCurrency(actualSpent)} spent of ${formatCurrency(actualBudgeted)} budgeted (linked categories only)`}
+          />
+        </div>
+      )}
+
+      {topCategories.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-subtle space-y-1">
+          {topCategories.map((c) => (
+            <div
+              key={c.name}
+              className="flex justify-between text-xs text-faint"
+            >
+              <span>{c.name}</span>
+              <span className="flex items-center gap-1.5">
+                {formatCurrency(c.total)}
+                {categoriesTotal > 0 && (
+                  // lint-violation-ok: guarded by categoriesTotal > 0 above
+                  <span>({formatPercent(c.total / categoriesTotal, 0)})</span>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {actualsData?.month && (
+        <p className="text-caption text-faint mt-2">
+          Synced for {formatDate(actualsData.month, "short")}
+        </p>
+      )}
     </Card>
   );
 }

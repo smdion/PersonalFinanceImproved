@@ -2,6 +2,7 @@
  * Pure business logic for household-level tax aggregation.
  * Extracted from paycheck router — no DB or I/O dependency.
  */
+import { sumBy } from "@/lib/utils/math";
 
 /** Per-person tax data needed for household aggregation. */
 export type PersonTaxData = {
@@ -32,9 +33,9 @@ export function computeHouseholdTax(
   people: PersonTaxData[],
   combinedTaxResult: { federalTax: number; marginalRate: number },
 ): HouseholdTaxResult {
-  const combinedGross = people.reduce((s, p) => s + p.salary, 0);
-  const perPersonFicaSS = people.reduce((s, p) => s + p.ficaSS, 0);
-  const perPersonFicaMed = people.reduce((s, p) => s + p.ficaMedicare, 0);
+  const combinedGross = sumBy(people, (p) => p.salary);
+  const perPersonFicaSS = sumBy(people, (p) => p.ficaSS);
+  const perPersonFicaMed = sumBy(people, (p) => p.ficaMedicare);
 
   const totalTax =
     combinedTaxResult.federalTax + perPersonFicaSS + perPersonFicaMed;
