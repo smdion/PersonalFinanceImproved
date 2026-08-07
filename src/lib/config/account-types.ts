@@ -59,6 +59,7 @@ import type {
 } from "./account-types.types";
 
 import { zeroBalanceForStructure } from "./account-balance";
+import { PERF_CATEGORY_HSA } from "./display-labels";
 
 /** Create a zero-initialized AccountBalance for the given category. */
 export function zeroBalance(category: AccountCategory): AccountBalance {
@@ -581,6 +582,19 @@ export function isRetirementParent(
 /** Check if a parentCategory DB column value is Portfolio. Use this when checking the stored/user-editable field, not account type config. */
 export function isPortfolioParent(parentCategory: string | undefined): boolean {
   return parentCategory === "Portfolio";
+}
+
+/** Performance categories that report a distinct Distributions row (in addition
+ *  to Contributions and Gains/Losses) — e.g. HSA, which supports tax-free
+ *  qualified medical withdrawals during accumulation. Single source of truth
+ *  for the year-over-year spreadsheet table's Distributions row. */
+const PERF_CATEGORIES_WITH_DISTRIBUTIONS: readonly string[] = [
+  PERF_CATEGORY_HSA,
+];
+
+/** Check if a performance display category (e.g. "HSA", "401k/IRA") reports a Distributions row. */
+export function categoryHasDistributions(category: string): boolean {
+  return PERF_CATEGORIES_WITH_DISTRIBUTIONS.includes(category);
 }
 
 /** Check if a tax treatment value represents tax-free (Roth) contributions. */

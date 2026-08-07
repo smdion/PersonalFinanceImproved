@@ -4,9 +4,7 @@
  *  Contains: Balance/Strategy/Budget toggle, Baseline On/Off, Confidence Band range. */
 import { HelpTip } from "@/components/ui/help-tip";
 import { PillBtn, LabeledPillGroup } from "./pill-btn";
-import type { useProjectionState } from "./use-projection-state";
-
-type ProjectionState = ReturnType<typeof useProjectionState>;
+import type { ProjectionState } from "./projection-table-types";
 
 export function ChartControls({ state }: { state: ProjectionState }) {
   const {

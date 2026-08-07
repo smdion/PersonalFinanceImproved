@@ -23,6 +23,15 @@ export const CONTRIBUTION_METHOD_LABELS_SHORT: Record<string, string> = {
   fixed_annual: "$/year",
 };
 
+/** Amount suffix appended after a formatted contribution dollar figure
+ *  (e.g. "$500/mo"). No entry for percent_of_salary — that method renders
+ *  as "X% of salary" instead of a dollar amount. */
+export const CONTRIBUTION_METHOD_AMOUNT_SUFFIXES: Record<string, string> = {
+  fixed_per_period: "/period",
+  fixed_monthly: "/mo",
+  fixed_annual: "/yr",
+};
+
 export const TAX_TREATMENT_LABELS: Record<string, string> = {
   pre_tax: "Traditional",
   tax_free: "Roth",

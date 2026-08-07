@@ -24,13 +24,7 @@ export function getPrimaryPerson<T extends { isPrimaryUser: boolean }>(
 }
 
 export function getPeriodsPerYear(payPeriod: string): number {
-  const map: Record<string, number> = {
-    weekly: 52,
-    biweekly: 26,
-    semimonthly: 24,
-    monthly: 12,
-  };
-  const periods = map[payPeriod];
+  const periods = PAY_PERIOD_CONFIG[payPeriod]?.periodsPerYear;
   if (periods === undefined) {
     throw new Error(
       `Unknown pay period "${payPeriod}". Expected: weekly, biweekly, semimonthly, or monthly.`,

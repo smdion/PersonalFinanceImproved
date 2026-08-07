@@ -1,4 +1,8 @@
 import type { DemoProfile } from "../types";
+import {
+  PERF_CATEGORY_RETIREMENT,
+  PERF_CATEGORY_DEFAULT,
+} from "@/lib/config/display-labels";
 
 export const singleIncomeProfile: DemoProfile = {
   slug: "single-income",
@@ -238,7 +242,7 @@ export const singleIncomeProfile: DemoProfile = {
       accountType: "401k",
       accountLabel: "401(k) - TechCorp",
       ownershipType: "individual",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       label: null,
       isActive: true,
     },
@@ -247,7 +251,7 @@ export const singleIncomeProfile: DemoProfile = {
       accountType: "ira",
       accountLabel: "Roth IRA",
       ownershipType: "individual",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       label: null,
       isActive: true,
     },
@@ -256,7 +260,7 @@ export const singleIncomeProfile: DemoProfile = {
   // annualReturnPct: decimal fraction (0.115 = 11.5%)
   annualPerformance: [
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT,
       year: 2023,
       beginningBalance: "25000",
       totalContributions: "15000",
@@ -270,7 +274,7 @@ export const singleIncomeProfile: DemoProfile = {
       lifetimeMatch: "6800",
     },
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT,
       year: 2024,
       beginningBalance: "23000",
       totalContributions: "15500",
@@ -284,7 +288,7 @@ export const singleIncomeProfile: DemoProfile = {
       lifetimeMatch: "2550",
     },
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT,
       year: 2025,
       beginningBalance: "35000",
       totalContributions: "15500",
@@ -335,7 +339,7 @@ export const singleIncomeProfile: DemoProfile = {
       annualReturnPct: "0.088",
       employerContributions: "3400",
       fees: "80",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "401(k) - TechCorp",
     },
     {
@@ -350,7 +354,7 @@ export const singleIncomeProfile: DemoProfile = {
       annualReturnPct: "0.021",
       employerContributions: "3600",
       fees: "90",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "401(k) - TechCorp",
     },
     {
@@ -365,7 +369,7 @@ export const singleIncomeProfile: DemoProfile = {
       annualReturnPct: "0.082",
       employerContributions: "0",
       fees: "0",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "Roth IRA",
     },
     {
@@ -380,7 +384,7 @@ export const singleIncomeProfile: DemoProfile = {
       annualReturnPct: "0.02",
       employerContributions: "0",
       fees: "0",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "Roth IRA",
     },
     // 2026 YTD (Q1)
@@ -396,7 +400,7 @@ export const singleIncomeProfile: DemoProfile = {
       annualReturnPct: "0.015",
       employerContributions: "900",
       fees: "22",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "401(k) - TechCorp",
     },
     {
@@ -411,7 +415,7 @@ export const singleIncomeProfile: DemoProfile = {
       annualReturnPct: "0.013",
       employerContributions: "0",
       fees: "0",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "Roth IRA",
     },
   ],

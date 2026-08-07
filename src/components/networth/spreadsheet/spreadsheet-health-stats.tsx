@@ -29,20 +29,35 @@ type RowDef = {
   format: (value: number) => string;
   accessor: (row: DetailedHistoryRow, annualize: boolean) => number;
   isFlowMetric: boolean;
+  /** When set, the accessor above is ignored and this pair of market/cost-basis
+   *  accessors is used instead, chosen by the `useMarketValue` toggle. Drives
+   *  the Wealth/AAW score rows without branching on `row.label` in the renderer. */
+  accessorCostBasis?: {
+    market: (row: DetailedHistoryRow) => number;
+    costBasis: (row: DetailedHistoryRow) => number;
+  };
 };
 
 const STAT_ROWS: RowDef[] = [
   {
     label: "Wealth Score",
     format: (v) => formatPercent(v),
-    accessor: (r, _ann) => r.wealthScoreMarket, // toggled in render
+    accessor: (r, _ann) => r.wealthScoreMarket,
     isFlowMetric: false,
+    accessorCostBasis: {
+      market: (r) => r.wealthScoreMarket,
+      costBasis: (r) => r.wealthScoreCostBasis,
+    },
   },
   {
     label: "AAW Score",
     format: (v) => v.toFixed(1),
-    accessor: (r, _ann) => r.aawScoreMarket, // toggled in render
+    accessor: (r, _ann) => r.aawScoreMarket,
     isFlowMetric: false,
+    accessorCostBasis: {
+      market: (r) => r.aawScoreMarket,
+      costBasis: (r) => r.aawScoreCostBasis,
+    },
   },
   {
     label: "Brokerage/ESPP Contribution Rate",
@@ -143,24 +158,16 @@ export function SpreadsheetHealthStats({
           </thead>
           <tbody>
             {STAT_ROWS.map((row, index) => {
-              let valA = row.accessor(yearA, annualize);
-              let valB = row.accessor(yearB, annualize);
-              // Pick market or cost basis for wealth/AAW scores
-              if (row.label === "Wealth Score") {
-                valA = useMarketValue
-                  ? yearA.wealthScoreMarket
-                  : yearA.wealthScoreCostBasis;
-                valB = useMarketValue
-                  ? yearB.wealthScoreMarket
-                  : yearB.wealthScoreCostBasis;
-              } else if (row.label === "AAW Score") {
-                valA = useMarketValue
-                  ? yearA.aawScoreMarket
-                  : yearA.aawScoreCostBasis;
-                valB = useMarketValue
-                  ? yearB.aawScoreMarket
-                  : yearB.aawScoreCostBasis;
-              }
+              const valA = row.accessorCostBasis
+                ? useMarketValue
+                  ? row.accessorCostBasis.market(yearA)
+                  : row.accessorCostBasis.costBasis(yearA)
+                : row.accessor(yearA, annualize);
+              const valB = row.accessorCostBasis
+                ? useMarketValue
+                  ? row.accessorCostBasis.market(yearB)
+                  : row.accessorCostBasis.costBasis(yearB)
+                : row.accessor(yearB, annualize);
               return (
                 <tr
                   key={row.label}

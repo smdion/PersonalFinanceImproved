@@ -1,4 +1,8 @@
 import type { DemoProfile } from "../types";
+import {
+  PERF_CATEGORY_RETIREMENT,
+  PERF_CATEGORY_DEFAULT,
+} from "@/lib/config/display-labels";
 
 export const earlyRetirementProfile: DemoProfile = {
   slug: "early-retirement",
@@ -211,7 +215,7 @@ export const earlyRetirementProfile: DemoProfile = {
       employerMatchValue: null,
       employerMaxMatchPct: null,
       perfAccountLabel: "Taxable Brokerage",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
     },
   ],
 
@@ -252,7 +256,7 @@ export const earlyRetirementProfile: DemoProfile = {
       amount: "450000",
       label: "Taxable",
       ownerPersonName: "Morgan",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "Taxable Brokerage",
     },
   ],
@@ -263,7 +267,7 @@ export const earlyRetirementProfile: DemoProfile = {
       accountType: "401k",
       accountLabel: "401(k) Mega",
       ownershipType: "individual",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       label: null,
       isActive: true,
     },
@@ -272,7 +276,7 @@ export const earlyRetirementProfile: DemoProfile = {
       accountType: "ira",
       accountLabel: "Roth IRA",
       ownershipType: "individual",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       label: null,
       isActive: true,
     },
@@ -281,7 +285,7 @@ export const earlyRetirementProfile: DemoProfile = {
       accountType: "hsa",
       accountLabel: "HSA",
       ownershipType: "individual",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       label: null,
       isActive: true,
     },
@@ -290,7 +294,7 @@ export const earlyRetirementProfile: DemoProfile = {
       accountType: "brokerage",
       accountLabel: "Taxable Brokerage",
       ownershipType: "individual",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       label: null,
       isActive: true,
     },
@@ -299,7 +303,7 @@ export const earlyRetirementProfile: DemoProfile = {
   // annualReturnPct: decimal fraction (0.115 = 11.5%)
   annualPerformance: [
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT,
       year: 2023,
       beginningBalance: "630000",
       totalContributions: "130000",
@@ -313,7 +317,7 @@ export const earlyRetirementProfile: DemoProfile = {
       lifetimeMatch: "60000",
     },
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT,
       year: 2024,
       beginningBalance: "815000",
       totalContributions: "101150",
@@ -327,7 +331,7 @@ export const earlyRetirementProfile: DemoProfile = {
       lifetimeMatch: "70000",
     },
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT,
       year: 2025,
       beginningBalance: "772850",
       totalContributions: "101650",
@@ -434,7 +438,7 @@ export const earlyRetirementProfile: DemoProfile = {
       annualReturnPct: "0.082",
       employerContributions: "10000",
       fees: "400",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "401(k) Mega",
     },
     {
@@ -449,7 +453,7 @@ export const earlyRetirementProfile: DemoProfile = {
       annualReturnPct: "0.021",
       employerContributions: "10500",
       fees: "450",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "401(k) Mega",
     },
     // Roth IRA
@@ -465,7 +469,7 @@ export const earlyRetirementProfile: DemoProfile = {
       annualReturnPct: "0.084",
       employerContributions: "0",
       fees: "0",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "Roth IRA",
     },
     {
@@ -480,7 +484,7 @@ export const earlyRetirementProfile: DemoProfile = {
       annualReturnPct: "0.023",
       employerContributions: "0",
       fees: "0",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "Roth IRA",
     },
     // HSA
@@ -496,7 +500,7 @@ export const earlyRetirementProfile: DemoProfile = {
       annualReturnPct: "0.07",
       employerContributions: "0",
       fees: "50",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "HSA",
     },
     {
@@ -511,7 +515,7 @@ export const earlyRetirementProfile: DemoProfile = {
       annualReturnPct: "0.022",
       employerContributions: "0",
       fees: "50",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "HSA",
     },
     // Taxable Brokerage
@@ -527,7 +531,7 @@ export const earlyRetirementProfile: DemoProfile = {
       annualReturnPct: "0.068",
       employerContributions: "0",
       fees: "150",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "Taxable Brokerage",
     },
     {
@@ -542,7 +546,7 @@ export const earlyRetirementProfile: DemoProfile = {
       annualReturnPct: "0.021",
       employerContributions: "0",
       fees: "150",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "Taxable Brokerage",
     },
     // 2026 YTD (Q1)
@@ -558,7 +562,7 @@ export const earlyRetirementProfile: DemoProfile = {
       annualReturnPct: "0.011",
       employerContributions: "2625",
       fees: "112",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "401(k) Mega",
     },
     {
@@ -573,7 +577,7 @@ export const earlyRetirementProfile: DemoProfile = {
       annualReturnPct: "0.008",
       employerContributions: "0",
       fees: "0",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "Roth IRA",
     },
     {
@@ -588,7 +592,7 @@ export const earlyRetirementProfile: DemoProfile = {
       annualReturnPct: "0.004",
       employerContributions: "0",
       fees: "12",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "HSA",
     },
     {
@@ -603,7 +607,7 @@ export const earlyRetirementProfile: DemoProfile = {
       annualReturnPct: "0.009",
       employerContributions: "0",
       fees: "38",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT,
       perfAccountLabel: "Taxable Brokerage",
     },
   ],

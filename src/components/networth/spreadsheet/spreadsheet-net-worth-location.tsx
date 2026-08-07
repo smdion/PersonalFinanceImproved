@@ -16,6 +16,9 @@ type SpreadsheetNetWorthLocationProps = {
 type LocationRow = {
   label: string;
   accessor: (row: DetailedHistoryRow) => number;
+  /** How to format this row's value — most rows are a share of gross assets
+   *  (percent); "Other Liabilities" shows the raw dollar figure instead. */
+  format: "percent" | "currency";
 };
 
 function buildLocationRows(useMarketValue: boolean): LocationRow[] {
@@ -23,11 +26,24 @@ function buildLocationRows(useMarketValue: boolean): LocationRow[] {
     {
       label: "House",
       accessor: (r) => (useMarketValue ? r.houseValue : r.houseValueCostBasis),
+      format: "percent",
     },
-    { label: "Portfolio", accessor: (r) => r.portfolioTotal },
-    { label: "Cash", accessor: (r) => r.cash },
-    { label: "Other Assets", accessor: (r) => r.otherAssets },
-    { label: "Other Liabilities", accessor: (r) => r.otherLiabilities },
+    {
+      label: "Portfolio",
+      accessor: (r) => r.portfolioTotal,
+      format: "percent",
+    },
+    { label: "Cash", accessor: (r) => r.cash, format: "percent" },
+    {
+      label: "Other Assets",
+      accessor: (r) => r.otherAssets,
+      format: "percent",
+    },
+    {
+      label: "Other Liabilities",
+      accessor: (r) => r.otherLiabilities,
+      format: "currency",
+    },
   ];
 }
 
@@ -81,12 +97,12 @@ export function SpreadsheetNetWorthLocation({
                     {row.label}
                   </td>
                   <td className="text-right py-1.5 px-2">
-                    {row.label === "Other Liabilities"
+                    {row.format === "currency"
                       ? formatCurrency(valA)
                       : formatPercent(pctA)}
                   </td>
                   <td className="text-right py-1.5 pl-2">
-                    {row.label === "Other Liabilities"
+                    {row.format === "currency"
                       ? formatCurrency(valB)
                       : formatPercent(pctB)}
                   </td>

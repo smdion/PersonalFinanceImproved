@@ -8,6 +8,10 @@ import {
   getAllCategories,
   type AccountCategory,
 } from "@/lib/config/account-types";
+import {
+  PERF_CATEGORY_RETIREMENT,
+  PERF_CATEGORY_PORTFOLIO,
+} from "@/lib/config/display-labels";
 
 export function CreateAccountForm({
   people,
@@ -42,7 +46,7 @@ export function CreateAccountForm({
   );
   const [parentCategory, setParentCategory] = useState<
     "Retirement" | "Portfolio"
-  >("Retirement");
+  >(PERF_CATEGORY_RETIREMENT);
 
   const typeOptions = getAllCategories().map((c) => ({
     value: c,
@@ -139,8 +143,12 @@ export function CreateAccountForm({
             }
             className="mt-1 block w-full text-sm border border-strong rounded px-2 py-1.5"
           >
-            <option value="Retirement">Retirement</option>
-            <option value="Portfolio">Portfolio</option>
+            <option value={PERF_CATEGORY_RETIREMENT}>
+              {PERF_CATEGORY_RETIREMENT}
+            </option>
+            <option value={PERF_CATEGORY_PORTFOLIO}>
+              {PERF_CATEGORY_PORTFOLIO}
+            </option>
           </select>
         </label>
         <label className="block">

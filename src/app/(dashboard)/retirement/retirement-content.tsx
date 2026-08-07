@@ -107,9 +107,11 @@ export function RetirementContent() {
   );
   const snapshotTotalsQuery = trpc.networth.listSnapshotTotals.useQuery();
   const snapshotOptions = snapshotTotalsQuery.data ?? [];
-  const engineInput = useMemo(
+  // Shared across engineInput and comparisonInput below — both projection
+  // queries take the same set of optional overrides, differing only in
+  // whether metadataOnly is set.
+  const baseInput = useMemo(
     () => ({
-      metadataOnly: true as const,
       ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
       ...(contribProfileId != null
         ? { contributionProfileId: contribProfileId }
@@ -133,6 +135,10 @@ export function RetirementContent() {
       decExpenseOverride,
       snapshotId,
     ],
+  );
+  const engineInput = useMemo(
+    () => ({ metadataOnly: true as const, ...baseInput }),
+    [baseInput],
   );
   const debouncedEngineInput = useDebouncedValue(engineInput, 600);
   const { data, isLoading, isFetching, error } =
@@ -173,32 +179,7 @@ export function RetirementContent() {
   // Lazy-load strategy comparison only when expanded
   const [comparisonExpanded, setComparisonExpanded] =
     usePersistedSetting<boolean>("retirement_comparison_expanded", false);
-  const comparisonInput = useMemo(
-    () => ({
-      ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
-      ...(contribProfileId != null
-        ? { contributionProfileId: contribProfileId }
-        : {}),
-      ...(decBudgetProfileId != null
-        ? { decumulationBudgetProfileId: decBudgetProfileId }
-        : {}),
-      ...(decBudgetCol != null
-        ? { decumulationBudgetColumn: decBudgetCol }
-        : {}),
-      ...(decExpenseOverride
-        ? { decumulationExpenseOverride: parseFloat(decExpenseOverride) }
-        : {}),
-      ...(snapshotId != null ? { snapshotId } : {}),
-    }),
-    [
-      salaryOverrides,
-      contribProfileId,
-      decBudgetProfileId,
-      decBudgetCol,
-      decExpenseOverride,
-      snapshotId,
-    ],
-  );
+  const comparisonInput = baseInput;
   const { data: comparisonData, isLoading: comparisonLoading } =
     trpc.projection.computeStrategyComparison.useQuery(comparisonInput, {
       enabled:
@@ -416,6 +397,7 @@ export function RetirementContent() {
           salaryGrowthRate={parseFloat(settings.salaryAnnualIncrease)}
           retirementHorizonYears={settings.endAge - settings.retirementAge}
           hasBudgetLink={!!data.accumulationBudgetProfileId}
+          hasSocialSecurity={Number(settings.socialSecurityMonthly) > 0}
           deterministicNestEgg={
             data.result?.projectionByYear.find(
               (p: { age: number }) => p.age === settings.retirementAge,
@@ -550,7 +532,8 @@ export function RetirementContent() {
                                   settings.endAge - settings.retirementAge,
                                 hasBudgetLink:
                                   !!data.accumulationBudgetProfileId,
-                                hasSocialSecurity: false,
+                                hasSocialSecurity:
+                                  Number(settings.socialSecurityMonthly) > 0,
                                 mostlyTaxAdvantaged: false,
                               });
                               const recKey =

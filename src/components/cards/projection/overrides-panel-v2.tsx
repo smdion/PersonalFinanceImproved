@@ -10,7 +10,7 @@
 import { useState, useMemo } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import type { useProjectionState } from "./use-projection-state";
+import type { ProjectionState } from "./projection-table-types";
 import type { AccumOverride, DecumOverride } from "./types";
 import { catDisplayLabel } from "./utils";
 import { LumpSumForm } from "./lump-sum-form";
@@ -18,8 +18,6 @@ import {
   WITHDRAWAL_STRATEGY_CONFIG,
   type WithdrawalStrategyType,
 } from "@/lib/config/withdrawal-strategies";
-
-type ProjectionState = ReturnType<typeof useProjectionState>;
 
 export type OverridesPanelV2Props = {
   state: ProjectionState;

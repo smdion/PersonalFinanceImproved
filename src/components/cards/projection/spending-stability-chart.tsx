@@ -27,9 +27,7 @@ import {
 } from "recharts";
 import { ChartControls } from "./chart-controls";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
-import type { useProjectionState } from "./use-projection-state";
-
-type ProjectionState = ReturnType<typeof useProjectionState>;
+import type { ProjectionState } from "./projection-table-types";
 
 export function SpendingStabilityChart({
   state,

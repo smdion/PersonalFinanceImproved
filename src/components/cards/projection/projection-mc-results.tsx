@@ -3,9 +3,7 @@
 /** Monte Carlo results — loading spinner, errors, warnings, depletion callout, and compact summary bar. */
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import type { useProjectionState } from "./use-projection-state";
-
-type ProjectionState = ReturnType<typeof useProjectionState>;
+import type { ProjectionState } from "./projection-table-types";
 
 /** Compact depletion callout (1-liner) shown when MC has a depletion age. */
 export function McDepletionCallout({ state }: { state: ProjectionState }) {

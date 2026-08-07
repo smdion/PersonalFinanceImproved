@@ -22,9 +22,7 @@ import {
   getSegmentBalance,
 } from "@/lib/config/account-types";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
-import type { useProjectionState } from "./use-projection-state";
-
-type ProjectionState = ReturnType<typeof useProjectionState>;
+import type { ProjectionState } from "./projection-table-types";
 
 // Skeleton lives in its own file so the parent (cards/projection/index.tsx)
 // can render it without pulling recharts in via this module's import graph.

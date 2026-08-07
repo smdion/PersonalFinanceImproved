@@ -2,7 +2,7 @@
 
 /** Unified overrides panel — thin shell that delegates to section components. */
 import { HelpTip } from "@/components/ui/help-tip";
-import type { useProjectionState } from "./use-projection-state";
+import type { ProjectionState } from "./projection-table-types";
 import { SavingOverridesSection } from "./overrides-saving-section";
 import { WithdrawalOverridesSection } from "./overrides-withdrawal-section";
 import { LifeChangesSection } from "./overrides-life-section";
@@ -26,8 +26,6 @@ function SectionHeader({
     </div>
   );
 }
-
-type ProjectionState = ReturnType<typeof useProjectionState>;
 
 export type OverridesSectionProps = {
   state: ProjectionState;

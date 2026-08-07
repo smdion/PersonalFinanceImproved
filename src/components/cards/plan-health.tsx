@@ -57,6 +57,8 @@ interface PlanHealthCardProps {
   /** v0.5 M4 — retirement horizon for strategy recommendation. */
   retirementHorizonYears?: number;
   hasBudgetLink?: boolean;
+  /** True when the household has a non-zero Social Security benefit configured. */
+  hasSocialSecurity?: boolean;
   /** v0.5 M3 — deterministic nest-egg estimate to derive a band around. */
   deterministicNestEgg?: number;
   /** Optional rangeFraction override for the band (default 0.25). */
@@ -142,7 +144,7 @@ export function PlanHealthCard(props: PlanHealthCardProps) {
     strategyRec = recommendWithdrawalStrategy({
       retirementHorizonYears: props.retirementHorizonYears,
       hasBudgetLink: props.hasBudgetLink ?? false,
-      hasSocialSecurity: false,
+      hasSocialSecurity: props.hasSocialSecurity ?? false,
       mostlyTaxAdvantaged: false,
     });
     callouts.push(

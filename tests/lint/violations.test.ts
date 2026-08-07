@@ -24,6 +24,7 @@
  *   16. taxYear/projectionYear z.number().int() field missing .min()/.max() bounds (M10 class)
  *   17. accountLabel fallback built from a template literal instead of null (M40 class)
  *   18. Hook file under src/lib/hooks/ using React hooks without a "use client" directive (H4 class)
+ *   19. Local `type X = ReturnType<typeof useYState>` redeclaration instead of importing the canonical type (L37 class)
  *
  * Intentionally NOT checked (needs semantic analysis, not string matching):
  *   - "Router computing budget expenses with different column index" (#1)
@@ -525,6 +526,19 @@ function findMissingUseClientOnHookViolations(): Violation[] {
   return violations;
 }
 
+// Rule 19: local `type X = ReturnType<typeof useYState>` redeclaration.
+// Found independently in 7 files (L37, .scratch/docs/review-findings.md) —
+// each copy is a second source of truth for the same type. If the source
+// hook's return shape changes, a stale local alias can mask a type error in
+// whichever file didn't get the memo, instead of surfacing it everywhere at
+// once. Import the canonical type instead of re-deriving it.
+function findLocalReturnTypeAliasViolations(): Violation[] {
+  return findPatternViolations(
+    /^\s*type\s+\w+\s*=\s*ReturnType<typeof use\w+>/,
+    "no-local-return-type-alias",
+  );
+}
+
 // ── Tests ───────────────────────────────────────────────────────────
 
 function formatViolations(label: string, violations: Violation[]): string {
@@ -753,6 +767,19 @@ describe("RULES.md violations sweep", () => {
         `Found ${violations.length} missing-use-client-on-hook violations. ` +
           `Add "use client"; as the first line — importing a hook that calls ` +
           `React hooks from a Server Component crashes at runtime.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no local `type X = ReturnType<typeof useYState>` redeclaration", () => {
+    const violations = findLocalReturnTypeAliasViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} local-return-type-alias violations. ` +
+          `Import the canonical type instead of re-deriving it locally — a ` +
+          `stale local alias can mask a type error when the source hook's ` +
+          `return shape changes.\n` +
           formatViolations("Violations", violations),
       );
     }

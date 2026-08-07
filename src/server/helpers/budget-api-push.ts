@@ -305,7 +305,7 @@ export async function pushSnapshotToBudgetApi(input: {
           rollbackFailures
             .map((f) => `${f.transactionId} (${f.error})`)
             .join("; ") +
-          ". Reconcile manually in YNAB.";
+          ". Reconcile manually in your budget app.";
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
       message: baseMessage + rollbackMessage,

@@ -12,6 +12,10 @@
 // Mortgages → Per-account history → Other assets → Net worth → App settings.
 // ============================================================================
 import type { DemoProfile } from "../types";
+import {
+  PERF_CATEGORY_RETIREMENT,
+  PERF_CATEGORY_DEFAULT,
+} from "@/lib/config/display-labels";
 
 export const recentlyRetiredProfile: DemoProfile = {
   slug: "recently-retired",
@@ -358,7 +362,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       amount: "1000000",
       label: "Joint Taxable",
       ownerPersonName: "James",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
       perfAccountLabel: "Joint Brokerage",
     },
   ],
@@ -370,7 +374,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       accountType: "401k",
       accountLabel: "James 401k",
       ownershipType: "individual",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
       label: null,
       isActive: true,
       ownerPersonName: "James",
@@ -380,7 +384,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       accountType: "ira",
       accountLabel: "James Rollover IRA",
       ownershipType: "individual",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
       label: "Rollover",
       isActive: true,
       ownerPersonName: "James",
@@ -390,7 +394,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       accountType: "ira",
       accountLabel: "James Roth IRA",
       ownershipType: "individual",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
       label: null,
       isActive: true,
       ownerPersonName: "James",
@@ -400,7 +404,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       accountType: "403b",
       accountLabel: "Patricia 403b",
       ownershipType: "individual",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
       label: null,
       isActive: true,
       ownerPersonName: "Patricia",
@@ -410,7 +414,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       accountType: "ira",
       accountLabel: "Patricia Rollover IRA",
       ownershipType: "individual",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
       label: "Rollover",
       isActive: true,
       ownerPersonName: "Patricia",
@@ -420,7 +424,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       accountType: "ira",
       accountLabel: "Patricia Roth IRA",
       ownershipType: "individual",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
       label: null,
       isActive: true,
       ownerPersonName: "Patricia",
@@ -430,7 +434,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       accountType: "brokerage",
       accountLabel: "Joint Brokerage",
       ownershipType: "joint",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
       label: "Joint Taxable",
       isActive: true,
       ownerPersonName: "James",
@@ -441,7 +445,7 @@ export const recentlyRetiredProfile: DemoProfile = {
   // annualReturnPct: decimal fraction (0.115 = 11.5%)
   annualPerformance: [
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT as "401k/IRA",
       year: 2016,
       beginningBalance: "2100000",
       totalContributions: "85000",
@@ -455,7 +459,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       lifetimeMatch: "280000",
     },
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT as "401k/IRA",
       year: 2017,
       beginningBalance: "2437000",
       totalContributions: "88000",
@@ -469,7 +473,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       lifetimeMatch: "299000",
     },
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT as "401k/IRA",
       year: 2018,
       beginningBalance: "3035000",
       totalContributions: "90000",
@@ -483,7 +487,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       lifetimeMatch: "318500",
     },
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT as "401k/IRA",
       year: 2019,
       beginningBalance: "2988000",
       totalContributions: "92000",
@@ -497,7 +501,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       lifetimeMatch: "338500",
     },
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT as "401k/IRA",
       year: 2020,
       beginningBalance: "3948000",
       totalContributions: "94000",
@@ -511,7 +515,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       lifetimeMatch: "359000",
     },
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT as "401k/IRA",
       year: 2021,
       beginningBalance: "4732000",
       totalContributions: "96000",
@@ -525,7 +529,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       lifetimeMatch: "380000",
     },
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT as "401k/IRA",
       year: 2022,
       beginningBalance: "6053000",
       totalContributions: "98000",
@@ -539,7 +543,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       lifetimeMatch: "401500",
     },
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT as "401k/IRA",
       year: 2023,
       beginningBalance: "5006000",
       totalContributions: "100000",
@@ -553,7 +557,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       lifetimeMatch: "423500",
     },
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT as "401k/IRA",
       year: 2024,
       beginningBalance: "6386000",
       totalContributions: "65000",
@@ -567,7 +571,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       lifetimeMatch: "435500",
     },
     {
-      category: "401k/IRA",
+      category: PERF_CATEGORY_DEFAULT as "401k/IRA",
       year: 2025,
       beginningBalance: "6961000",
       totalContributions: "0",
@@ -740,7 +744,7 @@ export const recentlyRetiredProfile: DemoProfile = {
           annualReturnPct: d.ret,
           employerContributions: d.match,
           fees: year <= 2023 ? "1800" : year === 2024 ? "1400" : "1000",
-          parentCategory: "Retirement" as const,
+          parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
           perfAccountLabel: "James 401k",
         };
       },
@@ -832,7 +836,7 @@ export const recentlyRetiredProfile: DemoProfile = {
           annualReturnPct: d.ret,
           employerContributions: "0",
           fees: year <= 2023 ? "1000" : year === 2024 ? "700" : "600",
-          parentCategory: "Retirement" as const,
+          parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
           perfAccountLabel: "James Rollover IRA",
         };
       },
@@ -935,7 +939,7 @@ export const recentlyRetiredProfile: DemoProfile = {
           annualReturnPct: d.ret,
           employerContributions: "0",
           fees: "0",
-          parentCategory: "Retirement" as const,
+          parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
           perfAccountLabel: "James Roth IRA",
         };
       },
@@ -1038,7 +1042,7 @@ export const recentlyRetiredProfile: DemoProfile = {
           annualReturnPct: d.ret,
           employerContributions: "0",
           fees: year <= 2023 ? "650" : year === 2024 ? "500" : "400",
-          parentCategory: "Retirement" as const,
+          parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
           perfAccountLabel: "Patricia 403b",
         };
       },
@@ -1130,7 +1134,7 @@ export const recentlyRetiredProfile: DemoProfile = {
           annualReturnPct: d.ret,
           employerContributions: "0",
           fees: year <= 2023 ? "250" : year === 2024 ? "200" : "100",
-          parentCategory: "Retirement" as const,
+          parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
           perfAccountLabel: "Patricia Rollover IRA",
         };
       },
@@ -1233,7 +1237,7 @@ export const recentlyRetiredProfile: DemoProfile = {
           annualReturnPct: d.ret,
           employerContributions: "0",
           fees: "0",
-          parentCategory: "Retirement" as const,
+          parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
           perfAccountLabel: "Patricia Roth IRA",
         };
       },
@@ -1336,7 +1340,7 @@ export const recentlyRetiredProfile: DemoProfile = {
           annualReturnPct: d.ret,
           employerContributions: "0",
           fees: year <= 2021 ? "250" : "400",
-          parentCategory: "Retirement" as const,
+          parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
           perfAccountLabel: "Joint Brokerage",
         };
       },
@@ -1355,7 +1359,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       annualReturnPct: "-0.026",
       employerContributions: "0",
       fees: "250",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
       perfAccountLabel: "James 401k",
     },
     {
@@ -1370,7 +1374,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       annualReturnPct: "-0.029",
       employerContributions: "0",
       fees: "150",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
       perfAccountLabel: "James Rollover IRA",
     },
     {
@@ -1385,7 +1389,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       annualReturnPct: "-0.031",
       employerContributions: "0",
       fees: "0",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
       perfAccountLabel: "James Roth IRA",
     },
     {
@@ -1400,7 +1404,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       annualReturnPct: "-0.021",
       employerContributions: "0",
       fees: "100",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
       perfAccountLabel: "Patricia 403b",
     },
     {
@@ -1415,7 +1419,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       annualReturnPct: "-0.022",
       employerContributions: "0",
       fees: "25",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
       perfAccountLabel: "Patricia Rollover IRA",
     },
     {
@@ -1430,7 +1434,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       annualReturnPct: "-0.021",
       employerContributions: "0",
       fees: "0",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
       perfAccountLabel: "Patricia Roth IRA",
     },
     {
@@ -1445,7 +1449,7 @@ export const recentlyRetiredProfile: DemoProfile = {
       annualReturnPct: "-0.017",
       employerContributions: "0",
       fees: "100",
-      parentCategory: "Retirement" as const,
+      parentCategory: PERF_CATEGORY_RETIREMENT as "Retirement",
       perfAccountLabel: "Joint Brokerage",
     },
   ],
