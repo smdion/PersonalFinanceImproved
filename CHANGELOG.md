@@ -10,11 +10,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.6.7] - 2026-08-06
 
+> A full-codebase correctness and security review (H1–H12 critical, M1–M46 medium, plus a 130-item cleanup pass) closed out this cycle. Highlights below; the SimpleFIN auto-sync work from earlier in this branch is included.
+
+### Security
+
+- **Closed an unauthenticated admin-takeover window.** Running "Reset All Data" used to leave a brief gap where anyone could create a fresh admin account before you did, because the reset wiped local admin logins but not the flag that says setup is already complete. Admin logins now survive a data reset, and account creation is blocked once setup has happened, closing the gap entirely.
+- **Hardened the internal scheduled-task endpoints (backup export/import, daily sync triggers) against timing-based secret guessing**, and made sure every one of them correctly refuses to run against a demo database. Two of these (the startup maintenance task and the daily SimpleFIN sync) were missing that demo-mode protection and have been fixed.
+
 ### Fixed
 
 - **SimpleFIN balances now actually sync automatically, once a day.** The daily sync endpoint existed since v0.6.6 but was never wired up to run on its own — balances only updated when you manually clicked "Sync Now." It's now checked hourly (at a randomized offset, per SimpleFIN's own guidance on spreading out request timing) and only calls SimpleFIN's API once real syncing is actually due for the day, so it stays well under their daily request quota.
 - **A partial SimpleFIN provider error (e.g. one linked institution needing re-authentication) no longer silently discards balances that did come back successfully** — and any sync error is now visible in the sidebar's Data Updated tooltip instead of only reaching a server log.
 - **The sidebar's "Data" freshness label now shows the actual oldest date across sources** instead of just whichever source happened to be listed last.
+- **Retirement catch-up contribution limits are now calculated per person, by their own age**, instead of averaging ages across a household — a two-person household could previously see the wrong extra contribution room for one or both people, especially once someone crosses into the 60–63 "super catch-up" window.
+- **ACA subsidy-cliff calculations now use your full Social Security benefit**, not just the taxable portion — the previous math could report you as safely under the subsidy cliff when you were actually over it.
+- **A new investment category showing up mid-year no longer silently disappears from the annual performance rollup** — it's now included going forward instead of being dropped until the next full recalculation.
+- **The Expenses page's savings rate now respects an active salary what-if scenario**, matching every other page, instead of quietly falling back to your real salary.
+- **The dashboard's "years to FI" figure could get stuck showing a what-if scenario's result as if it were your real plan.** It's now only ever updated from your actual (non-scenario, non-historical-snapshot) retirement plan.
+- **Contribution and paycheck percentage displays no longer show "Infinity%"** for employer-only accounts or when a pay-period calculation divides by zero.
+- **Fixed several places where light or dark mode made things hard to read or invisible**: a tooltip with white text on a white background, a strategy-guide card missing its border, and the light-mode theme toggle showing invisible button text.
+- **The Roth account color in the Retirement Taxes panel now matches the color used everywhere else** (it was showing green instead of the app's violet for tax-free accounts).
+- **Account color dots on the Contributions page are visible again** — they were silently rendering as no color at all.
+- **Portfolio account cards show their colored left-accent stripe again** — a CSS formatting issue was dropping it.
+- **Restoring a backup while using Actual Budget (instead of YNAB) no longer fails the post-restore sync** — it previously always assumed YNAB regardless of which service you had configured.
+- **Retirement page's "current age" is now computed the same way in both the Plan Health and Strategy Comparison tabs** — they could previously disagree at a birthday or year boundary.
+- **Fixed a rare case where an override form for salary or budget changes could silently save the change under the wrong household member** — it's now blocked until a person is properly selected.
+- **The relocation calculator's "expense increase" percentage now displays correctly** — it was showing a number 100x too large.
+- **Non-admin users no longer see (non-functional) Save/Delete controls on the relocation planner's saved scenarios** — those actions require admin and are now hidden instead of failing silently when clicked.
+- **Account names in a few places (Portfolio page, snapshot entry) no longer show raw internal keys like "ira" instead of a properly capitalized display name.**
+- **Rapid changes to a setting could occasionally get overwritten by a slightly-stale background refresh** — fixed with better tracking of which change is actually the latest.
+- **A house's equity percentage no longer shows a nonsensical large negative number when the home's value hasn't been entered yet.**
+- Several demo-profile-only data issues (investment return figures stored at the wrong scale, a mismatched account link) that only affected the built-in demo personas, not real data.
+
+### Improved
+
+- **A broad internal consistency pass**: centralized color definitions, number/percentage formatting, and category-name handling that had drifted across the app into single shared sources, so future changes only need to happen in one place. No visible behavior change.
+- **22 new automated checks now run on every change** to catch several of the bug patterns above (unsafe secret comparisons, unguarded math that could show "Infinity," raw account keys leaking into the UI, and more) before they can ship again.
 
 ### Added
 

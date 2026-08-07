@@ -70,7 +70,7 @@ export function PreviewPanel({
   const handleLinkSavingsFromBudget = (goalId: number, apiId: string) => {
     const cat = allApiCats.find((c) => c.id === apiId);
     if (!cat) return;
-    savingsMutations.linkSavings.mutate({
+    savingsMutations.mutations.linkSavings.mutate({
       goalId,
       apiCategoryId: apiId,
       apiCategoryName: cat.name,
@@ -82,14 +82,14 @@ export function PreviewPanel({
     name: string;
   }) => {
     try {
-      const created = await savingsMutations.createGoal.mutateAsync({
+      const created = await savingsMutations.mutations.createGoal.mutateAsync({
         name: apiCat.name,
         targetMode: "ongoing",
         isActive: true,
         monthlyContribution: "0",
       });
       if (created) {
-        await savingsMutations.linkSavings.mutateAsync({
+        await savingsMutations.mutations.linkSavings.mutateAsync({
           goalId: created.id,
           apiCategoryId: apiCat.id,
           apiCategoryName: apiCat.name,
@@ -127,7 +127,7 @@ export function PreviewPanel({
         service={service}
         profile={profile}
         totalDrifted={totalDrifted}
-        mutations={driftMutations}
+        mutations={driftMutations.mutations}
       />
 
       {/* Dashboard — compact overview row */}
@@ -220,7 +220,7 @@ export function PreviewPanel({
           budget={budget}
           savings={savings}
           allApiCats={allApiCats}
-          mutations={budgetMutations}
+          mutations={budgetMutations.mutations}
           onLinkSavings={handleLinkSavingsFromBudget}
           onCreateSavingsGoalFromApi={handleCreateSavingsGoalFromApi}
           savingsOverrideCount={savingsOverrideCount}
@@ -231,7 +231,7 @@ export function PreviewPanel({
         <SavingsSection
           savings={savings}
           allApiCats={allApiCats}
-          mutations={savingsMutations}
+          mutations={savingsMutations.mutations}
           savingsOverrides={savingsOverrides}
           setSavingsOverrides={setSavingsOverrides}
         />
@@ -241,7 +241,7 @@ export function PreviewPanel({
         <ContribSection
           budget={budget}
           contribAccounts={contribAccounts}
-          mutations={contribMutations}
+          mutations={contribMutations.mutations}
         />
       )}
 
@@ -249,7 +249,7 @@ export function PreviewPanel({
         <PortfolioSection
           service={service}
           portfolio={portfolio}
-          mutations={portfolioMutations}
+          mutations={portfolioMutations.mutations}
         />
       )}
     </div>

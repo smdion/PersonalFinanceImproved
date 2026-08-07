@@ -501,7 +501,7 @@ describe("ProjectionHeroKpis", () => {
     const { ProjectionHeroKpis } =
       await import("@/components/cards/projection/projection-hero-kpis");
     const s = baseMockState({ result: minResult });
-    render(<ProjectionHeroKpis s={s} />);
+    render(<ProjectionHeroKpis state={s} />);
     expect(screen.getByText("Nest Egg at Retirement")).toBeInTheDocument();
     expect(screen.getByText("Peak Balance")).toBeInTheDocument();
     expect(screen.getByText("Funding Duration")).toBeInTheDocument();
@@ -511,7 +511,9 @@ describe("ProjectionHeroKpis", () => {
   it("returns null when result is null", async () => {
     const { ProjectionHeroKpis } =
       await import("@/components/cards/projection/projection-hero-kpis");
-    const { container } = render(<ProjectionHeroKpis s={baseMockState()} />);
+    const { container } = render(
+      <ProjectionHeroKpis state={baseMockState()} />,
+    );
     expect(container.innerHTML).toBe("");
   });
 
@@ -547,7 +549,7 @@ describe("ProjectionHeroKpis", () => {
       mcQuery: { data: mcData, error: null },
       mcLoading: false,
     });
-    render(<ProjectionHeroKpis s={s} />);
+    render(<ProjectionHeroKpis state={s} />);
     expect(screen.getByText("92%")).toBeInTheDocument();
     // Labels post v0.5.1 rename — was "Success Rate" / "End Balance" before.
     // Tailwind's uppercase class styles the display but leaves the DOM text
@@ -598,7 +600,7 @@ describe("ProjectionChart", () => {
   it("returns null when result is null", async () => {
     const { ProjectionChart } =
       await import("@/components/cards/projection/projection-chart");
-    const { container } = render(<ProjectionChart s={baseMockState()} />);
+    const { container } = render(<ProjectionChart state={baseMockState()} />);
     expect(container.innerHTML).toBe("");
   });
 
@@ -606,7 +608,7 @@ describe("ProjectionChart", () => {
     const { ProjectionChart } =
       await import("@/components/cards/projection/projection-chart");
     const s = baseMockState({ result: chartResult });
-    render(<ProjectionChart s={s} />);
+    render(<ProjectionChart state={s} />);
     expect(screen.getByText("Balance Projection")).toBeInTheDocument();
     expect(screen.getByTestId("responsive-container")).toBeInTheDocument();
   });
@@ -619,7 +621,7 @@ describe("ProjectionChart", () => {
       isPersonFiltered: true,
       personFilterName: "Alice",
     });
-    render(<ProjectionChart s={s} />);
+    render(<ProjectionChart state={s} />);
     expect(screen.getByText("Alice")).toBeInTheDocument();
   });
 });
@@ -632,7 +634,9 @@ describe("McDepletionCallout", () => {
   it("returns null when no MC data", async () => {
     const { McDepletionCallout } =
       await import("@/components/cards/projection/projection-mc-results");
-    const { container } = render(<McDepletionCallout s={baseMockState()} />);
+    const { container } = render(
+      <McDepletionCallout state={baseMockState()} />,
+    );
     expect(container.innerHTML).toBe("");
   });
 
@@ -654,7 +658,7 @@ describe("McDepletionCallout", () => {
         error: null,
       },
     });
-    const { container } = render(<McDepletionCallout s={s} />);
+    const { container } = render(<McDepletionCallout state={s} />);
     expect(container.innerHTML).toBe("");
   });
 
@@ -682,7 +686,7 @@ describe("McDepletionCallout", () => {
         error: null,
       },
     });
-    render(<McDepletionCallout s={s} />);
+    render(<McDepletionCallout state={s} />);
     expect(screen.getByText(/28% of futures/)).toBeInTheDocument();
     expect(screen.getByText(/age 88/)).toBeInTheDocument();
   });
@@ -698,7 +702,7 @@ describe("McResultsSection", () => {
       await import("@/components/cards/projection/projection-mc-results");
     const { container } = render(
       <McResultsSection
-        s={baseMockState({ projectionMode: "deterministic" })}
+        state={baseMockState({ projectionMode: "deterministic" })}
       />,
     );
     expect(container.innerHTML).toBe("");
@@ -711,7 +715,7 @@ describe("McResultsSection", () => {
       projectionMode: "monteCarlo",
       mcLoading: true,
     });
-    const { container } = render(<McResultsSection s={s} />);
+    const { container } = render(<McResultsSection state={s} />);
     expect(container.querySelector(".space-y-3")).toBeInTheDocument();
     expect(screen.queryByText(/simulations/i)).not.toBeInTheDocument();
   });
@@ -723,8 +727,8 @@ describe("McResultsSection", () => {
       projectionMode: "monteCarlo",
       mcQuery: { data: null, error: { message: "Timeout" } },
     });
-    render(<McResultsSection s={s} />);
-    expect(screen.getByText(/Monte Carlo failed: Timeout/)).toBeInTheDocument();
+    render(<McResultsSection state={s} />);
+    expect(screen.getByText(/Simulation failed: Timeout/)).toBeInTheDocument();
   });
 
   it("shows no-data message when no MC results", async () => {
@@ -734,7 +738,7 @@ describe("McResultsSection", () => {
       projectionMode: "monteCarlo",
       mcQuery: { data: null, error: null },
     });
-    render(<McResultsSection s={s} />);
-    expect(screen.getByText(/No Monte Carlo data/)).toBeInTheDocument();
+    render(<McResultsSection state={s} />);
+    expect(screen.getByText(/No simulation data/)).toBeInTheDocument();
   });
 });

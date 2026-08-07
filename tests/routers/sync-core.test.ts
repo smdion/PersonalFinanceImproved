@@ -785,9 +785,9 @@ describe("sync core — computeExpenseComparison", () => {
 
     const result = await caller.sync.computeExpenseComparison(dateRange);
     const newCat = result.categories.find((c) => c.name === "NewCat")!;
-    expect(newCat.pctChange).toBeNull(); // prior is 0
+    expect(newCat.percentChange).toBeNull(); // prior is 0
 
     const oldCat = result.categories.find((c) => c.name === "OldCat")!;
-    expect(oldCat.pctChange).toBe(0); // same amount: (-100 - -100) / |-100| * 100 = 0
+    expect(oldCat.percentChange).toBe(0); // same amount: (-100 - -100) / |-100| * 100 = 0
   });
 });

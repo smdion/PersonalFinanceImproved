@@ -14,6 +14,9 @@ vi.mock("@/lib/utils/format", () => ({
 
 vi.mock("@/lib/utils/colors", () => ({
   taxTypeLabel: (t: string) => t,
+  accountBorderColor: () => "border-blue-300",
+  accountMatchColor: () => "bg-blue-50",
+  accountColor: () => "bg-blue-500",
 }));
 
 vi.mock("@/lib/config/account-types", () => {
@@ -26,14 +29,17 @@ vi.mock("@/lib/config/account-types", () => {
       text: "text-blue-600",
     },
   });
+  const config = {
+    "401k": mk("401(k)"),
+    ira: mk("IRA"),
+    brokerage: mk("Brokerage", false),
+    hsa: mk("HSA", false),
+  };
   return {
-    ACCOUNT_TYPE_CONFIG: {
-      "401k": mk("401(k)"),
-      ira: mk("IRA"),
-      brokerage: mk("Brokerage", false),
-      hsa: mk("HSA", false),
-    },
+    ACCOUNT_TYPE_CONFIG: config,
     getAllCategories: () => ["401k", "ira", "brokerage", "hsa"],
+    getAccountTypeConfig: (category: string) =>
+      config[category as keyof typeof config],
   };
 });
 

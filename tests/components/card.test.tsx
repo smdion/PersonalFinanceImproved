@@ -58,7 +58,7 @@ describe("Card", () => {
   // --- Collapsible variant ---
   it("supports collapsible toggle", () => {
     render(
-      <Card title="Toggle" collapsible defaultOpen={true}>
+      <Card title="Toggle" isCollapsible isDefaultOpen={true}>
         <span>Body</span>
       </Card>,
     );
@@ -75,7 +75,7 @@ describe("Card", () => {
 
   it("starts collapsed when defaultOpen is false", () => {
     render(
-      <Card title="Closed" collapsible defaultOpen={false}>
+      <Card title="Closed" isCollapsible isDefaultOpen={false}>
         <span>Hidden</span>
       </Card>,
     );
@@ -84,7 +84,7 @@ describe("Card", () => {
 
   it("has correct aria-expanded when open", () => {
     render(
-      <Card title="A11y" collapsible defaultOpen={true}>
+      <Card title="A11y" isCollapsible isDefaultOpen={true}>
         <span>Content</span>
       </Card>,
     );
@@ -93,7 +93,7 @@ describe("Card", () => {
 
   it("has correct aria-expanded when collapsed", () => {
     render(
-      <Card title="A11y" collapsible defaultOpen={false}>
+      <Card title="A11y" isCollapsible isDefaultOpen={false}>
         <span>Content</span>
       </Card>,
     );
@@ -105,7 +105,7 @@ describe("Card", () => {
 
   it("toggles via keyboard Enter key", () => {
     render(
-      <Card title="Keyboard" collapsible defaultOpen={true}>
+      <Card title="Keyboard" isCollapsible isDefaultOpen={true}>
         <span>Visible</span>
       </Card>,
     );
@@ -120,7 +120,7 @@ describe("Card", () => {
 
   it("toggles via keyboard Space key", () => {
     render(
-      <Card title="Keyboard" collapsible defaultOpen={true}>
+      <Card title="Keyboard" isCollapsible isDefaultOpen={true}>
         <span>Visible</span>
       </Card>,
     );
@@ -147,8 +147,8 @@ describe("Card", () => {
     render(
       <Card
         title="Header"
-        collapsible
-        defaultOpen={true}
+        isCollapsible
+        isDefaultOpen={true}
         headerRight={<button>Edit</button>}
       >
         <span>Body</span>
@@ -189,7 +189,7 @@ describe("Metric", () => {
       <Metric
         value="$500"
         label="Savings"
-        trend={{ value: "5%", positive: true }}
+        trend={{ value: "5%", isPositive: true }}
       />,
     );
     const trendEl = screen.getByText(/5%/);
@@ -198,7 +198,7 @@ describe("Metric", () => {
   });
 
   it("renders negative trend with down arrow", () => {
-    render(<Metric value="$200" trend={{ value: "3%", positive: false }} />);
+    render(<Metric value="$200" trend={{ value: "3%", isPositive: false }} />);
     const trendEl = screen.getByText(/3%/);
     expect(trendEl.textContent).toContain("\u2193"); // down arrow
     expect(trendEl.className).toContain("text-red-600");
@@ -262,9 +262,7 @@ describe("ProgressBar", () => {
   });
 
   it("applies custom color class", () => {
-    const { container } = render(
-      <ProgressBar value={0.5} color="bg-green-500" />,
-    );
+    const { container } = render(<ProgressBar value={0.5} variant="success" />);
     const bar = container.querySelector("[style]");
     expect(bar!.classList.contains("bg-green-500")).toBe(true);
   });
