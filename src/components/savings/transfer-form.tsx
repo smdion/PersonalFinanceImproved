@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { formatCurrency } from "@/lib/utils/format";
+import { parsePositiveInt } from "@/lib/utils/math";
 
 interface Goal {
   id: number;
@@ -54,7 +55,7 @@ export function TransferForm({
       amount: Number(amount),
       description,
       isRecurring,
-      recurrenceMonths: isRecurring ? parseInt(recurrenceMonths) || null : null,
+      recurrenceMonths: isRecurring ? parsePositiveInt(recurrenceMonths) : null,
     });
   };
 
@@ -138,6 +139,7 @@ export function TransferForm({
             {isRecurring && (
               <input
                 type="number"
+                min="1"
                 value={recurrenceMonths}
                 onChange={(e) => setRecurrenceMonths(e.target.value)}
                 placeholder="every N months"

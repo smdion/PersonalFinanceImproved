@@ -1,11 +1,12 @@
 "use client";
 
 import { trpc } from "@/lib/trpc";
+import { parsePositiveInt } from "@/lib/utils/math";
 import { type PlannedTxForm } from "./types";
 
 function parseRecurrence(form: PlannedTxForm): number | null {
   if (!form.isRecurring || !form.recurrenceMonths) return null;
-  return parseInt(form.recurrenceMonths, 10) || null;
+  return parsePositiveInt(form.recurrenceMonths);
 }
 
 export function useUpdatePlannedTx() {

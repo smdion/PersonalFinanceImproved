@@ -8,6 +8,7 @@ import { FundCard } from "./fund-card";
 import { FundTimelineDetail } from "./fund-timeline-detail";
 import { EmergencyFundDetail } from "./emergency-fund-detail";
 import { FUND_COLORS } from "@/lib/utils/colors";
+import { parsePositiveInt } from "@/lib/utils/math";
 import type {
   GoalProjection,
   PlannedTxForm,
@@ -338,7 +339,7 @@ export function FundManagementSection({
       description: form.description,
       isRecurring: form.isRecurring,
       recurrenceMonths: form.isRecurring
-        ? parseInt(form.recurrenceMonths) || null
+        ? parsePositiveInt(form.recurrenceMonths)
         : null,
     });
   };

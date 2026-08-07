@@ -1310,7 +1310,7 @@ export const savingsRouter = createTRPCRouter({
           amount: z.number().positive(),
           description: z.string().min(1),
           isRecurring: z.boolean().default(false),
-          recurrenceMonths: z.number().int().nullable().optional(),
+          recurrenceMonths: z.number().int().min(1).nullable().optional(),
         }),
       )
       .mutation(async ({ ctx, input }) => {

@@ -3,7 +3,39 @@
  * roundToCents is used in 59+ files — its correctness is load-bearing.
  */
 import { describe, it, expect } from "vitest";
-import { roundToCents, safeDivide, sumBy } from "@/lib/utils/math";
+import {
+  roundToCents,
+  safeDivide,
+  sumBy,
+  parsePositiveInt,
+} from "@/lib/utils/math";
+
+describe("parsePositiveInt", () => {
+  it("parses a valid positive integer string", () => {
+    expect(parsePositiveInt("3")).toBe(3);
+    expect(parsePositiveInt("12")).toBe(12);
+  });
+
+  it("rejects zero", () => {
+    expect(parsePositiveInt("0")).toBeNull();
+  });
+
+  it("rejects negative numbers (the `parseInt(x) || null` bug this replaces let these through)", () => {
+    expect(parsePositiveInt("-5")).toBeNull();
+  });
+
+  it("rejects non-numeric input", () => {
+    expect(parsePositiveInt("abc")).toBeNull();
+  });
+
+  it("rejects empty string", () => {
+    expect(parsePositiveInt("")).toBeNull();
+  });
+
+  it("truncates a decimal to its integer part", () => {
+    expect(parsePositiveInt("3.7")).toBe(3);
+  });
+});
 
 describe("roundToCents", () => {
   it("rounds to 2 decimal places", () => {
