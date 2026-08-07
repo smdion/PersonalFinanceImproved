@@ -954,7 +954,9 @@ export const budgetRouter = createTRPCRouter({
       // Pass ownershipType so accountDisplayName applies "Joint" prefix for
       // joint accounts and the individual owner name for individual accounts.
       const ownerName =
-        c.ownership === "individual" ? personMap.get(c.personId) : undefined;
+        c.ownership === "individual" && c.personId != null
+          ? personMap.get(c.personId)
+          : undefined;
       const label = accountDisplayName(
         {
           accountType: c.accountType,

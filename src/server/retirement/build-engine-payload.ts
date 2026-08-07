@@ -575,6 +575,9 @@ export async function buildEnginePayload(
     .map((c) => ({ ...c, accountType: c.accountType as AccountCategory }));
   const personAccountTypes = new Map<number, Set<string>>();
   for (const c of activeContribs) {
+    // Joint accounts have no single owning person — they don't attribute to
+    // any individual's per-person IRS limit tracking below.
+    if (c.personId == null) continue;
     if (!personAccountTypes.has(c.personId))
       personAccountTypes.set(c.personId, new Set());
     personAccountTypes.get(c.personId)!.add(c.accountType);

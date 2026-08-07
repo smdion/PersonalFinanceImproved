@@ -176,7 +176,8 @@ export const contributionProfileRouter = createTRPCRouter({
 
       const accountDetails = rawContribRows.map((row) => {
         const override = contribOverrides[String(row.id)];
-        const person = peopleMap.get(row.personId);
+        const person =
+          row.personId != null ? peopleMap.get(row.personId) : undefined;
 
         // Resolve linked performance account via explicit FK (primary path)
         const perfAccount = row.performanceAccountId

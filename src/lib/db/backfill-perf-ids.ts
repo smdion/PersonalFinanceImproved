@@ -122,7 +122,8 @@ export async function backfillPerformanceAccountIds(db: Db) {
     const peopleMap = new Map(people.map((p) => [p.id, p]));
 
     for (const contrib of nullContribs) {
-      const person = peopleMap.get(contrib.personId);
+      const person =
+        contrib.personId != null ? peopleMap.get(contrib.personId) : undefined;
       const personName = person?.name?.toLowerCase() ?? "";
       const display = getDisplayConfig(contrib.accountType, contrib.subType);
       const typeLabel = display.displayLabel.toLowerCase();

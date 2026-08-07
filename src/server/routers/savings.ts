@@ -299,30 +299,34 @@ export const savingsRouter = createTRPCRouter({
       const balanceMap = new Map<number, number>();
       if (activeGoalIds.length > 0) {
         const { isPostgres } = await import("@/lib/db/dialect");
+        const { queryRaw } = await import("@/lib/db/compat");
         const inList = sql.join(
           activeGoalIds.map((id) => sql`${id}`),
           sql`, `,
         );
         const latestBalances = isPostgres()
-          ? await ctx.db.execute(sql`
+          ? await queryRaw<{ goal_id: number; balance: string }>(
+              ctx.db,
+              sql`
               SELECT DISTINCT ON (goal_id) goal_id, balance
               FROM savings_monthly
               WHERE goal_id IN (${inList})
               ORDER BY goal_id, month_date DESC
-            `)
-          : await ctx.db.execute(sql`
+            `,
+            )
+          : await queryRaw<{ goal_id: number; balance: string }>(
+              ctx.db,
+              sql`
               SELECT goal_id, balance FROM savings_monthly t1
               WHERE month_date = (
                 SELECT MAX(t2.month_date) FROM savings_monthly t2
                 WHERE t2.goal_id = t1.goal_id
               )
               AND goal_id IN (${inList})
-            `);
-        for (const row of latestBalances.rows) {
-          balanceMap.set(
-            row.goal_id as number,
-            toNumber(row.balance as string),
-          );
+            `,
+            );
+        for (const row of latestBalances) {
+          balanceMap.set(row.goal_id, toNumber(row.balance));
         }
       }
 
@@ -1595,30 +1599,38 @@ export const savingsRouter = createTRPCRouter({
     if (activeGoals.length === 0) return { rows: [] };
 
     const { isPostgres } = await import("@/lib/db/dialect");
+    const { queryRaw } = await import("@/lib/db/compat");
     const ids = activeGoals.map((g) => g.id);
     const inList = sql.join(
       ids.map((id) => sql`${id}`),
       sql`, `,
     );
 
+    type MonthlyRow = { goal_id: number; month_date: string; balance: number };
     const rows = isPostgres()
-      ? await ctx.db.execute(sql`
+      ? await queryRaw<MonthlyRow>(
+          ctx.db,
+          sql`
           SELECT goal_id, month_date::text, balance::numeric
           FROM savings_monthly
           WHERE goal_id IN (${inList})
           ORDER BY month_date ASC
-        `)
-      : await ctx.db.execute(sql`
+        `,
+        )
+      : await queryRaw<MonthlyRow>(
+          ctx.db,
+          sql`
           SELECT goal_id, month_date, CAST(balance AS REAL) AS balance
           FROM savings_monthly
           WHERE goal_id IN (${inList})
           ORDER BY month_date ASC
-        `);
+        `,
+        );
 
     return {
-      rows: rows.rows.map((r) => ({
-        goalId: r.goal_id as number,
-        monthDate: r.month_date as string,
+      rows: rows.map((r) => ({
+        goalId: r.goal_id,
+        monthDate: r.month_date,
         balance: Number(r.balance),
       })),
     };

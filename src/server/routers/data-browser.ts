@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 import { createTRPCRouter, adminProcedure } from "../trpc";
 import { VERSION_TABLE_NAMES, EXCLUDED_TABLES } from "@/lib/db/version-tables";
 import { isPostgres } from "@/lib/db/dialect";
+import { queryRaw } from "@/lib/db/compat";
 
 /** All known table names (version tables + excluded tables like change_log). */
 const KNOWN_TABLE_LIST = [...VERSION_TABLE_NAMES, ...EXCLUDED_TABLES];
@@ -97,17 +98,19 @@ export const dataBrowserRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       assertKnownTable(input.tableName);
 
-      const countRes = await ctx.db.execute<{ count: string | number }>(
+      const countRes = await queryRaw<{ count: string | number }>(
+        ctx.db,
         sql`SELECT COUNT(*) AS count FROM ${sql.raw(`"${input.tableName}"`)}`,
       );
-      const totalCount = Number(countRes.rows[0]?.count ?? 0);
+      const totalCount = Number(countRes[0]?.count ?? 0);
 
-      const rowsRes = await ctx.db.execute(
+      const rows = await queryRaw<Record<string, unknown>>(
+        ctx.db,
         sql`SELECT * FROM ${sql.raw(`"${input.tableName}"`)} ORDER BY 1 LIMIT ${input.limit} OFFSET ${input.offset}`,
       );
 
       return {
-        rows: rowsRes.rows as Record<string, unknown>[],
+        rows,
         totalCount,
       };
     }),
@@ -118,9 +121,9 @@ export const dataBrowserRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       assertKnownTable(input.tableName);
 
-      const res = await ctx.db.execute(
+      return queryRaw<Record<string, unknown>>(
+        ctx.db,
         sql`SELECT * FROM ${sql.raw(`"${input.tableName}"`)} ORDER BY 1`,
       );
-      return res.rows as Record<string, unknown>[];
     }),
 });

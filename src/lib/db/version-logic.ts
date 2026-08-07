@@ -18,7 +18,13 @@ import { sql, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
 import { isPostgres } from "./dialect";
-import { truncateTables, resetSequences, validateColumns } from "./compat";
+import {
+  truncateTables,
+  resetSequences,
+  validateColumns,
+  queryRaw,
+  execRaw,
+} from "./compat";
 import { VERSION_TABLE_NAMES, VERSION_TABLES } from "./version-tables";
 import { log } from "@/lib/logger";
 import { transformBackupToCurrentSchema } from "./backup-transforms";
@@ -82,11 +88,14 @@ export async function createVersion(
 
     for (const tableName of VERSION_TABLE_NAMES) {
       try {
-        const rows = await tx.execute(sql.raw(`SELECT * FROM "${tableName}"`));
+        const rows = await queryRaw(
+          tx,
+          sql.raw(`SELECT * FROM "${tableName}"`),
+        );
         tableData.push({
           tableName,
-          rows: rows.rows as unknown[],
-          rowCount: rows.rows.length,
+          rows,
+          rowCount: rows.length,
         });
       } catch {
         // Table doesn't exist yet (migration pending) — skip
@@ -261,7 +270,8 @@ export async function restoreVersion(
           });
           return sql`(${sql.join(values, sql.raw(", "))})`;
         });
-        await tx.execute(
+        await execRaw(
+          tx,
           sql`INSERT INTO ${sql.raw(`"${tableEntry.name}"`)} (${sql.raw(colList)}) VALUES ${sql.join(valueClauses, sql.raw(", "))}`,
         );
         restoredRows += batch.length;
@@ -303,10 +313,10 @@ export async function exportBackup(
 
   for (const tableName of VERSION_TABLE_NAMES) {
     try {
-      const result = await database.execute(
+      tables[tableName] = await queryRaw(
+        database,
         sql.raw(`SELECT * FROM "${tableName}"`),
       );
-      tables[tableName] = result.rows as unknown[];
     } catch {
       // Table doesn't exist yet (migration pending) — export empty
       tables[tableName] = [];
@@ -506,7 +516,8 @@ async function importBackupSqlite(
           });
           return sql`(${sql.join(values, sql.raw(", "))})`;
         });
-        await tx.execute(
+        await execRaw(
+          tx,
           sql`INSERT INTO ${sql.raw(`"${tableEntry.name}"`)} (${sql.raw(colList)}) VALUES ${sql.join(valueClauses, sql.raw(", "))}`,
         );
         restoredRows += batch.length;

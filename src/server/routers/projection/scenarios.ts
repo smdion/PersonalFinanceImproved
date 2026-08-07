@@ -258,7 +258,8 @@ export const scenariosRouter = createTRPCRouter({
               c.accountType === rest.category &&
               (personId != null
                 ? c.personId === personId
-                : personNameById.get(c.personId) === rest.ownerName),
+                : c.personId != null &&
+                  personNameById.get(c.personId) === rest.ownerName),
           );
           const parentCategory =
             contrib?.parentCategory ??

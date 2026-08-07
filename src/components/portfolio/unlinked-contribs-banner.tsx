@@ -54,7 +54,7 @@ type Props = {
   admin: boolean;
   onContribOwnerChange: (
     c: ContribEntry,
-    update: { ownership: "individual" | "joint"; personId?: number },
+    update: { ownership: "individual" | "joint"; personId?: number | null },
   ) => void;
   onLinkContrib: (contribId: number, perfAccountId: number) => void;
 };

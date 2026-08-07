@@ -534,7 +534,10 @@ export const adminProcedures = {
       }[] = [];
 
       for (const contrib of needsBackfill) {
-        const person = peopleMap.get(contrib.personId);
+        const person =
+          contrib.personId != null
+            ? peopleMap.get(contrib.personId)
+            : undefined;
         const personName = person?.name?.toLowerCase() ?? "";
         const display = getAccountTypeConfig(
           contrib.accountType as AccountCategory,

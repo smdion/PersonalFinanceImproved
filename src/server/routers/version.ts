@@ -202,8 +202,10 @@ export const versionRouter = createTRPCRouter({
     .input(z.object({ confirmation: z.literal("delete") }))
     .mutation(async ({ ctx }) => {
       // Get all public tables
-      const { listTablesSQL, truncateTables } = await import("@/lib/db/compat");
-      const tables = await ctx.db.execute<{ tablename: string }>(
+      const { listTablesSQL, truncateTables, queryRaw } =
+        await import("@/lib/db/compat");
+      const tables = await queryRaw<{ tablename: string }>(
+        ctx.db,
         listTablesSQL(),
       );
 
@@ -220,7 +222,7 @@ export const versionRouter = createTRPCRouter({
       ]);
 
       // Truncate all user data tables
-      const toTruncate = tables.rows
+      const toTruncate = tables
         .map((r) => r.tablename)
         .filter((t) => !preserve.has(t));
 
