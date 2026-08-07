@@ -78,7 +78,7 @@ const salaryChangeInput = z.object({
 
 const contributionAccountInput = z.object({
   jobId: z.number().int().nullable().optional(),
-  personId: z.number().int(),
+  personId: z.number().int().nullable(),
   accountType: z.enum(accountCategoryEnum()),
   subType: z.string().nullable().optional(),
   label: z.string().nullable().optional(),
@@ -103,6 +103,29 @@ const contributionAccountInput = z.object({
   isPayrollDeducted: z.boolean().nullable().optional(),
   priorYearContribAmount: zDecimal.optional(),
 });
+
+// A joint account with no jobId has no single person's salary to resolve
+// percent_of_salary against — the salary-resolution fallback in
+// server/helpers/contribution.ts falls back to job-by-personId, which is
+// null for joint accounts, so this combination would silently compute a $0
+// salary instead of the intended percentage. Reject it loudly instead
+// (same philosophy as computeContributionValueFromMonthly's jobId-required
+// check for percent_of_salary).
+const jointRequiresJobForPercentOfSalary = (data: {
+  ownership?: string;
+  contributionMethod: string;
+  jobId?: number | null;
+}) =>
+  !(
+    data.ownership === "joint" &&
+    data.contributionMethod === "percent_of_salary" &&
+    !data.jobId
+  );
+const jointRequiresJobForPercentOfSalaryIssue = {
+  message:
+    "Joint accounts using percent-of-salary contributions must be linked to a specific job",
+  path: ["jobId"],
+};
 
 const deductionInput = z.object({
   jobId: z.number().int(),
@@ -224,7 +247,12 @@ export const paycheckProcedures = {
         .orderBy(asc(schema.contributionAccounts.personId)),
     ),
     create: adminProcedure
-      .input(contributionAccountInput)
+      .input(
+        contributionAccountInput.refine(
+          jointRequiresJobForPercentOfSalary,
+          jointRequiresJobForPercentOfSalaryIssue,
+        ),
+      )
       .mutation(async ({ ctx, input }) => {
         // When linked to a master account, sync parentCategory from its parentCategory
         let resolvedParentCategory = input.parentCategory;
@@ -296,7 +324,11 @@ export const paycheckProcedures = {
       .input(
         z
           .object({ id: z.number().int() })
-          .extend(contributionAccountInput.shape),
+          .extend(contributionAccountInput.shape)
+          .refine(
+            jointRequiresJobForPercentOfSalary,
+            jointRequiresJobForPercentOfSalaryIssue,
+          ),
       )
       .mutation(async ({ ctx, input: { id, ...data } }) => {
         // Validate priorYearContribAmount only allowed for eligible account types

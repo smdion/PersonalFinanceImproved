@@ -138,7 +138,7 @@ export function ContributionRow({
               ]}
               onChange={(val) => {
                 if (val === "joint") {
-                  onUpdate?.({ ownership: "joint" });
+                  onUpdate?.({ ownership: "joint", personId: null });
                 } else {
                   onUpdate?.({
                     personId: parseInt(val, 10),

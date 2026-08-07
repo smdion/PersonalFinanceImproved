@@ -223,9 +223,9 @@ export const contributionAccounts = pgTable(
   {
     id: serial("id").primaryKey(),
     jobId: integer("job_id").references(() => jobs.id, { onDelete: "cascade" }),
-    personId: integer("person_id")
-      .notNull()
-      .references(() => people.id, { onDelete: "restrict" }),
+    personId: integer("person_id").references(() => people.id, {
+      onDelete: "restrict",
+    }),
     accountType: text("account_type").notNull(),
     subType: text("sub_type"),
     label: text("label"),

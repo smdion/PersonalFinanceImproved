@@ -43,6 +43,13 @@
       "when": 1785965074092,
       "tag": "0005_lethal_rogue",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786111356476,
+      "tag": "0006_blue_gunslinger",
+      "breakpoints": true
     }
   ]
 }
