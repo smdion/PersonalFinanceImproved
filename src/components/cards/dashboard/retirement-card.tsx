@@ -198,6 +198,34 @@ function RetirementCardImpl() {
           <span className="text-muted">Retirement accounts</span>
           <span className="text-primary">{formatCurrency(portfolioTotal)}</span>
         </div>
+        {retPortfolio && portfolioTotal > 0 && (
+          <div className="ml-3 space-y-0.5 text-xs text-faint">
+            {retPortfolio.preTax > 0 && (
+              <div className="flex justify-between">
+                <span>Pre-tax</span>
+                <span>{formatCurrency(retPortfolio.preTax)}</span>
+              </div>
+            )}
+            {retPortfolio.taxFree > 0 && (
+              <div className="flex justify-between">
+                <span>Roth</span>
+                <span>{formatCurrency(retPortfolio.taxFree)}</span>
+              </div>
+            )}
+            {retPortfolio.hsa > 0 && (
+              <div className="flex justify-between">
+                <span>HSA</span>
+                <span>{formatCurrency(retPortfolio.hsa)}</span>
+              </div>
+            )}
+            {retPortfolio.afterTax > 0 && (
+              <div className="flex justify-between">
+                <span>After-tax</span>
+                <span>{formatCurrency(retPortfolio.afterTax)}</span>
+              </div>
+            )}
+          </div>
+        )}
         <div className="flex justify-between">
           <span className="text-muted">Contributions</span>
           <span className="text-primary">

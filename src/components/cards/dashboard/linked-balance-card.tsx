@@ -218,7 +218,7 @@ function LinkedBalanceCardImpl() {
           delta !== null && delta !== 0
             ? {
                 isPositive: delta > 0,
-                value: formatCurrency(Math.abs(delta)),
+                value: `${formatCurrency(Math.abs(delta))} vs. yesterday`,
               }
             : undefined
         }

@@ -18,6 +18,18 @@ import {
 import type { AccountCategory } from "@/lib/config/account-types";
 import { LoadingCard, ErrorCard } from "./utils";
 
+// A real, nonzero contribution can still round to "0%" at the default 0
+// decimals (e.g. $100/mo against a $250k household income is ~0.5%), which
+// reads as "nothing here" even though dollars are genuinely flowing.  Fall
+// back to 1 decimal only in that specific case so small-but-real categories
+// stay visible without adding decimal noise to the common (larger) values.
+function formatBreakdownPercent(fraction: number): string {
+  if (fraction > 0 && Math.round(fraction * 100) === 0) {
+    return formatPercent(fraction, 1);
+  }
+  return formatPercent(fraction);
+}
+
 function SavingsRateCardImpl() {
   const { viewMode } = useScenario();
   const salaryOverrides = useSalaryOverrides();
@@ -84,17 +96,22 @@ function SavingsRateCardImpl() {
   const portKey = excludeMatch
     ? "portfolioWithoutMatch"
     : ("portfolioWithMatch" as const);
+  // "portfolio" here means parentCategory === "Portfolio" — i.e. accounts
+  // NOT earmarked toward retirement projections. This is a goal-routing
+  // split, not a tax-treatment one: a Portfolio account isn't necessarily
+  // taxable, and a Retirement account isn't necessarily tax-advantaged (see
+  // afterTax total below, which cuts across both).
   const groupTotals: Record<string, number> = {};
   for (const d of people) {
     const vt = d.totals.views[viewMode];
     groupTotals["retirement"] = (groupTotals["retirement"] ?? 0) + vt[retKey];
-    groupTotals["taxable"] = (groupTotals["taxable"] ?? 0) + vt[portKey];
+    groupTotals["portfolio"] = (groupTotals["portfolio"] ?? 0) + vt[portKey];
   }
   // Add joint account contributions to group totals
   for (const jat of data?.jointAccountTypes ?? []) {
     const group = isRetirementParent(jat.parentCategory)
       ? "retirement"
-      : "taxable";
+      : "portfolio";
     groupTotals[group] =
       (groupTotals[group] ?? 0) +
       (excludeMatch ? jat.employeeContrib : jat.totalContrib);
@@ -119,6 +136,40 @@ function SavingsRateCardImpl() {
   const taxFreePct =
     householdTotalComp > 0 ? totalTaxFree / householdTotalComp : 0;
 
+  // After-tax and HSA are tax-treatment splits, not goal ones — either can
+  // occur inside EITHER group above (e.g. a taxable brokerage account
+  // tagged Retirement, or one tagged Portfolio), so each is tracked
+  // per-group here and rendered as a sub-line under each group, the same
+  // way Traditional/Roth are sub-lines under Retirement — not as its own
+  // top-level sibling. Without this, group totals (which include every tax
+  // treatment) won't reconcile against just Traditional+Roth.
+  function sumByGroup(
+    getContrib: (at: { afterTaxContrib: number; hsaContrib: number }) => number,
+  ): Record<string, number> {
+    const byGroup: Record<string, number> = {};
+    for (const d of people) {
+      for (const at of d.accountTypes) {
+        const amount = getContrib(at);
+        if (amount === 0) continue;
+        const group = isRetirementParent(at.parentCategory)
+          ? "retirement"
+          : "portfolio";
+        byGroup[group] = (byGroup[group] ?? 0) + amount;
+      }
+    }
+    for (const jat of data?.jointAccountTypes ?? []) {
+      const amount = getContrib(jat);
+      if (amount === 0) continue;
+      const group = isRetirementParent(jat.parentCategory)
+        ? "retirement"
+        : "portfolio";
+      byGroup[group] = (byGroup[group] ?? 0) + amount;
+    }
+    return byGroup;
+  }
+  const afterTaxByGroup = sumByGroup((at) => at.afterTaxContrib);
+  const hsaByGroup = sumByGroup((at) => at.hsaContrib);
+
   return (
     <Card
       title={
@@ -130,7 +181,7 @@ function SavingsRateCardImpl() {
       subtitle="25% target"
       href="/paycheck"
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between mb-1">
         <Metric
           value={formatPercent(totalRate, 1)}
           label={`Household savings rate${excludeMatch ? "" : " (incl. match)"}${viewMode === "ytd" ? " — annualized YTD" : ""}`}
@@ -141,11 +192,7 @@ function SavingsRateCardImpl() {
             e.stopPropagation();
             setMatchOverride(excludeMatch ? false : true);
           }}
-          className={`text-caption px-2 py-0.5 rounded transition-colors ${
-            matchOverride !== null
-              ? "bg-blue-100 text-blue-700 font-medium"
-              : "text-faint hover:bg-surface-elevated"
-          }`}
+          className="text-xs bg-surface-elevated hover:bg-surface-strong rounded-full px-2 py-0.5 text-muted transition-colors"
         >
           {excludeMatch ? "Incl. match" : "Excl. match"}
         </button>
@@ -174,55 +221,84 @@ function SavingsRateCardImpl() {
         </p>
       )}
       <div className="mt-3 space-y-2">
-        {/* Render groups in a defined order: retirement first, then hsa, then others */}
+        {/* Render groups in a defined order: retirement first, then others */}
         {[
           "retirement",
-          "hsa",
-          ...Object.keys(groupTotals).filter(
-            // lint-violation-ok: "hsa" here is a savings group label key, not an account category
-            (g) => g !== "retirement" && g !== "hsa",
-          ),
+          ...Object.keys(groupTotals).filter((g) => g !== "retirement"),
         ].map((group) => {
           const dollars = groupTotals[group];
           if (dollars === undefined) return null;
+          const groupAfterTax = afterTaxByGroup[group] ?? 0;
+          const groupAfterTaxPct =
+            householdTotalComp > 0 ? groupAfterTax / householdTotalComp : 0;
+          const groupHsa = hsaByGroup[group] ?? 0;
+          const groupHsaPct =
+            householdTotalComp > 0 ? groupHsa / householdTotalComp : 0;
+          const hasSubLines =
+            (group === "retirement" && (totalTrad > 0 || totalTaxFree > 0)) ||
+            groupAfterTax > 0 ||
+            groupHsa > 0;
           return (
             <div key={group}>
               <div className="flex justify-between text-sm">
                 <span className="text-muted capitalize">{group}</span>
                 <span className="text-primary">
-                  {formatPercent(
+                  {formatBreakdownPercent(
                     householdTotalComp > 0 ? dollars / householdTotalComp : 0,
                   )}
                 </span>
               </div>
-              {/* Trad/Roth split under retirement */}
-              {group === "retirement" &&
-                (totalTrad > 0 || totalTaxFree > 0) && (
-                  <div className="ml-3 mt-1 space-y-0.5 text-xs">
-                    {totalTrad > 0 && (
-                      <div className="flex justify-between text-muted">
-                        <span>
-                          {taxTypeLabel("preTax")}
-                          <HelpTip text="Traditional 401k/IRA contributions. Reduces taxable income now, taxed on withdrawal in retirement." />
-                        </span>
-                        <span className="font-medium text-secondary">
-                          {formatPercent(tradPct)}
-                        </span>
-                      </div>
-                    )}
-                    {totalTaxFree > 0 && (
-                      <div className="flex justify-between text-muted">
-                        <span>
-                          {taxTypeLabel("taxFree")}
-                          <HelpTip text="Roth 401k/IRA contributions. No tax break now, but withdrawals in retirement are tax-free." />
-                        </span>
-                        <span className="font-medium text-secondary">
-                          {formatPercent(taxFreePct)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )}
+              {/* Tax-treatment sub-lines — Traditional/Roth only apply to
+                  Retirement (401k/IRA); After-tax can apply to either group,
+                  since it's an orthogonal axis (see afterTaxByGroup above). */}
+              {hasSubLines && (
+                <div className="ml-3 mt-1 space-y-0.5 text-xs">
+                  {group === "retirement" && totalTrad > 0 && (
+                    <div className="flex justify-between text-muted">
+                      <span>
+                        {taxTypeLabel("preTax")}
+                        <HelpTip text="Traditional 401k/IRA contributions. Reduces taxable income now, taxed on withdrawal in retirement." />
+                      </span>
+                      <span className="font-medium text-secondary">
+                        {formatBreakdownPercent(tradPct)}
+                      </span>
+                    </div>
+                  )}
+                  {group === "retirement" && totalTaxFree > 0 && (
+                    <div className="flex justify-between text-muted">
+                      <span>
+                        {taxTypeLabel("taxFree")}
+                        <HelpTip text="Roth 401k/IRA contributions. No tax break now, but withdrawals in retirement are tax-free." />
+                      </span>
+                      <span className="font-medium text-secondary">
+                        {formatBreakdownPercent(taxFreePct)}
+                      </span>
+                    </div>
+                  )}
+                  {groupAfterTax > 0 && (
+                    <div className="flex justify-between text-muted">
+                      <span>
+                        After-tax
+                        <HelpTip text="Taxable/brokerage contributions (taxTreatment: after-tax) within this group." />
+                      </span>
+                      <span className="font-medium text-secondary">
+                        {formatBreakdownPercent(groupAfterTaxPct)}
+                      </span>
+                    </div>
+                  )}
+                  {groupHsa > 0 && (
+                    <div className="flex justify-between text-muted">
+                      <span>
+                        HSA
+                        <HelpTip text="HSA contributions within this group. Triple tax-advantaged — not Traditional or Roth." />
+                      </span>
+                      <span className="font-medium text-secondary">
+                        {formatBreakdownPercent(groupHsaPct)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
