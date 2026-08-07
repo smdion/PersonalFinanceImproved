@@ -1,0 +1,220 @@
+import { describe, it, expect, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+
+// Smoke tests for src/components/retirement/sections/ — created by the
+// v0.5.2/v0.5.3 file-split refactor of retirement-content.tsx and left with
+// zero test coverage. These are pure presentational components (Settings +
+// callback props in, JSX out), so we render them directly with
+// representative props, following the leaf-component smoke pattern from
+// tests/components/contribution-accounts-card.test.tsx.
+
+vi.mock("@/components/ui/help-tip", () => ({
+  HelpTip: () => null,
+}));
+
+import { StrategyParamsSection } from "@/components/retirement/sections/strategy-params";
+import { TaxesSection } from "@/components/retirement/sections/taxes";
+import { SocialSecuritySection } from "@/components/retirement/sections/social-security";
+import { PerPhaseBudgetSection } from "@/components/retirement/sections/per-phase-budget";
+import type { Settings } from "@/components/retirement/sections/types";
+
+const baseSettings: Settings = {
+  personId: 1,
+  retirementAge: 65,
+  endAge: 95,
+  returnAfterRetirement: "0.05",
+  annualInflation: "0.03",
+  salaryAnnualIncrease: "0.03",
+  withdrawalRate: "0.04",
+  taxMultiplier: "1.0",
+  socialSecurityMonthly: "2000",
+  ssStartAge: 67,
+  withdrawalStrategy: "fixed",
+};
+
+describe("StrategyParamsSection smoke", () => {
+  it("renders nothing for the 'fixed' strategy (no param fields)", () => {
+    const { container } = render(
+      <StrategyParamsSection
+        settings={baseSettings}
+        upsertSettings={{ mutate: vi.fn() }}
+      />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("renders guardrail param controls for the guyton_klinger strategy", () => {
+    render(
+      <StrategyParamsSection
+        settings={{ ...baseSettings, withdrawalStrategy: "guyton_klinger" }}
+        upsertSettings={{ mutate: vi.fn() }}
+      />,
+    );
+    expect(screen.getByText("Upper Guardrail")).toBeInTheDocument();
+    expect(screen.getByText("Lower Guardrail")).toBeInTheDocument();
+    expect(screen.getByText("Skip Inflation After Loss")).toBeInTheDocument();
+  });
+
+  it("renders the rolling-window select for the endowment strategy", () => {
+    render(
+      <StrategyParamsSection
+        settings={{ ...baseSettings, withdrawalStrategy: "endowment" }}
+        upsertSettings={{ mutate: vi.fn() }}
+      />,
+    );
+    expect(screen.getByText("Rolling Window (years)")).toBeInTheDocument();
+    expect(screen.getByText("Withdrawal %")).toBeInTheDocument();
+  });
+});
+
+describe("TaxesSection smoke", () => {
+  it("renders without crashing and shows default (Off) Roth conversions state", () => {
+    render(
+      <TaxesSection
+        settings={baseSettings}
+        selectedScenario={null}
+        upsertSettings={{ mutate: vi.fn() }}
+      />,
+    );
+    expect(screen.getByText("Taxes in Retirement")).toBeInTheDocument();
+    expect(screen.getByText("Roth Conversions")).toBeInTheDocument();
+    // Two toggle buttons exist (Gross-Up, Roth Conversions) both default "On"/"Off";
+    // Roth Conversions defaults to Off per component logic.
+    const offButtons = screen.getAllByRole("button", { name: "Off" });
+    expect(offButtons.length).toBeGreaterThan(0);
+  });
+
+  it("uses the fallback 15% LTCG rate when selectedScenario is null", () => {
+    render(
+      <TaxesSection
+        settings={baseSettings}
+        selectedScenario={null}
+        upsertSettings={{ mutate: vi.fn() }}
+      />,
+    );
+    expect(screen.getByText(/15%LTCG/)).toBeInTheDocument();
+  });
+
+  it("shows the Roth conversion target select once conversions are enabled", () => {
+    render(
+      <TaxesSection
+        settings={{ ...baseSettings, enableRothConversions: true }}
+        selectedScenario={null}
+        upsertSettings={{ mutate: vi.fn() }}
+      />,
+    );
+    // Only rendered when enableRothConversions is true — the extra select's
+    // options include 10%/12%/22%/24%.
+    const selects = screen.getAllByRole("combobox");
+    // filingStatus select, bracket ceiling select, rothConversionTarget select
+    expect(selects.length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("SocialSecuritySection smoke", () => {
+  it("renders single-person 'Monthly Benefit' field when perPersonSettings is null", () => {
+    render(
+      <SocialSecuritySection
+        settings={baseSettings}
+        perPersonSettings={null}
+        upsertSettings={{ mutate: vi.fn() }}
+      />,
+    );
+    expect(screen.getByText("Monthly Benefit")).toBeInTheDocument();
+    expect(screen.getByText("$2,000.00/mo")).toBeInTheDocument();
+  });
+
+  it("renders per-person benefit fields when household has >1 person", () => {
+    render(
+      <SocialSecuritySection
+        settings={baseSettings}
+        perPersonSettings={[
+          {
+            personId: 1,
+            name: "Alice",
+            birthYear: 1990,
+            retirementAge: 65,
+            endAge: 95,
+            socialSecurityMonthly: "2000",
+          },
+          {
+            personId: 2,
+            name: "Bob",
+            birthYear: 1992,
+            retirementAge: 67,
+            endAge: 95,
+            socialSecurityMonthly: "1500",
+          },
+        ]}
+        upsertSettings={{ mutate: vi.fn() }}
+      />,
+    );
+    expect(screen.getByText(/Alice.*Benefit/)).toBeInTheDocument();
+    expect(screen.getByText(/Bob.*Benefit/)).toBeInTheDocument();
+    expect(screen.queryByText("Monthly Benefit")).toBeNull();
+  });
+});
+
+describe("PerPhaseBudgetSection smoke", () => {
+  const baseProps = {
+    settings: baseSettings,
+    decumulationBudgetProfileId: null,
+    decumulationBudgetColumn: 0,
+    decExpenseOverride: null,
+    setDecExpenseOverride: vi.fn(),
+    setDecBudgetProfileId: vi.fn(),
+    setDecBudgetCol: vi.fn(),
+  };
+
+  it("renders nothing when there are no budget profiles (empty state)", () => {
+    const { container } = render(
+      <PerPhaseBudgetSection {...baseProps} budgetProfileSummaries={[]} />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("renders the profile picker when budget profiles exist", () => {
+    render(
+      <PerPhaseBudgetSection
+        {...baseProps}
+        budgetProfileSummaries={[
+          {
+            id: 1,
+            name: "Baseline",
+            isActive: true,
+            columnLabels: ["Lean", "Fat"],
+            columnMonths: null,
+            columnTotals: [4000, 6000],
+            weightedAnnualTotal: null,
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByText("Budget Source")).toBeInTheDocument();
+    expect(screen.getByText("Salary Override")).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: /Baseline/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows 'Using manual override' and hides the picker when decExpenseOverride is set", () => {
+    render(
+      <PerPhaseBudgetSection
+        {...baseProps}
+        decExpenseOverride="60000"
+        budgetProfileSummaries={[
+          {
+            id: 1,
+            name: "Baseline",
+            isActive: true,
+            columnLabels: [],
+            columnMonths: null,
+            columnTotals: [],
+            weightedAnnualTotal: null,
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByText("Using manual override")).toBeInTheDocument();
+  });
+});
