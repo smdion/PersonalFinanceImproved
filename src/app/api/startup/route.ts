@@ -10,6 +10,13 @@ import { getValidCronSecret, timingSafeSecretMatch } from "@/lib/auth/cron";
  * Runs idempotent backfill tasks that migrate legacy null FKs.
  */
 export async function GET(request: Request) {
+  if (process.env.DEMO_ONLY === "true") {
+    return NextResponse.json(
+      { error: "Forbidden: demo mode is read-only" },
+      { status: 403 },
+    );
+  }
+
   const cronSecret = getValidCronSecret();
 
   if (!cronSecret) {

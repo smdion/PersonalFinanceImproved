@@ -26,6 +26,8 @@
  *   18. Hook file under src/lib/hooks/ using React hooks without a "use client" directive (H4 class)
  *   19. Local `type X = ReturnType<typeof useYState>` redeclaration instead of importing the canonical type (L37 class)
  *   20. "Monte Carlo" in user-facing .tsx text (JSX text/string literals) — use "Simulation"/"Simulations" (L126 class)
+ *   21. `process.env.CRON_SECRET` read outside src/lib/auth/cron.ts (H1 class)
+ *   22. API route under src/app/api/ that writes to the DB with no DEMO_ONLY guard (M5 class)
  *
  * Intentionally NOT checked (needs semantic analysis, not string matching):
  *   - "Router computing budget expenses with different column index" (#1)
@@ -593,6 +595,68 @@ function findMonteCarloUserFacingTextViolations(): Violation[] {
   return violations;
 }
 
+// Rule 21: `process.env.CRON_SECRET` read outside src/lib/auth/cron.ts.
+// H1 fixed a timing-unsafe secret comparison by centralizing every
+// cron-route secret check into that one file's getValidCronSecret() /
+// validateCronBearerRequest() / validateCronHeaderRequest(). A new route
+// reading the env var directly reopens the door to a hand-rolled (and
+// possibly timing-unsafe) comparison. env.ts (startup validation, no
+// comparison) and instrumentation.node.ts (sends the secret as an outgoing
+// header to call our own routes, doesn't compare it) are legitimate direct
+// readers and stay exempt.
+function findDirectCronSecretReadViolations(): Violation[] {
+  return findPatternViolations(
+    /process\.env\.CRON_SECRET/,
+    "no-direct-cron-secret-read",
+    {
+      additionalExempt: new Set([
+        "src/lib/auth/cron.ts",
+        "src/lib/env.ts",
+        "src/instrumentation.node.ts",
+      ]),
+    },
+  );
+}
+
+// Rule 22: an API route under src/app/api/ that writes to the DB with no
+// DEMO_ONLY guard. M5 found one cron route missing the guard every sibling
+// write route had; while scoping this rule, the same gap turned up
+// independently in two MORE sibling routes (startup/route.ts,
+// simplefin/daily/route.ts) that the original review never flagged — fixed
+// alongside adding this rule. Detecting "does this route write" precisely
+// would need semantic analysis (writes often happen via an imported helper,
+// not an inline `.insert(`), so this uses an explicit allowlist of the
+// routes that are read-only or enforce demo-mode elsewhere (health checks,
+// the tRPC catch-all — per-procedure enforcement, not per-route; NextAuth)
+// instead of a content heuristic. Every other route.ts must contain the
+// string "DEMO_ONLY" somewhere.
+const DEMO_GUARD_EXEMPT_ROUTES = new Set([
+  "src/app/api/health/route.ts",
+  "src/app/api/health/detailed/route.ts",
+  "src/app/api/trpc/[trpc]/route.ts",
+  "src/app/api/auth/[...nextauth]/route.ts",
+]);
+function findMissingDemoOnlyGuardViolations(): Violation[] {
+  const violations: Violation[] = [];
+  const API_DIR = path.join(SRC_DIR, "app/api");
+  if (!fs.existsSync(API_DIR)) return violations;
+  for (const file of walkTsFiles(API_DIR)) {
+    if (!file.endsWith("route.ts")) continue;
+    const rel = relPath(file);
+    if (DEMO_GUARD_EXEMPT_ROUTES.has(rel)) continue;
+    const content = fs.readFileSync(file, "utf8");
+    if (!content.includes("DEMO_ONLY")) {
+      violations.push({
+        file: rel,
+        line: 1,
+        rule: "no-missing-demo-only-guard",
+        snippet: "(no DEMO_ONLY check found anywhere in file)",
+      });
+    }
+  }
+  return violations;
+}
+
 // ── Tests ───────────────────────────────────────────────────────────
 
 function formatViolations(label: string, violations: Violation[]): string {
@@ -848,6 +912,35 @@ describe("RULES.md violations sweep", () => {
           `"Simulation"/"Simulations" instead of "Monte Carlo" — internal code ` +
           `(variable names, function names like calculateMonteCarlo(), tRPC ` +
           `procedure names, .ts-only comments) may keep "monteCarlo"/"mc" naming.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no direct process.env.CRON_SECRET read outside src/lib/auth/cron.ts", () => {
+    const violations = findDirectCronSecretReadViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} direct-cron-secret-read violations. ` +
+          `Use getValidCronSecret()/validateCronBearerRequest()/` +
+          `validateCronHeaderRequest() from src/lib/auth/cron.ts instead of ` +
+          `reading and comparing the secret directly — a hand-rolled ` +
+          `comparison can reintroduce a timing oracle (H1).\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no API route under src/app/api/ missing a DEMO_ONLY guard", () => {
+    const violations = findMissingDemoOnlyGuardViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} missing-demo-only-guard violations. ` +
+          `Add a DEMO_ONLY check (return 403 "Forbidden: demo mode is ` +
+          `read-only" when process.env.DEMO_ONLY === "true") before any DB ` +
+          `write, matching every sibling write route. If this route is ` +
+          `genuinely read-only or enforces demo-mode elsewhere, add it to ` +
+          `DEMO_GUARD_EXEMPT_ROUTES in this file instead.\n` +
           formatViolations("Violations", violations),
       );
     }
