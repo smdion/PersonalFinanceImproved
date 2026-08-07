@@ -17,6 +17,7 @@ import type {
 import { fromCents, toCents } from "./conversions";
 import { budgetApiRequest } from "./errors";
 import { transactionIdempotencyKey } from "./idempotency";
+import { log } from "@/lib/logger";
 
 // -- Actual API response types --
 
@@ -173,6 +174,10 @@ export class ActualClient implements BudgetAPIClient {
     apiKey: string,
     private readonly budgetSyncId: string,
   ) {
+    // L130 (2026-08-06): serverUrl may be http:// (see url-safety.ts —
+    // permitted for LAN-friendly self-hosted use), in which case this
+    // x-api-key header is sent in cleartext. Accepted tradeoff, documented
+    // in validateOutboundUrl()'s doc comment; not fixed here.
     this.headers = {
       "x-api-key": apiKey,
       "Content-Type": "application/json",
@@ -210,18 +215,27 @@ export class ActualClient implements BudgetAPIClient {
     const res = await this.request<{ data: ActualAccount[] }>("/accounts");
     // Fetch balances for each account
     const accounts = res.data.map(mapAccount);
-    // Try to get balances individually
-    for (const acct of accounts) {
-      try {
-        const balRes = await this.request<{ data: { balance: number } }>(
-          `/accounts/${acct.id}/balance`,
-        );
-        acct.balance = fromCents(balRes.data.balance);
-        acct.clearedBalance = acct.balance;
-      } catch {
-        // Balance may already be included in the account data
-      }
-    }
+    // Try to get balances individually (parallelized — each call already
+    // retries up to 3x with exponential backoff via budgetApiRequest).
+    await Promise.all(
+      accounts.map(async (acct) => {
+        try {
+          const balRes = await this.request<{ data: { balance: number } }>(
+            `/accounts/${acct.id}/balance`,
+          );
+          acct.balance = fromCents(balRes.data.balance);
+          acct.clearedBalance = acct.balance;
+        } catch (err) {
+          // Balance may already be included in the account data, but this
+          // could also be a real failure (auth, network, etc.) — log it so
+          // it's debuggable instead of failing silently.
+          log("warn", "actual_client.balance_fetch_failed", {
+            accountId: acct.id,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }),
+    );
     return accounts;
   }
 

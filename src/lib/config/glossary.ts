@@ -62,7 +62,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     learnMoreHref: "/retirement/decumulation-methodology",
   },
   monteCarlo: {
-    label: "Monte Carlo Simulation",
+    label: "Simulation",
     plain: "Probability Testing",
     description:
       "Runs thousands of possible market scenarios to estimate the probability that your retirement plan will succeed.",

@@ -62,7 +62,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
       {/* MC loading state is handled by the unified ProjectionLoader slim strip */}
       {mcQuery.error && (
         <div className="text-sm text-red-500 py-4">
-          Monte Carlo failed: {mcQuery.error.message}
+          Simulation failed: {mcQuery.error.message}
         </div>
       )}
       {mcQuery.data?.result && !mcLoading && (
@@ -202,7 +202,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
       )}
       {!mcQuery.data?.result && !mcLoading && !mcQuery.error && (
         <div className="text-sm text-muted py-4">
-          No Monte Carlo data available. Ensure asset classes and glide path are
+          No simulation data available. Ensure asset classes and glide path are
           configured.
         </div>
       )}

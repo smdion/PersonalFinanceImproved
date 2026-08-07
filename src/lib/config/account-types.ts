@@ -415,14 +415,6 @@ export function isDiscountBasisEmployerContrib(
 // Module-level defaults
 // ---------------------------------------------------------------------------
 
-export const DEFAULT_ACCUMULATION_ORDER: AccountCategory[] = [
-  "401k",
-  "403b",
-  "hsa",
-  "ira",
-  "brokerage",
-];
-
 export const DEFAULT_DECUMULATION_ORDER: AccountCategory[] = [
   "401k",
   "403b",
@@ -571,12 +563,6 @@ export function getDisplayGroup(category: AccountCategory): DisplayGroup {
 export function isRetirementCategory(category: string): boolean {
   const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
   return cfg ? cfg.parentCategory === "Retirement" : false;
-}
-
-/** Check if an account category belongs to the Portfolio parent category (by account type config). */
-export function isPortfolioCategory(category: string): boolean {
-  const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
-  return cfg ? cfg.parentCategory === "Portfolio" : false;
 }
 
 /** Check if a parentCategory DB column value is Retirement. Use this when checking the stored/user-editable field, not account type config. */

@@ -95,7 +95,7 @@ export function ValidationContent() {
           </table>
         </div>
         <p className="text-xs text-faint mt-1">
-          *At high SWRs, log-normal Monte Carlo produces a fatter left tail than
+          *At high SWRs, log-normal simulation produces a fatter left tail than
           historical sequences &mdash; this is an expected methodological
           difference, not a bug.
         </p>
@@ -405,7 +405,7 @@ export function ValidationContent() {
         </ul>
       </Section>
 
-      <Section title="Monte Carlo Statistical Validity" defaultOpen={false}>
+      <Section title="Simulation Statistical Validity" defaultOpen={false}>
         <p>
           The simulation infrastructure itself is validated for correct
           statistical behavior:

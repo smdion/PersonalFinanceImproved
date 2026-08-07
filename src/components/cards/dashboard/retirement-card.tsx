@@ -249,7 +249,7 @@ function RetirementCardImpl() {
                     text={
                       isDynamic
                         ? `${strategyLabel} strategy — withdrawal varies year-to-year based on portfolio performance. This is a projected starting amount in today's dollars.`
-                        : "Your projected nest egg × withdrawal rate in today's dollars. Does not account for volatility or taxes — see Monte Carlo on the Retirement page for a realistic range."
+                        : "Your projected nest egg × withdrawal rate in today's dollars. Does not account for volatility or taxes — see Simulation on the Retirement page for a realistic range."
                     }
                     learnMoreHref="/retirement/decumulation-methodology"
                   />

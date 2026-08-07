@@ -25,6 +25,7 @@
  *   17. accountLabel fallback built from a template literal instead of null (M40 class)
  *   18. Hook file under src/lib/hooks/ using React hooks without a "use client" directive (H4 class)
  *   19. Local `type X = ReturnType<typeof useYState>` redeclaration instead of importing the canonical type (L37 class)
+ *   20. "Monte Carlo" in user-facing .tsx text (JSX text/string literals) — use "Simulation"/"Simulations" (L126 class)
  *
  * Intentionally NOT checked (needs semantic analysis, not string matching):
  *   - "Router computing budget expenses with different column index" (#1)
@@ -539,6 +540,59 @@ function findLocalReturnTypeAliasViolations(): Violation[] {
   );
 }
 
+// Rule 20: "Monte Carlo" (exact phrase, case-sensitive) in .tsx files —
+// user-facing text must say "Simulation"/"Simulations" instead (mandatory
+// terminology rule; internal code/variable/procedure names like
+// `calculateMonteCarlo()` or `mcTrials` are unaffected — those live in .ts
+// files or are identifiers, not this literal two-word phrase).
+//
+// Restricted to .tsx (where JSX text and display strings actually live).
+// Does NOT use findPatternViolations directly: the shared walker's comment
+// filter only recognizes `//`- and `*`-prefixed lines (block-comment
+// continuation style), but this codebase also has single-line JSDoc like
+// `/** ...Monte Carlo... */` (projection-mc-results.tsx, projection-table.tsx,
+// projection-table-mc-cell.tsx, projection-loader.tsx) which starts with "/"
+// and would slip through. This walks the same way but additionally skips
+// lines whose trimmed content starts with "/*" or "/**".
+const MONTE_CARLO_PATTERN = /\bMonte Carlo\b/;
+function findMonteCarloUserFacingTextViolations(): Violation[] {
+  const violations: Violation[] = [];
+  for (const file of walkTsFiles(SRC_DIR)) {
+    if (!file.endsWith(".tsx")) continue;
+    const rel = relPath(file);
+    if (isExempt(rel)) continue;
+    const lines = readFileLines(file);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]!;
+      const trimmed = line.trim();
+      if (
+        trimmed.startsWith("//") ||
+        trimmed.startsWith("*") ||
+        trimmed.startsWith("/*")
+      ) {
+        continue;
+      }
+      if (
+        line.includes("lint-violation-ok") ||
+        (i > 0 && lines[i - 1]!.includes("lint-violation-ok")) ||
+        (i > 1 && lines[i - 2]!.includes("lint-violation-ok")) ||
+        (i > 2 && lines[i - 3]!.includes("lint-violation-ok"))
+      ) {
+        continue;
+      }
+      if (MONTE_CARLO_PATTERN.test(line)) {
+        violations.push({
+          file: rel,
+          line: i + 1,
+          rule: "no-monte-carlo-user-facing-text",
+          snippet: trimmed.slice(0, 100),
+        });
+      }
+    }
+  }
+  return violations;
+}
+
 // ── Tests ───────────────────────────────────────────────────────────
 
 function formatViolations(label: string, violations: Violation[]): string {
@@ -780,6 +834,20 @@ describe("RULES.md violations sweep", () => {
           `Import the canonical type instead of re-deriving it locally — a ` +
           `stale local alias can mask a type error when the source hook's ` +
           `return shape changes.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it('no "Monte Carlo" in user-facing .tsx text (use "Simulation"/"Simulations")', () => {
+    const violations = findMonteCarloUserFacingTextViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} Monte-Carlo-user-facing-text violations. ` +
+          `User-facing text (JSX text, tooltips, labels, titles) must say ` +
+          `"Simulation"/"Simulations" instead of "Monte Carlo" — internal code ` +
+          `(variable names, function names like calculateMonteCarlo(), tRPC ` +
+          `procedure names, .ts-only comments) may keep "monteCarlo"/"mc" naming.\n` +
           formatViolations("Violations", violations),
       );
     }

@@ -607,7 +607,7 @@ export function RetirementContent() {
                     <div>
                       <span className="text-muted">
                         Inflation
-                        <HelpTip text="Constant CPI rate used for the deterministic projection — expense growth, real-dollar conversions, and IRS limit growth. In Monte Carlo mode, this is replaced by the Stochastic Inflation setting from your MC preset (View Assumptions)." />
+                        <HelpTip text="Constant CPI rate used for the deterministic projection — expense growth, real-dollar conversions, and IRS limit growth. In simulation mode, this is replaced by the Stochastic Inflation setting from your simulation preset (View Assumptions)." />
                       </span>
                       <div className="font-medium">
                         <InlineEdit

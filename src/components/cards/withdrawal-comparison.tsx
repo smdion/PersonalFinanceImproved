@@ -115,7 +115,7 @@ export function WithdrawalComparisonCard({
   return (
     <Card
       title="Withdrawal Strategy Comparison"
-      subtitle={`Comparing ${strategies.length} strategies from age ${retirementAge} · Success % via Monte Carlo`}
+      subtitle={`Comparing ${strategies.length} strategies from age ${retirementAge} · Success % via simulation`}
       className="mb-6"
       isCollapsible
       isDefaultOpen={true}
@@ -160,7 +160,7 @@ export function WithdrawalComparisonCard({
                   Depletion Age
                 </th>
                 <th className="text-right py-1.5 px-2 font-medium">
-                  <span title="Portfolio survives to end of plan — balance stays above $0 in every year (200 Monte Carlo simulations)">
+                  <span title="Portfolio survives to end of plan — balance stays above $0 in every year (200 simulations)">
                     Success
                   </span>
                 </th>
@@ -462,7 +462,7 @@ export function WithdrawalComparisonCard({
 
             <p className="text-caption text-faint mt-3">
               Full engine assumptions used with only the stated change. 200
-              Monte Carlo simulations each.
+              simulations each.
             </p>
           </div>
         ) : analyzerQuery.data?.diagnosis === "healthy" ? (

@@ -99,7 +99,7 @@ export function ChartControls({ state }: { state: ProjectionState }) {
               <HelpTip
                 maxWidth={360}
                 lines={[
-                  "Confidence bands show the range of Monte Carlo simulation outcomes.",
+                  "Confidence bands show the range of simulation outcomes.",
                   <span key="p25">
                     <strong className="text-purple-300">50%</strong> — Middle
                     50% of outcomes. Tightest view, shows the most likely range.

@@ -210,13 +210,13 @@ export function ProjectionCard(props: {
               {result && !mcAutoloadEnabled && !mcPrefetchQuery.data && (
                 <div className="flex items-center justify-between rounded-lg border border-subtle bg-surface-sunken px-3 py-2">
                   <span className="text-xs text-muted">
-                    Monte Carlo auto-load is off — chart bands unavailable.
+                    Simulation auto-load is off — chart bands unavailable.
                   </span>
                   <button
                     onClick={() => runMonteCarlo()}
                     className="text-xs text-blue-500 hover:text-blue-400 font-medium"
                   >
-                    Run Monte Carlo
+                    Run Simulation
                   </button>
                 </div>
               )}
@@ -671,7 +671,7 @@ export function ProjectionCard(props: {
       <SlidePanel
         isOpen={showMethodology}
         onClose={() => setShowMethodology(false)}
-        title="Monte Carlo Methodology"
+        title="Simulation Methodology"
       >
         <MethodologyContent />
       </SlidePanel>
