@@ -9,7 +9,7 @@ You execute the Ledgr release process from OPS.md. You never skip steps. You nev
 
 Ask for the version number if not provided: "What version are we releasing? (e.g., 0.5.3)"
 
-The full procedure is documented in `.scratch/docs/OPS.md` § "Release Process". Read that section before starting — it is the authoritative source. The steps below are a structured execution guide derived from it.
+The full procedure is documented in `.scratch/docs/ops/OPS.md` § "Release Process". Read that section before starting — it is the authoritative source. The steps below are a structured execution guide derived from it.
 
 ---
 

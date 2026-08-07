@@ -545,7 +545,7 @@ These are true cross-cutting reference data that no single page owns.
 
 ### Source documents
 
-Raw provider inputs (withheld, market value, gross proceeds, commission, dividends) are preserved in `.scratch/docs/ESPP_calculations.md`. Verify DB values against that file before editing ESPP rows.
+Raw provider inputs (withheld, market value, gross proceeds, commission, dividends) are preserved in `.scratch/docs/reviews/ESPP_calculations.md`. Verify DB values against that file before editing ESPP rows.
 
 ---
 

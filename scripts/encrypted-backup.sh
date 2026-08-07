@@ -2,7 +2,7 @@
 # Encrypted off-site backup script for ledgr (v0.5 expert-review H9).
 #
 # Operator runbook (one-time setup, cron config, quarterly restore drill,
-# key rotation, failure modes): see .scratch/docs/BACKUP-RUNBOOK.md in the
+# key rotation, failure modes): see .scratch/docs/ops/BACKUP-RUNBOOK.md in the
 # operator's local checkout. (.scratch/ is gitignored — the runbook lives
 # only on the operator's machine to avoid coupling deployment-specific
 # values like SSH targets to public source control.)
