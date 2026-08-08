@@ -1384,3 +1384,91 @@ describe("projection router — computeCoastFire", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// computeCoastFireMC
+// ---------------------------------------------------------------------------
+// computeCoastFireMC fetches `mc_preset_glide_paths` via raw SQL
+// (coast-fire.ts). This call site was missed by the original F5 fix
+// (commit 53c9fa5) because it uses a generic type parameter —
+// `ctx.db.execute<{...}>(...)` — which the grep used to find F5's other
+// call sites (`\.execute\(`) doesn't match (the `(` comes after the `<...>`
+// closes). Found via this test file during T14 work and fixed in a
+// follow-up commit by switching to compat.ts's queryRaw(), same as F5.
+
+describe("projection router — computeCoastFireMC", () => {
+  it("returns a null result when no data is seeded", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const response = await caller.projection.computeCoastFireMC({});
+      expect(response).toEqual({ result: null });
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("returns a result with seeded data and a default MC preset", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+
+      db.insert(schema.mcPresets)
+        .values({
+          key: "default",
+          label: "Default",
+          description: "Default preset for testing",
+          returnMultiplier: "1.0",
+          volMultiplier: "1.0",
+          inflationMean: "0.025",
+          inflationStdDev: "0.012",
+          defaultTrials: 1000,
+          returnClampMin: "-0.5",
+          returnClampMax: "1.0",
+          sortOrder: 0,
+          isActive: true,
+        })
+        .run();
+
+      const response = await caller.projection.computeCoastFireMC({});
+      expect(response.result).not.toBeNull();
+      expect(typeof response.result?.successRate).toBe("number");
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("accepts decumulationDefaults override input without a schema-validation error", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      db.insert(schema.mcPresets)
+        .values({
+          key: "default",
+          label: "Default",
+          description: "Default preset for testing",
+          returnMultiplier: "1.0",
+          volMultiplier: "1.0",
+          inflationMean: "0.025",
+          inflationStdDev: "0.012",
+          defaultTrials: 1000,
+          returnClampMin: "-0.5",
+          returnClampMax: "1.0",
+          sortOrder: 0,
+          isActive: true,
+        })
+        .run();
+
+      const response = await caller.projection.computeCoastFireMC({
+        decumulationDefaults: { withdrawalRate: 0.035 },
+      });
+      expect(response.result).not.toBeNull();
+      expect(typeof response.result?.successRate).toBe("number");
+    } finally {
+      cleanup();
+    }
+  });
+});

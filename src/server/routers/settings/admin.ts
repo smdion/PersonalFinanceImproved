@@ -312,13 +312,17 @@ export const adminProcedures = {
         }),
       )
       .mutation(async ({ ctx, input }) => {
-        // Use transaction + FOR UPDATE to prevent lost-write race conditions
+        // Wrapped in a transaction so the read-modify-write of the JSONB
+        // overrides column is atomic. (No FOR UPDATE — was never actually
+        // added despite an earlier comment claiming it; SQLite has no
+        // equivalent and relies on single-writer semantics elsewhere in
+        // this codebase, so the transaction boundary alone is consistent
+        // with that pattern.)
         return ctx.db.transaction(async (tx) => {
           const [existing] = await tx
-            .execute<typeof schema.scenarios.$inferSelect>(
-              sql`SELECT * FROM scenarios WHERE id = ${input.id}`,
-            )
-            .then((r) => r.rows);
+            .select()
+            .from(schema.scenarios)
+            .where(eq(schema.scenarios.id, input.id));
           if (!existing) throw new Error("Scenario not found");
           const overrides = (existing.overrides ?? {}) as Record<
             string,
@@ -347,13 +351,17 @@ export const adminProcedures = {
         }),
       )
       .mutation(async ({ ctx, input }) => {
-        // Use transaction + FOR UPDATE to prevent lost-write race conditions
+        // Wrapped in a transaction so the read-modify-write of the JSONB
+        // overrides column is atomic. (No FOR UPDATE — was never actually
+        // added despite an earlier comment claiming it; SQLite has no
+        // equivalent and relies on single-writer semantics elsewhere in
+        // this codebase, so the transaction boundary alone is consistent
+        // with that pattern.)
         return ctx.db.transaction(async (tx) => {
           const [existing] = await tx
-            .execute<typeof schema.scenarios.$inferSelect>(
-              sql`SELECT * FROM scenarios WHERE id = ${input.id}`,
-            )
-            .then((r) => r.rows);
+            .select()
+            .from(schema.scenarios)
+            .where(eq(schema.scenarios.id, input.id));
           if (!existing) throw new Error("Scenario not found");
           const overrides = (existing.overrides ?? {}) as Record<
             string,
@@ -534,7 +542,10 @@ export const adminProcedures = {
       }[] = [];
 
       for (const contrib of needsBackfill) {
-        const person = peopleMap.get(contrib.personId);
+        const person =
+          contrib.personId != null
+            ? peopleMap.get(contrib.personId)
+            : undefined;
         const personName = person?.name?.toLowerCase() ?? "";
         const display = getAccountTypeConfig(
           contrib.accountType as AccountCategory,
@@ -548,7 +559,11 @@ export const adminProcedures = {
           return (
             labelLower.includes(typeLabel) &&
             (pa.ownerPersonId === contrib.personId ||
-              labelLower.includes(personName))
+              // Guard against personName being "" (joint contrib /
+              // unresolved person) — String.includes("") is always true,
+              // which would otherwise match this contrib to ANY performance
+              // account of the right type regardless of actual ownership.
+              (personName !== "" && labelLower.includes(personName)))
           );
         });
 

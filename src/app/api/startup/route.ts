@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { backfillPerformanceAccountIds } from "@/lib/db/backfill-perf-ids";
 import { backfillMappingLocalIds } from "@/lib/db/backfill-local-ids";
+import { backfillJointPersonId } from "@/lib/db/backfill-joint-person-id";
 import { log } from "@/lib/logger";
 import { getValidCronSecret, timingSafeSecretMatch } from "@/lib/auth/cron";
 
@@ -52,6 +53,16 @@ export async function GET(request: Request) {
       error: err instanceof Error ? err.message : String(err),
     });
     results.localIds = "failed";
+  }
+
+  try {
+    await backfillJointPersonId(db);
+    results.jointPersonId = "ok";
+  } catch (err) {
+    log("error", "backfill_joint_person_id_failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    results.jointPersonId = "failed";
   }
 
   return NextResponse.json({ ok: true, backfills: results });

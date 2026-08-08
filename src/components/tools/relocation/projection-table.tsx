@@ -63,9 +63,24 @@ export function RelocationProjectionTable({
   return (
     <div className="border-t pt-3">
       <div className="flex items-center justify-between mb-2">
-        <h4 className="text-sm font-medium text-secondary">
-          Portfolio Projection Comparison
-        </h4>
+        <span className="flex items-center gap-1.5">
+          <h4 className="text-sm font-medium text-secondary">
+            Portfolio Projection Comparison
+          </h4>
+          <HelpTip
+            lines={
+              moveYear !== null
+                ? [
+                    "Blended year-by-year portfolio balance: uses your current budget and contributions through the move year, then switches to the relocation budget and contribution profile from that point forward.",
+                    '"Today\'s $" deflates future balances by inflation so they\'re comparable to today\'s dollars. "All years" shows every projected year instead of just the highlighted ones.',
+                  ]
+                : [
+                    "Two side-by-side year-by-year portfolio balances: staying on your current budget vs. fully switching to the relocation budget and contribution profile from year one.",
+                    '"Today\'s $" deflates future balances by inflation so they\'re comparable to today\'s dollars. "All years" shows every projected year instead of just the highlighted ones.',
+                  ]
+            }
+          />
+        </span>
         <div className="flex items-center gap-3">
           <Toggle
             label="Today's $"

@@ -11,6 +11,48 @@ import { isPostgres } from "./dialect";
 import { VERSION_TABLES } from "./version-tables";
 
 // ---------------------------------------------------------------------------
+// Raw SQL execution
+//
+// drizzle-orm's Postgres driver exposes `.execute()` returning `{ rows }`;
+// the SQLite (better-sqlite3) driver has no `.execute()` at all — it exposes
+// synchronous `.all()` (rows) / `.run()` (no rows). Every raw-SQL call site
+// must go through one of these two helpers instead of calling `.execute()`
+// directly, or it throws "db.execute is not a function" on SQLite deploys
+// (SQLite is Ledgr's default, zero-config dialect — see docs/DESIGN.md).
+// ---------------------------------------------------------------------------
+
+type RawQuery = ReturnType<typeof sql.raw> | ReturnType<typeof sql>;
+type PgLike = { execute: (q: RawQuery) => Promise<{ rows: unknown[] }> };
+type SqliteLike = {
+  all: (q: RawQuery) => unknown[];
+  run: (q: RawQuery) => unknown;
+};
+
+/** Run a raw SQL query and return its rows, across PG/SQLite dialects. */
+export async function queryRaw<T = Record<string, unknown>>(
+  db: PgLike | SqliteLike,
+  query: RawQuery,
+): Promise<T[]> {
+  if (isPostgres()) {
+    const result = await (db as PgLike).execute(query);
+    return result.rows as T[];
+  }
+  return (db as SqliteLike).all(query) as T[];
+}
+
+/** Run a raw SQL statement with no rows needed back, across PG/SQLite dialects. */
+export async function execRaw(
+  db: PgLike | SqliteLike,
+  query: RawQuery,
+): Promise<void> {
+  if (isPostgres()) {
+    await (db as PgLike).execute(query);
+  } else {
+    (db as SqliteLike).run(query);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Table introspection
 // ---------------------------------------------------------------------------
 
@@ -42,20 +84,30 @@ export function listTablesSQL() {
 
 /** Truncate multiple tables. PG: TRUNCATE CASCADE. SQLite: DELETE FROM each in reverse tier order. */
 export async function truncateTables(
-  db: { execute: (q: ReturnType<typeof sql.raw>) => Promise<unknown> },
+  db: PgLike | SqliteLike,
   tableNames: string[],
 ) {
   if (isPostgres()) {
     const quoted = tableNames.map((t) => `"${t}"`).join(", ");
-    await db.execute(sql.raw(`TRUNCATE ${quoted} CASCADE`));
+    await execRaw(db, sql.raw(`TRUNCATE ${quoted} CASCADE`));
   } else {
     // SQLite: delete in reverse tier order (children first) to respect FK constraints.
     // PRAGMA foreign_keys cannot be changed inside a transaction, so we rely on ordering.
+    const knownNames = new Set(VERSION_TABLES.map((t) => t.name));
     const reversed = [...VERSION_TABLES]
       .filter((t) => tableNames.includes(t.name))
       .sort((a, b) => b.tier - a.tier);
     for (const t of reversed) {
-      await db.execute(sql.raw(`DELETE FROM "${t.name}"`));
+      await execRaw(db, sql.raw(`DELETE FROM "${t.name}"`));
+    }
+    // Tables not tracked in VERSION_TABLES (e.g. change_log,
+    // budget_api_cache — real tables resetAllData passes in that aren't
+    // part of the version-snapshot tier ordering) have no known FK tier.
+    // Delete them last, after every tiered table is already gone, so any
+    // FK reference from an untracked table into a tiered one is safe.
+    const untracked = tableNames.filter((name) => !knownNames.has(name));
+    for (const name of untracked) {
+      await execRaw(db, sql.raw(`DELETE FROM "${name}"`));
     }
   }
 }
@@ -66,12 +118,13 @@ export async function truncateTables(
 
 /** Reset auto-increment counters after bulk insert. No-op on SQLite (automatic). */
 export async function resetSequences(
-  db: { execute: (q: ReturnType<typeof sql.raw>) => Promise<unknown> },
+  db: PgLike | SqliteLike,
   tableNames: string[],
 ) {
   if (!isPostgres()) return; // SQLite handles autoincrement automatically
   for (const tableName of tableNames) {
-    await db.execute(
+    await execRaw(
+      db,
       sql.raw(
         `SELECT setval(pg_get_serial_sequence('"${tableName}"', 'id'), COALESCE((SELECT MAX(id) FROM "${tableName}"), 0) + 1, false)`,
       ),

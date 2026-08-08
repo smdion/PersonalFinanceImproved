@@ -73,6 +73,7 @@ export function AddTransactionForm({
             {txForm.isRecurring && (
               <input
                 type="number"
+                min="1"
                 value={txForm.recurrenceMonths}
                 onChange={(e) =>
                   setTxForm({ ...txForm, recurrenceMonths: e.target.value })

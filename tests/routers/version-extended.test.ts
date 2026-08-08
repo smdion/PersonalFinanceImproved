@@ -3,9 +3,16 @@
  * Version router extended integration tests.
  *
  * Tests list, getById, delete, retention settings, schedule settings,
- * upgrade banner procedures, getPreview, and seeded-data scenarios.
- * Note: create/restore/resetAllData use db.transaction() or db.execute()
- * which are not compatible with better-sqlite3 in tests.
+ * upgrade banner procedures, getPreview, resetAllData, and seeded-data
+ * scenarios.
+ * Note: create/restore still aren't covered here — they go through
+ * database.transaction(), which the test harness's monkey-patched
+ * transaction stub (see tests/routers/setup.ts) handles, but exercising
+ * the full read-all-tables + write-version flow needs its own dedicated
+ * fixture setup. resetAllData previously had the same "not compatible with
+ * better-sqlite3" note, but that was misdiagnosed — the real cause was
+ * `ctx.db.execute()` not existing on the SQLite driver, fixed via
+ * compat.ts's queryRaw/execRaw helpers.
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -586,6 +593,78 @@ describe("version router — auth", () => {
         tableName: "anything",
       });
       expect(result).toEqual({ rows: [], rowCount: 0 });
+    } finally {
+      ctx.cleanup();
+    }
+  });
+});
+
+// ── RESET ALL DATA (T26 — locks in H9's local_admins-survives-reset fix) ──
+
+describe("resetAllData", () => {
+  it("truncates user data but preserves local_admins, app_settings, and state_versions", async () => {
+    const ctx = await createTestCaller();
+    try {
+      ctx.db
+        .insert(sqliteSchema.people)
+        .values({ name: "Test Person", dateOfBirth: "1990-01-01" })
+        .run();
+      ctx.db
+        .insert(sqliteSchema.localAdmins)
+        .values({
+          email: "admin@test.local",
+          passwordHash: "hash",
+          name: "Admin",
+        })
+        .run();
+      seedAppSetting(ctx.db, "onboarding_completed", "true");
+      const versionId = seedStateVersion(ctx.db);
+
+      const result = await ctx.caller.version.resetAllData({
+        confirmation: "delete",
+      });
+      expect(result.ok).toBe(true);
+      expect(result.tablesCleared).toBeGreaterThan(0);
+
+      expect(ctx.db.select().from(sqliteSchema.people).all()).toHaveLength(0);
+      expect(ctx.db.select().from(sqliteSchema.localAdmins).all()).toHaveLength(
+        1,
+      );
+      expect(
+        ctx.db
+          .select()
+          .from(sqliteSchema.stateVersions)
+          .all()
+          .some((v) => v.id === versionId),
+      ).toBe(true);
+      const onboardingSetting = ctx.db
+        .select()
+        .from(sqliteSchema.appSettings)
+        .all()
+        .find((s) => s.key === "onboarding_completed");
+      expect(onboardingSetting?.value).toBe("true");
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("rejects a non-admin caller", async () => {
+    const ctx = await createTestCaller(viewerSession);
+    try {
+      await expect(
+        ctx.caller.version.resetAllData({ confirmation: "delete" }),
+      ).rejects.toThrow();
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("rejects the wrong confirmation string", async () => {
+    const ctx = await createTestCaller();
+    try {
+      await expect(
+        ctx.caller.version.resetAllData({ confirmation: "yes" as "delete" }),
+      ).rejects.toThrow();
     } finally {
       ctx.cleanup();
     }

@@ -10,6 +10,7 @@
  * file-split refactor. Pure relocation — no logic changes.
  */
 import { eq, sql } from "drizzle-orm";
+import { queryRaw } from "@/lib/db/compat";
 import { z } from "zod/v4";
 import {
   createTRPCRouter,
@@ -256,37 +257,35 @@ export const monteCarloRouter = createTRPCRouter({
               .where(eq(schema.mcPresets.key, input.preset)),
         isCustom
           ? Promise.resolve([])
-          : ctx.db
-              .execute<{
-                preset_key: string;
-                age: number;
-                asset_class_id: number;
-                class_name: string;
-                allocation: string;
-              }>(
-                sql`SELECT p.key AS preset_key, gp.age, gp.asset_class_id, ac.name AS class_name, gp.allocation
+          : queryRaw<{
+              preset_key: string;
+              age: number;
+              asset_class_id: number;
+              class_name: string;
+              allocation: string;
+            }>(
+              ctx.db,
+              sql`SELECT p.key AS preset_key, gp.age, gp.asset_class_id, ac.name AS class_name, gp.allocation
                   FROM mc_preset_glide_paths gp
                   JOIN mc_presets p ON p.id = gp.preset_id
                   JOIN asset_class_params ac ON ac.id = gp.asset_class_id
                   WHERE p.key = ${input.preset}
                   ORDER BY gp.age, ac.sort_order`,
-              )
-              .then((r) => r.rows),
+            ),
         isCustom
           ? Promise.resolve([])
-          : ctx.db
-              .execute<{
-                asset_class_id: number;
-                class_name: string;
-                mean_return: string;
-              }>(
-                sql`SELECT ro.asset_class_id, ac.name AS class_name, ro.mean_return
+          : queryRaw<{
+              asset_class_id: number;
+              class_name: string;
+              mean_return: string;
+            }>(
+              ctx.db,
+              sql`SELECT ro.asset_class_id, ac.name AS class_name, ro.mean_return
                   FROM mc_preset_return_overrides ro
                   JOIN mc_presets p ON p.id = ro.preset_id
                   JOIN asset_class_params ac ON ac.id = ro.asset_class_id
                   WHERE p.key = ${input.preset}`,
-              )
-              .then((r) => r.rows),
+            ),
       ]);
 
       const preset = presetRows[0] ?? null;

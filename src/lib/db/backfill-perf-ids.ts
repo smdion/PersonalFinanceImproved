@@ -122,7 +122,8 @@ export async function backfillPerformanceAccountIds(db: Db) {
     const peopleMap = new Map(people.map((p) => [p.id, p]));
 
     for (const contrib of nullContribs) {
-      const person = peopleMap.get(contrib.personId);
+      const person =
+        contrib.personId != null ? peopleMap.get(contrib.personId) : undefined;
       const personName = person?.name?.toLowerCase() ?? "";
       const display = getDisplayConfig(contrib.accountType, contrib.subType);
       const typeLabel = display.displayLabel.toLowerCase();
@@ -132,7 +133,11 @@ export async function backfillPerformanceAccountIds(db: Db) {
         return (
           labelLower.includes(typeLabel) &&
           (pa.ownerPersonId === contrib.personId ||
-            labelLower.includes(personName))
+            // Guard against personName being "" (joint contrib / unresolved
+            // person) — String.includes("") is always true, which would
+            // otherwise match this contrib to ANY performance account of
+            // the right type regardless of actual ownership.
+            (personName !== "" && labelLower.includes(personName)))
         );
       });
 

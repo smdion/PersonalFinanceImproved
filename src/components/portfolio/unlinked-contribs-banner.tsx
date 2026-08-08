@@ -21,7 +21,7 @@ import {
 
 type ContribEntry = {
   id: number;
-  personId: number;
+  personId: number | null;
   jobId: number | null;
   accountType: string;
   subType: string | null;
@@ -54,7 +54,7 @@ type Props = {
   admin: boolean;
   onContribOwnerChange: (
     c: ContribEntry,
-    update: { ownership: "individual" | "joint"; personId?: number },
+    update: { ownership: "individual" | "joint"; personId?: number | null },
   ) => void;
   onLinkContrib: (contribId: number, perfAccountId: number) => void;
 };
@@ -106,7 +106,10 @@ export function UnlinkedContribsBanner({
                 onChange={(e) => {
                   const val = e.target.value;
                   if (val === "joint") {
-                    onContribOwnerChange(c, { ownership: "joint" });
+                    onContribOwnerChange(c, {
+                      ownership: "joint",
+                      personId: null,
+                    });
                   } else {
                     onContribOwnerChange(c, {
                       personId: parseInt(val, 10),

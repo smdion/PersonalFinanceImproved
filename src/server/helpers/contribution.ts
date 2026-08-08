@@ -228,7 +228,8 @@ export type ContribCategorySummary = {
 
 /** Minimal fields needed from the DB contribution_accounts row. */
 type ContribRow = {
-  personId: number;
+  id: number;
+  personId: number | null;
   jobId: number | null;
   accountType: AccountCategory;
   subType: string | null;
@@ -346,6 +347,11 @@ export function aggregateContributionsByCategory(
 
 /** Output of buildContributionDisplaySpecs — per-record spec with match. */
 export type ContribDisplaySpec = {
+  /** Source contribution_accounts.id — the only reliable way to look this
+   *  spec's row back up when personId/ownerName can't disambiguate (e.g.
+   *  multiple joint contributions in the same category, where both are
+   *  personId: null and ownerName: null). */
+  id: number;
   category: AccountCategory;
   name: string;
   method: string;
@@ -353,7 +359,7 @@ export type ContribDisplaySpec = {
   baseAnnual: number;
   taxTreatment: string;
   ownerName: string | null;
-  personId: number;
+  personId: number | null;
   matchAnnual: number;
 };
 
@@ -404,6 +410,7 @@ export function buildContributionDisplaySpecs(
         salary,
       );
       return {
+        id: c.id,
         category: c.accountType,
         name: c.subType ?? c.accountType,
         method,
@@ -446,7 +453,7 @@ export function buildContributionDisplaySpecs(
 
 /** Row shape returned by loadLiveContribData for aggregation. */
 export type LiveContribRow = {
-  personId: number;
+  personId: number | null;
   jobId: number | null;
   accountType: AccountCategory;
   subType: string | null;
@@ -798,7 +805,7 @@ export type ProfileContribData = {
 /** Minimal contribution row shape needed by buildProfileContribData. */
 export type ContribInputRow = {
   id: number;
-  personId: number;
+  personId: number | null;
   jobId: number | null;
   accountType: AccountCategory;
   subType: string | null;
@@ -842,6 +849,7 @@ export function buildProfileContribData(
 
   // Aggregate contributions and employer match by category
   const contribRows: ContribRow[] = activeContribs.map((c) => ({
+    id: c.id,
     personId: c.personId,
     jobId: c.jobId,
     accountType: c.accountType,
@@ -918,7 +926,8 @@ export function buildProfileContribData(
       }
 
       // Match contribution to its individual account
-      const contribOwner = ctx.personNameById.get(c.personId);
+      const contribOwner =
+        c.personId != null ? ctx.personNameById.get(c.personId) : undefined;
       const matchTaxType =
         TAX_TREATMENT_TO_TAX_TYPE[c.taxTreatment ?? "pre_tax"] ??
         c.taxTreatment;

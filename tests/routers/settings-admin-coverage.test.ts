@@ -5,14 +5,25 @@
  *   - appSettings.list viewer filtering (RBAC keys hidden for non-admins)
  *   - backfillPerformanceAccountIds
  *   - portfolioSnapshots.delete
- *   - scenarios.setOverride / clearOverride (uses db.transaction — skipped, noted below)
- *   - performanceAccounts.update (uses db.transaction — skipped, noted below)
- *   - portfolioSnapshots.create (uses db.transaction — skipped, noted below)
+ *   - scenarios.setOverride / clearOverride
+ *   - performanceAccounts.update
+ *   - portfolioSnapshots.create
  *
- * NOTE: Procedures using db.transaction() with async callbacks cannot be tested
- * with better-sqlite3 because SQLite's transaction() requires synchronous callbacks.
- * Affected: performanceAccounts.update, portfolioSnapshots.create,
- * scenarios.setOverride, scenarios.clearOverride
+ * The "db.transaction() with async callbacks can't run under better-sqlite3"
+ * note that used to be here was wrong for all four procedures above — the
+ * test harness's monkey-patched db.transaction() (tests/routers/setup.ts)
+ * already handles async callbacks fine. performanceAccounts.update and
+ * portfolioSnapshots.create were never actually broken (misdiagnosed, same
+ * as resetAllData/T26 before it). scenarios.setOverride/clearOverride WERE
+ * genuinely broken — not by the transaction, but because they read the
+ * scenario row via raw `tx.execute(sql\`SELECT * FROM scenarios...\`)`,
+ * which doesn't exist on the SQLite driver (same root cause as F5) *and*,
+ * even after switching to queryRaw(), returned the JSONB `overrides` column
+ * as an unparsed string on SQLite (Drizzle's typed .select() JSON-decodes
+ * text("...", {mode:"json"}) columns; raw SQL does not). Fixed by switching
+ * both to a plain typed tx.select() instead of raw SQL, which is simpler,
+ * correct on both dialects, and doesn't lose anything — the raw SQL's
+ * claimed "FOR UPDATE" locking was never actually implemented either.
  */
 import "./setup-mocks";
 import { vi, describe, it, expect } from "vitest";
@@ -312,12 +323,178 @@ describe("settings.performanceAccounts.create additional", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NOTE on skipped procedures
+// TRANSACTION-WRAPPED PROCEDURES — previously misdiagnosed as untestable
 // ─────────────────────────────────────────────────────────────────────────────
-// The following procedures use db.transaction() with async callbacks, which
-// better-sqlite3's synchronous transaction() does not support:
-//   - performanceAccounts.update (lines 600-662)
-//   - portfolioSnapshots.create (lines 709-982)
-//   - scenarios.setOverride (lines 284-307)
-//   - scenarios.clearOverride (lines 319-352)
-// These must be tested against a real PostgreSQL database.
+
+describe("performanceAccounts.update", () => {
+  it("updates the master record and cascades accountLabel/parentCategory", async () => {
+    const ctx = await createTestCaller(adminSession);
+    try {
+      const id = seedPerformanceAccount(ctx.db, { institution: "Fidelity" });
+      const result = await ctx.caller.settings.performanceAccounts.update({
+        id,
+        institution: "Vanguard",
+        accountType: "401k",
+        ownershipType: "individual",
+        parentCategory: "Retirement",
+        isActive: true,
+        displayOrder: 1,
+      });
+      expect(result?.institution).toBe("Vanguard");
+      expect(result?.accountLabel).toContain("Vanguard");
+    } finally {
+      ctx.cleanup();
+    }
+  });
+});
+
+describe("portfolioSnapshots.create", () => {
+  it("creates a snapshot with no accounts", async () => {
+    const ctx = await createTestCaller(adminSession);
+    try {
+      const result = await ctx.caller.settings.portfolioSnapshots.create({
+        snapshotDate: "2025-06-15",
+        accounts: [],
+      });
+      expect(result.snapshotDate).toBe("2025-06-15");
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("creates a snapshot with accounts and syncs parentCategory from the linked performance account", async () => {
+    const ctx = await createTestCaller(adminSession);
+    try {
+      const perfAcctId = seedPerformanceAccount(ctx.db, {
+        parentCategory: "Portfolio",
+      });
+      const result = await ctx.caller.settings.portfolioSnapshots.create({
+        snapshotDate: "2025-06-15",
+        accounts: [
+          {
+            institution: "Fidelity",
+            taxType: "preTax",
+            accountType: "401k",
+            amount: "10000",
+            ownerPersonId: null,
+            performanceAccountId: perfAcctId,
+          },
+        ],
+      });
+      expect(result.snapshotDate).toBe("2025-06-15");
+
+      const schema = await import("@/lib/db/schema");
+      const { eq } = await import("drizzle-orm");
+      const createdAccounts = await ctx.db
+        .select()
+        .from(schema.portfolioAccounts)
+        .where(eq(schema.portfolioAccounts.snapshotId, result.id));
+      expect(createdAccounts).toHaveLength(1);
+      expect(createdAccounts[0]?.parentCategory).toBe("Portfolio");
+    } finally {
+      ctx.cleanup();
+    }
+  });
+});
+
+describe("scenarios.setOverride / clearOverride", () => {
+  async function seedScenario(
+    ctx: Awaited<ReturnType<typeof createTestCaller>>,
+    overrides: Record<string, unknown> = {},
+  ) {
+    return ctx.db
+      .insert(schema.scenarios)
+      .values({ name: "Test Scenario", overrides, isBaseline: false })
+      .returning({ id: schema.scenarios.id })
+      .get().id;
+  }
+
+  it("setOverride adds a new override to an empty scenario", async () => {
+    const ctx = await createTestCaller(adminSession);
+    try {
+      const id = await seedScenario(ctx, {});
+      const result = await ctx.caller.settings.scenarios.setOverride({
+        id,
+        entity: "people",
+        recordId: "1",
+        field: "salary",
+        value: 150000,
+      });
+      const overrides = result?.overrides as Record<string, unknown>;
+      expect(
+        (overrides.people as Record<string, Record<string, unknown>>)["1"]
+          ?.salary,
+      ).toBe(150000);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("setOverride merges into existing overrides without clobbering unrelated fields", async () => {
+    const ctx = await createTestCaller(adminSession);
+    try {
+      const id = await seedScenario(ctx, {
+        people: { "1": { salary: 100000, retirementAge: 62 } },
+      });
+      const result = await ctx.caller.settings.scenarios.setOverride({
+        id,
+        entity: "people",
+        recordId: "1",
+        field: "salary",
+        value: 120000,
+      });
+      const person = (
+        result?.overrides as Record<
+          string,
+          Record<string, Record<string, unknown>>
+        >
+      ).people["1"];
+      expect(person?.salary).toBe(120000);
+      expect(person?.retirementAge).toBe(62);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("clearOverride removes a single field, leaving siblings intact", async () => {
+    const ctx = await createTestCaller(adminSession);
+    try {
+      const id = await seedScenario(ctx, {
+        people: { "1": { salary: 100000, retirementAge: 62 } },
+      });
+      const result = await ctx.caller.settings.scenarios.clearOverride({
+        id,
+        entity: "people",
+        recordId: "1",
+        field: "salary",
+      });
+      const person = (
+        result?.overrides as Record<
+          string,
+          Record<string, Record<string, unknown>>
+        >
+      ).people["1"];
+      expect(person?.salary).toBeUndefined();
+      expect(person?.retirementAge).toBe(62);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("setOverride throws for a non-existent scenario id", async () => {
+    const ctx = await createTestCaller(adminSession);
+    try {
+      await expect(
+        ctx.caller.settings.scenarios.setOverride({
+          id: 999999,
+          entity: "people",
+          recordId: "1",
+          field: "salary",
+          value: 100000,
+        }),
+      ).rejects.toThrow();
+    } finally {
+      ctx.cleanup();
+    }
+  });
+});

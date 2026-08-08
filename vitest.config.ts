@@ -11,6 +11,19 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["tests/setup-component.ts"],
     testTimeout: 10000,
+    // Newer Node ships its own native localStorage (Web Storage API), which
+    // jsdom 29 defers to on Node versions that have it instead of using its
+    // own implementation. Without a backing file, Node's native localStorage
+    // is a non-functional stub (window.localStorage is undefined) — pass
+    // --localstorage-file so it actually works under jsdom in tests. Feature
+    // -detected via allowedNodeEnvironmentFlags (not a version-number check)
+    // since older Node (still used by some local dev setups) doesn't
+    // recognize the flag at all and errors out on an unknown option.
+    execArgv: process.allowedNodeEnvironmentFlags.has("--localstorage-file")
+      ? [
+          `--localstorage-file=${path.resolve(__dirname, ".vitest-localstorage.json")}`,
+        ]
+      : [],
     coverage: {
       provider: "v8",
       include: [

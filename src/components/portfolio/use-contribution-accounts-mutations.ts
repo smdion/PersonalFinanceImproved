@@ -16,7 +16,7 @@ import type { AccountCategory } from "@/lib/config/account-types";
 
 type ContribRecord = {
   id: number;
-  personId: number;
+  personId: number | null;
   jobId: number | null;
   accountType: string;
   taxTreatment: string;
@@ -176,7 +176,7 @@ export function useContributionAccountsMutations({
     c: ContribRecord,
     updates: Partial<{
       accountType: string;
-      personId: number;
+      personId: number | null;
       jobId: number | null;
       taxTreatment: string;
       contributionMethod: string;
@@ -198,7 +198,7 @@ export function useContributionAccountsMutations({
   ) => {
     updateContribMut.mutate({
       id: c.id,
-      personId: updates.personId ?? c.personId,
+      personId: updates.personId !== undefined ? updates.personId : c.personId,
       jobId: updates.jobId !== undefined ? updates.jobId : c.jobId,
       accountType: (updates.accountType ?? c.accountType) as
         "401k" | "403b" | "ira" | "hsa" | "brokerage",

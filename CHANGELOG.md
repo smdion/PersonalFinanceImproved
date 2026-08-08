@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.6
 
+## [0.6.8] - 2026-08-07
+
+> Fixes several features that were silently broken on SQLite — Ledgr's default, zero-config database — since they'd only ever been exercised against the PostgreSQL setup.
+
+### Fixed
+
+- **On the default (SQLite) database setup, several features were silently broken and would fail immediately when used**: Reset All Data, creating/restoring/exporting/importing a backup version, the admin data browser, Monte Carlo retirement simulations (including the Coast FIRE calculator), and scenario what-if overrides. All now work correctly on SQLite installs.
+- **Switching a contribution account's owner to "Joint" now actually clears the previous individual owner** instead of silently leaving it attached in the background. For most accounts this only affects ownership displays, not calculations — the one exception is a joint account with no linked paycheck, where clearing the owner is what makes its contribution amount count correctly toward household totals instead of being silently misattributed.
+- **A recurring savings transfer or planned transaction with an invalid recurrence interval (blank, zero, or negative) now correctly rejects the input** instead of silently saving as a one-time (non-recurring) entry.
+- Added an explanation to the Relocation tool's year-by-year portfolio comparison table, which previously had no context for what it was showing.
+
+---
+
 ## [0.6.7] - 2026-08-06
 
 > A full-codebase correctness and security review (H1–H12 critical, M1–M46 medium, plus a 130-item cleanup pass) closed out this cycle. Highlights below; the SimpleFIN auto-sync work from earlier in this branch is included.

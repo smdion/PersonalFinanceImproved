@@ -499,7 +499,7 @@ export type ContributionSpec = {
   /** Tax treatment of employee contributions. */
   taxTreatment: "pre_tax" | "tax_free" | "after_tax" | "hsa";
   /** Person who owns this contribution (for per-person salary tracking). */
-  personId?: number;
+  personId?: number | null;
   /** Owner name for matching to individual accounts. */
   ownerName?: string;
   /** Matched individual account display name (data-driven from DB). */

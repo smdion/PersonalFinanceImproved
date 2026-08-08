@@ -154,7 +154,6 @@ export const scenariosRouter = createTRPCRouter({
         decProfile,
         decCol,
         limitByGroup,
-        personNameById,
         perfCategoryMap,
         perfAccountMap,
         rothConversionPresets,
@@ -251,15 +250,12 @@ export const scenariosRouter = createTRPCRouter({
           people,
           activeJobs,
           jobSalaries,
-        ).map(({ personId, ...rest }) => {
-          // Add parentCategory from the linked performance account
-          const contrib = activeContribs.find(
-            (c) =>
-              c.accountType === rest.category &&
-              (personId != null
-                ? c.personId === personId
-                : personNameById.get(c.personId) === rest.ownerName),
-          );
+        ).map(({ id, personId, ...rest }) => {
+          // Add parentCategory from the linked performance account.
+          // Looked up by the source row's stable id — personId/ownerName
+          // can't disambiguate between multiple joint contributions in the
+          // same category, since both are null for every joint row.
+          const contrib = activeContribs.find((c) => c.id === id);
           const parentCategory =
             contrib?.parentCategory ??
             (contrib?.performanceAccountId

@@ -16,6 +16,26 @@ export function safeDivide(
 }
 
 /**
+ * Parse a form-field string into a positive integer, or null.
+ *
+ * `parseInt(x) || null` (the pattern this replaces) silently maps invalid
+ * input, "0", and empty string all to `null` — but also lets negative
+ * numbers AND trailing garbage straight through: `parseInt("-5") || null`
+ * is `-5` (negative numbers are truthy), and `parseInt("3.7")`/
+ * `parseInt("3months")` both stop at the first non-digit and return `3`.
+ * Used for fields like "recur every N months" where anything that isn't
+ * cleanly a positive integer should be rejected the same way as empty
+ * input (null = "not set"), not silently truncated or accepted.
+ */
+export function parsePositiveInt(value: string): number | null {
+  const trimmed = value.trim();
+  if (!/^\d+$/.test(trimmed)) return null;
+  const n = parseInt(trimmed, 10);
+  if (n < 1) return null;
+  return n;
+}
+
+/**
  * Round to cents (2 decimal places), half-away-from-zero.
  * Uses Math.abs + Math.sign to correctly handle negatives (credits, refunds,
  * negative cash flow). The EPSILON nudge avoids float multiplication bias at
