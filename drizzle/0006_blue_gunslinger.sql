@@ -1,1 +1,0 @@
-ALTER TABLE "contribution_accounts" ALTER COLUMN "person_id" DROP NOT NULL;

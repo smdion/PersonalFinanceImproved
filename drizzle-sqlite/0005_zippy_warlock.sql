@@ -1,2 +1,0 @@
-ALTER TABLE `simplefin_accounts` ADD `linked_performance_account_id` integer REFERENCES performance_accounts(id) ON DELETE set null;--> statement-breakpoint
-CREATE INDEX `simplefin_accounts_linked_perf_account_idx` ON `simplefin_accounts` (`linked_performance_account_id`);

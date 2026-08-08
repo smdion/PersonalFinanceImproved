@@ -1,3 +1,0 @@
-ALTER TABLE "simplefin_accounts" ADD COLUMN "linked_performance_account_id" integer;--> statement-breakpoint
-ALTER TABLE "simplefin_accounts" ADD CONSTRAINT "simplefin_accounts_linked_performance_account_id_performance_accounts_id_fk" FOREIGN KEY ("linked_performance_account_id") REFERENCES "public"."performance_accounts"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "simplefin_accounts_linked_perf_account_idx" ON "simplefin_accounts" USING btree ("linked_performance_account_id");
