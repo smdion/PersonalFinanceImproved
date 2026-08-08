@@ -6,6 +6,60 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+# v0.7
+
+## [0.7.0] - 2026-08-07
+
+> What changed since v0.6.0. For patch-level detail, see the v0.6.x entries below.
+
+### Upgrading from v0.6.x
+
+Pull the new image and restart — your database upgrades automatically. The migration runner detects the v0.6 schema, creates a pre-upgrade backup, and applies the v0.7 baseline in place with no manual steps.
+
+### Added
+
+- **SimpleFIN Bridge integration — daily linked-balance pulse.** Connect a SimpleFIN Bridge setup token in Settings to automatically pull balances from your linked financial institutions once a day, independent of your weekly manual portfolio snapshot, with per-account include/exclude control and many-to-one account matching for institutions that split one real-world account across multiple SimpleFIN entries.
+- **"Live Balance" dashboard card**, showing drift between your synced SimpleFIN total and your last manual snapshot, broken out by account type.
+- **New Upkeep page for tracking home utilities** — log electric, gas, water, and other recurring bills over time, with an import option for existing records.
+- **Annual Performance: custom account/year-range filtering** — pick a specific set of accounts and a year range (Since Inception, YTD, Last N Years, or custom) to see an annualized and cumulative return for exactly the accounts you care about.
+- **Savings: "Update %" action** for percentage-based goals, and a preview step before "Recalculate All %" showing current vs. recalculated amounts before applying.
+- **Budget: reorder categories/items**, and bulk sync-direction control per category group.
+- **The Growth Factor card's "age" is now editable**, instead of being locked to your configured retirement age.
+
+### Improved
+
+- **A broad internal consistency pass** centralized color definitions, number/percentage formatting, and category-name handling into single shared sources.
+- **22 new automated checks now run on every change** to catch unsafe secret comparisons, unguarded "Infinity%" math, raw account keys leaking into the UI, and similar bug patterns before they can ship again.
+- **Dashboard cards surface more of what's already being fetched**: Mortgage's payoff date, Retirement's Pre-tax/Roth/HSA/After-tax balance breakdown, Budget's actual-spend-vs-budgeted progress bar with a top-category breakdown, and a reflowing grid that no longer leaves gaps for integration-only cards like Live Balance.
+- **Pushing or pulling budget/savings data to YNAB now shows a success toast with the item count** and elapsed time during longer pushes.
+
+### Fixed
+
+- **On the default (SQLite) database setup, several features were silently broken**: Reset All Data, backup version create/restore/export/import, the admin data browser, Monte Carlo retirement simulations (including Coast FIRE), and scenario what-if overrides. All now work correctly on SQLite installs.
+- **SimpleFIN balances now sync automatically once a day** instead of only on manual "Sync Now," and a partial provider error no longer silently discards balances that did come back successfully.
+- **Retirement catch-up contribution limits are now calculated per person, by their own age**, instead of averaging ages across a household.
+- **ACA subsidy-cliff calculations now use your full Social Security benefit**, not just the taxable portion.
+- **Taxable-brokerage and HSA contributions were being silently counted as "Traditional"** on the Paycheck, Contributions card, and Contributions page. The Savings Rate breakdown has been restructured so Retirement/Portfolio (goal) and tax treatment are shown as independent, correctly separated concepts.
+- **Percentage-based savings goals no longer silently drift with income changes** — they hold a fixed dollar amount until you explicitly recalculate, with the push preview flagging out-of-date goals.
+- **Corrected several places where employer contributions or match were double-counted or miscategorized** in return% figures, rollover accounting, and the Contributions page's employer-match table.
+- **Switching a contribution account's owner to "Joint" now actually clears the previous individual owner**, and joint accounts synced through the budget-API integration no longer lose their "Joint" label.
+- **A recurring savings transfer or planned transaction with an invalid recurrence interval now correctly rejects the input** instead of silently saving as one-time.
+- Numerous smaller display and correctness fixes across dark mode contrast, account color dots, relocation percentage display, "years to FI" scenario leakage, per-person totals keyed by name, and explicitly-entered-0 values being silently replaced with defaults.
+
+### Security
+
+- **Closed an unauthenticated admin-takeover window** in "Reset All Data" — admin logins now survive a data reset, and account creation is blocked once setup has happened.
+- **Hardened internal scheduled-task endpoints** (backup export/import, daily sync triggers) against timing-based secret guessing, and closed a gap where two of them were missing demo-mode protection.
+- **SimpleFIN setup tokens and account data are now validated before use**, blocking non-HTTPS and private/internal network addresses from being reached through the connection flow.
+
+### Under the Hood
+
+- **Migration squash.** All v0.6.x incremental migrations (PostgreSQL 0000–0006, SQLite 0000–0006) collapsed into a single v0.7 baseline schema file — generated directly from the current schema so there is no hand-editing of column definitions. Existing installs auto-upgrade with a pre-upgrade backup.
+- **`utility_reading` and `utility_service` added to versioned backups.** These tables were accidentally omitted from the backup snapshot set since v0.6.5. They are now included; restoring a pre-v0.7.0 backup starts both tables empty, which is safe.
+- **Dependencies updated** (Next.js, React, tRPC, and other packages) via Dependabot.
+
+---
+
 # v0.6
 
 ## [0.6.8] - 2026-08-07
