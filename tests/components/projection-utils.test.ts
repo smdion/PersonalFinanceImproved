@@ -140,14 +140,13 @@ describe("colBalance", () => {
     expect(colBalance(ba, "hsa")).toBe(15000);
   });
 
-  it("returns 0 for a category with no balance entry", () => {
-    const ba = accountBalancesFromTaxBuckets({
-      preTax: 0,
-      taxFree: 0,
-      hsa: 0,
-      afterTax: 0,
-      afterTaxBasis: 0,
-    });
+  it("returns 0 for a category with no balance entry at all (not just a zero-valued one)", () => {
+    // accountBalancesFromTaxBuckets always populates every category (even
+    // with a zero-valued structure), so it can't exercise the truly-missing
+    // -key branch (`if (!bal) return 0`) — construct a partial object
+    // directly to hit that branch specifically.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- intentionally partial to omit the "hsa" key entirely
+    const ba = {} as any;
     expect(colBalance(ba, "hsa")).toBe(0);
   });
 });

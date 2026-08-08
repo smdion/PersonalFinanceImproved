@@ -102,7 +102,7 @@ describe("useProjectionFormState", () => {
     rerender();
 
     // Even though DB data still has the 2030 override, local (touched) state
-    // — the empty array replacing it — must win.
+    // — the 2031 override that replaced it — must win.
     expect(result.current.accumOverrides).toEqual([
       { year: 2031, contributionRate: 0.5 },
     ]);

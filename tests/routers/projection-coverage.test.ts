@@ -1432,7 +1432,8 @@ describe("projection router — computeCoastFireMC", () => {
         .run();
 
       const response = await caller.projection.computeCoastFireMC({});
-      expect(response).toHaveProperty("result");
+      expect(response.result).not.toBeNull();
+      expect(typeof response.result?.successRate).toBe("number");
     } finally {
       cleanup();
     }
@@ -1443,11 +1444,29 @@ describe("projection router — computeCoastFireMC", () => {
     try {
       seedFullProjectionData(db);
       seedAssetClasses(db);
+      seedCorrelations(db);
+      db.insert(schema.mcPresets)
+        .values({
+          key: "default",
+          label: "Default",
+          description: "Default preset for testing",
+          returnMultiplier: "1.0",
+          volMultiplier: "1.0",
+          inflationMean: "0.025",
+          inflationStdDev: "0.012",
+          defaultTrials: 1000,
+          returnClampMin: "-0.5",
+          returnClampMax: "1.0",
+          sortOrder: 0,
+          isActive: true,
+        })
+        .run();
 
       const response = await caller.projection.computeCoastFireMC({
         decumulationDefaults: { withdrawalRate: 0.035 },
       });
-      expect(response).toHaveProperty("result");
+      expect(response.result).not.toBeNull();
+      expect(typeof response.result?.successRate).toBe("number");
     } finally {
       cleanup();
     }

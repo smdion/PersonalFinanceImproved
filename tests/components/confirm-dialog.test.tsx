@@ -177,7 +177,11 @@ describe("ConfirmDialog — unmount cleanup", () => {
     const first = render(<ConfirmDialog />);
     first.unmount();
     render(<ConfirmDialog />);
-    expect(() => confirm("Anything?")).not.toThrow();
+    expect(() => {
+      act(() => {
+        confirm("Anything?");
+      });
+    }).not.toThrow();
   });
 });
 

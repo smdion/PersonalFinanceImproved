@@ -11,9 +11,8 @@
  * the full read-all-tables + write-version flow needs its own dedicated
  * fixture setup. resetAllData previously had the same "not compatible with
  * better-sqlite3" note, but that was misdiagnosed — the real cause was
- * `ctx.db.execute()` not existing on the SQLite driver (see F5 in
- * .scratch/docs/reviews/review-findings.md), fixed via compat.ts's
- * queryRaw/execRaw helpers.
+ * `ctx.db.execute()` not existing on the SQLite driver, fixed via
+ * compat.ts's queryRaw/execRaw helpers.
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -638,6 +637,12 @@ describe("resetAllData", () => {
           .all()
           .some((v) => v.id === versionId),
       ).toBe(true);
+      const onboardingSetting = ctx.db
+        .select()
+        .from(sqliteSchema.appSettings)
+        .all()
+        .find((s) => s.key === "onboarding_completed");
+      expect(onboardingSetting?.value).toBe("true");
     } finally {
       ctx.cleanup();
     }

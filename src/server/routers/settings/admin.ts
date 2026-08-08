@@ -559,7 +559,11 @@ export const adminProcedures = {
           return (
             labelLower.includes(typeLabel) &&
             (pa.ownerPersonId === contrib.personId ||
-              labelLower.includes(personName))
+              // Guard against personName being "" (joint contrib /
+              // unresolved person) — String.includes("") is always true,
+              // which would otherwise match this contrib to ANY performance
+              // account of the right type regardless of actual ownership.
+              (personName !== "" && labelLower.includes(personName)))
           );
         });
 

@@ -36,6 +36,11 @@ vi.mock("@/server/auth", () => ({
 
 beforeEach(() => {
   process.env = { ...ORIGINAL_ENV };
+  // Some environments (a developer's shell, a CI step further down the
+  // pipeline) may have DEMO_ONLY set ambiently — delete it explicitly so
+  // non-demo test cases are hermetic regardless of ORIGINAL_ENV's contents,
+  // rather than relying on it having been unset when this file loaded.
+  delete process.env.DEMO_ONLY;
   vi.resetModules();
 });
 

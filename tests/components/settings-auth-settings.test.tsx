@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 // Smoke tests for src/components/settings/auth-settings.tsx — Authentik
@@ -18,8 +18,8 @@ vi.mock("@/lib/trpc", () => ({
   trpc: {
     settings: {
       testOidcConnection: {
-        useQuery: (_input: unknown, opts: { enabled: boolean }) => ({
-          data: opts.enabled ? queryResult : undefined,
+        useQuery: (_input: unknown, opts?: { enabled: boolean }) => ({
+          data: opts?.enabled ? queryResult : undefined,
           isFetching,
           refetch,
         }),
@@ -31,6 +31,10 @@ vi.mock("@/lib/trpc", () => ({
 import { AuthSettings } from "@/components/settings/auth-settings";
 
 describe("AuthSettings smoke", () => {
+  beforeEach(() => {
+    queryResult = null;
+  });
+
   it("renders required env vars and local admin info without testing yet", () => {
     render(<AuthSettings />);
     expect(screen.getByText("Authentik (OIDC)")).toBeInTheDocument();

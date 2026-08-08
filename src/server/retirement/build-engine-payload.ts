@@ -565,12 +565,21 @@ export async function buildEnginePayload(
   const limitsMap: Record<string, number> = {};
   for (const l of allLimits) limitsMap[l.limitType] = toNumber(l.value);
 
-  // Per-person account types for limit aggregation
+  // Per-person account types for limit aggregation.
+  // A jobless row is "active" if it's tied to a currently-known person, OR
+  // if personId is null — which (per the ownership/personId invariant
+  // enforced in settings/paycheck.ts) only ever means a joint account, not
+  // a data error. Without the null case, joint jobless contributions
+  // (e.g. a joint brokerage account with no linked job) would silently
+  // drop out of activeContribs entirely once their personId is cleared,
+  // excluding their contribution amount from every downstream total this
+  // function computes.
   const activeContribs = allContribs
     .filter(
       (c) =>
         activeJobs.some((j) => j.id === c.jobId) ||
-        (c.jobId === null && people.some((p) => p.id === c.personId)),
+        (c.jobId === null &&
+          (c.personId === null || people.some((p) => p.id === c.personId))),
     )
     .map((c) => ({ ...c, accountType: c.accountType as AccountCategory }));
   const personAccountTypes = new Map<number, Set<string>>();

@@ -43,6 +43,13 @@
       "when": 1785965074997,
       "tag": "0005_zippy_warlock",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1786147885866,
+      "tag": "0006_concerned_psylocke",
+      "breakpoints": true
     }
   ]
 }

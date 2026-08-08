@@ -382,6 +382,15 @@ describe("portfolioSnapshots.create", () => {
         ],
       });
       expect(result.snapshotDate).toBe("2025-06-15");
+
+      const schema = await import("@/lib/db/schema");
+      const { eq } = await import("drizzle-orm");
+      const createdAccounts = await ctx.db
+        .select()
+        .from(schema.portfolioAccounts)
+        .where(eq(schema.portfolioAccounts.snapshotId, result.id));
+      expect(createdAccounts).toHaveLength(1);
+      expect(createdAccounts[0]?.parentCategory).toBe("Portfolio");
     } finally {
       ctx.cleanup();
     }

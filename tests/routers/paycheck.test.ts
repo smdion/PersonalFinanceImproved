@@ -617,7 +617,7 @@ describe("settings.contributionAccounts CRUD", () => {
 
   it("create a joint brokerage contribution account", async () => {
     const acct = await caller.settings.contributionAccounts.create({
-      personId,
+      personId: null,
       accountType: "brokerage",
       parentCategory: "Portfolio",
       taxTreatment: "after_tax",
@@ -628,6 +628,7 @@ describe("settings.contributionAccounts CRUD", () => {
     });
     expect(acct!.ownership).toBe("joint");
     expect(acct!.parentCategory).toBe("Portfolio");
+    expect(acct!.personId).toBeNull();
   });
 
   it("delete removes a contribution account", async () => {

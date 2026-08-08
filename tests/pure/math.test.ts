@@ -32,8 +32,18 @@ describe("parsePositiveInt", () => {
     expect(parsePositiveInt("")).toBeNull();
   });
 
-  it("truncates a decimal to its integer part", () => {
-    expect(parsePositiveInt("3.7")).toBe(3);
+  it("rejects a decimal instead of silently truncating it", () => {
+    expect(parsePositiveInt("3.7")).toBeNull();
+  });
+
+  it("rejects trailing non-digit garbage (bare parseInt would stop at the first non-digit and return the leading number)", () => {
+    expect(parsePositiveInt("3months")).toBeNull();
+    expect(parsePositiveInt("3 months")).toBeNull();
+    expect(parsePositiveInt("3abc")).toBeNull();
+  });
+
+  it("trims surrounding whitespace before validating", () => {
+    expect(parsePositiveInt("  3  ")).toBe(3);
   });
 });
 

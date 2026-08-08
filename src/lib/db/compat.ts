@@ -93,11 +93,21 @@ export async function truncateTables(
   } else {
     // SQLite: delete in reverse tier order (children first) to respect FK constraints.
     // PRAGMA foreign_keys cannot be changed inside a transaction, so we rely on ordering.
+    const knownNames = new Set(VERSION_TABLES.map((t) => t.name));
     const reversed = [...VERSION_TABLES]
       .filter((t) => tableNames.includes(t.name))
       .sort((a, b) => b.tier - a.tier);
     for (const t of reversed) {
       await execRaw(db, sql.raw(`DELETE FROM "${t.name}"`));
+    }
+    // Tables not tracked in VERSION_TABLES (e.g. change_log,
+    // budget_api_cache — real tables resetAllData passes in that aren't
+    // part of the version-snapshot tier ordering) have no known FK tier.
+    // Delete them last, after every tiered table is already gone, so any
+    // FK reference from an untracked table into a tiered one is safe.
+    const untracked = tableNames.filter((name) => !knownNames.has(name));
+    for (const name of untracked) {
+      await execRaw(db, sql.raw(`DELETE FROM "${name}"`));
     }
   }
 }

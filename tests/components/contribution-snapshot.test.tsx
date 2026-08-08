@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ContributionSnapshot } from "@/components/paycheck/contribution-snapshot";
 
@@ -113,6 +113,12 @@ function makeData(overrides: Partial<Record<string, unknown>> = {}) {
 }
 
 describe("ContributionSnapshot", () => {
+  beforeEach(() => {
+    queryData = undefined;
+    queryLoading = false;
+    queryError = null;
+  });
+
   it("renders nothing while loading", () => {
     queryData = undefined;
     queryLoading = true;

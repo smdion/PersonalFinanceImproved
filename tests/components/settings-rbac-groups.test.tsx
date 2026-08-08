@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 // Smoke tests for src/components/settings/rbac-groups.tsx — RBAC group
 // mapping settings tab. Zero prior coverage of src/components/settings/
@@ -108,15 +108,15 @@ describe("RbacGroupsSettings smoke", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
-    // Allow the async handleSave to resolve
-    await Promise.resolve();
-    await Promise.resolve();
-
-    expect(upsertMutate).toHaveBeenCalledWith({
-      key: "rbac_admin_group",
-      value: "custom-admins",
-    });
-    expect(deleteMutate).toHaveBeenCalledWith({ key: "rbac_group_budget" });
+    await waitFor(() =>
+      expect(upsertMutate).toHaveBeenCalledWith({
+        key: "rbac_admin_group",
+        value: "custom-admins",
+      }),
+    );
+    await waitFor(() =>
+      expect(deleteMutate).toHaveBeenCalledWith({ key: "rbac_group_budget" }),
+    );
   });
 
   it("resets all fields to defaults when Reset to Defaults is clicked", () => {

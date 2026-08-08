@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - **On the default (SQLite) database setup, several features were silently broken and would fail immediately when used**: Reset All Data, creating/restoring/exporting/importing a backup version, the admin data browser, Monte Carlo retirement simulations (including the Coast FIRE calculator), and scenario what-if overrides. All now work correctly on SQLite installs.
-- **Switching a contribution account's owner to "Joint" now actually clears the previous individual owner** instead of silently leaving it attached in the background — this had no effect on any calculation, but could confuse account-ownership displays.
+- **Switching a contribution account's owner to "Joint" now actually clears the previous individual owner** instead of silently leaving it attached in the background. For most accounts this only affects ownership displays, not calculations — the one exception is a joint account with no linked paycheck, where clearing the owner is what makes its contribution amount count correctly toward household totals instead of being silently misattributed.
 - **A recurring savings transfer or planned transaction with an invalid recurrence interval (blank, zero, or negative) now correctly rejects the input** instead of silently saving as a one-time (non-recurring) entry.
 - Added an explanation to the Relocation tool's year-by-year portfolio comparison table, which previously had no context for what it was showing.
 

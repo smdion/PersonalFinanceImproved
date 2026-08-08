@@ -20,6 +20,7 @@ test-results/
 playwright-report/
 coverage/
 tests/.tmp/
+.vitest-localstorage.json*
 
 # artifacts
 *.db

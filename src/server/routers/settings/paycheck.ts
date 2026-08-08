@@ -127,6 +127,21 @@ const jointRequiresJobForPercentOfSalaryIssue = {
   path: ["jobId"],
 };
 
+// Several downstream consumers (build-engine-payload.ts's activeContribs
+// filter, the engine's salary-fallback matching) treat personId === null as
+// synonymous with ownership === "joint". Enforce that invariant at the
+// write boundary instead of leaving it as an unenforced convention.
+const ownershipPersonIdInvariant = (data: {
+  ownership?: string;
+  personId: number | null;
+}) =>
+  data.ownership === "joint" ? data.personId === null : data.personId !== null;
+const ownershipPersonIdInvariantIssue = {
+  message:
+    "personId must be set for individual accounts and null for joint accounts",
+  path: ["personId"],
+};
+
 const deductionInput = z.object({
   jobId: z.number().int(),
   deductionName: z.string().trim().min(1),
@@ -248,10 +263,12 @@ export const paycheckProcedures = {
     ),
     create: adminProcedure
       .input(
-        contributionAccountInput.refine(
-          jointRequiresJobForPercentOfSalary,
-          jointRequiresJobForPercentOfSalaryIssue,
-        ),
+        contributionAccountInput
+          .refine(
+            jointRequiresJobForPercentOfSalary,
+            jointRequiresJobForPercentOfSalaryIssue,
+          )
+          .refine(ownershipPersonIdInvariant, ownershipPersonIdInvariantIssue),
       )
       .mutation(async ({ ctx, input }) => {
         // When linked to a master account, sync parentCategory from its parentCategory
@@ -328,7 +345,8 @@ export const paycheckProcedures = {
           .refine(
             jointRequiresJobForPercentOfSalary,
             jointRequiresJobForPercentOfSalaryIssue,
-          ),
+          )
+          .refine(ownershipPersonIdInvariant, ownershipPersonIdInvariantIssue),
       )
       .mutation(async ({ ctx, input: { id, ...data } }) => {
         // Validate priorYearContribAmount only allowed for eligible account types

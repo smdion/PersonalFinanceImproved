@@ -20,14 +20,18 @@ export function safeDivide(
  *
  * `parseInt(x) || null` (the pattern this replaces) silently maps invalid
  * input, "0", and empty string all to `null` — but also lets negative
- * numbers straight through, since a negative number is truthy
- * (`parseInt("-5") || null` === `-5`). Used for fields like "recur every N
- * months" where negative/zero/garbage input should be rejected the same
- * way as empty input (null = "not set"), not silently accepted.
+ * numbers AND trailing garbage straight through: `parseInt("-5") || null`
+ * is `-5` (negative numbers are truthy), and `parseInt("3.7")`/
+ * `parseInt("3months")` both stop at the first non-digit and return `3`.
+ * Used for fields like "recur every N months" where anything that isn't
+ * cleanly a positive integer should be rejected the same way as empty
+ * input (null = "not set"), not silently truncated or accepted.
  */
 export function parsePositiveInt(value: string): number | null {
-  const n = parseInt(value, 10);
-  if (!Number.isFinite(n) || n < 1) return null;
+  const trimmed = value.trim();
+  if (!/^\d+$/.test(trimmed)) return null;
+  const n = parseInt(trimmed, 10);
+  if (n < 1) return null;
   return n;
 }
 

@@ -8,13 +8,21 @@
  * the delete path is deterministic without needing a real <ConfirmDialog />
  * mounted.
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 const mockConfirm = vi.fn<(msg: string) => Promise<boolean>>();
 vi.mock("@/components/ui/confirm-dialog", () => ({
   confirm: (msg: string) => mockConfirm(msg),
 }));
+
+beforeEach(() => {
+  // Full reset (not just clear) — drops any queued mockResolvedValueOnce
+  // implementation left over if a prior test failed before consuming it,
+  // and drops call history so toHaveBeenCalledWith assertions can't be
+  // satisfied by a call from a different test.
+  mockConfirm.mockReset();
+});
 
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 
