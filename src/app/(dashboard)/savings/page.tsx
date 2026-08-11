@@ -258,14 +258,10 @@ export default function SavingsPage() {
   })();
 
   // ── Projection months ──
-  // Start from the current month on the 1st; shift to next month once the 1st
-  // has passed so the table only shows months whose contribution date is today
-  // or in the future.
   const projectionMonths = projectionYears * 12;
   const now = new Date();
-  const startOffset = now.getDate() > 1 ? 1 : 0;
   const monthDates: Date[] = [];
-  for (let i = startOffset; i < projectionMonths + startOffset; i++) {
+  for (let i = 0; i < projectionMonths; i++) {
     monthDates.push(new Date(now.getFullYear(), now.getMonth() + i, 1));
   }
 
@@ -378,6 +374,13 @@ export default function SavingsPage() {
     // explicitly hits "Recalculate" (recalculateAllocation), not whenever
     // paycheck/budget data shifts underneath it.
     const baseAllocation = goal.monthlyAllocation;
+    // YNAB-linked goals report the live "Available" balance, which already
+    // includes the current month's budgeted amount once the 1st has passed.
+    // Skip adding month 0's allocation for those goals only, to avoid
+    // double-counting it — planned-transaction events still apply normally
+    // for every month, since they aren't reflected in the live balance.
+    const balanceIncludesCurrentMonth =
+      !!(raw?.isApiSyncEnabled && raw?.apiCategoryId) && now.getDate() > 1;
     for (let i = 0; i < projectionMonths; i++) {
       const mk = monthKey(monthDates[i]!);
       const events = goalTxMap?.get(mk) ?? null;
@@ -387,7 +390,9 @@ export default function SavingsPage() {
       const defaultAllocation = getAllocationForYear(baseAllocation, yr);
       const allocation =
         overrideAmount !== undefined ? overrideAmount : defaultAllocation;
-      balance += allocation;
+      if (!(i === 0 && balanceIncludesCurrentMonth)) {
+        balance += allocation;
+      }
       if (events) {
         for (const ev of events) balance += ev.amount;
       }

@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
+## [0.7.1] - 2026-08-11
+
+### Fixed
+
+- **Savings projections silently dropped planned transactions dated later in the current month.** Once the 1st of the month had passed, the projection trajectory skipped the entire current month (contributions and any planned withdrawals/deposits alike) instead of just avoiding double-counting the month's contribution for YNAB-linked goals. A sinking fund with an upcoming expense planned for later in the month would show future balances overstated by that amount until the following month.
+
 ## [0.7.0] - 2026-08-07
 
 > What changed since v0.6.0. For patch-level detail, see the v0.6.x entries below.
