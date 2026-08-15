@@ -8,6 +8,13 @@
       "when": 1786154084335,
       "tag": "0000_v7_initial_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786817594775,
+      "tag": "0001_parched_karma",
+      "breakpoints": true
     }
   ]
 }

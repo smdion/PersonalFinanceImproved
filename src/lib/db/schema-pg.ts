@@ -465,6 +465,33 @@ export const savingsPlannedTransactions = pgTable(
   ],
 );
 
+// Settlement is per-occurrence rather than a column on the row above, because
+// a single recurring row (isRecurring) represents many future occurrences —
+// a row-level "settled" flag would incorrectly hide every future occurrence
+// once one instance was confirmed. Non-recurring rows just have exactly one
+// possible occurrence (their own transactionDate's month).
+export const savingsPlannedTxSettlements = pgTable(
+  "savings_planned_tx_settlements",
+  {
+    id: serial("id").primaryKey(),
+    plannedTxId: integer("planned_tx_id")
+      .notNull()
+      .references(() => savingsPlannedTransactions.id, {
+        onDelete: "cascade",
+      }),
+    occurrenceMonth: date("occurrence_month").notNull(), // always the 1st of the settled occurrence's month
+    settledAt: timestamp("settled_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("savings_planned_tx_settlements_occurrence_idx").on(
+      table.plannedTxId,
+      table.occurrenceMonth,
+    ),
+  ],
+);
+
 // Per-month allocation overrides for sinking fund projections.
 // When set, overrides the default monthly contribution for a goal in that month.
 export const savingsAllocationOverrides = pgTable(

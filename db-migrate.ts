@@ -53,6 +53,7 @@ const VERSION_TABLE_NAMES = [
   "budget_items",
   "savings_monthly",
   "savings_planned_transactions",
+  "savings_planned_tx_settlements",
   "savings_allocation_overrides",
   "self_loans",
   "performance_accounts",

@@ -65,6 +65,11 @@ export const KNOWN_SCHEMA_VERSIONS = [
   "0004_calm_dazzler", // SQLite counterpart of 0004
   "0005_zippy_warlock", // SQLite counterpart of 0005
   "0006_concerned_psylocke", // SQLite counterpart of 0006
+  // v0.7.x series — squashed v7 baseline (same tag string in both PG and
+  // SQLite journals) + incremental migrations
+  "0000_v7_initial_schema", // PG + SQLite (identical tag in both journals)
+  "0001_parched_karma", // PG: savings_planned_tx_settlements table
+  "0001_fresh_masque", // SQLite counterpart of 0001_parched_karma
 ] as const;
 
 export type KnownSchemaVersion = (typeof KNOWN_SCHEMA_VERSIONS)[number];
@@ -160,11 +165,21 @@ function versionIndex(tag: string): number {
 // ---------------------------------------------------------------------------
 
 /** Returns the broad era for a schema version tag. */
-function schemaEra(tag: string): "v0.1" | "v0.2" | "v0.3" | "v0.5" | "v0.6" {
+function schemaEra(
+  tag: string,
+): "v0.1" | "v0.2" | "v0.3" | "v0.5" | "v0.6" | "v0.7" {
   if (tag === "v0.6_final") return "v0.6";
   if (tag === "v0.5_final") return "v0.5";
   if (tag === "v0.3_final") return "v0.3";
   if (tag === "v0.2_final") return "v0.2";
+
+  // v0.7.x tags (squashed v7 baseline + incremental).
+  const v07Tags = new Set([
+    "0000_v7_initial_schema", // PG + SQLite
+    "0001_parched_karma", // PG
+    "0001_fresh_masque", // SQLite
+  ]);
+  if (v07Tags.has(tag)) return "v0.7";
 
   // v0.6.x tags (squashed v6 baseline + incremental). Routed to a minimal
   // transform that only backfills tables added within the v0.6 line.
@@ -455,6 +470,31 @@ function transformV06xToCurrent(tables: TableData): TableData {
   if (!tables["utility_reading"]) {
     tables["utility_reading"] = [];
   }
+  // v0.7.1: settlement side table — a v0.6.x backup predates it entirely
+  if (!tables["savings_planned_tx_settlements"]) {
+    tables["savings_planned_tx_settlements"] = [];
+  }
+  return tables;
+}
+
+// ---------------------------------------------------------------------------
+// The v0.7.x → current transformer
+// ---------------------------------------------------------------------------
+
+/**
+ * Transform a v0.7.x backup to match the current schema.
+ *
+ * The v0.7.0 baseline (`0000_v7_initial_schema`) predates
+ * `savings_planned_tx_settlements` (added in v0.7.1, `0001_parched_karma` /
+ * `0001_fresh_masque`) — restoring one simply starts that table empty, which
+ * is safe (it only ever holds settlement records, never a source of truth
+ * for money already accounted for elsewhere). Idempotent, so a backup
+ * already at `0001_parched_karma`/`0001_fresh_masque` is a pure pass-through.
+ */
+function transformV07xToCurrent(tables: TableData): TableData {
+  if (!tables["savings_planned_tx_settlements"]) {
+    tables["savings_planned_tx_settlements"] = [];
+  }
   return tables;
 }
 
@@ -508,7 +548,10 @@ export function transformBackupToCurrentSchema(
 
   const era = schemaEra(schemaVersion);
 
-  if (era === "v0.6") {
+  if (era === "v0.7") {
+    // v0.7.x → current: backfill tables added within the v0.7 line
+    transformV07xToCurrent(cloned);
+  } else if (era === "v0.6") {
     // v0.6.x → current: backfill v0.6-line tables/columns + utilities tables
     transformV06xToCurrent(cloned);
   } else if (era === "v0.5") {
