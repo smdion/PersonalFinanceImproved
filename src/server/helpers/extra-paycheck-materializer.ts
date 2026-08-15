@@ -11,7 +11,7 @@
  * Call after: job create/update/delete, explicit rule/override save.
  */
 
-import { eq } from "drizzle-orm";
+import { eq, and, gte, notInArray, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type {
   ExtraPaycheckRule,
@@ -179,12 +179,63 @@ async function _materialize(db: Db): Promise<void> {
     }
   }
 
-  // Delete all rule-sourced rows then insert fresh ones inside a transaction
-  // so the replacement is atomic at the DB level.
+  // Delete rule-sourced rows and insert fresh ones inside a transaction so
+  // the replacement is atomic at the DB level. Only rows dated this month or
+  // later are candidates for deletion — getExtraPaycheckMonthKeys never
+  // regenerates anything earlier, so a blanket delete would destroy history
+  // with no way to recreate it. Rows with settlement history are preserved
+  // regardless of month: deleting and reinserting allocates a new row id,
+  // which would silently orphan (and cascade-delete) their settlement
+  // records the moment the materializer next ran.
+  const currentMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
   await db.transaction(async (tx) => {
+    const settledRows = await tx
+      .select({ plannedTxId: schema.savingsPlannedTxSettlements.plannedTxId })
+      .from(schema.savingsPlannedTxSettlements);
+    const preserveIds = [...new Set(settledRows.map((r) => r.plannedTxId))];
+
+    let preservedRuleRows: { goalId: number; transactionDate: string }[] = [];
+    if (preserveIds.length > 0) {
+      preservedRuleRows = await tx
+        .select({
+          goalId: schema.savingsPlannedTransactions.goalId,
+          transactionDate: schema.savingsPlannedTransactions.transactionDate,
+        })
+        .from(schema.savingsPlannedTransactions)
+        .where(
+          and(
+            eq(schema.savingsPlannedTransactions.source, "rule"),
+            inArray(schema.savingsPlannedTransactions.id, preserveIds),
+          ),
+        );
+    }
+    // A preserved (settled) row already occupies its goalId+month slot —
+    // drop the freshly-recomputed entry for that same slot so regeneration
+    // doesn't insert a duplicate alongside it.
+    for (const row of preservedRuleRows) {
+      desired.delete(`${row.goalId}:${row.transactionDate}`);
+    }
+
     await tx
       .delete(schema.savingsPlannedTransactions)
-      .where(eq(schema.savingsPlannedTransactions.source, "rule"));
+      .where(
+        preserveIds.length > 0
+          ? and(
+              eq(schema.savingsPlannedTransactions.source, "rule"),
+              gte(
+                schema.savingsPlannedTransactions.transactionDate,
+                currentMonthStart,
+              ),
+              notInArray(schema.savingsPlannedTransactions.id, preserveIds),
+            )
+          : and(
+              eq(schema.savingsPlannedTransactions.source, "rule"),
+              gte(
+                schema.savingsPlannedTransactions.transactionDate,
+                currentMonthStart,
+              ),
+            ),
+      );
 
     if (desired.size > 0) {
       await tx.insert(schema.savingsPlannedTransactions).values(

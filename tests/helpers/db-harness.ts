@@ -38,6 +38,15 @@ export async function createTestDb(): Promise<TestDbContext> {
   const db = drizzle(sqlite, { schema: sqliteSchema });
   applyMigrationsIdempotent(sqlite);
 
+  // Monkey-patch db.transaction so helpers using async transaction
+  // callbacks can run under the better-sqlite3 test harness — mirrors the
+  // identical patch in tests/routers/setup.ts (see its comment for why:
+  // production is Postgres, which supports async transactions natively;
+  // better-sqlite3 rejects them with "Transaction function cannot return a
+  // promise"). No real atomicity here, but the logic inside is testable.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (db as any).transaction = async (fn: (tx: unknown) => unknown) => fn(db);
+
   // Seed reference data
   const seedPath = path.resolve("seed-reference-data.sql");
   if (fs.existsSync(seedPath)) {
