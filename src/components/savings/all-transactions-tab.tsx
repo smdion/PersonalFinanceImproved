@@ -3,6 +3,7 @@
 import React, { useState, useRef } from "react";
 import { Lock, LockOpen, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HelpTip } from "@/components/ui/help-tip";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
@@ -927,7 +928,21 @@ export function AllTransactionsTab({
                 <th className="text-center px-3 py-2 font-medium text-muted whitespace-nowrap">
                   Recurring
                 </th>
-                {canEdit !== false && <th className="px-3 py-2 w-8" />}
+                {canEdit !== false && (
+                  <th className="text-right px-3 py-2 font-medium text-muted whitespace-nowrap">
+                    <span className="inline-flex items-center">
+                      Settled
+                      <HelpTip
+                        lines={[
+                          "Once a planned deposit or withdrawal has actually happened, settle it instead of deleting it.",
+                          "Settling excludes it from future balance projections — your synced balance already reflects the real activity — while keeping the row for your records.",
+                          "Never automatic: for YNAB-linked funds a banner may suggest likely-settled items based on real account activity, but nothing settles without a click.",
+                        ]}
+                        maxWidth={260}
+                      />
+                    </span>
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>

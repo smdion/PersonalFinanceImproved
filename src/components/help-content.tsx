@@ -389,6 +389,22 @@ export function HelpContent() {
             transactions above upcoming ones with a separator for clarity.
           </li>
           <li>
+            <strong>Settling planned transactions</strong> &mdash; Once a
+            planned deposit or withdrawal has actually happened, click{" "}
+            <em>Settle</em> on it (in the Transactions tab or a fund
+            card&rsquo;s transaction list) instead of deleting it. Settling
+            removes it from future balance projections &mdash; since your synced
+            balance already reflects the real activity &mdash; while keeping the
+            row for your records. For YNAB-linked funds, a dismissible banner
+            suggests transactions that look settled based on real account
+            activity; nothing settles automatically without a click. Rows
+            planned 2+ months ago with no matching real activity get a
+            &ldquo;still open?&rdquo; nudge as a reminder to settle or delete
+            them. Settling one occurrence of a recurring transaction
+            doesn&rsquo;t affect its other future occurrences, and settling one
+            side of a transfer settles both sides together.
+          </li>
+          <li>
             <strong>Extra paycheck routing</strong> &mdash; For biweekly
             employees, set rules to automatically split a 27th paycheck across
             funds. The Extra Paychecks tab shows upcoming months with an inline
