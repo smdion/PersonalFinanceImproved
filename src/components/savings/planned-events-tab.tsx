@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
+import { isFuturePlannedTx } from "@/lib/pure/savings-projection";
 import type { PlannedTransaction } from "./types";
 
 function TransactionRow({
@@ -124,12 +125,12 @@ export function PlannedEventsTab({
     );
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
   const sorted = [...plannedTransactions].sort((a, b) =>
     a.transactionDate.localeCompare(b.transactionDate),
   );
-  const upcoming = sorted.filter((tx) => tx.transactionDate >= today);
-  const past = sorted.filter((tx) => tx.transactionDate < today);
+  const upcoming = sorted.filter((tx) => isFuturePlannedTx(tx, now));
+  const past = sorted.filter((tx) => !isFuturePlannedTx(tx, now));
 
   return (
     <div className="space-y-4">

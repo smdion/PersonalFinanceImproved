@@ -164,13 +164,12 @@ export function AllTransactionsTab({
   // includes contributions, recurring expansion, and overrides — matching the Plan table.
   // Map from goalId for O(1) lookup.
   const gpByGoalId = new Map(goalProjections.map((gp) => [gp.goalId, gp]));
-  // Projection months start on the 1st of the current month, or next month once
-  // the 1st has passed — mirror the same logic used on the savings page.
-  const projectionStart = new Date(
-    today.getFullYear(),
-    today.getMonth() + (today.getDate() > 1 ? 1 : 0),
-    1,
-  );
+  // GoalProjection.balances[0] is always the current calendar month — must match
+  // src/app/(dashboard)/savings/page.tsx's monthDates construction exactly (that
+  // file previously skipped the current month once the 1st had passed, which
+  // silently dropped current-month planned transactions from the trajectory —
+  // fixed in v0.7.1; this index math has to stay in lockstep with it).
+  const projectionStart = new Date(today.getFullYear(), today.getMonth(), 1);
   const getBalanceAfter = (
     goalId: number,
     dateStr: string,

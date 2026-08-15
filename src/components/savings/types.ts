@@ -76,6 +76,9 @@ export function monthLabel(d: Date): string {
 
 export interface MonthEvent {
   id: string;
+  /** Source row + specific occurrence — needed to target a settle action. */
+  plannedTxId: number;
+  occurrenceMonth: string;
   amount: number;
   description: string;
 }

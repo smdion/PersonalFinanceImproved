@@ -599,11 +599,19 @@ export function FundCard({
               {/* Upcoming expenses */}
               <div className="text-right">
                 {(() => {
+                  // Date-truncated cutoff — matches the shared
+                  // isFuturePlannedTx predicate's boundary semantics.
+                  const now = new Date();
+                  const today = new Date(
+                    now.getFullYear(),
+                    now.getMonth(),
+                    now.getDate(),
+                  );
                   const upcomingExpenses = sumBy(
                     transactions.filter(
                       (t) =>
                         t.amount < 0 &&
-                        new Date(t.transactionDate + "T00:00:00") > new Date(),
+                        new Date(t.transactionDate + "T00:00:00") >= today,
                     ),
                     (t) => Math.abs(t.amount),
                   );

@@ -16,9 +16,9 @@ import {
   SummaryCards,
   NewFundFormCard,
   GoalProjection,
-  monthKey,
   type NewFundForm,
 } from "@/components/savings";
+import { projectGoalBalances } from "@/lib/pure/savings-projection";
 import { TARGET_MODE_VALUES } from "@/lib/config/enum-values";
 import type { TargetMode } from "@/lib/config/enum-values";
 
@@ -197,11 +197,6 @@ export default function SavingsPage() {
   } = data;
 
   // ── Shared derived state ──
-  const overrideMap = new Map<string, number>();
-  for (const o of allocationOverrides ?? []) {
-    const d = new Date(o.monthDate + "T00:00:00");
-    overrideMap.set(`${o.goalId}:${monthKey(d)}`, o.amount);
-  }
   const goalById = new Map(rawGoals.map((g) => [g.id, g]));
 
   const childGoalsByParent = new Map<number, typeof rawGoals>();
@@ -263,40 +258,6 @@ export default function SavingsPage() {
   const monthDates: Date[] = [];
   for (let i = 0; i < projectionMonths; i++) {
     monthDates.push(new Date(now.getFullYear(), now.getMonth() + i, 1));
-  }
-
-  // ── Expand planned transactions ──
-  let eventSeq = 0;
-  const txByGoalMonth = new Map<
-    number,
-    Map<string, { id: string; amount: number; description: string }[]>
-  >();
-  for (const tx of plannedTransactions) {
-    const addEntry = (
-      goalId: number,
-      mk: string,
-      amount: number,
-      desc: string,
-    ) => {
-      if (!txByGoalMonth.has(goalId)) txByGoalMonth.set(goalId, new Map());
-      const m = txByGoalMonth.get(goalId)!;
-      if (!m.has(mk)) m.set(mk, []);
-      m.get(mk)!.push({ id: `ev-${++eventSeq}`, amount, description: desc });
-    };
-    const txDate = new Date(tx.transactionDate + "T00:00:00");
-    addEntry(tx.goalId, monthKey(txDate), tx.amount, tx.description);
-    if (tx.isRecurring && tx.recurrenceMonths && tx.recurrenceMonths > 0) {
-      const last = monthDates[monthDates.length - 1]!;
-      let d = new Date(
-        txDate.getFullYear(),
-        txDate.getMonth() + tx.recurrenceMonths,
-        1,
-      );
-      while (d <= last) {
-        addEntry(tx.goalId, monthKey(d), tx.amount, tx.description);
-        d = new Date(d.getFullYear(), d.getMonth() + tx.recurrenceMonths, 1);
-      }
-    }
   }
 
   // ── Derived pool growth from per-person paycheck raise rates ──
@@ -361,46 +322,28 @@ export default function SavingsPage() {
   const goalProjections: GoalProjection[] = parentFundGoals.map((goal) => {
     const raw = goalById.get(goal.goalId);
     const goalId = goal.goalId;
-    const goalTxMap = txByGoalMonth.get(goalId);
-    const balances: number[] = [];
-    const monthEvents: (
-      { id: string; amount: number; description: string }[] | null
-    )[] = [];
-    const monthlyAllocations: number[] = [];
-    const hasOverride: boolean[] = [];
-    let balance = goal.current;
     // The stored snapshot (goal.monthlyAllocation) is the source of truth
     // even for percentage-based goals — it only moves when the user
     // explicitly hits "Recalculate" (recalculateAllocation), not whenever
     // paycheck/budget data shifts underneath it.
     const baseAllocation = goal.monthlyAllocation;
-    // YNAB-linked goals report the live "Available" balance, which already
-    // includes the current month's budgeted amount once the 1st has passed.
-    // Skip adding month 0's allocation for those goals only, to avoid
-    // double-counting it — planned-transaction events still apply normally
-    // for every month, since they aren't reflected in the live balance.
-    const balanceIncludesCurrentMonth =
-      !!(raw?.isApiSyncEnabled && raw?.apiCategoryId) && now.getDate() > 1;
-    for (let i = 0; i < projectionMonths; i++) {
-      const mk = monthKey(monthDates[i]!);
-      const events = goalTxMap?.get(mk) ?? null;
-      const overrideKey = `${goalId}:${mk}`;
-      const overrideAmount = overrideMap.get(overrideKey);
-      const yr = monthDates[i]!.getFullYear();
-      const defaultAllocation = getAllocationForYear(baseAllocation, yr);
-      const allocation =
-        overrideAmount !== undefined ? overrideAmount : defaultAllocation;
-      if (!(i === 0 && balanceIncludesCurrentMonth)) {
-        balance += allocation;
-      }
-      if (events) {
-        for (const ev of events) balance += ev.amount;
-      }
-      balances.push(balance);
-      monthEvents.push(events);
-      monthlyAllocations.push(allocation);
-      hasOverride.push(overrideAmount !== undefined);
-    }
+    const { balances, monthEvents, monthlyAllocations, hasOverride } =
+      projectGoalBalances(
+        {
+          id: goalId,
+          current: goal.current,
+          monthlyAllocation: baseAllocation,
+          isApiSyncEnabled: raw?.isApiSyncEnabled,
+          apiCategoryId: raw?.apiCategoryId,
+        },
+        {
+          now,
+          projectionMonths,
+          plannedTransactions,
+          allocationOverrides,
+          allocationForYear: getAllocationForYear,
+        },
+      );
 
     return {
       name: goal.name,
