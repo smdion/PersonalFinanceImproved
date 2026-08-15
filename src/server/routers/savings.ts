@@ -1,5 +1,5 @@
 /** Savings router for savings goals, emergency fund calculations, planned transactions, and budget API expense integration. */
-import { eq, asc, sql, lt, isNull, and } from "drizzle-orm";
+import { eq, asc, sql, lt, isNull, and, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import {
@@ -246,6 +246,65 @@ async function computeLiveMaxMonthlyFunding(
     : null;
 }
 
+/** Accepts both the main db instance and transaction handles. */
+type DbType =
+  Context["db"] | Parameters<Parameters<Context["db"]["transaction"]>[0]>[0];
+
+/** A transfer's two legs must settle/unsettle together — otherwise money
+ *  silently vanishes from (or reappears in) the combined projection. */
+async function resolvePairedPlannedTxIds(
+  db: DbType,
+  plannedTxId: number,
+): Promise<number[]> {
+  const [row] = await db
+    .select({
+      transferPairId: schema.savingsPlannedTransactions.transferPairId,
+    })
+    .from(schema.savingsPlannedTransactions)
+    .where(eq(schema.savingsPlannedTransactions.id, plannedTxId));
+  if (!row) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Planned transaction not found",
+    });
+  }
+  if (!row.transferPairId) return [plannedTxId];
+  const pairRows = await db
+    .select({ id: schema.savingsPlannedTransactions.id })
+    .from(schema.savingsPlannedTransactions)
+    .where(
+      eq(schema.savingsPlannedTransactions.transferPairId, row.transferPairId),
+    );
+  return pairRows.map((r) => r.id);
+}
+
+async function settleOccurrence(
+  db: DbType,
+  input: { plannedTxId: number; occurrenceMonth: string },
+) {
+  const pairIds = await resolvePairedPlannedTxIds(db, input.plannedTxId);
+  const monthDate = `${input.occurrenceMonth}-01`;
+  const existing = await db
+    .select({ id: schema.savingsPlannedTxSettlements.id })
+    .from(schema.savingsPlannedTxSettlements)
+    .where(
+      and(
+        eq(schema.savingsPlannedTxSettlements.plannedTxId, input.plannedTxId),
+        eq(schema.savingsPlannedTxSettlements.occurrenceMonth, monthDate),
+      ),
+    );
+  if (existing.length > 0) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Already settled." });
+  }
+  await db.insert(schema.savingsPlannedTxSettlements).values(
+    pairIds.map((id) => ({
+      plannedTxId: id,
+      occurrenceMonth: monthDate,
+    })),
+  );
+  return { ok: true };
+}
+
 const plannedTransactionInput = z.object({
   goalId: z.number().int(),
   transactionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -267,6 +326,7 @@ export const savingsRouter = createTRPCRouter({
         plannedTransactions,
         allocationOverrides,
         appSettings,
+        settlements,
       ] = await Promise.all([
         ctx.db
           .select()
@@ -290,6 +350,7 @@ export const savingsRouter = createTRPCRouter({
           .from(schema.savingsAllocationOverrides)
           .orderBy(asc(schema.savingsAllocationOverrides.monthDate)),
         ctx.db.select().from(schema.appSettings),
+        ctx.db.select().from(schema.savingsPlannedTxSettlements),
       ]);
 
       // Get latest balance for each active goal from savings_monthly (single query)
@@ -469,6 +530,15 @@ export const savingsRouter = createTRPCRouter({
 
       const savingsResult = calculateSavings(savingsInput);
 
+      // Group settlements by plannedTxId → occurrence-month strings ("YYYY-MM"),
+      // normalized from the stored date (always the 1st of the month).
+      const settledByTxId = new Map<number, string[]>();
+      for (const s of settlements) {
+        const list = settledByTxId.get(s.plannedTxId) ?? [];
+        list.push(s.occurrenceMonth.slice(0, 7));
+        settledByTxId.set(s.plannedTxId, list);
+      }
+
       // Transform planned transactions for the client
       const plannedTx = plannedTransactions.map((t) => ({
         id: t.id,
@@ -480,6 +550,7 @@ export const savingsRouter = createTRPCRouter({
         recurrenceMonths: t.recurrenceMonths,
         transferPairId: t.transferPairId,
         source: t.source ?? "manual",
+        settledOccurrences: settledByTxId.get(t.id) ?? [],
       }));
 
       // Transform allocation overrides for the client
@@ -565,6 +636,60 @@ export const savingsRouter = createTRPCRouter({
               eq(schema.savingsPlannedTransactions.source, "manual"),
             ),
           );
+      }),
+    // Settlement is per-occurrence (plannedTxId + occurrenceMonth), never
+    // per-row — a recurring row has many future occurrences, and settling
+    // one must not hide the others from the projection. Never invoked
+    // automatically (e.g. from sync); always an explicit user action.
+    settle: savingsProcedure
+      .input(
+        z.object({
+          plannedTxId: z.number().int(),
+          occurrenceMonth: z.string().regex(/^\d{4}-\d{2}$/),
+        }),
+      )
+      .mutation(({ ctx, input }) => settleOccurrence(ctx.db, input)),
+    unsettle: savingsProcedure
+      .input(
+        z.object({
+          plannedTxId: z.number().int(),
+          occurrenceMonth: z.string().regex(/^\d{4}-\d{2}$/),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        const pairIds = await resolvePairedPlannedTxIds(
+          ctx.db,
+          input.plannedTxId,
+        );
+        const monthDate = `${input.occurrenceMonth}-01`;
+        await ctx.db
+          .delete(schema.savingsPlannedTxSettlements)
+          .where(
+            and(
+              inArray(schema.savingsPlannedTxSettlements.plannedTxId, pairIds),
+              eq(schema.savingsPlannedTxSettlements.occurrenceMonth, monthDate),
+            ),
+          );
+        return { ok: true };
+      }),
+    settleMany: savingsProcedure
+      .input(
+        z.object({
+          occurrences: z.array(
+            z.object({
+              plannedTxId: z.number().int(),
+              occurrenceMonth: z.string().regex(/^\d{4}-\d{2}$/),
+            }),
+          ),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        return ctx.db.transaction(async (tx) => {
+          for (const occ of input.occurrences) {
+            await settleOccurrence(tx, occ);
+          }
+          return { ok: true };
+        });
       }),
   }),
 

@@ -35,6 +35,8 @@ export interface PlannedTransaction {
   recurrenceMonths: number | null;
   transferPairId?: string | null;
   source?: string;
+  /** Occurrence months ("YYYY-MM") already settled for this row. */
+  settledOccurrences?: string[];
 }
 
 export interface PlannedTxForm {

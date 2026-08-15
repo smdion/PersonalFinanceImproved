@@ -7,7 +7,10 @@ import { Card, ProgressBar } from "@/components/ui/card";
 import { formatCurrency, formatNumber } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { sumBy } from "@/lib/utils/math";
-import { projectGoalBalances } from "@/lib/pure/savings-projection";
+import {
+  projectGoalBalances,
+  buildSettledOccurrencesSet,
+} from "@/lib/pure/savings-projection";
 import { LoadingCard, ErrorCard } from "./utils";
 
 function SavingsGoalsCardImpl() {
@@ -48,6 +51,7 @@ function SavingsGoalsCardImpl() {
   const goalStatusMap = new Map<number, GoalStatus>();
   const now = new Date();
   const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const settledOccurrences = buildSettledOccurrencesSet(plannedTransactions);
   const shortMonthNames = [
     "Jan",
     "Feb",
@@ -140,6 +144,7 @@ function SavingsGoalsCardImpl() {
           projectionMonths: monthsToSimulate,
           plannedTransactions,
           allocationOverrides,
+          settledOccurrences,
         },
       );
 

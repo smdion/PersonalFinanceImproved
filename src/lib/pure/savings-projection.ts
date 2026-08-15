@@ -56,6 +56,20 @@ export function occurrenceKey(
   return `${plannedTxId}:${occurrenceMonth}`;
 }
 
+/** Flattens each row's `settledOccurrences` (from computeSummary) into the
+ *  single Set both `projectGoalBalances` and `isFuturePlannedTx` expect. */
+export function buildSettledOccurrencesSet(
+  plannedTransactions: PlannedTransaction[],
+): Set<string> {
+  const set = new Set<string>();
+  for (const tx of plannedTransactions) {
+    for (const mk of tx.settledOccurrences ?? []) {
+      set.add(occurrenceKey(tx.id, mk));
+    }
+  }
+  return set;
+}
+
 /**
  * Expands planned transactions (including recurring ones) into per-goal,
  * per-month events, dropping any occurrence present in `settledOccurrences`.

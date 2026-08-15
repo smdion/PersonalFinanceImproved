@@ -4,7 +4,10 @@ import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
-import { isFuturePlannedTx } from "@/lib/pure/savings-projection";
+import {
+  isFuturePlannedTx,
+  buildSettledOccurrencesSet,
+} from "@/lib/pure/savings-projection";
 import type { PlannedTransaction } from "./types";
 
 function TransactionRow({
@@ -126,11 +129,16 @@ export function PlannedEventsTab({
   }
 
   const now = new Date();
+  const settledOccurrences = buildSettledOccurrencesSet(plannedTransactions);
   const sorted = [...plannedTransactions].sort((a, b) =>
     a.transactionDate.localeCompare(b.transactionDate),
   );
-  const upcoming = sorted.filter((tx) => isFuturePlannedTx(tx, now));
-  const past = sorted.filter((tx) => !isFuturePlannedTx(tx, now));
+  const upcoming = sorted.filter((tx) =>
+    isFuturePlannedTx(tx, now, settledOccurrences),
+  );
+  const past = sorted.filter(
+    (tx) => !isFuturePlannedTx(tx, now, settledOccurrences),
+  );
 
   return (
     <div className="space-y-4">

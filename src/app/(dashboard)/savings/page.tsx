@@ -18,7 +18,10 @@ import {
   GoalProjection,
   type NewFundForm,
 } from "@/components/savings";
-import { projectGoalBalances } from "@/lib/pure/savings-projection";
+import {
+  projectGoalBalances,
+  buildSettledOccurrencesSet,
+} from "@/lib/pure/savings-projection";
 import { TARGET_MODE_VALUES } from "@/lib/config/enum-values";
 import type { TargetMode } from "@/lib/config/enum-values";
 
@@ -198,6 +201,7 @@ export default function SavingsPage() {
 
   // ── Shared derived state ──
   const goalById = new Map(rawGoals.map((g) => [g.id, g]));
+  const settledOccurrences = buildSettledOccurrencesSet(plannedTransactions);
 
   const childGoalsByParent = new Map<number, typeof rawGoals>();
   for (const g of rawGoals) {
@@ -341,6 +345,7 @@ export default function SavingsPage() {
           projectionMonths,
           plannedTransactions,
           allocationOverrides,
+          settledOccurrences,
           allocationForYear: getAllocationForYear,
         },
       );

@@ -964,6 +964,181 @@ describe("savings.transfers", () => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
+// plannedTransactions — settle, unsettle, settleMany
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe("savings.plannedTransactions settle/unsettle/settleMany", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+  let goalId1: number;
+  let goalId2: number;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    caller = ctx.caller;
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+    goalId1 = seedSavingsGoal(db, {
+      name: "Settle Fund A",
+      targetAmount: "10000",
+      monthlyContribution: "500",
+    });
+    goalId2 = seedSavingsGoal(db, {
+      name: "Settle Fund B",
+      targetAmount: "5000",
+      monthlyContribution: "200",
+    });
+  });
+
+  afterAll(() => cleanup());
+
+  it("settles a one-time planned transaction", async () => {
+    const tx = await caller.savings.plannedTransactions.create({
+      goalId: goalId1,
+      transactionDate: "2026-09-15",
+      amount: "-1200",
+      description: "Trip",
+      isRecurring: false,
+    });
+    const result = await caller.savings.plannedTransactions.settle({
+      plannedTxId: tx.id,
+      occurrenceMonth: "2026-09",
+    });
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("rejects settling the same occurrence twice", async () => {
+    const tx = await caller.savings.plannedTransactions.create({
+      goalId: goalId1,
+      transactionDate: "2026-10-15",
+      amount: "-500",
+      description: "Concert",
+      isRecurring: false,
+    });
+    await caller.savings.plannedTransactions.settle({
+      plannedTxId: tx.id,
+      occurrenceMonth: "2026-10",
+    });
+    await expect(
+      caller.savings.plannedTransactions.settle({
+        plannedTxId: tx.id,
+        occurrenceMonth: "2026-10",
+      }),
+    ).rejects.toThrow(/already settled/i);
+  });
+
+  it("unsettle removes the settlement so it can be settled again", async () => {
+    const tx = await caller.savings.plannedTransactions.create({
+      goalId: goalId1,
+      transactionDate: "2026-11-15",
+      amount: "-300",
+      description: "Gift",
+      isRecurring: false,
+    });
+    await caller.savings.plannedTransactions.settle({
+      plannedTxId: tx.id,
+      occurrenceMonth: "2026-11",
+    });
+    const unsettleResult = await caller.savings.plannedTransactions.unsettle({
+      plannedTxId: tx.id,
+      occurrenceMonth: "2026-11",
+    });
+    expect(unsettleResult).toEqual({ ok: true });
+    // Should be settleable again now that the settlement was removed.
+    const resettled = await caller.savings.plannedTransactions.settle({
+      plannedTxId: tx.id,
+      occurrenceMonth: "2026-11",
+    });
+    expect(resettled).toEqual({ ok: true });
+  });
+
+  it("settling one leg of a transfer settles both legs (pair-atomic)", async () => {
+    const created = await caller.savings.transfers.create({
+      fromGoalId: goalId1,
+      toGoalId: goalId2,
+      transactionDate: "2026-12-01",
+      amount: 750,
+      description: "Rebalance",
+    });
+    await caller.savings.plannedTransactions.settle({
+      plannedTxId: created.withdrawal.id,
+      occurrenceMonth: "2026-12",
+    });
+    // The deposit leg should now also be settled — verify via computeSummary
+    // (settling only the withdrawal leg must not leave the deposit leg
+    // still counting toward Fund B's projection, or money silently
+    // reappears in the combined balance).
+    const summary = await caller.savings.computeSummary();
+    const depositTx = summary.plannedTransactions.find(
+      (t) => t.id === created.deposit.id,
+    );
+    expect(depositTx?.settledOccurrences).toContain("2026-12");
+    // And settling the already-settled deposit leg directly should now reject.
+    await expect(
+      caller.savings.plannedTransactions.settle({
+        plannedTxId: created.deposit.id,
+        occurrenceMonth: "2026-12",
+      }),
+    ).rejects.toThrow(/already settled/i);
+  });
+
+  it("settleMany settles multiple occurrences in one call", async () => {
+    const tx1 = await caller.savings.plannedTransactions.create({
+      goalId: goalId1,
+      transactionDate: "2027-01-15",
+      amount: "-100",
+      description: "One",
+      isRecurring: false,
+    });
+    const tx2 = await caller.savings.plannedTransactions.create({
+      goalId: goalId1,
+      transactionDate: "2027-02-15",
+      amount: "-100",
+      description: "Two",
+      isRecurring: false,
+    });
+    const result = await caller.savings.plannedTransactions.settleMany({
+      occurrences: [
+        { plannedTxId: tx1.id, occurrenceMonth: "2027-01" },
+        { plannedTxId: tx2.id, occurrenceMonth: "2027-02" },
+      ],
+    });
+    expect(result).toEqual({ ok: true });
+    const summary = await caller.savings.computeSummary();
+    const t1 = summary.plannedTransactions.find((t) => t.id === tx1.id);
+    const t2 = summary.plannedTransactions.find((t) => t.id === tx2.id);
+    expect(t1?.settledOccurrences).toContain("2027-01");
+    expect(t2?.settledOccurrences).toContain("2027-02");
+  });
+
+  it("settling one occurrence of a recurring row does not settle its other occurrences", async () => {
+    const tx = await caller.savings.plannedTransactions.create({
+      goalId: goalId1,
+      transactionDate: "2027-03-01",
+      amount: "100",
+      description: "Recurring gift",
+      isRecurring: true,
+      recurrenceMonths: 1,
+    });
+    await caller.savings.plannedTransactions.settle({
+      plannedTxId: tx.id,
+      occurrenceMonth: "2027-03",
+    });
+    const summary = await caller.savings.computeSummary();
+    const found = summary.plannedTransactions.find((t) => t.id === tx.id);
+    expect(found?.settledOccurrences).toEqual(["2027-03"]);
+    // A later occurrence of the same recurring row must still be settleable
+    // independently — proves settlement is per-occurrence, not per-row.
+    const nextMonth = await caller.savings.plannedTransactions.settle({
+      plannedTxId: tx.id,
+      occurrenceMonth: "2027-04",
+    });
+    expect(nextMonth).toEqual({ ok: true });
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
 // allocationOverrides — upsertMonth, upsertMonthRange, batchUpsert
 // ══════════════════════════════════════════════════════════════════════════════
 
