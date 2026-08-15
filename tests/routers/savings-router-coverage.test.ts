@@ -1139,6 +1139,169 @@ describe("savings.plannedTransactions settle/unsettle/settleMany", () => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
+// plannedTransactions.getSettlementSuggestions
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe("savings.plannedTransactions.getSettlementSuggestions", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+  let linkedGoalId: number;
+  let unlinkedGoalId: number;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    caller = ctx.caller;
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+    linkedGoalId = seedSavingsGoal(db, {
+      name: "Linked Fund",
+      isApiSyncEnabled: true,
+      apiCategoryId: "cat-travel",
+    });
+    unlinkedGoalId = seedSavingsGoal(db, { name: "Unlinked Fund" });
+  });
+
+  afterAll(() => cleanup());
+
+  it("returns no suggestions when no budget API is active", async () => {
+    mockGetActiveBudgetApi.mockResolvedValueOnce("none");
+    const result =
+      await caller.savings.plannedTransactions.getSettlementSuggestions();
+    expect(result.suggestions).toEqual([]);
+  });
+
+  it("returns no suggestions when the transactions cache is empty", async () => {
+    mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+    mockCacheGet.mockResolvedValueOnce(null);
+    const result =
+      await caller.savings.plannedTransactions.getSettlementSuggestions();
+    expect(result.suggestions).toEqual([]);
+  });
+
+  it("suggests a planned transaction with real activity on/after its date, same month, same category", async () => {
+    const tx = await caller.savings.plannedTransactions.create({
+      goalId: linkedGoalId,
+      transactionDate: "2026-08-10",
+      amount: "-500",
+      description: "Hotel",
+      isRecurring: false,
+    });
+    mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+    mockCacheGet.mockResolvedValueOnce({
+      data: [
+        {
+          id: "t1",
+          categoryId: "cat-travel",
+          date: "2026-08-12",
+          amount: -12000,
+          deleted: false,
+        },
+      ],
+      serverKnowledge: 1,
+      fetchedAt: new Date(),
+    });
+    const result =
+      await caller.savings.plannedTransactions.getSettlementSuggestions();
+    expect(result.suggestions).toContainEqual({
+      plannedTxId: tx.id,
+      occurrenceMonth: "2026-08",
+    });
+  });
+
+  it("does not suggest when the only real activity is before the planned date", async () => {
+    const tx = await caller.savings.plannedTransactions.create({
+      goalId: linkedGoalId,
+      transactionDate: "2026-09-20",
+      amount: "-500",
+      description: "Late trip",
+      isRecurring: false,
+    });
+    mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+    mockCacheGet.mockResolvedValueOnce({
+      data: [
+        {
+          id: "t2",
+          categoryId: "cat-travel",
+          date: "2026-09-05", // before the planned date
+          amount: -5000,
+          deleted: false,
+        },
+      ],
+      serverKnowledge: 1,
+      fetchedAt: new Date(),
+    });
+    const result =
+      await caller.savings.plannedTransactions.getSettlementSuggestions();
+    expect(
+      result.suggestions.find((s) => s.plannedTxId === tx.id),
+    ).toBeUndefined();
+  });
+
+  it("does not suggest a non-API-linked goal's planned transaction", async () => {
+    const tx = await caller.savings.plannedTransactions.create({
+      goalId: unlinkedGoalId,
+      transactionDate: "2026-08-10",
+      amount: "-200",
+      description: "Cash spend",
+      isRecurring: false,
+    });
+    mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+    mockCacheGet.mockResolvedValueOnce({
+      data: [
+        {
+          id: "t3",
+          categoryId: "cat-travel",
+          date: "2026-08-12",
+          amount: -1,
+          deleted: false,
+        },
+      ],
+      serverKnowledge: 1,
+      fetchedAt: new Date(),
+    });
+    const result =
+      await caller.savings.plannedTransactions.getSettlementSuggestions();
+    expect(
+      result.suggestions.find((s) => s.plannedTxId === tx.id),
+    ).toBeUndefined();
+  });
+
+  it("does not suggest an already-settled occurrence", async () => {
+    const tx = await caller.savings.plannedTransactions.create({
+      goalId: linkedGoalId,
+      transactionDate: "2026-10-10",
+      amount: "-500",
+      description: "Already settled",
+      isRecurring: false,
+    });
+    await caller.savings.plannedTransactions.settle({
+      plannedTxId: tx.id,
+      occurrenceMonth: "2026-10",
+    });
+    mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+    mockCacheGet.mockResolvedValueOnce({
+      data: [
+        {
+          id: "t4",
+          categoryId: "cat-travel",
+          date: "2026-10-12",
+          amount: -500,
+          deleted: false,
+        },
+      ],
+      serverKnowledge: 1,
+      fetchedAt: new Date(),
+    });
+    const result =
+      await caller.savings.plannedTransactions.getSettlementSuggestions();
+    expect(
+      result.suggestions.find((s) => s.plannedTxId === tx.id),
+    ).toBeUndefined();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
 // allocationOverrides — upsertMonth, upsertMonthRange, batchUpsert
 // ══════════════════════════════════════════════════════════════════════════════
 

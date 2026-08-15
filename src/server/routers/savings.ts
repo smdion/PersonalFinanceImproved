@@ -41,7 +41,7 @@ import {
   cacheGet,
   refreshCategoryCache,
 } from "@/lib/budget-api";
-import type { BudgetCategoryGroup } from "@/lib/budget-api";
+import type { BudgetCategoryGroup, BudgetTransaction } from "@/lib/budget-api";
 
 /**
  * Compute the current net-pay-per-check for a job by running the paycheck
@@ -691,6 +691,93 @@ export const savingsRouter = createTRPCRouter({
           return { ok: true };
         });
       }),
+    // Presence-based hint only — never a write. A trip is many small real
+    // charges that never cleanly sum to one planned placeholder amount, so
+    // this deliberately doesn't try to match dollar amounts: once ANY real
+    // transaction posts in the goal's linked category on/after the planned
+    // date, in the same month, the live balance already reflects it and the
+    // placeholder's forecasting job is done. Surfaced as a dismissible
+    // suggestion the user confirms — settlement itself only ever happens via
+    // the settle/settleMany mutations above.
+    getSettlementSuggestions: protectedProcedure.query(async ({ ctx }) => {
+      const active = await getActiveBudgetApi(ctx.db);
+      if (active === "none") return { suggestions: [] };
+
+      const transactionsCache = await cacheGet<BudgetTransaction[]>(
+        ctx.db,
+        active,
+        "transactions",
+      );
+      if (!transactionsCache) return { suggestions: [] };
+      const realTransactions = transactionsCache.data;
+
+      const [rows, settlements, goals] = await Promise.all([
+        ctx.db
+          .select({
+            id: schema.savingsPlannedTransactions.id,
+            goalId: schema.savingsPlannedTransactions.goalId,
+            transactionDate: schema.savingsPlannedTransactions.transactionDate,
+          })
+          .from(schema.savingsPlannedTransactions),
+        ctx.db
+          .select({
+            plannedTxId: schema.savingsPlannedTxSettlements.plannedTxId,
+            occurrenceMonth: schema.savingsPlannedTxSettlements.occurrenceMonth,
+          })
+          .from(schema.savingsPlannedTxSettlements),
+        ctx.db
+          .select({
+            id: schema.savingsGoals.id,
+            apiCategoryId: schema.savingsGoals.apiCategoryId,
+          })
+          .from(schema.savingsGoals)
+          .where(eq(schema.savingsGoals.isApiSyncEnabled, true)),
+      ]);
+
+      const settledSet = new Set(
+        settlements.map(
+          (s) => `${s.plannedTxId}:${s.occurrenceMonth.slice(0, 7)}`,
+        ),
+      );
+      const apiCategoryByGoal = new Map(
+        goals
+          .filter((g) => g.apiCategoryId)
+          .map((g) => [g.id, g.apiCategoryId!]),
+      );
+
+      // Real transactions grouped by category + month ("YYYY-MM"), keeping
+      // only the earliest date per group (the check is "is there activity
+      // on/after the planned date", so the earliest is the strictest test).
+      const realByCategoryMonth = new Map<string, string>();
+      for (const t of realTransactions) {
+        if (t.deleted || !t.categoryId) continue;
+        const month = t.date.slice(0, 7);
+        const key = `${t.categoryId}:${month}`;
+        const existing = realByCategoryMonth.get(key);
+        if (!existing || t.date < existing) {
+          realByCategoryMonth.set(key, t.date);
+        }
+      }
+
+      const suggestions: { plannedTxId: number; occurrenceMonth: string }[] =
+        [];
+      for (const row of rows) {
+        const categoryId = apiCategoryByGoal.get(row.goalId);
+        if (!categoryId) continue;
+        // v1 scope: only the row's own occurrence, not every future
+        // occurrence of a recurring row — a future occurrence can't have a
+        // matching real transaction yet anyway.
+        const occurrenceMonth = row.transactionDate.slice(0, 7);
+        if (settledSet.has(`${row.id}:${occurrenceMonth}`)) continue;
+        const earliestReal = realByCategoryMonth.get(
+          `${categoryId}:${occurrenceMonth}`,
+        );
+        if (earliestReal && earliestReal >= row.transactionDate) {
+          suggestions.push({ plannedTxId: row.id, occurrenceMonth });
+        }
+      }
+      return { suggestions };
+    }),
   }),
 
   // ══ ALLOCATION OVERRIDES ══

@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
+import { CheckCircle2 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { AddTransactionForm } from "./add-transaction-form";
 import { PlannedTxForm, emptyTxForm, PlannedTransaction } from "./types";
+import { occurrenceKey } from "@/lib/pure/savings-projection";
 
 function txToForm(tx: PlannedTransaction): PlannedTxForm {
   return {
@@ -23,6 +25,8 @@ export function FundTransactionList({
   goalName,
   onDeleteTx,
   onDeleteTransfer,
+  onSettleTx,
+  settledOccurrences,
   goalById,
   onAddTx,
   createTxPending,
@@ -35,6 +39,11 @@ export function FundTransactionList({
   goalName: string;
   onDeleteTx: (params: { id: number }) => void;
   onDeleteTransfer?: (params: { transferPairId: string }) => void;
+  onSettleTx?: (params: {
+    plannedTxId: number;
+    occurrenceMonth: string;
+  }) => void;
+  settledOccurrences?: Set<string>;
   goalById?: Map<number, { name: string }>;
   onAddTx: (form: PlannedTxForm) => void;
   createTxPending: boolean;
@@ -126,6 +135,8 @@ export function FundTransactionList({
               onUpdate={
                 onUpdateTx ? (form) => onUpdateTx(tx.id, form) : undefined
               }
+              onSettleTx={onSettleTx}
+              settledOccurrences={settledOccurrences}
               canEdit={canEdit}
             />
           ))}
@@ -152,6 +163,8 @@ export function FundTransactionList({
                           ? (form) => onUpdateTx(tx.id, form)
                           : undefined
                       }
+                      onSettleTx={onSettleTx}
+                      settledOccurrences={settledOccurrences}
                       canEdit={canEdit}
                       isPast
                     />
@@ -183,6 +196,8 @@ function TransactionRow({
   goalById,
   onDelete,
   onUpdate,
+  onSettleTx,
+  settledOccurrences,
   canEdit,
   isPast,
 }: {
@@ -191,6 +206,11 @@ function TransactionRow({
   goalById?: Map<number, { name: string }>;
   onDelete: () => void;
   onUpdate?: (form: PlannedTxForm) => Promise<void> | void;
+  onSettleTx?: (params: {
+    plannedTxId: number;
+    occurrenceMonth: string;
+  }) => void;
+  settledOccurrences?: Set<string>;
   canEdit?: boolean;
   isPast?: boolean;
 }) {
@@ -350,6 +370,32 @@ function TransactionRow({
             ✎
           </button>
         )}
+        {canEdit !== false &&
+          !tx.isRecurring &&
+          onSettleTx &&
+          (settledOccurrences?.has(
+            occurrenceKey(tx.id, tx.transactionDate.slice(0, 7)),
+          ) ? (
+            <span
+              title="Settled — excluded from projections"
+              className="text-green-600"
+            >
+              <CheckCircle2 className="w-3 h-3" />
+            </span>
+          ) : (
+            <button
+              onClick={() =>
+                onSettleTx({
+                  plannedTxId: tx.id,
+                  occurrenceMonth: tx.transactionDate.slice(0, 7),
+                })
+              }
+              className="text-muted/50 hover:text-green-600 text-xs"
+              title="Mark settled — this happened, exclude it from future projections"
+            >
+              ✓
+            </button>
+          ))}
         {canEdit !== false && (
           <button
             onClick={onDelete}

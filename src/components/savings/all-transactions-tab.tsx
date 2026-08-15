@@ -1,12 +1,16 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { Lock, LockOpen } from "lucide-react";
+import { Lock, LockOpen, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { FUND_COLORS } from "@/lib/utils/colors";
+import {
+  buildSettledOccurrencesSet,
+  occurrenceKey,
+} from "@/lib/pure/savings-projection";
 import type { GoalProjection, PlannedTransaction } from "./types";
 
 interface EditForm {
@@ -126,6 +130,22 @@ export function AllTransactionsTab({
       setActiveCell(null);
     },
   });
+  const settleTx = trpc.savings.plannedTransactions.settle.useMutation({
+    onSuccess: () => utils.savings.invalidate(),
+  });
+  const settleMany = trpc.savings.plannedTransactions.settleMany.useMutation({
+    onSuccess: () => utils.savings.invalidate(),
+  });
+  const { data: suggestionsData } =
+    trpc.savings.plannedTransactions.getSettlementSuggestions.useQuery();
+  const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<string>>(
+    new Set(),
+  );
+  const settledOccurrences = buildSettledOccurrencesSet(plannedTransactions);
+  const plannedTxById = new Map(plannedTransactions.map((tx) => [tx.id, tx]));
+  const suggestions = (suggestionsData?.suggestions ?? []).filter(
+    (s) => !dismissedSuggestions.has(`${s.plannedTxId}:${s.occurrenceMonth}`),
+  );
 
   const fundColorMap = new Map(
     goalProjections.map((gp, i) => [
@@ -139,6 +159,19 @@ export function AllTransactionsTab({
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  // Age-based nudge — catches what the sync-presence suggestion banner
+  // can't: non-API-linked goals (no real-transaction signal to check
+  // against at all) and rows older than the sync's transaction lookback
+  // window. Pure UI, computed from data already in props — no new query.
+  const AGE_NUDGE_MONTHS = 2;
+  const monthsAgo = (dateStr: string): number => {
+    const d = new Date(dateStr + "T00:00:00");
+    return (
+      (today.getFullYear() - d.getFullYear()) * 12 +
+      (today.getMonth() - d.getMonth())
+    );
+  };
 
   // Show all upcoming transactions including transfers (deduped: only show one leg per pair)
   // Clipped to the projection window end date when provided.
@@ -705,6 +738,100 @@ export function AllTransactionsTab({
         </div>
       )}
 
+      {/* Settlement suggestions — presence-based hints only; never auto-applied.
+          A real transaction posted in the linked category on/after the planned
+          date means the live balance already reflects it, so the placeholder's
+          forecasting job is done. Dismissing just hides it for this session;
+          it reappears next load until settled or the underlying data changes. */}
+      {canEdit !== false && suggestions.length > 0 && (
+        <div className="rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/20 p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-blue-700 dark:text-blue-300">
+              <CheckCircle2 className="w-3.5 h-3.5 inline-block mr-1 -mt-0.5" />
+              {suggestions.length} planned transaction
+              {suggestions.length === 1 ? "" : "s"} look{" "}
+              {suggestions.length === 1 ? "s" : ""} settled — real activity was
+              found in the linked category.
+            </p>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={settleMany.isPending}
+                onClick={() =>
+                  settleMany.mutate({
+                    occurrences: suggestions.map((s) => ({
+                      plannedTxId: s.plannedTxId,
+                      occurrenceMonth: s.occurrenceMonth,
+                    })),
+                  })
+                }
+              >
+                {settleMany.isPending ? "Settling…" : "Settle all"}
+              </Button>
+              <button
+                onClick={() =>
+                  setDismissedSuggestions(
+                    (prev) =>
+                      new Set([
+                        ...prev,
+                        ...suggestions.map(
+                          (s) => `${s.plannedTxId}:${s.occurrenceMonth}`,
+                        ),
+                      ]),
+                  )
+                }
+                className="text-xs text-faint hover:text-primary"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+          <ul className="space-y-1">
+            {suggestions.map((s) => {
+              const tx = plannedTxById.get(s.plannedTxId);
+              if (!tx) return null;
+              const key = `${s.plannedTxId}:${s.occurrenceMonth}`;
+              return (
+                <li
+                  key={key}
+                  className="flex items-center justify-between gap-2 text-xs text-blue-800 dark:text-blue-200 bg-surface-primary/50 rounded px-2 py-1"
+                >
+                  <span>
+                    {fundNameMap.get(tx.goalId) ?? "Unknown"} — {tx.description}{" "}
+                    ({s.occurrenceMonth})
+                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() =>
+                        settleTx.mutate({
+                          plannedTxId: s.plannedTxId,
+                          occurrenceMonth: s.occurrenceMonth,
+                        })
+                      }
+                      disabled={settleTx.isPending}
+                      className="text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      Settle
+                    </button>
+                    <button
+                      onClick={() =>
+                        setDismissedSuggestions(
+                          (prev) => new Set([...prev, key]),
+                        )
+                      }
+                      className="text-faint hover:text-primary"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
       {/* Toolbar: add button + history selector + lock */}
       <div className="flex items-center justify-between gap-4 text-label text-faint px-1">
         <div className="flex items-center gap-2">
@@ -901,7 +1028,53 @@ export function AllTransactionsTab({
                     <td className="px-3 py-2 text-center text-faint/40">
                       <span className="text-caption">—</span>
                     </td>
-                    {canEdit !== false && <td className="px-3 py-2" />}
+                    {canEdit !== false && (
+                      <td className="px-3 py-2 text-right whitespace-nowrap">
+                        {!isTransfer &&
+                          (settledOccurrences.has(
+                            occurrenceKey(
+                              tx.id,
+                              tx.transactionDate.slice(0, 7),
+                            ),
+                          ) ? (
+                            <span
+                              title="Settled — excluded from projections"
+                              className="text-green-600 inline-block"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5">
+                              {monthsAgo(tx.transactionDate) >=
+                                AGE_NUDGE_MONTHS && (
+                                <span
+                                  title="No matching real activity was found — settle it if it happened, or delete it if it didn't"
+                                  className="text-caption text-amber-600"
+                                >
+                                  {monthsAgo(tx.transactionDate)}mo ago — still
+                                  open?
+                                </span>
+                              )}
+                              <button
+                                onClick={() =>
+                                  settleTx.mutate({
+                                    plannedTxId: tx.id,
+                                    occurrenceMonth: tx.transactionDate.slice(
+                                      0,
+                                      7,
+                                    ),
+                                  })
+                                }
+                                disabled={settleTx.isPending}
+                                title="Mark settled — this happened, exclude it from future projections"
+                                className="text-xs text-faint hover:text-green-600 transition-colors disabled:opacity-50"
+                              >
+                                Settle
+                              </button>
+                            </span>
+                          ))}
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -1184,23 +1357,56 @@ export function AllTransactionsTab({
                     {/* Actions */}
                     {canEdit !== false && (
                       <td className="px-3 py-2">
-                        {!tableLocked && !isRuleRow && (
-                          <button
-                            onClick={() =>
-                              isTransfer && tx.transferPairId
-                                ? deleteTransfer.mutate({
-                                    transferPairId: tx.transferPairId,
+                        <div className="flex items-center gap-2 justify-end">
+                          {!tx.isRecurring &&
+                            (settledOccurrences.has(
+                              occurrenceKey(
+                                tx.id,
+                                tx.transactionDate.slice(0, 7),
+                              ),
+                            ) ? (
+                              <span
+                                title="Settled — excluded from projections"
+                                className="text-green-600"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() =>
+                                  settleTx.mutate({
+                                    plannedTxId: tx.id,
+                                    occurrenceMonth: tx.transactionDate.slice(
+                                      0,
+                                      7,
+                                    ),
                                   })
-                                : deleteTx.mutate({ id: tx.id })
-                            }
-                            disabled={
-                              deleteTx.isPending || deleteTransfer.isPending
-                            }
-                            className="text-xs text-faint hover:text-red-600 transition-colors disabled:opacity-50"
-                          >
-                            ×
-                          </button>
-                        )}
+                                }
+                                disabled={settleTx.isPending}
+                                title="Mark settled — this happened, exclude it from future projections"
+                                className="text-xs text-faint hover:text-green-600 transition-colors disabled:opacity-50"
+                              >
+                                Settle
+                              </button>
+                            ))}
+                          {!tableLocked && !isRuleRow && (
+                            <button
+                              onClick={() =>
+                                isTransfer && tx.transferPairId
+                                  ? deleteTransfer.mutate({
+                                      transferPairId: tx.transferPairId,
+                                    })
+                                  : deleteTx.mutate({ id: tx.id })
+                              }
+                              disabled={
+                                deleteTx.isPending || deleteTransfer.isPending
+                              }
+                              className="text-xs text-faint hover:text-red-600 transition-colors disabled:opacity-50"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
                       </td>
                     )}
                   </tr>

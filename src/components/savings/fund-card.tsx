@@ -198,6 +198,8 @@ export function FundCard({
   onDeleteGoal,
   onDeleteTx,
   onDeleteTransfer,
+  onSettleTx,
+  settledOccurrences,
   goalById,
   onAddTx,
   createTxPending,
@@ -246,6 +248,11 @@ export function FundCard({
   onDeleteGoal: (params: { id: number }) => void;
   onDeleteTx: (params: { id: number }) => void;
   onDeleteTransfer?: (params: { transferPairId: string }) => void;
+  onSettleTx?: (params: {
+    plannedTxId: number;
+    occurrenceMonth: string;
+  }) => void;
+  settledOccurrences?: Set<string>;
   goalById?: Map<number, { name: string }>;
   onAddTx: (form: PlannedTxForm) => void;
   createTxPending: boolean;
@@ -789,6 +796,8 @@ export function FundCard({
               goalName={projection.name}
               onDeleteTx={onDeleteTx}
               onDeleteTransfer={onDeleteTransfer}
+              onSettleTx={onSettleTx}
+              settledOccurrences={settledOccurrences}
               goalById={goalById}
               onAddTx={onAddTx}
               createTxPending={createTxPending}

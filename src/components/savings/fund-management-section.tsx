@@ -19,6 +19,7 @@ import type {
 import type { TargetMode } from "@/lib/config/enum-values";
 import type { PushPreviewItem } from "@/components/ui/push-preview-modal";
 import { useUpdatePlannedTx } from "./use-update-planned-tx";
+import { buildSettledOccurrencesSet } from "@/lib/pure/savings-projection";
 
 interface AllocationOverride {
   goalId: number;
@@ -228,6 +229,15 @@ export function FundManagementSection({
   const deleteTransfer = trpc.savings.transfers.delete.useMutation({
     onSuccess: () => utils.savings.invalidate(),
   });
+  const settleTxMut = trpc.savings.plannedTransactions.settle.useMutation({
+    onSuccess: () => utils.savings.invalidate(),
+  });
+  const settleTx = useCallback(
+    (params: { plannedTxId: number; occurrenceMonth: string }) =>
+      settleTxMut.mutate(params),
+    [settleTxMut],
+  );
+  const settledOccurrences = buildSettledOccurrencesSet(plannedTransactions);
 
   // ── Local state ──
   const [addingSubGoalForFund, setAddingSubGoalForFund] = useState<
@@ -493,6 +503,8 @@ export function FundManagementSection({
                   onDeleteGoal={(p) => deleteGoal.mutate(p)}
                   onDeleteTx={deleteTx}
                   onDeleteTransfer={(p) => deleteTransfer.mutate(p)}
+                  onSettleTx={settleTx}
+                  settledOccurrences={settledOccurrences}
                   goalById={goalById as Map<number, { name: string }>}
                   onAddTx={handleAddTx}
                   createTxPending={createTx.isPending}
