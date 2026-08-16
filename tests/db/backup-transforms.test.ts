@@ -376,11 +376,14 @@ describe("KNOWN_SCHEMA_VERSIONS completeness", () => {
     expect(KNOWN_SCHEMA_VERSIONS).toContain("v0.2_final");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("v0.3_final");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("v0.5_final");
+    expect(KNOWN_SCHEMA_VERSIONS).toContain("v0.6_final");
     // v0.6.x tags
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0001_melodic_thaddeus_ross");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0002_blue_moon_knight");
+    expect(KNOWN_SCHEMA_VERSIONS).toContain("0006_blue_gunslinger");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0002_nervous_major_mapleleaf");
-    expect(KNOWN_SCHEMA_VERSIONS.length).toBe(33);
+    expect(KNOWN_SCHEMA_VERSIONS).toContain("0006_concerned_psylocke");
+    expect(KNOWN_SCHEMA_VERSIONS.length).toBe(42);
   });
 
   it("SQLite tags transform correctly (same as PG equivalents)", () => {
@@ -444,6 +447,63 @@ describe("transformBackupToCurrentSchema — v0.5_final to v0.6.0", () => {
     const result = transformBackupToCurrentSchema(
       tables,
       "v0.5_final",
+      CURRENT_VERSION,
+    );
+    expect(result.tables.savings_goals).toEqual([
+      { id: 1, is_api_sync_enabled: false },
+    ]);
+    expect(result.tables.annual_performance).toEqual([
+      { id: 1, category: "401k/IRA" },
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// v0.6_final → v0.7.0 transform
+// ---------------------------------------------------------------------------
+
+describe("transformBackupToCurrentSchema — v0.6_final to v0.7.0", () => {
+  it("adds utility_service and utility_reading as empty arrays when absent", () => {
+    const tables = makeBackup({
+      account_holdings: [{ id: 1 }],
+      pending_rollovers: [{ id: 1 }],
+    });
+    const result = transformBackupToCurrentSchema(
+      tables,
+      "v0.6_final",
+      CURRENT_VERSION,
+    );
+    expect(result.transformed).toBe(true);
+    expect(result.tables["utility_service"]).toEqual([]);
+    expect(result.tables["utility_reading"]).toEqual([]);
+  });
+
+  it("preserves existing utility_service/utility_reading rows", () => {
+    const tables = makeBackup({
+      utility_service: [{ id: 1, kind: "electric" }],
+      utility_reading: [{ id: 1, service_id: 1, cost: "120.00" }],
+    });
+    const result = transformBackupToCurrentSchema(
+      tables,
+      "v0.6_final",
+      CURRENT_VERSION,
+    );
+    expect(result.tables["utility_service"]).toEqual([
+      { id: 1, kind: "electric" },
+    ]);
+    expect(result.tables["utility_reading"]).toEqual([
+      { id: 1, service_id: 1, cost: "120.00" },
+    ]);
+  });
+
+  it("does not alter other tables during the v0.6_final transform", () => {
+    const tables = makeBackup({
+      savings_goals: [{ id: 1, is_api_sync_enabled: false }],
+      annual_performance: [{ id: 1, category: "401k/IRA" }],
+    });
+    const result = transformBackupToCurrentSchema(
+      tables,
+      "v0.6_final",
       CURRENT_VERSION,
     );
     expect(result.tables.savings_goals).toEqual([

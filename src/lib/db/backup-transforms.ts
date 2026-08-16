@@ -50,12 +50,21 @@ export const KNOWN_SCHEMA_VERSIONS = [
   "v0.2_final",
   "v0.3_final",
   "v0.5_final",
+  "v0.6_final",
   // v0.6.x series — squashed v6 baseline + incremental migrations
   "0000_v6_initial_schema",
   "0001_melodic_thaddeus_ross", // PG: account_holdings/pending_rollovers + extra_paycheck_routing reshape
   "0002_blue_moon_knight", // PG: utilities tracker tables
+  "0003_chubby_katie_power", // PG
+  "0004_dear_zemo", // PG
+  "0005_lethal_rogue", // PG
+  "0006_blue_gunslinger", // PG
   "0001_moaning_abomination", // SQLite counterpart of 0001
   "0002_nervous_major_mapleleaf", // SQLite counterpart of 0002
+  "0003_common_crusher_hogan", // SQLite counterpart of 0003
+  "0004_calm_dazzler", // SQLite counterpart of 0004
+  "0005_zippy_warlock", // SQLite counterpart of 0005
+  "0006_concerned_psylocke", // SQLite counterpart of 0006
 ] as const;
 
 export type KnownSchemaVersion = (typeof KNOWN_SCHEMA_VERSIONS)[number];
@@ -152,6 +161,7 @@ function versionIndex(tag: string): number {
 
 /** Returns the broad era for a schema version tag. */
 function schemaEra(tag: string): "v0.1" | "v0.2" | "v0.3" | "v0.5" | "v0.6" {
+  if (tag === "v0.6_final") return "v0.6";
   if (tag === "v0.5_final") return "v0.5";
   if (tag === "v0.3_final") return "v0.3";
   if (tag === "v0.2_final") return "v0.2";
@@ -162,8 +172,16 @@ function schemaEra(tag: string): "v0.1" | "v0.2" | "v0.3" | "v0.5" | "v0.6" {
     "0000_v6_initial_schema",
     "0001_melodic_thaddeus_ross", // PG
     "0002_blue_moon_knight", // PG
+    "0003_chubby_katie_power", // PG
+    "0004_dear_zemo", // PG
+    "0005_lethal_rogue", // PG
+    "0006_blue_gunslinger", // PG
     "0001_moaning_abomination", // SQLite
     "0002_nervous_major_mapleleaf", // SQLite
+    "0003_common_crusher_hogan", // SQLite
+    "0004_calm_dazzler", // SQLite
+    "0005_zippy_warlock", // SQLite
+    "0006_concerned_psylocke", // SQLite
   ]);
   if (v06Tags.has(tag)) return "v0.6";
 
@@ -412,10 +430,11 @@ function transformV05xToV060(tables: TableData): TableData {
  * to the v0.6.0 baseline) import cleanly:
  *  - v0.6.2 (0001_melodic_thaddeus_ross): `account_holdings` + `pending_rollovers`
  *    tables, `source` column on the two savings tables.
- *  - this change: `utility_service` + `utility_reading` tables.
+ *  - v0.6.5 (0002_blue_moon_knight): `utility_service` + `utility_reading` tables.
  *
- * All helpers are idempotent (only add what's missing), so a current-era v0.6
- * backup that already has these passes through unchanged.
+ * All helpers are idempotent (only add what's missing), so this also handles
+ * `v0.6_final` (a fully-current v0.6.8 backup tagged during the v0.7.0 squash)
+ * as a pure pass-through — every table it needs is already present.
  */
 function transformV06xToCurrent(tables: TableData): TableData {
   // Tables added in v0.6.2
