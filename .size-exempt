@@ -1,3 +1,14 @@
 # Files exempt from the 2000-line size limit.
 # Each entry should have a tracking issue or plan to split.
 # Review quarterly — remove entries as files are refactored.
+
+# v0.7.1: crossed the limit via the scenarios budget/contribution profile
+# pin columns (Plan-pinning). Split candidate: extract a dedicated
+# scenarios-schema module, or a per-domain schema split generally.
+src/lib/db/schema-pg.ts
+
+# v0.7.1: crossed the limit across two features (sinking-fund settlement +
+# savings profile allocations / Plan-pin targeting). Split candidate:
+# extract goalProfileAllocations and/or the settlement mutations into a
+# sibling router module.
+src/server/routers/savings.ts

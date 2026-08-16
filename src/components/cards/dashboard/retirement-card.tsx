@@ -297,7 +297,7 @@ function RetirementCardImpl() {
             <span className="text-muted">
               Coast FIRE
               <HelpTip
-                text="The earliest age at which you can stop contributing and still fund your plan through end of plan. 'Already Coast' means you could stop today. This is the deterministic baseline — it doesn't account for market variance. The Retirement page's Plan Health tab runs a Monte Carlo simulation and can show a materially later age once you're asking 'stop today, and still succeed in ~90% of simulated outcomes.'"
+                text="The earliest age at which you can stop contributing and still fund your plan through end of plan. 'Already Coast' means you could stop today. This is the deterministic baseline — it doesn't account for market variance. The Retirement page's Plan Health tab runs a Simulation and can show a materially later age once you're asking 'stop today, and still succeed in ~90% of simulated outcomes.'"
                 learnMoreHref="/retirement"
               />
             </span>
