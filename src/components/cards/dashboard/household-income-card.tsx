@@ -46,12 +46,39 @@ function HouseholdIncomeCardImpl() {
     (d as Record<string, unknown>).blendedAnnual as
       | import("@/lib/calculators/types/calculators").BlendedAnnualTotals
       | undefined;
+  // "Current Salary" (projected) shows the full formula bonus — a nominal
+  // target rate, independent of what's actually pinned. "Year-End Estimate"
+  // and "Actual YTD" are both grounded in what's really happening this
+  // year, so they use the resolved (pinned-if-set) bonus instead. YTD
+  // additionally distinguishes whether it's actually been paid yet
+  // (job.bonusMonth/bonusDayOfMonth has passed) vs. still pending, and only
+  // counts paid bonuses toward the YTD total so that total stays "money
+  // actually received."
+  const fullFormulaBonusOf = (d: (typeof people)[0]) =>
+    (d as Record<string, unknown>).fullFormulaBonusEstimate as
+      import("@/lib/calculators/types/calculators").BonusEstimate | undefined;
+  const bonusEstimateFor = (d: (typeof people)[0]) =>
+    isYtd || isBlended
+      ? d.paycheck!.bonusEstimate
+      : (fullFormulaBonusOf(d) ?? d.paycheck!.bonusEstimate);
+  const isBonusPaidYtd = (d: (typeof people)[0]) => {
+    const bonusMonth = d.job?.bonusMonth;
+    if (bonusMonth == null) return false;
+    const day = d.job?.bonusDayOfMonth ?? 1;
+    const today = new Date();
+    const payDate = new Date(today.getFullYear(), bonusMonth - 1, day);
+    return today >= payDate;
+  };
   const totalBonusGross = isYtd
-    ? 0
-    : sumBy(people, (d) => d.paycheck!.bonusEstimate.bonusGross);
+    ? sumBy(people, (d) =>
+        isBonusPaidYtd(d) ? bonusEstimateFor(d).bonusGross : 0,
+      )
+    : sumBy(people, (d) => bonusEstimateFor(d).bonusGross);
   const totalBonusNet = isYtd
-    ? 0
-    : sumBy(people, (d) => d.paycheck!.bonusEstimate.bonusNet);
+    ? sumBy(people, (d) =>
+        isBonusPaidYtd(d) ? bonusEstimateFor(d).bonusNet : 0,
+      )
+    : sumBy(people, (d) => bonusEstimateFor(d).bonusNet);
   const totalGrossAnnual = isBlended
     ? sumBy(people, (d) => {
         const ba = blendedOf(d);
@@ -78,7 +105,7 @@ function HouseholdIncomeCardImpl() {
     >
       <Metric
         value={formatCurrency(totalGrossAnnual)}
-        label={`${modeLabel} (salary${isYtd ? "" : " + bonus"})`}
+        label={`${modeLabel} (salary + bonus)`}
       />
       <div className="mt-3">
         <table className="w-full text-sm">
@@ -97,13 +124,19 @@ function HouseholdIncomeCardImpl() {
                           : formatCurrency(d.salary)}
                     </td>
                   </tr>
-                  {!isYtd && d.paycheck!.bonusEstimate.bonusGross > 0 && (
+                  {bonusEstimateFor(d).bonusGross > 0 && (
                     <tr>
-                      <td className="pb-1 pl-2 text-xs text-faint">Bonus</td>
+                      <td className="pb-1 pl-2 text-xs text-faint">
+                        Bonus
+                        {isYtd && (
+                          <span className="ml-1">
+                            ({isBonusPaidYtd(d) ? "paid" : "pending"})
+                          </span>
+                        )}
+                      </td>
                       <td className="pb-1 text-right text-xs text-faint tabular-nums">
-                        {formatCurrency(d.paycheck!.bonusEstimate.bonusGross)}{" "}
-                        gross /{" "}
-                        {formatCurrency(d.paycheck!.bonusEstimate.bonusNet)} net
+                        {formatCurrency(bonusEstimateFor(d).bonusGross)} gross /{" "}
+                        {formatCurrency(bonusEstimateFor(d).bonusNet)} net
                       </td>
                     </tr>
                   )}

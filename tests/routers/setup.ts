@@ -269,12 +269,40 @@ export function seedSavingsGoal(
     .values({
       name: "Emergency Fund",
       targetAmount: "10000",
-      monthlyContribution: "500",
       priority: 1,
       isActive: true,
       ...overrides,
     })
     .returning({ id: sqliteSchema.savingsGoals.id })
+    .get();
+  return result.id;
+}
+
+/**
+ * Seed a goal's funding for one budget profile — funding
+ * (allocationPercent/monthlyContribution) lives entirely on
+ * savings_goal_profile_allocations, not on the goal itself, so any test
+ * that wants a goal to resolve to a nonzero amount must seed this
+ * explicitly for the profile it's testing against.
+ */
+export function seedSavingsGoalAllocation(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  goalId: number,
+  profileId: number,
+  overrides: Partial<
+    typeof sqliteSchema.savingsGoalProfileAllocations.$inferInsert
+  > = {},
+): number {
+  const result = db
+    .insert(sqliteSchema.savingsGoalProfileAllocations)
+    .values({
+      goalId,
+      budgetProfileId: profileId,
+      allocationPercent: null,
+      monthlyContribution: "0",
+      ...overrides,
+    })
+    .returning({ id: sqliteSchema.savingsGoalProfileAllocations.id })
     .get();
   return result.id;
 }
@@ -438,6 +466,9 @@ export function seedStandardDataset(
   ];
 
   const goalId = seedSavingsGoal(db);
+  seedSavingsGoalAllocation(db, goalId, profileId, {
+    monthlyContribution: "500",
+  });
 
   const perfAcctId = seedPerformanceAccount(db);
 

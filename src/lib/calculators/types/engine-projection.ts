@@ -89,6 +89,17 @@ export type ProjectionInput = {
   }[];
   /** Per-year budget overrides (monthly budget in dollars). Sticky-forward. */
   budgetOverrides: RetirementYearOverride[];
+  /**
+   * Year-0-only adjustment (personId → dollar delta, can be negative) applied
+   * to that person's projected salary for the CURRENT year only — used when
+   * a job's bonus is pinned to a known actual for this calendar year. Unlike
+   * salaryOverrides/perPersonSalaryOverrides, this does NOT persist into
+   * later years' growth: `currentSalary`/`salaryByPerson` already reflect the
+   * full formula-computed bonus (the true compounding baseline), so years 1+
+   * grow correctly without this adjustment. Applied in pre-year-setup.ts to
+   * the year's `effectiveSalary`, never to `state.projectedSalary`.
+   */
+  currentYearBonusAdjustment?: Record<number, number>;
 
   // --- IRS limits ---
   /** Per-category base IRS limits for the current year (no catchup). */
@@ -251,6 +262,10 @@ export type EngineAccumulationYear = {
   /** Projected annual expenses (inflated or budget-overridden). */
   projectedExpenses: number;
   hasSalaryOverride: boolean;
+  /** True when this year's salary reflects a current-year-only pinned bonus
+   *  (job_bonus_overrides), distinct from hasSalaryOverride which is set by
+   *  retirement_salary_overrides / perPersonSalaryOverrides. */
+  hasBonusAdjustment: boolean;
   hasBudgetOverride: boolean;
   /** Pro-rate fraction for year 0 (e.g. 0.833 = 10 of 12 months remaining). null for full years. */
   proRateFraction: number | null;

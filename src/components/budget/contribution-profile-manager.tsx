@@ -709,7 +709,6 @@ function ProfileEditor({
           for (const key of [
             "bonusPercent",
             "bonusMultiplier",
-            "bonusOverride",
             "monthsInBonusYear",
             "include401kInBonus",
             "includeBonusInContributions",
@@ -810,9 +809,8 @@ function ProfileEditor({
         } else {
           const num = parseFloat(val);
           if (!isNaN(num)) {
-            if (key === "bonusOverride") parsed[key] = String(num);
             // Convert display percentage back to decimal (10 → 0.10)
-            else if (key === "bonusPercent") parsed[key] = num / 100;
+            if (key === "bonusPercent") parsed[key] = num / 100;
             else parsed[key] = num;
           }
         }
@@ -1234,7 +1232,7 @@ function ProfileEditor({
                           className="flex-1 px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
                         />
                       </div>
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="text-caption text-muted">
                             Bonus
@@ -1273,25 +1271,6 @@ function ProfileEditor({
                             <span className="text-caption text-faint shrink-0">
                               ×
                             </span>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-caption text-muted">
-                            Fixed override
-                          </label>
-                          <div className="flex items-center gap-0.5 mt-0.5">
-                            <span className="text-caption text-faint shrink-0">
-                              $
-                            </span>
-                            <input
-                              type="number"
-                              value={jo.bonusOverride ?? ""}
-                              onChange={(e) =>
-                                setField("bonusOverride", e.target.value)
-                              }
-                              placeholder="—"
-                              className="w-full px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
-                            />
                           </div>
                         </div>
                       </div>

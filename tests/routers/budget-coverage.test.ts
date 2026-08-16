@@ -1302,11 +1302,13 @@ describe("budget router — computeActiveSummary with contribution-linked items"
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedStandardDataset(db);
-      await caller.budget.updateColumnMonths({ columnMonths: [6] });
+      // A single-column profile's weighting must still cover the full year
+      // (columnMonths sums to 12) — see updateColumnMonths' validation.
+      await caller.budget.updateColumnMonths({ columnMonths: [12] });
 
       const summary = await caller.budget.computeActiveSummary();
       expect(typeof summary.weightedAnnualTotal).toBe("number");
-      // 2800/month * 6 months = 16800 (only one column with 6 months)
+      // 2800/month * 12 months = 33600 (only one column, spans the full year)
       expect(summary.weightedAnnualTotal).toBeGreaterThan(0);
     } finally {
       cleanup();

@@ -15,6 +15,7 @@ import {
   getCurrentSalary,
   getEffectiveIncome,
   getTotalCompensation,
+  getBonusOverridesForJobs,
   buildContribAccounts,
   computeAnnualContribution,
   computeBonusGross,
@@ -385,6 +386,14 @@ export const contributionRouter = createTRPCRouter({
         }
       }
 
+      const bonusOverrides = await getBonusOverridesForJobs(
+        ctx.db,
+        effectiveJobs.map((j) => j.id),
+      );
+      const asOfYear = asOfDate.getFullYear();
+      const resolveBonusOverride = (jobId: number) =>
+        bonusOverrides.get(`${jobId}:${asOfYear}`) ?? null;
+
       const results: PersonSnapshot[] = await Promise.all(
         people.map(async (person) => {
           const activeJob = findActiveJob(effectiveJobs, person.id);
@@ -446,13 +455,18 @@ export const contributionRouter = createTRPCRouter({
             activeJob.annualSalary,
             asOfDate,
           );
+          const resolvedOverride = resolveBonusOverride(activeJob.id);
           const salary = applySalaryOverride(
             person.id,
-            getEffectiveIncome(activeJob, dbSalary),
+            getEffectiveIncome(activeJob, dbSalary, resolvedOverride),
             effectiveSalaryMap,
           );
           // Total compensation (always includes bonus) — used for savings rate denominator
-          const totalCompensation = getTotalCompensation(activeJob, dbSalary);
+          const totalCompensation = getTotalCompensation(
+            activeJob,
+            dbSalary,
+            resolvedOverride,
+          );
           const periodsPerYear = getPeriodsPerYear(activeJob.payPeriod);
           const periodsElapsedYtd = activeJob.anchorPayDate
             ? countPeriodsElapsed(
@@ -495,7 +509,7 @@ export const contributionRouter = createTRPCRouter({
             salary,
             activeJob.bonusPercent,
             activeJob.bonusMultiplier,
-            activeJob.bonusOverride,
+            resolvedOverride,
             activeJob.monthsInBonusYear,
           );
 
@@ -992,13 +1006,14 @@ export const contributionRouter = createTRPCRouter({
             const blendedSalary = segments.reduce(
               (s, seg) =>
                 s +
-                getEffectiveIncome(activeJob, seg.salary) *
+                getEffectiveIncome(activeJob, seg.salary, resolvedOverride) *
                   ((seg.endPeriod - seg.startPeriod + 1) / periodsPerYear),
               0,
             );
             blendedTotalCompensation = getTotalCompensation(
               activeJob,
               blendedSalary,
+              resolvedOverride,
             );
           }
 

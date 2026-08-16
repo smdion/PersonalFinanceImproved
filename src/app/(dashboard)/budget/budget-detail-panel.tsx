@@ -41,7 +41,9 @@ type ColumnMutations = {
   updateColumnContribProfiles: {
     mutate: (args: { columnContributionProfileIds: (number | null)[] }) => void;
   };
-  updateColumnMonths: { mutate: (args: { columnMonths: number[] }) => void };
+  updateColumnMonths: {
+    mutate: (args: { columnMonths: number[] | null }) => void;
+  };
 };
 
 type CreateItemMutation = {
@@ -151,6 +153,13 @@ export function BudgetDetailPanel({
           onUpdateContributionProfiles={(ids) =>
             columnMutations.updateColumnContribProfiles.mutate({
               columnContributionProfileIds: ids,
+              ...(profile?.id != null ? { profileId: profile.id } : {}),
+            })
+          }
+          columnMonths={columnMonths}
+          onUpdateColumnMonths={(months) =>
+            columnMutations.updateColumnMonths.mutate({
+              columnMonths: months,
               ...(profile?.id != null ? { profileId: profile.id } : {}),
             })
           }

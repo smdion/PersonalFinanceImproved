@@ -145,6 +145,7 @@ describe("engine input snapshot guard", () => {
         "contributionSpecs",
         "currentAge",
         "currentSalary",
+        "currentYearBonusAdjustment",
         "decumulationAnnualExpenses",
         "employerMatchByParentCat",
         "employerMatchRateByCategory",

@@ -259,6 +259,20 @@ export default function PaycheckPage() {
       utils.contribution.invalidate();
     },
   });
+  const upsertBonusOverride =
+    trpc.settings.jobs.bonusOverrides.upsert.useMutation({
+      onSuccess: () => {
+        utils.paycheck.invalidate();
+        utils.contribution.invalidate();
+      },
+    });
+  const deleteBonusOverride =
+    trpc.settings.jobs.bonusOverrides.deleteByJobYear.useMutation({
+      onSuccess: () => {
+        utils.paycheck.invalidate();
+        utils.contribution.invalidate();
+      },
+    });
   const updateDeduction = trpc.settings.deductions.update.useMutation({
     onSuccess: () => utils.paycheck.invalidate(),
   });
@@ -598,11 +612,30 @@ export default function PaycheckPage() {
                   setScenarioOverride("jobs", job.id, field, parsed);
                   return;
                 }
+                // The bonus override is year-scoped (job_bonus_overrides),
+                // not a job column — persist it directly rather than routing
+                // through updateJob or a per-profile "job override" (there's
+                // no year concept in the profile-override JSON blob, so it
+                // can't express "this year only" correctly).
+                if (field === "bonusOverride") {
+                  if (value === "") {
+                    deleteBonusOverride.mutate({
+                      jobId: job.id,
+                      year: currentYear,
+                    });
+                  } else {
+                    upsertBonusOverride.mutate({
+                      jobId: job.id,
+                      year: currentYear,
+                      overrideAmount: value,
+                    });
+                  }
+                  return;
+                }
                 // Profile mode: bonus fields go to profile overrides
                 const bonusFields = [
                   "bonusPercent",
                   "bonusMultiplier",
-                  "bonusOverride",
                   "bonusMonth",
                   "bonusDayOfMonth",
                   "monthsInBonusYear",
@@ -626,7 +659,6 @@ export default function PaycheckPage() {
                   w4Box2cChecked: job.w4Box2cChecked,
                   bonusPercent: job.bonusPercent,
                   bonusMultiplier: job.bonusMultiplier,
-                  bonusOverride: job.bonusOverride ?? undefined,
                   bonusMonth: job.bonusMonth ?? undefined,
                   bonusDayOfMonth: job.bonusDayOfMonth ?? undefined,
                   monthsInBonusYear: job.monthsInBonusYear,

@@ -60,6 +60,7 @@ import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { useUpdatePlannedTx } from "@/components/savings/use-update-planned-tx";
 import {
   computeMaxMonthlyFunding,
+  deriveBudgetMonthlyTotal,
   type CapacityPerson,
 } from "@/lib/calculators/savings-capacity";
 import { resolveContributionProfileId } from "@/lib/calculators/contribution-profile-resolution";
@@ -149,11 +150,7 @@ export default function SavingsPage() {
   );
 
   // ── Budget leftover ──
-  const budgetMonthlyTotal = budgetData?.result
-    ? budgetData.columnMonths
-      ? (budgetData.weightedAnnualTotal ?? 0) / 12
-      : (budgetData.result.totalMonthly ?? 0)
-    : null;
+  const budgetMonthlyTotal = deriveBudgetMonthlyTotal(budgetData);
   const maxMonthlyFunding =
     paycheckData && budgetMonthlyTotal !== null
       ? computeMaxMonthlyFunding(
@@ -192,12 +189,9 @@ export default function SavingsPage() {
     },
     { enabled: isPreviewingOtherProfile },
   );
-  const recalcMonthlyTotal =
-    isPreviewingOtherProfile && recalcBudgetData?.result
-      ? recalcBudgetData.columnMonths
-        ? (recalcBudgetData.weightedAnnualTotal ?? 0) / 12
-        : (recalcBudgetData.result.totalMonthly ?? 0)
-      : null;
+  const recalcMonthlyTotal = isPreviewingOtherProfile
+    ? deriveBudgetMonthlyTotal(recalcBudgetData)
+    : null;
   const recalcMaxMonthlyFunding =
     isPreviewingOtherProfile && paycheckData && recalcMonthlyTotal !== null
       ? computeMaxMonthlyFunding(
@@ -231,7 +225,6 @@ export default function SavingsPage() {
   // ── Top-level form state (lives here to render in correct layout position) ──
   const [newFund, setNewFund] = useState<NewFundForm>({
     name: "",
-    monthlyContribution: "",
     targetAmount: "",
     targetMode: "fixed",
     targetDate: "",
@@ -470,7 +463,6 @@ export default function SavingsPage() {
       {
         name: newFund.name,
         parentGoalId: newFund.parentGoalId ?? null,
-        monthlyContribution: newFund.monthlyContribution || "0",
         targetAmount: newFund.targetAmount || null,
         targetMode: newFund.targetMode,
         targetDate: newFund.targetDate || null,
@@ -482,7 +474,6 @@ export default function SavingsPage() {
         onSuccess: () => {
           setNewFund({
             name: "",
-            monthlyContribution: "",
             targetAmount: "",
             targetMode: "fixed",
             targetDate: "",
@@ -912,6 +903,7 @@ export default function SavingsPage() {
               />
             )}
             <FundManagementSection
+              activeProfileId={activeProfileId}
               rawGoals={rawGoals}
               goalProjections={goalProjections}
               savings={savings}

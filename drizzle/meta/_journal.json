@@ -36,6 +36,20 @@
       "when": 1786834860577,
       "tag": "0004_clumsy_cargill",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786849443411,
+      "tag": "0005_slim_daimon_hellstrom",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786850440137,
+      "tag": "0006_thin_molecule_man",
+      "breakpoints": true
     }
   ]
 }

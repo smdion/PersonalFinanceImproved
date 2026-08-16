@@ -107,6 +107,9 @@ export type ProjectionContext = {
   // Pre-built maps
   salaryOverrideMap: Map<number, number>;
   perPersonSalaryOverrides: Map<number, Map<number, number>>;
+  /** personId → year-0-only bonus adjustment (see ProjectionInput's
+   *  currentYearBonusAdjustment docblock). */
+  currentYearBonusAdjustment: Map<number, number>;
   budgetOverrideMap: Map<number, number>;
   returnRateMap: Map<number, number>;
   brokerageGoalsByYear: Map<number, BrokerageGoal[]>;
@@ -144,4 +147,17 @@ export type PreYearSetup = {
   returnRate: number;
   strategyAction: string | null;
   totalBalance: number;
+  /** state.projectedSalary plus this year's bonus adjustment, if any —
+   *  non-persisting (state.projectedSalary itself is never mutated by the
+   *  adjustment, so next year's growth compounds from the true baseline).
+   *  Use this instead of state.projectedSalary for this year's
+   *  contribution/tax/cashflow math. */
+  effectiveSalary: number;
+  /** Per-person equivalent of effectiveSalary, only populated when
+   *  hasPerPersonSalary is true. */
+  effectiveSalaryByPerson: Map<number, number>;
+  /** True when this year's effectiveSalary differs from state.projectedSalary
+   *  because of a current-year bonus pin — distinct from hasSalaryOverride,
+   *  which the UI ties to salary overrides specifically. */
+  hasBonusAdjustment: boolean;
 };

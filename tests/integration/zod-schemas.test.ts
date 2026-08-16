@@ -307,7 +307,6 @@ describe("jobOverrideSchema", () => {
 
   it("accepts null for nullable fields", () => {
     const result = jobOverrideSchema.safeParse({
-      bonusOverride: null,
       bonusMonth: null,
       bonusDayOfMonth: null,
     });

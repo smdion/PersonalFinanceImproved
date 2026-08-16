@@ -9,6 +9,7 @@ import {
   toNumber,
   getCurrentSalary,
   getEffectiveIncome,
+  getBonusOverridesForJobs,
   getPeriodsPerYear,
   getLatestSnapshot,
   computeAnnualContribution,
@@ -251,6 +252,11 @@ export const retirementRouter = createTRPCRouter({
       // for the live-vs-override-aware rule.
       const asOfDate = referenceDate;
       const activeJobs = allJobs.filter((j) => !j.endDate);
+      const bonusOverrides = await getBonusOverridesForJobs(
+        ctx.db,
+        activeJobs.map((j) => j.id),
+      );
+      const asOfYear = asOfDate.getFullYear();
       const jobSalaries = await Promise.all(
         activeJobs.map(async (j) => {
           const dbSalary = await getCurrentSalary(
@@ -259,7 +265,12 @@ export const retirementRouter = createTRPCRouter({
             j.annualSalary,
             asOfDate,
           );
-          return { job: j, salary: getEffectiveIncome(j, dbSalary) };
+          const resolvedOverride =
+            bonusOverrides.get(`${j.id}:${asOfYear}`) ?? null;
+          return {
+            job: j,
+            salary: getEffectiveIncome(j, dbSalary, resolvedOverride),
+          };
         }),
       );
       const liveCombinedSalary = jobSalaries.reduce(

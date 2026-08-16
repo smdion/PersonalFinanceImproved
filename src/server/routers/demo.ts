@@ -104,12 +104,28 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
         targetMonths: sg.targetMonths,
         priority: sg.priority,
         isEmergencyFund: sg.isEmergencyFund,
-        monthlyContribution: sg.monthlyContribution,
-        allocationPercent: sg.allocationPercent,
       })),
     )
     .returning();
   const goalIdByName = new Map(goalRows.map((r) => [r.name, r.id]));
+
+  // Savings funding is per-(goal, budget profile) with no shared default —
+  // the demo fixture only defines one monthlyContribution/allocationPercent
+  // per goal, so apply it to every demo budget profile (closest match to
+  // pre-redesign behavior, where every profile read the same shared value
+  // until customized).
+  if (profileRows.length > 0) {
+    await db.insert(schema.savingsGoalProfileAllocations).values(
+      profile.savingsGoals.flatMap((sg) =>
+        profileRows.map((pr) => ({
+          goalId: goalIdByName.get(sg.name)!,
+          budgetProfileId: pr.id,
+          allocationPercent: sg.allocationPercent,
+          monthlyContribution: sg.monthlyContribution,
+        })),
+      ),
+    );
+  }
 
   // 6. Savings monthly
   for (const sm of profile.savingsMonthly) {

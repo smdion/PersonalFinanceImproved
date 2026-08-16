@@ -59,7 +59,6 @@ export const emptyTxForm = (goalId: number): PlannedTxForm => ({
 
 export interface NewFundForm {
   name: string;
-  monthlyContribution: string;
   targetAmount: string;
   targetMode: TargetMode;
   targetDate: string;

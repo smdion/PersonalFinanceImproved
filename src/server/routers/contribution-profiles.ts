@@ -268,14 +268,24 @@ export const contributionProfileRouter = createTRPCRouter({
 
       const salaryDetails = jobs.map((j) => {
         const person = peopleMap.get(j.personId);
-        const currentSalary =
-          jobSalaries.find((js) => js.job.id === j.id)?.salary ??
-          toNumber(j.annualSalary);
+        const matchedSalary = jobSalaries.find((js) => js.job.id === j.id);
+        const currentSalary = matchedSalary?.salary ?? toNumber(j.annualSalary);
+        const resolvedBonusOverride =
+          matchedSalary?.resolvedBonusOverride ?? null;
+        // Full formula bonus, ignoring any override — lets the UI show
+        // "what would my full bonus be" alongside the pinned/resolved value.
+        const fullFormulaBonus = computeBonusGross(
+          currentSalary,
+          j.bonusPercent,
+          j.bonusMultiplier,
+          null,
+          j.monthsInBonusYear,
+        );
         const estimatedBonus = computeBonusGross(
           currentSalary,
           j.bonusPercent,
           j.bonusMultiplier,
-          j.bonusOverride,
+          resolvedBonusOverride,
           j.monthsInBonusYear,
         );
         return {
@@ -286,11 +296,12 @@ export const contributionProfileRouter = createTRPCRouter({
           liveSalary: toNumber(j.annualSalary),
           currentSalary,
           estimatedBonus,
+          fullFormulaBonus,
           overrideSalary: salaryOverrides[String(j.personId)] ?? null,
           // Bonus live values
           liveBonusPercent: j.bonusPercent,
           liveBonusMultiplier: j.bonusMultiplier,
-          liveBonusOverride: j.bonusOverride,
+          liveBonusOverride: resolvedBonusOverride,
           liveMonthsInBonusYear: j.monthsInBonusYear,
           liveInclude401kInBonus: j.include401kInBonus,
           liveIncludeBonusInContributions: j.includeBonusInContributions,

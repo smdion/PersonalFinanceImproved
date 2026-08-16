@@ -1,7 +1,7 @@
 /**
  * Salary lookup and compensation helpers.
  */
-import { eq, and, lte, gte, gt, desc, asc } from "drizzle-orm";
+import { eq, and, lte, gte, gt, desc, asc, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "./transforms";
@@ -100,8 +100,17 @@ export async function getSalariesForJobs(
     job: typeof schema.jobs.$inferSelect;
     baseSalary: number;
     effectiveIncome: number;
+    /** This job's bonus override for asOfDate's calendar year, if any —
+     *  exposed so callers that also need getTotalCompensation don't have to
+     *  re-fetch it themselves. */
+    resolvedBonusOverride: number | null;
   }[]
 > {
+  const bonusOverrides = await getBonusOverridesForJobs(
+    db,
+    jobs.map((j) => j.id),
+  );
+  const year = asOfDate.getFullYear();
   return Promise.all(
     jobs.map(async (job) => {
       const baseSalary = await getCurrentSalary(
@@ -110,9 +119,35 @@ export async function getSalariesForJobs(
         job.annualSalary,
         asOfDate,
       );
-      const effectiveIncome = getEffectiveIncome(job, baseSalary);
-      return { job, baseSalary, effectiveIncome };
+      const resolvedBonusOverride =
+        bonusOverrides.get(`${job.id}:${year}`) ?? null;
+      const effectiveIncome = getEffectiveIncome(
+        job,
+        baseSalary,
+        resolvedBonusOverride,
+      );
+      return { job, baseSalary, effectiveIncome, resolvedBonusOverride };
     }),
+  );
+}
+
+/**
+ * Fetch every bonus override row for the given jobs, across all years,
+ * keyed `"${jobId}:${year}"`. Batched (one query) rather than per-job so
+ * callers that need multiple years for the same job set (e.g. historical.ts's
+ * per-year reconstruction loop) don't re-query per year.
+ */
+export async function getBonusOverridesForJobs(
+  db: Db,
+  jobIds: number[],
+): Promise<Map<string, number>> {
+  if (jobIds.length === 0) return new Map();
+  const rows = await db
+    .select()
+    .from(schema.jobBonusOverrides)
+    .where(inArray(schema.jobBonusOverrides.jobId, jobIds));
+  return new Map(
+    rows.map((r) => [`${r.jobId}:${r.year}`, toNumber(r.overrideAmount)]),
   );
 }
 
@@ -120,29 +155,39 @@ export async function getSalariesForJobs(
  * Compute effective income for a job — salary + annual bonus when
  * includeBonusInContributions is true. Used for payroll contribution calculations
  * where the flag controls whether percent-of-salary deductions apply to bonus pay.
+ *
+ * `resolvedBonusOverride` must be resolved by the caller for the specific
+ * year in question (via getBonusOverridesForJobs) — there is no shared
+ * fallback the way the old flat jobs.bonus_override column had, so passing
+ * the wrong year's value (or always-current when a past/future year is
+ * intended) silently produces the wrong number.
  */
 export function getEffectiveIncome(
   job: typeof schema.jobs.$inferSelect,
   baseSalary: number,
+  resolvedBonusOverride: number | null,
 ): number {
   if (!job.includeBonusInContributions) return baseSalary;
-  return getTotalCompensation(job, baseSalary);
+  return getTotalCompensation(job, baseSalary, resolvedBonusOverride);
 }
 
 /**
  * Compute total compensation (salary + bonus) regardless of the
  * includeBonusInContributions flag. Used for display and projection
  * purposes where total comp is always the relevant number.
+ *
+ * See getEffectiveIncome's docblock for the `resolvedBonusOverride` contract.
  */
 export function getTotalCompensation(
   job: typeof schema.jobs.$inferSelect,
   baseSalary: number,
+  resolvedBonusOverride: number | null,
 ): number {
   const bonus = computeBonusGross(
     baseSalary,
     job.bonusPercent,
     job.bonusMultiplier,
-    job.bonusOverride,
+    resolvedBonusOverride,
     job.monthsInBonusYear,
   );
   return baseSalary + bonus;
@@ -151,16 +196,16 @@ export function getTotalCompensation(
 /**
  * Compute gross bonus amount from job fields.
  * Formula: salary × bonusPercent × bonusMultiplier × (monthsInBonusYear / 12).
- * If bonusOverride is set, returns that directly.
+ * If bonusOverride is set (including explicitly to 0), returns that directly.
  */
 export function computeBonusGross(
   salary: number,
   bonusPercent: string | null,
   bonusMultiplier: string | null,
-  bonusOverride: string | null,
+  bonusOverride: number | null,
   monthsInBonusYear: number | null,
 ): number {
-  if (bonusOverride) return roundToCents(toNumber(bonusOverride));
+  if (bonusOverride !== null) return roundToCents(bonusOverride);
   const pct = toNumber(bonusPercent);
   if (pct <= 0) return 0;
   const mult = toNumber(bonusMultiplier) || 1;

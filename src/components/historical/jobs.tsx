@@ -37,7 +37,6 @@ type Job = {
   anchorPayDate: string | null;
   bonusPercent: string;
   bonusMultiplier: string;
-  bonusOverride: string | null;
   bonusMonth: number | null;
   bonusDayOfMonth: number | null;
   monthsInBonusYear: number;

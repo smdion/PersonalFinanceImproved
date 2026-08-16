@@ -61,6 +61,11 @@ export interface FundManagementCallbacks {
 }
 
 export interface FundManagementSectionProps {
+  /** The real active budget profile — funding (monthlyContribution/
+   *  allocationPercent) is per-profile with no shared default, and every
+   *  number on this page reflects the active profile (see savings/page.tsx's
+   *  activeProfileId comment), so inline funding edits here write to it. */
+  activeProfileId: number | null;
   rawGoals: RawGoal[];
   goalProjections: GoalProjection[];
   savings: {
@@ -126,7 +131,6 @@ export interface FundManagementSectionProps {
     params: {
       name: string;
       parentGoalId: number | null;
-      monthlyContribution: string;
       targetAmount: string | null;
       targetMode: TargetMode;
       targetDate: string | null;
@@ -140,6 +144,7 @@ export interface FundManagementSectionProps {
 }
 
 export function FundManagementSection({
+  activeProfileId,
   rawGoals,
   goalProjections,
   savings,
@@ -184,6 +189,16 @@ export function FundManagementSection({
       utils.budget.computeActiveSummary.invalidate();
     },
   });
+  // Funding (monthlyContribution/allocationPercent) lives on
+  // savings_goal_profile_allocations, not savings_goals — see
+  // activeProfileId's docblock above for which profile these write to.
+  const upsertAllocation =
+    trpc.savings.goalProfileAllocations.upsert.useMutation({
+      onSuccess: () => {
+        utils.savings.invalidate();
+        utils.budget.computeActiveSummary.invalidate();
+      },
+    });
   const deleteGoal = trpc.settings.savingsGoals.delete.useMutation({
     onSuccess: () => {
       utils.savings.invalidate();
@@ -254,43 +269,65 @@ export function FundManagementSection({
   >(undefined);
 
   // ── Handlers ──
+  const isFundingField = (field: string) =>
+    field === "monthlyContribution" || field === "allocationPercent";
+
   const handleGoalUpdate = (goalId: number, field: string, value: string) => {
     const raw = goalById.get(goalId);
     if (!raw) return;
-    updateGoal.mutate(
-      {
-        id: raw.id,
-        name: raw.name,
-        monthlyContribution: raw.monthlyContribution ?? "0",
-        allocationPercent: raw.allocationPercent ?? null,
-        isActive: raw.isActive,
-        isEmergencyFund: raw.isEmergencyFund,
-        targetDate: raw.targetDate ?? null,
-        [field]: value,
-      },
-      {
-        onSuccess: () => {
-          if (
-            field === "monthlyContribution" &&
-            raw.isApiSyncEnabled &&
-            raw.apiCategoryId
-          ) {
-            const newAmount = parseFloat(value) || 0;
-            const currentGoalTarget =
-              apiBalanceMap.get(raw.id)?.goalTarget ?? 0;
-            const items: PushPreviewItem[] = [
-              {
-                name: raw.name,
-                field: "Monthly Goal Target",
-                currentYnab: currentGoalTarget,
-                newValue: newAmount,
-              },
-            ];
-            onPushPreview(items, raw.id);
-          }
+    if (isFundingField(field)) {
+      if (activeProfileId == null) return;
+      const monthlyContribution =
+        field === "monthlyContribution"
+          ? parseFloat(value) || 0
+          : parseFloat(String(raw.monthlyContribution ?? "0")) || 0;
+      const allocationPercent =
+        field === "allocationPercent"
+          ? value === ""
+            ? null
+            : parseFloat(value)
+          : raw.allocationPercent != null
+            ? parseFloat(String(raw.allocationPercent))
+            : null;
+      upsertAllocation.mutate(
+        {
+          goalId: raw.id,
+          profileId: activeProfileId,
+          allocationPercent,
+          monthlyContribution,
         },
-      },
-    );
+        {
+          onSuccess: () => {
+            if (
+              field === "monthlyContribution" &&
+              raw.isApiSyncEnabled &&
+              raw.apiCategoryId
+            ) {
+              const currentGoalTarget =
+                apiBalanceMap.get(raw.id)?.goalTarget ?? 0;
+              const items: PushPreviewItem[] = [
+                {
+                  name: raw.name,
+                  field: "Monthly Goal Target",
+                  currentYnab: currentGoalTarget,
+                  newValue: monthlyContribution,
+                },
+              ];
+              onPushPreview(items, raw.id);
+            }
+          },
+        },
+      );
+      return;
+    }
+    updateGoal.mutate({
+      id: raw.id,
+      name: raw.name,
+      isActive: raw.isActive,
+      isEmergencyFund: raw.isEmergencyFund,
+      targetDate: raw.targetDate ?? null,
+      [field]: value,
+    });
   };
 
   const handleGoalUpdateMulti = (
@@ -299,40 +336,59 @@ export function FundManagementSection({
   ) => {
     const raw = goalById.get(goalId);
     if (!raw) return;
-    updateGoal.mutate(
-      {
+    const fundingKeys = Object.keys(fields).filter(isFundingField);
+    const otherFields = Object.fromEntries(
+      Object.entries(fields).filter(([k]) => !isFundingField(k)),
+    );
+    if (fundingKeys.length > 0 && activeProfileId != null) {
+      const monthlyContribution =
+        "monthlyContribution" in fields
+          ? parseFloat(fields.monthlyContribution ?? "0") || 0
+          : parseFloat(String(raw.monthlyContribution ?? "0")) || 0;
+      const allocationPercentRaw =
+        "allocationPercent" in fields
+          ? fields.allocationPercent
+          : (raw.allocationPercent ?? null);
+      const allocationPercent =
+        allocationPercentRaw == null || allocationPercentRaw === ""
+          ? null
+          : parseFloat(String(allocationPercentRaw));
+      upsertAllocation.mutate(
+        {
+          goalId: raw.id,
+          profileId: activeProfileId,
+          allocationPercent,
+          monthlyContribution,
+        },
+        {
+          onSuccess: () => {
+            if (raw.isApiSyncEnabled && raw.apiCategoryId) {
+              const currentGoalTarget =
+                apiBalanceMap.get(raw.id)?.goalTarget ?? 0;
+              const items: PushPreviewItem[] = [
+                {
+                  name: raw.name,
+                  field: "Monthly Goal Target",
+                  currentYnab: currentGoalTarget,
+                  newValue: monthlyContribution,
+                },
+              ];
+              onPushPreview(items, raw.id);
+            }
+          },
+        },
+      );
+    }
+    if (Object.keys(otherFields).length > 0) {
+      updateGoal.mutate({
         id: raw.id,
         name: raw.name,
-        monthlyContribution: raw.monthlyContribution ?? "0",
-        allocationPercent: raw.allocationPercent ?? null,
         isActive: raw.isActive,
         isEmergencyFund: raw.isEmergencyFund,
         targetDate: raw.targetDate ?? null,
-        ...fields,
-      },
-      {
-        onSuccess: () => {
-          if (
-            "monthlyContribution" in fields &&
-            raw.isApiSyncEnabled &&
-            raw.apiCategoryId
-          ) {
-            const newAmount = parseFloat(fields.monthlyContribution!) || 0;
-            const currentGoalTarget =
-              apiBalanceMap.get(raw.id)?.goalTarget ?? 0;
-            const items: PushPreviewItem[] = [
-              {
-                name: raw.name,
-                field: "Monthly Goal Target",
-                currentYnab: currentGoalTarget,
-                newValue: newAmount,
-              },
-            ];
-            onPushPreview(items, raw.id);
-          }
-        },
-      },
-    );
+        ...otherFields,
+      });
+    }
   };
 
   // Expose goal update callbacks to parent via ref (in useEffect to avoid ref write during render).
@@ -365,7 +421,6 @@ export function FundManagementSection({
       {
         name: newFund.name,
         parentGoalId: newFund.parentGoalId ?? null,
-        monthlyContribution: newFund.monthlyContribution || "0",
         targetAmount: newFund.targetAmount || null,
         targetMode: newFund.targetMode,
         targetDate: newFund.targetDate || null,
@@ -378,7 +433,6 @@ export function FundManagementSection({
           setAddingSubGoalForFund(null);
           setNewFund({
             name: "",
-            monthlyContribution: "",
             targetAmount: "",
             targetMode: "fixed",
             targetDate: "",
@@ -429,8 +483,6 @@ export function FundManagementSection({
                       updateGoal.mutate({
                         id: efundGoal.id,
                         name: efundGoal.name,
-                        monthlyContribution:
-                          efundGoal.monthlyContribution ?? "0",
                         isActive: efundGoal.isActive,
                         isEmergencyFund: efundGoal.isEmergencyFund,
                         targetDate: efundGoal.targetDate ?? null,
@@ -550,7 +602,6 @@ export function FundManagementSection({
                     updateGoal.mutate({
                       id: child.id,
                       name: child.name,
-                      monthlyContribution: child.monthlyContribution ?? "0",
                       isActive: child.isActive,
                       isEmergencyFund: child.isEmergencyFund,
                       targetDate: child.targetDate ?? null,

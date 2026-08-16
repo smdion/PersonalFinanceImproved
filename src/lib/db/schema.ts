@@ -34,6 +34,7 @@ const active: Schema = isPostgres()
 export const people = active.people;
 export const jobs = active.jobs;
 export const salaryChanges = active.salaryChanges;
+export const jobBonusOverrides = active.jobBonusOverrides;
 export const contributionAccounts = active.contributionAccounts;
 export const contributionLimits = active.contributionLimits;
 export const paycheckDeductions = active.paycheckDeductions;

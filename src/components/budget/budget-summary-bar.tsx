@@ -159,17 +159,22 @@ export function BudgetSummaryBar({
             </span>
           )}
           {allColumnResults && (
-            <span className="text-faint">
-              Total:{" "}
+            <span
+              className="text-faint"
+              title="Budgeted spending + savings allocations, annualized"
+            >
+              Total spending + savings:{" "}
               <span className="font-semibold text-secondary">
                 {formatCurrency(
-                  isWeighted && columnMonths
+                  (isWeighted && columnMonths
                     ? allColumnResults.reduce(
                         (sum, r, i) =>
                           sum + r.totalMonthly * (columnMonths[i] ?? 0),
                         0,
                       )
-                    : (allColumnResults[activeColumn]?.totalMonthly ?? 0) * 12,
+                    : (allColumnResults[activeColumn]?.totalMonthly ?? 0) *
+                      12) +
+                    totalSinking * 12,
                 )}
                 <span className="text-caption text-faint font-normal">/yr</span>
               </span>

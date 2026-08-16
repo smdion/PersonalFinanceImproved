@@ -17,6 +17,7 @@ import {
   getBudgetFrequencyNote,
   getCurrentSalary,
   getFutureSalaryChanges,
+  getBonusOverridesForJobs,
   buildContribAccounts,
   requireLimit,
   loadAndApplyContribProfile,
@@ -125,6 +126,11 @@ export const paycheckRouter = createTRPCRouter({
       const effectiveSalaryMap = profileResult.salaryMap;
 
       const asOfDate = new Date();
+      const bonusOverrides = await getBonusOverridesForJobs(
+        ctx.db,
+        effectiveJobs.map((j) => j.id),
+      );
+      const asOfYear = asOfDate.getFullYear();
 
       // Use Promise.all since getCurrentSalary is async
       const results = await Promise.all(
@@ -142,6 +148,19 @@ export const paycheckRouter = createTRPCRouter({
               rawContribs: [],
             };
           }
+          // Synthesized display field — not a DB column — so existing UI
+          // plumbing can keep reading job.bonusOverride as "this year's
+          // pinned bonus, if any" without knowing about the year-scoped
+          // job_bonus_overrides table underneath.
+          const resolvedBonusOverrideForClient =
+            bonusOverrides.get(`${activeJob.id}:${asOfYear}`) ?? null;
+          const jobForClient = {
+            ...activeJob,
+            bonusOverride:
+              resolvedBonusOverrideForClient !== null
+                ? resolvedBonusOverrideForClient.toFixed(2)
+                : null,
+          };
 
           const bracketRow = allBrackets.find(
             (b) =>
@@ -151,7 +170,7 @@ export const paycheckRouter = createTRPCRouter({
           if (!bracketRow) {
             return {
               person,
-              job: activeJob,
+              job: jobForClient,
               salary: 0,
               futureSalaryChanges: [],
               paycheck: null,
@@ -230,9 +249,8 @@ export const paycheckRouter = createTRPCRouter({
             ytdGrossEarnings: 0,
             bonusPercent: toNumber(activeJob.bonusPercent),
             bonusMultiplier: toNumber(activeJob.bonusMultiplier),
-            bonusOverride: activeJob.bonusOverride
-              ? toNumber(activeJob.bonusOverride)
-              : null,
+            bonusOverride:
+              bonusOverrides.get(`${activeJob.id}:${asOfYear}`) ?? null,
             monthsInBonusYear: activeJob.monthsInBonusYear,
             includeContribInBonus: activeJob.include401kInBonus,
             bonusMonth: activeJob.bonusMonth,
@@ -241,6 +259,14 @@ export const paycheckRouter = createTRPCRouter({
           };
 
           const paycheck = calculatePaycheck(paycheckInput);
+          // Full-formula bonus, ignoring any current-year pin — lets the UI
+          // show "target" (nominal formula) alongside "actual" (resolved/
+          // pinned) instead of only ever showing the resolved value.
+          const fullFormulaBonusEstimate =
+            paycheckInput.bonusOverride !== null
+              ? calculatePaycheck({ ...paycheckInput, bonusOverride: null })
+                  .bonusEstimate
+              : paycheck.bonusEstimate;
 
           // Blended annual computation — accounts for mid-year salary changes.
           // Skip when a salary override is active (future salary preview toggle)
@@ -371,10 +397,11 @@ export const paycheckRouter = createTRPCRouter({
 
           return {
             person,
-            job: activeJob,
+            job: jobForClient,
             salary,
             futureSalaryChanges,
             paycheck,
+            fullFormulaBonusEstimate,
             blendedAnnual,
             tax,
             rawDeductions: jobDeductions,

@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**60 tables.**
+**63 tables.**
 
 ## Mermaid diagram
 
@@ -15,6 +15,9 @@ erDiagram
     int id PK
   }
   salary_changes {
+    int id PK
+  }
+  job_bonus_overrides {
     int id PK
   }
   contribution_accounts {
@@ -41,7 +44,13 @@ erDiagram
   savings_planned_transactions {
     int id PK
   }
+  savings_planned_tx_settlements {
+    int id PK
+  }
   savings_allocation_overrides {
+    int id PK
+  }
+  savings_goal_profile_allocations {
     int id PK
   }
   brokerage_goals {
@@ -190,13 +199,17 @@ erDiagram
   }
   jobs }o--|| people : references
   salary_changes }o--|| jobs : references
+  job_bonus_overrides }o--|| jobs : references
   contribution_accounts }o--|| jobs : references
   contribution_accounts }o--|| people : references
   paycheck_deductions }o--|| jobs : references
   budget_items }o--|| budget_profiles : references
   savings_monthly }o--|| savings_goals : references
   savings_planned_transactions }o--|| savings_goals : references
+  savings_planned_tx_settlements }o--|| savings_planned_transactions : references
   savings_allocation_overrides }o--|| savings_goals : references
+  savings_goal_profile_allocations }o--|| savings_goals : references
+  savings_goal_profile_allocations }o--|| budget_profiles : references
   brokerage_planned_transactions }o--|| brokerage_goals : references
   self_loans }o--|| savings_goals : references
   self_loans }o--|| savings_goals : references
@@ -249,6 +262,7 @@ erDiagram
 - **historical_notes**
 - **home_improvement_items**
 - **irmaa_brackets**
+- **job_bonus_overrides** → jobs
 - **jobs** → people
 - **local_admins**
 - **ltcg_brackets**
@@ -277,9 +291,11 @@ erDiagram
 - **return_rate_table**
 - **salary_changes** → jobs
 - **savings_allocation_overrides** → savings_goals
+- **savings_goal_profile_allocations** → savings_goals, budget_profiles
 - **savings_goals**
 - **savings_monthly** → savings_goals
 - **savings_planned_transactions** → savings_goals
+- **savings_planned_tx_settlements** → savings_planned_transactions
 - **scenarios**
 - **self_loans** → savings_goals, savings_goals
 - **simplefin_accounts** → performance_accounts

@@ -88,7 +88,8 @@ export type ExtraPaycheckRoutingData = {
 // ============================================================================
 // TABLE OF CONTENTS — sections below are in this order:
 //
-//   1.  People & Jobs .............. people, jobs, salaryChanges
+//   1.  People & Jobs .............. people, jobs, salaryChanges,
+//                                    jobBonusOverrides
 //   2.  Contributions & Paycheck ... contributionAccounts, contributionLimits,
 //                                    paycheckDeductions
 //   3.  Budget ..................... budgetProfiles, budgetItems
@@ -167,7 +168,6 @@ export const jobs = sqliteTable(
     })
       .notNull()
       .default(true),
-    bonusOverride: text("bonus_override"),
     bonusMonth: integer("bonus_month"), // 1-12, month when bonus is typically paid (null = unknown/spread)
     bonusDayOfMonth: integer("bonus_day_of_month"), // 1-31, day of month when bonus is paid (null = first period of month)
     w4FilingStatus: text("w4_filing_status").$type<W4FilingStatus>().notNull(),
@@ -198,6 +198,31 @@ export const salaryChanges = sqliteTable(
     notes: text("notes"),
   },
   (table) => [index("salary_changes_job_id_idx").on(table.jobId)],
+);
+
+// Year-scoped bonus override — pins a job's actual known bonus for one
+// calendar year (e.g. once paid out and lower than the formula estimate)
+// without affecting the formula-computed bonus for any other year. Row
+// absent for a (jobId, year) pair means "use computeBonusGross's formula
+// for that year" — there is no shared/flat fallback the way the old
+// jobs.bonus_override column worked.
+export const jobBonusOverrides = sqliteTable(
+  "job_bonus_overrides",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    jobId: integer("job_id")
+      .notNull()
+      .references(() => jobs.id, { onDelete: "cascade" }),
+    year: integer("year").notNull(),
+    overrideAmount: text("override_amount").notNull(),
+    notes: text("notes"),
+    createdBy: text("created_by"),
+    updatedBy: text("updated_by"),
+  },
+  (table) => [
+    uniqueIndex("job_bonus_overrides_job_year_idx").on(table.jobId, table.year),
+    index("job_bonus_overrides_job_id_idx").on(table.jobId),
+  ],
 );
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -387,8 +412,6 @@ export const savingsGoals = sqliteTable(
       .default(false),
     reimbursementApiCategoryId: text("reimbursement_api_category_id"),
     targetMode: text("target_mode").notNull().default("fixed"), // 'fixed' | 'ongoing' | 'bucket' — validated by Zod (app-layer, no DB constraint)
-    monthlyContribution: text("monthly_contribution").notNull().default("0"),
-    allocationPercent: text("allocation_percent"), // % of budget leftover (e.g., 25.5 = 25.5%)
   },
   (table) => [index("savings_goals_is_active_idx").on(table.isActive)],
 );
@@ -485,13 +508,15 @@ export const savingsAllocationOverrides = sqliteTable(
   ],
 );
 
-// Per-(goal, budget profile) allocation overrides — lets a goal's
-// allocationPercent/monthlyContribution differ by which budget profile is
-// active (e.g. "Car fund gets 12% under my current budget, 25% under a
-// relocation what-if"). Row absent for a (goal, profile) pair means
-// "inherits savings_goals.allocationPercent/monthlyContribution" — the
-// same override-shadows-default shape savingsAllocationOverrides already
-// uses for per-month overrides, just keyed by profile instead of month.
+// Per-(goal, budget profile) funding — how much a goal is funded, and how
+// (percent of leftover vs. flat dollar), is entirely owned per profile.
+// Every active (goal, profile) pair has an explicit row; there is no shared
+// default a profile falls back to — each budget profile is its own funding
+// scenario. Row-per-pair is guaranteed by seeding at goal/profile creation
+// time (both start every new pairing at $0/no-percent) and backfilled by
+// migration 0006 for pairs that predate this table's mandatory-row model.
+// (Goal *identity* — name, target amount/date, priority, etc. — stays on
+// savingsGoals and IS shared across profiles; only funding is per-profile.)
 export const savingsGoalProfileAllocations = sqliteTable(
   "savings_goal_profile_allocations",
   {

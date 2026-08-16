@@ -489,7 +489,13 @@ export async function loadLiveContribData(db: Db, asOfDate: Date = new Date()) {
 
   // Get current salaries (with salary_changes applied)
   // Import salary helpers for bonus-aware compensation
-  const { getEffectiveIncome, getTotalCompensation } = await import("./salary");
+  const { getEffectiveIncome, getTotalCompensation, getBonusOverridesForJobs } =
+    await import("./salary");
+  const bonusOverrides = await getBonusOverridesForJobs(
+    db,
+    activeJobs.map((j) => j.id),
+  );
+  const asOfYear = asOfDate.getFullYear();
   const jobSalaries = await Promise.all(
     activeJobs.map(async (j) => {
       const baseSalary = await getCurrentSalary(
@@ -498,11 +504,14 @@ export async function loadLiveContribData(db: Db, asOfDate: Date = new Date()) {
         j.annualSalary,
         asOfDate,
       );
+      const resolvedOverride =
+        bonusOverrides.get(`${j.id}:${asOfYear}`) ?? null;
       return {
         job: { id: j.id },
-        salary: getEffectiveIncome(j, baseSalary),
-        totalComp: getTotalCompensation(j, baseSalary),
+        salary: getEffectiveIncome(j, baseSalary, resolvedOverride),
+        totalComp: getTotalCompensation(j, baseSalary, resolvedOverride),
         personId: j.personId,
+        resolvedBonusOverride: resolvedOverride,
       };
     }),
   );
@@ -534,6 +543,7 @@ export async function loadLiveContribData(db: Db, asOfDate: Date = new Date()) {
       job: { id: js.job.id, personId: js.personId },
       salary: js.salary,
       totalComp: js.totalComp,
+      resolvedBonusOverride: js.resolvedBonusOverride,
     })),
     rawContribRows: allContribs, // All accounts (active + inactive/stubbed) for profile editor
     peopleMap,
@@ -550,6 +560,7 @@ export function resolveProfile(
     job: { id: number; personId: number };
     salary: number;
     totalComp: number;
+    resolvedBonusOverride: number | null;
   }[],
 ) {
   const salaryOverrides = profile.salaryOverrides as Record<string, number>;
@@ -567,7 +578,12 @@ export function resolveProfile(
     if (!job) return js;
     const override = salaryOverrides[String(job.personId)];
     return override !== undefined
-      ? { job: js.job, salary: override, totalComp: override }
+      ? {
+          job: js.job,
+          salary: override,
+          totalComp: override,
+          resolvedBonusOverride: null,
+        }
       : js;
   });
 

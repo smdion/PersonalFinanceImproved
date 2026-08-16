@@ -4,7 +4,10 @@ import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { toNumber, buildYearEndHistory } from "@/server/helpers";
-import { computeBonusGross } from "@/server/helpers/salary";
+import {
+  computeBonusGross,
+  getBonusOverridesForJobs,
+} from "@/server/helpers/salary";
 import { zYearEndTargeting, toSalaryOverrideMap } from "./_shared";
 
 export const historicalRouter = createTRPCRouter({
@@ -99,6 +102,10 @@ export const historicalRouter = createTRPCRouter({
       }
 
       // Build salary detail lookup: year → person → {base, bonus, total} (for tooltip)
+      const bonusOverrides = await getBonusOverridesForJobs(
+        ctx.db,
+        jobs.map((j) => j.id),
+      );
       const salaryDetailsByYear = new Map<
         number,
         Map<string, { base: number; bonus: number; total: number }>
@@ -119,11 +126,13 @@ export const historicalRouter = createTRPCRouter({
               if (new Date(ch.effectiveDate).getFullYear() <= y)
                 base = toNumber(ch.newSalary);
             }
+            const resolvedOverride =
+              bonusOverrides.get(`${job.id}:${y}`) ?? null;
             const bonus = computeBonusGross(
               base,
               job.bonusPercent,
               job.bonusMultiplier,
-              job.bonusOverride,
+              resolvedOverride,
               job.monthsInBonusYear,
             );
             salaryDetailsByYear

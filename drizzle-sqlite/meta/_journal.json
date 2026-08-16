@@ -36,6 +36,20 @@
       "when": 1786834867310,
       "tag": "0004_wooden_starfox",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1786849455163,
+      "tag": "0005_free_patch",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1786850506186,
+      "tag": "0006_silent_gorgon",
+      "breakpoints": true
     }
   ]
 }

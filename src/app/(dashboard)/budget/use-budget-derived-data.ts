@@ -51,11 +51,6 @@ export type SavingsGoalEntry = {
   isActive: boolean;
   monthlyContribution: string | number;
   allocationPercent?: string | number | null;
-  /** True when monthlyContribution is a per-(goal, viewed-profile) override
-   *  rather than the goal's global default — surfaced in the UI so a
-   *  profile-specific sinking-fund amount doesn't look identical to a
-   *  plain one. See src/server/helpers/savings-allocation.ts. */
-  isOverride?: boolean;
 };
 
 type DataShape =
@@ -250,7 +245,6 @@ export function useBudgetDerivedData({
           id: g.id,
           name: g.name,
           monthlyContribution: Number(g.monthlyContribution),
-          isOverride: g.isOverride ?? false,
         }))
         .filter((f) => f.monthlyContribution > 0),
     [savingsGoals],

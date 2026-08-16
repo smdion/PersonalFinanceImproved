@@ -16,6 +16,31 @@ export interface SavingsGoalForAllocation {
   monthlyContribution: number | string;
 }
 
+/** Minimal shape of a budget.computeActiveSummary-style response needed to
+ *  derive a single "monthly spend" figure — weighted-blended when the
+ *  profile uses month-weighted modes, otherwise the flat column total. */
+export interface BudgetMonthlyTotalSource {
+  result: { totalMonthly: number } | null;
+  columnMonths?: number[] | null;
+  weightedAnnualTotal?: number | null;
+}
+
+/**
+ * Derive one "monthly spend" figure from a budget summary — the single
+ * computation path for this derivation, previously re-typed at 3 call
+ * sites (savings/page.tsx twice, savings.ts's computeLiveMaxMonthlyFunding
+ * once). Weighted profiles blend to a "typical month" (weightedAnnualTotal
+ * / 12); non-weighted profiles use the single column's totalMonthly as-is.
+ */
+export function deriveBudgetMonthlyTotal(
+  budgetSummary: BudgetMonthlyTotalSource | null | undefined,
+): number | null {
+  if (!budgetSummary?.result) return null;
+  return budgetSummary.columnMonths
+    ? (budgetSummary.weightedAnnualTotal ?? 0) / 12
+    : (budgetSummary.result.totalMonthly ?? 0);
+}
+
 /**
  * Compute the maximum monthly funding available for savings goals.
  * Returns null if inputs are insufficient (no paycheck data or no active earners).

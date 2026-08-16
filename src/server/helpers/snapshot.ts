@@ -778,6 +778,7 @@ export async function buildYearEndHistory(
             js.baseSalary,
             salaryOverrideMap,
           ),
+          js.resolvedBonusOverride,
         ),
       0,
     );
@@ -979,7 +980,11 @@ export async function buildYearEndHistory(
               )
             : Math.round((asOf.getMonth() / 12) * ppy);
           const ratio = ppy > 0 ? elapsed / ppy : 0;
-          const salary = getTotalCompensation(js.job, js.baseSalary);
+          const salary = getTotalCompensation(
+            js.job,
+            js.baseSalary,
+            js.resolvedBonusOverride,
+          );
           weightedRatio += ratio * salary;
           totalSalary += salary;
         }

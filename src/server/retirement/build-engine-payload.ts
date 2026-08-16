@@ -22,6 +22,8 @@ import {
   getCurrentSalary,
   getEffectiveIncome,
   getTotalCompensation,
+  computeBonusGross,
+  getBonusOverridesForJobs,
   applySalaryOverride,
   getLatestSnapshot,
   computeBudgetAnnualTotal,
@@ -367,25 +369,74 @@ export async function buildEnginePayload(
   // C7: use getSalariesForJobs helper (deduplicates the parallel-fetch pattern).
   // Post-process to apply salary override map and compute totalComp.
   const rawSalaries = await getSalariesForJobs(db, activeJobs, asOfDate);
+  // Per-person delta between this year's resolved (possibly pinned) bonus and
+  // the full-formula bonus — fed to the engine as a year-0-only adjustment so
+  // a pinned current-year bonus doesn't depress the compounding baseline for
+  // every future projected year (see currentYearBonusAdjustment's docblock
+  // in types/engine-projection.ts). Skipped for anyone with an active flat
+  // salary override — that already replaces their whole number, bonus
+  // included, so a separate bonus delta on top of it would double-count.
+  const currentYearBonusAdjustmentByPerson = new Map<number, number>();
   const jobSalaries = rawSalaries.map(
-    ({ job, baseSalary, effectiveIncome }) => ({
-      job,
-      salary: applySalaryOverride(
-        job.personId,
-        effectiveIncome,
-        salaryOverrideMap,
-      ),
-      totalComp: applySalaryOverride(
-        job.personId,
-        getTotalCompensation(job, baseSalary),
-        salaryOverrideMap,
-      ),
-    }),
+    ({ job, baseSalary, effectiveIncome, resolvedBonusOverride }) => {
+      const fullFormulaBonus = computeBonusGross(
+        baseSalary,
+        job.bonusPercent,
+        job.bonusMultiplier,
+        null,
+        job.monthsInBonusYear,
+      );
+      const resolvedBonus = computeBonusGross(
+        baseSalary,
+        job.bonusPercent,
+        job.bonusMultiplier,
+        resolvedBonusOverride,
+        job.monthsInBonusYear,
+      );
+      if (
+        resolvedBonus !== fullFormulaBonus &&
+        !salaryOverrideMap.has(job.personId)
+      ) {
+        currentYearBonusAdjustmentByPerson.set(
+          job.personId,
+          (currentYearBonusAdjustmentByPerson.get(job.personId) ?? 0) +
+            (resolvedBonus - fullFormulaBonus),
+        );
+      }
+      return {
+        job,
+        salary: applySalaryOverride(
+          job.personId,
+          effectiveIncome,
+          salaryOverrideMap,
+        ),
+        totalComp: applySalaryOverride(
+          job.personId,
+          getTotalCompensation(job, baseSalary, resolvedBonusOverride),
+          salaryOverrideMap,
+        ),
+        // The compounding baseline the engine should grow from — always the
+        // full formula bonus, never the pinned/resolved one, so year 1+
+        // projections aren't depressed by this year's actual being lower.
+        totalCompFullFormula: applySalaryOverride(
+          job.personId,
+          baseSalary + fullFormulaBonus,
+          salaryOverrideMap,
+        ),
+      };
+    },
   );
   // combinedSalary = effective income (respects includeBonusInContributions flag)
   // Used for contribution calculations where percent_of_salary uses the payroll basis
-  // totalCompensation = always includes bonus — used for display and rate calculations
+  // totalCompensation = always includes bonus (resolved/pinned, not full-formula)
+  // — used for display and "as of now" rate calculations.
   const totalCompensation = sumBy(jobSalaries, (js) => js.totalComp);
+  // The engine's compounding baseline — full-formula bonus, see
+  // currentYearBonusAdjustmentByPerson's docblock above.
+  const totalCompensationFullFormula = sumBy(
+    jobSalaries,
+    (js) => js.totalCompFullFormula,
+  );
 
   // Portfolio by tax bucket + per-account balances (combined for engine)
   const portfolioByTaxType: TaxBuckets = {
@@ -648,11 +699,13 @@ export async function buildEnginePayload(
   const { contribByCategory, employerMatchByCategory } =
     aggregateContributionsByCategory(activeContribs, activeJobs, jobSalaries);
 
-  // Build per-person salary map from job salaries
+  // Build per-person salary map from job salaries — the engine's compounding
+  // baseline, so full-formula bonus (see totalCompFullFormula's docblock
+  // above), not the resolved/pinned current-year value.
   const salaryByPerson: Record<number, number> = {};
   for (const js of jobSalaries) {
     salaryByPerson[js.job.personId] =
-      (salaryByPerson[js.job.personId] ?? 0) + js.totalComp;
+      (salaryByPerson[js.job.personId] ?? 0) + js.totalCompFullFormula;
   }
   const hasMultiplePeople = Object.keys(salaryByPerson).length > 1;
 
@@ -846,6 +899,11 @@ export async function buildEnginePayload(
   // below). Applying a Plan override here would double-count it into the
   // profile-switch growth math. Do not "fix" this into resolveEffectiveSalary
   // — see applySalaryOverride's docblock for the live-baseline rule.
+  const liveBonusOverrides = await getBonusOverridesForJobs(
+    db,
+    activeJobs.map((j) => j.id),
+  );
+  const liveAsOfYear = asOfDate.getFullYear();
   const liveJobSalaries = await Promise.all(
     activeJobs.map(async (j) => {
       const dbSalary = await getCurrentSalary(
@@ -854,10 +912,13 @@ export async function buildEnginePayload(
         j.annualSalary,
         asOfDate,
       );
+      const resolvedOverride =
+        liveBonusOverrides.get(`${j.id}:${liveAsOfYear}`) ?? null;
       return {
         job: { id: j.id, personId: j.personId },
-        salary: getEffectiveIncome(j, dbSalary),
-        totalComp: getTotalCompensation(j, dbSalary),
+        salary: getEffectiveIncome(j, dbSalary, resolvedOverride),
+        totalComp: getTotalCompensation(j, dbSalary, resolvedOverride),
+        resolvedBonusOverride: resolvedOverride,
       };
     }),
   );
@@ -1054,7 +1115,7 @@ export async function buildEnginePayload(
         )
       : undefined,
     projectionEndAge: maxEndAge,
-    currentSalary: totalCompensation,
+    currentSalary: totalCompensationFullFormula,
     salaryGrowthRate: toNumber(settings.salaryAnnualIncrease),
     salaryCap: settings.salaryCap ? toNumber(settings.salaryCap) : null,
     salaryOverrides: dbSalaryOverrides,
@@ -1062,6 +1123,10 @@ export async function buildEnginePayload(
     perPersonSalaryOverrides: hasMultiplePeople
       ? perPersonSalaryOverrides
       : undefined,
+    currentYearBonusAdjustment:
+      currentYearBonusAdjustmentByPerson.size > 0
+        ? Object.fromEntries(currentYearBonusAdjustmentByPerson)
+        : undefined,
     budgetOverrides: dbBudgetOverrides,
     baseLimits: Object.fromEntries(
       getAllCategories().map((cat) => {

@@ -175,7 +175,6 @@ export const jobOverrideSchema = z
   .object({
     bonusPercent: z.union([z.string(), z.number()]).optional(),
     bonusMultiplier: z.union([z.string(), z.number()]).optional(),
-    bonusOverride: z.union([z.string(), z.number(), z.null()]).optional(),
     monthsInBonusYear: z.number().optional(),
     bonusMonth: z.union([z.number(), z.null()]).optional(),
     bonusDayOfMonth: z.union([z.number(), z.null()]).optional(),

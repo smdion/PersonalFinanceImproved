@@ -7,24 +7,25 @@ import { sumBy } from "@/lib/utils/math";
 import { HelpTip } from "@/components/ui/help-tip";
 import { FormError } from "@/components/ui/form-error";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
+import { buildPayrollBreakdown, computeUnallocated } from "./helpers";
 import { useState } from "react";
 
 /**
- * Lets a savings goal's allocationPercent/monthlyContribution differ by
- * budget profile. The profile selection here is the SAME state the Budget
- * Profiles tab's sidebar uses (viewingProfileId, lifted to budget-content.tsx)
- * — picking a profile in either tab keeps it selected when you switch to
- * the other, since both are scoped to the same budget_profile_id. This
- * panel's own left rail is select-only (no create/rename/delete/set-active
- * — those stay exclusive to the Budget Profiles tab) and additionally
- * shows each profile's savings total/override count, which the Budget
- * tab's sidebar doesn't need.
+ * Every savings goal's allocationPercent/monthlyContribution is owned
+ * entirely per budget profile — no shared default a profile falls back to,
+ * each profile is its own funding scenario. The profile selection here is
+ * the SAME state the Budget Profiles tab's sidebar uses (viewingProfileId,
+ * lifted to budget-content.tsx) — picking a profile in either tab keeps it
+ * selected when you switch to the other, since both are scoped to the same
+ * budget_profile_id. This panel's own left rail is select-only (no
+ * create/rename/delete/set-active — those stay exclusive to the Budget
+ * Profiles tab) and additionally shows each profile's savings total/funded
+ * goal count, which the Budget tab's sidebar doesn't need.
  *
- * Absent an override, a goal falls back to its global default (shown
- * "inherited"); the fallback and the override are resolved server-side by
- * the same function computeSummary/pushContributionsToApi use, so this
- * panel can't show a number that ends up different from what's actually
- * live elsewhere.
+ * Every row is directly editable — there's no "inherited" fallback state.
+ * Values are resolved server-side by the same function
+ * computeSummary/pushContributionsToApi use, so this panel can't show a
+ * number that ends up different from what's actually live elsewhere.
  */
 export function SavingsAllocationPanel({
   canEdit,
@@ -57,6 +58,14 @@ export function SavingsAllocationPanel({
     trpc.budget.listProfiles.useQuery();
   const { data: summaries } =
     trpc.savings.goalProfileAllocations.listSummaries.useQuery();
+  // Household net pay is budget-profile-independent (income doesn't depend
+  // on which spending plan you're viewing) — one shared query, combined
+  // with each profile's own column-0 spending total below to approximate
+  // "unspent" per profile. This uses the default/no-override contribution
+  // basis, same simplifying assumption budget.listProfiles' own annualTotal
+  // already makes (not per-profile contribution-profile resolution).
+  const { data: paycheckData } = trpc.paycheck.computeSummary.useQuery();
+  const payroll = buildPayrollBreakdown(paycheckData?.people);
 
   if (profilesLoading) {
     return (
@@ -85,6 +94,7 @@ export function SavingsAllocationPanel({
         <p className="text-caption text-faint mb-2">
           Savings allocations follow Budget Profiles — create, rename, or
           activate one in the Budget Profiles tab.
+          <HelpTip text="'Unspent' approximates take-home pay minus that profile's own budgeted spending (first mode only) minus its savings allocations — using your default contribution profile, not each budget profile's own per-mode contribution-profile mapping. For the exact figure under the mode you're viewing, check the Live pool line on the right." />
         </p>
         {profiles.map((p) => {
           const summary = summaryByProfile.get(p.id);
@@ -107,19 +117,52 @@ export function SavingsAllocationPanel({
                   </span>
                 )}
               </div>
-              {summary && (
-                <div className="flex gap-2 mt-0.5 text-caption text-muted">
-                  <span>
-                    {formatCurrency(summary.totalMonthlyAllocation)}/mo
-                  </span>
-                  {summary.overrideCount > 0 && (
-                    <span className="text-amber-600">
-                      {summary.overrideCount} override
-                      {summary.overrideCount !== 1 ? "s" : ""}
-                    </span>
-                  )}
-                </div>
-              )}
+              {summary &&
+                (() => {
+                  const isWeighted =
+                    !!p.columnMonths && p.columnMonths.length > 0;
+                  // Weighted profiles blend to a "typical month" across
+                  // modes — the raw column-0 monthlyTotal would only
+                  // reflect whichever mode happens to be first.
+                  const spending = isWeighted
+                    ? p.weightedMonthlySpending
+                    : p.monthlyTotal;
+                  const unspent = payroll
+                    ? computeUnallocated(
+                        payroll.netMonthly,
+                        spending,
+                        summary.totalMonthlyAllocation,
+                      )
+                    : null;
+                  return (
+                    <div className="mt-0.5 text-caption text-muted space-y-0.5">
+                      <div className="flex gap-2">
+                        <span>
+                          Allocated:{" "}
+                          {formatCurrency(summary.totalMonthlyAllocation)}/mo
+                        </span>
+                        {summary.fundedGoalCount > 0 && (
+                          <span>
+                            {summary.fundedGoalCount} goal
+                            {summary.fundedGoalCount !== 1 ? "s" : ""}
+                          </span>
+                        )}
+                      </div>
+                      {unspent != null && (
+                        <div>
+                          Unspent{isWeighted ? " (blended)" : ""}:{" "}
+                          <span
+                            className={
+                              unspent >= 0 ? "text-emerald-600" : "text-red-600"
+                            }
+                          >
+                            {formatCurrency(unspent)}/mo
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
             </button>
           );
         })}
@@ -193,10 +236,12 @@ function SavingsAllocationTable({
     onSuccess: invalidate,
     onError: (err) => toast.error(err.message || "Failed to save allocation"),
   });
-  const revert = trpc.savings.goalProfileAllocations.delete.useMutation({
-    onSuccess: invalidate,
-    onError: (err) => toast.error(err.message || "Failed to revert allocation"),
-  });
+  const resetAllToZero =
+    trpc.savings.goalProfileAllocations.resetAllToZero.useMutation({
+      onSuccess: invalidate,
+      onError: (err) =>
+        toast.error(err.message || "Failed to reset allocations"),
+    });
 
   if (isLoading) {
     return <div className="animate-pulse h-32 bg-surface-elevated rounded" />;
@@ -272,7 +317,24 @@ function SavingsAllocationTable({
           isPinned={isPinned}
           onActivate={canEdit ? onActivate : undefined}
         />
-        <HelpTip text="A goal's %/$ can differ by budget profile. Rows without a custom value here inherit the goal's global default (shown grayed out). Editing a row creates an override just for this profile. Use the Savings page to pull in new pay or update % from live income." />
+        <HelpTip text="A goal's %/$ is entirely per budget profile — each profile is its own funding scenario. Use the Savings page to pull in new pay or update % from live income." />
+        {canEdit && rows.length > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              if (
+                confirm(
+                  `Reset every goal's allocation to $0 for "${profileName ?? "this profile"}"?`,
+                )
+              ) {
+                resetAllToZero.mutate({ profileId });
+              }
+            }}
+            className="ml-auto text-caption text-faint hover:text-red-600"
+          >
+            Reset all to zero
+          </button>
+        )}
       </div>
 
       {livePoolEstimate != null && (
@@ -319,7 +381,6 @@ function SavingsAllocationTable({
             <th className="text-left py-1.5 font-medium">Goal</th>
             <th className="text-right py-1.5 font-medium w-24">Allocation %</th>
             <th className="text-right py-1.5 font-medium w-28">Monthly $</th>
-            <th className="text-right py-1.5 font-medium w-20"></th>
           </tr>
         </thead>
         <tbody>
@@ -339,7 +400,7 @@ function SavingsAllocationTable({
                     r.goalId,
                     "allocationPercent",
                     r.allocationPercent != null
-                      ? String(r.allocationPercent)
+                      ? String(Math.round(r.allocationPercent * 100) / 100)
                       : "",
                   )}
                   onChange={(e) =>
@@ -349,11 +410,7 @@ function SavingsAllocationTable({
                     commit(r.goalId, r.allocationPercent, r.monthlyContribution)
                   }
                   placeholder="—"
-                  className={`w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary ${
-                    r.isOverride
-                      ? "text-amber-600 font-medium"
-                      : "text-secondary"
-                  }`}
+                  className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-secondary"
                 />
               </td>
               <td className="py-1.5 text-right">
@@ -371,30 +428,8 @@ function SavingsAllocationTable({
                   onBlur={() =>
                     commit(r.goalId, r.allocationPercent, r.monthlyContribution)
                   }
-                  className={`w-20 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary ${
-                    r.isOverride
-                      ? "text-amber-600 font-medium"
-                      : "text-secondary"
-                  }`}
+                  className="w-20 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-secondary"
                 />
-              </td>
-              <td className="py-1.5 text-right">
-                {r.isOverride ? (
-                  canEdit && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        revert.mutate({ goalId: r.goalId, profileId })
-                      }
-                      className="text-caption text-faint hover:text-red-600"
-                      title="Revert to this goal's global default"
-                    >
-                      reset
-                    </button>
-                  )
-                ) : (
-                  <span className="text-micro text-faint">inherited</span>
-                )}
               </td>
             </tr>
           ))}

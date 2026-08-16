@@ -410,7 +410,7 @@ describe("settings.jobs — optional fields", () => {
     expect(job!.budgetPeriodsPerMonth).toBe("4.33");
   });
 
-  it("creates a job with bonusOverride", async () => {
+  it("creates a job and can pin a year-scoped bonus override for it", async () => {
     const job = await caller.settings.jobs.create({
       personId,
       employerName: "BonusCo",
@@ -419,9 +419,20 @@ describe("settings.jobs — optional fields", () => {
       payWeek: "odd",
       startDate: "2024-01-01",
       w4FilingStatus: "Single",
-      bonusOverride: "15000",
     });
 
-    expect(job!.bonusOverride).toBe("15000");
+    const currentYear = new Date().getFullYear();
+    const override = await caller.settings.jobs.bonusOverrides.upsert({
+      jobId: job!.id,
+      year: currentYear,
+      overrideAmount: "15000",
+    });
+    expect(override!.overrideAmount).toBe("15000");
+
+    const rows = await caller.settings.jobs.bonusOverrides.list();
+    expect(
+      rows.find((r) => r.jobId === job!.id && r.year === currentYear)
+        ?.overrideAmount,
+    ).toBe("15000");
   });
 });

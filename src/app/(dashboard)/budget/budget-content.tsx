@@ -99,10 +99,9 @@ export function BudgetContent() {
   const { data: apiActualsData } = trpc.budget.listApiActuals.useQuery(
     displayProfileId != null ? { profileId: displayProfileId } : undefined,
   );
-  // Resolved per the profile being viewed (override-shadows-default, same
-  // path the Savings page uses) — NOT settings.savingsGoals.list, which
-  // returns raw unresolved rows and would silently disagree with the
-  // Savings page whenever a goal has a profile-specific override.
+  // Resolved per the profile being viewed (funding is entirely per-profile,
+  // same path the Savings page uses) — NOT settings.savingsGoals.list,
+  // which no longer carries funding data at all (goal identity only).
   const { data: resolvedSavingsGoals } =
     trpc.savings.goalProfileAllocations.list.useQuery(
       { profileId: displayProfileId! },
@@ -115,7 +114,6 @@ export function BudgetContent() {
       isActive: true,
       monthlyContribution: g.monthlyContribution,
       allocationPercent: g.allocationPercent,
-      isOverride: g.isOverride,
     }));
 
   // ---- Mutations ----
@@ -427,6 +425,13 @@ export function BudgetContent() {
                 profiles={(allProfiles ?? []) as BudgetProfileListEntry[]}
                 displayProfileId={displayProfileId}
                 canEdit={canEdit}
+                contribProfiles={
+                  (contribProfiles ?? []) as Array<{
+                    id: number;
+                    name: string;
+                    isDefault: boolean;
+                  }>
+                }
                 renamingProfileId={renamingProfileId}
                 renameValue={renameValue}
                 onRenameValueChange={setRenameValue}
@@ -444,7 +449,12 @@ export function BudgetContent() {
                 apiLinkedProfileId={apiLinkedProfileId}
                 apiLinkedColumnIndex={apiLinkedColumnIndex ?? 0}
                 onSelectProfile={setViewingProfileId}
-                onCreateProfile={(name) => createProfile.mutate({ name })}
+                onCreateProfile={(name, contributionProfileId) =>
+                  createProfile.mutate({
+                    name,
+                    contributionProfileId,
+                  })
+                }
                 onSetActiveProfile={handleActivateBudgetProfile}
                 onDeleteProfile={(id) => deleteProfile.mutate({ id })}
               />
@@ -503,12 +513,21 @@ export function BudgetContent() {
               isPinned={isPinnedProfile}
               onActivateProfile={handleActivateBudgetProfile}
               livePoolEstimate={
-                allColumnResults?.[activeColumn] != null
-                  ? (payrollBreakdowns[activeColumn]?.netMonthly ?? 0) -
-                    allColumnResults[activeColumn]!.totalMonthly
-                  : null
+                isWeighted && columnMonths && allColumnResults
+                  ? allColumnResults.reduce(
+                      (sum, r, i) =>
+                        sum +
+                        ((payrollBreakdowns[i]?.netMonthly ?? 0) -
+                          r.totalMonthly) *
+                          (columnMonths[i] ?? 0),
+                      0,
+                    ) / 12
+                  : allColumnResults?.[activeColumn] != null
+                    ? (payrollBreakdowns[activeColumn]?.netMonthly ?? 0) -
+                      allColumnResults[activeColumn]!.totalMonthly
+                    : null
               }
-              livePoolColumnLabel={cols[activeColumn]}
+              livePoolColumnLabel={isWeighted ? "Blended" : cols[activeColumn]}
             />
           </CardBoundary>
         )}
