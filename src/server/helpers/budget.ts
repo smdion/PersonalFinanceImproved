@@ -12,6 +12,58 @@ import { parseAppSettings } from "./settings";
 export const BUDGET_CACHE_MAX_AGE_MS = undefined;
 
 /**
+ * The active-profile predicate, for callers that already have every profile
+ * loaded in memory (e.g. the retirement engine payload builder, which fetches
+ * `allBudgetProfiles` once for several purposes) and would otherwise
+ * duplicate `getActiveBudgetProfile`'s `isActive` lookup inline.
+ */
+export function pickActiveBudgetProfile<T extends { isActive: boolean }>(
+  profiles: T[],
+): T | undefined {
+  return profiles.find((p) => p.isActive);
+}
+
+/**
+ * The active budget profile — the only place that should query
+ * `budget_profiles.is_active = true`. Returns undefined if none is active
+ * (e.g. a crash mid-`setActiveProfile` before that mutation's transaction
+ * fix, or before any profile has ever been created).
+ */
+export async function getActiveBudgetProfile(
+  db: Db,
+): Promise<typeof schema.budgetProfiles.$inferSelect | undefined> {
+  const rows = await db
+    .select()
+    .from(schema.budgetProfiles)
+    .where(eq(schema.budgetProfiles.isActive, true));
+  return pickActiveBudgetProfile(rows);
+}
+
+/**
+ * Resolve "the profile a mutation should target" — explicit `profileId` when
+ * given (a client editing a Plan-pinned or manually-viewed non-active
+ * profile), else the globally-active profile. The single place profile
+ * item/column mutations (createItem, addColumn, removeColumn, renameColumn,
+ * updateColumnMonths, updateColumnContributionProfileIds, reorderCategory)
+ * should resolve their target profile — a bare `getActiveBudgetProfile(db)`
+ * in one of those procedures silently redirects an edit made while viewing a
+ * non-active profile onto the active one instead.
+ */
+export async function resolveTargetBudgetProfile(
+  db: Db,
+  profileId: number | null | undefined,
+): Promise<typeof schema.budgetProfiles.$inferSelect | undefined> {
+  if (profileId) {
+    const rows = await db
+      .select()
+      .from(schema.budgetProfiles)
+      .where(eq(schema.budgetProfiles.id, profileId));
+    return rows[0];
+  }
+  return getActiveBudgetProfile(db);
+}
+
+/**
  * Get effective cash balance.
  * When a budget API is active, sums on-budget cash-like account balances from cache.
  * Falls back to manual `current_cash` from app_settings when no API is active or cache is stale/empty.
@@ -198,7 +250,20 @@ export function computeBudgetAnnualTotal(
   return computeBudgetColumnTotal(items, columnIndex);
 }
 
-export async function getAnnualExpensesFromBudget(db: Db): Promise<number> {
+/**
+ * Optional override of which budget profile/column to read — lets a caller ask
+ * "what would annual expenses be under profile X, column Y" instead of always
+ * reading the globally-active profile + `budget_active_column` setting.
+ */
+export type BudgetTargeting = {
+  budgetProfileId?: number | null;
+  budgetColumn?: number | null;
+};
+
+export async function getAnnualExpensesFromBudget(
+  db: Db,
+  targeting?: BudgetTargeting,
+): Promise<number> {
   const settings = await db.select().from(schema.appSettings);
   const settingsMap = new Map(
     settings.map((s: { key: string; value: unknown }) => [s.key, s.value]),
@@ -206,13 +271,14 @@ export async function getAnnualExpensesFromBudget(db: Db): Promise<number> {
 
   // Use the shared budget_active_column setting (same as budget page, savings page, dashboard)
   const columnSetting = settingsMap.get("budget_active_column");
-  const column = typeof columnSetting === "number" ? columnSetting : 0;
+  const column =
+    targeting?.budgetColumn ??
+    (typeof columnSetting === "number" ? columnSetting : 0);
 
-  const profiles = await db
-    .select()
-    .from(schema.budgetProfiles)
-    .where(eq(schema.budgetProfiles.isActive, true));
-  const profile = profiles[0];
+  const profile = await resolveTargetBudgetProfile(
+    db,
+    targeting?.budgetProfileId,
+  );
 
   if (!profile) return 0;
 

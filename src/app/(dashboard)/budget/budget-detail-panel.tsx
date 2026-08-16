@@ -69,6 +69,7 @@ type Props = {
   sinkingFunds: SinkingFundLine[];
   profile: {
     id?: number;
+    name?: string;
     columnContributionProfileIds?: (number | null)[] | null;
   } | null;
   contribProfiles: Array<{ id: number; name: string; isDefault: boolean }>;
@@ -123,12 +124,24 @@ export function BudgetDetailPanel({
         <BudgetModeManager
           cols={cols}
           onRenameColumn={(idx, label) =>
-            columnMutations.renameColumn.mutate({ colIndex: idx, label })
+            columnMutations.renameColumn.mutate({
+              colIndex: idx,
+              label,
+              ...(profile?.id != null ? { profileId: profile.id } : {}),
+            })
           }
           onRemoveColumn={(idx) =>
-            columnMutations.removeColumn.mutate({ colIndex: idx })
+            columnMutations.removeColumn.mutate({
+              colIndex: idx,
+              ...(profile?.id != null ? { profileId: profile.id } : {}),
+            })
           }
-          onAddColumn={(label) => columnMutations.addColumn.mutate({ label })}
+          onAddColumn={(label) =>
+            columnMutations.addColumn.mutate({
+              label,
+              ...(profile?.id != null ? { profileId: profile.id } : {}),
+            })
+          }
           addColumnPending={columnMutations.addColumn.isPending}
           contributionProfiles={contribProfiles}
           columnContributionProfileIds={
@@ -138,6 +151,7 @@ export function BudgetDetailPanel({
           onUpdateContributionProfiles={(ids) =>
             columnMutations.updateColumnContribProfiles.mutate({
               columnContributionProfileIds: ids,
+              ...(profile?.id != null ? { profileId: profile.id } : {}),
             })
           }
         />
@@ -151,9 +165,6 @@ export function BudgetDetailPanel({
           allColumnResults={allColumnResults}
           payrollBreakdowns={payrollBreakdowns}
           columnMonths={columnMonths}
-          onUpdateColumnMonths={(months) =>
-            columnMutations.updateColumnMonths.mutate({ columnMonths: months })
-          }
           apiLinkedColumnIndex={
             apiLinkedProfileId === profile?.id
               ? (apiLinkedColumnIndex ?? null)
@@ -162,6 +173,7 @@ export function BudgetDetailPanel({
           apiService={apiService}
           sinkingFunds={sinkingFunds}
           nameColWidth={layout.effectiveNameColWidth}
+          savingsProfileName={profile?.name}
         />
       )}
 
@@ -190,7 +202,12 @@ export function BudgetDetailPanel({
             category={addingItemToCategory}
             onAdd={(category, subcategory, isEssential) =>
               void createItem
-                .mutateAsync({ category, subcategory, isEssential })
+                .mutateAsync({
+                  category,
+                  subcategory,
+                  isEssential,
+                  ...(profile?.id != null ? { profileId: profile.id } : {}),
+                })
                 .then(() => onSetAddingItemToCategory(null))
             }
             onCancel={() => onSetAddingItemToCategory(null)}

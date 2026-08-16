@@ -62,6 +62,8 @@ import {
   computeMaxMonthlyFunding,
   type CapacityPerson,
 } from "@/lib/calculators/savings-capacity";
+import { resolveContributionProfileId } from "@/lib/calculators/contribution-profile-resolution";
+import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 
 export default function SavingsPage() {
   const user = useUser();
@@ -78,10 +80,30 @@ export default function SavingsPage() {
     "savings_projection_years",
     3,
   );
-  const [activeContribProfileId] = usePersistedSetting<number | null>(
+  const [rawActiveContribProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",
     null,
   );
+  // Fetch contribution profiles list for subtitle display + Plan-pin validIds.
+  const { data: contribProfilesList } =
+    trpc.contributionProfile.list.useQuery();
+  // Plan pin -> globally-active contribution profile (single computation
+  // path — matches expenses/page.tsx, paycheck/page.tsx, contributions/page.tsx).
+  const { profileId: activeContribProfileId } = useEffectiveProfileId(
+    "contribution",
+    {
+      validIds: contribProfilesList?.map((p) => p.id),
+      localSelection: null,
+      globalDefaultId: rawActiveContribProfileId,
+    },
+  );
+  // null = "use whichever budget profile is active" (today's behavior,
+  // unchanged). Only affects the live pool used by Pull In New Pay /
+  // Update % — goal balances, targets, and the e-fund always reflect the
+  // real active profile regardless of this selection.
+  const [recalcProfileId, setRecalcProfileId] = usePersistedSetting<
+    number | null
+  >("savings_recalc_profile_id", null);
 
   // ── Shared queries ──
   const efundTierInput =
@@ -95,19 +117,27 @@ export default function SavingsPage() {
   const { data: apiBalancesData } = trpc.savings.listApiBalances.useQuery();
   const { data: apiCategoriesData } = trpc.budget.listApiCategories.useQuery();
 
+  const salaryOverrides = useSalaryOverrides();
   const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: budgetColumn,
+    activeContribProfileId,
+    ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
   });
+  const { data: budgetProfilesList } = trpc.budget.listProfiles.useQuery();
 
-  // Derive contribution profile from the budget column's linked profile (holistic rule)
-  const linkedProfileId =
-    (
-      budgetData?.profile?.columnContributionProfileIds as
-        (number | null)[] | null
-    )?.[budgetColumn] ?? null;
-  const effectiveContribProfileId = linkedProfileId ?? activeContribProfileId;
+  // Derive contribution profile from the budget column's linked profile
+  // (holistic rule) — resolveContributionProfileId is the only path this
+  // and computeActiveSummary/use-budget-derived-data.ts should use, so
+  // budget item $ amounts, this page's pool, and the payroll breakdown
+  // never disagree about which contribution profile is in effect.
+  const effectiveContribProfileId = resolveContributionProfileId(
+    budgetData?.profile?.columnContributionProfileIds as
+      (number | null)[] | null,
+    budgetColumn,
+    budgetData?.columnLabels?.length ?? 0,
+    activeContribProfileId,
+  );
 
-  const salaryOverrides = useSalaryOverrides();
   const paycheckInput = {
     ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
     ...(effectiveContribProfileId != null
@@ -118,9 +148,63 @@ export default function SavingsPage() {
     Object.keys(paycheckInput).length > 0 ? paycheckInput : undefined,
   );
 
-  // Fetch contribution profiles list for subtitle display
-  const { data: contribProfilesList } =
-    trpc.contributionProfile.list.useQuery();
+  // ── Budget leftover ──
+  const budgetMonthlyTotal = budgetData?.result
+    ? budgetData.columnMonths
+      ? (budgetData.weightedAnnualTotal ?? 0) / 12
+      : (budgetData.result.totalMonthly ?? 0)
+    : null;
+  const maxMonthlyFunding =
+    paycheckData && budgetMonthlyTotal !== null
+      ? computeMaxMonthlyFunding(
+          paycheckData.people as CapacityPerson[],
+          budgetMonthlyTotal,
+        )
+      : null;
+
+  // ── Recalculate/lock-in pool, scoped to whichever profile is selected ──
+  // Only feeds the "Pull In New Pay" / "Update %" preview + mutations
+  // below — every other number on this page (goal balances, targets,
+  // e-fund, chart, capacity bar) always reflects the real active profile,
+  // matching computeSummary's own scope (see savings.ts computeSummary,
+  // which is not profile-scoped).
+  const activeProfileId =
+    budgetProfilesList?.find((p) => p.isActive)?.id ?? null;
+  // Plan pin -> the page's own recalc-profile picker -> true active profile
+  // (single computation path — see useEffectiveProfileId).
+  const { profileId: effectiveRecalcProfileId } = useEffectiveProfileId(
+    "budget",
+    {
+      validIds: budgetProfilesList?.map((p) => p.id),
+      localSelection: recalcProfileId,
+      globalDefaultId: activeProfileId,
+    },
+  );
+  const isPreviewingOtherProfile =
+    effectiveRecalcProfileId !== null &&
+    effectiveRecalcProfileId !== activeProfileId;
+  const { data: recalcBudgetData } = trpc.budget.computeActiveSummary.useQuery(
+    {
+      selectedColumn: budgetColumn,
+      profileId: effectiveRecalcProfileId ?? undefined,
+      activeContribProfileId,
+      ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+    },
+    { enabled: isPreviewingOtherProfile },
+  );
+  const recalcMonthlyTotal =
+    isPreviewingOtherProfile && recalcBudgetData?.result
+      ? recalcBudgetData.columnMonths
+        ? (recalcBudgetData.weightedAnnualTotal ?? 0) / 12
+        : (recalcBudgetData.result.totalMonthly ?? 0)
+      : null;
+  const recalcMaxMonthlyFunding =
+    isPreviewingOtherProfile && paycheckData && recalcMonthlyTotal !== null
+      ? computeMaxMonthlyFunding(
+          paycheckData.people as CapacityPerson[],
+          recalcMonthlyTotal,
+        )
+      : maxMonthlyFunding;
 
   // ── Cross-section coordination ──
   const apiSync = useApiSync();
@@ -231,20 +315,6 @@ export default function SavingsPage() {
       });
     }
   }
-
-  // ── Budget leftover ──
-  const budgetMonthlyTotal = budgetData?.result
-    ? budgetData.columnMonths
-      ? (budgetData.weightedAnnualTotal ?? 0) / 12
-      : (budgetData.result.totalMonthly ?? 0)
-    : null;
-  const maxMonthlyFunding =
-    paycheckData && budgetMonthlyTotal !== null
-      ? computeMaxMonthlyFunding(
-          paycheckData.people as CapacityPerson[],
-          budgetMonthlyTotal,
-        )
-      : null;
 
   // ── Budget frequency note for help text ──
   const budgetNote = (() => {
@@ -604,6 +674,48 @@ export default function SavingsPage() {
                 {editTab === "allocations" && (
                   <div className="space-y-3">
                     {canEdit &&
+                      rawGoals.some((g) => g.allocationPercent != null) &&
+                      budgetProfilesList &&
+                      budgetProfilesList.length > 1 && (
+                        <div className="flex items-center justify-end gap-2 text-label text-faint">
+                          <label htmlFor="recalc-profile-select">
+                            Budget for Pull In / Update %:
+                          </label>
+                          <select
+                            id="recalc-profile-select"
+                            value={recalcProfileId ?? ""}
+                            onChange={(e) =>
+                              setRecalcProfileId(
+                                e.target.value === ""
+                                  ? null
+                                  : Number(e.target.value),
+                              )
+                            }
+                            className="px-1.5 py-0.5 rounded border border-surface-strong bg-surface-elevated text-secondary"
+                          >
+                            <option value="">
+                              Active
+                              {activeProfileId != null
+                                ? ` (${budgetProfilesList.find((p) => p.id === activeProfileId)?.name ?? ""})`
+                                : ""}
+                            </option>
+                            {budgetProfilesList
+                              .filter((p) => p.id !== activeProfileId)
+                              .map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {p.name}
+                                </option>
+                              ))}
+                          </select>
+                          {isPreviewingOtherProfile && (
+                            <span className="text-amber-600">
+                              Previewing — goal balances/targets still reflect
+                              your active budget.
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    {canEdit &&
                       (apiBalancesData?.service ||
                         rawGoals.some((g) => g.allocationPercent != null)) && (
                         <div className="flex justify-end gap-2">
@@ -615,7 +727,9 @@ export default function SavingsPage() {
                                 onClick={() =>
                                   apiSync.buildLockInAllPreview(
                                     rawGoals,
-                                    maxMonthlyFunding,
+                                    recalcMaxMonthlyFunding,
+                                    undefined,
+                                    effectiveRecalcProfileId ?? undefined,
                                   )
                                 }
                                 disabled={
@@ -632,7 +746,9 @@ export default function SavingsPage() {
                                 onClick={() =>
                                   apiSync.buildRecalculateAllPreview(
                                     rawGoals,
-                                    maxMonthlyFunding,
+                                    recalcMaxMonthlyFunding,
+                                    undefined,
+                                    effectiveRecalcProfileId ?? undefined,
                                   )
                                 }
                                 disabled={
@@ -822,6 +938,7 @@ export default function SavingsPage() {
               onPushPreview={apiSync.onPushPreview}
               recalculateAllocation={apiSync.recalculateAllocation}
               lockInAllocationPercent={apiSync.lockInAllocationPercent}
+              recalcProfileId={effectiveRecalcProfileId}
               callbacksRef={fundCallbacksRef}
               showNewFund={showNewFund}
               setShowNewFund={setShowNewFund}
@@ -854,11 +971,15 @@ export default function SavingsPage() {
         setRecalcPreviewItems={apiSync.setRecalcPreviewItems}
         pendingRecalcGoalId={apiSync.pendingRecalcGoalId}
         setPendingRecalcGoalId={apiSync.setPendingRecalcGoalId}
+        pendingRecalcProfileId={apiSync.pendingRecalcProfileId}
+        setPendingRecalcProfileId={apiSync.setPendingRecalcProfileId}
         recalculateMutation={apiSync.recalculateAllocation}
         lockInPreviewItems={apiSync.lockInPreviewItems}
         setLockInPreviewItems={apiSync.setLockInPreviewItems}
         pendingLockInGoalId={apiSync.pendingLockInGoalId}
         setPendingLockInGoalId={apiSync.setPendingLockInGoalId}
+        pendingLockInProfileId={apiSync.pendingLockInProfileId}
+        setPendingLockInProfileId={apiSync.setPendingLockInProfileId}
         lockInMutation={apiSync.lockInAllocationPercent}
       />
     </div>

@@ -51,6 +51,7 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "savings_monthly", tier: 1 },
   { name: "savings_planned_transactions", tier: 1 },
   { name: "savings_allocation_overrides", tier: 1 },
+  { name: "savings_goal_profile_allocations", tier: 1 },
   { name: "self_loans", tier: 1 },
   { name: "performance_accounts", tier: 1 },
   { name: "mortgage_what_if_scenarios", tier: 1 },

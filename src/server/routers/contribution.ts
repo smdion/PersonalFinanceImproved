@@ -20,6 +20,7 @@ import {
   computeBonusGross,
   loadAndApplyContribProfile,
   getSalaryTimelineForYear,
+  applySalaryOverride,
 } from "@/server/helpers";
 import { roundToCents } from "@/lib/utils/math";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
@@ -445,9 +446,11 @@ export const contributionRouter = createTRPCRouter({
             activeJob.annualSalary,
             asOfDate,
           );
-          const salary =
-            effectiveSalaryMap.get(person.id) ??
-            getEffectiveIncome(activeJob, dbSalary);
+          const salary = applySalaryOverride(
+            person.id,
+            getEffectiveIncome(activeJob, dbSalary),
+            effectiveSalaryMap,
+          );
           // Total compensation (always includes bonus) — used for savings rate denominator
           const totalCompensation = getTotalCompensation(activeJob, dbSalary);
           const periodsPerYear = getPeriodsPerYear(activeJob.payPeriod);

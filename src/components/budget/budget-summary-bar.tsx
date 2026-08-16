@@ -21,6 +21,7 @@ import { formatCurrency } from "@/lib/utils/format";
 import { FormError } from "@/components/ui/form-error";
 import { useBudgetPageContext } from "./budget-page-context";
 import { computeTotalSinking, computeUnallocated } from "./helpers";
+import { ProfileViewingBadge } from "./profile-viewing-badge";
 import type { ColumnResult, PayrollBreakdown, SinkingFundLine } from "./types";
 
 type Props = {
@@ -29,6 +30,8 @@ type Props = {
     profileName: string | null | undefined;
     activeProfileName: string | null | undefined;
     isViewingNonActive: boolean;
+    isPinned?: boolean;
+    onActivate?: () => void;
   };
   // Column display data (not in context — derived from server query result)
   columnDisplay: {
@@ -77,7 +80,13 @@ export function BudgetSummaryBar({
     canEdit,
     editMode,
   } = useBudgetPageContext();
-  const { profileName, activeProfileName, isViewingNonActive } = profileDisplay;
+  const {
+    profileName,
+    activeProfileName,
+    isViewingNonActive,
+    isPinned,
+    onActivate,
+  } = profileDisplay;
   const {
     isWeighted,
     columnMonths,
@@ -102,26 +111,13 @@ export function BudgetSummaryBar({
     <div className="flex flex-wrap items-center justify-between gap-2 bg-surface-sunken rounded-lg px-4 py-3 mb-4">
       <div className="flex flex-wrap items-center gap-3 sm:gap-6">
         <div className="flex items-center gap-2">
-          {isViewingNonActive ? (
-            <>
-              <span className="text-micro px-1.5 py-0.5 rounded bg-surface-strong text-muted font-semibold uppercase">
-                Viewing
-              </span>
-              <span className="text-xs text-muted">{profileName}</span>
-              {activeProfileName && (
-                <span className="text-caption text-faint">
-                  (active: {activeProfileName})
-                </span>
-              )}
-            </>
-          ) : (
-            <>
-              <span className="text-micro px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-semibold uppercase">
-                Active
-              </span>
-              <span className="text-xs text-muted">{profileName}</span>
-            </>
-          )}
+          <ProfileViewingBadge
+            profileName={profileName}
+            activeProfileName={activeProfileName}
+            isViewingNonActive={isViewingNonActive}
+            isPinned={isPinned}
+            onActivate={canEdit ? onActivate : undefined}
+          />
           {apiService && apiLinkedProfileId === profileId && (
             <span className="text-micro px-1.5 py-0.5 rounded bg-blue-100 text-blue-600 font-semibold">
               ⇄ {apiService.toUpperCase()} →{" "}

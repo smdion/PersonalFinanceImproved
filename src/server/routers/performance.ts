@@ -17,6 +17,7 @@ import {
   toNumber,
   getLatestSnapshot,
   computeMortgageBalance,
+  getActiveMortgageLoan,
   parseAppSettings,
   getEffectiveCash,
   getEffectiveOtherAssets,
@@ -1363,7 +1364,7 @@ export const performanceRouter = createTRPCRouter({
           asOfDate,
         );
 
-        const activeLoan = mortgageLoans.find((m) => m.isActive);
+        const activeLoan = getActiveMortgageLoan(mortgageLoans);
         const houseValue = activeLoan
           ? toNumber(
               activeLoan.propertyValueEstimated ??

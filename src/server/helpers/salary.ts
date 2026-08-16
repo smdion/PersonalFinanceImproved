@@ -40,6 +40,53 @@ export async function getCurrentSalary(
 }
 
 /**
+ * Apply a salary override map to an already-resolved raw salary — the
+ * single "final merge" step (`override ?? raw`) that used to be re-typed
+ * inline at every call site. Use this when the caller already has the raw
+ * salary in hand for another purpose (e.g. also needs it un-overridden for
+ * total-compensation math); use resolveEffectiveSalary below when it
+ * doesn't and would otherwise fetch it just to throw it away.
+ *
+ * The map itself should already be the merged Plan+Contribution-Profile
+ * map from loadAndApplyContribProfile (Plan wins if both are set) — this
+ * function doesn't decide Plan vs. Profile precedence, only applies
+ * whatever map it's handed.
+ *
+ * Whether a call site should PASS a populated map at all is a separate
+ * decision: pass one when the output is presented as "what your finances
+ * look like under the active Plan" (paycheck, budget item $ amounts); pass
+ * an empty map when the output is a persisted snapshot or the live/control
+ * arm of a comparison (see savings.ts's computeJobNetPayPerCheck,
+ * retirement.ts's computeRelocationAnalysis, and this file's
+ * loadLiveContribData for documented examples of the latter — overriding
+ * those would corrupt what they're for, not fix them).
+ */
+export function applySalaryOverride(
+  personId: number,
+  rawSalary: number,
+  salaryOverrideMap: Map<number, number>,
+): number {
+  return salaryOverrideMap.get(personId) ?? rawSalary;
+}
+
+/**
+ * Resolve a job's effective salary end to end: fetches the raw current
+ * salary (salary_changes history, falling back to jobs.annual_salary) and
+ * applies applySalaryOverride to it. See applySalaryOverride's docblock for
+ * the full precedence contract and when a call site should/shouldn't pass
+ * a populated override map.
+ */
+export async function resolveEffectiveSalary(
+  db: Db,
+  job: { id: number; personId: number; annualSalary: string },
+  salaryOverrideMap: Map<number, number>,
+  asOfDate: Date = new Date(),
+): Promise<number> {
+  const raw = await getCurrentSalary(db, job.id, job.annualSalary, asOfDate);
+  return applySalaryOverride(job.personId, raw, salaryOverrideMap);
+}
+
+/**
  * Fetch current salary + effective income for a list of jobs.
  * Replaces the duplicated `Promise.all(jobs.map(j => getCurrentSalary(...)))` pattern
  * across paycheck, contribution, networth, retirement, and historical routers.

@@ -27,6 +27,11 @@ import {
   getCurrentSalary,
   buildContribAccounts,
   requireLimit,
+  getResolvedGoalAllocations,
+  upsertGoalProfileAllocation,
+  deleteGoalProfileAllocation,
+  getActiveBudgetProfile,
+  resolveTargetBudgetProfile,
 } from "@/server/helpers";
 import { buildBracketInput } from "./paycheck";
 import type { DeductionLine, PaycheckInput } from "@/lib/calculators/types";
@@ -48,6 +53,11 @@ import type { BudgetCategoryGroup, BudgetTransaction } from "@/lib/budget-api";
  * calculator against live DB data. Used to snapshot baseNetPayPerCheck when
  * routing rules or growth rates are saved, so the value always reflects the
  * actual paycheck calculation rather than a client-supplied number.
+ *
+ * Intentionally does not apply a salary override map — this value gets
+ * persisted as a recorded fact, not shown as "what your finances look like
+ * under the active Plan." See applySalaryOverride's docblock (server/helpers/salary.ts)
+ * for the live-vs-override-aware rule.
  */
 async function computeJobNetPayPerCheck(
   db: Parameters<typeof getCurrentSalary>[0],
@@ -223,15 +233,25 @@ function resolveEfundTierIndex(
  * allowed to move a percentage-based goal's dollar/percent (see
  * recalculateAllocation's doc comment for why display/push never do this
  * live automatically).
+ *
+ * `profileId` lets a caller target a specific budget profile instead of
+ * whichever one is currently active; omitting it preserves the
+ * active-profile default. This is deliberately a *separate* computation
+ * from computeSummary's totalMonthlyPool (which sums each goal's stored
+ * monthlyContribution snapshot, not a live paycheck/budget derivation) —
+ * they aren't two paths to the same number today. If computeSummary is
+ * ever made profile-aware too, it should resolve profile selection through
+ * this same function rather than re-deriving it, or the two will drift.
  */
 async function computeLiveMaxMonthlyFunding(
   ctx: Context,
+  profileId?: number,
 ): Promise<number | null> {
   const paycheckCaller = createCallerFactory(paycheckRouter)(ctx);
   const budgetCaller = createCallerFactory(budgetRouter)(ctx);
   const [paycheckData, budgetSummary] = await Promise.all([
     paycheckCaller.computeSummary(),
-    budgetCaller.computeActiveSummary(),
+    budgetCaller.computeActiveSummary(profileId ? { profileId } : undefined),
   ]);
   const budgetMonthlyTotal = budgetSummary?.result
     ? budgetSummary.columnMonths
@@ -321,7 +341,7 @@ export const savingsRouter = createTRPCRouter({
       const [
         goals,
         selfLoans,
-        budgetProfiles,
+        activeProfile,
         budgetItems,
         plannedTransactions,
         allocationOverrides,
@@ -336,10 +356,7 @@ export const savingsRouter = createTRPCRouter({
           .select()
           .from(schema.selfLoans)
           .where(lt(schema.selfLoans.repaidAmount, schema.selfLoans.amount)),
-        ctx.db
-          .select()
-          .from(schema.budgetProfiles)
-          .where(eq(schema.budgetProfiles.isActive, true)),
+        getActiveBudgetProfile(ctx.db),
         ctx.db.select().from(schema.budgetItems),
         ctx.db
           .select()
@@ -421,7 +438,6 @@ export const savingsRouter = createTRPCRouter({
       }
 
       // Budget profile info for tier selection
-      const activeProfile = budgetProfiles[0];
       const budgetTierLabels = activeProfile?.columnLabels ?? [];
 
       const efundGoal = activeGoals.find((g) => g.isEmergencyFund);
@@ -492,15 +508,26 @@ export const savingsRouter = createTRPCRouter({
         efundResult = calculateEFund(efundInput);
       }
 
+      // Resolve each goal's effective allocation for the active profile —
+      // a savings_goal_profile_allocations override shadows the goal's
+      // global default when one exists (see getResolvedGoalAllocations,
+      // the only path that reads allocationPercent/monthlyContribution).
+      const resolvedByGoal = await getResolvedGoalAllocations(
+        ctx.db,
+        goals,
+        activeProfile?.id ?? null,
+      );
+
       // Calculate total monthly contributions for the pool
       const totalMonthlyPool = activeGoals.reduce(
-        (s, g) => s + toNumber(g.monthlyContribution),
+        (s, g) => s + (resolvedByGoal.get(g.id)?.monthlyContribution ?? 0),
         0,
       );
 
       const savingsInput: SavingsInput = {
         goals: activeGoals.map((g) => {
-          const monthlyContrib = toNumber(g.monthlyContribution);
+          const monthlyContrib =
+            resolvedByGoal.get(g.id)?.monthlyContribution ?? 0;
           // E-fund target is derived from calculator (targetMonths × essential expenses)
           const targetBalance =
             g.isEmergencyFund && efundResult
@@ -562,10 +589,29 @@ export const savingsRouter = createTRPCRouter({
         source: o.source ?? "manual",
       }));
 
+      // goals sent to the client carry the RESOLVED allocation (override
+      // for the active profile, if one exists) in place of the raw
+      // savings_goals columns — every client-side consumer (fund cards,
+      // recalculate/lock-in previews) reads allocationPercent/
+      // monthlyContribution straight off this list, so resolving once here
+      // keeps them all correct without each one re-deriving it.
+      const goalsForClient = goals.map((g) => {
+        const resolved = resolvedByGoal.get(g.id);
+        if (!resolved) return g;
+        return {
+          ...g,
+          allocationPercent:
+            resolved.allocationPercent != null
+              ? resolved.allocationPercent.toFixed(3)
+              : null,
+          monthlyContribution: resolved.monthlyContribution.toFixed(2),
+        };
+      });
+
       return {
         savings: savingsResult,
         efund: efundResult,
-        goals,
+        goals: goalsForClient,
         budgetTierLabels,
         efundTierIndex,
         plannedTransactions: plannedTx,
@@ -979,6 +1025,115 @@ export const savingsRouter = createTRPCRouter({
       }),
   }),
 
+  // ══ PER-PROFILE ALLOCATION OVERRIDES ══
+  // Lets a goal's allocationPercent/monthlyContribution differ by budget
+  // profile (e.g. "Car fund gets 12% under my current budget, 25% under a
+  // relocation what-if"). Edited from the budget page, scoped to whichever
+  // profile is being viewed there — see getResolvedGoalAllocations for the
+  // single resolution path this and every other reader/writer goes through.
+  goalProfileAllocations: createTRPCRouter({
+    /** Every active goal's effective allocation for a given profile —
+     *  resolved (override if one exists, else the goal's global default),
+     *  plus whether it's actually an override so the panel can show
+     *  "inherited" vs. "custom for this profile." */
+    list: protectedProcedure
+      .input(z.object({ profileId: z.number().int() }))
+      .query(async ({ ctx, input }) => {
+        const goals = await ctx.db
+          .select()
+          .from(schema.savingsGoals)
+          .where(eq(schema.savingsGoals.isActive, true))
+          .orderBy(asc(schema.savingsGoals.priority));
+        const resolved = await getResolvedGoalAllocations(
+          ctx.db,
+          goals,
+          input.profileId,
+        );
+        return goals.map((g) => {
+          const r = resolved.get(g.id)!;
+          return {
+            goalId: g.id,
+            name: g.name,
+            isEmergencyFund: g.isEmergencyFund,
+            allocationPercent: r.allocationPercent,
+            monthlyContribution: r.monthlyContribution,
+            isOverride: r.isOverride,
+          };
+        });
+      }),
+    /** Per-profile summary (total resolved monthly allocation + how many
+     *  goals have a custom override) for every budget profile at once — for
+     *  the profile-picker sidebar, mirroring contributionProfile.list's
+     *  summary/overrideCount fields. Routes through the same resolver as
+     *  `list` above (one call per profile) rather than re-deriving totals
+     *  independently. */
+    listSummaries: protectedProcedure.query(async ({ ctx }) => {
+      const [goals, profiles] = await Promise.all([
+        ctx.db
+          .select()
+          .from(schema.savingsGoals)
+          .where(eq(schema.savingsGoals.isActive, true)),
+        ctx.db
+          .select({ id: schema.budgetProfiles.id })
+          .from(schema.budgetProfiles),
+      ]);
+      return Promise.all(
+        profiles.map(async (p) => {
+          const resolved = await getResolvedGoalAllocations(
+            ctx.db,
+            goals,
+            p.id,
+          );
+          let totalMonthlyAllocation = 0;
+          let overrideCount = 0;
+          for (const r of resolved.values()) {
+            totalMonthlyAllocation += r.monthlyContribution;
+            if (r.isOverride) overrideCount++;
+          }
+          return { profileId: p.id, totalMonthlyAllocation, overrideCount };
+        }),
+      );
+    }),
+    /** Manual edit — sets an explicit override for (goalId, profileId),
+     *  independent of the live pool (contrast with recalculateAllocation/
+     *  lockInAllocationPercent, which also write here but derive the value
+     *  from the live pool instead of taking it directly from the caller). */
+    upsert: savingsProcedure
+      .input(
+        z.object({
+          goalId: z.number().int(),
+          profileId: z.number().int(),
+          allocationPercent: z.number().nullable(),
+          monthlyContribution: z.number(),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        await upsertGoalProfileAllocation(
+          ctx.db,
+          input.goalId,
+          input.profileId,
+          {
+            allocationPercent: input.allocationPercent,
+            monthlyContribution: input.monthlyContribution,
+          },
+        );
+        return { ok: true };
+      }),
+    /** Revert a goal to the global default for this profile. */
+    delete: savingsProcedure
+      .input(
+        z.object({ goalId: z.number().int(), profileId: z.number().int() }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        await deleteGoalProfileAllocation(
+          ctx.db,
+          input.goalId,
+          input.profileId,
+        );
+        return { ok: true };
+      }),
+  }),
+
   // ══ API CATEGORY SYNC ══
 
   /** Link a savings goal to a budget API category. */
@@ -1072,6 +1227,7 @@ export const savingsRouter = createTRPCRouter({
         category: z.string().min(1),
         subcategory: z.string().min(1),
         isEssential: z.boolean().default(false),
+        profileId: z.number().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -1086,11 +1242,9 @@ export const savingsRouter = createTRPCRouter({
           message: "Savings goal not found",
         });
 
-      // Find active budget profile
-      const [profile] = await ctx.db
-        .select()
-        .from(schema.budgetProfiles)
-        .where(eq(schema.budgetProfiles.isActive, true));
+      // Target profile: explicit input.profileId (a client editing a
+      // Plan-pinned/viewed non-active profile) else the globally-active one.
+      const profile = await resolveTargetBudgetProfile(ctx.db, input.profileId);
       if (!profile)
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
@@ -1225,13 +1379,10 @@ export const savingsRouter = createTRPCRouter({
         });
       }
 
-      const [goals, budgetProfiles, budgetItems, appSettings] =
+      const [goals, activeProfile, budgetItems, appSettings] =
         await Promise.all([
           ctx.db.select().from(schema.savingsGoals),
-          ctx.db
-            .select()
-            .from(schema.budgetProfiles)
-            .where(eq(schema.budgetProfiles.isActive, true)),
+          getActiveBudgetProfile(ctx.db),
           ctx.db.select().from(schema.budgetItems),
           ctx.db.select().from(schema.appSettings),
         ]);
@@ -1244,7 +1395,6 @@ export const savingsRouter = createTRPCRouter({
       if (toPush.length === 0) return { pushed: 0 };
 
       // Same tier resolution as computeSummary — see resolveEfundTierIndex.
-      const activeProfile = budgetProfiles[0];
       const efundTierIndex = resolveEfundTierIndex(appSettings);
       const essentialExpenses = activeProfile
         ? getEssentialExpenses(
@@ -1258,6 +1408,15 @@ export const savingsRouter = createTRPCRouter({
             activeProfile.columnMonths ?? null,
           )
         : 0;
+
+      // Resolve through the same path computeSummary uses — pushing the
+      // raw savings_goals column would push the goal's global default
+      // instead of whatever's actually in effect for the active profile.
+      const resolvedByGoal = await getResolvedGoalAllocations(
+        ctx.db,
+        toPush,
+        activeProfile?.id ?? null,
+      );
 
       let pushed = 0;
       for (const goal of toPush) {
@@ -1278,14 +1437,16 @@ export const savingsRouter = createTRPCRouter({
               pushed++;
             }
           } else {
-            // Push the stored snapshot, not a live percentage-of-income
+            // Push the resolved snapshot, not a live percentage-of-income
             // recompute — a percentage-based goal's dollar amount should
             // only move when the user explicitly hits "Recalculate"
             // (recalculateAllocation), not silently whenever paycheck/
             // budget data changes underneath it. See recalculateAllocation
             // for the live derivation and resolveEffectiveMonthlyContribution
             // for the shared formula it uses.
-            const monthly = toNumber(goal.monthlyContribution);
+            const monthly =
+              resolvedByGoal.get(goal.id)?.monthlyContribution ??
+              toNumber(goal.monthlyContribution);
             if (monthly > 0) {
               await client.updateCategoryGoalTarget(
                 goal.apiCategoryId!,
@@ -1315,29 +1476,63 @@ export const savingsRouter = createTRPCRouter({
   /**
    * Recompute a percentage-based savings goal's monthly_contribution from
    * the CURRENT live pool ((allocationPercent/100) * maxMonthlyFunding) and
-   * persist it as the new snapshot. This is the only path that lets a
-   * percentage-based goal's dollar amount move — display and push both
-   * read the stored snapshot directly (see pushContributionsToApi), so a
-   * salary/budget change never silently changes what's shown or sent to
-   * the budget API until the user explicitly asks for it here.
-   * Omitting goalId recalculates every active percentage-based goal from
-   * one shared live-pool snapshot (a single fetch applied to all rows, so
-   * a batch recalc can't see the pool shift mid-batch the way N separate
-   * live reads could).
+   * persist it as a savings_goal_profile_allocations override for the
+   * target profile (profileId, or the active profile if omitted) — never
+   * the raw savings_goals columns; see getResolvedGoalAllocations for why
+   * those columns aren't read/written anywhere except goal creation. This
+   * is the only path that lets a percentage-based goal's dollar amount
+   * move — display and push both read the resolved override directly (see
+   * pushContributionsToApi), so a salary/budget change never silently
+   * changes what's shown or sent to the budget API until the user
+   * explicitly asks for it here.
+   * Omitting goalId recalculates every active percentage-based goal (for
+   * the target profile) from one shared live-pool snapshot (a single fetch
+   * applied to all rows, so a batch recalc can't see the pool shift
+   * mid-batch the way N separate live reads could).
    */
   recalculateAllocation: savingsProcedure
-    .input(z.object({ goalId: z.number().int().optional() }).optional())
+    .input(
+      z
+        .object({
+          goalId: z.number().int().optional(),
+          profileId: z.number().int().optional(),
+        })
+        .optional(),
+    )
     .mutation(async ({ ctx, input }) => {
-      const goals = await ctx.db.select().from(schema.savingsGoals);
+      const [goals, targetProfile] = await Promise.all([
+        ctx.db.select().from(schema.savingsGoals),
+        resolveTargetBudgetProfile(ctx.db, input?.profileId),
+      ]);
+      const targetProfileId = targetProfile?.id;
+      if (targetProfileId === undefined) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "No active budget profile to recalculate against",
+        });
+      }
+
+      // Resolve against the target profile's own overrides — a goal that's
+      // only percentage-based under this profile (not globally) must still
+      // be picked up, and one that's been overridden to flat-dollar under
+      // this profile must be excluded even if its global default is a %.
+      const resolvedByGoal = await getResolvedGoalAllocations(
+        ctx.db,
+        goals,
+        targetProfileId,
+      );
       const targets = goals.filter(
         (g) =>
           g.isActive &&
-          g.allocationPercent != null &&
+          resolvedByGoal.get(g.id)?.allocationPercent != null &&
           (input?.goalId === undefined || g.id === input.goalId),
       );
       if (targets.length === 0) return { updated: 0 };
 
-      const maxMonthlyFunding = await computeLiveMaxMonthlyFunding(ctx);
+      const maxMonthlyFunding = await computeLiveMaxMonthlyFunding(
+        ctx,
+        targetProfileId,
+      );
       if (maxMonthlyFunding === null) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
@@ -1354,15 +1549,16 @@ export const savingsRouter = createTRPCRouter({
 
       await ctx.db.transaction(async (tx) => {
         for (const g of targets) {
+          const resolved = resolvedByGoal.get(g.id)!;
           const newAmount = resolveEffectiveMonthlyContribution(
-            toNumber(g.allocationPercent),
+            resolved.allocationPercent,
             maxMonthlyFunding,
-            toNumber(g.monthlyContribution),
+            resolved.monthlyContribution,
           );
-          await tx
-            .update(schema.savingsGoals)
-            .set({ monthlyContribution: newAmount.toFixed(2) })
-            .where(eq(schema.savingsGoals.id, g.id));
+          await upsertGoalProfileAllocation(tx, g.id, targetProfileId, {
+            allocationPercent: resolved.allocationPercent,
+            monthlyContribution: newAmount,
+          });
         }
       });
 
@@ -1382,18 +1578,44 @@ export const savingsRouter = createTRPCRouter({
    * recalculateAllocation for the shared live-pool computation this reuses).
    */
   lockInAllocationPercent: savingsProcedure
-    .input(z.object({ goalId: z.number().int().optional() }).optional())
+    .input(
+      z
+        .object({
+          goalId: z.number().int().optional(),
+          profileId: z.number().int().optional(),
+        })
+        .optional(),
+    )
     .mutation(async ({ ctx, input }) => {
-      const goals = await ctx.db.select().from(schema.savingsGoals);
+      const [goals, targetProfile] = await Promise.all([
+        ctx.db.select().from(schema.savingsGoals),
+        resolveTargetBudgetProfile(ctx.db, input?.profileId),
+      ]);
+      const targetProfileId = targetProfile?.id;
+      if (targetProfileId === undefined) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "No active budget profile to recalculate against",
+        });
+      }
+
+      const resolvedByGoal = await getResolvedGoalAllocations(
+        ctx.db,
+        goals,
+        targetProfileId,
+      );
       const targets = goals.filter(
         (g) =>
           g.isActive &&
-          g.allocationPercent != null &&
+          resolvedByGoal.get(g.id)?.allocationPercent != null &&
           (input?.goalId === undefined || g.id === input.goalId),
       );
       if (targets.length === 0) return { updated: 0 };
 
-      const maxMonthlyFunding = await computeLiveMaxMonthlyFunding(ctx);
+      const maxMonthlyFunding = await computeLiveMaxMonthlyFunding(
+        ctx,
+        targetProfileId,
+      );
       if (maxMonthlyFunding === null) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
@@ -1410,12 +1632,13 @@ export const savingsRouter = createTRPCRouter({
 
       await ctx.db.transaction(async (tx) => {
         for (const g of targets) {
+          const resolved = resolvedByGoal.get(g.id)!;
           const newPercent =
-            (toNumber(g.monthlyContribution) / maxMonthlyFunding) * 100;
-          await tx
-            .update(schema.savingsGoals)
-            .set({ allocationPercent: newPercent.toFixed(3) })
-            .where(eq(schema.savingsGoals.id, g.id));
+            (resolved.monthlyContribution / maxMonthlyFunding) * 100;
+          await upsertGoalProfileAllocation(tx, g.id, targetProfileId, {
+            allocationPercent: newPercent,
+            monthlyContribution: resolved.monthlyContribution,
+          });
         }
       });
 

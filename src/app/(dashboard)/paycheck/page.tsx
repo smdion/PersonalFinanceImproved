@@ -10,6 +10,7 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
+import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { ScenarioBanner } from "@/components/ui/scenario-indicator";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -59,7 +60,15 @@ export default function PaycheckPage() {
 
   // Local viewing state — defaults to global active, but can view others without activating
   const [viewingContribId, setViewingContribId] = useState<number | null>(null);
-  const displayContribId = viewingContribId ?? contribProfileId;
+  // Plan pin -> local viewing selection -> globally-active profile (single computation path)
+  const { profileId: displayContribId } = useEffectiveProfileId(
+    "contribution",
+    {
+      validIds: contribProfiles.map((p) => p.id),
+      localSelection: viewingContribId,
+      globalDefaultId: contribProfileId,
+    },
+  );
 
   const viewingProfileQuery = trpc.contributionProfile.getById.useQuery(
     { id: displayContribId! },

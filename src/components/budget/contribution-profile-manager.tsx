@@ -5,6 +5,11 @@ import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { FormError } from "@/components/ui/form-error";
+import { useScenario } from "@/lib/context/scenario-context";
+import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
+import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
+import { ProfileViewingBadge } from "./profile-viewing-badge";
+import { confirm } from "@/components/ui/confirm-dialog";
 
 type ProfileSummary = {
   id: number;
@@ -21,6 +26,9 @@ type ProfileSummary = {
 
 export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
   const utils = trpc.useUtils();
+  const { persistedScenarios, isInScenario, setScenarioContributionProfile } =
+    useScenario();
+  const [activeContribId, setActiveContribId] = useActiveContribProfile();
   const { data: profiles, isLoading } =
     trpc.contributionProfile.list.useQuery();
   const [selectedProfileId, setSelectedProfileId] = useState<number | null>(
@@ -50,6 +58,28 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
     onSuccess: invalidateProfileDeps,
   });
 
+  const liveProfile = profiles?.find((p) => p.isDefault);
+  // activeContribId === null means "use Live" (the isDefault row), not
+  // "nothing is active" — mirrors scenario-bar.tsx's ProfilePill logic.
+  const globalActiveContribId =
+    activeContribId === null ? (liveProfile?.id ?? null) : activeContribId;
+  // Plan pin -> local selection -> globally-active profile (single computation path)
+  const {
+    profileId: effectiveSelectedId,
+    source: effectiveSelectedSource,
+    isPinned: isPinnedProfile,
+  } = useEffectiveProfileId("contribution", {
+    validIds: profiles?.map((p) => p.id),
+    localSelection: selectedProfileId,
+    globalDefaultId: globalActiveContribId,
+  });
+  const activeProfileName = profiles?.find(
+    (p) => p.id === globalActiveContribId,
+  )?.name;
+  const isViewingNonActive =
+    effectiveSelectedSource === "user-selection" &&
+    effectiveSelectedId !== globalActiveContribId;
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -61,52 +91,61 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
 
   if (!profiles || profiles.length === 0) return null;
 
-  const liveProfile = profiles.find((p) => p.isDefault);
   const customProfiles = profiles.filter((p) => !p.isDefault);
-  // Auto-select live profile if nothing selected
-  const effectiveSelectedId = selectedProfileId ?? liveProfile?.id ?? null;
+  const displayedProfile = profiles.find((p) => p.id === effectiveSelectedId);
+
+  const handleActivate = (id: number) => {
+    if (isInScenario) {
+      setScenarioContributionProfile(id);
+    } else {
+      setActiveContribId(id === liveProfile?.id ? null : id);
+    }
+  };
 
   return (
     <div>
-      {/* Active summary bar */}
-      {liveProfile && (
+      {/* Viewing/Active/Pinned summary bar — same visual language as Budget/Savings Profiles */}
+      {displayedProfile && (
         <div className="flex items-center justify-between bg-surface-sunken rounded-lg px-4 py-3 mb-4">
           <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <span className="text-micro px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-semibold uppercase">
-                Active
-              </span>
-              <span className="text-xs text-muted">Current paycheck data</span>
-            </div>
+            <ProfileViewingBadge
+              profileName={displayedProfile.name}
+              activeProfileName={activeProfileName}
+              isViewingNonActive={isViewingNonActive}
+              isPinned={isPinnedProfile}
+              onActivate={
+                canEdit ? () => handleActivate(displayedProfile.id) : undefined
+              }
+            />
             <div className="flex items-center gap-5 text-xs">
               <div>
                 <span className="text-faint">Salary </span>
                 <span className="font-semibold text-secondary">
-                  {formatCurrency(liveProfile.summary.combinedSalary)}
+                  {formatCurrency(displayedProfile.summary.combinedSalary)}
                 </span>
               </div>
               <div>
                 <span className="text-faint">Contributions </span>
                 <span className="font-semibold text-secondary">
-                  {formatCurrency(liveProfile.summary.annualContributions)}
+                  {formatCurrency(displayedProfile.summary.annualContributions)}
                   <span className="text-faint font-normal">/yr</span>
                 </span>
               </div>
               <div>
                 <span className="text-faint">Employer Match </span>
                 <span className="font-semibold text-secondary">
-                  {formatCurrency(liveProfile.summary.annualEmployerMatch)}
+                  {formatCurrency(displayedProfile.summary.annualEmployerMatch)}
                   <span className="text-faint font-normal">/yr</span>
                 </span>
               </div>
             </div>
           </div>
-          <HelpTip text="What-if scenarios for salary and contributions. The live profile reflects your current paycheck data. Create custom profiles to model different jobs, salaries, or contribution strategies — then use them in the Relocation tool." />
+          <HelpTip text="Salary/contributions for the profile shown below. The Live profile reflects your current paycheck data. Create custom profiles to model different jobs, salaries, or contribution strategies — then use them in the Relocation tool. Selected independently from the budget profile above — linked per budget column instead (see each column's settings)." />
         </div>
       )}
 
       {/* Master-detail layout */}
-      <div className="grid grid-cols-[240px_1fr] gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
         {/* Left: profile list */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between mb-2">
@@ -132,6 +171,7 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
             <ProfileListItem
               profile={liveProfile}
               isSelected={effectiveSelectedId === liveProfile.id}
+              isActive={globalActiveContribId === liveProfile.id}
               onSelect={() => setSelectedProfileId(liveProfile.id)}
               onRename={
                 canEdit
@@ -166,6 +206,7 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
               key={p.id}
               profile={p}
               isSelected={effectiveSelectedId === p.id}
+              isActive={globalActiveContribId === p.id}
               onSelect={() => setSelectedProfileId(p.id)}
               onRename={
                 canEdit
@@ -185,6 +226,7 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
                 setRenamingProfileId(null);
               }}
               onRenameCancel={() => setRenamingProfileId(null)}
+              onActivate={canEdit ? () => handleActivate(p.id) : undefined}
               onEdit={
                 canEdit
                   ? () => {
@@ -195,8 +237,19 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
               }
               onDelete={
                 canEdit
-                  ? () => {
-                      if (confirm(`Delete profile "${p.name}"?`)) {
+                  ? async () => {
+                      const pinnedBy = persistedScenarios
+                        .filter((s) => s.contributionProfileId === p.id)
+                        .map((s) => s.name);
+                      const pinnedByClause =
+                        pinnedBy.length > 0
+                          ? ` The Plan${pinnedBy.length > 1 ? "s" : ""} "${pinnedBy.join('", "')}" pin${pinnedBy.length > 1 ? "" : "s"} this profile and will fall back to the active profile once it's gone.`
+                          : "";
+                      if (
+                        await confirm(
+                          `Delete profile "${p.name}"?${pinnedByClause}`,
+                        )
+                      ) {
                         deleteMutation.mutate({ id: p.id });
                       }
                     }
@@ -257,7 +310,9 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
 function ProfileListItem({
   profile,
   isSelected,
+  isActive,
   onSelect,
+  onActivate,
   onEdit,
   onDelete,
   onRename,
@@ -269,7 +324,11 @@ function ProfileListItem({
 }: {
   profile: ProfileSummary;
   isSelected: boolean;
+  /** Whether this profile is the currently (globally-)active one — distinct
+   *  from profile.isDefault, which only ever marks the immutable Live row. */
+  isActive: boolean;
   onSelect: () => void;
+  onActivate?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
   onRename?: () => void;
@@ -280,10 +339,17 @@ function ProfileListItem({
   onRenameCancel?: () => void;
 }) {
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
-      className={`w-full text-left px-3 py-2 rounded-md transition-colors group ${
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
+      className={`w-full text-left px-3 py-2 rounded-md transition-colors group cursor-pointer ${
         isSelected
           ? "bg-blue-50 border border-blue-300"
           : "hover:bg-surface-sunken border border-transparent"
@@ -310,17 +376,26 @@ function ProfileListItem({
               {profile.name}
             </span>
           )}
-          {profile.isDefault && (
+          {isActive && (
             <span className="text-micro px-1 py-0.5 rounded bg-green-100 text-green-700 font-semibold shrink-0">
               ACTIVE
             </span>
           )}
         </div>
-        {(onEdit || onDelete || onRename) && !isRenaming && (
+        {(onActivate || onEdit || onDelete || onRename) && !isRenaming && (
           <div
-            className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0"
+            className="flex gap-1 shrink-0 md:max-w-0 md:overflow-hidden md:opacity-0 md:group-hover:max-w-[9rem] md:group-hover:opacity-100 transition-all"
             onClick={(e) => e.stopPropagation()}
           >
+            {onActivate && !isActive && (
+              <button
+                type="button"
+                onClick={onActivate}
+                className="text-caption text-faint hover:text-green-600"
+              >
+                activate
+              </button>
+            )}
             {onRename && (
               <button
                 type="button"
@@ -351,7 +426,7 @@ function ProfileListItem({
           </div>
         )}
       </div>
-      <div className="flex gap-3 mt-1 text-caption text-muted">
+      <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-1 text-caption text-muted">
         <span>{formatCurrency(profile.summary.combinedSalary)}</span>
         <span>{formatCurrency(profile.summary.annualContributions)}/yr</span>
         {profile.summary.annualEmployerMatch > 0 && (
@@ -366,7 +441,7 @@ function ProfileListItem({
           </span>
         )}
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -391,14 +466,10 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
 
   return (
     <div>
-      {/* Profile header */}
+      {/* Profile header — Viewing/Active/Pinned state is already shown in the
+          summary bar above; this just names which profile's detail this is. */}
       <div className="flex items-center gap-2 mb-4">
         <h3 className="text-sm font-semibold text-primary">{profile.name}</h3>
-        {profile.isDefault && (
-          <span className="text-micro px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-semibold">
-            ACTIVE
-          </span>
-        )}
         {profile.description && (
           <span className="text-caption text-faint">
             — {profile.description}

@@ -11,6 +11,7 @@ export * from "./mortgage";
 export * from "./snapshot";
 export * from "./api-balance-resolution";
 export * from "./budget-api-push";
+export * from "./savings-allocation";
 
 // Canonical implementation lives in @/lib/utils/format — re-export for server-side consumers
 export { accountDisplayName } from "@/lib/utils/format";

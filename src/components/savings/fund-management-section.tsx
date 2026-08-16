@@ -111,6 +111,10 @@ export interface FundManagementSectionProps {
   lockInAllocationPercent: ReturnType<
     typeof trpc.savings.lockInAllocationPercent.useMutation
   >;
+  /** Budget profile to recompute the live pool against for per-goal
+   *  recalculate/lock-in; null/undefined uses the active profile (see the
+   *  savings page's recalcProfileId for the full explanation). */
+  recalcProfileId?: number | null;
   /** Ref exposing goal update callbacks for the page to pipe to other sections */
   callbacksRef: React.MutableRefObject<FundManagementCallbacks | null>;
   /** Shared new fund form state — page owns for top-level form, shared for sub-goal creation */
@@ -162,6 +166,7 @@ export function FundManagementSection({
   onPushPreview,
   recalculateAllocation,
   lockInAllocationPercent,
+  recalcProfileId,
   callbacksRef,
   showNewFund: _showNewFund,
   setShowNewFund: _setShowNewFund,
@@ -491,11 +496,21 @@ export function FundManagementSection({
                   onGoalUpdateMulti={handleGoalUpdateMulti}
                   maxMonthlyFunding={maxMonthlyFunding}
                   onRecalculateAllocation={() =>
-                    recalculateAllocation.mutate({ goalId: raw.id })
+                    recalculateAllocation.mutate({
+                      goalId: raw.id,
+                      ...(recalcProfileId != null
+                        ? { profileId: recalcProfileId }
+                        : {}),
+                    })
                   }
                   recalculateAllocationPending={recalculateAllocation.isPending}
                   onLockInAllocationPercent={() =>
-                    lockInAllocationPercent.mutate({ goalId: raw.id })
+                    lockInAllocationPercent.mutate({
+                      goalId: raw.id,
+                      ...(recalcProfileId != null
+                        ? { profileId: recalcProfileId }
+                        : {}),
+                    })
                   }
                   lockInAllocationPercentPending={
                     lockInAllocationPercent.isPending

@@ -13,7 +13,7 @@
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import { SQLiteSyncDialect } from "drizzle-orm/sqlite-core";
-import { eq, type SQL } from "drizzle-orm";
+import { and, eq, type SQL } from "drizzle-orm";
 import * as sqliteSchemaTables from "@/lib/db/schema-sqlite";
 import {
   createTestCaller,
@@ -415,11 +415,34 @@ describe("savings.pushContributionsToApi", () => {
 // recalculateAllocation
 // ══════════════════════════════════════════════════════════════════════════════
 
+/** Reads the resolved override row for (goalId, profileId) — these
+ *  mutations now always write to savings_goal_profile_allocations, never
+ *  the raw savings_goals columns (see getResolvedGoalAllocations). */
+function getOverrideRow(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  goalId: number,
+  profileId: number,
+) {
+  return db
+    .select()
+    .from(sqliteSchemaTables.savingsGoalProfileAllocations)
+    .where(
+      and(
+        eq(sqliteSchemaTables.savingsGoalProfileAllocations.goalId, goalId),
+        eq(
+          sqliteSchemaTables.savingsGoalProfileAllocations.budgetProfileId,
+          profileId,
+        ),
+      ),
+    )
+    .all()[0];
+}
+
 describe("savings.recalculateAllocation", () => {
-  it("recomputes a percentage-based goal's monthlyContribution from the live pool and persists it", async () => {
+  it("recomputes a percentage-based goal's monthlyContribution from the live pool and persists it as a profile override", async () => {
     const ctx = await createTestCaller();
     try {
-      seedStandardDataset(ctx.db);
+      const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Percent Goal",
         monthlyContribution: "150",
@@ -432,12 +455,15 @@ describe("savings.recalculateAllocation", () => {
       });
       expect(result.updated).toBe(1);
 
-      const [row] = await ctx.db
+      const [globalRow] = await ctx.db
         .select()
         .from(sqliteSchemaTables.savingsGoals)
         .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
-      expect(row).toBeDefined();
-      expect(Number(row!.monthlyContribution)).not.toBe(150);
+      expect(globalRow!.monthlyContribution).toBe("150");
+
+      const override = getOverrideRow(ctx.db, goalId, profileId);
+      expect(override).toBeDefined();
+      expect(Number(override!.monthlyContribution)).not.toBe(150);
     } finally {
       ctx.cleanup();
     }
@@ -446,7 +472,7 @@ describe("savings.recalculateAllocation", () => {
   it("leaves non-percentage goals untouched and reports updated:0 when no percentage-based goals exist", async () => {
     const ctx = await createTestCaller();
     try {
-      seedStandardDataset(ctx.db);
+      const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Flat Goal",
         monthlyContribution: "150",
@@ -456,12 +482,7 @@ describe("savings.recalculateAllocation", () => {
 
       const result = await ctx.caller.savings.recalculateAllocation();
       expect(result.updated).toBe(0);
-
-      const [row] = await ctx.db
-        .select()
-        .from(sqliteSchemaTables.savingsGoals)
-        .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
-      expect(row!.monthlyContribution).toBe("150");
+      expect(getOverrideRow(ctx.db, goalId, profileId)).toBeUndefined();
     } finally {
       ctx.cleanup();
     }
@@ -470,7 +491,7 @@ describe("savings.recalculateAllocation", () => {
   it("only recalculates the specified goalId, leaving other percentage-based goals untouched", async () => {
     const ctx = await createTestCaller();
     try {
-      seedStandardDataset(ctx.db);
+      const { profileId } = seedStandardDataset(ctx.db);
       const goalA = seedSavingsGoal(ctx.db, {
         name: "Goal A",
         monthlyContribution: "150",
@@ -488,12 +509,7 @@ describe("savings.recalculateAllocation", () => {
         goalId: goalA,
       });
       expect(result.updated).toBe(1);
-
-      const [rowB] = await ctx.db
-        .select()
-        .from(sqliteSchemaTables.savingsGoals)
-        .where(eq(sqliteSchemaTables.savingsGoals.id, goalB));
-      expect(rowB!.monthlyContribution).toBe("250");
+      expect(getOverrideRow(ctx.db, goalB, profileId)).toBeUndefined();
     } finally {
       ctx.cleanup();
     }
@@ -502,7 +518,7 @@ describe("savings.recalculateAllocation", () => {
   it("skips inactive percentage-based goals", async () => {
     const ctx = await createTestCaller();
     try {
-      seedStandardDataset(ctx.db);
+      const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Inactive Percent Goal",
         monthlyContribution: "150",
@@ -512,12 +528,7 @@ describe("savings.recalculateAllocation", () => {
 
       const result = await ctx.caller.savings.recalculateAllocation();
       expect(result.updated).toBe(0);
-
-      const [row] = await ctx.db
-        .select()
-        .from(sqliteSchemaTables.savingsGoals)
-        .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
-      expect(row!.monthlyContribution).toBe("150");
+      expect(getOverrideRow(ctx.db, goalId, profileId)).toBeUndefined();
     } finally {
       ctx.cleanup();
     }
@@ -546,6 +557,51 @@ describe("savings.recalculateAllocation", () => {
       ctx.cleanup();
     }
   });
+
+  it("recomputes against a non-active profile's budget items when profileId is given, without touching the active profile's override", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const { profileId: activeProfileId } = seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Percent Goal",
+        monthlyContribution: "150",
+        allocationPercent: "10",
+        isActive: true,
+      });
+
+      // A second, inactive profile with a much smaller budget total than
+      // the active one (2800 across rent/groceries/dining) leaves far more
+      // pool available for savings, so the two profiles must not produce
+      // the same recalculated amount.
+      const altProfileId = await seedBudgetProfile(ctx.db, "Alt Budget", false);
+      seedBudgetItem(ctx.db, altProfileId, {
+        category: "Essentials",
+        subcategory: "Rent",
+        amounts: [500],
+      });
+
+      await ctx.caller.savings.recalculateAllocation({ goalId });
+      const activeOverride = getOverrideRow(ctx.db, goalId, activeProfileId);
+
+      await ctx.caller.savings.recalculateAllocation({
+        goalId,
+        profileId: altProfileId,
+      });
+      const altOverride = getOverrideRow(ctx.db, goalId, altProfileId);
+
+      expect(activeProfileId).not.toBe(altProfileId);
+      expect(Number(altOverride!.monthlyContribution)).not.toBe(
+        Number(activeOverride!.monthlyContribution),
+      );
+      // The second call (targeting altProfileId) must not have touched the
+      // active profile's own override row.
+      expect(
+        getOverrideRow(ctx.db, goalId, activeProfileId)!.monthlyContribution,
+      ).toBe(activeOverride!.monthlyContribution);
+    } finally {
+      ctx.cleanup();
+    }
+  });
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -553,10 +609,10 @@ describe("savings.recalculateAllocation", () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe("savings.lockInAllocationPercent", () => {
-  it("recomputes a percentage-based goal's allocationPercent from the live pool without touching monthlyContribution", async () => {
+  it("recomputes a percentage-based goal's allocationPercent from the live pool without touching monthlyContribution, as a profile override", async () => {
     const ctx = await createTestCaller();
     try {
-      seedStandardDataset(ctx.db);
+      const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Percent Goal",
         monthlyContribution: "150",
@@ -569,13 +625,10 @@ describe("savings.lockInAllocationPercent", () => {
       });
       expect(result.updated).toBe(1);
 
-      const [row] = await ctx.db
-        .select()
-        .from(sqliteSchemaTables.savingsGoals)
-        .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
-      expect(row).toBeDefined();
-      expect(row!.monthlyContribution).toBe("150");
-      expect(row!.allocationPercent).not.toBe("10");
+      const override = getOverrideRow(ctx.db, goalId, profileId);
+      expect(override).toBeDefined();
+      expect(Number(override!.monthlyContribution)).toBe(150);
+      expect(override!.allocationPercent).not.toBe("10");
     } finally {
       ctx.cleanup();
     }
@@ -584,7 +637,7 @@ describe("savings.lockInAllocationPercent", () => {
   it("leaves non-percentage goals untouched and reports updated:0 when no percentage-based goals exist", async () => {
     const ctx = await createTestCaller();
     try {
-      seedStandardDataset(ctx.db);
+      const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Flat Goal",
         monthlyContribution: "150",
@@ -594,12 +647,7 @@ describe("savings.lockInAllocationPercent", () => {
 
       const result = await ctx.caller.savings.lockInAllocationPercent();
       expect(result.updated).toBe(0);
-
-      const [row] = await ctx.db
-        .select()
-        .from(sqliteSchemaTables.savingsGoals)
-        .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
-      expect(row!.allocationPercent).toBeNull();
+      expect(getOverrideRow(ctx.db, goalId, profileId)).toBeUndefined();
     } finally {
       ctx.cleanup();
     }
@@ -608,7 +656,7 @@ describe("savings.lockInAllocationPercent", () => {
   it("only updates the specified goalId, leaving other percentage-based goals untouched", async () => {
     const ctx = await createTestCaller();
     try {
-      seedStandardDataset(ctx.db);
+      const { profileId } = seedStandardDataset(ctx.db);
       const goalA = seedSavingsGoal(ctx.db, {
         name: "Goal A",
         monthlyContribution: "150",
@@ -626,12 +674,7 @@ describe("savings.lockInAllocationPercent", () => {
         goalId: goalA,
       });
       expect(result.updated).toBe(1);
-
-      const [rowB] = await ctx.db
-        .select()
-        .from(sqliteSchemaTables.savingsGoals)
-        .where(eq(sqliteSchemaTables.savingsGoals.id, goalB));
-      expect(rowB!.allocationPercent).toBe("20");
+      expect(getOverrideRow(ctx.db, goalB, profileId)).toBeUndefined();
     } finally {
       ctx.cleanup();
     }
@@ -640,7 +683,7 @@ describe("savings.lockInAllocationPercent", () => {
   it("skips inactive percentage-based goals", async () => {
     const ctx = await createTestCaller();
     try {
-      seedStandardDataset(ctx.db);
+      const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Inactive Percent Goal",
         monthlyContribution: "150",
@@ -650,12 +693,7 @@ describe("savings.lockInAllocationPercent", () => {
 
       const result = await ctx.caller.savings.lockInAllocationPercent();
       expect(result.updated).toBe(0);
-
-      const [row] = await ctx.db
-        .select()
-        .from(sqliteSchemaTables.savingsGoals)
-        .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
-      expect(row!.allocationPercent).toBe("10");
+      expect(getOverrideRow(ctx.db, goalId, profileId)).toBeUndefined();
     } finally {
       ctx.cleanup();
     }
@@ -685,10 +723,47 @@ describe("savings.lockInAllocationPercent", () => {
     }
   });
 
+  it("recomputes against a non-active profile's budget items when profileId is given", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const { profileId: activeProfileId } = seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Percent Goal",
+        monthlyContribution: "150",
+        allocationPercent: "10",
+        isActive: true,
+      });
+
+      // See the analogous recalculateAllocation test above for why a
+      // smaller-budget alt profile is expected to change the result.
+      const altProfileId = await seedBudgetProfile(ctx.db, "Alt Budget", false);
+      seedBudgetItem(ctx.db, altProfileId, {
+        category: "Essentials",
+        subcategory: "Rent",
+        amounts: [500],
+      });
+
+      await ctx.caller.savings.lockInAllocationPercent({ goalId });
+      const activeOverride = getOverrideRow(ctx.db, goalId, activeProfileId);
+
+      await ctx.caller.savings.lockInAllocationPercent({
+        goalId,
+        profileId: altProfileId,
+      });
+      const altOverride = getOverrideRow(ctx.db, goalId, altProfileId);
+
+      expect(Number(altOverride!.allocationPercent)).not.toBe(
+        Number(activeOverride!.allocationPercent),
+      );
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
   it("round-trips with recalculateAllocation: locking in % then pulling in pay recovers the original dollar amount within a cent", async () => {
     const ctx = await createTestCaller();
     try {
-      seedStandardDataset(ctx.db);
+      const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Round Trip Goal",
         monthlyContribution: "289.90",
@@ -699,13 +774,10 @@ describe("savings.lockInAllocationPercent", () => {
       await ctx.caller.savings.lockInAllocationPercent({ goalId });
       await ctx.caller.savings.recalculateAllocation({ goalId });
 
-      const [row] = await ctx.db
-        .select()
-        .from(sqliteSchemaTables.savingsGoals)
-        .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
-      expect(Math.abs(Number(row!.monthlyContribution) - 289.9)).toBeLessThan(
-        1,
-      );
+      const override = getOverrideRow(ctx.db, goalId, profileId);
+      expect(
+        Math.abs(Number(override!.monthlyContribution) - 289.9),
+      ).toBeLessThan(1);
     } finally {
       ctx.cleanup();
     }

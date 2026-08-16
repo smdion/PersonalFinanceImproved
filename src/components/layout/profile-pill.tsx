@@ -5,7 +5,12 @@ import { useState, useRef, useEffect } from "react";
 export type ProfileOption = {
   id: string | number;
   name: string;
+  /** Drives the highlight + the closed pill's label — the effectively-in-effect profile. */
   isActive: boolean;
+  /** Right-aligned status text, e.g. "Active", "Pinned", "Active (global)".
+   *  Lets a Plan-pinned option say so distinctly from the true global default
+   *  when they differ, instead of both silently reading "Active". */
+  badge?: string;
 };
 
 type ProfilePillProps = {
@@ -86,9 +91,11 @@ export function ProfilePill({
                 }`}
               >
                 <span className="truncate">{o.name}</span>
-                {o.isActive && (
-                  <span className="ml-auto text-caption text-blue-500 shrink-0">
-                    Active
+                {o.badge && (
+                  <span
+                    className={`ml-auto text-caption shrink-0 ${o.isActive ? "text-blue-500" : "text-faint"}`}
+                  >
+                    {o.badge}
                   </span>
                 )}
               </button>

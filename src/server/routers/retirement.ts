@@ -14,6 +14,7 @@ import {
   computeAnnualContribution,
   computeEmployerMatch,
   fetchNonDefaultContributionProfile,
+  getPrimaryPerson,
 } from "@/server/helpers";
 import { isRetirementParent } from "@/lib/config/account-types";
 import { getAge } from "@/lib/utils/date";
@@ -128,7 +129,7 @@ export const retirementRouter = createTRPCRouter({
           isRetirementParent(perfCatMap.get(c.performanceAccountId)),
       );
 
-      const primaryPerson = people.find((p) => p.isPrimaryUser) ?? people[0];
+      const primaryPerson = getPrimaryPerson(people);
       if (!primaryPerson) return { result: null, budgetInfo: null };
 
       const settings = retSettings.find((s) => s.personId === primaryPerson.id);
@@ -243,7 +244,11 @@ export const retirementRouter = createTRPCRouter({
         }
       }
 
-      // Salary
+      // Salary — intentionally live/un-overridden. This is the control arm
+      // of the relocation comparison (liveCombinedSalary below); applying a
+      // Plan salary override here would collapse the comparison it exists
+      // to run. See applySalaryOverride's docblock (server/helpers/salary.ts)
+      // for the live-vs-override-aware rule.
       const asOfDate = referenceDate;
       const activeJobs = allJobs.filter((j) => !j.endDate);
       const jobSalaries = await Promise.all(

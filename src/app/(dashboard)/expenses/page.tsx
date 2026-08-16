@@ -11,6 +11,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { YNAB_EXPENSE_EXCLUDED_GROUPS } from "@/lib/budget-api";
 import {
@@ -90,20 +91,53 @@ export default function ExpensesPage() {
 
   const { data: apiCategories } = trpc.budget.listApiCategories.useQuery();
   const { data: apiActuals } = trpc.budget.listApiActuals.useQuery();
-  const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
-    selectedColumn: activeColumn,
-  });
+  const { data: budgetProfilesList } = trpc.budget.listProfiles.useQuery();
+  const { data: contribProfilesList } =
+    trpc.contributionProfile.list.useQuery();
 
   // Salary overrides from scenario context (used by all pages) — mirrors
   // paycheck/page.tsx so a what-if salary scenario stays holistic across pages.
   const scenarioSalaryOverrides = useSalaryOverrides();
 
+  // Plan pin -> globally-active profile for both budget and contribution —
+  // this page has no local viewing picker of its own, so localSelection is
+  // always null (single computation path — see useEffectiveProfileId).
+  const activeBudgetProfileId =
+    budgetProfilesList?.find((p) => p.isActive)?.id ?? null;
+  const { profileId: effectiveBudgetProfileId } = useEffectiveProfileId(
+    "budget",
+    {
+      validIds: budgetProfilesList?.map((p) => p.id),
+      localSelection: null,
+      globalDefaultId: activeBudgetProfileId,
+    },
+  );
+  const { profileId: effectiveContribProfileId } = useEffectiveProfileId(
+    "contribution",
+    {
+      validIds: contribProfilesList?.map((p) => p.id),
+      localSelection: null,
+      globalDefaultId: activeContribProfileId,
+    },
+  );
+
+  const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
+    selectedColumn: activeColumn,
+    ...(effectiveBudgetProfileId != null
+      ? { profileId: effectiveBudgetProfileId }
+      : {}),
+    activeContribProfileId: effectiveContribProfileId,
+    ...(scenarioSalaryOverrides.length > 0
+      ? { salaryOverrides: scenarioSalaryOverrides }
+      : {}),
+  });
+
   const paycheckInput = {
     ...(scenarioSalaryOverrides.length > 0
       ? { salaryOverrides: scenarioSalaryOverrides }
       : {}),
-    ...(activeContribProfileId != null
-      ? { contributionProfileId: activeContribProfileId }
+    ...(effectiveContribProfileId != null
+      ? { contributionProfileId: effectiveContribProfileId }
       : {}),
   };
   const { data: paycheckData } = trpc.paycheck.computeSummary.useQuery(

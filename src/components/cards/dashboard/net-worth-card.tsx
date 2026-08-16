@@ -5,10 +5,13 @@ import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
+import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { LoadingCard, ErrorCard } from "./utils";
 
 function NetWorthCardImpl() {
-  const { data, isLoading, error } = trpc.networth.computeSummary.useQuery();
+  const targeting = useYearEndTargetingInput();
+  const { data, isLoading, error } =
+    trpc.networth.computeSummary.useQuery(targeting);
   const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
   const [useMarket, setUseMarket] = useState(true);
   if (isLoading) return <LoadingCard title="Net Worth" />;

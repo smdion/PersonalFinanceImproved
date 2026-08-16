@@ -94,7 +94,8 @@ export type ExtraPaycheckRoutingData = {
 //   3.  Budget ..................... budgetProfiles, budgetItems
 //   4.  Savings (sinking funds) .... savingsGoals, savingsMonthly,
 //                                    savingsPlannedTransactions,
-//                                    savingsAllocationOverrides
+//                                    savingsAllocationOverrides,
+//                                    savingsGoalProfileAllocations
 //   5.  Brokerage goals ............ brokerageGoals, brokeragePlannedTransactions
 //   6.  Self loans ................. selfLoans
 //   7.  Portfolio performance ...... performanceAccounts, portfolioSnapshots,
@@ -480,6 +481,34 @@ export const savingsAllocationOverrides = sqliteTable(
     uniqueIndex("savings_alloc_override_goal_month_idx").on(
       table.goalId,
       table.monthDate,
+    ),
+  ],
+);
+
+// Per-(goal, budget profile) allocation overrides — lets a goal's
+// allocationPercent/monthlyContribution differ by which budget profile is
+// active (e.g. "Car fund gets 12% under my current budget, 25% under a
+// relocation what-if"). Row absent for a (goal, profile) pair means
+// "inherits savings_goals.allocationPercent/monthlyContribution" — the
+// same override-shadows-default shape savingsAllocationOverrides already
+// uses for per-month overrides, just keyed by profile instead of month.
+export const savingsGoalProfileAllocations = sqliteTable(
+  "savings_goal_profile_allocations",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    goalId: integer("goal_id")
+      .notNull()
+      .references(() => savingsGoals.id, { onDelete: "cascade" }),
+    budgetProfileId: integer("budget_profile_id")
+      .notNull()
+      .references(() => budgetProfiles.id, { onDelete: "cascade" }),
+    allocationPercent: text("allocation_percent"),
+    monthlyContribution: text("monthly_contribution").notNull(),
+  },
+  (table) => [
+    uniqueIndex("savings_goal_profile_alloc_goal_profile_idx").on(
+      table.goalId,
+      table.budgetProfileId,
     ),
   ],
 );
@@ -1508,24 +1537,46 @@ export type ScenarioOverrides = Record<
   Record<string, Record<string, unknown>>
 >;
 
-export const scenarios = sqliteTable("scenarios", {
-  id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-  name: text("name").notNull(),
-  description: text("description"),
-  overrides: text("overrides", { mode: "json" })
-    .$type<ScenarioOverrides>()
-    .notNull()
-    .default(sql`'{}'`),
-  isBaseline: integer("is_baseline", { mode: "boolean" })
-    .notNull()
-    .default(false),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
-});
+export const scenarios = sqliteTable(
+  "scenarios",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    name: text("name").notNull(),
+    description: text("description"),
+    overrides: text("overrides", { mode: "json" })
+      .$type<ScenarioOverrides>()
+      .notNull()
+      .default(sql`'{}'`),
+    isBaseline: integer("is_baseline", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    /** Pins which Budget Profile is "active" for every page/calculator when this
+     *  Plan is selected, instead of the globally-active budget_profiles row.
+     *  A reference pin, not a value override — deliberately a dedicated FK
+     *  column rather than a generic `overrides` entry (see docs/RULES.md). */
+    budgetProfileId: integer("budget_profile_id").references(
+      () => budgetProfiles.id,
+      { onDelete: "set null" },
+    ),
+    /** Pins which Contribution Profile is "active" for this Plan — see budgetProfileId. */
+    contributionProfileId: integer("contribution_profile_id").references(
+      () => contributionProfiles.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    index("scenarios_budget_profile_id_idx").on(table.budgetProfileId),
+    index("scenarios_contribution_profile_id_idx").on(
+      table.contributionProfileId,
+    ),
+  ],
+);
 
 // --- Monte Carlo: Asset class parameters and glide path ---
 

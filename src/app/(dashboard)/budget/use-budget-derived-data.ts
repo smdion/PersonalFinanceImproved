@@ -13,6 +13,7 @@
 
 import { useMemo, useCallback } from "react";
 import { usePerColumnPaycheck } from "@/lib/hooks/use-per-column-paycheck";
+import { resolveContributionProfileIdsForAllColumns } from "@/lib/calculators/contribution-profile-resolution";
 import {
   buildPayrollBreakdown,
   buildNonPayrollContribs,
@@ -50,6 +51,11 @@ export type SavingsGoalEntry = {
   isActive: boolean;
   monthlyContribution: string | number;
   allocationPercent?: string | number | null;
+  /** True when monthlyContribution is a per-(goal, viewed-profile) override
+   *  rather than the goal's global default — surfaced in the UI so a
+   *  profile-specific sinking-fund amount doesn't look identical to a
+   *  plain one. See src/server/helpers/savings-allocation.ts. */
+  isOverride?: boolean;
 };
 
 type DataShape =
@@ -102,15 +108,15 @@ export function useBudgetDerivedData({
 
   const columnContribProfileIds = useMemo(() => {
     if (numCols === 0) return [];
-    if (!profile) return cols.map(() => activeContribProfileId);
     const stored =
-      (profile.columnContributionProfileIds as (number | null)[] | null) ??
+      (profile?.columnContributionProfileIds as (number | null)[] | null) ??
       null;
-    if (stored && stored.length === numCols) {
-      return stored.map((id) => id ?? activeContribProfileId);
-    }
-    return cols.map(() => activeContribProfileId);
-  }, [profile, numCols, cols, activeContribProfileId]);
+    return resolveContributionProfileIdsForAllColumns(
+      stored,
+      numCols,
+      activeContribProfileId,
+    );
+  }, [profile, numCols, activeContribProfileId]);
 
   const perColumnPaycheckData = usePerColumnPaycheck(
     columnContribProfileIds,
@@ -230,6 +236,11 @@ export function useBudgetDerivedData({
   // percentage-based goals — it should only change when the user
   // explicitly hits "Recalculate" on the savings page (recalculateAllocation),
   // not whenever paycheck/budget data shifts underneath it.
+  // `savingsGoals` here is already resolved server-side for the profile
+  // being viewed (goals with no override fall back to the global default,
+  // per getResolvedGoalAllocations) — this must not read a raw,
+  // unresolved savings_goals row, or this total can silently disagree
+  // with what the Savings page shows for the same profile.
 
   const sinkingFunds: SinkingFundLine[] = useMemo(
     () =>
@@ -239,6 +250,7 @@ export function useBudgetDerivedData({
           id: g.id,
           name: g.name,
           monthlyContribution: Number(g.monthlyContribution),
+          isOverride: g.isOverride ?? false,
         }))
         .filter((f) => f.monthlyContribution > 0),
     [savingsGoals],

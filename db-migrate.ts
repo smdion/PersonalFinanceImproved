@@ -55,6 +55,7 @@ const VERSION_TABLE_NAMES = [
   "savings_planned_transactions",
   "savings_planned_tx_settlements",
   "savings_allocation_overrides",
+  "savings_goal_profile_allocations",
   "self_loans",
   "performance_accounts",
   "mortgage_what_if_scenarios",

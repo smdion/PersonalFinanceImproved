@@ -4,17 +4,22 @@
 import { eq, desc, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { AccountCategory } from "@/lib/calculators/types";
-import { toNumber } from "./transforms";
+import { toNumber, getPrimaryPerson } from "./transforms";
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 import type { Db } from "./transforms";
 import { parseAppSettings } from "./settings";
-import { getSalariesForJobs, getTotalCompensation } from "./salary";
+import {
+  getSalariesForJobs,
+  getTotalCompensation,
+  applySalaryOverride,
+} from "./salary";
 import {
   getEffectiveCash,
   getEffectiveOtherAssets,
   getAnnualExpensesFromBudget,
+  type BudgetTargeting,
 } from "./budget";
-import { computeMortgageBalance } from "./mortgage";
+import { computeMortgageBalance, getActiveMortgageLoan } from "./mortgage";
 import { calculateNetWorth } from "@/lib/calculators/net-worth";
 import { countPeriodsElapsed } from "@/lib/calculators/paycheck";
 import type { NetWorthInput } from "@/lib/calculators/types";
@@ -277,14 +282,34 @@ export type YearEndRow = {
  *
  * Results are cached for 5 seconds to deduplicate concurrent calls (e.g. NetWorth
  * page fires getSummary + getHistory in parallel, both of which call this function).
+ * The cache is untargeted (no key) and only ever holds the default, no-`targeting`
+ * result — any call that passes `targeting` bypasses it entirely on both read and
+ * write, so a Plan-pinned or profile-scoped call can never read another call's
+ * differently-targeted result, and never pollutes the shared default cache.
  */
+export type YearEndHistoryTargeting = BudgetTargeting & {
+  /** personId -> overridden salary, merged in place of the raw current salary for the live current-year row. */
+  salaryOverrides?: Map<number, number>;
+};
+
 let _yearEndCache: { data: YearEndRow[]; expiresAt: number } | null = null;
+
+function hasTargeting(targeting: YearEndHistoryTargeting | undefined) {
+  return !!(
+    targeting &&
+    (targeting.budgetProfileId != null ||
+      targeting.budgetColumn != null ||
+      (targeting.salaryOverrides && targeting.salaryOverrides.size > 0))
+  );
+}
 
 export async function buildYearEndHistory(
   db: Db,
   asOfDate: Date = new Date(),
+  targeting?: YearEndHistoryTargeting,
 ): Promise<YearEndRow[]> {
-  if (_yearEndCache && Date.now() < _yearEndCache.expiresAt) {
+  const targeted = hasTargeting(targeting);
+  if (!targeted && _yearEndCache && Date.now() < _yearEndCache.expiresAt) {
     return _yearEndCache.data;
   }
   const [
@@ -321,7 +346,7 @@ export async function buildYearEndHistory(
     db.select().from(schema.propertyTaxes),
     db.select().from(schema.people).orderBy(asc(schema.people.id)),
     db.select().from(schema.retirementSettings),
-    getAnnualExpensesFromBudget(db),
+    getAnnualExpensesFromBudget(db, targeting),
     db
       .select()
       .from(schema.homeImprovementItems)
@@ -729,9 +754,10 @@ export async function buildYearEndHistory(
     const mortgageBalance = computeMortgageBalance(
       mortgageLoans,
       extraPayments,
+      asOfDate,
     );
 
-    const activeLoan = mortgageLoans.find((m) => m.isActive);
+    const activeLoan = getActiveMortgageLoan(mortgageLoans);
     const houseValue = activeLoan
       ? toNumber(
           activeLoan.propertyValueEstimated ?? activeLoan.propertyValuePurchase,
@@ -740,9 +766,19 @@ export async function buildYearEndHistory(
 
     // Gross income from active jobs (includes bonus — matches finalized year-end data)
     const activeJobs = jobs.filter((j) => !j.endDate);
-    const jobSalaries = await getSalariesForJobs(db, activeJobs);
+    const jobSalaries = await getSalariesForJobs(db, activeJobs, asOfDate);
+    const salaryOverrideMap = targeting?.salaryOverrides ?? new Map();
     const combinedGross = jobSalaries.reduce(
-      (s, js) => s + getTotalCompensation(js.job, js.baseSalary),
+      (s, js) =>
+        s +
+        getTotalCompensation(
+          js.job,
+          applySalaryOverride(
+            js.job.personId,
+            js.baseSalary,
+            salaryOverrideMap,
+          ),
+        ),
       0,
     );
 
@@ -979,7 +1015,7 @@ export async function buildYearEndHistory(
   const birthYears = people.map((p) => new Date(p.dateOfBirth).getFullYear());
 
   // Withdrawal rate from primary person's retirement settings
-  const primaryPerson = people.find((p) => p.isPrimaryUser) ?? people[0];
+  const primaryPerson = getPrimaryPerson(people);
   const primaryRetSettings = primaryPerson
     ? retirementSettingsRows.find((rs) => rs.personId === primaryPerson.id)
     : retirementSettingsRows[0];
@@ -988,8 +1024,7 @@ export async function buildYearEndHistory(
     : DEFAULT_WITHDRAWAL_RATE;
 
   // Purchase price for cost basis
-  const activeMortgageForCostBasis =
-    mortgageLoans.find((m) => m.isActive) ?? mortgageLoans[0];
+  const activeMortgageForCostBasis = getActiveMortgageLoan(mortgageLoans);
   const purchasePrice = activeMortgageForCostBasis
     ? toNumber(activeMortgageForCostBasis.propertyValuePurchase)
     : 0;
@@ -1077,7 +1112,9 @@ export async function buildYearEndHistory(
     row.withdrawalRateIsDefault = !primaryRetSettings;
   }
 
-  _yearEndCache = { data: history, expiresAt: Date.now() + 5_000 };
+  if (!targeted) {
+    _yearEndCache = { data: history, expiresAt: Date.now() + 5_000 };
+  }
   return history;
 }
 

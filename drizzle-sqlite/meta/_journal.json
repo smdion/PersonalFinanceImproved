@@ -15,6 +15,27 @@
       "when": 1786817604497,
       "tag": "0001_fresh_masque",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786824331968,
+      "tag": "0002_public_marvel_apes",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1786830567071,
+      "tag": "0003_loose_wonder_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1786834867310,
+      "tag": "0004_wooden_starfox",
+      "breakpoints": true
     }
   ]
 }

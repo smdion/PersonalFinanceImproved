@@ -8,270 +8,285 @@ import {
   buildYearEndHistory,
   getEffectiveCash,
   computeMortgageBalance,
+  getActiveMortgageLoan,
 } from "@/server/helpers";
 import { getActiveBudgetApi } from "@/lib/budget-api";
+import { zYearEndTargeting, toSalaryOverrideMap } from "./_shared";
 
 export const assetsRouter = createTRPCRouter({
   /**
    * Asset-focused summary: current state + year-over-year history.
    * Includes API sync status per item so the UI can show sync badges.
    */
-  computeSummary: protectedProcedure.query(async ({ ctx }) => {
-    const [
-      yearEndHistory,
-      homeImprovements,
-      otherAssets,
-      notes,
-      apiConnections,
-      mortgageLoans,
-      mortgageExtras,
-      allSettings,
-    ] = await Promise.all([
-      buildYearEndHistory(ctx.db),
-      ctx.db
-        .select()
-        .from(schema.homeImprovementItems)
-        .orderBy(asc(schema.homeImprovementItems.year)),
-      ctx.db
-        .select()
-        .from(schema.otherAssetItems)
-        .orderBy(asc(schema.otherAssetItems.year)),
-      ctx.db.select().from(schema.historicalNotes),
-      ctx.db.select().from(schema.apiConnections),
-      ctx.db.select().from(schema.mortgageLoans),
-      ctx.db
-        .select()
-        .from(schema.mortgageExtraPayments)
-        .orderBy(asc(schema.mortgageExtraPayments.paymentDate)),
-      ctx.db.select().from(schema.appSettings),
-    ]);
+  computeSummary: protectedProcedure
+    .input(zYearEndTargeting)
+    .query(async ({ ctx, input }) => {
+      const [
+        yearEndHistory,
+        homeImprovements,
+        otherAssets,
+        notes,
+        apiConnections,
+        mortgageLoans,
+        mortgageExtras,
+        allSettings,
+      ] = await Promise.all([
+        buildYearEndHistory(ctx.db, new Date(), {
+          budgetProfileId: input?.budgetProfileId,
+          budgetColumn: input?.budgetColumn,
+          salaryOverrides: toSalaryOverrideMap(input?.salaryOverrides),
+        }),
+        ctx.db
+          .select()
+          .from(schema.homeImprovementItems)
+          .orderBy(asc(schema.homeImprovementItems.year)),
+        ctx.db
+          .select()
+          .from(schema.otherAssetItems)
+          .orderBy(asc(schema.otherAssetItems.year)),
+        ctx.db.select().from(schema.historicalNotes),
+        ctx.db.select().from(schema.apiConnections),
+        ctx.db.select().from(schema.mortgageLoans),
+        ctx.db
+          .select()
+          .from(schema.mortgageExtraPayments)
+          .orderBy(asc(schema.mortgageExtraPayments.paymentDate)),
+        ctx.db.select().from(schema.appSettings),
+      ]);
 
-    const activeBudgetApi = await getActiveBudgetApi(ctx.db);
+      const activeBudgetApi = await getActiveBudgetApi(ctx.db);
 
-    // Build account mappings lookup from active API connection
-    const conn = apiConnections.find((c) => c.service === activeBudgetApi);
-    const mappings = conn?.accountMappings ?? [];
-    const mappedAssetIds = new Set(
-      mappings
-        .filter(
-          (m) =>
-            m.assetId != null ||
-            (m.localId ?? m.localName).startsWith("asset:"),
-        )
-        .map(
-          (m) =>
-            m.assetId ??
-            parseInt((m.localId ?? m.localName).split(":")[1]!, 10),
-        ),
-    );
-    // Build mortgage mapping lookup using typed fields with legacy fallback
-    const mortgageMappings = mappings.filter(
-      (m) =>
-        m.loanId != null || (m.localId ?? m.localName).startsWith("mortgage:"),
-    );
-
-    // Cash sync status
-    const { cash: currentCash, source: cashSource } = await getEffectiveCash(
-      ctx.db,
-      allSettings,
-    );
-
-    // Mortgage data
-    const activeLoan = mortgageLoans.find((m) => m.isActive);
-    const houseValue = activeLoan
-      ? toNumber(
-          activeLoan.propertyValueEstimated ?? activeLoan.propertyValuePurchase,
-        )
-      : 0;
-    const mortgageBalance = computeMortgageBalance(
-      mortgageLoans,
-      mortgageExtras,
-    );
-
-    // Determine sync status for house value and mortgage
-    const houseValueSynced = activeLoan
-      ? mortgageMappings.some((m) => {
-          if (m.loanId === activeLoan.id && m.loanMapType === "propertyValue")
-            return true;
-          const lid = m.localId ?? m.localName;
-          return lid === `mortgage:${activeLoan.id}:propertyValue`;
-        })
-      : false;
-    const mortgageSynced = activeLoan
-      ? mortgageMappings.some((m) => {
-          if (m.loanId === activeLoan.id && m.loanMapType === "loanBalance")
-            return true;
-          const lid = m.localId ?? m.localName;
-          return lid === `mortgage:${activeLoan.id}:loanBalance`;
-        })
-      : false;
-
-    const allYears = yearEndHistory.map((r) => r.year);
-    const currentYear = new Date().getFullYear();
-
-    // Build home improvements cumulative by year
-    const homeImpByYear = new Map<
-      number,
-      { items: typeof homeImprovements; cumulative: number }
-    >();
-    for (const year of allYears) {
-      const itemsUpToYear = homeImprovements.filter((hi) => hi.year <= year);
-      const cumulative = itemsUpToYear.reduce(
-        (sum, hi) => sum + toNumber(hi.cost),
-        0,
+      // Build account mappings lookup from active API connection
+      const conn = apiConnections.find((c) => c.service === activeBudgetApi);
+      const mappings = conn?.accountMappings ?? [];
+      const mappedAssetIds = new Set(
+        mappings
+          .filter(
+            (m) =>
+              m.assetId != null ||
+              (m.localId ?? m.localName).startsWith("asset:"),
+          )
+          .map(
+            (m) =>
+              m.assetId ??
+              parseInt((m.localId ?? m.localName).split(":")[1]!, 10),
+          ),
       );
-      const itemsThisYear = homeImprovements.filter((hi) => hi.year === year);
-      homeImpByYear.set(year, { items: itemsThisYear, cumulative });
-    }
+      // Build mortgage mapping lookup using typed fields with legacy fallback
+      const mortgageMappings = mappings.filter(
+        (m) =>
+          m.loanId != null ||
+          (m.localId ?? m.localName).startsWith("mortgage:"),
+      );
 
-    // Build other assets by year (carry-forward: latest value per name where year <= target)
-    const uniqueAssetNames = Array.from(
-      new Set(otherAssets.map((a) => a.name)),
-    );
+      // Cash sync status
+      const { cash: currentCash, source: cashSource } = await getEffectiveCash(
+        ctx.db,
+        allSettings,
+      );
 
-    // Current year other asset items (carry-forward)
-    const currentOtherAssetItems: Array<{
-      id: number;
-      name: string;
-      value: number;
-      note: string | null;
-      synced: boolean;
-      yearRecorded: number;
-    }> = [];
-    for (const name of uniqueAssetNames) {
-      const entries = otherAssets
-        .filter((a) => a.name === name && a.year <= currentYear)
-        .sort((a, b) => a.year - b.year);
-      if (entries.length > 0) {
-        const latest = entries[entries.length - 1]!;
-        const val = toNumber(latest.value);
-        if (val > 0) {
-          currentOtherAssetItems.push({
-            id: latest.id,
-            name,
-            value: val,
-            note: latest.note,
-            synced: mappedAssetIds.has(latest.id),
-            yearRecorded: latest.year,
-          });
-        }
+      // Mortgage data
+      const activeLoan = getActiveMortgageLoan(mortgageLoans);
+      const houseValue = activeLoan
+        ? toNumber(
+            activeLoan.propertyValueEstimated ??
+              activeLoan.propertyValuePurchase,
+          )
+        : 0;
+      const mortgageBalance = computeMortgageBalance(
+        mortgageLoans,
+        mortgageExtras,
+      );
+
+      // Determine sync status for house value and mortgage
+      const houseValueSynced = activeLoan
+        ? mortgageMappings.some((m) => {
+            if (m.loanId === activeLoan.id && m.loanMapType === "propertyValue")
+              return true;
+            const lid = m.localId ?? m.localName;
+            return lid === `mortgage:${activeLoan.id}:propertyValue`;
+          })
+        : false;
+      const mortgageSynced = activeLoan
+        ? mortgageMappings.some((m) => {
+            if (m.loanId === activeLoan.id && m.loanMapType === "loanBalance")
+              return true;
+            const lid = m.localId ?? m.localName;
+            return lid === `mortgage:${activeLoan.id}:loanBalance`;
+          })
+        : false;
+
+      const allYears = yearEndHistory.map((r) => r.year);
+      const currentYear = new Date().getFullYear();
+
+      // Build home improvements cumulative by year
+      const homeImpByYear = new Map<
+        number,
+        { items: typeof homeImprovements; cumulative: number }
+      >();
+      for (const year of allYears) {
+        const itemsUpToYear = homeImprovements.filter((hi) => hi.year <= year);
+        const cumulative = itemsUpToYear.reduce(
+          (sum, hi) => sum + toNumber(hi.cost),
+          0,
+        );
+        const itemsThisYear = homeImprovements.filter((hi) => hi.year === year);
+        homeImpByYear.set(year, { items: itemsThisYear, cumulative });
       }
-    }
 
-    // Build other assets by year for history
-    const otherAssetsByYear = new Map<
-      number,
-      {
-        items: {
-          id: number;
-          name: string;
-          value: number;
-          note: string | null;
-        }[];
-        total: number;
-      }
-    >();
-    for (const year of allYears) {
-      const items: {
+      // Build other assets by year (carry-forward: latest value per name where year <= target)
+      const uniqueAssetNames = Array.from(
+        new Set(otherAssets.map((a) => a.name)),
+      );
+
+      // Current year other asset items (carry-forward)
+      const currentOtherAssetItems: Array<{
         id: number;
         name: string;
         value: number;
         note: string | null;
-      }[] = [];
+        synced: boolean;
+        yearRecorded: number;
+      }> = [];
       for (const name of uniqueAssetNames) {
-        const entries = otherAssets.filter(
-          (a) => a.name === name && a.year <= year,
-        );
+        const entries = otherAssets
+          .filter((a) => a.name === name && a.year <= currentYear)
+          .sort((a, b) => a.year - b.year);
         if (entries.length > 0) {
           const latest = entries[entries.length - 1]!;
           const val = toNumber(latest.value);
           if (val > 0) {
-            items.push({ id: latest.id, name, value: val, note: latest.note });
+            currentOtherAssetItems.push({
+              id: latest.id,
+              name,
+              value: val,
+              note: latest.note,
+              synced: mappedAssetIds.has(latest.id),
+              yearRecorded: latest.year,
+            });
           }
         }
       }
-      otherAssetsByYear.set(year, {
-        items,
-        total: items.reduce((s, i) => s + i.value, 0),
+
+      // Build other assets by year for history
+      const otherAssetsByYear = new Map<
+        number,
+        {
+          items: {
+            id: number;
+            name: string;
+            value: number;
+            note: string | null;
+          }[];
+          total: number;
+        }
+      >();
+      for (const year of allYears) {
+        const items: {
+          id: number;
+          name: string;
+          value: number;
+          note: string | null;
+        }[] = [];
+        for (const name of uniqueAssetNames) {
+          const entries = otherAssets.filter(
+            (a) => a.name === name && a.year <= year,
+          );
+          if (entries.length > 0) {
+            const latest = entries[entries.length - 1]!;
+            const val = toNumber(latest.value);
+            if (val > 0) {
+              items.push({
+                id: latest.id,
+                name,
+                value: val,
+                note: latest.note,
+              });
+            }
+          }
+        }
+        otherAssetsByYear.set(year, {
+          items,
+          total: items.reduce((s, i) => s + i.value, 0),
+        });
+      }
+
+      // Build notes lookup
+      const notesMap: Record<string, string> = {};
+      for (const n of notes) {
+        notesMap[`${n.year}:${n.field}`] = n.note;
+      }
+
+      // Year-over-year history rows (compact)
+      const history = yearEndHistory.map((row) => {
+        const hiData = homeImpByYear.get(row.year);
+        const oaData = otherAssetsByYear.get(row.year);
+        const oaTotal =
+          oaData && oaData.items.length > 0 ? oaData.total : row.otherAssets;
+
+        return {
+          year: row.year,
+          isCurrent: row.isCurrent,
+          cash: row.cash,
+          houseValue: row.houseValue,
+          homeImprovements:
+            hiData && hiData.items.length > 0
+              ? hiData.cumulative
+              : row.homeImprovements,
+          homeImprovementItems:
+            hiData?.items.map((i) => ({
+              id: i.id,
+              year: i.year,
+              description: i.description,
+              cost: toNumber(i.cost),
+              note: i.note,
+            })) ?? [],
+          otherAssets: oaTotal,
+          otherAssetItems: oaData?.items ?? [],
+          mortgageBalance: row.mortgageBalance,
+          totalAssets: row.cash + row.houseValue + oaTotal,
+        };
       });
-    }
 
-    // Build notes lookup
-    const notesMap: Record<string, string> = {};
-    for (const n of notes) {
-      notesMap[`${n.year}:${n.field}`] = n.note;
-    }
+      // Current state summary (top-level)
+      const latestHistory =
+        history.find((h) => h.isCurrent) ?? history[history.length - 1];
+      const otherAssetsTotal = currentOtherAssetItems.reduce(
+        (s, i) => s + i.value,
+        0,
+      );
 
-    // Year-over-year history rows (compact)
-    const history = yearEndHistory.map((row) => {
-      const hiData = homeImpByYear.get(row.year);
-      const oaData = otherAssetsByYear.get(row.year);
-      const oaTotal =
-        oaData && oaData.items.length > 0 ? oaData.total : row.otherAssets;
+      // A house "exists" if there's an active mortgage loan OR home improvements
+      const hasHouse = !!activeLoan || homeImprovements.length > 0;
 
       return {
-        year: row.year,
-        isCurrent: row.isCurrent,
-        cash: row.cash,
-        houseValue: row.houseValue,
-        homeImprovements:
-          hiData && hiData.items.length > 0
-            ? hiData.cumulative
-            : row.homeImprovements,
-        homeImprovementItems:
-          hiData?.items.map((i) => ({
-            id: i.id,
-            year: i.year,
-            description: i.description,
-            cost: toNumber(i.cost),
-            note: i.note,
-          })) ?? [],
-        otherAssets: oaTotal,
-        otherAssetItems: oaData?.items ?? [],
-        mortgageBalance: row.mortgageBalance,
-        totalAssets: row.cash + row.houseValue + oaTotal,
+        current: {
+          cash: currentCash,
+          cashSource,
+          houseValue,
+          houseValueSynced,
+          mortgageBalance,
+          mortgageSynced,
+          houseEquity: houseValue - mortgageBalance,
+          homeImprovements: latestHistory?.homeImprovements ?? 0,
+          otherAssetsTotal,
+          otherAssetItems: currentOtherAssetItems,
+          totalAssets: currentCash + houseValue + otherAssetsTotal,
+          activeLoanName: activeLoan?.name ?? null,
+          activeBudgetApi,
+          hasHouse,
+        },
+        history,
+        homeImprovements: homeImprovements.map((hi) => ({
+          id: hi.id,
+          year: hi.year,
+          description: hi.description,
+          cost: toNumber(hi.cost),
+          note: hi.note,
+        })),
+        notes: notesMap,
       };
-    });
-
-    // Current state summary (top-level)
-    const latestHistory =
-      history.find((h) => h.isCurrent) ?? history[history.length - 1];
-    const otherAssetsTotal = currentOtherAssetItems.reduce(
-      (s, i) => s + i.value,
-      0,
-    );
-
-    // A house "exists" if there's an active mortgage loan OR home improvements
-    const hasHouse = !!activeLoan || homeImprovements.length > 0;
-
-    return {
-      current: {
-        cash: currentCash,
-        cashSource,
-        houseValue,
-        houseValueSynced,
-        mortgageBalance,
-        mortgageSynced,
-        houseEquity: houseValue - mortgageBalance,
-        homeImprovements: latestHistory?.homeImprovements ?? 0,
-        otherAssetsTotal,
-        otherAssetItems: currentOtherAssetItems,
-        totalAssets: currentCash + houseValue + otherAssetsTotal,
-        activeLoanName: activeLoan?.name ?? null,
-        activeBudgetApi,
-        hasHouse,
-      },
-      history,
-      homeImprovements: homeImprovements.map((hi) => ({
-        id: hi.id,
-        year: hi.year,
-        description: hi.description,
-        cost: toNumber(hi.cost),
-        note: hi.note,
-      })),
-      notes: notesMap,
-    };
-  }),
+    }),
 
   /** Update simple asset fields (cash, houseValue) on a net_worth_annual row. */
   updateAsset: adminProcedure

@@ -41,6 +41,7 @@ import {
   changeColor,
 } from "@/components/historical/cells";
 import type { HIItem, OAItem } from "@/components/historical/cells";
+import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 
 // All possible portfolio breakdown columns from config
 const ALL_portfolioBreakdownCols = getAllCategories().map((cat) => ({
@@ -75,7 +76,9 @@ const EDITABLE_FIELDS = new Set([
 export default function HistoricalPage() {
   const [showJobHistory, setShowJobHistory] = useState(false);
   const [hiddenGroups, setHiddenGroups] = useState<Set<ColumnGroup>>(new Set());
-  const { data, isLoading, error } = trpc.historical.computeSummary.useQuery();
+  const targeting = useYearEndTargetingInput();
+  const { data, isLoading, error } =
+    trpc.historical.computeSummary.useQuery(targeting);
   const utils = trpc.useUtils();
 
   const invalidateAll = () => {

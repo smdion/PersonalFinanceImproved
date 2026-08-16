@@ -22,8 +22,8 @@ import {
   getCurrentSalary,
   getEffectiveIncome,
   getTotalCompensation,
+  applySalaryOverride,
   getLatestSnapshot,
-  getAnnualExpensesFromBudget,
   computeBudgetAnnualTotal,
   requireLimit,
   accountDisplayName,
@@ -32,6 +32,8 @@ import {
   loadAndApplyContribProfile,
   resolveProfile,
   buildProfileContribData,
+  getPrimaryPerson,
+  pickActiveBudgetProfile,
 } from "@/server/helpers";
 import type {
   TaxBuckets,
@@ -99,7 +101,6 @@ export async function fetchRetirementData(
     allContribsRaw,
     allLimits,
     snapshotData,
-    budgetExpenses,
     salaryOverrideRows,
     budgetOverrideRows,
     allBudgetProfiles,
@@ -132,7 +133,6 @@ export async function fetchRetirementData(
         ),
       ),
     getLatestSnapshot(db, opts?.snapshotId),
-    getAnnualExpensesFromBudget(db),
     db
       .select()
       .from(schema.retirementSalaryOverrides)
@@ -175,7 +175,6 @@ export async function fetchRetirementData(
     allContribsRaw,
     allLimits,
     snapshotData,
-    budgetExpenses,
     salaryOverrideRows,
     budgetOverrideRows,
     allBudgetProfiles,
@@ -256,7 +255,7 @@ export async function buildEnginePayload(
       ? contribProfileResult.salaryMap
       : null;
 
-  const primaryPerson = people.find((p) => p.isPrimaryUser) ?? people[0];
+  const primaryPerson = getPrimaryPerson(people);
   if (!primaryPerson) return null;
 
   const settings = retSettings.find((s) => s.personId === primaryPerson.id);
@@ -369,14 +368,19 @@ export async function buildEnginePayload(
   // Post-process to apply salary override map and compute totalComp.
   const rawSalaries = await getSalariesForJobs(db, activeJobs, asOfDate);
   const jobSalaries = rawSalaries.map(
-    ({ job, baseSalary, effectiveIncome }) => {
-      const overrideSalary = salaryOverrideMap.get(job.personId);
-      return {
-        job,
-        salary: overrideSalary ?? effectiveIncome,
-        totalComp: overrideSalary ?? getTotalCompensation(job, baseSalary),
-      };
-    },
+    ({ job, baseSalary, effectiveIncome }) => ({
+      job,
+      salary: applySalaryOverride(
+        job.personId,
+        effectiveIncome,
+        salaryOverrideMap,
+      ),
+      totalComp: applySalaryOverride(
+        job.personId,
+        getTotalCompensation(job, baseSalary),
+        salaryOverrideMap,
+      ),
+    }),
   );
   // combinedSalary = effective income (respects includeBonusInContributions flag)
   // Used for contribution calculations where percent_of_salary uses the payroll basis
@@ -718,7 +722,7 @@ export async function buildEnginePayload(
   const globalColSetting = settingsMap.get("budget_active_column");
   const globalActiveCol =
     typeof globalColSetting === "number" ? globalColSetting : 0;
-  const defaultProfile = allBudgetProfiles.find((p) => p.isActive);
+  const defaultProfile = pickActiveBudgetProfile(allBudgetProfiles);
   // Accumulation phase: profile + column
   const accProfile = opts.accumulationBudgetProfileId
     ? allBudgetProfiles.find((p) => p.id === opts.accumulationBudgetProfileId)
@@ -836,6 +840,12 @@ export async function buildEnginePayload(
     subType: c.subType,
     label: c.label ?? null,
   }));
+  // Intentionally live/un-overridden — this is the reference baseline a
+  // profile switch's stored salary override gets GROWN from ("Profile
+  // salary overrides are in today's dollars; grow to the switch year"
+  // below). Applying a Plan override here would double-count it into the
+  // profile-switch growth math. Do not "fix" this into resolveEffectiveSalary
+  // — see applySalaryOverride's docblock for the live-baseline rule.
   const liveJobSalaries = await Promise.all(
     activeJobs.map(async (j) => {
       const dbSalary = await getCurrentSalary(

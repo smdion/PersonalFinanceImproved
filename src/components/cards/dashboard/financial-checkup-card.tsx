@@ -15,6 +15,7 @@ import {
 } from "@/lib/constants";
 import { wealthScoreTier } from "@/lib/config/display-labels";
 import { useScenario } from "@/lib/context/scenario-context";
+import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { LoadingCard, ErrorCard } from "./utils";
 
 type CheckupStep = {
@@ -153,7 +154,8 @@ function FinancialCheckupCardImpl() {
   const savings = trpc.savings.computeSummary.useQuery(efundTierInput);
   const contribs = trpc.contribution.computeSummary.useQuery(contribInput);
   const mortgage = trpc.mortgage.computeActiveSummary.useQuery();
-  const networth = trpc.networth.computeSummary.useQuery();
+  const yearEndTargeting = useYearEndTargetingInput();
+  const networth = trpc.networth.computeSummary.useQuery(yearEndTargeting);
 
   const isLoading =
     savings.isLoading ||

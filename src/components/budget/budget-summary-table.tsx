@@ -13,11 +13,13 @@ type BudgetSummaryTableProps = {
   allColumnResults: ColumnResult[];
   payrollBreakdowns: (PayrollBreakdown | null)[];
   columnMonths: number[] | null;
-  onUpdateColumnMonths: (months: number[]) => void;
   apiLinkedColumnIndex?: number | null;
   apiService?: string | null;
   sinkingFunds?: SinkingFundLine[];
   nameColWidth?: number;
+  /** Name of the budget profile whose savings allocations feed this row —
+   *  shown once in the row header rather than repeated per line item. */
+  savingsProfileName?: string;
 };
 
 function ChevronIcon({ expanded }: { expanded: boolean }) {
@@ -68,11 +70,11 @@ export function BudgetSummaryTable({
   allColumnResults,
   payrollBreakdowns,
   columnMonths,
-  onUpdateColumnMonths: _onUpdateColumnMonths,
   apiLinkedColumnIndex,
   apiService,
   sinkingFunds,
   nameColWidth,
+  savingsProfileName,
 }: BudgetSummaryTableProps) {
   const [showTaxes, setShowTaxes] = useState(false);
   const [showPreTax, setShowPreTax] = useState(false);
@@ -479,7 +481,12 @@ export function BudgetSummaryTable({
                             <span className="w-2 h-2 rounded-full bg-emerald-500" />
                           )}
                           Savings
-                          <HelpTip text="Take-home pay minus all budgeted expenses. Expanding shows sinking fund commitments and the unallocated remainder." />
+                          {savingsProfileName && (
+                            <span className="text-micro font-normal text-faint">
+                              ({savingsProfileName})
+                            </span>
+                          )}
+                          <HelpTip text="Take-home pay minus all budgeted expenses. Sinking fund commitments and allocations below reflect the budget profile named above. Expanding shows sinking fund commitments and the unallocated remainder." />
                         </span>
                       </td>
                       {allColumnResults.map((r, i) => {
@@ -516,6 +523,14 @@ export function BudgetSummaryTable({
                           >
                             <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
                               {fund.name}
+                              {fund.isOverride && (
+                                <span
+                                  className="ml-1 text-blue-500"
+                                  title="Custom allocation for this budget profile (not the goal's global default)"
+                                >
+                                  &bull;
+                                </span>
+                              )}
                             </td>
                             {allColumnResults.map((_, i) => (
                               <td
