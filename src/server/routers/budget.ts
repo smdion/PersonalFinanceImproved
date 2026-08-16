@@ -13,17 +13,19 @@ import {
   budgetAmountsSchema,
 } from "@/lib/db/json-schemas";
 import { calculateBudget } from "@/lib/calculators/budget";
+import { resolveContributionProfileId } from "@/lib/calculators/contribution-profile-resolution";
 import type { BudgetInput } from "@/lib/calculators/types";
 import {
   computeBudgetAnnualTotal,
   toNumber,
   getPeriodsPerYear,
   getEffectiveIncome,
-  getCurrentSalary,
+  resolveEffectiveSalary,
   computeAnnualContribution,
   loadAndApplyContribProfile,
   resolveJoblessPeriodsPerYear,
   applyContributionAccountEdit,
+  resolveTargetBudgetProfile,
 } from "@/server/helpers";
 import { accountDisplayName } from "@/lib/utils/format";
 import {
@@ -187,17 +189,20 @@ export const budgetRouter = createTRPCRouter({
       return { ok: true };
     }),
 
-  /** Set a profile as the active one (deactivate all others). */
+  /** Set a profile as the active one (deactivate all others). Transactional
+   *  — an error between the deactivate-all and activate-one writes must
+   *  not be able to leave zero active profiles (every downstream reader
+   *  of getActiveBudgetProfile silently treats that as "no profile"). */
   setActiveProfile: budgetProcedure
     .input(z.object({ id: z.number().int() }))
     .mutation(async ({ ctx, input }) => {
-      // Deactivate all
-      await ctx.db.update(schema.budgetProfiles).set({ isActive: false });
-      // Activate the selected one
-      await ctx.db
-        .update(schema.budgetProfiles)
-        .set({ isActive: true })
-        .where(eq(schema.budgetProfiles.id, input.id));
+      await ctx.db.transaction(async (tx) => {
+        await tx.update(schema.budgetProfiles).set({ isActive: false });
+        await tx
+          .update(schema.budgetProfiles)
+          .set({ isActive: true })
+          .where(eq(schema.budgetProfiles.id, input.id));
+      });
       return { ok: true };
     }),
 
@@ -208,24 +213,18 @@ export const budgetRouter = createTRPCRouter({
         .object({
           selectedColumn: z.number().optional(),
           profileId: z.number().optional(),
+          activeContribProfileId: z.number().nullable().optional(),
+          salaryOverrides: z
+            .array(z.object({ personId: z.number(), salary: z.number() }))
+            .optional(),
         })
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      let activeProfile;
-      if (input?.profileId) {
-        const rows = await ctx.db
-          .select()
-          .from(schema.budgetProfiles)
-          .where(eq(schema.budgetProfiles.id, input.profileId));
-        activeProfile = rows[0];
-      } else {
-        const rows = await ctx.db
-          .select()
-          .from(schema.budgetProfiles)
-          .where(eq(schema.budgetProfiles.isActive, true));
-        activeProfile = rows[0];
-      }
+      const activeProfile = await resolveTargetBudgetProfile(
+        ctx.db,
+        input?.profileId,
+      );
       if (!activeProfile) {
         return { profile: null, result: null, columnLabels: [] as string[] };
       }
@@ -253,19 +252,35 @@ export const budgetRouter = createTRPCRouter({
         .where(eq(schema.contributionAccounts.isActive, true));
       const allJobs = await ctx.db.select().from(schema.jobs);
 
-      // Determine contribution profile for the selected column
+      // Determine contribution profile for the selected column — per-column
+      // override wins, else the caller's global active contribution
+      // profile, else Live. Must match use-budget-derived-data.ts's
+      // resolution exactly, or budget item $ amounts and the payroll
+      // breakdown shown on the same page can silently disagree.
       const columnContribProfileIds =
         activeProfile.columnContributionProfileIds as (number | null)[] | null;
-      const contribProfileId =
-        columnContribProfileIds?.[selectedColumn] ?? null;
+      const contribProfileId = resolveContributionProfileId(
+        columnContribProfileIds,
+        selectedColumn,
+        columnLabels.length,
+        input?.activeContribProfileId ?? null,
+      );
 
-      // Apply contribution profile overrides (salary + contribution values)
+      // Apply contribution profile overrides (salary + contribution values).
+      // Plan-level salaryOverrides are threaded through here so budget item
+      // $ amounts for percent-of-salary contributions stay consistent with
+      // what the Paycheck page shows under the same active Plan override —
+      // previously this always passed an empty map and silently ignored
+      // Plan overrides.
+      const planSalaryOverrideMap = new Map(
+        (input?.salaryOverrides ?? []).map((o) => [o.personId, o.salary]),
+      );
       const profileResult = await loadAndApplyContribProfile(
         ctx.db,
         contribProfileId,
         rawContribs,
         allJobs,
-        new Map(),
+        planSalaryOverrideMap,
       );
       const activeContribs = profileResult.contribs;
       const effectiveJobs = profileResult.jobs;
@@ -284,10 +299,11 @@ export const budgetRouter = createTRPCRouter({
 
         const salaryByJobId = new Map<number, number>();
         for (const j of activeJobs) {
-          const overrideSalary = profileResult.salaryMap.get(j.personId);
-          const salary =
-            overrideSalary ??
-            (await getCurrentSalary(ctx.db, j.id, j.annualSalary, new Date()));
+          const salary = await resolveEffectiveSalary(
+            ctx.db,
+            j,
+            profileResult.salaryMap,
+          );
           salaryByJobId.set(j.id, getEffectiveIncome(j, salary));
         }
 
@@ -483,15 +499,13 @@ export const budgetRouter = createTRPCRouter({
       return { ok: true };
     }),
 
-  /** Add a new column (budget mode) to the active profile. */
+  /** Add a new column (budget mode) to the target profile (active if not given). */
   addColumn: budgetProcedure
-    .input(z.object({ label: z.string().min(1) }))
+    .input(
+      z.object({ label: z.string().min(1), profileId: z.number().optional() }),
+    )
     .mutation(async ({ ctx, input }) => {
-      const profiles = await ctx.db
-        .select()
-        .from(schema.budgetProfiles)
-        .where(eq(schema.budgetProfiles.isActive, true));
-      const profile = profiles[0];
+      const profile = await resolveTargetBudgetProfile(ctx.db, input.profileId);
       if (!profile) throw new Error("No active profile");
 
       const newLabels = columnLabelsSchema.parse([
@@ -534,15 +548,16 @@ export const budgetRouter = createTRPCRouter({
       return { ok: true };
     }),
 
-  /** Remove a column (budget mode) from the active profile. */
+  /** Remove a column (budget mode) from the target profile (active if not given). */
   removeColumn: budgetProcedure
-    .input(z.object({ colIndex: z.number().int().min(0) }))
+    .input(
+      z.object({
+        colIndex: z.number().int().min(0),
+        profileId: z.number().optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
-      const profiles = await ctx.db
-        .select()
-        .from(schema.budgetProfiles)
-        .where(eq(schema.budgetProfiles.isActive, true));
-      const profile = profiles[0];
+      const profile = await resolveTargetBudgetProfile(ctx.db, input.profileId);
       if (!profile) throw new Error("No active profile");
       const colCheck = canRemoveColumn(
         profile.columnLabels.length,
@@ -604,14 +619,11 @@ export const budgetRouter = createTRPCRouter({
         category: z.string().trim().min(1),
         subcategory: z.string().trim().min(1),
         isEssential: z.boolean().default(true),
+        profileId: z.number().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const profiles = await ctx.db
-        .select()
-        .from(schema.budgetProfiles)
-        .where(eq(schema.budgetProfiles.isActive, true));
-      const profile = profiles[0];
+      const profile = await resolveTargetBudgetProfile(ctx.db, input.profileId);
       if (!profile) throw new Error("No active profile");
 
       const numCols = profile.columnLabels.length;
@@ -682,20 +694,7 @@ export const budgetRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      let profile;
-      if (input.profileId) {
-        const rows = await ctx.db
-          .select()
-          .from(schema.budgetProfiles)
-          .where(eq(schema.budgetProfiles.id, input.profileId));
-        profile = rows[0];
-      } else {
-        const rows = await ctx.db
-          .select()
-          .from(schema.budgetProfiles)
-          .where(eq(schema.budgetProfiles.isActive, true));
-        profile = rows[0];
-      }
+      const profile = await resolveTargetBudgetProfile(ctx.db, input.profileId);
       if (!profile) throw new Error("No active profile");
 
       const items = await ctx.db
@@ -781,14 +780,11 @@ export const budgetRouter = createTRPCRouter({
       z.object({
         category: z.string().trim().min(1),
         isEssential: z.boolean(),
+        profileId: z.number().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const profiles = await ctx.db
-        .select()
-        .from(schema.budgetProfiles)
-        .where(eq(schema.budgetProfiles.isActive, true));
-      const profile = profiles[0];
+      const profile = await resolveTargetBudgetProfile(ctx.db, input.profileId);
       if (!profile) throw new Error("No active profile");
 
       const allItems = await ctx.db
@@ -813,14 +809,11 @@ export const budgetRouter = createTRPCRouter({
       z.object({
         colIndex: z.number().int().min(0),
         label: z.string().trim().min(1),
+        profileId: z.number().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const profiles = await ctx.db
-        .select()
-        .from(schema.budgetProfiles)
-        .where(eq(schema.budgetProfiles.isActive, true));
-      const profile = profiles[0];
+      const profile = await resolveTargetBudgetProfile(ctx.db, input.profileId);
       if (!profile) throw new Error("No active profile");
       if (input.colIndex >= profile.columnLabels.length)
         throw new Error("Invalid column index");
@@ -836,13 +829,14 @@ export const budgetRouter = createTRPCRouter({
 
   /** Update column months for weighted budget profiles. */
   updateColumnMonths: budgetProcedure
-    .input(z.object({ columnMonths: columnMonthsSchema }))
+    .input(
+      z.object({
+        columnMonths: columnMonthsSchema,
+        profileId: z.number().optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
-      const profiles = await ctx.db
-        .select()
-        .from(schema.budgetProfiles)
-        .where(eq(schema.budgetProfiles.isActive, true));
-      const profile = profiles[0];
+      const profile = await resolveTargetBudgetProfile(ctx.db, input.profileId);
       if (!profile) throw new Error("No active profile");
 
       if (input.columnMonths) {
@@ -863,14 +857,11 @@ export const budgetRouter = createTRPCRouter({
     .input(
       z.object({
         columnContributionProfileIds: columnContributionProfileIdsSchema,
+        profileId: z.number().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const profiles = await ctx.db
-        .select()
-        .from(schema.budgetProfiles)
-        .where(eq(schema.budgetProfiles.isActive, true));
-      const profile = profiles[0];
+      const profile = await resolveTargetBudgetProfile(ctx.db, input.profileId);
       if (!profile) throw new Error("No active profile");
 
       if (input.columnContributionProfileIds) {
@@ -1231,86 +1222,87 @@ export const budgetRouter = createTRPCRouter({
     }),
 
   /** Get API actuals for linked budget items (activity + balance from cached month data). */
-  listApiActuals: protectedProcedure.query(async ({ ctx }) => {
-    const active = await getActiveBudgetApi(ctx.db);
-    if (active === "none")
-      return {
-        actuals: [],
-        service: null as string | null,
-        month: null as string | null,
-        linkedProfileId: null as number | null,
-        linkedColumnIndex: 0,
-      };
-
-    const now = new Date();
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-    const monthCache = await cacheGet<BudgetMonthDetail>(
-      ctx.db,
-      active,
-      `months/${currentMonth}`,
-    );
-    if (!monthCache)
-      return {
-        actuals: [],
-        service: active,
-        month: null as string | null,
-        linkedProfileId: null as number | null,
-        linkedColumnIndex: 0,
-      };
-
-    const apiCategories = new Map(
-      monthCache.data.categories.map((c) => [c.id, c]),
-    );
-
-    const profiles = await ctx.db
-      .select()
-      .from(schema.budgetProfiles)
-      .where(eq(schema.budgetProfiles.isActive, true));
-    const profile = profiles[0];
-    if (!profile)
-      return {
-        actuals: [],
-        service: active,
-        month: null as string | null,
-        linkedProfileId: null as number | null,
-        linkedColumnIndex: 0,
-      };
-
-    const items = await ctx.db
-      .select()
-      .from(schema.budgetItems)
-      .where(eq(schema.budgetItems.profileId, profile.id));
-
-    const actuals = items
-      .filter((i) => i.apiCategoryId)
-      .map((i) => {
-        const cat = apiCategories.get(i.apiCategoryId!);
+  listApiActuals: protectedProcedure
+    .input(z.object({ profileId: z.number().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const active = await getActiveBudgetApi(ctx.db);
+      if (active === "none")
         return {
-          budgetItemId: i.id,
-          apiCategoryName: i.apiCategoryName,
-          budgeted: cat?.budgeted ?? 0,
-          activity: cat?.activity ?? 0,
-          balance: cat?.balance ?? 0,
-          goalTarget: cat?.goalTarget ?? 0,
+          actuals: [],
+          service: null as string | null,
+          month: null as string | null,
+          linkedProfileId: null as number | null,
+          linkedColumnIndex: 0,
         };
-      });
 
-    // Include linked profile/column info so UI can highlight which profile + mode syncs
-    const conn = await ctx.db
-      .select({
-        linkedProfileId: schema.apiConnections.linkedProfileId,
-        linkedColumnIndex: schema.apiConnections.linkedColumnIndex,
-      })
-      .from(schema.apiConnections)
-      .where(eq(schema.apiConnections.service, active))
-      .limit(1);
+      const now = new Date();
+      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+      const monthCache = await cacheGet<BudgetMonthDetail>(
+        ctx.db,
+        active,
+        `months/${currentMonth}`,
+      );
+      if (!monthCache)
+        return {
+          actuals: [],
+          service: active,
+          month: null as string | null,
+          linkedProfileId: null as number | null,
+          linkedColumnIndex: 0,
+        };
 
-    return {
-      actuals,
-      month: currentMonth,
-      service: active,
-      linkedProfileId: conn[0]?.linkedProfileId ?? null,
-      linkedColumnIndex: conn[0]?.linkedColumnIndex ?? 0,
-    };
-  }),
+      const apiCategories = new Map(
+        monthCache.data.categories.map((c) => [c.id, c]),
+      );
+
+      const profile = await resolveTargetBudgetProfile(
+        ctx.db,
+        input?.profileId,
+      );
+      if (!profile)
+        return {
+          actuals: [],
+          service: active,
+          month: null as string | null,
+          linkedProfileId: null as number | null,
+          linkedColumnIndex: 0,
+        };
+
+      const items = await ctx.db
+        .select()
+        .from(schema.budgetItems)
+        .where(eq(schema.budgetItems.profileId, profile.id));
+
+      const actuals = items
+        .filter((i) => i.apiCategoryId)
+        .map((i) => {
+          const cat = apiCategories.get(i.apiCategoryId!);
+          return {
+            budgetItemId: i.id,
+            apiCategoryName: i.apiCategoryName,
+            budgeted: cat?.budgeted ?? 0,
+            activity: cat?.activity ?? 0,
+            balance: cat?.balance ?? 0,
+            goalTarget: cat?.goalTarget ?? 0,
+          };
+        });
+
+      // Include linked profile/column info so UI can highlight which profile + mode syncs
+      const conn = await ctx.db
+        .select({
+          linkedProfileId: schema.apiConnections.linkedProfileId,
+          linkedColumnIndex: schema.apiConnections.linkedColumnIndex,
+        })
+        .from(schema.apiConnections)
+        .where(eq(schema.apiConnections.service, active))
+        .limit(1);
+
+      return {
+        actuals,
+        month: currentMonth,
+        service: active,
+        linkedProfileId: conn[0]?.linkedProfileId ?? null,
+        linkedColumnIndex: conn[0]?.linkedColumnIndex ?? 0,
+      };
+    }),
 });

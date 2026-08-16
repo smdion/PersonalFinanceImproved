@@ -55,11 +55,14 @@ const TaxLocationPie = dynamic(
 import { SpreadsheetView } from "@/components/networth/spreadsheet";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { useFICache } from "@/lib/hooks/use-fi-cache";
+import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 
 export default function NetWorthPage() {
   const utils = trpc.useUtils();
-  const { data, isLoading, error } = trpc.networth.computeSummary.useQuery();
-  const { data: historyData } = trpc.networth.listHistory.useQuery();
+  const targeting = useYearEndTargetingInput();
+  const { data, isLoading, error } =
+    trpc.networth.computeSummary.useQuery(targeting);
+  const { data: historyData } = trpc.networth.listHistory.useQuery(targeting);
   const primaryBirthYear = historyData?.primaryBirthYear;
   const [budgetColumn] = usePersistedSetting<number>("budget_active_column", 0);
   const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({

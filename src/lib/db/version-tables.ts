@@ -51,6 +51,7 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "savings_monthly", tier: 1 },
   { name: "savings_planned_transactions", tier: 1 },
   { name: "savings_allocation_overrides", tier: 1 },
+  { name: "savings_goal_profile_allocations", tier: 1 },
   { name: "self_loans", tier: 1 },
   { name: "performance_accounts", tier: 1 },
   { name: "mortgage_what_if_scenarios", tier: 1 },
@@ -75,6 +76,7 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "mc_preset_glide_paths", tier: 2 },
   { name: "mc_preset_return_overrides", tier: 2 },
   { name: "account_holdings", tier: 2 },
+  { name: "savings_planned_tx_settlements", tier: 2 },
 
   // Tier 3 — depends on tier 2
   { name: "pending_rollovers", tier: 3 }, // FKs into account_performance (tier 2, ON DELETE restrict) + performance_accounts (tier 1)

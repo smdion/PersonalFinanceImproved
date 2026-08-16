@@ -20,6 +20,7 @@ import {
   buildContribAccounts,
   requireLimit,
   loadAndApplyContribProfile,
+  applySalaryOverride,
 } from "@/server/helpers";
 import { getSalaryTimelineForYear } from "@/server/helpers/salary";
 import type {
@@ -160,21 +161,25 @@ export const paycheckRouter = createTRPCRouter({
             };
           }
 
-          // Get current salary from salary_changes (falls back to job starting salary)
-          const currentSalary = await getCurrentSalary(
-            ctx.db,
-            activeJob.id,
-            activeJob.annualSalary,
-            asOfDate,
-          );
           const futureSalaryChanges = await getFutureSalaryChanges(
             ctx.db,
             activeJob.id,
             asOfDate,
           );
-          // If a specific salary override is provided (from toggle), use it
+          // Plan/Contribution-Profile override wins, else current salary
+          // from salary_changes (falls back to job starting salary).
           const overrideSalary = effectiveSalaryMap.get(person.id);
-          const salary = overrideSalary ?? currentSalary;
+          const dbSalary = await getCurrentSalary(
+            ctx.db,
+            activeJob.id,
+            activeJob.annualSalary,
+            asOfDate,
+          );
+          const salary = applySalaryOverride(
+            person.id,
+            dbSalary,
+            effectiveSalaryMap,
+          );
           const periodsPerYear = getPeriodsPerYear(activeJob.payPeriod);
           const taxBracketInput = buildBracketInput(bracketRow, limitsMap);
 

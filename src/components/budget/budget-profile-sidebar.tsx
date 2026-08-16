@@ -13,6 +13,7 @@
 
 import { formatCurrency } from "@/lib/utils/format";
 import { confirm, promptText } from "@/components/ui/confirm-dialog";
+import { useScenario } from "@/lib/context/scenario-context";
 import type { BudgetProfileListEntry } from "./types";
 
 type Props = {
@@ -58,6 +59,13 @@ export function BudgetProfileSidebar({
   onSetActiveProfile,
   onDeleteProfile,
 }: Props) {
+  const { persistedScenarios } = useScenario();
+
+  const pinningPlanNames = (profileId: number): string[] =>
+    persistedScenarios
+      .filter((s) => s.budgetProfileId === profileId)
+      .map((s) => s.name);
+
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between mb-2">
@@ -137,7 +145,7 @@ export function BudgetProfileSidebar({
               </div>
               {canEdit && renamingProfileId !== p.id && (
                 <div
-                  className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0"
+                  className="flex gap-1 shrink-0 md:max-w-0 md:overflow-hidden md:opacity-0 md:group-hover:max-w-[9rem] md:group-hover:opacity-100 transition-all"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {!p.isActive && (
@@ -160,7 +168,16 @@ export function BudgetProfileSidebar({
                     <button
                       type="button"
                       onClick={async () => {
-                        if (await confirm(`Delete profile"${p.name}"?`)) {
+                        const pinnedBy = pinningPlanNames(p.id);
+                        const pinnedByClause =
+                          pinnedBy.length > 0
+                            ? ` The Plan${pinnedBy.length > 1 ? "s" : ""} "${pinnedBy.join('", "')}" pin${pinnedBy.length > 1 ? "" : "s"} this profile and will fall back to the active profile once it's gone.`
+                            : "";
+                        if (
+                          await confirm(
+                            `Delete profile "${p.name}"? Its budget items and any savings allocations customized for this profile will be permanently deleted too.${pinnedByClause}`,
+                          )
+                        ) {
                           onDeleteProfile(p.id);
                         }
                       }}

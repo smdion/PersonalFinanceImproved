@@ -11,6 +11,10 @@ vi.mock("@/components/ui/help-tip", () => ({
   HelpTip: () => null,
 }));
 
+vi.mock("@/lib/hooks/use-year-end-targeting", () => ({
+  useYearEndTargetingInput: () => ({}),
+}));
+
 let networthQuery: {
   data: unknown;
   isLoading: boolean;

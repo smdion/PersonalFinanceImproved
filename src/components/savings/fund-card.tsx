@@ -198,6 +198,8 @@ export function FundCard({
   onDeleteGoal,
   onDeleteTx,
   onDeleteTransfer,
+  onSettleTx,
+  settledOccurrences,
   goalById,
   onAddTx,
   createTxPending,
@@ -246,6 +248,11 @@ export function FundCard({
   onDeleteGoal: (params: { id: number }) => void;
   onDeleteTx: (params: { id: number }) => void;
   onDeleteTransfer?: (params: { transferPairId: string }) => void;
+  onSettleTx?: (params: {
+    plannedTxId: number;
+    occurrenceMonth: string;
+  }) => void;
+  settledOccurrences?: Set<string>;
   goalById?: Map<number, { name: string }>;
   onAddTx: (form: PlannedTxForm) => void;
   createTxPending: boolean;
@@ -599,11 +606,19 @@ export function FundCard({
               {/* Upcoming expenses */}
               <div className="text-right">
                 {(() => {
+                  // Date-truncated cutoff — matches the shared
+                  // isFuturePlannedTx predicate's boundary semantics.
+                  const now = new Date();
+                  const today = new Date(
+                    now.getFullYear(),
+                    now.getMonth(),
+                    now.getDate(),
+                  );
                   const upcomingExpenses = sumBy(
                     transactions.filter(
                       (t) =>
                         t.amount < 0 &&
-                        new Date(t.transactionDate + "T00:00:00") > new Date(),
+                        new Date(t.transactionDate + "T00:00:00") >= today,
                     ),
                     (t) => Math.abs(t.amount),
                   );
@@ -781,6 +796,8 @@ export function FundCard({
               goalName={projection.name}
               onDeleteTx={onDeleteTx}
               onDeleteTransfer={onDeleteTransfer}
+              onSettleTx={onSettleTx}
+              settledOccurrences={settledOccurrences}
               goalById={goalById}
               onAddTx={onAddTx}
               createTxPending={createTxPending}

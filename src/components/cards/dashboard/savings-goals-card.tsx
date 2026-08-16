@@ -7,6 +7,10 @@ import { Card, ProgressBar } from "@/components/ui/card";
 import { formatCurrency, formatNumber } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { sumBy } from "@/lib/utils/math";
+import {
+  projectGoalBalances,
+  buildSettledOccurrencesSet,
+} from "@/lib/pure/savings-projection";
 import { LoadingCard, ErrorCard } from "./utils";
 
 function SavingsGoalsCardImpl() {
@@ -46,6 +50,8 @@ function SavingsGoalsCardImpl() {
   };
   const goalStatusMap = new Map<number, GoalStatus>();
   const now = new Date();
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const settledOccurrences = buildSettledOccurrencesSet(plannedTransactions);
   const shortMonthNames = [
     "Jan",
     "Feb",
@@ -71,6 +77,8 @@ function SavingsGoalsCardImpl() {
       targetDate: string | null;
       monthlyContribution: string | null;
       isEmergencyFund?: boolean;
+      isApiSyncEnabled?: boolean | null;
+      apiCategoryId?: string | null;
     };
     const calcGoal = savings.goals.find((g) => g.goalId === rg.id);
     if (!calcGoal) continue;
@@ -90,11 +98,13 @@ function SavingsGoalsCardImpl() {
     // Data-driven: fixed goals use their target, ongoing goals have no fixed target to reach
     const target = rg.targetMode === "fixed" ? calcGoal.target : 0;
 
-    // All future transactions for this fund (deposits + withdrawals)
+    // All future transactions for this fund (deposits + withdrawals).
+    // Date-truncated "today" cutoff (not time-of-day-sensitive), matching
+    // the shared isFuturePlannedTx predicate's boundary semantics.
     const goalTxs = plannedTransactions
       .filter(
         (t: { goalId: number; transactionDate: string }) =>
-          t.goalId === rg.id && new Date(t.transactionDate) > now,
+          t.goalId === rg.id && t.transactionDate >= todayKey,
       )
       .sort((a: { transactionDate: string }, b: { transactionDate: string }) =>
         a.transactionDate.localeCompare(b.transactionDate),
@@ -104,23 +114,13 @@ function SavingsGoalsCardImpl() {
       .filter((t: { amount: number }) => t.amount < 0)
       .reduce((s: number, t: { amount: number }) => s + Math.abs(t.amount), 0);
 
-    // If there are planned expenses, simulate month-by-month (applies to both fixed and ongoing)
+    // If there are planned expenses, project month-by-month via the shared
+    // walk (applies to both fixed and ongoing) instead of a hand-rolled
+    // simulation — this also means recurring planned transactions are now
+    // correctly expanded here (previously only their base occurrence was
+    // considered), and API-linked goals get the same "don't double-count
+    // this month's contribution" guard the Savings page already applies.
     if (totalPlannedExpenses > 0) {
-      const overrideMap = new Map<string, number>();
-      for (const o of allocationOverrides.filter(
-        (o: { goalId: number }) => o.goalId === rg.id,
-      )) {
-        const ov = o as { monthDate: string; amount: number };
-        overrideMap.set(ov.monthDate.slice(0, 7), ov.amount);
-      }
-
-      let onTrack = true;
-      const shortfalls: {
-        month: string;
-        amount: number;
-        descriptions: string[];
-      }[] = [];
-      let balance = current;
       const lastTx = goalTxs[goalTxs.length - 1] as
         { transactionDate: string; amount: number } | undefined;
       if (!lastTx) continue;
@@ -131,35 +131,41 @@ function SavingsGoalsCardImpl() {
           (lastTxDate.getMonth() - now.getMonth()) +
           1,
       );
+      const { balances, monthEvents } = projectGoalBalances(
+        {
+          id: rg.id,
+          current,
+          monthlyAllocation: calcGoal.monthlyAllocation,
+          isApiSyncEnabled: rg.isApiSyncEnabled,
+          apiCategoryId: rg.apiCategoryId,
+        },
+        {
+          now,
+          projectionMonths: monthsToSimulate,
+          plannedTransactions,
+          allocationOverrides,
+          settledOccurrences,
+        },
+      );
+
+      let onTrack = true;
+      const shortfalls: {
+        month: string;
+        amount: number;
+        descriptions: string[];
+      }[] = [];
       for (let m = 0; m < monthsToSimulate; m++) {
-        const monthDate = new Date(now.getFullYear(), now.getMonth() + m, 1);
-        const mk = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}`;
-        const contribution = overrideMap.has(mk)
-          ? overrideMap.get(mk)!
-          : calcGoal.monthlyAllocation;
-        balance += contribution;
-        const monthDescriptions: string[] = [];
-        let hasWithdrawal = false;
-        for (const tx of goalTxs) {
-          const t = tx as {
-            transactionDate: string;
-            amount: number;
-            description?: string;
-          };
-          if (t.transactionDate?.startsWith(mk)) {
-            balance += t.amount;
-            if (t.amount < 0) {
-              hasWithdrawal = true;
-              if (t.description) monthDescriptions.push(t.description);
-            }
-          }
-        }
-        if (balance < 0 && hasWithdrawal) {
+        const events = monthEvents[m] ?? [];
+        const hasWithdrawal = events.some((ev) => ev.amount < 0);
+        if (balances[m]! < 0 && hasWithdrawal) {
           onTrack = false;
+          const monthDate = new Date(now.getFullYear(), now.getMonth() + m, 1);
           shortfalls.push({
             month: `${shortMonthNames[monthDate.getMonth()]} ${monthDate.getFullYear()}`,
-            amount: Math.abs(balance),
-            descriptions: monthDescriptions,
+            amount: Math.abs(balances[m]!),
+            descriptions: events
+              .filter((ev) => ev.amount < 0)
+              .map((ev) => ev.description),
           });
         }
       }

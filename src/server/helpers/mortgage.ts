@@ -11,6 +11,17 @@ import { MAX_EXTRA_PAYMENTS } from "@/lib/constants";
 import { toNumber } from "./transforms";
 
 /**
+ * The active mortgage loan — the only place that should resolve `isActive`
+ * from an already-loaded loans array. Falls back to the first loan (by id)
+ * if none is marked active. Returns undefined only when no loans exist.
+ */
+export function getActiveMortgageLoan<T extends { isActive: boolean }>(
+  mortgageLoans: T[],
+): T | undefined {
+  return mortgageLoans.find((l) => l.isActive) ?? mortgageLoans[0];
+}
+
+/**
  * Build mortgage inputs from DB rows and compute current balance via amortization.
  * Used by networth and historical routers.
  */

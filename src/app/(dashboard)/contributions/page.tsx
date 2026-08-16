@@ -14,6 +14,8 @@ import { useUser, hasPermission } from "@/lib/context/user-context";
 import { useScenario } from "@/lib/context/scenario-context";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import {
   isPortfolioParent,
   isRetirementParent,
@@ -42,10 +44,32 @@ export default function ContributionsPage() {
   const user = useUser();
   const canEdit = hasPermission(user, "portfolio");
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.contribution.computeSummary.useQuery();
   const { data: profiles } = trpc.contributionProfile.list.useQuery();
   const [period, setPeriod] = useState<PeriodMode>("annual");
   const [activeProfileId] = useActiveContribProfile();
+  const salaryOverrides = useSalaryOverrides();
+  // Plan pin -> globally-active profile — the primary summary below must stay
+  // in sync with Paycheck/Budget's resolution instead of always reading raw
+  // Live data (see docs/RULES.md "Profile Pins"). This is distinct from
+  // selectedProfileId below, which is a "compare against a specific other
+  // profile" picker and deliberately stays local-only.
+  const { profileId: effectiveActiveContribProfileId } = useEffectiveProfileId(
+    "contribution",
+    {
+      validIds: profiles?.map((p) => p.id),
+      localSelection: null,
+      globalDefaultId: activeProfileId,
+    },
+  );
+  const dataInput = {
+    ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+    ...(effectiveActiveContribProfileId != null
+      ? { contributionProfileId: effectiveActiveContribProfileId }
+      : {}),
+  };
+  const { data, isLoading } = trpc.contribution.computeSummary.useQuery(
+    Object.keys(dataInput).length > 0 ? dataInput : undefined,
+  );
   const setPriorYear =
     trpc.settings.contributionAccounts.setPriorYearAmount.useMutation({
       onSuccess: () => utils.contribution.computeSummary.invalidate(),

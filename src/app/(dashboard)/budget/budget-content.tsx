@@ -17,7 +17,11 @@ import { useUser, hasPermission } from "@/lib/context/user-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
-import { ContributionProfileManager } from "@/components/budget";
+import { useScenario } from "@/lib/context/scenario-context";
+import {
+  ContributionProfileManager,
+  SavingsAllocationPanel,
+} from "@/components/budget";
 import type { ColumnResult } from "@/components/budget";
 import { BudgetPushYnabModal } from "@/components/budget/budget-push-ynab-modal";
 import { BudgetPullYnabModal } from "@/components/budget/budget-pull-ynab-modal";
@@ -35,6 +39,7 @@ import {
   BudgetPageContext,
   type BudgetPageContextValue,
 } from "@/components/budget/budget-page-context";
+import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useBudgetPageState } from "./use-budget-page-state";
 import {
   useBudgetDerivedData,
@@ -45,6 +50,7 @@ import { BudgetDetailPanel } from "./budget-detail-panel";
 export function BudgetContent() {
   const user = useUser();
   const canEdit = hasPermission(user, "budget");
+  const { isInScenario, setScenarioBudgetProfile } = useScenario();
   const [activeColumn, setActiveColumn] = usePersistedSetting<number>(
     "budget_active_column",
     0,
@@ -58,24 +64,73 @@ export function BudgetContent() {
   const { data: allProfiles } = trpc.budget.listProfiles.useQuery();
   const activeProfileId = allProfiles?.find((p) => p.isActive)?.id ?? null;
   const [viewingProfileId, setViewingProfileId] = useState<number | null>(null);
-  const displayProfileId = viewingProfileId ?? activeProfileId;
+  // Single shared resolution for both the Budget tab and Savings tab — see
+  // useEffectiveProfileId's docblock for why this must not be two independent calls.
+  const { profileId: displayProfileId, source: displayProfileSource } =
+    useEffectiveProfileId("budget", {
+      validIds: allProfiles?.map((p) => p.id),
+      localSelection: viewingProfileId,
+      globalDefaultId: activeProfileId,
+    });
+  const isPinnedProfile = displayProfileSource === "plan-pin";
 
-  const { data, isLoading, error } = trpc.budget.computeActiveSummary.useQuery({
-    selectedColumn: activeColumn,
-    ...(displayProfileId != null ? { profileId: displayProfileId } : {}),
-  });
-  const { data: apiActualsData } = trpc.budget.listApiActuals.useQuery();
-  const salaryOverrides = useSalaryOverrides();
   const [activeContribProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",
     null,
   );
   const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
-  const { data: savingsGoals } = trpc.settings.savingsGoals.list.useQuery();
+  // Plan pin -> globally-active contribution profile (single computation
+  // path — matches expenses/page.tsx, paycheck/page.tsx, contributions/page.tsx).
+  const { profileId: effectiveContribProfileId } = useEffectiveProfileId(
+    "contribution",
+    {
+      validIds: contribProfiles?.map((p) => p.id),
+      localSelection: null,
+      globalDefaultId: activeContribProfileId,
+    },
+  );
+  const salaryOverrides = useSalaryOverrides();
+  const { data, isLoading, error } = trpc.budget.computeActiveSummary.useQuery({
+    selectedColumn: activeColumn,
+    activeContribProfileId: effectiveContribProfileId,
+    ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+    ...(displayProfileId != null ? { profileId: displayProfileId } : {}),
+  });
+  const { data: apiActualsData } = trpc.budget.listApiActuals.useQuery(
+    displayProfileId != null ? { profileId: displayProfileId } : undefined,
+  );
+  // Resolved per the profile being viewed (override-shadows-default, same
+  // path the Savings page uses) — NOT settings.savingsGoals.list, which
+  // returns raw unresolved rows and would silently disagree with the
+  // Savings page whenever a goal has a profile-specific override.
+  const { data: resolvedSavingsGoals } =
+    trpc.savings.goalProfileAllocations.list.useQuery(
+      { profileId: displayProfileId! },
+      { enabled: displayProfileId != null },
+    );
+  const savingsGoals: SavingsGoalEntry[] | undefined =
+    resolvedSavingsGoals?.map((g) => ({
+      id: g.goalId,
+      name: g.name,
+      isActive: true,
+      monthlyContribution: g.monthlyContribution,
+      allocationPercent: g.allocationPercent,
+      isOverride: g.isOverride,
+    }));
 
   // ---- Mutations ----
   const { setActiveProfile, createProfile, deleteProfile, renameProfile } =
     useProfileMutations();
+  // While a Plan is selected, "activating" a profile pins it to that Plan
+  // instead of changing the globally-active profile (which would affect
+  // Main Plan and every other Plan too) — see docs/RULES.md "Profile Pins".
+  const handleActivateBudgetProfile = (id: number) => {
+    if (isInScenario) {
+      setScenarioBudgetProfile(id);
+    } else {
+      setActiveProfile.mutate({ id });
+    }
+  };
   const {
     addColumn,
     removeColumn,
@@ -106,9 +161,9 @@ export function BudgetContent() {
   } = useItemMutations({ selectedColumnRef });
 
   // ---- Local UI state ----
-  const [activeTab, setActiveTab] = useState<"budget" | "contributions">(
-    "budget",
-  );
+  const [activeTab, setActiveTab] = useState<
+    "budget" | "contributions" | "savings"
+  >("budget");
   const [pushPreviewItems, setPushPreviewItems] = useState<ReturnType<
     typeof buildPushPreviewItems
   > | null>(null);
@@ -157,10 +212,10 @@ export function BudgetContent() {
     buildPullPreviewItems,
   } = useBudgetDerivedData({
     data,
-    savingsGoals: savingsGoals as SavingsGoalEntry[] | undefined,
+    savingsGoals,
     apiActualsData,
     salaryOverrides,
-    activeContribProfileId,
+    activeContribProfileId: effectiveContribProfileId,
     editMode,
     getDraft,
     visibleCount,
@@ -229,7 +284,9 @@ export function BudgetContent() {
 
   const activeProfile = allProfiles?.find((p) => p.isActive) ?? null;
   const isViewingNonActive =
-    displayProfileId != null && displayProfileId !== activeProfileId;
+    displayProfileSource === "user-selection" &&
+    displayProfileId != null &&
+    displayProfileId !== activeProfileId;
 
   const rowHandlers = {
     getDraft,
@@ -239,7 +296,11 @@ export function BudgetContent() {
     onToggleItemEssential: (id: number, isEssential: boolean) =>
       updateItemEssential.mutate({ id, isEssential }),
     onToggleCategoryEssential: (category: string, isEssential: boolean) =>
-      updateCategoryEssential.mutate({ category, isEssential }),
+      updateCategoryEssential.mutate({
+        category,
+        isEssential,
+        ...(displayProfileId != null ? { profileId: displayProfileId } : {}),
+      }),
     onMoveItem: (id: number, newCategory: string) =>
       moveItem.mutate({ id, newCategory }),
     onReorderItem: (id: number, direction: "up" | "down") =>
@@ -258,7 +319,12 @@ export function BudgetContent() {
         targetMode: "ongoing",
       }),
     onAddItem: (category: string, subcategory: string, isEssential: boolean) =>
-      createItem.mutate({ category, subcategory, isEssential }),
+      createItem.mutate({
+        category,
+        subcategory,
+        isEssential,
+        ...(displayProfileId != null ? { profileId: displayProfileId } : {}),
+      }),
     addItemPending: createItem.isPending,
     addItemError: createItem.error,
     matchContrib: (sub: string) => matchContrib(sub),
@@ -269,16 +335,29 @@ export function BudgetContent() {
   return (
     <BudgetPageContext.Provider value={pageCtxValue}>
       <div>
-        <PageHeader title="Budget" />
+        <PageHeader
+          title="Budget"
+          subtitle={
+            <>
+              <div>
+                Contributions set take-home pay, Budget spends it, Savings
+                allocates what&rsquo;s left — in that order.
+              </div>
+              <div className="mt-0.5">
+                Want to try a different profile without changing what&rsquo;s
+                active for everyone? Use the &ldquo;Plan&rdquo; dropdown at the
+                top of the page to create one, then pin profiles to it instead
+                of activating them here — a Plan&rsquo;s pins only apply while
+                you&rsquo;re viewing it, so the shared setup everyone else sees
+                stays untouched.
+              </div>
+            </>
+          }
+        />
 
+        {/* Ordered to match the actual dependency chain: Contributions feed
+            Budget's leftover, which feeds Savings — see docs/RULES.md. */}
         <div className="flex gap-1 border-b mb-4">
-          <button
-            type="button"
-            onClick={() => setActiveTab("budget")}
-            className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "budget" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
-          >
-            Budget Profiles
-          </button>
           <button
             type="button"
             onClick={() => setActiveTab("contributions")}
@@ -286,6 +365,22 @@ export function BudgetContent() {
           >
             Contribution Profiles
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("budget")}
+            className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "budget" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+          >
+            Budget Profiles
+          </button>
+          {hasPermission(user, "savings") && (
+            <button
+              type="button"
+              onClick={() => setActiveTab("savings")}
+              className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "savings" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+            >
+              Savings Profiles
+            </button>
+          )}
         </div>
 
         {activeTab === "budget" && (
@@ -295,6 +390,11 @@ export function BudgetContent() {
                 profileName: profile?.name ?? null,
                 activeProfileName: activeProfile?.name ?? null,
                 isViewingNonActive,
+                isPinned: isPinnedProfile,
+                onActivate:
+                  profile?.id != null
+                    ? () => handleActivateBudgetProfile(profile.id!)
+                    : undefined,
               }}
               columnDisplay={{
                 isWeighted,
@@ -345,7 +445,7 @@ export function BudgetContent() {
                 apiLinkedColumnIndex={apiLinkedColumnIndex ?? 0}
                 onSelectProfile={setViewingProfileId}
                 onCreateProfile={(name) => createProfile.mutate({ name })}
-                onSetActiveProfile={(id) => setActiveProfile.mutate({ id })}
+                onSetActiveProfile={handleActivateBudgetProfile}
                 onDeleteProfile={(id) => deleteProfile.mutate({ id })}
               />
 
@@ -390,6 +490,25 @@ export function BudgetContent() {
           <CardBoundary title="Contribution Profiles">
             <ContributionProfileManager
               canEdit={hasPermission(user, "contributionProfile")}
+            />
+          </CardBoundary>
+        )}
+
+        {activeTab === "savings" && hasPermission(user, "savings") && (
+          <CardBoundary title="Savings Profiles">
+            <SavingsAllocationPanel
+              canEdit={hasPermission(user, "savings")}
+              viewingProfileId={displayProfileId}
+              onSelectProfile={setViewingProfileId}
+              isPinned={isPinnedProfile}
+              onActivateProfile={handleActivateBudgetProfile}
+              livePoolEstimate={
+                allColumnResults?.[activeColumn] != null
+                  ? (payrollBreakdowns[activeColumn]?.netMonthly ?? 0) -
+                    allColumnResults[activeColumn]!.totalMonthly
+                  : null
+              }
+              livePoolColumnLabel={cols[activeColumn]}
             />
           </CardBoundary>
         )}

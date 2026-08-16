@@ -8,6 +8,34 @@
       "when": 1786154084335,
       "tag": "0000_v7_initial_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786817594775,
+      "tag": "0001_parched_karma",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786824305620,
+      "tag": "0002_oval_thunderbolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786830566024,
+      "tag": "0003_graceful_satana",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786834860577,
+      "tag": "0004_clumsy_cargill",
+      "breakpoints": true
     }
   ]
 }

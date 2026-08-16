@@ -25,6 +25,9 @@ vi.mock("@/lib/hooks/use-persisted-setting", () => ({
 vi.mock("@/lib/hooks/use-fi-cache", () => ({
   useFICache: () => [null, vi.fn()],
 }));
+vi.mock("@/lib/hooks/use-year-end-targeting", () => ({
+  useYearEndTargetingInput: () => ({}),
+}));
 
 let savingsQuery: { data: unknown; isLoading: boolean; error: unknown };
 let contribsQuery: { data: unknown; isLoading: boolean; error: unknown };

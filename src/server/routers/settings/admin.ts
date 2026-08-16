@@ -96,16 +96,10 @@ const performanceAccountInput = z.object({
   displayOrder: z.number().int().default(0),
 });
 
-/** Zod schema for numeric strings stored as TEXT in SQLite (e.g. financial amounts). */
-const numericText = z
-  .string()
-  .min(1, "Must not be empty")
-  .refine((v) => !Number.isNaN(Number(v)), "Must be a valid number");
-
 const savingsGoalInput = z.object({
   name: z.string().min(1),
   parentGoalId: z.number().int().nullable().optional(),
-  targetAmount: numericText.nullable().optional(),
+  targetAmount: zDecimal.nullable().optional(),
   targetMonths: z.number().int().nullable().optional(),
   targetDate: z
     .string()
@@ -116,8 +110,8 @@ const savingsGoalInput = z.object({
   isActive: z.boolean().default(true),
   isEmergencyFund: z.boolean().default(false),
   targetMode: targetModeSchema.default("fixed"),
-  monthlyContribution: numericText.default("0"),
-  allocationPercent: numericText.nullable().optional(), // % of budget leftover
+  monthlyContribution: zDecimal.default("0"),
+  allocationPercent: zDecimal.nullable().optional(), // % of budget leftover
 });
 
 // --- Procedures ---
@@ -267,6 +261,8 @@ export const adminProcedures = {
           name: z.string().min(1),
           description: z.string().nullable().optional(),
           overrides: scenarioOverridesSchema.default({}),
+          budgetProfileId: z.number().int().nullable().optional(),
+          contributionProfileId: z.number().int().nullable().optional(),
         }),
       )
       .mutation(({ ctx, input }) =>
@@ -283,6 +279,8 @@ export const adminProcedures = {
           name: z.string().min(1).optional(),
           description: z.string().nullable().optional(),
           overrides: scenarioOverridesSchema.optional(),
+          budgetProfileId: z.number().int().nullable().optional(),
+          contributionProfileId: z.number().int().nullable().optional(),
         }),
       )
       .mutation(({ ctx, input: { id, ...data } }) =>
@@ -290,6 +288,44 @@ export const adminProcedures = {
           .update(schema.scenarios)
           .set({ ...data, updatedAt: new Date() })
           .where(eq(schema.scenarios.id, id))
+          .returning()
+          .then((r) => r[0]),
+      ),
+    /** Pin (or clear, with null) which Budget Profile is "active" when this Plan is selected. */
+    setBudgetProfilePin: scenarioProcedure
+      .input(
+        z.object({
+          id: z.number().int(),
+          budgetProfileId: z.number().nullable(),
+        }),
+      )
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .update(schema.scenarios)
+          .set({
+            budgetProfileId: input.budgetProfileId,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.scenarios.id, input.id))
+          .returning()
+          .then((r) => r[0]),
+      ),
+    /** Pin (or clear, with null) which Contribution Profile is "active" when this Plan is selected. */
+    setContributionProfilePin: scenarioProcedure
+      .input(
+        z.object({
+          id: z.number().int(),
+          contributionProfileId: z.number().nullable(),
+        }),
+      )
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .update(schema.scenarios)
+          .set({
+            contributionProfileId: input.contributionProfileId,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.scenarios.id, input.id))
           .returning()
           .then((r) => r[0]),
       ),
@@ -1058,7 +1094,7 @@ export const adminProcedures = {
           snapshotId: z.number().int(),
           institution: z.string().trim().min(1),
           taxType: z.enum(PORTFOLIO_TAX_TYPE_VALUES),
-          amount: numericText,
+          amount: zDecimal,
           accountType: z.enum(accountCategoryEnum()),
           subType: z.string().nullable().optional(),
           label: z.string().trim().nullable().optional(),

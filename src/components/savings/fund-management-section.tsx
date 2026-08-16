@@ -19,6 +19,7 @@ import type {
 import type { TargetMode } from "@/lib/config/enum-values";
 import type { PushPreviewItem } from "@/components/ui/push-preview-modal";
 import { useUpdatePlannedTx } from "./use-update-planned-tx";
+import { buildSettledOccurrencesSet } from "@/lib/pure/savings-projection";
 
 interface AllocationOverride {
   goalId: number;
@@ -110,6 +111,10 @@ export interface FundManagementSectionProps {
   lockInAllocationPercent: ReturnType<
     typeof trpc.savings.lockInAllocationPercent.useMutation
   >;
+  /** Budget profile to recompute the live pool against for per-goal
+   *  recalculate/lock-in; null/undefined uses the active profile (see the
+   *  savings page's recalcProfileId for the full explanation). */
+  recalcProfileId?: number | null;
   /** Ref exposing goal update callbacks for the page to pipe to other sections */
   callbacksRef: React.MutableRefObject<FundManagementCallbacks | null>;
   /** Shared new fund form state — page owns for top-level form, shared for sub-goal creation */
@@ -161,6 +166,7 @@ export function FundManagementSection({
   onPushPreview,
   recalculateAllocation,
   lockInAllocationPercent,
+  recalcProfileId,
   callbacksRef,
   showNewFund: _showNewFund,
   setShowNewFund: _setShowNewFund,
@@ -228,6 +234,15 @@ export function FundManagementSection({
   const deleteTransfer = trpc.savings.transfers.delete.useMutation({
     onSuccess: () => utils.savings.invalidate(),
   });
+  const settleTxMut = trpc.savings.plannedTransactions.settle.useMutation({
+    onSuccess: () => utils.savings.invalidate(),
+  });
+  const settleTx = useCallback(
+    (params: { plannedTxId: number; occurrenceMonth: string }) =>
+      settleTxMut.mutate(params),
+    [settleTxMut],
+  );
+  const settledOccurrences = buildSettledOccurrencesSet(plannedTransactions);
 
   // ── Local state ──
   const [addingSubGoalForFund, setAddingSubGoalForFund] = useState<
@@ -481,11 +496,21 @@ export function FundManagementSection({
                   onGoalUpdateMulti={handleGoalUpdateMulti}
                   maxMonthlyFunding={maxMonthlyFunding}
                   onRecalculateAllocation={() =>
-                    recalculateAllocation.mutate({ goalId: raw.id })
+                    recalculateAllocation.mutate({
+                      goalId: raw.id,
+                      ...(recalcProfileId != null
+                        ? { profileId: recalcProfileId }
+                        : {}),
+                    })
                   }
                   recalculateAllocationPending={recalculateAllocation.isPending}
                   onLockInAllocationPercent={() =>
-                    lockInAllocationPercent.mutate({ goalId: raw.id })
+                    lockInAllocationPercent.mutate({
+                      goalId: raw.id,
+                      ...(recalcProfileId != null
+                        ? { profileId: recalcProfileId }
+                        : {}),
+                    })
                   }
                   lockInAllocationPercentPending={
                     lockInAllocationPercent.isPending
@@ -493,6 +518,8 @@ export function FundManagementSection({
                   onDeleteGoal={(p) => deleteGoal.mutate(p)}
                   onDeleteTx={deleteTx}
                   onDeleteTransfer={(p) => deleteTransfer.mutate(p)}
+                  onSettleTx={settleTx}
+                  settledOccurrences={settledOccurrences}
                   goalById={goalById as Map<number, { name: string }>}
                   onAddTx={handleAddTx}
                   createTxPending={createTx.isPending}

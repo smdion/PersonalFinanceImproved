@@ -36,7 +36,17 @@ function MortgageCardImpl() {
     );
   }
 
-  const primaryLoan = activeLoans[0]!;
+  // Prefer the server-resolved active loan (single computation path — see
+  // getActiveMortgageLoan) over just picking the first still-owed loan;
+  // fall back to that only when the active loan itself is already paid off.
+  const activeLoanResult =
+    data?.activeLoanId != null
+      ? allLoans.find((l) => l.loanId === data.activeLoanId)
+      : undefined;
+  const primaryLoan =
+    activeLoanResult && activeLoanResult.remainingMonths > 0
+      ? activeLoanResult
+      : activeLoans[0]!;
 
   return (
     <Card title="Mortgage" href="/liabilities">

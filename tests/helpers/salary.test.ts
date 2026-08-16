@@ -6,6 +6,8 @@ import {
   getTotalCompensation,
   getCurrentSalary,
   getFutureSalaryChanges,
+  applySalaryOverride,
+  resolveEffectiveSalary,
 } from "@/server/helpers/salary";
 import { createTestDb, type TestDbContext } from "./db-harness";
 
@@ -213,6 +215,107 @@ describe("getCurrentSalary", () => {
   it("falls back to fallbackSalary for non-existent job", async () => {
     const salary = await getCurrentSalary(ctx.rawDb, 999, "80000");
     expect(salary).toBe(80000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// applySalaryOverride (pure)
+// ---------------------------------------------------------------------------
+
+describe("applySalaryOverride", () => {
+  it("returns the override when the map has an entry for the person", () => {
+    const map = new Map([[1, 150000]]);
+    expect(applySalaryOverride(1, 100000, map)).toBe(150000);
+  });
+
+  it("returns the raw salary when the map has no entry for the person", () => {
+    const map = new Map([[2, 150000]]);
+    expect(applySalaryOverride(1, 100000, map)).toBe(100000);
+  });
+
+  it("returns the raw salary for an empty map", () => {
+    expect(applySalaryOverride(1, 100000, new Map())).toBe(100000);
+  });
+
+  it("honors a zero-dollar override rather than falling back", () => {
+    const map = new Map([[1, 0]]);
+    expect(applySalaryOverride(1, 100000, map)).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveEffectiveSalary (DB-dependent)
+// ---------------------------------------------------------------------------
+
+describe("resolveEffectiveSalary", () => {
+  let ctx: TestDbContext;
+
+  beforeAll(async () => {
+    ctx = await createTestDb();
+    ctx.db
+      .insert(ctx.schema.people)
+      .values({
+        id: 1,
+        name: "Test",
+        dateOfBirth: "1990-01-01",
+        isPrimaryUser: true,
+      })
+      .run();
+    ctx.db
+      .insert(ctx.schema.jobs)
+      .values({
+        id: 1,
+        personId: 1,
+        employerName: "TestCo",
+        annualSalary: "100000",
+        payPeriod: "biweekly",
+        payWeek: "even",
+        startDate: "2020-01-01",
+        w4FilingStatus: "MFJ",
+      })
+      .run();
+    ctx.db
+      .insert(ctx.schema.salaryChanges)
+      .values({
+        jobId: 1,
+        newSalary: "120000",
+        effectiveDate: "2025-01-01",
+      })
+      .run();
+  });
+
+  afterAll(() => ctx.cleanup());
+
+  const job = { id: 1, personId: 1, annualSalary: "100000" };
+
+  it("returns the override when the map has an entry for the job's person", async () => {
+    const salary = await resolveEffectiveSalary(
+      ctx.rawDb,
+      job,
+      new Map([[1, 200000]]),
+      new Date("2025-07-01"),
+    );
+    expect(salary).toBe(200000);
+  });
+
+  it("falls back to getCurrentSalary when the map has no entry", async () => {
+    const salary = await resolveEffectiveSalary(
+      ctx.rawDb,
+      job,
+      new Map(),
+      new Date("2025-07-01"),
+    );
+    expect(salary).toBe(120000);
+  });
+
+  it("falls back to getCurrentSalary before the salary change's effective date", async () => {
+    const salary = await resolveEffectiveSalary(
+      ctx.rawDb,
+      job,
+      new Map(),
+      new Date("2024-01-01"),
+    );
+    expect(salary).toBe(100000);
   });
 });
 

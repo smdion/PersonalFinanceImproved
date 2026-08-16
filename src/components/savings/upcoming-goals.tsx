@@ -47,6 +47,9 @@ export function UpcomingGoals({
   updateTxPending?: boolean;
 }) {
   const now = new Date();
+  // Date-truncated cutoff — matches the shared isFuturePlannedTx predicate's
+  // boundary semantics instead of being sensitive to time-of-day.
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   // Build one card per fund — only funds with an upcoming expense are shown
   const cards = goalProjections
@@ -62,7 +65,7 @@ export function UpcomingGoals({
           )
           .map((tx) => {
             const txDate = new Date(tx.transactionDate + "T00:00:00");
-            if (txDate <= now) return null;
+            if (txDate < today) return null;
             const mi = monthDates.findIndex(
               (d) => monthKey(d) === monthKey(txDate),
             );

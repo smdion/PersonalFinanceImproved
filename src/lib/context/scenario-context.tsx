@@ -19,6 +19,11 @@ type Scenario = {
   description: string | null;
   overrides: ScenarioOverrides;
   isBaseline: boolean;
+  /** Budget/Contribution Profile pinned as "active" for every page/calculator
+   *  while this Plan is selected — null means "no pin, fall through to the
+   *  globally-active profile". See useEffectiveProfileId. */
+  budgetProfileId: number | null;
+  contributionProfileId: number | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -28,6 +33,8 @@ type SessionScenario = {
   name: string;
   description: string | null;
   overrides: ScenarioOverrides;
+  budgetProfileId: number | null;
+  contributionProfileId: number | null;
   isSession: true;
 };
 
@@ -77,6 +84,13 @@ type ScenarioContextValue = {
     entity: string,
     recordId: string | number,
     field: string,
+  ) => void;
+
+  /** Pin (or clear, with null) which Budget Profile is active while the active scenario is selected. No-op on Main Plan. */
+  setScenarioBudgetProfile: (budgetProfileId: number | null) => void;
+  /** Pin (or clear, with null) which Contribution Profile is active while the active scenario is selected. No-op on Main Plan. */
+  setScenarioContributionProfile: (
+    contributionProfileId: number | null,
   ) => void;
 
   /** Create a new session-only scenario, optionally with initial overrides */
@@ -130,6 +144,10 @@ export function ScenarioProvider({ children }: { children: React.ReactNode }) {
   // Mutations for persisted scenario overrides
   const setOverrideMut = trpc.settings.scenarios.setOverride.useMutation();
   const clearOverrideMut = trpc.settings.scenarios.clearOverride.useMutation();
+  const setBudgetProfilePinMut =
+    trpc.settings.scenarios.setBudgetProfilePin.useMutation();
+  const setContributionProfilePinMut =
+    trpc.settings.scenarios.setContributionProfilePin.useMutation();
   const utils = trpc.useUtils();
 
   // Resolve the active scenario object
@@ -245,6 +263,46 @@ export function ScenarioProvider({ children }: { children: React.ReactNode }) {
     [activeSelection, clearOverrideMut, utils],
   );
 
+  const setScenarioBudgetProfile = useCallback(
+    (budgetProfileId: number | null) => {
+      if (activeSelection.type === "main") return;
+
+      if (activeSelection.type === "persisted") {
+        setBudgetProfilePinMut.mutate(
+          { id: activeSelection.id, budgetProfileId },
+          { onSuccess: () => utils.settings.scenarios.list.invalidate() },
+        );
+      } else {
+        setSessionScenarios((prev) =>
+          prev.map((s) =>
+            s.id === activeSelection.id ? { ...s, budgetProfileId } : s,
+          ),
+        );
+      }
+    },
+    [activeSelection, setBudgetProfilePinMut, utils],
+  );
+
+  const setScenarioContributionProfile = useCallback(
+    (contributionProfileId: number | null) => {
+      if (activeSelection.type === "main") return;
+
+      if (activeSelection.type === "persisted") {
+        setContributionProfilePinMut.mutate(
+          { id: activeSelection.id, contributionProfileId },
+          { onSuccess: () => utils.settings.scenarios.list.invalidate() },
+        );
+      } else {
+        setSessionScenarios((prev) =>
+          prev.map((s) =>
+            s.id === activeSelection.id ? { ...s, contributionProfileId } : s,
+          ),
+        );
+      }
+    },
+    [activeSelection, setContributionProfilePinMut, utils],
+  );
+
   const createSessionScenario = useCallback(
     (name: string, initialOverrides?: ScenarioOverrides): string => {
       const id = `session-${++sessionCounter}`;
@@ -255,6 +313,8 @@ export function ScenarioProvider({ children }: { children: React.ReactNode }) {
           name,
           description: null,
           overrides: initialOverrides ?? {},
+          budgetProfileId: null,
+          contributionProfileId: null,
           isSession: true as const,
         },
       ]);
@@ -286,6 +346,8 @@ export function ScenarioProvider({ children }: { children: React.ReactNode }) {
       isOverridden,
       setOverride,
       clearOverride,
+      setScenarioBudgetProfile,
+      setScenarioContributionProfile,
       createSessionScenario,
       deleteSessionScenario,
       isInScenario: activeSelection.type !== "main",
@@ -300,6 +362,8 @@ export function ScenarioProvider({ children }: { children: React.ReactNode }) {
       isOverridden,
       setOverride,
       clearOverride,
+      setScenarioBudgetProfile,
+      setScenarioContributionProfile,
       createSessionScenario,
       deleteSessionScenario,
     ],

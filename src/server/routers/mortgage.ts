@@ -3,7 +3,11 @@ import { asc } from "drizzle-orm";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
-import { toNumber, buildMortgageInputs } from "@/server/helpers";
+import {
+  toNumber,
+  buildMortgageInputs,
+  getActiveMortgageLoan,
+} from "@/server/helpers";
 import type { MortgageInput, MortgageWhatIf } from "@/lib/calculators/types";
 
 export const mortgageRouter = createTRPCRouter({
@@ -43,6 +47,18 @@ export const mortgageRouter = createTRPCRouter({
     };
 
     const result = calculateMortgage(input);
-    return { loans, result, whatIfScenarios: whatIfRows };
+    const activeLoan = getActiveMortgageLoan(loans);
+    const activeLoanResult = activeLoan
+      ? (result.loans.find((r) => r.loanId === activeLoan.id) ??
+        result.loans[0])
+      : result.loans[0];
+
+    return {
+      loans,
+      result,
+      whatIfScenarios: whatIfRows,
+      activeLoanId: activeLoan?.id ?? null,
+      activeLoanResult: activeLoanResult ?? null,
+    };
   }),
 });

@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SyncBadge } from "@/components/ui/sync-badge";
+import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import Link from "next/link";
 
 function ExternalLink({ href, label }: { href: string; label: string }) {
@@ -41,7 +42,9 @@ function ExternalLink({ href, label }: { href: string; label: string }) {
 }
 
 export default function AssetsPage() {
-  const { data, isLoading, error } = trpc.assets.computeSummary.useQuery();
+  const targeting = useYearEndTargetingInput();
+  const { data, isLoading, error } =
+    trpc.assets.computeSummary.useQuery(targeting);
   const utils = trpc.useUtils();
 
   const [addingAsset, setAddingAsset] = useState(false);

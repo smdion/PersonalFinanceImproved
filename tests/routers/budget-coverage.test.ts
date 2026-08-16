@@ -11,6 +11,7 @@
  */
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeEach } from "vitest";
+import { eq } from "drizzle-orm";
 import {
   createTestCaller,
   seedStandardDataset,
@@ -1343,6 +1344,153 @@ describe("budget router — computeActiveSummary with contribution-linked items"
       cleanup();
     }
   });
+
+  it("honors activeContribProfileId as a fallback when the column has no explicit override — must match what use-budget-derived-data.ts's payroll breakdown resolves for the same column", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const seed = seedStandardDataset(db);
+      const contrib = await seedContribAccount(db, seed.personId, {
+        contributionMethod: "dollar_amount",
+        contributionValue: "600",
+        jobId: null,
+      });
+      await caller.budget.linkContributionAccount({
+        budgetItemId: seed.itemIds[0]!,
+        contributionAccountId: contrib.id,
+      });
+
+      const profileId = seedContributionProfile(db, {
+        name: "Alt Contribution Profile",
+        isDefault: false,
+        contributionOverrides: {
+          contributionAccounts: {
+            [String(contrib.id)]: { contributionValue: "900" },
+          },
+        },
+      });
+
+      // No activeContribProfileId → Live (the account's own $600).
+      const liveSummary = await caller.budget.computeActiveSummary();
+      const liveItem = liveSummary.rawItems!.find(
+        (i) => i.id === seed.itemIds[0]!,
+      );
+      // contribAmount is monthly; contributionValue "600" is annual → 50/mo.
+      expect(liveItem!.contribAmount).toBe(50);
+
+      // No per-column override exists, but activeContribProfileId is
+      // passed — the column must fall through to it (this is the fix:
+      // previously the server ignored this param entirely).
+      const overriddenSummary = await caller.budget.computeActiveSummary({
+        activeContribProfileId: profileId,
+      });
+      const overriddenItem = overriddenSummary.rawItems!.find(
+        (i) => i.id === seed.itemIds[0]!,
+      );
+      expect(overriddenItem!.contribAmount).toBe(75);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("prefers a per-column override over activeContribProfileId when both are set", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const seed = seedStandardDataset(db);
+      const contrib = await seedContribAccount(db, seed.personId, {
+        contributionMethod: "dollar_amount",
+        contributionValue: "600",
+        jobId: null,
+      });
+      await caller.budget.linkContributionAccount({
+        budgetItemId: seed.itemIds[0]!,
+        contributionAccountId: contrib.id,
+      });
+
+      const columnProfileId = seedContributionProfile(db, {
+        name: "Column Profile",
+        isDefault: false,
+        contributionOverrides: {
+          contributionAccounts: {
+            [String(contrib.id)]: { contributionValue: "750" },
+          },
+        },
+      });
+      const globalProfileId = seedContributionProfile(db, {
+        name: "Global Profile",
+        isDefault: false,
+        contributionOverrides: {
+          contributionAccounts: {
+            [String(contrib.id)]: { contributionValue: "900" },
+          },
+        },
+      });
+      await caller.budget.updateColumnContributionProfileIds({
+        columnContributionProfileIds: [columnProfileId],
+      });
+
+      const summary = await caller.budget.computeActiveSummary({
+        activeContribProfileId: globalProfileId,
+      });
+      const item = summary.rawItems!.find((i) => i.id === seed.itemIds[0]!);
+      expect(item!.contribAmount).toBe(62.5);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("honors a Plan-level salaryOverride for percent-of-salary contribution-linked items — must agree with what paycheck.computeSummary resolves for the same person/override", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const seed = seedStandardDataset(db);
+      // 10% of salary, linked to a payroll job (seedStandardDataset's job
+      // defaults to $120,000/yr).
+      // computeAnnualContribution divides percent_of_salary values by 100,
+      // so "10" here means 10%.
+      const contrib = await seedPayrollContribAccount(
+        db,
+        seed.personId,
+        seed.jobId,
+        { contributionMethod: "percent_of_salary", contributionValue: "10" },
+      );
+      await caller.budget.linkContributionAccount({
+        budgetItemId: seed.itemIds[0]!,
+        contributionAccountId: contrib.id,
+      });
+
+      const salaryOverrides = [{ personId: seed.personId, salary: 240000 }];
+
+      // Before the fix, computeActiveSummary had no salaryOverrides input
+      // at all and this would silently stay at the $120,000 live figure.
+      const liveSummary = await caller.budget.computeActiveSummary();
+      const liveItem = liveSummary.rawItems!.find(
+        (i) => i.id === seed.itemIds[0]!,
+      );
+      expect(liveItem!.contribAmount).toBeCloseTo((120000 * 0.1) / 12, 2);
+
+      const [paycheckResult, overriddenSummary] = await Promise.all([
+        caller.paycheck.computeSummary({ salaryOverrides }),
+        caller.budget.computeActiveSummary({ salaryOverrides }),
+      ]);
+
+      const paycheckPerson = paycheckResult.people.find(
+        (p) => p.person.id === seed.personId,
+      );
+      expect(paycheckPerson!.salary).toBe(240000);
+
+      const overriddenItem = overriddenSummary.rawItems!.find(
+        (i) => i.id === seed.itemIds[0]!,
+      );
+      // Budget must now agree with Paycheck's resolved salary — both are
+      // driven by the same 240,000 override, not the raw 120,000.
+      expect(overriddenItem!.contribAmount).toBeCloseTo(
+        (paycheckPerson!.salary * 0.1) / 12,
+        2,
+      );
+      expect(overriddenItem!.contribAmount).toBeCloseTo((240000 * 0.1) / 12, 2);
+    } finally {
+      cleanup();
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1524,6 +1672,110 @@ describe("budget router — syncBudgetToApi no profile", () => {
       await expect(
         caller.budget.syncBudgetToApi({ selectedColumn: 0 }),
       ).rejects.toThrow("No linked or active budget profile");
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Regression: mutations must honor an explicit profileId instead of always
+// targeting the globally-active profile. A client viewing (not activating) a
+// non-active profile passes its id explicitly — before this fix, createItem/
+// addColumn/removeColumn/renameColumn/updateColumnMonths/
+// updateColumnContributionProfileIds/updateCategoryEssential all silently
+// redirected the edit onto the active profile instead.
+// ---------------------------------------------------------------------------
+
+describe("budget router — item/column mutations target explicit profileId", () => {
+  it("createItem creates the item under the given non-active profile, not the active one", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedStandardDataset(db);
+      const activeProfileId = (await caller.budget.listProfiles()).find(
+        (p) => p.isActive,
+      )!.id;
+      const viewedProfileId = await seedBudgetProfile(db, "Viewed", false);
+
+      const created = await caller.budget.createItem({
+        category: "New Category",
+        subcategory: "New Sub",
+        profileId: viewedProfileId,
+      });
+
+      expect(created!.profileId).toBe(viewedProfileId);
+      expect(created!.profileId).not.toBe(activeProfileId);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("addColumn/renameColumn/removeColumn/updateColumnMonths target the given non-active profile", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedStandardDataset(db);
+      const viewedProfileId = await seedBudgetProfile(db, "Viewed", false);
+
+      await caller.budget.addColumn({
+        label: "Extra",
+        profileId: viewedProfileId,
+      });
+      await caller.budget.renameColumn({
+        colIndex: 1,
+        label: "Renamed",
+        profileId: viewedProfileId,
+      });
+      await caller.budget.updateColumnMonths({
+        columnMonths: [10, 2],
+        profileId: viewedProfileId,
+      });
+
+      const profiles = await caller.budget.listProfiles();
+      const viewed = profiles.find((p) => p.id === viewedProfileId)!;
+      const active = profiles.find((p) => p.isActive)!;
+      expect(viewed.columnLabels).toEqual(["Standard", "Renamed"]);
+      expect(viewed.columnMonths).toEqual([10, 2]);
+      // The active profile must be untouched by edits scoped to viewedProfileId.
+      expect(active.columnLabels).toEqual(["Standard"]);
+      expect(active.columnMonths).toBeNull();
+
+      await caller.budget.removeColumn({
+        colIndex: 1,
+        profileId: viewedProfileId,
+      });
+      const afterRemove = (await caller.budget.listProfiles()).find(
+        (p) => p.id === viewedProfileId,
+      )!;
+      expect(afterRemove.columnLabels).toEqual(["Standard"]);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("updateCategoryEssential only touches items in the given non-active profile", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedStandardDataset(db);
+      const viewedProfileId = await seedBudgetProfile(db, "Viewed", false);
+      await caller.budget.createItem({
+        category: "Shared Category",
+        subcategory: "Item",
+        isEssential: false,
+        profileId: viewedProfileId,
+      });
+
+      await caller.budget.updateCategoryEssential({
+        category: "Shared Category",
+        isEssential: true,
+        profileId: viewedProfileId,
+      });
+
+      const schema = await getSchema();
+      const items = await db
+        .select()
+        .from(schema.budgetItems)
+        .where(eq(schema.budgetItems.profileId, viewedProfileId));
+      expect(items.every((i) => i.isEssential)).toBe(true);
     } finally {
       cleanup();
     }

@@ -8,6 +8,7 @@ import { accountDisplayName } from "@/lib/utils/format";
 import {
   toNumber,
   computeMortgageBalance,
+  getActiveMortgageLoan,
   getLatestSnapshot,
   parseAppSettings,
   getEffectiveCash,
@@ -17,310 +18,328 @@ import {
   groupSnapshotAccounts,
   buildYearEndHistory,
 } from "@/server/helpers";
+import { zYearEndTargeting, toSalaryOverrideMap } from "./_shared";
 
 export const networthRouter = createTRPCRouter({
-  computeSummary: protectedProcedure.query(async ({ ctx }) => {
-    const [
-      people,
-      mortgageLoans,
-      extraPayments,
-      settings,
-      snapshotData,
-      apiConnections,
-    ] = await Promise.all([
-      ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
-      ctx.db.select().from(schema.mortgageLoans),
-      ctx.db
-        .select()
-        .from(schema.mortgageExtraPayments)
-        .orderBy(asc(schema.mortgageExtraPayments.paymentDate)),
-      ctx.db.select().from(schema.appSettings),
-      getLatestSnapshot(ctx.db),
-      ctx.db.select().from(schema.apiConnections),
-    ]);
+  computeSummary: protectedProcedure
+    .input(zYearEndTargeting)
+    .query(async ({ ctx, input }) => {
+      const [
+        people,
+        mortgageLoans,
+        extraPayments,
+        settings,
+        snapshotData,
+        apiConnections,
+      ] = await Promise.all([
+        ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
+        ctx.db.select().from(schema.mortgageLoans),
+        ctx.db
+          .select()
+          .from(schema.mortgageExtraPayments)
+          .orderBy(asc(schema.mortgageExtraPayments.paymentDate)),
+        ctx.db.select().from(schema.appSettings),
+        getLatestSnapshot(ctx.db),
+        ctx.db.select().from(schema.apiConnections),
+      ]);
 
-    let portfolioTotal = 0;
-    let portfolioAccountDetails: {
-      institution: string;
-      taxType: string;
-      accountType: string;
-      amount: number;
-      ownerPersonId: number | null;
-      category: string | null;
-      accountLabel: string | null;
-      ownershipType: string | null;
-    }[] = [];
+      let portfolioTotal = 0;
+      let portfolioAccountDetails: {
+        institution: string;
+        taxType: string;
+        accountType: string;
+        amount: number;
+        ownerPersonId: number | null;
+        category: string | null;
+        accountLabel: string | null;
+        ownershipType: string | null;
+      }[] = [];
 
-    if (snapshotData) {
-      portfolioTotal = snapshotData.total;
+      if (snapshotData) {
+        portfolioTotal = snapshotData.total;
 
-      // Fetch performance accounts for category lookup
-      const perfAccounts = await ctx.db
-        .select()
-        .from(schema.performanceAccounts);
-      const perfMap = new Map(perfAccounts.map((p) => [p.id, p]));
+        // Fetch performance accounts for category lookup
+        const perfAccounts = await ctx.db
+          .select()
+          .from(schema.performanceAccounts);
+        const perfMap = new Map(perfAccounts.map((p) => [p.id, p]));
 
-      portfolioAccountDetails = snapshotData.accounts.map((a) => {
-        const perf = a.performanceAccountId
-          ? perfMap.get(a.performanceAccountId)
-          : null;
-        return {
-          institution: a.institution,
-          taxType: a.taxType,
-          accountType: a.accountType,
-          amount: a.amount,
-          ownerPersonId: a.ownerPersonId,
-          category: perf?.parentCategory ?? null,
-          accountLabel: perf ? accountDisplayName(perf) : null,
-          ownershipType: perf?.ownershipType ?? null,
-        };
+        portfolioAccountDetails = snapshotData.accounts.map((a) => {
+          const perf = a.performanceAccountId
+            ? perfMap.get(a.performanceAccountId)
+            : null;
+          return {
+            institution: a.institution,
+            taxType: a.taxType,
+            accountType: a.accountType,
+            amount: a.amount,
+            ownerPersonId: a.ownerPersonId,
+            category: perf?.parentCategory ?? null,
+            accountLabel: perf ? accountDisplayName(perf) : null,
+            ownershipType: perf?.ownershipType ?? null,
+          };
+        });
+      }
+
+      // Current-state values from app_settings (editable, not tied to year-end snapshots)
+      const setting = parseAppSettings(settings);
+      const {
+        cash,
+        source: cashSource,
+        cacheAgeDays: cashCacheAgeDays,
+      } = await getEffectiveCash(ctx.db, settings);
+      const otherAssetsResult = await getEffectiveOtherAssetsDetailed(
+        ctx.db,
+        settings,
+      );
+      const otherAssets = otherAssetsResult.total;
+
+      // Enrich other-asset items with API sync status (same pattern as assets.ts)
+      const { getActiveBudgetApi } = await import("@/lib/budget-api");
+      const activeBudgetApi = await getActiveBudgetApi(ctx.db);
+      const apiConn = apiConnections.find((c) => c.service === activeBudgetApi);
+      const apiMappings = (apiConn?.accountMappings ?? []) as {
+        localId?: string;
+        localName?: string;
+        assetId?: number;
+      }[];
+      const mappedAssetIds = new Set(
+        apiMappings
+          .filter(
+            (m) =>
+              m.assetId != null ||
+              (m.localId ?? m.localName ?? "").startsWith("asset:"),
+          )
+          .map(
+            (m) =>
+              m.assetId ??
+              parseInt((m.localId ?? m.localName ?? "").split(":")[1]!, 10),
+          ),
+      );
+      const otherAssetItems = otherAssetsResult.items.map((item) => ({
+        ...item,
+        synced: item.id !== null && mappedAssetIds.has(item.id),
+      }));
+      const otherAssetsSyncSource =
+        activeBudgetApi !== "none" ? activeBudgetApi : null;
+
+      const otherLiabilities = setting("current_other_liabilities", 0);
+      const homeImprovements = setting("current_home_improvements", 0);
+
+      // Home values: market (estimated) and cost basis (purchase + improvements)
+      const asOfDate = new Date();
+      const activeMortgage = getActiveMortgageLoan(mortgageLoans);
+      const homeValueEstimated = activeMortgage
+        ? toNumber(
+            activeMortgage.propertyValueEstimated ??
+              activeMortgage.propertyValuePurchase,
+          )
+        : 0;
+      const homeValuePurchase = activeMortgage
+        ? toNumber(activeMortgage.propertyValuePurchase)
+        : 0;
+      const homeValueConservative = homeValuePurchase + homeImprovements;
+
+      const mortgageBalance = computeMortgageBalance(
+        mortgageLoans,
+        extraPayments,
+        asOfDate,
+      );
+
+      // Read computed metrics from buildYearEndHistory (single computation path)
+      const yearEndHistory = await buildYearEndHistory(ctx.db, asOfDate, {
+        budgetProfileId: input?.budgetProfileId,
+        budgetColumn: input?.budgetColumn,
+        salaryOverrides: toSalaryOverrideMap(input?.salaryOverrides),
       });
-    }
+      const currentRow =
+        yearEndHistory.find((h) => h.isCurrent) ??
+        yearEndHistory[yearEndHistory.length - 1];
 
-    // Current-state values from app_settings (editable, not tied to year-end snapshots)
-    const setting = parseAppSettings(settings);
-    const {
-      cash,
-      source: cashSource,
-      cacheAgeDays: cashCacheAgeDays,
-    } = await getEffectiveCash(ctx.db, settings);
-    const otherAssetsResult = await getEffectiveOtherAssetsDetailed(
-      ctx.db,
-      settings,
-    );
-    const otherAssets = otherAssetsResult.total;
+      const result = currentRow
+        ? {
+            netWorthMarket: currentRow.netWorthMarket,
+            netWorthCostBasis: currentRow.netWorthCostBasis,
+            netWorth: currentRow.netWorthMarket,
+            totalAssets:
+              portfolioTotal + cash + homeValueEstimated + otherAssets,
+            totalLiabilities: mortgageBalance + otherLiabilities,
+            wealthScoreMarket: currentRow.wealthScoreMarket,
+            wealthScoreCostBasis: currentRow.wealthScoreCostBasis,
+            aawScoreMarket: currentRow.aawScoreMarket,
+            aawScoreCostBasis: currentRow.aawScoreCostBasis,
+            fiProgress: currentRow.fiProgress,
+            fiTarget: currentRow.fiTarget,
+            warnings: [] as string[],
+          }
+        : {
+            netWorthMarket: 0,
+            netWorthCostBasis: 0,
+            netWorth: 0,
+            totalAssets: 0,
+            totalLiabilities: 0,
+            wealthScoreMarket: 0,
+            wealthScoreCostBasis: 0,
+            aawScoreMarket: 0,
+            aawScoreCostBasis: 0,
+            fiProgress: 0,
+            fiTarget: 0,
+            warnings: [] as string[],
+          };
 
-    // Enrich other-asset items with API sync status (same pattern as assets.ts)
-    const { getActiveBudgetApi } = await import("@/lib/budget-api");
-    const activeBudgetApi = await getActiveBudgetApi(ctx.db);
-    const apiConn = apiConnections.find((c) => c.service === activeBudgetApi);
-    const apiMappings = (apiConn?.accountMappings ?? []) as {
-      localId?: string;
-      localName?: string;
-      assetId?: number;
-    }[];
-    const mappedAssetIds = new Set(
-      apiMappings
-        .filter(
-          (m) =>
-            m.assetId != null ||
-            (m.localId ?? m.localName ?? "").startsWith("asset:"),
-        )
-        .map(
-          (m) =>
-            m.assetId ??
-            parseInt((m.localId ?? m.localName ?? "").split(":")[1]!, 10),
-        ),
-    );
-    const otherAssetItems = otherAssetsResult.items.map((item) => ({
-      ...item,
-      synced: item.id !== null && mappedAssetIds.has(item.id),
-    }));
-    const otherAssetsSyncSource =
-      activeBudgetApi !== "none" ? activeBudgetApi : null;
+      const performanceLastUpdated = currentRow?.perfLastUpdated ?? null;
 
-    const otherLiabilities = setting("current_other_liabilities", 0);
-    const homeImprovements = setting("current_home_improvements", 0);
-
-    // Home values: market (estimated) and cost basis (purchase + improvements)
-    const asOfDate = new Date();
-    const activeLoans = mortgageLoans.filter((m) => m.isActive);
-    const activeMortgage = activeLoans[0];
-    const homeValueEstimated = activeMortgage
-      ? toNumber(
-          activeMortgage.propertyValueEstimated ??
-            activeMortgage.propertyValuePurchase,
-        )
-      : 0;
-    const homeValuePurchase = activeMortgage
-      ? toNumber(activeMortgage.propertyValuePurchase)
-      : 0;
-    const homeValueConservative = homeValuePurchase + homeImprovements;
-
-    const mortgageBalance = computeMortgageBalance(
-      mortgageLoans,
-      extraPayments,
-      asOfDate,
-    );
-
-    // Read computed metrics from buildYearEndHistory (single computation path)
-    const yearEndHistory = await buildYearEndHistory(ctx.db, asOfDate);
-    const currentRow =
-      yearEndHistory.find((h) => h.isCurrent) ??
-      yearEndHistory[yearEndHistory.length - 1];
-
-    const result = currentRow
-      ? {
-          netWorthMarket: currentRow.netWorthMarket,
-          netWorthCostBasis: currentRow.netWorthCostBasis,
-          netWorth: currentRow.netWorthMarket,
-          totalAssets: portfolioTotal + cash + homeValueEstimated + otherAssets,
-          totalLiabilities: mortgageBalance + otherLiabilities,
-          wealthScoreMarket: currentRow.wealthScoreMarket,
-          wealthScoreCostBasis: currentRow.wealthScoreCostBasis,
-          aawScoreMarket: currentRow.aawScoreMarket,
-          aawScoreCostBasis: currentRow.aawScoreCostBasis,
-          fiProgress: currentRow.fiProgress,
-          fiTarget: currentRow.fiTarget,
-          warnings: [] as string[],
-        }
-      : {
-          netWorthMarket: 0,
-          netWorthCostBasis: 0,
-          netWorth: 0,
-          totalAssets: 0,
-          totalLiabilities: 0,
-          wealthScoreMarket: 0,
-          wealthScoreCostBasis: 0,
-          aawScoreMarket: 0,
-          aawScoreCostBasis: 0,
-          fiProgress: 0,
-          fiTarget: 0,
-          warnings: [] as string[],
-        };
-
-    const performanceLastUpdated = currentRow?.perfLastUpdated ?? null;
-
-    // Latest annual performance year (most recent year with data)
-    const latestAnnualRow = await ctx.db
-      .select({ year: schema.annualPerformance.year })
-      .from(schema.annualPerformance)
-      .orderBy(desc(schema.annualPerformance.year))
-      .limit(1);
-    const latestPerformanceYear = latestAnnualRow[0]?.year ?? null;
-
-    return {
-      result,
-      snapshotDate: snapshotData?.snapshot.snapshotDate ?? null,
-      performanceLastUpdated,
-      latestPerformanceYear,
-      portfolioTotal,
-      portfolioByTaxLocation: currentRow?.portfolioByTaxLocation ?? null,
-      portfolioAccounts: portfolioAccountDetails,
-      people: people.map((p) => ({ id: p.id, name: p.name })),
-      hasHouse: !!activeMortgage,
-      homeValueEstimated,
-      homeValueConservative,
-      mortgageBalance,
-      cash,
-      cashSource,
-      cashCacheAgeDays,
-      otherAssets,
-      otherAssetItems,
-      otherAssetsSyncSource,
-      otherLiabilities,
-      withdrawalRate: currentRow?.withdrawalRate ?? DEFAULT_WITHDRAWAL_RATE,
-      withdrawalRateIsDefault: currentRow?.withdrawalRateIsDefault ?? true,
-    };
-  }),
-
-  listHistory: protectedProcedure.query(async ({ ctx }) => {
-    const [yearEndHistory, people, mortgageLoansAll] = await Promise.all([
-      buildYearEndHistory(ctx.db),
-      ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
-      ctx.db.select().from(schema.mortgageLoans),
-    ]);
-
-    const primaryPerson = getPrimaryPerson(people);
-    const primaryBirthYear = primaryPerson
-      ? new Date(primaryPerson.dateOfBirth).getFullYear()
-      : null;
-
-    // Purchase price for cost basis: use earliest mortgage (or active) as the property
-    const activeMortgageForHistory =
-      mortgageLoansAll.find((m) => m.isActive) ?? mortgageLoansAll[0];
-    const purchasePrice = activeMortgageForHistory
-      ? toNumber(activeMortgageForHistory.propertyValuePurchase)
-      : 0;
-
-    // Derive cost-basis and totals from shared year-end rows
-    const history = yearEndHistory.map((row) => {
-      const totalLiabilities = row.mortgageBalance + row.otherLiabilities;
-      const totalAssets =
-        row.portfolioTotal + row.cash + row.houseValue + row.otherAssets;
-      const houseValueCostBasis =
-        row.houseValue > 0 ? purchasePrice + row.homeImprovements : 0;
-      const totalAssetsCB =
-        row.portfolioTotal + row.cash + houseValueCostBasis + row.otherAssets;
+      // Latest annual performance year (most recent year with data)
+      const latestAnnualRow = await ctx.db
+        .select({ year: schema.annualPerformance.year })
+        .from(schema.annualPerformance)
+        .orderBy(desc(schema.annualPerformance.year))
+        .limit(1);
+      const latestPerformanceYear = latestAnnualRow[0]?.year ?? null;
 
       return {
+        result,
+        snapshotDate: snapshotData?.snapshot.snapshotDate ?? null,
+        performanceLastUpdated,
+        latestPerformanceYear,
+        portfolioTotal,
+        portfolioByTaxLocation: currentRow?.portfolioByTaxLocation ?? null,
+        portfolioAccounts: portfolioAccountDetails,
+        people: people.map((p) => ({ id: p.id, name: p.name })),
+        hasHouse: !!activeMortgage,
+        homeValueEstimated,
+        homeValueConservative,
+        mortgageBalance,
+        cash,
+        cashSource,
+        cashCacheAgeDays,
+        otherAssets,
+        otherAssetItems,
+        otherAssetsSyncSource,
+        otherLiabilities,
+        withdrawalRate: currentRow?.withdrawalRate ?? DEFAULT_WITHDRAWAL_RATE,
+        withdrawalRateIsDefault: currentRow?.withdrawalRateIsDefault ?? true,
+      };
+    }),
+
+  listHistory: protectedProcedure
+    .input(zYearEndTargeting)
+    .query(async ({ ctx, input }) => {
+      const [yearEndHistory, people, mortgageLoansAll] = await Promise.all([
+        buildYearEndHistory(ctx.db, new Date(), {
+          budgetProfileId: input?.budgetProfileId,
+          budgetColumn: input?.budgetColumn,
+          salaryOverrides: toSalaryOverrideMap(input?.salaryOverrides),
+        }),
+        ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
+        ctx.db.select().from(schema.mortgageLoans),
+      ]);
+
+      const primaryPerson = getPrimaryPerson(people);
+      const primaryBirthYear = primaryPerson
+        ? new Date(primaryPerson.dateOfBirth).getFullYear()
+        : null;
+
+      // Purchase price for cost basis: use earliest mortgage (or active) as the property
+      const activeMortgageForHistory = getActiveMortgageLoan(mortgageLoansAll);
+      const purchasePrice = activeMortgageForHistory
+        ? toNumber(activeMortgageForHistory.propertyValuePurchase)
+        : 0;
+
+      // Derive cost-basis and totals from shared year-end rows
+      const history = yearEndHistory.map((row) => {
+        const totalLiabilities = row.mortgageBalance + row.otherLiabilities;
+        const totalAssets =
+          row.portfolioTotal + row.cash + row.houseValue + row.otherAssets;
+        const houseValueCostBasis =
+          row.houseValue > 0 ? purchasePrice + row.homeImprovements : 0;
+        const totalAssetsCB =
+          row.portfolioTotal + row.cash + houseValueCostBasis + row.otherAssets;
+
+        return {
+          year: row.year,
+          netWorth: row.netWorth,
+          netWorthCostBasis: totalAssetsCB - totalLiabilities,
+          portfolioTotal: row.portfolioTotal,
+          portfolioByType: row.portfolioByType,
+          cash: row.cash,
+          houseValue: row.houseValue,
+          houseValueCostBasis,
+          mortgageBalance: row.mortgageBalance,
+          otherAssets: row.otherAssets,
+          otherLiabilities: row.otherLiabilities,
+          totalAssets,
+          totalLiabilities,
+          grossIncome: row.grossIncome,
+          effectiveIncome: row.effectiveIncome,
+          averageAge: row.averageAge,
+          combinedAgi: row.combinedAgi,
+          effectiveTaxRate: row.effectiveTaxRate ?? 0,
+          taxesPaid: row.taxesPaid ?? 0,
+          isCurrent: row.isCurrent,
+        };
+      });
+
+      return { years: history, primaryBirthYear };
+    }),
+
+  /** Extended history with per-category performance breakdowns and tax location data.
+   *  Used by the spreadsheet view; heavier than listHistory (which feeds charts). */
+  computeDetailedHistory: protectedProcedure
+    .input(zYearEndTargeting)
+    .query(async ({ ctx, input }) => {
+      const [yearEndHistory, people] = await Promise.all([
+        buildYearEndHistory(ctx.db, new Date(), {
+          budgetProfileId: input?.budgetProfileId,
+          budgetColumn: input?.budgetColumn,
+          salaryOverrides: toSalaryOverrideMap(input?.salaryOverrides),
+        }),
+        ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
+      ]);
+
+      const primaryPerson = getPrimaryPerson(people);
+      const primaryBirthYear = primaryPerson
+        ? new Date(primaryPerson.dateOfBirth).getFullYear()
+        : null;
+
+      // Pass through YearEndRow data — all metrics already computed by buildYearEndHistory
+      const history = yearEndHistory.map((row) => ({
         year: row.year,
         netWorth: row.netWorth,
-        netWorthCostBasis: totalAssetsCB - totalLiabilities,
+        netWorthCostBasis: row.netWorthCostBasis,
+        netWorthMarket: row.netWorthMarket,
+        houseValueCostBasis: row.houseValueCostBasis,
         portfolioTotal: row.portfolioTotal,
         portfolioByType: row.portfolioByType,
         cash: row.cash,
         houseValue: row.houseValue,
-        houseValueCostBasis,
         mortgageBalance: row.mortgageBalance,
         otherAssets: row.otherAssets,
         otherLiabilities: row.otherLiabilities,
-        totalAssets,
-        totalLiabilities,
         grossIncome: row.grossIncome,
-        effectiveIncome: row.effectiveIncome,
-        averageAge: row.averageAge,
         combinedAgi: row.combinedAgi,
-        effectiveTaxRate: row.effectiveTaxRate ?? 0,
-        taxesPaid: row.taxesPaid ?? 0,
         isCurrent: row.isCurrent,
-      };
-    });
+        perfLastUpdated: row.perfLastUpdated,
+        perfContributions: row.perfContributions,
+        perfGainLoss: row.perfGainLoss,
+        performanceByCategory: row.performanceByCategory,
+        performanceByParentCategory: row.performanceByParentCategory,
+        portfolioByTaxLocation: row.portfolioByTaxLocation,
+        ytdRatio: row.ytdRatio,
+        // Pre-computed metrics (single computation path)
+        wealthScoreMarket: row.wealthScoreMarket,
+        wealthScoreCostBasis: row.wealthScoreCostBasis,
+        aawScoreMarket: row.aawScoreMarket,
+        aawScoreCostBasis: row.aawScoreCostBasis,
+        fiProgress: row.fiProgress,
+        fiTarget: row.fiTarget,
+        averageAge: row.averageAge,
+        effectiveIncome: row.effectiveIncome,
+        lifetimeEarnings: row.lifetimeEarnings,
+      }));
 
-    return { years: history, primaryBirthYear };
-  }),
-
-  /** Extended history with per-category performance breakdowns and tax location data.
-   *  Used by the spreadsheet view; heavier than listHistory (which feeds charts). */
-  computeDetailedHistory: protectedProcedure.query(async ({ ctx }) => {
-    const [yearEndHistory, people] = await Promise.all([
-      buildYearEndHistory(ctx.db),
-      ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
-    ]);
-
-    const primaryPerson = getPrimaryPerson(people);
-    const primaryBirthYear = primaryPerson
-      ? new Date(primaryPerson.dateOfBirth).getFullYear()
-      : null;
-
-    // Pass through YearEndRow data — all metrics already computed by buildYearEndHistory
-    const history = yearEndHistory.map((row) => ({
-      year: row.year,
-      netWorth: row.netWorth,
-      netWorthCostBasis: row.netWorthCostBasis,
-      netWorthMarket: row.netWorthMarket,
-      houseValueCostBasis: row.houseValueCostBasis,
-      portfolioTotal: row.portfolioTotal,
-      portfolioByType: row.portfolioByType,
-      cash: row.cash,
-      houseValue: row.houseValue,
-      mortgageBalance: row.mortgageBalance,
-      otherAssets: row.otherAssets,
-      otherLiabilities: row.otherLiabilities,
-      grossIncome: row.grossIncome,
-      combinedAgi: row.combinedAgi,
-      isCurrent: row.isCurrent,
-      perfLastUpdated: row.perfLastUpdated,
-      perfContributions: row.perfContributions,
-      perfGainLoss: row.perfGainLoss,
-      performanceByCategory: row.performanceByCategory,
-      performanceByParentCategory: row.performanceByParentCategory,
-      portfolioByTaxLocation: row.portfolioByTaxLocation,
-      ytdRatio: row.ytdRatio,
-      // Pre-computed metrics (single computation path)
-      wealthScoreMarket: row.wealthScoreMarket,
-      wealthScoreCostBasis: row.wealthScoreCostBasis,
-      aawScoreMarket: row.aawScoreMarket,
-      aawScoreCostBasis: row.aawScoreCostBasis,
-      fiProgress: row.fiProgress,
-      fiTarget: row.fiTarget,
-      averageAge: row.averageAge,
-      effectiveIncome: row.effectiveIncome,
-      lifetimeEarnings: row.lifetimeEarnings,
-    }));
-
-    return { years: history, primaryBirthYear };
-  }),
+      return { years: history, primaryBirthYear };
+    }),
 
   /** Paginated snapshot list with optional date range filter and sorting. */
   listSnapshots: protectedProcedure
@@ -577,20 +596,26 @@ export const networthRouter = createTRPCRouter({
     }));
   }),
 
-  computeFIProgress: protectedProcedure.query(async ({ ctx }) => {
-    // Read from buildYearEndHistory (single computation path)
-    const yearEndHistory = await buildYearEndHistory(ctx.db);
-    const currentRow =
-      yearEndHistory.find((h) => h.isCurrent) ??
-      yearEndHistory[yearEndHistory.length - 1];
+  computeFIProgress: protectedProcedure
+    .input(zYearEndTargeting)
+    .query(async ({ ctx, input }) => {
+      // Read from buildYearEndHistory (single computation path)
+      const yearEndHistory = await buildYearEndHistory(ctx.db, new Date(), {
+        budgetProfileId: input?.budgetProfileId,
+        budgetColumn: input?.budgetColumn,
+        salaryOverrides: toSalaryOverrideMap(input?.salaryOverrides),
+      });
+      const currentRow =
+        yearEndHistory.find((h) => h.isCurrent) ??
+        yearEndHistory[yearEndHistory.length - 1];
 
-    return {
-      fiProgress: currentRow?.fiProgress ?? 0,
-      fiTarget: currentRow?.fiTarget ?? 0,
-      currentPortfolio: currentRow?.portfolioTotal ?? 0,
-      cash: currentRow?.cash ?? 0,
-    };
-  }),
+      return {
+        fiProgress: currentRow?.fiProgress ?? 0,
+        fiTarget: currentRow?.fiTarget ?? 0,
+        currentPortfolio: currentRow?.portfolioTotal ?? 0,
+        cash: currentRow?.cash ?? 0,
+      };
+    }),
 
   /**
    * Compare net worth at two dates.
@@ -627,8 +652,7 @@ export const networthRouter = createTRPCRouter({
       const setting = parseAppSettings(settings);
       const homeImprovements = setting("current_home_improvements", 0);
       const homeValue = (() => {
-        const activeLoans = mortgageLoans.filter((m) => m.isActive);
-        const activeMortgage = activeLoans[0];
+        const activeMortgage = getActiveMortgageLoan(mortgageLoans);
         if (!activeMortgage) return 0;
         if (useMarketValue) {
           return toNumber(

@@ -42,6 +42,9 @@ export type SinkingFundLine = {
   id: number;
   name: string;
   monthlyContribution: number;
+  /** True when this amount is a per-(goal, viewed-profile) override rather
+   *  than the goal's global default. */
+  isOverride: boolean;
 };
 
 /**

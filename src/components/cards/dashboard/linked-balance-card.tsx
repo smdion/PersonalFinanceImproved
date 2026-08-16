@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo } from "react";
+import React, { memo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -8,7 +8,6 @@ import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types.types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
-import { sumBy } from "@/lib/utils/math";
 import { LoadingCard } from "./utils";
 
 // Only need enough history to compute yesterday-vs-today for the trend arrow.
@@ -16,6 +15,7 @@ const HISTORY_DAYS = 2;
 
 export type SimplefinAccountListItem = {
   id: number;
+  orgName: string;
   isIncluded: boolean;
   lastBalance: number;
   linkedPerformanceAccountId: number | null;
@@ -35,15 +35,14 @@ export type AccountTypeGroup = {
 };
 
 /**
- * Included accounts' own balances, bucketed by tracked-account type
- * (401k/IRA/HSA/Brokerage/ESPP/...) via getDisplayConfig — the same
- * canonical, subtype-aware labeling used everywhere else account types
- * are shown. Each group also carries its own drift figure. Sums to the
- * card's headline total; "Not matched" is always last regardless of
- * balance size, every other group sorts largest-first.
+ * Shared grouping engine behind summarizeByAccountType and
+ * summarizeByInstitution — same balances/drift math, different bucketing
+ * key/label, so the two rollups can never silently disagree on totals.
  */
-export function summarizeByAccountType(
+function summarizeAccounts(
   accounts: SimplefinAccountListItem[],
+  bucket: (a: SimplefinAccountListItem) => { key: string; label: string },
+  unmatchedKey: string,
 ): AccountTypeGroup[] {
   const groups = new Map<
     string,
@@ -51,10 +50,7 @@ export function summarizeByAccountType(
   >();
   for (const a of accounts) {
     if (!a.isIncluded) continue;
-    const key = a.accountType ? `${a.accountType}::${a.subType ?? ""}` : "";
-    const label = a.accountType
-      ? getDisplayConfig(a.accountType, a.subType).displayLabel
-      : "Not matched";
+    const { key, label } = bucket(a);
     const group = groups.get(key) ?? {
       label,
       balance: 0,
@@ -76,8 +72,8 @@ export function summarizeByAccountType(
   }
   return Array.from(groups.entries())
     .sort(([keyA, a], [keyB, b]) => {
-      if (keyA === "") return 1;
-      if (keyB === "") return -1;
+      if (keyA === unmatchedKey) return 1;
+      if (keyB === unmatchedKey) return -1;
       return b.balance - a.balance;
     })
     .map(([key, group]) => ({
@@ -89,6 +85,44 @@ export function summarizeByAccountType(
         0,
       ),
     }));
+}
+
+/**
+ * Included accounts' own balances, bucketed by tracked-account type
+ * (401k/IRA/HSA/Brokerage/ESPP/...) via getDisplayConfig — the same
+ * canonical, subtype-aware labeling used everywhere else account types
+ * are shown. Each group also carries its own drift figure. Sums to the
+ * card's headline total; "Not matched" is always last regardless of
+ * balance size, every other group sorts largest-first.
+ */
+export function summarizeByAccountType(
+  accounts: SimplefinAccountListItem[],
+): AccountTypeGroup[] {
+  return summarizeAccounts(
+    accounts,
+    (a) => ({
+      key: a.accountType ? `${a.accountType}::${a.subType ?? ""}` : "",
+      label: a.accountType
+        ? getDisplayConfig(a.accountType, a.subType).displayLabel
+        : "Not matched",
+    }),
+    "",
+  );
+}
+
+/**
+ * Same balances/drift, bucketed by institution (orgName) instead of account
+ * type — a different rollup of identical underlying accounts, so the two
+ * views' totals always agree.
+ */
+export function summarizeByInstitution(
+  accounts: SimplefinAccountListItem[],
+): AccountTypeGroup[] {
+  return summarizeAccounts(
+    accounts,
+    (a) => ({ key: a.orgName || "unknown", label: a.orgName || "Unknown" }),
+    "unknown",
+  );
 }
 
 /**
@@ -120,19 +154,30 @@ export function summarizeDrift(accounts: SimplefinAccountListItem[]): {
   return { groupCount: changeByPerfId.size, driftedCount, totalDrift };
 }
 
-function DriftBadge({ drift }: { drift: number }) {
+/** balance is the category's CURRENT total — used only to back out its prior
+ *  balance (balance - drift) so the badge can show percent *changed*, not
+ *  percent of the portfolio total (a different, already-confusing number). */
+function DriftBadge({ drift, balance }: { drift: number; balance: number }) {
   if (drift === 0) return null;
+  const prevBalance = balance - drift;
+  const driftPct = prevBalance !== 0 ? drift / prevBalance : null;
   return (
     <span
       className={`text-caption ${drift > 0 ? "text-green-600" : "text-red-600"}`}
     >
       ({drift > 0 ? "+" : "-"}
-      {formatCurrency(Math.abs(drift))})
+      {formatCurrency(Math.abs(drift))}
+      {driftPct !== null &&
+        ` / ${drift > 0 ? "+" : "-"}${formatPercent(Math.abs(driftPct), 1)}`}
+      )
     </span>
   );
 }
 
 function LinkedBalanceCardImpl() {
+  const [rollupBy, setRollupBy] = useState<"category" | "institution">(
+    "category",
+  );
   const { data: status, isLoading: statusLoading } =
     trpc.simplefin.getStatus.useQuery();
   const isConnected = status?.connected ?? false;
@@ -173,7 +218,11 @@ function LinkedBalanceCardImpl() {
   if (!latest) return null;
   const delta = previous ? latest.totalBalance - previous.totalBalance : null;
 
-  const accountTypeGroups = accounts ? summarizeByAccountType(accounts) : [];
+  const accountTypeGroups = accounts
+    ? rollupBy === "category"
+      ? summarizeByAccountType(accounts)
+      : summarizeByInstitution(accounts)
+    : [];
   const drift = accounts ? summarizeDrift(accounts) : null;
   const snapshotDate = accounts?.find((a) => a.snapshotDate)?.snapshotDate;
   const snapshotLabel = snapshotDate
@@ -196,10 +245,14 @@ function LinkedBalanceCardImpl() {
       ).size
     : 0;
 
-  const groupsTotal = sumBy(accountTypeGroups, (g) => g.balance);
+  // Percent changed since the last snapshot — divide by the PRIOR balance
+  // (current total minus this drift), not the current total, matching
+  // DriftBadge's per-category math below. Dividing by the current total
+  // understates the percent whenever the drift is a meaningful share of it.
+  const priorTotal = drift ? latest.totalBalance - drift.totalDrift : null;
   const driftPercent =
-    drift && drift.totalDrift !== 0 && latest.totalBalance !== 0
-      ? drift.totalDrift / latest.totalBalance
+    drift && drift.totalDrift !== 0 && priorTotal !== null && priorTotal !== 0
+      ? drift.totalDrift / priorTotal
       : null;
 
   return (
@@ -263,6 +316,21 @@ function LinkedBalanceCardImpl() {
           kept small/muted so it doesn't compete with the drift figure above. */}
       {accounts && accountTypeGroups.length > 0 && (
         <div className="mt-3 pt-3 border-t border-subtle space-y-1">
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setRollupBy(
+                  rollupBy === "category" ? "institution" : "category",
+                );
+              }}
+              className="text-xs bg-surface-elevated hover:bg-surface-strong rounded-full px-2 py-0.5 text-muted transition-colors"
+            >
+              By {rollupBy === "category" ? "institution" : "category"}
+            </button>
+          </div>
           {accountTypeGroups.map(
             ({ key, label, balance, drift: groupDrift }) => (
               <div
@@ -272,11 +340,7 @@ function LinkedBalanceCardImpl() {
                 <span>{label}</span>
                 <span className="flex items-center gap-1.5">
                   {formatCurrency(balance)}
-                  {groupsTotal > 0 && (
-                    // lint-violation-ok: guarded by groupsTotal > 0 above
-                    <span>({formatPercent(balance / groupsTotal, 1)})</span>
-                  )}
-                  <DriftBadge drift={groupDrift} />
+                  <DriftBadge drift={groupDrift} balance={balance} />
                 </span>
               </div>
             ),

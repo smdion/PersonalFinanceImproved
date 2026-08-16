@@ -8,6 +8,7 @@ import { confirm } from "@/components/ui/confirm-dialog";
 import { ProfilePill } from "./profile-pill";
 import type { ProfileOption } from "./profile-pill";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
+import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 
 export function ScenarioBar() {
   const {
@@ -21,6 +22,8 @@ export function ScenarioBar() {
     createSessionScenario,
     deleteSessionScenario,
     isInScenario,
+    setScenarioBudgetProfile,
+    setScenarioContributionProfile,
   } = useScenario();
 
   const user = useUser();
@@ -47,17 +50,75 @@ export function ScenarioBar() {
     onSuccess: () => utils.budget.listProfiles.invalidate(),
   });
 
+  // Plan pin -> globally-active profile, so the pill reflects what's actually
+  // in effect while a Plan is selected, not just the raw global default.
+  const globalActiveBudgetId =
+    budgetProfiles?.find((p) => p.isActive)?.id ?? null;
+  const { profileId: effectiveBudgetId, isPinned: budgetIsPinned } =
+    useEffectiveProfileId("budget", {
+      validIds: budgetProfiles?.map((p) => p.id),
+      localSelection: null,
+      globalDefaultId: globalActiveBudgetId,
+    });
+  const globalActiveContribId =
+    activeContribId === null
+      ? (contribProfiles?.find((p) => p.isDefault)?.id ?? null)
+      : activeContribId;
+  const { profileId: effectiveContribId, isPinned: contribIsPinned } =
+    useEffectiveProfileId("contribution", {
+      validIds: contribProfiles?.map((p) => p.id),
+      localSelection: null,
+      globalDefaultId: globalActiveContribId,
+    });
+
+  // Each option gets its own badge so a Plan pin and the true global default
+  // never both silently read "Active" when they've diverged — see
+  // docs/RULES.md "Profile Pins".
   const budgetOptions: ProfileOption[] = (budgetProfiles ?? []).map((p) => ({
     id: p.id,
     name: p.name,
-    isActive: p.isActive,
+    isActive: p.id === effectiveBudgetId,
+    badge:
+      p.id === effectiveBudgetId
+        ? budgetIsPinned
+          ? "Pinned"
+          : "Active"
+        : p.id === globalActiveBudgetId
+          ? "Active (global)"
+          : undefined,
   }));
 
   const contribOptions: ProfileOption[] = (contribProfiles ?? []).map((p) => ({
     id: p.id,
     name: p.name,
-    isActive: p.id === activeContribId,
+    isActive: p.id === effectiveContribId,
+    badge:
+      p.id === effectiveContribId
+        ? contribIsPinned
+          ? "Pinned"
+          : "Active"
+        : p.id === globalActiveContribId
+          ? "Active (global)"
+          : undefined,
   }));
+
+  // While a Plan is selected, the pills pin that Plan's profile instead of
+  // changing the global default (which would affect Main Plan and every
+  // other Plan too) — see docs/RULES.md "Profile Pins".
+  const handleActivateBudget = (id: number) => {
+    if (isInScenario) {
+      setScenarioBudgetProfile(id);
+    } else {
+      activateBudget.mutate({ id });
+    }
+  };
+  const handleActivateContrib = (id: number) => {
+    if (isInScenario) {
+      setScenarioContributionProfile(id);
+    } else {
+      setActiveContribId(id);
+    }
+  };
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -413,16 +474,16 @@ export function ScenarioBar() {
 
       {/* Profile switchers */}
       <ProfilePill
-        label="Budget"
+        label={budgetIsPinned ? "Budget (pinned)" : "Budget"}
         options={budgetOptions}
-        onActivate={(id) => activateBudget.mutate({ id: Number(id) })}
+        onActivate={(id) => handleActivateBudget(Number(id))}
         isPending={activateBudget.isPending}
       />
       <div className="hidden sm:block w-px h-4 bg-surface-strong" />
       <ProfilePill
-        label="Contributions"
+        label={contribIsPinned ? "Contributions (pinned)" : "Contributions"}
         options={contribOptions}
-        onActivate={(id) => setActiveContribId(Number(id))}
+        onActivate={(id) => handleActivateContrib(Number(id))}
       />
 
       {/* Divider */}

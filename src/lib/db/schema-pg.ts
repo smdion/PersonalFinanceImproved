@@ -102,7 +102,8 @@ export type ExtraPaycheckRoutingData = {
 //   3.  Budget ..................... budgetProfiles, budgetItems
 //   4.  Savings (sinking funds) .... savingsGoals, savingsMonthly,
 //                                    savingsPlannedTransactions,
-//                                    savingsAllocationOverrides
+//                                    savingsAllocationOverrides,
+//                                    savingsGoalProfileAllocations
 //   5.  Brokerage goals ............ brokerageGoals, brokeragePlannedTransactions
 //   6.  Self loans ................. selfLoans
 //   7.  Portfolio performance ...... performanceAccounts, portfolioSnapshots,
@@ -465,6 +466,33 @@ export const savingsPlannedTransactions = pgTable(
   ],
 );
 
+// Settlement is per-occurrence rather than a column on the row above, because
+// a single recurring row (isRecurring) represents many future occurrences —
+// a row-level "settled" flag would incorrectly hide every future occurrence
+// once one instance was confirmed. Non-recurring rows just have exactly one
+// possible occurrence (their own transactionDate's month).
+export const savingsPlannedTxSettlements = pgTable(
+  "savings_planned_tx_settlements",
+  {
+    id: serial("id").primaryKey(),
+    plannedTxId: integer("planned_tx_id")
+      .notNull()
+      .references(() => savingsPlannedTransactions.id, {
+        onDelete: "cascade",
+      }),
+    occurrenceMonth: date("occurrence_month").notNull(), // always the 1st of the settled occurrence's month
+    settledAt: timestamp("settled_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("savings_planned_tx_settlements_occurrence_idx").on(
+      table.plannedTxId,
+      table.occurrenceMonth,
+    ),
+  ],
+);
+
 // Per-month allocation overrides for sinking fund projections.
 // When set, overrides the default monthly contribution for a goal in that month.
 export const savingsAllocationOverrides = pgTable(
@@ -482,6 +510,40 @@ export const savingsAllocationOverrides = pgTable(
     uniqueIndex("savings_alloc_override_goal_month_idx").on(
       table.goalId,
       table.monthDate,
+    ),
+  ],
+);
+
+// Per-(goal, budget profile) allocation overrides — lets a goal's
+// allocationPercent/monthlyContribution differ by which budget profile is
+// active (e.g. "Car fund gets 12% under my current budget, 25% under a
+// relocation what-if"). Row absent for a (goal, profile) pair means
+// "inherits savings_goals.allocationPercent/monthlyContribution" — the
+// same override-shadows-default shape savingsAllocationOverrides already
+// uses for per-month overrides, just keyed by profile instead of month.
+export const savingsGoalProfileAllocations = pgTable(
+  "savings_goal_profile_allocations",
+  {
+    id: serial("id").primaryKey(),
+    goalId: integer("goal_id")
+      .notNull()
+      .references(() => savingsGoals.id, { onDelete: "cascade" }),
+    budgetProfileId: integer("budget_profile_id")
+      .notNull()
+      .references(() => budgetProfiles.id, { onDelete: "cascade" }),
+    allocationPercent: decimal("allocation_percent", {
+      precision: 6,
+      scale: 3,
+    }),
+    monthlyContribution: decimal("monthly_contribution", {
+      precision: 14,
+      scale: 2,
+    }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("savings_goal_profile_alloc_goal_profile_idx").on(
+      table.goalId,
+      table.budgetProfileId,
     ),
   ],
 );
@@ -1700,22 +1762,44 @@ export type ScenarioOverrides = Record<
   Record<string, Record<string, unknown>>
 >;
 
-export const scenarios = pgTable("scenarios", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description"),
-  overrides: jsonb("overrides")
-    .$type<ScenarioOverrides>()
-    .notNull()
-    .default({}),
-  isBaseline: boolean("is_baseline").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const scenarios = pgTable(
+  "scenarios",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description"),
+    overrides: jsonb("overrides")
+      .$type<ScenarioOverrides>()
+      .notNull()
+      .default({}),
+    isBaseline: boolean("is_baseline").notNull().default(false),
+    /** Pins which Budget Profile is "active" for every page/calculator when this
+     *  Plan is selected, instead of the globally-active budget_profiles row.
+     *  A reference pin, not a value override — deliberately a dedicated FK
+     *  column rather than a generic `overrides` entry (see docs/RULES.md). */
+    budgetProfileId: integer("budget_profile_id").references(
+      () => budgetProfiles.id,
+      { onDelete: "set null" },
+    ),
+    /** Pins which Contribution Profile is "active" for this Plan — see budgetProfileId. */
+    contributionProfileId: integer("contribution_profile_id").references(
+      () => contributionProfiles.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("scenarios_budget_profile_id_idx").on(table.budgetProfileId),
+    index("scenarios_contribution_profile_id_idx").on(
+      table.contributionProfileId,
+    ),
+  ],
+);
 
 // --- Monte Carlo: Asset class parameters and glide path ---
 

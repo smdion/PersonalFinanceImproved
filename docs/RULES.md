@@ -326,6 +326,39 @@ Main Plan (DB) → tRPC query → ScenarioContext applies overrides → Page ren
                           Active scenario overrides (JSONB or React state)
 ```
 
+### Lever Order
+
+The three profile-driven "levers" have a real dependency chain, and pages/UI
+ordering should follow it: **Contributions → Budget → Savings**. Contribution
+elections (+ salary) determine take-home pay; the Budget consumes that
+take-home pay and leaves a monthly surplus/deficit; Savings allocations spend
+whatever the Budget leaves over. Changing an earlier lever changes every
+later one's numbers — the reverse is never true. This is why the Budget
+page's tabs are ordered Contributions, Budget, Savings rather than
+alphabetically or by table-creation order.
+
+### Profile Pins (a second, deliberately separate mechanism)
+
+A Scenario can also **pin** which Budget Profile / Contribution Profile is
+"active" while it's selected — e.g. "under this Plan, always use my
+Chicago-relocation budget profile." This is a _reference_, not a value diff,
+so it does **not** live in the `overrides` JSONB bucket above. Instead
+`scenarios` carries two nullable FK columns, `budget_profile_id` and
+`contribution_profile_id` (`onDelete: "set null"`), each with an explicit
+index — the same shape as `retirement_salary_overrides.contributionProfileId`.
+
+Precedence when resolving "which profile is active" (see
+`useEffectiveProfileId`): **Plan pin → local page selection → globally-active
+profile.** A pin that points at a since-deleted profile silently falls
+through to the next tier rather than erroring — `onDelete: "set null"`
+guarantees the FK itself can't dangle. Session-only scenarios (never
+persisted to DB) hold the same two fields as plain React state instead of DB
+columns; the precedence rule is identical either way.
+
+Deleting a Budget/Contribution Profile that's pinned by a Plan surfaces that
+in the delete confirmation (which Plan(s), by name) so the consequence isn't
+silent — see `budget-profile-sidebar.tsx` / `contribution-profile-manager.tsx`.
+
 ---
 
 ## Data Model Principles

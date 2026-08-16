@@ -13,6 +13,10 @@ vi.mock("@/lib/context/user-context", () => ({
   hasPermission: () => true,
 }));
 
+vi.mock("@/lib/hooks/use-year-end-targeting", () => ({
+  useYearEndTargetingInput: () => ({}),
+}));
+
 vi.mock("@/components/ui/page-header", () => ({
   PageHeader: ({
     title,

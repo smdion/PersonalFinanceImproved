@@ -468,8 +468,15 @@ export type LiveContribRow = {
   id: number;
 };
 
-/** Load all live contribution data needed for profile resolution. */
-export async function loadLiveContribData(db: Db) {
+/**
+ * Load all live contribution data needed for profile resolution.
+ * Intentionally live/un-overridden — this is the baseline every named
+ * Contribution Profile's overrides get layered ON TOP OF (see
+ * resolveProfile's callers), so it can't itself reflect a Plan override
+ * without corrupting that layering. See applySalaryOverride's docblock
+ * (./salary.ts) for the live-vs-override-aware rule.
+ */
+export async function loadLiveContribData(db: Db, asOfDate: Date = new Date()) {
   const [allJobs, allContribs, allPeople, allPerfAccounts] = await Promise.all([
     db.select().from(schema.jobs),
     db.select().from(schema.contributionAccounts),
@@ -485,7 +492,12 @@ export async function loadLiveContribData(db: Db) {
   const { getEffectiveIncome, getTotalCompensation } = await import("./salary");
   const jobSalaries = await Promise.all(
     activeJobs.map(async (j) => {
-      const baseSalary = await getCurrentSalary(db, j.id, j.annualSalary);
+      const baseSalary = await getCurrentSalary(
+        db,
+        j.id,
+        j.annualSalary,
+        asOfDate,
+      );
       return {
         job: { id: j.id },
         salary: getEffectiveIncome(j, baseSalary),

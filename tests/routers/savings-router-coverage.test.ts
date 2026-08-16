@@ -13,7 +13,7 @@
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import { SQLiteSyncDialect } from "drizzle-orm/sqlite-core";
-import { eq, type SQL } from "drizzle-orm";
+import { and, eq, type SQL } from "drizzle-orm";
 import * as sqliteSchemaTables from "@/lib/db/schema-sqlite";
 import {
   createTestCaller,
@@ -415,11 +415,34 @@ describe("savings.pushContributionsToApi", () => {
 // recalculateAllocation
 // ══════════════════════════════════════════════════════════════════════════════
 
+/** Reads the resolved override row for (goalId, profileId) — these
+ *  mutations now always write to savings_goal_profile_allocations, never
+ *  the raw savings_goals columns (see getResolvedGoalAllocations). */
+function getOverrideRow(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  goalId: number,
+  profileId: number,
+) {
+  return db
+    .select()
+    .from(sqliteSchemaTables.savingsGoalProfileAllocations)
+    .where(
+      and(
+        eq(sqliteSchemaTables.savingsGoalProfileAllocations.goalId, goalId),
+        eq(
+          sqliteSchemaTables.savingsGoalProfileAllocations.budgetProfileId,
+          profileId,
+        ),
+      ),
+    )
+    .all()[0];
+}
+
 describe("savings.recalculateAllocation", () => {
-  it("recomputes a percentage-based goal's monthlyContribution from the live pool and persists it", async () => {
+  it("recomputes a percentage-based goal's monthlyContribution from the live pool and persists it as a profile override", async () => {
     const ctx = await createTestCaller();
     try {
-      seedStandardDataset(ctx.db);
+      const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Percent Goal",
         monthlyContribution: "150",
@@ -432,12 +455,15 @@ describe("savings.recalculateAllocation", () => {
       });
       expect(result.updated).toBe(1);
 
-      const [row] = await ctx.db
+      const [globalRow] = await ctx.db
         .select()
         .from(sqliteSchemaTables.savingsGoals)
         .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
-      expect(row).toBeDefined();
-      expect(Number(row!.monthlyContribution)).not.toBe(150);
+      expect(globalRow!.monthlyContribution).toBe("150");
+
+      const override = getOverrideRow(ctx.db, goalId, profileId);
+      expect(override).toBeDefined();
+      expect(Number(override!.monthlyContribution)).not.toBe(150);
     } finally {
       ctx.cleanup();
     }
@@ -446,7 +472,7 @@ describe("savings.recalculateAllocation", () => {
   it("leaves non-percentage goals untouched and reports updated:0 when no percentage-based goals exist", async () => {
     const ctx = await createTestCaller();
     try {
-      seedStandardDataset(ctx.db);
+      const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Flat Goal",
         monthlyContribution: "150",
@@ -456,12 +482,7 @@ describe("savings.recalculateAllocation", () => {
 
       const result = await ctx.caller.savings.recalculateAllocation();
       expect(result.updated).toBe(0);
-
-      const [row] = await ctx.db
-        .select()
-        .from(sqliteSchemaTables.savingsGoals)
-        .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
-      expect(row!.monthlyContribution).toBe("150");
+      expect(getOverrideRow(ctx.db, goalId, profileId)).toBeUndefined();
     } finally {
       ctx.cleanup();
     }
@@ -470,7 +491,7 @@ describe("savings.recalculateAllocation", () => {
   it("only recalculates the specified goalId, leaving other percentage-based goals untouched", async () => {
     const ctx = await createTestCaller();
     try {
-      seedStandardDataset(ctx.db);
+      const { profileId } = seedStandardDataset(ctx.db);
       const goalA = seedSavingsGoal(ctx.db, {
         name: "Goal A",
         monthlyContribution: "150",
@@ -488,12 +509,7 @@ describe("savings.recalculateAllocation", () => {
         goalId: goalA,
       });
       expect(result.updated).toBe(1);
-
-      const [rowB] = await ctx.db
-        .select()
-        .from(sqliteSchemaTables.savingsGoals)
-        .where(eq(sqliteSchemaTables.savingsGoals.id, goalB));
-      expect(rowB!.monthlyContribution).toBe("250");
+      expect(getOverrideRow(ctx.db, goalB, profileId)).toBeUndefined();
     } finally {
       ctx.cleanup();
     }
@@ -502,7 +518,7 @@ describe("savings.recalculateAllocation", () => {
   it("skips inactive percentage-based goals", async () => {
     const ctx = await createTestCaller();
     try {
-      seedStandardDataset(ctx.db);
+      const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Inactive Percent Goal",
         monthlyContribution: "150",
@@ -512,12 +528,7 @@ describe("savings.recalculateAllocation", () => {
 
       const result = await ctx.caller.savings.recalculateAllocation();
       expect(result.updated).toBe(0);
-
-      const [row] = await ctx.db
-        .select()
-        .from(sqliteSchemaTables.savingsGoals)
-        .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
-      expect(row!.monthlyContribution).toBe("150");
+      expect(getOverrideRow(ctx.db, goalId, profileId)).toBeUndefined();
     } finally {
       ctx.cleanup();
     }
@@ -546,6 +557,51 @@ describe("savings.recalculateAllocation", () => {
       ctx.cleanup();
     }
   });
+
+  it("recomputes against a non-active profile's budget items when profileId is given, without touching the active profile's override", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const { profileId: activeProfileId } = seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Percent Goal",
+        monthlyContribution: "150",
+        allocationPercent: "10",
+        isActive: true,
+      });
+
+      // A second, inactive profile with a much smaller budget total than
+      // the active one (2800 across rent/groceries/dining) leaves far more
+      // pool available for savings, so the two profiles must not produce
+      // the same recalculated amount.
+      const altProfileId = await seedBudgetProfile(ctx.db, "Alt Budget", false);
+      seedBudgetItem(ctx.db, altProfileId, {
+        category: "Essentials",
+        subcategory: "Rent",
+        amounts: [500],
+      });
+
+      await ctx.caller.savings.recalculateAllocation({ goalId });
+      const activeOverride = getOverrideRow(ctx.db, goalId, activeProfileId);
+
+      await ctx.caller.savings.recalculateAllocation({
+        goalId,
+        profileId: altProfileId,
+      });
+      const altOverride = getOverrideRow(ctx.db, goalId, altProfileId);
+
+      expect(activeProfileId).not.toBe(altProfileId);
+      expect(Number(altOverride!.monthlyContribution)).not.toBe(
+        Number(activeOverride!.monthlyContribution),
+      );
+      // The second call (targeting altProfileId) must not have touched the
+      // active profile's own override row.
+      expect(
+        getOverrideRow(ctx.db, goalId, activeProfileId)!.monthlyContribution,
+      ).toBe(activeOverride!.monthlyContribution);
+    } finally {
+      ctx.cleanup();
+    }
+  });
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -553,10 +609,10 @@ describe("savings.recalculateAllocation", () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe("savings.lockInAllocationPercent", () => {
-  it("recomputes a percentage-based goal's allocationPercent from the live pool without touching monthlyContribution", async () => {
+  it("recomputes a percentage-based goal's allocationPercent from the live pool without touching monthlyContribution, as a profile override", async () => {
     const ctx = await createTestCaller();
     try {
-      seedStandardDataset(ctx.db);
+      const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Percent Goal",
         monthlyContribution: "150",
@@ -569,13 +625,10 @@ describe("savings.lockInAllocationPercent", () => {
       });
       expect(result.updated).toBe(1);
 
-      const [row] = await ctx.db
-        .select()
-        .from(sqliteSchemaTables.savingsGoals)
-        .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
-      expect(row).toBeDefined();
-      expect(row!.monthlyContribution).toBe("150");
-      expect(row!.allocationPercent).not.toBe("10");
+      const override = getOverrideRow(ctx.db, goalId, profileId);
+      expect(override).toBeDefined();
+      expect(Number(override!.monthlyContribution)).toBe(150);
+      expect(override!.allocationPercent).not.toBe("10");
     } finally {
       ctx.cleanup();
     }
@@ -584,7 +637,7 @@ describe("savings.lockInAllocationPercent", () => {
   it("leaves non-percentage goals untouched and reports updated:0 when no percentage-based goals exist", async () => {
     const ctx = await createTestCaller();
     try {
-      seedStandardDataset(ctx.db);
+      const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Flat Goal",
         monthlyContribution: "150",
@@ -594,12 +647,7 @@ describe("savings.lockInAllocationPercent", () => {
 
       const result = await ctx.caller.savings.lockInAllocationPercent();
       expect(result.updated).toBe(0);
-
-      const [row] = await ctx.db
-        .select()
-        .from(sqliteSchemaTables.savingsGoals)
-        .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
-      expect(row!.allocationPercent).toBeNull();
+      expect(getOverrideRow(ctx.db, goalId, profileId)).toBeUndefined();
     } finally {
       ctx.cleanup();
     }
@@ -608,7 +656,7 @@ describe("savings.lockInAllocationPercent", () => {
   it("only updates the specified goalId, leaving other percentage-based goals untouched", async () => {
     const ctx = await createTestCaller();
     try {
-      seedStandardDataset(ctx.db);
+      const { profileId } = seedStandardDataset(ctx.db);
       const goalA = seedSavingsGoal(ctx.db, {
         name: "Goal A",
         monthlyContribution: "150",
@@ -626,12 +674,7 @@ describe("savings.lockInAllocationPercent", () => {
         goalId: goalA,
       });
       expect(result.updated).toBe(1);
-
-      const [rowB] = await ctx.db
-        .select()
-        .from(sqliteSchemaTables.savingsGoals)
-        .where(eq(sqliteSchemaTables.savingsGoals.id, goalB));
-      expect(rowB!.allocationPercent).toBe("20");
+      expect(getOverrideRow(ctx.db, goalB, profileId)).toBeUndefined();
     } finally {
       ctx.cleanup();
     }
@@ -640,7 +683,7 @@ describe("savings.lockInAllocationPercent", () => {
   it("skips inactive percentage-based goals", async () => {
     const ctx = await createTestCaller();
     try {
-      seedStandardDataset(ctx.db);
+      const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Inactive Percent Goal",
         monthlyContribution: "150",
@@ -650,12 +693,7 @@ describe("savings.lockInAllocationPercent", () => {
 
       const result = await ctx.caller.savings.lockInAllocationPercent();
       expect(result.updated).toBe(0);
-
-      const [row] = await ctx.db
-        .select()
-        .from(sqliteSchemaTables.savingsGoals)
-        .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
-      expect(row!.allocationPercent).toBe("10");
+      expect(getOverrideRow(ctx.db, goalId, profileId)).toBeUndefined();
     } finally {
       ctx.cleanup();
     }
@@ -685,10 +723,47 @@ describe("savings.lockInAllocationPercent", () => {
     }
   });
 
+  it("recomputes against a non-active profile's budget items when profileId is given", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const { profileId: activeProfileId } = seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Percent Goal",
+        monthlyContribution: "150",
+        allocationPercent: "10",
+        isActive: true,
+      });
+
+      // See the analogous recalculateAllocation test above for why a
+      // smaller-budget alt profile is expected to change the result.
+      const altProfileId = await seedBudgetProfile(ctx.db, "Alt Budget", false);
+      seedBudgetItem(ctx.db, altProfileId, {
+        category: "Essentials",
+        subcategory: "Rent",
+        amounts: [500],
+      });
+
+      await ctx.caller.savings.lockInAllocationPercent({ goalId });
+      const activeOverride = getOverrideRow(ctx.db, goalId, activeProfileId);
+
+      await ctx.caller.savings.lockInAllocationPercent({
+        goalId,
+        profileId: altProfileId,
+      });
+      const altOverride = getOverrideRow(ctx.db, goalId, altProfileId);
+
+      expect(Number(altOverride!.allocationPercent)).not.toBe(
+        Number(activeOverride!.allocationPercent),
+      );
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
   it("round-trips with recalculateAllocation: locking in % then pulling in pay recovers the original dollar amount within a cent", async () => {
     const ctx = await createTestCaller();
     try {
-      seedStandardDataset(ctx.db);
+      const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Round Trip Goal",
         monthlyContribution: "289.90",
@@ -699,13 +774,10 @@ describe("savings.lockInAllocationPercent", () => {
       await ctx.caller.savings.lockInAllocationPercent({ goalId });
       await ctx.caller.savings.recalculateAllocation({ goalId });
 
-      const [row] = await ctx.db
-        .select()
-        .from(sqliteSchemaTables.savingsGoals)
-        .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
-      expect(Math.abs(Number(row!.monthlyContribution) - 289.9)).toBeLessThan(
-        1,
-      );
+      const override = getOverrideRow(ctx.db, goalId, profileId);
+      expect(
+        Math.abs(Number(override!.monthlyContribution) - 289.9),
+      ).toBeLessThan(1);
     } finally {
       ctx.cleanup();
     }
@@ -960,6 +1032,344 @@ describe("savings.transfers", () => {
       transferPairId: "xfer_nonexistent",
     });
     expect(result).toEqual({ ok: true });
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// plannedTransactions — settle, unsettle, settleMany
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe("savings.plannedTransactions settle/unsettle/settleMany", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+  let goalId1: number;
+  let goalId2: number;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    caller = ctx.caller;
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+    goalId1 = seedSavingsGoal(db, {
+      name: "Settle Fund A",
+      targetAmount: "10000",
+      monthlyContribution: "500",
+    });
+    goalId2 = seedSavingsGoal(db, {
+      name: "Settle Fund B",
+      targetAmount: "5000",
+      monthlyContribution: "200",
+    });
+  });
+
+  afterAll(() => cleanup());
+
+  it("settles a one-time planned transaction", async () => {
+    const tx = await caller.savings.plannedTransactions.create({
+      goalId: goalId1,
+      transactionDate: "2026-09-15",
+      amount: "-1200",
+      description: "Trip",
+      isRecurring: false,
+    });
+    const result = await caller.savings.plannedTransactions.settle({
+      plannedTxId: tx.id,
+      occurrenceMonth: "2026-09",
+    });
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("rejects settling the same occurrence twice", async () => {
+    const tx = await caller.savings.plannedTransactions.create({
+      goalId: goalId1,
+      transactionDate: "2026-10-15",
+      amount: "-500",
+      description: "Concert",
+      isRecurring: false,
+    });
+    await caller.savings.plannedTransactions.settle({
+      plannedTxId: tx.id,
+      occurrenceMonth: "2026-10",
+    });
+    await expect(
+      caller.savings.plannedTransactions.settle({
+        plannedTxId: tx.id,
+        occurrenceMonth: "2026-10",
+      }),
+    ).rejects.toThrow(/already settled/i);
+  });
+
+  it("unsettle removes the settlement so it can be settled again", async () => {
+    const tx = await caller.savings.plannedTransactions.create({
+      goalId: goalId1,
+      transactionDate: "2026-11-15",
+      amount: "-300",
+      description: "Gift",
+      isRecurring: false,
+    });
+    await caller.savings.plannedTransactions.settle({
+      plannedTxId: tx.id,
+      occurrenceMonth: "2026-11",
+    });
+    const unsettleResult = await caller.savings.plannedTransactions.unsettle({
+      plannedTxId: tx.id,
+      occurrenceMonth: "2026-11",
+    });
+    expect(unsettleResult).toEqual({ ok: true });
+    // Should be settleable again now that the settlement was removed.
+    const resettled = await caller.savings.plannedTransactions.settle({
+      plannedTxId: tx.id,
+      occurrenceMonth: "2026-11",
+    });
+    expect(resettled).toEqual({ ok: true });
+  });
+
+  it("settling one leg of a transfer settles both legs (pair-atomic)", async () => {
+    const created = await caller.savings.transfers.create({
+      fromGoalId: goalId1,
+      toGoalId: goalId2,
+      transactionDate: "2026-12-01",
+      amount: 750,
+      description: "Rebalance",
+    });
+    await caller.savings.plannedTransactions.settle({
+      plannedTxId: created.withdrawal.id,
+      occurrenceMonth: "2026-12",
+    });
+    // The deposit leg should now also be settled — verify via computeSummary
+    // (settling only the withdrawal leg must not leave the deposit leg
+    // still counting toward Fund B's projection, or money silently
+    // reappears in the combined balance).
+    const summary = await caller.savings.computeSummary();
+    const depositTx = summary.plannedTransactions.find(
+      (t) => t.id === created.deposit.id,
+    );
+    expect(depositTx?.settledOccurrences).toContain("2026-12");
+    // And settling the already-settled deposit leg directly should now reject.
+    await expect(
+      caller.savings.plannedTransactions.settle({
+        plannedTxId: created.deposit.id,
+        occurrenceMonth: "2026-12",
+      }),
+    ).rejects.toThrow(/already settled/i);
+  });
+
+  it("settleMany settles multiple occurrences in one call", async () => {
+    const tx1 = await caller.savings.plannedTransactions.create({
+      goalId: goalId1,
+      transactionDate: "2027-01-15",
+      amount: "-100",
+      description: "One",
+      isRecurring: false,
+    });
+    const tx2 = await caller.savings.plannedTransactions.create({
+      goalId: goalId1,
+      transactionDate: "2027-02-15",
+      amount: "-100",
+      description: "Two",
+      isRecurring: false,
+    });
+    const result = await caller.savings.plannedTransactions.settleMany({
+      occurrences: [
+        { plannedTxId: tx1.id, occurrenceMonth: "2027-01" },
+        { plannedTxId: tx2.id, occurrenceMonth: "2027-02" },
+      ],
+    });
+    expect(result).toEqual({ ok: true });
+    const summary = await caller.savings.computeSummary();
+    const t1 = summary.plannedTransactions.find((t) => t.id === tx1.id);
+    const t2 = summary.plannedTransactions.find((t) => t.id === tx2.id);
+    expect(t1?.settledOccurrences).toContain("2027-01");
+    expect(t2?.settledOccurrences).toContain("2027-02");
+  });
+
+  it("settling one occurrence of a recurring row does not settle its other occurrences", async () => {
+    const tx = await caller.savings.plannedTransactions.create({
+      goalId: goalId1,
+      transactionDate: "2027-03-01",
+      amount: "100",
+      description: "Recurring gift",
+      isRecurring: true,
+      recurrenceMonths: 1,
+    });
+    await caller.savings.plannedTransactions.settle({
+      plannedTxId: tx.id,
+      occurrenceMonth: "2027-03",
+    });
+    const summary = await caller.savings.computeSummary();
+    const found = summary.plannedTransactions.find((t) => t.id === tx.id);
+    expect(found?.settledOccurrences).toEqual(["2027-03"]);
+    // A later occurrence of the same recurring row must still be settleable
+    // independently — proves settlement is per-occurrence, not per-row.
+    const nextMonth = await caller.savings.plannedTransactions.settle({
+      plannedTxId: tx.id,
+      occurrenceMonth: "2027-04",
+    });
+    expect(nextMonth).toEqual({ ok: true });
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// plannedTransactions.getSettlementSuggestions
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe("savings.plannedTransactions.getSettlementSuggestions", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+  let linkedGoalId: number;
+  let unlinkedGoalId: number;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    caller = ctx.caller;
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+    linkedGoalId = seedSavingsGoal(db, {
+      name: "Linked Fund",
+      isApiSyncEnabled: true,
+      apiCategoryId: "cat-travel",
+    });
+    unlinkedGoalId = seedSavingsGoal(db, { name: "Unlinked Fund" });
+  });
+
+  afterAll(() => cleanup());
+
+  it("returns no suggestions when no budget API is active", async () => {
+    mockGetActiveBudgetApi.mockResolvedValueOnce("none");
+    const result =
+      await caller.savings.plannedTransactions.getSettlementSuggestions();
+    expect(result.suggestions).toEqual([]);
+  });
+
+  it("returns no suggestions when the transactions cache is empty", async () => {
+    mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+    mockCacheGet.mockResolvedValueOnce(null);
+    const result =
+      await caller.savings.plannedTransactions.getSettlementSuggestions();
+    expect(result.suggestions).toEqual([]);
+  });
+
+  it("suggests a planned transaction with real activity on/after its date, same month, same category", async () => {
+    const tx = await caller.savings.plannedTransactions.create({
+      goalId: linkedGoalId,
+      transactionDate: "2026-08-10",
+      amount: "-500",
+      description: "Hotel",
+      isRecurring: false,
+    });
+    mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+    mockCacheGet.mockResolvedValueOnce({
+      data: [
+        {
+          id: "t1",
+          categoryId: "cat-travel",
+          date: "2026-08-12",
+          amount: -12000,
+          deleted: false,
+        },
+      ],
+      serverKnowledge: 1,
+      fetchedAt: new Date(),
+    });
+    const result =
+      await caller.savings.plannedTransactions.getSettlementSuggestions();
+    expect(result.suggestions).toContainEqual({
+      plannedTxId: tx.id,
+      occurrenceMonth: "2026-08",
+    });
+  });
+
+  it("does not suggest when the only real activity is before the planned date", async () => {
+    const tx = await caller.savings.plannedTransactions.create({
+      goalId: linkedGoalId,
+      transactionDate: "2026-09-20",
+      amount: "-500",
+      description: "Late trip",
+      isRecurring: false,
+    });
+    mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+    mockCacheGet.mockResolvedValueOnce({
+      data: [
+        {
+          id: "t2",
+          categoryId: "cat-travel",
+          date: "2026-09-05", // before the planned date
+          amount: -5000,
+          deleted: false,
+        },
+      ],
+      serverKnowledge: 1,
+      fetchedAt: new Date(),
+    });
+    const result =
+      await caller.savings.plannedTransactions.getSettlementSuggestions();
+    expect(
+      result.suggestions.find((s) => s.plannedTxId === tx.id),
+    ).toBeUndefined();
+  });
+
+  it("does not suggest a non-API-linked goal's planned transaction", async () => {
+    const tx = await caller.savings.plannedTransactions.create({
+      goalId: unlinkedGoalId,
+      transactionDate: "2026-08-10",
+      amount: "-200",
+      description: "Cash spend",
+      isRecurring: false,
+    });
+    mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+    mockCacheGet.mockResolvedValueOnce({
+      data: [
+        {
+          id: "t3",
+          categoryId: "cat-travel",
+          date: "2026-08-12",
+          amount: -1,
+          deleted: false,
+        },
+      ],
+      serverKnowledge: 1,
+      fetchedAt: new Date(),
+    });
+    const result =
+      await caller.savings.plannedTransactions.getSettlementSuggestions();
+    expect(
+      result.suggestions.find((s) => s.plannedTxId === tx.id),
+    ).toBeUndefined();
+  });
+
+  it("does not suggest an already-settled occurrence", async () => {
+    const tx = await caller.savings.plannedTransactions.create({
+      goalId: linkedGoalId,
+      transactionDate: "2026-10-10",
+      amount: "-500",
+      description: "Already settled",
+      isRecurring: false,
+    });
+    await caller.savings.plannedTransactions.settle({
+      plannedTxId: tx.id,
+      occurrenceMonth: "2026-10",
+    });
+    mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+    mockCacheGet.mockResolvedValueOnce({
+      data: [
+        {
+          id: "t4",
+          categoryId: "cat-travel",
+          date: "2026-10-12",
+          amount: -500,
+          deleted: false,
+        },
+      ],
+      serverKnowledge: 1,
+      fetchedAt: new Date(),
+    });
+    const result =
+      await caller.savings.plannedTransactions.getSettlementSuggestions();
+    expect(
+      result.suggestions.find((s) => s.plannedTxId === tx.id),
+    ).toBeUndefined();
   });
 });
 

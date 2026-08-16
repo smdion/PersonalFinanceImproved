@@ -27,6 +27,7 @@ import { NewSnapshotForm } from "@/components/portfolio/new-snapshot-form";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import { AccountBalanceOverview } from "@/components/portfolio/account-balance-overview";
 import { PortfolioQuickLook } from "@/components/portfolio/portfolio-quick-look";
+import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 
 // v0.5 expert-review M8: code-split Recharts. PortfolioChart pulls in
 // ~250KB of recharts code; lazy-loading moves it to a dedicated chunk.
@@ -156,7 +157,9 @@ export function PortfolioContent() {
   const user = useUser();
   const canEdit = hasPermission(user, "portfolio");
   const utils = trpc.useUtils();
-  const { data, isLoading, error } = trpc.networth.computeSummary.useQuery();
+  const targeting = useYearEndTargetingInput();
+  const { data, isLoading, error } =
+    trpc.networth.computeSummary.useQuery(targeting);
   const [snapshotPage, setSnapshotPage] = useState(1);
   const [snapshotDateFrom, setSnapshotDateFrom] = useState("");
   const [snapshotDateTo, setSnapshotDateTo] = useState("");

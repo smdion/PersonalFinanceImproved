@@ -8,6 +8,7 @@ import { useState, useMemo, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { SpreadsheetControls } from "./spreadsheet-controls";
 import { useScenario } from "@/lib/context/scenario-context";
+import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { SpreadsheetYearOverYearTable } from "./spreadsheet-year-over-year-table";
 import { SpreadsheetHealthStats } from "./spreadsheet-health-stats";
 import { SpreadsheetTaxLocation } from "./spreadsheet-tax-location";
@@ -60,8 +61,9 @@ export function SpreadsheetView({
   onChartXAxisChange,
 }: SpreadsheetViewProps) {
   const utils = trpc.useUtils();
+  const targeting = useYearEndTargetingInput();
   const { data: detailedData } =
-    trpc.networth.computeDetailedHistory.useQuery();
+    trpc.networth.computeDetailedHistory.useQuery(targeting);
   const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
 
   const upsertSetting = trpc.settings.appSettings.upsert.useMutation({

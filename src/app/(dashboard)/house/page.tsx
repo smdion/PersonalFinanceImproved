@@ -14,10 +14,12 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import { Lock, LockOpen } from "lucide-react";
 import { SyncBadge } from "@/components/ui/sync-badge";
+import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 
 export default function HousePage() {
+  const targeting = useYearEndTargetingInput();
   const { data: assetData, isLoading: assetsLoading } =
-    trpc.assets.computeSummary.useQuery();
+    trpc.assets.computeSummary.useQuery(targeting);
   const { data: mortgageData, isLoading: mortgageLoading } =
     trpc.mortgage.computeActiveSummary.useQuery();
   const { data: propTaxes, isLoading: taxesLoading } =
@@ -100,12 +102,10 @@ export default function HousePage() {
   }
 
   const current = assetData?.current;
-  const activeLoan =
-    mortgageData?.loans?.find((l) => l.isActive) ?? mortgageData?.loans?.[0];
-  const loanResult = activeLoan
-    ? (mortgageData?.result?.loans?.find((r) => r.loanId === activeLoan.id) ??
-      mortgageData?.result?.loans?.[0])
-    : mortgageData?.result?.loans?.[0];
+  const activeLoan = mortgageData?.loans?.find(
+    (l) => l.id === mortgageData?.activeLoanId,
+  );
+  const loanResult = mortgageData?.activeLoanResult ?? undefined;
   const homeImprovements = assetData?.homeImprovements ?? [];
 
   // Group home improvements by year

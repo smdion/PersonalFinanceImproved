@@ -8,6 +8,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
+## [0.7.1] - 2026-08-15
+
+### Added
+
+- **Sinking funds: mark a planned transaction "settled"** once its real spend has actually happened, instead of deleting it. Settled occurrences are excluded from the forward balance projection but stay visible in history — no more choosing between stale placeholder clutter and losing the record. A dismissible banner suggests likely-settled items for YNAB-linked funds (based on real transaction activity showing up in the linked category — never an automatic write, always a one-click confirm), and a direct settle action is available on any planned transaction in both the Transactions tab and each fund's card. Rows planned 2+ months ago and still open get a gentle "still open?" nudge, including for funds with no linked budget category.
+- **Settlement is per-occurrence, not per-row** — settling one month of a recurring planned transaction (e.g. a routed paycheck split) doesn't affect its other future occurrences. Settling one leg of a transfer between two funds settles both legs together, so money can't silently vanish from the combined projection.
+- **Plans can now pin which Budget Profile and Contribution Profile are "active."** Create a Plan, pin a profile to it from the Budget page or the top bar, and every page reflects that pin while you're viewing the Plan — without changing what's active for Main Plan or anyone else. Useful for modeling a real what-if (a future relocation, a new job's contribution elections) without disturbing your everyday numbers.
+- **The Savings Profiles tab now shows a live pool estimate** next to the stored allocation total for the mode you're viewing, so you can see at a glance whether your saved %/$ splits are over- or under-allocating your actual take-home leftover.
+- **The Live Balance dashboard card can now roll accounts up by institution instead of account type**, via a toggle next to the breakdown.
+- **The Retirement dashboard card now flags that its Coast FIRE age is the deterministic baseline**, distinct from the simulated-confidence age shown on the Retirement page's Plan Health tab.
+
+### Improved
+
+- **Contribution Profiles, Budget Profiles, and Savings Profiles tabs now share one consistent look** for which profile is active, pinned by a Plan, or just being viewed, plus a one-click Activate action — previously each tab had its own inconsistent indicator.
+- **The Budget page's top pills now distinguish a Plan's pinned profile from the true global-active one** when they differ, instead of both silently reading "Active."
+- **Budget page tabs reordered to Contributions → Budget → Savings**, matching the order money actually flows through them, with a short explainer under the page title.
+
+### Fixed
+
+- **Adding a new budget category or item, or editing a budget column/mode, while viewing a non-active budget profile could silently land the change on the active profile instead** — the one you weren't looking at. This affected every kind of budget edit made from a non-active profile.
+- **The Budget and Savings pages could silently disagree with Paycheck, Contributions, and Expenses about which contribution profile was in effect**, showing different dollar figures for what was supposed to be the same profile.
+- **The Live Balance dashboard card's percentage figures showed "percent of total portfolio" where they were labeled "percent changed."** Both the per-category and headline drift percentages now reflect actual day-over-day change.
+- **Net Worth, Historical, and Assets pages could disagree about which mortgage loan was "active"** when more than one loan existed, due to each page resolving it independently.
+- **Savings projections silently dropped planned transactions dated later in the current month.** Once the 1st of the month had passed, the projection trajectory skipped the entire current month (contributions and any planned withdrawals/deposits alike) instead of just avoiding double-counting the month's contribution for YNAB-linked goals. A sinking fund with an upcoming expense planned for later in the month would show future balances overstated by that amount until the following month. A second, independent copy of the same stale offset logic in the Transactions tab's "balance after" column has been fixed too.
+- **The dashboard's Savings Goals card computed its own independent balance projection** that never applied the current-month double-counting guard above, and didn't expand recurring planned transactions at all when checking for shortfalls. Both the Savings page and the dashboard card now share one projection implementation.
+- **Extra-paycheck routing silently destroyed savings-transaction history.** Every job or routing-rule save deleted and regenerated _all_ auto-generated planned transactions, even ones dated in the past — they only survived by accident, whenever the regeneration job hadn't happened to run recently. Past and settled rows are now preserved.
+- **Restoring a v0.7.0-tagged backup would fail with "Unknown schema version.".** The backup-compatibility layer never registered the v0.7 baseline schema tag.
+
 ## [0.7.0] - 2026-08-07
 
 > What changed since v0.6.0. For patch-level detail, see the v0.6.x entries below.

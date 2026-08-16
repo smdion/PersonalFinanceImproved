@@ -383,7 +383,11 @@ describe("KNOWN_SCHEMA_VERSIONS completeness", () => {
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0006_blue_gunslinger");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0002_nervous_major_mapleleaf");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0006_concerned_psylocke");
-    expect(KNOWN_SCHEMA_VERSIONS.length).toBe(42);
+    // v0.7.x tags
+    expect(KNOWN_SCHEMA_VERSIONS).toContain("0000_v7_initial_schema");
+    expect(KNOWN_SCHEMA_VERSIONS).toContain("0001_parched_karma");
+    expect(KNOWN_SCHEMA_VERSIONS).toContain("0001_fresh_masque");
+    expect(KNOWN_SCHEMA_VERSIONS.length).toBe(45);
   });
 
   it("SQLite tags transform correctly (same as PG equivalents)", () => {

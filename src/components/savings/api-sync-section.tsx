@@ -65,11 +65,15 @@ export interface ApiSyncSectionProps {
   setRecalcPreviewItems: (items: PushPreviewItem[] | null) => void;
   pendingRecalcGoalId: number | undefined;
   setPendingRecalcGoalId: (id: number | undefined) => void;
+  pendingRecalcProfileId: number | undefined;
+  setPendingRecalcProfileId: (id: number | undefined) => void;
   recalculateMutation: RecalculateMutation;
   lockInPreviewItems: PushPreviewItem[] | null;
   setLockInPreviewItems: (items: PushPreviewItem[] | null) => void;
   pendingLockInGoalId: number | undefined;
   setPendingLockInGoalId: (id: number | undefined) => void;
+  pendingLockInProfileId: number | undefined;
+  setPendingLockInProfileId: (id: number | undefined) => void;
   lockInMutation: LockInMutation;
 }
 
@@ -90,11 +94,15 @@ export function ApiSyncSection({
   setRecalcPreviewItems,
   pendingRecalcGoalId,
   setPendingRecalcGoalId,
+  pendingRecalcProfileId,
+  setPendingRecalcProfileId,
   recalculateMutation,
   lockInPreviewItems,
   setLockInPreviewItems,
   pendingLockInGoalId,
   setPendingLockInGoalId,
+  pendingLockInProfileId,
+  setPendingLockInProfileId,
   lockInMutation,
 }: ApiSyncSectionProps) {
   const utils = trpc.useUtils();
@@ -186,13 +194,19 @@ export function ApiSyncSection({
           direction="recalculate"
           onConfirm={() => {
             recalculateMutation.mutate(
-              pendingRecalcGoalId !== undefined
-                ? { goalId: pendingRecalcGoalId }
-                : {},
+              {
+                ...(pendingRecalcGoalId !== undefined
+                  ? { goalId: pendingRecalcGoalId }
+                  : {}),
+                ...(pendingRecalcProfileId !== undefined
+                  ? { profileId: pendingRecalcProfileId }
+                  : {}),
+              },
               {
                 onSettled: () => {
                   setRecalcPreviewItems(null);
                   setPendingRecalcGoalId(undefined);
+                  setPendingRecalcProfileId(undefined);
                 },
               },
             );
@@ -200,6 +214,7 @@ export function ApiSyncSection({
           onCancel={() => {
             setRecalcPreviewItems(null);
             setPendingRecalcGoalId(undefined);
+            setPendingRecalcProfileId(undefined);
           }}
           isPending={recalculateMutation.isPending}
         />
@@ -214,13 +229,19 @@ export function ApiSyncSection({
           valueFormat="percent"
           onConfirm={() => {
             lockInMutation.mutate(
-              pendingLockInGoalId !== undefined
-                ? { goalId: pendingLockInGoalId }
-                : {},
+              {
+                ...(pendingLockInGoalId !== undefined
+                  ? { goalId: pendingLockInGoalId }
+                  : {}),
+                ...(pendingLockInProfileId !== undefined
+                  ? { profileId: pendingLockInProfileId }
+                  : {}),
+              },
               {
                 onSettled: () => {
                   setLockInPreviewItems(null);
                   setPendingLockInGoalId(undefined);
+                  setPendingLockInProfileId(undefined);
                 },
               },
             );
@@ -228,6 +249,7 @@ export function ApiSyncSection({
           onCancel={() => {
             setLockInPreviewItems(null);
             setPendingLockInGoalId(undefined);
+            setPendingLockInProfileId(undefined);
           }}
           isPending={lockInMutation.isPending}
         />
@@ -311,10 +333,16 @@ export function useApiSync() {
   const [pendingRecalcGoalId, setPendingRecalcGoalId] = useState<
     number | undefined
   >(undefined);
+  const [pendingRecalcProfileId, setPendingRecalcProfileId] = useState<
+    number | undefined
+  >(undefined);
   const [lockInPreviewItems, setLockInPreviewItems] = useState<
     PushPreviewItem[] | null
   >(null);
   const [pendingLockInGoalId, setPendingLockInGoalId] = useState<
+    number | undefined
+  >(undefined);
+  const [pendingLockInProfileId, setPendingLockInProfileId] = useState<
     number | undefined
   >(undefined);
 
@@ -352,6 +380,7 @@ export function useApiSync() {
       rawGoals: RawGoal[],
       maxMonthlyFunding: number | null,
       goalId?: number,
+      profileId?: number,
     ) => {
       const items: PushPreviewItem[] = [];
       for (const g of rawGoals) {
@@ -372,6 +401,7 @@ export function useApiSync() {
         });
       }
       setPendingRecalcGoalId(goalId);
+      setPendingRecalcProfileId(profileId);
       setRecalcPreviewItems(items);
     },
     [],
@@ -381,6 +411,7 @@ export function useApiSync() {
       rawGoals: RawGoal[],
       maxMonthlyFunding: number | null,
       goalId?: number,
+      profileId?: number,
     ) => {
       const items: PushPreviewItem[] = [];
       for (const g of rawGoals) {
@@ -400,6 +431,7 @@ export function useApiSync() {
         });
       }
       setPendingLockInGoalId(goalId);
+      setPendingLockInProfileId(profileId);
       setLockInPreviewItems(items);
     },
     [],
@@ -417,11 +449,15 @@ export function useApiSync() {
     setRecalcPreviewItems,
     pendingRecalcGoalId,
     setPendingRecalcGoalId,
+    pendingRecalcProfileId,
+    setPendingRecalcProfileId,
     buildRecalculateAllPreview,
     lockInPreviewItems,
     setLockInPreviewItems,
     pendingLockInGoalId,
     setPendingLockInGoalId,
+    pendingLockInProfileId,
+    setPendingLockInProfileId,
     buildLockInAllPreview,
     // Callbacks for header buttons
     pushToApiPending: pushToApi.isPending,
