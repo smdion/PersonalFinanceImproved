@@ -1,9 +1,9 @@
 /**
  * paycheck.computeSummary / contribution.computeSummary / budget
  * .computeActiveSummary all honor the What-If tab's sandboxContribOverrides
- * — one more layer on top of the picked Contribution Profile's own
- * overrides, applied via the SAME applyContribOverrides merge every other
- * override already goes through.
+ * — one more layer on top of the picked Contribution Profile's own active
+ * fields, applied via the SAME applyContribActiveFields merge every other
+ * active field already goes through.
  */
 import "./setup-mocks";
 import { describe, it, expect, vi } from "vitest";

@@ -86,26 +86,29 @@ export default function PaycheckPage() {
     },
   });
 
-  // Helper: update a field in the active profile's overrides
-  function updateProfileOverride(
+  // Helper: update a field in the active profile's active fields
+  function updateProfileActiveField(
     entityType: "contributionAccounts" | "jobs",
     entityId: number,
     field: string,
     value: unknown,
   ) {
     if (!activeProfile) return;
-    const existing = activeProfile.contributionOverrides as Record<
+    const existing = activeProfile.contributionActiveFields as Record<
       string,
       Record<string, Record<string, unknown>>
     >;
-    const entityOverrides = { ...(existing[entityType] ?? {}) };
-    entityOverrides[String(entityId)] = {
-      ...(entityOverrides[String(entityId)] ?? {}),
+    const entityActiveFields = { ...(existing[entityType] ?? {}) };
+    entityActiveFields[String(entityId)] = {
+      ...(entityActiveFields[String(entityId)] ?? {}),
       [field]: value,
     };
     updateProfile.mutate({
       id: activeProfile.id,
-      contributionOverrides: { ...existing, [entityType]: entityOverrides },
+      contributionActiveFields: {
+        ...existing,
+        [entityType]: entityActiveFields,
+      },
     });
   }
 
@@ -124,7 +127,7 @@ export default function PaycheckPage() {
       return true;
     }
     if (isProfileMode) {
-      updateProfileOverride(entityType, entityId, field, value);
+      updateProfileActiveField(entityType, entityId, field, value);
       return true;
     }
     return false;
@@ -580,7 +583,7 @@ export default function PaycheckPage() {
                       "includeBonusInContributions",
                     ];
                     if (isProfileMode && bonusFields.includes(field)) {
-                      updateProfileOverride("jobs", job.id, field, parsed);
+                      updateProfileActiveField("jobs", job.id, field, parsed);
                       return;
                     }
                     updateJob.mutate({
@@ -690,15 +693,15 @@ export default function PaycheckPage() {
                       // Set both autoMaximize and contributionValue in one profile update
                       if (!activeProfile) return;
                       const existing =
-                        activeProfile.contributionOverrides as Record<
+                        activeProfile.contributionActiveFields as Record<
                           string,
                           Record<string, Record<string, unknown>>
                         >;
-                      const entityOverrides = {
+                      const entityActiveFields = {
                         ...(existing.contributionAccounts ?? {}),
                       };
-                      entityOverrides[String(id)] = {
-                        ...(entityOverrides[String(id)] ?? {}),
+                      entityActiveFields[String(id)] = {
+                        ...(entityActiveFields[String(id)] ?? {}),
                         autoMaximize: value,
                         ...(value && targetContribValue != null
                           ? { contributionValue: String(targetContribValue) }
@@ -706,9 +709,9 @@ export default function PaycheckPage() {
                       };
                       updateProfile.mutate({
                         id: activeProfile.id,
-                        contributionOverrides: {
+                        contributionActiveFields: {
                           ...existing,
-                          contributionAccounts: entityOverrides,
+                          contributionAccounts: entityActiveFields,
                         },
                       });
                       return;

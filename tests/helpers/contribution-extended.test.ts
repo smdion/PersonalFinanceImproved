@@ -3,15 +3,15 @@
  * Extended contribution helper tests.
  *
  * Tests aggregateContributionsByCategory, resolveProfile,
- * applyContribOverrides, applyJobOverrides, and buildContributionDisplaySpecs.
+ * applyContribActiveFields, applyJobActiveFields, and buildContributionDisplaySpecs.
  */
 import "./setup-mocks";
 import { describe, it, expect } from "vitest";
 import {
   aggregateContributionsByCategory,
   resolveProfile,
-  applyContribOverrides,
-  applyJobOverrides,
+  applyContribActiveFields,
+  applyJobActiveFields,
   buildContributionDisplaySpecs,
 } from "@/server/helpers/contribution";
 import type { AccountCategory } from "@/lib/calculators/types";
@@ -213,10 +213,10 @@ describe("aggregateContributionsByCategory", () => {
 });
 
 // ---------------------------------------------------------------------------
-// applyContribOverrides
+// applyContribActiveFields
 // ---------------------------------------------------------------------------
 
-describe("applyContribOverrides", () => {
+describe("applyContribActiveFields", () => {
   const baseRow = {
     id: 1,
     personId: 1,
@@ -242,21 +242,21 @@ describe("applyContribOverrides", () => {
     updatedAt: "2025-01-01",
   } as unknown as (typeof import("@/lib/db/schema").contributionAccounts)["$inferSelect"];
 
-  it("returns rows unchanged when no overrides", () => {
-    const result = applyContribOverrides([baseRow], {});
+  it("returns rows unchanged when no active fields", () => {
+    const result = applyContribActiveFields([baseRow], {});
     expect(result).toHaveLength(1);
     expect(result[0].contributionValue).toBe("10");
   });
 
-  it("applies override fields", () => {
-    const result = applyContribOverrides([baseRow], {
+  it("applies active fields", () => {
+    const result = applyContribActiveFields([baseRow], {
       "1": { contributionValue: "15" },
     });
     expect(result[0].contributionValue).toBe("15");
   });
 
-  it("filters out rows with isActive=false override", () => {
-    const result = applyContribOverrides([baseRow], {
+  it("filters out rows with isActive=false active field", () => {
+    const result = applyContribActiveFields([baseRow], {
       "1": { isActive: false },
     });
     expect(result).toHaveLength(0);
@@ -264,7 +264,7 @@ describe("applyContribOverrides", () => {
 
   it("leaves other rows untouched", () => {
     const row2 = { ...baseRow, id: 2 } as typeof baseRow;
-    const result = applyContribOverrides([baseRow, row2], {
+    const result = applyContribActiveFields([baseRow, row2], {
       "1": { contributionValue: "20" },
     });
     expect(result).toHaveLength(2);
@@ -274,10 +274,10 @@ describe("applyContribOverrides", () => {
 });
 
 // ---------------------------------------------------------------------------
-// applyJobOverrides
+// applyJobActiveFields
 // ---------------------------------------------------------------------------
 
-describe("applyJobOverrides", () => {
+describe("applyJobActiveFields", () => {
   const baseJob = {
     id: 1,
     personId: 1,
@@ -293,13 +293,13 @@ describe("applyJobOverrides", () => {
     employerName: "OldCorp",
   } as unknown as (typeof import("@/lib/db/schema").jobs)["$inferSelect"];
 
-  it("returns jobs unchanged when no overrides", () => {
-    const result = applyJobOverrides([baseJob], {});
+  it("returns jobs unchanged when no active fields", () => {
+    const result = applyJobActiveFields([baseJob], {});
     expect(result[0].bonusPercent).toBe("0.10");
   });
 
-  it("applies valid override fields", () => {
-    const result = applyJobOverrides([baseJob], {
+  it("applies valid active fields", () => {
+    const result = applyJobActiveFields([baseJob], {
       "1": { includeBonusInContributions: true, bonusMonth: 3 },
     });
     expect(result[0].includeBonusInContributions).toBe(true);
@@ -310,7 +310,7 @@ describe("applyJobOverrides", () => {
     // A Contribution Profile must not be able to change anyone's
     // compensation. These names are still real jobs columns, so the plain
     // `field in job` filter would happily apply a stale stored key.
-    const result = applyJobOverrides([baseJob], {
+    const result = applyJobActiveFields([baseJob], {
       "1": {
         bonusPercent: "0.15",
         bonusMultiplier: "1.5",
@@ -322,8 +322,8 @@ describe("applyJobOverrides", () => {
     expect(result[0].monthsInBonusYear).toBe(12);
   });
 
-  it("ignores override fields not present on job", () => {
-    const result = applyJobOverrides([baseJob], {
+  it("ignores active fields not present on job", () => {
+    const result = applyJobActiveFields([baseJob], {
       "1": { nonExistentField: "value", bonusMonth: 4 },
     } as Record<string, Record<string, unknown>>);
     expect(result[0].bonusMonth).toBe(4);
@@ -342,7 +342,7 @@ describe("resolveProfile", () => {
     ({
       id: 1,
       name: "Test Profile",
-      contributionOverrides: {
+      contributionActiveFields: {
         contributionAccounts: {},
         jobs: {},
       },
@@ -462,7 +462,7 @@ describe("resolveProfile", () => {
 
   it("applies contribution overrides", () => {
     const profile = makeProfile({
-      contributionOverrides: {
+      contributionActiveFields: {
         contributionAccounts: {
           "10": { contributionValue: "15" },
         },
@@ -482,7 +482,7 @@ describe("resolveProfile", () => {
 
   it("filters out contributions deactivated by override", () => {
     const profile = makeProfile({
-      contributionOverrides: {
+      contributionActiveFields: {
         contributionAccounts: {
           "10": { isActive: false },
         },
@@ -502,7 +502,7 @@ describe("resolveProfile", () => {
 
   it("applies job overrides it still owns", () => {
     const profile = makeProfile({
-      contributionOverrides: {
+      contributionActiveFields: {
         contributionAccounts: {},
         jobs: {
           "1": { employerName: "NewCorp" },
@@ -527,7 +527,7 @@ describe("resolveProfile", () => {
     // compensation from the wrong axis. The migration strips these; this is
     // the runtime backstop that makes a missed row inert, not wrong.
     const profile = makeProfile({
-      contributionOverrides: {
+      contributionActiveFields: {
         contributionAccounts: {},
         jobs: {
           "1": {

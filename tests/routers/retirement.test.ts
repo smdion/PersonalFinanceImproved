@@ -1097,7 +1097,7 @@ describe("retirement router -- contribution profiles", () => {
       .insert(cpSchema.contributionProfiles)
       .values({
         name: "High Salary Profile",
-        contributionOverrides: {
+        contributionActiveFields: {
           contributionAccounts: {
             [String(contribAcct.id)]: { contributionValue: "0.15" },
           },

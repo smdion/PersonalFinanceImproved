@@ -54,7 +54,7 @@ import {
   applyContributionAccountEdit,
   resolveTargetBudgetProfile,
   getResolvedGoalAllocations,
-  applyContribOverrides,
+  applyContribActiveFields,
 } from "@/server/helpers";
 import { accountDisplayName } from "@/lib/utils/format";
 import {
@@ -764,7 +764,7 @@ export const budgetRouter = createTRPCRouter({
         // contribution account must reflect the sandbox's edited value the
         // same way the paycheck/contribution routers do, or "edit the
         // contribution account" and "see it in the budget" disagree.
-        const activeContribs = applyContribOverrides(
+        const activeContribs = applyContribActiveFields(
           profileResult.contribs,
           input?.sandboxContribOverrides ?? {},
         );

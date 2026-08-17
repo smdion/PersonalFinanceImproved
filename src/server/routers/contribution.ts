@@ -25,7 +25,7 @@ import {
   applySalaryOverride,
   resolveBonusTerms,
   applySandboxSalaryEntries,
-  applyContribOverrides,
+  applyContribActiveFields,
   buildSandboxContribRow,
 } from "@/server/helpers";
 import {
@@ -296,7 +296,7 @@ export const contributionRouter = createTRPCRouter({
       );
       // Sandbox edits are the highest-precedence tier, applied AFTER the
       // picked profile's own overrides via the SAME merge function.
-      const effectiveContribs = applyContribOverrides(
+      const effectiveContribs = applyContribActiveFields(
         profileResult.contribs,
         input?.sandboxContribOverrides ?? {},
       );

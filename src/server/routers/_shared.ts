@@ -192,10 +192,10 @@ const MAX_SANDBOX_CONTRIB_OVERRIDES = 30;
 /**
  * The What-If tab's hand-edited amount for an EXISTING contribution
  * account, keyed by the real `contribution_accounts.id`. Reuses the SAME
- * generic override-merge mechanism a Contribution Profile's own
- * `contributionOverrides.contributionAccounts` already goes through
- * (`applyContribOverrides`) — this is one more layer applied AFTER the
- * picked profile's own overrides, not a parallel mechanism. Stored as a
+ * generic active-field-merge mechanism a Contribution Profile's own
+ * `contributionActiveFields.contributionAccounts` already goes through
+ * (`applyContribActiveFields`) — this is one more layer applied AFTER the
+ * picked profile's own active fields, not a parallel mechanism. Stored as a
  * string to match `contribution_accounts.contribution_value`'s own column
  * type — every downstream reader already parses that field with
  * `toNumber`, so a mismatched type here would only matter if something

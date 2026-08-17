@@ -38,7 +38,7 @@ export type RawContrib = {
   targetAnnual: string | null;
   allocationPriority: number;
   notes: string | null;
-  displayNameOverride?: string;
+  displayNameActive?: string;
 };
 
 // Deduction row data used for aligned rendering

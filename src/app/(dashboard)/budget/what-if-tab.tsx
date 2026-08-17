@@ -818,8 +818,8 @@ function WhatIfDeductionsEditor({
  * Per-person contribution accounts editor — same pin-editable pattern as
  * salary/deductions: pre-filled with the resolved current value, pinning on
  * change, ↺ to reset. Feeds `sandboxContribOverrides`, applied server-side
- * via the SAME `applyContribOverrides` merge a Contribution Profile's own
- * overrides go through — one more layer, not a parallel mechanism. Value is
+ * via the SAME `applyContribActiveFields` merge a Contribution Profile's own
+ * active fields go through — one more layer, not a parallel mechanism. Value is
  * NOT percent/100 converted: `percent_of_salary` stores the raw percent
  * number (5 = 5%), matching how ContributionProfileManager already displays
  * it (`value%`), not a fraction like bonusPercent uses.

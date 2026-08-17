@@ -15,7 +15,7 @@ type ProfileSummary = {
   id: number;
   name: string;
   description: string | null;
-  overrideCount: number;
+  activeFieldCount: number;
   summary: {
     annualContributions: number;
     annualEmployerMatch: number;
@@ -447,16 +447,16 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
           </thead>
           <tbody>
             {profile.accountDetails.map((ad, rowIdx) => {
-              const ov = ad.overrides as Record<string, unknown> | null;
-              const hasOverride = ov !== null;
-              const isProfileDisabled = ov?.isActive === false;
-              const overrideValue = hasOverride
-                ? String(ov?.contributionValue ?? "")
+              const af = ad.activeFields as Record<string, unknown> | null;
+              const hasActiveFields = af !== null;
+              const isProfileDisabled = af?.isActive === false;
+              const activeValue = hasActiveFields
+                ? String(af?.contributionValue ?? "")
                 : null;
-              const resolvedValue = (overrideValue || ad.liveValue) ?? "";
+              const resolvedValue = (activeValue || ad.liveValue) ?? "";
               const methodSuffix =
                 ad.liveMethod === "percent_of_salary" ? "%" : "";
-              const hasNameOverride =
+              const hasActiveName =
                 ad.liveAccountName && ad.accountName !== ad.liveAccountName;
               return (
                 <tr
@@ -470,7 +470,7 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                   <td className="py-1.5 pl-4 pr-3 text-secondary">
                     <span className="flex items-center gap-1.5">
                       <span
-                        className={`${isProfileDisabled ? "line-through" : ""} ${hasNameOverride ? "text-amber-600" : ""}`}
+                        className={`${isProfileDisabled ? "line-through" : ""} ${hasActiveName ? "text-amber-600" : ""}`}
                       >
                         {ad.accountName}
                       </span>
@@ -488,7 +488,7 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                   </td>
                   <td
                     className={`py-1.5 px-3 text-right font-mono ${
-                      hasOverride && !isProfileDisabled
+                      hasActiveFields && !isProfileDisabled
                         ? "text-amber-600 font-medium"
                         : "text-secondary"
                     }`}
@@ -575,7 +575,7 @@ function ProfileEditor({
       if (nameVal.trim()) {
         contribAccounts[accountId] = {
           ...(contribAccounts[accountId] ?? {}),
-          displayNameOverride: nameVal.trim(),
+          displayNameActive: nameVal.trim(),
         };
       }
     }
@@ -635,7 +635,7 @@ function ProfileEditor({
       }
     }
 
-    const contributionOverrides: Record<
+    const contributionActiveFields: Record<
       string,
       Record<string, Record<string, unknown>>
     > = {
@@ -648,7 +648,7 @@ function ProfileEditor({
     createMutation.mutate({
       name,
       description: description || undefined,
-      contributionOverrides,
+      contributionActiveFields,
     });
   };
 
@@ -993,8 +993,8 @@ function ProfileEditor({
 // Profile Inline Editor — unlocked, in-place editing of an existing profile
 // ---------------------------------------------------------------------------
 
-/** The stored shape of contribution_profiles.contribution_overrides. */
-type OverridesRoot = {
+/** The stored shape of contribution_profiles.contribution_active_fields. */
+type ActiveFieldsRoot = {
   contributionAccounts?: Record<string, Record<string, unknown>>;
   jobs?: Record<string, Record<string, unknown>>;
 };
@@ -1032,10 +1032,10 @@ function ProfileInlineEditor({
 
   if (!profile) return null;
 
-  const root = (profile.contributionOverrides ?? {}) as OverridesRoot;
-  const accountOverrides = (id: number) =>
+  const root = (profile.contributionActiveFields ?? {}) as ActiveFieldsRoot;
+  const accountActiveFields = (id: number) =>
     root.contributionAccounts?.[String(id)] ?? {};
-  const jobOverrides = (id: number) => root.jobs?.[String(id)] ?? {};
+  const jobActiveFields = (id: number) => root.jobs?.[String(id)] ?? {};
 
   /** Send a patch for one account. `undefined` removes that key. */
   const patchAccount = (
@@ -1052,7 +1052,7 @@ function ProfileInlineEditor({
     else accounts[String(accountId)] = entry;
     updateMutation.mutate({
       id: profileId,
-      contributionOverrides: { ...root, contributionAccounts: accounts },
+      contributionActiveFields: { ...root, contributionAccounts: accounts },
     });
   };
 
@@ -1068,7 +1068,7 @@ function ProfileInlineEditor({
     else jobs[String(jobId)] = entry;
     updateMutation.mutate({
       id: profileId,
-      contributionOverrides: { ...root, jobs },
+      contributionActiveFields: { ...root, jobs },
     });
   };
 
@@ -1190,7 +1190,7 @@ function ProfileInlineEditor({
             </thead>
             <tbody>
               {profile.accountDetails.map((ad, rowIdx) => {
-                const ov = accountOverrides(ad.id);
+                const af = accountActiveFields(ad.id);
                 const isPercent = ad.liveMethod === "percent_of_salary";
                 const fmtValue = (v: string | null | undefined) => {
                   if (!v) return "—";
@@ -1203,22 +1203,22 @@ function ProfileInlineEditor({
                 const liveMaxMatchDisplay = ad.liveMaxMatchPct
                   ? String(parseFloat(ad.liveMaxMatchPct) * 100)
                   : "";
-                const isDisabled = ov.isActive === false;
+                const isDisabled = af.isActive === false;
                 const storedValue =
-                  ov.contributionValue !== undefined
-                    ? String(ov.contributionValue)
+                  af.contributionValue !== undefined
+                    ? String(af.contributionValue)
                     : "";
                 const storedName =
-                  ov.displayNameOverride !== undefined
-                    ? String(ov.displayNameOverride)
+                  af.displayNameActive !== undefined
+                    ? String(af.displayNameActive)
                     : "";
                 const storedMatch =
-                  ov.employerMatchValue !== undefined
-                    ? String(ov.employerMatchValue)
+                  af.employerMatchValue !== undefined
+                    ? String(af.employerMatchValue)
                     : "";
                 const storedCap =
-                  ov.employerMaxMatchPct !== undefined
-                    ? String(Number(ov.employerMaxMatchPct) * 100)
+                  af.employerMaxMatchPct !== undefined
+                    ? String(Number(af.employerMaxMatchPct) * 100)
                     : "";
                 return (
                   <tr
@@ -1260,7 +1260,7 @@ function ProfileInlineEditor({
                           onBlur={() =>
                             commitText(`a${ad.id}:name`, storedName, (value) =>
                               patchAccount(ad.id, {
-                                displayNameOverride: value,
+                                displayNameActive: value,
                               }),
                             )
                           }
@@ -1378,7 +1378,7 @@ function ProfileInlineEditor({
           </h4>
           <div className="space-y-3">
             {profile.salaryDetails.map((sd) => {
-              const jo = jobOverrides(sd.jobId);
+              const jo = jobActiveFields(sd.jobId);
               const storedEmployer =
                 jo.employerName !== undefined ? String(jo.employerName) : "";
               const include401k =

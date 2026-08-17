@@ -841,7 +841,7 @@ describe("contribution router", () => {
       });
       profileId = seedContributionProfile(db, {
         name: `test-profile-${Date.now()}`,
-        contributionOverrides: {
+        contributionActiveFields: {
           contributionAccounts: {
             [String(contribId)]: { contributionValue: "15" },
           },

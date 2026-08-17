@@ -61,7 +61,7 @@ function seedContribProfile(
     .insert(sqliteSchema.contributionProfiles)
     .values({
       name: "Test What-If",
-      contributionOverrides: { contributionAccounts: {}, jobs: {} },
+      contributionActiveFields: { contributionAccounts: {}, jobs: {} },
       ...overrides,
     })
     .returning({ id: sqliteSchema.contributionProfiles.id })
@@ -89,10 +89,10 @@ describe("contributionProfiles coverage", () => {
     });
   });
 
-  // ── LIST: profile with overrides shows overrideCount ──
+  // ── LIST: profile with active fields shows activeFieldCount ──
 
-  describe("list — overrideCount reflects contribution overrides", () => {
-    it("counts contribution account overrides", async () => {
+  describe("list — activeFieldCount reflects contribution active fields", () => {
+    it("counts contribution account active fields", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const personId = await seedPerson(db, "Alex");
@@ -100,8 +100,8 @@ describe("contributionProfiles coverage", () => {
         const acctId = seedContribAccount(db, { personId });
 
         seedContribProfile(db, {
-          name: "WithOverrides",
-          contributionOverrides: {
+          name: "WithActiveFields",
+          contributionActiveFields: {
             contributionAccounts: {
               [String(acctId)]: { contributionValue: "0.15" },
             },
@@ -111,12 +111,12 @@ describe("contributionProfiles coverage", () => {
 
         const profiles = await caller.contributionProfile.list();
         const p = profiles.find(
-          (x: { name: string }) => x.name === "WithOverrides",
+          (x: { name: string }) => x.name === "WithActiveFields",
         );
         expect(p).toBeDefined();
         // Salary is no longer part of a Contribution Profile — only the
-        // 1 contribution account override counts.
-        expect(p!.overrideCount).toBe(1);
+        // 1 contribution account active field counts.
+        expect(p!.activeFieldCount).toBe(1);
       } finally {
         cleanup();
       }
@@ -157,7 +157,7 @@ describe("contributionProfiles coverage", () => {
   // ── GETBYID: real profile with account details ──
 
   describe("getById — account details with seeded contrib accounts", () => {
-    it("returns accountDetails with live values and overrides", async () => {
+    it("returns accountDetails with live values and active fields", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const personId = await seedPerson(db, "Alex");
@@ -173,11 +173,11 @@ describe("contributionProfiles coverage", () => {
 
         const profileId = seedContribProfile(db, {
           name: "DetailTest",
-          contributionOverrides: {
+          contributionActiveFields: {
             contributionAccounts: {
               [String(acctId)]: {
                 contributionValue: "0.20",
-                displayNameOverride: "My Custom Name",
+                displayNameActive: "My Custom Name",
               },
             },
             jobs: {},
@@ -194,9 +194,9 @@ describe("contributionProfiles coverage", () => {
           (d: { id: number }) => d.id === acctId,
         );
         expect(detail).toBeDefined();
-        // displayNameOverride should be used as accountName
+        // displayNameActive should be used as accountName
         expect(detail!.accountName).toBe("My Custom Name");
-        expect(detail!.overrides).toBeDefined();
+        expect(detail!.activeFields).toBeDefined();
         expect(detail!.liveMethod).toBe("percent_of_salary");
         expect(detail!.liveValue).toBe("0.10");
       } finally {
@@ -325,10 +325,10 @@ describe("contributionProfiles coverage", () => {
     });
   });
 
-  // ── GETBYID: salaryDetails with job overrides ──
+  // ── GETBYID: salaryDetails with job active fields ──
 
-  describe("getById — salaryDetails with job overrides", () => {
-    it("includes jobOverrides and employerNameOverride from profile", async () => {
+  describe("getById — salaryDetails with job active fields", () => {
+    it("includes jobActiveFields and employerNameActive from profile", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const personId = await seedPerson(db, "Alex");
@@ -340,8 +340,8 @@ describe("contributionProfiles coverage", () => {
         });
 
         const profileId = seedContribProfile(db, {
-          name: "JobOverrideTest",
-          contributionOverrides: {
+          name: "JobActiveFieldsTest",
+          contributionActiveFields: {
             contributionAccounts: {},
             jobs: {
               [String(jobId)]: {
@@ -359,8 +359,8 @@ describe("contributionProfiles coverage", () => {
         expect(result!.salaryDetails.length).toBe(1);
 
         const salary = result!.salaryDetails[0];
-        expect(salary.jobOverrides).toBeDefined();
-        expect(salary.employerNameOverride).toBe("NewCo");
+        expect(salary.jobActiveFields).toBeDefined();
+        expect(salary.employerNameActive).toBe("NewCo");
         expect(salary.liveSalary).toBe(100000);
       } finally {
         cleanup();
@@ -368,17 +368,17 @@ describe("contributionProfiles coverage", () => {
     });
   });
 
-  // ── GETBYID: salaryDetails without overrides ──
+  // ── GETBYID: salaryDetails without active fields ──
 
-  describe("getById — salaryDetails without overrides", () => {
-    it("returns null for override fields when no overrides set", async () => {
+  describe("getById — salaryDetails without active fields", () => {
+    it("returns null for active-field fields when none set", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const personId = await seedPerson(db, "Alex");
         seedJob(db, personId, { annualSalary: "90000" });
 
         const profileId = seedContribProfile(db, {
-          name: "NoOverridesSalary",
+          name: "NoActiveFieldsSalary",
         });
 
         const result = await caller.contributionProfile.getById({
@@ -386,8 +386,8 @@ describe("contributionProfiles coverage", () => {
         });
         expect(result).not.toBeNull();
         const salary = result!.salaryDetails[0];
-        expect(salary.jobOverrides).toBeNull();
-        expect(salary.employerNameOverride).toBeNull();
+        expect(salary.jobActiveFields).toBeNull();
+        expect(salary.employerNameActive).toBeNull();
       } finally {
         cleanup();
       }
@@ -427,19 +427,19 @@ describe("contributionProfiles coverage", () => {
   // ── UPDATE: the former "default" profile is now fully editable ──
 
   describe("update — no immutable profile any more", () => {
-    it("edits contribution overrides on the migration-seeded baseline", async () => {
+    it("edits contribution active fields on the migration-seeded baseline", async () => {
       const { caller, cleanup } = await createTestCaller(adminSession);
       try {
         const [seeded] = await caller.contributionProfile.list();
         const updated = await caller.contributionProfile.update({
           id: seeded!.id,
-          contributionOverrides: {
+          contributionActiveFields: {
             contributionAccounts: { "1": { contributionValue: "0.20" } },
             jobs: {},
           },
         });
         const accts = (
-          updated.contributionOverrides as Record<
+          updated.contributionActiveFields as Record<
             string,
             Record<string, Record<string, unknown>>
           >
@@ -465,24 +465,24 @@ describe("contributionProfiles coverage", () => {
     });
   });
 
-  // ── UPDATE: update salary and contribution overrides ──
+  // ── UPDATE: update salary and contribution active fields ──
 
-  describe("update — overrides update", () => {
-    it("updates contribution overrides on a non-default profile", async () => {
+  describe("update — active fields update", () => {
+    it("updates contribution active fields on a non-default profile", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const profileId = seedContribProfile(db, {
-          name: "OverrideUpdate",
+          name: "ActiveFieldsUpdate",
         });
         const updated = await caller.contributionProfile.update({
           id: profileId,
-          contributionOverrides: {
+          contributionActiveFields: {
             contributionAccounts: { "1": { contributionValue: "0.2" } },
             jobs: {},
           },
         });
         const accts = (
-          updated.contributionOverrides as Record<
+          updated.contributionActiveFields as Record<
             string,
             Record<string, Record<string, unknown>>
           >
@@ -493,27 +493,27 @@ describe("contributionProfiles coverage", () => {
       }
     });
 
-    it("updates contribution overrides on a non-default profile", async () => {
+    it("updates contribution active fields on a non-default profile", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const profileId = seedContribProfile(db, {
-          name: "ContribOverrideUpd",
+          name: "ContribActiveFieldsUpd",
         });
         const updated = await caller.contributionProfile.update({
           id: profileId,
-          contributionOverrides: {
+          contributionActiveFields: {
             contributionAccounts: { "5": { contributionValue: "500" } },
             // employerName, not a bonus amount term — those moved to the
-            // Salary Profile and jobOverrideSchema now rejects them.
-            jobs: { "2": { employerName: "OverrideCorp" } },
+            // Salary Profile and jobActiveFieldsSchema now rejects them.
+            jobs: { "2": { employerName: "ActiveFieldsCorp" } },
           },
         });
-        const overrides = updated.contributionOverrides as Record<
+        const activeFields = updated.contributionActiveFields as Record<
           string,
           Record<string, Record<string, unknown>>
         >;
-        expect(overrides.contributionAccounts["5"]).toBeDefined();
-        expect(overrides.jobs["2"]).toBeDefined();
+        expect(activeFields.contributionAccounts["5"]).toBeDefined();
+        expect(activeFields.jobs["2"]).toBeDefined();
       } finally {
         cleanup();
       }
@@ -634,7 +634,7 @@ describe("contributionProfiles coverage", () => {
       try {
         const profile = await caller.contributionProfile.create({
           name: "Minimal",
-          contributionOverrides: { contributionAccounts: {}, jobs: {} },
+          contributionActiveFields: { contributionAccounts: {}, jobs: {} },
         });
         expect(profile.name).toBe("Minimal");
         expect(profile.description).toBeNull();
@@ -644,16 +644,16 @@ describe("contributionProfiles coverage", () => {
     });
   });
 
-  // ── CREATE: with salary and contribution overrides ──
+  // ── CREATE: with salary and contribution active fields ──
 
-  describe("create — with overrides", () => {
-    it("creates a profile with contribution overrides", async () => {
+  describe("create — with active fields", () => {
+    it("creates a profile with contribution active fields", async () => {
       const { caller, cleanup } = await createTestCaller(adminSession);
       try {
         const profile = await caller.contributionProfile.create({
-          name: "Full Override",
+          name: "Full Active",
           description: "Has everything",
-          contributionOverrides: {
+          contributionActiveFields: {
             contributionAccounts: {
               "10": { contributionValue: "0.15", isActive: true },
             },
@@ -662,14 +662,14 @@ describe("contributionProfiles coverage", () => {
             },
           },
         });
-        expect(profile.name).toBe("Full Override");
-        const contribOverrides = (
-          profile.contributionOverrides as Record<
+        expect(profile.name).toBe("Full Active");
+        const contribActiveFields = (
+          profile.contributionActiveFields as Record<
             string,
             Record<string, unknown>
           >
         ).contributionAccounts;
-        expect(contribOverrides["10"]).toBeDefined();
+        expect(contribActiveFields["10"]).toBeDefined();
       } finally {
         cleanup();
       }
@@ -736,8 +736,8 @@ describe("contributionProfiles coverage", () => {
         expect(result!.accountDetails.length).toBe(1);
         expect(result!.salaryDetails.length).toBe(1);
         expect(result!.salaryDetails[0].liveSalary).toBe(120000);
-        // A profile with empty contributionOverrides customizes nothing.
-        expect(result!.accountDetails[0].overrides).toBeNull();
+        // A profile with empty contributionActiveFields customizes nothing.
+        expect(result!.accountDetails[0].activeFields).toBeNull();
       } finally {
         cleanup();
       }

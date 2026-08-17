@@ -110,7 +110,7 @@ export const skippedCategoryIdsSchema = z.array(z.string()).nullable();
 
 /**
  * scenarios.overrides — nested map: { entityType: { recordId: { field: value } } }
- * Also used by contribution_profiles.contribution_overrides.
+ * Also used by contribution_profiles.contribution_active_fields.
  */
 export const scenarioOverridesSchema = z.record(
   z.string(),
@@ -188,11 +188,14 @@ export const salaryEntriesSchema = z.record(z.string(), salaryEntrySchema);
 // ── contribution_profiles ───────────────────────────────────────
 
 /**
- * Detailed contribution account override (write-path).
- * contribution_profiles.contribution_overrides uses scenarioOverridesSchema
- * at the structural level but the leaf objects have a known shape.
+ * Detailed contribution account active-field set (write-path). A field
+ * present here means this profile has its own value for it (active);
+ * absent means it falls through to the account's own live value (inactive).
+ * contribution_profiles.contribution_active_fields uses
+ * scenarioOverridesSchema at the structural level but the leaf objects have
+ * a known shape.
  */
-export const contribAccountOverrideSchema = z
+export const contribAccountActiveFieldsSchema = z
   .object({
     contributionValue: z.union([z.string(), z.number()]).optional(),
     contributionMethod: z.string().optional(),
@@ -201,12 +204,12 @@ export const contribAccountOverrideSchema = z
     employerMaxMatchPct: z.union([z.string(), z.number()]).optional(),
     autoMaximize: z.boolean().optional(),
     isActive: z.boolean().optional(),
-    displayNameOverride: z.string().optional(),
+    displayNameActive: z.string().optional(),
   })
   .strict();
 
 /**
- * Contribution-profile job override.
+ * Contribution-profile job active-field set.
  *
  * Bonus AMOUNT terms (bonusPercent / bonusMultiplier / monthsInBonusYear)
  * deliberately do NOT appear here — they moved to the Salary Profile entry,
@@ -215,7 +218,7 @@ export const contribAccountOverrideSchema = z
  * (include401kInBonus, includeBonusInContributions), plus the employer name
  * and the bonus pay DATE, which are neither.
  */
-export const jobOverrideSchema = z
+export const jobActiveFieldsSchema = z
   .object({
     bonusMonth: z.union([z.number(), z.null()]).optional(),
     bonusDayOfMonth: z.union([z.number(), z.null()]).optional(),
@@ -225,13 +228,13 @@ export const jobOverrideSchema = z
   })
   .strict();
 
-/** contribution_profiles.contribution_overrides — typed override structure */
-export const contributionOverridesSchema = z
+/** contribution_profiles.contribution_active_fields — typed active-field structure */
+export const contributionActiveFieldsSchema = z
   .object({
     contributionAccounts: z
-      .record(z.string(), contribAccountOverrideSchema)
+      .record(z.string(), contribAccountActiveFieldsSchema)
       .default({}),
-    jobs: z.record(z.string(), jobOverrideSchema).default({}),
+    jobs: z.record(z.string(), jobActiveFieldsSchema).default({}),
   })
   .strict()
   .default({ contributionAccounts: {}, jobs: {} });

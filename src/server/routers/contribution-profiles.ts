@@ -1,7 +1,7 @@
 /**
  * Contribution Profiles Router
  *
- * CRUD + resolution for named contribution override profiles.
+ * CRUD + resolution for named contribution profiles.
  * Profiles are managed on the budget page (the what-if control center)
  * and consumed by the relocation tool and potentially the retirement page.
  *
@@ -12,7 +12,7 @@
  *
  * There is no `isDefault` flag and no synthetic id-0 "Live" row: every
  * profile is an ordinary, renamable, editable row, and one with empty
- * contributionOverrides is simply a profile with nothing customized.
+ * contributionActiveFields is simply a profile with nothing customized.
  */
 import { z } from "zod/v4";
 import { eq } from "drizzle-orm";
@@ -30,13 +30,13 @@ import {
 } from "@/server/helpers";
 import { accountDisplayName } from "@/lib/utils/format";
 import { getDisplayConfig } from "@/lib/config/account-types";
-import { contributionOverridesSchema } from "@/lib/db/json-schemas";
+import { contributionActiveFieldsSchema } from "@/lib/db/json-schemas";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 
-// ── Override shape validation (write-only — reads tolerate unexpected fields) ──
+// ── Active-field shape validation (write-only — reads tolerate unexpected fields) ──
 // Schemas imported from @/lib/db/json-schemas as centralized schemas.
 
-const ContributionOverridesSchema = contributionOverridesSchema;
+const ContributionActiveFieldsSchema = contributionActiveFieldsSchema;
 
 export const contributionProfileRouter = createTRPCRouter({
   /**
@@ -73,9 +73,9 @@ export const contributionProfileRouter = createTRPCRouter({
         name: profile.name,
         description: profile.description,
         createdAt: profile.createdAt.toISOString(),
-        overrideCount: Object.keys(
+        activeFieldCount: Object.keys(
           (
-            profile.contributionOverrides as Record<
+            profile.contributionActiveFields as Record<
               string,
               Record<string, Record<string, unknown>>
             >
@@ -116,13 +116,17 @@ export const contributionProfileRouter = createTRPCRouter({
       const resolved = resolveProfile(profile, {}, contribs, jobs, jobSalaries);
 
       // Build per-account detail for the editor UI
-      const contribOverridesRoot = profile.contributionOverrides as Record<
-        string,
-        Record<string, Record<string, unknown>>
-      >;
-      const contribOverrides = (contribOverridesRoot.contributionAccounts ??
-        {}) as Record<string, Record<string, unknown>>;
-      const jobOverridesMap = (contribOverridesRoot.jobs ?? {}) as Record<
+      const contribActiveFieldsRoot =
+        profile.contributionActiveFields as Record<
+          string,
+          Record<string, Record<string, unknown>>
+        >;
+      const accountActiveFields =
+        (contribActiveFieldsRoot.contributionAccounts ?? {}) as Record<
+          string,
+          Record<string, unknown>
+        >;
+      const jobActiveFieldsMap = (contribActiveFieldsRoot.jobs ?? {}) as Record<
         string,
         Record<string, unknown>
       >;
@@ -130,7 +134,7 @@ export const contributionProfileRouter = createTRPCRouter({
       const allPerfAccounts = Array.from(perfAccountMap.values());
 
       const accountDetails = rawContribRows.map((row) => {
-        const override = contribOverrides[String(row.id)];
+        const activeFields = accountActiveFields[String(row.id)];
         const person =
           row.personId != null ? peopleMap.get(row.personId) : undefined;
 
@@ -196,7 +200,7 @@ export const contributionProfileRouter = createTRPCRouter({
         const disambiguatedName =
           sameName.length > 0 ? `${accountName} — ${taxLabel}` : accountName;
 
-        const displayNameOvr = override?.displayNameOverride as
+        const displayNameActive = activeFields?.displayNameActive as
           string | undefined;
 
         return {
@@ -204,7 +208,7 @@ export const contributionProfileRouter = createTRPCRouter({
           accountType: row.accountType,
           subType: row.subType,
           label: row.label,
-          accountName: displayNameOvr || disambiguatedName,
+          accountName: displayNameActive || disambiguatedName,
           liveAccountName: disambiguatedName,
           personId: row.personId,
           taxTreatment: row.taxTreatment,
@@ -216,8 +220,8 @@ export const contributionProfileRouter = createTRPCRouter({
           liveMatchValue: row.employerMatchValue,
           liveMaxMatchPct: row.employerMaxMatchPct,
           liveIsActive: row.isActive,
-          // Override values (null = no override)
-          overrides: override ?? null,
+          // Active values (null = inactive, follows the account's own value)
+          activeFields: activeFields ?? null,
         };
       });
 
@@ -259,10 +263,10 @@ export const contributionProfileRouter = createTRPCRouter({
           liveMonthsInBonusYear: j.monthsInBonusYear,
           liveInclude401kInBonus: j.include401kInBonus,
           liveIncludeBonusInContributions: j.includeBonusInContributions,
-          // Job overrides from profile
-          jobOverrides: jobOverridesMap[String(j.id)] ?? null,
-          employerNameOverride:
-            (jobOverridesMap[String(j.id)]?.employerName as
+          // Job active fields from profile
+          jobActiveFields: jobActiveFieldsMap[String(j.id)] ?? null,
+          employerNameActive:
+            (jobActiveFieldsMap[String(j.id)]?.employerName as
               string | undefined) ?? null,
         };
       });
@@ -286,7 +290,7 @@ export const contributionProfileRouter = createTRPCRouter({
       z.object({
         name: z.string().min(1).max(100),
         description: z.string().max(500).optional(),
-        contributionOverrides: ContributionOverridesSchema,
+        contributionActiveFields: ContributionActiveFieldsSchema,
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -295,7 +299,7 @@ export const contributionProfileRouter = createTRPCRouter({
         .values({
           name: input.name,
           description: input.description ?? null,
-          contributionOverrides: input.contributionOverrides,
+          contributionActiveFields: input.contributionActiveFields,
         })
         .returning();
       return rows[0]!;
@@ -310,7 +314,7 @@ export const contributionProfileRouter = createTRPCRouter({
         id: z.number(),
         name: z.string().min(1).max(100).optional(),
         description: z.string().max(500).nullish(),
-        contributionOverrides: ContributionOverridesSchema.optional(),
+        contributionActiveFields: ContributionActiveFieldsSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -325,8 +329,8 @@ export const contributionProfileRouter = createTRPCRouter({
       if (input.name !== undefined) updates.name = input.name;
       if (input.description !== undefined)
         updates.description = input.description ?? null;
-      if (input.contributionOverrides !== undefined)
-        updates.contributionOverrides = input.contributionOverrides;
+      if (input.contributionActiveFields !== undefined)
+        updates.contributionActiveFields = input.contributionActiveFields;
 
       const rows = await ctx.db
         .update(schema.contributionProfiles)

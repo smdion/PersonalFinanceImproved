@@ -13,9 +13,9 @@ import {
   budgetAmountsSchema,
   settingValueSchema,
   salaryEntriesSchema,
-  contributionOverridesSchema,
-  contribAccountOverrideSchema,
-  jobOverrideSchema,
+  contributionActiveFieldsSchema,
+  contribAccountActiveFieldsSchema,
+  jobActiveFieldsSchema,
   taxBracketEntrySchema,
   taxBracketsSchema,
   accountMappingSchema,
@@ -283,9 +283,9 @@ describe("salaryEntriesSchema", () => {
   });
 });
 
-describe("contribAccountOverrideSchema", () => {
-  it("accepts valid override with contribution fields", () => {
-    const result = contribAccountOverrideSchema.safeParse({
+describe("contribAccountActiveFieldsSchema", () => {
+  it("accepts valid active fields with contribution fields", () => {
+    const result = contribAccountActiveFieldsSchema.safeParse({
       contributionValue: 500,
       contributionMethod: "fixed_monthly",
       isActive: true,
@@ -294,12 +294,12 @@ describe("contribAccountOverrideSchema", () => {
   });
 
   it("accepts empty object (all fields optional)", () => {
-    const result = contribAccountOverrideSchema.safeParse({});
+    const result = contribAccountActiveFieldsSchema.safeParse({});
     expect(result.success).toBe(true);
   });
 
   it("accepts string contribution values (percent notation)", () => {
-    const result = contribAccountOverrideSchema.safeParse({
+    const result = contribAccountActiveFieldsSchema.safeParse({
       contributionValue: "10",
       employerMatchValue: "6",
       employerMaxMatchPct: "4",
@@ -308,30 +308,30 @@ describe("contribAccountOverrideSchema", () => {
   });
 
   it("rejects unknown fields (strict mode)", () => {
-    const result = contribAccountOverrideSchema.safeParse({
+    const result = contribAccountActiveFieldsSchema.safeParse({
       unknownField: "bad",
     });
     expect(result.success).toBe(false);
   });
 
   it("accepts autoMaximize boolean", () => {
-    const result = contribAccountOverrideSchema.safeParse({
+    const result = contribAccountActiveFieldsSchema.safeParse({
       autoMaximize: true,
     });
     expect(result.success).toBe(true);
   });
 
-  it("accepts displayNameOverride", () => {
-    const result = contribAccountOverrideSchema.safeParse({
-      displayNameOverride: "My Custom Name",
+  it("accepts displayNameActive", () => {
+    const result = contribAccountActiveFieldsSchema.safeParse({
+      displayNameActive: "My Custom Name",
     });
     expect(result.success).toBe(true);
   });
 });
 
-describe("jobOverrideSchema", () => {
+describe("jobActiveFieldsSchema", () => {
   it("accepts the fields a Contribution Profile still owns", () => {
-    const result = jobOverrideSchema.safeParse({
+    const result = jobActiveFieldsSchema.safeParse({
       include401kInBonus: true,
       includeBonusInContributions: false,
       employerName: "NewCorp",
@@ -351,17 +351,17 @@ describe("jobOverrideSchema", () => {
       { bonusMultiplier: 1.5 },
       { monthsInBonusYear: 12 },
     ]) {
-      expect(jobOverrideSchema.safeParse(field).success).toBe(false);
+      expect(jobActiveFieldsSchema.safeParse(field).success).toBe(false);
     }
   });
 
   it("accepts empty object", () => {
-    const result = jobOverrideSchema.safeParse({});
+    const result = jobActiveFieldsSchema.safeParse({});
     expect(result.success).toBe(true);
   });
 
   it("accepts null for nullable fields", () => {
-    const result = jobOverrideSchema.safeParse({
+    const result = jobActiveFieldsSchema.safeParse({
       bonusMonth: null,
       bonusDayOfMonth: null,
     });
@@ -369,16 +369,16 @@ describe("jobOverrideSchema", () => {
   });
 
   it("rejects unknown fields (strict mode)", () => {
-    const result = jobOverrideSchema.safeParse({
+    const result = jobActiveFieldsSchema.safeParse({
       salary: 100000, // not a valid field
     });
     expect(result.success).toBe(false);
   });
 });
 
-describe("contributionOverridesSchema", () => {
+describe("contributionActiveFieldsSchema", () => {
   it("accepts valid nested structure", () => {
-    const result = contributionOverridesSchema.safeParse({
+    const result = contributionActiveFieldsSchema.safeParse({
       contributionAccounts: {
         "5": { contributionValue: 1000, isActive: true },
         "12": { contributionMethod: "percent_gross" },
@@ -391,7 +391,7 @@ describe("contributionOverridesSchema", () => {
   });
 
   it("defaults to empty objects when omitted", () => {
-    const result = contributionOverridesSchema.safeParse({});
+    const result = contributionActiveFieldsSchema.safeParse({});
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.contributionAccounts).toEqual({});
@@ -400,7 +400,7 @@ describe("contributionOverridesSchema", () => {
   });
 
   it("applies defaults when called with undefined", () => {
-    const result = contributionOverridesSchema.safeParse(undefined);
+    const result = contributionActiveFieldsSchema.safeParse(undefined);
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data).toEqual({ contributionAccounts: {}, jobs: {} });
@@ -408,7 +408,7 @@ describe("contributionOverridesSchema", () => {
   });
 
   it("rejects unknown top-level fields (strict mode)", () => {
-    const result = contributionOverridesSchema.safeParse({
+    const result = contributionActiveFieldsSchema.safeParse({
       contributionAccounts: {},
       jobs: {},
       extra: "bad",
@@ -416,8 +416,8 @@ describe("contributionOverridesSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects invalid nested contribution account overrides", () => {
-    const result = contributionOverridesSchema.safeParse({
+  it("rejects invalid nested contribution account active fields", () => {
+    const result = contributionActiveFieldsSchema.safeParse({
       contributionAccounts: {
         "5": { unknownField: "bad" },
       },

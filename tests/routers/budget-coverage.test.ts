@@ -1364,7 +1364,7 @@ describe("budget router — computeActiveSummary with contribution-linked items"
 
       const profileId = seedContributionProfile(db, {
         name: "Alt Contribution Profile",
-        contributionOverrides: {
+        contributionActiveFields: {
           contributionAccounts: {
             [String(contrib.id)]: { contributionValue: "900" },
           },
@@ -1414,7 +1414,7 @@ describe("budget router — computeActiveSummary with contribution-linked items"
 
       const columnProfileId = seedContributionProfile(db, {
         name: "Column Profile",
-        contributionOverrides: {
+        contributionActiveFields: {
           contributionAccounts: {
             [String(contrib.id)]: { contributionValue: "750" },
           },
@@ -1422,7 +1422,7 @@ describe("budget router — computeActiveSummary with contribution-linked items"
       });
       const globalProfileId = seedContributionProfile(db, {
         name: "Global Profile",
-        contributionOverrides: {
+        contributionActiveFields: {
           contributionAccounts: {
             [String(contrib.id)]: { contributionValue: "900" },
           },
@@ -1637,7 +1637,7 @@ describe("budget router — computeActiveSummary resolves a profile PER COLUMN",
 
     const profileA = seedContributionProfile(db, {
       name: "Column A Profile",
-      contributionOverrides: {
+      contributionActiveFields: {
         contributionAccounts: {
           [String(contrib.id)]: { contributionValue: "1200" }, // $100/mo
         },
@@ -1645,7 +1645,7 @@ describe("budget router — computeActiveSummary resolves a profile PER COLUMN",
     });
     const profileB = seedContributionProfile(db, {
       name: "Column B Profile",
-      contributionOverrides: {
+      contributionActiveFields: {
         contributionAccounts: {
           [String(contrib.id)]: { contributionValue: "2400" }, // $200/mo
         },
@@ -1753,7 +1753,7 @@ describe("budget router — computeActiveSummary resolves a profile PER COLUMN",
     try {
       const planProfileId = seedContributionProfile(db, {
         name: "Plan-Pinned Profile",
-        contributionOverrides: {
+        contributionActiveFields: {
           contributionAccounts: {
             [String(contrib.id)]: { contributionValue: "3600" }, // $300/mo
           },
@@ -1806,7 +1806,7 @@ describe("budget router — listProfiles computes Unspent under the resolved pro
     );
     const contribProfileId = seedContributionProfile(db, {
       name: "Max Out 401k",
-      contributionOverrides: {
+      contributionActiveFields: {
         contributionAccounts: {
           [String(contrib.id)]: { contributionValue: "25" },
         },
@@ -1888,7 +1888,7 @@ describe("budget router — listProfiles computes Unspent under the resolved pro
     try {
       const planProfileId = seedContributionProfile(db, {
         name: "Plan-Pinned Contributions",
-        contributionOverrides: {
+        contributionActiveFields: {
           contributionAccounts: {
             [String(contrib.id)]: { contributionValue: "3" },
           },

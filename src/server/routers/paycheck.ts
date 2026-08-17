@@ -24,7 +24,7 @@ import {
   loadAndApplySalaryProfile,
   applySalaryOverride,
   resolveBonusTerms,
-  applyContribOverrides,
+  applyContribActiveFields,
   buildSandboxContribRow,
 } from "@/server/helpers";
 import {
@@ -100,7 +100,7 @@ export const paycheckRouter = createTRPCRouter({
           sandboxDeductionAdditions: zSandboxDeductionAdditions,
           /** The What-If tab's hand-edited contribution account values —
            *  one more layer on top of the picked Contribution Profile's own
-           *  overrides, via the SAME applyContribOverrides merge. */
+           *  overrides, via the SAME applyContribActiveFields merge. */
           sandboxContribOverrides: zSandboxContribOverrides,
           /** The What-If tab's hand-added hypothetical contribution
            *  accounts — no DB row, personId-keyed. */
@@ -169,7 +169,7 @@ export const paycheckRouter = createTRPCRouter({
       // The What-If tab's sandbox edits are the highest-precedence tier,
       // applied AFTER the picked profile's own overrides — same merge
       // function, one more layer, never a second resolution path.
-      const effectiveContribs = applyContribOverrides(
+      const effectiveContribs = applyContribActiveFields(
         profileResult.contribs,
         input?.sandboxContribOverrides ?? {},
       );
