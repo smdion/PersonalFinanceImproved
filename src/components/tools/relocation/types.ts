@@ -76,7 +76,6 @@ export type LargePurchaseRow = {
 export type ContribProfileListItem = {
   id: number;
   name: string;
-  isDefault: boolean;
 };
 
 /** Year-by-year engine projection row returned by `computeRelocationFiProjection`.

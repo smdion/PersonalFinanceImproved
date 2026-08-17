@@ -10,6 +10,7 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
+import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { ScenarioBanner } from "@/components/ui/scenario-indicator";
@@ -18,16 +19,16 @@ import { confirm } from "@/components/ui/confirm-dialog";
 import {
   PersonPaycheck,
   ContributionSnapshot,
-  alignDeductionRows,
+  SalaryTracker,
   type RawDeduction,
   type RawContrib,
 } from "@/components/paycheck";
+import { usePaycheckPersonViews } from "@/lib/hooks/use-paycheck-person-views";
 import {
-  getLimitGroup as configGetLimitGroup,
-  getAccountTypeConfig,
-  categoriesWithIrsLimit,
-} from "@/lib/config/account-types";
-import type { AccountCategory } from "@/lib/config/account-types";
+  EditLockToggle,
+  EDIT_LOCK_KEYS,
+  useEditLock,
+} from "@/components/ui/edit-lock-toggle";
 
 export default function PaycheckPage() {
   const user = useUser();
@@ -35,7 +36,6 @@ export default function PaycheckPage() {
   const {
     viewMode: mode,
     isInScenario,
-    getOverride,
     setOverride: setScenarioOverride,
     createSessionScenario,
     setActive,
@@ -75,8 +75,7 @@ export default function PaycheckPage() {
     { enabled: displayContribId != null },
   );
   const activeProfile = viewingProfileQuery.data;
-  const isProfileMode =
-    canEditProfiles && activeProfile != null && !activeProfile.isDefault;
+  const isProfileMode = canEditProfiles && activeProfile != null;
 
   const updateProfile = trpc.contributionProfile.update.useMutation({
     onSuccess: () => {
@@ -134,113 +133,91 @@ export default function PaycheckPage() {
   // Salary overrides from scenario context (used by all pages)
   const scenarioSalaryOverrides = useSalaryOverrides();
 
-  const queryInput = {
-    ...(scenarioSalaryOverrides.length > 0
-      ? { salaryOverrides: scenarioSalaryOverrides }
-      : {}),
-    ...(taxYearOverride ? { taxYearOverride } : {}),
-    ...(displayContribId != null
-      ? { contributionProfileId: displayContribId }
-      : {}),
-  };
+  // Independent Salary Profile axis. Same three-tier resolution as the
+  // contribution axis above (Plan pin -> this page's dropdown -> globally
+  // active), rather than useEffectiveSalaryProfileId(), because the picker
+  // needs a local-selection tier that hook deliberately doesn't have. The
+  // resolved id feeds both the picker and the query input below, so they
+  // can't drift.
+  const salaryProfilesQuery = trpc.salaryProfile.list.useQuery();
+  const salaryProfiles = salaryProfilesQuery.data ?? [];
+  const [activeSalaryId] = useActiveSalaryProfile();
+  const [viewingSalaryId, setViewingSalaryId] = useState<number | null>(null);
+  const { profileId: displaySalaryId } = useEffectiveProfileId("salary", {
+    validIds: salaryProfiles.map((p) => p.id),
+    localSelection: viewingSalaryId,
+    // Always a real row id post-migration — useActiveSalaryProfile repairs
+    // the setting if the row it names ever disappears.
+    globalDefaultId: activeSalaryId,
+  });
+  const displayedSalaryProfile = salaryProfiles.find(
+    (p) => p.id === displaySalaryId,
+  );
+  const isSalaryProfileMode = canEditProfiles && displayedSalaryProfile != null;
+  const [salaryLocked, toggleSalaryLock] = useEditLock(
+    EDIT_LOCK_KEYS.paycheckSalary,
+  );
+  /** Salary figures write to the profile (not the job) while this is true. */
+  const salaryEditsProfile = isSalaryProfileMode && !salaryLocked;
+
+  const updateSalaryProfile = trpc.salaryProfile.update.useMutation({
+    onSuccess: () => {
+      utils.paycheck.invalidate();
+      utils.salaryProfile.invalidate();
+      utils.contribution.invalidate();
+      utils.budget.invalidate();
+      utils.projection.invalidate();
+    },
+  });
+
+  /**
+   * Whether this person's SALARY is pinned by the displayed Salary Profile.
+   * Only then does a salary edit belong to the profile — an unpinned
+   * person's salary lives on their job record, so editing it has to write
+   * through to the normal job path (which carries its own, stricter
+   * permission gate) rather than being captured into the profile's jsonb.
+   *
+   * Note this asks about the `salary` field specifically, not about the
+   * person having an entry: someone whose profile entry pins only bonus
+   * terms still has a live salary that must not be captured here.
+   */
+  function salaryIsFixedInProfile(personId: number): boolean {
+    return (
+      displayedSalaryProfile?.salaries[String(personId)]?.salary !== undefined
+    );
+  }
+
+  /** Pin one person's salary in the displayed Salary Profile, leaving any
+   *  bonus terms they have pinned untouched. */
+  function writeSalaryProfileFixed(personId: number, salary: number) {
+    if (!displayedSalaryProfile) return;
+    updateSalaryProfile.mutate({
+      id: displayedSalaryProfile.id,
+      salaries: {
+        ...displayedSalaryProfile.salaries,
+        [String(personId)]: {
+          ...(displayedSalaryProfile.salaries[String(personId)] ?? {}),
+          salary,
+        },
+      },
+    });
+  }
+
+  // One shared derivation for the whole page — the same hook the Budget
+  // page's What-If tab uses (with honorSessionScenario:false there). Session
+  // scenario overrides apply here, which is today's behavior.
   const {
-    data: rawData,
+    views,
     isLoading,
     error,
-  } = trpc.paycheck.computeSummary.useQuery(
-    Object.keys(queryInput).length > 0 ? queryInput : undefined,
-    { placeholderData: (prev) => prev },
-  );
-
-  // Apply scenario overrides to the query data
-  const data = (() => {
-    if (!rawData || !isInScenario) return rawData?.people;
-    return rawData.people.map((d) => {
-      if (!d.job) return d;
-      // Override job fields
-      const job = { ...d.job };
-      const jobId = String(job.id);
-      for (const field of [
-        "annualSalary",
-        "bonusPercent",
-        "bonusMultiplier",
-        "bonusOverride",
-        "payPeriod",
-        "payWeek",
-        "w4FilingStatus",
-        "anchorPayDate",
-        "additionalFedWithholding",
-      ] as const) {
-        const override = getOverride("jobs", jobId, field, undefined);
-        if (override !== undefined) {
-          (job as Record<string, unknown>)[field] = override;
-        }
-      }
-      // Override boolean job fields
-      for (const field of [
-        "include401kInBonus",
-        "w4Box2cChecked",
-        "includeBonusInContributions",
-      ] as const) {
-        const override = getOverride("jobs", jobId, field, undefined);
-        if (override !== undefined) {
-          (job as Record<string, unknown>)[field] = override;
-        }
-      }
-
-      // Override raw deduction fields
-      const rawDeductions = (d.rawDeductions as RawDeduction[]).map((ded) => {
-        const dedId = String(ded.id);
-        const amountOverride = getOverride(
-          "deductions",
-          dedId,
-          "amountPerPeriod",
-          undefined,
-        );
-        if (amountOverride !== undefined) {
-          return { ...ded, amountPerPeriod: amountOverride as string };
-        }
-        return ded;
-      });
-
-      // Override raw contribution fields
-      const rawContribs = (d.rawContribs as RawContrib[]).map((c) => {
-        const cId = String(c.id);
-        const contrib = { ...c };
-        for (const field of [
-          "contributionValue",
-          "contributionMethod",
-          "employerMatchType",
-          "employerMatchValue",
-          "employerMaxMatchPct",
-          "autoMaximize",
-        ] as const) {
-          const override = getOverride(
-            "contributionAccounts",
-            cId,
-            field,
-            undefined,
-          );
-          if (override !== undefined) {
-            (contrib as Record<string, unknown>)[field] = override;
-          }
-        }
-        return contrib;
-      });
-
-      // Override salary if scenario has a job salary override
-      const salaryOverride = getOverride(
-        "jobs",
-        jobId,
-        "annualSalary",
-        undefined,
-      );
-      const salary =
-        salaryOverride !== undefined ? Number(salaryOverride) : d.salary;
-
-      return { ...d, job, rawDeductions, rawContribs, salary };
-    });
-  })();
+    sharedContribGroupOrder,
+    salaryOverrides: scenarioSalaryOverridesApplied,
+  } = usePaycheckPersonViews({
+    contributionProfileId: displayContribId,
+    salaryProfileId: displaySalaryId,
+    taxYearOverride,
+    honorSessionScenario: true,
+  });
 
   // Get available tax years for the toggle (union of brackets + limits years)
   const { data: taxBrackets } = trpc.settings.taxBrackets.list.useQuery();
@@ -327,8 +304,6 @@ export default function PaycheckPage() {
     );
   }
 
-  const people = data?.filter((d) => d.paycheck && d.job) ?? [];
-
   const toggleSalaryOverride = (personId: number, salary: number) => {
     // Check if this salary is already active in the scenario
     const currentOverride = scenarioSalaryOverrides.find(
@@ -370,105 +345,6 @@ export default function PaycheckPage() {
     }
   };
 
-  // Build aligned deduction rows and HSA family notes when we have exactly 2 people
-  const alignedData = (() => {
-    if (people.length !== 2) return null;
-
-    const [p0, p1] = people;
-    if (!p0?.paycheck || !p1?.paycheck) return null;
-
-    const d0 = p0.rawDeductions as RawDeduction[];
-    const d1 = p1.rawDeductions as RawDeduction[];
-
-    const preTaxAligned = alignDeductionRows(
-      p0.paycheck.preTaxDeductions,
-      d0,
-      p1.paycheck.preTaxDeductions,
-      d1,
-      p0.job!.id,
-      p1.job!.id,
-    );
-    const postTaxAligned = alignDeductionRows(
-      p0.paycheck.postTaxDeductions,
-      d0,
-      p1.paycheck.postTaxDeductions,
-      d1,
-      p0.job!.id,
-      p1.job!.id,
-    );
-
-    // Coverage variant detection: find categories where one person covers the household
-    // (e.g., HSA family plan — one person's family HSA covers the other)
-    const c0 = p0.rawContribs as RawContrib[];
-    const c1 = p1.rawContribs as RawContrib[];
-
-    // Find categories with a coverage variant (e.g., HSA has family vs individual)
-    const coverageVariantCategories = categoriesWithIrsLimit().filter(
-      (cat) => getAccountTypeConfig(cat).irsLimitKeys?.coverageVariant != null,
-    );
-
-    // For each such category, check if one person has family coverage and the other has none
-    type CoverageNote = { note: string; group: string } | undefined;
-    let coverageNote0: CoverageNote;
-    let coverageNote1: CoverageNote;
-
-    for (const cat of coverageVariantCategories) {
-      const cfg = getAccountTypeConfig(cat);
-      const group = cfg.irsLimitGroup ?? cat;
-      const label = cfg.displayLabel;
-
-      const p0Family = c0.find(
-        (c) => c.accountType === cat && c.hsaCoverageType === "family",
-      );
-      const p1Family = c1.find(
-        (c) => c.accountType === cat && c.hsaCoverageType === "family",
-      );
-      const p0Has = c0.some((c) => c.accountType === cat);
-      const p1Has = c1.some((c) => c.accountType === cat);
-
-      if (p1Family && !p0Has) {
-        coverageNote0 = {
-          note: `${label} (Family — via ${p1.person.name})`,
-          group,
-        };
-      }
-      if (p0Family && !p1Has) {
-        coverageNote1 = {
-          note: `${label} (Family — via ${p0.person.name})`,
-          group,
-        };
-      }
-    }
-
-    return {
-      preTax: [preTaxAligned.left, preTaxAligned.right] as const,
-      postTax: [postTaxAligned.left, postTaxAligned.right] as const,
-      coverageNotes: [coverageNote0, coverageNote1] as const,
-    };
-  })();
-
-  // Compute shared contribution group order across all people so they align
-  // Include both individual and joint accounts
-  const sharedContribGroupOrder = (() => {
-    const getLimitGroup = (type: string): string | null => {
-      return configGetLimitGroup(type as AccountCategory);
-    };
-    const getGroupKey = (type: string) => getLimitGroup(type) ?? type;
-    const order: string[] = [];
-    for (const d of people) {
-      for (const c of d.rawContribs as RawContrib[]) {
-        const key = getGroupKey(c.accountType);
-        if (!order.includes(key)) order.push(key);
-      }
-    }
-    // Include joint account types
-    for (const jc of rawData?.jointContribs ?? []) {
-      const key = getGroupKey(jc.accountType);
-      if (!order.includes(key)) order.push(key);
-    }
-    return order;
-  })();
-
   return (
     <div>
       <ScenarioBanner />
@@ -506,9 +382,45 @@ export default function PaycheckPage() {
           ) : undefined
         }
       >
+        {salaryProfiles.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted">Salary:</span>
+            <select
+              className="text-xs border rounded px-2 py-1 bg-surface-primary"
+              value={displaySalaryId ?? ""}
+              onChange={(e) => setViewingSalaryId(Number(e.target.value))}
+              aria-label="Salary profile"
+            >
+              {salaryProfiles.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            {displaySalaryId !== activeSalaryId && (
+              <span className="text-caption text-muted font-medium">
+                (viewing — not active)
+              </span>
+            )}
+            {isSalaryProfileMode && (
+              <>
+                <EditLockToggle
+                  locked={salaryLocked}
+                  onToggle={toggleSalaryLock}
+                  disabled={!canEditProfiles}
+                />
+                {!salaryLocked && (
+                  <span className="text-caption text-amber-600 font-medium">
+                    Fixed-amount salaries update this profile
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+        )}
         {contribProfiles.length > 0 && (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted">Profile:</span>
+            <span className="text-xs text-muted">Contribution:</span>
             <select
               className="text-xs border rounded px-2 py-1 bg-surface-primary"
               value={displayContribId ?? ""}
@@ -521,7 +433,6 @@ export default function PaycheckPage() {
               {contribProfiles.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
-                  {!p.name.includes("(Live)") && p.isDefault ? " (Live)" : ""}
                 </option>
               ))}
             </select>
@@ -539,269 +450,306 @@ export default function PaycheckPage() {
         )}
       </PageHeader>
 
-      {people.length === 0 ? (
+      {views.length === 0 ? (
         <EmptyState
           message="No active jobs found."
           hint="Add jobs on the Historical page to see paycheck breakdowns."
         />
       ) : (
         <div
-          className={`grid grid-cols-1 ${people.length > 1 ? "lg:grid-cols-2" : ""} gap-6 grid-rows-[auto_auto_auto]`}
+          className={`grid grid-cols-1 ${views.length > 1 ? "lg:grid-cols-2" : ""} gap-6 grid-rows-[auto_auto_auto]`}
         >
-          {people.map((d, index) => (
+          {views.map((d) => (
             <PersonPaycheck
               key={d.person.id}
               person={d.person}
-              job={d.job!}
+              job={d.job}
               salary={d.salary}
-              futureSalaryChanges={d.futureSalaryChanges}
-              paycheck={d.paycheck!}
+              paycheck={d.paycheck}
               mode={mode}
-              blendedAnnual={
-                (d as Record<string, unknown>).blendedAnnual as
-                  | import("@/lib/calculators/types/calculators").BlendedAnnualTotals
-                  | undefined
+              blendedAnnual={d.blendedAnnual}
+              // The padlock guards edits that would land in the Salary
+              // Profile — i.e. only people this profile pins at a fixed
+              // amount. A "follows job" person's salary edits their job
+              // record, which was never padlocked here.
+              salaryReadOnly={
+                isSalaryProfileMode &&
+                salaryLocked &&
+                salaryIsFixedInProfile(d.person.id)
               }
-              activeSalaryOverride={
-                scenarioSalaryOverrides.find((o) => o.personId === d.person.id)
-                  ?.salary ?? null
-              }
-              onToggleSalary={(salary) =>
-                toggleSalaryOverride(d.person.id, salary)
-              }
-              rawDeductions={d.rawDeductions as RawDeduction[]}
-              rawContribs={d.rawContribs as RawContrib[]}
-              alignedPreTax={alignedData?.preTax[index as 0 | 1]}
-              alignedPostTax={alignedData?.postTax[index as 0 | 1]}
-              coverageNote={alignedData?.coverageNotes[index as 0 | 1]?.note}
-              coverageNoteGroup={
-                alignedData?.coverageNotes[index as 0 | 1]?.group
-              }
-              otherJointContribs={(rawData?.jointContribs ?? []).map((c) => ({
-                id: c.id,
-                accountType:
-                  c.accountType as import("@/lib/config/account-types").AccountCategory,
-                subType: c.subType ?? null,
-                label: c.label ?? null,
-                contributionValue: c.contributionValue ?? "0",
-                contributionMethod: c.contributionMethod,
-                taxTreatment: c.taxTreatment,
-                ownerName: "Joint",
-              }))}
-              onUpdateJob={(field, value) => {
-                const job = d.job!;
-                const boolFields = [
-                  "include401kInBonus",
-                  "w4Box2cChecked",
-                  "includeBonusInContributions",
-                ];
-                const nullableIntFields = ["bonusMonth", "bonusDayOfMonth"];
-                const nullableDecimalFields = ["budgetPeriodsPerMonth"];
-                const parsed = boolFields.includes(field)
-                  ? value === "true"
-                  : nullableIntFields.includes(field)
-                    ? value === ""
-                      ? null
-                      : Number(value)
-                    : nullableDecimalFields.includes(field)
-                      ? value === ""
-                        ? null
-                        : value
-                      : value;
-                if (isInScenario) {
-                  setScenarioOverride("jobs", job.id, field, parsed);
-                  return;
-                }
-                // The bonus override is year-scoped (job_bonus_overrides),
-                // not a job column — persist it directly rather than routing
-                // through updateJob or a per-profile "job override" (there's
-                // no year concept in the profile-override JSON blob, so it
-                // can't express "this year only" correctly).
-                if (field === "bonusOverride") {
-                  if (value === "") {
-                    deleteBonusOverride.mutate({
-                      jobId: job.id,
-                      year: currentYear,
-                    });
-                  } else {
-                    upsertBonusOverride.mutate({
-                      jobId: job.id,
-                      year: currentYear,
-                      overrideAmount: value,
-                    });
-                  }
-                  return;
-                }
-                // Profile mode: bonus fields go to profile overrides
-                const bonusFields = [
-                  "bonusPercent",
-                  "bonusMultiplier",
-                  "bonusMonth",
-                  "bonusDayOfMonth",
-                  "monthsInBonusYear",
-                  "include401kInBonus",
-                  "includeBonusInContributions",
-                ];
-                if (isProfileMode && bonusFields.includes(field)) {
-                  updateProfileOverride("jobs", job.id, field, parsed);
-                  return;
-                }
-                updateJob.mutate({
-                  id: job.id,
-                  personId: job.personId,
-                  employerName: job.employerName,
-                  annualSalary: job.annualSalary,
-                  payPeriod: job.payPeriod,
-                  payWeek: job.payWeek,
-                  startDate: job.startDate,
-                  anchorPayDate: job.anchorPayDate ?? undefined,
-                  w4FilingStatus: job.w4FilingStatus,
-                  w4Box2cChecked: job.w4Box2cChecked,
-                  bonusPercent: job.bonusPercent,
-                  bonusMultiplier: job.bonusMultiplier,
-                  bonusMonth: job.bonusMonth ?? undefined,
-                  bonusDayOfMonth: job.bonusDayOfMonth ?? undefined,
-                  monthsInBonusYear: job.monthsInBonusYear,
-                  include401kInBonus: job.include401kInBonus,
-                  includeBonusInContributions: job.includeBonusInContributions,
-                  additionalFedWithholding: job.additionalFedWithholding,
-                  budgetPeriodsPerMonth: job.budgetPeriodsPerMonth ?? undefined,
-                  [field]: parsed,
-                });
-              }}
-              onUpdateDeduction={(id, field, value) => {
-                if (isInScenario) {
-                  setScenarioOverride("deductions", id, field, value);
-                  return;
-                }
-                const raw = (d.rawDeductions as RawDeduction[]).find(
-                  (dd) => dd.id === id,
-                );
-                if (!raw) return;
-                updateDeduction.mutate({
-                  id: raw.id,
-                  jobId: raw.jobId,
-                  deductionName: raw.deductionName,
-                  amountPerPeriod: raw.amountPerPeriod,
-                  isPretax: raw.isPretax,
-                  ficaExempt: raw.ficaExempt,
-                  [field]: value,
-                });
-              }}
-              onUpdateContrib={(id, field, value) => {
-                if (writeOverride("contributionAccounts", id, field, value))
-                  return;
-                const raw = (d.rawContribs as RawContrib[]).find(
-                  (cc) => cc.id === id,
-                );
-                if (!raw) return;
-                updateContrib.mutate({
-                  id: raw.id,
-                  personId: raw.personId,
-                  accountType: raw.accountType,
-                  taxTreatment: raw.taxTreatment as
-                    "pre_tax" | "tax_free" | "after_tax" | "hsa",
-                  contributionMethod: raw.contributionMethod as
-                    | "percent_of_salary"
-                    | "fixed_per_period"
-                    | "fixed_monthly"
-                    | "fixed_annual",
-                  contributionValue: raw.contributionValue,
-                  employerMatchType: raw.employerMatchType as
-                    | "none"
-                    | "percent_of_contribution"
-                    | "dollar_match"
-                    | "fixed_annual",
-                  isActive: raw.isActive,
-                  [field]: value,
-                });
-              }}
-              onCreateDeduction={
-                isInScenario
-                  ? undefined
-                  : (data) => createDeduction.mutate(data)
-              }
-              onDeleteDeduction={async (id) => {
-                if (isInScenario) return; // Can't delete in scenario mode
-                if (await confirm("Remove this deduction?")) {
-                  deleteDeduction.mutate({ id });
-                }
-              }}
-              onToggleAutoMax={(id, value, targetContribValue) => {
-                if (isInScenario) {
-                  setScenarioOverride(
-                    "contributionAccounts",
-                    id,
-                    "autoMaximize",
-                    value,
-                  );
-                  return;
-                }
-                if (isProfileMode) {
-                  // Set both autoMaximize and contributionValue in one profile update
-                  if (!activeProfile) return;
-                  const existing =
-                    activeProfile.contributionOverrides as Record<
-                      string,
-                      Record<string, Record<string, unknown>>
-                    >;
-                  const entityOverrides = {
-                    ...(existing.contributionAccounts ?? {}),
-                  };
-                  entityOverrides[String(id)] = {
-                    ...(entityOverrides[String(id)] ?? {}),
-                    autoMaximize: value,
-                    ...(value && targetContribValue != null
-                      ? { contributionValue: String(targetContribValue) }
-                      : {}),
-                  };
-                  updateProfile.mutate({
-                    id: activeProfile.id,
-                    contributionOverrides: {
-                      ...existing,
-                      contributionAccounts: entityOverrides,
-                    },
-                  });
-                  return;
-                }
-                const raw = (d.rawContribs as RawContrib[]).find(
-                  (cc) => cc.id === id,
-                );
-                if (!raw) return;
-                updateContrib.mutate({
-                  id: raw.id,
-                  personId: raw.personId,
-                  accountType: raw.accountType,
-                  taxTreatment: raw.taxTreatment as
-                    "pre_tax" | "tax_free" | "after_tax" | "hsa",
-                  contributionMethod: raw.contributionMethod as
-                    "percent_of_salary" | "fixed_per_period" | "fixed_annual",
-                  contributionValue:
-                    value && targetContribValue != null
-                      ? String(targetContribValue)
-                      : raw.contributionValue,
-                  employerMatchType: raw.employerMatchType as
-                    | "none"
-                    | "percent_of_contribution"
-                    | "dollar_match"
-                    | "fixed_annual",
-                  isActive: raw.isActive,
-                  autoMaximize: value,
-                });
-              }}
-              onDeleteContrib={
-                isInScenario
-                  ? undefined
-                  : (id) => {
-                      deleteContrib.mutate({ id });
-                    }
-              }
-              onCreateContrib={
-                isInScenario ? undefined : (data) => createContrib.mutate(data)
-              }
+              rawDeductions={d.rawDeductions}
+              rawContribs={d.rawContribs}
+              perContribData={d.perContribData}
+              alignedPreTax={d.alignedPreTax}
+              alignedPostTax={d.alignedPostTax}
+              coverageNote={d.coverageNote}
+              coverageNoteGroup={d.coverageNoteGroup}
+              otherJointContribs={d.otherJointContribs}
               contribExpanded={contribExpanded}
               onToggleContrib={() => setContribExpanded((prev) => !prev)}
               sharedGroupOrder={sharedContribGroupOrder}
+              // Salary history creates/deletes real salary_changes rows, so
+              // it is a slot the live page fills — a sandbox simply doesn't
+              // pass it (see PersonPaycheckInteraction's docblock).
+              salaryHistorySlot={
+                <SalaryTracker
+                  jobId={d.job.id}
+                  activeSalaryOverride={
+                    scenarioSalaryOverridesApplied.find(
+                      (o) => o.personId === d.person.id,
+                    )?.salary ?? null
+                  }
+                  onToggleSalary={(salary) =>
+                    toggleSalaryOverride(d.person.id, salary)
+                  }
+                />
+              }
+              interaction={{
+                kind: "live",
+                handlers: {
+                  onUpdateJob: (field: string, value: string) => {
+                    const job = d.job!;
+                    const boolFields = [
+                      "include401kInBonus",
+                      "w4Box2cChecked",
+                      "includeBonusInContributions",
+                    ];
+                    const nullableIntFields = ["bonusMonth", "bonusDayOfMonth"];
+                    const nullableDecimalFields = ["budgetPeriodsPerMonth"];
+                    const parsed = boolFields.includes(field)
+                      ? value === "true"
+                      : nullableIntFields.includes(field)
+                        ? value === ""
+                          ? null
+                          : Number(value)
+                        : nullableDecimalFields.includes(field)
+                          ? value === ""
+                            ? null
+                            : value
+                          : value;
+                    if (isInScenario) {
+                      setScenarioOverride("jobs", job.id, field, parsed);
+                      return;
+                    }
+                    // Salary-profile mode: the salary figure belongs to the
+                    // Salary Profile being viewed ONLY when this person's entry
+                    // is a fixed amount. A "follows job" person falls through to
+                    // the direct job write below — same target, and same
+                    // permission gate, as editing their salary outside profile
+                    // mode, so the lighter profile-CRUD gate can't become a back
+                    // door into jobs/salary_changes.
+                    if (
+                      field === "annualSalary" &&
+                      salaryEditsProfile &&
+                      salaryIsFixedInProfile(job.personId)
+                    ) {
+                      const num = Number(value);
+                      if (!isNaN(num) && num > 0) {
+                        writeSalaryProfileFixed(job.personId, num);
+                      }
+                      return;
+                    }
+                    // The bonus override is year-scoped (job_bonus_overrides),
+                    // not a job column — persist it directly rather than routing
+                    // through updateJob or a per-profile "job override" (there's
+                    // no year concept in the profile-override JSON blob, so it
+                    // can't express "this year only" correctly).
+                    if (field === "bonusOverride") {
+                      if (value === "") {
+                        deleteBonusOverride.mutate({
+                          jobId: job.id,
+                          year: currentYear,
+                        });
+                      } else {
+                        upsertBonusOverride.mutate({
+                          jobId: job.id,
+                          year: currentYear,
+                          overrideAmount: value,
+                        });
+                      }
+                      return;
+                    }
+                    // Profile mode: bonus fields go to profile overrides
+                    const bonusFields = [
+                      "bonusPercent",
+                      "bonusMultiplier",
+                      "bonusMonth",
+                      "bonusDayOfMonth",
+                      "monthsInBonusYear",
+                      "include401kInBonus",
+                      "includeBonusInContributions",
+                    ];
+                    if (isProfileMode && bonusFields.includes(field)) {
+                      updateProfileOverride("jobs", job.id, field, parsed);
+                      return;
+                    }
+                    updateJob.mutate({
+                      id: job.id,
+                      personId: job.personId,
+                      employerName: job.employerName,
+                      annualSalary: job.annualSalary,
+                      payPeriod: job.payPeriod,
+                      payWeek: job.payWeek,
+                      startDate: job.startDate,
+                      anchorPayDate: job.anchorPayDate ?? undefined,
+                      w4FilingStatus: job.w4FilingStatus,
+                      w4Box2cChecked: job.w4Box2cChecked,
+                      bonusPercent: job.bonusPercent,
+                      bonusMultiplier: job.bonusMultiplier,
+                      bonusMonth: job.bonusMonth ?? undefined,
+                      bonusDayOfMonth: job.bonusDayOfMonth ?? undefined,
+                      monthsInBonusYear: job.monthsInBonusYear,
+                      include401kInBonus: job.include401kInBonus,
+                      includeBonusInContributions:
+                        job.includeBonusInContributions,
+                      additionalFedWithholding: job.additionalFedWithholding,
+                      budgetPeriodsPerMonth:
+                        job.budgetPeriodsPerMonth ?? undefined,
+                      [field]: parsed,
+                    });
+                  },
+                  onUpdateDeduction: (
+                    id: number,
+                    field: string,
+                    value: string,
+                  ) => {
+                    if (isInScenario) {
+                      setScenarioOverride("deductions", id, field, value);
+                      return;
+                    }
+                    const raw = (d.rawDeductions as RawDeduction[]).find(
+                      (dd) => dd.id === id,
+                    );
+                    if (!raw) return;
+                    updateDeduction.mutate({
+                      id: raw.id,
+                      jobId: raw.jobId,
+                      deductionName: raw.deductionName,
+                      amountPerPeriod: raw.amountPerPeriod,
+                      isPretax: raw.isPretax,
+                      ficaExempt: raw.ficaExempt,
+                      [field]: value,
+                    });
+                  },
+                  onUpdateContrib: (
+                    id: number,
+                    field: string,
+                    value: string,
+                  ) => {
+                    if (writeOverride("contributionAccounts", id, field, value))
+                      return;
+                    const raw = (d.rawContribs as RawContrib[]).find(
+                      (cc) => cc.id === id,
+                    );
+                    if (!raw) return;
+                    updateContrib.mutate({
+                      id: raw.id,
+                      personId: raw.personId,
+                      accountType: raw.accountType,
+                      taxTreatment: raw.taxTreatment as
+                        "pre_tax" | "tax_free" | "after_tax" | "hsa",
+                      contributionMethod: raw.contributionMethod as
+                        | "percent_of_salary"
+                        | "fixed_per_period"
+                        | "fixed_monthly"
+                        | "fixed_annual",
+                      contributionValue: raw.contributionValue,
+                      employerMatchType: raw.employerMatchType as
+                        | "none"
+                        | "percent_of_contribution"
+                        | "dollar_match"
+                        | "fixed_annual",
+                      isActive: raw.isActive,
+                      [field]: value,
+                    });
+                  },
+                  onCreateDeduction: isInScenario
+                    ? undefined
+                    : (data) => createDeduction.mutate(data),
+                  onDeleteDeduction: async (id: number) => {
+                    if (isInScenario) return; // Can't delete in scenario mode
+                    if (await confirm("Remove this deduction?")) {
+                      deleteDeduction.mutate({ id });
+                    }
+                  },
+                  onToggleAutoMax: (
+                    id: number,
+                    value: boolean,
+                    targetContribValue?: number,
+                  ) => {
+                    if (isInScenario) {
+                      setScenarioOverride(
+                        "contributionAccounts",
+                        id,
+                        "autoMaximize",
+                        value,
+                      );
+                      return;
+                    }
+                    if (isProfileMode) {
+                      // Set both autoMaximize and contributionValue in one profile update
+                      if (!activeProfile) return;
+                      const existing =
+                        activeProfile.contributionOverrides as Record<
+                          string,
+                          Record<string, Record<string, unknown>>
+                        >;
+                      const entityOverrides = {
+                        ...(existing.contributionAccounts ?? {}),
+                      };
+                      entityOverrides[String(id)] = {
+                        ...(entityOverrides[String(id)] ?? {}),
+                        autoMaximize: value,
+                        ...(value && targetContribValue != null
+                          ? { contributionValue: String(targetContribValue) }
+                          : {}),
+                      };
+                      updateProfile.mutate({
+                        id: activeProfile.id,
+                        contributionOverrides: {
+                          ...existing,
+                          contributionAccounts: entityOverrides,
+                        },
+                      });
+                      return;
+                    }
+                    const raw = (d.rawContribs as RawContrib[]).find(
+                      (cc) => cc.id === id,
+                    );
+                    if (!raw) return;
+                    updateContrib.mutate({
+                      id: raw.id,
+                      personId: raw.personId,
+                      accountType: raw.accountType,
+                      taxTreatment: raw.taxTreatment as
+                        "pre_tax" | "tax_free" | "after_tax" | "hsa",
+                      contributionMethod: raw.contributionMethod as
+                        | "percent_of_salary"
+                        | "fixed_per_period"
+                        | "fixed_annual",
+                      contributionValue:
+                        value && targetContribValue != null
+                          ? String(targetContribValue)
+                          : raw.contributionValue,
+                      employerMatchType: raw.employerMatchType as
+                        | "none"
+                        | "percent_of_contribution"
+                        | "dollar_match"
+                        | "fixed_annual",
+                      isActive: raw.isActive,
+                      autoMaximize: value,
+                    });
+                  },
+                  onDeleteContrib: isInScenario
+                    ? undefined
+                    : (id: number) => {
+                        deleteContrib.mutate({ id });
+                      },
+                  onCreateContrib: isInScenario
+                    ? undefined
+                    : (data) => createContrib.mutate(data),
+                },
+              }}
             />
           ))}
         </div>

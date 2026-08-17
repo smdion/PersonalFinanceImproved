@@ -80,6 +80,12 @@ vi.mock("@/lib/hooks/use-persisted-setting", () => ({
 vi.mock("@/lib/hooks/use-active-contrib-profile", () => ({
   useActiveContribProfile: () => [null, vi.fn()],
 }));
+vi.mock("@/lib/hooks/use-active-salary-profile", () => ({
+  useActiveSalaryProfile: () => [null, vi.fn()],
+}));
+vi.mock("@/lib/context/scenario-context", () => ({
+  useScenario: () => ({ activeScenario: null }),
+}));
 
 const mockSettings = {
   personId: 1,
@@ -132,6 +138,12 @@ vi.mock("@/lib/trpc", () => ({
       },
     }),
     contributionProfile: {
+      list: { useQuery: () => ({ data: [] }) },
+    },
+    // The independent Salary Profile axis (useActiveSalaryProfile). An empty
+    // list is the "nothing to resolve" case: the hook leaves the active id
+    // alone rather than re-pointing it.
+    salaryProfile: {
       list: { useQuery: () => ({ data: [] }) },
     },
     networth: {

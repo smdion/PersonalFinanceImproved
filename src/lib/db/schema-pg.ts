@@ -128,7 +128,7 @@ export type ExtraPaycheckRoutingData = {
 //                                    glidePathAllocations, mcPresets,
 //                                    mcPresetGlidePaths, mcPresetReturnOverrides,
 //                                    mcUserPresets
-//  16.  Contribution profiles ...... contributionProfiles
+//  16.  Contribution profiles ...... contributionProfiles, salaryProfiles
 //  17.  State versions (backup) .... stateVersions, stateVersionTables, changeLog
 //
 // NOTE: this file is the source of truth. `schema-sqlite.ts` is auto-generated
@@ -368,6 +368,11 @@ export const budgetProfiles = pgTable(
     columnContributionProfileIds: jsonb(
       "column_contribution_profile_ids",
     ).$type<(number | null)[]>(),
+    /** Per-column Salary Profile pin — parallel to
+     *  columnContributionProfileIds, resolved by resolveSalaryProfileId. */
+    columnSalaryProfileIds: jsonb("column_salary_profile_ids").$type<
+      (number | null)[]
+    >(),
     isActive: boolean("is_active").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -1412,8 +1417,16 @@ export const retirementSalaryOverrides = pgTable(
       precision: 14,
       scale: 2,
     }).notNull(),
+    /** Contribution Profile this year switches to (contribution side only). */
     contributionProfileId: integer("contribution_profile_id").references(
       () => contributionProfiles.id,
+      { onDelete: "set null" },
+    ),
+    /** Salary Profile this year switches to. Independent of
+     *  contributionProfileId — only this row's own personId's entry from the
+     *  referenced profile is injected (the table's grain is per person-year). */
+    salaryProfileId: integer("salary_profile_id").references(
+      () => salaryProfiles.id,
       { onDelete: "set null" },
     ),
     notes: text("notes"),
@@ -1426,6 +1439,12 @@ export const retirementSalaryOverrides = pgTable(
       table.projectionYear,
     ),
     index("retirement_salary_overrides_person_id_idx").on(table.personId),
+    index("retirement_salary_overrides_contribution_profile_id_idx").on(
+      table.contributionProfileId,
+    ),
+    index("retirement_salary_overrides_salary_profile_id_idx").on(
+      table.salaryProfileId,
+    ),
   ],
 );
 
@@ -1806,6 +1825,13 @@ export const scenarios = pgTable(
       () => contributionProfiles.id,
       { onDelete: "set null" },
     ),
+    /** Pins which Salary Profile is "active" for this Plan — see budgetProfileId.
+     *  Independent of contributionProfileId: a Plan can pin either, both, or
+     *  neither. */
+    salaryProfileId: integer("salary_profile_id").references(
+      () => salaryProfiles.id,
+      { onDelete: "set null" },
+    ),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -1818,6 +1844,7 @@ export const scenarios = pgTable(
     index("scenarios_contribution_profile_id_idx").on(
       table.contributionProfileId,
     ),
+    index("scenarios_salary_profile_id_idx").on(table.salaryProfileId),
   ],
 );
 
@@ -1979,7 +2006,7 @@ export const mcUserPresets = pgTable("mc_user_presets", {
     .defaultNow(),
 });
 
-// --- Contribution profiles (what-if salary/contribution overrides) ---
+// --- Contribution profiles (what-if contribution overrides) ---
 
 // ────────────────────────────────────────────────────────────────────────────
 // 16. Contribution profiles
@@ -1989,15 +2016,67 @@ export const contributionProfiles = pgTable("contribution_profiles", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
   description: text("description"),
-  salaryOverrides: jsonb("salary_overrides")
-    .$type<Record<string, number>>()
-    .notNull()
-    .default({}),
   contributionOverrides: jsonb("contribution_overrides")
     .$type<ScenarioOverrides>()
     .notNull()
     .default({}),
-  isDefault: boolean("is_default").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// --- Salary profiles (per-person salary entries) ---
+//
+// A first-class sibling of Budget Profile / Contribution Profile: a named set
+// of per-person salary ENTRIES that any page can preview under. Deliberately
+// separate from contribution_profiles so "what if I earned X" and "what if I
+// contributed Y" are two independent pins rather than one coupled entity.
+//
+// Every profile is an ordinary row — there is no `isDefault` column and no
+// synthetic id-0 "Live" row. An id either resolves to a real row or is an
+// error; it is never a sentinel.
+//
+// `salaries` is a SPARSE map of pins, and PRESENCE OF A FIELD IS THE PIN
+// SIGNAL. Each person's entry is an object of optional fields:
+//   { salary?, bonusPercent?, bonusMultiplier?, monthsInBonusYear? }
+// A field that is set pins that value for this profile. A field that is
+// absent resolves live from the job record (salary via getCurrentSalary:
+// salary_changes → jobs.annual_salary; bonus terms straight off `jobs`).
+// An empty object, or no key for the person at all, pins nothing — the two
+// are the same statement. There is no `mode` discriminator.
+//
+// The fields are INDEPENDENT: pinning a salary says nothing about bonus.
+// Someone can pin a salary and keep live bonus terms, pin bonus terms and
+// keep a live salary, or pin both. Only entries that pin something reach
+// the salary override map, so a map key means "has at least one pin" — see
+// salary.ts's applySalaryProfileRow for why that presence invariant
+// matters, and resolveCompensation for the one definition of what a person
+// earns under an entry.
+//
+// jobs.annual_salary / salary_changes stay the sole authority for "what is
+// this job's actual salary"; an unpinned field re-reads them on every
+// resolution, so there is nothing to sync and no drift to guard against.
+// Bonus terms on `jobs` are the same tier and likewise stay authoritative.
+
+export const salaryProfiles = pgTable("salary_profiles", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  /** personId → salary entry. See salaryEntriesSchema in json-schemas.ts. */
+  salaries: jsonb("salaries")
+    .$type<
+      Record<
+        string,
+        {
+          salary?: number;
+          bonusPercent?: number;
+          bonusMultiplier?: number;
+          monthsInBonusYear?: number;
+        }
+      >
+    >()
+    .notNull()
+    .default({}),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

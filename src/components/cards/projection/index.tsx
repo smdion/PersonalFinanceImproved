@@ -58,6 +58,7 @@ export function ProjectionCard(props: {
   decumulationExpenseOverride?: number;
   parentCategoryFilter?: string;
   contributionProfileId?: number;
+  salaryProfileId?: number;
   snapshotId?: number;
   /** When provided, overrides the internal dollarMode state (for shared page-level toggle). */
   dollarMode?: "nominal" | "real";
@@ -75,6 +76,7 @@ export function ProjectionCard(props: {
     decumulationExpenseOverride: props.decumulationExpenseOverride,
     parentCategoryFilter: props.parentCategoryFilter,
     contributionProfileId: props.contributionProfileId,
+    salaryProfileId: props.salaryProfileId,
     snapshotId: props.snapshotId,
   });
 

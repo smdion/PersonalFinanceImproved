@@ -62,6 +62,8 @@ export const coastFireRouter = createTRPCRouter({
           .array(z.object({ personId: z.number(), salary: z.number() }))
           .optional(),
         contributionProfileId: z.number().int().optional(),
+        /** Optional Salary Profile — the independent "what if I earned X" axis. */
+        salaryProfileId: z.number().int().optional(),
         accumulationBudgetProfileId: z.number().int().optional(),
         accumulationBudgetColumn: z.number().int().min(0).optional(),
         accumulationExpenseOverride: z.number().min(0).optional(),
@@ -75,10 +77,12 @@ export const coastFireRouter = createTRPCRouter({
       const data = await fetchRetirementData(ctx.db, {
         snapshotId: input.snapshotId,
         contributionProfileId: input.contributionProfileId,
+        salaryProfileId: input.salaryProfileId,
       });
       const payload = await buildEnginePayload(ctx.db, data, {
         salaryOverrides: input.salaryOverrides,
         contributionProfileId: input.contributionProfileId,
+        salaryProfileId: input.salaryProfileId,
         accumulationBudgetProfileId: input.accumulationBudgetProfileId,
         accumulationBudgetColumn: input.accumulationBudgetColumn,
         accumulationExpenseOverride: input.accumulationExpenseOverride,
@@ -166,6 +170,8 @@ export const coastFireRouter = createTRPCRouter({
           .array(z.object({ personId: z.number(), salary: z.number() }))
           .optional(),
         contributionProfileId: z.number().int().optional(),
+        /** Optional Salary Profile — the independent "what if I earned X" axis. */
+        salaryProfileId: z.number().int().optional(),
         accumulationBudgetProfileId: z.number().int().optional(),
         accumulationBudgetColumn: z.number().int().min(0).optional(),
         accumulationExpenseOverride: z.number().min(0).optional(),
@@ -185,6 +191,7 @@ export const coastFireRouter = createTRPCRouter({
           fetchRetirementData(ctx.db, {
             snapshotId: input.snapshotId,
             contributionProfileId: input.contributionProfileId,
+            salaryProfileId: input.salaryProfileId,
           }),
           ctx.db
             .select()
@@ -213,6 +220,7 @@ export const coastFireRouter = createTRPCRouter({
       const payload = await buildEnginePayload(ctx.db, data, {
         salaryOverrides: input.salaryOverrides,
         contributionProfileId: input.contributionProfileId,
+        salaryProfileId: input.salaryProfileId,
         accumulationBudgetProfileId: input.accumulationBudgetProfileId,
         accumulationBudgetColumn: input.accumulationBudgetColumn,
         accumulationExpenseOverride: input.accumulationExpenseOverride,

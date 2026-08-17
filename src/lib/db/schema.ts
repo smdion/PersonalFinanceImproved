@@ -92,6 +92,7 @@ export const mcPresetGlidePaths = active.mcPresetGlidePaths;
 export const mcPresetReturnOverrides = active.mcPresetReturnOverrides;
 export const mcUserPresets = active.mcUserPresets;
 export const contributionProfiles = active.contributionProfiles;
+export const salaryProfiles = active.salaryProfiles;
 export const stateVersions = active.stateVersions;
 export const stateVersionTables = active.stateVersionTables;
 export const changeLog = active.changeLog;

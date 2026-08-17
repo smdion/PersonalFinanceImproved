@@ -108,14 +108,29 @@ const mockRelocData = {
   relocationContribProfile: null,
 };
 
+// useBudgetProfilesList reads the active Plan's pins from scenario context.
+vi.mock("@/lib/context/scenario-context", () => ({
+  useScenario: () => ({
+    activeScenario: null,
+    isInScenario: false,
+    getOverride: () => undefined,
+  }),
+}));
+
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     useUtils: () => ({
       settings: {
+        appSettings: { list: { invalidate: vi.fn() } },
         relocationScenarios: { list: { invalidate: vi.fn() } },
       },
     }),
     settings: {
+      // useBudgetProfilesList -> usePersistedSetting reads this.
+      appSettings: {
+        list: { useQuery: () => ({ data: [] }) },
+        upsert: { useMutation: () => ({ mutate: vi.fn() }) },
+      },
       relocationScenarios: {
         list: { useQuery: () => ({ data: [] }) },
         save: {
@@ -142,6 +157,9 @@ vi.mock("@/lib/trpc", () => ({
       },
     },
     contributionProfile: {
+      list: { useQuery: () => ({ data: [] }) },
+    },
+    salaryProfile: {
       list: { useQuery: () => ({ data: [] }) },
     },
     projection: {

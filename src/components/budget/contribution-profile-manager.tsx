@@ -10,15 +10,18 @@ import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
 import { confirm } from "@/components/ui/confirm-dialog";
+import {
+  EditLockToggle,
+  EDIT_LOCK_KEYS,
+  useEditLock,
+} from "@/components/ui/edit-lock-toggle";
 
 type ProfileSummary = {
   id: number;
   name: string;
   description: string | null;
-  isDefault: boolean;
   overrideCount: number;
   summary: {
-    combinedSalary: number;
     annualContributions: number;
     annualEmployerMatch: number;
   };
@@ -34,12 +37,12 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
   const [selectedProfileId, setSelectedProfileId] = useState<number | null>(
     null,
   );
-  const [showEditor, setShowEditor] = useState(false);
-  const [editingProfileId, setEditingProfileId] = useState<number | null>(null);
+  const [creatingNew, setCreatingNew] = useState(false);
   const [renamingProfileId, setRenamingProfileId] = useState<number | null>(
     null,
   );
   const [renameValue, setRenameValue] = useState("");
+  const [locked, toggleLocked] = useEditLock(EDIT_LOCK_KEYS.budgetContrib);
 
   const invalidateProfileDeps = () => {
     utils.contributionProfile.invalidate();
@@ -58,11 +61,9 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
     onSuccess: invalidateProfileDeps,
   });
 
-  const liveProfile = profiles?.find((p) => p.isDefault);
-  // activeContribId === null means "use Live" (the isDefault row), not
-  // "nothing is active" — mirrors scenario-bar.tsx's ProfilePill logic.
-  const globalActiveContribId =
-    activeContribId === null ? (liveProfile?.id ?? null) : activeContribId;
+  // Post-migration the active-profile setting always points at a real row;
+  // useActiveContribProfile repairs it if that row ever goes missing.
+  const globalActiveContribId = activeContribId;
   // Plan pin -> local selection -> globally-active profile (single computation path)
   const {
     profileId: effectiveSelectedId,
@@ -91,14 +92,14 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
 
   if (!profiles || profiles.length === 0) return null;
 
-  const customProfiles = profiles.filter((p) => !p.isDefault);
   const displayedProfile = profiles.find((p) => p.id === effectiveSelectedId);
+  const canDeleteAny = profiles.length > 1;
 
   const handleActivate = (id: number) => {
     if (isInScenario) {
       setScenarioContributionProfile(id);
     } else {
-      setActiveContribId(id === liveProfile?.id ? null : id);
+      setActiveContribId(id);
     }
   };
 
@@ -117,13 +118,10 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
                 canEdit ? () => handleActivate(displayedProfile.id) : undefined
               }
             />
+            {/* Contribution-scoped figures only. Salary is the Salary
+                Profile's axis — showing a number here invited reading it as
+                something this profile sets, which it never did. */}
             <div className="flex items-center gap-5 text-xs">
-              <div>
-                <span className="text-faint">Salary </span>
-                <span className="font-semibold text-secondary">
-                  {formatCurrency(displayedProfile.summary.combinedSalary)}
-                </span>
-              </div>
               <div>
                 <span className="text-faint">Contributions </span>
                 <span className="font-semibold text-secondary">
@@ -140,7 +138,7 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
               </div>
             </div>
           </div>
-          <HelpTip text="Salary/contributions for the profile shown below. The Live profile reflects your current paycheck data. Create custom profiles to model different jobs, salaries, or contribution strategies — then use them in the Relocation tool. Selected independently from the budget profile above — linked per budget column instead (see each column's settings)." />
+          <HelpTip text="Contributions and employer match for the profile shown below. Every profile is an ordinary, editable set of contribution settings — create more to model different contribution strategies, then use them in the Relocation tool. Salary and bonus are the Salary Profile's axis, not this one. Selected independently from the budget profile above — linked per budget column instead (see each column's settings)." />
         </div>
       )}
 
@@ -156,8 +154,8 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
               <button
                 type="button"
                 onClick={() => {
-                  setEditingProfileId(null);
-                  setShowEditor(true);
+                  setSelectedProfileId(null);
+                  setCreatingNew(true);
                 }}
                 className="text-caption font-medium text-blue-600 hover:text-blue-700"
               >
@@ -166,48 +164,16 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
             )}
           </div>
 
-          {/* Default profile entry */}
-          {liveProfile && (
-            <ProfileListItem
-              profile={liveProfile}
-              isSelected={effectiveSelectedId === liveProfile.id}
-              isActive={globalActiveContribId === liveProfile.id}
-              onSelect={() => setSelectedProfileId(liveProfile.id)}
-              onRename={
-                canEdit
-                  ? () => {
-                      setRenamingProfileId(liveProfile.id);
-                      setRenameValue(liveProfile.name);
-                    }
-                  : undefined
-              }
-              isRenaming={renamingProfileId === liveProfile.id}
-              renameValue={renameValue}
-              onRenameValueChange={setRenameValue}
-              onRenameComplete={() => {
-                if (
-                  renameValue.trim() &&
-                  renameValue.trim() !== liveProfile.name
-                ) {
-                  renameMutation.mutate({
-                    id: liveProfile.id,
-                    name: renameValue.trim(),
-                  });
-                }
-                setRenamingProfileId(null);
-              }}
-              onRenameCancel={() => setRenamingProfileId(null)}
-            />
-          )}
-
-          {/* Custom profiles */}
-          {customProfiles.map((p) => (
+          {profiles.map((p) => (
             <ProfileListItem
               key={p.id}
               profile={p}
-              isSelected={effectiveSelectedId === p.id}
+              isSelected={!creatingNew && effectiveSelectedId === p.id}
               isActive={globalActiveContribId === p.id}
-              onSelect={() => setSelectedProfileId(p.id)}
+              onSelect={() => {
+                setCreatingNew(false);
+                setSelectedProfileId(p.id);
+              }}
               onRename={
                 canEdit
                   ? () => {
@@ -227,23 +193,15 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
               }}
               onRenameCancel={() => setRenamingProfileId(null)}
               onActivate={canEdit ? () => handleActivate(p.id) : undefined}
-              onEdit={
-                canEdit
-                  ? () => {
-                      setEditingProfileId(p.id);
-                      setShowEditor(true);
-                    }
-                  : undefined
-              }
               onDelete={
-                canEdit
+                canEdit && canDeleteAny
                   ? async () => {
                       const pinnedBy = persistedScenarios
                         .filter((s) => s.contributionProfileId === p.id)
                         .map((s) => s.name);
                       const pinnedByClause =
                         pinnedBy.length > 0
-                          ? ` The Plan${pinnedBy.length > 1 ? "s" : ""} "${pinnedBy.join('", "')}" pin${pinnedBy.length > 1 ? "" : "s"} this profile and will fall back to the active profile once it's gone.`
+                          ? ` The Plan${pinnedBy.length > 1 ? "s" : ""} "${pinnedBy.join('", "')}" pin${pinnedBy.length > 1 ? "" : "s"} this profile, so deleting is blocked until you unpin it there.`
                           : "";
                       if (
                         await confirm(
@@ -258,9 +216,9 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
             />
           ))}
 
-          {customProfiles.length === 0 && (
+          {profiles.length <= 1 && (
             <p className="text-caption text-faint italic px-2 py-3">
-              No custom profiles yet. Create one to model a different salary or
+              Only one profile so far. Create another to model a different
               contribution strategy.
             </p>
           )}
@@ -276,10 +234,39 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
           />
         </div>
 
-        {/* Right: detail panel */}
+        {/* Right: detail panel / inline editor */}
         <div className="border-l pl-4">
-          {effectiveSelectedId != null ? (
-            <ProfileDetailPanel profileId={effectiveSelectedId} />
+          {creatingNew ? (
+            <ProfileEditor
+              onCancel={() => setCreatingNew(false)}
+              onSaved={(newId) => {
+                setCreatingNew(false);
+                invalidateProfileDeps();
+                if (newId !== undefined) setSelectedProfileId(newId);
+              }}
+            />
+          ) : effectiveSelectedId != null ? (
+            (() => {
+              const lockToggle = (
+                <EditLockToggle
+                  locked={locked}
+                  onToggle={toggleLocked}
+                  disabled={!canEdit}
+                />
+              );
+              return !canEdit || locked ? (
+                <ProfileDetailPanel
+                  profileId={effectiveSelectedId}
+                  lockToggle={lockToggle}
+                />
+              ) : (
+                <ProfileInlineEditor
+                  profileId={effectiveSelectedId}
+                  lockToggle={lockToggle}
+                  onSaved={() => invalidateProfileDeps()}
+                />
+              );
+            })()
           ) : (
             <div className="flex items-center justify-center h-40 text-xs text-faint">
               Select a profile to view details
@@ -287,18 +274,6 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
           )}
         </div>
       </div>
-
-      {/* Editor modal */}
-      {showEditor && (
-        <ProfileEditor
-          profileId={editingProfileId}
-          onClose={() => setShowEditor(false)}
-          onSaved={() => {
-            setShowEditor(false);
-            invalidateProfileDeps();
-          }}
-        />
-      )}
     </div>
   );
 }
@@ -313,7 +288,6 @@ function ProfileListItem({
   isActive,
   onSelect,
   onActivate,
-  onEdit,
   onDelete,
   onRename,
   isRenaming,
@@ -324,12 +298,10 @@ function ProfileListItem({
 }: {
   profile: ProfileSummary;
   isSelected: boolean;
-  /** Whether this profile is the currently (globally-)active one — distinct
-   *  from profile.isDefault, which only ever marks the immutable Live row. */
+  /** Whether this profile is the currently (globally-)active one. */
   isActive: boolean;
   onSelect: () => void;
   onActivate?: () => void;
-  onEdit?: () => void;
   onDelete?: () => void;
   onRename?: () => void;
   isRenaming?: boolean;
@@ -382,7 +354,7 @@ function ProfileListItem({
             </span>
           )}
         </div>
-        {(onActivate || onEdit || onDelete || onRename) && !isRenaming && (
+        {(onActivate || onDelete || onRename) && !isRenaming && (
           <div
             className="flex gap-1 shrink-0 md:max-w-0 md:overflow-hidden md:opacity-0 md:group-hover:max-w-[9rem] md:group-hover:opacity-100 transition-all"
             onClick={(e) => e.stopPropagation()}
@@ -402,16 +374,7 @@ function ProfileListItem({
                 onClick={onRename}
                 className="text-caption text-faint hover:text-blue-600"
               >
-                edit
-              </button>
-            )}
-            {onEdit && (
-              <button
-                type="button"
-                onClick={onEdit}
-                className="text-caption text-faint hover:text-blue-600"
-              >
-                configure
+                rename
               </button>
             )}
             {onDelete && (
@@ -427,17 +390,10 @@ function ProfileListItem({
         )}
       </div>
       <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-1 text-caption text-muted">
-        <span>{formatCurrency(profile.summary.combinedSalary)}</span>
         <span>{formatCurrency(profile.summary.annualContributions)}/yr</span>
         {profile.summary.annualEmployerMatch > 0 && (
           <span className="text-green-600">
             +{formatCurrency(profile.summary.annualEmployerMatch)}
-          </span>
-        )}
-        {!profile.isDefault && profile.overrideCount > 0 && (
-          <span className="text-amber-600">
-            {profile.overrideCount} override
-            {profile.overrideCount !== 1 ? "s" : ""}
           </span>
         )}
       </div>
@@ -449,7 +405,13 @@ function ProfileListItem({
 // Profile Detail Panel (right side)
 // ---------------------------------------------------------------------------
 
-function ProfileDetailPanel({ profileId }: { profileId: number }) {
+function ProfileDetailPanel({
+  profileId,
+  lockToggle,
+}: {
+  profileId: number;
+  lockToggle?: React.ReactNode;
+}) {
   const { data: profile, isLoading } =
     trpc.contributionProfile.getById.useQuery({ id: profileId });
 
@@ -475,70 +437,34 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
             — {profile.description}
           </span>
         )}
+        {lockToggle}
       </div>
 
-      {/* Salary section */}
-      {profile.salaryDetails.length > 0 && (
-        <div className="mb-5">
-          <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
-            Salary
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {profile.salaryDetails.map((sd) => {
-              const resolvedSalary = sd.overrideSalary ?? sd.currentSalary;
-              const isModified = sd.overrideSalary !== null;
-              return (
-                <div
-                  key={sd.jobId}
-                  className="bg-surface-sunken rounded-lg px-3 py-2"
-                >
-                  <div className="text-xs font-medium text-secondary">
-                    {sd.personName}
-                  </div>
-                  <div className="text-caption text-faint">
-                    {sd.employerNameOverride ? (
-                      <span className="text-amber-600">
-                        {sd.employerNameOverride}
-                      </span>
-                    ) : (
-                      sd.employerName
-                    )}
-                  </div>
-                  <div className="flex items-baseline gap-2 mt-1">
-                    <span
-                      className={`text-lg font-semibold ${isModified ? "text-amber-600" : "text-primary"}`}
-                    >
-                      {formatCurrency(resolvedSalary)}
-                    </span>
-                  </div>
-                  {sd.estimatedBonus > 0 && (
-                    <div className="text-caption text-faint mt-0.5">
-                      +{formatCurrency(sd.estimatedBonus)} estimated bonus
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Contributions section */}
+      {/* Contributions section — salary is entirely the Salary Profiles
+          tab's domain now, so it is deliberately not shown here. */}
       <div>
         <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
           Contribution Accounts
         </h4>
-        <table className="w-full text-xs">
+        <table className="w-full text-xs border-collapse">
           <thead>
-            <tr className="text-muted border-b">
-              <th className="text-left py-1.5 font-medium">Account</th>
-              <th className="text-left py-1.5 font-medium w-16">Method</th>
-              <th className="text-right py-1.5 font-medium w-24">Value</th>
-              <th className="text-right py-1.5 font-medium w-28">Match</th>
+            <tr className="border-b-2 border-strong">
+              <th className="text-left py-2 pl-4 pr-3 text-muted font-medium">
+                Account
+              </th>
+              <th className="text-left py-2 px-3 text-muted font-medium w-20 whitespace-nowrap">
+                Method
+              </th>
+              <th className="text-right py-2 px-3 text-muted font-medium w-24">
+                Value
+              </th>
+              <th className="text-right py-2 px-3 text-muted font-medium w-28">
+                Match
+              </th>
             </tr>
           </thead>
           <tbody>
-            {profile.accountDetails.map((ad) => {
+            {profile.accountDetails.map((ad, rowIdx) => {
               const ov = ad.overrides as Record<string, unknown> | null;
               const hasOverride = ov !== null;
               const isProfileDisabled = ov?.isActive === false;
@@ -553,9 +479,13 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
               return (
                 <tr
                   key={ad.id}
-                  className={`border-b border-subtle ${isProfileDisabled ? "opacity-40" : ""}`}
+                  className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+                    rowIdx % 2 === 1
+                      ? "bg-surface-sunken/60"
+                      : "bg-surface-primary"
+                  } ${isProfileDisabled ? "opacity-40" : ""}`}
                 >
-                  <td className="py-1.5 text-secondary">
+                  <td className="py-1.5 pl-4 pr-3 text-secondary">
                     <span className="flex items-center gap-1.5">
                       <span
                         className={`${isProfileDisabled ? "line-through" : ""} ${hasNameOverride ? "text-amber-600" : ""}`}
@@ -569,13 +499,13 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                       )}
                     </span>
                   </td>
-                  <td className="py-1.5 text-muted">
+                  <td className="py-1.5 px-3 text-muted whitespace-nowrap">
                     {ad.liveMethod === "percent_of_salary"
                       ? "% salary"
                       : "fixed"}
                   </td>
                   <td
-                    className={`py-1.5 text-right font-mono ${
+                    className={`py-1.5 px-3 text-right font-mono ${
                       hasOverride && !isProfileDisabled
                         ? "text-amber-600 font-medium"
                         : "text-secondary"
@@ -584,7 +514,7 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                     {resolvedValue}
                     {methodSuffix}
                   </td>
-                  <td className="py-1.5 text-right text-faint">
+                  <td className="py-1.5 px-3 text-right text-faint">
                     {ad.liveMatchType && ad.liveMatchType !== "none" ? (
                       <span>
                         {parseFloat(ad.liveMatchValue ?? "0")}%
@@ -608,145 +538,48 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
 }
 
 // ---------------------------------------------------------------------------
-// Profile Editor (Create / Update) — Modal
+// Profile Creator — inline in the right-hand panel
 // ---------------------------------------------------------------------------
 
+/**
+ * Create-new form. The one place a batched Save survives: a profile row has
+ * to exist before per-field edits have anywhere to write. Once created, the
+ * profile is edited in place by ProfileInlineEditor (padlock-gated,
+ * commit-on-blur) — there is no Save/Cancel/Reset for an existing profile.
+ */
 function ProfileEditor({
-  profileId,
-  onClose,
+  onCancel,
   onSaved,
 }: {
-  profileId: number | null;
-  onClose: () => void;
-  onSaved: () => void;
+  onCancel: () => void;
+  onSaved: (newId?: number) => void;
 }) {
-  const { data: existingProfile } = trpc.contributionProfile.getById.useQuery(
-    { id: profileId! },
-    { enabled: profileId !== null },
-  );
-
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [salaryOverrides, setSalaryOverrides] = useState<
-    Record<string, string>
-  >({});
-  const [contribOverrides, setContribOverrides] = useState<
-    Record<string, string>
-  >({});
-  const [matchOverrides, setMatchOverrides] = useState<
-    Record<string, { matchValue?: string; maxMatchPct?: string }>
-  >({});
-  const [jobOverrides, setJobOverrides] = useState<
-    Record<string, Record<string, string>>
-  >({});
-  const [nameOverrides, setNameOverrides] = useState<Record<string, string>>(
+  const [contribValues, setContribValues] = useState<Record<string, string>>(
     {},
   );
+  const [matchValues, setMatchValues] = useState<
+    Record<string, { matchValue?: string; maxMatchPct?: string }>
+  >({});
+  const [jobValues, setJobValues] = useState<
+    Record<string, Record<string, string>>
+  >({});
+  const [nameValues, setNameValues] = useState<Record<string, string>>({});
   const [disabledAccounts, setDisabledAccounts] = useState<
     Record<string, boolean>
   >({});
-  const [employerNameOverrides, setEmployerNameOverrides] = useState<
+  const [employerNameValues, setEmployerNameValues] = useState<
     Record<string, string>
   >({});
 
-  // Populate form when editing an existing profile
-  React.useEffect(() => {
-    if (existingProfile && profileId !== null) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- populate form from server data when profile changes
-      setName(existingProfile.name);
-      setDescription(existingProfile.description ?? "");
-
-      const sOvr: Record<string, string> = {};
-      for (const sd of existingProfile.salaryDetails) {
-        if (sd.overrideSalary !== null) {
-          sOvr[String(sd.personId)] = String(sd.overrideSalary);
-        }
-      }
-      setSalaryOverrides(sOvr);
-
-      const cOvr: Record<string, string> = {};
-      const mOvr: Record<
-        string,
-        { matchValue?: string; maxMatchPct?: string }
-      > = {};
-      const nOvr: Record<string, string> = {};
-      const dOvr: Record<string, boolean> = {};
-      for (const ad of existingProfile.accountDetails) {
-        if (ad.overrides) {
-          const ov = ad.overrides as Record<string, unknown>;
-          if (ov.contributionValue !== undefined) {
-            cOvr[String(ad.id)] = String(ov.contributionValue);
-          }
-          if (
-            ov.employerMatchValue !== undefined ||
-            ov.employerMaxMatchPct !== undefined
-          ) {
-            mOvr[String(ad.id)] = {
-              ...(ov.employerMatchValue !== undefined
-                ? { matchValue: String(ov.employerMatchValue) }
-                : {}),
-              ...(ov.employerMaxMatchPct !== undefined
-                ? { maxMatchPct: String(Number(ov.employerMaxMatchPct) * 100) }
-                : {}),
-            };
-          }
-          if (ov.displayNameOverride)
-            nOvr[String(ad.id)] = String(ov.displayNameOverride);
-          if (ov.isActive === false) dOvr[String(ad.id)] = true;
-        }
-      }
-      setContribOverrides(cOvr);
-      setMatchOverrides(mOvr);
-      setNameOverrides(nOvr);
-      setDisabledAccounts(dOvr);
-
-      const jOvr: Record<string, Record<string, string>> = {};
-      const eOvr: Record<string, string> = {};
-      for (const sd of existingProfile.salaryDetails) {
-        if (sd.jobOverrides) {
-          const ov = sd.jobOverrides as Record<string, unknown>;
-          const fields: Record<string, string> = {};
-          for (const key of [
-            "bonusPercent",
-            "bonusMultiplier",
-            "monthsInBonusYear",
-            "include401kInBonus",
-            "includeBonusInContributions",
-          ] as const) {
-            if (ov[key] !== undefined) {
-              // Convert decimal bonusPercent to display percentage (0.10 → 10)
-              fields[key] =
-                key === "bonusPercent"
-                  ? String(Number(ov[key]) * 100)
-                  : String(ov[key]);
-            }
-          }
-          if (Object.keys(fields).length > 0) jOvr[String(sd.jobId)] = fields;
-        }
-        if (sd.employerNameOverride)
-          eOvr[String(sd.jobId)] = sd.employerNameOverride;
-      }
-      setJobOverrides(jOvr);
-      setEmployerNameOverrides(eOvr);
-    }
-  }, [existingProfile, profileId]);
-
   const createMutation = trpc.contributionProfile.create.useMutation({
-    onSuccess: onSaved,
-  });
-  const updateMutation = trpc.contributionProfile.update.useMutation({
-    onSuccess: onSaved,
+    onSuccess: (created) => onSaved(created.id),
   });
 
   const handleSave = () => {
-    const salaryOvr: Record<string, number> = {};
-    for (const [personId, val] of Object.entries(salaryOverrides)) {
-      const num = parseFloat(val);
-      if (!isNaN(num) && num > 0) salaryOvr[personId] = num;
-    }
-
     const contribAccounts: Record<string, Record<string, unknown>> = {};
-    for (const [accountId, val] of Object.entries(contribOverrides)) {
+    for (const [accountId, val] of Object.entries(contribValues)) {
       const num = parseFloat(val);
       if (!isNaN(num)) {
         contribAccounts[accountId] = {
@@ -755,8 +588,8 @@ function ProfileEditor({
         };
       }
     }
-    // Merge name overrides into contrib accounts
-    for (const [accountId, nameVal] of Object.entries(nameOverrides)) {
+    // Merge custom names into contrib accounts
+    for (const [accountId, nameVal] of Object.entries(nameValues)) {
       if (nameVal.trim()) {
         contribAccounts[accountId] = {
           ...(contribAccounts[accountId] ?? {}),
@@ -773,10 +606,10 @@ function ProfileEditor({
         };
       }
     }
-    // Merge match overrides into contrib accounts
-    for (const [accountId, mOvr] of Object.entries(matchOverrides)) {
-      if (mOvr.matchValue) {
-        const num = parseFloat(mOvr.matchValue);
+    // Merge employer-match values into contrib accounts
+    for (const [accountId, mVal] of Object.entries(matchValues)) {
+      if (mVal.matchValue) {
+        const num = parseFloat(mVal.matchValue);
         if (!isNaN(num)) {
           contribAccounts[accountId] = {
             ...(contribAccounts[accountId] ?? {}),
@@ -784,8 +617,8 @@ function ProfileEditor({
           };
         }
       }
-      if (mOvr.maxMatchPct) {
-        const num = parseFloat(mOvr.maxMatchPct);
+      if (mVal.maxMatchPct) {
+        const num = parseFloat(mVal.maxMatchPct);
         if (!isNaN(num)) {
           // Convert display percentage back to decimal (5 → 0.05)
           contribAccounts[accountId] = {
@@ -796,9 +629,9 @@ function ProfileEditor({
       }
     }
 
-    // Build job overrides for bonus fields
+    // Build per-job values for bonus fields
     const jobs: Record<string, Record<string, unknown>> = {};
-    for (const [jobId, fields] of Object.entries(jobOverrides)) {
+    for (const [jobId, fields] of Object.entries(jobValues)) {
       const parsed: Record<string, unknown> = {};
       for (const [key, val] of Object.entries(fields)) {
         if (
@@ -808,17 +641,13 @@ function ProfileEditor({
           parsed[key] = val === "true";
         } else {
           const num = parseFloat(val);
-          if (!isNaN(num)) {
-            // Convert display percentage back to decimal (10 → 0.10)
-            if (key === "bonusPercent") parsed[key] = num / 100;
-            else parsed[key] = num;
-          }
+          if (!isNaN(num)) parsed[key] = num;
         }
       }
       if (Object.keys(parsed).length > 0) jobs[jobId] = parsed;
     }
-    // Merge employer name overrides into jobs
-    for (const [jobId, nameVal] of Object.entries(employerNameOverrides)) {
+    // Merge custom employer names into jobs
+    for (const [jobId, nameVal] of Object.entries(employerNameValues)) {
       if (nameVal.trim()) {
         jobs[jobId] = { ...(jobs[jobId] ?? {}), employerName: nameVal.trim() };
       }
@@ -834,48 +663,36 @@ function ProfileEditor({
       ...(Object.keys(jobs).length > 0 ? { jobs } : {}),
     };
 
-    if (profileId !== null) {
-      updateMutation.mutate({
-        id: profileId,
-        name,
-        description: description || null,
-        salaryOverrides: salaryOvr,
-        contributionOverrides,
-      });
-    } else {
-      createMutation.mutate({
-        name,
-        description: description || undefined,
-        salaryOverrides: salaryOvr,
-        contributionOverrides,
-      });
-    }
+    createMutation.mutate({
+      name,
+      description: description || undefined,
+      contributionOverrides,
+    });
   };
 
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const isPending = createMutation.isPending;
 
-  // For new profiles, load live data as the base for showing fields
+  // An existing profile supplies the rows (and their current values) to start
+  // from — every account/job is listed with its live value either way.
   const { data: profilesList } = trpc.contributionProfile.list.useQuery();
-  const liveId = profilesList?.find((p) => p.isDefault)?.id;
-  const { data: liveData } = trpc.contributionProfile.getById.useQuery(
-    { id: liveId! },
-    { enabled: liveId !== undefined },
+  const baseId = profilesList?.[0]?.id;
+  const { data: baseData } = trpc.contributionProfile.getById.useQuery(
+    { id: baseId! },
+    { enabled: baseId !== undefined },
   );
 
-  const baseData = profileId !== null ? existingProfile : liveData;
-
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div className="bg-surface-primary rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-        <div className="p-4 border-b">
-          <h3 className="text-sm font-semibold text-primary">
-            {profileId !== null ? "Edit" : "New"} Contribution Profile
-          </h3>
-        </div>
+    <div className="bg-surface-sunken rounded-lg p-4">
+      <FormError
+        error={createMutation.error}
+        prefix="Failed to save profile"
+        className="mb-3"
+      />
 
-        <div className="p-4 space-y-5">
+      <div className="space-y-5">
+        <div className="flex items-start justify-between gap-3">
           {/* Name & Description */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 flex-1">
             <div>
               <label className="text-label font-medium text-muted">Name</label>
               <input
@@ -899,439 +716,11 @@ function ProfileEditor({
               />
             </div>
           </div>
-
-          {/* Salary Overrides */}
-          {baseData?.salaryDetails && baseData.salaryDetails.length > 0 && (
-            <div>
-              <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
-                Salary
-              </h4>
-              <div className="space-y-2">
-                {baseData.salaryDetails.map((sd) => (
-                  <div
-                    key={sd.jobId}
-                    className="flex items-center gap-3 bg-surface-sunken rounded-lg px-3 py-2"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium text-secondary">
-                        {sd.personName}
-                      </div>
-                      <div className="text-caption text-faint">
-                        {sd.employerName} · Current:{" "}
-                        {formatCurrency(sd.currentSalary)}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-faint">$</span>
-                      <input
-                        type="number"
-                        value={salaryOverrides[String(sd.personId)] ?? ""}
-                        onChange={(e) =>
-                          setSalaryOverrides((prev) => ({
-                            ...prev,
-                            [String(sd.personId)]: e.target.value,
-                          }))
-                        }
-                        placeholder="same"
-                        className="w-28 px-2 py-1 text-xs text-right border rounded bg-surface-primary text-primary"
-                      />
-                      {salaryOverrides[String(sd.personId)] && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSalaryOverrides((prev) => {
-                              const next = { ...prev };
-                              delete next[String(sd.personId)];
-                              return next;
-                            })
-                          }
-                          className="text-caption text-faint hover:text-red-500"
-                        >
-                          ×
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Contribution Overrides */}
-          {baseData?.accountDetails && baseData.accountDetails.length > 0 && (
-            <div>
-              <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
-                Contributions
-              </h4>
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-muted border-b">
-                    <th className="w-6 py-1.5"></th>
-                    <th className="text-left py-1.5 font-medium">Account</th>
-                    <th className="text-right py-1.5 font-medium w-24">
-                      Current
-                    </th>
-                    <th className="text-right py-1.5 font-medium w-24">
-                      Override
-                    </th>
-                    <th className="text-right py-1.5 font-medium w-24">
-                      Employer Match
-                    </th>
-                    <th className="text-right py-1.5 font-medium w-24">
-                      Match Cap
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {baseData.accountDetails.map((ad) => {
-                    const isPercent = ad.liveMethod === "percent_of_salary";
-                    const _unit = isPercent ? "%" : "$";
-                    const fmtValue = (v: string | null | undefined) => {
-                      if (!v) return "—";
-                      const n = parseFloat(v);
-                      if (isNaN(n)) return v;
-                      return n % 1 === 0 ? String(n) : n.toFixed(2);
-                    };
-                    const hasMatch =
-                      ad.liveMatchType !== "none" && ad.liveMatchType !== null;
-                    const liveMaxMatchDisplay = ad.liveMaxMatchPct
-                      ? String(parseFloat(ad.liveMaxMatchPct) * 100)
-                      : "";
-                    const isDisabled = disabledAccounts[String(ad.id)] ?? false;
-                    return (
-                      <tr
-                        key={ad.id}
-                        className={`border-b border-subtle ${isDisabled ? "opacity-40" : ""}`}
-                      >
-                        <td className="py-1.5 align-top">
-                          <input
-                            type="checkbox"
-                            checked={!isDisabled}
-                            onChange={(e) =>
-                              setDisabledAccounts((prev) => {
-                                const next = { ...prev };
-                                if (e.target.checked)
-                                  delete next[String(ad.id)];
-                                else next[String(ad.id)] = true;
-                                return next;
-                              })
-                            }
-                            className="rounded border-strong mt-0.5"
-                            title={
-                              isDisabled
-                                ? "Account disabled in this profile"
-                                : "Account active"
-                            }
-                          />
-                        </td>
-                        <td className="py-1.5 text-secondary">
-                          <div className={isDisabled ? "line-through" : ""}>
-                            {ad.liveAccountName ?? ad.accountName}
-                          </div>
-                          {!isDisabled && (
-                            <input
-                              type="text"
-                              value={nameOverrides[String(ad.id)] ?? ""}
-                              onChange={(e) =>
-                                setNameOverrides((prev) => {
-                                  const next = { ...prev };
-                                  if (e.target.value)
-                                    next[String(ad.id)] = e.target.value;
-                                  else delete next[String(ad.id)];
-                                  return next;
-                                })
-                              }
-                              placeholder="Override name..."
-                              className="w-full mt-0.5 px-1.5 py-0.5 text-caption border rounded bg-surface-primary text-primary"
-                            />
-                          )}
-                        </td>
-                        <td className="py-1.5 text-right text-muted font-mono">
-                          {isPercent ? "" : "$"}
-                          {fmtValue(ad.liveValue)}
-                          {isPercent ? "%" : ""}
-                        </td>
-                        <td className="py-1.5 text-right">
-                          <div className="flex items-center justify-end gap-0.5">
-                            {!isPercent && (
-                              <span className="text-caption text-faint">$</span>
-                            )}
-                            <input
-                              type="number"
-                              value={contribOverrides[String(ad.id)] ?? ""}
-                              onChange={(e) =>
-                                setContribOverrides((prev) => ({
-                                  ...prev,
-                                  [String(ad.id)]: e.target.value,
-                                }))
-                              }
-                              placeholder="same"
-                              className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
-                            />
-                            {isPercent && (
-                              <span className="text-caption text-faint">%</span>
-                            )}
-                            {contribOverrides[String(ad.id)] && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setContribOverrides((prev) => {
-                                    const next = { ...prev };
-                                    delete next[String(ad.id)];
-                                    return next;
-                                  })
-                                }
-                                className="text-caption text-faint hover:text-red-500"
-                              >
-                                ×
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-1.5 text-right">
-                          {hasMatch ? (
-                            <div className="flex items-center justify-end gap-0.5">
-                              <input
-                                type="number"
-                                value={
-                                  matchOverrides[String(ad.id)]?.matchValue ??
-                                  ""
-                                }
-                                onChange={(e) =>
-                                  setMatchOverrides((prev) => ({
-                                    ...prev,
-                                    [String(ad.id)]: {
-                                      ...prev[String(ad.id)],
-                                      matchValue: e.target.value,
-                                    },
-                                  }))
-                                }
-                                placeholder={fmtValue(ad.liveMatchValue)}
-                                className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
-                              />
-                              <span className="text-caption text-faint">%</span>
-                              {matchOverrides[String(ad.id)]?.matchValue && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setMatchOverrides((prev) => {
-                                      const next = { ...prev };
-                                      if (next[String(ad.id)]) {
-                                        next[String(ad.id)] = {
-                                          ...next[String(ad.id)],
-                                          matchValue: "",
-                                        };
-                                      }
-                                      return next;
-                                    })
-                                  }
-                                  className="text-caption text-faint hover:text-red-500"
-                                >
-                                  ×
-                                </button>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-faint">—</span>
-                          )}
-                        </td>
-                        <td className="py-1.5 text-right">
-                          {hasMatch ? (
-                            <div className="flex items-center justify-end gap-0.5">
-                              <input
-                                type="number"
-                                value={
-                                  matchOverrides[String(ad.id)]?.maxMatchPct ??
-                                  ""
-                                }
-                                onChange={(e) =>
-                                  setMatchOverrides((prev) => ({
-                                    ...prev,
-                                    [String(ad.id)]: {
-                                      ...prev[String(ad.id)],
-                                      maxMatchPct: e.target.value,
-                                    },
-                                  }))
-                                }
-                                placeholder={liveMaxMatchDisplay || "—"}
-                                className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
-                              />
-                              <span className="text-caption text-faint">%</span>
-                              {matchOverrides[String(ad.id)]?.maxMatchPct && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setMatchOverrides((prev) => {
-                                      const next = { ...prev };
-                                      if (next[String(ad.id)]) {
-                                        next[String(ad.id)] = {
-                                          ...next[String(ad.id)],
-                                          maxMatchPct: "",
-                                        };
-                                      }
-                                      return next;
-                                    })
-                                  }
-                                  className="text-caption text-faint hover:text-red-500"
-                                >
-                                  ×
-                                </button>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-faint">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-          {/* Bonus Overrides */}
-          {baseData?.salaryDetails && baseData.salaryDetails.length > 0 && (
-            <div>
-              <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
-                Bonus & Employer
-              </h4>
-              <div className="space-y-3">
-                {baseData.salaryDetails.map((sd) => {
-                  const jo = jobOverrides[String(sd.jobId)] ?? {};
-                  const setField = (field: string, value: string) =>
-                    setJobOverrides((prev) => ({
-                      ...prev,
-                      [String(sd.jobId)]: {
-                        ...(prev[String(sd.jobId)] ?? {}),
-                        [field]: value,
-                      },
-                    }));
-                  const liveBonusPctDisplay = sd.liveBonusPercent
-                    ? String(parseFloat(String(sd.liveBonusPercent)) * 100)
-                    : "0";
-                  const liveBonusMultDisplay = sd.liveBonusMultiplier
-                    ? String(parseFloat(String(sd.liveBonusMultiplier)))
-                    : "1";
-                  return (
-                    <div key={sd.jobId} className="border rounded-lg p-3">
-                      <div className="text-xs font-medium text-secondary mb-2 flex items-center gap-2">
-                        <span>{sd.personName} —</span>
-                        <input
-                          type="text"
-                          value={employerNameOverrides[String(sd.jobId)] ?? ""}
-                          onChange={(e) =>
-                            setEmployerNameOverrides((prev) => {
-                              const next = { ...prev };
-                              if (e.target.value)
-                                next[String(sd.jobId)] = e.target.value;
-                              else delete next[String(sd.jobId)];
-                              return next;
-                            })
-                          }
-                          placeholder={sd.employerName}
-                          className="flex-1 px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-caption text-muted">
-                            Bonus
-                          </label>
-                          <div className="flex items-center gap-0.5 mt-0.5">
-                            <input
-                              type="number"
-                              value={jo.bonusPercent ?? ""}
-                              onChange={(e) =>
-                                setField("bonusPercent", e.target.value)
-                              }
-                              placeholder={liveBonusPctDisplay}
-                              step="1"
-                              className="w-full px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
-                            />
-                            <span className="text-caption text-faint shrink-0">
-                              %
-                            </span>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-caption text-muted">
-                            Multiplier
-                          </label>
-                          <div className="flex items-center gap-0.5 mt-0.5">
-                            <input
-                              type="number"
-                              value={jo.bonusMultiplier ?? ""}
-                              onChange={(e) =>
-                                setField("bonusMultiplier", e.target.value)
-                              }
-                              placeholder={liveBonusMultDisplay}
-                              step="0.1"
-                              className="w-full px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
-                            />
-                            <span className="text-caption text-faint shrink-0">
-                              ×
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 mt-2">
-                        <label className="flex items-center gap-1.5 text-caption text-muted">
-                          <input
-                            type="checkbox"
-                            checked={
-                              jo.include401kInBonus === "true" ||
-                              (jo.include401kInBonus === undefined &&
-                                sd.liveInclude401kInBonus)
-                            }
-                            onChange={(e) =>
-                              setField(
-                                "include401kInBonus",
-                                String(e.target.checked),
-                              )
-                            }
-                            className="rounded border-strong"
-                          />
-                          Deduct 401k from bonus
-                        </label>
-                        <label className="flex items-center gap-1.5 text-caption text-muted">
-                          <input
-                            type="checkbox"
-                            checked={
-                              jo.includeBonusInContributions === "true" ||
-                              (jo.includeBonusInContributions === undefined &&
-                                sd.liveIncludeBonusInContributions)
-                            }
-                            onChange={(e) =>
-                              setField(
-                                "includeBonusInContributions",
-                                String(e.target.checked),
-                              )
-                            }
-                            className="rounded border-strong"
-                          />
-                          Contributions on salary + bonus
-                        </label>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t">
-          <FormError
-            error={createMutation.error ?? updateMutation.error}
-            prefix="Failed to save profile"
-            className="mb-2"
-          />
-          <div className="flex justify-end gap-2">
+          <div className="flex items-center gap-2 shrink-0 pt-4">
             <button
               type="button"
-              onClick={onClose}
-              className="px-3 py-1.5 text-xs font-medium rounded-md bg-surface-elevated text-secondary hover:bg-surface-strong"
+              onClick={onCancel}
+              className="px-2 py-1.5 text-xs font-medium text-muted hover:text-secondary"
             >
               Cancel
             </button>
@@ -1339,13 +728,753 @@ function ProfileEditor({
               type="button"
               onClick={handleSave}
               disabled={!name.trim() || isPending}
-              className="px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+              className="px-3 py-1.5 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
             >
-              {isPending ? "Saving…" : profileId !== null ? "Update" : "Create"}
+              {isPending ? "Saving…" : "Create"}
             </button>
           </div>
         </div>
+
+        {/* Contribution accounts */}
+        {baseData?.accountDetails && baseData.accountDetails.length > 0 && (
+          <div>
+            <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
+              Contributions
+            </h4>
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-muted border-b">
+                  <th className="w-6 py-1.5"></th>
+                  <th className="text-left py-1.5 font-medium">Account</th>
+                  <th className="text-right py-1.5 font-medium w-24">
+                    Current
+                  </th>
+                  <th className="text-right py-1.5 font-medium w-24">Value</th>
+                  <th className="text-right py-1.5 font-medium w-24">
+                    Employer Match
+                  </th>
+                  <th className="text-right py-1.5 font-medium w-24">
+                    Match Cap
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {baseData.accountDetails.map((ad) => {
+                  const isPercent = ad.liveMethod === "percent_of_salary";
+                  const fmtValue = (v: string | null | undefined) => {
+                    if (!v) return "—";
+                    const n = parseFloat(v);
+                    if (isNaN(n)) return v;
+                    return n % 1 === 0 ? String(n) : n.toFixed(2);
+                  };
+                  const hasMatch =
+                    ad.liveMatchType !== "none" && ad.liveMatchType !== null;
+                  const liveMaxMatchDisplay = ad.liveMaxMatchPct
+                    ? String(parseFloat(ad.liveMaxMatchPct) * 100)
+                    : "";
+                  const isDisabled = disabledAccounts[String(ad.id)] ?? false;
+                  return (
+                    <tr
+                      key={ad.id}
+                      className={`border-b border-subtle ${isDisabled ? "opacity-40" : ""}`}
+                    >
+                      <td className="py-1.5 align-top">
+                        <input
+                          type="checkbox"
+                          checked={!isDisabled}
+                          onChange={(e) =>
+                            setDisabledAccounts((prev) => {
+                              const next = { ...prev };
+                              if (e.target.checked) delete next[String(ad.id)];
+                              else next[String(ad.id)] = true;
+                              return next;
+                            })
+                          }
+                          className="rounded border-strong mt-0.5"
+                          title={
+                            isDisabled
+                              ? "Account disabled in this profile"
+                              : "Account active"
+                          }
+                        />
+                      </td>
+                      <td className="py-1.5 text-secondary">
+                        <div className={isDisabled ? "line-through" : ""}>
+                          {ad.liveAccountName ?? ad.accountName}
+                        </div>
+                        {!isDisabled && (
+                          <input
+                            type="text"
+                            value={nameValues[String(ad.id)] ?? ""}
+                            onChange={(e) =>
+                              setNameValues((prev) => {
+                                const next = { ...prev };
+                                if (e.target.value)
+                                  next[String(ad.id)] = e.target.value;
+                                else delete next[String(ad.id)];
+                                return next;
+                              })
+                            }
+                            placeholder="Custom name..."
+                            className="w-full mt-0.5 px-1.5 py-0.5 text-caption border rounded bg-surface-primary text-primary"
+                          />
+                        )}
+                      </td>
+                      <td className="py-1.5 text-right text-muted font-mono">
+                        {isPercent ? "" : "$"}
+                        {fmtValue(ad.liveValue)}
+                        {isPercent ? "%" : ""}
+                      </td>
+                      <td className="py-1.5 text-right">
+                        <div className="flex items-center justify-end gap-0.5">
+                          {!isPercent && (
+                            <span className="text-caption text-faint">$</span>
+                          )}
+                          <input
+                            type="number"
+                            value={contribValues[String(ad.id)] ?? ""}
+                            onChange={(e) =>
+                              setContribValues((prev) => ({
+                                ...prev,
+                                [String(ad.id)]: e.target.value,
+                              }))
+                            }
+                            placeholder="same"
+                            className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                          />
+                          {isPercent && (
+                            <span className="text-caption text-faint">%</span>
+                          )}
+                          {contribValues[String(ad.id)] && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setContribValues((prev) => {
+                                  const next = { ...prev };
+                                  delete next[String(ad.id)];
+                                  return next;
+                                })
+                              }
+                              className="text-caption text-faint hover:text-red-500"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-1.5 text-right">
+                        {hasMatch ? (
+                          <div className="flex items-center justify-end gap-0.5">
+                            <input
+                              type="number"
+                              value={
+                                matchValues[String(ad.id)]?.matchValue ?? ""
+                              }
+                              onChange={(e) =>
+                                setMatchValues((prev) => ({
+                                  ...prev,
+                                  [String(ad.id)]: {
+                                    ...prev[String(ad.id)],
+                                    matchValue: e.target.value,
+                                  },
+                                }))
+                              }
+                              placeholder={fmtValue(ad.liveMatchValue)}
+                              className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                            />
+                            <span className="text-caption text-faint">%</span>
+                          </div>
+                        ) : (
+                          <span className="text-faint">—</span>
+                        )}
+                      </td>
+                      <td className="py-1.5 text-right">
+                        {hasMatch ? (
+                          <div className="flex items-center justify-end gap-0.5">
+                            <input
+                              type="number"
+                              value={
+                                matchValues[String(ad.id)]?.maxMatchPct ?? ""
+                              }
+                              onChange={(e) =>
+                                setMatchValues((prev) => ({
+                                  ...prev,
+                                  [String(ad.id)]: {
+                                    ...prev[String(ad.id)],
+                                    maxMatchPct: e.target.value,
+                                  },
+                                }))
+                              }
+                              placeholder={liveMaxMatchDisplay || "—"}
+                              className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                            />
+                            <span className="text-caption text-faint">%</span>
+                          </div>
+                        ) : (
+                          <span className="text-faint">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {/* Employer & bonus handling — bonus AMOUNT terms live on the Salary Profile */}
+        {baseData?.salaryDetails && baseData.salaryDetails.length > 0 && (
+          <div>
+            <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
+              Employer & Bonus Handling
+            </h4>
+            <div className="space-y-3">
+              {baseData.salaryDetails.map((sd) => {
+                const jo = jobValues[String(sd.jobId)] ?? {};
+                const setField = (field: string, value: string) =>
+                  setJobValues((prev) => ({
+                    ...prev,
+                    [String(sd.jobId)]: {
+                      ...(prev[String(sd.jobId)] ?? {}),
+                      [field]: value,
+                    },
+                  }));
+                return (
+                  <div key={sd.jobId} className="border rounded-lg p-3">
+                    <div className="text-xs font-medium text-secondary mb-2 flex items-center gap-2">
+                      <span>{sd.personName} —</span>
+                      <input
+                        type="text"
+                        value={employerNameValues[String(sd.jobId)] ?? ""}
+                        onChange={(e) =>
+                          setEmployerNameValues((prev) => {
+                            const next = { ...prev };
+                            if (e.target.value)
+                              next[String(sd.jobId)] = e.target.value;
+                            else delete next[String(sd.jobId)];
+                            return next;
+                          })
+                        }
+                        placeholder={sd.employerName}
+                        className="flex-1 px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="flex items-center gap-1.5 text-caption text-muted">
+                        <input
+                          type="checkbox"
+                          checked={
+                            jo.include401kInBonus === "true" ||
+                            (jo.include401kInBonus === undefined &&
+                              sd.liveInclude401kInBonus)
+                          }
+                          onChange={(e) =>
+                            setField(
+                              "include401kInBonus",
+                              String(e.target.checked),
+                            )
+                          }
+                          className="rounded border-strong"
+                        />
+                        Deduct 401k from bonus
+                      </label>
+                      <label className="flex items-center gap-1.5 text-caption text-muted">
+                        <input
+                          type="checkbox"
+                          checked={
+                            jo.includeBonusInContributions === "true" ||
+                            (jo.includeBonusInContributions === undefined &&
+                              sd.liveIncludeBonusInContributions)
+                          }
+                          onChange={(e) =>
+                            setField(
+                              "includeBonusInContributions",
+                              String(e.target.checked),
+                            )
+                          }
+                          className="rounded border-strong"
+                        />
+                        Contributions on salary + bonus
+                      </label>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Profile Inline Editor — unlocked, in-place editing of an existing profile
+// ---------------------------------------------------------------------------
+
+/** The stored shape of contribution_profiles.contribution_overrides. */
+type OverridesRoot = {
+  contributionAccounts?: Record<string, Record<string, unknown>>;
+  jobs?: Record<string, Record<string, unknown>>;
+};
+
+/**
+ * Same fields as ProfileDetailPanel, rendered as inputs. There is no Save
+ * button: each field commits on blur (checkboxes on change, since they have
+ * no natural blur moment), sending only that field's patch — the same
+ * commit-on-blur model as SavingsAllocationTable. Draft strings exist purely
+ * so typing a multi-digit number doesn't fire a mutation per keystroke.
+ */
+function ProfileInlineEditor({
+  profileId,
+  lockToggle,
+  onSaved,
+}: {
+  profileId: number;
+  lockToggle?: React.ReactNode;
+  onSaved: () => void;
+}) {
+  const { data: profile } = trpc.contributionProfile.getById.useQuery({
+    id: profileId,
+  });
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const updateMutation = trpc.contributionProfile.update.useMutation({
+    onSuccess: () => onSaved(),
+  });
+
+  const setDraft = (key: string, value: string) =>
+    setDrafts((prev) => ({ ...prev, [key]: value }));
+  const clearDraft = (key: string) =>
+    setDrafts((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+
+  if (!profile) return null;
+
+  const root = (profile.contributionOverrides ?? {}) as OverridesRoot;
+  const accountOverrides = (id: number) =>
+    root.contributionAccounts?.[String(id)] ?? {};
+  const jobOverrides = (id: number) => root.jobs?.[String(id)] ?? {};
+
+  /** Send a patch for one account. `undefined` removes that key. */
+  const patchAccount = (
+    accountId: number,
+    changes: Record<string, unknown>,
+  ) => {
+    const accounts = { ...(root.contributionAccounts ?? {}) };
+    const entry = { ...(accounts[String(accountId)] ?? {}) };
+    for (const [key, value] of Object.entries(changes)) {
+      if (value === undefined) delete entry[key];
+      else entry[key] = value;
+    }
+    if (Object.keys(entry).length === 0) delete accounts[String(accountId)];
+    else accounts[String(accountId)] = entry;
+    updateMutation.mutate({
+      id: profileId,
+      contributionOverrides: { ...root, contributionAccounts: accounts },
+    });
+  };
+
+  /** Send a patch for one job. `undefined` removes that key. */
+  const patchJob = (jobId: number, changes: Record<string, unknown>) => {
+    const jobs = { ...(root.jobs ?? {}) };
+    const entry = { ...(jobs[String(jobId)] ?? {}) };
+    for (const [key, value] of Object.entries(changes)) {
+      if (value === undefined) delete entry[key];
+      else entry[key] = value;
+    }
+    if (Object.keys(entry).length === 0) delete jobs[String(jobId)];
+    else jobs[String(jobId)] = entry;
+    updateMutation.mutate({
+      id: profileId,
+      contributionOverrides: { ...root, jobs },
+    });
+  };
+
+  /**
+   * Shared blur handler for a numeric field: no-ops when nothing was typed or
+   * the typed value matches what's already stored, clears the value when the
+   * field was emptied, otherwise sends `toValue(parsed)`.
+   */
+  const commitNumeric = (
+    draftKey: string,
+    stored: string,
+    apply: (value: unknown) => void,
+    toValue: (num: number) => unknown,
+  ) => {
+    const draft = drafts[draftKey];
+    if (draft === undefined) return;
+    clearDraft(draftKey);
+    const trimmed = draft.trim();
+    if (trimmed === stored.trim()) return;
+    if (trimmed === "") {
+      apply(undefined);
+      return;
+    }
+    const num = parseFloat(trimmed);
+    if (isNaN(num)) return;
+    apply(toValue(num));
+  };
+
+  const commitText = (
+    draftKey: string,
+    stored: string,
+    apply: (value: unknown) => void,
+  ) => {
+    const draft = drafts[draftKey];
+    if (draft === undefined) return;
+    clearDraft(draftKey);
+    const trimmed = draft.trim();
+    if (trimmed === stored.trim()) return;
+    apply(trimmed === "" ? undefined : trimmed);
+  };
+
+  const commitProfileName = () => {
+    const draft = drafts["profile:name"];
+    if (draft === undefined) return;
+    clearDraft("profile:name");
+    const trimmed = draft.trim();
+    if (!trimmed || trimmed === profile.name) return;
+    updateMutation.mutate({ id: profileId, name: trimmed });
+  };
+
+  const commitProfileDescription = () => {
+    const draft = drafts["profile:description"];
+    if (draft === undefined) return;
+    clearDraft("profile:description");
+    const trimmed = draft.trim();
+    if (trimmed === (profile.description ?? "")) return;
+    updateMutation.mutate({ id: profileId, description: trimmed || null });
+  };
+
+  return (
+    <div>
+      <FormError
+        error={updateMutation.error}
+        prefix="Failed to save profile"
+        className="mb-3"
+      />
+
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <div>
+          <label className="text-label font-medium text-muted">Name</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={drafts["profile:name"] ?? profile.name}
+              onChange={(e) => setDraft("profile:name", e.target.value)}
+              onBlur={commitProfileName}
+              className="mt-0.5 w-full px-2 py-1.5 text-xs border rounded bg-surface-primary text-primary"
+            />
+            {lockToggle}
+          </div>
+        </div>
+        <div>
+          <label className="text-label font-medium text-muted">
+            Description
+          </label>
+          <input
+            type="text"
+            value={drafts["profile:description"] ?? profile.description ?? ""}
+            onChange={(e) => setDraft("profile:description", e.target.value)}
+            onBlur={commitProfileDescription}
+            placeholder="Optional description"
+            className="mt-0.5 w-full px-2 py-1.5 text-xs border rounded bg-surface-primary text-primary"
+          />
+        </div>
+      </div>
+
+      {profile.accountDetails.length > 0 && (
+        <div className="mb-5">
+          <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
+            Contribution Accounts
+          </h4>
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="border-b-2 border-strong">
+                <th className="w-6 py-2 pl-4"></th>
+                <th className="text-left py-2 px-3 text-muted font-medium">
+                  Account
+                </th>
+                <th className="text-right py-2 px-3 text-muted font-medium w-24">
+                  Current
+                </th>
+                <th className="text-right py-2 px-3 text-muted font-medium w-24">
+                  Value
+                </th>
+                <th className="text-right py-2 px-3 text-muted font-medium w-24">
+                  Employer Match
+                </th>
+                <th className="text-right py-2 px-3 text-muted font-medium w-24">
+                  Match Cap
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {profile.accountDetails.map((ad, rowIdx) => {
+                const ov = accountOverrides(ad.id);
+                const isPercent = ad.liveMethod === "percent_of_salary";
+                const fmtValue = (v: string | null | undefined) => {
+                  if (!v) return "—";
+                  const n = parseFloat(v);
+                  if (isNaN(n)) return v;
+                  return n % 1 === 0 ? String(n) : n.toFixed(2);
+                };
+                const hasMatch =
+                  ad.liveMatchType !== "none" && ad.liveMatchType !== null;
+                const liveMaxMatchDisplay = ad.liveMaxMatchPct
+                  ? String(parseFloat(ad.liveMaxMatchPct) * 100)
+                  : "";
+                const isDisabled = ov.isActive === false;
+                const storedValue =
+                  ov.contributionValue !== undefined
+                    ? String(ov.contributionValue)
+                    : "";
+                const storedName =
+                  ov.displayNameOverride !== undefined
+                    ? String(ov.displayNameOverride)
+                    : "";
+                const storedMatch =
+                  ov.employerMatchValue !== undefined
+                    ? String(ov.employerMatchValue)
+                    : "";
+                const storedCap =
+                  ov.employerMaxMatchPct !== undefined
+                    ? String(Number(ov.employerMaxMatchPct) * 100)
+                    : "";
+                return (
+                  <tr
+                    key={ad.id}
+                    className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+                      rowIdx % 2 === 1
+                        ? "bg-surface-sunken/60"
+                        : "bg-surface-primary"
+                    } ${isDisabled ? "opacity-40" : ""}`}
+                  >
+                    <td className="py-1.5 pl-4 align-top">
+                      <input
+                        type="checkbox"
+                        checked={!isDisabled}
+                        onChange={(e) =>
+                          patchAccount(ad.id, {
+                            isActive: e.target.checked ? undefined : false,
+                          })
+                        }
+                        className="rounded border-strong mt-0.5"
+                        title={
+                          isDisabled
+                            ? "Account disabled in this profile"
+                            : "Account active"
+                        }
+                      />
+                    </td>
+                    <td className="py-1.5 px-3 text-secondary">
+                      <div className={isDisabled ? "line-through" : ""}>
+                        {ad.liveAccountName ?? ad.accountName}
+                      </div>
+                      {!isDisabled && (
+                        <input
+                          type="text"
+                          value={drafts[`a${ad.id}:name`] ?? storedName}
+                          onChange={(e) =>
+                            setDraft(`a${ad.id}:name`, e.target.value)
+                          }
+                          onBlur={() =>
+                            commitText(`a${ad.id}:name`, storedName, (value) =>
+                              patchAccount(ad.id, {
+                                displayNameOverride: value,
+                              }),
+                            )
+                          }
+                          placeholder="Custom name..."
+                          className="w-full mt-0.5 px-1.5 py-0.5 text-caption border rounded bg-surface-primary text-primary"
+                        />
+                      )}
+                    </td>
+                    <td className="py-1.5 px-3 text-right text-muted font-mono">
+                      {isPercent ? "" : "$"}
+                      {fmtValue(ad.liveValue)}
+                      {isPercent ? "%" : ""}
+                    </td>
+                    <td className="py-1.5 px-3 text-right">
+                      <div className="flex items-center justify-end gap-0.5">
+                        {!isPercent && (
+                          <span className="text-caption text-faint">$</span>
+                        )}
+                        <input
+                          type="number"
+                          value={drafts[`a${ad.id}:value`] ?? storedValue}
+                          onChange={(e) =>
+                            setDraft(`a${ad.id}:value`, e.target.value)
+                          }
+                          onBlur={() =>
+                            commitNumeric(
+                              `a${ad.id}:value`,
+                              storedValue,
+                              (value) =>
+                                patchAccount(ad.id, {
+                                  contributionValue: value,
+                                }),
+                              (num) => String(num),
+                            )
+                          }
+                          placeholder="same"
+                          className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                        />
+                        {isPercent && (
+                          <span className="text-caption text-faint">%</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-1.5 px-3 text-right">
+                      {hasMatch ? (
+                        <div className="flex items-center justify-end gap-0.5">
+                          <input
+                            type="number"
+                            value={drafts[`a${ad.id}:match`] ?? storedMatch}
+                            onChange={(e) =>
+                              setDraft(`a${ad.id}:match`, e.target.value)
+                            }
+                            onBlur={() =>
+                              commitNumeric(
+                                `a${ad.id}:match`,
+                                storedMatch,
+                                (value) =>
+                                  patchAccount(ad.id, {
+                                    employerMatchValue: value,
+                                  }),
+                                (num) => String(num),
+                              )
+                            }
+                            placeholder={fmtValue(ad.liveMatchValue)}
+                            className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                          />
+                          <span className="text-caption text-faint">%</span>
+                        </div>
+                      ) : (
+                        <span className="text-faint">—</span>
+                      )}
+                    </td>
+                    <td className="py-1.5 px-3 text-right">
+                      {hasMatch ? (
+                        <div className="flex items-center justify-end gap-0.5">
+                          <input
+                            type="number"
+                            value={drafts[`a${ad.id}:cap`] ?? storedCap}
+                            onChange={(e) =>
+                              setDraft(`a${ad.id}:cap`, e.target.value)
+                            }
+                            onBlur={() =>
+                              commitNumeric(
+                                `a${ad.id}:cap`,
+                                storedCap,
+                                (value) =>
+                                  patchAccount(ad.id, {
+                                    employerMaxMatchPct: value,
+                                  }),
+                                // Display percentage back to decimal (5 → 0.05)
+                                (num) => String(num / 100),
+                              )
+                            }
+                            placeholder={liveMaxMatchDisplay || "—"}
+                            className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                          />
+                          <span className="text-caption text-faint">%</span>
+                        </div>
+                      ) : (
+                        <span className="text-faint">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {profile.salaryDetails.length > 0 && (
+        <div>
+          <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
+            Employer & Bonus Handling
+          </h4>
+          <div className="space-y-3">
+            {profile.salaryDetails.map((sd) => {
+              const jo = jobOverrides(sd.jobId);
+              const storedEmployer =
+                jo.employerName !== undefined ? String(jo.employerName) : "";
+              const include401k =
+                jo.include401kInBonus !== undefined
+                  ? jo.include401kInBonus === true
+                  : sd.liveInclude401kInBonus;
+              const bonusInContribs =
+                jo.includeBonusInContributions !== undefined
+                  ? jo.includeBonusInContributions === true
+                  : sd.liveIncludeBonusInContributions;
+              return (
+                <div key={sd.jobId} className="border rounded-lg p-3">
+                  <div className="text-xs font-medium text-secondary mb-2 flex items-center gap-2">
+                    <span>{sd.personName} —</span>
+                    <input
+                      type="text"
+                      value={drafts[`j${sd.jobId}:employer`] ?? storedEmployer}
+                      onChange={(e) =>
+                        setDraft(`j${sd.jobId}:employer`, e.target.value)
+                      }
+                      onBlur={() =>
+                        commitText(
+                          `j${sd.jobId}:employer`,
+                          storedEmployer,
+                          (value) =>
+                            patchJob(sd.jobId, { employerName: value }),
+                        )
+                      }
+                      placeholder={sd.employerName}
+                      className="flex-1 px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="flex items-center gap-1.5 text-caption text-muted">
+                      <input
+                        type="checkbox"
+                        checked={include401k}
+                        onChange={(e) =>
+                          patchJob(sd.jobId, {
+                            include401kInBonus:
+                              e.target.checked === sd.liveInclude401kInBonus
+                                ? undefined
+                                : e.target.checked,
+                          })
+                        }
+                        className="rounded border-strong"
+                      />
+                      Deduct 401k from bonus
+                    </label>
+                    <label className="flex items-center gap-1.5 text-caption text-muted">
+                      <input
+                        type="checkbox"
+                        checked={bonusInContribs}
+                        onChange={(e) =>
+                          patchJob(sd.jobId, {
+                            includeBonusInContributions:
+                              e.target.checked ===
+                              sd.liveIncludeBonusInContributions
+                                ? undefined
+                                : e.target.checked,
+                          })
+                        }
+                        className="rounded border-strong"
+                      />
+                      Contributions on salary + bonus
+                    </label>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

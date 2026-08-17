@@ -261,6 +261,7 @@ export const adminProcedures = {
           overrides: scenarioOverridesSchema.default({}),
           budgetProfileId: z.number().int().nullable().optional(),
           contributionProfileId: z.number().int().nullable().optional(),
+          salaryProfileId: z.number().int().nullable().optional(),
         }),
       )
       .mutation(({ ctx, input }) =>
@@ -279,6 +280,7 @@ export const adminProcedures = {
           overrides: scenarioOverridesSchema.optional(),
           budgetProfileId: z.number().int().nullable().optional(),
           contributionProfileId: z.number().int().nullable().optional(),
+          salaryProfileId: z.number().int().nullable().optional(),
         }),
       )
       .mutation(({ ctx, input: { id, ...data } }) =>
@@ -321,6 +323,25 @@ export const adminProcedures = {
           .update(schema.scenarios)
           .set({
             contributionProfileId: input.contributionProfileId,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.scenarios.id, input.id))
+          .returning()
+          .then((r) => r[0]),
+      ),
+    /** Pin (or clear, with null) which Salary Profile is "active" when this Plan is selected. */
+    setSalaryProfilePin: scenarioProcedure
+      .input(
+        z.object({
+          id: z.number().int(),
+          salaryProfileId: z.number().nullable(),
+        }),
+      )
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .update(schema.scenarios)
+          .set({
+            salaryProfileId: input.salaryProfileId,
             updatedAt: new Date(),
           })
           .where(eq(schema.scenarios.id, input.id))

@@ -488,13 +488,52 @@ function transformV06xToCurrent(tables: TableData): TableData {
  * `savings_planned_tx_settlements` (added in v0.7.1, `0001_parched_karma` /
  * `0001_fresh_masque`) — restoring one simply starts that table empty, which
  * is safe (it only ever holds settlement records, never a source of truth
- * for money already accounted for elsewhere). Idempotent, so a backup
- * already at `0001_parched_karma`/`0001_fresh_masque` is a pure pass-through.
+ * for money already accounted for elsewhere).
+ *
+ * It also predates `0008_kill_live_sentinel`, which dropped
+ * `contribution_profiles.is_default` and replaced
+ * `salary_profiles.salary_overrides` (sparse personId → number) with
+ * `salary_profiles.salaries` (personId → {mode:"job"} | {mode:"fixed",
+ * salary}). Both are reshaped here with the SAME rule the migration uses, so
+ * an old snapshot restores with identical semantics rather than being
+ * rejected: a person who had a number was explicitly pinned (fixed),
+ * everyone else follows their job.
+ *
+ * Every step is idempotent, so a backup already at the current shape is a
+ * pure pass-through.
  */
 function transformV07xToCurrent(tables: TableData): TableData {
   if (!tables["savings_planned_tx_settlements"]) {
     tables["savings_planned_tx_settlements"] = [];
   }
+
+  // 0008: contribution_profiles.is_default no longer exists — the row it
+  // flagged survives as an ordinary profile, so the flag is simply dropped.
+  for (const row of tables["contribution_profiles"] ?? []) {
+    delete (row as Record<string, unknown>).is_default;
+  }
+
+  // 0008: salary_profiles.salary_overrides → salaries, sparse → complete.
+  const personIds = (tables["people"] ?? [])
+    .map((p) => (p as Record<string, unknown>).id)
+    .filter((id): id is number | string => id != null)
+    .map(String);
+  for (const raw of tables["salary_profiles"] ?? []) {
+    const row = raw as Record<string, unknown>;
+    if (!("salary_overrides" in row)) continue;
+    const old = (row.salary_overrides ?? {}) as Record<string, unknown>;
+    delete row.salary_overrides;
+    const salaries: Record<string, unknown> = {};
+    for (const personId of personIds) {
+      const pinned = old[personId];
+      salaries[personId] =
+        typeof pinned === "number"
+          ? { mode: "fixed", salary: pinned }
+          : { mode: "job" };
+    }
+    row.salaries = salaries;
+  }
+
   return tables;
 }
 

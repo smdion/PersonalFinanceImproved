@@ -3,8 +3,13 @@ export type RawItem = {
   category: string;
   subcategory: string;
   amounts: number[];
-  /** Linked contribution account's monthly amount (displayed instead of DB amounts). */
+  /** Linked contribution account's monthly amount for the SELECTED column
+   *  (displayed instead of DB amounts). Prefer contribAmounts when rendering
+   *  a specific column — columns can pin different Contribution Profiles. */
   contribAmount?: number | null;
+  /** Per-column linked contribution amounts — index i is column i resolved
+   *  under column i's own Contribution/Salary Profile. Null when unlinked. */
+  contribAmounts?: number[] | null;
   isEssential: boolean;
   /** Linked budget API category ID (YNAB UUID, etc.) */
   apiCategoryId?: string | null;

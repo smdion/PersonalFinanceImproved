@@ -65,6 +65,8 @@ import {
 } from "@/lib/calculators/savings-capacity";
 import { resolveContributionProfileId } from "@/lib/calculators/contribution-profile-resolution";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
+import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
+import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 
 export default function SavingsPage() {
   const user = useUser();
@@ -90,7 +92,7 @@ export default function SavingsPage() {
     trpc.contributionProfile.list.useQuery();
   // Plan pin -> globally-active contribution profile (single computation
   // path — matches expenses/page.tsx, paycheck/page.tsx, contributions/page.tsx).
-  const { profileId: activeContribProfileId } = useEffectiveProfileId(
+  const { planPinId: planContribProfileId } = useEffectiveProfileId(
     "contribution",
     {
       validIds: contribProfilesList?.map((p) => p.id),
@@ -119,31 +121,44 @@ export default function SavingsPage() {
   const { data: apiCategoriesData } = trpc.budget.listApiCategories.useQuery();
 
   const salaryOverrides = useSalaryOverrides();
+
+  // Independent Salary Profile axis (Plan pin -> globally-active setting).
+
+  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
+  // Tiers, not a pre-resolved id — see docs/RULES.md "Profile Pins" and
+  // contribution-profile-resolution.ts: folding the Plan pin into the
+  // global-default tier is what let a column pin outrank an active Plan.
+  const contributionProfileTiers = {
+    planPinId: planContribProfileId,
+    localSelectionId: null,
+    globalDefaultId: rawActiveContribProfileId,
+  };
   const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: budgetColumn,
-    activeContribProfileId,
+    contributionProfile: contributionProfileTiers,
     ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
   });
-  const { data: budgetProfilesList } = trpc.budget.listProfiles.useQuery();
+  const { data: budgetProfilesList } = useBudgetProfilesList();
 
   // Derive contribution profile from the budget column's linked profile
   // (holistic rule) — resolveContributionProfileId is the only path this
   // and computeActiveSummary/use-budget-derived-data.ts should use, so
   // budget item $ amounts, this page's pool, and the payroll breakdown
   // never disagree about which contribution profile is in effect.
-  const effectiveContribProfileId = resolveContributionProfileId(
-    budgetData?.profile?.columnContributionProfileIds as
+  const effectiveContribProfileId = resolveContributionProfileId({
+    ...contributionProfileTiers,
+    columnPinIds: budgetData?.profile?.columnContributionProfileIds as
       (number | null)[] | null,
-    budgetColumn,
-    budgetData?.columnLabels?.length ?? 0,
-    activeContribProfileId,
-  );
+    column: budgetColumn,
+    numColumns: budgetData?.columnLabels?.length ?? 0,
+  });
 
   const paycheckInput = {
     ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
     ...(effectiveContribProfileId != null
       ? { contributionProfileId: effectiveContribProfileId }
       : {}),
+    ...salaryProfileInput,
   };
   const { data: paycheckData } = trpc.paycheck.computeSummary.useQuery(
     Object.keys(paycheckInput).length > 0 ? paycheckInput : undefined,
@@ -184,7 +199,7 @@ export default function SavingsPage() {
     {
       selectedColumn: budgetColumn,
       profileId: effectiveRecalcProfileId ?? undefined,
-      activeContribProfileId,
+      contributionProfile: contributionProfileTiers,
       ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
     },
     { enabled: isPreviewingOtherProfile },

@@ -55,10 +55,15 @@ describe("settings.appSettings", () => {
   afterAll(() => cleanup());
 
   describe("list", () => {
-    it("returns an empty array when no settings exist", async () => {
+    it("returns only the migration-seeded settings on a fresh DB", async () => {
+      // 0008_kill_live_sentinel backfills the two active-profile keys so they
+      // always name a real row, so a fresh DB is no longer setting-free.
       const rows = await caller.settings.appSettings.list();
       expect(Array.isArray(rows)).toBe(true);
-      expect(rows).toHaveLength(0);
+      expect(rows.map((r: { key: string }) => r.key).sort()).toEqual([
+        "active_contrib_profile_id",
+        "active_salary_profile_id",
+      ]);
     });
 
     it("returns seeded settings ordered by key", async () => {

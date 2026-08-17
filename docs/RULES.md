@@ -226,20 +226,22 @@ Portfolio Snapshots + Performance Data + Settings
 
 ### Shared State Sources
 
-| Data                      | Source                               | Key                                                            |
-| ------------------------- | ------------------------------------ | -------------------------------------------------------------- |
-| Year-level financial data | `buildYearEndHistory()`              | `YearEndRow` from `net_worth_annual` + live current year       |
-| Tax location breakdown    | `YearEndRow.portfolioByTaxLocation`  | JSONB on `net_worth_annual` (finalized) / snapshot (current)   |
-| Budget column             | `app_settings`                       | `budget_active_column`                                         |
-| Annual expenses           | `getAnnualExpensesFromBudget()`      | Uses `budget_active_column`                                    |
-| Current salary            | `getCurrentSalary()`                 | `salary_changes` → `jobs.annual_salary` fallback               |
-| Portfolio balances        | `getLatestSnapshot()`                | Latest `portfolio_snapshots` row                               |
-| Contribution accounts     | `buildContribAccounts()`             | `contribution_accounts` table                                  |
-| Contribution specs        | `buildContributionDisplaySpecs()`    | Per-account specs with match redistribution                    |
-| Category aggregations     | `aggregateContributionsByCategory()` | Contribution + match totals per account category               |
-| Account type config       | `getAccountTypeConfig()`             | All account-type behavior (from `ACCOUNT_TYPE_CONFIG`)         |
-| Parent category map       | `getParentCategory()`                | Account type → goal category (Retirement/Portfolio) via config |
-| Mortgage balance          | `computeMortgageBalance()`           | Amortization from loans + extra payments                       |
+| Data                       | Source                               | Key                                                                        |
+| -------------------------- | ------------------------------------ | -------------------------------------------------------------------------- |
+| Year-level financial data  | `buildYearEndHistory()`              | `YearEndRow` from `net_worth_annual` + live current year                   |
+| Tax location breakdown     | `YearEndRow.portfolioByTaxLocation`  | JSONB on `net_worth_annual` (finalized) / snapshot (current)               |
+| Budget column              | `app_settings`                       | `budget_active_column`                                                     |
+| Annual expenses            | `getAnnualExpensesFromBudget()`      | Uses `budget_active_column`                                                |
+| Current salary (raw)       | `getCurrentSalary()`                 | `salary_changes` → `jobs.annual_salary` fallback                           |
+| Current salary (effective) | `resolveEffectiveSalary()`           | `getCurrentSalary()` + the salary override map (below)                     |
+| Salary override map        | `loadAndApplySalaryProfile()`        | Plan/session pins, then the active Salary Profile's `mode:"fixed"` entries |
+| Portfolio balances         | `getLatestSnapshot()`                | Latest `portfolio_snapshots` row                                           |
+| Contribution accounts      | `buildContribAccounts()`             | `contribution_accounts` table                                              |
+| Contribution specs         | `buildContributionDisplaySpecs()`    | Per-account specs with match redistribution                                |
+| Category aggregations      | `aggregateContributionsByCategory()` | Contribution + match totals per account category                           |
+| Account type config        | `getAccountTypeConfig()`             | All account-type behavior (from `ACCOUNT_TYPE_CONFIG`)                     |
+| Parent category map        | `getParentCategory()`                | Account type → goal category (Retirement/Portfolio) via config             |
+| Mortgage balance           | `computeMortgageBalance()`           | Amortization from loans + extra payments                                   |
 
 ### Rules
 
@@ -249,10 +251,79 @@ Portfolio Snapshots + Performance Data + Settings
 4. **Shared helpers, not duplicated queries.** Use `helpers.ts` when multiple routers need the same derived value.
 5. **Age and personal data come from the `people` table.** Never hardcode ages or personal details.
 
+### The Salary Profile layer
+
+`getCurrentSalary()` is the raw, un-overridden answer to "what does this job
+pay" and stays the sole authority for it — nothing writes salary back into
+`jobs` / `salary_changes` on its behalf. The same goes for the bonus terms on
+`jobs` (`bonus_percent`, `bonus_multiplier`, `months_in_bonus_year`). A
+**Salary Profile** sits on top of both: `salary_profiles.salaries` maps a
+personId to an entry of **optional** fields, and
+
+> **presence of a field IS the pin.**
+
+```ts
+type SalaryProfileEntry = {
+  salary?: number; // else getCurrentSalary() on every read
+  bonusPercent?: number; // fraction, 0.12 = 12%
+  bonusMultiplier?: number;
+  monthsInBonusYear?: number;
+};
+```
+
+A field that is set pins that value for this profile. A field that is absent
+resolves live from the job record. An empty entry — or no key for that person
+at all — pins nothing; the two say the same thing, so the router normalizes
+empty entries away on write. There is **no `mode` discriminator** and no
+"Follows job" / "Fixed amount" toggle anywhere in the UI.
+
+The fields are **independent**. Pinning a salary says nothing about bonus, so
+a pinned salary still earns a bonus computed from live (or separately pinned)
+terms. Anything that treats "salary is pinned" as "bonus is zero" is a bug —
+that exact assumption shipped once and silently dropped pinned people's
+bonuses from every contribution and projection number while the profile
+editor kept displaying them.
+
+**One definition of compensation.** `resolveCompensation()` in
+`server/helpers/salary.ts` is the single place salary-plus-bonus is computed
+under a profile entry, and `resolveProfile`, `build-engine-payload`, and the
+`salaryProfile.getById` editor preview all go through it. They previously
+re-derived it separately and disagreed. Do not add a fourth derivation.
+
+**Invariant:** only entries that pin _something_ are written into the
+`Map<personId, SalaryProfileEntry>` salary override map
+(`applySalaryProfileRow` / `pinnedSalaries` in `server/helpers/salary.ts`).
+A key in that map therefore means "this person has at least one pin" — it
+does **not** mean their salary is pinned. Ask
+`map.get(personId)?.salary !== undefined` for that specific question;
+`.has()` is not a substitute and using it as one is how the year-0 bonus
+adjustment guard first went wrong. Merge precedence into the map is
+gaps-only **per field**, not per person: Plan / session pins (salary only)
+win for salary while the profile still supplies bonus terms for the same
+person.
+
+**Bonus terms live on the Salary Profile, not the Contribution Profile.**
+"How big is the bonus" is the same category of fact as "how big is the
+salary". A Contribution Profile's job overrides keep only what is genuinely
+about contributions computed _from_ a bonus — `include401kInBonus`,
+`includeBonusInContributions` — plus `employerName` and the bonus pay date.
+`applyJobOverrides` refuses the moved keys at runtime so a stale stored
+override cannot change anyone's compensation from the wrong axis. Salary is
+likewise not _displayed_ as a Contribution Profile statistic.
+
 ### Violations to Watch For
 
 - A router computing budget expenses with a different column index
-- A page showing salary that doesn't come from `getCurrentSalary()`
+- A page showing salary that doesn't come from `getCurrentSalary()` (raw) or
+  `resolveEffectiveSalary()` / `applySalaryOverride()` (profile-aware)
+- An unpinned person's salary reaching the salary override map
+- `salaryOverrideMap.has(personId)` used to mean "this person's salary is
+  pinned" (it means "has at least one pin" — check `?.salary !== undefined`)
+- A pinned salary being treated as excluding bonus, or total compensation
+  computed anywhere other than `resolveCompensation()`
+- Bonus amount terms (`bonusPercent` / `bonusMultiplier` /
+  `monthsInBonusYear`) reappearing in a Contribution Profile override
+- A salary figure displayed as a Contribution Profile statistic
 - A fallback value that silently replaces missing data
 - Two routers fetching the same data independently
 - A "what-if" override that leaks into non-scenario calculations
@@ -339,25 +410,66 @@ alphabetically or by table-creation order.
 
 ### Profile Pins (a second, deliberately separate mechanism)
 
-A Scenario can also **pin** which Budget Profile / Contribution Profile is
-"active" while it's selected — e.g. "under this Plan, always use my
-Chicago-relocation budget profile." This is a _reference_, not a value diff,
-so it does **not** live in the `overrides` JSONB bucket above. Instead
-`scenarios` carries two nullable FK columns, `budget_profile_id` and
-`contribution_profile_id` (`onDelete: "set null"`), each with an explicit
-index — the same shape as `retirement_salary_overrides.contributionProfileId`.
+A Scenario can also **pin** which Budget Profile / Contribution Profile /
+Salary Profile is "active" while it's selected — e.g. "under this Plan,
+always use my Chicago-relocation budget profile." This is a _reference_, not
+a value diff, so it does **not** live in the `overrides` JSONB bucket above.
+Instead `scenarios` carries three nullable FK columns, `budget_profile_id`,
+`contribution_profile_id`, and `salary_profile_id` (all `onDelete: "set
+null"`), each with an explicit index — the same shape as
+`retirement_salary_overrides.contributionProfileId` /
+`.salaryProfileId`. The Contribution and Salary axes are **independent**: a
+Plan can pin either, both, or neither.
 
 Precedence when resolving "which profile is active" (see
-`useEffectiveProfileId`): **Plan pin → local page selection → globally-active
-profile.** A pin that points at a since-deleted profile silently falls
-through to the next tier rather than erroring — `onDelete: "set null"`
-guarantees the FK itself can't dangle. Session-only scenarios (never
-persisted to DB) hold the same two fields as plain React state instead of DB
-columns; the precedence rule is identical either way.
+`useEffectiveProfileId`): **Plan pin → per-budget-column pin → local page
+selection → globally-active profile.** The per-column tier only exists on the
+budget page's columns: `budget_profiles.column_contribution_profile_ids` /
+`.column_salary_profile_ids` are same-length-as-columns arrays resolved
+exclusively through `resolveContributionProfileId` / `resolveSalaryProfileId`
+(`lib/calculators/contribution-profile-resolution.ts`) — server-side budget
+item $ computation and client-side payroll display must call the same
+resolver for the same column or the two numbers on screen silently disagree.
 
-Deleting a Budget/Contribution Profile that's pinned by a Plan surfaces that
-in the delete confirmation (which Plan(s), by name) so the consequence isn't
-silent — see `budget-profile-sidebar.tsx` / `contribution-profile-manager.tsx`.
+Those resolvers take a **required options object with one named field per
+tier** (`planPinId`, `columnPinIds`, `localSelectionId`, `globalDefaultId`),
+not positional arguments. Never pass an already-resolved id (e.g.
+`useEffectiveProfileId`'s `profileId`) into the `globalDefaultId` slot: that
+collapses the Plan pin into the lowest tier and lets a column's own pin beat
+an active Plan's pin, which is exactly the bug the named-tier shape exists to
+prevent. Pass `useEffectiveProfileId`'s `planPinId` as `planPinId` instead.
+`budget.computeActiveSummary` / `budget.listProfiles` take the same tiers over
+the wire for the same reason. `computeActiveSummary` resolves **per column**,
+not once from `selectedColumn` — a profile whose columns pin different
+Contribution Profiles is the whole point of per-column pins.
+
+**`null` means two different things and must not be conflated:**
+
+- On a **pin** (`scenarios.*_profile_id`,
+  `retirement_salary_overrides.*_profile_id`, any element of
+  `budget_profiles.column_*_profile_ids`), `null` means "this Plan/column
+  pins nothing — fall through to the next tier". Never rewrite these to a
+  concrete id; that silently converts "no pin" into "pinned".
+- On the **globally-active setting** (`app_settings.active_contrib_profile_id`
+  / `active_salary_profile_id`), `null` means nothing at all. Since
+  `0008_kill_live_sentinel` these always name a real row: there is no
+  synthetic "Live" profile and no id-`0` sentinel, `useActiveContribProfile` /
+  `useActiveSalaryProfile` re-point the setting if the row it names goes
+  missing, and the delete guards refuse to remove the active or last
+  remaining profile of either kind.
+
+A pin that points at a since-deleted profile silently falls through to the
+next tier rather than erroring — `onDelete: "set null"` guarantees the FK
+itself can't dangle. Session-only scenarios (never persisted to DB) hold the
+same fields as plain React state instead of DB columns; the precedence rule
+is identical either way.
+
+Deleting a Contribution/Salary Profile that's pinned by a Plan is **blocked**
+by the router (both `delete` procedures name the offending Plan(s)), because
+the FK is `set null` and would otherwise silently unpin every Plan
+referencing it. Budget Profile deletion instead surfaces the consequence in
+the confirmation dialog — see `budget-profile-sidebar.tsx` /
+`contribution-profile-manager.tsx`.
 
 ---
 

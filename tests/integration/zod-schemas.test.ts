@@ -12,7 +12,7 @@ import {
   columnContributionProfileIdsSchema,
   budgetAmountsSchema,
   settingValueSchema,
-  salaryOverridesSchema,
+  salaryEntriesSchema,
   contributionOverridesSchema,
   contribAccountOverrideSchema,
   jobOverrideSchema,
@@ -225,20 +225,61 @@ describe("settingValueSchema", () => {
 
 // ── Contribution Profile Schemas ─────────────────────────────────
 
-describe("salaryOverridesSchema", () => {
-  it("accepts valid personId-to-salary map", () => {
-    const result = salaryOverridesSchema.safeParse({ "1": 120000, "2": 95000 });
+describe("salaryEntriesSchema", () => {
+  it("accepts a mix of pinned and unpinned entries", () => {
+    const result = salaryEntriesSchema.safeParse({
+      "1": { salary: 120000 },
+      "2": {}, // pins nothing — same meaning as having no key
+      "3": { bonusPercent: 0.15, bonusMultiplier: 2, monthsInBonusYear: 6 },
+      "4": { salary: 200000, bonusPercent: 0.1 },
+    });
     expect(result.success).toBe(true);
   });
 
   it("accepts empty object", () => {
-    const result = salaryOverridesSchema.safeParse({});
+    const result = salaryEntriesSchema.safeParse({});
     expect(result.success).toBe(true);
   });
 
-  it("rejects non-number values", () => {
-    const result = salaryOverridesSchema.safeParse({ "1": "not a number" });
+  it("rejects a bare number — the old sparse shape is no longer valid", () => {
+    const result = salaryEntriesSchema.safeParse({ "1": 120000 });
     expect(result.success).toBe(false);
+  });
+
+  it("rejects the old {mode:...} discriminator outright", () => {
+    // .strict() matters here: without it a stale client payload would be
+    // accepted, stored, and then silently ignored by every reader — the
+    // pin would appear to save and simply not take effect.
+    expect(
+      salaryEntriesSchema.safeParse({ "1": { mode: "job" } }).success,
+    ).toBe(false);
+    expect(
+      salaryEntriesSchema.safeParse({ "1": { mode: "fixed", salary: 1 } })
+        .success,
+    ).toBe(false);
+  });
+
+  it("rejects unknown fields", () => {
+    const result = salaryEntriesSchema.safeParse({
+      "1": { salary: 100, bonusPercentage: 0.1 },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a non-number salary", () => {
+    const result = salaryEntriesSchema.safeParse({
+      "1": { salary: "not a number" },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects non-number bonus terms", () => {
+    expect(
+      salaryEntriesSchema.safeParse({ "1": { bonusPercent: "0.1" } }).success,
+    ).toBe(false);
+    expect(
+      salaryEntriesSchema.safeParse({ "1": { bonusMultiplier: null } }).success,
+    ).toBe(false);
   });
 });
 
@@ -289,15 +330,29 @@ describe("contribAccountOverrideSchema", () => {
 });
 
 describe("jobOverrideSchema", () => {
-  it("accepts valid job override fields", () => {
+  it("accepts the fields a Contribution Profile still owns", () => {
     const result = jobOverrideSchema.safeParse({
-      bonusPercent: 15,
-      bonusMultiplier: 1.5,
-      monthsInBonusYear: 12,
       include401kInBonus: true,
+      includeBonusInContributions: false,
       employerName: "NewCorp",
+      bonusMonth: 3,
+      bonusDayOfMonth: 15,
     });
     expect(result.success).toBe(true);
+  });
+
+  it("REJECTS bonus amount terms — they moved to the Salary Profile", () => {
+    // "How big is the bonus" is the same category of fact as "how big is
+    // the salary", so it belongs on the Salary Profile entry. Rejecting
+    // these here is what stops a Contribution Profile from ever changing
+    // anyone's compensation again.
+    for (const field of [
+      { bonusPercent: 15 },
+      { bonusMultiplier: 1.5 },
+      { monthsInBonusYear: 12 },
+    ]) {
+      expect(jobOverrideSchema.safeParse(field).success).toBe(false);
+    }
   });
 
   it("accepts empty object", () => {
@@ -329,7 +384,7 @@ describe("contributionOverridesSchema", () => {
         "12": { contributionMethod: "percent_gross" },
       },
       jobs: {
-        "1": { bonusPercent: 10, employerName: "TestCo" },
+        "1": { employerName: "TestCo", include401kInBonus: true },
       },
     });
     expect(result.success).toBe(true);

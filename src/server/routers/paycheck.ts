@@ -21,9 +21,24 @@ import {
   buildContribAccounts,
   requireLimit,
   loadAndApplyContribProfile,
+  loadAndApplySalaryProfile,
   applySalaryOverride,
+  resolveBonusTerms,
+  applyContribOverrides,
+  buildSandboxContribRow,
 } from "@/server/helpers";
-import { getSalaryTimelineForYear } from "@/server/helpers/salary";
+import {
+  getSalaryTimelineForYear,
+  applySandboxSalaryEntries,
+} from "@/server/helpers/salary";
+import {
+  toSalaryOverrideMap,
+  zSandboxSalaryEntries,
+  zSandboxDeductionEdits,
+  zSandboxDeductionAdditions,
+  zSandboxContribOverrides,
+  zSandboxContribAdditions,
+} from "./_shared";
 import type {
   PaycheckInput,
   DeductionLine,
@@ -74,12 +89,32 @@ export const paycheckRouter = createTRPCRouter({
             .optional(),
           taxYearOverride: z.number().int().optional(),
           contributionProfileId: z.number().int().optional(),
+          salaryProfileId: z.number().int().optional(),
+          /** The What-If tab's hand-edited salary/bonus entries — highest
+           *  precedence tier, above Plan/session overrides and the Salary
+           *  Profile pin. See applySandboxSalaryEntries. */
+          sandboxSalaryEntries: zSandboxSalaryEntries,
+          /** The What-If tab's hand-edited amount for an existing deduction. */
+          sandboxDeductionEdits: zSandboxDeductionEdits,
+          /** The What-If tab's hand-added hypothetical deductions. */
+          sandboxDeductionAdditions: zSandboxDeductionAdditions,
+          /** The What-If tab's hand-edited contribution account values —
+           *  one more layer on top of the picked Contribution Profile's own
+           *  overrides, via the SAME applyContribOverrides merge. */
+          sandboxContribOverrides: zSandboxContribOverrides,
+          /** The What-If tab's hand-added hypothetical contribution
+           *  accounts — no DB row, personId-keyed. */
+          sandboxContribAdditions: zSandboxContribAdditions,
         })
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      const salaryOverrideMap = new Map(
-        (input?.salaryOverrides ?? []).map((o) => [o.personId, o.salary]),
+      const salaryOverrideMap = toSalaryOverrideMap(input?.salaryOverrides);
+      const deductionEditMap = new Map(
+        (input?.sandboxDeductionEdits ?? []).map((e) => [
+          e.id,
+          e.amountPerPeriod,
+        ]),
       );
       const taxYear = input?.taxYearOverride ?? new Date().getFullYear();
       const [
@@ -113,17 +148,40 @@ export const paycheckRouter = createTRPCRouter({
       const limitsRecord: Record<string, number> = {};
       for (const l of allLimits) limitsRecord[l.limitType] = toNumber(l.value);
 
-      // Apply contribution profile overrides if selected
+      // Salary and contribution overrides are two independent axes.
+      // Precedence for salary: Plan/session overrides (already in the map,
+      // highest) > Salary Profile > live DB salary. The Contribution Profile
+      // contributes no salary at all — only account/job field overrides.
+      const effectiveSalaryMap = applySandboxSalaryEntries(
+        input?.sandboxSalaryEntries,
+        await loadAndApplySalaryProfile(
+          ctx.db,
+          input?.salaryProfileId,
+          salaryOverrideMap,
+        ),
+      );
       const profileResult = await loadAndApplyContribProfile(
         ctx.db,
         input?.contributionProfileId,
         allContribs,
         allJobs,
-        salaryOverrideMap,
       );
-      const effectiveContribs = profileResult.contribs;
+      // The What-If tab's sandbox edits are the highest-precedence tier,
+      // applied AFTER the picked profile's own overrides — same merge
+      // function, one more layer, never a second resolution path.
+      const effectiveContribs = applyContribOverrides(
+        profileResult.contribs,
+        input?.sandboxContribOverrides ?? {},
+      );
+      // Hypothetical additions have no DB row — appended for the duration
+      // of this request only, never written anywhere. Negative ids can
+      // never collide with a real autoincrement id.
+      for (const [i, addition] of (
+        input?.sandboxContribAdditions ?? []
+      ).entries()) {
+        effectiveContribs.push(buildSandboxContribRow(addition, -(i + 1)));
+      }
       const effectiveJobs = profileResult.jobs;
-      const effectiveSalaryMap = profileResult.salaryMap;
 
       const asOfDate = new Date();
       const bonusOverrides = await getBonusOverridesForJobs(
@@ -185,7 +243,7 @@ export const paycheckRouter = createTRPCRouter({
             activeJob.id,
             asOfDate,
           );
-          // Plan/Contribution-Profile override wins, else current salary
+          // Plan/Salary-Profile override wins, else current salary
           // from salary_changes (falls back to job starting salary).
           const overrideSalary = effectiveSalaryMap.get(person.id);
           const dbSalary = await getCurrentSalary(
@@ -207,12 +265,27 @@ export const paycheckRouter = createTRPCRouter({
           );
           const deductions: DeductionLine[] = jobDeductions.map((d) => ({
             name: d.deductionName,
-            amount: toNumber(d.amountPerPeriod),
+            // A sandbox edit is one more layer on top of the stored
+            // amount, applied here (not a second pass after
+            // calculatePaycheck) so it's the SAME arithmetic every other
+            // deduction goes through.
+            amount: deductionEditMap.get(d.id) ?? toNumber(d.amountPerPeriod),
             taxTreatment: d.isPretax
               ? ("pre_tax" as const)
               : ("after_tax" as const),
             ficaExempt: d.ficaExempt,
           }));
+          // Hypothetical additions have no DB row — appended for the
+          // duration of this request only, never written anywhere.
+          for (const addition of input?.sandboxDeductionAdditions ?? []) {
+            if (addition.personId !== person.id) continue;
+            deductions.push({
+              name: addition.name,
+              amount: addition.amountPerPeriod,
+              taxTreatment: addition.isPretax ? "pre_tax" : "after_tax",
+              ficaExempt: false,
+            });
+          }
 
           const jobContribs = effectiveContribs.filter(
             (c) => c.jobId === activeJob.id && c.isActive,
@@ -231,6 +304,15 @@ export const paycheckRouter = createTRPCRouter({
             periodsPerYear,
           );
 
+          // A Salary Profile pin on bonus terms is independent of a salary
+          // pin — resolveBonusTerms overlays whichever of bonusPercent/
+          // bonusMultiplier/monthsInBonusYear the profile pins onto the
+          // job's live values, same as resolveCompensation does for the
+          // Salary Profile editor. Reading activeJob's raw fields here
+          // silently ignored a pinned bonus for a pinned-or-unpinned salary
+          // alike.
+          const bonusTerms = resolveBonusTerms(activeJob, overrideSalary);
+
           const paycheckInput: PaycheckInput = {
             annualSalary: salary,
             payPeriod: activeJob.payPeriod,
@@ -247,11 +329,11 @@ export const paycheckRouter = createTRPCRouter({
             taxBrackets: taxBracketInput,
             limits: limitsRecord,
             ytdGrossEarnings: 0,
-            bonusPercent: toNumber(activeJob.bonusPercent),
-            bonusMultiplier: toNumber(activeJob.bonusMultiplier),
+            bonusPercent: toNumber(bonusTerms.bonusPercent),
+            bonusMultiplier: toNumber(bonusTerms.bonusMultiplier),
             bonusOverride:
               bonusOverrides.get(`${activeJob.id}:${asOfYear}`) ?? null,
-            monthsInBonusYear: activeJob.monthsInBonusYear,
+            monthsInBonusYear: bonusTerms.monthsInBonusYear ?? 12,
             includeContribInBonus: activeJob.include401kInBonus,
             bonusMonth: activeJob.bonusMonth,
             bonusDayOfMonth: activeJob.bonusDayOfMonth,
@@ -399,6 +481,17 @@ export const paycheckRouter = createTRPCRouter({
             person,
             job: jobForClient,
             salary,
+            /** The bonus terms actually in effect (Salary Profile pin, if
+             *  any, else the job record) — as numbers, for clients (e.g.
+             *  the What-If tab's editor) that need to pre-fill from the
+             *  resolved value rather than `job`'s raw, profile-unaware
+             *  fields. Mirrors what `salary` already does for the salary
+             *  axis. */
+            resolvedBonusTerms: {
+              bonusPercent: toNumber(bonusTerms.bonusPercent),
+              bonusMultiplier: toNumber(bonusTerms.bonusMultiplier) || 1,
+              monthsInBonusYear: bonusTerms.monthsInBonusYear ?? 12,
+            },
             futureSalaryChanges,
             paycheck,
             fullFormulaBonusEstimate,

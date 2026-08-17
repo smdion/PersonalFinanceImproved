@@ -1,8 +1,8 @@
 "use client";
 
-import { trpc } from "@/lib/trpc";
 import { useSalaryOverrides } from "./use-salary-overrides";
 import { useEffectiveProfileId } from "./use-effective-profile-id";
+import { useBudgetProfilesList } from "./use-budget-profiles-list";
 
 /**
  * The shared input for every procedure that reads through
@@ -17,7 +17,7 @@ export function useYearEndTargetingInput(): {
   budgetProfileId?: number;
   salaryOverrides?: { personId: number; salary: number }[];
 } {
-  const { data: budgetProfiles } = trpc.budget.listProfiles.useQuery();
+  const { data: budgetProfiles } = useBudgetProfilesList();
   const activeBudgetProfileId =
     budgetProfiles?.find((p) => p.isActive)?.id ?? null;
   const { profileId: effectiveBudgetProfileId } = useEffectiveProfileId(

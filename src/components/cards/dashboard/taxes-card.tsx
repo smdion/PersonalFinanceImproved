@@ -11,12 +11,15 @@ import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
 import { sumBy } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
+import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 
 function TaxesCardImpl() {
   const { viewMode } = useScenario();
   const isYtd = viewMode === "ytd";
   const isBlended = viewMode === "blended";
   const salaryOverrides = useSalaryOverrides();
+  // Independent Salary Profile axis (Plan pin -> globally-active setting).
+  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [activeContribProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",
     null,
@@ -30,6 +33,7 @@ function TaxesCardImpl() {
     ...(activeContribProfileId != null
       ? { contributionProfileId: activeContribProfileId }
       : {}),
+    ...salaryProfileInput,
     ...(taxYearSetting != null ? { taxYearOverride: taxYearSetting } : {}),
   };
   const { data, isLoading, error } = trpc.paycheck.computeSummary.useQuery(

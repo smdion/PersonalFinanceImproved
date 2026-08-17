@@ -20,9 +20,20 @@ import {
   computeAnnualContribution,
   computeBonusGross,
   loadAndApplyContribProfile,
+  loadAndApplySalaryProfile,
   getSalaryTimelineForYear,
   applySalaryOverride,
+  resolveBonusTerms,
+  applySandboxSalaryEntries,
+  applyContribOverrides,
+  buildSandboxContribRow,
 } from "@/server/helpers";
+import {
+  toSalaryOverrideMap,
+  zSandboxSalaryEntries,
+  zSandboxContribOverrides,
+  zSandboxContribAdditions,
+} from "./_shared";
 import { roundToCents } from "@/lib/utils/math";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import { getAge, isPriorYearContribWindow } from "@/lib/utils/date";
@@ -147,15 +158,23 @@ export const contributionRouter = createTRPCRouter({
             .array(z.object({ personId: z.number(), salary: z.number() }))
             .optional(),
           contributionProfileId: z.number().int().optional(),
+          salaryProfileId: z.number().int().optional(),
+          /** See paycheckRouter.computeSummary's identical field — must be
+           *  sent to both routers together or the contribution cards and
+           *  the pay stub disagree, same bug class as the ContributionsSection
+           *  fix this hook already exists to avoid. */
+          sandboxSalaryEntries: zSandboxSalaryEntries,
+          /** See paycheckRouter.computeSummary's identical field — must be
+           *  sent to both routers or the pay stub and the contribution
+           *  cards disagree, same bug class as this hook's own fix. */
+          sandboxContribOverrides: zSandboxContribOverrides,
+          /** See paycheckRouter.computeSummary's identical field. */
+          sandboxContribAdditions: zSandboxContribAdditions,
         })
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      const salaryOverrideMap = new Map(
-        (input?.salaryOverrides ?? []).map(
-          (o) => [o.personId, o.salary] as const,
-        ),
-      );
+      const salaryOverrideMap = toSalaryOverrideMap(input?.salaryOverrides);
       const currentYear = new Date().getFullYear();
       const inPriorYearWindow = isPriorYearContribWindow();
       const priorYear = currentYear - 1;
@@ -258,17 +277,35 @@ export const contributionRouter = createTRPCRouter({
       for (const l of priorYearLimitsRaw)
         priorYearLimitsRecord[l.limitType] = toNumber(l.value);
 
-      // Apply contribution profile overrides if selected
+      // Two independent axes: Salary Profile fills salary gaps left by the
+      // Plan/session overrides already in the map; Contribution Profile
+      // overrides account/job fields only.
+      const effectiveSalaryMap = applySandboxSalaryEntries(
+        input?.sandboxSalaryEntries,
+        await loadAndApplySalaryProfile(
+          ctx.db,
+          input?.salaryProfileId,
+          salaryOverrideMap,
+        ),
+      );
       const profileResult = await loadAndApplyContribProfile(
         ctx.db,
         input?.contributionProfileId,
         allContribs,
         allJobs,
-        salaryOverrideMap,
       );
-      const effectiveContribs = profileResult.contribs;
+      // Sandbox edits are the highest-precedence tier, applied AFTER the
+      // picked profile's own overrides via the SAME merge function.
+      const effectiveContribs = applyContribOverrides(
+        profileResult.contribs,
+        input?.sandboxContribOverrides ?? {},
+      );
+      for (const [i, addition] of (
+        input?.sandboxContribAdditions ?? []
+      ).entries()) {
+        effectiveContribs.push(buildSandboxContribRow(addition, -(i + 1)));
+      }
       const effectiveJobs = profileResult.jobs;
-      const effectiveSalaryMap = profileResult.salaryMap;
 
       const asOfDate = new Date();
 
@@ -456,14 +493,36 @@ export const contributionRouter = createTRPCRouter({
             asOfDate,
           );
           const resolvedOverride = resolveBonusOverride(activeJob.id);
+          // A Salary Profile pin on bonus terms is independent of a salary
+          // pin — resolveBonusTerms overlays whichever of bonusPercent/
+          // bonusMultiplier/monthsInBonusYear the profile pins onto the
+          // job's live values. getEffectiveIncome/getTotalCompensation only
+          // read those three fields (plus includeBonusInContributions) off
+          // the job object, so a job-shaped object with the resolved terms
+          // substituted in gets them the pinned bonus without duplicating
+          // their arithmetic.
+          const bonusTerms = resolveBonusTerms(
+            activeJob,
+            effectiveSalaryMap.get(person.id),
+          );
+          const jobWithResolvedBonus = {
+            ...activeJob,
+            bonusPercent: bonusTerms.bonusPercent ?? "0",
+            bonusMultiplier: bonusTerms.bonusMultiplier ?? "0",
+            monthsInBonusYear: bonusTerms.monthsInBonusYear ?? 12,
+          };
           const salary = applySalaryOverride(
             person.id,
-            getEffectiveIncome(activeJob, dbSalary, resolvedOverride),
+            getEffectiveIncome(
+              jobWithResolvedBonus,
+              dbSalary,
+              resolvedOverride,
+            ),
             effectiveSalaryMap,
           );
           // Total compensation (always includes bonus) — used for savings rate denominator
           const totalCompensation = getTotalCompensation(
-            activeJob,
+            jobWithResolvedBonus,
             dbSalary,
             resolvedOverride,
           );
@@ -507,10 +566,10 @@ export const contributionRouter = createTRPCRouter({
 
           const bonusGross = computeBonusGross(
             salary,
-            activeJob.bonusPercent,
-            activeJob.bonusMultiplier,
+            bonusTerms.bonusPercent,
+            bonusTerms.bonusMultiplier,
             resolvedOverride,
-            activeJob.monthsInBonusYear,
+            bonusTerms.monthsInBonusYear,
           );
 
           // Estimate bonus contributions for categories in the 401k limit group (if include401kInBonus is set)

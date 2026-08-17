@@ -13,19 +13,22 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
-import { useUser, hasPermission } from "@/lib/context/user-context";
+import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
 import {
   ContributionProfileManager,
+  SalaryProfileManager,
   SavingsAllocationPanel,
 } from "@/components/budget";
 import type { ColumnResult } from "@/components/budget";
 import { BudgetPushYnabModal } from "@/components/budget/budget-push-ynab-modal";
 import { BudgetPullYnabModal } from "@/components/budget/budget-pull-ynab-modal";
 import { BudgetSummaryBar } from "@/components/budget/budget-summary-bar";
+import { EditLockToggle } from "@/components/ui/edit-lock-toggle";
 import {
   BudgetProfileSidebar,
   type BudgetProfileListEntry,
@@ -46,6 +49,8 @@ import {
   type SavingsGoalEntry,
 } from "./use-budget-derived-data";
 import { BudgetDetailPanel } from "./budget-detail-panel";
+import { WhatIfTab } from "./what-if-tab";
+import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 
 export function BudgetContent() {
   const user = useUser();
@@ -61,7 +66,7 @@ export function BudgetContent() {
   );
 
   // ---- Queries ----
-  const { data: allProfiles } = trpc.budget.listProfiles.useQuery();
+  const { data: allProfiles } = useBudgetProfilesList();
   const activeProfileId = allProfiles?.find((p) => p.isActive)?.id ?? null;
   const [viewingProfileId, setViewingProfileId] = useState<number | null>(null);
   // Single shared resolution for both the Budget tab and Savings tab — see
@@ -79,9 +84,11 @@ export function BudgetContent() {
     null,
   );
   const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
-  // Plan pin -> globally-active contribution profile (single computation
-  // path — matches expenses/page.tsx, paycheck/page.tsx, contributions/page.tsx).
-  const { profileId: effectiveContribProfileId } = useEffectiveProfileId(
+  // Plan pin -> [per-column pin] -> globally-active contribution profile.
+  // The Plan pin is kept as its OWN tier rather than pre-resolved into the
+  // global-default slot — collapsing it there is what let a budget column's
+  // pin beat an active Plan's pin (docs/RULES.md "Profile Pins").
+  const { planPinId: planContribProfileId } = useEffectiveProfileId(
     "contribution",
     {
       validIds: contribProfiles?.map((p) => p.id),
@@ -89,10 +96,40 @@ export function BudgetContent() {
       globalDefaultId: activeContribProfileId,
     },
   );
+  // Salary Profile — the independent second axis. Plan pin -> globally-active.
+  const [activeSalaryProfileIdSetting] = usePersistedSetting<number | null>(
+    SK_ACTIVE_SALARY_PROFILE_ID,
+    null,
+  );
+  const { data: salaryProfiles } = trpc.salaryProfile.list.useQuery();
+  const { planPinId: planSalaryProfileId } = useEffectiveProfileId("salary", {
+    validIds: salaryProfiles?.map((p) => p.id),
+    localSelection: null,
+    globalDefaultId: activeSalaryProfileIdSetting,
+  });
+  // One shared tier object per axis, fed to BOTH the server query and the
+  // client-side per-column resolution so they cannot resolve differently.
+  const contributionProfileTiers = useMemo(
+    () => ({
+      planPinId: planContribProfileId,
+      localSelectionId: null,
+      globalDefaultId: activeContribProfileId,
+    }),
+    [planContribProfileId, activeContribProfileId],
+  );
+  const salaryProfileTiers = useMemo(
+    () => ({
+      planPinId: planSalaryProfileId,
+      localSelectionId: null,
+      globalDefaultId: activeSalaryProfileIdSetting,
+    }),
+    [planSalaryProfileId, activeSalaryProfileIdSetting],
+  );
   const salaryOverrides = useSalaryOverrides();
   const { data, isLoading, error } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
-    activeContribProfileId: effectiveContribProfileId,
+    contributionProfile: contributionProfileTiers,
+    salaryProfile: salaryProfileTiers,
     ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
     ...(displayProfileId != null ? { profileId: displayProfileId } : {}),
   });
@@ -135,6 +172,7 @@ export function BudgetContent() {
     renameColumn,
     updateColumnMonths,
     updateColumnContribProfiles,
+    updateColumnSalaryProfiles,
   } = useColumnMutations();
   const { syncFromApi, syncToApi } = useSyncMutations();
 
@@ -146,7 +184,6 @@ export function BudgetContent() {
   }, [activeColumn]);
 
   const {
-    updateCell,
     deleteItem,
     updateItemEssential,
     updateCategoryEssential,
@@ -160,7 +197,7 @@ export function BudgetContent() {
 
   // ---- Local UI state ----
   const [activeTab, setActiveTab] = useState<
-    "budget" | "contributions" | "savings"
+    "budget" | "contributions" | "salary" | "savings" | "what-if"
   >("budget");
   const [pushPreviewItems, setPushPreviewItems] = useState<ReturnType<
     typeof buildPushPreviewItems
@@ -213,7 +250,8 @@ export function BudgetContent() {
     savingsGoals,
     apiActualsData,
     salaryOverrides,
-    activeContribProfileId: effectiveContribProfileId,
+    contributionProfileTiers,
+    salaryProfileTiers,
     editMode,
     getDraft,
     visibleCount,
@@ -289,8 +327,6 @@ export function BudgetContent() {
   const rowHandlers = {
     getDraft,
     setDraft,
-    onUpdateCell: (id: number, col: number, amt: number) =>
-      updateCell.mutate({ id, colIndex: col, amount: amt }),
     onToggleItemEssential: (id: number, isEssential: boolean) =>
       updateItemEssential.mutate({ id, isEssential }),
     onToggleCategoryEssential: (category: string, isEssential: boolean) =>
@@ -353,9 +389,17 @@ export function BudgetContent() {
           }
         />
 
-        {/* Ordered to match the actual dependency chain: Contributions feed
-            Budget's leftover, which feeds Savings — see docs/RULES.md. */}
+        {/* Ordered to match the actual dependency chain: Salary sets gross
+            pay, Contributions (often % of salary) derive take-home,
+            Budget spends it, which feeds Savings — see docs/RULES.md. */}
         <div className="flex gap-1 border-b mb-4">
+          <button
+            type="button"
+            onClick={() => setActiveTab("salary")}
+            className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "salary" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+          >
+            Salary Profiles
+          </button>
           <button
             type="button"
             onClick={() => setActiveTab("contributions")}
@@ -379,6 +423,15 @@ export function BudgetContent() {
               Savings Profiles
             </button>
           )}
+          {/* Last, after the four real levers: it previews combinations of
+              them rather than being a lever of its own. */}
+          <button
+            type="button"
+            onClick={() => setActiveTab("what-if")}
+            className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "what-if" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+          >
+            What-If
+          </button>
         </div>
 
         {activeTab === "budget" && (
@@ -417,7 +470,6 @@ export function BudgetContent() {
               unsavedCount={editDrafts.size}
               onToggleModeManager={() => setShowModeManager(!showModeManager)}
               isSavingBatch={updateBatch.isPending}
-              onToggleEditMode={toggleEditMode}
             />
 
             <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
@@ -429,7 +481,6 @@ export function BudgetContent() {
                   (contribProfiles ?? []) as Array<{
                     id: number;
                     name: string;
-                    isDefault: boolean;
                   }>
                 }
                 renamingProfileId={renamingProfileId}
@@ -472,14 +523,17 @@ export function BudgetContent() {
                   (contribProfiles ?? []) as Array<{
                     id: number;
                     name: string;
-                    isDefault: boolean;
                   }>
+                }
+                salaryProfiles={
+                  (salaryProfiles ?? []) as Array<{ id: number; name: string }>
                 }
                 columnMutations={{
                   renameColumn,
                   removeColumn,
                   addColumn,
                   updateColumnContribProfiles,
+                  updateColumnSalaryProfiles,
                   updateColumnMonths,
                 }}
                 layout={{ effectiveNameColWidth, onResizeStart, sentinelRef }}
@@ -491,8 +545,26 @@ export function BudgetContent() {
                 rowHandlers={rowHandlers}
                 categoryMap={categoryMap}
                 createItem={createItem}
+                lockToggle={
+                  /* Locking (toggling while unlocked) still flushes any
+                     pending draft amounts via the batch save — that is what
+                     toggleEditMode has always done. */
+                  <EditLockToggle
+                    locked={!editMode}
+                    onToggle={toggleEditMode}
+                    disabled={!canEdit || updateBatch.isPending}
+                  />
+                }
               />
             </div>
+          </CardBoundary>
+        )}
+
+        {activeTab === "salary" && (
+          <CardBoundary title="Salary Profiles">
+            <SalaryProfileManager
+              canEdit={hasPermission(user, "contributionProfile")}
+            />
           </CardBoundary>
         )}
 
@@ -500,6 +572,21 @@ export function BudgetContent() {
           <CardBoundary title="Contribution Profiles">
             <ContributionProfileManager
               canEdit={hasPermission(user, "contributionProfile")}
+            />
+          </CardBoundary>
+        )}
+
+        {activeTab === "what-if" && (
+          <CardBoundary title="What-If">
+            <WhatIfTab
+              canDuplicateProfile={canEdit}
+              // Creating a Plan is settings.scenarios.create — scenarioProcedure,
+              // a different permission from the Budget page's own gate.
+              canCreatePlan={hasPermission(user, "scenario")}
+              // settings.deductions.create / settings.contributionAccounts
+              // .create are adminProcedure — a stricter gate than either
+              // permission above.
+              canManagePaycheck={isAdmin(user)}
             />
           </CardBoundary>
         )}

@@ -109,16 +109,26 @@ export function LifeChangesSection({
                     <span>
                       <span className="font-medium">{o.projectionYear}</span>
                       {" → "}
-                      {o.contributionProfileId
-                        ? (() => {
-                            const profile = state.contribProfileSummaries?.find(
+                      {(() => {
+                        const amount = `${formatCurrency(o.overrideSalary)}/yr`;
+                        const salaryProfile = o.salaryProfileId
+                          ? state.salaryProfileSummaries?.find(
+                              (p) => p.id === o.salaryProfileId,
+                            )
+                          : undefined;
+                        const contribProfile = o.contributionProfileId
+                          ? state.contribProfileSummaries?.find(
                               (p) => p.id === o.contributionProfileId,
-                            );
-                            return profile
-                              ? `${profile.name} (${formatCurrency(o.overrideSalary)}/yr)`
-                              : `${formatCurrency(o.overrideSalary)}/yr`;
-                          })()
-                        : `${formatCurrency(o.overrideSalary)}/yr`}
+                            )
+                          : undefined;
+                        const names = [
+                          salaryProfile?.name,
+                          contribProfile?.name,
+                        ]
+                          .filter(Boolean)
+                          .join(" + ");
+                        return names ? `${names} (${amount})` : amount;
+                      })()}
                       {enginePeople && enginePeople.length > 1 && (
                         <span className="text-blue-500 text-caption ml-1">
                           [
@@ -168,11 +178,18 @@ export function LifeChangesSection({
                       onChange={(e) =>
                         setSalaryForm((f) => ({
                           ...f,
-                          source: e.target.value as "custom" | "profile",
+                          source: e.target.value as
+                            "custom" | "profile" | "salaryProfile",
                         }))
                       }
                       className="mt-0.5 block rounded border border-strong px-2 py-1 text-xs"
                     >
+                      {state.salaryProfileSummaries &&
+                        state.salaryProfileSummaries.length > 0 && (
+                          <option value="salaryProfile">
+                            From salary profile
+                          </option>
+                        )}
                       {state.contribProfileSummaries &&
                         state.contribProfileSummaries.length > 0 && (
                           <option value="profile">
@@ -197,23 +214,38 @@ export function LifeChangesSection({
                           className="mt-0.5 block rounded border border-strong px-2 py-1 text-xs"
                         >
                           <option value="">Select...</option>
-                          {state.contribProfileSummaries
-                            .slice()
-                            .sort((a, b) =>
-                              a.isDefault === b.isDefault
-                                ? 0
-                                : a.isDefault
-                                  ? -1
-                                  : 1,
-                            )
-                            .map((cp) => (
-                              <option key={cp.id} value={String(cp.id)}>
-                                {cp.isDefault ? "\u2713 " : ""}
-                                {cp.name} (
-                                {formatCurrency(cp.summary.combinedSalary)}
-                                /yr)
-                              </option>
-                            ))}
+                          {state.contribProfileSummaries.map((cp) => (
+                            <option key={cp.id} value={String(cp.id)}>
+                              {cp.name} (
+                              {formatCurrency(cp.summary.combinedSalary)}
+                              /yr)
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                  {salaryForm.source === "salaryProfile" &&
+                    state.salaryProfileSummaries && (
+                      <label className="block">
+                        <span className="text-caption text-muted">
+                          Salary Profile
+                        </span>
+                        <select
+                          value={salaryForm.salaryProfileId}
+                          onChange={(e) =>
+                            setSalaryForm((f) => ({
+                              ...f,
+                              salaryProfileId: e.target.value,
+                            }))
+                          }
+                          className="mt-0.5 block rounded border border-strong px-2 py-1 text-xs"
+                        >
+                          <option value="">Select...</option>
+                          {state.salaryProfileSummaries.map((sp) => (
+                            <option key={sp.id} value={String(sp.id)}>
+                              {sp.name}
+                            </option>
+                          ))}
                         </select>
                       </label>
                     )}
@@ -300,8 +332,27 @@ export function LifeChangesSection({
                       let notes = salaryForm.notes || "";
 
                       let contributionProfileId: number | null = null;
+                      let salaryProfileId: number | null = null;
 
-                      if (salaryForm.source === "profile") {
+                      if (salaryForm.source === "salaryProfile") {
+                        const sp = state.salaryProfileSummaries?.find(
+                          (p) => String(p.id) === salaryForm.salaryProfileId,
+                        );
+                        if (!sp) return;
+                        // The engine grows only THIS person's entry forward,
+                        // so store this person's value, not the household sum.
+                        // Only a pinned SALARY carries a number to grow — a
+                        // person whose salary resolves live (even if they pin
+                        // bonus terms) has no profile value here.
+                        const own = sp.salaries[String(salaryOverridePersonId)];
+                        if (own?.salary === undefined) return;
+                        resolvedSalary = own.salary;
+                        salaryProfileId = sp.id;
+                        const profileNote = `Profile: ${sp.name}`;
+                        notes = notes
+                          ? `${profileNote} — ${notes}`
+                          : profileNote;
+                      } else if (salaryForm.source === "profile") {
                         const profile = state.contribProfileSummaries?.find(
                           (p) => String(p.id) === salaryForm.profileId,
                         );
@@ -324,12 +375,14 @@ export function LifeChangesSection({
                           Math.round(resolvedSalary * 100) / 100,
                         ),
                         contributionProfileId,
+                        salaryProfileId,
                         notes: notes || null,
                       });
                       setSalaryForm({
                         year: "",
-                        source: "profile",
+                        source: "salaryProfile",
                         profileId: "",
+                        salaryProfileId: "",
                         value: "",
                         notes: "",
                       });

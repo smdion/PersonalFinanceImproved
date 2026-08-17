@@ -5,7 +5,8 @@ import { InlineEdit } from "@/components/ui/inline-edit";
 import { HelpTip } from "@/components/ui/help-tip";
 import { confirm } from "@/components/ui/confirm-dialog";
 
-type ContributionProfile = { id: number; name: string; isDefault: boolean };
+type ContributionProfile = { id: number; name: string };
+type SalaryProfile = { id: number; name: string };
 
 type BudgetModeManagerProps = {
   cols: string[];
@@ -16,6 +17,9 @@ type BudgetModeManagerProps = {
   contributionProfiles?: ContributionProfile[];
   columnContributionProfileIds?: (number | null)[] | null;
   onUpdateContributionProfiles?: (ids: (number | null)[]) => void;
+  salaryProfiles?: SalaryProfile[];
+  columnSalaryProfileIds?: (number | null)[] | null;
+  onUpdateSalaryProfiles?: (ids: (number | null)[]) => void;
   columnMonths?: number[] | null;
   onUpdateColumnMonths?: (months: number[] | null) => void;
 };
@@ -29,6 +33,9 @@ export function BudgetModeManager({
   contributionProfiles,
   columnContributionProfileIds,
   onUpdateContributionProfiles,
+  salaryProfiles,
+  columnSalaryProfileIds,
+  onUpdateSalaryProfiles,
   columnMonths,
   onUpdateColumnMonths,
 }: BudgetModeManagerProps) {
@@ -37,6 +44,7 @@ export function BudgetModeManager({
 
   const hasContribProfiles =
     contributionProfiles && contributionProfiles.length > 0;
+  const hasSalaryProfiles = salaryProfiles && salaryProfiles.length > 0;
   const isWeighted = !!columnMonths && columnMonths.length > 0;
   const canWeight = cols.length > 1 && onUpdateColumnMonths;
 
@@ -73,6 +81,7 @@ export function BudgetModeManager({
       <div className="space-y-2">
         {cols.map((label, idx) => {
           const currentProfileId = columnContributionProfileIds?.[idx] ?? null;
+          const currentSalaryProfileId = columnSalaryProfileIds?.[idx] ?? null;
           return (
             <div key={label} className="flex items-center gap-2">
               <InlineEdit
@@ -98,17 +107,37 @@ export function BudgetModeManager({
                   className="text-caption border rounded px-1.5 py-0.5 bg-surface-primary text-muted focus:border-blue-400 focus:outline-none"
                   title="Contribution profile for this mode's income calculations"
                 >
-                  <option value="">
-                    {contributionProfiles.find((p) => p.isDefault)?.name ??
-                      "Default"}
-                  </option>
-                  {contributionProfiles
-                    .filter((p) => !p.isDefault)
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
+                  {/* Empty = this column pins nothing and follows whichever
+                      profile is globally active. */}
+                  <option value="">Use active profile</option>
+                  {contributionProfiles.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {hasSalaryProfiles && onUpdateSalaryProfiles && (
+                <select
+                  value={currentSalaryProfileId ?? ""}
+                  onChange={(e) => {
+                    const next = [
+                      ...(columnSalaryProfileIds ?? cols.map(() => null)),
+                    ];
+                    next[idx] = e.target.value ? Number(e.target.value) : null;
+                    onUpdateSalaryProfiles(next);
+                  }}
+                  className="text-caption border rounded px-1.5 py-0.5 bg-surface-primary text-muted focus:border-blue-400 focus:outline-none"
+                  title="Salary profile for this mode's income calculations — independent of the contribution profile"
+                >
+                  {/* Empty = this column pins nothing and follows whichever
+                      profile is globally active. */}
+                  <option value="">Use active profile</option>
+                  {salaryProfiles.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
                 </select>
               )}
               {isWeighted && canWeight && (
@@ -221,7 +250,7 @@ export function BudgetModeManager({
       <p className="text-caption text-faint mt-2">
         Click a mode name to rename it. Each mode is a column of budget amounts.
         {hasContribProfiles &&
-          " Use the dropdown to assign a contribution profile for income calculations per mode."}
+          " Use the dropdowns to assign a contribution profile and/or a salary profile for income calculations per mode."}
       </p>
     </div>
   );

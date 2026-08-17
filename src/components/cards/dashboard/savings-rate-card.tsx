@@ -17,6 +17,7 @@ import {
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { LoadingCard, ErrorCard } from "./utils";
+import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 
 // A real, nonzero contribution can still round to "0%" at the default 0
 // decimals (e.g. $100/mo against a $250k household income is ~0.5%), which
@@ -33,6 +34,8 @@ function formatBreakdownPercent(fraction: number): string {
 function SavingsRateCardImpl() {
   const { viewMode } = useScenario();
   const salaryOverrides = useSalaryOverrides();
+  // Independent Salary Profile axis (Plan pin -> globally-active setting).
+  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [activeProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",
     null,
@@ -42,6 +45,7 @@ function SavingsRateCardImpl() {
     ...(activeProfileId != null
       ? { contributionProfileId: activeProfileId }
       : {}),
+    ...salaryProfileInput,
   } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
   const { data, isLoading, error } =
     trpc.contribution.computeSummary.useQuery(contribInput);

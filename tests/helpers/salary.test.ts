@@ -231,12 +231,12 @@ describe("getCurrentSalary", () => {
 
 describe("applySalaryOverride", () => {
   it("returns the override when the map has an entry for the person", () => {
-    const map = new Map([[1, 150000]]);
+    const map = new Map([[1, { salary: 150000 }]]);
     expect(applySalaryOverride(1, 100000, map)).toBe(150000);
   });
 
   it("returns the raw salary when the map has no entry for the person", () => {
-    const map = new Map([[2, 150000]]);
+    const map = new Map([[2, { salary: 150000 }]]);
     expect(applySalaryOverride(1, 100000, map)).toBe(100000);
   });
 
@@ -245,8 +245,15 @@ describe("applySalaryOverride", () => {
   });
 
   it("honors a zero-dollar override rather than falling back", () => {
-    const map = new Map([[1, 0]]);
+    const map = new Map([[1, { salary: 0 }]]);
     expect(applySalaryOverride(1, 100000, map)).toBe(0);
+  });
+
+  it("falls back to raw when the entry pins bonus terms but no salary", () => {
+    // A map key means "has at least one pin", NOT "salary is pinned". Reading
+    // it as the latter is what broke the year-0 bonus adjustment guard.
+    const map = new Map([[1, { bonusPercent: 0.2 }]]);
+    expect(applySalaryOverride(1, 100000, map)).toBe(100000);
   });
 });
 
@@ -299,7 +306,7 @@ describe("resolveEffectiveSalary", () => {
     const salary = await resolveEffectiveSalary(
       ctx.rawDb,
       job,
-      new Map([[1, 200000]]),
+      new Map([[1, { salary: 200000 }]]),
       new Date("2025-07-01"),
     );
     expect(salary).toBe(200000);

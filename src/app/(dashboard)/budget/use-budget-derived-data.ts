@@ -13,7 +13,10 @@
 
 import { useMemo, useCallback } from "react";
 import { usePerColumnPaycheck } from "@/lib/hooks/use-per-column-paycheck";
-import { resolveContributionProfileIdsForAllColumns } from "@/lib/calculators/contribution-profile-resolution";
+import {
+  resolveContributionProfileIdsForAllColumns,
+  resolveSalaryProfileIdsForAllColumns,
+} from "@/lib/calculators/contribution-profile-resolution";
 import {
   buildPayrollBreakdown,
   buildNonPayrollContribs,
@@ -28,6 +31,14 @@ import type {
 import type { PushPreviewItem } from "@/components/ui/push-preview-modal";
 
 type SalaryOverride = { personId: number; salary: number };
+
+/** Non-column tiers of docs/RULES.md's profile precedence, supplied by the
+ *  page (Plan pin → [column pin] → local selection → globally-active). */
+export type ProfileResolutionTiers = {
+  planPinId: number | null;
+  localSelectionId: number | null;
+  globalDefaultId: number | null;
+};
 
 type ApiActualsData =
   | {
@@ -59,6 +70,7 @@ type DataShape =
         id?: number;
         name?: string;
         columnContributionProfileIds?: (number | null)[] | null;
+        columnSalaryProfileIds?: (number | null)[] | null;
         columnMonths?: number[] | null;
       } | null;
       columnLabels?: unknown;
@@ -73,7 +85,8 @@ export function useBudgetDerivedData({
   savingsGoals,
   apiActualsData,
   salaryOverrides,
-  activeContribProfileId,
+  contributionProfileTiers,
+  salaryProfileTiers,
   editMode,
   getDraft,
   visibleCount,
@@ -82,7 +95,11 @@ export function useBudgetDerivedData({
   savingsGoals: SavingsGoalEntry[] | undefined;
   apiActualsData: ApiActualsData;
   salaryOverrides: SalaryOverride[];
-  activeContribProfileId: number | null;
+  /** The non-column tiers of the profile precedence — must be the SAME
+   *  values sent to budget.computeActiveSummary, or server totals and this
+   *  page's payroll breakdown resolve different profiles. */
+  contributionProfileTiers: ProfileResolutionTiers;
+  salaryProfileTiers: ProfileResolutionTiers;
   editMode: boolean;
   getDraft: (id: number, colIndex: number, original: number) => number;
   visibleCount: number;
@@ -106,16 +123,33 @@ export function useBudgetDerivedData({
     const stored =
       (profile?.columnContributionProfileIds as (number | null)[] | null) ??
       null;
-    return resolveContributionProfileIdsForAllColumns(
-      stored,
-      numCols,
-      activeContribProfileId,
-    );
-  }, [profile, numCols, activeContribProfileId]);
+    return resolveContributionProfileIdsForAllColumns({
+      ...contributionProfileTiers,
+      columnPinIds: stored,
+      numColumns: numCols,
+    });
+  }, [profile, numCols, contributionProfileTiers]);
+
+  // ---- Per-column salary profile resolution ----
+  // MUST match routers/budget.ts's computeActiveSummary resolution exactly
+  // (it calls the same resolver with the same tiers), or budget item $
+  // amounts and the payroll breakdown on this page silently disagree about
+  // which salary reality is in effect.
+  const columnSalaryProfileIds = useMemo(() => {
+    if (numCols === 0) return [];
+    const stored =
+      (profile?.columnSalaryProfileIds as (number | null)[] | null) ?? null;
+    return resolveSalaryProfileIdsForAllColumns({
+      ...salaryProfileTiers,
+      columnPinIds: stored,
+      numColumns: numCols,
+    });
+  }, [profile, numCols, salaryProfileTiers]);
 
   const perColumnPaycheckData = usePerColumnPaycheck(
     columnContribProfileIds,
     salaryOverrides,
+    columnSalaryProfileIds,
   );
 
   const payrollBreakdowns: (PayrollBreakdown | null)[] = useMemo(
@@ -203,23 +237,29 @@ export function useBudgetDerivedData({
     (items: RawItem[]) =>
       Array.from({ length: numCols }, (_, col) =>
         items.reduce((s, it) => {
-          let val: number;
-          if (editMode) {
-            val = getDraft(it.id, col, it.amounts[col] ?? 0);
-          } else {
-            // Look up the per-column contribution profile before falling back
-            // to the raw amounts array, so each column reflects its own
-            // contribution profile rather than a single shared scalar.
-            const map = contribByCanonicalPerCol[col];
-            const key =
-              map && map.size > 0 ? normalizeContribKey(it.subcategory) : null;
-            const fromContrib = key != null ? (map!.get(key) ?? null) : null;
-            val =
-              fromContrib ??
-              (it.contribAmount != null
-                ? it.contribAmount
-                : (it.amounts[col] ?? 0));
-          }
+          // Look up the per-column contribution profile before falling back
+          // to the raw amounts array, so each column reflects its own
+          // contribution profile rather than a single shared scalar.
+          const map = contribByCanonicalPerCol[col];
+          const key =
+            map && map.size > 0 ? normalizeContribKey(it.subcategory) : null;
+          const fromContrib = key != null ? (map!.get(key) ?? null) : null;
+          // contribAmounts is the server's own per-column figure (column i
+          // resolved with column i's profiles); contribAmount is only the
+          // selected column's value and is the last resort before raw
+          // amounts. This is the SAME resolved value regardless of edit
+          // mode — editMode only adds a draft on TOP of it (via getDraft's
+          // `original` argument), it never bypasses this resolution chain.
+          // (Bypassing it here used to make a contribution-linked item's
+          // total silently change the instant edit mode turned on, before
+          // the user touched anything.)
+          const resolved =
+            fromContrib ??
+            it.contribAmounts?.[col] ??
+            (it.contribAmount != null
+              ? it.contribAmount
+              : (it.amounts[col] ?? 0));
+          const val = editMode ? getDraft(it.id, col, resolved) : resolved;
           return s + val;
         }, 0),
       ),
@@ -330,6 +370,7 @@ export function useBudgetDerivedData({
     columnMonths,
     isWeighted,
     columnContribProfileIds,
+    columnSalaryProfileIds,
     perColumnPaycheckData,
     payrollBreakdowns,
     matchContrib,

@@ -423,6 +423,25 @@ export function seedContributionProfile(
 }
 
 /**
+ * Seed a salary profile (the independent "what if I earned X" axis).
+ */
+export function seedSalaryProfile(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  overrides: Partial<typeof sqliteSchema.salaryProfiles.$inferInsert> = {},
+): number {
+  const result = db
+    .insert(sqliteSchema.salaryProfiles)
+    .values({
+      name: "Default Salary Profile",
+      salaries: {},
+      ...overrides,
+    })
+    .returning({ id: sqliteSchema.salaryProfiles.id })
+    .get();
+  return result.id;
+}
+
+/**
  * Seed a full "standard" dataset: person + job + budget profile + items + savings goal + performance account + snapshot.
  * Returns all IDs for use in tests.
  */

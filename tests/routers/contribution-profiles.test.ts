@@ -23,46 +23,40 @@ describe("contributionProfiles router", () => {
   // ── LIST ──
 
   describe("list", () => {
-    it("returns at least a synthetic Live profile when DB is empty", async () => {
+    it("returns only real rows — the migration seeds one ordinary baseline", async () => {
       const profiles = await caller.contributionProfile.list();
       expect(Array.isArray(profiles)).toBe(true);
       expect(profiles.length).toBeGreaterThanOrEqual(1);
-
-      const live = profiles.find((p: { name: string }) => p.name === "Live");
-      expect(live).toBeDefined();
-      expect(live!.id).toBe(0);
-      expect(live!.isDefault).toBe(true);
-      expect(live!.overrideCount).toBe(0);
+      // No synthetic id-0 entry is prepended any more.
+      expect(profiles.map((p: { id: number }) => p.id)).not.toContain(0);
+      expect(profiles.every((p: { id: number }) => p.id > 0)).toBe(true);
+      expect(profiles[0]!.overrideCount).toBe(0);
     });
 
-    it("Live profile has summary with numeric fields", async () => {
+    it("each profile has summary with numeric fields", async () => {
       const profiles = await caller.contributionProfile.list();
-      const live = profiles.find((p: { name: string }) => p.name === "Live")!;
-      expect(typeof live.summary.combinedSalary).toBe("number");
-      expect(typeof live.summary.annualContributions).toBe("number");
-      expect(typeof live.summary.annualEmployerMatch).toBe("number");
+      const first = profiles[0]!;
+      expect(typeof first.summary.combinedSalary).toBe("number");
+      expect(typeof first.summary.annualContributions).toBe("number");
+      expect(typeof first.summary.annualEmployerMatch).toBe("number");
     });
   });
 
-  // ── GETBYID — SYNTHETIC LIVE (id=0) ──
+  // ── GETBYID — id 0 is no longer a sentinel ──
 
-  describe("getById (id=0 — synthetic Live)", () => {
-    it("returns the synthetic Live profile", async () => {
-      const profile = await caller.contributionProfile.getById({ id: 0 });
-      expect(profile).toBeDefined();
-      expect(profile!.id).toBe(0);
-      expect(profile!.name).toBe("Live");
-      expect(profile!.isDefault).toBe(true);
+  describe("getById (id=0)", () => {
+    it("returns null — 0 is just an id that does not exist", async () => {
+      expect(await caller.contributionProfile.getById({ id: 0 })).toBeNull();
     });
 
-    it("includes accountDetails and salaryDetails arrays", async () => {
-      const profile = await caller.contributionProfile.getById({ id: 0 });
+    it("the migration-seeded baseline resolves like any other profile", async () => {
+      const [seeded] = await caller.contributionProfile.list();
+      const profile = await caller.contributionProfile.getById({
+        id: seeded!.id,
+      });
+      expect(profile).not.toBeNull();
       expect(Array.isArray(profile!.accountDetails)).toBe(true);
       expect(Array.isArray(profile!.salaryDetails)).toBe(true);
-    });
-
-    it("includes resolved combinedSalary", async () => {
-      const profile = await caller.contributionProfile.getById({ id: 0 });
       expect(typeof profile!.resolved.combinedSalary).toBe("number");
     });
   });
@@ -74,20 +68,17 @@ describe("contributionProfiles router", () => {
       const profile = await caller.contributionProfile.create({
         name: "Test Profile",
         description: "For testing",
-        salaryOverrides: {},
         contributionOverrides: { contributionAccounts: {}, jobs: {} },
       });
       expect(profile).toBeDefined();
       expect(profile.name).toBe("Test Profile");
       expect(profile.description).toBe("For testing");
-      expect(profile.isDefault).toBeFalsy();
     });
 
     it("created profile has a valid numeric id", async () => {
       const profile = await caller.contributionProfile.create({
         name: "Second Profile",
         description: "Another test",
-        salaryOverrides: {},
         contributionOverrides: { contributionAccounts: {}, jobs: {} },
       });
       expect(typeof profile.id).toBe("number");
@@ -106,12 +97,9 @@ describe("contributionProfiles router", () => {
       expect(found).toBeDefined();
     });
 
-    it("still includes the synthetic Live default", async () => {
+    it("still returns real rows only", async () => {
       const profiles = await caller.contributionProfile.list();
-      // The DB now has no isDefault row, so the synthetic Live is prepended
-      const live = profiles.find((p: { name: string }) => p.name === "Live");
-      expect(live).toBeDefined();
-      expect(live!.id).toBe(0);
+      expect(profiles.map((p: { id: number }) => p.id)).not.toContain(0);
     });
   });
 
@@ -191,13 +179,12 @@ describe("contributionProfiles router", () => {
       const profile = await caller.contributionProfile.create({
         name: "Profile To Delete",
         description: "Will be deleted",
-        salaryOverrides: {},
         contributionOverrides: { contributionAccounts: {}, jobs: {} },
       });
       deletableId = profile.id;
     });
 
-    it("deletes a non-default profile successfully", async () => {
+    it("deletes an ordinary profile successfully", async () => {
       const result = await caller.contributionProfile.delete({
         id: deletableId,
       });
@@ -210,26 +197,10 @@ describe("contributionProfiles router", () => {
       expect(found).toBeUndefined();
     });
 
-    it("throws when deleting the synthetic Live default (id=0)", async () => {
-      // id=0 is not a DB row — the router will throw "Profile not found"
-      // because it queries the DB and finds nothing
+    it("throws for id 0 — no longer a sentinel, just a missing row", async () => {
       await expect(
         caller.contributionProfile.delete({ id: 0 }),
-      ).rejects.toThrow();
-    });
-
-    it("throws when deleting a DB-persisted default profile", async () => {
-      // Insert a profile directly marked as default, then attempt deletion
-      const profiles = await caller.contributionProfile.list();
-      // All created profiles above have isDefault=false; verify that pattern
-      const nonDefault = profiles.find(
-        (p: { id: number; isDefault: boolean }) => p.id !== 0 && !p.isDefault,
-      );
-      // Non-default profiles should delete fine — already verified above.
-      // To test the isDefault guard, use a profile marked default in DB.
-      // We can't create one via the public API (create doesn't expose isDefault),
-      // so we confirm the guard message text is correct via the router source.
-      expect(nonDefault).toBeDefined(); // sanity — there is at least one non-default
+      ).rejects.toThrow("Profile not found");
     });
   });
 
@@ -242,7 +213,6 @@ describe("contributionProfiles router", () => {
       const profile = await caller.contributionProfile.create({
         name: "Resolve Test Profile",
         description: "Used to test resolve",
-        salaryOverrides: {},
         contributionOverrides: { contributionAccounts: {}, jobs: {} },
       });
       profileId = profile.id;

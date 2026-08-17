@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**63 tables.**
+**64 tables.**
 
 ## Mermaid diagram
 
@@ -188,6 +188,9 @@ erDiagram
   contribution_profiles {
     int id PK
   }
+  salary_profiles {
+    int id PK
+  }
   state_versions {
     int id PK
   }
@@ -290,6 +293,7 @@ erDiagram
 - **retirement_settings** → people
 - **return_rate_table**
 - **salary_changes** → jobs
+- **salary_profiles**
 - **savings_allocation_overrides** → savings_goals
 - **savings_goal_profile_allocations** → savings_goals, budget_profiles
 - **savings_goals**

@@ -17,6 +17,7 @@ import { wealthScoreTier } from "@/lib/config/display-labels";
 import { useScenario } from "@/lib/context/scenario-context";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { LoadingCard, ErrorCard } from "./utils";
+import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 
 type CheckupStep = {
   label: string;
@@ -124,6 +125,8 @@ function CheckupRow({ step }: { step: CheckupStep }) {
 function FinancialCheckupCardImpl() {
   const { viewMode } = useScenario();
   const salaryOverrides = useSalaryOverrides();
+  // Independent Salary Profile axis (Plan pin -> globally-active setting).
+  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [activeContribProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",
     null,
@@ -133,6 +136,7 @@ function FinancialCheckupCardImpl() {
     ...(activeContribProfileId != null
       ? { contributionProfileId: activeContribProfileId }
       : {}),
+    ...salaryProfileInput,
   } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
   const [efundBudgetColumn] = usePersistedSetting<number>(
     "efund_budget_column",

@@ -6,9 +6,14 @@ import { formatCurrency } from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
 import { HelpTip } from "@/components/ui/help-tip";
 import { FormError } from "@/components/ui/form-error";
+import {
+  EditLockToggle,
+  EDIT_LOCK_KEYS,
+  useEditLock,
+} from "@/components/ui/edit-lock-toggle";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
-import { buildPayrollBreakdown, computeUnallocated } from "./helpers";
 import { useState } from "react";
+import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 
 /**
  * Every savings goal's allocationPercent/monthlyContribution is owned
@@ -35,6 +40,8 @@ export function SavingsAllocationPanel({
   onActivateProfile,
   livePoolEstimate,
   livePoolColumnLabel,
+  sandbox,
+  onLocalChange,
 }: {
   canEdit: boolean;
   viewingProfileId: number | null;
@@ -53,19 +60,44 @@ export function SavingsAllocationPanel({
   livePoolEstimate?: number | null;
   /** Which budget mode/column livePoolEstimate was computed for, e.g. "Standard". */
   livePoolColumnLabel?: string;
+  /**
+   * Rendered inside a hypothetical/preview surface (the What-If tab). The
+   * rail's green "ACTIVE" badge gains a `?` tip there clarifying it marks
+   * the household's real active profile, which is not necessarily the one
+   * this preview is showing — swapping the badge's own label to a
+   * different word ("REAL") was tried first and just traded one piece of
+   * jargon for another with no visible affordance explaining it, so the
+   * label stays "ACTIVE" and the tip carries the distinction instead.
+   *
+   * ALSO redirects the allocation table's writes: when `sandbox` is true
+   * and `onLocalChange` is provided, editing a goal's %/$ calls
+   * `onLocalChange` instead of `savings.goalProfileAllocations.upsert` —
+   * see SavingsAllocationTable's `commit`. Previously this prop was purely
+   * cosmetic (the badge only) while edits still wrote straight to the
+   * database regardless — a sandbox that wasn't actually sandboxed.
+   */
+  sandbox?: boolean;
+  /** See `sandbox` above. Called with the parsed allocationPercent/
+   *  monthlyContribution instead of persisting to the database. Only takes
+   *  effect when `sandbox` is also true. */
+  onLocalChange?: (
+    goalId: number,
+    field: "allocationPercent" | "monthlyContribution",
+    value: number | null,
+  ) => void;
 }) {
   const { data: profiles, isLoading: profilesLoading } =
-    trpc.budget.listProfiles.useQuery();
+    useBudgetProfilesList();
   const { data: summaries } =
     trpc.savings.goalProfileAllocations.listSummaries.useQuery();
-  // Household net pay is budget-profile-independent (income doesn't depend
-  // on which spending plan you're viewing) — one shared query, combined
-  // with each profile's own column-0 spending total below to approximate
-  // "unspent" per profile. This uses the default/no-override contribution
-  // basis, same simplifying assumption budget.listProfiles' own annualTotal
-  // already makes (not per-profile contribution-profile resolution).
-  const { data: paycheckData } = trpc.paycheck.computeSummary.useQuery();
-  const payroll = buildPayrollBreakdown(paycheckData?.people);
+  // "Unspent" arrives already computed, per profile, from budget.listProfiles
+  // — take-home pay resolved under THAT profile's own per-column
+  // Contribution/Salary Profile pins (honoring the active Plan's pins and any
+  // Plan-level salary override), minus that profile's spending, minus its
+  // savings allocations. This panel used to make its own
+  // paycheck.computeSummary query with no input, which server-side means no
+  // profile is applied at all — so the figure silently ignored every active
+  // profile. Do NOT reintroduce a client-side pay query here.
 
   if (profilesLoading) {
     return (
@@ -94,7 +126,7 @@ export function SavingsAllocationPanel({
         <p className="text-caption text-faint mb-2">
           Savings allocations follow Budget Profiles — create, rename, or
           activate one in the Budget Profiles tab.
-          <HelpTip text="'Unspent' approximates take-home pay minus that profile's own budgeted spending (first mode only) minus its savings allocations — using your default contribution profile, not each budget profile's own per-mode contribution-profile mapping. For the exact figure under the mode you're viewing, check the Live pool line on the right." />
+          <HelpTip text="'Unspent' is take-home pay minus that profile's own budgeted spending minus its savings allocations. Take-home is resolved under each profile's own per-mode Contribution and Salary Profile pins (and the active Plan's pins, if any), and weighted profiles blend pay and spending across modes the same way. For the exact figure under the single mode you're viewing, check the Live pool line on the right." />
         </p>
         {profiles.map((p) => {
           const summary = summaryByProfile.get(p.id);
@@ -112,8 +144,21 @@ export function SavingsAllocationPanel({
               <div className="flex items-center gap-1.5">
                 <span className="truncate">{p.name}</span>
                 {p.isActive && (
-                  <span className="text-micro px-1 py-0.5 rounded bg-green-100 text-green-700 font-semibold shrink-0">
-                    ACTIVE
+                  <span className="flex items-center gap-0.5 shrink-0">
+                    <span className="text-micro px-1 py-0.5 rounded bg-green-100 text-green-700 font-semibold">
+                      ACTIVE
+                    </span>
+                    {sandbox && (
+                      <HelpTip text="This is your household's actual active budget profile — not necessarily the one this What-If preview is showing below." />
+                    )}
+                  </span>
+                )}
+                {sandbox && effectiveProfileId === p.id && (
+                  <span
+                    className="text-micro px-1 py-0.5 rounded bg-blue-100 text-blue-700 font-semibold shrink-0"
+                    title="The profile this What-If view is currently showing"
+                  >
+                    VIEWING
                   </span>
                 )}
               </div>
@@ -122,18 +167,9 @@ export function SavingsAllocationPanel({
                   const isWeighted =
                     !!p.columnMonths && p.columnMonths.length > 0;
                   // Weighted profiles blend to a "typical month" across
-                  // modes — the raw column-0 monthlyTotal would only
-                  // reflect whichever mode happens to be first.
-                  const spending = isWeighted
-                    ? p.weightedMonthlySpending
-                    : p.monthlyTotal;
-                  const unspent = payroll
-                    ? computeUnallocated(
-                        payroll.netMonthly,
-                        spending,
-                        summary.totalMonthlyAllocation,
-                      )
-                    : null;
+                  // modes — both this profile's spending AND its take-home
+                  // pay are blended the same way, server-side.
+                  const unspent = p.unspentMonthly;
                   return (
                     <div className="mt-0.5 text-caption text-muted space-y-0.5">
                       <div className="flex gap-2">
@@ -187,6 +223,8 @@ export function SavingsAllocationPanel({
             }
             livePoolEstimate={livePoolEstimate}
             livePoolColumnLabel={livePoolColumnLabel}
+            sandbox={sandbox}
+            onLocalChange={onLocalChange}
           />
         ) : (
           <div className="flex items-center justify-center h-40 text-xs text-faint">
@@ -208,6 +246,8 @@ function SavingsAllocationTable({
   onActivate,
   livePoolEstimate,
   livePoolColumnLabel,
+  sandbox,
+  onLocalChange,
 }: {
   profileId: number;
   profileName: string | undefined;
@@ -218,10 +258,17 @@ function SavingsAllocationTable({
   onActivate?: () => void;
   livePoolEstimate?: number | null;
   livePoolColumnLabel?: string;
+  sandbox?: boolean;
+  onLocalChange?: (
+    goalId: number,
+    field: "allocationPercent" | "monthlyContribution",
+    value: number | null,
+  ) => void;
 }) {
   const utils = trpc.useUtils();
   const { data: rows, isLoading } =
     trpc.savings.goalProfileAllocations.list.useQuery({ profileId });
+  const [locked, toggleLocked] = useEditLock(EDIT_LOCK_KEYS.budgetSavings);
 
   const [drafts, setDrafts] = useState<
     Record<number, { allocationPercent: string; monthlyContribution: string }>
@@ -294,12 +341,22 @@ function SavingsAllocationTable({
     ) {
       return;
     }
-    upsert.mutate({
-      goalId,
-      profileId,
-      allocationPercent,
-      monthlyContribution,
-    });
+    if (sandbox && onLocalChange) {
+      // Sandbox mode: redirect the write to the caller's own local state
+      // instead of persisting — only the field the user actually touched,
+      // so an untouched field doesn't get re-sent as a no-op "change".
+      if (percentStr !== "")
+        onLocalChange(goalId, "allocationPercent", allocationPercent);
+      if (monthlyStr !== "")
+        onLocalChange(goalId, "monthlyContribution", monthlyContribution);
+    } else {
+      upsert.mutate({
+        goalId,
+        profileId,
+        allocationPercent,
+        monthlyContribution,
+      });
+    }
     setDrafts((prev) => {
       const next = { ...prev };
       delete next[goalId];
@@ -318,7 +375,12 @@ function SavingsAllocationTable({
           onActivate={canEdit ? onActivate : undefined}
         />
         <HelpTip text="A goal's %/$ is entirely per budget profile — each profile is its own funding scenario. Use the Savings page to pull in new pay or update % from live income." />
-        {canEdit && rows.length > 0 && (
+        <EditLockToggle
+          locked={locked}
+          onToggle={toggleLocked}
+          disabled={!canEdit}
+        />
+        {!sandbox && canEdit && !locked && rows.length > 0 && (
           <button
             type="button"
             onClick={() => {
@@ -375,27 +437,38 @@ function SavingsAllocationTable({
         className="mb-2"
       />
 
-      <table className="w-full text-xs">
+      <table className="w-full text-xs border-collapse">
         <thead>
-          <tr className="text-muted border-b">
-            <th className="text-left py-1.5 font-medium">Goal</th>
-            <th className="text-right py-1.5 font-medium w-24">Allocation %</th>
-            <th className="text-right py-1.5 font-medium w-28">Monthly $</th>
+          <tr className="border-b-2 border-strong">
+            <th className="text-left py-2 pl-4 pr-3 text-muted font-medium">
+              Goal
+            </th>
+            <th className="text-right py-2 px-3 text-muted font-medium w-24">
+              Allocation %
+            </th>
+            <th className="text-right py-2 px-3 text-muted font-medium w-28">
+              Monthly $
+            </th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
-            <tr key={r.goalId} className="border-b border-subtle">
-              <td className="py-1.5 text-secondary">
+          {rows.map((r, rowIdx) => (
+            <tr
+              key={r.goalId}
+              className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+                rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
+              }`}
+            >
+              <td className="py-1.5 pl-4 pr-3 text-secondary">
                 {r.name}
                 {r.isEmergencyFund && (
                   <span className="ml-1 text-micro text-faint">(e-fund)</span>
                 )}
               </td>
-              <td className="py-1.5 text-right">
+              <td className="py-1.5 px-3 text-right">
                 <input
                   type="number"
-                  disabled={!canEdit}
+                  disabled={!canEdit || locked}
                   value={draftFor(
                     r.goalId,
                     "allocationPercent",
@@ -413,10 +486,10 @@ function SavingsAllocationTable({
                   className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-secondary"
                 />
               </td>
-              <td className="py-1.5 text-right">
+              <td className="py-1.5 px-3 text-right">
                 <input
                   type="number"
-                  disabled={!canEdit}
+                  disabled={!canEdit || locked}
                   value={draftFor(
                     r.goalId,
                     "monthlyContribution",

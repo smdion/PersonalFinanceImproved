@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { Lock, LockOpen, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HelpTip } from "@/components/ui/help-tip";
+import { EditLockToggle } from "@/components/ui/edit-lock-toggle";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
@@ -880,20 +881,11 @@ export function AllTransactionsTab({
             <option value="12">1 year history</option>
             <option value="all">All history</option>
           </select>
-          {canEdit !== false && (
-            <button
-              onClick={() => setTableLocked(!tableLocked)}
-              title={tableLocked ? "Unlock to edit" : "Lock editing"}
-              aria-label={tableLocked ? "Unlock to edit" : "Lock editing"}
-              className="text-faint hover:text-primary transition-colors"
-            >
-              {tableLocked ? (
-                <Lock className="w-3.5 h-3.5" />
-              ) : (
-                <LockOpen className="w-3.5 h-3.5" />
-              )}
-            </button>
-          )}
+          <EditLockToggle
+            locked={tableLocked}
+            onToggle={() => setTableLocked(!tableLocked)}
+            disabled={canEdit === false}
+          />
         </div>
       </div>
 

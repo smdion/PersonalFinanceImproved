@@ -7,6 +7,7 @@ import { describe, it, expect } from "vitest";
 import {
   canDeleteBudgetProfile,
   canDeleteContribProfile,
+  canDeleteSalaryProfile,
   canRemoveColumn,
   findActiveJob,
   filterActiveJobs,
@@ -29,28 +30,48 @@ describe("canDeleteBudgetProfile", () => {
 });
 
 describe("canDeleteContribProfile", () => {
-  it("allows deleting non-default, non-active profile", () => {
-    expect(canDeleteContribProfile({ isDefault: false }, null, 5)).toEqual({
-      allowed: true,
-    });
+  it("allows deleting a non-active profile when others remain", () => {
+    expect(canDeleteContribProfile(null, 5, 3)).toEqual({ allowed: true });
   });
 
-  it("prevents deleting default profile", () => {
-    const result = canDeleteContribProfile({ isDefault: true }, null, 1);
+  it("prevents deleting the only remaining profile", () => {
+    // The active-profile setting must always name a real row, so the last
+    // profile of a kind is undeletable — this replaced the old isDefault flag.
+    const result = canDeleteContribProfile(null, 1, 1);
     expect(result.allowed).toBe(false);
-    expect(result.reason).toContain("default");
+    expect(result.reason).toContain("only remaining");
   });
 
   it("prevents deleting currently active profile", () => {
-    const result = canDeleteContribProfile({ isDefault: false }, 5, 5);
+    const result = canDeleteContribProfile(5, 5, 3);
     expect(result.allowed).toBe(false);
     expect(result.reason).toContain("active");
   });
 
   it("allows when activeProfileId is different", () => {
-    expect(canDeleteContribProfile({ isDefault: false }, 3, 5)).toEqual({
-      allowed: true,
-    });
+    expect(canDeleteContribProfile(3, 5, 2)).toEqual({ allowed: true });
+  });
+});
+
+describe("canDeleteSalaryProfile", () => {
+  it("allows deleting a non-active profile when others remain", () => {
+    expect(canDeleteSalaryProfile(null, 5, 3)).toEqual({ allowed: true });
+  });
+
+  it("prevents deleting the only remaining profile", () => {
+    const result = canDeleteSalaryProfile(null, 1, 1);
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toContain("only remaining");
+  });
+
+  it("prevents deleting currently active profile", () => {
+    const result = canDeleteSalaryProfile(5, 5, 3);
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toContain("active");
+  });
+
+  it("has no id-0 sentinel — id 0 is just an id", () => {
+    expect(canDeleteSalaryProfile(null, 0, 3).allowed).toBe(true);
   });
 });
 

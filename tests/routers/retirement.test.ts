@@ -1088,14 +1088,15 @@ describe("retirement router -- contribution profiles", () => {
       },
     );
 
-    // Seed a contribution profile with salary override
+    // Seed a contribution profile. Note it carries NO salary — salary is its
+    // own entity now, and computeRelocationAnalysis deliberately keeps a live,
+    // un-overridden salary baseline (it's the control arm of the comparison).
     const cpSchema = await getSchema();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
     contribProfileId = (db as any)
       .insert(cpSchema.contributionProfiles)
       .values({
         name: "High Salary Profile",
-        salaryOverrides: { [String(personId)]: 200000 },
         contributionOverrides: {
           contributionAccounts: {
             [String(contribAcct.id)]: { contributionValue: "0.15" },
@@ -1144,14 +1145,18 @@ describe("retirement router -- contribution profiles", () => {
 
     expect(resultLive.result).not.toBeNull();
     expect(resultProfile.result).not.toBeNull();
-    // The profile overrides salary to 200k and contribution to 15%, so amounts should differ
     const cpLive = (resultLive as Record<string, unknown>)
       .currentContribProfile as Record<string, number>;
     const cpProfile = (resultProfile as Record<string, unknown>)
       .currentContribProfile as Record<string, number>;
-    // Salary override: profile sets 200k vs live ~120k
-    expect(cpProfile.combinedSalary).toBe(200000);
-    expect(cpLive.combinedSalary).not.toBe(200000);
+    // Salary is the live baseline on BOTH arms — the profile only moves the
+    // contribution rate (0.10 live -> 0.15), so contributions must differ
+    // while combined salary stays put.
+    expect(cpProfile.combinedSalary).toBe(cpLive.combinedSalary);
+    expect(cpProfile.annualContributions).not.toBe(cpLive.annualContributions);
+    expect(cpProfile.annualContributions).toBeGreaterThan(
+      cpLive.annualContributions,
+    );
   });
 });
 

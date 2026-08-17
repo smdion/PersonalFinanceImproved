@@ -2,7 +2,7 @@
 
 /**
  * Column-level mutations for the budget page: add, remove, rename,
- * update months, update per-column contribution profile ids.
+ * update months, update per-column contribution/salary profile ids.
  *
  * Extracted from `src/app/(dashboard)/budget/page.tsx` during the
  * v0.5.2 file-split refactor. Pure relocation — no behavior changes.
@@ -36,6 +36,10 @@ export function useColumnMutations() {
     trpc.budget.updateColumnContributionProfileIds.useMutation({
       onSuccess: invalidateSummaryAndProfiles,
     });
+  const updateColumnSalaryProfiles =
+    trpc.budget.updateColumnSalaryProfileIds.useMutation({
+      onSuccess: invalidateSummaryAndProfiles,
+    });
 
   return {
     addColumn,
@@ -43,6 +47,7 @@ export function useColumnMutations() {
     renameColumn,
     updateColumnMonths,
     updateColumnContribProfiles,
+    updateColumnSalaryProfiles,
   };
 }
 

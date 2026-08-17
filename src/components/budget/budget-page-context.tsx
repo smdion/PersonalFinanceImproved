@@ -26,6 +26,10 @@ export type BudgetPageContextValue = {
   // UI mode, stable per user toggle
   editMode: boolean;
   setEditMode: (mode: boolean) => void;
+  /** Sandbox mode (the What-If tab) — see BudgetItemRow's amountsOnly prop
+   *  for exactly what this does and doesn't unlock. Defaults false; the
+   *  real Budget tab's provider never sets it. */
+  amountsOnly?: boolean;
 };
 
 const BudgetPageContext = createContext<BudgetPageContextValue | null>(null);

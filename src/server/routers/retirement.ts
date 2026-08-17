@@ -9,12 +9,14 @@ import {
   toNumber,
   getCurrentSalary,
   getEffectiveIncome,
+  getTotalCompensation,
   getBonusOverridesForJobs,
   getPeriodsPerYear,
   getLatestSnapshot,
   computeAnnualContribution,
   computeEmployerMatch,
-  fetchNonDefaultContributionProfile,
+  fetchContributionProfile,
+  resolveProfile,
   getPrimaryPerson,
 } from "@/server/helpers";
 import { isRetirementParent } from "@/lib/config/account-types";
@@ -270,6 +272,9 @@ export const retirementRouter = createTRPCRouter({
           return {
             job: j,
             salary: getEffectiveIncome(j, dbSalary, resolvedOverride),
+            baseSalary: dbSalary,
+            totalComp: getTotalCompensation(j, dbSalary, resolvedOverride),
+            resolvedBonusOverride: resolvedOverride,
           };
         }),
       );
@@ -329,10 +334,7 @@ export const retirementRouter = createTRPCRouter({
           };
         }
 
-        const profile = await fetchNonDefaultContributionProfile(
-          ctx.db,
-          profileId,
-        );
+        const profile = await fetchContributionProfile(ctx.db, profileId);
         if (!profile) {
           const totals = computeContribTotals(activeContribs, jobSalaries);
           return {
@@ -342,43 +344,28 @@ export const retirementRouter = createTRPCRouter({
           };
         }
 
-        // Apply salary overrides
-        const salaryOverrides = profile.salaryOverrides as Record<
-          string,
-          number
-        >;
-        const resolvedSalaries = jobSalaries.map((js) => {
-          const override = salaryOverrides[String(js.job.personId)];
-          return override !== undefined ? { ...js, salary: override } : js;
-        });
-        const resolvedCombinedSalary = resolvedSalaries.reduce(
+        // Shared resolver (was a near-duplicate re-implementation inline
+        // here — M26). Salary overrides are intentionally EMPTY: this is the
+        // control/comparison arm of the relocation analysis, and the salary
+        // baseline above is deliberately live/un-overridden. Salary Profiles
+        // are not threaded into relocation analysis yet; adding them here
+        // would need matching current/relocation Salary Profile inputs.
+        const resolved = resolveProfile(
+          profile,
+          {},
+          activeContribs,
+          activeJobs,
+          jobSalaries,
+        );
+        const resolvedCombinedSalary = resolved.jobSalaries.reduce(
           (s, js) => s + js.salary,
           0,
         );
 
-        // Apply contribution overrides
-        const contribOverridesRoot = profile.contributionOverrides as Record<
-          string,
-          Record<string, Record<string, unknown>>
-        >;
-        const contribOverrides =
-          contribOverridesRoot.contributionAccounts ?? {};
-
-        const resolvedContribs = activeContribs
-          .map((c) => {
-            const overrides = contribOverrides[String(c.id)];
-            if (!overrides) return c;
-            const validOverrides = Object.fromEntries(
-              Object.entries(overrides).filter(([field]) => field in c),
-            );
-            return { ...c, ...validOverrides };
-          })
-          .filter((c) => {
-            const overrides = contribOverrides[String(c.id)];
-            return !(overrides && overrides.isActive === false);
-          });
-
-        const totals = computeContribTotals(resolvedContribs, resolvedSalaries);
+        const totals = computeContribTotals(
+          resolved.activeContribs,
+          resolved.jobSalaries,
+        );
         return {
           combinedSalary: resolvedCombinedSalary,
           annualContributions: totals.totalContribs,

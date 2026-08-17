@@ -39,6 +39,11 @@ export const columnContributionProfileIdsSchema = z
   .array(z.number().int().nullable())
   .nullable();
 
+/** budget_profiles.column_salary_profile_ids — per-column profile refs (nullable) */
+export const columnSalaryProfileIdsSchema = z
+  .array(z.number().int().nullable())
+  .nullable();
+
 // ── budget_items ────────────────────────────────────────────────
 
 /** budget_items.amounts — per-column dollar amounts */
@@ -148,10 +153,39 @@ export const relocationScenarioParamsSchema = z.object({
   moveYear: z.number().nullable().optional().default(null),
 });
 
-// ── contribution_profiles ───────────────────────────────────────
+// ── salary_profiles ─────────────────────────────────────────────
 
-/** contribution_profiles.salary_overrides — jobId → salary number */
-export const salaryOverridesSchema = z.record(z.string(), z.number());
+/**
+ * salary_profiles.salaries — personId → salary entry.
+ *
+ * Every field is optional and PRESENCE IS THE PIN SIGNAL: a field that is
+ * set pins that value for this profile, a field that is absent resolves
+ * live from the job record. There is no `mode` discriminator — an empty
+ * object pins nothing, which is indistinguishable in meaning from having no
+ * key for the person at all.
+ *
+ * `.strict()` so a stale `{mode:...}` payload from an old client is
+ * rejected loudly rather than being stored and silently ignored.
+ *
+ * Bonus terms live HERE, not on a Contribution Profile: "what is my bonus"
+ * is the same category of fact as "what is my salary". A Contribution
+ * Profile still owns include401kInBonus / includeBonusInContributions,
+ * which are about how contributions are computed FROM a bonus.
+ */
+export const salaryEntrySchema = z
+  .object({
+    salary: z.number().optional(),
+    /** Fraction, not percent: 0.12 = 12%. Matches jobs.bonus_percent. */
+    bonusPercent: z.number().optional(),
+    bonusMultiplier: z.number().optional(),
+    monthsInBonusYear: z.number().optional(),
+  })
+  .strict();
+
+/** personId → salary entry. */
+export const salaryEntriesSchema = z.record(z.string(), salaryEntrySchema);
+
+// ── contribution_profiles ───────────────────────────────────────
 
 /**
  * Detailed contribution account override (write-path).
@@ -171,11 +205,18 @@ export const contribAccountOverrideSchema = z
   })
   .strict();
 
+/**
+ * Contribution-profile job override.
+ *
+ * Bonus AMOUNT terms (bonusPercent / bonusMultiplier / monthsInBonusYear)
+ * deliberately do NOT appear here — they moved to the Salary Profile entry,
+ * because "how big is the bonus" belongs with "how big is the salary". What
+ * stays is what is genuinely about contributions computed FROM a bonus
+ * (include401kInBonus, includeBonusInContributions), plus the employer name
+ * and the bonus pay DATE, which are neither.
+ */
 export const jobOverrideSchema = z
   .object({
-    bonusPercent: z.union([z.string(), z.number()]).optional(),
-    bonusMultiplier: z.union([z.string(), z.number()]).optional(),
-    monthsInBonusYear: z.number().optional(),
     bonusMonth: z.union([z.number(), z.null()]).optional(),
     bonusDayOfMonth: z.union([z.number(), z.null()]).optional(),
     include401kInBonus: z.boolean().optional(),

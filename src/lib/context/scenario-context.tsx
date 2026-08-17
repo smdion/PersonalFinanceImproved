@@ -19,11 +19,13 @@ type Scenario = {
   description: string | null;
   overrides: ScenarioOverrides;
   isBaseline: boolean;
-  /** Budget/Contribution Profile pinned as "active" for every page/calculator
-   *  while this Plan is selected — null means "no pin, fall through to the
-   *  globally-active profile". See useEffectiveProfileId. */
+  /** Budget/Contribution/Salary Profile pinned as "active" for every
+   *  page/calculator while this Plan is selected — null means "no pin, fall
+   *  through to the globally-active profile". The three are independent
+   *  pins. See useEffectiveProfileId. */
   budgetProfileId: number | null;
   contributionProfileId: number | null;
+  salaryProfileId: number | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -35,6 +37,7 @@ type SessionScenario = {
   overrides: ScenarioOverrides;
   budgetProfileId: number | null;
   contributionProfileId: number | null;
+  salaryProfileId: number | null;
   isSession: true;
 };
 
@@ -92,6 +95,8 @@ type ScenarioContextValue = {
   setScenarioContributionProfile: (
     contributionProfileId: number | null,
   ) => void;
+  /** Pin (or clear, with null) which Salary Profile is active while the active scenario is selected. No-op on Main Plan. */
+  setScenarioSalaryProfile: (salaryProfileId: number | null) => void;
 
   /** Create a new session-only scenario, optionally with initial overrides */
   createSessionScenario: (
@@ -148,6 +153,8 @@ export function ScenarioProvider({ children }: { children: React.ReactNode }) {
     trpc.settings.scenarios.setBudgetProfilePin.useMutation();
   const setContributionProfilePinMut =
     trpc.settings.scenarios.setContributionProfilePin.useMutation();
+  const setSalaryProfilePinMut =
+    trpc.settings.scenarios.setSalaryProfilePin.useMutation();
   const utils = trpc.useUtils();
 
   // Resolve the active scenario object
@@ -303,6 +310,26 @@ export function ScenarioProvider({ children }: { children: React.ReactNode }) {
     [activeSelection, setContributionProfilePinMut, utils],
   );
 
+  const setScenarioSalaryProfile = useCallback(
+    (salaryProfileId: number | null) => {
+      if (activeSelection.type === "main") return;
+
+      if (activeSelection.type === "persisted") {
+        setSalaryProfilePinMut.mutate(
+          { id: activeSelection.id, salaryProfileId },
+          { onSuccess: () => utils.settings.scenarios.list.invalidate() },
+        );
+      } else {
+        setSessionScenarios((prev) =>
+          prev.map((s) =>
+            s.id === activeSelection.id ? { ...s, salaryProfileId } : s,
+          ),
+        );
+      }
+    },
+    [activeSelection, setSalaryProfilePinMut, utils],
+  );
+
   const createSessionScenario = useCallback(
     (name: string, initialOverrides?: ScenarioOverrides): string => {
       const id = `session-${++sessionCounter}`;
@@ -315,6 +342,7 @@ export function ScenarioProvider({ children }: { children: React.ReactNode }) {
           overrides: initialOverrides ?? {},
           budgetProfileId: null,
           contributionProfileId: null,
+          salaryProfileId: null,
           isSession: true as const,
         },
       ]);
@@ -348,6 +376,7 @@ export function ScenarioProvider({ children }: { children: React.ReactNode }) {
       clearOverride,
       setScenarioBudgetProfile,
       setScenarioContributionProfile,
+      setScenarioSalaryProfile,
       createSessionScenario,
       deleteSessionScenario,
       isInScenario: activeSelection.type !== "main",
@@ -364,6 +393,7 @@ export function ScenarioProvider({ children }: { children: React.ReactNode }) {
       clearOverride,
       setScenarioBudgetProfile,
       setScenarioContributionProfile,
+      setScenarioSalaryProfile,
       createSessionScenario,
       deleteSessionScenario,
     ],

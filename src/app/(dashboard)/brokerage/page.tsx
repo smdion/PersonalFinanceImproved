@@ -33,12 +33,15 @@ import {
 import { isPortfolioParent } from "@/lib/config/account-types";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { SkeletonTable } from "@/components/ui/skeleton";
+import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 
 export default function BrokeragePage() {
   const user = useUser();
   const canEdit = hasPermission(user, "brokerage");
   const utils = trpc.useUtils();
   const salaryOverrides = useSalaryOverrides();
+  // Independent Salary Profile axis (Plan pin -> globally-active setting).
+  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [activeProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",
     null,
@@ -116,12 +119,14 @@ export default function BrokeragePage() {
     ...(activeProfileId != null
       ? { contributionProfileId: activeProfileId }
       : {}),
+    ...salaryProfileInput,
   };
   const contribInput = {
     ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
     ...(activeProfileId != null
       ? { contributionProfileId: activeProfileId }
       : {}),
+    ...salaryProfileInput,
   } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
 
   const { data, isLoading, error } =

@@ -8,7 +8,9 @@ import { confirm } from "@/components/ui/confirm-dialog";
 import { ProfilePill } from "./profile-pill";
 import type { ProfileOption } from "./profile-pill";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
+import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
+import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 
 export function ScenarioBar() {
   const {
@@ -24,6 +26,7 @@ export function ScenarioBar() {
     isInScenario,
     setScenarioBudgetProfile,
     setScenarioContributionProfile,
+    setScenarioSalaryProfile,
   } = useScenario();
 
   const user = useUser();
@@ -42,9 +45,11 @@ export function ScenarioBar() {
   const utils = trpc.useUtils();
 
   // Profile switcher data
-  const { data: budgetProfiles } = trpc.budget.listProfiles.useQuery();
+  const { data: budgetProfiles } = useBudgetProfilesList();
   const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
+  const { data: salaryProfiles } = trpc.salaryProfile.list.useQuery();
   const [activeContribId, setActiveContribId] = useActiveContribProfile();
+  const [activeSalaryId, setActiveSalaryId] = useActiveSalaryProfile();
 
   const activateBudget = trpc.budget.setActiveProfile.useMutation({
     onSuccess: () => utils.budget.listProfiles.invalidate(),
@@ -60,10 +65,9 @@ export function ScenarioBar() {
       localSelection: null,
       globalDefaultId: globalActiveBudgetId,
     });
-  const globalActiveContribId =
-    activeContribId === null
-      ? (contribProfiles?.find((p) => p.isDefault)?.id ?? null)
-      : activeContribId;
+  // Post-migration the active-profile setting always names a real row;
+  // useActiveContribProfile repairs it if that row ever goes missing.
+  const globalActiveContribId = activeContribId;
   const { profileId: effectiveContribId, isPinned: contribIsPinned } =
     useEffectiveProfileId("contribution", {
       validIds: contribProfiles?.map((p) => p.id),
@@ -102,6 +106,28 @@ export function ScenarioBar() {
           : undefined,
   }));
 
+  const globalActiveSalaryId = activeSalaryId;
+  const { profileId: effectiveSalaryId, isPinned: salaryIsPinned } =
+    useEffectiveProfileId("salary", {
+      validIds: salaryProfiles?.map((p) => p.id),
+      localSelection: null,
+      globalDefaultId: globalActiveSalaryId,
+    });
+
+  const salaryOptions: ProfileOption[] = (salaryProfiles ?? []).map((p) => ({
+    id: p.id,
+    name: p.name,
+    isActive: p.id === effectiveSalaryId,
+    badge:
+      p.id === effectiveSalaryId
+        ? salaryIsPinned
+          ? "Pinned"
+          : "Active"
+        : p.id === globalActiveSalaryId
+          ? "Active (global)"
+          : undefined,
+  }));
+
   // While a Plan is selected, the pills pin that Plan's profile instead of
   // changing the global default (which would affect Main Plan and every
   // other Plan too) — see docs/RULES.md "Profile Pins".
@@ -117,6 +143,13 @@ export function ScenarioBar() {
       setScenarioContributionProfile(id);
     } else {
       setActiveContribId(id);
+    }
+  };
+  const handleActivateSalary = (id: number) => {
+    if (isInScenario) {
+      setScenarioSalaryProfile(id);
+    } else {
+      setActiveSalaryId(id);
     }
   };
 
@@ -484,6 +517,12 @@ export function ScenarioBar() {
         label={contribIsPinned ? "Contributions (pinned)" : "Contributions"}
         options={contribOptions}
         onActivate={(id) => handleActivateContrib(Number(id))}
+      />
+      <div className="hidden sm:block w-px h-4 bg-surface-strong" />
+      <ProfilePill
+        label={salaryIsPinned ? "Salary (pinned)" : "Salary"}
+        options={salaryOptions}
+        onActivate={(id) => handleActivateSalary(Number(id))}
       />
 
       {/* Divider */}

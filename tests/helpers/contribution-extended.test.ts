@@ -288,6 +288,9 @@ describe("applyJobOverrides", () => {
     annualSalary: "120000",
     payPeriod: "biweekly",
     endDate: null,
+    bonusMonth: 2,
+    includeBonusInContributions: false,
+    employerName: "OldCorp",
   } as unknown as (typeof import("@/lib/db/schema").jobs)["$inferSelect"];
 
   it("returns jobs unchanged when no overrides", () => {
@@ -297,17 +300,33 @@ describe("applyJobOverrides", () => {
 
   it("applies valid override fields", () => {
     const result = applyJobOverrides([baseJob], {
-      "1": { bonusPercent: "0.15", bonusMultiplier: "1.5" },
+      "1": { includeBonusInContributions: true, bonusMonth: 3 },
     });
-    expect(result[0].bonusPercent).toBe("0.15");
-    expect(result[0].bonusMultiplier).toBe("1.5");
+    expect(result[0].includeBonusInContributions).toBe(true);
+    expect(result[0].bonusMonth).toBe(3);
+  });
+
+  it("refuses bonus AMOUNT fields — they moved to the Salary Profile", () => {
+    // A Contribution Profile must not be able to change anyone's
+    // compensation. These names are still real jobs columns, so the plain
+    // `field in job` filter would happily apply a stale stored key.
+    const result = applyJobOverrides([baseJob], {
+      "1": {
+        bonusPercent: "0.15",
+        bonusMultiplier: "1.5",
+        monthsInBonusYear: 6,
+      },
+    });
+    expect(result[0].bonusPercent).toBe("0.10");
+    expect(result[0].bonusMultiplier).toBe("1.0");
+    expect(result[0].monthsInBonusYear).toBe(12);
   });
 
   it("ignores override fields not present on job", () => {
     const result = applyJobOverrides([baseJob], {
-      "1": { nonExistentField: "value", bonusPercent: "0.20" },
+      "1": { nonExistentField: "value", bonusMonth: 4 },
     } as Record<string, Record<string, unknown>>);
-    expect(result[0].bonusPercent).toBe("0.20");
+    expect(result[0].bonusMonth).toBe(4);
     expect(
       (result[0] as Record<string, unknown>)["nonExistentField"],
     ).toBeUndefined();
@@ -323,8 +342,6 @@ describe("resolveProfile", () => {
     ({
       id: 1,
       name: "Test Profile",
-      isDefault: false,
-      salaryOverrides: {} as Record<string, number>,
       contributionOverrides: {
         contributionAccounts: {},
         jobs: {},
@@ -359,18 +376,24 @@ describe("resolveProfile", () => {
     bonusOverride: null,
     monthsInBonusYear: 12,
     includeBonusInContributions: false,
+    employerName: "OldCorp",
   } as (typeof import("@/lib/db/schema").jobs)["$inferSelect"];
 
   const liveJobSalary = {
     job: { id: 1, personId: 1 },
     salary: 120000,
+    // Base salary BEFORE bonus — the multiplicand every bonus formula uses.
+    // `salary` above is the payroll basis and may already include a bonus.
+    baseSalary: 120000,
     totalComp: 130000,
+    resolvedBonusOverride: null,
   };
 
   it("returns unmodified data for empty profile", () => {
     const profile = makeProfile();
     const result = resolveProfile(
       profile,
+      {},
       [liveContrib],
       [liveJob],
       [liveJobSalary],
@@ -381,20 +404,60 @@ describe("resolveProfile", () => {
     expect(result.combinedSalary).toBe(120000);
   });
 
-  it("applies salary overrides", () => {
-    const profile = makeProfile({
-      salaryOverrides: { "1": 150000 },
-    });
+  it("a pinned salary KEEPS its bonus in totalComp", () => {
+    // THE SHIPPED BUG. This branch used to set totalComp = the pinned salary
+    // and null out resolvedBonusOverride, silently deleting the bonus of
+    // every pinned person from contribution and employer-match math — while
+    // the Salary Profile editor went on displaying it. totalComp must be the
+    // pinned salary PLUS a bonus computed from the (here live) 10% terms.
+    const profile = makeProfile();
     const result = resolveProfile(
       profile,
+      { "1": { salary: 150000 } },
       [liveContrib],
       [liveJob],
       [liveJobSalary],
     );
 
+    expect(result.jobSalaries[0].totalComp).toBe(165000); // 150k + 10%
+    expect(result.jobSalaries[0].totalComp).not.toBe(150000); // the old value
+    // includeBonusInContributions is false on this job, so the payroll basis
+    // stays bonus-free.
     expect(result.jobSalaries[0].salary).toBe(150000);
-    expect(result.jobSalaries[0].totalComp).toBe(150000);
     expect(result.combinedSalary).toBe(150000);
+  });
+
+  it("pinned bonus terms apply to an unpinned salary", () => {
+    const profile = makeProfile();
+    const result = resolveProfile(
+      profile,
+      { "1": { bonusPercent: 0.25 } },
+      [liveContrib],
+      [liveJob],
+      [liveJobSalary],
+    );
+
+    expect(result.jobSalaries[0].salary).toBe(120000); // still live
+    expect(result.jobSalaries[0].totalComp).toBe(150000); // 120k + 25%
+  });
+
+  it("leaves a person who pins nothing completely untouched", () => {
+    // The invariant the presence encoding exists to preserve: an entry that
+    // pins nothing must not replace salary or totalComp for someone who
+    // asked for nothing.
+    const profile = makeProfile();
+    for (const entry of [{}, undefined]) {
+      const result = resolveProfile(
+        profile,
+        entry === undefined ? {} : { "1": entry },
+        [liveContrib],
+        [liveJob],
+        [liveJobSalary],
+      );
+      expect(result.jobSalaries[0].salary).toBe(120000);
+      expect(result.jobSalaries[0].totalComp).toBe(130000);
+      expect(result.combinedSalary).toBe(120000);
+    }
   });
 
   it("applies contribution overrides", () => {
@@ -408,6 +471,7 @@ describe("resolveProfile", () => {
     });
     const result = resolveProfile(
       profile,
+      {},
       [liveContrib],
       [liveJob],
       [liveJobSalary],
@@ -427,6 +491,7 @@ describe("resolveProfile", () => {
     });
     const result = resolveProfile(
       profile,
+      {},
       [liveContrib],
       [liveJob],
       [liveJobSalary],
@@ -435,23 +500,55 @@ describe("resolveProfile", () => {
     expect(result.activeContribs).toHaveLength(0);
   });
 
-  it("applies job overrides", () => {
+  it("applies job overrides it still owns", () => {
     const profile = makeProfile({
       contributionOverrides: {
         contributionAccounts: {},
         jobs: {
-          "1": { bonusPercent: "0.25" },
+          "1": { employerName: "NewCorp" },
         },
       },
     });
     const result = resolveProfile(
       profile,
+      {},
       [liveContrib],
       [liveJob],
       [liveJobSalary],
     );
 
-    expect(result.patchedJobs[0].bonusPercent).toBe("0.25");
+    expect(result.patchedJobs[0].employerName).toBe("NewCorp");
+  });
+
+  it("REFUSES a stale bonus-amount job override", () => {
+    // bonusPercent moved to the Salary Profile. The override filter is
+    // field-name-driven and bonusPercent is still a real jobs column, so a
+    // leftover key in an old row would otherwise keep changing someone's
+    // compensation from the wrong axis. The migration strips these; this is
+    // the runtime backstop that makes a missed row inert, not wrong.
+    const profile = makeProfile({
+      contributionOverrides: {
+        contributionAccounts: {},
+        jobs: {
+          "1": {
+            bonusPercent: "0.25",
+            bonusMultiplier: "3",
+            monthsInBonusYear: 6,
+          },
+        },
+      },
+    });
+    const result = resolveProfile(
+      profile,
+      {},
+      [liveContrib],
+      [liveJob],
+      [liveJobSalary],
+    );
+
+    expect(result.patchedJobs[0].bonusPercent).toBe("0.10");
+    expect(result.patchedJobs[0].bonusMultiplier).toBe("1.0");
+    expect(result.patchedJobs[0].monthsInBonusYear).toBe(12);
   });
 });
 

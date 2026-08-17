@@ -11,7 +11,6 @@ export function SalaryTracker({
   onToggleSalary,
 }: {
   jobId: number;
-  futureSalaryChanges?: { salary: number; effectiveDate: string }[];
   activeSalaryOverride: number | null;
   onToggleSalary: (salary: number) => void;
 }) {

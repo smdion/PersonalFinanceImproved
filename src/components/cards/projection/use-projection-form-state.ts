@@ -146,8 +146,11 @@ export function useProjectionFormState() {
   const [showSalaryForm, setShowSalaryForm] = useState(false);
   const [salaryForm, setSalaryForm] = useState({
     year: "",
-    source: "profile" as "custom" | "profile",
+    // "profile" = switch Contribution Profile; "salaryProfile" = switch
+    // Salary Profile. Independent axes, so the form picks one source per row.
+    source: "salaryProfile" as "custom" | "profile" | "salaryProfile",
     profileId: "",
+    salaryProfileId: "",
     value: "",
     notes: "",
   });

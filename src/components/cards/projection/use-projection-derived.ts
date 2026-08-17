@@ -52,13 +52,19 @@ export function useProjectionDerived(
     scenarioView,
   } = form;
 
-  const { engineQuery, contribProfilesQuery, coastFireMcResult } = queries;
+  const {
+    engineQuery,
+    contribProfilesQuery,
+    salaryProfilesQuery,
+    coastFireMcResult,
+  } = queries;
 
   const {
     parentCategoryFilter,
     people,
     onContributionRates,
     contributionProfileId,
+    salaryProfileId,
     snapshotId,
   } = props;
   const { isInScenario } = useScenario();
@@ -150,6 +156,7 @@ export function useProjectionDerived(
         accumulationOverrides: accumOverrides,
         decumulationOverrides: decumOverrides,
         contributionProfileId,
+        salaryProfileId,
         parentCategoryFilter,
         isPersonFiltered,
       })
@@ -183,6 +190,7 @@ export function useProjectionDerived(
     accumOverrides,
     decumOverrides,
     contributionProfileId,
+    salaryProfileId,
     parentCategoryFilter,
     isPersonFiltered,
   ]);
@@ -196,6 +204,7 @@ export function useProjectionDerived(
       ? engineData.budgetProfileSummaries
       : undefined;
   const contribProfileSummaries = contribProfilesQuery.data;
+  const salaryProfileSummaries = salaryProfilesQuery.data;
 
   const contribSpecs = useMemo(() => {
     const raw =
@@ -586,6 +595,7 @@ export function useProjectionDerived(
     decumulationExpenses,
     budgetProfileSummaries,
     contribProfileSummaries,
+    salaryProfileSummaries,
     contribSpecs,
     rothBracketPresets,
     personFilterName,

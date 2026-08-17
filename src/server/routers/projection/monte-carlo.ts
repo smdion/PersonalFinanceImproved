@@ -74,6 +74,8 @@ export const monteCarloRouter = createTRPCRouter({
         taxMode: z.enum(["simple", "advanced"]).default("simple"),
         // --- Optional contribution profile (overrides contribution accounts + salary) ---
         contributionProfileId: z.number().int().optional(),
+        /** Optional Salary Profile — the independent "what if I earned X" axis. */
+        salaryProfileId: z.number().int().optional(),
         /** Optional per-asset-class return/volatility overrides from the UI. */
         assetClassOverrides: z
           .array(
@@ -133,6 +135,7 @@ export const monteCarloRouter = createTRPCRouter({
         fetchRetirementData(ctx.db, {
           snapshotId: input.snapshotId,
           contributionProfileId: input.contributionProfileId,
+          salaryProfileId: input.salaryProfileId,
         }),
         buildMcInputs(ctx.db),
         ctx.db
@@ -152,6 +155,7 @@ export const monteCarloRouter = createTRPCRouter({
       const payload = await buildEnginePayload(ctx.db, data, {
         salaryOverrides: input.salaryOverrides,
         contributionProfileId: input.contributionProfileId,
+        salaryProfileId: input.salaryProfileId,
         accumulationBudgetProfileId: input.accumulationBudgetProfileId,
         accumulationBudgetColumn: input.accumulationBudgetColumn,
         accumulationExpenseOverride: input.accumulationExpenseOverride,

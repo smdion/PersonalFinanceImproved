@@ -79,6 +79,8 @@ export const scenariosRouter = createTRPCRouter({
           .optional(),
         // --- Optional contribution profile (overrides contribution accounts + salary) ---
         contributionProfileId: z.number().int().optional(),
+        /** Optional Salary Profile — the independent "what if I earned X" axis. */
+        salaryProfileId: z.number().int().optional(),
         // --- Phase-based budget selection (independent profile+column per phase) ---
         accumulationBudgetProfileId: z.number().int().optional(),
         accumulationBudgetColumn: z.number().int().min(0).optional(),
@@ -103,10 +105,12 @@ export const scenariosRouter = createTRPCRouter({
       const data = await fetchRetirementData(ctx.db, {
         snapshotId: input.snapshotId,
         contributionProfileId: input.contributionProfileId,
+        salaryProfileId: input.salaryProfileId,
       });
       const payload = await buildEnginePayload(ctx.db, data, {
         salaryOverrides: input.salaryOverrides,
         contributionProfileId: input.contributionProfileId,
+        salaryProfileId: input.salaryProfileId,
         accumulationBudgetProfileId: input.accumulationBudgetProfileId,
         accumulationBudgetColumn: input.accumulationBudgetColumn,
         accumulationExpenseOverride: input.accumulationExpenseOverride,
@@ -369,6 +373,7 @@ export const scenariosRouter = createTRPCRouter({
           projectionYear: o.projectionYear,
           overrideSalary: toNumber(o.overrideSalary),
           contributionProfileId: o.contributionProfileId ?? null,
+          salaryProfileId: o.salaryProfileId ?? null,
           notes: o.notes,
         })),
         salaryByPerson,

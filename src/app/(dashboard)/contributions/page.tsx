@@ -20,6 +20,7 @@ import {
   isPortfolioParent,
   isRetirementParent,
 } from "@/lib/config/account-types";
+import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 
 type PeriodMode = "annual" | "monthly" | "per-period";
 
@@ -48,6 +49,8 @@ export default function ContributionsPage() {
   const [period, setPeriod] = useState<PeriodMode>("annual");
   const [activeProfileId] = useActiveContribProfile();
   const salaryOverrides = useSalaryOverrides();
+  // Independent Salary Profile axis (Plan pin -> globally-active setting).
+  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   // Plan pin -> globally-active profile — the primary summary below must stay
   // in sync with Paycheck/Budget's resolution instead of always reading raw
   // Live data (see docs/RULES.md "Profile Pins"). This is distinct from
@@ -66,6 +69,7 @@ export default function ContributionsPage() {
     ...(effectiveActiveContribProfileId != null
       ? { contributionProfileId: effectiveActiveContribProfileId }
       : {}),
+    ...salaryProfileInput,
   };
   const { data, isLoading } = trpc.contribution.computeSummary.useQuery(
     Object.keys(dataInput).length > 0 ? dataInput : undefined,

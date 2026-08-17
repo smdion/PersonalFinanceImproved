@@ -19,6 +19,7 @@ import {
   adminSession,
   seedPerformanceAccount,
   seedContributionProfile,
+  viewerSession,
 } from "./setup";
 
 vi.mock("@/lib/budget-api", () => ({
@@ -1347,7 +1348,7 @@ describe("budget router — computeActiveSummary with contribution-linked items"
     }
   });
 
-  it("honors activeContribProfileId as a fallback when the column has no explicit override — must match what use-budget-derived-data.ts's payroll breakdown resolves for the same column", async () => {
+  it("honors the globally-active Contribution Profile as a fallback when the column has no explicit override — must match what use-budget-derived-data.ts's payroll breakdown resolves for the same column", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const seed = seedStandardDataset(db);
@@ -1363,7 +1364,6 @@ describe("budget router — computeActiveSummary with contribution-linked items"
 
       const profileId = seedContributionProfile(db, {
         name: "Alt Contribution Profile",
-        isDefault: false,
         contributionOverrides: {
           contributionAccounts: {
             [String(contrib.id)]: { contributionValue: "900" },
@@ -1371,7 +1371,7 @@ describe("budget router — computeActiveSummary with contribution-linked items"
         },
       });
 
-      // No activeContribProfileId → Live (the account's own $600).
+      // No Contribution Profile tiers at all → Live (the account's own $600).
       const liveSummary = await caller.budget.computeActiveSummary();
       const liveItem = liveSummary.rawItems!.find(
         (i) => i.id === seed.itemIds[0]!,
@@ -1379,11 +1379,15 @@ describe("budget router — computeActiveSummary with contribution-linked items"
       // contribAmount is monthly; contributionValue "600" is annual → 50/mo.
       expect(liveItem!.contribAmount).toBe(50);
 
-      // No per-column override exists, but activeContribProfileId is
-      // passed — the column must fall through to it (this is the fix:
-      // previously the server ignored this param entirely).
+      // No per-column override exists, but a globally-active Contribution
+      // Profile is passed — the column must fall through to it (this is the
+      // fix: previously the server ignored this param entirely).
       const overriddenSummary = await caller.budget.computeActiveSummary({
-        activeContribProfileId: profileId,
+        contributionProfile: {
+          planPinId: null,
+          localSelectionId: null,
+          globalDefaultId: profileId,
+        },
       });
       const overriddenItem = overriddenSummary.rawItems!.find(
         (i) => i.id === seed.itemIds[0]!,
@@ -1394,7 +1398,7 @@ describe("budget router — computeActiveSummary with contribution-linked items"
     }
   });
 
-  it("prefers a per-column override over activeContribProfileId when both are set", async () => {
+  it("prefers a per-column override over the globally-active Contribution Profile when both are set", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const seed = seedStandardDataset(db);
@@ -1410,7 +1414,6 @@ describe("budget router — computeActiveSummary with contribution-linked items"
 
       const columnProfileId = seedContributionProfile(db, {
         name: "Column Profile",
-        isDefault: false,
         contributionOverrides: {
           contributionAccounts: {
             [String(contrib.id)]: { contributionValue: "750" },
@@ -1419,7 +1422,6 @@ describe("budget router — computeActiveSummary with contribution-linked items"
       });
       const globalProfileId = seedContributionProfile(db, {
         name: "Global Profile",
-        isDefault: false,
         contributionOverrides: {
           contributionAccounts: {
             [String(contrib.id)]: { contributionValue: "900" },
@@ -1431,7 +1433,11 @@ describe("budget router — computeActiveSummary with contribution-linked items"
       });
 
       const summary = await caller.budget.computeActiveSummary({
-        activeContribProfileId: globalProfileId,
+        contributionProfile: {
+          planPinId: null,
+          localSelectionId: null,
+          globalDefaultId: globalProfileId,
+        },
       });
       const item = summary.rawItems!.find((i) => i.id === seed.itemIds[0]!);
       expect(item!.contribAmount).toBe(62.5);
@@ -1489,6 +1495,588 @@ describe("budget router — computeActiveSummary with contribution-linked items"
         2,
       );
       expect(overriddenItem!.contribAmount).toBeCloseTo((240000 * 0.1) / 12, 2);
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// What-If sandbox support: itemAmountOverrides + netMonthlyIncome. See
+// .scratch/docs/plans/what-if-editable-sandbox-final.md section 3.
+// ---------------------------------------------------------------------------
+describe("budget router — computeActiveSummary sandbox support", () => {
+  it("itemAmountOverrides replaces an item's amount for the given column, leaving others untouched", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const seed = seedStandardDataset(db);
+
+      const summary = await caller.budget.computeActiveSummary({
+        itemAmountOverrides: [
+          { itemId: seed.itemIds[0]!, colIndex: 0, amount: 9999 },
+        ],
+      });
+
+      const overridden = summary
+        .allColumnResults![0]!.categories.flatMap((c) => c.items)
+        .find((i) => i.label === "Rent");
+      const untouched = summary
+        .allColumnResults![0]!.categories.flatMap((c) => c.items)
+        .find((i) => i.label === "Groceries");
+
+      expect(overridden!.amount).toBeCloseTo(9999, 2);
+      expect(untouched!.amount).toBeCloseTo(600, 2);
+
+      // rawItems (used for the client's OWN draft display) keeps the raw
+      // DB amount — the override is a server-computed-totals concern, not
+      // a persisted change.
+      const rawItem = summary.rawItems!.find((i) => i.id === seed.itemIds[0]!);
+      expect(rawItem!.amounts[0]).toBeCloseTo(2000, 2);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("itemAmountOverrides layers on top of a contribution-linked item's resolved amount, not a raw one", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const seed = seedStandardDataset(db);
+      const contrib = await seedContribAccount(db, seed.personId, {
+        contributionMethod: "dollar_amount",
+        contributionValue: "600",
+        jobId: null,
+      });
+      await caller.budget.linkContributionAccount({
+        budgetItemId: seed.itemIds[0]!,
+        contributionAccountId: contrib.id,
+      });
+
+      const withoutOverride = await caller.budget.computeActiveSummary();
+      const linkedItem = withoutOverride.rawItems!.find(
+        (i) => i.id === seed.itemIds[0]!,
+      );
+      // dollar_amount is treated as an annual figure by
+      // computeContribMonthlyForPair — $600/yr resolves to $50/mo.
+      expect(linkedItem!.contribAmount).toBeCloseTo(50, 2);
+
+      const withOverride = await caller.budget.computeActiveSummary({
+        itemAmountOverrides: [
+          { itemId: seed.itemIds[0]!, colIndex: 0, amount: 750 },
+        ],
+      });
+      const overriddenTotal = withOverride
+        .allColumnResults![0]!.categories.flatMap((c) => c.items)
+        .find((i) => i.label === "Rent");
+      expect(overriddenTotal!.amount).toBeCloseTo(750, 2);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("returns netMonthlyIncome computed from the selected column's resolved profile pair", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedStandardDataset(db);
+      const summary = await caller.budget.computeActiveSummary();
+      expect(typeof summary.netMonthlyIncome).toBe("number");
+      expect(summary.netMonthlyIncome).toBeGreaterThan(0);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("sandboxSalaryEntries changes netMonthlyIncome", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const seed = seedStandardDataset(db);
+      const baseline = await caller.budget.computeActiveSummary();
+
+      const withSandbox = await caller.budget.computeActiveSummary({
+        sandboxSalaryEntries: {
+          [String(seed.personId)]: { salary: 500000 },
+        },
+      });
+
+      expect(withSandbox.netMonthlyIncome).not.toBeCloseTo(
+        baseline.netMonthlyIncome!,
+        2,
+      );
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// REGRESSION (pre-existing bug): computeActiveSummary resolved ONE
+// contribution/salary profile from `selectedColumn` and wrote that single
+// monthly figure into every column's amounts, then derived allColumnResults
+// from that flattened data. So on a profile whose columns pin DIFFERENT
+// Contribution Profiles:
+//   - every column's linked-item $ showed the selected column's profile, and
+//   - the totals changed depending on which column you happened to be
+//     viewing, while the client's own per-column payroll breakdown
+//     (use-budget-derived-data.ts → usePerColumnPaycheck) resolved each
+//     column independently and disagreed.
+// ---------------------------------------------------------------------------
+describe("budget router — computeActiveSummary resolves a profile PER COLUMN", () => {
+  /** Two columns pinning contribution profiles worth $100/mo and $200/mo. */
+  async function seedTwoColumnsWithDifferentPins() {
+    const ctx = await createTestCaller(adminSession);
+    const { caller, db } = ctx;
+    const seed = seedStandardDataset(db);
+    const contrib = await seedContribAccount(db, seed.personId, {
+      contributionMethod: "dollar_amount",
+      contributionValue: "600", // $50/mo with no profile applied
+      jobId: null,
+    });
+    await caller.budget.linkContributionAccount({
+      budgetItemId: seed.itemIds[0]!,
+      contributionAccountId: contrib.id,
+    });
+
+    const profileA = seedContributionProfile(db, {
+      name: "Column A Profile",
+      contributionOverrides: {
+        contributionAccounts: {
+          [String(contrib.id)]: { contributionValue: "1200" }, // $100/mo
+        },
+      },
+    });
+    const profileB = seedContributionProfile(db, {
+      name: "Column B Profile",
+      contributionOverrides: {
+        contributionAccounts: {
+          [String(contrib.id)]: { contributionValue: "2400" }, // $200/mo
+        },
+      },
+    });
+
+    await caller.budget.addColumn({ label: "Travel" });
+    await caller.budget.updateColumnContributionProfileIds({
+      columnContributionProfileIds: [profileA, profileB],
+    });
+
+    return { ...ctx, seed, contrib, profileA, profileB };
+  }
+
+  it("gives each column its own linked-item amount instead of broadcasting one", async () => {
+    const { caller, seed, cleanup } = await seedTwoColumnsWithDifferentPins();
+    try {
+      const summary = await caller.budget.computeActiveSummary({
+        selectedColumn: 0,
+      });
+      const item = summary.rawItems!.find((i) => i.id === seed.itemIds[0]!);
+      // OLD behavior: [100, 100] — column 1 silently used column 0's profile.
+      expect(item!.contribAmounts).toEqual([100, 200]);
+      expect(summary.contribProfileIdByColumn).toHaveLength(2);
+      expect(summary.contribProfileIdByColumn![0]).not.toBe(
+        summary.contribProfileIdByColumn![1],
+      );
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("allColumnResults no longer change with the column you happen to be viewing", async () => {
+    const { caller, cleanup } = await seedTwoColumnsWithDifferentPins();
+    try {
+      const fromColumn0 = await caller.budget.computeActiveSummary({
+        selectedColumn: 0,
+      });
+      const fromColumn1 = await caller.budget.computeActiveSummary({
+        selectedColumn: 1,
+      });
+      // OLD behavior: viewing column 0 made BOTH columns report the $100
+      // profile and viewing column 1 made both report $200, so these two
+      // arrays disagreed.
+      expect(fromColumn1.allColumnResults).toEqual(
+        fromColumn0.allColumnResults,
+      );
+
+      const col0 = fromColumn0.allColumnResults![0]!;
+      const col1 = fromColumn0.allColumnResults![1]!;
+      // seedStandardDataset's unlinked items (600 + 200) only exist in
+      // column 0; addColumn appends 0 for them. So each column's total is
+      // its own linked-item amount plus its own unlinked items:
+      //   col0 = 100 (profile A) + 600 + 200 = 900
+      //   col1 = 200 (profile B) + 0   + 0   = 200
+      // The $100 gap between the two pinned Contribution Profiles is what
+      // makes the linked portions differ at all.
+      expect(col0.totalMonthly).toBeCloseTo(900, 6);
+      expect(col1.totalMonthly).toBeCloseTo(200, 6);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("each column's amount matches what that column's OWN profile computes on its own", async () => {
+    const { caller, seed, profileA, profileB, cleanup } =
+      await seedTwoColumnsWithDifferentPins();
+    try {
+      const perColumn = await caller.budget.computeActiveSummary({
+        selectedColumn: 0,
+      });
+      const item = perColumn.rawItems!.find((i) => i.id === seed.itemIds[0]!);
+
+      // The reference values: what a single-column profile pinned to A (or
+      // B) resolves — i.e. what the client's own per-column paycheck query
+      // for that pin would produce.
+      for (const [colIdx, profileId] of [
+        [0, profileA],
+        [1, profileB],
+      ] as const) {
+        const reference = await caller.budget.computeActiveSummary({
+          selectedColumn: colIdx,
+          contributionProfile: {
+            planPinId: profileId,
+            localSelectionId: null,
+            globalDefaultId: null,
+          },
+        });
+        const refItem = reference.rawItems!.find(
+          (i) => i.id === seed.itemIds[0]!,
+        );
+        expect(item!.contribAmounts![colIdx]).toBeCloseTo(
+          refItem!.contribAmounts![colIdx]!,
+          6,
+        );
+      }
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("a Plan pin overrides every column's own pin (documented precedence)", async () => {
+    const { caller, db, seed, contrib, cleanup } =
+      await seedTwoColumnsWithDifferentPins();
+    try {
+      const planProfileId = seedContributionProfile(db, {
+        name: "Plan-Pinned Profile",
+        contributionOverrides: {
+          contributionAccounts: {
+            [String(contrib.id)]: { contributionValue: "3600" }, // $300/mo
+          },
+        },
+      });
+      const summary = await caller.budget.computeActiveSummary({
+        selectedColumn: 0,
+        contributionProfile: {
+          planPinId: planProfileId,
+          localSelectionId: null,
+          globalDefaultId: null,
+        },
+      });
+      const item = summary.rawItems!.find((i) => i.id === seed.itemIds[0]!);
+      // OLD behavior: [100, 200] — the column pins beat the Plan pin.
+      expect(item!.contribAmounts).toEqual([300, 300]);
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// REGRESSION (pre-existing bug): the Savings Profiles rail's "Unspent" figure.
+//
+// savings-allocation-panel.tsx called `paycheck.computeSummary.useQuery()`
+// with NO input at all. Server-side, no contributionProfileId means
+// fetchContributionProfile returns null — i.e. NO profile is applied, not
+// "the globally-active one". So Unspent ignored the active Contribution
+// Profile, the active Salary Profile, any Plan pin, and any Plan-level salary
+// override. It is now computed inside budget.listProfiles, which resolves
+// each profile's own per-column pins.
+// ---------------------------------------------------------------------------
+describe("budget router — listProfiles computes Unspent under the resolved profiles", () => {
+  /** Household whose ACTIVE Contribution Profile is not the raw job default. */
+  async function seedHouseholdWithActiveContribProfile() {
+    const ctx = await createTestCaller(adminSession);
+    const { caller, db } = ctx;
+    const seed = seedStandardDataset(db);
+    // A payroll contribution that a profile can move — 10% of salary,
+    // pre-tax, so changing it visibly moves take-home pay.
+    const contrib = await seedPayrollContribAccount(
+      db,
+      seed.personId,
+      seed.jobId,
+      {
+        contributionMethod: "percent_of_salary",
+        contributionValue: "10",
+      },
+    );
+    const contribProfileId = seedContributionProfile(db, {
+      name: "Max Out 401k",
+      contributionOverrides: {
+        contributionAccounts: {
+          [String(contrib.id)]: { contributionValue: "25" },
+        },
+      },
+    });
+    await caller.settings.appSettings.upsert({
+      key: "active_contrib_profile_id",
+      value: contribProfileId,
+    });
+    return { ...ctx, seed, contrib, contribProfileId };
+  }
+
+  /** The same monthly take-home the client's buildPayrollBreakdown derives. */
+  function netMonthlyFrom(
+    paycheckData: Awaited<
+      ReturnType<
+        Awaited<
+          ReturnType<typeof createTestCaller>
+        >["caller"]["paycheck"]["computeSummary"]
+      >
+    >,
+  ): number {
+    let net = 0;
+    for (const d of paycheckData.people) {
+      const pc = d.paycheck;
+      if (!pc || !d.job) continue;
+      const perMonth =
+        ("budgetPerMonth" in d ? d.budgetPerMonth : null) ??
+        pc.periodsPerYear / 12;
+      net += pc.netPay * perMonth;
+    }
+    return net;
+  }
+
+  it("matches a directly-parameterized paycheck.computeSummary for the active Contribution Profile", async () => {
+    const { caller, contribProfileId, cleanup } =
+      await seedHouseholdWithActiveContribProfile();
+    try {
+      const profiles = await caller.budget.listProfiles();
+      const main = profiles.find((p) => p.isActive)!;
+
+      const reference = await caller.paycheck.computeSummary({
+        contributionProfileId: contribProfileId,
+      });
+      const expectedNet = netMonthlyFrom(reference);
+
+      expect(main.netMonthly).toBeCloseTo(expectedNet, 6);
+      expect(main.unspentMonthly).toBeCloseTo(
+        expectedNet - main.monthlyTotal - main.monthlySavings,
+        6,
+      );
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("differs from the no-profile figure the panel used to show", async () => {
+    const { caller, cleanup } = await seedHouseholdWithActiveContribProfile();
+    try {
+      const profiles = await caller.budget.listProfiles();
+      const main = profiles.find((p) => p.isActive)!;
+
+      // What the old client-side query computed: computeSummary() with no
+      // input at all, i.e. no Contribution Profile applied.
+      const noProfile = await caller.paycheck.computeSummary();
+      const oldNet = netMonthlyFrom(noProfile);
+      const oldUnspent = oldNet - main.monthlyTotal - main.monthlySavings;
+
+      expect(main.netMonthly).not.toBeCloseTo(oldNet, 2);
+      expect(main.unspentMonthly).not.toBeCloseTo(oldUnspent, 2);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("honors an active Plan's Contribution Profile pin over the globally-active one", async () => {
+    const { caller, db, contrib, cleanup } =
+      await seedHouseholdWithActiveContribProfile();
+    try {
+      const planProfileId = seedContributionProfile(db, {
+        name: "Plan-Pinned Contributions",
+        contributionOverrides: {
+          contributionAccounts: {
+            [String(contrib.id)]: { contributionValue: "3" },
+          },
+        },
+      });
+
+      const [pinned, unpinned] = await Promise.all([
+        caller.budget.listProfiles({ planContribProfileId: planProfileId }),
+        caller.budget.listProfiles(),
+      ]);
+      const reference = await caller.paycheck.computeSummary({
+        contributionProfileId: planProfileId,
+      });
+
+      const pinnedMain = pinned.find((p) => p.isActive)!;
+      expect(pinnedMain.netMonthly).toBeCloseTo(netMonthlyFrom(reference), 6);
+      expect(pinnedMain.netMonthly).not.toBeCloseTo(
+        unpinned.find((p) => p.isActive)!.netMonthly!,
+        2,
+      );
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("honors a Plan-level salary override", async () => {
+    const { caller, cleanup } = await seedHouseholdWithActiveContribProfile();
+    try {
+      const salaryOverrides = [{ personId: 1, salary: 240000 }];
+      const withOverride = await caller.budget.listProfiles({
+        salaryOverrides,
+      });
+      const without = await caller.budget.listProfiles();
+      expect(withOverride.find((p) => p.isActive)!.netMonthly!).toBeGreaterThan(
+        without.find((p) => p.isActive)!.netMonthly!,
+      );
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("returns null Unspent when nobody has a paycheck to compute from", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedBudgetProfile(db, "No Earners", true);
+      const profiles = await caller.budget.listProfiles();
+      expect(profiles[0]!.netMonthly).toBeNull();
+      expect(profiles[0]!.unspentMonthly).toBeNull();
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// duplicateProfile — the What-If tab's "keep this" action
+// ---------------------------------------------------------------------------
+describe("budget router — duplicateProfile", () => {
+  it("copies columns, items and savings allocations but not API/contribution links", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const seed = seedStandardDataset(db);
+      const contribProfileId = seedContributionProfile(db, { name: "Pinned" });
+      await caller.budget.addColumn({ label: "Travel" });
+      await caller.budget.updateColumnMonths({ columnMonths: [9, 3] });
+      await caller.budget.updateColumnContributionProfileIds({
+        columnContributionProfileIds: [contribProfileId, null],
+      });
+      // An API-linked + contribution-linked item on the source.
+      const contrib = await seedContribAccount(db, seed.personId, {
+        contributionMethod: "dollar_amount",
+        contributionValue: "600",
+        jobId: null,
+      });
+      await caller.budget.linkContributionAccount({
+        budgetItemId: seed.itemIds[0]!,
+        contributionAccountId: contrib.id,
+      });
+      const schema = await getSchema();
+      db.update(schema.budgetItems)
+        .set({
+          apiCategoryId: "ynab-uuid",
+          apiCategoryName: "Rent",
+          apiSyncDirection: "push",
+        })
+        .where(eq(schema.budgetItems.id, seed.itemIds[1]!))
+        .run();
+
+      const copy = await caller.budget.duplicateProfile({
+        sourceProfileId: seed.profileId,
+        name: "Sandbox Copy",
+      });
+
+      expect(copy.name).toBe("Sandbox Copy");
+      // Duplicating is not activating.
+      expect(copy.isActive).toBe(false);
+      expect(copy.columnLabels).toEqual(["Standard", "Travel"]);
+      expect(copy.columnMonths).toEqual([9, 3]);
+      // Column pins ARE copied — the duplicate should resolve like its source.
+      expect(copy.columnContributionProfileIds).toEqual([
+        contribProfileId,
+        null,
+      ]);
+
+      const copiedItems = await db
+        .select()
+        .from(schema.budgetItems)
+        .where(eq(schema.budgetItems.profileId, copy.id))
+        .all();
+      expect(copiedItems).toHaveLength(seed.itemIds.length);
+      // API links and contribution links are external-write hazards on a
+      // copy — every one of them must be dropped.
+      for (const i of copiedItems) {
+        expect(i.apiCategoryId).toBeNull();
+        expect(i.apiCategoryName).toBeNull();
+        expect(i.contributionAccountId).toBeNull();
+      }
+      // ...while the real budget content survives.
+      const rent = copiedItems.find((i) => i.subcategory === "Rent");
+      expect(rent).toBeTruthy();
+      expect(rent!.isEssential).toBe(true);
+
+      const copiedAllocations = await db
+        .select()
+        .from(schema.savingsGoalProfileAllocations)
+        .where(
+          eq(schema.savingsGoalProfileAllocations.budgetProfileId, copy.id),
+        )
+        .all();
+      expect(copiedAllocations).toHaveLength(1);
+      expect(Number(copiedAllocations[0]!.monthlyContribution)).toBe(500);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("is gated on the budget permission", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    const viewer = await createTestCaller(viewerSession);
+    try {
+      const seed = seedStandardDataset(db);
+      await expect(
+        viewer.caller.budget.duplicateProfile({
+          sourceProfileId: seed.profileId,
+          name: "Nope",
+        }),
+      ).rejects.toThrow();
+      void caller;
+    } finally {
+      viewer.cleanup();
+      cleanup();
+    }
+  });
+
+  it("bakes itemAmountOverrides into the copy, keyed by the SOURCE item ids", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const schema = await getSchema();
+      const seed = seedStandardDataset(db);
+
+      const copy = await caller.budget.duplicateProfile({
+        sourceProfileId: seed.profileId,
+        name: "Edited Copy",
+        itemAmountOverrides: [
+          { itemId: seed.itemIds[0]!, colIndex: 0, amount: 2500 },
+        ],
+      });
+
+      const copiedItems = await db
+        .select()
+        .from(schema.budgetItems)
+        .where(eq(schema.budgetItems.profileId, copy.id))
+        .all();
+      const rent = copiedItems.find((i) => i.subcategory === "Rent");
+      const groceries = copiedItems.find((i) => i.subcategory === "Groceries");
+      expect((rent!.amounts as number[])[0]).toBe(2500);
+      // Untouched items keep the source's raw amount.
+      expect((groceries!.amounts as number[])[0]).toBe(600);
+
+      // The source profile itself is unaffected — this is a copy-time bake,
+      // never a mutation of the profile being played with.
+      const sourceItems = await db
+        .select()
+        .from(schema.budgetItems)
+        .where(eq(schema.budgetItems.profileId, seed.profileId))
+        .all();
+      const sourceRent = sourceItems.find((i) => i.subcategory === "Rent");
+      expect((sourceRent!.amounts as number[])[0]).toBe(2000);
     } finally {
       cleanup();
     }

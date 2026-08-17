@@ -33,6 +33,9 @@
 //   protectedProcedure   → @/server/trpc
 
 import { z } from "zod/v4";
+import type { SalaryOverrideMap } from "@/server/helpers";
+import { accountCategoryEnum } from "@/lib/config/account-types";
+import { CONTRIBUTION_METHOD_VALUES } from "@/lib/config/enum-values";
 
 /**
  * Optional "what-if" targeting for procedures that read through
@@ -55,9 +58,177 @@ export const zYearEndTargeting = z
 
 export type YearEndTargetingInput = z.infer<typeof zYearEndTargeting>;
 
-/** Convert a procedure's `salaryOverrides` input array into the Map shape helpers expect. */
+/**
+ * Convert a procedure's `salaryOverrides` input array into the Map shape
+ * helpers expect.
+ *
+ * Plan/session overrides pin SALARY ONLY — they have no bonus dimension, so
+ * every entry sets exactly that one field and leaves bonus terms to resolve
+ * live (or to a Salary Profile, which merges into the gaps per field).
+ */
 export function toSalaryOverrideMap(
   salaryOverrides: { personId: number; salary: number }[] | undefined,
-): Map<number, number> {
-  return new Map((salaryOverrides ?? []).map((s) => [s.personId, s.salary]));
+): SalaryOverrideMap {
+  return new Map(
+    (salaryOverrides ?? []).map((s) => [s.personId, { salary: s.salary }]),
+  );
 }
+
+/** Guardrail on the sandbox record's size — see zSandboxSalaryEntries. */
+const MAX_SANDBOX_PEOPLE = 10;
+
+/**
+ * The What-If tab's hand-edited salary/bonus entries — the same
+ * `SalaryEntryMap` shape a Salary Profile's `salaries` column holds, so the
+ * sandbox needs no new override input shape and no new schema.
+ *
+ * Applied server-side by `applySandboxSalaryEntries` as the highest
+ * precedence tier (above a Plan/session salary override, above a Salary
+ * Profile pin, above the live job). Every field is optional and PRESENCE IS
+ * THE PIN SIGNAL, exactly as on a profile row.
+ *
+ * Size-capped because, unlike a profile row, this arrives directly from the
+ * client on every keystroke-debounced query: a household is realistically
+ * 1-2 people, so 10 is generous while keeping the record from being an
+ * unbounded user-controlled map.
+ */
+export const zSandboxSalaryEntries = z
+  .record(
+    z.string(),
+    z.object({
+      salary: z.number().optional(),
+      bonusPercent: z.number().optional(),
+      bonusMultiplier: z.number().optional(),
+      monthsInBonusYear: z.number().int().optional(),
+    }),
+  )
+  .refine((v) => Object.keys(v ?? {}).length <= MAX_SANDBOX_PEOPLE, {
+    message: `At most ${MAX_SANDBOX_PEOPLE} people may be edited at once`,
+  })
+  .optional();
+
+/**
+ * The What-If tab's hand-edited budget item amounts, keyed by
+ * (itemId, colIndex).
+ *
+ * Consumed by `budget.computeActiveSummary` (to recompute totals under the
+ * sandbox's edits without a second client-side computation of the app's most
+ * important number) and by `budget.duplicateProfile` (to bake the same edits
+ * into a saved copy, in the copy's own transaction).
+ */
+export const zItemAmountOverrides = z
+  .array(
+    z.object({
+      itemId: z.number().int(),
+      colIndex: z.number().int(),
+      amount: z.number(),
+    }),
+  )
+  .optional();
+
+/**
+ * `itemAmountOverrides` → a `"itemId:colIndex"` → amount lookup.
+ *
+ * The override is ONE MORE LAYER on top of the existing amount resolution
+ * chain, never a replacement for it: callers must consult this map first and
+ * fall back to whatever they resolve today (contribution-linked amount, then
+ * the raw stored amount). Skipping the chain for overridden items is the
+ * exact bug class this feature exists to avoid.
+ */
+export function toItemAmountOverrideMap(
+  overrides: { itemId: number; colIndex: number; amount: number }[] | undefined,
+): Map<string, number> {
+  return new Map(
+    (overrides ?? []).map((o) => [`${o.itemId}:${o.colIndex}`, o.amount]),
+  );
+}
+
+/** Guardrail on the sandbox deduction inputs below — same reasoning as
+ *  MAX_SANDBOX_PEOPLE: realistically a handful per household, capped to
+ *  keep these from being unbounded user-controlled arrays. */
+const MAX_SANDBOX_DEDUCTIONS = 20;
+
+/**
+ * The What-If tab's hand-edited amount for an EXISTING paycheck deduction
+ * (identified by its real `paycheck_deductions.id`). One more layer on top
+ * of the stored `amountPerPeriod`, applied before `calculatePaycheck` runs
+ * — never a second computation of net pay.
+ */
+export const zSandboxDeductionEdits = z
+  .array(
+    z.object({
+      id: z.number().int(),
+      amountPerPeriod: z.number(),
+    }),
+  )
+  .max(MAX_SANDBOX_DEDUCTIONS)
+  .optional();
+
+/**
+ * The What-If tab's hand-added HYPOTHETICAL deductions — no `paycheck_
+ * deductions` row exists for these (e.g. "what if I added a $200/mo life
+ * insurance premium"), so they're keyed by `personId` instead of a real id
+ * and appended to that person's deduction list for the duration of the
+ * request only. `ficaExempt` is not exposed here (defaults to false, i.e.
+ * FICA still applies) — a hypothetical addition doesn't know the DB's
+ * per-deduction FICA-exemption nuance the way a real row does, and getting
+ * that wrong silently would be worse than the (disclosed) simplification.
+ */
+export const zSandboxDeductionAdditions = z
+  .array(
+    z.object({
+      personId: z.number().int(),
+      name: z.string().trim().min(1),
+      amountPerPeriod: z.number(),
+      isPretax: z.boolean(),
+    }),
+  )
+  .max(MAX_SANDBOX_DEDUCTIONS)
+  .optional();
+
+/** Guardrail on the sandbox contribution overrides below. */
+const MAX_SANDBOX_CONTRIB_OVERRIDES = 30;
+
+/**
+ * The What-If tab's hand-edited amount for an EXISTING contribution
+ * account, keyed by the real `contribution_accounts.id`. Reuses the SAME
+ * generic override-merge mechanism a Contribution Profile's own
+ * `contributionOverrides.contributionAccounts` already goes through
+ * (`applyContribOverrides`) — this is one more layer applied AFTER the
+ * picked profile's own overrides, not a parallel mechanism. Stored as a
+ * string to match `contribution_accounts.contribution_value`'s own column
+ * type — every downstream reader already parses that field with
+ * `toNumber`, so a mismatched type here would only matter if something
+ * read it raw, which nothing does.
+ */
+export const zSandboxContribOverrides = z
+  .record(z.string(), z.object({ contributionValue: z.string() }))
+  .refine((v) => Object.keys(v ?? {}).length <= MAX_SANDBOX_CONTRIB_OVERRIDES, {
+    message: `At most ${MAX_SANDBOX_CONTRIB_OVERRIDES} accounts may be edited at once`,
+  })
+  .optional();
+
+/**
+ * The What-If tab's hand-added HYPOTHETICAL contribution accounts — no
+ * `contribution_accounts` row exists yet, keyed by `personId` and appended
+ * to that person's account list for the duration of the request only.
+ * Deliberately minimal (account type, method, value) — the same fields
+ * `contributionAccountInput` (settings/paycheck.ts) actually requires,
+ * everything else (institution, label, employer match, sub-accounts) takes
+ * that mutation's own defaults, same as a freshly-created real account
+ * would have before anyone edits it further. `employerMatchType` defaults
+ * to "none" here rather than being exposed — keeping the quick-add form
+ * genuinely quick; a real employer match is set up on the real Contribution
+ * Profiles page.
+ */
+export const zSandboxContribAdditions = z
+  .array(
+    z.object({
+      personId: z.number().int(),
+      accountType: z.enum(accountCategoryEnum()),
+      contributionMethod: z.enum(CONTRIBUTION_METHOD_VALUES),
+      contributionValue: z.string(),
+    }),
+  )
+  .max(MAX_SANDBOX_CONTRIB_OVERRIDES)
+  .optional();

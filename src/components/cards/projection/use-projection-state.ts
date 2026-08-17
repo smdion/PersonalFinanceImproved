@@ -39,6 +39,8 @@ export type UseProjectionStateProps = {
   decumulationExpenseOverride?: number;
   parentCategoryFilter?: string;
   contributionProfileId?: number;
+  /** Independent Salary Profile axis. */
+  salaryProfileId?: number;
   snapshotId?: number;
 };
 

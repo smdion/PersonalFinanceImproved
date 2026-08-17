@@ -1,9 +1,18 @@
 /**
  * Contribution Profiles Router
  *
- * CRUD + resolution for named contribution/salary override profiles.
+ * CRUD + resolution for named contribution override profiles.
  * Profiles are managed on the budget page (the what-if control center)
  * and consumed by the relocation tool and potentially the retirement page.
+ *
+ * Salary is NOT part of a Contribution Profile — it lives on the independent
+ * salaryProfile router. Every resolveProfile() call here therefore passes an
+ * empty salary-entry map: these endpoints resolve the contribution axis
+ * standalone, not paired with any particular Salary Profile.
+ *
+ * There is no `isDefault` flag and no synthetic id-0 "Live" row: every
+ * profile is an ordinary, renamable, editable row, and one with empty
+ * contributionOverrides is simply a profile with nothing customized.
  */
 import { z } from "zod/v4";
 import { eq } from "drizzle-orm";
@@ -21,10 +30,8 @@ import {
 } from "@/server/helpers";
 import { accountDisplayName } from "@/lib/utils/format";
 import { getDisplayConfig } from "@/lib/config/account-types";
-import {
-  contributionOverridesSchema,
-  salaryOverridesSchema,
-} from "@/lib/db/json-schemas";
+import { contributionOverridesSchema } from "@/lib/db/json-schemas";
+import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 // ── Override shape validation (write-only — reads tolerate unexpected fields) ──
 // Schemas imported from @/lib/db/json-schemas as centralized schemas.
@@ -45,7 +52,7 @@ export const contributionProfileRouter = createTRPCRouter({
     const { contribs, jobs, jobSalaries } = await loadLiveContribData(ctx.db);
 
     const resolved = profiles.map((profile) => {
-      const r = resolveProfile(profile, contribs, jobs, jobSalaries);
+      const r = resolveProfile(profile, {}, contribs, jobs, jobSalaries);
       const agg = aggregateContributionsByCategory(
         r.activeContribs,
         r.activeJobs,
@@ -65,18 +72,15 @@ export const contributionProfileRouter = createTRPCRouter({
         id: profile.id,
         name: profile.name,
         description: profile.description,
-        isDefault: profile.isDefault,
         createdAt: profile.createdAt.toISOString(),
-        overrideCount:
-          Object.keys(
-            (
-              profile.contributionOverrides as Record<
-                string,
-                Record<string, Record<string, unknown>>
-              >
-            ).contributionAccounts ?? {},
-          ).length +
-          Object.keys(profile.salaryOverrides as Record<string, number>).length,
+        overrideCount: Object.keys(
+          (
+            profile.contributionOverrides as Record<
+              string,
+              Record<string, Record<string, unknown>>
+            >
+          ).contributionAccounts ?? {},
+        ).length,
         summary: {
           combinedSalary: r.combinedSalary,
           annualContributions: totalContributions,
@@ -84,39 +88,6 @@ export const contributionProfileRouter = createTRPCRouter({
         },
       };
     });
-
-    // Always ensure a "Live" default profile exists in the response.
-    // If no DB row is marked isDefault, synthesize one from current data.
-    const hasDefault = resolved.some((p) => p.isDefault);
-    if (!hasDefault) {
-      const liveAgg = aggregateContributionsByCategory(
-        contribs,
-        jobs,
-        jobSalaries,
-      );
-      const liveTotalContrib = Object.values(liveAgg.contribByCategory).reduce(
-        (sum, cat) => sum + cat.annual,
-        0,
-      );
-      const liveTotalMatch = Object.values(
-        liveAgg.employerMatchByCategory,
-      ).reduce((sum, val) => sum + val, 0);
-      const combinedSalary = jobSalaries.reduce((s, js) => s + js.salary, 0);
-
-      resolved.unshift({
-        id: 0,
-        name: "Live",
-        description: "Current paycheck contributions — no overrides",
-        isDefault: true,
-        createdAt: new Date().toISOString(),
-        overrideCount: 0,
-        summary: {
-          combinedSalary,
-          annualContributions: liveTotalContrib,
-          annualEmployerMatch: liveTotalMatch,
-        },
-      });
-    }
 
     return resolved;
   }),
@@ -127,26 +98,12 @@ export const contributionProfileRouter = createTRPCRouter({
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
-      // id=0 is the synthetic "Live" profile — no overrides, just current data
-      let profile: typeof schema.contributionProfiles.$inferSelect;
-      if (input.id === 0) {
-        profile = {
-          id: 0,
-          name: "Live",
-          description: "Current paycheck contributions — no overrides",
-          isDefault: true,
-          salaryOverrides: {},
-          contributionOverrides: { contributionAccounts: {}, jobs: {} },
-          createdAt: new Date(),
-        };
-      } else {
-        const rows = await ctx.db
-          .select()
-          .from(schema.contributionProfiles)
-          .where(eq(schema.contributionProfiles.id, input.id));
-        if (!rows[0]) return null;
-        profile = rows[0];
-      }
+      const rows = await ctx.db
+        .select()
+        .from(schema.contributionProfiles)
+        .where(eq(schema.contributionProfiles.id, input.id));
+      const profile = rows[0];
+      if (!profile) return null;
 
       const {
         contribs,
@@ -156,7 +113,7 @@ export const contributionProfileRouter = createTRPCRouter({
         peopleMap,
         perfAccountMap,
       } = await loadLiveContribData(ctx.db);
-      const resolved = resolveProfile(profile, contribs, jobs, jobSalaries);
+      const resolved = resolveProfile(profile, {}, contribs, jobs, jobSalaries);
 
       // Build per-account detail for the editor UI
       const contribOverridesRoot = profile.contributionOverrides as Record<
@@ -169,8 +126,6 @@ export const contributionProfileRouter = createTRPCRouter({
         string,
         Record<string, unknown>
       >;
-      const salaryOverrides = profile.salaryOverrides as Record<string, number>;
-
       // Convert perfAccountMap to array for fallback matching
       const allPerfAccounts = Array.from(perfAccountMap.values());
 
@@ -297,7 +252,6 @@ export const contributionProfileRouter = createTRPCRouter({
           currentSalary,
           estimatedBonus,
           fullFormulaBonus,
-          overrideSalary: salaryOverrides[String(j.personId)] ?? null,
           // Bonus live values
           liveBonusPercent: j.bonusPercent,
           liveBonusMultiplier: j.bonusMultiplier,
@@ -332,7 +286,6 @@ export const contributionProfileRouter = createTRPCRouter({
       z.object({
         name: z.string().min(1).max(100),
         description: z.string().max(500).optional(),
-        salaryOverrides: salaryOverridesSchema.default({}),
         contributionOverrides: ContributionOverridesSchema,
       }),
     )
@@ -342,7 +295,6 @@ export const contributionProfileRouter = createTRPCRouter({
         .values({
           name: input.name,
           description: input.description ?? null,
-          salaryOverrides: input.salaryOverrides,
           contributionOverrides: input.contributionOverrides,
         })
         .returning();
@@ -358,31 +310,21 @@ export const contributionProfileRouter = createTRPCRouter({
         id: z.number(),
         name: z.string().min(1).max(100).optional(),
         description: z.string().max(500).nullish(),
-        salaryOverrides: salaryOverridesSchema.optional(),
         contributionOverrides: ContributionOverridesSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      // Prevent editing the default profile's core identity
       const existing = await ctx.db
         .select()
         .from(schema.contributionProfiles)
         .where(eq(schema.contributionProfiles.id, input.id));
       if (!existing[0]) throw new Error("Profile not found");
-      if (
-        existing[0].isDefault &&
-        (input.salaryOverrides || input.contributionOverrides)
-      ) {
-        throw new Error("Cannot modify the default (Live) profile overrides");
-      }
 
       const updates: Partial<typeof schema.contributionProfiles.$inferInsert> =
         {};
       if (input.name !== undefined) updates.name = input.name;
       if (input.description !== undefined)
         updates.description = input.description ?? null;
-      if (input.salaryOverrides !== undefined)
-        updates.salaryOverrides = input.salaryOverrides;
       if (input.contributionOverrides !== undefined)
         updates.contributionOverrides = input.contributionOverrides;
 
@@ -395,29 +337,47 @@ export const contributionProfileRouter = createTRPCRouter({
     }),
 
   /**
-   * Delete a contribution profile (cannot delete default).
+   * Delete a contribution profile. Blocked when it's the last one left (the
+   * active-profile setting must always resolve to a real row), when it's the
+   * globally-active selection, and when any Plan still pins it — the
+   * scenarios FK is `set null`, so without that check deleting would silently
+   * unpin every Plan referencing it. (Mirrors salaryProfile.delete, which had
+   * the Plan-pin guard first.)
    */
   delete: contributionProfileProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const existing = await ctx.db
-        .select()
-        .from(schema.contributionProfiles)
-        .where(eq(schema.contributionProfiles.id, input.id));
-      if (!existing[0]) throw new Error("Profile not found");
-
-      // Prevent deleting the currently active profile
       const activeSettingRows = await ctx.db
         .select()
         .from(schema.appSettings)
-        .where(eq(schema.appSettings.key, "active_contrib_profile_id"));
-      const activeId = activeSettingRows[0]?.value as number | null;
+        .where(eq(schema.appSettings.key, SK_ACTIVE_CONTRIB_PROFILE_ID));
+      const activeId = (activeSettingRows[0]?.value ?? null) as number | null;
+
+      const allProfiles = await ctx.db
+        .select({ id: schema.contributionProfiles.id })
+        .from(schema.contributionProfiles);
+
       const deleteCheck = canDeleteContribProfile(
-        existing[0],
         activeId,
         input.id,
+        allProfiles.length,
       );
       if (!deleteCheck.allowed) throw new Error(deleteCheck.reason);
+
+      if (!allProfiles.some((p) => p.id === input.id))
+        throw new Error("Profile not found");
+
+      const pinningPlans = await ctx.db
+        .select({ name: schema.scenarios.name })
+        .from(schema.scenarios)
+        .where(eq(schema.scenarios.contributionProfileId, input.id));
+      if (pinningPlans.length > 0) {
+        throw new Error(
+          `Cannot delete: pinned by ${pinningPlans.length} Plan(s) (${pinningPlans
+            .map((p) => p.name)
+            .join(", ")}). Unpin it there first.`,
+        );
+      }
 
       await ctx.db
         .delete(schema.contributionProfiles)
@@ -441,7 +401,7 @@ export const contributionProfileRouter = createTRPCRouter({
       if (!profile) return null;
 
       const { contribs, jobs, jobSalaries } = await loadLiveContribData(ctx.db);
-      const resolved = resolveProfile(profile, contribs, jobs, jobSalaries);
+      const resolved = resolveProfile(profile, {}, contribs, jobs, jobSalaries);
       const agg = aggregateContributionsByCategory(
         resolved.activeContribs,
         resolved.activeJobs,

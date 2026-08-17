@@ -5,6 +5,7 @@ export { BudgetItemRow } from "./budget-item-row";
 export { AddItemForm } from "./add-item-form";
 export { AddCategoryForm } from "./add-category-form";
 export { ContributionProfileManager } from "./contribution-profile-manager";
+export { SalaryProfileManager } from "./salary-profile-manager";
 export { SavingsAllocationPanel } from "./savings-allocation-panel";
 export { ProfileViewingBadge } from "./profile-viewing-badge";
 // v0.5.2 budget page split — extracted components

@@ -31,10 +31,11 @@ export function ContribCard({
   annualLimit,
   siblingAnnualContribs = 0,
   employerMatchAnnual = 0,
+  readOnly,
 }: ContribCardProps) {
   return (
     <div className="bg-surface-primary border rounded-lg p-3 text-sm shadow-sm group/card relative">
-      {onDeleteContrib && (
+      {!readOnly && onDeleteContrib && (
         <button
           onClick={async () => {
             if (
@@ -108,8 +109,10 @@ export function ContribCard({
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}
             type="number"
             className="font-medium"
+            isEditable={!readOnly}
           />
           <select
+            disabled={readOnly}
             value={c.contributionMethod}
             onChange={(e) =>
               onUpdateContrib(c.id, "contributionMethod", e.target.value)
@@ -150,6 +153,7 @@ export function ContribCard({
                 parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                 type="number"
                 className="text-muted"
+                isEditable={!readOnly}
               />
               <span>discount</span>
             </>
@@ -163,6 +167,7 @@ export function ContribCard({
                 parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                 type="number"
                 className="text-muted"
+                isEditable={!readOnly}
               />
             </>
           ) : (
@@ -175,6 +180,7 @@ export function ContribCard({
                 parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                 type="number"
                 className="text-muted"
+                isEditable={!readOnly}
               />
               {c.employerMaxMatchPct && (
                 <>
@@ -190,12 +196,14 @@ export function ContribCard({
                     parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                     type="number"
                     className="text-muted"
+                    isEditable={!readOnly}
                   />
                 </>
               )}
             </>
           )}
           <select
+            disabled={readOnly}
             value={c.employerMatchType}
             onChange={(e) =>
               onUpdateContrib(c.id, "employerMatchType", e.target.value)
@@ -211,6 +219,7 @@ export function ContribCard({
       {c.employerMatchType === "none" && (
         <div className="text-caption text-faint mt-1">
           <select
+            disabled={readOnly}
             value="none"
             onChange={(e) =>
               onUpdateContrib(c.id, "employerMatchType", e.target.value)
@@ -362,6 +371,7 @@ export function ContribCard({
                   }}
                   label="Auto-max"
                   size="xs"
+                  disabled={readOnly}
                 />
                 {automaxPreview && !c.autoMaximize && (
                   <span className="text-caption text-faint">

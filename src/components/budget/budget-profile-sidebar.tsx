@@ -22,7 +22,7 @@ type Props = {
   canEdit: boolean;
   /** For "base the new profile off of this Contribution Profile" at
    *  creation time. */
-  contribProfiles: { id: number; name: string; isDefault: boolean }[];
+  contribProfiles: { id: number; name: string }[];
 
   // Inline rename state (hoisted to parent so Escape/Blur flow stays simple)
   renamingProfileId: number | null;
@@ -86,7 +86,7 @@ export function BudgetProfileSidebar({
                 "Base it off of a Contribution Profile (optional)",
                 contribProfiles.map((p) => ({
                   value: String(p.id),
-                  label: p.isDefault ? "Live" : p.name,
+                  label: p.name,
                 })),
               );
               if (result) {

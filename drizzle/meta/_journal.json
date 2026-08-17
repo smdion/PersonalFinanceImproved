@@ -50,6 +50,27 @@
       "when": 1786850440137,
       "tag": "0006_thin_molecule_man",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1786857490396,
+      "tag": "0007_salary_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1786899175625,
+      "tag": "0008_kill_live_sentinel",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1786906260585,
+      "tag": "0009_salary_profile_bonus_terms",
+      "breakpoints": true
     }
   ]
 }

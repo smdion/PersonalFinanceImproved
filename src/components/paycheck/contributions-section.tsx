@@ -1,7 +1,5 @@
 "use client";
 
-import { trpc } from "@/lib/trpc";
-import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -22,9 +20,11 @@ import {
   isOverflowTarget,
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
+import type { PerContribView } from "@/lib/hooks/use-paycheck-person-views";
 
 export function ContributionsSection({
   rawContribs,
+  perContribData,
   onUpdateContrib,
   onToggleAutoMax,
   onDeleteContrib,
@@ -39,8 +39,23 @@ export function ContributionsSection({
   sharedGroupOrder,
   personId,
   jobId,
+  readOnly,
 }: {
   rawContribs: RawContrib[];
+  /**
+   * Per-contribution annual/limit figures, already resolved by the caller's
+   * shared paycheck hook with the SAME Contribution/Salary Profile ids the
+   * rest of the page uses.
+   *
+   * This section used to run its own `contribution.computeSummary` query
+   * keyed on the raw globally-active contribution setting while using the
+   * Plan-pin-aware hook for the salary axis. That made the cards ignore an
+   * active Plan's Contribution Profile pin, and made the page's own
+   * Contribution Profile dropdown move the pay stub without moving these
+   * cards — two different profiles rendered in one view. Never reintroduce a
+   * query here: this data arrives as a prop.
+   */
+  perContribData: PerContribView[];
   onUpdateContrib: (id: number, field: string, value: string) => void;
   onToggleAutoMax?: (
     id: number,
@@ -59,38 +74,14 @@ export function ContributionsSection({
   sharedGroupOrder?: string[];
   personId?: number;
   jobId?: number;
+  /** Sandbox/preview mode — cards are read-only and the "add account"
+   *  action is omitted entirely. */
+  readOnly?: boolean;
 }) {
-  // Use contribution router as canonical source for limits, annual amounts, and sibling data
-  const [activeProfileId] = usePersistedSetting<number | null>(
-    "active_contrib_profile_id",
-    null,
+  // Lookup from contribId -> per-contrib computed data (resolved upstream).
+  const perContribMap = new Map<number, PerContribView>(
+    perContribData.map((pcd) => [pcd.contribId, pcd]),
   );
-  const contribInput =
-    activeProfileId != null
-      ? { contributionProfileId: activeProfileId }
-      : undefined;
-  const { data: contribData } =
-    trpc.contribution.computeSummary.useQuery(contribInput);
-
-  // Build lookup from contribId -> per-contrib computed data
-  const perContribMap = new Map<
-    number,
-    {
-      annualAmount: number;
-      employerMatchAnnual: number;
-      limit: number;
-      siblingAnnualTotal: number;
-      limitGroup: string | null;
-    }
-  >();
-  if (contribData?.people && personId) {
-    const personData = contribData.people.find((p) => p.person.id === personId);
-    if (personData?.perContribData) {
-      for (const pcd of personData.perContribData) {
-        perContribMap.set(pcd.contribId, pcd);
-      }
-    }
-  }
 
   // Show section if there are contribs or a coverage note or joint accounts from partner
   if (
@@ -266,6 +257,7 @@ export function ContributionsSection({
                         annualLimit={pcd?.limit}
                         siblingAnnualContribs={pcd?.siblingAnnualTotal ?? 0}
                         employerMatchAnnual={pcd?.employerMatchAnnual ?? 0}
+                        readOnly={readOnly}
                       />
                     );
                   })}
@@ -314,6 +306,7 @@ export function ContributionsSection({
                               parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                               type="number"
                               className="font-medium"
+                              isEditable={!readOnly}
                             />
                             <span className="text-faint">
                               {methodLabel(jc.contributionMethod)}
@@ -344,7 +337,7 @@ export function ContributionsSection({
           })}
 
           {/* Add new contribution account */}
-          {onCreateContrib && personId && (
+          {!readOnly && onCreateContrib && personId && (
             <AddContribInline
               personId={personId}
               jobId={jobId ?? null}

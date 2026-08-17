@@ -20,16 +20,47 @@ export function canDeleteBudgetProfile(profile: {
 
 /**
  * Check if a contribution profile can be deleted.
+ *
+ * There is no privileged "default" profile any more — every Contribution
+ * Profile is an ordinary row. What has to stay true instead is that at least
+ * ONE profile always exists (the active-profile setting must always point at
+ * a real row), hence the profileCount guard.
+ *
+ * The "pinned by a Plan" guard lives in the router, which has to name the
+ * offending Plans in its message.
  */
 export function canDeleteContribProfile(
-  profile: { isDefault: boolean },
   activeProfileId: number | null,
   profileId: number,
+  profileCount: number,
 ): DeletionCheck {
-  if (profile.isDefault)
+  if (profileCount <= 1)
     return {
       allowed: false,
-      reason: "Cannot delete the default (Live) profile",
+      reason: "Cannot delete the only remaining Contribution Profile",
+    };
+  if (activeProfileId === profileId)
+    return {
+      allowed: false,
+      reason:
+        "Cannot delete the active profile. Switch to a different profile first.",
+    };
+  return { allowed: true };
+}
+
+/**
+ * Check if a salary profile can be deleted. Twin of
+ * canDeleteContribProfile — no sentinel id, same last-one-standing rule.
+ */
+export function canDeleteSalaryProfile(
+  activeProfileId: number | null,
+  profileId: number,
+  profileCount: number,
+): DeletionCheck {
+  if (profileCount <= 1)
+    return {
+      allowed: false,
+      reason: "Cannot delete the only remaining Salary Profile",
     };
   if (activeProfileId === profileId)
     return {
