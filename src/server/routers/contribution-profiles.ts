@@ -93,6 +93,85 @@ export const contributionProfileRouter = createTRPCRouter({
   }),
 
   /**
+   * Lightweight data for the Compare view (R20) and the swap-time diff:
+   * every account's live values plus every profile's raw active-fields
+   * map, keyed by account id. Deliberately skips what `getById` does per
+   * profile — perf-account fuzzy matching and full display-name
+   * disambiguation — since those only need to happen once per account row,
+   * not once per profile × account. `loadLiveContribData` itself still
+   * only runs once for the whole request, same as `list` above.
+   */
+  compareData: protectedProcedure.query(async ({ ctx }) => {
+    const profiles = await ctx.db
+      .select()
+      .from(schema.contributionProfiles)
+      .orderBy(schema.contributionProfiles.createdAt);
+
+    const { rawContribRows, peopleMap, jobs } = await loadLiveContribData(
+      ctx.db,
+    );
+
+    const accounts = rawContribRows.map((row) => {
+      const person =
+        row.personId != null ? peopleMap.get(row.personId) : undefined;
+      const institution =
+        jobs.find((j) => j.personId === row.personId && !j.endDate)
+          ?.employerName ?? "";
+      const accountName = accountDisplayName(
+        {
+          accountType: row.accountType,
+          subType: row.subType,
+          label: row.label,
+          institution,
+          displayName: null,
+          accountLabel: null,
+          ownershipType: null,
+        },
+        person?.name,
+      );
+      // Same-person/same-type siblings need disambiguating, same rule
+      // getById's accountDetails uses — otherwise two 401k rows for one
+      // person would render as identical column labels.
+      const sameName = rawContribRows.filter(
+        (r) =>
+          r.id !== row.id &&
+          r.personId === row.personId &&
+          r.accountType === row.accountType,
+      );
+      const taxLabel = taxTreatmentToShortLabel(row.taxTreatment);
+      return {
+        id: row.id,
+        accountName:
+          sameName.length > 0 ? `${accountName} — ${taxLabel}` : accountName,
+        live: {
+          contributionValue: row.contributionValue,
+          contributionMethod: row.contributionMethod,
+          employerMatchType: row.employerMatchType,
+          employerMatchValue: row.employerMatchValue,
+          employerMaxMatchPct: row.employerMaxMatchPct,
+          autoMaximize: row.autoMaximize,
+          isActive: row.isActive,
+        },
+      };
+    });
+
+    return {
+      accounts,
+      profiles: profiles.map((p) => {
+        const root = p.contributionActiveFields as Record<
+          string,
+          Record<string, Record<string, unknown>>
+        >;
+        return {
+          id: p.id,
+          name: p.name,
+          accountActiveFields: root.contributionAccounts ?? {},
+        };
+      }),
+    };
+  }),
+
+  /**
    * Get a single profile with fully resolved per-account details.
    */
   getById: protectedProcedure

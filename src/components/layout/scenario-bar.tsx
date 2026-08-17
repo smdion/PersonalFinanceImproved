@@ -4,7 +4,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { useScenario } from "@/lib/context/scenario-context";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { trpc } from "@/lib/trpc";
-import { confirm } from "@/components/ui/confirm-dialog";
+import { confirm, confirmWithDiff } from "@/components/ui/confirm-dialog";
+import { diffContribProfileSwap } from "@/lib/pure/contrib-profile-diff";
 import { ProfilePill } from "./profile-pill";
 import type { ProfileOption } from "./profile-pill";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
@@ -47,6 +48,8 @@ export function ScenarioBar() {
   // Profile switcher data
   const { data: budgetProfiles } = useBudgetProfilesList();
   const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
+  const { data: contribCompareData } =
+    trpc.contributionProfile.compareData.useQuery();
   const { data: salaryProfiles } = trpc.salaryProfile.list.useQuery();
   const [activeContribId, setActiveContribId] = useActiveContribProfile();
   const [activeSalaryId, setActiveSalaryId] = useActiveSalaryProfile();
@@ -138,7 +141,29 @@ export function ScenarioBar() {
       activateBudget.mutate({ id });
     }
   };
-  const handleActivateContrib = (id: number) => {
+  // R20: warn before a swap silently drops an account's active value — same
+  // treatment as contribution-profile-manager.tsx's handleActivate, compared
+  // against whichever profile is currently in effect (Plan pin, if any,
+  // else the global active one).
+  const handleActivateContrib = async (id: number) => {
+    const outgoing = contribCompareData?.profiles.find(
+      (p) => p.id === effectiveContribId,
+    );
+    const incoming = contribCompareData?.profiles.find((p) => p.id === id);
+    if (contribCompareData && outgoing) {
+      const lines = diffContribProfileSwap(
+        outgoing.accountActiveFields,
+        incoming?.accountActiveFields ?? {},
+        contribCompareData.accounts,
+      );
+      if (lines.length > 0) {
+        const ok = await confirmWithDiff(
+          `Switching to "${incoming?.name ?? "this profile"}" will change:`,
+          lines,
+        );
+        if (!ok) return;
+      }
+    }
     if (isInScenario) {
       setScenarioContributionProfile(id);
     } else {

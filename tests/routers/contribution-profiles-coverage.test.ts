@@ -1056,4 +1056,77 @@ describe("contributionProfiles coverage", () => {
       }
     });
   });
+
+  // ── COMPAREDATA: lightweight data for the R20 swap-diff + compare view ──
+
+  describe("compareData", () => {
+    it("returns every profile and every account with active fields keyed by account id", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const acctId = seedContribAccount(db, { personId });
+        const profileId = seedContribProfile(db, {
+          name: "CompareA",
+          contributionActiveFields: {
+            contributionAccounts: {
+              [String(acctId)]: { contributionValue: "0.20" },
+            },
+            jobs: {},
+          },
+        });
+
+        const result = await caller.contributionProfile.compareData();
+
+        expect(result.accounts.length).toBeGreaterThanOrEqual(1);
+        const account = result.accounts.find((a) => a.id === acctId)!;
+        expect(account).toBeDefined();
+        expect(account.live.contributionValue).toBe("0.10");
+
+        const profile = result.profiles.find((p) => p.id === profileId)!;
+        expect(profile).toBeDefined();
+        expect(profile.name).toBe("CompareA");
+        expect(
+          profile.accountActiveFields[String(acctId)]?.contributionValue,
+        ).toBe("0.20");
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("a profile with empty contributionActiveFields has an empty accountActiveFields map", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const profileId = seedContribProfile(db, { name: "CompareEmpty" });
+        const result = await caller.contributionProfile.compareData();
+        const profile = result.profiles.find((p) => p.id === profileId)!;
+        expect(profile.accountActiveFields).toEqual({});
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("disambiguates same-person/same-type sibling accounts by tax treatment", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const trad = seedContribAccount(db, {
+          personId,
+          accountType: "401k",
+          taxTreatment: "pre_tax",
+        });
+        const roth = seedContribAccount(db, {
+          personId,
+          accountType: "401k",
+          taxTreatment: "tax_free",
+        });
+
+        const result = await caller.contributionProfile.compareData();
+        const tradAccount = result.accounts.find((a) => a.id === trad)!;
+        const rothAccount = result.accounts.find((a) => a.id === roth)!;
+        expect(tradAccount.accountName).not.toBe(rothAccount.accountName);
+      } finally {
+        cleanup();
+      }
+    });
+  });
 });

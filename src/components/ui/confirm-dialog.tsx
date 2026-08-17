@@ -34,7 +34,19 @@ type PromptWithSelectState = {
   resolve: (value: { text: string; selectValue: string | null } | null) => void;
 };
 
-type DialogState = ConfirmState | PromptState | PromptWithSelectState | null;
+/** Confirm gated on a bulleted list of changes (e.g. "here's what will
+ *  change if you proceed") — same amber-warning visual language as the
+ *  What-If tab's `overriddenColumns` banner, in dialog form. */
+type ConfirmDiffState = {
+  mode: "confirmDiff";
+  message: string;
+  lines: string[];
+  confirmLabel?: string;
+  resolve: (value: boolean) => void;
+};
+
+type DialogState =
+  ConfirmState | PromptState | PromptWithSelectState | ConfirmDiffState | null;
 
 let globalSetState: ((state: DialogState) => void) | null = null;
 
@@ -53,6 +65,32 @@ export function confirm(message: string): Promise<boolean> {
     );
   return new Promise((resolve) => {
     globalSetState!({ mode: "confirm", message, resolve });
+  });
+}
+
+/**
+ * Imperative confirm API for a change list — e.g. "switching profiles will
+ * change these accounts" — rendered as an amber bulleted list rather than
+ * `confirm()`'s single-paragraph message, which has no line-wrap handling
+ * for multi-item content. Returns a Promise<boolean> exactly like confirm().
+ */
+export function confirmWithDiff(
+  message: string,
+  lines: string[],
+  confirmLabel?: string,
+): Promise<boolean> {
+  if (!globalSetState)
+    throw new Error(
+      "ConfirmDialog not mounted — ensure <ConfirmDialog /> is in the app shell.",
+    );
+  return new Promise((resolve) => {
+    globalSetState!({
+      mode: "confirmDiff",
+      message,
+      lines,
+      confirmLabel,
+      resolve,
+    });
   });
 }
 
@@ -124,14 +162,15 @@ export function ConfirmDialog() {
 
   const handleCancel = useCallback(() => {
     if (!state) return;
-    if (state.mode === "confirm") state.resolve(false);
+    if (state.mode === "confirm" || state.mode === "confirmDiff")
+      state.resolve(false);
     else state.resolve(null);
     setState(null);
   }, [state]);
 
   const handleConfirm = useCallback(() => {
     if (!state) return;
-    if (state.mode === "confirm") {
+    if (state.mode === "confirm" || state.mode === "confirmDiff") {
       state.resolve(true);
     } else if (state.mode === "promptWithSelect") {
       const text = inputRef.current?.value.trim() ?? "";
@@ -189,11 +228,23 @@ export function ConfirmDialog() {
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-message"
-        className="bg-surface-primary rounded-lg shadow-xl border p-5 max-w-sm w-full mx-4"
+        className={`bg-surface-primary rounded-lg shadow-xl border p-5 w-full mx-4 ${
+          state.mode === "confirmDiff" ? "max-w-md" : "max-w-sm"
+        }`}
       >
         <p id="confirm-dialog-message" className="text-sm text-secondary mb-4">
           {state.message}
         </p>
+
+        {state.mode === "confirmDiff" && (
+          <div className="text-caption text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-4 max-h-64 overflow-y-auto">
+            <ul className="list-disc list-inside space-y-0.5">
+              {state.lines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {state.mode === "prompt" && (
           <input
@@ -257,10 +308,16 @@ export function ConfirmDialog() {
             className={`px-3 py-1.5 text-sm rounded transition-colors ${
               state.mode === "confirm"
                 ? "bg-red-600 text-white hover:bg-red-700"
-                : "bg-blue-600 text-white hover:bg-blue-700"
+                : state.mode === "confirmDiff"
+                  ? "bg-amber-600 text-white hover:bg-amber-700"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
             }`}
           >
-            {state.mode === "confirm" ? "Confirm" : "OK"}
+            {state.mode === "confirm"
+              ? "Confirm"
+              : state.mode === "confirmDiff"
+                ? (state.confirmLabel ?? "Switch anyway")
+                : "OK"}
           </button>
         </div>
       </div>

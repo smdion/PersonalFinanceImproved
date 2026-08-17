@@ -9,7 +9,9 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
-import { confirm } from "@/components/ui/confirm-dialog";
+import { confirm, confirmWithDiff } from "@/components/ui/confirm-dialog";
+import { diffContribProfileSwap } from "@/lib/pure/contrib-profile-diff";
+import { ContributionProfileCompare } from "./contribution-profile-compare";
 
 type ProfileSummary = {
   id: number;
@@ -37,10 +39,12 @@ export function ContributionProfileManager({
   const [activeContribId, setActiveContribId] = useActiveContribProfile();
   const { data: profiles, isLoading } =
     trpc.contributionProfile.list.useQuery();
+  const { data: compareData } = trpc.contributionProfile.compareData.useQuery();
   const [selectedProfileId, setSelectedProfileId] = useState<number | null>(
     null,
   );
   const [creatingNew, setCreatingNew] = useState(false);
+  const [viewMode, setViewMode] = useState<"profiles" | "compare">("profiles");
   const [renamingProfileId, setRenamingProfileId] = useState<number | null>(
     null,
   );
@@ -97,7 +101,29 @@ export function ContributionProfileManager({
   const displayedProfile = profiles.find((p) => p.id === effectiveSelectedId);
   const canDeleteAny = profiles.length > 1;
 
-  const handleActivate = (id: number) => {
+  // R20: warn before a swap silently drops an account's active value —
+  // compare against whichever profile is CURRENTLY in effect for this
+  // viewing context (Plan pin, if any, else the global active one), same
+  // resolution useEffectiveProfileId already does for display.
+  const handleActivate = async (id: number) => {
+    const outgoing = compareData?.profiles.find(
+      (p) => p.id === effectiveSelectedId,
+    );
+    const incoming = compareData?.profiles.find((p) => p.id === id);
+    if (compareData && outgoing) {
+      const lines = diffContribProfileSwap(
+        outgoing.accountActiveFields,
+        incoming?.accountActiveFields ?? {},
+        compareData.accounts,
+      );
+      if (lines.length > 0) {
+        const ok = await confirmWithDiff(
+          `Switching to "${incoming?.name ?? "this profile"}" will change:`,
+          lines,
+        );
+        if (!ok) return;
+      }
+    }
     if (isInScenario) {
       setScenarioContributionProfile(id);
     } else {
@@ -107,162 +133,205 @@ export function ContributionProfileManager({
 
   return (
     <div>
-      {/* Viewing/Active/Pinned summary bar — same visual language as Budget/Savings Profiles */}
-      {displayedProfile && (
-        <div className="flex items-center justify-between bg-surface-sunken rounded-lg px-4 py-3 mb-4">
-          <div className="flex items-center gap-6">
-            <ProfileViewingBadge
-              profileName={displayedProfile.name}
-              activeProfileName={activeProfileName}
-              isViewingNonActive={isViewingNonActive}
-              isPinned={isPinnedProfile}
-              onActivate={
-                canEdit ? () => handleActivate(displayedProfile.id) : undefined
-              }
-            />
-            {/* Contribution-scoped figures only. Salary is the Salary
+      {/* R20: a standing audit view — accounts × profiles, not just this one
+          profile's editor — kept as an internal toggle rather than a new
+          top-level Budget-page tab (see contribution-profile-compare.tsx). */}
+      <div className="flex gap-1 mb-4 border-b">
+        <button
+          type="button"
+          onClick={() => setViewMode("profiles")}
+          className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+            viewMode === "profiles"
+              ? "border-blue-600 text-blue-600"
+              : "border-transparent text-muted hover:text-secondary"
+          }`}
+        >
+          Profiles
+        </button>
+        <button
+          type="button"
+          onClick={() => setViewMode("compare")}
+          className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+            viewMode === "compare"
+              ? "border-blue-600 text-blue-600"
+              : "border-transparent text-muted hover:text-secondary"
+          }`}
+        >
+          Compare
+        </button>
+      </div>
+
+      {viewMode === "compare" && <ContributionProfileCompare />}
+
+      {viewMode === "profiles" && (
+        <>
+          {/* Viewing/Active/Pinned summary bar — same visual language as Budget/Savings Profiles */}
+          {displayedProfile && (
+            <div className="flex items-center justify-between bg-surface-sunken rounded-lg px-4 py-3 mb-4">
+              <div className="flex items-center gap-6">
+                <ProfileViewingBadge
+                  profileName={displayedProfile.name}
+                  activeProfileName={activeProfileName}
+                  isViewingNonActive={isViewingNonActive}
+                  isPinned={isPinnedProfile}
+                  onActivate={
+                    canEdit
+                      ? () => handleActivate(displayedProfile.id)
+                      : undefined
+                  }
+                />
+                {/* Contribution-scoped figures only. Salary is the Salary
                 Profile's axis — showing a number here invited reading it as
                 something this profile sets, which it never did. */}
-            <div className="flex items-center gap-5 text-xs">
-              <div>
-                <span className="text-faint">Contributions </span>
-                <span className="font-semibold text-secondary">
-                  {formatCurrency(displayedProfile.summary.annualContributions)}
-                  <span className="text-faint font-normal">/yr</span>
-                </span>
+                <div className="flex items-center gap-5 text-xs">
+                  <div>
+                    <span className="text-faint">Contributions </span>
+                    <span className="font-semibold text-secondary">
+                      {formatCurrency(
+                        displayedProfile.summary.annualContributions,
+                      )}
+                      <span className="text-faint font-normal">/yr</span>
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-faint">Employer Match </span>
+                    <span className="font-semibold text-secondary">
+                      {formatCurrency(
+                        displayedProfile.summary.annualEmployerMatch,
+                      )}
+                      <span className="text-faint font-normal">/yr</span>
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <span className="text-faint">Employer Match </span>
-                <span className="font-semibold text-secondary">
-                  {formatCurrency(displayedProfile.summary.annualEmployerMatch)}
-                  <span className="text-faint font-normal">/yr</span>
-                </span>
-              </div>
+              <HelpTip text="Contributions and employer match for the profile shown below. Every profile is an ordinary, editable set of contribution settings — create more to model different contribution strategies, then use them in the Relocation tool. Salary and bonus are the Salary Profile's axis, not this one. Selected independently from the budget profile above — linked per budget column instead (see each column's settings)." />
             </div>
-          </div>
-          <HelpTip text="Contributions and employer match for the profile shown below. Every profile is an ordinary, editable set of contribution settings — create more to model different contribution strategies, then use them in the Relocation tool. Salary and bonus are the Salary Profile's axis, not this one. Selected independently from the budget profile above — linked per budget column instead (see each column's settings)." />
-        </div>
-      )}
-
-      {/* Master-detail layout */}
-      <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
-        {/* Left: profile list */}
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-label font-semibold text-muted uppercase tracking-wide">
-              Profiles
-            </h3>
-            {canEdit && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedProfileId(null);
-                  setCreatingNew(true);
-                }}
-                className="text-caption font-medium text-blue-600 hover:text-blue-700"
-              >
-                + New
-              </button>
-            )}
-          </div>
-
-          {profiles.map((p) => (
-            <ProfileListItem
-              key={p.id}
-              profile={p}
-              isSelected={!creatingNew && effectiveSelectedId === p.id}
-              isActive={globalActiveContribId === p.id}
-              onSelect={() => {
-                setCreatingNew(false);
-                setSelectedProfileId(p.id);
-              }}
-              onRename={
-                canEdit
-                  ? () => {
-                      setRenamingProfileId(p.id);
-                      setRenameValue(p.name);
-                    }
-                  : undefined
-              }
-              isRenaming={renamingProfileId === p.id}
-              renameValue={renameValue}
-              onRenameValueChange={setRenameValue}
-              onRenameComplete={() => {
-                if (renameValue.trim() && renameValue.trim() !== p.name) {
-                  renameMutation.mutate({ id: p.id, name: renameValue.trim() });
-                }
-                setRenamingProfileId(null);
-              }}
-              onRenameCancel={() => setRenamingProfileId(null)}
-              onActivate={canEdit ? () => handleActivate(p.id) : undefined}
-              onDelete={
-                canEdit && canDeleteAny
-                  ? async () => {
-                      const pinnedBy = persistedScenarios
-                        .filter((s) => s.contributionProfileId === p.id)
-                        .map((s) => s.name);
-                      const pinnedByClause =
-                        pinnedBy.length > 0
-                          ? ` The Plan${pinnedBy.length > 1 ? "s" : ""} "${pinnedBy.join('", "')}" pin${pinnedBy.length > 1 ? "" : "s"} this profile, so deleting is blocked until you unpin it there.`
-                          : "";
-                      if (
-                        await confirm(
-                          `Delete profile "${p.name}"?${pinnedByClause}`,
-                        )
-                      ) {
-                        deleteMutation.mutate({ id: p.id });
-                      }
-                    }
-                  : undefined
-              }
-            />
-          ))}
-
-          {profiles.length <= 1 && (
-            <p className="text-caption text-faint italic px-2 py-3">
-              Only one profile so far. Create another to model a different
-              contribution strategy.
-            </p>
           )}
-          <FormError
-            error={deleteMutation.error}
-            prefix="Failed to delete profile"
-            className="mt-2 px-2"
-          />
-          <FormError
-            error={renameMutation.error}
-            prefix="Failed to rename profile"
-            className="mt-2 px-2"
-          />
-        </div>
 
-        {/* Right: detail panel / inline editor */}
-        <div className="border-l pl-4">
-          {creatingNew ? (
-            <ProfileEditor
-              onCancel={() => setCreatingNew(false)}
-              onSaved={(newId) => {
-                setCreatingNew(false);
-                invalidateProfileDeps();
-                if (newId !== undefined) setSelectedProfileId(newId);
-              }}
-            />
-          ) : effectiveSelectedId != null ? (
-            !canEdit || locked ? (
-              <ProfileDetailPanel profileId={effectiveSelectedId} />
-            ) : (
-              <ProfileInlineEditor
-                profileId={effectiveSelectedId}
-                onSaved={() => invalidateProfileDeps()}
+          {/* Master-detail layout */}
+          <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
+            {/* Left: profile list */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-label font-semibold text-muted uppercase tracking-wide">
+                  Profiles
+                </h3>
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedProfileId(null);
+                      setCreatingNew(true);
+                    }}
+                    className="text-caption font-medium text-blue-600 hover:text-blue-700"
+                  >
+                    + New
+                  </button>
+                )}
+              </div>
+
+              {profiles.map((p) => (
+                <ProfileListItem
+                  key={p.id}
+                  profile={p}
+                  isSelected={!creatingNew && effectiveSelectedId === p.id}
+                  isActive={globalActiveContribId === p.id}
+                  onSelect={() => {
+                    setCreatingNew(false);
+                    setSelectedProfileId(p.id);
+                  }}
+                  onRename={
+                    canEdit
+                      ? () => {
+                          setRenamingProfileId(p.id);
+                          setRenameValue(p.name);
+                        }
+                      : undefined
+                  }
+                  isRenaming={renamingProfileId === p.id}
+                  renameValue={renameValue}
+                  onRenameValueChange={setRenameValue}
+                  onRenameComplete={() => {
+                    if (renameValue.trim() && renameValue.trim() !== p.name) {
+                      renameMutation.mutate({
+                        id: p.id,
+                        name: renameValue.trim(),
+                      });
+                    }
+                    setRenamingProfileId(null);
+                  }}
+                  onRenameCancel={() => setRenamingProfileId(null)}
+                  onActivate={canEdit ? () => handleActivate(p.id) : undefined}
+                  onDelete={
+                    canEdit && canDeleteAny
+                      ? async () => {
+                          const pinnedBy = persistedScenarios
+                            .filter((s) => s.contributionProfileId === p.id)
+                            .map((s) => s.name);
+                          const pinnedByClause =
+                            pinnedBy.length > 0
+                              ? ` The Plan${pinnedBy.length > 1 ? "s" : ""} "${pinnedBy.join('", "')}" pin${pinnedBy.length > 1 ? "" : "s"} this profile, so deleting is blocked until you unpin it there.`
+                              : "";
+                          if (
+                            await confirm(
+                              `Delete profile "${p.name}"?${pinnedByClause}`,
+                            )
+                          ) {
+                            deleteMutation.mutate({ id: p.id });
+                          }
+                        }
+                      : undefined
+                  }
+                />
+              ))}
+
+              {profiles.length <= 1 && (
+                <p className="text-caption text-faint italic px-2 py-3">
+                  Only one profile so far. Create another to model a different
+                  contribution strategy.
+                </p>
+              )}
+              <FormError
+                error={deleteMutation.error}
+                prefix="Failed to delete profile"
+                className="mt-2 px-2"
               />
-            )
-          ) : (
-            <div className="flex items-center justify-center h-40 text-xs text-faint">
-              Select a profile to view details
+              <FormError
+                error={renameMutation.error}
+                prefix="Failed to rename profile"
+                className="mt-2 px-2"
+              />
             </div>
-          )}
-        </div>
-      </div>
+
+            {/* Right: detail panel / inline editor */}
+            <div className="border-l pl-4">
+              {creatingNew ? (
+                <ProfileEditor
+                  onCancel={() => setCreatingNew(false)}
+                  onSaved={(newId) => {
+                    setCreatingNew(false);
+                    invalidateProfileDeps();
+                    if (newId !== undefined) setSelectedProfileId(newId);
+                  }}
+                />
+              ) : effectiveSelectedId != null ? (
+                !canEdit || locked ? (
+                  <ProfileDetailPanel profileId={effectiveSelectedId} />
+                ) : (
+                  <ProfileInlineEditor
+                    profileId={effectiveSelectedId}
+                    onSaved={() => invalidateProfileDeps()}
+                  />
+                )
+              ) : (
+                <div className="flex items-center justify-center h-40 text-xs text-faint">
+                  Select a profile to view details
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
