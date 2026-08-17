@@ -10,11 +10,6 @@ import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
 import { confirm } from "@/components/ui/confirm-dialog";
-import {
-  EditLockToggle,
-  EDIT_LOCK_KEYS,
-  useEditLock,
-} from "@/components/ui/edit-lock-toggle";
 
 /**
  * Salary Profiles tab — the "what if I earned X" axis.
@@ -36,11 +31,12 @@ import {
  * pin. The fields are independent, so pinning a salary leaves bonus terms
  * live (and vice versa) — which is why a pinned salary still earns a bonus.
  *
- * Selecting a profile shows it read-only; unlocking the padlock makes the
- * same fields editable in place, each committing on blur — the same
- * interaction model as the Savings Profile allocation table. There is no
- * Save button: the only batch form left is "create new", which has to collect
- * a name before a row exists to write to.
+ * Selecting a profile shows it read-only; unlocking the padlock (in the tab
+ * bar above — see budget-content.tsx) makes the same fields editable in
+ * place, each committing on blur — the same interaction model as the
+ * Savings Profile allocation table. There is no Save button: the only batch
+ * form left is "create new", which has to collect a name before a row
+ * exists to write to.
  *
  * `monthsInBonusYear` is supported by the data model and by every resolver,
  * but is deliberately NOT surfaced as an editable column: it is a partial-year
@@ -48,7 +44,15 @@ import {
  * cost more legibility than it buys. Pins written by other means are honoured
  * and displayed via the resulting bonus.
  */
-export function SalaryProfileManager({ canEdit }: { canEdit: boolean }) {
+export function SalaryProfileManager({
+  canEdit,
+  locked,
+}: {
+  canEdit: boolean;
+  /** Owned by budget-content.tsx's single tab-bar padlock — see its
+   *  useEditLock(EDIT_LOCK_KEYS.budgetSalary) call. */
+  locked: boolean;
+}) {
   const utils = trpc.useUtils();
   const { isInScenario, setScenarioSalaryProfile } = useScenario();
   const [activeSalaryId, setActiveSalaryId] = useActiveSalaryProfile();
@@ -58,7 +62,6 @@ export function SalaryProfileManager({ canEdit }: { canEdit: boolean }) {
   );
   const [creatingNew, setCreatingNew] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [locked, toggleLocked] = useEditLock(EDIT_LOCK_KEYS.budgetSalary);
 
   const invalidateProfileDeps = () => {
     utils.salaryProfile.invalidate();
@@ -218,27 +221,14 @@ export function SalaryProfileManager({ canEdit }: { canEdit: boolean }) {
               }}
             />
           ) : effectiveSelectedId != null ? (
-            (() => {
-              const lockToggle = (
-                <EditLockToggle
-                  locked={locked}
-                  onToggle={toggleLocked}
-                  disabled={!canEdit}
-                />
-              );
-              return !canEdit || locked ? (
-                <ProfileDetail
-                  profileId={effectiveSelectedId}
-                  lockToggle={lockToggle}
-                />
-              ) : (
-                <ProfileEditPanel
-                  profileId={effectiveSelectedId}
-                  lockToggle={lockToggle}
-                  onSaved={() => invalidateProfileDeps()}
-                />
-              );
-            })()
+            !canEdit || locked ? (
+              <ProfileDetail profileId={effectiveSelectedId} />
+            ) : (
+              <ProfileEditPanel
+                profileId={effectiveSelectedId}
+                onSaved={() => invalidateProfileDeps()}
+              />
+            )
           ) : (
             <div className="text-xs text-faint">Select a profile.</div>
           )}
@@ -557,13 +547,7 @@ function TotalsFooter({ combinedIncome }: { combinedIncome: number }) {
  * is locked. Every person shows a real salary and bonus: what their job
  * resolves to, with any pinned field replacing it (shown in amber).
  */
-function ProfileDetail({
-  profileId,
-  lockToggle,
-}: {
-  profileId: number;
-  lockToggle?: React.ReactNode;
-}) {
+function ProfileDetail({ profileId }: { profileId: number }) {
   const { data: profile } = trpc.salaryProfile.getById.useQuery({
     id: profileId,
   });
@@ -598,7 +582,6 @@ function ProfileDetail({
             — {profile.description}
           </span>
         )}
-        {lockToggle}
       </div>
 
       <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
@@ -876,11 +859,9 @@ function ProfileCreatePanel({
  */
 function ProfileEditPanel({
   profileId,
-  lockToggle,
   onSaved,
 }: {
   profileId: number;
-  lockToggle?: React.ReactNode;
   onSaved: () => void;
 }) {
   const { data: profile } = trpc.salaryProfile.getById.useQuery({
@@ -978,16 +959,13 @@ function ProfileEditPanel({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
         <div>
           <label className="text-label font-medium text-muted">Name</label>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={drafts.name ?? profile.name}
-              onChange={(e) => setDraft("name", e.target.value)}
-              onBlur={commitName}
-              className="mt-0.5 w-full px-2 py-1.5 text-xs border rounded bg-surface-primary text-primary"
-            />
-            {lockToggle}
-          </div>
+          <input
+            type="text"
+            value={drafts.name ?? profile.name}
+            onChange={(e) => setDraft("name", e.target.value)}
+            onBlur={commitName}
+            className="mt-0.5 w-full px-2 py-1.5 text-xs border rounded bg-surface-primary text-primary"
+          />
         </div>
         <div>
           <label className="text-label font-medium text-muted">

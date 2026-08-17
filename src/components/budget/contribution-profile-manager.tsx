@@ -10,11 +10,6 @@ import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
 import { confirm } from "@/components/ui/confirm-dialog";
-import {
-  EditLockToggle,
-  EDIT_LOCK_KEYS,
-  useEditLock,
-} from "@/components/ui/edit-lock-toggle";
 
 type ProfileSummary = {
   id: number;
@@ -27,7 +22,15 @@ type ProfileSummary = {
   };
 };
 
-export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
+export function ContributionProfileManager({
+  canEdit,
+  locked,
+}: {
+  canEdit: boolean;
+  /** Owned by budget-content.tsx's single tab-bar padlock — see its
+   *  useEditLock(EDIT_LOCK_KEYS.budgetContrib) call. */
+  locked: boolean;
+}) {
   const utils = trpc.useUtils();
   const { persistedScenarios, isInScenario, setScenarioContributionProfile } =
     useScenario();
@@ -42,7 +45,6 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
     null,
   );
   const [renameValue, setRenameValue] = useState("");
-  const [locked, toggleLocked] = useEditLock(EDIT_LOCK_KEYS.budgetContrib);
 
   const invalidateProfileDeps = () => {
     utils.contributionProfile.invalidate();
@@ -246,27 +248,14 @@ export function ContributionProfileManager({ canEdit }: { canEdit: boolean }) {
               }}
             />
           ) : effectiveSelectedId != null ? (
-            (() => {
-              const lockToggle = (
-                <EditLockToggle
-                  locked={locked}
-                  onToggle={toggleLocked}
-                  disabled={!canEdit}
-                />
-              );
-              return !canEdit || locked ? (
-                <ProfileDetailPanel
-                  profileId={effectiveSelectedId}
-                  lockToggle={lockToggle}
-                />
-              ) : (
-                <ProfileInlineEditor
-                  profileId={effectiveSelectedId}
-                  lockToggle={lockToggle}
-                  onSaved={() => invalidateProfileDeps()}
-                />
-              );
-            })()
+            !canEdit || locked ? (
+              <ProfileDetailPanel profileId={effectiveSelectedId} />
+            ) : (
+              <ProfileInlineEditor
+                profileId={effectiveSelectedId}
+                onSaved={() => invalidateProfileDeps()}
+              />
+            )
           ) : (
             <div className="flex items-center justify-center h-40 text-xs text-faint">
               Select a profile to view details
@@ -405,13 +394,7 @@ function ProfileListItem({
 // Profile Detail Panel (right side)
 // ---------------------------------------------------------------------------
 
-function ProfileDetailPanel({
-  profileId,
-  lockToggle,
-}: {
-  profileId: number;
-  lockToggle?: React.ReactNode;
-}) {
+function ProfileDetailPanel({ profileId }: { profileId: number }) {
   const { data: profile, isLoading } =
     trpc.contributionProfile.getById.useQuery({ id: profileId });
 
@@ -437,7 +420,6 @@ function ProfileDetailPanel({
             — {profile.description}
           </span>
         )}
-        {lockToggle}
       </div>
 
       {/* Contributions section — salary is entirely the Salary Profiles
@@ -1026,11 +1008,9 @@ type OverridesRoot = {
  */
 function ProfileInlineEditor({
   profileId,
-  lockToggle,
   onSaved,
 }: {
   profileId: number;
-  lockToggle?: React.ReactNode;
   onSaved: () => void;
 }) {
   const { data: profile } = trpc.contributionProfile.getById.useQuery({
@@ -1159,16 +1139,13 @@ function ProfileInlineEditor({
       <div className="grid grid-cols-2 gap-3 mb-5">
         <div>
           <label className="text-label font-medium text-muted">Name</label>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={drafts["profile:name"] ?? profile.name}
-              onChange={(e) => setDraft("profile:name", e.target.value)}
-              onBlur={commitProfileName}
-              className="mt-0.5 w-full px-2 py-1.5 text-xs border rounded bg-surface-primary text-primary"
-            />
-            {lockToggle}
-          </div>
+          <input
+            type="text"
+            value={drafts["profile:name"] ?? profile.name}
+            onChange={(e) => setDraft("profile:name", e.target.value)}
+            onBlur={commitProfileName}
+            className="mt-0.5 w-full px-2 py-1.5 text-xs border rounded bg-surface-primary text-primary"
+          />
         </div>
         <div>
           <label className="text-label font-medium text-muted">

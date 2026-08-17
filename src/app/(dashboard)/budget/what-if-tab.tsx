@@ -45,6 +45,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/hooks/use-toast";
 import { formatCurrency, accountDisplayName } from "@/lib/utils/format";
@@ -121,40 +122,62 @@ function ProfilePicker({
  * Savings). Gives the tab visual structure instead of one long
  * undifferentiated column — each step is its own bounded region with a
  * clear "what is this for" line, matching how a multi-step form reads.
+ *
+ * Collapsible rather than a wizard: the whole point of What-If is seeing
+ * the cascade (a salary tweak in step 1 changes the leftover figure in
+ * step 3) so hiding earlier steps behind "Next" would work against the
+ * tool's purpose. Folding a step you're done with just reclaims vertical
+ * space — `headerExtra` (each step's key figure) stays visible either way,
+ * so a collapsed step still tells you what it resolved to.
  */
 function WhatIfStep({
   number,
   title,
   description,
   headerExtra,
+  defaultExpanded = true,
   children,
 }: {
   number: number;
   title: string;
   description?: string;
-  /** Right-aligned content in the header row (mode tabs, leftover figure). */
+  /** Right-aligned content in the header row (mode tabs, leftover figure).
+   *  Rendered outside the collapse toggle, so it stays visible — and its
+   *  own controls (e.g. the mode picker) stay clickable — when folded. */
   headerExtra?: ReactNode;
+  defaultExpanded?: boolean;
   children: ReactNode;
 }) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   return (
     <section className="rounded-lg border border-default bg-surface-sunken/40 p-4">
       <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
-        <div className="flex items-start gap-2.5">
+        <button
+          type="button"
+          onClick={() => setExpanded((e) => !e)}
+          className="flex items-start gap-2.5 text-left"
+          aria-expanded={expanded}
+        >
           <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-600 text-white text-micro font-semibold flex items-center justify-center mt-0.5">
             {number}
           </span>
           <div>
-            <h3 className="text-sm font-semibold text-primary leading-tight">
+            <h3 className="text-sm font-semibold text-primary leading-tight flex items-center gap-1">
               {title}
+              {expanded ? (
+                <ChevronDown className="w-3.5 h-3.5 text-faint" />
+              ) : (
+                <ChevronRight className="w-3.5 h-3.5 text-faint" />
+              )}
             </h3>
             {description && (
               <p className="text-caption text-faint mt-0.5">{description}</p>
             )}
           </div>
-        </div>
+        </button>
         {headerExtra}
       </div>
-      {children}
+      {expanded && children}
     </section>
   );
 }
@@ -910,6 +933,9 @@ function WhatIfContributionsEditor({
                         </td>
                         <td className="py-1 px-3 text-right">
                           <div className="flex items-center justify-end gap-1">
+                            <span className="text-faint w-3 text-right shrink-0">
+                              {isPercent ? "" : "$"}
+                            </span>
                             <WhatIfPinnedCell
                               liveValue={liveValue}
                               pinnedValue={
@@ -922,7 +948,9 @@ function WhatIfContributionsEditor({
                               step={isPercent ? "0.5" : "10"}
                               width="w-20"
                             />
-                            {isPercent && <span className="text-faint">%</span>}
+                            <span className="text-faint w-3 text-left shrink-0">
+                              {isPercent ? "%" : ""}
+                            </span>
                           </div>
                         </td>
                         <td />
@@ -972,6 +1000,9 @@ function WhatIfContributionsEditor({
                         </td>
                         <td className="py-1 px-3 text-right">
                           <div className="flex items-center justify-end gap-1">
+                            <span className="text-faint w-3 text-right shrink-0">
+                              {isPercent ? "" : "$"}
+                            </span>
                             <input
                               type="number"
                               step={isPercent ? "0.5" : "10"}
@@ -983,7 +1014,9 @@ function WhatIfContributionsEditor({
                               }
                               className="w-20 text-xs text-right border rounded px-1.5 py-0.5 bg-surface-primary text-amber-600 font-medium border-amber-400 tabular-nums"
                             />
-                            {isPercent && <span className="text-faint">%</span>}
+                            <span className="text-faint w-3 text-left shrink-0">
+                              {isPercent ? "%" : ""}
+                            </span>
                           </div>
                         </td>
                         <td className="py-1 px-1">
@@ -1509,6 +1542,13 @@ export function WhatIfTab({
         number={1}
         title="Paycheck"
         description="Edit salary, bonus, or deductions to see the resulting take-home pay."
+        headerExtra={
+          netMonthlyIncome != null ? (
+            <span className="text-xs font-semibold text-indigo-700">
+              {formatCurrency(netMonthlyIncome)}/mo net
+            </span>
+          ) : undefined
+        }
       >
         {paycheckLoading ? (
           <Skeleton className="h-40 w-full" />
@@ -1676,6 +1716,9 @@ export function WhatIfTab({
       >
         <SavingsAllocationPanel
           canEdit
+          // No padlock to gate this: sandbox mode writes nothing but local
+          // preview state (via onLocalChange below), so it's always editable.
+          locked={false}
           sandbox
           viewingProfileId={budgetId}
           // The rail's own selection IS the tab's Budget Profile picker —

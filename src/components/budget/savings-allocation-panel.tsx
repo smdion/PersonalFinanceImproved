@@ -6,11 +6,6 @@ import { formatCurrency } from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
 import { HelpTip } from "@/components/ui/help-tip";
 import { FormError } from "@/components/ui/form-error";
-import {
-  EditLockToggle,
-  EDIT_LOCK_KEYS,
-  useEditLock,
-} from "@/components/ui/edit-lock-toggle";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
 import { useState } from "react";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
@@ -34,6 +29,7 @@ import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
  */
 export function SavingsAllocationPanel({
   canEdit,
+  locked,
   viewingProfileId,
   onSelectProfile,
   isPinned,
@@ -44,6 +40,11 @@ export function SavingsAllocationPanel({
   onLocalChange,
 }: {
   canEdit: boolean;
+  /** Owned by budget-content.tsx's single tab-bar padlock — see its
+   *  useEditLock(EDIT_LOCK_KEYS.budgetSavings) call. The What-If tab's
+   *  sandbox instance of this panel has no such padlock (nothing here
+   *  persists in sandbox mode), so it just passes `false`. */
+  locked: boolean;
   viewingProfileId: number | null;
   onSelectProfile: (id: number) => void;
   /** Whether viewingProfileId came from the active Plan's pin rather than a
@@ -216,6 +217,7 @@ export function SavingsAllocationPanel({
             isPinned={isPinned}
             activeProfileName={activeProfile?.name}
             canEdit={canEdit}
+            locked={locked}
             onActivate={
               onActivateProfile
                 ? () => onActivateProfile(effectiveProfileId)
@@ -243,6 +245,7 @@ function SavingsAllocationTable({
   isPinned,
   activeProfileName,
   canEdit,
+  locked,
   onActivate,
   livePoolEstimate,
   livePoolColumnLabel,
@@ -255,6 +258,7 @@ function SavingsAllocationTable({
   isPinned?: boolean;
   activeProfileName: string | undefined;
   canEdit: boolean;
+  locked: boolean;
   onActivate?: () => void;
   livePoolEstimate?: number | null;
   livePoolColumnLabel?: string;
@@ -268,7 +272,6 @@ function SavingsAllocationTable({
   const utils = trpc.useUtils();
   const { data: rows, isLoading } =
     trpc.savings.goalProfileAllocations.list.useQuery({ profileId });
-  const [locked, toggleLocked] = useEditLock(EDIT_LOCK_KEYS.budgetSavings);
 
   const [drafts, setDrafts] = useState<
     Record<number, { allocationPercent: string; monthlyContribution: string }>
@@ -375,11 +378,6 @@ function SavingsAllocationTable({
           onActivate={canEdit ? onActivate : undefined}
         />
         <HelpTip text="A goal's %/$ is entirely per budget profile — each profile is its own funding scenario. Use the Savings page to pull in new pay or update % from live income." />
-        <EditLockToggle
-          locked={locked}
-          onToggle={toggleLocked}
-          disabled={!canEdit}
-        />
         {!sandbox && canEdit && !locked && rows.length > 0 && (
           <button
             type="button"
@@ -466,43 +464,63 @@ function SavingsAllocationTable({
                 )}
               </td>
               <td className="py-1.5 px-3 text-right">
-                <input
-                  type="number"
-                  disabled={!canEdit || locked}
-                  value={draftFor(
-                    r.goalId,
-                    "allocationPercent",
-                    r.allocationPercent != null
-                      ? String(Math.round(r.allocationPercent * 100) / 100)
-                      : "",
-                  )}
-                  onChange={(e) =>
-                    setDraft(r.goalId, "allocationPercent", e.target.value)
-                  }
-                  onBlur={() =>
-                    commit(r.goalId, r.allocationPercent, r.monthlyContribution)
-                  }
-                  placeholder="—"
-                  className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-secondary"
-                />
+                {!canEdit || locked ? (
+                  <span className="text-secondary font-mono">
+                    {r.allocationPercent != null
+                      ? `${Math.round(r.allocationPercent * 100) / 100}%`
+                      : "—"}
+                  </span>
+                ) : (
+                  <input
+                    type="number"
+                    value={draftFor(
+                      r.goalId,
+                      "allocationPercent",
+                      r.allocationPercent != null
+                        ? String(Math.round(r.allocationPercent * 100) / 100)
+                        : "",
+                    )}
+                    onChange={(e) =>
+                      setDraft(r.goalId, "allocationPercent", e.target.value)
+                    }
+                    onBlur={() =>
+                      commit(
+                        r.goalId,
+                        r.allocationPercent,
+                        r.monthlyContribution,
+                      )
+                    }
+                    placeholder="—"
+                    className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-secondary"
+                  />
+                )}
               </td>
               <td className="py-1.5 px-3 text-right">
-                <input
-                  type="number"
-                  disabled={!canEdit || locked}
-                  value={draftFor(
-                    r.goalId,
-                    "monthlyContribution",
-                    String(r.monthlyContribution),
-                  )}
-                  onChange={(e) =>
-                    setDraft(r.goalId, "monthlyContribution", e.target.value)
-                  }
-                  onBlur={() =>
-                    commit(r.goalId, r.allocationPercent, r.monthlyContribution)
-                  }
-                  className="w-20 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-secondary"
-                />
+                {!canEdit || locked ? (
+                  <span className="text-secondary font-mono">
+                    {formatCurrency(r.monthlyContribution)}
+                  </span>
+                ) : (
+                  <input
+                    type="number"
+                    value={draftFor(
+                      r.goalId,
+                      "monthlyContribution",
+                      String(r.monthlyContribution),
+                    )}
+                    onChange={(e) =>
+                      setDraft(r.goalId, "monthlyContribution", e.target.value)
+                    }
+                    onBlur={() =>
+                      commit(
+                        r.goalId,
+                        r.allocationPercent,
+                        r.monthlyContribution,
+                      )
+                    }
+                    className="w-20 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-secondary"
+                  />
+                )}
               </td>
             </tr>
           ))}

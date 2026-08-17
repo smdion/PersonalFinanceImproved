@@ -28,7 +28,11 @@ import type { ColumnResult } from "@/components/budget";
 import { BudgetPushYnabModal } from "@/components/budget/budget-push-ynab-modal";
 import { BudgetPullYnabModal } from "@/components/budget/budget-pull-ynab-modal";
 import { BudgetSummaryBar } from "@/components/budget/budget-summary-bar";
-import { EditLockToggle } from "@/components/ui/edit-lock-toggle";
+import {
+  EditLockToggle,
+  EDIT_LOCK_KEYS,
+  useEditLock,
+} from "@/components/ui/edit-lock-toggle";
 import {
   BudgetProfileSidebar,
   type BudgetProfileListEntry,
@@ -228,6 +232,21 @@ export function BudgetContent() {
     onResizeStart,
   } = useBudgetPageState({ data, nameColWidth, setNameColWidth, updateBatch });
 
+  // Salary/Contribution/Savings tabs each keep their own persisted lock —
+  // unlocking one must not silently unlock another — but the padlock
+  // control itself lives once, at a fixed spot in the tab bar (see below),
+  // so it never moves as the user switches tabs or the active tab's
+  // content reflows between its locked/unlocked layouts.
+  const [salaryLocked, toggleSalaryLocked] = useEditLock(
+    EDIT_LOCK_KEYS.budgetSalary,
+  );
+  const [contribLocked, toggleContribLocked] = useEditLock(
+    EDIT_LOCK_KEYS.budgetContrib,
+  );
+  const [savingsLocked, toggleSavingsLocked] = useEditLock(
+    EDIT_LOCK_KEYS.budgetSavings,
+  );
+
   const {
     profile,
     cols,
@@ -392,46 +411,82 @@ export function BudgetContent() {
         {/* Ordered to match the actual dependency chain: Salary sets gross
             pay, Contributions (often % of salary) derive take-home,
             Budget spends it, which feeds Savings — see docs/RULES.md. */}
-        <div className="flex gap-1 border-b mb-4">
-          <button
-            type="button"
-            onClick={() => setActiveTab("salary")}
-            className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "salary" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
-          >
-            Salary Profiles
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("contributions")}
-            className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "contributions" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
-          >
-            Contribution Profiles
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("budget")}
-            className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "budget" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
-          >
-            Budget Profiles
-          </button>
-          {hasPermission(user, "savings") && (
+        <div className="flex items-center justify-between border-b mb-4">
+          <div className="flex gap-1">
             <button
               type="button"
-              onClick={() => setActiveTab("savings")}
-              className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "savings" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+              onClick={() => setActiveTab("salary")}
+              className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "salary" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
             >
-              Savings Profiles
+              Salary Profiles
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("contributions")}
+              className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "contributions" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+            >
+              Contribution Profiles
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("budget")}
+              className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "budget" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+            >
+              Budget Profiles
+            </button>
+            {hasPermission(user, "savings") && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("savings")}
+                className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "savings" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+              >
+                Savings Profiles
+              </button>
+            )}
+            {/* Last, after the four real levers: it previews combinations of
+                them rather than being a lever of its own. */}
+            <button
+              type="button"
+              onClick={() => setActiveTab("what-if")}
+              className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "what-if" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+            >
+              What-If
+            </button>
+          </div>
+          {/* One padlock, fixed here regardless of which tab is active —
+              it used to live inside each tab's own panel, which meant its
+              on-screen position shifted with that panel's locked/unlocked
+              layout. It reflects and toggles whichever tab's own lock is
+              current; What-If has none of its own (it's a preview, not an
+              editable surface), so nothing renders there. */}
+          {activeTab === "salary" && (
+            <EditLockToggle
+              locked={salaryLocked}
+              onToggle={toggleSalaryLocked}
+              disabled={!hasPermission(user, "contributionProfile")}
+            />
           )}
-          {/* Last, after the four real levers: it previews combinations of
-              them rather than being a lever of its own. */}
-          <button
-            type="button"
-            onClick={() => setActiveTab("what-if")}
-            className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "what-if" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
-          >
-            What-If
-          </button>
+          {activeTab === "contributions" && (
+            <EditLockToggle
+              locked={contribLocked}
+              onToggle={toggleContribLocked}
+              disabled={!hasPermission(user, "contributionProfile")}
+            />
+          )}
+          {activeTab === "budget" && (
+            <EditLockToggle
+              locked={!editMode}
+              onToggle={toggleEditMode}
+              disabled={!canEdit || updateBatch.isPending}
+            />
+          )}
+          {activeTab === "savings" && (
+            <EditLockToggle
+              locked={savingsLocked}
+              onToggle={toggleSavingsLocked}
+              disabled={!hasPermission(user, "savings")}
+            />
+          )}
         </div>
 
         {activeTab === "budget" && (
@@ -545,16 +600,6 @@ export function BudgetContent() {
                 rowHandlers={rowHandlers}
                 categoryMap={categoryMap}
                 createItem={createItem}
-                lockToggle={
-                  /* Locking (toggling while unlocked) still flushes any
-                     pending draft amounts via the batch save — that is what
-                     toggleEditMode has always done. */
-                  <EditLockToggle
-                    locked={!editMode}
-                    onToggle={toggleEditMode}
-                    disabled={!canEdit || updateBatch.isPending}
-                  />
-                }
               />
             </div>
           </CardBoundary>
@@ -564,6 +609,7 @@ export function BudgetContent() {
           <CardBoundary title="Salary Profiles">
             <SalaryProfileManager
               canEdit={hasPermission(user, "contributionProfile")}
+              locked={salaryLocked}
             />
           </CardBoundary>
         )}
@@ -572,6 +618,7 @@ export function BudgetContent() {
           <CardBoundary title="Contribution Profiles">
             <ContributionProfileManager
               canEdit={hasPermission(user, "contributionProfile")}
+              locked={contribLocked}
             />
           </CardBoundary>
         )}
@@ -595,6 +642,7 @@ export function BudgetContent() {
           <CardBoundary title="Savings Profiles">
             <SavingsAllocationPanel
               canEdit={hasPermission(user, "savings")}
+              locked={savingsLocked}
               viewingProfileId={displayProfileId}
               onSelectProfile={setViewingProfileId}
               isPinned={isPinnedProfile}
