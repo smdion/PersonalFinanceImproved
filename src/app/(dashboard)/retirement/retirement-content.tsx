@@ -48,7 +48,7 @@ const RECOMMENDED_KEY_MAP: Record<string, WithdrawalStrategyType> = {
   "rmd-spending": "rmd_spending",
 };
 
-import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
@@ -91,7 +91,7 @@ export function RetirementContent() {
   const [dollarMode, setDollarMode] = useState<"nominal" | "real">("real");
   const currentYear = new Date().getFullYear();
   const utils = trpc.useUtils();
-  const salaryOverrides = useSalaryOverrides();
+  const salaryActiveFields = useActiveSalaries();
   const [decBudgetProfileId, setDecBudgetProfileId] = usePersistedSetting<
     number | null
   >("retirement_dec_budget_profile_id", null);
@@ -143,7 +143,7 @@ export function RetirementContent() {
   // whether metadataOnly is set.
   const baseInput = useMemo(
     () => ({
-      ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+      ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
       ...(effectiveContribProfileId != null
         ? { contributionProfileId: effectiveContribProfileId }
         : {}),
@@ -162,7 +162,7 @@ export function RetirementContent() {
       ...(snapshotId != null ? { snapshotId } : {}),
     }),
     [
-      salaryOverrides,
+      salaryActiveFields,
       effectiveContribProfileId,
       effectiveSalaryProfileId,
       decBudgetProfileId,

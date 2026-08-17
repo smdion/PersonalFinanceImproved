@@ -508,9 +508,9 @@ export type LiveContribRow = {
  * Load all live contribution data needed for profile resolution.
  * Intentionally live/unmodified — this is the baseline every named
  * Contribution Profile's active fields get layered ON TOP OF (see
- * resolveProfile's callers), so it can't itself reflect a Plan override
- * without corrupting that layering. See applySalaryOverride's docblock
- * (./salary.ts) for the live-vs-override-aware rule.
+ * resolveProfile's callers), so it can't itself reflect a Plan's active
+ * salary without corrupting that layering. See applyActiveSalary's docblock
+ * (./salary.ts) for the live-vs-active rule.
  */
 export async function loadLiveContribData(db: Db, asOfDate: Date = new Date()) {
   const [allJobs, allContribs, allPeople, allPerfAccounts] = await Promise.all([

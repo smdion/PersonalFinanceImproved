@@ -36,7 +36,7 @@ export const stressTestRouter = createTRPCRouter({
     .input(
       z
         .object({
-          salaryOverrides: z
+          salaryActiveFields: z
             .array(z.object({ personId: z.number(), salary: z.number() }))
             .optional(),
           contributionProfileId: z.number().int().optional(),
@@ -57,7 +57,7 @@ export const stressTestRouter = createTRPCRouter({
         snapshotId: input?.snapshotId,
       });
       const payload = await buildEnginePayload(ctx.db, data, {
-        salaryOverrides: input?.salaryOverrides,
+        salaryActiveFields: input?.salaryActiveFields,
         contributionProfileId: input?.contributionProfileId,
         salaryProfileId: input?.salaryProfileId,
         accumulationBudgetProfileId: input?.accumulationBudgetProfileId,

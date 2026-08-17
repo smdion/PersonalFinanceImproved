@@ -645,7 +645,7 @@ describe("contribution router", () => {
 
     it("uses overridden salary for contribution calculation", async () => {
       const result = await caller.contribution.computeSummary({
-        salaryOverrides: [{ personId, salary: 200000 }],
+        salaryActiveFields: [{ personId, salary: 200000 }],
       });
       const person = result.people.find((p) => p.person.id === personId);
       expect(person!.salary).toBe(200000);
@@ -898,10 +898,10 @@ describe("contribution router", () => {
       expect(acctType!.employeeContrib).toBe(27000);
     });
 
-    it("an explicit salaryOverrides entry outranks the Salary Profile", async () => {
+    it("an explicit salaryActiveFields entry outranks the Salary Profile", async () => {
       const result = await caller.contribution.computeSummary({
         salaryProfileId,
-        salaryOverrides: [{ personId, salary: 210000 }],
+        salaryActiveFields: [{ personId, salary: 210000 }],
       });
       const person = result.people.find((p) => p.person.id === personId);
       expect(person!.salary).toBe(210000);

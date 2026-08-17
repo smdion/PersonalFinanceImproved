@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { YNAB_EXPENSE_EXCLUDED_GROUPS } from "@/lib/budget-api";
@@ -99,7 +99,7 @@ export default function ExpensesPage() {
 
   // Salary overrides from scenario context (used by all pages) — mirrors
   // paycheck/page.tsx so a what-if salary scenario stays holistic across pages.
-  const scenarioSalaryOverrides = useSalaryOverrides();
+  const scenarioActiveSalaries = useActiveSalaries();
   // Independent Salary Profile axis (Plan pin -> globally-active setting).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
 
@@ -137,14 +137,14 @@ export default function ExpensesPage() {
       localSelectionId: null,
       globalDefaultId: activeContribProfileId,
     },
-    ...(scenarioSalaryOverrides.length > 0
-      ? { salaryOverrides: scenarioSalaryOverrides }
+    ...(scenarioActiveSalaries.length > 0
+      ? { salaryActiveFields: scenarioActiveSalaries }
       : {}),
   });
 
   const paycheckInput = {
-    ...(scenarioSalaryOverrides.length > 0
-      ? { salaryOverrides: scenarioSalaryOverrides }
+    ...(scenarioActiveSalaries.length > 0
+      ? { salaryActiveFields: scenarioActiveSalaries }
       : {}),
     ...(effectiveContribProfileId != null
       ? { contributionProfileId: effectiveContribProfileId }

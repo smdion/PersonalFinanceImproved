@@ -40,12 +40,12 @@ export async function getCurrentSalary(
 }
 
 /**
- * Apply a salary override map to an already-resolved raw salary — the
- * single "final merge" step (`override ?? raw`) that used to be re-typed
+ * Apply a salary active-value map to an already-resolved raw salary — the
+ * single "final merge" step (`active ?? raw`) that used to be re-typed
  * inline at every call site. Use this when the caller already has the raw
- * salary in hand for another purpose (e.g. also needs it un-overridden for
- * total-compensation math); use resolveEffectiveSalary below when it
- * doesn't and would otherwise fetch it just to throw it away.
+ * salary in hand for another purpose (e.g. also needs the inactive/live
+ * value for total-compensation math); use resolveEffectiveSalary below when
+ * it doesn't and would otherwise fetch it just to throw it away.
  *
  * The map itself should already be the merged Plan+Salary-Profile map from
  * loadAndApplySalaryProfile (Plan wins if both are set) — this function
@@ -68,12 +68,12 @@ export async function getCurrentSalary(
  * loadLiveContribData for documented examples of the latter — overriding
  * those would corrupt what they're for, not fix them).
  */
-export function applySalaryOverride(
+export function applyActiveSalary(
   personId: number,
   rawSalary: number,
-  salaryOverrideMap: SalaryOverrideMap,
+  salaryActiveMap: SalaryActiveMap,
 ): number {
-  return salaryOverrideMap.get(personId)?.salary ?? rawSalary;
+  return salaryActiveMap.get(personId)?.salary ?? rawSalary;
 }
 
 // ---------------------------------------------------------------------------
@@ -117,7 +117,7 @@ export type SalaryEntryMap = Record<string, SalaryProfileEntry>;
  * pinned. Ask `.get(personId)?.salary !== undefined` for that specific
  * question, and `?.bonusPercent !== undefined` (etc.) for bonus terms.
  */
-export type SalaryOverrideMap = Map<number, SalaryProfileEntry>;
+export type SalaryActiveMap = Map<number, SalaryProfileEntry>;
 
 /** The bonus terms computeBonusGross takes, in its own argument types. */
 export type BonusTerms = {
@@ -137,10 +137,10 @@ type JobBonusFields = {
  * Strip an entry down to just the fields it actually pins, dropping anything
  * absent, null, or non-finite. Returns undefined when nothing is pinned.
  *
- * This is the gate that keeps the override map's presence contract honest:
+ * This is the gate that keeps the active map's presence contract honest:
  * an entry that pins nothing must produce NO key, because a key that exists
- * but pins nothing would read as an override at every `.has()` call site
- * while carrying no value to apply.
+ * but pins nothing would read as active at every `.has()` call site while
+ * carrying no value to apply.
  */
 export function pinnedFields(
   entry: SalaryProfileEntry | null | undefined,
@@ -277,9 +277,9 @@ export async function fetchSalaryProfile(
 
 /**
  * Merge a Salary Profile's pinned per-person fields into an existing salary
- * override map — GAPS ONLY. Fields already in the map (Plan/session
- * overrides, the highest-precedence tier) always win, matching
- * applySalaryOverride's precedence contract.
+ * active-value map — GAPS ONLY. Fields already in the map (the Plan/session
+ * tier's active values, the highest-precedence tier) always win, matching
+ * applyActiveSalary's precedence contract.
  *
  * No-op (returns the map unchanged) when the id is null/undefined or the
  * profile no longer exists.
@@ -287,10 +287,10 @@ export async function fetchSalaryProfile(
 export async function loadAndApplySalaryProfile(
   db: Db,
   salaryProfileId: number | undefined | null,
-  salaryOverrideMap: SalaryOverrideMap,
-): Promise<SalaryOverrideMap> {
+  salaryActiveMap: SalaryActiveMap,
+): Promise<SalaryActiveMap> {
   const profile = await fetchSalaryProfile(db, salaryProfileId);
-  return applySalaryProfileRow(profile, salaryOverrideMap);
+  return applySalaryProfileRow(profile, salaryActiveMap);
 }
 
 /**
@@ -304,18 +304,18 @@ export async function loadAndApplySalaryProfile(
  * downstream. See pinnedSalaries' docblock for what breaks if that is
  * violated.
  *
- * The gaps-only merge is PER FIELD, not per person. Plan/session overrides
- * only ever pin salary, so a per-person merge would make a Plan's salary pin
- * silently discard the profile's pinned bonus terms for that same person —
- * the pins are independent facts and each falls to the highest tier that
- * sets it.
+ * The gaps-only merge is PER FIELD, not per person. The Plan/session tier
+ * only ever sets an active salary, so a per-person merge would make a
+ * Plan's active salary silently discard the profile's pinned bonus terms
+ * for that same person — the pins are independent facts and each falls to
+ * the highest tier that sets it.
  */
 export function applySalaryProfileRow(
   profile: { salaries: SalaryEntryMap | null } | null | undefined,
-  salaryOverrideMap: SalaryOverrideMap,
-): SalaryOverrideMap {
-  if (!profile) return salaryOverrideMap;
-  const map = new Map(salaryOverrideMap);
+  salaryActiveMap: SalaryActiveMap,
+): SalaryActiveMap {
+  if (!profile) return salaryActiveMap;
+  const map = new Map(salaryActiveMap);
   const salaries = (profile.salaries ?? {}) as SalaryEntryMap;
   for (const [personIdKey, rawEntry] of Object.entries(salaries)) {
     const pinned = pinnedFields(rawEntry);
@@ -334,7 +334,7 @@ export function applySalaryProfileRow(
  * HIGHEST tier, above everything already merged into the map.
  *
  * Full precedence once this has run (highest first):
- *   sandbox entry (per field) > Plan/session salary override (salary only)
+ *   sandbox entry (per field) > Plan/session active salary (salary only)
  *   > Salary Profile pin > live job record.
  *
  * There is deliberately no second merge implementation here. The gaps-only
@@ -353,17 +353,17 @@ export function applySalaryProfileRow(
  */
 export function applySandboxSalaryEntries(
   entries: SalaryEntryMap | null | undefined,
-  salaryOverrideMap: SalaryOverrideMap,
-): SalaryOverrideMap {
-  if (!entries || Object.keys(entries).length === 0) return salaryOverrideMap;
-  const sandboxMap: SalaryOverrideMap = new Map();
+  salaryActiveMap: SalaryActiveMap,
+): SalaryActiveMap {
+  if (!entries || Object.keys(entries).length === 0) return salaryActiveMap;
+  const sandboxMap: SalaryActiveMap = new Map();
   for (const [personIdKey, rawEntry] of Object.entries(entries)) {
     const pinned = pinnedFields(rawEntry);
     if (pinned) sandboxMap.set(Number(personIdKey), pinned);
   }
-  if (sandboxMap.size === 0) return salaryOverrideMap;
+  if (sandboxMap.size === 0) return salaryActiveMap;
   const lowerTiers: SalaryEntryMap = {};
-  for (const [personId, entry] of salaryOverrideMap) {
+  for (const [personId, entry] of salaryActiveMap) {
     lowerTiers[String(personId)] = entry;
   }
   return applySalaryProfileRow({ salaries: lowerTiers }, sandboxMap);
@@ -372,18 +372,18 @@ export function applySandboxSalaryEntries(
 /**
  * Resolve a job's effective salary end to end: fetches the raw current
  * salary (salary_changes history, falling back to jobs.annual_salary) and
- * applies applySalaryOverride to it. See applySalaryOverride's docblock for
+ * applies applyActiveSalary to it. See applyActiveSalary's docblock for
  * the full precedence contract and when a call site should/shouldn't pass
- * a populated override map.
+ * a populated active-value map.
  */
 export async function resolveEffectiveSalary(
   db: Db,
   job: { id: number; personId: number; annualSalary: string },
-  salaryOverrideMap: SalaryOverrideMap,
+  salaryActiveMap: SalaryActiveMap,
   asOfDate: Date = new Date(),
 ): Promise<number> {
   const raw = await getCurrentSalary(db, job.id, job.annualSalary, asOfDate);
-  return applySalaryOverride(job.personId, raw, salaryOverrideMap);
+  return applyActiveSalary(job.personId, raw, salaryActiveMap);
 }
 
 /**

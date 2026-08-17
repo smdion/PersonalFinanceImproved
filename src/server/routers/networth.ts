@@ -18,7 +18,7 @@ import {
   groupSnapshotAccounts,
   buildYearEndHistory,
 } from "@/server/helpers";
-import { zYearEndTargeting, toSalaryOverrideMap } from "./_shared";
+import { zYearEndTargeting, toSalaryActiveMap } from "./_shared";
 
 export const networthRouter = createTRPCRouter({
   computeSummary: protectedProcedure
@@ -150,7 +150,7 @@ export const networthRouter = createTRPCRouter({
       const yearEndHistory = await buildYearEndHistory(ctx.db, asOfDate, {
         budgetProfileId: input?.budgetProfileId,
         budgetColumn: input?.budgetColumn,
-        salaryOverrides: toSalaryOverrideMap(input?.salaryOverrides),
+        salaryActiveFields: toSalaryActiveMap(input?.salaryActiveFields),
       });
       const currentRow =
         yearEndHistory.find((h) => h.isCurrent) ??
@@ -229,7 +229,7 @@ export const networthRouter = createTRPCRouter({
         buildYearEndHistory(ctx.db, new Date(), {
           budgetProfileId: input?.budgetProfileId,
           budgetColumn: input?.budgetColumn,
-          salaryOverrides: toSalaryOverrideMap(input?.salaryOverrides),
+          salaryActiveFields: toSalaryActiveMap(input?.salaryActiveFields),
         }),
         ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
         ctx.db.select().from(schema.mortgageLoans),
@@ -292,7 +292,7 @@ export const networthRouter = createTRPCRouter({
         buildYearEndHistory(ctx.db, new Date(), {
           budgetProfileId: input?.budgetProfileId,
           budgetColumn: input?.budgetColumn,
-          salaryOverrides: toSalaryOverrideMap(input?.salaryOverrides),
+          salaryActiveFields: toSalaryActiveMap(input?.salaryActiveFields),
         }),
         ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
       ]);
@@ -603,7 +603,7 @@ export const networthRouter = createTRPCRouter({
       const yearEndHistory = await buildYearEndHistory(ctx.db, new Date(), {
         budgetProfileId: input?.budgetProfileId,
         budgetColumn: input?.budgetColumn,
-        salaryOverrides: toSalaryOverrideMap(input?.salaryOverrides),
+        salaryActiveFields: toSalaryActiveMap(input?.salaryActiveFields),
       });
       const currentRow =
         yearEndHistory.find((h) => h.isCurrent) ??

@@ -7,7 +7,7 @@ import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { PageHeader } from "@/components/ui/page-header";
 import { useScenario } from "@/lib/context/scenario-context";
-import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
@@ -134,7 +134,7 @@ export default function PaycheckPage() {
   }
 
   // Salary overrides from scenario context (used by all pages)
-  const scenarioSalaryOverrides = useSalaryOverrides();
+  const scenarioActiveSalaries = useActiveSalaries();
 
   // Independent Salary Profile axis. Same three-tier resolution as the
   // contribution axis above (Plan pin -> this page's dropdown -> globally
@@ -214,7 +214,7 @@ export default function PaycheckPage() {
     isLoading,
     error,
     sharedContribGroupOrder,
-    salaryOverrides: scenarioSalaryOverridesApplied,
+    salaryActiveFields: scenarioSalaryOverridesApplied,
   } = usePaycheckPersonViews({
     contributionProfileId: displayContribId,
     salaryProfileId: displaySalaryId,
@@ -309,7 +309,7 @@ export default function PaycheckPage() {
 
   const toggleSalaryOverride = (personId: number, salary: number) => {
     // Check if this salary is already active in the scenario
-    const currentOverride = scenarioSalaryOverrides.find(
+    const currentOverride = scenarioActiveSalaries.find(
       (o) => o.personId === personId,
     );
     const isCurrentlyActive = currentOverride?.salary === salary;
@@ -318,7 +318,7 @@ export default function PaycheckPage() {
       // Deactivate: clear this person's salary override from the scenario
       clearOverride("people", personId, "salary");
       // If no more salary overrides remain, clean up the scenario
-      const remaining = scenarioSalaryOverrides.filter(
+      const remaining = scenarioActiveSalaries.filter(
         (o) => o.personId !== personId,
       );
       if (

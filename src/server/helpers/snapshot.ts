@@ -11,9 +11,9 @@ import { parseAppSettings } from "./settings";
 import {
   getSalariesForJobs,
   getTotalCompensation,
-  applySalaryOverride,
+  applyActiveSalary,
 } from "./salary";
-import type { SalaryOverrideMap } from "./salary";
+import type { SalaryActiveMap } from "./salary";
 import {
   getEffectiveCash,
   getEffectiveOtherAssets,
@@ -289,8 +289,8 @@ export type YearEndRow = {
  * differently-targeted result, and never pollutes the shared default cache.
  */
 export type YearEndHistoryTargeting = BudgetTargeting & {
-  /** personId -> overridden salary, merged in place of the raw current salary for the live current-year row. */
-  salaryOverrides?: SalaryOverrideMap;
+  /** personId -> active salary, merged in place of the raw current salary for the live current-year row. */
+  salaryActiveFields?: SalaryActiveMap;
 };
 
 let _yearEndCache: { data: YearEndRow[]; expiresAt: number } | null = null;
@@ -300,7 +300,7 @@ function hasTargeting(targeting: YearEndHistoryTargeting | undefined) {
     targeting &&
     (targeting.budgetProfileId != null ||
       targeting.budgetColumn != null ||
-      (targeting.salaryOverrides && targeting.salaryOverrides.size > 0))
+      (targeting.salaryActiveFields && targeting.salaryActiveFields.size > 0))
   );
 }
 
@@ -768,17 +768,13 @@ export async function buildYearEndHistory(
     // Gross income from active jobs (includes bonus — matches finalized year-end data)
     const activeJobs = jobs.filter((j) => !j.endDate);
     const jobSalaries = await getSalariesForJobs(db, activeJobs, asOfDate);
-    const salaryOverrideMap = targeting?.salaryOverrides ?? new Map();
+    const salaryActiveMap = targeting?.salaryActiveFields ?? new Map();
     const combinedGross = jobSalaries.reduce(
       (s, js) =>
         s +
         getTotalCompensation(
           js.job,
-          applySalaryOverride(
-            js.job.personId,
-            js.baseSalary,
-            salaryOverrideMap,
-          ),
+          applyActiveSalary(js.job.personId, js.baseSalary, salaryActiveMap),
           js.resolvedBonusOverride,
         ),
       0,

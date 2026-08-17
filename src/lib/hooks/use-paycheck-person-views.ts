@@ -29,7 +29,7 @@
 
 import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
-import { useSalaryOverrides } from "./use-salary-overrides";
+import { useActiveSalaries } from "./use-salary-overrides";
 import {
   alignDeductionRows,
   type RawDeduction,
@@ -110,7 +110,7 @@ export type UsePaycheckPersonViewsOptions = {
    * a different concept from the tab's own sandbox, and letting it stack on
    * top of the tab's picks would silently show numbers that are neither.
    *
-   * `useSalaryOverrides` is still *called* unconditionally — React forbids
+   * `useActiveSalaries` is still *called* unconditionally — React forbids
    * conditional hook calls — but its value is discarded when this is false,
    * so nothing scenario-derived reaches the query input.
    */
@@ -156,18 +156,18 @@ export function usePaycheckPersonViews({
   sandboxContribOverrides,
   sandboxContribAdditions,
 }: UsePaycheckPersonViewsOptions) {
-  const sessionSalaryOverrides = useSalaryOverrides();
+  const sessionSalaryOverrides = useActiveSalaries();
 
   // Stable identity: an inline `[]` would be a new array every render and
   // churn every memo below it.
-  const salaryOverrides = useMemo(
+  const salaryActiveFields = useMemo(
     () => (honorSessionScenario ? sessionSalaryOverrides : EMPTY_OVERRIDES),
     [honorSessionScenario, sessionSalaryOverrides],
   );
 
   const queryInput = useMemo(
     () => ({
-      ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+      ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
       ...(taxYearOverride ? { taxYearOverride } : {}),
       ...(contributionProfileId != null ? { contributionProfileId } : {}),
       ...(salaryProfileId != null ? { salaryProfileId } : {}),
@@ -189,7 +189,7 @@ export function usePaycheckPersonViews({
         : {}),
     }),
     [
-      salaryOverrides,
+      salaryActiveFields,
       taxYearOverride,
       contributionProfileId,
       salaryProfileId,
@@ -213,7 +213,7 @@ export function usePaycheckPersonViews({
   // Contribution annual/limit figures, resolved with the SAME profile ids as
   // the paycheck query above — one query for the whole page.
   const { data: contribData } = trpc.contribution.computeSummary.useQuery({
-    ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(contributionProfileId != null ? { contributionProfileId } : {}),
     ...(sandboxSalaryEntries && Object.keys(sandboxSalaryEntries).length > 0
       ? { sandboxSalaryEntries }
@@ -236,7 +236,7 @@ export function usePaycheckPersonViews({
   // — a different entity than any of the keys this block ever read, so
   // every `getOverride` call here always returned its fallback. The one
   // override that's actually real (salary, per person) already reaches the
-  // server correctly via `salaryOverrides` in `queryInput` above and a real
+  // server correctly via `salaryActiveFields` in `queryInput` above and a real
   // recompute — it never needed this client-side patch. Removed rather than
   // kept as a misleading no-op.
   const people = useMemo(
@@ -372,13 +372,13 @@ export function usePaycheckPersonViews({
           coverageNoteGroup: alignedData?.coverageNotes[index as 0 | 1]?.group,
           otherJointContribs: jointContribs,
           activeSalaryOverride:
-            salaryOverrides.find((o) => o.personId === d.person.id)?.salary ??
-            null,
+            salaryActiveFields.find((o) => o.personId === d.person.id)
+              ?.salary ?? null,
           perContribData: (personContrib?.perContribData ??
             []) as PerContribView[],
         };
       }),
-    [people, contribData, alignedData, jointContribs, salaryOverrides],
+    [people, contribData, alignedData, jointContribs, salaryActiveFields],
   );
 
   return {
@@ -387,6 +387,6 @@ export function usePaycheckPersonViews({
     isLoading,
     error,
     sharedContribGroupOrder,
-    salaryOverrides,
+    salaryActiveFields,
   };
 }

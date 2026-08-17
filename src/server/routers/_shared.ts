@@ -33,7 +33,7 @@
 //   protectedProcedure   → @/server/trpc
 
 import { z } from "zod/v4";
-import type { SalaryOverrideMap } from "@/server/helpers";
+import type { SalaryActiveMap } from "@/server/helpers";
 import { accountCategoryEnum } from "@/lib/config/account-types";
 import { CONTRIBUTION_METHOD_VALUES } from "@/lib/config/enum-values";
 
@@ -41,7 +41,7 @@ import { CONTRIBUTION_METHOD_VALUES } from "@/lib/config/enum-values";
  * Optional "what-if" targeting for procedures that read through
  * buildYearEndHistory/getAnnualExpensesFromBudget — lets a caller (a Plan
  * pin, or a page-local profile picker) ask "what would this look like under
- * budget profile X, column Y, with these salary overrides" instead of always
+ * budget profile X, column Y, with these active salaries" instead of always
  * reading the globally-active budget profile and true DB salaries.
  * Every field is optional; omitting all of them reproduces the untargeted,
  * cacheable default behavior.
@@ -50,7 +50,7 @@ export const zYearEndTargeting = z
   .object({
     budgetProfileId: z.number().nullable().optional(),
     budgetColumn: z.number().nullable().optional(),
-    salaryOverrides: z
+    salaryActiveFields: z
       .array(z.object({ personId: z.number(), salary: z.number() }))
       .optional(),
   })
@@ -59,18 +59,19 @@ export const zYearEndTargeting = z
 export type YearEndTargetingInput = z.infer<typeof zYearEndTargeting>;
 
 /**
- * Convert a procedure's `salaryOverrides` input array into the Map shape
+ * Convert a procedure's `salaryActiveFields` input array into the Map shape
  * helpers expect.
  *
- * Plan/session overrides pin SALARY ONLY — they have no bonus dimension, so
- * every entry sets exactly that one field and leaves bonus terms to resolve
- * live (or to a Salary Profile, which merges into the gaps per field).
+ * The Plan/session tier sets an active value for SALARY ONLY — it has no
+ * bonus dimension, so every entry sets exactly that one field and leaves
+ * bonus terms to resolve live (or to a Salary Profile, which merges into
+ * the gaps per field).
  */
-export function toSalaryOverrideMap(
-  salaryOverrides: { personId: number; salary: number }[] | undefined,
-): SalaryOverrideMap {
+export function toSalaryActiveMap(
+  salaryActiveFields: { personId: number; salary: number }[] | undefined,
+): SalaryActiveMap {
   return new Map(
-    (salaryOverrides ?? []).map((s) => [s.personId, { salary: s.salary }]),
+    (salaryActiveFields ?? []).map((s) => [s.personId, { salary: s.salary }]),
   );
 }
 
@@ -80,10 +81,10 @@ const MAX_SANDBOX_PEOPLE = 10;
 /**
  * The What-If tab's hand-edited salary/bonus entries — the same
  * `SalaryEntryMap` shape a Salary Profile's `salaries` column holds, so the
- * sandbox needs no new override input shape and no new schema.
+ * sandbox needs no new input shape and no new schema.
  *
  * Applied server-side by `applySandboxSalaryEntries` as the highest
- * precedence tier (above a Plan/session salary override, above a Salary
+ * precedence tier (above a Plan/session active salary, above a Salary
  * Profile pin, above the live job). Every field is optional and PRESENCE IS
  * THE PIN SIGNAL, exactly as on a profile row.
  *

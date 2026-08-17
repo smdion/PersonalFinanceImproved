@@ -18,6 +18,7 @@ import {
   zSandboxDeductionAdditions,
   zSandboxContribOverrides,
   zSandboxContribAdditions,
+  toSalaryActiveMap,
 } from "./_shared";
 import { applySandboxSalaryEntries } from "@/server/helpers/salary";
 import {
@@ -161,7 +162,7 @@ export const budgetRouter = createTRPCRouter({
           /** The active Plan's pins, if a Plan is selected in the browser. */
           planContribProfileId: z.number().int().nullable().optional(),
           planSalaryProfileId: z.number().int().nullable().optional(),
-          salaryOverrides: z
+          salaryActiveFields: z
             .array(z.object({ personId: z.number(), salary: z.number() }))
             .optional(),
         })
@@ -256,8 +257,8 @@ export const budgetRouter = createTRPCRouter({
         const cached = netMonthlyByPair.get(key);
         if (cached !== undefined) return cached;
         const paycheckData = await paycheckCaller.computeSummary({
-          ...(input?.salaryOverrides && input.salaryOverrides.length > 0
-            ? { salaryOverrides: input.salaryOverrides }
+          ...(input?.salaryActiveFields && input.salaryActiveFields.length > 0
+            ? { salaryActiveFields: input.salaryActiveFields }
             : {}),
           ...(contribProfileId != null
             ? { contributionProfileId: contribProfileId }
@@ -624,7 +625,7 @@ export const budgetRouter = createTRPCRouter({
            */
           contributionProfile: profileResolutionTiersSchema.optional(),
           salaryProfile: profileResolutionTiersSchema.optional(),
-          salaryOverrides: z
+          salaryActiveFields: z
             .array(z.object({ personId: z.number(), salary: z.number() }))
             .optional(),
           /** The What-If tab's hand-edited salary/bonus entries — see
@@ -715,17 +716,12 @@ export const budgetRouter = createTRPCRouter({
         numColumns,
       });
 
-      // Plan-level salaryOverrides are threaded through here so budget item
+      // Plan-level salaryActiveFields are threaded through here so budget item
       // $ amounts for percent-of-salary contributions stay consistent with
-      // what the Paycheck page shows under the same active Plan override —
-      // previously this always passed an empty map and silently ignored
-      // Plan overrides. Precedence: Plan overrides > Salary Profile > live.
-      const planSalaryOverrideMap = new Map(
-        (input?.salaryOverrides ?? []).map((o) => [
-          o.personId,
-          { salary: o.salary },
-        ]),
-      );
+      // what the Paycheck page shows under the same active Plan — previously
+      // this always passed an empty map and silently ignored the Plan's
+      // active salaries. Precedence: Plan active salary > Salary Profile > live.
+      const planSalaryActiveMap = toSalaryActiveMap(input?.salaryActiveFields);
 
       const linkedContribIds = new Set(
         items
@@ -751,7 +747,7 @@ export const budgetRouter = createTRPCRouter({
           await loadAndApplySalaryProfile(
             ctx.db,
             salaryProfileId,
-            planSalaryOverrideMap,
+            planSalaryActiveMap,
           ),
         );
         const profileResult = await loadAndApplyContribProfile(
@@ -948,8 +944,8 @@ export const budgetRouter = createTRPCRouter({
           createCallerFactory(paycheckRouter)(ctx);
         const incomePaycheckData = await paycheckCallerForIncome.computeSummary(
           {
-            ...(input?.salaryOverrides && input.salaryOverrides.length > 0
-              ? { salaryOverrides: input.salaryOverrides }
+            ...(input?.salaryActiveFields && input.salaryActiveFields.length > 0
+              ? { salaryActiveFields: input.salaryActiveFields }
               : {}),
             ...(contribProfileIdByColumn[selectedColumn] != null
               ? {

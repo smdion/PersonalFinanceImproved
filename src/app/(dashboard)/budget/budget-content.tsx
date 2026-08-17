@@ -17,7 +17,7 @@ import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
-import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
 import {
   ContributionProfileManager,
@@ -129,12 +129,12 @@ export function BudgetContent() {
     }),
     [planSalaryProfileId, activeSalaryProfileIdSetting],
   );
-  const salaryOverrides = useSalaryOverrides();
+  const salaryActiveFields = useActiveSalaries();
   const { data, isLoading, error } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
     contributionProfile: contributionProfileTiers,
     salaryProfile: salaryProfileTiers,
-    ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(displayProfileId != null ? { profileId: displayProfileId } : {}),
   });
   const { data: apiActualsData } = trpc.budget.listApiActuals.useQuery(
@@ -268,7 +268,7 @@ export function BudgetContent() {
     data,
     savingsGoals,
     apiActualsData,
-    salaryOverrides,
+    salaryActiveFields,
     contributionProfileTiers,
     salaryProfileTiers,
     editMode,

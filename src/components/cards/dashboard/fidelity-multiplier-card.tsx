@@ -6,7 +6,7 @@ import { Card, ProgressBar } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatNumber } from "@/lib/utils/format";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
-import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { sumBy } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
 
@@ -58,8 +58,9 @@ function getFidelityTarget(age: number): {
 }
 
 function FidelityMultiplierCardImpl() {
-  const salaryOverrides = useSalaryOverrides();
-  const engineInput = salaryOverrides.length > 0 ? { salaryOverrides } : {};
+  const salaryActiveFields = useActiveSalaries();
+  const engineInput =
+    salaryActiveFields.length > 0 ? { salaryActiveFields } : {};
   const { data, isLoading, error } =
     trpc.projection.computeProjection.useQuery(engineInput);
   const [projectedAge, setProjectedAge] = useState<number | null>(null);

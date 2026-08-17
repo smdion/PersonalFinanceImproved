@@ -189,7 +189,7 @@ describe("projection router — computeProjection full result path", () => {
       const { personId } = seedFullProjectionData(db);
 
       const response = await caller.projection.computeProjection({
-        salaryOverrides: [{ personId, salary: 200000 }],
+        salaryActiveFields: [{ personId, salary: 200000 }],
         accumulationOverrides: [],
         decumulationOverrides: [],
       });
@@ -640,12 +640,12 @@ describe("projection router — computeMonteCarloProjection", () => {
         numTrials: 100,
         preset: "custom",
         seed: 42,
-        salaryOverrides: [{ personId, salary: 200000 }],
+        salaryActiveFields: [{ personId, salary: 200000 }],
       });
 
       expect(response).toHaveProperty("result");
       if (response.result !== null) {
-        expect(response.simulationInputs.hasSalaryOverrides).toBe(true);
+        expect(response.simulationInputs.hasSalaryActiveFields).toBe(true);
       }
     } finally {
       cleanup();
@@ -785,7 +785,7 @@ describe("projection router — computeStrategyComparison", () => {
       const { personId } = seedFullProjectionData(db);
 
       const response = await caller.projection.computeStrategyComparison({
-        salaryOverrides: [{ personId, salary: 200000 }],
+        salaryActiveFields: [{ personId, salary: 200000 }],
       });
 
       expect(response.strategies.length).toBeGreaterThan(0);

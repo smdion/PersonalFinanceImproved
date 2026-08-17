@@ -247,11 +247,11 @@ export const retirementRouter = createTRPCRouter({
         }
       }
 
-      // Salary — intentionally live/un-overridden. This is the control arm
+      // Salary — intentionally live/unmodified. This is the control arm
       // of the relocation comparison (liveCombinedSalary below); applying a
-      // Plan salary override here would collapse the comparison it exists
-      // to run. See applySalaryOverride's docblock (server/helpers/salary.ts)
-      // for the live-vs-override-aware rule.
+      // Plan's active salary here would collapse the comparison it exists
+      // to run. See applyActiveSalary's docblock (server/helpers/salary.ts)
+      // for the live-vs-active rule.
       const asOfDate = referenceDate;
       const activeJobs = allJobs.filter((j) => !j.endDate);
       const bonusOverrides = await getBonusOverridesForJobs(

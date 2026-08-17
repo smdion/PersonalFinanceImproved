@@ -8,7 +8,7 @@ import {
   computeBonusGross,
   getBonusOverridesForJobs,
 } from "@/server/helpers/salary";
-import { zYearEndTargeting, toSalaryOverrideMap } from "./_shared";
+import { zYearEndTargeting, toSalaryActiveMap } from "./_shared";
 
 export const historicalRouter = createTRPCRouter({
   computeSummary: protectedProcedure
@@ -26,7 +26,7 @@ export const historicalRouter = createTRPCRouter({
         buildYearEndHistory(ctx.db, new Date(), {
           budgetProfileId: input?.budgetProfileId,
           budgetColumn: input?.budgetColumn,
-          salaryOverrides: toSalaryOverrideMap(input?.salaryOverrides),
+          salaryActiveFields: toSalaryActiveMap(input?.salaryActiveFields),
         }),
         ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
         ctx.db.select().from(schema.jobs).orderBy(asc(schema.jobs.startDate)),

@@ -1446,7 +1446,7 @@ describe("budget router — computeActiveSummary with contribution-linked items"
     }
   });
 
-  it("honors a Plan-level salaryOverride for percent-of-salary contribution-linked items — must agree with what paycheck.computeSummary resolves for the same person/override", async () => {
+  it("honors a Plan-level active salary for percent-of-salary contribution-linked items — must agree with what paycheck.computeSummary resolves for the same person/override", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const seed = seedStandardDataset(db);
@@ -1465,9 +1465,9 @@ describe("budget router — computeActiveSummary with contribution-linked items"
         contributionAccountId: contrib.id,
       });
 
-      const salaryOverrides = [{ personId: seed.personId, salary: 240000 }];
+      const salaryActiveFields = [{ personId: seed.personId, salary: 240000 }];
 
-      // Before the fix, computeActiveSummary had no salaryOverrides input
+      // Before the fix, computeActiveSummary had no salaryActiveFields input
       // at all and this would silently stay at the $120,000 live figure.
       const liveSummary = await caller.budget.computeActiveSummary();
       const liveItem = liveSummary.rawItems!.find(
@@ -1476,8 +1476,8 @@ describe("budget router — computeActiveSummary with contribution-linked items"
       expect(liveItem!.contribAmount).toBeCloseTo((120000 * 0.1) / 12, 2);
 
       const [paycheckResult, overriddenSummary] = await Promise.all([
-        caller.paycheck.computeSummary({ salaryOverrides }),
-        caller.budget.computeActiveSummary({ salaryOverrides }),
+        caller.paycheck.computeSummary({ salaryActiveFields }),
+        caller.budget.computeActiveSummary({ salaryActiveFields }),
       ]);
 
       const paycheckPerson = paycheckResult.people.find(
@@ -1917,9 +1917,9 @@ describe("budget router — listProfiles computes Unspent under the resolved pro
   it("honors a Plan-level salary override", async () => {
     const { caller, cleanup } = await seedHouseholdWithActiveContribProfile();
     try {
-      const salaryOverrides = [{ personId: 1, salary: 240000 }];
+      const salaryActiveFields = [{ personId: 1, salary: 240000 }];
       const withOverride = await caller.budget.listProfiles({
-        salaryOverrides,
+        salaryActiveFields,
       });
       const without = await caller.budget.listProfiles();
       expect(withOverride.find((p) => p.isActive)!.netMonthly!).toBeGreaterThan(

@@ -22,14 +22,14 @@ import {
   loadAndApplyContribProfile,
   loadAndApplySalaryProfile,
   getSalaryTimelineForYear,
-  applySalaryOverride,
+  applyActiveSalary,
   resolveBonusTerms,
   applySandboxSalaryEntries,
   applyContribActiveFields,
   buildSandboxContribRow,
 } from "@/server/helpers";
 import {
-  toSalaryOverrideMap,
+  toSalaryActiveMap,
   zSandboxSalaryEntries,
   zSandboxContribOverrides,
   zSandboxContribAdditions,
@@ -154,7 +154,7 @@ export const contributionRouter = createTRPCRouter({
     .input(
       z
         .object({
-          salaryOverrides: z
+          salaryActiveFields: z
             .array(z.object({ personId: z.number(), salary: z.number() }))
             .optional(),
           contributionProfileId: z.number().int().optional(),
@@ -174,7 +174,7 @@ export const contributionRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      const salaryOverrideMap = toSalaryOverrideMap(input?.salaryOverrides);
+      const salaryActiveMap = toSalaryActiveMap(input?.salaryActiveFields);
       const currentYear = new Date().getFullYear();
       const inPriorYearWindow = isPriorYearContribWindow();
       const priorYear = currentYear - 1;
@@ -285,7 +285,7 @@ export const contributionRouter = createTRPCRouter({
         await loadAndApplySalaryProfile(
           ctx.db,
           input?.salaryProfileId,
-          salaryOverrideMap,
+          salaryActiveMap,
         ),
       );
       const profileResult = await loadAndApplyContribProfile(
@@ -511,7 +511,7 @@ export const contributionRouter = createTRPCRouter({
             bonusMultiplier: bonusTerms.bonusMultiplier ?? "0",
             monthsInBonusYear: bonusTerms.monthsInBonusYear ?? 12,
           };
-          const salary = applySalaryOverride(
+          const salary = applyActiveSalary(
             person.id,
             getEffectiveIncome(
               jobWithResolvedBonus,

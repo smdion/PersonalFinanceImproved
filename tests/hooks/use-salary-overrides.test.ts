@@ -1,22 +1,22 @@
 /**
- * T1 — useSalaryOverrides extraction from scenario context: pulls
+ * T1 — useActiveSalaries extraction from scenario context: pulls
  * { personId, salary } pairs out of activeScenario.overrides.people, where
  * the map is keyed by string personId and values may carry a `salary`
  * override field alongside other unrelated per-person override fields.
  */
 import { describe, it, expect, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
-import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 
 const mockUseScenario = vi.fn();
 vi.mock("@/lib/context/scenario-context", () => ({
   useScenario: () => mockUseScenario(),
 }));
 
-describe("useSalaryOverrides", () => {
+describe("useActiveSalaries", () => {
   it("returns an empty array when there is no active scenario", () => {
     mockUseScenario.mockReturnValue({ activeScenario: null });
-    const { result } = renderHook(() => useSalaryOverrides());
+    const { result } = renderHook(() => useActiveSalaries());
     expect(result.current).toEqual([]);
   });
 
@@ -24,7 +24,7 @@ describe("useSalaryOverrides", () => {
     mockUseScenario.mockReturnValue({
       activeScenario: { overrides: {} },
     });
-    const { result } = renderHook(() => useSalaryOverrides());
+    const { result } = renderHook(() => useActiveSalaries());
     expect(result.current).toEqual([]);
   });
 
@@ -39,7 +39,7 @@ describe("useSalaryOverrides", () => {
         },
       },
     });
-    const { result } = renderHook(() => useSalaryOverrides());
+    const { result } = renderHook(() => useActiveSalaries());
     expect(result.current).toEqual(
       expect.arrayContaining([
         { personId: 3, salary: 150000 },
@@ -60,7 +60,7 @@ describe("useSalaryOverrides", () => {
         },
       },
     });
-    const { result } = renderHook(() => useSalaryOverrides());
+    const { result } = renderHook(() => useActiveSalaries());
     expect(result.current).toEqual([{ personId: 3, salary: 150000 }]);
   });
 
@@ -74,7 +74,7 @@ describe("useSalaryOverrides", () => {
         },
       },
     });
-    const { result } = renderHook(() => useSalaryOverrides());
+    const { result } = renderHook(() => useActiveSalaries());
     expect(result.current).toEqual([{ personId: 3, salary: 150000 }]);
   });
 });

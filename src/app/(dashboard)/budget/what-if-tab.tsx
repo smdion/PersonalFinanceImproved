@@ -1230,7 +1230,7 @@ export function WhatIfTab({
     data: budgetData,
     savingsGoals,
     apiActualsData: null,
-    salaryOverrides: [],
+    salaryActiveFields: [],
     contributionProfileTiers,
     salaryProfileTiers,
     editMode: true,

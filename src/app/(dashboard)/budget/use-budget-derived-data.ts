@@ -30,7 +30,7 @@ import type {
 } from "@/components/budget";
 import type { PushPreviewItem } from "@/components/ui/push-preview-modal";
 
-type SalaryOverride = { personId: number; salary: number };
+type SalaryActiveField = { personId: number; salary: number };
 
 /** Non-column tiers of docs/RULES.md's profile precedence, supplied by the
  *  page (Plan pin → [column pin] → local selection → globally-active). */
@@ -84,7 +84,7 @@ export function useBudgetDerivedData({
   data,
   savingsGoals,
   apiActualsData,
-  salaryOverrides,
+  salaryActiveFields,
   contributionProfileTiers,
   salaryProfileTiers,
   editMode,
@@ -94,7 +94,7 @@ export function useBudgetDerivedData({
   data: DataShape;
   savingsGoals: SavingsGoalEntry[] | undefined;
   apiActualsData: ApiActualsData;
-  salaryOverrides: SalaryOverride[];
+  salaryActiveFields: SalaryActiveField[];
   /** The non-column tiers of the profile precedence — must be the SAME
    *  values sent to budget.computeActiveSummary, or server totals and this
    *  page's payroll breakdown resolve different profiles. */
@@ -148,7 +148,7 @@ export function useBudgetDerivedData({
 
   const perColumnPaycheckData = usePerColumnPaycheck(
     columnContribProfileIds,
-    salaryOverrides,
+    salaryActiveFields,
     columnSalaryProfileIds,
   );
 

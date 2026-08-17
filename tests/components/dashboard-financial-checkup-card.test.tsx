@@ -14,7 +14,7 @@ vi.mock("@/lib/context/scenario-context", () => ({
   useScenario: () => ({ viewMode: "projected" as const, isInScenario: false }),
 }));
 vi.mock("@/lib/hooks/use-salary-overrides", () => ({
-  useSalaryOverrides: () => [],
+  useActiveSalaries: () => [],
 }));
 vi.mock("@/lib/hooks/use-persisted-setting", () => ({
   usePersistedSetting: (key: string, defaultValue: unknown) => {

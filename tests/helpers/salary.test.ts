@@ -6,7 +6,7 @@ import {
   getTotalCompensation,
   getCurrentSalary,
   getFutureSalaryChanges,
-  applySalaryOverride,
+  applyActiveSalary,
   resolveEffectiveSalary,
 } from "@/server/helpers/salary";
 import { createTestDb, type TestDbContext } from "./db-harness";
@@ -226,34 +226,34 @@ describe("getCurrentSalary", () => {
 });
 
 // ---------------------------------------------------------------------------
-// applySalaryOverride (pure)
+// applyActiveSalary (pure)
 // ---------------------------------------------------------------------------
 
-describe("applySalaryOverride", () => {
+describe("applyActiveSalary", () => {
   it("returns the override when the map has an entry for the person", () => {
     const map = new Map([[1, { salary: 150000 }]]);
-    expect(applySalaryOverride(1, 100000, map)).toBe(150000);
+    expect(applyActiveSalary(1, 100000, map)).toBe(150000);
   });
 
   it("returns the raw salary when the map has no entry for the person", () => {
     const map = new Map([[2, { salary: 150000 }]]);
-    expect(applySalaryOverride(1, 100000, map)).toBe(100000);
+    expect(applyActiveSalary(1, 100000, map)).toBe(100000);
   });
 
   it("returns the raw salary for an empty map", () => {
-    expect(applySalaryOverride(1, 100000, new Map())).toBe(100000);
+    expect(applyActiveSalary(1, 100000, new Map())).toBe(100000);
   });
 
   it("honors a zero-dollar override rather than falling back", () => {
     const map = new Map([[1, { salary: 0 }]]);
-    expect(applySalaryOverride(1, 100000, map)).toBe(0);
+    expect(applyActiveSalary(1, 100000, map)).toBe(0);
   });
 
   it("falls back to raw when the entry pins bonus terms but no salary", () => {
     // A map key means "has at least one pin", NOT "salary is pinned". Reading
     // it as the latter is what broke the year-0 bonus adjustment guard.
     const map = new Map([[1, { bonusPercent: 0.2 }]]);
-    expect(applySalaryOverride(1, 100000, map)).toBe(100000);
+    expect(applyActiveSalary(1, 100000, map)).toBe(100000);
   });
 });
 

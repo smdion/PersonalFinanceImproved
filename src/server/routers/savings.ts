@@ -56,10 +56,10 @@ import type { BudgetCategoryGroup, BudgetTransaction } from "@/lib/budget-api";
  * routing rules or growth rates are saved, so the value always reflects the
  * actual paycheck calculation rather than a client-supplied number.
  *
- * Intentionally does not apply a salary override map — this value gets
+ * Intentionally does not apply a salary active-value map — this value gets
  * persisted as a recorded fact, not shown as "what your finances look like
- * under the active Plan." See applySalaryOverride's docblock (server/helpers/salary.ts)
- * for the live-vs-override-aware rule.
+ * under the active Plan." See applyActiveSalary's docblock (server/helpers/salary.ts)
+ * for the live-vs-active rule.
  */
 async function computeJobNetPayPerCheck(
   db: Parameters<typeof getCurrentSalary>[0],

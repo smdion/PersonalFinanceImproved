@@ -58,7 +58,7 @@ export const coastFireRouter = createTRPCRouter({
         decumulationDefaults: decumulationDefaultsInputSchema,
         accumulationOverrides: accumulationOverrideSchema,
         decumulationOverrides: decumulationOverrideSchema,
-        salaryOverrides: z
+        salaryActiveFields: z
           .array(z.object({ personId: z.number(), salary: z.number() }))
           .optional(),
         contributionProfileId: z.number().int().optional(),
@@ -80,7 +80,7 @@ export const coastFireRouter = createTRPCRouter({
         salaryProfileId: input.salaryProfileId,
       });
       const payload = await buildEnginePayload(ctx.db, data, {
-        salaryOverrides: input.salaryOverrides,
+        salaryActiveFields: input.salaryActiveFields,
         contributionProfileId: input.contributionProfileId,
         salaryProfileId: input.salaryProfileId,
         accumulationBudgetProfileId: input.accumulationBudgetProfileId,
@@ -166,7 +166,7 @@ export const coastFireRouter = createTRPCRouter({
         decumulationDefaults: decumulationDefaultsInputSchema,
         accumulationOverrides: accumulationOverrideSchema,
         decumulationOverrides: decumulationOverrideSchema,
-        salaryOverrides: z
+        salaryActiveFields: z
           .array(z.object({ personId: z.number(), salary: z.number() }))
           .optional(),
         contributionProfileId: z.number().int().optional(),
@@ -218,7 +218,7 @@ export const coastFireRouter = createTRPCRouter({
         ]);
 
       const payload = await buildEnginePayload(ctx.db, data, {
-        salaryOverrides: input.salaryOverrides,
+        salaryActiveFields: input.salaryActiveFields,
         contributionProfileId: input.contributionProfileId,
         salaryProfileId: input.salaryProfileId,
         accumulationBudgetProfileId: input.accumulationBudgetProfileId,

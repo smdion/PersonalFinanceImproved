@@ -7,7 +7,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
 import {
   RAMSEY_RANGES,
@@ -26,7 +26,7 @@ function LivingCostsCardImpl() {
       selectedColumn: budgetColumn,
     });
   const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
-  const salaryOverrides = useSalaryOverrides();
+  const salaryActiveFields = useActiveSalaries();
   // Independent Salary Profile axis (Plan pin -> globally-active setting).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [activeContribProfileId] = usePersistedSetting<number | null>(
@@ -34,7 +34,7 @@ function LivingCostsCardImpl() {
     null,
   );
   const lcQueryInput = {
-    ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(activeContribProfileId != null
       ? { contributionProfileId: activeContribProfileId }
       : {}),

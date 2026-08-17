@@ -15,7 +15,7 @@ import {
   taxTypeLabel,
 } from "@/lib/utils/colors";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
 import { OVER_LIMIT_THRESHOLD } from "@/lib/constants";
 import { safeDivide, sumBy } from "@/lib/utils/math";
@@ -113,7 +113,7 @@ function FundingBar({
 
 function ContributionsCardImpl() {
   const { viewMode } = useScenario();
-  const salaryOverrides = useSalaryOverrides();
+  const salaryActiveFields = useActiveSalaries();
   // Independent Salary Profile axis (Plan pin -> globally-active setting).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [activeContribProfileId] = usePersistedSetting<number | null>(
@@ -121,7 +121,7 @@ function ContributionsCardImpl() {
     null,
   );
   const contribInput = {
-    ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(activeContribProfileId != null
       ? { contributionProfileId: activeContribProfileId }
       : {}),

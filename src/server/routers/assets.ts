@@ -11,7 +11,7 @@ import {
   getActiveMortgageLoan,
 } from "@/server/helpers";
 import { getActiveBudgetApi } from "@/lib/budget-api";
-import { zYearEndTargeting, toSalaryOverrideMap } from "./_shared";
+import { zYearEndTargeting, toSalaryActiveMap } from "./_shared";
 
 export const assetsRouter = createTRPCRouter({
   /**
@@ -34,7 +34,7 @@ export const assetsRouter = createTRPCRouter({
         buildYearEndHistory(ctx.db, new Date(), {
           budgetProfileId: input?.budgetProfileId,
           budgetColumn: input?.budgetColumn,
-          salaryOverrides: toSalaryOverrideMap(input?.salaryOverrides),
+          salaryActiveFields: toSalaryActiveMap(input?.salaryActiveFields),
         }),
         ctx.db
           .select()

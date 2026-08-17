@@ -8,7 +8,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";
 import { sumBy } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
 import { useScenario } from "@/lib/context/scenario-context";
 import {
@@ -33,7 +33,7 @@ function formatBreakdownPercent(fraction: number): string {
 
 function SavingsRateCardImpl() {
   const { viewMode } = useScenario();
-  const salaryOverrides = useSalaryOverrides();
+  const salaryActiveFields = useActiveSalaries();
   // Independent Salary Profile axis (Plan pin -> globally-active setting).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [activeProfileId] = usePersistedSetting<number | null>(
@@ -41,7 +41,7 @@ function SavingsRateCardImpl() {
     null,
   );
   const contribInput = {
-    ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(activeProfileId != null
       ? { contributionProfileId: activeProfileId }
       : {}),

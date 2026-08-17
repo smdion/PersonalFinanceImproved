@@ -22,7 +22,7 @@ import {
   requireLimit,
   loadAndApplyContribProfile,
   loadAndApplySalaryProfile,
-  applySalaryOverride,
+  applyActiveSalary,
   resolveBonusTerms,
   applyContribActiveFields,
   buildSandboxContribRow,
@@ -32,7 +32,7 @@ import {
   applySandboxSalaryEntries,
 } from "@/server/helpers/salary";
 import {
-  toSalaryOverrideMap,
+  toSalaryActiveMap,
   zSandboxSalaryEntries,
   zSandboxDeductionEdits,
   zSandboxDeductionAdditions,
@@ -84,7 +84,7 @@ export const paycheckRouter = createTRPCRouter({
     .input(
       z
         .object({
-          salaryOverrides: z
+          salaryActiveFields: z
             .array(z.object({ personId: z.number(), salary: z.number() }))
             .optional(),
           taxYearOverride: z.number().int().optional(),
@@ -109,7 +109,7 @@ export const paycheckRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      const salaryOverrideMap = toSalaryOverrideMap(input?.salaryOverrides);
+      const salaryActiveMap = toSalaryActiveMap(input?.salaryActiveFields);
       const deductionEditMap = new Map(
         (input?.sandboxDeductionEdits ?? []).map((e) => [
           e.id,
@@ -157,7 +157,7 @@ export const paycheckRouter = createTRPCRouter({
         await loadAndApplySalaryProfile(
           ctx.db,
           input?.salaryProfileId,
-          salaryOverrideMap,
+          salaryActiveMap,
         ),
       );
       const profileResult = await loadAndApplyContribProfile(
@@ -252,7 +252,7 @@ export const paycheckRouter = createTRPCRouter({
             activeJob.annualSalary,
             asOfDate,
           );
-          const salary = applySalaryOverride(
+          const salary = applyActiveSalary(
             person.id,
             dbSalary,
             effectiveSalaryMap,
