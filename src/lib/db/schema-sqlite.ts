@@ -1777,7 +1777,7 @@ export const contributionProfiles = sqliteTable("contribution_profiles", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   name: text("name").notNull().unique(),
   description: text("description"),
-  contributionOverrides: text("contribution_overrides", { mode: "json" })
+  contributionActiveFields: text("contribution_active_fields", { mode: "json" })
     .$type<ScenarioOverrides>()
     .notNull()
     .default(sql`'{}'`),

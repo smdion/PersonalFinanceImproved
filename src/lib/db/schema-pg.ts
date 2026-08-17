@@ -2016,7 +2016,7 @@ export const contributionProfiles = pgTable("contribution_profiles", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
   description: text("description"),
-  contributionOverrides: jsonb("contribution_overrides")
+  contributionActiveFields: jsonb("contribution_active_fields")
     .$type<ScenarioOverrides>()
     .notNull()
     .default({}),

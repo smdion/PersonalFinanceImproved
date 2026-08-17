@@ -71,6 +71,13 @@
       "when": 1786906260585,
       "tag": "0009_salary_profile_bonus_terms",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1786978713055,
+      "tag": "0010_contribution_active_fields",
+      "breakpoints": true
     }
   ]
 }
