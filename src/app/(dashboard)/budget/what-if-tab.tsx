@@ -1368,7 +1368,7 @@ export function WhatIfTab({
         if (localId != null) sandbox.removeContribAddition(localId);
         setContribMakeRealPendingId(null);
         toast.success(
-          `Added "${created?.accountType ?? ""}" account to Contribution Profiles`,
+          `Added "${created ? accountDisplayName(created) : ""}" account to Contribution Profiles`,
         );
       },
       onError: (err) => {

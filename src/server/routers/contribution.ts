@@ -1065,12 +1065,16 @@ export const contributionRouter = createTRPCRouter({
             const blendedSalary = segments.reduce(
               (s, seg) =>
                 s +
-                getEffectiveIncome(activeJob, seg.salary, resolvedOverride) *
+                getEffectiveIncome(
+                  jobWithResolvedBonus,
+                  seg.salary,
+                  resolvedOverride,
+                ) *
                   ((seg.endPeriod - seg.startPeriod + 1) / periodsPerYear),
               0,
             );
             blendedTotalCompensation = getTotalCompensation(
-              activeJob,
+              jobWithResolvedBonus,
               blendedSalary,
               resolvedOverride,
             );

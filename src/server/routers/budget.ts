@@ -46,6 +46,7 @@ import {
   getEffectiveIncome,
   getBonusOverridesForJobs,
   resolveEffectiveSalary,
+  resolveBonusTerms,
   computeAnnualContribution,
   loadAndApplyContribProfile,
   loadAndApplySalaryProfile,
@@ -784,9 +785,25 @@ export const budgetRouter = createTRPCRouter({
           );
           const resolvedOverride =
             bonusOverrides.get(`${j.id}:${currentYear}`) ?? null;
+          // A Salary Profile pin on bonus terms is independent of a salary
+          // pin — resolveBonusTerms overlays whichever of bonusPercent/
+          // bonusMultiplier/monthsInBonusYear the profile pins onto the
+          // job's live values, same as paycheck.ts/contribution.ts do.
+          // Reading j's raw fields here silently ignored a pinned bonus for
+          // linked contribution items on the Budget tab.
+          const bonusTerms = resolveBonusTerms(
+            j,
+            effectiveSalaryMap.get(j.personId),
+          );
+          const jobWithResolvedBonus = {
+            ...j,
+            bonusPercent: bonusTerms.bonusPercent ?? "0",
+            bonusMultiplier: bonusTerms.bonusMultiplier ?? "0",
+            monthsInBonusYear: bonusTerms.monthsInBonusYear ?? 12,
+          };
           salaryByJobId.set(
             j.id,
-            getEffectiveIncome(j, salary, resolvedOverride),
+            getEffectiveIncome(jobWithResolvedBonus, salary, resolvedOverride),
           );
         }
 

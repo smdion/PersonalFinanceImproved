@@ -352,9 +352,13 @@ export const paycheckRouter = createTRPCRouter({
 
           // Blended annual computation — accounts for mid-year salary changes.
           // Skip when a salary override is active (future salary preview toggle)
-          // since blended doesn't make sense with an overridden salary.
+          // since blended doesn't make sense with an overridden salary. A
+          // Salary-Profile-pinned bonus with no salary pin is not a salary
+          // override — overrideSalary is a SalaryProfileEntry object now, so
+          // checking its truthiness alone would also skip blending whenever
+          // only bonus terms are pinned.
           let blendedAnnual: BlendedAnnualTotals | null = null;
-          if (!overrideSalary) {
+          if (overrideSalary?.salary === undefined) {
             const currentYear = taxYear;
             const anchorPayDate = new Date(
               activeJob.anchorPayDate ?? activeJob.startDate,

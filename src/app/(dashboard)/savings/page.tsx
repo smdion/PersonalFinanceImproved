@@ -63,9 +63,12 @@ import {
   deriveBudgetMonthlyTotal,
   type CapacityPerson,
 } from "@/lib/calculators/savings-capacity";
-import { resolveContributionProfileId } from "@/lib/calculators/contribution-profile-resolution";
+import {
+  resolveContributionProfileId,
+  resolveSalaryProfileId,
+} from "@/lib/calculators/contribution-profile-resolution";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
-import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
+import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 
 export default function SavingsPage() {
@@ -122,9 +125,17 @@ export default function SavingsPage() {
 
   const salaryOverrides = useSalaryOverrides();
 
-  // Independent Salary Profile axis (Plan pin -> globally-active setting).
-
-  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
+  // Independent Salary Profile axis (Plan pin -> column pin -> globally-active
+  // setting) — mirrors the Contribution axis below so a per-column Salary
+  // Profile pin (set from Manage Modes) isn't silently ignored here while
+  // computeActiveSummary honors it for the Budget tab's item $ amounts.
+  const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
+  const { data: salaryProfilesList } = trpc.salaryProfile.list.useQuery();
+  const { planPinId: planSalaryProfileId } = useEffectiveProfileId("salary", {
+    validIds: salaryProfilesList?.map((p) => p.id),
+    localSelection: null,
+    globalDefaultId: rawActiveSalaryProfileId,
+  });
   // Tiers, not a pre-resolved id — see docs/RULES.md "Profile Pins" and
   // contribution-profile-resolution.ts: folding the Plan pin into the
   // global-default tier is what let a column pin outrank an active Plan.
@@ -133,9 +144,15 @@ export default function SavingsPage() {
     localSelectionId: null,
     globalDefaultId: rawActiveContribProfileId,
   };
+  const salaryProfileTiers = {
+    planPinId: planSalaryProfileId,
+    localSelectionId: null,
+    globalDefaultId: rawActiveSalaryProfileId,
+  };
   const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: budgetColumn,
     contributionProfile: contributionProfileTiers,
+    salaryProfile: salaryProfileTiers,
     ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
   });
   const { data: budgetProfilesList } = useBudgetProfilesList();
@@ -152,13 +169,27 @@ export default function SavingsPage() {
     column: budgetColumn,
     numColumns: budgetData?.columnLabels?.length ?? 0,
   });
+  // Same holistic rule for the Salary axis — resolveSalaryProfileId is the
+  // only path this and computeActiveSummary should use for column
+  // resolution, so this page's payroll preview never disagrees with the
+  // Budget tab's linked item $ amounts about which Salary Profile is in
+  // effect for the selected column.
+  const effectiveSalaryProfileId = resolveSalaryProfileId({
+    ...salaryProfileTiers,
+    columnPinIds: budgetData?.profile?.columnSalaryProfileIds as
+      (number | null)[] | null,
+    column: budgetColumn,
+    numColumns: budgetData?.columnLabels?.length ?? 0,
+  });
 
   const paycheckInput = {
     ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
     ...(effectiveContribProfileId != null
       ? { contributionProfileId: effectiveContribProfileId }
       : {}),
-    ...salaryProfileInput,
+    ...(effectiveSalaryProfileId != null
+      ? { salaryProfileId: effectiveSalaryProfileId }
+      : {}),
   };
   const { data: paycheckData } = trpc.paycheck.computeSummary.useQuery(
     Object.keys(paycheckInput).length > 0 ? paycheckInput : undefined,
