@@ -214,7 +214,7 @@ export default function PaycheckPage() {
     isLoading,
     error,
     sharedContribGroupOrder,
-    salaryActiveFields: scenarioSalaryOverridesApplied,
+    salaryActiveFields: scenarioActiveSalariesApplied,
   } = usePaycheckPersonViews({
     contributionProfileId: displayContribId,
     salaryProfileId: displaySalaryId,
@@ -498,7 +498,7 @@ export default function PaycheckPage() {
                 <SalaryTracker
                   jobId={d.job.id}
                   activeSalaryValue={
-                    scenarioSalaryOverridesApplied.find(
+                    scenarioActiveSalariesApplied.find(
                       (o) => o.personId === d.person.id,
                     )?.salary ?? null
                   }
