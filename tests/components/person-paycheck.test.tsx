@@ -123,7 +123,7 @@ const defaultProps = {
   salaryHistorySlot: (
     <SalaryTracker
       jobId={1}
-      activeSalaryOverride={null}
+      activeSalaryValue={null}
       onToggleSalary={vi.fn()}
     />
   ),

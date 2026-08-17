@@ -44,7 +44,7 @@ import {
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 
-const EMPTY_OVERRIDES: { personId: number; salary: number }[] = [];
+const EMPTY_ACTIVE_SALARIES: { personId: number; salary: number }[] = [];
 
 /** Mirrors the server's SalaryEntryMap shape (server/helpers/salary.ts) —
  *  duplicated rather than imported since that file is server-only. */
@@ -93,7 +93,7 @@ export type PaycheckPersonView = {
   coverageNote?: string;
   coverageNoteGroup?: string;
   otherJointContribs: JointContrib[];
-  activeSalaryOverride: number | null;
+  activeSalaryValue: number | null;
   /** Already-resolved contribution figures — see the docblock. */
   perContribData: PerContribView[];
 };
@@ -134,9 +134,9 @@ export type UsePaycheckPersonViewsOptions = {
   /** The What-If tab's hand-edited contribution account values — sent to
    *  BOTH queries (deductions built from contribution accounts feed the
    *  pay stub too, via buildContribAccounts). */
-  sandboxContribOverrides?: Record<string, { contributionValue: string }>;
+  sandboxContribActiveFields?: Record<string, { contributionValue: string }>;
   /** The What-If tab's hand-added hypothetical contribution accounts — sent
-   *  to BOTH queries, same reasoning as sandboxContribOverrides. */
+   *  to BOTH queries, same reasoning as sandboxContribActiveFields. */
   sandboxContribAdditions?: {
     personId: number;
     accountType: AccountCategory;
@@ -153,16 +153,17 @@ export function usePaycheckPersonViews({
   sandboxSalaryEntries,
   sandboxDeductionEdits,
   sandboxDeductionAdditions,
-  sandboxContribOverrides,
+  sandboxContribActiveFields,
   sandboxContribAdditions,
 }: UsePaycheckPersonViewsOptions) {
-  const sessionSalaryOverrides = useActiveSalaries();
+  const sessionActiveSalaries = useActiveSalaries();
 
   // Stable identity: an inline `[]` would be a new array every render and
   // churn every memo below it.
   const salaryActiveFields = useMemo(
-    () => (honorSessionScenario ? sessionSalaryOverrides : EMPTY_OVERRIDES),
-    [honorSessionScenario, sessionSalaryOverrides],
+    () =>
+      honorSessionScenario ? sessionActiveSalaries : EMPTY_ACTIVE_SALARIES,
+    [honorSessionScenario, sessionActiveSalaries],
   );
 
   const queryInput = useMemo(
@@ -180,9 +181,9 @@ export function usePaycheckPersonViews({
       ...(sandboxDeductionAdditions && sandboxDeductionAdditions.length > 0
         ? { sandboxDeductionAdditions }
         : {}),
-      ...(sandboxContribOverrides &&
-      Object.keys(sandboxContribOverrides).length > 0
-        ? { sandboxContribOverrides }
+      ...(sandboxContribActiveFields &&
+      Object.keys(sandboxContribActiveFields).length > 0
+        ? { sandboxContribActiveFields }
         : {}),
       ...(sandboxContribAdditions && sandboxContribAdditions.length > 0
         ? { sandboxContribAdditions }
@@ -196,7 +197,7 @@ export function usePaycheckPersonViews({
       sandboxSalaryEntries,
       sandboxDeductionEdits,
       sandboxDeductionAdditions,
-      sandboxContribOverrides,
+      sandboxContribActiveFields,
       sandboxContribAdditions,
     ],
   );
@@ -218,9 +219,9 @@ export function usePaycheckPersonViews({
     ...(sandboxSalaryEntries && Object.keys(sandboxSalaryEntries).length > 0
       ? { sandboxSalaryEntries }
       : {}),
-    ...(sandboxContribOverrides &&
-    Object.keys(sandboxContribOverrides).length > 0
-      ? { sandboxContribOverrides }
+    ...(sandboxContribActiveFields &&
+    Object.keys(sandboxContribActiveFields).length > 0
+      ? { sandboxContribActiveFields }
       : {}),
     ...(sandboxContribAdditions && sandboxContribAdditions.length > 0
       ? { sandboxContribAdditions }
@@ -371,7 +372,7 @@ export function usePaycheckPersonViews({
           coverageNote: alignedData?.coverageNotes[index as 0 | 1]?.note,
           coverageNoteGroup: alignedData?.coverageNotes[index as 0 | 1]?.group,
           otherJointContribs: jointContribs,
-          activeSalaryOverride:
+          activeSalaryValue:
             salaryActiveFields.find((o) => o.personId === d.person.id)
               ?.salary ?? null,
           perContribData: (personContrib?.perContribData ??

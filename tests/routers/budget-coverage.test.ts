@@ -1502,17 +1502,17 @@ describe("budget router — computeActiveSummary with contribution-linked items"
 });
 
 // ---------------------------------------------------------------------------
-// What-If sandbox support: itemAmountOverrides + netMonthlyIncome. See
+// What-If sandbox support: itemAmountActiveFields + netMonthlyIncome. See
 // .scratch/docs/plans/what-if-editable-sandbox-final.md section 3.
 // ---------------------------------------------------------------------------
 describe("budget router — computeActiveSummary sandbox support", () => {
-  it("itemAmountOverrides replaces an item's amount for the given column, leaving others untouched", async () => {
+  it("itemAmountActiveFields replaces an item's amount for the given column, leaving others untouched", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const seed = seedStandardDataset(db);
 
       const summary = await caller.budget.computeActiveSummary({
-        itemAmountOverrides: [
+        itemAmountActiveFields: [
           { itemId: seed.itemIds[0]!, colIndex: 0, amount: 9999 },
         ],
       });
@@ -1537,7 +1537,7 @@ describe("budget router — computeActiveSummary sandbox support", () => {
     }
   });
 
-  it("itemAmountOverrides layers on top of a contribution-linked item's resolved amount, not a raw one", async () => {
+  it("itemAmountActiveFields layers on top of a contribution-linked item's resolved amount, not a raw one", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const seed = seedStandardDataset(db);
@@ -1560,7 +1560,7 @@ describe("budget router — computeActiveSummary sandbox support", () => {
       expect(linkedItem!.contribAmount).toBeCloseTo(50, 2);
 
       const withOverride = await caller.budget.computeActiveSummary({
-        itemAmountOverrides: [
+        itemAmountActiveFields: [
           { itemId: seed.itemIds[0]!, colIndex: 0, amount: 750 },
         ],
       });
@@ -2043,7 +2043,7 @@ describe("budget router — duplicateProfile", () => {
     }
   });
 
-  it("bakes itemAmountOverrides into the copy, keyed by the SOURCE item ids", async () => {
+  it("bakes itemAmountActiveFields into the copy, keyed by the SOURCE item ids", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const schema = await getSchema();
@@ -2052,7 +2052,7 @@ describe("budget router — duplicateProfile", () => {
       const copy = await caller.budget.duplicateProfile({
         sourceProfileId: seed.profileId,
         name: "Edited Copy",
-        itemAmountOverrides: [
+        itemAmountActiveFields: [
           { itemId: seed.itemIds[0]!, colIndex: 0, amount: 2500 },
         ],
       });

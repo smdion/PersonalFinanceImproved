@@ -1,6 +1,6 @@
 /**
  * paycheck.computeSummary / contribution.computeSummary / budget
- * .computeActiveSummary all honor the What-If tab's sandboxContribOverrides
+ * .computeActiveSummary all honor the What-If tab's sandboxContribActiveFields
  * — one more layer on top of the picked Contribution Profile's own active
  * fields, applied via the SAME applyContribActiveFields merge every other
  * active field already goes through.
@@ -42,7 +42,7 @@ async function seedContribAccount(
     .get();
 }
 
-describe("sandboxContribOverrides", () => {
+describe("sandboxContribActiveFields", () => {
   it("contribution.computeSummary uses the edited contribution value", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
@@ -59,7 +59,7 @@ describe("sandboxContribOverrides", () => {
       expect(basePerContrib.annualAmount).toBeCloseTo(100, 2);
 
       const edited = await caller.contribution.computeSummary({
-        sandboxContribOverrides: {
+        sandboxContribActiveFields: {
           [String(contrib.id)]: { contributionValue: "500" },
         },
       });
@@ -94,7 +94,7 @@ describe("sandboxContribOverrides", () => {
       );
 
       const edited = await caller.paycheck.computeSummary({
-        sandboxContribOverrides: {
+        sandboxContribActiveFields: {
           [String(contrib.id)]: { contributionValue: "20" },
         },
       });

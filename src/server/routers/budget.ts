@@ -12,11 +12,11 @@ import {
 import { paycheckRouter } from "./paycheck";
 import {
   zSandboxSalaryEntries,
-  zItemAmountOverrides,
-  toItemAmountOverrideMap,
+  zItemAmountActiveFields,
+  toItemAmountActiveMap,
   zSandboxDeductionEdits,
   zSandboxDeductionAdditions,
-  zSandboxContribOverrides,
+  zSandboxContribActiveFields,
   zSandboxContribAdditions,
   toSalaryActiveMap,
 } from "./_shared";
@@ -473,13 +473,11 @@ export const budgetRouter = createTRPCRouter({
          *  as the rest of the clone, so a mid-copy failure can't leave a
          *  half-edited profile behind (a copy-then-separate-batch-update
          *  would have exactly that window). */
-        itemAmountOverrides: zItemAmountOverrides,
+        itemAmountActiveFields: zItemAmountActiveFields,
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const itemOverrideMap = toItemAmountOverrideMap(
-        input.itemAmountOverrides,
-      );
+      const itemActiveMap = toItemAmountActiveMap(input.itemAmountActiveFields);
       return ctx.db.transaction(async (tx) => {
         const source = await tx
           .select()
@@ -512,11 +510,10 @@ export const budgetRouter = createTRPCRouter({
             items.map((i) => {
               const rawAmounts = i.amounts as number[];
               const amounts =
-                itemOverrideMap.size === 0
+                itemActiveMap.size === 0
                   ? rawAmounts
                   : rawAmounts.map(
-                      (amt, col) =>
-                        itemOverrideMap.get(`${i.id}:${col}`) ?? amt,
+                      (amt, col) => itemActiveMap.get(`${i.id}:${col}`) ?? amt,
                     );
               return {
                 profileId: created.id,
@@ -636,8 +633,8 @@ export const budgetRouter = createTRPCRouter({
           sandboxSalaryEntries: zSandboxSalaryEntries,
           /** The What-If tab's hand-edited budget item amounts — one more
            *  layer on top of the existing per-item resolution chain (see
-           *  toItemAmountOverrideMap's docblock). */
-          itemAmountOverrides: zItemAmountOverrides,
+           *  toItemAmountActiveMap's docblock). */
+          itemAmountActiveFields: zItemAmountActiveFields,
           /** See paycheckRouter.computeSummary's identical fields — threaded
            *  into netMonthlyIncome's paycheck.computeSummary call below so a
            *  deduction edit/addition actually moves the income figure the
@@ -648,7 +645,7 @@ export const budgetRouter = createTRPCRouter({
            *  both to linked-item resolution (below) and netMonthlyIncome's
            *  paycheck.computeSummary call, so a contribution edit moves
            *  both consistently. */
-          sandboxContribOverrides: zSandboxContribOverrides,
+          sandboxContribActiveFields: zSandboxContribActiveFields,
           /** See paycheckRouter.computeSummary's identical field. */
           sandboxContribAdditions: zSandboxContribAdditions,
         })
@@ -762,7 +759,7 @@ export const budgetRouter = createTRPCRouter({
         // contribution account" and "see it in the budget" disagree.
         const activeContribs = applyContribActiveFields(
           profileResult.contribs,
-          input?.sandboxContribOverrides ?? {},
+          input?.sandboxContribActiveFields ?? {},
         );
         const activeJobs = profileResult.jobs.filter((j) => !j.endDate);
         const defaultPeriodsPerYear = resolveJoblessPeriodsPerYear(activeJobs);
@@ -845,25 +842,25 @@ export const budgetRouter = createTRPCRouter({
       // replaces that column's DB amount. For unlinked items, use DB amounts
       // as-is. The What-If tab's hand-edited amounts are ONE MORE LAYER on
       // top of that resolution chain — never a replacement for it, per
-      // toItemAmountOverrideMap's docblock — applied here so every
+      // toItemAmountActiveMap's docblock — applied here so every
       // downstream total (result, allColumnResults, weightedAnnualTotal,
       // netMonthlyIncome's leftover) reflects the sandbox's edits through
       // the ONE resolution path instead of a second client-side computation.
-      const itemOverrideMap = toItemAmountOverrideMap(
-        input?.itemAmountOverrides,
+      const itemActiveMap = toItemAmountActiveMap(
+        input?.itemAmountActiveFields,
       );
-      const applyItemOverrides = (itemId: number, amounts: number[]) =>
-        itemOverrideMap.size === 0
+      const applyItemActiveFields = (itemId: number, amounts: number[]) =>
+        itemActiveMap.size === 0
           ? amounts
           : amounts.map(
-              (amt, col) => itemOverrideMap.get(`${itemId}:${col}`) ?? amt,
+              (amt, col) => itemActiveMap.get(`${itemId}:${col}`) ?? amt,
             );
       const budgetItems = items.map((i) => {
         const dbAmounts = i.amounts as number[];
         if (!i.contributionAccountId)
           return {
             ...i,
-            amounts: applyItemOverrides(i.id, dbAmounts),
+            amounts: applyItemActiveFields(i.id, dbAmounts),
             contribAmounts: null as number[] | null,
             contribAmount: null as number | null,
           };
@@ -874,7 +871,7 @@ export const budgetRouter = createTRPCRouter({
         );
         return {
           ...i,
-          amounts: applyItemOverrides(i.id, contribAmounts),
+          amounts: applyItemActiveFields(i.id, contribAmounts),
           contribAmounts,
           // Kept for the display path that only knows about one figure; it is
           // the SELECTED column's amount, not a value valid for all columns.
@@ -965,8 +962,8 @@ export const budgetRouter = createTRPCRouter({
             ...(input?.sandboxDeductionAdditions
               ? { sandboxDeductionAdditions: input.sandboxDeductionAdditions }
               : {}),
-            ...(input?.sandboxContribOverrides
-              ? { sandboxContribOverrides: input.sandboxContribOverrides }
+            ...(input?.sandboxContribActiveFields
+              ? { sandboxContribActiveFields: input.sandboxContribActiveFields }
               : {}),
             ...(input?.sandboxContribAdditions
               ? { sandboxContribAdditions: input.sandboxContribAdditions }

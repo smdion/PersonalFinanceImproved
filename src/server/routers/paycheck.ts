@@ -36,7 +36,7 @@ import {
   zSandboxSalaryEntries,
   zSandboxDeductionEdits,
   zSandboxDeductionAdditions,
-  zSandboxContribOverrides,
+  zSandboxContribActiveFields,
   zSandboxContribAdditions,
 } from "./_shared";
 import type {
@@ -101,7 +101,7 @@ export const paycheckRouter = createTRPCRouter({
           /** The What-If tab's hand-edited contribution account values —
            *  one more layer on top of the picked Contribution Profile's own
            *  overrides, via the SAME applyContribActiveFields merge. */
-          sandboxContribOverrides: zSandboxContribOverrides,
+          sandboxContribActiveFields: zSandboxContribActiveFields,
           /** The What-If tab's hand-added hypothetical contribution
            *  accounts — no DB row, personId-keyed. */
           sandboxContribAdditions: zSandboxContribAdditions,
@@ -171,7 +171,7 @@ export const paycheckRouter = createTRPCRouter({
       // function, one more layer, never a second resolution path.
       const effectiveContribs = applyContribActiveFields(
         profileResult.contribs,
-        input?.sandboxContribOverrides ?? {},
+        input?.sandboxContribActiveFields ?? {},
       );
       // Hypothetical additions have no DB row — appended for the duration
       // of this request only, never written anywhere. Negative ids can

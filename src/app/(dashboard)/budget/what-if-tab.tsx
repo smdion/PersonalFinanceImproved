@@ -227,9 +227,9 @@ function useSandboxState(salaryId: number | null, budgetId: number | null) {
   const [deductionAdditions, setDeductionAdditions] = useState<
     DeductionAddition[]
   >([]);
-  const [contribOverrides, setContribOverrides] = useState<Map<number, string>>(
-    new Map(),
-  );
+  const [contribActiveFields, setContribActiveFields] = useState<
+    Map<number, string>
+  >(new Map());
   const [contribAdditions, setContribAdditions] = useState<ContribAddition[]>(
     [],
   );
@@ -308,12 +308,15 @@ function useSandboxState(salaryId: number | null, budgetId: number | null) {
   const removeDeductionAddition = (localId: number) =>
     setDeductionAdditions((prev) => prev.filter((d) => d.localId !== localId));
 
-  const setContribOverride = (accountId: number, contributionValue: string) =>
-    setContribOverrides((prev) =>
+  const setContribActiveField = (
+    accountId: number,
+    contributionValue: string,
+  ) =>
+    setContribActiveFields((prev) =>
       new Map(prev).set(accountId, contributionValue),
     );
-  const resetContribOverride = (accountId: number) =>
-    setContribOverrides((prev) => {
+  const resetContribActiveField = (accountId: number) =>
+    setContribActiveFields((prev) => {
       const next = new Map(prev);
       next.delete(accountId);
       return next;
@@ -347,11 +350,11 @@ function useSandboxState(salaryId: number | null, budgetId: number | null) {
     setBudgetDrafts(new Map());
     setDeductionEdits(new Map());
     setDeductionAdditions([]);
-    setContribOverrides(new Map());
+    setContribActiveFields(new Map());
     setContribAdditions([]);
   };
 
-  const itemAmountOverrides = useMemo(
+  const itemAmountActiveFields = useMemo(
     () =>
       Array.from(budgetDrafts.entries()).map(([key, amount]) => {
         const [itemId, colIndex] = key.split(":").map(Number);
@@ -382,13 +385,13 @@ function useSandboxState(salaryId: number | null, budgetId: number | null) {
     [deductionAdditions],
   );
 
-  const sandboxContribOverrides = useMemo(() => {
+  const sandboxContribActiveFields = useMemo(() => {
     const out: Record<string, { contributionValue: string }> = {};
-    for (const [accountId, contributionValue] of contribOverrides) {
+    for (const [accountId, contributionValue] of contribActiveFields) {
       out[String(accountId)] = { contributionValue };
     }
     return out;
-  }, [contribOverrides]);
+  }, [contribActiveFields]);
 
   const sandboxContribAdditions = useMemo(
     () =>
@@ -416,7 +419,7 @@ function useSandboxState(salaryId: number | null, budgetId: number | null) {
     budgetDrafts,
     getDraft,
     setDraft,
-    itemAmountOverrides,
+    itemAmountActiveFields,
     deductionEdits,
     setDeductionEdit,
     resetDeductionEdit,
@@ -426,10 +429,10 @@ function useSandboxState(salaryId: number | null, budgetId: number | null) {
     removeDeductionAddition,
     sandboxDeductionEdits,
     sandboxDeductionAdditions,
-    contribOverrides,
-    setContribOverride,
-    resetContribOverride,
-    sandboxContribOverrides,
+    contribActiveFields,
+    setContribActiveField,
+    resetContribActiveField,
+    sandboxContribActiveFields,
     contribAdditions,
     addContribAddition,
     updateContribAddition,
@@ -441,7 +444,7 @@ function useSandboxState(salaryId: number | null, budgetId: number | null) {
       budgetDrafts.size > 0 ||
       deductionEdits.size > 0 ||
       deductionAdditions.length > 0 ||
-      contribOverrides.size > 0 ||
+      contribActiveFields.size > 0 ||
       contribAdditions.length > 0,
   };
 }
@@ -817,7 +820,7 @@ function WhatIfDeductionsEditor({
 /**
  * Per-person contribution accounts editor — same pin-editable pattern as
  * salary/deductions: pre-filled with the resolved current value, pinning on
- * change, ↺ to reset. Feeds `sandboxContribOverrides`, applied server-side
+ * change, ↺ to reset. Feeds `sandboxContribActiveFields`, applied server-side
  * via the SAME `applyContribActiveFields` merge a Contribution Profile's own
  * active fields go through — one more layer, not a parallel mechanism. Value is
  * NOT percent/100 converted: `percent_of_salary` stores the raw percent
@@ -826,7 +829,7 @@ function WhatIfDeductionsEditor({
  */
 function WhatIfContributionsEditor({
   views,
-  overrides,
+  activeFields,
   onEdit,
   onReset,
   additions,
@@ -838,7 +841,7 @@ function WhatIfContributionsEditor({
   makeRealPendingId,
 }: {
   views: PaycheckPersonView[];
-  overrides: Map<number, string>;
+  activeFields: Map<number, string>;
   onEdit: (accountId: number, contributionValue: string) => void;
   onReset: (accountId: number) => void;
   additions: ContribAddition[];
@@ -919,7 +922,7 @@ function WhatIfContributionsEditor({
                     const isPercent =
                       c.contributionMethod === "percent_of_salary";
                     const liveValue = parseFloat(c.contributionValue);
-                    const override = overrides.get(c.id);
+                    const activeField = activeFields.get(c.id);
                     return (
                       <tr
                         key={c.id}
@@ -939,8 +942,8 @@ function WhatIfContributionsEditor({
                             <WhatIfPinnedCell
                               liveValue={liveValue}
                               pinnedValue={
-                                override !== undefined
-                                  ? parseFloat(override)
+                                activeField !== undefined
+                                  ? parseFloat(activeField)
                                   : undefined
                               }
                               onCommit={(n) => onEdit(c.id, String(n))}
@@ -1145,7 +1148,7 @@ export function WhatIfTab({
     sandboxSalaryEntries: sandbox.salaryEntries,
     sandboxDeductionEdits: sandbox.sandboxDeductionEdits,
     sandboxDeductionAdditions: sandbox.sandboxDeductionAdditions,
-    sandboxContribOverrides: sandbox.sandboxContribOverrides,
+    sandboxContribActiveFields: sandbox.sandboxContribActiveFields,
     sandboxContribAdditions: sandbox.sandboxContribAdditions,
   });
 
@@ -1183,8 +1186,8 @@ export function WhatIfTab({
       ...(Object.keys(sandbox.salaryEntries).length > 0
         ? { sandboxSalaryEntries: sandbox.salaryEntries }
         : {}),
-      ...(sandbox.itemAmountOverrides.length > 0
-        ? { itemAmountOverrides: sandbox.itemAmountOverrides }
+      ...(sandbox.itemAmountActiveFields.length > 0
+        ? { itemAmountActiveFields: sandbox.itemAmountActiveFields }
         : {}),
       ...(sandbox.sandboxDeductionEdits.length > 0
         ? { sandboxDeductionEdits: sandbox.sandboxDeductionEdits }
@@ -1192,8 +1195,8 @@ export function WhatIfTab({
       ...(sandbox.sandboxDeductionAdditions.length > 0
         ? { sandboxDeductionAdditions: sandbox.sandboxDeductionAdditions }
         : {}),
-      ...(Object.keys(sandbox.sandboxContribOverrides).length > 0
-        ? { sandboxContribOverrides: sandbox.sandboxContribOverrides }
+      ...(Object.keys(sandbox.sandboxContribActiveFields).length > 0
+        ? { sandboxContribActiveFields: sandbox.sandboxContribActiveFields }
         : {}),
       ...(sandbox.sandboxContribAdditions.length > 0
         ? { sandboxContribAdditions: sandbox.sandboxContribAdditions }
@@ -1606,9 +1609,9 @@ export function WhatIfTab({
         ) : (
           <WhatIfContributionsEditor
             views={views}
-            overrides={sandbox.contribOverrides}
-            onEdit={sandbox.setContribOverride}
-            onReset={sandbox.resetContribOverride}
+            activeFields={sandbox.contribActiveFields}
+            onEdit={sandbox.setContribActiveField}
+            onReset={sandbox.resetContribActiveField}
             additions={sandbox.contribAdditions}
             onAddAccount={sandbox.addContribAddition}
             onUpdateAddition={sandbox.updateContribAddition}
@@ -1766,8 +1769,11 @@ export function WhatIfTab({
                   duplicateProfile.mutate({
                     sourceProfileId: budgetId!,
                     name: duplicateName.trim(),
-                    ...(sandbox.itemAmountOverrides.length > 0
-                      ? { itemAmountOverrides: sandbox.itemAmountOverrides }
+                    ...(sandbox.itemAmountActiveFields.length > 0
+                      ? {
+                          itemAmountActiveFields:
+                            sandbox.itemAmountActiveFields,
+                        }
                       : {}),
                   })
                 }

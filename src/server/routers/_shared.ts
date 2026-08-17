@@ -117,7 +117,7 @@ export const zSandboxSalaryEntries = z
  * important number) and by `budget.duplicateProfile` (to bake the same edits
  * into a saved copy, in the copy's own transaction).
  */
-export const zItemAmountOverrides = z
+export const zItemAmountActiveFields = z
   .array(
     z.object({
       itemId: z.number().int(),
@@ -128,19 +128,20 @@ export const zItemAmountOverrides = z
   .optional();
 
 /**
- * `itemAmountOverrides` → a `"itemId:colIndex"` → amount lookup.
+ * `itemAmountActiveFields` → a `"itemId:colIndex"` → amount lookup.
  *
- * The override is ONE MORE LAYER on top of the existing amount resolution
- * chain, never a replacement for it: callers must consult this map first and
- * fall back to whatever they resolve today (contribution-linked amount, then
- * the raw stored amount). Skipping the chain for overridden items is the
- * exact bug class this feature exists to avoid.
+ * The active value is ONE MORE LAYER on top of the existing amount
+ * resolution chain, never a replacement for it: callers must consult this
+ * map first and fall back to whatever they resolve today (contribution-linked
+ * amount, then the raw stored amount). Skipping the chain for an item with
+ * an active value is the exact bug class this feature exists to avoid.
  */
-export function toItemAmountOverrideMap(
-  overrides: { itemId: number; colIndex: number; amount: number }[] | undefined,
+export function toItemAmountActiveMap(
+  activeFields:
+    { itemId: number; colIndex: number; amount: number }[] | undefined,
 ): Map<string, number> {
   return new Map(
-    (overrides ?? []).map((o) => [`${o.itemId}:${o.colIndex}`, o.amount]),
+    (activeFields ?? []).map((o) => [`${o.itemId}:${o.colIndex}`, o.amount]),
   );
 }
 
@@ -187,8 +188,8 @@ export const zSandboxDeductionAdditions = z
   .max(MAX_SANDBOX_DEDUCTIONS)
   .optional();
 
-/** Guardrail on the sandbox contribution overrides below. */
-const MAX_SANDBOX_CONTRIB_OVERRIDES = 30;
+/** Guardrail on the sandbox contribution active fields below. */
+const MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS = 30;
 
 /**
  * The What-If tab's hand-edited amount for an EXISTING contribution
@@ -202,11 +203,14 @@ const MAX_SANDBOX_CONTRIB_OVERRIDES = 30;
  * `toNumber`, so a mismatched type here would only matter if something
  * read it raw, which nothing does.
  */
-export const zSandboxContribOverrides = z
+export const zSandboxContribActiveFields = z
   .record(z.string(), z.object({ contributionValue: z.string() }))
-  .refine((v) => Object.keys(v ?? {}).length <= MAX_SANDBOX_CONTRIB_OVERRIDES, {
-    message: `At most ${MAX_SANDBOX_CONTRIB_OVERRIDES} accounts may be edited at once`,
-  })
+  .refine(
+    (v) => Object.keys(v ?? {}).length <= MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS,
+    {
+      message: `At most ${MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS} accounts may be edited at once`,
+    },
+  )
   .optional();
 
 /**
@@ -231,5 +235,5 @@ export const zSandboxContribAdditions = z
       contributionValue: z.string(),
     }),
   )
-  .max(MAX_SANDBOX_CONTRIB_OVERRIDES)
+  .max(MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS)
   .optional();

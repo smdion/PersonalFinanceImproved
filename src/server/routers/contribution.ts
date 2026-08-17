@@ -31,7 +31,7 @@ import {
 import {
   toSalaryActiveMap,
   zSandboxSalaryEntries,
-  zSandboxContribOverrides,
+  zSandboxContribActiveFields,
   zSandboxContribAdditions,
 } from "./_shared";
 import { roundToCents } from "@/lib/utils/math";
@@ -167,7 +167,7 @@ export const contributionRouter = createTRPCRouter({
           /** See paycheckRouter.computeSummary's identical field — must be
            *  sent to both routers or the pay stub and the contribution
            *  cards disagree, same bug class as this hook's own fix. */
-          sandboxContribOverrides: zSandboxContribOverrides,
+          sandboxContribActiveFields: zSandboxContribActiveFields,
           /** See paycheckRouter.computeSummary's identical field. */
           sandboxContribAdditions: zSandboxContribAdditions,
         })
@@ -298,7 +298,7 @@ export const contributionRouter = createTRPCRouter({
       // picked profile's own overrides via the SAME merge function.
       const effectiveContribs = applyContribActiveFields(
         profileResult.contribs,
-        input?.sandboxContribOverrides ?? {},
+        input?.sandboxContribActiveFields ?? {},
       );
       for (const [i, addition] of (
         input?.sandboxContribAdditions ?? []

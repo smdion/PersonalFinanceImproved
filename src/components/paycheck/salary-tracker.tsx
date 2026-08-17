@@ -7,11 +7,11 @@ import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 
 export function SalaryTracker({
   jobId,
-  activeSalaryOverride,
+  activeSalaryValue,
   onToggleSalary,
 }: {
   jobId: number;
-  activeSalaryOverride: number | null;
+  activeSalaryValue: number | null;
   onToggleSalary: (salary: number) => void;
 }) {
   const utils = trpc.useUtils();
@@ -92,7 +92,7 @@ export function SalaryTracker({
             <p className="text-caption text-faint uppercase mb-0.5">Upcoming</p>
             {futureChanges.map((sc) => {
               const scSalary = Number(sc.newSalary);
-              const isActive = activeSalaryOverride === scSalary;
+              const isActive = activeSalaryValue === scSalary;
               return (
                 <div
                   key={sc.id}

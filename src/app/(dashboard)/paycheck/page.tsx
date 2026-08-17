@@ -497,7 +497,7 @@ export default function PaycheckPage() {
               salaryHistorySlot={
                 <SalaryTracker
                   jobId={d.job.id}
-                  activeSalaryOverride={
+                  activeSalaryValue={
                     scenarioSalaryOverridesApplied.find(
                       (o) => o.personId === d.person.id,
                     )?.salary ?? null
