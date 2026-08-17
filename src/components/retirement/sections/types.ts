@@ -119,5 +119,4 @@ export type BudgetProfileSummaries = ReadonlyArray<{
 export type ContribProfileListEntry = {
   id: number;
   name: string;
-  isDefault?: boolean;
 };

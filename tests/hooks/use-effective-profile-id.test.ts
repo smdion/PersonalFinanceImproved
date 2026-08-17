@@ -29,6 +29,7 @@ describe("useEffectiveProfileId", () => {
         profileId: 1,
         source: "global-default",
         isPinned: false,
+        planPinId: null,
       });
     });
 
@@ -65,6 +66,7 @@ describe("useEffectiveProfileId", () => {
         profileId: 2,
         source: "plan-pin",
         isPinned: true,
+        planPinId: 2,
       });
     });
 
@@ -83,6 +85,7 @@ describe("useEffectiveProfileId", () => {
         profileId: 3,
         source: "user-selection",
         isPinned: false,
+        planPinId: null,
       });
     });
 
@@ -99,6 +102,7 @@ describe("useEffectiveProfileId", () => {
         profileId: 1,
         source: "global-default",
         isPinned: false,
+        planPinId: null,
       });
     });
 
@@ -117,6 +121,7 @@ describe("useEffectiveProfileId", () => {
         profileId: 3,
         source: "user-selection",
         isPinned: false,
+        planPinId: null,
       });
     });
 

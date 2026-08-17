@@ -60,10 +60,16 @@ import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { useUpdatePlannedTx } from "@/components/savings/use-update-planned-tx";
 import {
   computeMaxMonthlyFunding,
+  deriveBudgetMonthlyTotal,
   type CapacityPerson,
 } from "@/lib/calculators/savings-capacity";
-import { resolveContributionProfileId } from "@/lib/calculators/contribution-profile-resolution";
+import {
+  resolveContributionProfileId,
+  resolveSalaryProfileId,
+} from "@/lib/calculators/contribution-profile-resolution";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
+import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
+import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 
 export default function SavingsPage() {
   const user = useUser();
@@ -89,7 +95,7 @@ export default function SavingsPage() {
     trpc.contributionProfile.list.useQuery();
   // Plan pin -> globally-active contribution profile (single computation
   // path — matches expenses/page.tsx, paycheck/page.tsx, contributions/page.tsx).
-  const { profileId: activeContribProfileId } = useEffectiveProfileId(
+  const { planPinId: planContribProfileId } = useEffectiveProfileId(
     "contribution",
     {
       validIds: contribProfilesList?.map((p) => p.id),
@@ -118,30 +124,71 @@ export default function SavingsPage() {
   const { data: apiCategoriesData } = trpc.budget.listApiCategories.useQuery();
 
   const salaryOverrides = useSalaryOverrides();
+
+  // Independent Salary Profile axis (Plan pin -> column pin -> globally-active
+  // setting) — mirrors the Contribution axis below so a per-column Salary
+  // Profile pin (set from Manage Modes) isn't silently ignored here while
+  // computeActiveSummary honors it for the Budget tab's item $ amounts.
+  const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
+  const { data: salaryProfilesList } = trpc.salaryProfile.list.useQuery();
+  const { planPinId: planSalaryProfileId } = useEffectiveProfileId("salary", {
+    validIds: salaryProfilesList?.map((p) => p.id),
+    localSelection: null,
+    globalDefaultId: rawActiveSalaryProfileId,
+  });
+  // Tiers, not a pre-resolved id — see docs/RULES.md "Profile Pins" and
+  // contribution-profile-resolution.ts: folding the Plan pin into the
+  // global-default tier is what let a column pin outrank an active Plan.
+  const contributionProfileTiers = {
+    planPinId: planContribProfileId,
+    localSelectionId: null,
+    globalDefaultId: rawActiveContribProfileId,
+  };
+  const salaryProfileTiers = {
+    planPinId: planSalaryProfileId,
+    localSelectionId: null,
+    globalDefaultId: rawActiveSalaryProfileId,
+  };
   const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: budgetColumn,
-    activeContribProfileId,
+    contributionProfile: contributionProfileTiers,
+    salaryProfile: salaryProfileTiers,
     ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
   });
-  const { data: budgetProfilesList } = trpc.budget.listProfiles.useQuery();
+  const { data: budgetProfilesList } = useBudgetProfilesList();
 
   // Derive contribution profile from the budget column's linked profile
   // (holistic rule) — resolveContributionProfileId is the only path this
   // and computeActiveSummary/use-budget-derived-data.ts should use, so
   // budget item $ amounts, this page's pool, and the payroll breakdown
   // never disagree about which contribution profile is in effect.
-  const effectiveContribProfileId = resolveContributionProfileId(
-    budgetData?.profile?.columnContributionProfileIds as
+  const effectiveContribProfileId = resolveContributionProfileId({
+    ...contributionProfileTiers,
+    columnPinIds: budgetData?.profile?.columnContributionProfileIds as
       (number | null)[] | null,
-    budgetColumn,
-    budgetData?.columnLabels?.length ?? 0,
-    activeContribProfileId,
-  );
+    column: budgetColumn,
+    numColumns: budgetData?.columnLabels?.length ?? 0,
+  });
+  // Same holistic rule for the Salary axis — resolveSalaryProfileId is the
+  // only path this and computeActiveSummary should use for column
+  // resolution, so this page's payroll preview never disagrees with the
+  // Budget tab's linked item $ amounts about which Salary Profile is in
+  // effect for the selected column.
+  const effectiveSalaryProfileId = resolveSalaryProfileId({
+    ...salaryProfileTiers,
+    columnPinIds: budgetData?.profile?.columnSalaryProfileIds as
+      (number | null)[] | null,
+    column: budgetColumn,
+    numColumns: budgetData?.columnLabels?.length ?? 0,
+  });
 
   const paycheckInput = {
     ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
     ...(effectiveContribProfileId != null
       ? { contributionProfileId: effectiveContribProfileId }
+      : {}),
+    ...(effectiveSalaryProfileId != null
+      ? { salaryProfileId: effectiveSalaryProfileId }
       : {}),
   };
   const { data: paycheckData } = trpc.paycheck.computeSummary.useQuery(
@@ -149,11 +196,7 @@ export default function SavingsPage() {
   );
 
   // ── Budget leftover ──
-  const budgetMonthlyTotal = budgetData?.result
-    ? budgetData.columnMonths
-      ? (budgetData.weightedAnnualTotal ?? 0) / 12
-      : (budgetData.result.totalMonthly ?? 0)
-    : null;
+  const budgetMonthlyTotal = deriveBudgetMonthlyTotal(budgetData);
   const maxMonthlyFunding =
     paycheckData && budgetMonthlyTotal !== null
       ? computeMaxMonthlyFunding(
@@ -187,17 +230,14 @@ export default function SavingsPage() {
     {
       selectedColumn: budgetColumn,
       profileId: effectiveRecalcProfileId ?? undefined,
-      activeContribProfileId,
+      contributionProfile: contributionProfileTiers,
       ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
     },
     { enabled: isPreviewingOtherProfile },
   );
-  const recalcMonthlyTotal =
-    isPreviewingOtherProfile && recalcBudgetData?.result
-      ? recalcBudgetData.columnMonths
-        ? (recalcBudgetData.weightedAnnualTotal ?? 0) / 12
-        : (recalcBudgetData.result.totalMonthly ?? 0)
-      : null;
+  const recalcMonthlyTotal = isPreviewingOtherProfile
+    ? deriveBudgetMonthlyTotal(recalcBudgetData)
+    : null;
   const recalcMaxMonthlyFunding =
     isPreviewingOtherProfile && paycheckData && recalcMonthlyTotal !== null
       ? computeMaxMonthlyFunding(
@@ -231,7 +271,6 @@ export default function SavingsPage() {
   // ── Top-level form state (lives here to render in correct layout position) ──
   const [newFund, setNewFund] = useState<NewFundForm>({
     name: "",
-    monthlyContribution: "",
     targetAmount: "",
     targetMode: "fixed",
     targetDate: "",
@@ -470,7 +509,6 @@ export default function SavingsPage() {
       {
         name: newFund.name,
         parentGoalId: newFund.parentGoalId ?? null,
-        monthlyContribution: newFund.monthlyContribution || "0",
         targetAmount: newFund.targetAmount || null,
         targetMode: newFund.targetMode,
         targetDate: newFund.targetDate || null,
@@ -482,7 +520,6 @@ export default function SavingsPage() {
         onSuccess: () => {
           setNewFund({
             name: "",
-            monthlyContribution: "",
             targetAmount: "",
             targetMode: "fixed",
             targetDate: "",
@@ -912,6 +949,7 @@ export default function SavingsPage() {
               />
             )}
             <FundManagementSection
+              activeProfileId={activeProfileId}
               rawGoals={rawGoals}
               goalProjections={goalProjections}
               savings={savings}

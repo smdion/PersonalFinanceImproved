@@ -111,10 +111,12 @@ describe("budget router", () => {
     });
 
     it("computes annualTotal from column 0 * 12 when no columnMonths set", async () => {
-      // seeded items: Rent 2000 + Groceries 600 + Dining 200 = 2800/month
+      // seeded items: Rent 2000 + Groceries 600 + Dining 200 = 2800/month,
+      // plus seedStandardDataset's default goal at $500/mo savings — annualTotal
+      // is spending + savings, not budget items alone.
       const result = await caller.budget.listProfiles();
       const main = result.find((p) => p.id === profileId)!;
-      expect(main.annualTotal).toBe(2800 * 12);
+      expect(main.annualTotal).toBe((2800 + 500) * 12);
     });
 
     it("returns empty array when no profiles exist in a fresh environment", async () => {
@@ -824,9 +826,11 @@ describe("budget router", () => {
     it("weighted annualTotal uses columnMonths when set", async () => {
       // col0: Rent 2000 + Groceries 600 + Dining 200 = 2800 * 6 months
       // col1: all items are 0 * 6 months
+      // plus seedStandardDataset's default goal at $500/mo savings * 12
+      // (savings funding doesn't vary by mode, so it's not weighted by column).
       const profiles = await caller.budget.listProfiles();
       const main = profiles.find((p) => p.id === profileId)!;
-      expect(main.annualTotal).toBe(2800 * 6 + 0 * 6);
+      expect(main.annualTotal).toBe(2800 * 6 + 0 * 6 + 500 * 12);
     });
 
     it("throws when columnMonths length does not match column count", async () => {

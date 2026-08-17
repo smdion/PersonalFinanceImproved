@@ -39,6 +39,7 @@ export function runPreYearSetup(
     validatedPostRetirementInflation,
     salaryOverrideMap,
     perPersonSalaryOverrides,
+    currentYearBonusAdjustment,
     budgetOverrideMap,
     returnRateMap,
     sortedProfileSwitches,
@@ -171,6 +172,27 @@ export function runPreYearSetup(
     }
   }
 
+  // Year-0-only bonus adjustment (current-year pinned bonus vs. the
+  // full-formula bonus already baked into state.projectedSalary/
+  // projectedSalaryByPerson). Applied to a local effectiveSalary — never to
+  // state itself — so it doesn't compound into future years' growth.
+  let effectiveSalary = state.projectedSalary;
+  const effectiveSalaryByPerson = new Map(state.projectedSalaryByPerson);
+  let hasBonusAdjustment = false;
+  if (isAccumulation && year === input.asOfDate.getFullYear()) {
+    for (const [personId, delta] of currentYearBonusAdjustment) {
+      if (delta === 0) continue;
+      hasBonusAdjustment = true;
+      effectiveSalary += delta;
+      if (effectiveSalaryByPerson.has(personId)) {
+        effectiveSalaryByPerson.set(
+          personId,
+          effectiveSalaryByPerson.get(personId)! + delta,
+        );
+      }
+    }
+  }
+
   // Reset expenses to decumulation budget on the FIRST decumulation year.
   // Do NOT key on `age === retirementAge`: that check fails in the mid-year
   // case (retirementAge === currentAge) because by yearIndex=1 the age has already
@@ -249,5 +271,8 @@ export function runPreYearSetup(
     returnRate,
     strategyAction,
     totalBalance,
+    effectiveSalary,
+    effectiveSalaryByPerson,
+    hasBonusAdjustment,
   };
 }

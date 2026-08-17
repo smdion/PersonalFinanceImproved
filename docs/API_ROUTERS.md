@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**304 procedures across 34 routers.**
+**327 procedures across 36 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -57,38 +57,39 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `budget`
 
-| Procedure                            | Kind     | Auth                 | Description                                                                                                                                                                                 |
-| ------------------------------------ | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `addColumn`                          | mutation | `budgetProcedure`    | Add a new column (budget mode) to the active profile.                                                                                                                                       |
-| `computeActiveSummary`               | query    | `protectedProcedure` | Returns the active budget profile's calculator result for a given column.                                                                                                                   |
-| `createItem`                         | mutation | `budgetProcedure`    | Create a new budget item.                                                                                                                                                                   |
-| `createProfile`                      | mutation | `budgetProcedure`    | Create a new budget profile, pre-populated with standard template categories.                                                                                                               |
-| `deleteItem`                         | mutation | `budgetProcedure`    | Delete a budget item.                                                                                                                                                                       |
-| `deleteProfile`                      | mutation | `budgetProcedure`    | Delete a budget profile (cannot delete the active one).                                                                                                                                     |
-| `linkContributionAccount`            | mutation | `budgetProcedure`    | Link a budget item to a specific contribution account.                                                                                                                                      |
-| `linkToApi`                          | mutation | `budgetProcedure`    | Link a budget item to a budget API category.                                                                                                                                                |
-| `listApiActuals`                     | query    | `protectedProcedure` | Get API actuals for linked budget items (activity + balance from cached month data).                                                                                                        |
-| `listApiCategories`                  | query    | `protectedProcedure` | Get cached categories from the active (or specified) budget API for the category picker.                                                                                                    |
-| `listContribAccountsForLinking`      | query    | `protectedProcedure` | jobId === null means the contribution comes from take-home pay (IRA, taxable brokerage, etc.). Job-linked contributions (401k, HSA, ESPP) are payroll-deducted and already on the paycheck. |
-| `listProfiles`                       | query    | `protectedProcedure` | List all budget profiles with summary totals (for profile sidebar).                                                                                                                         |
-| `moveItem`                           | mutation | `budgetProcedure`    | Move a budget item to a different category.                                                                                                                                                 |
-| `removeColumn`                       | mutation | `budgetProcedure`    | Remove a column (budget mode) from the active profile.                                                                                                                                      |
-| `renameColumn`                       | mutation | `budgetProcedure`    | Rename a column (budget mode).                                                                                                                                                              |
-| `renameProfile`                      | mutation | `budgetProcedure`    | Rename a budget profile.                                                                                                                                                                    |
-| `reorderCategory`                    | mutation | `budgetProcedure`    | block. No-ops at the first/last category boundary.                                                                                                                                          |
-| `reorderItem`                        | mutation | `budgetProcedure`    | category. No-ops at the category's first/last item boundary — moving an item into a different category is the "Move..." dropdown's job (moveItem above), not this.                          |
-| `setActiveProfile`                   | mutation | `budgetProcedure`    | Set a profile as the active one (deactivate all others).                                                                                                                                    |
-| `setSyncDirection`                   | mutation | `budgetProcedure`    | Change sync direction on a linked budget item.                                                                                                                                              |
-| `syncBudgetFromApi`                  | mutation | `budgetProcedure`    | Pull budgeted amounts from API for all linked items (API -> Ledgr).                                                                                                                         |
-| `syncBudgetToApi`                    | mutation | `budgetProcedure`    | Push budget amounts to API for all linked items (Ledgr -> API).                                                                                                                             |
-| `unlinkContributionAccount`          | mutation | `budgetProcedure`    | Remove contribution account link from a budget item.                                                                                                                                        |
-| `unlinkFromApi`                      | mutation | `budgetProcedure`    | Remove API link from a budget item.                                                                                                                                                         |
-| `updateCategoryEssential`            | mutation | `budgetProcedure`    | Toggle isEssential for all items in a category.                                                                                                                                             |
-| `updateColumnContributionProfileIds` | mutation | `budgetProcedure`    | Update per-column contribution profile assignments.                                                                                                                                         |
-| `updateColumnMonths`                 | mutation | `budgetProcedure`    | Update column months for weighted budget profiles.                                                                                                                                          |
-| `updateItemAmount`                   | mutation | `budgetProcedure`    | Update a single amount cell for a budget item.                                                                                                                                              |
-| `updateItemAmounts`                  | mutation | `budgetProcedure`    | Batch update multiple amount cells.                                                                                                                                                         |
-| `updateItemEssential`                | mutation | `budgetProcedure`    | Update a budget item's essential flag.                                                                                                                                                      |
+| Procedure                            | Kind     | Auth                 | Description                                                                                                                                                                                              |
+| ------------------------------------ | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `addColumn`                          | mutation | `budgetProcedure`    | Add a new column (budget mode) to the target profile (active if not given).                                                                                                                              |
+| `createItem`                         | mutation | `budgetProcedure`    | Create a new budget item.                                                                                                                                                                                |
+| `createProfile`                      | mutation | `budgetProcedure`    | categories. Optionally links every starting column to a Contribution Profile so the new profile's income/take-home math uses that Contribution Profile from the start, instead of defaulting to Live and |
+| `deleteItem`                         | mutation | `budgetProcedure`    | Delete a budget item.                                                                                                                                                                                    |
+| `deleteProfile`                      | mutation | `budgetProcedure`    | Delete a budget profile (cannot delete the active one).                                                                                                                                                  |
+| `duplicateProfile`                   | mutation | `budgetProcedure`    | account) is a live external-write hazard, and a copy is exactly how you'd create one by accident. - Forced: `isActive: false`. Duplicating is not activating. Same `budget` permission gate as createPro |
+| `linkContributionAccount`            | mutation | `budgetProcedure`    | Link a budget item to a specific contribution account.                                                                                                                                                   |
+| `linkToApi`                          | mutation | `budgetProcedure`    | Link a budget item to a budget API category.                                                                                                                                                             |
+| `listApiActuals`                     | query    | `protectedProcedure` | Get API actuals for linked budget items (activity + balance from cached month data).                                                                                                                     |
+| `listApiCategories`                  | query    | `protectedProcedure` | Get cached categories from the active (or specified) budget API for the category picker.                                                                                                                 |
+| `listContribAccountsForLinking`      | query    | `protectedProcedure` | jobId === null means the contribution comes from take-home pay (IRA, taxable brokerage, etc.). Job-linked contributions (401k, HSA, ESPP) are payroll-deducted and already on the paycheck.              |
+| `listProfiles`                       | query    | `protectedProcedure` | allocations and per-mode weighting, so resolving the pay side here too keeps it to one round trip and one computation path. Plan pins are session/browser state, so the caller supplies them; the global |
+| `moveItem`                           | mutation | `budgetProcedure`    | Move a budget item to a different category.                                                                                                                                                              |
+| `removeColumn`                       | mutation | `budgetProcedure`    | Remove a column (budget mode) from the target profile (active if not given).                                                                                                                             |
+| `renameColumn`                       | mutation | `budgetProcedure`    | Rename a column (budget mode).                                                                                                                                                                           |
+| `renameProfile`                      | mutation | `budgetProcedure`    | Rename a budget profile.                                                                                                                                                                                 |
+| `reorderCategory`                    | mutation | `budgetProcedure`    | block. No-ops at the first/last category boundary.                                                                                                                                                       |
+| `reorderItem`                        | mutation | `budgetProcedure`    | category. No-ops at the category's first/last item boundary — moving an item into a different category is the "Move..." dropdown's job (moveItem above), not this.                                       |
+| `setActiveProfile`                   | mutation | `budgetProcedure`    | — an error between the deactivate-all and activate-one writes must not be able to leave zero active profiles (every downstream reader of getActiveBudgetProfile silently treats that as "no profile").   |
+| `setSyncDirection`                   | mutation | `budgetProcedure`    | Change sync direction on a linked budget item.                                                                                                                                                           |
+| `syncBudgetFromApi`                  | mutation | `budgetProcedure`    | Pull budgeted amounts from API for all linked items (API -> Ledgr).                                                                                                                                      |
+| `syncBudgetToApi`                    | mutation | `budgetProcedure`    | Push budget amounts to API for all linked items (Ledgr -> API).                                                                                                                                          |
+| `unlinkContributionAccount`          | mutation | `budgetProcedure`    | Remove contribution account link from a budget item.                                                                                                                                                     |
+| `unlinkFromApi`                      | mutation | `budgetProcedure`    | Remove API link from a budget item.                                                                                                                                                                      |
+| `updateCategoryEssential`            | mutation | `budgetProcedure`    | Toggle isEssential for all items in a category.                                                                                                                                                          |
+| `updateColumnContributionProfileIds` | mutation | `budgetProcedure`    | Update per-column contribution profile assignments.                                                                                                                                                      |
+| `updateColumnMonths`                 | mutation | `budgetProcedure`    | Update column months for weighted budget profiles.                                                                                                                                                       |
+| `updateColumnSalaryProfileIds`       | mutation | `budgetProcedure`    | contribution-profile assignments above).                                                                                                                                                                 |
+| `updateItemAmount`                   | mutation | `budgetProcedure`    | Update a single amount cell for a budget item.                                                                                                                                                           |
+| `updateItemAmounts`                  | mutation | `budgetProcedure`    | Batch update multiple amount cells.                                                                                                                                                                      |
+| `updateItemEssential`                | mutation | `budgetProcedure`    | Update a budget item's essential flag.                                                                                                                                                                   |
 
 ## `contribution`
 
@@ -98,14 +99,14 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `contribution-profiles`
 
-| Procedure | Kind     | Auth                           | Description                                                                                                                                                  |
-| --------- | -------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `create`  | mutation | `contributionProfileProcedure` | Create a new contribution profile.                                                                                                                           |
-| `delete`  | mutation | `contributionProfileProcedure` | Delete a contribution profile (cannot delete default).                                                                                                       |
-| `getById` | query    | `protectedProcedure`           | Get a single profile with fully resolved per-account details.                                                                                                |
-| `list`    | query    | `protectedProcedure`           | List all contribution profiles with resolved summary totals.                                                                                                 |
-| `resolve` | query    | `protectedProcedure`           | Resolve a profile to aggregate totals — used by the relocation tool and any other consumer that needs salary/contribution/match numbers for a given profile. |
-| `update`  | mutation | `contributionProfileProcedure` | Update an existing contribution profile.                                                                                                                     |
+| Procedure | Kind     | Auth                           | Description                                                                                                                                                                                              |
+| --------- | -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create`  | mutation | `contributionProfileProcedure` | Create a new contribution profile.                                                                                                                                                                       |
+| `delete`  | mutation | `contributionProfileProcedure` | active-profile setting must always resolve to a real row), when it's the globally-active selection, and when any Plan still pins it — the scenarios FK is `set null`, so without that check deleting wou |
+| `getById` | query    | `protectedProcedure`           | Get a single profile with fully resolved per-account details.                                                                                                                                            |
+| `list`    | query    | `protectedProcedure`           | List all contribution profiles with resolved summary totals.                                                                                                                                             |
+| `resolve` | query    | `protectedProcedure`           | Resolve a profile to aggregate totals — used by the relocation tool and any other consumer that needs salary/contribution/match numbers for a given profile.                                             |
+| `update`  | mutation | `contributionProfileProcedure` | Update an existing contribution profile.                                                                                                                                                                 |
 
 ## `data-browser`
 
@@ -174,6 +175,13 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `updateAnnual`           | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
 | `updateCostBasis`        | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
 
+## `projection/coast-fire`
+
+| Procedure            | Kind  | Auth                 | Description                                                                                                                                                                                              |
+| -------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `computeCoastFire`   | query | `protectedProcedure` | ~log₂(retirementAge - currentAge) engine runs. Success criterion: `portfolioDepletionAge === null` AND `sustainableWithdrawal >= projectedExpenses` at the first decumulation year. See `findCoastFireAg |
+| `computeCoastFireMC` | query | `protectedProcedure` | If the re-probe also passes, the true earliest age may be lower but we return the search result honestly with a warning. Cost: ~5-6 probes × 1 MC run × 1000 trials ≈ 4-6s wall clock (profiled 2026-04- |
+
 ## `projection/monte-carlo`
 
 | Procedure                    | Kind     | Auth                | Description      |
@@ -207,6 +215,16 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | ------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `computeStressTest` | query | `protectedProcedure` | returnRates / inflationRate / salaryGrowthRate / withdrawalRate before calling calculateProjection. Returns summary metrics (nest egg at retirement, sustainable withdrawal, depletion age) so the PlanH |
 
+## `salary-profiles`
+
+| Procedure | Kind     | Auth                           | Description                                                                                                                                                                                              |
+| --------- | -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create`  | mutation | `contributionProfileProcedure` | Under the presence encoding an empty map is already complete: it says "this profile pins nothing", which is exactly what a fresh profile means. The old encoding had to enumerate every person to say th |
+| `delete`  | mutation | `contributionProfileProcedure` | Delete a profile. Blocked when it's the last one left (the active-profile setting must always resolve to a real row), when it's the globally-active selection, and when any Plan still pins it — the sce |
+| `getById` | query    | `protectedProcedure`           | One profile plus per-person live salary rows, so the editor can show what "follows job" currently resolves to without a second round trip.                                                               |
+| `list`    | query    | `protectedProcedure`           | All salary profiles, oldest first. Real rows only.                                                                                                                                                       |
+| `update`  | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
+
 ## `savings`
 
 | Procedure                   | Kind     | Auth                 | Description                                                                                                                                                                                              |
@@ -222,21 +240,29 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `delete`                    | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
 | `deleteMonth`               | mutation | `savingsProcedure`   | Delete all overrides for ALL goals in one or more months.                                                                                                                                                |
 | `getMonthlyHistory`         | query    | `protectedProcedure` | All recorded monthly balances for active savings goals (for history view).                                                                                                                               |
+| `getSettlementSuggestions`  | query    | `protectedProcedure` | this deliberately doesn't try to match dollar amounts: once ANY real transaction posts in the goal's linked category on/after the planned date, in the same month, the live balance already reflects it  |
 | `linkGoalToApi`             | mutation | `savingsProcedure`   | Link a savings goal to a budget API category.                                                                                                                                                            |
 | `linkReimbursementCategory` | mutation | `savingsProcedure`   | Link a reimbursement tracking category to the e-fund goal.                                                                                                                                               |
+| `list`                      | query    | `protectedProcedure` | Every active goal's funding for a given profile.                                                                                                                                                         |
 | `list`                      | query    | `protectedProcedure` | Load routing rules for all jobs.                                                                                                                                                                         |
 | `listApiBalances`           | query    | `protectedProcedure` | Get API category balances for linked savings goals (for display).                                                                                                                                        |
 | `listEfundReimbursements`   | query    | `protectedProcedure` | Get parsed reimbursement items from the linked YNAB category's note field.                                                                                                                               |
+| `listSummaries`             | query    | `protectedProcedure` | nonzero allocation) for every budget profile at once — for the profile-picker sidebar. Routes through the same resolver as `list` above (one call per profile) rather than re-deriving totals independen |
 | `lockInAllocationPercent`   | mutation | `savingsProcedure`   | an accurate description of "what % of current income this is" rather than a stale figure computed against a smaller pool. allocation_percent is decimal(6,3) — rounded to 3 decimals, which at typical p |
 | `pushContributionsToApi`    | mutation | `savingsProcedure`   | - Emergency fund: pushes computed targetAmount (targetMonths × essentials) via updateCategoryTargetBalance — amount only, never touches the goal's type/cadence (that has to be configured once, manuall |
-| `recalculateAllocation`     | mutation | `savingsProcedure`   | the budget API until the user explicitly asks for it here. Omitting goalId recalculates every active percentage-based goal from one shared live-pool snapshot (a single fetch applied to all rows, so a  |
+| `recalculateAllocation`     | mutation | `savingsProcedure`   | explicitly asks for it here. Omitting goalId recalculates every active percentage-based goal (for the target profile) from one shared live-pool snapshot (a single fetch applied to all rows, so a batch |
 | `rematerialize`             | mutation | `savingsProcedure`   | Re-run materializer without changing rules (e.g. after goal rename).                                                                                                                                     |
+| `resetAllToZero`            | mutation | `savingsProcedure`   | Set every active goal's funding to $0/no-percent for one profile.                                                                                                                                        |
 | `save`                      | mutation | `savingsProcedure`   | Save routing rules for a single job and re-materialize. Preserves existing overrides and growth settings.                                                                                                |
 | `saveGrowth`                | mutation | `savingsProcedure`   | Persist growth rates for a job, then re-materialize. Net pay is always recomputed server-side.                                                                                                           |
 | `saveOverride`              | mutation | `savingsProcedure`   | Upsert or delete a one-time override for a specific extra-paycheck month.                                                                                                                                |
+| `settle`                    | mutation | `savingsProcedure`   | Settlement is per-occurrence (plannedTxId + occurrenceMonth), never per-row — a recurring row has many future occurrences, and settling one must not hide the others from the projection. Never invoked  |
+| `settleMany`                | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
 | `unlinkGoalFromApi`         | mutation | `savingsProcedure`   | Unlink a savings goal from a budget API category.                                                                                                                                                        |
+| `unsettle`                  | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
 | `update`                    | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
 | `upsert`                    | mutation | `savingsProcedure`   | ══ ALLOCATION OVERRIDES ══                                                                                                                                                                               |
+| `upsert`                    | mutation | `savingsProcedure`   | of the live pool (contrast with recalculateAllocation/ lockInAllocationPercent, which also write here but derive the value from the live pool instead of taking it directly from the caller).            |
 | `upsertMonth`               | mutation | `savingsProcedure`   | Atomically upsert overrides for ALL goals in a single month (pool-constrained).                                                                                                                          |
 | `upsertMonthRange`          | mutation | `savingsProcedure`   | Atomically upsert overrides for ALL goals across a month range (fill-forward).                                                                                                                           |
 
@@ -268,7 +294,10 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `list`                          | query    | `protectedProcedure`   | ══ RELOCATION SCENARIOS ══                                                                            |
 | `list`                          | query    | `protectedProcedure`   | ══ PERFORMANCE ACCOUNTS (master registry) ══                                                          |
 | `save`                          | mutation | `adminProcedure`       | (no description)                                                                                      |
+| `setBudgetProfilePin`           | mutation | `scenarioProcedure`    | Pin (or clear, with null) which Budget Profile is "active" when this Plan is selected.                |
+| `setContributionProfilePin`     | mutation | `scenarioProcedure`    | Pin (or clear, with null) which Contribution Profile is "active" when this Plan is selected.          |
 | `setOverride`                   | mutation | `scenarioProcedure`    | Update a single override within a scenario's overrides JSONB                                          |
+| `setSalaryProfilePin`           | mutation | `scenarioProcedure`    | Pin (or clear, with null) which Salary Profile is "active" when this Plan is selected.                |
 | `update`                        | mutation | `scenarioProcedure`    | (no description)                                                                                      |
 | `update`                        | mutation | `savingsProcedure`     | (no description)                                                                                      |
 | `update`                        | mutation | `performanceProcedure` | (no description)                                                                                      |
@@ -296,38 +325,42 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `settings/onboarding`
 
-| Procedure              | Kind     | Auth                 | Description                                                                                                                                                                                      |
-| ---------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `completeOnboarding`   | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                 |
-| `createLocalAdmin`     | mutation | `publicProcedure`    | Create the initial local admin account during onboarding. Guard: only callable when no local admins exist yet. Uses publicProcedure because no session exists before the first admin is created. |
-| `isOnboardingComplete` | query    | `protectedProcedure` | (no description)                                                                                                                                                                                 |
-| `testOidcConnection`   | query    | `publicProcedure`    | Test whether OIDC (Authentik) is configured and reachable. Checks env vars and fetches the issuer's well-known endpoint.                                                                         |
+| Procedure              | Kind     | Auth                 | Description                                                                                                                                                                                              |
+| ---------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `completeOnboarding`   | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `createLocalAdmin`     | mutation | `publicProcedure`    | never creates a local_admins row, so table-emptiness alone would leave this endpoint permanently open. Runs inside a transaction so the check-then-insert can't race two concurrent first-run requests i |
+| `isOnboardingComplete` | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
+| `testOidcConnection`   | query    | `publicProcedure`    | Test whether OIDC (Authentik) is configured and reachable. Checks env vars and fetches the issuer's well-known endpoint.                                                                                 |
 
 ## `settings/paycheck`
 
-| Procedure            | Kind     | Auth                 | Description      |
-| -------------------- | -------- | -------------------- | ---------------- |
-| `create`             | mutation | `adminProcedure`     | (no description) |
-| `create`             | mutation | `adminProcedure`     | (no description) |
-| `create`             | mutation | `adminProcedure`     | (no description) |
-| `create`             | mutation | `adminProcedure`     | (no description) |
-| `create`             | mutation | `adminProcedure`     | (no description) |
-| `delete`             | mutation | `adminProcedure`     | (no description) |
-| `delete`             | mutation | `adminProcedure`     | (no description) |
-| `delete`             | mutation | `adminProcedure`     | (no description) |
-| `delete`             | mutation | `adminProcedure`     | (no description) |
-| `delete`             | mutation | `adminProcedure`     | (no description) |
-| `list`               | query    | `protectedProcedure` | (no description) |
-| `list`               | query    | `protectedProcedure` | (no description) |
-| `list`               | query    | `protectedProcedure` | (no description) |
-| `list`               | query    | `protectedProcedure` | (no description) |
-| `list`               | query    | `protectedProcedure` | (no description) |
-| `setPriorYearAmount` | mutation | `adminProcedure`     | (no description) |
-| `update`             | mutation | `adminProcedure`     | (no description) |
-| `update`             | mutation | `adminProcedure`     | (no description) |
-| `update`             | mutation | `adminProcedure`     | (no description) |
-| `update`             | mutation | `adminProcedure`     | (no description) |
-| `update`             | mutation | `adminProcedure`     | (no description) |
+| Procedure            | Kind     | Auth                 | Description                                                                    |
+| -------------------- | -------- | -------------------- | ------------------------------------------------------------------------------ |
+| `create`             | mutation | `adminProcedure`     | (no description)                                                               |
+| `create`             | mutation | `adminProcedure`     | (no description)                                                               |
+| `create`             | mutation | `adminProcedure`     | (no description)                                                               |
+| `create`             | mutation | `adminProcedure`     | (no description)                                                               |
+| `create`             | mutation | `adminProcedure`     | (no description)                                                               |
+| `delete`             | mutation | `adminProcedure`     | (no description)                                                               |
+| `delete`             | mutation | `adminProcedure`     | (no description)                                                               |
+| `delete`             | mutation | `adminProcedure`     | (no description)                                                               |
+| `delete`             | mutation | `adminProcedure`     | (no description)                                                               |
+| `delete`             | mutation | `adminProcedure`     | (no description)                                                               |
+| `delete`             | mutation | `adminProcedure`     | (no description)                                                               |
+| `deleteByJobYear`    | mutation | `adminProcedure`     | needing to know the row id first (mirrors the upsert-by-key ergonomics above). |
+| `list`               | query    | `protectedProcedure` | (no description)                                                               |
+| `list`               | query    | `protectedProcedure` | (no description)                                                               |
+| `list`               | query    | `protectedProcedure` | (no description)                                                               |
+| `list`               | query    | `protectedProcedure` | (no description)                                                               |
+| `list`               | query    | `protectedProcedure` | (no description)                                                               |
+| `list`               | query    | `protectedProcedure` | (no description)                                                               |
+| `setPriorYearAmount` | mutation | `adminProcedure`     | (no description)                                                               |
+| `update`             | mutation | `adminProcedure`     | (no description)                                                               |
+| `update`             | mutation | `adminProcedure`     | (no description)                                                               |
+| `update`             | mutation | `adminProcedure`     | (no description)                                                               |
+| `update`             | mutation | `adminProcedure`     | (no description)                                                               |
+| `update`             | mutation | `adminProcedure`     | (no description)                                                               |
+| `upsert`             | mutation | `adminProcedure`     | has to know whether a row already exists for that year.                        |
 
 ## `settings/retirement`
 
@@ -379,7 +412,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 | Procedure               | Kind     | Auth                 | Description                                                                                                                                                                                             |
 | ----------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `getStatus`             | query    | `protectedProcedure` | Connection status for the Settings integrations card.                                                                                                                                                   |
+| `getStatus`             | query    | `protectedProcedure` | Connection status for the Settings integrations card and the sidebar's Data Updated tooltip.                                                                                                            |
 | `listAccounts`          | query    | `protectedProcedure` | matched-group level: every SimpleFIN account linked to a given performance account shares the same `change`, comparing their _combined_ live balance against that one snapshot balance. A per-row delta |
 | `listBalanceHistory`    | query    | `protectedProcedure` | Snapshot history for the dashboard sparkline.                                                                                                                                                           |
 | `listMatchableAccounts` | query    | `protectedProcedure` | Active performance_accounts, for the match-to-existing-account picker.                                                                                                                                  |
@@ -464,18 +497,18 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `version`
 
-| Procedure              | Kind     | Auth                 | Description                                                                         |
-| ---------------------- | -------- | -------------------- | ----------------------------------------------------------------------------------- |
-| `create`               | mutation | `versionProcedure`   | Create a new manual version.                                                        |
-| `delete`               | mutation | `versionProcedure`   | Delete a version.                                                                   |
-| `dismissUpgradeBanner` | mutation | `versionProcedure`   | Dismiss the upgrade banner by removing the app_settings flag.                       |
-| `getById`              | query    | `protectedProcedure` | Get a single version with per-table row counts (no JSONB data).                     |
-| `getPreview`           | query    | `protectedProcedure` | Preview first 50 rows of a specific table from a version.                           |
-| `getRetention`         | query    | `protectedProcedure` | Read retention setting.                                                             |
-| `getSchedule`          | query    | `protectedProcedure` | Read auto-version schedule setting.                                                 |
-| `getUpgradeBanner`     | query    | `protectedProcedure` | Check if a pre-upgrade backup banner should be shown.                               |
-| `list`                 | query    | `protectedProcedure` | List all versions (metadata only, no JSONB data).                                   |
-| `resetAllData`         | mutation | `adminProcedure`     | Reset all user data — truncates every table except state_versions and app_settings. |
-| `restore`              | mutation | `versionProcedure`   | Restore from a version.                                                             |
-| `setRetention`         | mutation | `versionProcedure`   | Update retention setting and trigger cleanup.                                       |
-| `setSchedule`          | mutation | `versionProcedure`   | Update auto-version schedule.                                                       |
+| Procedure              | Kind     | Auth                 | Description                                                                                                              |
+| ---------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `create`               | mutation | `versionProcedure`   | Create a new manual version.                                                                                             |
+| `delete`               | mutation | `versionProcedure`   | Delete a version.                                                                                                        |
+| `dismissUpgradeBanner` | mutation | `versionProcedure`   | Dismiss the upgrade banner by removing the app_settings flag.                                                            |
+| `getById`              | query    | `protectedProcedure` | Get a single version with per-table row counts (no JSONB data).                                                          |
+| `getPreview`           | query    | `protectedProcedure` | Preview first 50 rows of a specific table from a version.                                                                |
+| `getRetention`         | query    | `protectedProcedure` | Read retention setting.                                                                                                  |
+| `getSchedule`          | query    | `protectedProcedure` | Read auto-version schedule setting.                                                                                      |
+| `getUpgradeBanner`     | query    | `protectedProcedure` | Check if a pre-upgrade backup banner should be shown.                                                                    |
+| `list`                 | query    | `protectedProcedure` | List all versions (metadata only, no JSONB data).                                                                        |
+| `resetAllData`         | mutation | `adminProcedure`     | Reset all user data — truncates every table except state_versions, state_version_tables, app_settings, and local_admins. |
+| `restore`              | mutation | `versionProcedure`   | Restore from a version.                                                                                                  |
+| `setRetention`         | mutation | `versionProcedure`   | Update retention setting and trigger cleanup.                                                                            |
+| `setSchedule`          | mutation | `versionProcedure`   | Update auto-version schedule.                                                                                            |

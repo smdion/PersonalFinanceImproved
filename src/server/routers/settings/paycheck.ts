@@ -4,6 +4,7 @@ import {
   createTRPCRouter,
   protectedProcedure,
   adminProcedure,
+  getSessionUserLabel,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
@@ -55,7 +56,6 @@ const jobInput = z
     monthsInBonusYear: z.number().int().default(12),
     include401kInBonus: z.boolean().default(false),
     includeBonusInContributions: z.boolean().default(false),
-    bonusOverride: zDecimal.nullable().optional(),
     bonusMonth: z.number().int().min(1).max(12).nullable().optional(),
     bonusDayOfMonth: z.number().int().min(1).max(31).nullable().optional(),
     w4FilingStatus: z.enum(["MFJ", "Single", "HOH"]),
@@ -216,6 +216,73 @@ export const paycheckProcedures = {
         await materializeExtraPaycheckOverrides(ctx.db);
         return { ok: true };
       }),
+    bonusOverrides: createTRPCRouter({
+      list: protectedProcedure.query(({ ctx }) =>
+        ctx.db
+          .select()
+          .from(schema.jobBonusOverrides)
+          .orderBy(
+            asc(schema.jobBonusOverrides.jobId),
+            asc(schema.jobBonusOverrides.year),
+          ),
+      ),
+      /** One control per (job, year) in the UI — upsert so the caller never
+       *  has to know whether a row already exists for that year. */
+      upsert: adminProcedure
+        .input(
+          z.object({
+            jobId: z.number().int(),
+            year: z.number().int().min(1900).max(2100),
+            overrideAmount: zDecimal,
+            notes: z.string().nullable().optional(),
+          }),
+        )
+        .mutation(({ ctx, input }) =>
+          ctx.db
+            .insert(schema.jobBonusOverrides)
+            .values({ ...input, createdBy: getSessionUserLabel(ctx.session) })
+            .onConflictDoUpdate({
+              target: [
+                schema.jobBonusOverrides.jobId,
+                schema.jobBonusOverrides.year,
+              ],
+              set: {
+                overrideAmount: input.overrideAmount,
+                notes: input.notes,
+                updatedBy: getSessionUserLabel(ctx.session),
+              },
+            })
+            .returning()
+            .then((r) => r[0]),
+        ),
+      delete: adminProcedure
+        .input(z.object({ id: z.number().int() }))
+        .mutation(({ ctx, input }) =>
+          ctx.db
+            .delete(schema.jobBonusOverrides)
+            .where(eq(schema.jobBonusOverrides.id, input.id)),
+        ),
+      /** Clear a job's override for a specific year without the caller
+       *  needing to know the row id first (mirrors the upsert-by-key
+       *  ergonomics above). */
+      deleteByJobYear: adminProcedure
+        .input(
+          z.object({
+            jobId: z.number().int(),
+            year: z.number().int().min(1900).max(2100),
+          }),
+        )
+        .mutation(({ ctx, input }) =>
+          ctx.db
+            .delete(schema.jobBonusOverrides)
+            .where(
+              and(
+                eq(schema.jobBonusOverrides.jobId, input.jobId),
+                eq(schema.jobBonusOverrides.year, input.year),
+              ),
+            ),
+        ),
+    }),
   }),
 
   salaryChanges: createTRPCRouter({

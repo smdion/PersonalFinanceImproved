@@ -20,7 +20,21 @@ type PromptState = {
   resolve: (value: string | null) => void;
 };
 
-type DialogState = ConfirmState | PromptState | null;
+/** Name + optional "base this off of" select in one dialog — used for
+ *  creating a budget profile linked to a Contribution Profile at creation
+ *  time, instead of a name-only prompt followed by a separate step. */
+type PromptWithSelectState = {
+  mode: "promptWithSelect";
+  message: string;
+  placeholder?: string;
+  selectLabel: string;
+  selectOptions: { value: string; label: string }[];
+  /** First entry's value, or "" for "none" — shown pre-selected. */
+  defaultSelectValue?: string;
+  resolve: (value: { text: string; selectValue: string | null } | null) => void;
+};
+
+type DialogState = ConfirmState | PromptState | PromptWithSelectState | null;
 
 let globalSetState: ((state: DialogState) => void) | null = null;
 
@@ -59,6 +73,35 @@ export function promptText(
   });
 }
 
+/**
+ * Imperative name + select prompt — e.g. "New budget profile name" plus
+ * "base it off of this Contribution Profile." Returns null if cancelled;
+ * `selectValue` is null when "none" is chosen (an empty first option).
+ */
+export function promptTextWithSelect(
+  message: string,
+  placeholder: string,
+  selectLabel: string,
+  selectOptions: { value: string; label: string }[],
+  defaultSelectValue?: string,
+): Promise<{ text: string; selectValue: string | null } | null> {
+  if (!globalSetState)
+    throw new Error(
+      "ConfirmDialog not mounted — ensure <ConfirmDialog /> is in the app shell.",
+    );
+  return new Promise((resolve) => {
+    globalSetState!({
+      mode: "promptWithSelect",
+      message,
+      placeholder,
+      selectLabel,
+      selectOptions,
+      defaultSelectValue,
+      resolve,
+    });
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Dialog component — mount once in app shell
 // ---------------------------------------------------------------------------
@@ -67,6 +110,7 @@ export function ConfirmDialog() {
   const [state, setState] = useState<DialogState>(null);
   const actionRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const selectRef = useRef<HTMLSelectElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const trapRef = useFocusTrap<HTMLDivElement>(state !== null);
 
@@ -89,6 +133,15 @@ export function ConfirmDialog() {
     if (!state) return;
     if (state.mode === "confirm") {
       state.resolve(true);
+    } else if (state.mode === "promptWithSelect") {
+      const text = inputRef.current?.value.trim() ?? "";
+      if (!text) {
+        setState(null);
+        state.resolve(null);
+        return;
+      }
+      const selectValue = selectRef.current?.value || null;
+      state.resolve({ text, selectValue });
     } else {
       const val = inputRef.current?.value.trim() ?? "";
       state.resolve(val || null);
@@ -99,7 +152,7 @@ export function ConfirmDialog() {
   // Focus on open
   useEffect(() => {
     if (!state) return;
-    if (state.mode === "prompt") {
+    if (state.mode === "prompt" || state.mode === "promptWithSelect") {
       // Small delay to let the input render
       requestAnimationFrame(() => inputRef.current?.focus());
     } else {
@@ -155,6 +208,40 @@ export function ConfirmDialog() {
             }}
             className="w-full mb-4 px-3 py-2 text-sm border border-strong rounded-md bg-surface-primary text-primary focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
+        )}
+
+        {state.mode === "promptWithSelect" && (
+          <div className="space-y-3 mb-4">
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder={state.placeholder}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleConfirm();
+                }
+              }}
+              className="w-full px-3 py-2 text-sm border border-strong rounded-md bg-surface-primary text-primary focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <div>
+              <label className="block text-caption text-muted mb-1">
+                {state.selectLabel}
+              </label>
+              <select
+                ref={selectRef}
+                defaultValue={state.defaultSelectValue ?? ""}
+                className="w-full px-3 py-2 text-sm border border-strong rounded-md bg-surface-primary text-primary focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">None</option>
+                {state.selectOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         )}
 
         <div className="flex justify-end gap-2">

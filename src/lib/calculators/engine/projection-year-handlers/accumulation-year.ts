@@ -69,7 +69,14 @@ export function runAccumulationYear(
   yearIndex: number,
   setup: PreYearSetup,
 ): void {
-  const { age, year, returnRate } = setup;
+  const {
+    age,
+    year,
+    returnRate,
+    effectiveSalary: projectedSalary,
+    effectiveSalaryByPerson: projectedSalaryByPerson,
+    hasBonusAdjustment,
+  } = setup;
   const {
     input,
     salaryOverrideMap,
@@ -98,8 +105,6 @@ export function runAccumulationYear(
     indBal,
     specToAccount,
     accountsWithSpecs,
-    projectedSalary,
-    projectedSalaryByPerson,
   } = state;
 
   const {
@@ -589,6 +594,7 @@ export function runAccumulationYear(
     projectedExpenses: roundToCents(state.projectedExpenses),
     hasSalaryOverride:
       salaryOverrideMap.has(year) || perPersonSalaryOverrides.has(year),
+    hasBonusAdjustment,
     hasBudgetOverride: budgetOverrideMap.has(year),
     proRateFraction:
       yearIndex === 0 && firstYearFraction < 1 ? firstYearFraction : null,

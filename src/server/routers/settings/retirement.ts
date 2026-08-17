@@ -129,6 +129,7 @@ export const retirementProcedures = {
           projectionYear: z.number().int().min(1900).max(2100),
           overrideSalary: zDecimal,
           contributionProfileId: z.number().int().nullable().optional(),
+          salaryProfileId: z.number().int().nullable().optional(),
           notes: z.string().nullable().optional(),
         }),
       )
@@ -147,6 +148,7 @@ export const retirementProcedures = {
           projectionYear: z.number().int().min(1900).max(2100),
           overrideSalary: zDecimal,
           contributionProfileId: z.number().int().nullable().optional(),
+          salaryProfileId: z.number().int().nullable().optional(),
           notes: z.string().nullable().optional(),
         }),
       )

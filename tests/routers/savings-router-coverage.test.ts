@@ -18,6 +18,7 @@ import * as sqliteSchemaTables from "@/lib/db/schema-sqlite";
 import {
   createTestCaller,
   seedSavingsGoal,
+  seedSavingsGoalAllocation,
   seedStandardDataset,
   seedBudgetProfile,
   seedBudgetItem,
@@ -272,12 +273,15 @@ describe("savings.pushContributionsToApi", () => {
   it("pushes contributions for linked goals", async () => {
     const ctx = await createTestCaller();
     try {
-      seedSavingsGoal(ctx.db, {
+      const profileId = await seedBudgetProfile(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
         name: "Push Goal",
         targetAmount: "5000",
-        monthlyContribution: "200",
         isApiSyncEnabled: true,
         apiCategoryId: "cat-push-001",
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+        monthlyContribution: "200",
       });
 
       const mockUpdateGoal = vi.fn().mockResolvedValue(undefined);
@@ -299,11 +303,14 @@ describe("savings.pushContributionsToApi", () => {
   it("returns pushed:0 when no linked goals exist", async () => {
     const ctx = await createTestCaller();
     try {
-      seedSavingsGoal(ctx.db, {
+      const profileId = await seedBudgetProfile(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
         name: "Unlinked Goal",
         targetAmount: "5000",
-        monthlyContribution: "200",
         isApiSyncEnabled: false,
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+        monthlyContribution: "200",
       });
 
       mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
@@ -323,17 +330,22 @@ describe("savings.pushContributionsToApi", () => {
   it("pushes only the specified goalId when provided", async () => {
     const ctx = await createTestCaller();
     try {
+      const profileId = await seedBudgetProfile(ctx.db);
       const g1 = seedSavingsGoal(ctx.db, {
         name: "Goal A",
-        monthlyContribution: "100",
         isApiSyncEnabled: true,
         apiCategoryId: "cat-a",
       });
-      seedSavingsGoal(ctx.db, {
+      seedSavingsGoalAllocation(ctx.db, g1, profileId, {
+        monthlyContribution: "100",
+      });
+      const g2 = seedSavingsGoal(ctx.db, {
         name: "Goal B",
-        monthlyContribution: "200",
         isApiSyncEnabled: true,
         apiCategoryId: "cat-b",
+      });
+      seedSavingsGoalAllocation(ctx.db, g2, profileId, {
+        monthlyContribution: "200",
       });
 
       const mockUpdateGoal = vi.fn().mockResolvedValue(undefined);
@@ -357,11 +369,14 @@ describe("savings.pushContributionsToApi", () => {
   it("handles API errors gracefully and continues pushing", async () => {
     const ctx = await createTestCaller();
     try {
-      seedSavingsGoal(ctx.db, {
+      const profileId = await seedBudgetProfile(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
         name: "Error Goal",
-        monthlyContribution: "300",
         isApiSyncEnabled: true,
         apiCategoryId: "cat-err",
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+        monthlyContribution: "300",
       });
 
       const mockUpdateGoal = vi.fn().mockRejectedValue(new Error("API fail"));
@@ -385,13 +400,15 @@ describe("savings.pushContributionsToApi", () => {
       // seedStandardDataset gives a real job/salary + budget items, so a live
       // pool computation (if push still did one) would very likely differ
       // from this arbitrary stored snapshot.
-      seedStandardDataset(ctx.db);
-      seedSavingsGoal(ctx.db, {
+      const { profileId } = seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
         name: "Percent Goal",
-        monthlyContribution: "150",
-        allocationPercent: "10",
         isApiSyncEnabled: true,
         apiCategoryId: "cat-pct",
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+        monthlyContribution: "150",
+        allocationPercent: "10",
       });
 
       const mockUpdateGoal = vi.fn().mockResolvedValue(undefined);
@@ -445,21 +462,17 @@ describe("savings.recalculateAllocation", () => {
       const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Percent Goal",
+        isActive: true,
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
         monthlyContribution: "150",
         allocationPercent: "10",
-        isActive: true,
       });
 
       const result = await ctx.caller.savings.recalculateAllocation({
         goalId,
       });
       expect(result.updated).toBe(1);
-
-      const [globalRow] = await ctx.db
-        .select()
-        .from(sqliteSchemaTables.savingsGoals)
-        .where(eq(sqliteSchemaTables.savingsGoals.id, goalId));
-      expect(globalRow!.monthlyContribution).toBe("150");
 
       const override = getOverrideRow(ctx.db, goalId, profileId);
       expect(override).toBeDefined();
@@ -475,14 +488,17 @@ describe("savings.recalculateAllocation", () => {
       const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Flat Goal",
-        monthlyContribution: "150",
-        allocationPercent: null,
         isActive: true,
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+        monthlyContribution: "150",
       });
 
       const result = await ctx.caller.savings.recalculateAllocation();
       expect(result.updated).toBe(0);
-      expect(getOverrideRow(ctx.db, goalId, profileId)).toBeUndefined();
+      expect(getOverrideRow(ctx.db, goalId, profileId)).toEqual(
+        expect.objectContaining({ allocationPercent: null }),
+      );
     } finally {
       ctx.cleanup();
     }
@@ -492,24 +508,24 @@ describe("savings.recalculateAllocation", () => {
     const ctx = await createTestCaller();
     try {
       const { profileId } = seedStandardDataset(ctx.db);
-      const goalA = seedSavingsGoal(ctx.db, {
-        name: "Goal A",
+      const goalA = seedSavingsGoal(ctx.db, { name: "Goal A", isActive: true });
+      seedSavingsGoalAllocation(ctx.db, goalA, profileId, {
         monthlyContribution: "150",
         allocationPercent: "10",
-        isActive: true,
       });
-      const goalB = seedSavingsGoal(ctx.db, {
-        name: "Goal B",
+      const goalB = seedSavingsGoal(ctx.db, { name: "Goal B", isActive: true });
+      seedSavingsGoalAllocation(ctx.db, goalB, profileId, {
         monthlyContribution: "250",
         allocationPercent: "20",
-        isActive: true,
       });
 
       const result = await ctx.caller.savings.recalculateAllocation({
         goalId: goalA,
       });
       expect(result.updated).toBe(1);
-      expect(getOverrideRow(ctx.db, goalB, profileId)).toBeUndefined();
+      expect(
+        getOverrideRow(ctx.db, goalB, profileId)!.monthlyContribution,
+      ).toBe("250");
     } finally {
       ctx.cleanup();
     }
@@ -521,14 +537,18 @@ describe("savings.recalculateAllocation", () => {
       const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Inactive Percent Goal",
+        isActive: false,
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
         monthlyContribution: "150",
         allocationPercent: "10",
-        isActive: false,
       });
 
       const result = await ctx.caller.savings.recalculateAllocation();
       expect(result.updated).toBe(0);
-      expect(getOverrideRow(ctx.db, goalId, profileId)).toBeUndefined();
+      expect(
+        getOverrideRow(ctx.db, goalId, profileId)!.monthlyContribution,
+      ).toBe("150");
     } finally {
       ctx.cleanup();
     }
@@ -537,18 +557,16 @@ describe("savings.recalculateAllocation", () => {
   it("recalculates every active percentage-based goal when goalId is omitted", async () => {
     const ctx = await createTestCaller();
     try {
-      seedStandardDataset(ctx.db);
-      seedSavingsGoal(ctx.db, {
-        name: "Goal A",
+      const { profileId } = seedStandardDataset(ctx.db);
+      const goalA = seedSavingsGoal(ctx.db, { name: "Goal A", isActive: true });
+      seedSavingsGoalAllocation(ctx.db, goalA, profileId, {
         monthlyContribution: "150",
         allocationPercent: "10",
-        isActive: true,
       });
-      seedSavingsGoal(ctx.db, {
-        name: "Goal B",
+      const goalB = seedSavingsGoal(ctx.db, { name: "Goal B", isActive: true });
+      seedSavingsGoalAllocation(ctx.db, goalB, profileId, {
         monthlyContribution: "250",
         allocationPercent: "20",
-        isActive: true,
       });
 
       const result = await ctx.caller.savings.recalculateAllocation();
@@ -564,20 +582,27 @@ describe("savings.recalculateAllocation", () => {
       const { profileId: activeProfileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Percent Goal",
+        isActive: true,
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, activeProfileId, {
         monthlyContribution: "150",
         allocationPercent: "10",
-        isActive: true,
       });
 
       // A second, inactive profile with a much smaller budget total than
       // the active one (2800 across rent/groceries/dining) leaves far more
       // pool available for savings, so the two profiles must not produce
-      // the same recalculated amount.
+      // the same recalculated amount. It needs its own percentage-based
+      // funding row too — funding is per-profile, no shared default.
       const altProfileId = await seedBudgetProfile(ctx.db, "Alt Budget", false);
       seedBudgetItem(ctx.db, altProfileId, {
         category: "Essentials",
         subcategory: "Rent",
         amounts: [500],
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, altProfileId, {
+        monthlyContribution: "150",
+        allocationPercent: "10",
       });
 
       await ctx.caller.savings.recalculateAllocation({ goalId });
@@ -615,9 +640,11 @@ describe("savings.lockInAllocationPercent", () => {
       const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Percent Goal",
+        isActive: true,
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
         monthlyContribution: "150",
         allocationPercent: "10",
-        isActive: true,
       });
 
       const result = await ctx.caller.savings.lockInAllocationPercent({
@@ -640,14 +667,17 @@ describe("savings.lockInAllocationPercent", () => {
       const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Flat Goal",
-        monthlyContribution: "150",
-        allocationPercent: null,
         isActive: true,
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+        monthlyContribution: "150",
       });
 
       const result = await ctx.caller.savings.lockInAllocationPercent();
       expect(result.updated).toBe(0);
-      expect(getOverrideRow(ctx.db, goalId, profileId)).toBeUndefined();
+      expect(
+        getOverrideRow(ctx.db, goalId, profileId)!.monthlyContribution,
+      ).toBe("150");
     } finally {
       ctx.cleanup();
     }
@@ -657,24 +687,24 @@ describe("savings.lockInAllocationPercent", () => {
     const ctx = await createTestCaller();
     try {
       const { profileId } = seedStandardDataset(ctx.db);
-      const goalA = seedSavingsGoal(ctx.db, {
-        name: "Goal A",
+      const goalA = seedSavingsGoal(ctx.db, { name: "Goal A", isActive: true });
+      seedSavingsGoalAllocation(ctx.db, goalA, profileId, {
         monthlyContribution: "150",
         allocationPercent: "10",
-        isActive: true,
       });
-      const goalB = seedSavingsGoal(ctx.db, {
-        name: "Goal B",
+      const goalB = seedSavingsGoal(ctx.db, { name: "Goal B", isActive: true });
+      seedSavingsGoalAllocation(ctx.db, goalB, profileId, {
         monthlyContribution: "250",
         allocationPercent: "20",
-        isActive: true,
       });
 
       const result = await ctx.caller.savings.lockInAllocationPercent({
         goalId: goalA,
       });
       expect(result.updated).toBe(1);
-      expect(getOverrideRow(ctx.db, goalB, profileId)).toBeUndefined();
+      expect(getOverrideRow(ctx.db, goalB, profileId)!.allocationPercent).toBe(
+        "20",
+      );
     } finally {
       ctx.cleanup();
     }
@@ -686,14 +716,18 @@ describe("savings.lockInAllocationPercent", () => {
       const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Inactive Percent Goal",
+        isActive: false,
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
         monthlyContribution: "150",
         allocationPercent: "10",
-        isActive: false,
       });
 
       const result = await ctx.caller.savings.lockInAllocationPercent();
       expect(result.updated).toBe(0);
-      expect(getOverrideRow(ctx.db, goalId, profileId)).toBeUndefined();
+      expect(getOverrideRow(ctx.db, goalId, profileId)!.allocationPercent).toBe(
+        "10",
+      );
     } finally {
       ctx.cleanup();
     }
@@ -702,18 +736,16 @@ describe("savings.lockInAllocationPercent", () => {
   it("updates every active percentage-based goal when goalId is omitted", async () => {
     const ctx = await createTestCaller();
     try {
-      seedStandardDataset(ctx.db);
-      seedSavingsGoal(ctx.db, {
-        name: "Goal A",
+      const { profileId } = seedStandardDataset(ctx.db);
+      const goalA = seedSavingsGoal(ctx.db, { name: "Goal A", isActive: true });
+      seedSavingsGoalAllocation(ctx.db, goalA, profileId, {
         monthlyContribution: "150",
         allocationPercent: "10",
-        isActive: true,
       });
-      seedSavingsGoal(ctx.db, {
-        name: "Goal B",
+      const goalB = seedSavingsGoal(ctx.db, { name: "Goal B", isActive: true });
+      seedSavingsGoalAllocation(ctx.db, goalB, profileId, {
         monthlyContribution: "250",
         allocationPercent: "20",
-        isActive: true,
       });
 
       const result = await ctx.caller.savings.lockInAllocationPercent();
@@ -729,9 +761,11 @@ describe("savings.lockInAllocationPercent", () => {
       const { profileId: activeProfileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Percent Goal",
+        isActive: true,
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, activeProfileId, {
         monthlyContribution: "150",
         allocationPercent: "10",
-        isActive: true,
       });
 
       // See the analogous recalculateAllocation test above for why a
@@ -741,6 +775,10 @@ describe("savings.lockInAllocationPercent", () => {
         category: "Essentials",
         subcategory: "Rent",
         amounts: [500],
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, altProfileId, {
+        monthlyContribution: "150",
+        allocationPercent: "10",
       });
 
       await ctx.caller.savings.lockInAllocationPercent({ goalId });
@@ -766,9 +804,11 @@ describe("savings.lockInAllocationPercent", () => {
       const { profileId } = seedStandardDataset(ctx.db);
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Round Trip Goal",
+        isActive: true,
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
         monthlyContribution: "289.90",
         allocationPercent: "13",
-        isActive: true,
       });
 
       await ctx.caller.savings.lockInAllocationPercent({ goalId });

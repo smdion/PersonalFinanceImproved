@@ -11,6 +11,7 @@ import {
   seedJob,
   seedPerformanceAccount,
   seedContributionProfile,
+  seedSalaryProfile,
   viewerSession,
 } from "./setup";
 import * as schema from "@/lib/db/schema-sqlite";
@@ -820,9 +821,10 @@ describe("contribution router", () => {
     });
   });
 
-  describe("computeSummary — contribution profile override", () => {
+  describe("computeSummary — contribution + salary profile overrides", () => {
     let personId: number;
     let profileId: number;
+    let salaryProfileId: number;
 
     beforeAll(async () => {
       personId = await seedPerson(db, "Profile-Override", "1990-01-01");
@@ -839,8 +841,6 @@ describe("contribution router", () => {
       });
       profileId = seedContributionProfile(db, {
         name: `test-profile-${Date.now()}`,
-        isDefault: false,
-        salaryOverrides: { [String(personId)]: 180000 },
         contributionOverrides: {
           contributionAccounts: {
             [String(contribId)]: { contributionValue: "15" },
@@ -848,22 +848,63 @@ describe("contribution router", () => {
           jobs: {},
         },
       });
+      salaryProfileId = seedSalaryProfile(db, {
+        name: `test-salary-profile-${Date.now()}`,
+        salaries: { [String(personId)]: { mode: "fixed", salary: 180000 } },
+      });
     });
 
-    it("applies profile salary and contribution overrides", async () => {
+    it("a Contribution Profile alone changes contributions, not salary", async () => {
       const result = await caller.contribution.computeSummary({
         contributionProfileId: profileId,
       });
       const person = result.people.find((p) => p.person.id === personId);
       expect(person).toBeDefined();
-      // Profile overrides salary to 180000 and contribution to 15%
-      expect(person!.salary).toBe(180000);
+      // Salary is a separate axis now — untouched by the contribution profile.
+      expect(person!.salary).toBe(100000);
       const acctType = person!.accountTypes.find(
         (a) => a.categoryKey === "401k",
       );
       expect(acctType).toBeDefined();
-      // 15% of 180000 = 27000
+      // 15% of the live 100000 = 15000
+      expect(acctType!.employeeContrib).toBe(15000);
+    });
+
+    it("a Salary Profile alone changes salary, not contribution rates", async () => {
+      const result = await caller.contribution.computeSummary({
+        salaryProfileId,
+      });
+      const person = result.people.find((p) => p.person.id === personId);
+      expect(person!.salary).toBe(180000);
+      const acctType = person!.accountTypes.find(
+        (a) => a.categoryKey === "401k",
+      );
+      // live 5% of 180000 = 9000
+      expect(acctType!.employeeContrib).toBe(9000);
+    });
+
+    it("both axes compose independently", async () => {
+      const result = await caller.contribution.computeSummary({
+        contributionProfileId: profileId,
+        salaryProfileId,
+      });
+      const person = result.people.find((p) => p.person.id === personId);
+      expect(person!.salary).toBe(180000);
+      const acctType = person!.accountTypes.find(
+        (a) => a.categoryKey === "401k",
+      );
+      // 15% of 180000 = 27000 — the old coupled-profile result, now reached
+      // by pinning both axes explicitly.
       expect(acctType!.employeeContrib).toBe(27000);
+    });
+
+    it("an explicit salaryOverrides entry outranks the Salary Profile", async () => {
+      const result = await caller.contribution.computeSummary({
+        salaryProfileId,
+        salaryOverrides: [{ personId, salary: 210000 }],
+      });
+      const person = result.people.find((p) => p.person.id === personId);
+      expect(person!.salary).toBe(210000);
     });
   });
 

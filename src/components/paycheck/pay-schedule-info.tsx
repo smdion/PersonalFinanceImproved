@@ -9,6 +9,7 @@ export function PayScheduleInfo({
   job,
   paycheck,
   onUpdateJob,
+  readOnly,
 }: {
   job: {
     payPeriod: string;
@@ -18,6 +19,8 @@ export function PayScheduleInfo({
   };
   paycheck: PaycheckResult;
   onUpdateJob: (field: string, value: string) => void;
+  /** Sandbox/preview mode — the schedule controls are shown but inert. */
+  readOnly?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -64,6 +67,7 @@ export function PayScheduleInfo({
           <select
             value={job.payPeriod}
             onChange={(e) => onUpdateJob("payPeriod", e.target.value)}
+            disabled={readOnly}
             className="text-xs border rounded px-1.5 py-0.5 bg-surface-primary hover:border-strong cursor-pointer"
           >
             <option value="weekly">Weekly</option>
@@ -82,6 +86,7 @@ export function PayScheduleInfo({
               onChange={(e) =>
                 onUpdateJob("anchorPayDate", e.target.value || "")
               }
+              disabled={readOnly}
               className="text-xs border rounded px-1.5 py-0.5 bg-surface-primary hover:border-strong cursor-pointer w-[120px]"
               placeholder={job.startDate}
             />
@@ -99,6 +104,7 @@ export function PayScheduleInfo({
               onChange={(e) =>
                 onUpdateJob("budgetPeriodsPerMonth", e.target.value || "")
               }
+              disabled={readOnly}
               placeholder={String(
                 PAY_PERIOD_CONFIG[job.payPeriod]?.defaultBudgetPerMonth ?? "",
               )}

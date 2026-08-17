@@ -6,7 +6,8 @@
  * refactor. Pure relocation of the JSX block above the master-detail grid:
  * displays the active (or viewing-only) profile name, API link badge,
  * current mode / weighted label, total, and the cluster of right-aligned
- * action buttons (Manage Modes, Pull, Push, Edit Mode / Save All).
+ * action buttons (Manage Modes, Pull, Push). The edit padlock lives in the
+ * right column (BudgetDetailPanel), matching the other three profile tabs.
  *
  * The parent owns all state + tRPC mutations. This component receives
  * plain primitive props and event callbacks — no queries, no mutations,
@@ -57,7 +58,6 @@ type Props = {
   unsavedCount: number;
   onToggleModeManager: () => void;
   isSavingBatch: boolean;
-  onToggleEditMode: () => void;
 };
 
 export function BudgetSummaryBar({
@@ -68,7 +68,6 @@ export function BudgetSummaryBar({
   unsavedCount,
   onToggleModeManager,
   isSavingBatch,
-  onToggleEditMode,
 }: Props) {
   const {
     profileId,
@@ -159,17 +158,22 @@ export function BudgetSummaryBar({
             </span>
           )}
           {allColumnResults && (
-            <span className="text-faint">
-              Total:{" "}
+            <span
+              className="text-faint"
+              title="Budgeted spending + savings allocations, annualized"
+            >
+              Total spending + savings:{" "}
               <span className="font-semibold text-secondary">
                 {formatCurrency(
-                  isWeighted && columnMonths
+                  (isWeighted && columnMonths
                     ? allColumnResults.reduce(
                         (sum, r, i) =>
                           sum + r.totalMonthly * (columnMonths[i] ?? 0),
                         0,
                       )
-                    : (allColumnResults[activeColumn]?.totalMonthly ?? 0) * 12,
+                    : (allColumnResults[activeColumn]?.totalMonthly ?? 0) *
+                      12) +
+                    totalSinking * 12,
                 )}
                 <span className="text-caption text-faint font-normal">/yr</span>
               </span>
@@ -231,19 +235,8 @@ export function BudgetSummaryBar({
               Sync: linked to another profile
             </span>
           )}
-        {canEdit && (
-          <button
-            type="button"
-            onClick={onToggleEditMode}
-            disabled={isSavingBatch}
-            className={`px-2 py-1 text-caption font-medium rounded transition-colors ${
-              editMode
-                ? "bg-green-600 text-white hover:bg-green-700"
-                : "bg-surface-strong text-muted hover:bg-surface-strong"
-            }`}
-          >
-            {isSavingBatch ? "Saving…" : editMode ? "Save All" : "Edit Mode"}
-          </button>
+        {isSavingBatch && (
+          <span className="text-caption text-muted">Saving…</span>
         )}
       </div>
     </div>

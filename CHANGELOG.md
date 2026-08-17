@@ -8,7 +8,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
-## [0.7.1] - 2026-08-15
+## [0.7.2] - 2026-08-16
+
+### Added
+
+- **A new "What-If" tab on the Budget page** — a sandboxed area to try a different salary, bonus, deductions, contribution accounts, and budget amounts together, and see the resulting take-home pay, whether it covers your budget, and what's left over for savings — without changing anything your household actually sees. Edits are local until you explicitly keep them: duplicate the budget profile with your changes baked in, save the whole combination as a Plan, or graduate a hand-added deduction or contribution account into a real, permanent one.
+- **A job's bonus can now be pinned to its actual paid-out amount for just the current year**, without suppressing the full formula-computed bonus in future-year retirement projections. Previously, overriding a bonus permanently depressed every future projected year, since salary and bonus were compounded together as one blended number.
+- **The Household Income dashboard card shows a consistent bonus breakout across all three view modes** (Current Salary, Year-End Estimate, Actual YTD), with the Year-To-Date view distinguishing a bonus that's already been paid from one that's still pending.
+- **Budget Profiles support weighted modes with an actual editor.** Give each mode a number of months per year (e.g. 1 month Traveling + 11 months At Home) directly from Manage Modes, with a live "must sum to 12" check — previously the underlying data model supported this but there was no way to set it from the UI.
+- **Weighted budget profiles now show a Blended column** in the summary table — a "typical month" figure that blends every mode by its month-weight, so you're not left doing the math yourself to reconcile the top-line annual total against the per-mode rows.
+- **The weighted annual total now includes savings**, not just budgeted spending.
+- **The Savings Profiles sidebar shows Allocated and Unspent per profile**, so you can see funding status for every profile at a glance instead of only the one you're viewing.
+- **A new "Reset all to zero" action on the Savings Profiles tab** clears every goal's funding for a profile in one click.
+- **Creating a Budget Profile can link it to a Contribution Profile from the start**, instead of requiring a separate trip to Manage Modes afterward.
+
+### Changed
+
+- **Salary Profiles are now ordinary, renamable, deletable rows** instead of a synthetic "default" placeholder you couldn't otherwise manage — create as many as you want, rename them, remove the ones you don't need.
+- **Bonus percentage and multiplier moved from Contribution Profile to Salary Profile**, alongside salary itself — each profile now controls what it conceptually owns, instead of salary living in one profile and its bonus terms in another.
+- **Savings goal funding (allocation % / monthly $) is now entirely per budget profile**, with no shared default a profile silently falls back to. Each budget profile is its own funding scenario — a goal with no explicit funding under a given profile now reads as $0 for that profile, instead of quietly inheriting a value from wherever it was last edited. Historical per-year tooltips also no longer misapply a bonus pin to years it wasn't set for.
+
+### Fixed
+
+- **A Salary Profile's pinned bonus percentage/multiplier was silently ignored by actual paycheck and contribution calculations**, even though the profile editor correctly showed it — pinning a salary while leaving bonus terms live (or vice versa) now works everywhere, not just in the preview.
+- **The Budget page's item table could stretch a couple of amount columns very wide with lots of empty space** when a budget profile had only 1–2 modes, while the category/item name column stayed too narrow for longer names — column widths now scale with how many modes exist instead of always splitting leftover space evenly.
+- **The emergency-fund budget tier could read past the end of a budget profile with fewer columns than whichever profile was active when the tier setting was last saved**, silently pulling essential-expense numbers from a nonexistent tier.
 
 ### Added
 

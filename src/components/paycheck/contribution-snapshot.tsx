@@ -28,6 +28,7 @@ import {
   isPortfolioParent,
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
+import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 
 export function ContributionSnapshot() {
   const { viewMode } = useScenario();
@@ -35,10 +36,13 @@ export function ContributionSnapshot() {
     "active_contrib_profile_id",
     null,
   );
-  const contribInput =
-    activeProfileId != null
+  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
+  const contribInput = {
+    ...(activeProfileId != null
       ? { contributionProfileId: activeProfileId }
-      : undefined;
+      : {}),
+    ...salaryProfileInput,
+  };
   const { data, isLoading, error } =
     trpc.contribution.computeSummary.useQuery(contribInput);
   const [contribPeriod, setContribPeriod] = useState<ContribPeriod>("annual");

@@ -17,6 +17,8 @@ import {
   type RefObject,
 } from "react";
 import type { RawItem } from "@/components/budget";
+import { useLocalStorage } from "@/lib/hooks/use-local-storage";
+import { EDIT_LOCK_KEYS } from "@/components/ui/edit-lock-toggle";
 
 const INITIAL_VISIBLE = 15;
 const LOAD_MORE_COUNT = 10;
@@ -40,7 +42,18 @@ export function useBudgetPageState({
 }) {
   // ---- Edit mode + draft store ----
 
-  const [editMode, setEditMode] = useState(false);
+  // Locked (read-only) is the default, persisted per-browser like every other
+  // padlock in the app. Stored as "locked" — editMode is its inverse — so the
+  // key matches the other profile tabs' `ledgr:budget:*Locked` convention.
+  const [budgetLocked, setBudgetLocked] = useLocalStorage<boolean>(
+    EDIT_LOCK_KEYS.budgetBudget,
+    true,
+  );
+  const editMode = !budgetLocked;
+  const setEditMode = useCallback(
+    (next: boolean) => setBudgetLocked(!next),
+    [setBudgetLocked],
+  );
   const [editDrafts, setEditDrafts] = useState<Map<string, number>>(new Map());
 
   const setDraft = useCallback(

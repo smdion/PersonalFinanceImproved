@@ -20,6 +20,7 @@ export function PayStub({
   onAddDeduction,
   onDeleteDeduction,
   onCreateDeduction,
+  readOnly,
 }: {
   paycheck: PaycheckResult;
   rawDeductions: RawDeduction[];
@@ -29,6 +30,9 @@ export function PayStub({
   onAddDeduction?: (isPretax: boolean) => void;
   onDeleteDeduction?: (id: number) => void;
   onCreateDeduction?: (data: CreateDeductionData) => void;
+  /** Sandbox/preview mode — in-place edits are disabled and the add/remove
+   *  actions are omitted entirely rather than rendered inert. */
+  readOnly?: boolean;
 }) {
   // Match calculator deductions to raw DB rows by name
   const findRaw = (name: string) =>
@@ -72,13 +76,15 @@ export function PayStub({
                 Pre-Tax Deductions
                 <HelpTip text="Taken from your pay before taxes, reducing your taxable income (e.g. health insurance, 401k)" />
               </p>
-              <button
-                onClick={() => onAddDeduction?.(true)}
-                className="text-xs text-blue-500 hover:text-blue-700 transition-colors"
-                title="Add pre-tax deduction"
-              >
-                + Add
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={() => onAddDeduction?.(true)}
+                  className="text-xs text-blue-500 hover:text-blue-700 transition-colors"
+                  title="Add pre-tax deduction"
+                >
+                  + Add
+                </button>
+              )}
             </div>
             {preTaxRows.map((row) => (
               <div key={row.name} className="group relative">
@@ -86,8 +92,9 @@ export function PayStub({
                   row={row}
                   onUpdateDeduction={onUpdateDeduction}
                   onCreateDeduction={onCreateDeduction}
+                  readOnly={readOnly}
                 />
-                {row.type === "real" && row.raw && (
+                {!readOnly && row.type === "real" && row.raw && (
                   <button
                     onClick={() => onDeleteDeduction?.(row.raw!.id)}
                     className="absolute -left-5 top-0.5 text-faint hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
@@ -122,13 +129,15 @@ export function PayStub({
                 Pre-Tax Deductions
                 <HelpTip text="Taken from your pay before taxes, reducing your taxable income (e.g. health insurance, 401k)" />
               </p>
-              <button
-                onClick={() => onAddDeduction?.(true)}
-                className="text-xs text-blue-500 hover:text-blue-700 transition-colors"
-                title="Add pre-tax deduction"
-              >
-                + Add
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={() => onAddDeduction?.(true)}
+                  className="text-xs text-blue-500 hover:text-blue-700 transition-colors"
+                  title="Add pre-tax deduction"
+                >
+                  + Add
+                </button>
+              )}
             </div>
             <p className="text-xs text-faint italic">None</p>
           </div>
@@ -182,13 +191,15 @@ export function PayStub({
                 Post-Tax Deductions
                 <HelpTip text="Taken from your pay after taxes — does not reduce your taxable income (e.g. Roth 401k, disability)" />
               </p>
-              <button
-                onClick={() => onAddDeduction?.(false)}
-                className="text-xs text-blue-500 hover:text-blue-700 transition-colors"
-                title="Add post-tax deduction"
-              >
-                + Add
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={() => onAddDeduction?.(false)}
+                  className="text-xs text-blue-500 hover:text-blue-700 transition-colors"
+                  title="Add post-tax deduction"
+                >
+                  + Add
+                </button>
+              )}
             </div>
             {postTaxRows.map((row) => (
               <div key={row.name} className="group relative">
@@ -196,8 +207,9 @@ export function PayStub({
                   row={row}
                   onUpdateDeduction={onUpdateDeduction}
                   onCreateDeduction={onCreateDeduction}
+                  readOnly={readOnly}
                 />
-                {row.type === "real" && row.raw && (
+                {!readOnly && row.type === "real" && row.raw && (
                   <button
                     onClick={() => onDeleteDeduction?.(row.raw!.id)}
                     className="absolute -left-5 top-0.5 text-faint hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
@@ -232,13 +244,15 @@ export function PayStub({
                 Post-Tax Deductions
                 <HelpTip text="Taken from your pay after taxes — does not reduce your taxable income (e.g. Roth 401k, disability)" />
               </p>
-              <button
-                onClick={() => onAddDeduction?.(false)}
-                className="text-xs text-blue-500 hover:text-blue-700 transition-colors"
-                title="Add post-tax deduction"
-              >
-                + Add
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={() => onAddDeduction?.(false)}
+                  className="text-xs text-blue-500 hover:text-blue-700 transition-colors"
+                  title="Add post-tax deduction"
+                >
+                  + Add
+                </button>
+              )}
             </div>
             <p className="text-xs text-faint italic">None</p>
           </div>

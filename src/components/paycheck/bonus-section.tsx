@@ -11,6 +11,7 @@ export function BonusSection({
   paycheck,
   job,
   onUpdateJob,
+  readOnly,
 }: {
   paycheck: PaycheckResult;
   job: {
@@ -24,6 +25,8 @@ export function BonusSection({
     includeBonusInContributions: boolean;
   };
   onUpdateJob: (field: string, value: string) => void;
+  /** Sandbox/preview mode — bonus terms are shown but not editable. */
+  readOnly?: boolean;
 }) {
   const { bonusEstimate } = paycheck;
   if (bonusEstimate.bonusGross === 0 && Number(job.bonusPercent) === 0)
@@ -46,6 +49,7 @@ export function BonusSection({
               onChange={(v) => onUpdateJob("include401kInBonus", String(v))}
               label="Deduct 401k from bonus"
               size="xs"
+              disabled={readOnly}
             />
             <HelpTip text="When on, 401k contributions are withheld from the bonus paycheck just like a regular paycheck." />
           </div>
@@ -57,6 +61,7 @@ export function BonusSection({
               }
               label="Contributions on salary + bonus"
               size="xs"
+              disabled={readOnly}
             />
             <HelpTip text="When on, percent-of-salary contributions (e.g. 401k at 16%) are calculated against salary + bonus instead of salary alone." />
           </div>
@@ -73,6 +78,7 @@ export function BonusSection({
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}
             type="number"
             className="font-medium"
+            isEditable={!readOnly}
           />
         </div>
         <div className="flex justify-between items-center">
@@ -89,12 +95,13 @@ export function BonusSection({
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}
             type="number"
             className="font-medium"
+            isEditable={!readOnly}
           />
         </div>
         <div className="flex justify-between items-center">
           <span className="flex items-center gap-1">
-            Gross Override
-            <HelpTip text="Set a specific bonus amount instead of using the calculated salary x percent x multiplier" />
+            {new Date().getFullYear()} Actual
+            <HelpTip text="Pin this year's actual bonus once it's paid out, instead of the calculated salary x percent x multiplier. Only affects this calendar year — next year's projections still use the full formula." />
             {!hasOverride && (
               <span className="text-caption text-faint">
                 (calc: {formatCurrency(calculatedGross)})
@@ -113,6 +120,7 @@ export function BonusSection({
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}
             type="number"
             className={`font-medium ${hasOverride ? "text-amber-700" : "text-faint"}`}
+            isEditable={!readOnly}
           />
         </div>
         <div className="flex justify-between items-center">
@@ -139,9 +147,10 @@ export function BonusSection({
                   onUpdateJob("bonusDayOfMonth", String(d.getDate()));
                 }
               }}
+              disabled={readOnly}
               className="text-sm border rounded px-2 py-0.5 bg-surface-primary font-medium"
             />
-            {job.bonusMonth != null && (
+            {!readOnly && job.bonusMonth != null && (
               <button
                 type="button"
                 onClick={() => {

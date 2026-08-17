@@ -17,6 +17,7 @@ import { utilitiesRouter } from "./utilities";
 import { apiDocsRouter } from "./api-docs";
 import { versionRouter } from "./version";
 import { contributionProfileRouter } from "./contribution-profiles";
+import { salaryProfileRouter } from "./salary-profiles";
 import { syncRouter } from "./sync";
 import { simplefinRouter } from "./simplefin";
 import { demoRouter } from "./demo";
@@ -42,6 +43,7 @@ export const appRouter = createTRPCRouter({
   apiDocs: apiDocsRouter,
   version: versionRouter,
   contributionProfile: contributionProfileRouter,
+  salaryProfile: salaryProfileRouter,
   sync: syncRouter,
   simplefin: simplefinRouter,
   demo: demoRouter,

@@ -19,6 +19,8 @@ import {
   essentialColor,
   discretionaryColor,
 } from "@/lib/utils/colors";
+import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
+import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 
 // Code-split the recharts-heavy chart row (v0.5 expert-review M8). Both
 // charts share a single chunk so the recharts payload is fetched once on
@@ -91,13 +93,15 @@ export default function ExpensesPage() {
 
   const { data: apiCategories } = trpc.budget.listApiCategories.useQuery();
   const { data: apiActuals } = trpc.budget.listApiActuals.useQuery();
-  const { data: budgetProfilesList } = trpc.budget.listProfiles.useQuery();
+  const { data: budgetProfilesList } = useBudgetProfilesList();
   const { data: contribProfilesList } =
     trpc.contributionProfile.list.useQuery();
 
   // Salary overrides from scenario context (used by all pages) — mirrors
   // paycheck/page.tsx so a what-if salary scenario stays holistic across pages.
   const scenarioSalaryOverrides = useSalaryOverrides();
+  // Independent Salary Profile axis (Plan pin -> globally-active setting).
+  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
 
   // Plan pin -> globally-active profile for both budget and contribution —
   // this page has no local viewing picker of its own, so localSelection is
@@ -112,21 +116,27 @@ export default function ExpensesPage() {
       globalDefaultId: activeBudgetProfileId,
     },
   );
-  const { profileId: effectiveContribProfileId } = useEffectiveProfileId(
-    "contribution",
-    {
-      validIds: contribProfilesList?.map((p) => p.id),
-      localSelection: null,
-      globalDefaultId: activeContribProfileId,
-    },
-  );
+  const {
+    profileId: effectiveContribProfileId,
+    planPinId: planContribProfileId,
+  } = useEffectiveProfileId("contribution", {
+    validIds: contribProfilesList?.map((p) => p.id),
+    localSelection: null,
+    globalDefaultId: activeContribProfileId,
+  });
 
   const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
     ...(effectiveBudgetProfileId != null
       ? { profileId: effectiveBudgetProfileId }
       : {}),
-    activeContribProfileId: effectiveContribProfileId,
+    // Tiers, not a pre-resolved id — the Plan pin has to stay in its own tier
+    // or a budget column's pin would outrank it (docs/RULES.md "Profile Pins").
+    contributionProfile: {
+      planPinId: planContribProfileId,
+      localSelectionId: null,
+      globalDefaultId: activeContribProfileId,
+    },
     ...(scenarioSalaryOverrides.length > 0
       ? { salaryOverrides: scenarioSalaryOverrides }
       : {}),
@@ -139,6 +149,7 @@ export default function ExpensesPage() {
     ...(effectiveContribProfileId != null
       ? { contributionProfileId: effectiveContribProfileId }
       : {}),
+    ...salaryProfileInput,
   };
   const { data: paycheckData } = trpc.paycheck.computeSummary.useQuery(
     Object.keys(paycheckInput).length > 0 ? paycheckInput : undefined,

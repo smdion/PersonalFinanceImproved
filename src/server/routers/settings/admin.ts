@@ -110,8 +110,6 @@ const savingsGoalInput = z.object({
   isActive: z.boolean().default(true),
   isEmergencyFund: z.boolean().default(false),
   targetMode: targetModeSchema.default("fixed"),
-  monthlyContribution: zDecimal.default("0"),
-  allocationPercent: zDecimal.nullable().optional(), // % of budget leftover
 });
 
 // --- Procedures ---
@@ -263,6 +261,7 @@ export const adminProcedures = {
           overrides: scenarioOverridesSchema.default({}),
           budgetProfileId: z.number().int().nullable().optional(),
           contributionProfileId: z.number().int().nullable().optional(),
+          salaryProfileId: z.number().int().nullable().optional(),
         }),
       )
       .mutation(({ ctx, input }) =>
@@ -281,6 +280,7 @@ export const adminProcedures = {
           overrides: scenarioOverridesSchema.optional(),
           budgetProfileId: z.number().int().nullable().optional(),
           contributionProfileId: z.number().int().nullable().optional(),
+          salaryProfileId: z.number().int().nullable().optional(),
         }),
       )
       .mutation(({ ctx, input: { id, ...data } }) =>
@@ -323,6 +323,25 @@ export const adminProcedures = {
           .update(schema.scenarios)
           .set({
             contributionProfileId: input.contributionProfileId,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.scenarios.id, input.id))
+          .returning()
+          .then((r) => r[0]),
+      ),
+    /** Pin (or clear, with null) which Salary Profile is "active" when this Plan is selected. */
+    setSalaryProfilePin: scenarioProcedure
+      .input(
+        z.object({
+          id: z.number().int(),
+          salaryProfileId: z.number().nullable(),
+        }),
+      )
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .update(schema.scenarios)
+          .set({
+            salaryProfileId: input.salaryProfileId,
             updatedAt: new Date(),
           })
           .where(eq(schema.scenarios.id, input.id))
@@ -481,13 +500,30 @@ export const adminProcedures = {
     ),
     create: savingsProcedure
       .input(savingsGoalInput)
-      .mutation(({ ctx, input }) =>
-        ctx.db
+      .mutation(async ({ ctx, input }) => {
+        const goal = await ctx.db
           .insert(schema.savingsGoals)
           .values(input)
           .returning()
-          .then((r) => r[0]),
-      ),
+          .then((r) => r[0]!);
+        // Funding is per-profile with no shared default — every existing
+        // budget profile needs an explicit $0/no-percent row for this new
+        // goal (see savings_goal_profile_allocations' table comment).
+        const profiles = await ctx.db
+          .select({ id: schema.budgetProfiles.id })
+          .from(schema.budgetProfiles);
+        if (profiles.length > 0) {
+          await ctx.db.insert(schema.savingsGoalProfileAllocations).values(
+            profiles.map((p) => ({
+              goalId: goal.id,
+              budgetProfileId: p.id,
+              allocationPercent: null,
+              monthlyContribution: "0",
+            })),
+          );
+        }
+        return goal;
+      }),
     update: savingsProcedure
       .input(z.object({ id: z.number().int() }).extend(savingsGoalInput.shape))
       .mutation(({ ctx, input: { id, ...data } }) =>

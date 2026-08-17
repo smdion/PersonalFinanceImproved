@@ -12,7 +12,7 @@
  */
 
 import { formatCurrency } from "@/lib/utils/format";
-import { confirm, promptText } from "@/components/ui/confirm-dialog";
+import { confirm, promptTextWithSelect } from "@/components/ui/confirm-dialog";
 import { useScenario } from "@/lib/context/scenario-context";
 import type { BudgetProfileListEntry } from "./types";
 
@@ -20,6 +20,9 @@ type Props = {
   profiles: BudgetProfileListEntry[];
   displayProfileId: number | null;
   canEdit: boolean;
+  /** For "base the new profile off of this Contribution Profile" at
+   *  creation time. */
+  contribProfiles: { id: number; name: string }[];
 
   // Inline rename state (hoisted to parent so Escape/Blur flow stays simple)
   renamingProfileId: number | null;
@@ -36,7 +39,7 @@ type Props = {
 
   // Callbacks
   onSelectProfile: (profileId: number) => void;
-  onCreateProfile: (name: string) => void;
+  onCreateProfile: (name: string, contributionProfileId: number | null) => void;
   onSetActiveProfile: (profileId: number) => void;
   onDeleteProfile: (profileId: number) => void;
 };
@@ -45,6 +48,7 @@ export function BudgetProfileSidebar({
   profiles,
   displayProfileId,
   canEdit,
+  contribProfiles,
   renamingProfileId,
   renameValue,
   onRenameValueChange,
@@ -76,11 +80,21 @@ export function BudgetProfileSidebar({
           <button
             type="button"
             onClick={async () => {
-              const name = await promptText(
+              const result = await promptTextWithSelect(
                 "New budget profile name:",
                 "e.g. Aggressive Savings",
+                "Base it off of a Contribution Profile (optional)",
+                contribProfiles.map((p) => ({
+                  value: String(p.id),
+                  label: p.name,
+                })),
               );
-              if (name) onCreateProfile(name);
+              if (result) {
+                onCreateProfile(
+                  result.text,
+                  result.selectValue ? Number(result.selectValue) : null,
+                );
+              }
             }}
             className="text-caption font-medium text-blue-600 hover:text-blue-700"
           >

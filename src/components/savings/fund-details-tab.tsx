@@ -334,7 +334,6 @@ export function FundDetailsTab({
                             setAddingSubGoalForFund(null);
                             setNewFund({
                               name: "",
-                              monthlyContribution: "",
                               targetAmount: "",
                               targetMode: "fixed",
                               targetDate: "",
@@ -351,7 +350,6 @@ export function FundDetailsTab({
                           setAddingSubGoalForFund(raw.id);
                           setNewFund({
                             name: "",
-                            monthlyContribution: "0",
                             targetAmount: "",
                             targetMode: "fixed",
                             targetDate: "",

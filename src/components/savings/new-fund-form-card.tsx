@@ -36,23 +36,6 @@ export function NewFundFormCard({
             className="w-full border rounded px-2 py-1 text-sm"
           />
         </div>
-        {!isBucket && (
-          <div>
-            <label className="block text-xs text-muted mb-1">
-              Monthly Contribution
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={newFund.monthlyContribution}
-              onChange={(e) =>
-                setNewFund({ ...newFund, monthlyContribution: e.target.value })
-              }
-              placeholder="500"
-              className="w-full border rounded px-2 py-1 text-sm"
-            />
-          </div>
-        )}
         <div>
           <label className="block text-xs text-muted mb-1">Goal Type</label>
           <div className="flex bg-surface-elevated rounded p-0.5">
@@ -92,7 +75,6 @@ export function NewFundFormCard({
                   targetMode: "bucket",
                   targetDate: "",
                   targetAmount: "",
-                  monthlyContribution: "",
                 })
               }
               className={`flex-1 px-2 py-1 text-xs rounded transition-colors ${
@@ -178,6 +160,10 @@ export function NewFundFormCard({
           Cancel
         </button>
       </div>
+      <p className="text-caption text-faint mt-2">
+        New funds start at $0 for every budget profile — set how much each
+        profile funds this goal from the Savings Profiles tab after creating it.
+      </p>
     </Card>
   );
 }

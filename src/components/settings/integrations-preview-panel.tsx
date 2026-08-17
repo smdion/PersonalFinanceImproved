@@ -86,7 +86,6 @@ export function PreviewPanel({
         name: apiCat.name,
         targetMode: "ongoing",
         isActive: true,
-        monthlyContribution: "0",
       });
       if (created) {
         await savingsMutations.mutations.linkSavings.mutateAsync({

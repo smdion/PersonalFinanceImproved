@@ -1,17 +1,16 @@
 /**
  * The only path that resolves a savings goal's effective
- * allocationPercent/monthlyContribution for a given budget profile. A row in
- * savings_goal_profile_allocations for (goalId, profileId) shadows the
- * goal's global savings_goals.allocationPercent/monthlyContribution columns
- * when present; absent means "inherits the global default" (same
- * override-shadows-default shape savings_allocation_overrides already uses
- * for per-month overrides).
+ * allocationPercent/monthlyContribution for a given budget profile. Every
+ * active (goal, profile) pair has a mandatory row in
+ * savings_goal_profile_allocations — funding is entirely per-profile, no
+ * shared default a profile falls back to (goal *identity* stays on
+ * savingsGoals and IS shared; only funding is per-profile — see that
+ * table's comment in schema-pg.ts). A missing row (shouldn't happen once a
+ * pair is seeded at goal/profile creation) resolves to $0/no-percent rather
+ * than throwing, since a genuinely defensive fallback beats a 500 here.
  *
  * recalculateAllocation/lockInAllocationPercent always write through
- * upsertGoalProfileAllocation, never the raw savings_goals columns — those
- * columns are only ever set at goal creation, so this is the single place
- * that can produce a stale-vs-displayed mismatch, and it can't, because
- * nothing else writes allocation state.
+ * upsertGoalProfileAllocation.
  */
 import { and, eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
@@ -25,24 +24,21 @@ export interface ResolvedGoalAllocation {
   goalId: number;
   allocationPercent: number | null;
   monthlyContribution: number;
-  isOverride: boolean;
 }
 
 interface GoalAllocationFields {
   id: number;
-  allocationPercent: string | null;
-  monthlyContribution: string | null;
 }
 
-/** Batched — one query for all override rows in the profile, not N+1 per goal. */
+/** Batched — one query for all rows in the profile, not N+1 per goal. */
 export async function getResolvedGoalAllocations(
   db: DbType,
   goals: GoalAllocationFields[],
   profileId: number | null,
 ): Promise<Map<number, ResolvedGoalAllocation>> {
-  const overridesByGoal = new Map<
+  const rowsByGoal = new Map<
     number,
-    { allocationPercent: string | null; monthlyContribution: string | null }
+    { allocationPercent: string | null; monthlyContribution: string }
   >();
   if (profileId != null && goals.length > 0) {
     const rows = await db
@@ -57,32 +53,23 @@ export async function getResolvedGoalAllocations(
           ),
         ),
       );
-    for (const r of rows) overridesByGoal.set(r.goalId, r);
+    for (const r of rows) rowsByGoal.set(r.goalId, r);
   }
 
-  // A present override row is a full replacement of both fields (same
-  // null-means-dollar-only semantics as savings_goals itself) — not a
-  // per-field merge with the global default.
   const result = new Map<number, ResolvedGoalAllocation>();
   for (const g of goals) {
-    const override = overridesByGoal.get(g.id);
-    const source = override ?? g;
+    const row = rowsByGoal.get(g.id);
     result.set(g.id, {
       goalId: g.id,
       allocationPercent:
-        source.allocationPercent != null
-          ? toNumber(source.allocationPercent)
-          : null,
-      monthlyContribution: toNumber(source.monthlyContribution),
-      isOverride: override !== undefined,
+        row?.allocationPercent != null ? toNumber(row.allocationPercent) : null,
+      monthlyContribution: row ? toNumber(row.monthlyContribution) : 0,
     });
   }
   return result;
 }
 
-/** Upsert a single (goal, profile) override. Replaces both fields as a
- *  unit — to fully revert to the global default, use
- *  deleteGoalProfileAllocation instead of upserting nulls. */
+/** Upsert a single (goal, profile) row. Replaces both fields as a unit. */
 export async function upsertGoalProfileAllocation(
   db: DbType,
   goalId: number,
@@ -121,19 +108,19 @@ export async function upsertGoalProfileAllocation(
   }
 }
 
-/** Delete a (goal, profile) override, reverting that goal to the global
- *  default for that profile. */
-export async function deleteGoalProfileAllocation(
+/** Set every active goal's funding to $0/no-percent for one profile — the
+ *  "reset all to zero" bulk action. One statement per goal inside a
+ *  transaction (caller passes a tx db handle) rather than delete+reseed,
+ *  since every pair must keep an explicit row. */
+export async function resetProfileAllocationsToZero(
   db: DbType,
-  goalId: number,
+  goalIds: number[],
   profileId: number,
 ): Promise<void> {
-  await db
-    .delete(schema.savingsGoalProfileAllocations)
-    .where(
-      and(
-        eq(schema.savingsGoalProfileAllocations.goalId, goalId),
-        eq(schema.savingsGoalProfileAllocations.budgetProfileId, profileId),
-      ),
-    );
+  for (const goalId of goalIds) {
+    await upsertGoalProfileAllocation(db, goalId, profileId, {
+      allocationPercent: null,
+      monthlyContribution: 0,
+    });
+  }
 }

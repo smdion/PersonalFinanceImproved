@@ -75,6 +75,9 @@ export type ContribCardProps = {
   annualLimit?: number;
   siblingAnnualContribs?: number; // other accounts sharing same IRS limit (e.g., trad 401k + roth 401k)
   employerMatchAnnual?: number; // this account's employer match annual amount
+  /** Sandbox/preview mode — in-place editing is disabled and the delete
+   *  action is omitted entirely rather than rendered inert. */
+  readOnly?: boolean;
 };
 
 export type CreateDeductionData = {

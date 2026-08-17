@@ -52,6 +52,7 @@ export function useProjectionQueries(
     decumulationBudgetColumn,
     decumulationExpenseOverride,
     contributionProfileId,
+    salaryProfileId,
     snapshotId,
     parentCategoryFilter,
   } = props;
@@ -89,6 +90,7 @@ export function useProjectionQueries(
         ? { decumulationExpenseOverride }
         : {}),
       ...(contributionProfileId != null ? { contributionProfileId } : {}),
+      ...(salaryProfileId != null ? { salaryProfileId } : {}),
       ...(snapshotId != null ? { snapshotId } : {}),
     }),
     [
@@ -107,6 +109,7 @@ export function useProjectionQueries(
       decumulationBudgetColumn,
       decumulationExpenseOverride,
       contributionProfileId,
+      salaryProfileId,
       snapshotId,
     ],
   );
@@ -414,6 +417,7 @@ export function useProjectionQueries(
 
   // Contribution profiles query
   const contribProfilesQuery = trpc.contributionProfile.list.useQuery();
+  const salaryProfilesQuery = trpc.salaryProfile.list.useQuery();
 
   return {
     withdrawalRate,
@@ -451,6 +455,7 @@ export function useProjectionQueries(
     updateAssetClassOverrides,
     updateInflationOverrides,
     contribProfilesQuery,
+    salaryProfilesQuery,
   };
 }
 

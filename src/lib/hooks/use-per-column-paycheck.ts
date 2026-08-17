@@ -5,10 +5,16 @@ import { trpc } from "@/lib/trpc";
 
 type SalaryOverride = { personId: number; salary: number };
 
+/** A column's profile pins — the two axes are independent, so both are part
+ *  of the dedup key: two columns share a query only if they agree on BOTH. */
+type ColumnPins = { contribId: number | null; salaryId: number | null };
+
+const pinKey = (p: ColumnPins) => `${p.contribId}:${p.salaryId}`;
+
 /**
- * Fetches paycheck summaries for up to 5 unique contribution profile IDs
- * (one per budget column). Deduplicates queries so that columns sharing
- * a profile only trigger one fetch.
+ * Fetches paycheck summaries for up to 5 unique (Contribution Profile,
+ * Salary Profile) pairs — one per budget column. Deduplicates queries so
+ * that columns sharing both pins only trigger one fetch.
  *
  * Returns an array of paycheck results indexed by column, or null entries
  * while loading.
@@ -16,26 +22,37 @@ type SalaryOverride = { personId: number; salary: number };
 export function usePerColumnPaycheck(
   perColumnProfileIds: (number | null)[],
   salaryOverrides: SalaryOverride[],
+  perColumnSalaryProfileIds: (number | null)[] = [],
 ) {
-  // Deduplicate profile IDs (preserve order for stable hook calls)
+  const perColumnPins: ColumnPins[] = useMemo(
+    () =>
+      perColumnProfileIds.map((contribId, i) => ({
+        contribId,
+        salaryId: perColumnSalaryProfileIds[i] ?? null,
+      })),
+    [perColumnProfileIds, perColumnSalaryProfileIds],
+  );
+
+  // Deduplicate pin pairs (preserve order for stable hook calls)
   const uniqueIds = useMemo(() => {
     const seen = new Set<string>();
-    const result: (number | null)[] = [];
-    for (const id of perColumnProfileIds) {
-      const key = String(id);
+    const result: ColumnPins[] = [];
+    for (const pins of perColumnPins) {
+      const key = pinKey(pins);
       if (!seen.has(key)) {
         seen.add(key);
-        result.push(id);
+        result.push(pins);
       }
     }
     return result;
-  }, [perColumnProfileIds]);
+  }, [perColumnPins]);
 
-  // Build query inputs for up to 5 unique profiles (padding with nulls for stable hook count)
-  const buildInput = (profileId: number | null) => {
+  // Build query inputs for up to 5 unique pairs (padding with nulls for stable hook count)
+  const buildInput = (pins: ColumnPins | null) => {
     const input: Record<string, unknown> = {};
     if (salaryOverrides.length > 0) input.salaryOverrides = salaryOverrides;
-    if (profileId != null) input.contributionProfileId = profileId;
+    if (pins?.contribId != null) input.contributionProfileId = pins.contribId;
+    if (pins?.salaryId != null) input.salaryProfileId = pins.salaryId;
     return Object.keys(input).length > 0 ? input : undefined;
   };
 
@@ -63,23 +80,16 @@ export function usePerColumnPaycheck(
 
   const queries = [q0, q1, q2, q3, q4];
 
-  // Build a map from profile ID → query result
+  // Build a map from pin pair → query result
   return useMemo(() => {
     const dataByKey = new Map<string, typeof q0.data>();
     for (let i = 0; i < uniqueIds.length; i++) {
-      const key = String(uniqueIds[i]);
-      dataByKey.set(key, queries[i]?.data ?? undefined);
+      const pins = uniqueIds[i];
+      if (!pins) continue;
+      dataByKey.set(pinKey(pins), queries[i]?.data ?? undefined);
     }
     // Map each column to its corresponding query result
-    return perColumnProfileIds.map((id) => dataByKey.get(String(id)) ?? null);
+    return perColumnPins.map((pins) => dataByKey.get(pinKey(pins)) ?? null);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `queries` is omitted: new array ref every render; reactive content captured via q0.data–q4.data
-  }, [
-    perColumnProfileIds,
-    uniqueIds,
-    q0.data,
-    q1.data,
-    q2.data,
-    q3.data,
-    q4.data,
-  ]);
+  }, [perColumnPins, uniqueIds, q0.data, q1.data, q2.data, q3.data, q4.data]);
 }

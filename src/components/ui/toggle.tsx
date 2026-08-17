@@ -11,12 +11,15 @@ export function Toggle({
   label,
   size = "sm",
   title,
+  disabled = false,
 }: {
   isChecked: boolean;
   onChange: (checked: boolean) => void;
   label?: string;
   size?: "xs" | "sm";
   title?: string;
+  /** Renders the switch inert (read-only preview surfaces). */
+  disabled?: boolean;
 }) {
   const track = size === "xs" ? "w-7 h-4" : "w-9 h-5";
   const dot = size === "xs" ? "w-3 h-3" : "w-3.5 h-3.5";
@@ -34,7 +37,8 @@ export function Toggle({
         onChange(!isChecked);
       }}
       title={title}
-      className={`inline-flex items-center gap-1.5 ${label ? "px-2 py-1 rounded text-caption font-medium" : ""} ${
+      disabled={disabled}
+      className={`${disabled ? "opacity-60 cursor-not-allowed " : ""}inline-flex items-center gap-1.5 ${label ? "px-2 py-1 rounded text-caption font-medium" : ""} ${
         label
           ? isChecked
             ? "bg-blue-50 text-blue-700 border border-blue-200"

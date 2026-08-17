@@ -75,6 +75,8 @@ export type FICacheInputSignals = {
   accumulationOverrides?: unknown[] | null;
   decumulationOverrides?: unknown[] | null;
   contributionProfileId?: number | null;
+  /** A Salary Profile preview is just as non-live as a Contribution Profile one. */
+  salaryProfileId?: number | null;
   parentCategoryFilter?: string | null;
   isPersonFiltered?: boolean;
 };
@@ -90,6 +92,7 @@ export function isLivePlanInput(signals: FICacheInputSignals): boolean {
       signals.decumulationOverrides && signals.decumulationOverrides.length > 0
     ) &&
     signals.contributionProfileId == null &&
+    signals.salaryProfileId == null &&
     !signals.parentCategoryFilter &&
     !signals.isPersonFiltered
   );

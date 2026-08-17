@@ -29,6 +29,17 @@ type Props = {
   contribProfiles: ContribProfile[];
   contribProfileId: number | null;
   setContribProfileId: (id: number | null) => void;
+  /** Whether an active Plan pin — not this page's own selection — is what's
+   *  actually driving the projection. When true the select below is
+   *  disabled: changing it wouldn't change anything until the Plan pin is
+   *  cleared, so editing it here would be misleading. */
+  isContribPinned?: boolean;
+  salaryProfiles: { id: number; name: string }[];
+  salaryProfileId: number | null;
+  setSalaryProfileId: (id: number | null) => void;
+  isSalaryPinned?: boolean;
+  /** Name of the Plan doing the pinning, shown in the note next to either select. */
+  pinnedPlanName?: string;
 };
 
 export function IncomeSection({
@@ -39,6 +50,12 @@ export function IncomeSection({
   contribProfiles,
   contribProfileId,
   setContribProfileId,
+  isContribPinned,
+  salaryProfiles,
+  salaryProfileId,
+  setSalaryProfileId,
+  isSalaryPinned,
+  pinnedPlanName,
 }: Props) {
   return (
     <div>
@@ -111,13 +128,44 @@ export function IncomeSection({
         </div>
         <div>
           <span className="text-muted">
-            Contribution Profile
-            <HelpTip text="Select a contribution profile to override salary and contribution assumptions in the projection. 'Live' uses your current paycheck/contribution settings." />
+            Salary Profile
+            <HelpTip text="Which Salary Profile the salaries in this projection come from. Each profile sets every person to either follow their job record or a fixed amount. Independent of the Contribution Profile beside it — the two are separate selections. This selection is saved as your active Salary Profile and applies on every page until you change it back; it is not a one-off preview. A Plan pin, if one is set, overrides it." />
           </span>
           <div className="font-medium">
             <select
-              className="text-sm border rounded px-2 py-1 bg-surface-primary w-full"
+              className="text-sm border rounded px-2 py-1 bg-surface-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              value={salaryProfileId ?? ""}
+              disabled={isSalaryPinned}
+              onChange={(e) =>
+                setSalaryProfileId(
+                  e.target.value ? Number(e.target.value) : null,
+                )
+              }
+            >
+              {salaryProfiles.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            {isSalaryPinned && (
+              <div className="text-caption text-amber-600 mt-0.5">
+                Pinned by Plan{pinnedPlanName ? ` "${pinnedPlanName}"` : ""} —
+                clear the pin to change this here.
+              </div>
+            )}
+          </div>
+        </div>
+        <div>
+          <span className="text-muted">
+            Contribution Profile
+            <HelpTip text="Which Contribution Profile the contribution assumptions in this projection come from. Salary is a separate selection — see Salary Profile. This selection is saved as your active Contribution Profile and applies on every page until you change it back; it is not a one-off preview. A Plan pin, if one is set, overrides it." />
+          </span>
+          <div className="font-medium">
+            <select
+              className="text-sm border rounded px-2 py-1 bg-surface-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
               value={contribProfileId ?? ""}
+              disabled={isContribPinned}
               onChange={(e) =>
                 setContribProfileId(
                   e.target.value ? Number(e.target.value) : null,
@@ -127,10 +175,15 @@ export function IncomeSection({
               {contribProfiles.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
-                  {!p.name.includes("(Live)") && p.isDefault ? " (Live)" : ""}
                 </option>
               ))}
             </select>
+            {isContribPinned && (
+              <div className="text-caption text-amber-600 mt-0.5">
+                Pinned by Plan{pinnedPlanName ? ` "${pinnedPlanName}"` : ""} —
+                clear the pin to change this here.
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -11,10 +11,13 @@ export function DeductionRow({
   row,
   onUpdateDeduction,
   onCreateDeduction,
+  readOnly,
 }: {
   row: DeductionRowData;
   onUpdateDeduction: (id: number, field: string, value: string) => void;
   onCreateDeduction?: (data: CreateDeductionData) => void;
+  /** Sandbox/preview mode — in-place editing is disabled. */
+  readOnly?: boolean;
 }) {
   if (row.type === "placeholder") {
     return (
@@ -39,6 +42,7 @@ export function DeductionRow({
           parseInput={(v) => v.replace(/[^0-9.]/g, "")}
           type="number"
           className="text-faint"
+          isEditable={!readOnly}
         />
       </div>
     );
@@ -55,6 +59,7 @@ export function DeductionRow({
           parseInput={(v) => v.replace(/[^0-9.]/g, "")}
           type="number"
           className="text-red-600"
+          isEditable={!readOnly}
         />
       ) : (
         <span className="text-red-600">-{formatCurrency(row.amount)}</span>

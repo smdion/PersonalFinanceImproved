@@ -29,12 +29,19 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "api_connections", tier: 0 },
   { name: "app_settings", tier: 0 },
   { name: "local_admins", tier: 0 },
+  // These two must stay ahead of "scenarios" — scenarios.salary_profile_id and
+  // scenarios.contribution_profile_id FK into them, and the tier sort is
+  // stable, so array order decides insert order within tier 0. The restore
+  // path in version-logic.ts does NOT disable FK checks (unlike the
+  // session_replication_role import path), so getting this wrong fails the
+  // restore outright.
+  { name: "salary_profiles", tier: 0 },
+  { name: "contribution_profiles", tier: 0 },
   { name: "scenarios", tier: 0 },
   { name: "asset_class_params", tier: 0 },
   { name: "mc_presets", tier: 0 },
   { name: "portfolio_snapshots", tier: 0 },
   { name: "brokerage_goals", tier: 0 },
-  { name: "contribution_profiles", tier: 0 },
   { name: "net_worth_annual", tier: 0 },
   { name: "home_improvement_items", tier: 0 },
   { name: "other_asset_items", tier: 0 },

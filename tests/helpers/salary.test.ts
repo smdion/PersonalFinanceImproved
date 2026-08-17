@@ -23,7 +23,11 @@ describe("computeBonusGross", () => {
   });
 
   it("returns override directly when set", () => {
-    expect(computeBonusGross(120000, "0.10", "1", "15000", null)).toBe(15000);
+    expect(computeBonusGross(120000, "0.10", "1", 15000, null)).toBe(15000);
+  });
+
+  it("returns 0 when override is explicitly 0, not the formula", () => {
+    expect(computeBonusGross(120000, "0.10", "1", 0, null)).toBe(0);
   });
 
   it("returns 0 when bonus percent is 0", () => {
@@ -73,7 +77,6 @@ describe("getEffectiveIncome", () => {
       annualSalary: "120000",
       bonusPercent: "0.10",
       bonusMultiplier: "1",
-      bonusOverride: null,
       monthsInBonusYear: 12,
       includeBonusInContributions: false,
       payPeriod: "biweekly",
@@ -83,13 +86,18 @@ describe("getEffectiveIncome", () => {
   }
 
   it("returns base salary when includeBonusInContributions is false", () => {
-    expect(getEffectiveIncome(makeJob(), 120000)).toBe(120000);
+    expect(getEffectiveIncome(makeJob(), 120000, null)).toBe(120000);
   });
 
   it("returns salary + bonus when includeBonusInContributions is true", () => {
     const job = makeJob({ includeBonusInContributions: true });
     // 120000 + 120000 * 0.10 * 1 * (12/12) = 132000
-    expect(getEffectiveIncome(job, 120000)).toBe(132000);
+    expect(getEffectiveIncome(job, 120000, null)).toBe(132000);
+  });
+
+  it("uses the resolved bonus override instead of the formula", () => {
+    const job = makeJob({ includeBonusInContributions: true });
+    expect(getEffectiveIncome(job, 120000, 5000)).toBe(125000);
   });
 });
 
@@ -105,7 +113,6 @@ describe("getTotalCompensation", () => {
       annualSalary: "120000",
       bonusPercent: "0.10",
       bonusMultiplier: "1",
-      bonusOverride: null,
       monthsInBonusYear: 12,
       includeBonusInContributions: false,
       payPeriod: "biweekly",
@@ -116,17 +123,17 @@ describe("getTotalCompensation", () => {
 
   it("returns salary + bonus regardless of includeBonusInContributions", () => {
     const job = makeJob({ includeBonusInContributions: false });
-    expect(getTotalCompensation(job, 120000)).toBe(132000);
+    expect(getTotalCompensation(job, 120000, null)).toBe(132000);
   });
 
   it("returns just salary when no bonus", () => {
     const job = makeJob({ bonusPercent: "0" });
-    expect(getTotalCompensation(job, 120000)).toBe(120000);
+    expect(getTotalCompensation(job, 120000, null)).toBe(120000);
   });
 
-  it("applies bonus override", () => {
-    const job = makeJob({ bonusOverride: "25000" });
-    expect(getTotalCompensation(job, 120000)).toBe(145000);
+  it("applies the resolved bonus override instead of the formula", () => {
+    const job = makeJob();
+    expect(getTotalCompensation(job, 120000, 25000)).toBe(145000);
   });
 });
 
@@ -224,12 +231,12 @@ describe("getCurrentSalary", () => {
 
 describe("applySalaryOverride", () => {
   it("returns the override when the map has an entry for the person", () => {
-    const map = new Map([[1, 150000]]);
+    const map = new Map([[1, { salary: 150000 }]]);
     expect(applySalaryOverride(1, 100000, map)).toBe(150000);
   });
 
   it("returns the raw salary when the map has no entry for the person", () => {
-    const map = new Map([[2, 150000]]);
+    const map = new Map([[2, { salary: 150000 }]]);
     expect(applySalaryOverride(1, 100000, map)).toBe(100000);
   });
 
@@ -238,8 +245,15 @@ describe("applySalaryOverride", () => {
   });
 
   it("honors a zero-dollar override rather than falling back", () => {
-    const map = new Map([[1, 0]]);
+    const map = new Map([[1, { salary: 0 }]]);
     expect(applySalaryOverride(1, 100000, map)).toBe(0);
+  });
+
+  it("falls back to raw when the entry pins bonus terms but no salary", () => {
+    // A map key means "has at least one pin", NOT "salary is pinned". Reading
+    // it as the latter is what broke the year-0 bonus adjustment guard.
+    const map = new Map([[1, { bonusPercent: 0.2 }]]);
+    expect(applySalaryOverride(1, 100000, map)).toBe(100000);
   });
 });
 
@@ -292,7 +306,7 @@ describe("resolveEffectiveSalary", () => {
     const salary = await resolveEffectiveSalary(
       ctx.rawDb,
       job,
-      new Map([[1, 200000]]),
+      new Map([[1, { salary: 200000 }]]),
       new Date("2025-07-01"),
     );
     expect(salary).toBe(200000);

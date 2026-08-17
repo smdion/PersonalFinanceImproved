@@ -13,6 +13,7 @@ import {
   getTotalCompensation,
   applySalaryOverride,
 } from "./salary";
+import type { SalaryOverrideMap } from "./salary";
 import {
   getEffectiveCash,
   getEffectiveOtherAssets,
@@ -289,7 +290,7 @@ export type YearEndRow = {
  */
 export type YearEndHistoryTargeting = BudgetTargeting & {
   /** personId -> overridden salary, merged in place of the raw current salary for the live current-year row. */
-  salaryOverrides?: Map<number, number>;
+  salaryOverrides?: SalaryOverrideMap;
 };
 
 let _yearEndCache: { data: YearEndRow[]; expiresAt: number } | null = null;
@@ -778,6 +779,7 @@ export async function buildYearEndHistory(
             js.baseSalary,
             salaryOverrideMap,
           ),
+          js.resolvedBonusOverride,
         ),
       0,
     );
@@ -979,7 +981,11 @@ export async function buildYearEndHistory(
               )
             : Math.round((asOf.getMonth() / 12) * ppy);
           const ratio = ppy > 0 ? elapsed / ppy : 0;
-          const salary = getTotalCompensation(js.job, js.baseSalary);
+          const salary = getTotalCompensation(
+            js.job,
+            js.baseSalary,
+            js.resolvedBonusOverride,
+          );
           weightedRatio += ratio * salary;
           totalSalary += salary;
         }

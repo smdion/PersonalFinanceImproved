@@ -37,6 +37,7 @@ import {
   DEFAULT_LOAN_RATE,
   DEFAULT_LOAN_TERM_YEARS,
 } from "@/lib/constants";
+import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 
 export default function ToolsPage() {
   const user = useUser();
@@ -115,7 +116,7 @@ export default function ToolsPage() {
   });
 
   // Budget profiles for relocation selectors
-  const budgetProfilesQuery = trpc.budget.listProfiles.useQuery();
+  const budgetProfilesQuery = useBudgetProfilesList();
   const relocProfiles = budgetProfilesQuery.data ?? [];
   const relocDefaultProfileId =
     relocProfiles.find((p) => p.isActive)?.id ?? relocProfiles[0]?.id;
@@ -127,8 +128,9 @@ export default function ToolsPage() {
   // Contribution profiles for relocation selectors
   const contribProfilesQuery = trpc.contributionProfile.list.useQuery();
   const contribProfiles = contribProfilesQuery.data ?? [];
-  const defaultContribProfileId =
-    contribProfiles.find((p) => p.isDefault)?.id ?? contribProfiles[0]?.id;
+  // No profile is privileged any more — the first (oldest) one is simply the
+  // pre-selection when the relocation scenario hasn't picked one yet.
+  const defaultContribProfileId = contribProfiles[0]?.id;
   const effectiveCurrentContribProfileId =
     relocCurrentContribProfileId ?? defaultContribProfileId ?? null;
   const effectiveTargetContribProfileId =

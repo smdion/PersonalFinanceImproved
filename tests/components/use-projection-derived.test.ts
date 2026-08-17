@@ -204,6 +204,7 @@ function makeQueries(
       isFetching: false,
     },
     contribProfilesQuery: { data: undefined },
+    salaryProfilesQuery: { data: undefined },
     coastFireMcResult: undefined,
     ...overrides,
   } as unknown as ProjectionQueries;

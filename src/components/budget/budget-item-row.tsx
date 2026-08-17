@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { formatCurrency } from "@/lib/utils/format";
-import { InlineEdit } from "@/components/ui/inline-edit";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { ApiCategoryPicker } from "./api-category-picker";
 import type { RawItem } from "./types";
@@ -15,7 +14,6 @@ type BudgetItemRowProps = {
   editMode: boolean;
   getDraft: (id: number, colIndex: number, original: number) => number;
   onSetDraft: (id: number, colIndex: number, amount: number) => void;
-  onUpdateCell: (id: number, colIndex: number, amount: number) => void;
   onToggleEssential: (id: number, isEssential: boolean) => void;
   onMoveItem: (id: number, newCategory: string) => void;
   onDeleteItem: (id: number) => void;
@@ -28,6 +26,18 @@ type BudgetItemRowProps = {
   apiActual?: { activity: number; balance: number; budgeted: number } | null;
   showApiColumn?: boolean;
   nameColWidth?: number;
+  /**
+   * Sandbox mode: amounts are editable via `editMode` alone (not `editMode
+   * && canEdit`), and every OTHER control that reaches a live mutation —
+   * the essential toggle, the API-category link/unlink picker, and the
+   * move/reorder/delete/convert-to-goal action cluster — renders in its
+   * fully inert/hidden form regardless of `editMode`/`canEdit`. This is the
+   * structural-omission pattern used elsewhere in the What-If tab: not
+   * disabled-but-present, actually absent, so nothing here can reach
+   * `budget.linkToApi`/`unlinkFromApi`/`updateCategoryEssential`/etc. even
+   * if a caller passes `canEdit: true` to unlock amount editing.
+   */
+  amountsOnly?: boolean;
 };
 
 export function BudgetItemRow({
@@ -38,7 +48,6 @@ export function BudgetItemRow({
   editMode,
   getDraft,
   onSetDraft,
-  onUpdateCell,
   onToggleEssential,
   onMoveItem,
   onDeleteItem,
@@ -51,6 +60,7 @@ export function BudgetItemRow({
   apiActual,
   showApiColumn,
   nameColWidth,
+  amountsOnly = false,
 }: BudgetItemRowProps) {
   const [showPicker, setShowPicker] = useState(false);
   const [pickerAnchor, setPickerAnchor] = useState<DOMRect | null>(null);
@@ -69,7 +79,7 @@ export function BudgetItemRow({
         }
       >
         <span className="flex flex-wrap items-center gap-1.5 min-w-0">
-          {canEdit ? (
+          {canEdit && !amountsOnly ? (
             <button
               onClick={() => onToggleEssential(item.id, !item.isEssential)}
               className="p-3 -m-3 flex-shrink-0 cursor-pointer touch-target flex items-center justify-center"
@@ -112,11 +122,11 @@ export function BudgetItemRow({
           )}
           {isLinked && (
             <span
-              className="flex-shrink-0 text-caption font-semibold text-blue-600 bg-blue-50 rounded px-0.5 leading-tight cursor-pointer"
+              className={`flex-shrink-0 text-caption font-semibold text-blue-600 bg-blue-50 rounded px-0.5 leading-tight ${amountsOnly ? "" : "cursor-pointer"}`}
               title={`Linked to ${item.apiCategoryName} (${item.apiSyncDirection})`}
               onClick={(e) => {
                 e.stopPropagation();
-                if (canEdit) {
+                if (canEdit && !amountsOnly) {
                   setPickerAnchor(e.currentTarget.getBoundingClientRect());
                   setShowPicker(!showPicker);
                 }
@@ -125,7 +135,7 @@ export function BudgetItemRow({
               API
             </span>
           )}
-          {canEdit && !isLinked && (
+          {canEdit && !amountsOnly && !isLinked && (
             <span
               className="flex-shrink-0 text-caption text-faint hover:text-blue-500 cursor-pointer hidden group-hover:inline"
               title="Link to budget API category"
@@ -138,7 +148,7 @@ export function BudgetItemRow({
               +API
             </span>
           )}
-          {showPicker && pickerAnchor && (
+          {!amountsOnly && showPicker && pickerAnchor && (
             <ApiCategoryPicker
               budgetItemId={item.id}
               currentApiCategoryId={item.apiCategoryId}
@@ -148,7 +158,7 @@ export function BudgetItemRow({
               onClose={() => setShowPicker(false)}
             />
           )}
-          {canEdit && editMode && (
+          {canEdit && !amountsOnly && editMode && (
             <span className="flex-shrink-0 inline-flex items-center gap-1 whitespace-nowrap ml-1">
               <button
                 onClick={() => onReorderItem(item.id, "up")}
@@ -218,26 +228,28 @@ export function BudgetItemRow({
         </span>
       </td>
       {Array.from({ length: numCols }, (_, col) => {
+        // Per-column first: a linked item's monthly $ depends on the
+        // Contribution/Salary Profile THIS column resolves to, which can
+        // differ column to column. contribAmount is only the selected
+        // column's figure and is the back-compat fallback.
         const amt =
-          item.contribAmount != null
+          item.contribAmounts?.[col] ??
+          (item.contribAmount != null
             ? item.contribAmount
-            : (item.amounts[col] ?? 0);
-        if (editMode && canEdit) {
-          const draftVal = getDraft(item.id, col, amt);
-          return (
-            <td key={col} className="text-right py-1 px-2">
-              <input
-                type="number"
-                value={draftVal}
-                onChange={(e) =>
-                  onSetDraft(item.id, col, parseFloat(e.target.value) || 0)
-                }
-                className="w-full max-w-[100px] text-right text-xs border border-strong rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400 tabular-nums ml-auto block"
-              />
-            </td>
-          );
-        }
-        if (!canEdit) {
+            : (item.amounts[col] ?? 0));
+        // The padlock is the ONE thing that gates amount editing here: an
+        // amount is only editable when the tab is unlocked (editMode) AND the
+        // user has write permission. Every other case renders static text.
+        // (Previously the locked-but-editable case rendered an InlineEdit,
+        // which had its own click-to-edit affordance that saved immediately
+        // and so bypassed the padlock entirely.)
+        // In amountsOnly (sandbox) mode, `canEdit` doesn't gate the amount —
+        // every OTHER control on this row is already structurally omitted
+        // above regardless of canEdit, so editMode alone is the right gate:
+        // someone without the `budget` permission can still play in a
+        // sandbox that writes nothing.
+        const amountEditable = amountsOnly ? editMode : editMode && canEdit;
+        if (!amountEditable) {
           const n = parseFloat(String(amt));
           return (
             <td
@@ -248,26 +260,16 @@ export function BudgetItemRow({
             </td>
           );
         }
+        const draftVal = getDraft(item.id, col, amt);
         return (
-          <td
-            key={col}
-            className="text-right py-1.5 px-3 tabular-nums text-secondary"
-          >
-            <InlineEdit
-              value={String(amt)}
+          <td key={col} className="text-right py-1 px-2">
+            <input
               type="number"
-              formatDisplay={() => {
-                const n = parseFloat(String(amt));
-                return n > 0 ? formatCurrency(n) : "\u2014";
-              }}
-              parseInput={(v) => String(parseFloat(v) || 0)}
-              onSave={(newVal) => {
-                const newAmt = parseFloat(newVal);
-                if (newAmt !== amt) {
-                  onUpdateCell(item.id, col, newAmt);
-                }
-              }}
-              className="text-right justify-end text-xs"
+              value={draftVal}
+              onChange={(e) =>
+                onSetDraft(item.id, col, parseFloat(e.target.value) || 0)
+              }
+              className="w-full max-w-[100px] text-right text-xs border border-strong rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400 tabular-nums ml-auto block"
             />
           </td>
         );

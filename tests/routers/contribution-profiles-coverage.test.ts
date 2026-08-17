@@ -22,6 +22,7 @@ import {
   seedPerformanceAccount,
 } from "./setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
+import { eq } from "drizzle-orm";
 
 // ── Helpers ──
 
@@ -60,7 +61,6 @@ function seedContribProfile(
     .insert(sqliteSchema.contributionProfiles)
     .values({
       name: "Test What-If",
-      salaryOverrides: {},
       contributionOverrides: { contributionAccounts: {}, jobs: {} },
       ...overrides,
     })
@@ -73,24 +73,16 @@ function seedContribProfile(
 describe("contributionProfiles coverage", () => {
   // ── LIST: DB-default profile present (no synthetic Live) ──
 
-  describe("list — DB-default profile suppresses synthetic Live", () => {
-    it("does not prepend synthetic Live when a DB row has isDefault=true", async () => {
+  describe("list — real rows only", () => {
+    it("never prepends a synthetic id-0 Live row", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
-        seedContribProfile(db, {
-          name: "DefaultProfile",
-          isDefault: true,
-        });
+        seedContribProfile(db, { name: "SomeProfile" });
         const profiles = await caller.contributionProfile.list();
-        const liveIds = profiles.filter(
-          (p: { id: number; name: string }) => p.id === 0 && p.name === "Live",
-        );
-        expect(liveIds.length).toBe(0);
-        const dbDefault = profiles.find(
-          (p: { name: string }) => p.name === "DefaultProfile",
-        );
-        expect(dbDefault).toBeDefined();
-        expect(dbDefault!.isDefault).toBe(true);
+        expect(profiles.map((p: { id: number }) => p.id)).not.toContain(0);
+        expect(
+          profiles.find((p: { name: string }) => p.name === "SomeProfile"),
+        ).toBeDefined();
       } finally {
         cleanup();
       }
@@ -99,8 +91,8 @@ describe("contributionProfiles coverage", () => {
 
   // ── LIST: profile with overrides shows overrideCount ──
 
-  describe("list — overrideCount reflects contribution + salary overrides", () => {
-    it("counts contribution account overrides and salary overrides", async () => {
+  describe("list — overrideCount reflects contribution overrides", () => {
+    it("counts contribution account overrides", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const personId = await seedPerson(db, "Alex");
@@ -115,7 +107,6 @@ describe("contributionProfiles coverage", () => {
             },
             jobs: {},
           },
-          salaryOverrides: { [String(personId)]: 150000 },
         });
 
         const profiles = await caller.contributionProfile.list();
@@ -123,8 +114,9 @@ describe("contributionProfiles coverage", () => {
           (x: { name: string }) => x.name === "WithOverrides",
         );
         expect(p).toBeDefined();
-        // 1 contribution account override + 1 salary override = 2
-        expect(p!.overrideCount).toBe(2);
+        // Salary is no longer part of a Contribution Profile — only the
+        // 1 contribution account override counts.
+        expect(p!.overrideCount).toBe(1);
       } finally {
         cleanup();
       }
@@ -349,7 +341,6 @@ describe("contributionProfiles coverage", () => {
 
         const profileId = seedContribProfile(db, {
           name: "JobOverrideTest",
-          salaryOverrides: { [String(personId)]: 130000 },
           contributionOverrides: {
             contributionAccounts: {},
             jobs: {
@@ -368,7 +359,6 @@ describe("contributionProfiles coverage", () => {
         expect(result!.salaryDetails.length).toBe(1);
 
         const salary = result!.salaryDetails[0];
-        expect(salary.overrideSalary).toBe(130000);
         expect(salary.jobOverrides).toBeDefined();
         expect(salary.employerNameOverride).toBe("NewCo");
         expect(salary.liveSalary).toBe(100000);
@@ -396,7 +386,6 @@ describe("contributionProfiles coverage", () => {
         });
         expect(result).not.toBeNull();
         const salary = result!.salaryDetails[0];
-        expect(salary.overrideSalary).toBeNull();
         expect(salary.jobOverrides).toBeNull();
         expect(salary.employerNameOverride).toBeNull();
       } finally {
@@ -435,64 +424,41 @@ describe("contributionProfiles coverage", () => {
     });
   });
 
-  // ── UPDATE: prevent modifying default profile overrides ──
+  // ── UPDATE: the former "default" profile is now fully editable ──
 
-  describe("update — default profile guard", () => {
-    it("throws when updating salary overrides on a default profile", async () => {
-      const { caller, db, cleanup } = await createTestCaller(adminSession);
+  describe("update — no immutable profile any more", () => {
+    it("edits contribution overrides on the migration-seeded baseline", async () => {
+      const { caller, cleanup } = await createTestCaller(adminSession);
       try {
-        const profileId = seedContribProfile(db, {
-          name: "DefaultLocked",
-          isDefault: true,
+        const [seeded] = await caller.contributionProfile.list();
+        const updated = await caller.contributionProfile.update({
+          id: seeded!.id,
+          contributionOverrides: {
+            contributionAccounts: { "1": { contributionValue: "0.20" } },
+            jobs: {},
+          },
         });
-        await expect(
-          caller.contributionProfile.update({
-            id: profileId,
-            salaryOverrides: { "1": 999999 },
-          }),
-        ).rejects.toThrow("Cannot modify the default (Live) profile overrides");
+        const accts = (
+          updated.contributionOverrides as Record<
+            string,
+            Record<string, Record<string, unknown>>
+          >
+        ).contributionAccounts;
+        expect(accts["1"].contributionValue).toBe("0.20");
       } finally {
         cleanup();
       }
     });
 
-    it("throws when updating contribution overrides on a default profile", async () => {
-      const { caller, db, cleanup } = await createTestCaller(adminSession);
+    it("renames the migration-seeded baseline", async () => {
+      const { caller, cleanup } = await createTestCaller(adminSession);
       try {
-        const profileId = seedContribProfile(db, {
-          name: "DefaultLocked2",
-          isDefault: true,
+        const [seeded] = await caller.contributionProfile.list();
+        const updated = await caller.contributionProfile.update({
+          id: seeded!.id,
+          name: "Renamed Baseline",
         });
-        await expect(
-          caller.contributionProfile.update({
-            id: profileId,
-            contributionOverrides: {
-              contributionAccounts: { "1": { contributionValue: "0.20" } },
-              jobs: {},
-            },
-          }),
-        ).rejects.toThrow("Cannot modify the default (Live) profile overrides");
-      } finally {
-        cleanup();
-      }
-    });
-
-    it("throws even when no explicit overrides passed — contributionOverrides defaults to truthy object", async () => {
-      // The contributionOverridesSchema has .default({...}), so even without
-      // passing it, Zod applies the default and the guard triggers.
-      // This means a default profile cannot be updated via this procedure at all.
-      const { caller, db, cleanup } = await createTestCaller(adminSession);
-      try {
-        const profileId = seedContribProfile(db, {
-          name: "DefaultCannotUpdate",
-          isDefault: true,
-        });
-        await expect(
-          caller.contributionProfile.update({
-            id: profileId,
-            name: "Renamed Default",
-          }),
-        ).rejects.toThrow("Cannot modify the default (Live) profile overrides");
+        expect(updated.name).toBe("Renamed Baseline");
       } finally {
         cleanup();
       }
@@ -502,7 +468,7 @@ describe("contributionProfiles coverage", () => {
   // ── UPDATE: update salary and contribution overrides ──
 
   describe("update — overrides update", () => {
-    it("updates salary overrides on a non-default profile", async () => {
+    it("updates contribution overrides on a non-default profile", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const profileId = seedContribProfile(db, {
@@ -510,11 +476,18 @@ describe("contributionProfiles coverage", () => {
         });
         const updated = await caller.contributionProfile.update({
           id: profileId,
-          salaryOverrides: { "1": 200000 },
+          contributionOverrides: {
+            contributionAccounts: { "1": { contributionValue: "0.2" } },
+            jobs: {},
+          },
         });
-        expect((updated.salaryOverrides as Record<string, number>)["1"]).toBe(
-          200000,
-        );
+        const accts = (
+          updated.contributionOverrides as Record<
+            string,
+            Record<string, Record<string, unknown>>
+          >
+        ).contributionAccounts;
+        expect(accts["1"].contributionValue).toBe("0.2");
       } finally {
         cleanup();
       }
@@ -530,7 +503,9 @@ describe("contributionProfiles coverage", () => {
           id: profileId,
           contributionOverrides: {
             contributionAccounts: { "5": { contributionValue: "500" } },
-            jobs: { "2": { bonusPercent: "0.12" } },
+            // employerName, not a bonus amount term — those moved to the
+            // Salary Profile and jobOverrideSchema now rejects them.
+            jobs: { "2": { employerName: "OverrideCorp" } },
           },
         });
         const overrides = updated.contributionOverrides as Record<
@@ -562,19 +537,42 @@ describe("contributionProfiles coverage", () => {
     });
   });
 
-  // ── DELETE: default profile guard ──
+  // ── DELETE: last-remaining and Plan-pin guards ──
 
-  describe("delete — default profile guard", () => {
-    it("throws when deleting a DB-persisted default profile", async () => {
+  describe("delete — last-remaining guard", () => {
+    it("throws when deleting the only remaining profile", async () => {
+      const { caller, cleanup } = await createTestCaller(adminSession);
+      try {
+        const [only] = await caller.contributionProfile.list();
+        await expect(
+          caller.contributionProfile.delete({ id: only!.id }),
+        ).rejects.toThrow("only remaining");
+      } finally {
+        cleanup();
+      }
+    });
+  });
+
+  describe("delete — Plan-pin guard", () => {
+    it("refuses to delete a profile a Plan pins", async () => {
+      // The scenarios FK is `set null`, so without this guard deleting would
+      // silently unpin every Plan referencing it. salaryProfile.delete had
+      // this check first; contributionProfile.delete was missing it.
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
-        const profileId = seedContribProfile(db, {
-          name: "DefaultNoDelete",
-          isDefault: true,
-        });
+        const profileId = seedContribProfile(db, { name: "PinnedByPlan" });
+        db.insert(sqliteSchema.scenarios)
+          .values({
+            name: "My Plan",
+            overrides: {},
+            isBaseline: false,
+            contributionProfileId: profileId,
+          })
+          .run();
+
         await expect(
           caller.contributionProfile.delete({ id: profileId }),
-        ).rejects.toThrow("Cannot delete the default (Live) profile");
+        ).rejects.toThrow("pinned by 1 Plan");
       } finally {
         cleanup();
       }
@@ -590,11 +588,13 @@ describe("contributionProfiles coverage", () => {
         const profileId = seedContribProfile(db, {
           name: "ActiveProfile",
         });
-        // Set this profile as the active one in app_settings.
-        // The value column is mode: "json", so we need to store a number (not a string)
-        // for the strict equality check (activeId === input.id) to match.
-        db.insert(sqliteSchema.appSettings)
-          .values({ key: "active_contrib_profile_id", value: profileId })
+        // Point the active-profile setting at it. The migration already
+        // inserted this key (it must always name a real row), so this is an
+        // update rather than an insert. The value column is mode: "json", so
+        // it holds a number for the strict `activeId === input.id` check.
+        db.update(sqliteSchema.appSettings)
+          .set({ value: profileId })
+          .where(eq(sqliteSchema.appSettings.key, "active_contrib_profile_id"))
           .run();
 
         await expect(
@@ -612,8 +612,11 @@ describe("contributionProfiles coverage", () => {
 
   describe("delete — non-existent profile", () => {
     it("throws Profile not found for non-existent id", async () => {
-      const { caller, cleanup } = await createTestCaller(adminSession);
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
+        // Seed a second profile so the last-remaining guard doesn't fire
+        // first and mask the not-found path.
+        seedContribProfile(db, { name: "Extra" });
         await expect(
           caller.contributionProfile.delete({ id: 99999 }),
         ).rejects.toThrow("Profile not found");
@@ -632,7 +635,6 @@ describe("contributionProfiles coverage", () => {
         const profile = await caller.contributionProfile.create({
           name: "Minimal",
           contributionOverrides: { contributionAccounts: {}, jobs: {} },
-          salaryOverrides: {},
         });
         expect(profile.name).toBe("Minimal");
         expect(profile.description).toBeNull();
@@ -645,26 +647,29 @@ describe("contributionProfiles coverage", () => {
   // ── CREATE: with salary and contribution overrides ──
 
   describe("create — with overrides", () => {
-    it("creates a profile with salary and contribution overrides", async () => {
+    it("creates a profile with contribution overrides", async () => {
       const { caller, cleanup } = await createTestCaller(adminSession);
       try {
         const profile = await caller.contributionProfile.create({
           name: "Full Override",
           description: "Has everything",
-          salaryOverrides: { "1": 150000, "2": 200000 },
           contributionOverrides: {
             contributionAccounts: {
               "10": { contributionValue: "0.15", isActive: true },
             },
             jobs: {
-              "5": { bonusPercent: "0.10", employerName: "NewCorp" },
+              "5": { include401kInBonus: true, employerName: "NewCorp" },
             },
           },
         });
         expect(profile.name).toBe("Full Override");
-        const salOverrides = profile.salaryOverrides as Record<string, number>;
-        expect(salOverrides["1"]).toBe(150000);
-        expect(salOverrides["2"]).toBe(200000);
+        const contribOverrides = (
+          profile.contributionOverrides as Record<
+            string,
+            Record<string, unknown>
+          >
+        ).contributionAccounts;
+        expect(contribOverrides["10"]).toBeDefined();
       } finally {
         cleanup();
       }
@@ -706,9 +711,9 @@ describe("contributionProfiles coverage", () => {
     });
   });
 
-  // ── GETBYID: id=0 synthetic Live with seeded data ──
+  // ── GETBYID: the migration-seeded baseline with seeded data ──
 
-  describe("getById id=0 — Live with seeded data", () => {
+  describe("getById — baseline profile with seeded data", () => {
     it("returns account and salary details from live data", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
@@ -722,16 +727,17 @@ describe("contributionProfiles coverage", () => {
           accountType: "401k",
         });
 
-        const result = await caller.contributionProfile.getById({ id: 0 });
+        const [seeded] = await caller.contributionProfile.list();
+        const result = await caller.contributionProfile.getById({
+          id: seeded!.id,
+        });
         expect(result).not.toBeNull();
-        expect(result!.id).toBe(0);
-        expect(result!.name).toBe("Live");
+        expect(result!.id).toBe(seeded!.id);
         expect(result!.accountDetails.length).toBe(1);
         expect(result!.salaryDetails.length).toBe(1);
         expect(result!.salaryDetails[0].liveSalary).toBe(120000);
-        // Live profile has no overrides
+        // A profile with empty contributionOverrides customizes nothing.
         expect(result!.accountDetails[0].overrides).toBeNull();
-        expect(result!.salaryDetails[0].overrideSalary).toBeNull();
       } finally {
         cleanup();
       }
@@ -960,34 +966,12 @@ describe("contributionProfiles coverage", () => {
     });
   });
 
-  // ── LIST: profile with only salary overrides ──
+  // ── RESOLVE: salary is live, not profile-driven ──
+  // (Salary override coverage moved to tests/routers/salary-profiles.test.ts
+  // when salary became its own first-class entity.)
 
-  describe("list — profile with salary overrides only", () => {
-    it("counts salary overrides in overrideCount", async () => {
-      const { caller, db, cleanup } = await createTestCaller(adminSession);
-      try {
-        seedContribProfile(db, {
-          name: "SalaryOnlyOverrides",
-          salaryOverrides: { "1": 150000, "2": 160000 },
-          contributionOverrides: { contributionAccounts: {}, jobs: {} },
-        });
-
-        const profiles = await caller.contributionProfile.list();
-        const p = profiles.find(
-          (x: { name: string }) => x.name === "SalaryOnlyOverrides",
-        );
-        expect(p).toBeDefined();
-        expect(p!.overrideCount).toBe(2);
-      } finally {
-        cleanup();
-      }
-    });
-  });
-
-  // ── RESOLVE: salary overrides affect combined salary ──
-
-  describe("resolve — salary overrides affect combined salary", () => {
-    it("uses overridden salary in resolved totals", async () => {
+  describe("resolve — combined salary is live", () => {
+    it("ignores any salary axis and reports live combined salary", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const personId = await seedPerson(db, "Alex");
@@ -1001,14 +985,13 @@ describe("contributionProfiles coverage", () => {
 
         const profileId = seedContribProfile(db, {
           name: "SalaryOverrideResolve",
-          salaryOverrides: { [String(personId)]: 200000 },
         });
 
         const result = await caller.contributionProfile.resolve({
           id: profileId,
         });
         expect(result).not.toBeNull();
-        expect(result!.combinedSalary).toBe(200000);
+        expect(result!.combinedSalary).toBe(100000);
       } finally {
         cleanup();
       }

@@ -40,7 +40,6 @@ export type TableLayout = {
 export type RowHandlers = {
   getDraft: (id: number, colIndex: number, original: number) => number;
   setDraft: (id: number, colIndex: number, amount: number) => void;
-  onUpdateCell: (id: number, colIndex: number, amount: number) => void;
   onToggleItemEssential: (id: number, isEssential: boolean) => void;
   onToggleCategoryEssential: (category: string, isEssential: boolean) => void;
   onMoveItem: (id: number, newCategory: string) => void;
@@ -94,6 +93,7 @@ export function BudgetTable({
     showApiColumn,
     canEdit,
     editMode,
+    amountsOnly,
   } = useBudgetPageContext();
   const numCols = cols.length;
   const { effectiveNameColWidth, onResizeStart, sentinelRef } = layout;
@@ -108,11 +108,16 @@ export function BudgetTable({
           <tr className="border-b-2 border-strong">
             <th
               className="text-left py-2 pr-3 text-muted font-medium sticky left-0 bg-surface-sunken z-10 select-none"
-              style={{
-                width: effectiveNameColWidth,
-                minWidth: 120,
-                maxWidth: 400,
-              }}
+              // No fixed `width` — table-layout:fixed gives every OTHER
+              // column (below) a real pixel width, so this is the one
+              // column left as "auto" and absorbs 100% of whatever's left
+              // over. That's what makes a 3-mode table and a 6-mode table
+              // both fill the card at a sane column width instead of the
+              // name column staying cramped while a handful of amount
+              // columns stretch to soak up the leftover space (or, before
+              // this, a container-level max-width fighting w-full to fake
+              // the same effect).
+              style={{ minWidth: effectiveNameColWidth, maxWidth: 400 }}
             >
               <span className="flex items-center justify-between">
                 <span>Category / Item</span>
@@ -128,7 +133,8 @@ export function BudgetTable({
             {cols.map((label, colIdx) => (
               <th
                 key={label}
-                className="text-right py-2 px-3 text-muted font-medium min-w-[90px]"
+                className="text-right py-2 px-3 text-muted font-medium"
+                style={{ width: 130 }}
               >
                 {label}
                 {apiService &&
@@ -141,7 +147,10 @@ export function BudgetTable({
               </th>
             ))}
             {showApiColumn && (
-              <th className="text-right py-2 px-2 text-muted font-medium min-w-[80px] text-xs">
+              <th
+                className="text-right py-2 px-2 text-muted font-medium text-xs"
+                style={{ width: 110 }}
+              >
                 {apiService?.toUpperCase()}
               </th>
             )}
@@ -158,7 +167,6 @@ export function BudgetTable({
               editMode={editMode}
               getDraft={rowHandlers.getDraft}
               onSetDraft={rowHandlers.setDraft}
-              onUpdateCell={rowHandlers.onUpdateCell}
               onToggleItemEssential={rowHandlers.onToggleItemEssential}
               onToggleCategoryEssential={rowHandlers.onToggleCategoryEssential}
               onMoveItem={rowHandlers.onMoveItem}
@@ -181,6 +189,7 @@ export function BudgetTable({
               apiActualsMap={apiActualsMap}
               showApiColumn={showApiColumn}
               nameColWidth={effectiveNameColWidth}
+              amountsOnly={amountsOnly}
             />
           ))}
           {hasMoreCategories && (

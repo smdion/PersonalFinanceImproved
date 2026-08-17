@@ -51,6 +51,9 @@ const RECOMMENDED_KEY_MAP: Record<string, WithdrawalStrategyType> = {
 import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
+import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
+import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
+import { useScenario } from "@/lib/context/scenario-context";
 import { ProjectionCard } from "@/components/cards/projection";
 
 // Code-split the recharts-heavy withdrawal comparison card (v0.5
@@ -102,6 +105,33 @@ export function RetirementContent() {
   const [contribProfileId, setContribProfileId] = useActiveContribProfile();
   const contribProfilesQuery = trpc.contributionProfile.list.useQuery();
   const contribProfiles = contribProfilesQuery.data ?? [];
+  // Independent Salary Profile axis — same tier as the Contribution Profile
+  // selector beside it (both write the globally-active setting, not a
+  // page-local preview).
+  const [salaryProfileId, setSalaryProfileId] = useActiveSalaryProfile();
+  const salaryProfilesQuery = trpc.salaryProfile.list.useQuery();
+  const salaryProfiles = salaryProfilesQuery.data ?? [];
+
+  // What the picker writes (above) is the globally-active setting, but a
+  // Plan pin must still win for what's actually COMPUTED here — same
+  // precedence every other page respects via useEffectiveProfileId. Without
+  // this, viewing the Retirement page while a Plan pins a different profile
+  // silently projects off the wrong one. isPinned drives the "pinned by
+  // Plan" note in IncomeSection so the picker doesn't look inert.
+  const { activeScenario } = useScenario();
+  const { profileId: effectiveContribProfileId, isPinned: isContribPinned } =
+    useEffectiveProfileId("contribution", {
+      validIds: contribProfiles.map((p) => p.id),
+      localSelection: null,
+      globalDefaultId: contribProfileId,
+    });
+  const { profileId: effectiveSalaryProfileIdRaw, isPinned: isSalaryPinned } =
+    useEffectiveProfileId("salary", {
+      validIds: salaryProfiles.map((p) => p.id),
+      localSelection: null,
+      globalDefaultId: salaryProfileId,
+    });
+  const effectiveSalaryProfileId = effectiveSalaryProfileIdRaw;
   const [snapshotId, setSnapshotId] = usePersistedSetting<number | null>(
     "retirement_snapshot_id",
     null,
@@ -114,8 +144,11 @@ export function RetirementContent() {
   const baseInput = useMemo(
     () => ({
       ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
-      ...(contribProfileId != null
-        ? { contributionProfileId: contribProfileId }
+      ...(effectiveContribProfileId != null
+        ? { contributionProfileId: effectiveContribProfileId }
+        : {}),
+      ...(effectiveSalaryProfileId != null
+        ? { salaryProfileId: effectiveSalaryProfileId }
         : {}),
       ...(decBudgetProfileId != null
         ? { decumulationBudgetProfileId: decBudgetProfileId }
@@ -130,7 +163,8 @@ export function RetirementContent() {
     }),
     [
       salaryOverrides,
-      contribProfileId,
+      effectiveContribProfileId,
+      effectiveSalaryProfileId,
       decBudgetProfileId,
       decBudgetCol,
       decExpenseOverride,
@@ -449,7 +483,8 @@ export function RetirementContent() {
                 decExpenseOverride ? parseFloat(decExpenseOverride) : undefined
               }
               parentCategoryFilter="Retirement"
-              contributionProfileId={contribProfileId ?? undefined}
+              contributionProfileId={effectiveContribProfileId ?? undefined}
+              salaryProfileId={effectiveSalaryProfileId ?? undefined}
               snapshotId={snapshotId ?? undefined}
               dollarMode={dollarMode}
               onDollarModeChange={setDollarMode}
@@ -486,6 +521,12 @@ export function RetirementContent() {
                       contribProfiles={contribProfiles}
                       contribProfileId={contribProfileId}
                       setContribProfileId={setContribProfileId}
+                      isContribPinned={isContribPinned}
+                      salaryProfiles={salaryProfiles}
+                      salaryProfileId={salaryProfileId}
+                      setSalaryProfileId={setSalaryProfileId}
+                      isSalaryPinned={isSalaryPinned}
+                      pinnedPlanName={activeScenario?.name}
                     />
                   </div>
 

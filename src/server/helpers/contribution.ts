@@ -17,10 +17,45 @@ import {
   getAllCategories,
   getDisplayGroup,
   getParentCategory,
+  getDefaultTaxTreatment,
 } from "@/lib/config/account-types";
+import type {
+  TaxTreatment,
+  ContributionMethod,
+} from "@/lib/config/enum-values";
 import { toNumber, getPeriodsPerYear } from "./transforms";
 import type { Db } from "./transforms";
-import { getCurrentSalary } from "./salary";
+import { getCurrentSalary, pinnedFields, resolveCompensation } from "./salary";
+import type { SalaryEntryMap } from "./salary";
+
+/**
+ * Bonus-AMOUNT fields a Contribution Profile is no longer allowed to
+ * override — they moved to the Salary Profile entry (same tier as salary).
+ *
+ * The override filter is field-name-driven and these names all still exist
+ * on `jobs`, so a stale key left behind in an old contribution_overrides
+ * blob would otherwise keep being applied and keep changing someone's
+ * compensation from the wrong profile. The migration strips them and
+ * jobOverrideSchema rejects new ones; this is the runtime backstop that
+ * makes a missed row inert rather than silently wrong.
+ */
+const MOVED_TO_SALARY_PROFILE = new Set([
+  "bonusPercent",
+  "bonusMultiplier",
+  "monthsInBonusYear",
+]);
+
+/** Job-override fields that are real columns AND still owned by this axis. */
+function pickJobOverrideFields(
+  overrides: Record<string, unknown>,
+  job: object,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(overrides).filter(
+      ([field]) => field in job && !MOVED_TO_SALARY_PROFILE.has(field),
+    ),
+  );
+}
 
 /**
  * Compute annual contribution amount from DB contribution row fields.
@@ -489,7 +524,13 @@ export async function loadLiveContribData(db: Db, asOfDate: Date = new Date()) {
 
   // Get current salaries (with salary_changes applied)
   // Import salary helpers for bonus-aware compensation
-  const { getEffectiveIncome, getTotalCompensation } = await import("./salary");
+  const { getEffectiveIncome, getTotalCompensation, getBonusOverridesForJobs } =
+    await import("./salary");
+  const bonusOverrides = await getBonusOverridesForJobs(
+    db,
+    activeJobs.map((j) => j.id),
+  );
+  const asOfYear = asOfDate.getFullYear();
   const jobSalaries = await Promise.all(
     activeJobs.map(async (j) => {
       const baseSalary = await getCurrentSalary(
@@ -498,11 +539,15 @@ export async function loadLiveContribData(db: Db, asOfDate: Date = new Date()) {
         j.annualSalary,
         asOfDate,
       );
+      const resolvedOverride =
+        bonusOverrides.get(`${j.id}:${asOfYear}`) ?? null;
       return {
         job: { id: j.id },
-        salary: getEffectiveIncome(j, baseSalary),
-        totalComp: getTotalCompensation(j, baseSalary),
+        salary: getEffectiveIncome(j, baseSalary, resolvedOverride),
+        baseSalary,
+        totalComp: getTotalCompensation(j, baseSalary, resolvedOverride),
         personId: j.personId,
+        resolvedBonusOverride: resolvedOverride,
       };
     }),
   );
@@ -533,7 +578,9 @@ export async function loadLiveContribData(db: Db, asOfDate: Date = new Date()) {
     jobSalaries: jobSalaries.map((js) => ({
       job: { id: js.job.id, personId: js.personId },
       salary: js.salary,
+      baseSalary: js.baseSalary,
       totalComp: js.totalComp,
+      resolvedBonusOverride: js.resolvedBonusOverride,
     })),
     rawContribRows: allContribs, // All accounts (active + inactive/stubbed) for profile editor
     peopleMap,
@@ -541,18 +588,58 @@ export async function loadLiveContribData(db: Db, asOfDate: Date = new Date()) {
   };
 }
 
-/** Resolve a profile against live data, returning effective contribs + salaries. */
-export function resolveProfile(
-  profile: typeof schema.contributionProfiles.$inferSelect,
-  liveContribs: LiveContribRow[],
-  liveJobs: (typeof schema.jobs.$inferSelect)[],
-  liveJobSalaries: {
+/**
+ * Resolve a profile against live data, returning effective contribs + salaries.
+ *
+ * `salaryEntries` (personId → salary entry) is supplied by the CALLER — it
+ * comes from whichever Salary Profile is active at that call site, not from
+ * `profile` (contribution profiles no longer carry salary). Pass `{}` for
+ * "live salary, nothing pinned". It's a required parameter precisely so every
+ * call site has to make that choice explicitly.
+ *
+ * A person's entry pins only the fields it actually sets. Pinning `salary`
+ * replaces the salary but leaves the bonus terms live; pinning bonus terms
+ * leaves the salary live. Both feed resolveCompensation, which is also what
+ * the salaryProfile router's editor preview uses — the two used to compute
+ * total comp separately and disagree, with a pinned salary silently losing
+ * its bonus here while the editor still displayed it.
+ *
+ * Generic over the row shapes so callers can hand in their own richer row
+ * types (e.g. full contribution_accounts rows) and get them back unchanged
+ * apart from the applied overrides.
+ */
+export function resolveProfile<
+  C extends { id: number },
+  J extends {
+    id: number;
+    personId: number;
+    payPeriod: string;
+    bonusPercent: string | null;
+    bonusMultiplier: string | null;
+    monthsInBonusYear: number | null;
+    includeBonusInContributions: boolean;
+  },
+  S extends {
     job: { id: number; personId: number };
+    /** Payroll contribution basis — bonus-inclusive per the job's flag. */
     salary: number;
+    /** Un-blended current salary, BEFORE any bonus. The base every bonus
+     *  formula multiplies; `salary` above may already include a bonus, so
+     *  computing off it would compound. */
+    baseSalary: number;
     totalComp: number;
-  }[],
+    resolvedBonusOverride: number | null;
+  },
+>(
+  profile: Pick<
+    typeof schema.contributionProfiles.$inferSelect,
+    "contributionOverrides"
+  >,
+  salaryEntries: SalaryEntryMap,
+  liveContribs: C[],
+  liveJobs: J[],
+  liveJobSalaries: S[],
 ) {
-  const salaryOverrides = profile.salaryOverrides as Record<string, number>;
   const contribOverridesRoot = profile.contributionOverrides as Record<
     string,
     Record<string, Record<string, unknown>>
@@ -560,15 +647,39 @@ export function resolveProfile(
   const contribOverrides = contribOverridesRoot.contributionAccounts ?? {};
   const jobOverrides = contribOverridesRoot.jobs ?? {};
 
-  // Apply salary overrides — when a profile overrides salary, both salary and
-  // totalComp are set to the override value (bonus is excluded from overrides)
+  // Apply the profile's pinned salary/bonus fields. Anything the entry does
+  // not pin keeps resolving live, so this is a no-op for people the profile
+  // says nothing about.
+  //
+  // totalComp is recomputed through resolveCompensation rather than being
+  // set to the salary: a pinned salary does NOT mean "no bonus". It used to,
+  // which silently dropped the bonus of every pinned person from
+  // contribution and employer-match math while the profile editor kept
+  // showing it — the two now share one definition and cannot diverge.
+  // resolvedBonusOverride (this year's actual-bonus pin) is likewise carried
+  // through instead of being discarded; it is orthogonal to the salary pin.
   const jobSalaries = liveJobSalaries.map((js) => {
     const job = liveJobs.find((j) => j.id === js.job.id);
     if (!job) return js;
-    const override = salaryOverrides[String(job.personId)];
-    return override !== undefined
-      ? { job: js.job, salary: override, totalComp: override }
-      : js;
+    const entry = pinnedFields(salaryEntries[String(job.personId)]);
+    if (!entry) return js;
+    const comp = resolveCompensation(
+      job,
+      js.baseSalary,
+      entry,
+      js.resolvedBonusOverride,
+    );
+    return {
+      ...js,
+      baseSalary: comp.salary,
+      // The payroll basis follows the job's own includeBonusInContributions
+      // flag, exactly as getEffectiveIncome does for an unpinned person. A
+      // pinned salary used to bypass the flag and report a bare number here
+      // while totalComp dropped the bonus entirely; both now answer "does
+      // this person have a bonus" the same way.
+      salary: job.includeBonusInContributions ? comp.totalComp : comp.salary,
+      totalComp: comp.totalComp,
+    } as S;
   });
 
   // Apply contribution account overrides
@@ -588,14 +699,12 @@ export function resolveProfile(
       return true;
     });
 
-  // Apply job overrides (bonus fields)
+  // Apply job overrides (employer name, bonus pay date, bonus-contribution
+  // flags). Bonus AMOUNT terms are excluded — see MOVED_TO_SALARY_PROFILE.
   const patchedJobs = liveJobs.map((j) => {
     const overrides = jobOverrides[String(j.id)];
     if (!overrides) return j;
-    const validOverrides = Object.fromEntries(
-      Object.entries(overrides).filter(([field]) => field in j),
-    );
-    return { ...j, ...validOverrides };
+    return { ...j, ...pickJobOverrideFields(overrides, j) };
   });
 
   const activeJobs = patchedJobs.map((j) => ({
@@ -643,8 +752,66 @@ export function applyContribOverrides(
 }
 
 /**
+ * Build a synthetic (no DB row) contribution account for the What-If tab's
+ * hand-added hypothetical accounts. Negative `id`s so they can never
+ * collide with a real autoincrement id; every field this app's calculators
+ * actually read is filled in with the same defaults
+ * `contributionAccountInput` (settings/paycheck.ts) would use for a
+ * freshly-created real row — no employer match, default tax treatment for
+ * the chosen account type. Exists once here so paycheck.ts, contribution.ts,
+ * and budget.ts can't each guess the defaults differently.
+ */
+export function buildSandboxContribRow(
+  addition: {
+    personId: number;
+    accountType: string;
+    contributionMethod: string;
+    contributionValue: string;
+  },
+  syntheticId: number,
+): typeof schema.contributionAccounts.$inferSelect {
+  const category = addition.accountType as AccountCategory;
+  return {
+    id: syntheticId,
+    jobId: null,
+    personId: addition.personId,
+    accountType: addition.accountType,
+    subType: null,
+    label: null,
+    parentCategory: getParentCategory(category),
+    taxTreatment: getDefaultTaxTreatment(category) as TaxTreatment,
+    contributionMethod: addition.contributionMethod as ContributionMethod,
+    contributionValue: addition.contributionValue,
+    employerMatchType: "none",
+    employerMatchValue: null,
+    employerMaxMatchPct: null,
+    employerMatchTaxTreatment: "pre_tax",
+    hsaCoverageType: null,
+    autoMaximize: false,
+    isActive: true,
+    ownership: "individual",
+    performanceAccountId: null,
+    targetAnnual: null,
+    allocationPriority: 0,
+    notes: null,
+    isPayrollDeducted: null,
+    priorYearContribAmount: "0",
+    priorYearContribYear: null,
+  };
+}
+
+/**
  * Apply contribution profile job overrides to raw DB job rows.
- * Used to override bonus fields (bonusPercent, bonusMultiplier, etc.) per profile.
+ *
+ * Overrides the job fields a Contribution Profile still owns: employerName,
+ * the bonus PAY DATE (bonusMonth / bonusDayOfMonth), and the two flags that
+ * decide how contributions are computed from a bonus (include401kInBonus,
+ * includeBonusInContributions).
+ *
+ * It no longer overrides how BIG the bonus is. bonusPercent /
+ * bonusMultiplier / monthsInBonusYear moved to the Salary Profile entry —
+ * same tier as salary — so a Contribution Profile can no longer change
+ * anyone's compensation.
  *
  * jobOverrides shape: { "jobId": { field: value, ... } }
  */
@@ -655,84 +822,55 @@ export function applyJobOverrides(
   return jobs.map((job) => {
     const overrides = jobOverrides[String(job.id)];
     if (!overrides) return job;
-    const validOverrides = Object.fromEntries(
-      Object.entries(overrides).filter(([field]) => field in job),
-    );
-    return { ...job, ...validOverrides };
+    return { ...job, ...pickJobOverrideFields(overrides, job) };
   });
 }
 
 /**
- * Load a contribution profile by ID and apply its overrides to raw DB rows.
- * Merges profile salary overrides into the provided map (lower priority than existing entries).
- * Returns modified contribs, jobs, and salary map — or originals if profile is null/default.
+ * Fetch a contribution profile by ID, returning null when no profile is
+ * selected (null/undefined id) or the row no longer exists.
+ *
+ * There is no `isDefault` concept any more: a profile whose
+ * contributionOverrides are empty is simply a profile with nothing
+ * customized, and applying it is a no-op by content rather than by flag.
+ * Was duplicated between this file's loadAndApplyContribProfile and
+ * retirement.ts's own scenario-comparison resolver (M26,
+ * .scratch/docs/review-findings.md) — retirement.ts applies salary overrides
+ * with different layering semantics (no existing-override priority), so it
+ * keeps its own override-application logic and only shares this fetch.
  */
-/**
- * Fetch a contribution profile by ID, returning null when unset, not found,
- * or the default profile (callers treat all three as "no profile
- * resolution needed"). Was duplicated between this file's
- * loadAndApplyContribProfile and retirement.ts's own scenario-comparison
- * resolver (M26, .scratch/docs/review-findings.md) — retirement.ts applies
- * salary overrides with different layering semantics (no existing-override
- * priority), so it keeps its own override-application logic and only
- * shares this fetch+isDefault check.
- */
-export async function fetchNonDefaultContributionProfile(
+export async function fetchContributionProfile(
   db: Db,
   profileId: number | null | undefined,
 ): Promise<typeof schema.contributionProfiles.$inferSelect | null> {
-  if (!profileId) return null;
+  if (profileId == null) return null;
   const profiles = await db
     .select()
     .from(schema.contributionProfiles)
     .where(eq(schema.contributionProfiles.id, profileId));
-  const profile = profiles[0];
-  return profile && !profile.isDefault ? profile : null;
+  return profiles[0] ?? null;
 }
 
+/**
+ * Load a contribution profile by ID and apply its overrides to raw DB rows.
+ * Returns modified contribs + jobs — or the originals if no profile is
+ * selected / the row is gone.
+ *
+ * Purely contribution-account and job-field overrides. Salary is NOT part of
+ * a Contribution Profile — call loadAndApplySalaryProfile (./salary.ts) for
+ * that axis, independently.
+ */
 export async function loadAndApplyContribProfile(
   db: Db,
   profileId: number | undefined | null,
   allContribs: (typeof schema.contributionAccounts.$inferSelect)[],
   allJobs: (typeof schema.jobs.$inferSelect)[],
-  salaryOverrideMap: Map<number, number>,
 ): Promise<{
   contribs: ContribRowWithOverrides[];
   jobs: (typeof schema.jobs.$inferSelect)[];
-  salaryMap: Map<number, number>;
 }> {
-  const profile = await fetchNonDefaultContributionProfile(db, profileId);
-  if (!profile) {
-    return {
-      contribs: allContribs,
-      jobs: allJobs,
-      salaryMap: salaryOverrideMap,
-    };
-  }
-
-  const overridesRoot = profile.contributionOverrides as Record<
-    string,
-    Record<string, Record<string, unknown>>
-  >;
-  const contribs = applyContribOverrides(
-    allContribs,
-    overridesRoot.contributionAccounts ?? {},
-  );
-  const jobs = applyJobOverrides(allJobs, overridesRoot.jobs ?? {});
-
-  // Merge salary overrides (profile has lower priority than explicit UI overrides)
-  const salaryMap = new Map(salaryOverrideMap);
-  const profileSalaryOverrides = profile.salaryOverrides as Record<
-    string,
-    number
-  >;
-  for (const [personId, salary] of Object.entries(profileSalaryOverrides)) {
-    if (!salaryMap.has(Number(personId))) {
-      salaryMap.set(Number(personId), salary);
-    }
-  }
-
-  return { contribs, jobs, salaryMap };
+  const profile = await fetchContributionProfile(db, profileId);
+  return applyContribProfileRow(profile, allContribs, allJobs);
 }
 
 /**
@@ -746,18 +884,12 @@ export function applyContribProfileRow(
   profile: typeof schema.contributionProfiles.$inferSelect | null | undefined,
   allContribs: (typeof schema.contributionAccounts.$inferSelect)[],
   allJobs: (typeof schema.jobs.$inferSelect)[],
-  salaryOverrideMap: Map<number, number>,
 ): {
   contribs: ContribRowWithOverrides[];
   jobs: (typeof schema.jobs.$inferSelect)[];
-  salaryMap: Map<number, number>;
 } {
-  if (!profile || profile.isDefault) {
-    return {
-      contribs: allContribs,
-      jobs: allJobs,
-      salaryMap: salaryOverrideMap,
-    };
+  if (!profile) {
+    return { contribs: allContribs, jobs: allJobs };
   }
   const overridesRoot = profile.contributionOverrides as Record<
     string,
@@ -768,17 +900,7 @@ export function applyContribProfileRow(
     overridesRoot.contributionAccounts ?? {},
   );
   const jobs = applyJobOverrides(allJobs, overridesRoot.jobs ?? {});
-  const salaryMap = new Map(salaryOverrideMap);
-  const profileSalaryOverrides = profile.salaryOverrides as Record<
-    string,
-    number
-  >;
-  for (const [personId, salary] of Object.entries(profileSalaryOverrides)) {
-    if (!salaryMap.has(Number(personId))) {
-      salaryMap.set(Number(personId), salary);
-    }
-  }
-  return { contribs, jobs, salaryMap };
+  return { contribs, jobs };
 }
 
 // ---------------------------------------------------------------------------

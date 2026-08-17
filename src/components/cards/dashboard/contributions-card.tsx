@@ -33,6 +33,7 @@ import {
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { LoadingCard, ErrorCard } from "./utils";
+import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 
 function FundingBar({
   percent,
@@ -113,6 +114,8 @@ function FundingBar({
 function ContributionsCardImpl() {
   const { viewMode } = useScenario();
   const salaryOverrides = useSalaryOverrides();
+  // Independent Salary Profile axis (Plan pin -> globally-active setting).
+  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [activeContribProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",
     null,
@@ -122,6 +125,7 @@ function ContributionsCardImpl() {
     ...(activeContribProfileId != null
       ? { contributionProfileId: activeContribProfileId }
       : {}),
+    ...salaryProfileInput,
   } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
   const { data, isLoading, error } =
     trpc.contribution.computeSummary.useQuery(contribInput);

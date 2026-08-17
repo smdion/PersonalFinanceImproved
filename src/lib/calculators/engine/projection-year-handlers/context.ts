@@ -66,6 +66,15 @@ export function buildProjectionContext(
   const hasPerPersonSalary =
     input.salaryByPerson && Object.keys(input.salaryByPerson).length > 0;
 
+  const currentYearBonusAdjustment = new Map<number, number>();
+  if (input.currentYearBonusAdjustment) {
+    for (const [personId, delta] of Object.entries(
+      input.currentYearBonusAdjustment,
+    )) {
+      currentYearBonusAdjustment.set(Number(personId), delta);
+    }
+  }
+
   // Auto-inject $0 salary overrides at each person's individual retirement age.
   // This makes partial retirement work: the accumulation handler sees reduced
   // salary for the retired person, their contribution specs produce $0 via
@@ -174,6 +183,7 @@ export function buildProjectionContext(
     validatedPostRetirementInflation: validated.postRetirementInflationRate,
     salaryOverrideMap,
     perPersonSalaryOverrides,
+    currentYearBonusAdjustment,
     budgetOverrideMap,
     returnRateMap,
     brokerageGoalsByYear,

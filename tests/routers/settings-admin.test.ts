@@ -55,10 +55,15 @@ describe("settings.appSettings", () => {
   afterAll(() => cleanup());
 
   describe("list", () => {
-    it("returns an empty array when no settings exist", async () => {
+    it("returns only the migration-seeded settings on a fresh DB", async () => {
+      // 0008_kill_live_sentinel backfills the two active-profile keys so they
+      // always name a real row, so a fresh DB is no longer setting-free.
       const rows = await caller.settings.appSettings.list();
       expect(Array.isArray(rows)).toBe(true);
-      expect(rows).toHaveLength(0);
+      expect(rows.map((r: { key: string }) => r.key).sort()).toEqual([
+        "active_contrib_profile_id",
+        "active_salary_profile_id",
+      ]);
     });
 
     it("returns seeded settings ordered by key", async () => {
@@ -534,13 +539,12 @@ describe("settings.savingsGoals", () => {
   });
 
   describe("update", () => {
-    it("updates a goal name and monthly contribution", async () => {
+    it("updates a goal name and target details (funding lives on savings_goal_profile_allocations, not the goal)", async () => {
       const result = await caller.settings.savingsGoals.update({
         id: vacationId,
         name: "Europe Trip 2027",
         targetAmount: "8000",
         targetDate: "2027-06-01",
-        monthlyContribution: "500",
         priority: 2,
         isActive: true,
         isEmergencyFund: false,
@@ -548,7 +552,6 @@ describe("settings.savingsGoals", () => {
       });
       expect(result).toBeDefined();
       expect(result!.name).toBe("Europe Trip 2027");
-      expect(result!.monthlyContribution).toBe("500");
     });
 
     it("deactivates a goal by setting isActive: false", async () => {
@@ -1822,24 +1825,11 @@ describe("settings.savingsGoals additional coverage", () => {
 
   afterAll(() => cleanup());
 
-  it("creates a goal with allocationPercent", async () => {
-    const result = await caller.settings.savingsGoals.create({
-      name: "Allocation Goal",
-      monthlyContribution: "0",
-      priority: 10,
-      isActive: true,
-      allocationPercent: "25.5",
-    });
-    expect(result).toBeDefined();
-    expect(result!.allocationPercent).toBe("25.5");
-  });
-
   it("creates a goal with targetMonths", async () => {
     const result = await caller.settings.savingsGoals.create({
       name: "Monthly Target Goal",
       targetAmount: "6000",
       targetMonths: 12,
-      monthlyContribution: "500",
       priority: 11,
       isActive: true,
     });
@@ -1850,14 +1840,12 @@ describe("settings.savingsGoals additional coverage", () => {
   it("creates a goal with parentGoalId", async () => {
     const parent = await caller.settings.savingsGoals.create({
       name: "Parent Goal",
-      monthlyContribution: "1000",
       priority: 20,
       isActive: true,
     });
     const child = await caller.settings.savingsGoals.create({
       name: "Child Goal",
       parentGoalId: parent!.id,
-      monthlyContribution: "200",
       priority: 21,
       isActive: true,
     });
@@ -1865,11 +1853,29 @@ describe("settings.savingsGoals additional coverage", () => {
     expect(child!.parentGoalId).toBe(parent!.id);
   });
 
-  it("updates all fields on a goal", async () => {
+  it("creating a goal seeds a $0/no-percent funding row for every existing budget profile", async () => {
+    let [profile] = await caller.budget.listProfiles();
+    if (!profile) {
+      profile = await caller.budget.createProfile({ name: "Funding Test" });
+    }
+    const created = await caller.settings.savingsGoals.create({
+      name: "Seeded Funding Goal",
+      priority: 22,
+      isActive: true,
+    });
+    const rows = await caller.savings.goalProfileAllocations.list({
+      profileId: profile!.id,
+    });
+    const row = rows.find((r) => r.goalId === created!.id);
+    expect(row).toBeDefined();
+    expect(row!.monthlyContribution).toBe(0);
+    expect(row!.allocationPercent).toBeNull();
+  });
+
+  it("updates all fields on a goal (funding lives on savings_goal_profile_allocations, not the goal)", async () => {
     const created = await caller.settings.savingsGoals.create({
       name: "Full Update Test",
       targetAmount: "10000",
-      monthlyContribution: "500",
       priority: 30,
       isActive: true,
       isEmergencyFund: false,
@@ -1880,23 +1886,19 @@ describe("settings.savingsGoals additional coverage", () => {
       name: "Fully Updated",
       targetAmount: "20000",
       targetDate: "2028-12-31",
-      monthlyContribution: "1000",
       priority: 1,
       isActive: false,
       isEmergencyFund: true,
       targetMode: "ongoing",
-      allocationPercent: "50",
     });
     expect(result).toBeDefined();
     expect(result!.name).toBe("Fully Updated");
     expect(result!.targetAmount).toBe("20000");
     expect(result!.targetDate).toBe("2028-12-31");
-    expect(result!.monthlyContribution).toBe("1000");
     expect(result!.priority).toBe(1);
     expect(result!.isActive).toBe(false);
     expect(result!.isEmergencyFund).toBe(true);
     expect(result!.targetMode).toBe("ongoing");
-    expect(result!.allocationPercent).toBe("50");
   });
 });
 

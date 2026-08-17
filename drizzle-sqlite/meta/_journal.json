@@ -36,6 +36,41 @@
       "when": 1786834867310,
       "tag": "0004_wooden_starfox",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1786849455163,
+      "tag": "0005_free_patch",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1786850506186,
+      "tag": "0006_silent_gorgon",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1786857495582,
+      "tag": "0007_salary_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1786899175625,
+      "tag": "0008_kill_live_sentinel",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1786906261583,
+      "tag": "0009_salary_profile_bonus_terms",
+      "breakpoints": true
     }
   ]
 }

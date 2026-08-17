@@ -14,7 +14,6 @@ type BudgetCategoryRowProps = {
   editMode: boolean;
   getDraft: (id: number, colIndex: number, original: number) => number;
   onSetDraft: (id: number, colIndex: number, amount: number) => void;
-  onUpdateCell: (id: number, colIndex: number, amount: number) => void;
   onToggleItemEssential: (id: number, isEssential: boolean) => void;
   onToggleCategoryEssential: (category: string, isEssential: boolean) => void;
   onMoveItem: (id: number, newCategory: string) => void;
@@ -42,6 +41,10 @@ type BudgetCategoryRowProps = {
   >;
   showApiColumn?: boolean;
   nameColWidth?: number;
+  /** See BudgetItemRow's amountsOnly prop — same contract, threaded down
+   *  to it plus this row's own category-level controls (essential toggle,
+   *  reorder, + item), which are ALSO structurally omitted here. */
+  amountsOnly?: boolean;
 };
 
 export function BudgetCategoryRow({
@@ -52,7 +55,6 @@ export function BudgetCategoryRow({
   editMode,
   getDraft,
   onSetDraft,
-  onUpdateCell,
   onToggleItemEssential,
   onToggleCategoryEssential,
   onMoveItem,
@@ -73,6 +75,7 @@ export function BudgetCategoryRow({
   apiActualsMap,
   showApiColumn,
   nameColWidth,
+  amountsOnly = false,
 }: BudgetCategoryRowProps) {
   const allEssential = items.every((i) => i.isEssential);
   const allDiscretionary = items.every((i) => !i.isEssential);
@@ -90,7 +93,7 @@ export function BudgetCategoryRow({
           }
         >
           <span className="flex flex-wrap items-center gap-2 min-w-0">
-            {canEdit ? (
+            {canEdit && !amountsOnly ? (
               <button
                 onClick={() =>
                   onToggleCategoryEssential(categoryName, !allEssential)
@@ -125,7 +128,7 @@ export function BudgetCategoryRow({
             >
               {categoryName}
             </span>
-            {canEdit && editMode && (
+            {canEdit && !amountsOnly && editMode && (
               <>
                 <button
                   onClick={() => onReorderCategory(categoryName, "up")}
@@ -172,16 +175,19 @@ export function BudgetCategoryRow({
         {showApiColumn && <td />}
       </tr>
       {/* Add item form */}
-      {canEdit && editMode && addingItemToCategory === categoryName && (
-        <AddItemForm
-          category={categoryName}
-          onAdd={onAddItem}
-          onCancel={() => onSetAddingItemToCategory(null)}
-          isPending={addItemPending}
-          numCols={numCols}
-          error={addItemError}
-        />
-      )}
+      {canEdit &&
+        !amountsOnly &&
+        editMode &&
+        addingItemToCategory === categoryName && (
+          <AddItemForm
+            category={categoryName}
+            onAdd={onAddItem}
+            onCancel={() => onSetAddingItemToCategory(null)}
+            isPending={addItemPending}
+            numCols={numCols}
+            error={addItemError}
+          />
+        )}
       {/* Item rows */}
       {items.map((item, idx) => (
         <BudgetItemRow
@@ -193,7 +199,6 @@ export function BudgetCategoryRow({
           editMode={editMode}
           getDraft={getDraft}
           onSetDraft={onSetDraft}
-          onUpdateCell={onUpdateCell}
           onToggleEssential={onToggleItemEssential}
           onMoveItem={onMoveItem}
           onDeleteItem={onDeleteItem}
@@ -206,6 +211,7 @@ export function BudgetCategoryRow({
           apiActual={apiActualsMap?.get(item.id) ?? null}
           showApiColumn={showApiColumn}
           nameColWidth={nameColWidth}
+          amountsOnly={amountsOnly}
         />
       ))}
     </React.Fragment>

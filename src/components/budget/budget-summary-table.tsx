@@ -84,6 +84,20 @@ export function BudgetSummaryTable({
   const [showSavings, setShowSavings] = useState(false);
   const isWeighted = columnMonths !== null && columnMonths.length > 0;
 
+  // Weighted average across modes (Σ value_i × months_i / 12) — "what does
+  // a typical month look like" when spending is split across modes by
+  // months/year. Only meaningful when isWeighted; callers gate on that.
+  const blended = (values: (number | null)[]) => {
+    const months = columnMonths;
+    if (!months) return 0;
+    return (
+      values.reduce<number>((s, v, i) => s + (v ?? 0) * (months[i] ?? 0), 0) /
+      12
+    );
+  };
+  const blendedCellClass =
+    "text-right py-1 px-2 tabular-nums font-semibold bg-surface-sunken/60";
+
   // Check if any column has payroll data
   const hasAnyPayroll = payrollBreakdowns.some((b) => b !== null);
 
@@ -107,6 +121,17 @@ export function BudgetSummaryTable({
 
   return (
     <div className="overflow-x-auto mb-3">
+      {isWeighted && (
+        <p className="text-caption text-faint mb-1.5">
+          Each mode&rsquo;s column shows{" "}
+          <span className="font-medium text-secondary">
+            that mode&rsquo;s own monthly amount
+          </span>{" "}
+          — e.g. what Traveling costs during its 1 month.{" "}
+          <span className="font-medium text-secondary">Blended</span> is the
+          weighted average across all 12 months — a typical month.
+        </p>
+      )}
       <table
         className="w-full text-xs border-collapse"
         style={{ tableLayout: "fixed" }}
@@ -155,6 +180,14 @@ export function BudgetSummaryTable({
                 )}
               </th>
             ))}
+            {isWeighted && (
+              <th
+                className="text-right py-1.5 px-2 font-semibold min-w-[90px] text-primary bg-surface-sunken/60"
+                title="Weighted average across modes — what a typical month looks like"
+              >
+                Blended
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -187,6 +220,15 @@ export function BudgetSummaryTable({
                     {formatCurrency(payrollBreakdowns[i]?.grossMonthly ?? 0)}
                   </td>
                 ))}
+                {isWeighted && (
+                  <td className={`${blendedCellClass} text-green-800`}>
+                    {formatCurrency(
+                      blended(
+                        payrollBreakdowns.map((b) => b?.grossMonthly ?? 0),
+                      ),
+                    )}
+                  </td>
+                )}
               </tr>
               {showGross &&
                 grossDetailLines.map((line) => (
@@ -205,6 +247,11 @@ export function BudgetSummaryTable({
                         {formatCurrency(amt ?? 0)}
                       </td>
                     ))}
+                    {isWeighted && (
+                      <td className="text-right py-0.5 px-2 tabular-nums text-green-700 text-caption bg-surface-sunken/60">
+                        {formatCurrency(blended(line.amounts))}
+                      </td>
+                    )}
                   </tr>
                 ))}
 
@@ -227,6 +274,14 @@ export function BudgetSummaryTable({
                     −{formatCurrency(payrollBreakdowns[i]?.totalTaxes ?? 0)}
                   </td>
                 ))}
+                {isWeighted && (
+                  <td className={`${blendedCellClass} text-red-600`}>
+                    −
+                    {formatCurrency(
+                      blended(payrollBreakdowns.map((b) => b?.totalTaxes ?? 0)),
+                    )}
+                  </td>
+                )}
               </tr>
               {showTaxes && (
                 <>
@@ -245,6 +300,18 @@ export function BudgetSummaryTable({
                         )}
                       </td>
                     ))}
+                    {isWeighted && (
+                      <td className="text-right py-0.5 px-2 tabular-nums text-red-500 text-caption bg-surface-sunken/60">
+                        −
+                        {formatCurrency(
+                          blended(
+                            payrollBreakdowns.map(
+                              (b) => b?.federalWithholding ?? 0,
+                            ),
+                          ),
+                        )}
+                      </td>
+                    )}
                   </tr>
                   <tr className="border-b border-subtle bg-surface-sunken/50">
                     <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
@@ -258,6 +325,14 @@ export function BudgetSummaryTable({
                         −{formatCurrency(payrollBreakdowns[i]?.ficaSS ?? 0)}
                       </td>
                     ))}
+                    {isWeighted && (
+                      <td className="text-right py-0.5 px-2 tabular-nums text-red-500 text-caption bg-surface-sunken/60">
+                        −
+                        {formatCurrency(
+                          blended(payrollBreakdowns.map((b) => b?.ficaSS ?? 0)),
+                        )}
+                      </td>
+                    )}
                   </tr>
                   <tr className="border-b border-subtle bg-surface-sunken/50">
                     <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
@@ -274,6 +349,16 @@ export function BudgetSummaryTable({
                         )}
                       </td>
                     ))}
+                    {isWeighted && (
+                      <td className="text-right py-0.5 px-2 tabular-nums text-red-500 text-caption bg-surface-sunken/60">
+                        −
+                        {formatCurrency(
+                          blended(
+                            payrollBreakdowns.map((b) => b?.ficaMedicare ?? 0),
+                          ),
+                        )}
+                      </td>
+                    )}
                   </tr>
                 </>
               )}
@@ -301,6 +386,16 @@ export function BudgetSummaryTable({
                         {formatCurrency(payrollBreakdowns[i]?.totalPreTax ?? 0)}
                       </td>
                     ))}
+                    {isWeighted && (
+                      <td className={`${blendedCellClass} text-red-600`}>
+                        −
+                        {formatCurrency(
+                          blended(
+                            payrollBreakdowns.map((b) => b?.totalPreTax ?? 0),
+                          ),
+                        )}
+                      </td>
+                    )}
                   </tr>
                   {showPreTax &&
                     preTaxDetailLines.map((line) => (
@@ -319,6 +414,11 @@ export function BudgetSummaryTable({
                             −{formatCurrency(amt ?? 0)}
                           </td>
                         ))}
+                        {isWeighted && (
+                          <td className="text-right py-0.5 px-2 tabular-nums text-red-500 text-caption bg-surface-sunken/60">
+                            −{formatCurrency(blended(line.amounts))}
+                          </td>
+                        )}
                       </tr>
                     ))}
                 </>
@@ -349,6 +449,16 @@ export function BudgetSummaryTable({
                         )}
                       </td>
                     ))}
+                    {isWeighted && (
+                      <td className={`${blendedCellClass} text-red-600`}>
+                        −
+                        {formatCurrency(
+                          blended(
+                            payrollBreakdowns.map((b) => b?.totalPostTax ?? 0),
+                          ),
+                        )}
+                      </td>
+                    )}
                   </tr>
                   {showPostTax &&
                     postTaxDetailLines.map((line) => (
@@ -367,6 +477,11 @@ export function BudgetSummaryTable({
                             −{formatCurrency(amt ?? 0)}
                           </td>
                         ))}
+                        {isWeighted && (
+                          <td className="text-right py-0.5 px-2 tabular-nums text-red-500 text-caption bg-surface-sunken/60">
+                            −{formatCurrency(blended(line.amounts))}
+                          </td>
+                        )}
                       </tr>
                     ))}
                 </>
@@ -402,6 +517,13 @@ export function BudgetSummaryTable({
                     {formatCurrency(payrollBreakdowns[i]?.netMonthly ?? 0)}
                   </td>
                 ))}
+                {isWeighted && (
+                  <td className={`${blendedCellClass} text-green-700`}>
+                    {formatCurrency(
+                      blended(payrollBreakdowns.map((b) => b?.netMonthly ?? 0)),
+                    )}
+                  </td>
+                )}
               </tr>
               {showTakeHome &&
                 takeHomeDetailLines.map((line) => (
@@ -420,6 +542,11 @@ export function BudgetSummaryTable({
                         {formatCurrency(amt ?? 0)}
                       </td>
                     ))}
+                    {isWeighted && (
+                      <td className="text-right py-0.5 px-2 tabular-nums text-green-600 text-caption bg-surface-sunken/60">
+                        {formatCurrency(blended(line.amounts))}
+                      </td>
+                    )}
                   </tr>
                 ))}
 
@@ -440,6 +567,14 @@ export function BudgetSummaryTable({
                     −{formatCurrency(r.essentialTotal)}
                   </td>
                 ))}
+                {isWeighted && (
+                  <td className={`${blendedCellClass} text-blue-600`}>
+                    −
+                    {formatCurrency(
+                      blended(allColumnResults.map((r) => r.essentialTotal)),
+                    )}
+                  </td>
+                )}
               </tr>
               <tr className="border-b border-subtle">
                 <td className="py-1 pr-3 font-medium text-purple-500">
@@ -457,6 +592,16 @@ export function BudgetSummaryTable({
                     −{formatCurrency(r.discretionaryTotal)}
                   </td>
                 ))}
+                {isWeighted && (
+                  <td className={`${blendedCellClass} text-purple-500`}>
+                    −
+                    {formatCurrency(
+                      blended(
+                        allColumnResults.map((r) => r.discretionaryTotal),
+                      ),
+                    )}
+                  </td>
+                )}
               </tr>
 
               {/* Savings — combines sinking funds + unallocated remainder */}
@@ -497,7 +642,11 @@ export function BudgetSummaryTable({
                           payrollBreakdowns[i] !== null
                             ? totalSinking - totalSavings
                             : 0;
-                        const isOverCapacity = overage > 0.01;
+                        // In weighted profiles, a single mode running "over"
+                        // (e.g. a one-month travel splurge) doesn't mean
+                        // savings capacity is actually blown for the year —
+                        // only the blended column's warning reflects that.
+                        const isOverCapacity = !isWeighted && overage > 0.01;
                         return (
                           <td
                             key={cols[i]}
@@ -513,6 +662,30 @@ export function BudgetSummaryTable({
                           </td>
                         );
                       })}
+                      {isWeighted &&
+                        (() => {
+                          const blendedSavings = blended(
+                            allColumnResults.map(
+                              (r, i) =>
+                                (payrollBreakdowns[i]?.netMonthly ?? 0) -
+                                r.totalMonthly,
+                            ),
+                          );
+                          const blendedOverage = totalSinking - blendedSavings;
+                          const isOverCapacity = blendedOverage > 0.01;
+                          return (
+                            <td
+                              className={`${blendedCellClass} ${blendedSavings >= 0 ? "text-emerald-700" : "text-red-600"}`}
+                            >
+                              {formatCurrency(blendedSavings)}
+                              {isOverCapacity && (
+                                <div className="text-micro text-red-500 leading-tight mt-0.5 font-normal">
+                                  ⚠ {formatCurrency(blendedOverage)} over
+                                </div>
+                              )}
+                            </td>
+                          );
+                        })()}
                     </tr>
                     {showSavings && hasSinkingFunds && (
                       <>
@@ -523,14 +696,6 @@ export function BudgetSummaryTable({
                           >
                             <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
                               {fund.name}
-                              {fund.isOverride && (
-                                <span
-                                  className="ml-1 text-blue-500"
-                                  title="Custom allocation for this budget profile (not the goal's global default)"
-                                >
-                                  &bull;
-                                </span>
-                              )}
                             </td>
                             {allColumnResults.map((_, i) => (
                               <td
@@ -540,6 +705,11 @@ export function BudgetSummaryTable({
                                 {formatCurrency(fund.monthlyContribution)}
                               </td>
                             ))}
+                            {isWeighted && (
+                              <td className="text-right py-0.5 px-2 tabular-nums text-amber-500 text-caption bg-surface-sunken/60">
+                                {formatCurrency(fund.monthlyContribution)}
+                              </td>
+                            )}
                           </tr>
                         ))}
                         <tr className="border-b border-subtle bg-surface-sunken/50">
@@ -561,6 +731,27 @@ export function BudgetSummaryTable({
                               </td>
                             );
                           })}
+                          {isWeighted &&
+                            (() => {
+                              const blendedUnallocated = computeUnallocated(
+                                blended(
+                                  payrollBreakdowns.map(
+                                    (b) => b?.netMonthly ?? 0,
+                                  ),
+                                ),
+                                blended(
+                                  allColumnResults.map((r) => r.totalMonthly),
+                                ),
+                                totalSinking,
+                              );
+                              return (
+                                <td
+                                  className={`text-right py-0.5 px-2 tabular-nums text-caption bg-surface-sunken/60 ${blendedUnallocated >= 0 ? "text-emerald-600" : "text-red-500"}`}
+                                >
+                                  {formatCurrency(blendedUnallocated)}
+                                </td>
+                              );
+                            })()}
                         </tr>
                       </>
                     )}

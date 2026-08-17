@@ -283,7 +283,10 @@ export function OverridesPanelV2({
         id: `salary-${o.id}`,
         year: o.projectionYear,
         phase: "life",
-        type: o.contributionProfileId ? "Contribution" : "Salary",
+        type:
+          o.contributionProfileId && !o.salaryProfileId
+            ? "Contribution"
+            : "Salary",
         summary: `${formatCurrency(o.overrideSalary)}/yr${o.notes ? ` (${o.notes})` : ""}`,
         color: "blue",
         onDelete: () => state.deleteSalaryOverride.mutate({ id: o.id }),
@@ -937,7 +940,6 @@ function SalaryOverrideForm({
   contribProfiles: {
     id: number;
     name: string;
-    isDefault?: boolean;
     summary?: { combinedSalary: number };
   }[];
   personId: number;
@@ -947,9 +949,7 @@ function SalaryOverrideForm({
   const [source, setSource] = useState<"custom" | "profile">(
     contribProfiles.length > 0 ? "profile" : "custom",
   );
-  const [profileId, setProfileId] = useState(
-    contribProfiles.find((p) => p.isDefault)?.id ?? contribProfiles[0]?.id ?? 0,
-  );
+  const [profileId, setProfileId] = useState(contribProfiles[0]?.id ?? 0);
   const [customValue, setCustomValue] = useState(initialValue ?? "");
   const [notes, setNotes] = useState("");
 
@@ -987,7 +987,6 @@ function SalaryOverrideForm({
             >
               {contribProfiles.map((cp) => (
                 <option key={cp.id} value={String(cp.id)}>
-                  {cp.isDefault ? "\u2713 " : ""}
                   {cp.name}
                   {cp.summary
                     ? ` (${formatCurrency(cp.summary.combinedSalary)}/yr)`

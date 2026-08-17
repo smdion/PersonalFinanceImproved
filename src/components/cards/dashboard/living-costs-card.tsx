@@ -14,6 +14,7 @@ import {
   DEFAULT_LIVING_COST_MAPPING,
 } from "@/lib/config/living-costs";
 import { LoadingCard } from "./utils";
+import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 
 function LivingCostsCardImpl() {
   const { viewMode } = useScenario();
@@ -26,6 +27,8 @@ function LivingCostsCardImpl() {
     });
   const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
   const salaryOverrides = useSalaryOverrides();
+  // Independent Salary Profile axis (Plan pin -> globally-active setting).
+  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [activeContribProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",
     null,
@@ -35,6 +38,7 @@ function LivingCostsCardImpl() {
     ...(activeContribProfileId != null
       ? { contributionProfileId: activeContribProfileId }
       : {}),
+    ...salaryProfileInput,
   };
   const { data: paycheckData, isLoading: isPaycheckLoading } =
     trpc.paycheck.computeSummary.useQuery(

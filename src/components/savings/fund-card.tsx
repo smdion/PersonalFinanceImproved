@@ -983,7 +983,6 @@ export function FundCard({
                       setAddingSubGoalForFund(null);
                       setNewFund({
                         name: "",
-                        monthlyContribution: "",
                         targetAmount: "",
                         targetMode: "fixed",
                         targetDate: "",
@@ -1000,7 +999,6 @@ export function FundCard({
                     setAddingSubGoalForFund(rawGoal.id);
                     setNewFund({
                       name: "",
-                      monthlyContribution: "0",
                       targetAmount: "",
                       targetMode: "fixed",
                       targetDate: "",
