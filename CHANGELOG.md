@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed (internal)
 
 - Bumped `better-sqlite3` from 12.11.1 to 13.0.3.
+- Bumped `@testing-library/jest-dom` from 6.9.1 to 7.0.1.
 
 ## [0.7.3] - 2026-08-18
 
