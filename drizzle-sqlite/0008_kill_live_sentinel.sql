@@ -12,6 +12,13 @@ ALTER TABLE `salary_profiles` RENAME COLUMN `salary_overrides` TO `salaries`;-->
 --    Record<personId, {mode:"job"} | {mode:"fixed", salary}>. json_object()
 --    values keep their JSON subtype through json_group_object, so these nest
 --    as objects rather than being re-quoted as strings.
+--
+-- IDEMPOTENCY GUARD: see drizzle/0008_kill_live_sentinel.sql (Postgres) for
+-- the full rationale. The pre-0008 shape stores a bare NUMBER per pinned
+-- person; every shape this migration or a later one produces stores an
+-- OBJECT instead, so a bare-number value (or an empty map) is the only
+-- safe trigger to re-run — checking whether keys resolve to a person
+-- would wrongly re-trigger on later, job-keyed shapes.
 UPDATE `salary_profiles`
 SET `salaries` = COALESCE(
 	(
@@ -26,7 +33,13 @@ SET `salaries` = COALESCE(
 		FROM `people` p
 	),
 	'{}'
-);--> statement-breakpoint
+)
+WHERE `salary_profiles`.`salaries` = '{}'
+	OR EXISTS (
+		SELECT 1
+		FROM json_each(`salary_profiles`.`salaries`) AS already
+		WHERE json_type(already.value) IN ('integer', 'real')
+	);--> statement-breakpoint
 
 -- 3. Seed the ordinary profile that replaces the synthetic "Live" entry:
 --    every person follows their job record. `name` is unique, so pick the
