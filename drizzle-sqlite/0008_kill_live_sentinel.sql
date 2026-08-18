@@ -45,6 +45,13 @@ WHERE `salary_profiles`.`salaries` = '{}'
 --    every person follows their job record. `name` is unique, so pick the
 --    first free candidate; if all are taken the NOT NULL constraint fails
 --    loudly rather than silently skipping the seed.
+--
+-- IDEMPOTENCY: see drizzle/0008_kill_live_sentinel.sql (Postgres) for the
+-- full rationale — this had no guard and would spawn a fresh blank
+-- "Current (N)" row on every squash-recovery replay. Can't gate on "does
+-- any salary_profiles row exist" (0007 may have legitimately created other
+-- profiles first), so gate on the thing only this seed sets:
+-- app_settings.active_salary_profile_id holding a proper id.
 INSERT INTO `salary_profiles` (`name`, `description`, `salaries`)
 SELECT
 	(
@@ -65,7 +72,14 @@ SELECT
 	COALESCE(
 		(SELECT json_group_object(CAST(p.`id` AS TEXT), json_object('mode', 'job')) FROM `people` p),
 		'{}'
-	);--> statement-breakpoint
+	)
+WHERE NOT EXISTS (
+	SELECT 1 FROM `app_settings` a
+	WHERE a.`key` = 'active_salary_profile_id'
+		AND a.`value` IS NOT NULL
+		AND a.`value` != 'null'
+		AND a.`value` != '0'
+);--> statement-breakpoint
 
 -- 4. Point app_settings.active_salary_profile_id at the row just seeded
 --    (highest id — nothing else inserts into this table in between) wherever

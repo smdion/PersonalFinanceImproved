@@ -83,6 +83,20 @@ WHERE sp."salaries" = '{}'::jsonb
 --    4. Point app_settings.active_salary_profile_id at it wherever it is
 --    currently absent, JSON null, or the old 0 sentinel. An existing real id
 --    is left alone.
+--
+-- IDEMPOTENCY: this INSERT had no guard and unconditionally adds a fresh
+-- blank "Current (N)" row on every replay — harmless to existing data
+-- (nothing here overwrites another row), but real clutter: a squash-
+-- recovery replay spawns a new junk profile every time it fires. Can't
+-- guard on "does any salary_profiles row already exist" the way the
+-- contribution_profiles seed below does — 0007 may have already legitimately
+-- created OTHER profiles (copied from contribution_profiles that had real
+-- overrides) before this statement ever runs for the first time, so that
+-- would wrongly skip the seed on a genuine first run. The precise signal
+-- for "has THIS seed already happened" is the thing only this seed sets:
+-- app_settings.active_salary_profile_id holding a proper id. Pre-0008 that
+-- key is guaranteed absent/null/0 (see header comment); after 0008 runs
+-- once it's guaranteed a real id.
 WITH seeded AS (
 	INSERT INTO "salary_profiles" ("name", "description", "salaries")
 	SELECT
@@ -105,6 +119,12 @@ WITH seeded AS (
 			(SELECT jsonb_object_agg(p."id"::text, jsonb_build_object('mode', 'job')) FROM "people" p),
 			'{}'::jsonb
 		)
+	WHERE NOT EXISTS (
+		SELECT 1 FROM "app_settings" a
+		WHERE a."key" = 'active_salary_profile_id'
+			AND jsonb_typeof(a."value") != 'null'
+			AND a."value" != '0'::jsonb
+	)
 	RETURNING "id"
 )
 INSERT INTO "app_settings" ("key", "value")
