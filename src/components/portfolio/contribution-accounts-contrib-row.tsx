@@ -5,7 +5,6 @@
 import React, { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import {
-  CONTRIBUTION_METHOD_LABELS as METHOD_LABELS,
   TAX_TREATMENT_LABELS as TAX_LABELS,
   EMPLOYER_MATCH_LABELS as MATCH_LABELS,
   MATCH_TAX_LABELS,
@@ -62,13 +61,6 @@ export function ContributionRow({
           <span className="text-faint">·</span>
           <span className="text-muted">
             {TAX_LABELS[c.taxTreatment] ?? c.taxTreatment}
-          </span>
-          <span className="text-faint">·</span>
-          <span className="text-secondary font-mono">
-            {c.contributionValue}
-          </span>
-          <span className="text-faint text-caption">
-            {METHOD_LABELS[c.contributionMethod] ?? ""}
           </span>
           {c.employerMatchType !== "none" && c.employerMatchValue && (
             <>
@@ -128,6 +120,10 @@ export function ContributionRow({
               Done
             </button>
           </div>
+          <p className="text-caption text-faint mb-2">
+            Contribution amount is set per Contribution Profile — edit it on the
+            Paycheck page or the Contribution Profiles tab.
+          </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <InlineSelect
               label="Owner"
@@ -178,24 +174,6 @@ export function ContributionRow({
                 label: v,
               }))}
               onChange={(val) => onUpdate?.({ taxTreatment: val })}
-              disabled={!onUpdate}
-            />
-            <InlineSelect
-              label="Method"
-              value={c.contributionMethod}
-              options={Object.entries(METHOD_LABELS).map(([k, v]) => ({
-                value: k,
-                label: v,
-              }))}
-              onChange={(val) => onUpdate?.({ contributionMethod: val })}
-              disabled={!onUpdate}
-            />
-            <InlineText
-              label="Value"
-              value={c.contributionValue}
-              onSave={(val) => {
-                if (val) onUpdate?.({ contributionValue: val });
-              }}
               disabled={!onUpdate}
             />
             <InlineSelect
@@ -372,14 +350,11 @@ export function AddContribForm({
   const [taxTreatment, setTaxTreatment] = useState<string>(
     getDefaultTaxTreatment(accountType as AccountCategory),
   );
-  const [method, setMethod] = useState("percent_of_salary");
-  const [value, setValue] = useState("");
   const [matchType, setMatchType] = useState("none");
   const [matchValue, setMatchValue] = useState("");
   const [maxMatchPct, setMaxMatchPct] = useState("");
 
   const handleSubmit = () => {
-    if (!value) return;
     onSave({
       personId,
       jobId,
@@ -387,8 +362,6 @@ export function AddContribForm({
       parentCategory,
       performanceAccountId,
       taxTreatment,
-      contributionMethod: method,
-      contributionValue: value,
       employerMatchType: matchType,
       ...(matchType !== "none" && matchValue
         ? { employerMatchValue: matchValue }
@@ -405,6 +378,11 @@ export function AddContribForm({
       <div className="text-caption font-semibold text-muted uppercase tracking-wider">
         New Contribution
       </div>
+      <p className="text-caption text-faint">
+        Set the contribution amount afterward on the Paycheck page or the
+        Contribution Profiles tab — accounts don&apos;t carry a value of their
+        own.
+      </p>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <div>
           <label className="text-caption text-muted">Owner</label>
@@ -452,32 +430,6 @@ export function AddContribForm({
           </select>
         </div>
         <div>
-          <label className="text-caption text-muted">Method</label>
-          <select
-            value={method}
-            onChange={(e) => setMethod(e.target.value)}
-            className="w-full border rounded px-1.5 py-1 text-xs bg-surface-primary"
-          >
-            {Object.entries(METHOD_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="text-caption text-muted">Value</label>
-          <input
-            type="number"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder={
-              method === "percent_of_salary" ? "e.g. 10" : "e.g. 500"
-            }
-            className="w-full border rounded px-1.5 py-1 text-xs bg-surface-primary"
-          />
-        </div>
-        <div>
           <label className="text-caption text-muted">Match Type</label>
           <select
             value={matchType}
@@ -519,7 +471,6 @@ export function AddContribForm({
       <div className="flex gap-2 pt-1">
         <button
           onClick={handleSubmit}
-          disabled={!value}
           className="text-xs px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
         >
           Create

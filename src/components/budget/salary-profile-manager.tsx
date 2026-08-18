@@ -10,45 +10,46 @@ import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
 import { confirm } from "@/components/ui/confirm-dialog";
-import {
-  EditLockToggle,
-  EDIT_LOCK_KEYS,
-  useEditLock,
-} from "@/components/ui/edit-lock-toggle";
 
 /**
  * Salary Profiles tab — the "what if I earned X" axis.
  *
  * Deliberately much thinner than ContributionProfileManager: a Salary
- * Profile's whole content is a personId → entry map, so there's no
+ * Profile's whole content is a jobId → entry map, so there's no
  * contribution math to resolve or aggregate. Every profile is an ordinary row
  * — renamable, editable, and deletable so long as it isn't the last one, the
  * active one, or pinned by a Plan.
  *
- * THERE IS NO MODE TOGGLE. Every field (salary, bonus %, bonus multiplier)
- * renders pre-filled with what that person's job record currently resolves
- * to. Leaving a field as pre-filled writes nothing — it keeps resolving live,
- * so a later raise on the job record flows straight through. Changing a field
- * pins it for this profile, and the ↺ next to a pinned field clears the pin
- * without making the user retype the live number from memory.
+ * THERE IS NO LIVE FALLBACK. A job either has a complete entry in a profile
+ * — salary, bonus %, and multiplier, all real numbers you typed — or it has
+ * none, in which case the profile says nothing about that job and it
+ * contributes $0. There's no "leave it alone and it tracks the job record":
+ * a job doesn't have a salary of its own to track. Adding a job to a profile
+ * is an explicit action; editing any of its three fields is a plain,
+ * ordinary edit — no pin/live distinction, no revert-to-live control. If you
+ * want a different number, use a different profile.
  *
- * That is the whole encoding: presence of a value in the stored entry IS the
- * pin. The fields are independent, so pinning a salary leaves bonus terms
- * live (and vice versa) — which is why a pinned salary still earns a bonus.
- *
- * Selecting a profile shows it read-only; unlocking the padlock makes the
- * same fields editable in place, each committing on blur — the same
- * interaction model as the Savings Profile allocation table. There is no
- * Save button: the only batch form left is "create new", which has to collect
- * a name before a row exists to write to.
+ * Selecting a profile shows it read-only; unlocking the padlock (in the tab
+ * bar above — see budget-content.tsx) makes the same fields editable in
+ * place, each committing on blur — the same interaction model as the
+ * Savings Profile allocation table. There is no Save button: the only batch
+ * form left is "create new", which has to collect a name before a row
+ * exists to write to.
  *
  * `monthsInBonusYear` is supported by the data model and by every resolver,
  * but is deliberately NOT surfaced as an editable column: it is a partial-year
  * proration that is rarely customized, and a seventh numeric column would
- * cost more legibility than it buys. Pins written by other means are honoured
- * and displayed via the resulting bonus.
+ * cost more legibility than it buys. New entries default it to 12.
  */
-export function SalaryProfileManager({ canEdit }: { canEdit: boolean }) {
+export function SalaryProfileManager({
+  canEdit,
+  locked,
+}: {
+  canEdit: boolean;
+  /** Owned by budget-content.tsx's single tab-bar padlock — see its
+   *  useEditLock(EDIT_LOCK_KEYS.profileEditLocked) call. */
+  locked: boolean;
+}) {
   const utils = trpc.useUtils();
   const { isInScenario, setScenarioSalaryProfile } = useScenario();
   const [activeSalaryId, setActiveSalaryId] = useActiveSalaryProfile();
@@ -58,7 +59,6 @@ export function SalaryProfileManager({ canEdit }: { canEdit: boolean }) {
   );
   const [creatingNew, setCreatingNew] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [locked, toggleLocked] = useEditLock(EDIT_LOCK_KEYS.budgetSalary);
 
   const invalidateProfileDeps = () => {
     utils.salaryProfile.invalidate();
@@ -140,15 +140,9 @@ export function SalaryProfileManager({ canEdit }: { canEdit: boolean }) {
               }
             />
             <div className="flex items-center gap-5 text-xs">
-              <div>
-                <span className="text-faint">People pinned </span>
-                <span className="font-semibold text-secondary">
-                  {displayedProfile.pinnedCount}
-                </span>
-              </div>
               {displayedProfile.pinnedSalaryTotal > 0 && (
                 <div>
-                  <span className="text-faint">Pinned salary </span>
+                  <span className="text-faint">Salary total </span>
                   <span className="font-semibold text-secondary">
                     {formatCurrency(displayedProfile.pinnedSalaryTotal)}
                     <span className="text-faint font-normal">/yr</span>
@@ -157,7 +151,7 @@ export function SalaryProfileManager({ canEdit }: { canEdit: boolean }) {
               )}
             </div>
           </div>
-          <HelpTip text="A Salary Profile sets each person's pay for what-if analysis. Every field starts at what their job record says right now — leave it alone and it keeps tracking the job, change it and this profile pins it. Salary and bonus pin independently, so a pinned salary still earns its bonus. It is independent of the Contribution Profile — pin either, both, or neither. Plan pins and page-level salary overrides always win over a profile." />
+          <HelpTip text="A Salary Profile sets each person's pay for what-if analysis. Each job either has a complete entry in this profile — salary, bonus %, and multiplier — or it isn't in the profile at all and contributes $0. There's no fallback to a job record: if you want a different number, use a different profile. It is independent of the Contribution Profile — set either, both, or neither. Plan pins and page-level salary overrides always win over a profile." />
         </div>
       )}
 
@@ -209,7 +203,6 @@ export function SalaryProfileManager({ canEdit }: { canEdit: boolean }) {
         <div>
           {creatingNew ? (
             <ProfileCreatePanel
-              profiles={profiles}
               onCancel={() => setCreatingNew(false)}
               onSaved={(newId) => {
                 setCreatingNew(false);
@@ -218,27 +211,14 @@ export function SalaryProfileManager({ canEdit }: { canEdit: boolean }) {
               }}
             />
           ) : effectiveSelectedId != null ? (
-            (() => {
-              const lockToggle = (
-                <EditLockToggle
-                  locked={locked}
-                  onToggle={toggleLocked}
-                  disabled={!canEdit}
-                />
-              );
-              return !canEdit || locked ? (
-                <ProfileDetail
-                  profileId={effectiveSelectedId}
-                  lockToggle={lockToggle}
-                />
-              ) : (
-                <ProfileEditPanel
-                  profileId={effectiveSelectedId}
-                  lockToggle={lockToggle}
-                  onSaved={() => invalidateProfileDeps()}
-                />
-              );
-            })()
+            !canEdit || locked ? (
+              <ProfileDetail profileId={effectiveSelectedId} />
+            ) : (
+              <ProfileEditPanel
+                profileId={effectiveSelectedId}
+                onSaved={() => invalidateProfileDeps()}
+              />
+            )
           ) : (
             <div className="text-xs text-faint">Select a profile.</div>
           )}
@@ -289,8 +269,8 @@ function ProfileListItem({
           <div className="text-caption text-faint truncate">
             {description ??
               (pinnedCount === 0
-                ? "Everything follows the job records"
-                : `${pinnedCount} ${pinnedCount === 1 ? "person" : "people"} pinned`)}
+                ? "Empty"
+                : `${pinnedCount} ${pinnedCount === 1 ? "job" : "jobs"} set`)}
           </div>
         </div>
         {onDelete && (
@@ -316,6 +296,27 @@ function ProfileListItem({
 // Shared entry helpers
 // ---------------------------------------------------------------------------
 
+/** One job in a person's job history, as salaryProfile.getById resolves it. */
+type JobOption = {
+  id: number;
+  employerName: string;
+  startDate: string;
+  endDate: string | null;
+  /** Whether this profile has a complete entry for this job — the whole
+   *  encoding. No entry means $0/no bonus, not a fallback to anything. */
+  hasEntry: boolean;
+  salary: number;
+  bonusPercent: number;
+  bonusMultiplier: number;
+  monthsInBonusYear: number;
+  /** This year's actual paid-out bonus, pinned on the same entry — see
+   *  SalaryProfileEntry.bonusOverride's docblock. */
+  bonusOverride: number | null;
+  /** What this profile actually produces for this job. */
+  effectiveSalary: number;
+  estimatedBonus: number;
+};
+
 /**
  * One person's row as salaryProfile.getById returns it.
  *
@@ -326,53 +327,68 @@ function ProfileListItem({
 type Detail = {
   personId: number;
   personName: string;
+  /** The job this row targets — the real identity of an entry, not
+   *  personId. Null when this person has no jobs at all yet. */
+  jobId: number | null;
+  /** This person's full job history, for the row's job picker. */
+  jobOptions: JobOption[];
   employerName: string | null;
-  baseSalary: number;
-  jobSalary: number;
-  jobBonusPercent: number;
-  jobBonusMultiplier: number;
-  jobMonthsInBonusYear: number;
-  pinnedSalary: number | null;
-  pinnedBonusPercent: number | null;
-  pinnedBonusMultiplier: number | null;
-  pinnedMonthsInBonusYear: number | null;
+  hasEntry: boolean;
+  salary: number;
+  bonusPercent: number;
+  bonusMultiplier: number;
+  monthsInBonusYear: number;
+  bonusOverride: number | null;
   effectiveSalary: number;
   estimatedBonus: number;
 };
 
-/** The stored entry shape — every field optional, presence means pinned. */
+/** The complete entry shape written to the profile's jsonb — all five
+ *  fields, always. */
 type Entry = {
-  salary?: number;
-  bonusPercent?: number;
-  bonusMultiplier?: number;
-  monthsInBonusYear?: number;
+  salary: number;
+  bonusPercent: number;
+  bonusMultiplier: number;
+  monthsInBonusYear: number;
+  bonusOverride: number | null;
+};
+
+/** What a brand-new entry starts as when a job is explicitly added to a
+ *  profile — plain zeros/on-target, never copied from anywhere. */
+const BLANK_ENTRY: Entry = {
+  salary: 0,
+  bonusPercent: 0,
+  bonusMultiplier: 1,
+  monthsInBonusYear: 12,
+  bonusOverride: null,
 };
 
 /**
- * Rebuild the profile's stored entry map from the rows the server just sent.
- *
- * Round-tripping through `pinned*` (rather than keeping a separate client
- * copy of `salaries`) means a write always sends exactly what the server
- * currently believes plus the one field being changed, so two edits in quick
- * succession can't resurrect a pin the first one cleared.
+ * Re-target a row at a different job from its jobOptions — used by the job
+ * picker so switching jobs shows THAT job's real entry with no second round
+ * trip. Falls back to the row unchanged if the id isn't one of this
+ * person's jobs.
  */
-function storedEntries(details: Detail[]): Record<string, Entry> {
-  const out: Record<string, Entry> = {};
-  for (const sd of details) {
-    const entry: Entry = {};
-    if (sd.pinnedSalary !== null) entry.salary = sd.pinnedSalary;
-    if (sd.pinnedBonusPercent !== null)
-      entry.bonusPercent = sd.pinnedBonusPercent;
-    if (sd.pinnedBonusMultiplier !== null)
-      entry.bonusMultiplier = sd.pinnedBonusMultiplier;
-    if (sd.pinnedMonthsInBonusYear !== null)
-      entry.monthsInBonusYear = sd.pinnedMonthsInBonusYear;
-    if (Object.keys(entry).length > 0) out[String(sd.personId)] = entry;
-  }
-  return out;
+function detailForJob(sd: Detail, jobId: number): Detail {
+  const opt = sd.jobOptions.find((jo) => jo.id === jobId);
+  if (!opt) return sd;
+  return {
+    ...sd,
+    jobId: opt.id,
+    employerName: opt.employerName,
+    hasEntry: opt.hasEntry,
+    salary: opt.salary,
+    bonusPercent: opt.bonusPercent,
+    bonusMultiplier: opt.bonusMultiplier,
+    monthsInBonusYear: opt.monthsInBonusYear,
+    bonusOverride: opt.bonusOverride,
+    effectiveSalary: opt.effectiveSalary,
+    estimatedBonus: opt.estimatedBonus,
+  };
 }
 
-/** The three fields this table edits, and how each maps to live/pinned. */
+/** The three fields this table edits, and how each maps display ↔ stored
+ *  units. */
 const FIELDS = {
   salary: {
     label: "Salary",
@@ -398,27 +414,9 @@ const FIELDS = {
 
 type FieldKey = keyof typeof FIELDS;
 
-/** The live (job-record) value a field pre-fills with, in display units. */
-function liveDisplay(sd: Detail, field: FieldKey): number {
-  if (field === "salary") return sd.jobSalary;
-  if (field === "bonusPercent")
-    return FIELDS.bonusPercent.toDisplay(sd.jobBonusPercent);
-  return sd.jobBonusMultiplier;
-}
-
-/** The pinned value for a field, or null when it resolves live. */
-function pinnedValue(sd: Detail, field: FieldKey): number | null {
-  if (field === "salary") return sd.pinnedSalary;
-  if (field === "bonusPercent") return sd.pinnedBonusPercent;
-  return sd.pinnedBonusMultiplier;
-}
-
-/** What the input shows: the pin if there is one, else the live value. */
-function displayValue(sd: Detail, field: FieldKey): number {
-  const pinned = pinnedValue(sd, field);
-  return pinned !== null
-    ? FIELDS[field].toDisplay(pinned)
-    : liveDisplay(sd, field);
+/** What the input/cell shows: this entry's own value, in display units. */
+function entryDisplay(sd: Detail, field: FieldKey): number {
+  return FIELDS[field].toDisplay(sd[field]);
 }
 
 /** Format a display-unit number for an input without trailing float noise. */
@@ -426,22 +424,14 @@ function fmt(n: number): string {
   return String(Math.round(n * 1e6) / 1e6);
 }
 
-/**
- * A numeric cell that is pre-filled with the live value and pins on change.
- *
- * The pin state is visible (amber + a ↺ to clear it) rather than implied, so
- * "this number is frozen for this profile" and "this number tracks the job
- * record" are distinguishable at a glance — which is the job the old
- * Follows-job/Fixed-amount toggle used to do, without a separate control
- * whose state could contradict the value beside it.
- */
-function PinnedNumberCell({
+/** A plain numeric cell for a job that already has an entry in this
+ *  profile — every edit is an ordinary edit, no pin/live distinction. */
+function EntryNumberCell({
   sd,
   field,
   draft,
   onDraft,
   onCommit,
-  onReset,
   prefix,
   suffix,
   width = "w-24",
@@ -451,13 +441,11 @@ function PinnedNumberCell({
   draft: string | undefined;
   onDraft: (value: string) => void;
   onCommit: () => void;
-  onReset: () => void;
   prefix?: string;
   suffix?: string;
   width?: string;
 }) {
-  const isPinned = pinnedValue(sd, field) !== null;
-  const value = draft ?? fmt(displayValue(sd, field));
+  const value = draft ?? fmt(entryDisplay(sd, field));
   return (
     <div className="flex items-center justify-end gap-1">
       {prefix && <span className="text-xs text-faint">{prefix}</span>}
@@ -467,27 +455,41 @@ function PinnedNumberCell({
         onChange={(e) => onDraft(e.target.value)}
         onBlur={onCommit}
         step={FIELDS[field].step}
-        title={
-          isPinned
-            ? `Pinned by this profile. Live value: ${fmt(liveDisplay(sd, field))}`
-            : "Follows the job record"
-        }
-        className={`${width} px-2 py-1 text-xs text-right border rounded bg-surface-primary ${
-          isPinned
-            ? "text-amber-600 font-medium border-amber-400"
-            : "text-primary"
-        }`}
+        className={`${width} px-2 py-1 text-xs text-right border rounded bg-surface-primary text-primary`}
       />
       {suffix && <span className="text-xs text-faint">{suffix}</span>}
-      <button
-        type="button"
-        onClick={onReset}
-        disabled={!isPinned}
-        title={isPinned ? "Reset to the live job value" : "Already live"}
-        className="text-caption text-faint hover:text-blue-600 disabled:opacity-0 disabled:cursor-default w-3.5 shrink-0"
-      >
-        ↺
-      </button>
+    </div>
+  );
+}
+
+/** This year's actual bonus pin — a separate cell from EntryNumberCell
+ *  because it's nullable (empty = unpinned, formula applies) rather than
+ *  always-numeric like the three FIELDS above. */
+function BonusOverrideCell({
+  sd,
+  draft,
+  onDraft,
+  onCommit,
+}: {
+  sd: Detail;
+  draft: string | undefined;
+  onDraft: (value: string) => void;
+  onCommit: () => void;
+}) {
+  const value =
+    draft ?? (sd.bonusOverride !== null ? fmt(sd.bonusOverride) : "");
+  return (
+    <div className="flex items-center justify-end gap-1">
+      <span className="text-xs text-faint">$</span>
+      <input
+        type="number"
+        value={value}
+        onChange={(e) => onDraft(e.target.value)}
+        onBlur={onCommit}
+        placeholder="—"
+        step="1"
+        className="w-24 px-2 py-1 text-xs text-right border rounded bg-surface-primary text-primary"
+      />
     </div>
   );
 }
@@ -502,19 +504,22 @@ function SalaryTableHead({ editable }: { editable: boolean }) {
         </th>
         <th className="text-left py-2 px-3 text-muted font-medium">Employer</th>
         <th
-          className={`text-right py-2 px-3 text-muted font-medium ${editable ? "w-44" : "w-32"}`}
+          className={`text-right py-2 px-3 text-muted font-medium ${editable ? "w-32" : "w-32"}`}
         >
           Salary
         </th>
         <th
-          className={`text-right py-2 px-3 text-muted font-medium ${editable ? "w-36" : "w-24"}`}
+          className={`text-right py-2 px-3 text-muted font-medium ${editable ? "w-24" : "w-24"}`}
         >
           Bonus %
         </th>
         <th
-          className={`text-right py-2 px-3 text-muted font-medium ${editable ? "w-36" : "w-24"}`}
+          className={`text-right py-2 px-3 text-muted font-medium ${editable ? "w-24" : "w-24"}`}
         >
           Multiplier
+        </th>
+        <th className="text-right py-2 px-3 text-muted font-medium w-24">
+          Actual
         </th>
         <th className="text-right py-2 px-3 text-muted font-medium w-28">
           Bonus
@@ -539,7 +544,7 @@ function TotalsFooter({ combinedIncome }: { combinedIncome: number }) {
     <tfoot>
       <tr className="border-t-2 border-strong">
         <td
-          colSpan={6}
+          colSpan={7}
           className="py-2 pl-4 pr-3 text-right text-muted font-medium"
         >
           Household income under this profile
@@ -552,42 +557,59 @@ function TotalsFooter({ combinedIncome }: { combinedIncome: number }) {
   );
 }
 
+/** Job picker shared by the read-only and editable rows. */
+function JobPicker({
+  sd,
+  rawSd,
+  onChange,
+}: {
+  sd: Detail;
+  rawSd: Detail;
+  onChange: (jobId: number) => void;
+}) {
+  if (rawSd.jobOptions.length <= 1) {
+    return <>{sd.employerName ?? "No active job"}</>;
+  }
+  return (
+    <select
+      value={sd.jobId ?? ""}
+      onChange={(e) => onChange(Number(e.target.value))}
+      className="text-xs border rounded bg-surface-primary text-primary px-1 py-0.5 max-w-[10rem]"
+    >
+      {rawSd.jobOptions.map((jo) => (
+        <option key={jo.id} value={jo.id}>
+          {jo.employerName}
+          {jo.endDate ? ` (ended ${jo.endDate})` : ""}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 /**
  * Read-only detail view — used when canEdit is false and whenever the padlock
- * is locked. Every person shows a real salary and bonus: what their job
- * resolves to, with any pinned field replacing it (shown in amber).
+ * is locked. A job either has a real entry in this profile (shown plainly)
+ * or it doesn't (shown as "—", contributing $0).
  */
-function ProfileDetail({
-  profileId,
-  lockToggle,
-}: {
-  profileId: number;
-  lockToggle?: React.ReactNode;
-}) {
+function ProfileDetail({ profileId }: { profileId: number }) {
   const { data: profile } = trpc.salaryProfile.getById.useQuery({
     id: profileId,
   });
   if (!profile) return null;
 
-  const cell = (sd: Detail, field: FieldKey, suffix?: string) => {
-    const isPinned = pinnedValue(sd, field) !== null;
-    return (
-      <td
-        className={`py-1.5 px-3 text-right tabular-nums ${
-          isPinned ? "text-amber-600 font-medium" : "text-secondary"
-        }`}
-        title={
-          isPinned
-            ? `Pinned by this profile. Live value: ${fmt(liveDisplay(sd, field))}`
-            : "Follows the job record"
-        }
-      >
-        {field === "salary"
-          ? formatCurrency(displayValue(sd, field))
-          : `${fmt(displayValue(sd, field))}${suffix ?? ""}`}
-      </td>
-    );
-  };
+  const cell = (sd: Detail, field: FieldKey, suffix?: string) => (
+    <td
+      className={`py-1.5 px-3 text-right tabular-nums ${
+        sd.hasEntry ? "text-secondary" : "text-faint"
+      }`}
+    >
+      {!sd.hasEntry
+        ? "—"
+        : field === "salary"
+          ? formatCurrency(entryDisplay(sd, field))
+          : `${fmt(entryDisplay(sd, field))}${suffix ?? ""}`}
+    </td>
+  );
 
   return (
     <div className="bg-surface-sunken rounded-lg p-4">
@@ -598,7 +620,6 @@ function ProfileDetail({
             — {profile.description}
           </span>
         )}
-        {lockToggle}
       </div>
 
       <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
@@ -614,12 +635,32 @@ function ProfileDetail({
               </td>
               <td className="py-1.5 px-3 text-muted">
                 {sd.employerName ?? "No active job"}
+                {!sd.hasEntry && sd.jobId !== null && (
+                  <span className="text-caption text-faint ml-1">
+                    (not in this profile)
+                  </span>
+                )}
               </td>
               {cell(sd, "salary")}
               {cell(sd, "bonusPercent", "%")}
               {cell(sd, "bonusMultiplier", "×")}
-              <td className="py-1.5 px-3 text-right tabular-nums text-secondary">
-                {formatCurrency(sd.estimatedBonus)}
+              <td
+                className={`py-1.5 px-3 text-right tabular-nums ${
+                  sd.hasEntry && sd.bonusOverride !== null
+                    ? "text-amber-700"
+                    : "text-faint"
+                }`}
+              >
+                {sd.hasEntry && sd.bonusOverride !== null
+                  ? formatCurrency(sd.bonusOverride)
+                  : "—"}
+              </td>
+              <td
+                className={`py-1.5 px-3 text-right tabular-nums ${
+                  sd.hasEntry ? "text-secondary" : "text-faint"
+                }`}
+              >
+                {sd.hasEntry ? formatCurrency(sd.estimatedBonus) : "—"}
               </td>
               <td className="py-1.5 pr-4 pl-3 text-right tabular-nums font-medium text-secondary">
                 {formatCurrency(sd.effectiveSalary + sd.estimatedBonus)}
@@ -635,36 +676,20 @@ function ProfileDetail({
 
 /**
  * Create-new panel. This is the one place a batch form survives: a profile
- * row has to exist before per-field edits have anywhere to go, so the name
- * (and any starting pins) are collected and sent as a single create.
- * Once created, the profile is edited in place via ProfileEditPanel.
+ * row has to exist before per-job entries have anywhere to go. A new
+ * profile starts genuinely empty — no rows, no seeded values, nothing
+ * copied from any other profile. Jobs are added to it afterward, in
+ * ProfileEditPanel.
  */
 function ProfileCreatePanel({
-  profiles,
   onCancel,
   onSaved,
 }: {
-  profiles: { id: number; name: string }[];
   onCancel: () => void;
   onSaved: (newId?: number) => void;
 }) {
-  /** Opt-in "start from an existing profile". Empty = start fresh, which is
-   *  every field following its job record — a new what-if profile must never
-   *  silently inherit and freeze whatever was pinned when it was created. */
-  const [startFromId, setStartFromId] = useState<number | "">("");
-  /** Any existing profile supplies the per-person rows and their live job
-   *  values; when startFromId is set it also supplies the starting pins. */
-  const rowsSourceId = startFromId === "" ? profiles[0]?.id : startFromId;
-  const { data: baseData } = trpc.salaryProfile.getById.useQuery(
-    { id: rowsSourceId! },
-    { enabled: rowsSourceId !== undefined },
-  );
-
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  /** `${personId}:${field}` → in-progress text. Absent = untouched, which
-   *  takes the seed below (the started-from profile's pin, else live). */
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
 
   const createMutation = trpc.salaryProfile.create.useMutation({
@@ -672,41 +697,10 @@ function ProfileCreatePanel({
     onError: (e) => setError(e.message),
   });
 
-  const startingFrom = startFromId !== "";
-
-  /** What this row's field shows: an explicit draft, else the seed. When not
-   *  copying a profile the seed is always the LIVE value, so an untouched
-   *  form creates a profile that pins nothing. */
-  const seedFor = (sd: Detail, field: FieldKey) =>
-    startingFrom ? displayValue(sd, field) : liveDisplay(sd, field);
-
-  const valueFor = (sd: Detail, field: FieldKey) =>
-    drafts[`${sd.personId}:${field}`] ?? fmt(seedFor(sd, field));
-
   const handleCreate = () => {
-    const salaries: Record<string, Entry> = {};
-    for (const sd of baseData?.salaryDetails ?? []) {
-      const entry: Entry = {};
-      for (const field of Object.keys(FIELDS) as FieldKey[]) {
-        const raw = valueFor(sd, field);
-        const num = parseFloat(raw);
-        // Unparseable, negative, or exactly the live value ⇒ no pin. The
-        // last of those is decision 5: leaving a pre-filled field alone must
-        // write nothing, or every new profile would freeze every number.
-        if (isNaN(num) || num < 0) continue;
-        if (num === liveDisplay(sd, field)) continue;
-        entry[field] = FIELDS[field].fromDisplay(num);
-      }
-      // Copying a profile also copies any months-in-bonus-year pin, which
-      // this table doesn't surface but must not silently drop.
-      if (startingFrom && sd.pinnedMonthsInBonusYear !== null)
-        entry.monthsInBonusYear = sd.pinnedMonthsInBonusYear;
-      if (Object.keys(entry).length > 0) salaries[String(sd.personId)] = entry;
-    }
     createMutation.mutate({
       name,
       description: description || undefined,
-      salaries,
     });
   };
 
@@ -714,7 +708,7 @@ function ProfileCreatePanel({
     <div className="bg-surface-sunken rounded-lg p-4">
       {error && <FormError message={error} className="mb-3" />}
 
-      <div className="flex items-start justify-between gap-3 mb-4">
+      <div className="flex items-start justify-between gap-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
           <div>
             <label className="text-label font-medium text-muted">Name</label>
@@ -757,112 +751,9 @@ function ProfileCreatePanel({
           </button>
         </div>
       </div>
-
-      {profiles.length > 0 && (
-        <div className="mb-4 flex items-center gap-2">
-          <label className="text-label font-medium text-muted">
-            Start from an existing profile
-          </label>
-          <select
-            value={startFromId === "" ? "" : String(startFromId)}
-            onChange={(e) => {
-              setStartFromId(e.target.value ? Number(e.target.value) : "");
-              setDrafts({});
-            }}
-            className="px-2 py-1 text-xs border rounded bg-surface-primary text-primary"
-          >
-            <option value="">
-              Start fresh (everything follows the job records)
-            </option>
-            {profiles.map((p) => (
-              <option key={p.id} value={p.id}>
-                Copy from {p.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {baseData?.salaryDetails && baseData.salaryDetails.length > 0 && (
-        <div>
-          <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
-            Salary &amp; Bonus
-          </h4>
-          <p className="text-caption text-faint mb-2">
-            Fields start at each person&apos;s current job values. Leave one
-            alone and it keeps tracking the job record; change it and this
-            profile pins it.
-          </p>
-          <table className="w-full text-xs border-collapse">
-            <thead>
-              <tr className="border-b-2 border-strong">
-                <th className="text-left py-2 pl-4 pr-3 text-muted font-medium">
-                  Person
-                </th>
-                <th className="text-left py-2 px-3 text-muted font-medium">
-                  Employer
-                </th>
-                <th className="text-right py-2 px-3 text-muted font-medium w-40">
-                  Salary
-                </th>
-                <th className="text-right py-2 px-3 text-muted font-medium w-32">
-                  Bonus %
-                </th>
-                <th className="text-right py-2 pr-4 pl-3 text-muted font-medium w-32">
-                  Multiplier
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {baseData.salaryDetails.map((sd, rowIdx) => {
-                const input = (
-                  field: FieldKey,
-                  prefix?: string,
-                  suffix?: string,
-                ) => (
-                  <div className="flex items-center justify-end gap-1">
-                    {prefix && (
-                      <span className="text-xs text-faint">{prefix}</span>
-                    )}
-                    <input
-                      type="number"
-                      value={valueFor(sd, field)}
-                      onChange={(e) =>
-                        setDrafts((prev) => ({
-                          ...prev,
-                          [`${sd.personId}:${field}`]: e.target.value,
-                        }))
-                      }
-                      step={FIELDS[field].step}
-                      className="w-24 px-2 py-1 text-xs text-right border rounded bg-surface-primary text-primary"
-                    />
-                    {suffix && (
-                      <span className="text-xs text-faint">{suffix}</span>
-                    )}
-                  </div>
-                );
-                return (
-                  <tr key={sd.personId} className={rowClass(rowIdx)}>
-                    <td className="py-1.5 pl-4 pr-3 font-medium text-secondary">
-                      {sd.personName}
-                    </td>
-                    <td className="py-1.5 px-3 text-muted">
-                      {sd.employerName ?? "No active job"}
-                    </td>
-                    <td className="py-1.5 px-3">{input("salary", "$")}</td>
-                    <td className="py-1.5 px-3">
-                      {input("bonusPercent", undefined, "%")}
-                    </td>
-                    <td className="py-1.5 pr-4 pl-3">
-                      {input("bonusMultiplier", undefined, "×")}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <p className="text-caption text-faint mt-3">
+        Starts completely empty — add jobs to it after creating.
+      </p>
     </div>
   );
 }
@@ -876,11 +767,9 @@ function ProfileCreatePanel({
  */
 function ProfileEditPanel({
   profileId,
-  lockToggle,
   onSaved,
 }: {
   profileId: number;
-  lockToggle?: React.ReactNode;
   onSaved: () => void;
 }) {
   const { data: profile } = trpc.salaryProfile.getById.useQuery({
@@ -889,6 +778,11 @@ function ProfileEditPanel({
   const [error, setError] = useState<string | null>(null);
   /** In-progress text per field; cleared once its mutation is sent. */
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  /** personId → jobId, when the user has picked a DIFFERENT job than the
+   *  one the server selected by default (whichever job has an entry, else
+   *  the active one) — the row's job picker. Client-only until a field is
+   *  actually set under that job. */
+  const [jobOverride, setJobOverride] = useState<Record<number, number>>({});
 
   const updateMutation = trpc.salaryProfile.update.useMutation({
     onSuccess: () => {
@@ -929,17 +823,63 @@ function ProfileEditPanel({
     updateMutation.mutate({ id: profileId, description: trimmed || null });
   };
 
-  /** Write the whole entry map back with one person's one field changed.
-   *  `next === undefined` clears the pin (the ↺ affordance). */
-  const writeField = (personId: number, field: FieldKey, next?: number) => {
-    const salaries = storedEntries(details);
-    const key = String(personId);
-    const entry: Entry = { ...(salaries[key] ?? {}) };
-    if (next === undefined) delete entry[field];
-    else entry[field] = next;
-    if (Object.keys(entry).length > 0) salaries[key] = entry;
-    else delete salaries[key];
+  /** Add this job to the profile with a blank entry — the explicit action
+   *  that turns a "—" row into an editable one. */
+  const addEntry = (jobId: number | null) => {
+    if (jobId === null) return;
+    updateMutation.mutate({
+      id: profileId,
+      salaries: { ...profile.salaries, [String(jobId)]: BLANK_ENTRY },
+    });
+  };
+
+  /** Remove this job's entry entirely — it goes back to contributing $0,
+   *  the same as a job that was never added. */
+  const removeEntry = (jobId: number | null) => {
+    if (jobId === null) return;
+    const salaries = { ...profile.salaries };
+    delete salaries[String(jobId)];
     updateMutation.mutate({ id: profileId, salaries });
+  };
+
+  /** Update one field of an already-existing entry. Entries are always
+   *  complete, so this only ever runs for a job that already has one. */
+  const writeField = (
+    sd: Detail,
+    field: FieldKey | "bonusOverride",
+    stored: number | null,
+  ) => {
+    if (sd.jobId === null) return;
+    const key = String(sd.jobId);
+    const existing = profile.salaries[key];
+    if (!existing) return;
+    updateMutation.mutate({
+      id: profileId,
+      salaries: {
+        ...profile.salaries,
+        [key]: { ...existing, [field]: stored },
+      },
+    });
+  };
+
+  /** Empty clears the pin back to null (unpinned, formula applies) — unlike
+   *  the always-numeric fields below, an empty commit here is meaningful,
+   *  not a no-op. */
+  const commitBonusOverride = (sd: Detail) => {
+    const key = `${sd.personId}:bonusOverride`;
+    const draft = drafts[key];
+    if (draft === undefined) return;
+    clearDraft(key);
+    const trimmed = draft.trim();
+    if (trimmed === "") {
+      if (sd.bonusOverride === null) return;
+      writeField(sd, "bonusOverride", null);
+      return;
+    }
+    const num = parseFloat(trimmed);
+    if (isNaN(num) || num < 0) return;
+    if (sd.bonusOverride === num) return;
+    writeField(sd, "bonusOverride", num);
   };
 
   const commitField = (sd: Detail, field: FieldKey) => {
@@ -949,26 +889,10 @@ function ProfileEditPanel({
     clearDraft(key);
     const trimmed = draft.trim();
     const num = parseFloat(trimmed);
-    // A blank or unusable box means "no pin" rather than a zero pin — a zero
-    // salary is a real, destructive value to write by accident.
-    if (trimmed === "" || isNaN(num) || num < 0) {
-      if (pinnedValue(sd, field) !== null) writeField(sd.personId, field);
-      return;
-    }
-    // Back to exactly the live value ⇒ unpin, so the field resumes tracking
-    // the job record instead of freezing today's number forever.
-    if (num === liveDisplay(sd, field)) {
-      if (pinnedValue(sd, field) !== null) writeField(sd.personId, field);
-      return;
-    }
+    if (trimmed === "" || isNaN(num) || num < 0) return;
     const stored = FIELDS[field].fromDisplay(num);
-    if (pinnedValue(sd, field) === stored) return;
-    writeField(sd.personId, field, stored);
-  };
-
-  const resetField = (sd: Detail, field: FieldKey) => {
-    clearDraft(`${sd.personId}:${field}`);
-    if (pinnedValue(sd, field) !== null) writeField(sd.personId, field);
+    if (sd[field] === stored) return;
+    writeField(sd, field, stored);
   };
 
   return (
@@ -978,16 +902,13 @@ function ProfileEditPanel({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
         <div>
           <label className="text-label font-medium text-muted">Name</label>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={drafts.name ?? profile.name}
-              onChange={(e) => setDraft("name", e.target.value)}
-              onBlur={commitName}
-              className="mt-0.5 w-full px-2 py-1.5 text-xs border rounded bg-surface-primary text-primary"
-            />
-            {lockToggle}
-          </div>
+          <input
+            type="text"
+            value={drafts.name ?? profile.name}
+            onChange={(e) => setDraft("name", e.target.value)}
+            onBlur={commitName}
+            className="mt-0.5 w-full px-2 py-1.5 text-xs border rounded bg-surface-primary text-primary"
+          />
         </div>
         <div>
           <label className="text-label font-medium text-muted">
@@ -1010,52 +931,116 @@ function ProfileEditPanel({
             Salary &amp; Bonus
           </h4>
           <p className="text-caption text-faint mb-2">
-            Fields start at each person&apos;s current job values. Change one to
-            pin it for this profile (shown in amber); use ↺ to go back to
-            following the job record.
+            A job is either in this profile (edit any field) or it isn&apos;t
+            (shown as &ldquo;—&rdquo;, contributing $0) — use + Add to give it
+            real numbers.
           </p>
           <table className="w-full text-xs border-collapse">
             <SalaryTableHead editable />
             <tbody>
-              {details.map((sd, rowIdx) => {
+              {details.map((rawSd, rowIdx) => {
+                // Job picker lets a row target a DIFFERENT job than the one
+                // the server picked by default (whichever job has an entry,
+                // else the active one) — e.g. setting terms for a job that
+                // already ended, or one that hasn't started yet.
+                const override = jobOverride[rawSd.personId];
+                const sd =
+                  override !== undefined
+                    ? detailForJob(rawSd, override)
+                    : rawSd;
                 const cellFor = (
                   field: FieldKey,
                   prefix?: string,
                   suffix?: string,
                 ) => (
-                  <PinnedNumberCell
+                  <EntryNumberCell
                     sd={sd}
                     field={field}
                     draft={drafts[`${sd.personId}:${field}`]}
                     onDraft={(v) => setDraft(`${sd.personId}:${field}`, v)}
                     onCommit={() => commitField(sd, field)}
-                    onReset={() => resetField(sd, field)}
                     prefix={prefix}
                     suffix={suffix}
                     width={field === "salary" ? "w-28" : "w-20"}
                   />
                 );
                 return (
-                  <tr key={sd.personId} className={rowClass(rowIdx)}>
+                  <tr key={rawSd.personId} className={rowClass(rowIdx)}>
                     <td className="py-1.5 pl-4 pr-3 font-medium text-secondary">
                       {sd.personName}
                     </td>
                     <td className="py-1.5 px-3 text-muted">
-                      {sd.employerName ?? "No active job"}
+                      <JobPicker
+                        sd={sd}
+                        rawSd={rawSd}
+                        onChange={(jobId) =>
+                          setJobOverride((prev) => ({
+                            ...prev,
+                            [rawSd.personId]: jobId,
+                          }))
+                        }
+                      />
                     </td>
-                    <td className="py-1.5 px-3">{cellFor("salary", "$")}</td>
-                    <td className="py-1.5 px-3">
-                      {cellFor("bonusPercent", undefined, "%")}
-                    </td>
-                    <td className="py-1.5 px-3">
-                      {cellFor("bonusMultiplier", undefined, "×")}
-                    </td>
-                    <td className="py-1.5 px-3 text-right tabular-nums text-secondary">
-                      {formatCurrency(sd.estimatedBonus)}
-                    </td>
-                    <td className="py-1.5 pr-4 pl-3 text-right tabular-nums font-medium text-secondary">
-                      {formatCurrency(sd.effectiveSalary + sd.estimatedBonus)}
-                    </td>
+                    {sd.hasEntry ? (
+                      <>
+                        <td className="py-1.5 px-3">
+                          {cellFor("salary", "$")}
+                        </td>
+                        <td className="py-1.5 px-3">
+                          {cellFor("bonusPercent", undefined, "%")}
+                        </td>
+                        <td className="py-1.5 px-3">
+                          {cellFor("bonusMultiplier", undefined, "×")}
+                        </td>
+                        <td className="py-1.5 px-3">
+                          <BonusOverrideCell
+                            sd={sd}
+                            draft={drafts[`${sd.personId}:bonusOverride`]}
+                            onDraft={(v) =>
+                              setDraft(`${sd.personId}:bonusOverride`, v)
+                            }
+                            onCommit={() => commitBonusOverride(sd)}
+                          />
+                        </td>
+                        <td className="py-1.5 px-3 text-right tabular-nums text-secondary">
+                          {formatCurrency(sd.estimatedBonus)}
+                        </td>
+                        <td className="py-1.5 pr-4 pl-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <span className="tabular-nums font-medium text-secondary">
+                              {formatCurrency(
+                                sd.effectiveSalary + sd.estimatedBonus,
+                              )}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeEntry(sd.jobId)}
+                              title="Remove this job from the profile"
+                              className="text-caption text-faint hover:text-red-500 shrink-0"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    ) : (
+                      <td
+                        colSpan={6}
+                        className="py-1.5 px-3 text-right text-faint"
+                      >
+                        <div className="flex items-center justify-end gap-2">
+                          <span>Not in this profile</span>
+                          <button
+                            type="button"
+                            onClick={() => addEntry(sd.jobId)}
+                            disabled={sd.jobId === null}
+                            className="text-caption font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                          >
+                            + Add
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 );
               })}

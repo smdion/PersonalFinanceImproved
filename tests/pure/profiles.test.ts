@@ -99,9 +99,9 @@ describe("canRemoveColumn", () => {
 
 describe("findActiveJob", () => {
   const jobs = [
-    { personId: 1, endDate: "2023-12-31", name: "old" },
-    { personId: 1, endDate: null, name: "current" },
-    { personId: 2, endDate: null, name: "other" },
+    { personId: 1, endDate: "2023-12-31", isSpeculative: false, name: "old" },
+    { personId: 1, endDate: null, isSpeculative: false, name: "current" },
+    { personId: 2, endDate: null, isSpeculative: false, name: "other" },
   ];
 
   it("finds active job for person", () => {
@@ -110,25 +110,53 @@ describe("findActiveJob", () => {
   });
 
   it("returns undefined when no active job", () => {
-    const ended = [{ personId: 1, endDate: "2023-01-01" }];
+    const ended = [
+      { personId: 1, endDate: "2023-01-01", isSpeculative: false },
+    ];
     expect(findActiveJob(ended, 1)).toBeUndefined();
   });
 
   it("returns undefined for unknown person", () => {
     expect(findActiveJob(jobs, 99)).toBeUndefined();
   });
+
+  it("never returns a speculative job, even though it has no endDate", () => {
+    // The auto-provisioned what-if peg — always endDate: null, but must
+    // never be picked up as a person's real, active job.
+    const withSpeculative = [
+      { personId: 3, endDate: null, isSpeculative: true, name: "spec" },
+    ];
+    expect(findActiveJob(withSpeculative, 3)).toBeUndefined();
+  });
+
+  it("prefers a real active job over a speculative one for the same person", () => {
+    const mixed = [
+      { personId: 4, endDate: null, isSpeculative: true, name: "spec" },
+      { personId: 4, endDate: null, isSpeculative: false, name: "real" },
+    ];
+    expect(findActiveJob(mixed, 4)?.name).toBe("real");
+  });
 });
 
 describe("filterActiveJobs", () => {
   it("returns only jobs without endDate", () => {
     const jobs = [
-      { endDate: null, name: "a" },
-      { endDate: "2023-01-01", name: "b" },
-      { endDate: null, name: "c" },
+      { endDate: null, isSpeculative: false, name: "a" },
+      { endDate: "2023-01-01", isSpeculative: false, name: "b" },
+      { endDate: null, isSpeculative: false, name: "c" },
     ];
     const active = filterActiveJobs(jobs);
     expect(active).toHaveLength(2);
     expect(active.map((j) => j.name)).toEqual(["a", "c"]);
+  });
+
+  it("excludes a speculative job even though it has no endDate", () => {
+    const jobs = [
+      { endDate: null, isSpeculative: false, name: "real" },
+      { endDate: null, isSpeculative: true, name: "spec" },
+    ];
+    const active = filterActiveJobs(jobs);
+    expect(active.map((j) => j.name)).toEqual(["real"]);
   });
 });
 

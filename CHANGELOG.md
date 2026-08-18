@@ -8,6 +8,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
+## [0.7.3] - 2026-08-18
+
+### Changed
+
+- **Salary and bonus history no longer lives on jobs.** The Historical page's Year-End table is now the single, direct record of what you earned each past year — editing a year there writes straight to that year's fact, with no more indirection through a job's dated raise ledger. The in-progress current year still auto-fills from your active Salary Profile until you record the real number.
+- **A Salary Profile's entry for a job is now complete or absent — never partial.** A job either has real numbers for salary, bonus %, multiplier, and months-in-bonus-year all together, or the profile says nothing about it and it contributes $0. There's no more "pin one field, the rest quietly falls back to something else" — if you want different numbers, use a different profile. The Salary Profile editor drops the old pin/live/revert-to-live controls entirely in favor of plain add/edit/remove per job.
+- **Creating a job no longer asks for a starting salary.** Jobs are now pure employment structure (employer, dates, payroll/withholding config) — pay comes exclusively from the Salary Profile you give that job an entry in. Onboarding's Income step still collects each person's starting pay, but now sets it up as a Salary Profile entry instead of a job field.
+- **Adding a Contribution Account is now available directly from the Contribution Profile manager**, alongside the existing profile compare view — no need to leave the page to set one up.
+- **One padlock now controls edit-protection everywhere profiles are edited** — the Budget page's four tabs, the standalone Savings page, and the Paycheck page all shared the same underlying data but used to lock independently. Locking or unlocking on any one of them now locks/unlocks all of them.
+
+### Fixed
+
+- **The Paycheck page's salary padlock is now a plain edit-protection toggle** instead of implying a "correct baseline" you could revert to — unlocking it lets you edit a job's entry in the currently-viewed Salary Profile directly, and locking it now also protects the bonus % and multiplier fields alongside salary (previously those stayed editable while locked, silently failing to save).
+- **A stored bonus multiplier of exactly 0 is now treated as a real "no bonus this cycle" value**, instead of being silently bumped up to 1x.
+- **Finalizing a year on the Performance page no longer records $0 income** if that year's salary hasn't been entered yet — it now falls back to the same estimate the Historical page uses, or asks you to record the year's salary first.
+- **Switching Salary Profiles mid-Plan now carries the bonus into retirement projections and contribution calculations**, instead of only the base salary.
+- **Toggling "include bonus in contributions" on a Contribution Profile now actually takes effect** instead of silently no-op'ing.
+- **A household's expected year-to-date contribution figure now reflects any active What-If salary override**, matching the actual salary figure shown alongside it.
+- Fixed a case where the Net Worth page's budget summary could silently use $0 income when no Salary Profile was explicitly selected.
+- Deleting a person now cleans up correctly if the delete is interrupted partway through, instead of leaving an orphaned placeholder job behind.
+- Creating a new Contribution Profile now enforces the same validation as editing one.
+- **Several pages (Savings, Expenses, Net Worth, and two dashboard cards) now correctly reflect a Plan's pinned Salary Profile** in their budget totals, instead of silently falling back to whichever Salary Profile is globally active.
+- **Retirement projections, the year-end Net Worth history, and the Budget Profile sidebar's "Unspent" figure now correctly include budget items linked to a Contribution Account**, instead of showing them as $0.
+- **Editing an account's employer match or auto-maximize setting from the Portfolio page now updates the active Contribution Profile**, instead of writing to a value the active profile was already overriding elsewhere (which made the edit silently disappear).
+- **Locking the Savings allocation editor on the Budget page now also locks it on the standalone Savings page**, so a lock set on one page actually protects the same numbers everywhere they're editable.
+- **The Relocation tool's projections now correctly include budget items linked to a Contribution Account, and respect a Plan's pinned Salary Profile**, instead of silently undercounting linked expenses or ignoring the pinned salary — bringing it in line with the Retirement page for the same scenario.
+
+### Changed (internal hardening, no user-facing behavior change for existing data)
+
+- The one-time conversion that moved salary history off jobs and onto the Historical page is now safe to run twice, uses accurate per-year date handling regardless of server timezone, and correctly carries a salary forward through years with no raise recorded.
+- Production deploys now take an automatic safety backup immediately before that one-time conversion runs, in addition to the existing pre-upgrade backup.
+
 ## [0.7.2] - 2026-08-16
 
 ### Added

@@ -12,7 +12,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { Tooltip } from "@/components/ui/tooltip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
-import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { BrokerageGoalsSection } from "@/components/cards/brokerage-goals";
 import {
@@ -39,7 +39,7 @@ export default function BrokeragePage() {
   const user = useUser();
   const canEdit = hasPermission(user, "brokerage");
   const utils = trpc.useUtils();
-  const salaryOverrides = useSalaryOverrides();
+  const salaryActiveFields = useActiveSalaries();
   // Independent Salary Profile axis (Plan pin -> globally-active setting).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [activeProfileId] = usePersistedSetting<number | null>(
@@ -112,7 +112,7 @@ export default function BrokeragePage() {
   }, [brokerageLumpSums]);
 
   const engineInput = {
-    ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(accumOverridesFromLumpSums.length > 0
       ? { accumulationOverrides: accumOverridesFromLumpSums }
       : {}),
@@ -122,7 +122,7 @@ export default function BrokeragePage() {
     ...salaryProfileInput,
   };
   const contribInput = {
-    ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(activeProfileId != null
       ? { contributionProfileId: activeProfileId }
       : {}),
@@ -232,7 +232,7 @@ export default function BrokeragePage() {
       ? (contribProfiles?.find((p) => p.id === activeProfileId)?.name ?? null)
       : null;
   const hasContextOverrides =
-    activeProfileName != null || salaryOverrides.length > 0;
+    activeProfileName != null || salaryActiveFields.length > 0;
 
   return (
     <div>
@@ -252,11 +252,11 @@ export default function BrokeragePage() {
               </span>
             </span>
           )}
-          {salaryOverrides.length > 0 && (
+          {salaryActiveFields.length > 0 && (
             <span>
               Salary overrides:{" "}
               <span className="font-medium text-primary">
-                {salaryOverrides.length} active
+                {salaryActiveFields.length} active
               </span>
             </span>
           )}

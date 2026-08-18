@@ -3,11 +3,13 @@
 import { useScenario } from "@/lib/context/scenario-context";
 
 /**
- * Extract salary overrides from the active scenario context.
- * Returns an array of { personId, salary } suitable for passing to tRPC queries.
- * Salary overrides are stored in scenarios as people/<personId>/salary.
+ * Extract the Plan/session tier's active salaries from the active scenario
+ * context. Returns an array of { personId, salary } suitable for passing to
+ * tRPC queries. These active values are stored in scenarios as
+ * people/<personId>/salary — reading the generic scenario overrides store,
+ * a separate, much larger mechanism this hook is not renaming.
  */
-export function useSalaryOverrides(): { personId: number; salary: number }[] {
+export function useActiveSalaries(): { personId: number; salary: number }[] {
   const { activeScenario } = useScenario();
   if (!activeScenario) return [];
 

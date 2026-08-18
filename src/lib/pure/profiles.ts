@@ -91,26 +91,33 @@ export function canRemoveColumn(
 export type JobLike = {
   personId: number;
   endDate: string | null;
+  /** A speculative job is a permanent, auto-provisioned peg for Salary
+   *  Profiles to pin what-if scenarios against — it never ends (endDate is
+   *  always null) but must NEVER be treated as a person's real, active job. */
+  isSpeculative: boolean;
 };
 
 /**
- * Find the active job for a person. Active = no endDate.
+ * Find the active job for a person. Active = no endDate AND not speculative.
  * Centralizes the duplicated `!j.endDate` pattern across routers.
  */
 export function findActiveJob<T extends JobLike>(
   jobs: T[],
   personId: number,
 ): T | undefined {
-  return jobs.find((j) => j.personId === personId && !j.endDate);
+  return jobs.find(
+    (j) => j.personId === personId && !j.endDate && !j.isSpeculative,
+  );
 }
 
 /**
- * Filter to only active jobs (no endDate). For use when personId filtering isn't needed.
+ * Filter to only active jobs (no endDate, not speculative). For use when
+ * personId filtering isn't needed.
  */
-export function filterActiveJobs<T extends { endDate: string | null }>(
-  jobs: T[],
-): T[] {
-  return jobs.filter((j) => !j.endDate);
+export function filterActiveJobs<
+  T extends { endDate: string | null; isSpeculative: boolean },
+>(jobs: T[]): T[] {
+  return jobs.filter((j) => !j.endDate && !j.isSpeculative);
 }
 
 // --- Profile linking ---

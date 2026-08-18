@@ -7,7 +7,7 @@ import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
 import { sumBy } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
@@ -17,7 +17,7 @@ function TaxesCardImpl() {
   const { viewMode } = useScenario();
   const isYtd = viewMode === "ytd";
   const isBlended = viewMode === "blended";
-  const salaryOverrides = useSalaryOverrides();
+  const salaryActiveFields = useActiveSalaries();
   // Independent Salary Profile axis (Plan pin -> globally-active setting).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [activeContribProfileId] = usePersistedSetting<number | null>(
@@ -29,7 +29,7 @@ function TaxesCardImpl() {
     null,
   );
   const queryInput = {
-    ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(activeContribProfileId != null
       ? { contributionProfileId: activeContribProfileId }
       : {}),

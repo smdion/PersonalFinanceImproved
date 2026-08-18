@@ -38,7 +38,8 @@ export type RawContrib = {
   targetAnnual: string | null;
   allocationPriority: number;
   notes: string | null;
-  displayNameOverride?: string;
+  displayNameActive?: string;
+  performanceAccountId: number | null;
 };
 
 // Deduction row data used for aligned rendering
@@ -69,6 +70,10 @@ export type ContribCardProps = {
     targetContribValue?: number,
   ) => void;
   onDeleteContrib?: (id: number) => void;
+  onUpdateInstitution?: (
+    id: number,
+    performanceAccountId: number | null,
+  ) => void;
   _methodLabel: (m: string) => string;
   salary?: number;
   periodsPerYear?: number;
@@ -78,6 +83,12 @@ export type ContribCardProps = {
   /** Sandbox/preview mode — in-place editing is disabled and the delete
    *  action is omitted entirely rather than rendered inert. */
   readOnly?: boolean;
+  /** Mirrors PersonPaycheck's salary padlock — contributionValue writes into
+   *  the viewed Contribution Profile's active fields when unlocked (see
+   *  writeOverride in paycheck/page.tsx), so only that one field gates on
+   *  it. Delete/toggle/institution edits are unrelated to the profile and
+   *  keep gating on `readOnly` alone. */
+  contribValueReadOnly?: boolean;
 };
 
 export type CreateDeductionData = {
@@ -86,22 +97,6 @@ export type CreateDeductionData = {
   amountPerPeriod: string;
   isPretax: boolean;
   ficaExempt: boolean;
-};
-
-export type CreateContribData = {
-  personId: number;
-  jobId?: number | null;
-  accountType: AccountCategory;
-  subType?: string | null;
-  label?: string | null;
-  parentCategory?: "Retirement" | "Portfolio";
-  taxTreatment: "pre_tax" | "tax_free" | "after_tax" | "hsa";
-  contributionMethod:
-    "percent_of_salary" | "fixed_per_period" | "fixed_monthly" | "fixed_annual";
-  contributionValue: string;
-  employerMatchType:
-    "none" | "percent_of_contribution" | "dollar_match" | "fixed_annual";
-  isActive: boolean;
 };
 
 export type JointContrib = {

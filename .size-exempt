@@ -12,3 +12,9 @@ src/lib/db/schema-pg.ts
 # extract goalProfileAllocations and/or the settlement mutations into a
 # sibling router module.
 src/server/routers/savings.ts
+
+# v0.7.3: crossed the limit via the profile-system audit sweep's
+# listProfiles fix (linked budget items must resolve through
+# resolveLinkedBudgetItemAmounts, not raw amounts). Split candidate:
+# extract listProfiles' per-profile summary computation into a helper.
+src/server/routers/budget.ts

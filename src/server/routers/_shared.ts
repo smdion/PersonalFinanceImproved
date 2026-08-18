@@ -33,7 +33,7 @@
 //   protectedProcedure   → @/server/trpc
 
 import { z } from "zod/v4";
-import type { SalaryOverrideMap } from "@/server/helpers";
+import type { SalaryActiveMap } from "@/server/helpers";
 import { accountCategoryEnum } from "@/lib/config/account-types";
 import { CONTRIBUTION_METHOD_VALUES } from "@/lib/config/enum-values";
 
@@ -41,7 +41,7 @@ import { CONTRIBUTION_METHOD_VALUES } from "@/lib/config/enum-values";
  * Optional "what-if" targeting for procedures that read through
  * buildYearEndHistory/getAnnualExpensesFromBudget — lets a caller (a Plan
  * pin, or a page-local profile picker) ask "what would this look like under
- * budget profile X, column Y, with these salary overrides" instead of always
+ * budget profile X, column Y, with these active salaries" instead of always
  * reading the globally-active budget profile and true DB salaries.
  * Every field is optional; omitting all of them reproduces the untargeted,
  * cacheable default behavior.
@@ -50,7 +50,7 @@ export const zYearEndTargeting = z
   .object({
     budgetProfileId: z.number().nullable().optional(),
     budgetColumn: z.number().nullable().optional(),
-    salaryOverrides: z
+    salaryActiveFields: z
       .array(z.object({ personId: z.number(), salary: z.number() }))
       .optional(),
   })
@@ -59,18 +59,19 @@ export const zYearEndTargeting = z
 export type YearEndTargetingInput = z.infer<typeof zYearEndTargeting>;
 
 /**
- * Convert a procedure's `salaryOverrides` input array into the Map shape
+ * Convert a procedure's `salaryActiveFields` input array into the Map shape
  * helpers expect.
  *
- * Plan/session overrides pin SALARY ONLY — they have no bonus dimension, so
- * every entry sets exactly that one field and leaves bonus terms to resolve
- * live (or to a Salary Profile, which merges into the gaps per field).
+ * The Plan/session tier sets an active value for SALARY ONLY — it has no
+ * bonus dimension, so every entry sets exactly that one field and leaves
+ * bonus terms to resolve live (or to a Salary Profile, which merges into
+ * the gaps per field).
  */
-export function toSalaryOverrideMap(
-  salaryOverrides: { personId: number; salary: number }[] | undefined,
-): SalaryOverrideMap {
+export function toSalaryActiveMap(
+  salaryActiveFields: { personId: number; salary: number }[] | undefined,
+): SalaryActiveMap {
   return new Map(
-    (salaryOverrides ?? []).map((s) => [s.personId, { salary: s.salary }]),
+    (salaryActiveFields ?? []).map((s) => [s.personId, { salary: s.salary }]),
   );
 }
 
@@ -80,10 +81,10 @@ const MAX_SANDBOX_PEOPLE = 10;
 /**
  * The What-If tab's hand-edited salary/bonus entries — the same
  * `SalaryEntryMap` shape a Salary Profile's `salaries` column holds, so the
- * sandbox needs no new override input shape and no new schema.
+ * sandbox needs no new input shape and no new schema.
  *
  * Applied server-side by `applySandboxSalaryEntries` as the highest
- * precedence tier (above a Plan/session salary override, above a Salary
+ * precedence tier (above a Plan/session active salary, above a Salary
  * Profile pin, above the live job). Every field is optional and PRESENCE IS
  * THE PIN SIGNAL, exactly as on a profile row.
  *
@@ -116,7 +117,7 @@ export const zSandboxSalaryEntries = z
  * important number) and by `budget.duplicateProfile` (to bake the same edits
  * into a saved copy, in the copy's own transaction).
  */
-export const zItemAmountOverrides = z
+export const zItemAmountActiveFields = z
   .array(
     z.object({
       itemId: z.number().int(),
@@ -127,19 +128,20 @@ export const zItemAmountOverrides = z
   .optional();
 
 /**
- * `itemAmountOverrides` → a `"itemId:colIndex"` → amount lookup.
+ * `itemAmountActiveFields` → a `"itemId:colIndex"` → amount lookup.
  *
- * The override is ONE MORE LAYER on top of the existing amount resolution
- * chain, never a replacement for it: callers must consult this map first and
- * fall back to whatever they resolve today (contribution-linked amount, then
- * the raw stored amount). Skipping the chain for overridden items is the
- * exact bug class this feature exists to avoid.
+ * The active value is ONE MORE LAYER on top of the existing amount
+ * resolution chain, never a replacement for it: callers must consult this
+ * map first and fall back to whatever they resolve today (contribution-linked
+ * amount, then the raw stored amount). Skipping the chain for an item with
+ * an active value is the exact bug class this feature exists to avoid.
  */
-export function toItemAmountOverrideMap(
-  overrides: { itemId: number; colIndex: number; amount: number }[] | undefined,
+export function toItemAmountActiveMap(
+  activeFields:
+    { itemId: number; colIndex: number; amount: number }[] | undefined,
 ): Map<string, number> {
   return new Map(
-    (overrides ?? []).map((o) => [`${o.itemId}:${o.colIndex}`, o.amount]),
+    (activeFields ?? []).map((o) => [`${o.itemId}:${o.colIndex}`, o.amount]),
   );
 }
 
@@ -186,26 +188,29 @@ export const zSandboxDeductionAdditions = z
   .max(MAX_SANDBOX_DEDUCTIONS)
   .optional();
 
-/** Guardrail on the sandbox contribution overrides below. */
-const MAX_SANDBOX_CONTRIB_OVERRIDES = 30;
+/** Guardrail on the sandbox contribution active fields below. */
+const MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS = 30;
 
 /**
  * The What-If tab's hand-edited amount for an EXISTING contribution
  * account, keyed by the real `contribution_accounts.id`. Reuses the SAME
- * generic override-merge mechanism a Contribution Profile's own
- * `contributionOverrides.contributionAccounts` already goes through
- * (`applyContribOverrides`) — this is one more layer applied AFTER the
- * picked profile's own overrides, not a parallel mechanism. Stored as a
+ * generic active-field-merge mechanism a Contribution Profile's own
+ * `contributionActiveFields.contributionAccounts` already goes through
+ * (`applyContribActiveFields`) — this is one more layer applied AFTER the
+ * picked profile's own active fields, not a parallel mechanism. Stored as a
  * string to match `contribution_accounts.contribution_value`'s own column
  * type — every downstream reader already parses that field with
  * `toNumber`, so a mismatched type here would only matter if something
  * read it raw, which nothing does.
  */
-export const zSandboxContribOverrides = z
+export const zSandboxContribActiveFields = z
   .record(z.string(), z.object({ contributionValue: z.string() }))
-  .refine((v) => Object.keys(v ?? {}).length <= MAX_SANDBOX_CONTRIB_OVERRIDES, {
-    message: `At most ${MAX_SANDBOX_CONTRIB_OVERRIDES} accounts may be edited at once`,
-  })
+  .refine(
+    (v) => Object.keys(v ?? {}).length <= MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS,
+    {
+      message: `At most ${MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS} accounts may be edited at once`,
+    },
+  )
   .optional();
 
 /**
@@ -230,5 +235,5 @@ export const zSandboxContribAdditions = z
       contributionValue: z.string(),
     }),
   )
-  .max(MAX_SANDBOX_CONTRIB_OVERRIDES)
+  .max(MAX_SANDBOX_CONTRIB_ACTIVE_FIELDS)
   .optional();

@@ -46,7 +46,7 @@ export type SimulationInputs = {
   accumulationExpenseOverride?: number;
   taxMode: "simple" | "advanced";
   hasAssetClassOverrides: boolean;
-  hasSalaryOverrides: boolean;
+  hasSalaryActiveFields: boolean;
   correlations: { classAId: number; classBId: number; correlation: number }[];
   returnClampMin: number;
   returnClampMax: number;
@@ -187,7 +187,7 @@ export function SimulationAssumptions({
     activeOverrides.push(
       `Retirement expense override: ${formatCurrency(inputs.decumulationExpenseOverride)}/yr`,
     );
-  if (inputs.hasSalaryOverrides)
+  if (inputs.hasSalaryActiveFields)
     activeOverrides.push("Salary overrides active");
 
   const presetColors: Record<string, string> = {
@@ -326,7 +326,7 @@ export function SimulationAssumptions({
               <AssumptionRow
                 label="Income (Salary + Bonus)"
                 value={formatCurrency(inputs.salary)}
-                highlight={inputs.hasSalaryOverrides}
+                highlight={inputs.hasSalaryActiveFields}
               />
               <AssumptionRow
                 label="Base-Year Contributions"

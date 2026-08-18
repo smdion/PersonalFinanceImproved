@@ -55,7 +55,7 @@ function setup(editMode: boolean) {
       },
       savingsGoals: undefined,
       apiActualsData: null,
-      salaryOverrides: [],
+      salaryActiveFields: [],
       contributionProfileTiers: {
         planPinId: null,
         localSelectionId: null,

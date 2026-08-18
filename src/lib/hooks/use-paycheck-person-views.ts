@@ -29,7 +29,7 @@
 
 import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
-import { useSalaryOverrides } from "./use-salary-overrides";
+import { useActiveSalaries } from "./use-salary-overrides";
 import {
   alignDeductionRows,
   type RawDeduction,
@@ -44,7 +44,7 @@ import {
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 
-const EMPTY_OVERRIDES: { personId: number; salary: number }[] = [];
+const EMPTY_ACTIVE_SALARIES: { personId: number; salary: number }[] = [];
 
 /** Mirrors the server's SalaryEntryMap shape (server/helpers/salary.ts) —
  *  duplicated rather than imported since that file is server-only. */
@@ -75,15 +75,21 @@ export type PaycheckPersonView = {
   job: any;
   salary: number;
   /** The bonus terms actually in effect (Salary Profile pin, if any, else
-   *  the job record) — see paycheck.ts's identical field for why this
-   *  exists separately from `job`'s own (profile-unaware) bonus fields. */
+   *  unset) — a job carries no bonus terms of its own, so this is the only
+   *  source to pre-fill from. See paycheck.ts's identical field. */
   resolvedBonusTerms: {
     bonusPercent: number;
     bonusMultiplier: number;
     monthsInBonusYear: number;
+    bonusOverride: number | null;
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- router output shape
   paycheck: any;
+  /** The nominal formula bonus, ignoring any current-year pin — lets the UI
+   *  show "target" alongside "actual" when resolvedBonusTerms.bonusOverride
+   *  is set. Identical to paycheck.bonusEstimate when no override is set. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- router output shape
+  fullFormulaBonusEstimate: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- router output shape
   blendedAnnual: any;
   rawDeductions: RawDeduction[];
@@ -93,7 +99,7 @@ export type PaycheckPersonView = {
   coverageNote?: string;
   coverageNoteGroup?: string;
   otherJointContribs: JointContrib[];
-  activeSalaryOverride: number | null;
+  activeSalaryValue: number | null;
   /** Already-resolved contribution figures — see the docblock. */
   perContribData: PerContribView[];
 };
@@ -110,7 +116,7 @@ export type UsePaycheckPersonViewsOptions = {
    * a different concept from the tab's own sandbox, and letting it stack on
    * top of the tab's picks would silently show numbers that are neither.
    *
-   * `useSalaryOverrides` is still *called* unconditionally — React forbids
+   * `useActiveSalaries` is still *called* unconditionally — React forbids
    * conditional hook calls — but its value is discarded when this is false,
    * so nothing scenario-derived reaches the query input.
    */
@@ -134,9 +140,9 @@ export type UsePaycheckPersonViewsOptions = {
   /** The What-If tab's hand-edited contribution account values — sent to
    *  BOTH queries (deductions built from contribution accounts feed the
    *  pay stub too, via buildContribAccounts). */
-  sandboxContribOverrides?: Record<string, { contributionValue: string }>;
+  sandboxContribActiveFields?: Record<string, { contributionValue: string }>;
   /** The What-If tab's hand-added hypothetical contribution accounts — sent
-   *  to BOTH queries, same reasoning as sandboxContribOverrides. */
+   *  to BOTH queries, same reasoning as sandboxContribActiveFields. */
   sandboxContribAdditions?: {
     personId: number;
     accountType: AccountCategory;
@@ -153,21 +159,22 @@ export function usePaycheckPersonViews({
   sandboxSalaryEntries,
   sandboxDeductionEdits,
   sandboxDeductionAdditions,
-  sandboxContribOverrides,
+  sandboxContribActiveFields,
   sandboxContribAdditions,
 }: UsePaycheckPersonViewsOptions) {
-  const sessionSalaryOverrides = useSalaryOverrides();
+  const sessionActiveSalaries = useActiveSalaries();
 
   // Stable identity: an inline `[]` would be a new array every render and
   // churn every memo below it.
-  const salaryOverrides = useMemo(
-    () => (honorSessionScenario ? sessionSalaryOverrides : EMPTY_OVERRIDES),
-    [honorSessionScenario, sessionSalaryOverrides],
+  const salaryActiveFields = useMemo(
+    () =>
+      honorSessionScenario ? sessionActiveSalaries : EMPTY_ACTIVE_SALARIES,
+    [honorSessionScenario, sessionActiveSalaries],
   );
 
   const queryInput = useMemo(
     () => ({
-      ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+      ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
       ...(taxYearOverride ? { taxYearOverride } : {}),
       ...(contributionProfileId != null ? { contributionProfileId } : {}),
       ...(salaryProfileId != null ? { salaryProfileId } : {}),
@@ -180,23 +187,23 @@ export function usePaycheckPersonViews({
       ...(sandboxDeductionAdditions && sandboxDeductionAdditions.length > 0
         ? { sandboxDeductionAdditions }
         : {}),
-      ...(sandboxContribOverrides &&
-      Object.keys(sandboxContribOverrides).length > 0
-        ? { sandboxContribOverrides }
+      ...(sandboxContribActiveFields &&
+      Object.keys(sandboxContribActiveFields).length > 0
+        ? { sandboxContribActiveFields }
         : {}),
       ...(sandboxContribAdditions && sandboxContribAdditions.length > 0
         ? { sandboxContribAdditions }
         : {}),
     }),
     [
-      salaryOverrides,
+      salaryActiveFields,
       taxYearOverride,
       contributionProfileId,
       salaryProfileId,
       sandboxSalaryEntries,
       sandboxDeductionEdits,
       sandboxDeductionAdditions,
-      sandboxContribOverrides,
+      sandboxContribActiveFields,
       sandboxContribAdditions,
     ],
   );
@@ -213,14 +220,14 @@ export function usePaycheckPersonViews({
   // Contribution annual/limit figures, resolved with the SAME profile ids as
   // the paycheck query above — one query for the whole page.
   const { data: contribData } = trpc.contribution.computeSummary.useQuery({
-    ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(contributionProfileId != null ? { contributionProfileId } : {}),
     ...(sandboxSalaryEntries && Object.keys(sandboxSalaryEntries).length > 0
       ? { sandboxSalaryEntries }
       : {}),
-    ...(sandboxContribOverrides &&
-    Object.keys(sandboxContribOverrides).length > 0
-      ? { sandboxContribOverrides }
+    ...(sandboxContribActiveFields &&
+    Object.keys(sandboxContribActiveFields).length > 0
+      ? { sandboxContribActiveFields }
       : {}),
     ...(sandboxContribAdditions && sandboxContribAdditions.length > 0
       ? { sandboxContribAdditions }
@@ -236,7 +243,7 @@ export function usePaycheckPersonViews({
   // — a different entity than any of the keys this block ever read, so
   // every `getOverride` call here always returned its fallback. The one
   // override that's actually real (salary, per person) already reaches the
-  // server correctly via `salaryOverrides` in `queryInput` above and a real
+  // server correctly via `salaryActiveFields` in `queryInput` above and a real
   // recompute — it never needed this client-side patch. Removed rather than
   // kept as a misleading no-op.
   const people = useMemo(
@@ -340,7 +347,7 @@ export function usePaycheckPersonViews({
         accountType: c.accountType as AccountCategory,
         subType: c.subType ?? null,
         label: c.label ?? null,
-        contributionValue: c.contributionValue ?? "0",
+        contributionValue: String(c.contributionValue ?? "0"),
         contributionMethod: c.contributionMethod,
         taxTreatment: c.taxTreatment,
         ownerName: "Joint",
@@ -361,8 +368,15 @@ export function usePaycheckPersonViews({
           resolvedBonusTerms:
             "resolvedBonusTerms" in d
               ? d.resolvedBonusTerms
-              : { bonusPercent: 0, bonusMultiplier: 1, monthsInBonusYear: 12 },
+              : {
+                  bonusPercent: 0,
+                  bonusMultiplier: 1,
+                  monthsInBonusYear: 12,
+                  bonusOverride: null,
+                },
           paycheck: d.paycheck!,
+          fullFormulaBonusEstimate: (d as Record<string, unknown>)
+            .fullFormulaBonusEstimate,
           blendedAnnual: (d as Record<string, unknown>).blendedAnnual,
           rawDeductions: d.rawDeductions as RawDeduction[],
           rawContribs: d.rawContribs as RawContrib[],
@@ -371,14 +385,14 @@ export function usePaycheckPersonViews({
           coverageNote: alignedData?.coverageNotes[index as 0 | 1]?.note,
           coverageNoteGroup: alignedData?.coverageNotes[index as 0 | 1]?.group,
           otherJointContribs: jointContribs,
-          activeSalaryOverride:
-            salaryOverrides.find((o) => o.personId === d.person.id)?.salary ??
-            null,
+          activeSalaryValue:
+            salaryActiveFields.find((o) => o.personId === d.person.id)
+              ?.salary ?? null,
           perContribData: (personContrib?.perContribData ??
             []) as PerContribView[],
         };
       }),
-    [people, contribData, alignedData, jointContribs, salaryOverrides],
+    [people, contribData, alignedData, jointContribs, salaryActiveFields],
   );
 
   return {
@@ -387,6 +401,6 @@ export function usePaycheckPersonViews({
     isLoading,
     error,
     sharedContribGroupOrder,
-    salaryOverrides,
+    salaryActiveFields,
   };
 }

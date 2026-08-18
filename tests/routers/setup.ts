@@ -19,10 +19,12 @@ if (!process.env.ENCRYPTION_KEY) {
 }
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
+import { eq } from "drizzle-orm";
 import type { Session } from "next-auth";
 import { applyMigrationsIdempotent } from "../helpers/db-harness";
 import type { Permission } from "@/server/auth";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 // Import schema for SQLite
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
@@ -211,27 +213,129 @@ export async function seedBudgetProfile(
 }
 
 /**
+ * Write this job's entry into whichever Salary Profile is currently
+ * globally-active, so every seedJob call keeps producing a job that
+ * resolves to a real salary by default — a job carries no salary of its
+ * own any more, so SOME Salary Profile has to carry it, and callers that
+ * don't care which one get whatever's already active.
+ *
+ * Migrations always leave a baseline profile active post-migration (e.g.
+ * "Every salary follows its job record" — see 0008_kill_live_sentinel),
+ * so the active-profile row already exists before any test runs; this
+ * merges into THAT row rather than fighting over a separate one. Only a
+ * genuinely fresh DB with no active setting at all gets a brand-new
+ * profile created and activated here.
+ */
+function seedDefaultSalaryProfileEntry(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  jobId: number,
+  entry: {
+    salary: number;
+    bonusPercent: number;
+    bonusMultiplier: number;
+    monthsInBonusYear: number;
+    bonusOverride: number | null;
+  },
+): number {
+  const settingRow = db
+    .select()
+    .from(sqliteSchema.appSettings)
+    .where(eq(sqliteSchema.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID))
+    .get();
+  const activeId = settingRow ? Number(settingRow.value) : NaN;
+  const activeProfile = Number.isFinite(activeId)
+    ? db
+        .select()
+        .from(sqliteSchema.salaryProfiles)
+        .where(eq(sqliteSchema.salaryProfiles.id, activeId))
+        .get()
+    : undefined;
+
+  if (activeProfile) {
+    const salaries = {
+      ...(activeProfile.salaries as Record<string, unknown>),
+      [String(jobId)]: entry,
+    };
+    db.update(sqliteSchema.salaryProfiles)
+      .set({ salaries })
+      .where(eq(sqliteSchema.salaryProfiles.id, activeProfile.id))
+      .run();
+    return activeProfile.id;
+  }
+
+  const created = db
+    .insert(sqliteSchema.salaryProfiles)
+    .values({
+      name: "Test Default Salary Profile",
+      salaries: { [String(jobId)]: entry },
+    })
+    .returning({ id: sqliteSchema.salaryProfiles.id })
+    .get();
+  if (settingRow) {
+    db.update(sqliteSchema.appSettings)
+      .set({ value: String(created.id) })
+      .where(eq(sqliteSchema.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID))
+      .run();
+  } else {
+    db.insert(sqliteSchema.appSettings)
+      .values({
+        key: SK_ACTIVE_SALARY_PROFILE_ID,
+        value: String(created.id),
+      })
+      .run();
+  }
+  return created.id;
+}
+
+/**
  * Seed a job for a person.
+ *
+ * A job carries no salary of its own any more — `annualSalary`/
+ * `bonusPercent`/`bonusMultiplier`/`monthsInBonusYear` here are convenience
+ * fields (defaulting to the same values this helper always defaulted to),
+ * written as a complete entry into the shared default Salary Profile
+ * (see seedDefaultSalaryProfileEntry) instead of a job column, so every
+ * existing call site keeps working unchanged. See resolveCompensation's
+ * docblock (server/helpers/salary.ts) for why a job needs a Salary Profile
+ * entry to resolve to anything but $0.
  */
 export function seedJob(
   db: BetterSQLite3Database<typeof sqliteSchema>,
   personId: number,
-  overrides: Partial<typeof sqliteSchema.jobs.$inferInsert> = {},
+  overrides: Partial<typeof sqliteSchema.jobs.$inferInsert> & {
+    annualSalary?: string;
+    bonusPercent?: string;
+    bonusMultiplier?: string;
+    monthsInBonusYear?: number;
+  } = {},
 ): number {
+  const {
+    annualSalary,
+    bonusPercent,
+    bonusMultiplier,
+    monthsInBonusYear,
+    ...jobOverrides
+  } = overrides;
   const result = db
     .insert(sqliteSchema.jobs)
     .values({
       personId,
       employerName: "TestCo",
-      annualSalary: "120000",
       payPeriod: "biweekly",
       payWeek: "even",
       startDate: "2020-01-01",
       w4FilingStatus: "MFJ",
-      ...overrides,
+      ...jobOverrides,
     })
     .returning({ id: sqliteSchema.jobs.id })
     .get();
+  seedDefaultSalaryProfileEntry(db, result.id, {
+    salary: Number(annualSalary ?? "120000"),
+    bonusPercent: Number(bonusPercent ?? "0"),
+    bonusMultiplier: Number(bonusMultiplier ?? "1"),
+    monthsInBonusYear: monthsInBonusYear ?? 12,
+    bonusOverride: null,
+  });
   return result.id;
 }
 

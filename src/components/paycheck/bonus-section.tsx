@@ -6,37 +6,55 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SectionHeader } from "./section-header";
 import type { PaycheckResult } from "./types";
+import type { BonusEstimate } from "@/lib/calculators/types/calculators";
 
 export function BonusSection({
   paycheck,
+  fullFormulaBonusEstimate,
   job,
+  resolvedBonusTerms,
   onUpdateJob,
   readOnly,
+  salaryReadOnly,
 }: {
   paycheck: PaycheckResult;
+  /** The nominal formula bonus, ignoring any current-year pin — shown as
+   *  "(target: $X)" next to the Actual field so pinning a real number
+   *  doesn't hide what the formula would otherwise say. */
+  fullFormulaBonusEstimate: BonusEstimate;
   job: {
-    bonusPercent: string;
-    bonusMultiplier: string;
-    bonusOverride: string | null;
     bonusMonth: number | null;
     bonusDayOfMonth: number | null;
-    annualSalary: string;
     include401kInBonus: boolean;
     includeBonusInContributions: boolean;
+  };
+  /** A job carries no bonus terms of its own any more — this is the only
+   *  source to pre-fill from (Salary Profile entry, if any, else unset). */
+  resolvedBonusTerms: {
+    bonusPercent: number;
+    bonusMultiplier: number;
+    monthsInBonusYear: number;
+    /** This year's actual paid-out bonus, pinned on the same Salary Profile
+     *  entry — orthogonal to the formula fields above, which future-year
+     *  retirement projections always use untouched. Null means unpinned:
+     *  the live estimate below uses the formula. */
+    bonusOverride: number | null;
   };
   onUpdateJob: (field: string, value: string) => void;
   /** Sandbox/preview mode — bonus terms are shown but not editable. */
   readOnly?: boolean;
+  /** Mirrors PersonPaycheck's salary padlock — bonus %, multiplier, and the
+   *  current-year Actual pin all write into the SAME Salary Profile entry
+   *  as salary (see writeSalaryProfileEntry in paycheck/page.tsx), so they
+   *  must gate on the same lock. Only those fields respect it; "Paid in"
+   *  and the two toggles below are real job columns, unrelated to the
+   *  Salary Profile, and keep gating on `readOnly` alone. */
+  salaryReadOnly?: boolean;
 }) {
   const { bonusEstimate } = paycheck;
-  if (bonusEstimate.bonusGross === 0 && Number(job.bonusPercent) === 0)
+  if (bonusEstimate.bonusGross === 0 && resolvedBonusTerms.bonusPercent === 0)
     return null;
-
-  const hasOverride = job.bonusOverride !== null && job.bonusOverride !== "";
-  const calculatedGross =
-    Number(job.annualSalary) *
-    Number(job.bonusPercent) *
-    Number(job.bonusMultiplier || 1);
+  const bonusTermsEditable = !readOnly && !salaryReadOnly;
 
   return (
     <div className="space-y-2">
@@ -69,7 +87,7 @@ export function BonusSection({
         <div className="flex justify-between items-center">
           <span>Bonus %</span>
           <InlineEdit
-            value={String(Number(job.bonusPercent) * 100)}
+            value={String(resolvedBonusTerms.bonusPercent * 100)}
             onSave={(v) => {
               const pct = Number(v.replace(/[^0-9.]/g, "")) / 100;
               onUpdateJob("bonusPercent", String(pct));
@@ -78,7 +96,7 @@ export function BonusSection({
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}
             type="number"
             className="font-medium"
-            isEditable={!readOnly}
+            isEditable={bonusTermsEditable}
           />
         </div>
         <div className="flex justify-between items-center">
@@ -87,7 +105,7 @@ export function BonusSection({
             <HelpTip text="Scales your bonus target — 1.0x means on-target, higher means exceeding expectations" />
           </span>
           <InlineEdit
-            value={String(Number(job.bonusMultiplier))}
+            value={String(resolvedBonusTerms.bonusMultiplier)}
             onSave={(v) =>
               onUpdateJob("bonusMultiplier", v.replace(/[^0-9.]/g, ""))
             }
@@ -95,32 +113,36 @@ export function BonusSection({
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}
             type="number"
             className="font-medium"
-            isEditable={!readOnly}
+            isEditable={bonusTermsEditable}
           />
         </div>
         <div className="flex justify-between items-center">
           <span className="flex items-center gap-1">
             {new Date().getFullYear()} Actual
             <HelpTip text="Pin this year's actual bonus once it's paid out, instead of the calculated salary x percent x multiplier. Only affects this calendar year — next year's projections still use the full formula." />
-            {!hasOverride && (
+            {resolvedBonusTerms.bonusOverride === null && (
               <span className="text-caption text-faint">
-                (calc: {formatCurrency(calculatedGross)})
+                (calc: {formatCurrency(fullFormulaBonusEstimate.bonusGross)})
               </span>
             )}
           </span>
           <InlineEdit
-            value={hasOverride ? job.bonusOverride! : ""}
+            value={
+              resolvedBonusTerms.bonusOverride !== null
+                ? String(resolvedBonusTerms.bonusOverride)
+                : ""
+            }
             onSave={(v) => {
               const cleaned = v.replace(/[^0-9.]/g, "");
-              onUpdateJob("bonusOverride", cleaned || "");
+              onUpdateJob("bonusOverride", cleaned);
             }}
             formatDisplay={(v) =>
               v && Number(v) > 0 ? formatCurrency(Number(v)) : "—"
             }
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}
             type="number"
-            className={`font-medium ${hasOverride ? "text-amber-700" : "text-faint"}`}
-            isEditable={!readOnly}
+            className={`font-medium ${resolvedBonusTerms.bonusOverride !== null ? "text-amber-700" : "text-faint"}`}
+            isEditable={bonusTermsEditable}
           />
         </div>
         <div className="flex justify-between items-center">

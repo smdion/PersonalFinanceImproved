@@ -871,10 +871,10 @@ describe("projection router — computeProjection", () => {
     }
   });
 
-  it("computeProjection with salaryOverride exercises override path", async () => {
+  it("computeProjection with an active salary exercises that path", async () => {
     try {
       const response = await caller.projection.computeProjection({
-        salaryOverrides: [{ personId: 1, salary: 150000 }],
+        salaryActiveFields: [{ personId: 1, salary: 150000 }],
         accumulationOverrides: [],
         decumulationOverrides: [],
       });

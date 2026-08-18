@@ -17,7 +17,7 @@ import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
-import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
 import {
   ContributionProfileManager,
@@ -125,12 +125,12 @@ export function BudgetContent() {
     }),
     [planSalaryProfileId, activeSalaryProfileIdSetting],
   );
-  const salaryOverrides = useSalaryOverrides();
+  const salaryActiveFields = useActiveSalaries();
   const { data, isLoading, error } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
     contributionProfile: contributionProfileTiers,
     salaryProfile: salaryProfileTiers,
-    ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(displayProfileId != null ? { profileId: displayProfileId } : {}),
   });
   const { data: apiActualsData } = trpc.budget.listApiActuals.useQuery(
@@ -226,7 +226,13 @@ export function BudgetContent() {
     visibleCount,
     effectiveNameColWidth,
     onResizeStart,
-  } = useBudgetPageState({ data, nameColWidth, setNameColWidth, updateBatch });
+  } = useBudgetPageState({
+    data,
+    nameColWidth,
+    setNameColWidth,
+    updateBatch,
+    contributionProfileTiers,
+  });
 
   const {
     profile,
@@ -249,7 +255,7 @@ export function BudgetContent() {
     data,
     savingsGoals,
     apiActualsData,
-    salaryOverrides,
+    salaryActiveFields,
     contributionProfileTiers,
     salaryProfileTiers,
     editMode,
@@ -392,46 +398,89 @@ export function BudgetContent() {
         {/* Ordered to match the actual dependency chain: Salary sets gross
             pay, Contributions (often % of salary) derive take-home,
             Budget spends it, which feeds Savings — see docs/RULES.md. */}
-        <div className="flex gap-1 border-b mb-4">
-          <button
-            type="button"
-            onClick={() => setActiveTab("salary")}
-            className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "salary" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
-          >
-            Salary Profiles
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("contributions")}
-            className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "contributions" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
-          >
-            Contribution Profiles
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("budget")}
-            className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "budget" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
-          >
-            Budget Profiles
-          </button>
-          {hasPermission(user, "savings") && (
+        <div className="flex items-center justify-between border-b mb-4">
+          <div className="flex gap-1">
             <button
               type="button"
-              onClick={() => setActiveTab("savings")}
-              className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "savings" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+              onClick={() => setActiveTab("salary")}
+              className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "salary" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
             >
-              Savings Profiles
+              Salary Profiles
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("contributions")}
+              className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "contributions" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+            >
+              Contribution Profiles
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("budget")}
+              className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "budget" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+            >
+              Budget Profiles
+            </button>
+            {hasPermission(user, "savings") && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("savings")}
+                className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "savings" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+              >
+                Savings Profiles
+              </button>
+            )}
+            {/* Last, after the four real levers: it previews combinations of
+                them rather than being a lever of its own. */}
+            <button
+              type="button"
+              onClick={() => setActiveTab("what-if")}
+              className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "what-if" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+            >
+              What-If
+            </button>
+          </div>
+          {/* One padlock, fixed here regardless of which tab is active —
+              it used to live inside each tab's own panel, which meant its
+              on-screen position shifted with that panel's locked/unlocked
+              layout. One lock (EDIT_LOCK_KEYS.profileEditLocked, via editMode/
+              toggleEditMode from useBudgetPageState) now covers all four
+              profile tabs — locking/unlocking on any one of them locks/
+              unlocks the rest too, so there's no "I locked Salary but
+              Contribution is still wide open" gap. toggleEditMode still
+              saves any pending Budget-tab drafts before locking, regardless
+              of which tab was active when the padlock was clicked. What-If
+              has none of its own (it's a preview, not an editable surface),
+              so nothing renders there. Only the `disabled` (visibility/
+              permission) condition stays tab-specific. */}
+          {activeTab === "salary" && (
+            <EditLockToggle
+              locked={!editMode}
+              onToggle={toggleEditMode}
+              disabled={!hasPermission(user, "contributionProfile")}
+            />
           )}
-          {/* Last, after the four real levers: it previews combinations of
-              them rather than being a lever of its own. */}
-          <button
-            type="button"
-            onClick={() => setActiveTab("what-if")}
-            className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "what-if" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
-          >
-            What-If
-          </button>
+          {activeTab === "contributions" && (
+            <EditLockToggle
+              locked={!editMode}
+              onToggle={toggleEditMode}
+              disabled={!hasPermission(user, "contributionProfile")}
+            />
+          )}
+          {activeTab === "budget" && (
+            <EditLockToggle
+              locked={!editMode}
+              onToggle={toggleEditMode}
+              disabled={!canEdit || updateBatch.isPending}
+            />
+          )}
+          {activeTab === "savings" && (
+            <EditLockToggle
+              locked={!editMode}
+              onToggle={toggleEditMode}
+              disabled={!hasPermission(user, "savings")}
+            />
+          )}
         </div>
 
         {activeTab === "budget" && (
@@ -545,16 +594,6 @@ export function BudgetContent() {
                 rowHandlers={rowHandlers}
                 categoryMap={categoryMap}
                 createItem={createItem}
-                lockToggle={
-                  /* Locking (toggling while unlocked) still flushes any
-                     pending draft amounts via the batch save — that is what
-                     toggleEditMode has always done. */
-                  <EditLockToggle
-                    locked={!editMode}
-                    onToggle={toggleEditMode}
-                    disabled={!canEdit || updateBatch.isPending}
-                  />
-                }
               />
             </div>
           </CardBoundary>
@@ -564,6 +603,7 @@ export function BudgetContent() {
           <CardBoundary title="Salary Profiles">
             <SalaryProfileManager
               canEdit={hasPermission(user, "contributionProfile")}
+              locked={!editMode}
             />
           </CardBoundary>
         )}
@@ -572,6 +612,7 @@ export function BudgetContent() {
           <CardBoundary title="Contribution Profiles">
             <ContributionProfileManager
               canEdit={hasPermission(user, "contributionProfile")}
+              locked={!editMode}
             />
           </CardBoundary>
         )}
@@ -595,6 +636,7 @@ export function BudgetContent() {
           <CardBoundary title="Savings Profiles">
             <SavingsAllocationPanel
               canEdit={hasPermission(user, "savings")}
+              locked={!editMode}
               viewingProfileId={displayProfileId}
               onSelectProfile={setViewingProfileId}
               isPinned={isPinnedProfile}

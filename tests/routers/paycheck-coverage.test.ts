@@ -43,8 +43,6 @@ describe("settings.contributionAccounts — performanceAccountId-linked create",
       personId,
       accountType: "401k",
       taxTreatment: "pre_tax",
-      contributionMethod: "percent_of_salary",
-      contributionValue: "0.10",
       employerMatchType: "none",
       performanceAccountId: perfAcctId,
       parentCategory: "Portfolio", // should be overridden by perf account's Retirement
@@ -64,7 +62,6 @@ describe("settings.contributionAccounts — performanceAccountId-linked create",
     const stub = linkedAccts.find((a) => a.taxTreatment === "tax_free");
     expect(stub).toBeDefined();
     expect(stub!.isActive).toBe(false);
-    expect(stub!.contributionValue).toBe("0");
   });
 });
 
@@ -233,8 +230,6 @@ describe("settings.contributionAccounts — update with performanceAccountId", (
       personId,
       accountType: "brokerage",
       taxTreatment: "after_tax",
-      contributionMethod: "fixed_monthly",
-      contributionValue: "200",
       employerMatchType: "none",
       performanceAccountId: perfAcctId,
     });
@@ -245,12 +240,9 @@ describe("settings.contributionAccounts — update with performanceAccountId", (
       personId,
       accountType: "brokerage",
       taxTreatment: "after_tax",
-      contributionMethod: "fixed_monthly",
-      contributionValue: "300",
       employerMatchType: "none",
       // no performanceAccountId
     });
-    expect(updated!.contributionValue).toBe("300");
     expect(updated!.parentCategory).toBe("Portfolio");
   });
 });
@@ -359,20 +351,16 @@ describe("settings.jobs — optional fields", () => {
 
   afterAll(() => cleanup());
 
-  it("creates a job with title, anchorPayDate, and bonus fields", async () => {
+  it("creates a job with title, anchorPayDate, and bonus-adjacent fields", async () => {
     const job = await caller.settings.jobs.create({
       personId,
       employerName: "FullCo",
       title: "Senior Engineer",
-      annualSalary: "150000",
       payPeriod: "semimonthly",
       payWeek: "na",
       startDate: "2022-03-01",
       anchorPayDate: "2022-03-15",
       w4FilingStatus: "MFJ",
-      bonusPercent: "0.10",
-      bonusMultiplier: "1.5",
-      monthsInBonusYear: 10,
       include401kInBonus: true,
       includeBonusInContributions: true,
       bonusMonth: 3,
@@ -382,9 +370,6 @@ describe("settings.jobs — optional fields", () => {
     expect(job).toBeDefined();
     expect(job!.title).toBe("Senior Engineer");
     expect(job!.anchorPayDate).toBe("2022-03-15");
-    expect(job!.bonusPercent).toBe("0.10");
-    expect(job!.bonusMultiplier).toBe("1.5");
-    expect(job!.monthsInBonusYear).toBe(10);
     expect(job!.include401kInBonus).toBe(true);
     expect(job!.bonusMonth).toBe(3);
     expect(job!.bonusDayOfMonth).toBe(15);
@@ -394,7 +379,6 @@ describe("settings.jobs — optional fields", () => {
     const job = await caller.settings.jobs.create({
       personId,
       employerName: "WithholdCo",
-      annualSalary: "90000",
       payPeriod: "weekly",
       payWeek: "even",
       startDate: "2023-01-01",
@@ -408,31 +392,5 @@ describe("settings.jobs — optional fields", () => {
     expect(job!.w4Box2cChecked).toBe(true);
     expect(job!.additionalFedWithholding).toBe("50");
     expect(job!.budgetPeriodsPerMonth).toBe("4.33");
-  });
-
-  it("creates a job and can pin a year-scoped bonus override for it", async () => {
-    const job = await caller.settings.jobs.create({
-      personId,
-      employerName: "BonusCo",
-      annualSalary: "100000",
-      payPeriod: "biweekly",
-      payWeek: "odd",
-      startDate: "2024-01-01",
-      w4FilingStatus: "Single",
-    });
-
-    const currentYear = new Date().getFullYear();
-    const override = await caller.settings.jobs.bonusOverrides.upsert({
-      jobId: job!.id,
-      year: currentYear,
-      overrideAmount: "15000",
-    });
-    expect(override!.overrideAmount).toBe("15000");
-
-    const rows = await caller.settings.jobs.bonusOverrides.list();
-    expect(
-      rows.find((r) => r.jobId === job!.id && r.year === currentYear)
-        ?.overrideAmount,
-    ).toBe("15000");
   });
 });

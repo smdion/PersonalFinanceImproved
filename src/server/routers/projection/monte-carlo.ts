@@ -87,7 +87,7 @@ export const monteCarloRouter = createTRPCRouter({
           )
           .optional(),
         /** Optional salary overrides from UI (same as getProjection). */
-        salaryOverrides: z
+        salaryActiveFields: z
           .array(z.object({ personId: z.number(), salary: z.number() }))
           .optional(),
 
@@ -153,7 +153,7 @@ export const monteCarloRouter = createTRPCRouter({
       }[];
 
       const payload = await buildEnginePayload(ctx.db, data, {
-        salaryOverrides: input.salaryOverrides,
+        salaryActiveFields: input.salaryActiveFields,
         contributionProfileId: input.contributionProfileId,
         salaryProfileId: input.salaryProfileId,
         accumulationBudgetProfileId: input.accumulationBudgetProfileId,
@@ -479,7 +479,7 @@ export const monteCarloRouter = createTRPCRouter({
           accumulationExpenseOverride: input.accumulationExpenseOverride,
           taxMode: input.taxMode,
           hasAssetClassOverrides: effectiveAssetOverrides.length > 0,
-          hasSalaryOverrides: (input.salaryOverrides ?? []).length > 0,
+          hasSalaryActiveFields: (input.salaryActiveFields ?? []).length > 0,
           correlations: mcCorrelations,
           returnClampMin,
           returnClampMax,

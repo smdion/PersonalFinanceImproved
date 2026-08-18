@@ -4,7 +4,6 @@ import {
   createTRPCRouter,
   protectedProcedure,
   adminProcedure,
-  getSessionUserLabel,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
@@ -17,7 +16,6 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import {
   TAX_TREATMENT_VALUES,
   MATCH_TAX_TREATMENT_VALUES,
-  CONTRIBUTION_METHOD_VALUES,
   EMPLOYER_MATCH_TYPE_VALUES,
   HSA_COVERAGE_TYPE_VALUES,
   ACCOUNT_OWNERSHIP_VALUES,
@@ -32,12 +30,38 @@ const personInput = z.object({
   isPrimaryUser: z.boolean().default(false),
 });
 
+/**
+ * A speculative job is a permanent, auto-provisioned peg for Salary
+ * Profiles to pin what-if scenarios against (e.g. "moving to Chicago in 5
+ * years") — never a real job. Every person gets exactly one (DB-enforced,
+ * see `jobs_one_speculative_per_person_idx` in schema-pg.ts), and it must
+ * never be treated as a person's real, active job — see
+ * findActiveJob/filterActiveJobs in lib/pure/profiles.ts, the single source
+ * of truth for that exclusion. Exported so demo.ts and the 0013 migration
+ * can use the identical placeholder shape.
+ */
+export function speculativeJobValues(personId: number) {
+  return {
+    personId,
+    employerName: "Speculative (What-If Planning)",
+    payPeriod: "biweekly" as const,
+    payWeek: "na" as const,
+    startDate: new Date().toISOString().slice(0, 10),
+    w4FilingStatus: "Single" as const,
+    includeBonusInContributions: false,
+    isSpeculative: true,
+  };
+}
+
+// annualSalary/bonusPercent/bonusMultiplier/monthsInBonusYear are
+// deliberately NOT here — a job is purely structural and carries no salary
+// or bonus terms of its own; both come exclusively from a Salary Profile's
+// complete entry (see resolveCompensation in server/helpers/salary.ts).
 const jobInput = z
   .object({
     personId: z.number().int(),
     employerName: z.string().trim().min(1),
     title: z.string().trim().nullable().optional(),
-    annualSalary: zDecimal,
     payPeriod: z.enum(["weekly", "biweekly", "semimonthly", "monthly"]),
     payWeek: z.enum(["even", "odd", "na"]),
     startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -51,9 +75,6 @@ const jobInput = z
       .regex(/^\d{4}-\d{2}-\d{2}$/)
       .nullable()
       .optional(),
-    bonusPercent: zDecimal.default("0"),
-    bonusMultiplier: zDecimal.default("1.0"),
-    monthsInBonusYear: z.number().int().default(12),
     include401kInBonus: z.boolean().default(false),
     includeBonusInContributions: z.boolean().default(false),
     bonusMonth: z.number().int().min(1).max(12).nullable().optional(),
@@ -68,14 +89,17 @@ const jobInput = z
     path: ["endDate"],
   });
 
-const salaryChangeInput = z.object({
-  jobId: z.number().int(),
-  effectiveDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  newSalary: zDecimal,
-  raisePercent: zDecimal.nullable().optional(),
-  notes: z.string().nullable().optional(),
-});
+// A job carries no salary of its own — creating one establishes no
+// compensation at all until a Salary Profile gives it a complete entry
+// (see resolveCompensation's docblock in server/helpers/salary.ts).
+const jobCreateInput = z.object(jobInput.shape);
 
+// contributionMethod/contributionValue are deliberately NOT here — an
+// account is purely structural; the actual contribution amount/method is
+// ALWAYS a Contribution Profile's active-field entry
+// (contributionProfile.update writes it, validated there — see
+// jointRequiresJobForPercentOfSalary below, moved to that write boundary
+// since it's the only place contributionMethod is ever set now).
 const contributionAccountInput = z.object({
   jobId: z.number().int().nullable().optional(),
   personId: z.number().int().nullable(),
@@ -84,8 +108,6 @@ const contributionAccountInput = z.object({
   label: z.string().nullable().optional(),
   parentCategory: z.enum(parentCategoryEnum()).default("Retirement"),
   taxTreatment: z.enum(TAX_TREATMENT_VALUES),
-  contributionMethod: z.enum(CONTRIBUTION_METHOD_VALUES),
-  contributionValue: zDecimal,
   employerMatchType: z.enum(EMPLOYER_MATCH_TYPE_VALUES),
   employerMatchValue: zDecimal.nullable().optional(),
   employerMaxMatchPct: zDecimal.nullable().optional(),
@@ -103,29 +125,6 @@ const contributionAccountInput = z.object({
   isPayrollDeducted: z.boolean().nullable().optional(),
   priorYearContribAmount: zDecimal.optional(),
 });
-
-// A joint account with no jobId has no single person's salary to resolve
-// percent_of_salary against — the salary-resolution fallback in
-// server/helpers/contribution.ts falls back to job-by-personId, which is
-// null for joint accounts, so this combination would silently compute a $0
-// salary instead of the intended percentage. Reject it loudly instead
-// (same philosophy as computeContributionValueFromMonthly's jobId-required
-// check for percent_of_salary).
-const jointRequiresJobForPercentOfSalary = (data: {
-  ownership?: string;
-  contributionMethod: string;
-  jobId?: number | null;
-}) =>
-  !(
-    data.ownership === "joint" &&
-    data.contributionMethod === "percent_of_salary" &&
-    !data.jobId
-  );
-const jointRequiresJobForPercentOfSalaryIssue = {
-  message:
-    "Joint accounts using percent-of-salary contributions must be linked to a specific job",
-  path: ["jobId"],
-};
 
 // Several downstream consumers (build-engine-payload.ts's activeContribs
 // filter, the engine's salary-fallback matching) treat personId === null as
@@ -157,13 +156,23 @@ export const paycheckProcedures = {
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
     ),
-    create: adminProcedure.input(personInput).mutation(({ ctx, input }) =>
-      ctx.db
-        .insert(schema.people)
-        .values(input)
-        .returning()
-        .then((r) => r[0]),
-    ),
+    create: adminProcedure
+      .input(personInput)
+      .mutation(async ({ ctx, input }) => {
+        const person = await ctx.db
+          .insert(schema.people)
+          .values(input)
+          .returning()
+          .then((r) => r[0]!);
+        // Provision the speculative-job peg atomically with the person —
+        // inserted directly (not via jobs.create) so it doesn't trigger
+        // materializeExtraPaycheckOverrides, which a job that never has real
+        // routing rules has no need for.
+        await ctx.db
+          .insert(schema.jobs)
+          .values(speculativeJobValues(person.id));
+        return person;
+      }),
     update: adminProcedure
       .input(z.object({ id: z.number().int() }).extend(personInput.shape))
       .mutation(({ ctx, input: { id, ...data } }) =>
@@ -176,9 +185,26 @@ export const paycheckProcedures = {
       ),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
-      .mutation(({ ctx, input }) =>
-        ctx.db.delete(schema.people).where(eq(schema.people.id, input.id)),
-      ),
+      .mutation(async ({ ctx, input }) => {
+        // The speculative-job peg is an implementation detail of this
+        // person's row, not real employment history — delete it first so
+        // it never blocks a person delete via jobs' onDelete: "restrict"
+        // FK. Any REAL job still correctly blocks the delete. Both deletes
+        // must be one transaction — otherwise a failed person delete (a
+        // real job still referencing them) leaves the peg gone with no
+        // re-provisioning path.
+        return ctx.db.transaction(async (tx) => {
+          await tx
+            .delete(schema.jobs)
+            .where(
+              and(
+                eq(schema.jobs.personId, input.id),
+                eq(schema.jobs.isSpeculative, true),
+              ),
+            );
+          return tx.delete(schema.people).where(eq(schema.people.id, input.id));
+        });
+      }),
   }),
 
   jobs: createTRPCRouter({
@@ -188,15 +214,17 @@ export const paycheckProcedures = {
         .from(schema.jobs)
         .orderBy(asc(schema.jobs.personId), asc(schema.jobs.startDate)),
     ),
-    create: adminProcedure.input(jobInput).mutation(async ({ ctx, input }) => {
-      const result = await ctx.db
-        .insert(schema.jobs)
-        .values(input)
-        .returning()
-        .then((r) => r[0]);
-      await materializeExtraPaycheckOverrides(ctx.db);
-      return result;
-    }),
+    create: adminProcedure
+      .input(jobCreateInput)
+      .mutation(async ({ ctx, input: jobData }) => {
+        const result = await ctx.db
+          .insert(schema.jobs)
+          .values(jobData)
+          .returning()
+          .then((r) => r[0]);
+        await materializeExtraPaycheckOverrides(ctx.db);
+        return result;
+      }),
     update: adminProcedure
       .input(z.object({ id: z.number().int() }).extend(jobInput.shape))
       .mutation(async ({ ctx, input: { id, ...data } }) => {
@@ -212,113 +240,19 @@ export const paycheckProcedures = {
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(async ({ ctx, input }) => {
+        const existing = await ctx.db
+          .select({ isSpeculative: schema.jobs.isSpeculative })
+          .from(schema.jobs)
+          .where(eq(schema.jobs.id, input.id));
+        if (existing[0]?.isSpeculative) {
+          throw new Error(
+            "Cannot delete the speculative job — it's a permanent peg for Salary Profile what-if scenarios.",
+          );
+        }
         await ctx.db.delete(schema.jobs).where(eq(schema.jobs.id, input.id));
         await materializeExtraPaycheckOverrides(ctx.db);
         return { ok: true };
       }),
-    bonusOverrides: createTRPCRouter({
-      list: protectedProcedure.query(({ ctx }) =>
-        ctx.db
-          .select()
-          .from(schema.jobBonusOverrides)
-          .orderBy(
-            asc(schema.jobBonusOverrides.jobId),
-            asc(schema.jobBonusOverrides.year),
-          ),
-      ),
-      /** One control per (job, year) in the UI — upsert so the caller never
-       *  has to know whether a row already exists for that year. */
-      upsert: adminProcedure
-        .input(
-          z.object({
-            jobId: z.number().int(),
-            year: z.number().int().min(1900).max(2100),
-            overrideAmount: zDecimal,
-            notes: z.string().nullable().optional(),
-          }),
-        )
-        .mutation(({ ctx, input }) =>
-          ctx.db
-            .insert(schema.jobBonusOverrides)
-            .values({ ...input, createdBy: getSessionUserLabel(ctx.session) })
-            .onConflictDoUpdate({
-              target: [
-                schema.jobBonusOverrides.jobId,
-                schema.jobBonusOverrides.year,
-              ],
-              set: {
-                overrideAmount: input.overrideAmount,
-                notes: input.notes,
-                updatedBy: getSessionUserLabel(ctx.session),
-              },
-            })
-            .returning()
-            .then((r) => r[0]),
-        ),
-      delete: adminProcedure
-        .input(z.object({ id: z.number().int() }))
-        .mutation(({ ctx, input }) =>
-          ctx.db
-            .delete(schema.jobBonusOverrides)
-            .where(eq(schema.jobBonusOverrides.id, input.id)),
-        ),
-      /** Clear a job's override for a specific year without the caller
-       *  needing to know the row id first (mirrors the upsert-by-key
-       *  ergonomics above). */
-      deleteByJobYear: adminProcedure
-        .input(
-          z.object({
-            jobId: z.number().int(),
-            year: z.number().int().min(1900).max(2100),
-          }),
-        )
-        .mutation(({ ctx, input }) =>
-          ctx.db
-            .delete(schema.jobBonusOverrides)
-            .where(
-              and(
-                eq(schema.jobBonusOverrides.jobId, input.jobId),
-                eq(schema.jobBonusOverrides.year, input.year),
-              ),
-            ),
-        ),
-    }),
-  }),
-
-  salaryChanges: createTRPCRouter({
-    list: protectedProcedure.query(({ ctx }) =>
-      ctx.db
-        .select()
-        .from(schema.salaryChanges)
-        .orderBy(
-          asc(schema.salaryChanges.jobId),
-          asc(schema.salaryChanges.effectiveDate),
-        ),
-    ),
-    create: adminProcedure.input(salaryChangeInput).mutation(({ ctx, input }) =>
-      ctx.db
-        .insert(schema.salaryChanges)
-        .values(input)
-        .returning()
-        .then((r) => r[0]),
-    ),
-    update: adminProcedure
-      .input(z.object({ id: z.number().int() }).extend(salaryChangeInput.shape))
-      .mutation(({ ctx, input: { id, ...data } }) =>
-        ctx.db
-          .update(schema.salaryChanges)
-          .set(data)
-          .where(eq(schema.salaryChanges.id, id))
-          .returning()
-          .then((r) => r[0]),
-      ),
-    delete: adminProcedure
-      .input(z.object({ id: z.number().int() }))
-      .mutation(({ ctx, input }) =>
-        ctx.db
-          .delete(schema.salaryChanges)
-          .where(eq(schema.salaryChanges.id, input.id)),
-      ),
   }),
 
   contributionAccounts: createTRPCRouter({
@@ -330,12 +264,10 @@ export const paycheckProcedures = {
     ),
     create: adminProcedure
       .input(
-        contributionAccountInput
-          .refine(
-            jointRequiresJobForPercentOfSalary,
-            jointRequiresJobForPercentOfSalaryIssue,
-          )
-          .refine(ownershipPersonIdInvariant, ownershipPersonIdInvariantIssue),
+        contributionAccountInput.refine(
+          ownershipPersonIdInvariant,
+          ownershipPersonIdInvariantIssue,
+        ),
       )
       .mutation(async ({ ctx, input }) => {
         // When linked to a master account, sync parentCategory from its parentCategory
@@ -391,8 +323,6 @@ export const paycheckProcedures = {
                 parentCategory: resolvedParentCategory,
                 taxTreatment: taxTreatment as
                   "pre_tax" | "tax_free" | "after_tax" | "hsa",
-                contributionMethod: "percent_of_salary" as const,
-                contributionValue: "0",
                 employerMatchType: "none" as const,
                 isActive: false,
                 ownership: input.ownership ?? ("individual" as const),
@@ -409,10 +339,6 @@ export const paycheckProcedures = {
         z
           .object({ id: z.number().int() })
           .extend(contributionAccountInput.shape)
-          .refine(
-            jointRequiresJobForPercentOfSalary,
-            jointRequiresJobForPercentOfSalaryIssue,
-          )
           .refine(ownershipPersonIdInvariant, ownershipPersonIdInvariantIssue),
       )
       .mutation(async ({ ctx, input: { id, ...data } }) => {

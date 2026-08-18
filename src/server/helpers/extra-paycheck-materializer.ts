@@ -77,6 +77,7 @@ async function _materialize(db: Db): Promise<void> {
       extraPaycheckRouting: schema.jobs.extraPaycheckRouting,
       personId: schema.jobs.personId,
       endDate: schema.jobs.endDate,
+      isSpeculative: schema.jobs.isSpeculative,
     })
     .from(schema.jobs);
 
@@ -89,9 +90,11 @@ async function _materialize(db: Db): Promise<void> {
       extraPaycheckRouting: ExtraPaycheckRoutingData | null;
       personId: number;
       endDate: string | null;
+      isSpeculative: boolean;
     }[]
   ).filter(
     (j) =>
+      !j.isSpeculative &&
       j.extraPaycheckRouting?.rules?.length &&
       j.anchorPayDate &&
       (!j.endDate || j.endDate >= todayStr),

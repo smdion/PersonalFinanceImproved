@@ -1,60 +1,32 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { DataTable } from "@/components/settings/data-table";
-import {
-  formatCurrency,
-  formatPercent,
-  compactCurrency,
-  formatDate,
-} from "@/lib/utils/format";
+import { formatDate } from "@/lib/utils/format";
 import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
-import { safeDivide } from "@/lib/utils/math";
 import { PERSON_COLORS } from "@/lib/utils/colors";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-} from "recharts";
-import { CHART_FONT } from "@/components/charts/chart-defaults";
 
 type Job = {
   id: number;
   personId: number;
   employerName: string;
   title: string | null;
-  annualSalary: string;
   payPeriod: string;
   payWeek: string;
   startDate: string;
   endDate: string | null;
   anchorPayDate: string | null;
-  bonusPercent: string;
-  bonusMultiplier: string;
   bonusMonth: number | null;
   bonusDayOfMonth: number | null;
-  monthsInBonusYear: number;
   include401kInBonus: boolean;
   includeBonusInContributions: boolean;
   w4FilingStatus: string;
   w4Box2cChecked: boolean;
   additionalFedWithholding: string;
   budgetPeriodsPerMonth: string | null;
-};
-
-type SalaryChange = {
-  id: number;
-  jobId: number;
-  effectiveDate: string;
-  newSalary: string;
-  raisePercent: string | null;
-  notes: string | null;
+  isSpeculative: boolean;
 };
 
 function duration(start: string, end: string | null): string {
@@ -69,13 +41,28 @@ function duration(start: string, end: string | null): string {
   return `${yrs}yr ${mos}mo`;
 }
 
+/**
+ * Jobs settings — pure employment structure (employer, dates, payroll
+ * config). A job carries no salary or bonus terms of its own: what someone
+ * earned in the past lives on the Historical page (`historical_salaries`),
+ * and what they earn now lives in the active Salary Profile. This
+ * component never shows a dollar figure.
+ */
 export function JobsSettings() {
   const user = useUser();
   const admin = isAdmin(user);
   const utils = trpc.useUtils();
   const { data: people } = trpc.settings.people.list.useQuery();
-  const { data, isLoading } = trpc.settings.jobs.list.useQuery();
-  const { data: salaryChanges } = trpc.settings.salaryChanges.list.useQuery();
+  const { data: rawData, isLoading } = trpc.settings.jobs.list.useQuery();
+  // The auto-provisioned speculative job (a permanent peg for Salary
+  // Profile what-if scenarios, see settings/paycheck.ts's
+  // speculativeJobValues) isn't real employment history — it never
+  // appears in the Employment Timeline or Jobs table, only in the Salary
+  // Profile editor's job picker where it's actually used.
+  const data = useMemo(
+    () => rawData?.filter((j: Job) => !j.isSpeculative),
+    [rawData],
+  );
   const deleteMut = trpc.settings.jobs.delete.useMutation({
     onSuccess: () => utils.settings.jobs.list.invalidate(),
   });
@@ -90,92 +77,6 @@ export function JobsSettings() {
     (id: number) => people?.find((p) => p.id === id)?.name ?? String(id),
     [people],
   );
-
-  // Build salary timeline for chart
-  const salaryTimeline = useMemo(() => {
-    if (!data || !people) return [];
-
-    const personIds = Array.from(
-      new Set(data.map((j: Job) => j.personId as number)),
-    );
-    const events: { date: string; [key: string]: number | string }[] = [];
-
-    // Build salary map: person → array of { date, salary }
-    for (const pid of personIds) {
-      const pName = personName(pid);
-      const jobs = data
-        .filter((j: Job) => j.personId === pid)
-        .sort((a: Job, b: Job) => a.startDate.localeCompare(b.startDate));
-
-      for (const job of jobs) {
-        // Starting salary
-        events.push({ date: job.startDate, [pName]: Number(job.annualSalary) });
-
-        // Salary changes for this job
-        const changes = (salaryChanges ?? [])
-          .filter((sc: SalaryChange) => sc.jobId === job.id)
-          .sort((a: SalaryChange, b: SalaryChange) =>
-            a.effectiveDate.localeCompare(b.effectiveDate),
-          );
-
-        for (const sc of changes) {
-          events.push({
-            date: sc.effectiveDate,
-            [pName]: Number(sc.newSalary),
-          });
-        }
-
-        // Job end — keep last salary until end, then drop
-        if (job.endDate) {
-          events.push({
-            date: job.endDate,
-            [pName]: Number(
-              changes.length > 0
-                ? changes[changes.length - 1]!.newSalary
-                : job.annualSalary,
-            ),
-          });
-        }
-      }
-    }
-
-    // Sort and forward-fill so each point has all persons
-    events.sort((a, b) => a.date.localeCompare(b.date));
-
-    const current: Record<string, number> = {};
-    const filled = events.map((e) => {
-      const point: Record<string, number | string> = { date: e.date };
-      for (const pid of personIds) {
-        const pName = personName(pid);
-        if (typeof e[pName] === "number") current[pName] = e[pName] as number;
-        if (current[pName] !== undefined) point[pName] = current[pName];
-      }
-      return point;
-    });
-
-    // Add current date point with latest salaries
-    if (filled.length > 0) {
-      const today = new Date().toISOString().slice(0, 10);
-      const last = filled[filled.length - 1];
-      if (last && last.date !== today) {
-        const todayPoint: Record<string, number | string> = { date: today };
-        for (const pid of personIds) {
-          const pName = personName(pid);
-          if (current[pName] !== undefined) todayPoint[pName] = current[pName];
-        }
-        filled.push(todayPoint);
-      }
-    }
-
-    return filled;
-  }, [data, salaryChanges, people, personName]);
-
-  const personNames = useMemo(() => {
-    if (!data || !people) return [];
-    return Array.from(
-      new Set(data.map((j: Job) => personName(j.personId as number))),
-    );
-  }, [data, people, personName]);
 
   // Group jobs by person for timeline display
   const jobsByPerson = useMemo(() => {
@@ -197,53 +98,6 @@ export function JobsSettings() {
 
   return (
     <div className="space-y-6">
-      {/* Salary Progression Chart */}
-      {salaryTimeline.length > 1 && (
-        <div>
-          <h3 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">
-            Salary Progression
-          </h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart
-              data={salaryTimeline}
-              margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="date"
-                fontSize={CHART_FONT.tick}
-                tickFormatter={(d: string) => formatDate(d, "short")}
-              />
-              <YAxis
-                fontSize={CHART_FONT.tick}
-                tickFormatter={(v: number) => compactCurrency(v)}
-              />
-              <RechartsTooltip
-                labelFormatter={(d: unknown) => formatDate(String(d), "short")}
-                formatter={(value: unknown, name: unknown) => [
-                  formatCurrency(Number(value)),
-                  String(name),
-                ]}
-                contentStyle={{ fontSize: CHART_FONT.tooltip }}
-              />
-              {personNames.map((name, i) => (
-                <Area
-                  key={name}
-                  type="stepAfter"
-                  dataKey={name}
-                  stroke={PERSON_COLORS[i % PERSON_COLORS.length]}
-                  fill={PERSON_COLORS[i % PERSON_COLORS.length]}
-                  fillOpacity={0.1}
-                  strokeWidth={2}
-                  dot={false}
-                  connectNulls
-                />
-              ))}
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
       {/* Job Timeline by Person */}
       {jobsByPerson.length > 0 && (
         <div>
@@ -265,18 +119,6 @@ export function JobsSettings() {
                 <div className="space-y-1.5">
                   {jobs.map((job: Job) => {
                     const isCurrent = !job.endDate;
-                    const jobChanges = (salaryChanges ?? [])
-                      .filter((sc: SalaryChange) => sc.jobId === job.id)
-                      .sort((a: SalaryChange, b: SalaryChange) =>
-                        a.effectiveDate.localeCompare(b.effectiveDate),
-                      );
-                    const currentSalary =
-                      jobChanges.length > 0
-                        ? Number(jobChanges[jobChanges.length - 1]!.newSalary)
-                        : Number(job.annualSalary);
-                    const startingSalary = Number(job.annualSalary);
-                    const totalRaise = currentSalary - startingSalary;
-
                     return (
                       <div
                         key={job.id}
@@ -321,45 +163,6 @@ export function JobsSettings() {
                             <span className="text-faint">·</span>
                             <span>{duration(job.startDate, job.endDate)}</span>
                           </div>
-                          <div className="flex items-center gap-3 mt-1">
-                            <span className="font-medium text-primary tabular-nums">
-                              {formatCurrency(currentSalary)}
-                            </span>
-                            {totalRaise > 0 && (
-                              <span className="text-green-600 text-caption">
-                                +{formatCurrency(totalRaise)} (
-                                {formatPercent(
-                                  safeDivide(totalRaise, startingSalary, 0)!,
-                                  1,
-                                )}
-                                ) over {jobChanges.length} raise
-                                {jobChanges.length !== 1 ? "s" : ""}
-                              </span>
-                            )}
-                            {startingSalary !== currentSalary && (
-                              <span className="text-faint text-caption">
-                                started at {formatCurrency(startingSalary)}
-                              </span>
-                            )}
-                          </div>
-                          {/* Salary change milestones */}
-                          {jobChanges.length > 0 && (
-                            <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1.5">
-                              {jobChanges.map((sc: SalaryChange) => (
-                                <span
-                                  key={sc.id}
-                                  className="text-caption text-faint"
-                                >
-                                  {formatDate(sc.effectiveDate, "short")}:{" "}
-                                  {formatCurrency(Number(sc.newSalary))}
-                                  {sc.raisePercent
-                                    ? ` (+${formatPercent(Number(sc.raisePercent), 1)})`
-                                    : ""}
-                                  {sc.notes ? ` — ${sc.notes}` : ""}
-                                </span>
-                              ))}
-                            </div>
-                          )}
                         </div>
                       </div>
                     );
@@ -381,11 +184,6 @@ export function JobsSettings() {
             render: (r) => personName(r.personId),
           },
           { key: "employerName", label: "Employer" },
-          {
-            key: "annualSalary",
-            label: "Starting Salary",
-            render: (r) => formatCurrency(Number(r.annualSalary)),
-          },
           { key: "payPeriod", label: "Pay Period" },
           {
             key: "startDate",
@@ -427,64 +225,6 @@ export function JobsSettings() {
             : undefined
         }
       />
-
-      {salaryChanges && salaryChanges.length > 0 && (
-        <div>
-          <h3 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">
-            Salary Changes
-          </h3>
-          <table className="w-full text-xs border-collapse">
-            <thead>
-              <tr className="border-b-2 border-strong">
-                <th className="text-left px-3 py-2 text-muted font-medium">
-                  Person / Employer
-                </th>
-                <th className="text-left px-3 py-2 text-muted font-medium">
-                  Effective
-                </th>
-                <th className="text-right px-3 py-2 text-muted font-medium">
-                  New Salary
-                </th>
-                <th className="text-right px-3 py-2 text-muted font-medium">
-                  Raise
-                </th>
-                <th className="text-left px-3 py-2 text-muted font-medium">
-                  Notes
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {salaryChanges.map((sc: SalaryChange) => {
-                const job = data?.find((j: Job) => j.id === sc.jobId);
-                return (
-                  <tr
-                    key={sc.id}
-                    className="border-b border-subtle hover:bg-blue-50/60"
-                  >
-                    <td className="px-3 py-1.5 text-secondary">
-                      {job
-                        ? `${personName(job.personId)} @ ${job.employerName}`
-                        : `Job #${sc.jobId}`}
-                    </td>
-                    <td className="px-3 py-1.5 text-muted">
-                      {formatDate(sc.effectiveDate, "short")}
-                    </td>
-                    <td className="text-right px-3 py-1.5 tabular-nums font-medium">
-                      {formatCurrency(Number(sc.newSalary))}
-                    </td>
-                    <td className="text-right px-3 py-1.5 tabular-nums text-green-600">
-                      {sc.raisePercent
-                        ? `+${formatPercent(Number(sc.raisePercent), 1)}`
-                        : ""}
-                    </td>
-                    <td className="px-3 py-1.5 text-muted">{sc.notes}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
   );
 }
@@ -501,7 +241,6 @@ function JobForm({
   onSubmit: (v: {
     personId: number;
     employerName: string;
-    annualSalary: string;
     payPeriod: "weekly" | "biweekly" | "semimonthly" | "monthly";
     payWeek: "even" | "odd" | "na";
     startDate: string;
@@ -516,7 +255,6 @@ function JobForm({
     initial?.personId ?? people[0]?.id ?? 0,
   );
   const [employer, setEmployer] = useState(initial?.employerName ?? "");
-  const [salary, setSalary] = useState(initial?.annualSalary ?? "");
   const [payPeriod, setPayPeriod] = useState(initial?.payPeriod ?? "biweekly");
   const [payWeek, setPayWeek] = useState(initial?.payWeek ?? "na");
   const [startDate, setStartDate] = useState(initial?.startDate ?? "");
@@ -533,7 +271,6 @@ function JobForm({
         onSubmit({
           personId,
           employerName: employer,
-          annualSalary: salary,
           payPeriod: payPeriod as "biweekly",
           payWeek: payWeek as "even",
           startDate,
@@ -563,15 +300,6 @@ function JobForm({
         <input
           value={employer}
           onChange={(e) => setEmployer(e.target.value)}
-          required
-          className="mt-1 px-2 py-1 border rounded"
-        />
-      </label>
-      <label className="flex flex-col text-sm">
-        Annual Salary
-        <input
-          value={salary}
-          onChange={(e) => setSalary(e.target.value)}
           required
           className="mt-1 px-2 py-1 border rounded"
         />

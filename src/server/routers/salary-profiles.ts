@@ -1,21 +1,28 @@
 /**
  * Salary Profiles Router
  *
- * CRUD for named per-person salary sets — a first-class sibling of Budget
+ * CRUD for named per-job salary sets — a first-class sibling of Budget
  * Profile and Contribution Profile. A Salary Profile answers "what if I
- * earned X"; a Contribution Profile answers "what if I contributed Y". The two
- * are independent pins: a Plan, a budget column, or a page dropdown can select
- * either, both, or neither.
+ * earned X"; a Contribution Profile answers "what if I contributed Y". The
+ * two are independent pins: a Plan, a budget column, or a page dropdown can
+ * select either, both, or neither.
  *
  * Every profile is an ordinary row. There is no synthetic id-0 entry and no
  * `isDefault` column: `list`/`getById` return real rows only, and an id that
- * doesn't resolve is an error, not a "use live salary" signal.
+ * doesn't resolve is an error.
  *
- * A profile's content is a personId → entry map where each entry is an object
- * of OPTIONAL pins — `{salary?, bonusPercent?, bonusMultiplier?,
- * monthsInBonusYear?}`. Presence of a field is the pin signal; an absent
- * field resolves live from the job record on every read. An empty entry, or
- * no entry at all, pins nothing. There is no `mode` discriminator.
+ * A profile's content is a jobId → entry map where each entry is COMPLETE —
+ * `{salary, bonusPercent, bonusMultiplier, monthsInBonusYear}`, all four,
+ * always. A job either has a real, self-contained number in this profile,
+ * or (no key at all) the profile says nothing about it — never a partial
+ * pin, never a fallback to "the job's live value" (a job has none). A
+ * profile is its own complete world; if you want different numbers, make a
+ * different profile.
+ *
+ * Keyed by jobId, not personId: a profile targets a SPECIFIC job's terms,
+ * not "whichever job this person currently has" — see getById's job-picker
+ * (jobOptions) below for how a row can target a past job instead of the
+ * current active one.
  *
  * Bonus terms live here rather than on a Contribution Profile: "how big is
  * the bonus" is the same category of fact as "how big is the salary". A
@@ -33,50 +40,17 @@ import { protectedProcedure, contributionProfileProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { canDeleteSalaryProfile } from "@/lib/pure/profiles";
 import { salaryEntriesSchema } from "@/lib/db/json-schemas";
-import {
-  getCurrentSalary,
-  getBonusOverridesForJobs,
-  pinnedFields,
-  resolveCompensation,
-  toNumber,
-} from "@/server/helpers";
+import { resolveCompensation } from "@/server/helpers";
 import type { SalaryEntryMap } from "@/server/helpers";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 
-/**
- * How much this profile pins, for the list view's at-a-glance summary.
- *
- * `pinnedCount` counts people with ANY pin (salary or bonus terms), so a
- * bonus-only profile doesn't read as empty. `pinnedSalaryTotal` sums only
- * pinned SALARIES — people whose salary resolves live keep their real
- * salary, so this is deliberately not the household total.
- */
+/** How much this profile specifies, for the list view's at-a-glance summary. */
 function summarizeEntries(salaries: SalaryEntryMap) {
-  const entries = Object.values(salaries ?? {})
-    .map((e) => pinnedFields(e))
-    .filter((e): e is NonNullable<typeof e> => e !== undefined);
+  const entries = Object.values(salaries ?? {});
   return {
     pinnedCount: entries.length,
-    pinnedSalaryTotal: entries.reduce((s, e) => s + (e.salary ?? 0), 0),
+    pinnedSalaryTotal: entries.reduce((s, e) => s + e.salary, 0),
   };
-}
-
-/**
- * Drop entries that pin nothing before storing.
- *
- * Clients naturally send an entry per person (that is what their table
- * renders), and "unpin this field" arrives as a field simply not being set.
- * Left alone, that accumulates `{}` entries which mean the same as no key
- * but make every stored map look populated and make `pinnedCount` wrong.
- * Normalizing on write keeps one representation for one meaning.
- */
-function normalizeSalaries(salaries: SalaryEntryMap): SalaryEntryMap {
-  const out: SalaryEntryMap = {};
-  for (const [personId, entry] of Object.entries(salaries)) {
-    const pinned = pinnedFields(entry);
-    if (pinned) out[personId] = pinned;
-  }
-  return out;
 }
 
 export const salaryProfileRouter = createTRPCRouter({
@@ -103,8 +77,8 @@ export const salaryProfileRouter = createTRPCRouter({
   }),
 
   /**
-   * One profile plus per-person live salary rows, so the editor can show what
-   * "follows job" currently resolves to without a second round trip.
+   * One profile plus per-person resolved rows, so the editor can show what
+   * this profile actually produces for each job without a second round trip.
    */
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
@@ -117,67 +91,88 @@ export const salaryProfileRouter = createTRPCRouter({
       if (!profile) return null;
 
       const salaries = (profile.salaries ?? {}) as SalaryEntryMap;
+      const salaryProfileActiveMap = new Map(
+        Object.entries(salaries).map(([jobId, entry]) => [
+          Number(jobId),
+          entry,
+        ]),
+      );
       const [people, allJobs] = await Promise.all([
         ctx.db.select().from(schema.people),
         ctx.db.select().from(schema.jobs),
       ]);
-      const asOfDate = new Date();
-      const currentYear = asOfDate.getFullYear();
-      const activeJobs = allJobs.filter((j) => !j.endDate);
-      const bonusOverrides = await getBonusOverridesForJobs(
-        ctx.db,
-        activeJobs.map((j) => j.id),
-      );
 
-      const salaryDetails = await Promise.all(
-        people.map(async (person) => {
-          const job = activeJobs.find((j) => j.personId === person.id);
-          const jobSalary = job
-            ? await getCurrentSalary(ctx.db, job.id, job.annualSalary, asOfDate)
-            : 0;
-          // A person with no entry yet (added after the profile was created)
-          // pins nothing — every field resolves live, the same default a new
-          // profile starts from.
-          const entry = pinnedFields(salaries[String(person.id)]);
-          const resolvedBonusOverride = job
-            ? (bonusOverrides.get(`${job.id}:${currentYear}`) ?? null)
-            : null;
-          // The SAME kernel resolveProfile and build-engine-payload use, so
-          // the editor's preview cannot drift from the numbers the rest of
-          // the app computes. It previously re-derived this and disagreed:
-          // a pinned salary kept its bonus here while losing it everywhere
-          // that mattered.
-          const comp = job
-            ? resolveCompensation(job, jobSalary, entry, resolvedBonusOverride)
-            : { salary: entry?.salary ?? 0, bonus: 0, totalComp: 0 };
-          return {
-            personId: person.id,
-            personName: person.name,
-            employerName: job?.employerName ?? null,
-            /** jobs.annual_salary as stored — the starting salary. */
-            baseSalary: job ? toNumber(job.annualSalary) : 0,
-            /** What an unpinned salary resolves to right now (salary_changes applied). */
-            jobSalary,
-            /** Live bonus terms off the job record — what the editor
-             *  pre-fills a bonus field with when nothing is pinned. */
-            jobBonusPercent: job ? toNumber(job.bonusPercent) : 0,
-            jobBonusMultiplier: job ? toNumber(job.bonusMultiplier) || 1 : 1,
-            jobMonthsInBonusYear: job?.monthsInBonusYear ?? 12,
-            /** Per-field pins: null means "resolves live", a number means
-             *  "this profile pins it". This is the whole encoding — there is
-             *  no separate mode flag to read. */
-            pinnedSalary: entry?.salary ?? null,
-            pinnedBonusPercent: entry?.bonusPercent ?? null,
-            pinnedBonusMultiplier: entry?.bonusMultiplier ?? null,
-            pinnedMonthsInBonusYear: entry?.monthsInBonusYear ?? null,
-            /** The salary this profile actually produces for this person. */
-            effectiveSalary: comp.salary,
-            /** Estimated annual bonus at this profile's salary and bonus
-             *  terms — pinned where pinned, live otherwise. */
-            estimatedBonus: comp.bonus,
-          };
-        }),
-      );
+      /** Full per-job detail — computed once per job so both the selected
+       *  row AND every OTHER job in that person's jobOptions (the row's job
+       *  picker) carry real resolved values, not just the display name.
+       *  Lets the client switch which job a row targets with no second
+       *  round trip. */
+      const jobDetail = (job: (typeof allJobs)[number]) => {
+        const entry = salaries[String(job.id)] ?? null;
+        const comp = resolveCompensation(salaryProfileActiveMap, job.id);
+        return {
+          id: job.id,
+          employerName: job.employerName,
+          startDate: job.startDate,
+          endDate: job.endDate,
+          /** Whether this profile has a complete entry for this job at all —
+           *  the whole encoding. No entry means $0/no bonus, not a fallback
+           *  to some other value. */
+          hasEntry: entry !== null,
+          salary: entry?.salary ?? 0,
+          bonusPercent: entry?.bonusPercent ?? 0,
+          bonusMultiplier: entry?.bonusMultiplier ?? 1,
+          monthsInBonusYear: entry?.monthsInBonusYear ?? 12,
+          /** This year's actual paid-out bonus, pinned on the same entry —
+           *  see SalaryProfileEntry.bonusOverride's docblock. */
+          bonusOverride: entry?.bonusOverride ?? null,
+          /** What this profile actually produces for this job — the pinned
+           *  actual when set, else the formula estimate. */
+          effectiveSalary: comp.salary,
+          estimatedBonus: comp.bonusOverride ?? comp.bonus,
+        };
+      };
+
+      const salaryDetails = people.map((person) => {
+        const personJobs = allJobs
+          .filter((j) => j.personId === person.id)
+          .sort((a, b) => (a.startDate < b.startDate ? 1 : -1));
+        const jobOptions = personJobs.map(jobDetail);
+        // Which job this row targets: whichever job already has an entry in
+        // this profile (so reopening a profile that targets a past job
+        // keeps showing that job selected), else this person's current
+        // active job. A speculative job also has endDate: null (it never
+        // "ends") but must never be the default pick when a real active job
+        // exists — excluded from both branches.
+        const withEntry = jobOptions.find(
+          (jo, i) => !personJobs[i]!.isSpeculative && jo.hasEntry,
+        );
+        const activeOption = jobOptions.find(
+          (jo, i) =>
+            personJobs[i]!.endDate === null && !personJobs[i]!.isSpeculative,
+        );
+        const selected = withEntry ?? activeOption ?? null;
+        return {
+          personId: person.id,
+          personName: person.name,
+          /** The job this row targets — the real identity of an entry, not
+           *  personId. Null when this person has no jobs at all yet. */
+          jobId: selected?.id ?? null,
+          /** This person's full job history, with resolved values
+           *  precomputed for each — the row's job picker. */
+          jobOptions,
+          employerName: selected?.employerName ?? null,
+          hasEntry: selected?.hasEntry ?? false,
+          salary: selected?.salary ?? 0,
+          bonusPercent: selected?.bonusPercent ?? 0,
+          bonusMultiplier: selected?.bonusMultiplier ?? 1,
+          monthsInBonusYear: selected?.monthsInBonusYear ?? 12,
+          bonusOverride: selected?.bonusOverride ?? null,
+          /** What this profile actually produces for this person. */
+          effectiveSalary: selected?.effectiveSalary ?? 0,
+          estimatedBonus: selected?.estimatedBonus ?? 0,
+        };
+      });
 
       /** Household income this profile produces: everyone's salary + bonus. */
       const combinedIncome = salaryDetails.reduce(
@@ -195,16 +190,10 @@ export const salaryProfileRouter = createTRPCRouter({
     }),
 
   /**
-   * Create a profile. `salaries` defaults to EMPTY — nothing pinned, every
-   * person's salary and bonus resolving live. A new what-if profile must
-   * never silently inherit and freeze whatever pins happened to be active
-   * when it was made. Callers wanting "start from an existing profile" pass
-   * that profile's map explicitly.
-   *
-   * Under the presence encoding an empty map is already complete: it says
-   * "this profile pins nothing", which is exactly what a fresh profile
-   * means. The old encoding had to enumerate every person to say the same
-   * thing, and that enumeration then went stale whenever someone was added.
+   * Create a profile. `salaries` defaults to EMPTY — genuinely no job
+   * entries, not copied from any other profile. A new what-if profile must
+   * never silently inherit whatever another profile happened to say —
+   * that's the entire point of a profile being its own complete world.
    */
   create: contributionProfileProcedure
     .input(
@@ -215,13 +204,12 @@ export const salaryProfileRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const salaries = normalizeSalaries(input.salaries ?? {});
       const rows = await ctx.db
         .insert(schema.salaryProfiles)
         .values({
           name: input.name,
           description: input.description ?? null,
-          salaries,
+          salaries: input.salaries ?? {},
         })
         .returning();
       return rows[0]!;
@@ -247,8 +235,7 @@ export const salaryProfileRouter = createTRPCRouter({
       if (input.name !== undefined) updates.name = input.name;
       if (input.description !== undefined)
         updates.description = input.description ?? null;
-      if (input.salaries !== undefined)
-        updates.salaries = normalizeSalaries(input.salaries);
+      if (input.salaries !== undefined) updates.salaries = input.salaries;
 
       const rows = await ctx.db
         .update(schema.salaryProfiles)

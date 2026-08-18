@@ -41,7 +41,7 @@ type StrategyResult = {
 };
 
 type AnalyzerInput = {
-  salaryOverrides?: { personId: number; salary: number }[];
+  salaryActiveFields?: { personId: number; salary: number }[];
   contributionProfileId?: number;
   accumulationBudgetProfileId?: number;
   accumulationBudgetColumn?: number;

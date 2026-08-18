@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { usePersistedSetting } from "./use-persisted-setting";
 import { useEffectiveProfileId } from "./use-effective-profile-id";
-import { useSalaryOverrides } from "./use-salary-overrides";
+import { useActiveSalaries } from "./use-salary-overrides";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_ACTIVE_SALARY_PROFILE_ID,
@@ -46,15 +46,15 @@ export function useBudgetProfilesList() {
     localSelection: null,
     globalDefaultId: activeSalaryProfileId,
   });
-  const salaryOverrides = useSalaryOverrides();
+  const salaryActiveFields = useActiveSalaries();
 
   const input = useMemo(
     () => ({
       planContribProfileId,
       planSalaryProfileId,
-      ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+      ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     }),
-    [planContribProfileId, planSalaryProfileId, salaryOverrides],
+    [planContribProfileId, planSalaryProfileId, salaryActiveFields],
   );
 
   return trpc.budget.listProfiles.useQuery(input);

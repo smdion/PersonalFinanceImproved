@@ -74,7 +74,7 @@ export const scenariosRouter = createTRPCRouter({
         decumulationOverrides: decumulationOverrideSchema,
 
         // --- Optional salary overrides from UI ---
-        salaryOverrides: z
+        salaryActiveFields: z
           .array(z.object({ personId: z.number(), salary: z.number() }))
           .optional(),
         // --- Optional contribution profile (overrides contribution accounts + salary) ---
@@ -108,7 +108,7 @@ export const scenariosRouter = createTRPCRouter({
         salaryProfileId: input.salaryProfileId,
       });
       const payload = await buildEnginePayload(ctx.db, data, {
-        salaryOverrides: input.salaryOverrides,
+        salaryActiveFields: input.salaryActiveFields,
         contributionProfileId: input.contributionProfileId,
         salaryProfileId: input.salaryProfileId,
         accumulationBudgetProfileId: input.accumulationBudgetProfileId,

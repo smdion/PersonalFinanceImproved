@@ -3,15 +3,15 @@
  * Extended contribution helper tests.
  *
  * Tests aggregateContributionsByCategory, resolveProfile,
- * applyContribOverrides, applyJobOverrides, and buildContributionDisplaySpecs.
+ * applyContribActiveFields, applyJobActiveFields, and buildContributionDisplaySpecs.
  */
 import "./setup-mocks";
 import { describe, it, expect } from "vitest";
 import {
   aggregateContributionsByCategory,
   resolveProfile,
-  applyContribOverrides,
-  applyJobOverrides,
+  applyContribActiveFields,
+  applyJobActiveFields,
   buildContributionDisplaySpecs,
 } from "@/server/helpers/contribution";
 import type { AccountCategory } from "@/lib/calculators/types";
@@ -213,10 +213,12 @@ describe("aggregateContributionsByCategory", () => {
 });
 
 // ---------------------------------------------------------------------------
-// applyContribOverrides
+// applyContribActiveFields
 // ---------------------------------------------------------------------------
 
-describe("applyContribOverrides", () => {
+describe("applyContribActiveFields", () => {
+  // A raw account row — no contributionValue/contributionMethod of its own;
+  // accounts carry no value anymore, only whichever profile is in effect.
   const baseRow = {
     id: 1,
     personId: 1,
@@ -225,8 +227,6 @@ describe("applyContribOverrides", () => {
     subType: null,
     label: null,
     parentCategory: "Retirement",
-    contributionMethod: "percent_of_salary",
-    contributionValue: "10",
     taxTreatment: "pre_tax",
     isActive: true,
     employerMatchType: null,
@@ -242,21 +242,31 @@ describe("applyContribOverrides", () => {
     updatedAt: "2025-01-01",
   } as unknown as (typeof import("@/lib/db/schema").contributionAccounts)["$inferSelect"];
 
-  it("returns rows unchanged when no overrides", () => {
-    const result = applyContribOverrides([baseRow], {});
-    expect(result).toHaveLength(1);
-    expect(result[0].contributionValue).toBe("10");
+  it("excludes rows with no active fields — no fallback to a base value", () => {
+    const result = applyContribActiveFields([baseRow], {});
+    expect(result).toHaveLength(0);
   });
 
-  it("applies override fields", () => {
-    const result = applyContribOverrides([baseRow], {
-      "1": { contributionValue: "15" },
+  it("applies active fields", () => {
+    const result = applyContribActiveFields([baseRow], {
+      "1": { contributionValue: "15", contributionMethod: "percent_of_salary" },
     });
     expect(result[0].contributionValue).toBe("15");
   });
 
-  it("filters out rows with isActive=false override", () => {
-    const result = applyContribOverrides([baseRow], {
+  it("filters out rows with isActive=false active field", () => {
+    const result = applyContribActiveFields([baseRow], {
+      "1": {
+        contributionValue: "15",
+        contributionMethod: "percent_of_salary",
+        isActive: false,
+      },
+    });
+    expect(result).toHaveLength(0);
+  });
+
+  it("excludes an entry with isActive alone and no value — still no fallback", () => {
+    const result = applyContribActiveFields([baseRow], {
       "1": { isActive: false },
     });
     expect(result).toHaveLength(0);
@@ -264,20 +274,46 @@ describe("applyContribOverrides", () => {
 
   it("leaves other rows untouched", () => {
     const row2 = { ...baseRow, id: 2 } as typeof baseRow;
-    const result = applyContribOverrides([baseRow, row2], {
-      "1": { contributionValue: "20" },
+    const result = applyContribActiveFields([baseRow, row2], {
+      "1": { contributionValue: "20", contributionMethod: "percent_of_salary" },
+      "2": { contributionValue: "10", contributionMethod: "percent_of_salary" },
     });
     expect(result).toHaveLength(2);
     expect(result[0].contributionValue).toBe("20");
     expect(result[1].contributionValue).toBe("10");
   });
+
+  it("overlay mode keeps an already-resolved row when this layer has no entry for it", () => {
+    const resolved = {
+      ...baseRow,
+      contributionValue: "10",
+      contributionMethod: "percent_of_salary",
+    };
+    const result = applyContribActiveFields([resolved], {}, true);
+    expect(result).toHaveLength(1);
+    expect(result[0].contributionValue).toBe("10");
+  });
+
+  it("overlay mode overrides an already-resolved row when this layer has an entry", () => {
+    const resolved = {
+      ...baseRow,
+      contributionValue: "10",
+      contributionMethod: "percent_of_salary",
+    };
+    const result = applyContribActiveFields(
+      [resolved],
+      { "1": { contributionValue: "999", contributionMethod: "fixed_annual" } },
+      true,
+    );
+    expect(result[0].contributionValue).toBe("999");
+  });
 });
 
 // ---------------------------------------------------------------------------
-// applyJobOverrides
+// applyJobActiveFields
 // ---------------------------------------------------------------------------
 
-describe("applyJobOverrides", () => {
+describe("applyJobActiveFields", () => {
   const baseJob = {
     id: 1,
     personId: 1,
@@ -293,13 +329,13 @@ describe("applyJobOverrides", () => {
     employerName: "OldCorp",
   } as unknown as (typeof import("@/lib/db/schema").jobs)["$inferSelect"];
 
-  it("returns jobs unchanged when no overrides", () => {
-    const result = applyJobOverrides([baseJob], {});
+  it("returns jobs unchanged when no active fields", () => {
+    const result = applyJobActiveFields([baseJob], {});
     expect(result[0].bonusPercent).toBe("0.10");
   });
 
-  it("applies valid override fields", () => {
-    const result = applyJobOverrides([baseJob], {
+  it("applies valid active fields", () => {
+    const result = applyJobActiveFields([baseJob], {
       "1": { includeBonusInContributions: true, bonusMonth: 3 },
     });
     expect(result[0].includeBonusInContributions).toBe(true);
@@ -310,7 +346,7 @@ describe("applyJobOverrides", () => {
     // A Contribution Profile must not be able to change anyone's
     // compensation. These names are still real jobs columns, so the plain
     // `field in job` filter would happily apply a stale stored key.
-    const result = applyJobOverrides([baseJob], {
+    const result = applyJobActiveFields([baseJob], {
       "1": {
         bonusPercent: "0.15",
         bonusMultiplier: "1.5",
@@ -322,8 +358,8 @@ describe("applyJobOverrides", () => {
     expect(result[0].monthsInBonusYear).toBe(12);
   });
 
-  it("ignores override fields not present on job", () => {
-    const result = applyJobOverrides([baseJob], {
+  it("ignores active fields not present on job", () => {
+    const result = applyJobActiveFields([baseJob], {
       "1": { nonExistentField: "value", bonusMonth: 4 },
     } as Record<string, Record<string, unknown>>);
     expect(result[0].bonusMonth).toBe(4);
@@ -342,7 +378,7 @@ describe("resolveProfile", () => {
     ({
       id: 1,
       name: "Test Profile",
-      contributionOverrides: {
+      contributionActiveFields: {
         contributionAccounts: {},
         jobs: {},
       },
@@ -365,16 +401,17 @@ describe("resolveProfile", () => {
     employerMaxMatchPct: null,
   };
 
+  // A job carries no salary/bonus of its own any more — resolveProfile's J
+  // generic only needs identity + payroll-basis fields. Salary/bonus
+  // resolution happens upstream (against the active Salary Profile, see
+  // loadLiveContribData) — resolveProfile no longer takes a salaries
+  // parameter at all; it just applies contribution/job active-field
+  // overrides on top of whatever liveJobSalaries already resolved to.
   const liveJob = {
     id: 1,
     personId: 1,
     payPeriod: "biweekly",
     endDate: null,
-    annualSalary: "120000",
-    bonusPercent: "0.10",
-    bonusMultiplier: "1.0",
-    bonusOverride: null,
-    monthsInBonusYear: 12,
     includeBonusInContributions: false,
     employerName: "OldCorp",
   } as (typeof import("@/lib/db/schema").jobs)["$inferSelect"];
@@ -389,80 +426,36 @@ describe("resolveProfile", () => {
     resolvedBonusOverride: null,
   };
 
-  it("returns unmodified data for empty profile", () => {
+  it("passes through the already-resolved salary/totalComp untouched", () => {
     const profile = makeProfile();
     const result = resolveProfile(
       profile,
-      {},
       [liveContrib],
       [liveJob],
       [liveJobSalary],
     );
 
-    expect(result.activeContribs).toHaveLength(1);
-    expect(result.activeContribs[0].contributionValue).toBe("10");
+    expect(result.jobSalaries[0].salary).toBe(120000);
+    expect(result.jobSalaries[0].totalComp).toBe(130000);
     expect(result.combinedSalary).toBe(120000);
   });
 
-  it("a pinned salary KEEPS its bonus in totalComp", () => {
-    // THE SHIPPED BUG. This branch used to set totalComp = the pinned salary
-    // and null out resolvedBonusOverride, silently deleting the bonus of
-    // every pinned person from contribution and employer-match math — while
-    // the Salary Profile editor went on displaying it. totalComp must be the
-    // pinned salary PLUS a bonus computed from the (here live) 10% terms.
+  it("excludes contribs with no active value for an empty profile — no fallback", () => {
     const profile = makeProfile();
     const result = resolveProfile(
       profile,
-      { "1": { salary: 150000 } },
       [liveContrib],
       [liveJob],
       [liveJobSalary],
     );
 
-    expect(result.jobSalaries[0].totalComp).toBe(165000); // 150k + 10%
-    expect(result.jobSalaries[0].totalComp).not.toBe(150000); // the old value
-    // includeBonusInContributions is false on this job, so the payroll basis
-    // stays bonus-free.
-    expect(result.jobSalaries[0].salary).toBe(150000);
-    expect(result.combinedSalary).toBe(150000);
-  });
-
-  it("pinned bonus terms apply to an unpinned salary", () => {
-    const profile = makeProfile();
-    const result = resolveProfile(
-      profile,
-      { "1": { bonusPercent: 0.25 } },
-      [liveContrib],
-      [liveJob],
-      [liveJobSalary],
-    );
-
-    expect(result.jobSalaries[0].salary).toBe(120000); // still live
-    expect(result.jobSalaries[0].totalComp).toBe(150000); // 120k + 25%
-  });
-
-  it("leaves a person who pins nothing completely untouched", () => {
-    // The invariant the presence encoding exists to preserve: an entry that
-    // pins nothing must not replace salary or totalComp for someone who
-    // asked for nothing.
-    const profile = makeProfile();
-    for (const entry of [{}, undefined]) {
-      const result = resolveProfile(
-        profile,
-        entry === undefined ? {} : { "1": entry },
-        [liveContrib],
-        [liveJob],
-        [liveJobSalary],
-      );
-      expect(result.jobSalaries[0].salary).toBe(120000);
-      expect(result.jobSalaries[0].totalComp).toBe(130000);
-      expect(result.combinedSalary).toBe(120000);
-    }
+    expect(result.activeContribs).toHaveLength(0);
+    expect(result.combinedSalary).toBe(120000);
   });
 
   it("applies contribution overrides", () => {
     const profile = makeProfile({
-      contributionOverrides: {
+      contributionActiveFields: {
         contributionAccounts: {
           "10": { contributionValue: "15" },
         },
@@ -471,7 +464,6 @@ describe("resolveProfile", () => {
     });
     const result = resolveProfile(
       profile,
-      {},
       [liveContrib],
       [liveJob],
       [liveJobSalary],
@@ -482,7 +474,7 @@ describe("resolveProfile", () => {
 
   it("filters out contributions deactivated by override", () => {
     const profile = makeProfile({
-      contributionOverrides: {
+      contributionActiveFields: {
         contributionAccounts: {
           "10": { isActive: false },
         },
@@ -491,7 +483,6 @@ describe("resolveProfile", () => {
     });
     const result = resolveProfile(
       profile,
-      {},
       [liveContrib],
       [liveJob],
       [liveJobSalary],
@@ -502,7 +493,7 @@ describe("resolveProfile", () => {
 
   it("applies job overrides it still owns", () => {
     const profile = makeProfile({
-      contributionOverrides: {
+      contributionActiveFields: {
         contributionAccounts: {},
         jobs: {
           "1": { employerName: "NewCorp" },
@@ -511,7 +502,6 @@ describe("resolveProfile", () => {
     });
     const result = resolveProfile(
       profile,
-      {},
       [liveContrib],
       [liveJob],
       [liveJobSalary],
@@ -521,13 +511,14 @@ describe("resolveProfile", () => {
   });
 
   it("REFUSES a stale bonus-amount job override", () => {
-    // bonusPercent moved to the Salary Profile. The override filter is
-    // field-name-driven and bonusPercent is still a real jobs column, so a
-    // leftover key in an old row would otherwise keep changing someone's
-    // compensation from the wrong axis. The migration strips these; this is
-    // the runtime backstop that makes a missed row inert, not wrong.
+    // bonusPercent/bonusMultiplier/monthsInBonusYear moved to the Salary
+    // Profile and are no longer real jobs columns at all. The override
+    // filter is field-name-driven (`field in job`), so a leftover key in an
+    // old contribution_active_fields row has nothing to land on any more —
+    // this is the runtime backstop that makes a missed row inert, not
+    // wrong.
     const profile = makeProfile({
-      contributionOverrides: {
+      contributionActiveFields: {
         contributionAccounts: {},
         jobs: {
           "1": {
@@ -540,15 +531,14 @@ describe("resolveProfile", () => {
     });
     const result = resolveProfile(
       profile,
-      {},
       [liveContrib],
       [liveJob],
       [liveJobSalary],
     );
 
-    expect(result.patchedJobs[0].bonusPercent).toBe("0.10");
-    expect(result.patchedJobs[0].bonusMultiplier).toBe("1.0");
-    expect(result.patchedJobs[0].monthsInBonusYear).toBe(12);
+    expect(result.patchedJobs[0]).not.toHaveProperty("bonusPercent");
+    expect(result.patchedJobs[0]).not.toHaveProperty("bonusMultiplier");
+    expect(result.patchedJobs[0]).not.toHaveProperty("monthsInBonusYear");
   });
 });
 

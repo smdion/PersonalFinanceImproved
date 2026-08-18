@@ -1,64 +1,58 @@
 import "../helpers/setup-mocks";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   computeBonusGross,
   getEffectiveIncome,
   getTotalCompensation,
-  getCurrentSalary,
-  getFutureSalaryChanges,
-  applySalaryOverride,
-  resolveEffectiveSalary,
+  applyActiveSalary,
+  applyActiveBonusTerms,
+  resolveCompensation,
+  applySalaryProfileRow,
+  type BonusTerms,
+  type SalaryProfileActiveMap,
 } from "@/server/helpers/salary";
-import { createTestDb, type TestDbContext } from "./db-harness";
 
 describe("computeBonusGross", () => {
   it("computes bonus from percent and multiplier", () => {
     // $120,000 salary × 10% bonus × 1.0 multiplier × (12/12 months)
-    expect(computeBonusGross(120000, "0.10", "1", null, null)).toBe(12000);
+    expect(computeBonusGross(120000, "0.10", "1", null)).toBe(12000);
   });
 
   it("applies bonusMultiplier", () => {
     // $120,000 × 10% × 1.5 = $18,000
-    expect(computeBonusGross(120000, "0.10", "1.5", null, null)).toBe(18000);
-  });
-
-  it("returns override directly when set", () => {
-    expect(computeBonusGross(120000, "0.10", "1", 15000, null)).toBe(15000);
-  });
-
-  it("returns 0 when override is explicitly 0, not the formula", () => {
-    expect(computeBonusGross(120000, "0.10", "1", 0, null)).toBe(0);
+    expect(computeBonusGross(120000, "0.10", "1.5", null)).toBe(18000);
   });
 
   it("returns 0 when bonus percent is 0", () => {
-    expect(computeBonusGross(120000, "0", "1", null, null)).toBe(0);
+    expect(computeBonusGross(120000, "0", "1", null)).toBe(0);
   });
 
   it("returns 0 when bonus percent is null", () => {
-    expect(computeBonusGross(120000, null, null, null, null)).toBe(0);
+    expect(computeBonusGross(120000, null, null, null)).toBe(0);
   });
 
   it("prorates for partial bonus year", () => {
     // $120,000 × 10% × 1 × (6/12) = $6,000
-    expect(computeBonusGross(120000, "0.10", "1", null, 6)).toBe(6000);
+    expect(computeBonusGross(120000, "0.10", "1", 6)).toBe(6000);
   });
 
   it("defaults multiplier to 1 when null", () => {
-    expect(computeBonusGross(120000, "0.10", null, null, null)).toBe(12000);
+    expect(computeBonusGross(120000, "0.10", null, null)).toBe(12000);
   });
 
-  it("defaults multiplier to 1 when zero", () => {
-    // "0" multiplier fallback → 1
-    expect(computeBonusGross(120000, "0.10", "0", null, null)).toBe(12000);
+  it("treats a stored zero multiplier as a real zero, not unset", () => {
+    // A stored "0" is a real "no bonus this cycle" value — only a
+    // genuinely null multiplier defaults to 1x. See computeBonusGross.
+    expect(computeBonusGross(120000, "0.10", "0", null)).toBe(0);
   });
 
   it("defaults monthsInBonusYear to 12 when null", () => {
-    expect(computeBonusGross(120000, "0.10", "1", null, null)).toBe(12000);
+    expect(computeBonusGross(120000, "0.10", "1", null)).toBe(12000);
   });
 
   it("rounds to cents", () => {
     // 100000 × 0.15 × 1.1 × (12/12) = 16500.000...
-    const result = computeBonusGross(100000, "0.15", "1.1", null, null);
+    const result = computeBonusGross(100000, "0.15", "1.1", null);
     expect(result).toBe(16500);
     // Check that the result has at most 2 decimal places
     expect(Math.round(result * 100)).toBe(result * 100);
@@ -66,357 +60,203 @@ describe("computeBonusGross", () => {
 });
 
 // ---------------------------------------------------------------------------
-// getEffectiveIncome (pure)
+// getEffectiveIncome / getTotalCompensation (pure)
 // ---------------------------------------------------------------------------
 
 describe("getEffectiveIncome", () => {
-  function makeJob(overrides: Record<string, unknown> = {}) {
-    return {
-      id: 1,
-      personId: 1,
-      annualSalary: "120000",
-      bonusPercent: "0.10",
-      bonusMultiplier: "1",
-      monthsInBonusYear: 12,
-      includeBonusInContributions: false,
-      payPeriod: "biweekly",
-      endDate: null,
-      ...overrides,
-    } as Parameters<typeof getEffectiveIncome>[0];
-  }
+  // A job carries no bonus terms of its own any more — bonusTerms is
+  // whatever a Salary Profile's entry resolved to (see resolveCompensation).
+  const bonusTerms: BonusTerms = {
+    bonusPercent: "0.10",
+    bonusMultiplier: "1",
+    monthsInBonusYear: 12,
+  };
 
   it("returns base salary when includeBonusInContributions is false", () => {
-    expect(getEffectiveIncome(makeJob(), 120000, null)).toBe(120000);
+    const job = { includeBonusInContributions: false };
+    expect(getEffectiveIncome(job, 120000, bonusTerms)).toBe(120000);
   });
 
   it("returns salary + bonus when includeBonusInContributions is true", () => {
-    const job = makeJob({ includeBonusInContributions: true });
+    const job = { includeBonusInContributions: true };
     // 120000 + 120000 * 0.10 * 1 * (12/12) = 132000
-    expect(getEffectiveIncome(job, 120000, null)).toBe(132000);
-  });
-
-  it("uses the resolved bonus override instead of the formula", () => {
-    const job = makeJob({ includeBonusInContributions: true });
-    expect(getEffectiveIncome(job, 120000, 5000)).toBe(125000);
+    expect(getEffectiveIncome(job, 120000, bonusTerms)).toBe(132000);
   });
 });
 
-// ---------------------------------------------------------------------------
-// getTotalCompensation (pure)
-// ---------------------------------------------------------------------------
-
 describe("getTotalCompensation", () => {
-  function makeJob(overrides: Record<string, unknown> = {}) {
-    return {
-      id: 1,
-      personId: 1,
-      annualSalary: "120000",
-      bonusPercent: "0.10",
-      bonusMultiplier: "1",
-      monthsInBonusYear: 12,
-      includeBonusInContributions: false,
-      payPeriod: "biweekly",
-      endDate: null,
-      ...overrides,
-    } as Parameters<typeof getTotalCompensation>[0];
-  }
+  const bonusTerms: BonusTerms = {
+    bonusPercent: "0.10",
+    bonusMultiplier: "1",
+    monthsInBonusYear: 12,
+  };
 
   it("returns salary + bonus regardless of includeBonusInContributions", () => {
-    const job = makeJob({ includeBonusInContributions: false });
-    expect(getTotalCompensation(job, 120000, null)).toBe(132000);
+    expect(getTotalCompensation(120000, bonusTerms)).toBe(132000);
   });
 
   it("returns just salary when no bonus", () => {
-    const job = makeJob({ bonusPercent: "0" });
-    expect(getTotalCompensation(job, 120000, null)).toBe(120000);
-  });
-
-  it("applies the resolved bonus override instead of the formula", () => {
-    const job = makeJob();
-    expect(getTotalCompensation(job, 120000, 25000)).toBe(145000);
+    const noBonus: BonusTerms = { ...bonusTerms, bonusPercent: "0" };
+    expect(getTotalCompensation(120000, noBonus)).toBe(120000);
   });
 });
 
 // ---------------------------------------------------------------------------
-// getCurrentSalary (DB-dependent)
+// applyActiveSalary / applyActiveBonusTerms (pure) — the Plan/session tier,
+// independent of Salary Profiles.
 // ---------------------------------------------------------------------------
 
-describe("getCurrentSalary", () => {
-  let ctx: TestDbContext;
-
-  beforeAll(async () => {
-    ctx = await createTestDb();
-    // Seed a person + job + salary change
-    ctx.db
-      .insert(ctx.schema.people)
-      .values({
-        id: 1,
-        name: "Test",
-        dateOfBirth: "1990-01-01",
-        isPrimaryUser: true,
-      })
-      .run();
-    ctx.db
-      .insert(ctx.schema.jobs)
-      .values({
-        id: 1,
-        personId: 1,
-        employerName: "TestCo",
-        annualSalary: "100000",
-        payPeriod: "biweekly",
-        payWeek: "even",
-        startDate: "2020-01-01",
-        w4FilingStatus: "MFJ",
-      })
-      .run();
-    ctx.db
-      .insert(ctx.schema.salaryChanges)
-      .values({
-        jobId: 1,
-        newSalary: "110000",
-        effectiveDate: "2025-01-01",
-      })
-      .run();
-    ctx.db
-      .insert(ctx.schema.salaryChanges)
-      .values({
-        jobId: 1,
-        newSalary: "120000",
-        effectiveDate: "2025-06-01",
-      })
-      .run();
-  });
-
-  afterAll(() => ctx.cleanup());
-
-  it("returns latest salary change before asOfDate", async () => {
-    const salary = await getCurrentSalary(
-      ctx.rawDb,
-      1,
-      "100000",
-      new Date("2025-07-01"),
-    );
-    expect(salary).toBe(120000);
-  });
-
-  it("returns earlier change when asOfDate is before later change", async () => {
-    const salary = await getCurrentSalary(
-      ctx.rawDb,
-      1,
-      "100000",
-      new Date("2025-03-01"),
-    );
-    expect(salary).toBe(110000);
-  });
-
-  it("falls back to fallbackSalary when no changes exist before date", async () => {
-    const salary = await getCurrentSalary(
-      ctx.rawDb,
-      1,
-      "100000",
-      new Date("2024-01-01"),
-    );
-    expect(salary).toBe(100000);
-  });
-
-  it("falls back to fallbackSalary for non-existent job", async () => {
-    const salary = await getCurrentSalary(ctx.rawDb, 999, "80000");
-    expect(salary).toBe(80000);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// applySalaryOverride (pure)
-// ---------------------------------------------------------------------------
-
-describe("applySalaryOverride", () => {
+describe("applyActiveSalary", () => {
   it("returns the override when the map has an entry for the person", () => {
     const map = new Map([[1, { salary: 150000 }]]);
-    expect(applySalaryOverride(1, 100000, map)).toBe(150000);
+    expect(applyActiveSalary(1, 100000, map)).toBe(150000);
   });
 
   it("returns the raw salary when the map has no entry for the person", () => {
     const map = new Map([[2, { salary: 150000 }]]);
-    expect(applySalaryOverride(1, 100000, map)).toBe(100000);
+    expect(applyActiveSalary(1, 100000, map)).toBe(100000);
   });
 
   it("returns the raw salary for an empty map", () => {
-    expect(applySalaryOverride(1, 100000, new Map())).toBe(100000);
+    expect(applyActiveSalary(1, 100000, new Map())).toBe(100000);
   });
 
   it("honors a zero-dollar override rather than falling back", () => {
     const map = new Map([[1, { salary: 0 }]]);
-    expect(applySalaryOverride(1, 100000, map)).toBe(0);
+    expect(applyActiveSalary(1, 100000, map)).toBe(0);
   });
 
   it("falls back to raw when the entry pins bonus terms but no salary", () => {
-    // A map key means "has at least one pin", NOT "salary is pinned". Reading
-    // it as the latter is what broke the year-0 bonus adjustment guard.
     const map = new Map([[1, { bonusPercent: 0.2 }]]);
-    expect(applySalaryOverride(1, 100000, map)).toBe(100000);
+    expect(applyActiveSalary(1, 100000, map)).toBe(100000);
+  });
+});
+
+describe("applyActiveBonusTerms", () => {
+  const resolved: BonusTerms = {
+    bonusPercent: "0.10",
+    bonusMultiplier: "1",
+    monthsInBonusYear: 12,
+  };
+
+  it("returns the resolved terms unchanged when the override entry is undefined", () => {
+    expect(applyActiveBonusTerms(undefined, resolved)).toEqual(resolved);
+  });
+
+  it("overrides only the fields the entry sets", () => {
+    expect(applyActiveBonusTerms({ bonusPercent: 0.2 }, resolved)).toEqual({
+      bonusPercent: "0.2",
+      bonusMultiplier: "1",
+      monthsInBonusYear: 12,
+    });
+  });
+
+  it("overrides all three fields when all are set", () => {
+    expect(
+      applyActiveBonusTerms(
+        { bonusPercent: 0.25, bonusMultiplier: 1.5, monthsInBonusYear: 6 },
+        resolved,
+      ),
+    ).toEqual({
+      bonusPercent: "0.25",
+      bonusMultiplier: "1.5",
+      monthsInBonusYear: 6,
+    });
   });
 });
 
 // ---------------------------------------------------------------------------
-// resolveEffectiveSalary (DB-dependent)
+// resolveCompensation — the single definition of pay under a Salary Profile
 // ---------------------------------------------------------------------------
 
-describe("resolveEffectiveSalary", () => {
-  let ctx: TestDbContext;
-
-  beforeAll(async () => {
-    ctx = await createTestDb();
-    ctx.db
-      .insert(ctx.schema.people)
-      .values({
-        id: 1,
-        name: "Test",
-        dateOfBirth: "1990-01-01",
-        isPrimaryUser: true,
-      })
-      .run();
-    ctx.db
-      .insert(ctx.schema.jobs)
-      .values({
-        id: 1,
-        personId: 1,
-        employerName: "TestCo",
-        annualSalary: "100000",
-        payPeriod: "biweekly",
-        payWeek: "even",
-        startDate: "2020-01-01",
-        w4FilingStatus: "MFJ",
-      })
-      .run();
-    ctx.db
-      .insert(ctx.schema.salaryChanges)
-      .values({
-        jobId: 1,
-        newSalary: "120000",
-        effectiveDate: "2025-01-01",
-      })
-      .run();
+describe("resolveCompensation", () => {
+  it("returns $0/no bonus when the profile has no entry for the job", () => {
+    const map: SalaryProfileActiveMap = new Map();
+    const comp = resolveCompensation(map, 1);
+    expect(comp).toEqual({
+      salary: 0,
+      bonus: 0,
+      totalComp: 0,
+      terms: {
+        bonusPercent: null,
+        bonusMultiplier: null,
+        monthsInBonusYear: null,
+      },
+      bonusOverride: null,
+    });
   });
 
-  afterAll(() => ctx.cleanup());
-
-  const job = { id: 1, personId: 1, annualSalary: "100000" };
-
-  it("returns the override when the map has an entry for the job's person", async () => {
-    const salary = await resolveEffectiveSalary(
-      ctx.rawDb,
-      job,
-      new Map([[1, { salary: 200000 }]]),
-      new Date("2025-07-01"),
-    );
-    expect(salary).toBe(200000);
+  it("resolves salary and bonus straight from the job's complete entry", () => {
+    const map: SalaryProfileActiveMap = new Map([
+      [
+        1,
+        {
+          salary: 120000,
+          bonusPercent: 0.1,
+          bonusMultiplier: 1,
+          monthsInBonusYear: 12,
+          bonusOverride: null,
+        },
+      ],
+    ]);
+    const comp = resolveCompensation(map, 1);
+    expect(comp.salary).toBe(120000);
+    expect(comp.bonus).toBe(12000);
+    expect(comp.totalComp).toBe(132000);
   });
 
-  it("falls back to getCurrentSalary when the map has no entry", async () => {
-    const salary = await resolveEffectiveSalary(
-      ctx.rawDb,
-      job,
-      new Map(),
-      new Date("2025-07-01"),
-    );
-    expect(salary).toBe(120000);
+  it("prorates by monthsInBonusYear", () => {
+    const map: SalaryProfileActiveMap = new Map([
+      [
+        1,
+        {
+          salary: 100000,
+          bonusPercent: 0.1,
+          bonusMultiplier: 1,
+          monthsInBonusYear: 6,
+        },
+      ],
+    ]);
+    expect(resolveCompensation(map, 1).bonus).toBe(5000);
   });
 
-  it("falls back to getCurrentSalary before the salary change's effective date", async () => {
-    const salary = await resolveEffectiveSalary(
-      ctx.rawDb,
-      job,
-      new Map(),
-      new Date("2024-01-01"),
-    );
-    expect(salary).toBe(100000);
+  it("an entry for a DIFFERENT job never applies", () => {
+    const map: SalaryProfileActiveMap = new Map([
+      [
+        11,
+        {
+          salary: 90000,
+          bonusPercent: 0,
+          bonusMultiplier: 1,
+          monthsInBonusYear: 12,
+        },
+      ],
+    ]);
+    expect(resolveCompensation(map, 1).salary).toBe(0);
   });
 });
 
 // ---------------------------------------------------------------------------
-// getFutureSalaryChanges (DB-dependent)
+// applySalaryProfileRow — building the jobId-keyed map from a stored row
 // ---------------------------------------------------------------------------
 
-describe("getFutureSalaryChanges", () => {
-  let ctx: TestDbContext;
-
-  beforeAll(async () => {
-    ctx = await createTestDb();
-    ctx.db
-      .insert(ctx.schema.people)
-      .values({
-        id: 1,
-        name: "Test",
-        dateOfBirth: "1990-01-01",
-        isPrimaryUser: true,
-      })
-      .run();
-    ctx.db
-      .insert(ctx.schema.jobs)
-      .values({
-        id: 1,
-        personId: 1,
-        employerName: "TestCo",
-        annualSalary: "100000",
-        payPeriod: "biweekly",
-        payWeek: "even",
-        startDate: "2020-01-01",
-        w4FilingStatus: "MFJ",
-      })
-      .run();
-    ctx.db
-      .insert(ctx.schema.salaryChanges)
-      .values({
-        jobId: 1,
-        newSalary: "110000",
-        effectiveDate: "2025-06-01",
-      })
-      .run();
-    ctx.db
-      .insert(ctx.schema.salaryChanges)
-      .values({
-        jobId: 1,
-        newSalary: "120000",
-        effectiveDate: "2026-01-01",
-      })
-      .run();
+describe("applySalaryProfileRow", () => {
+  it("returns an empty map for a null profile", () => {
+    expect(applySalaryProfileRow(null).size).toBe(0);
   });
 
-  afterAll(() => ctx.cleanup());
-
-  it("returns future changes sorted by date", async () => {
-    const changes = await getFutureSalaryChanges(
-      ctx.rawDb,
-      1,
-      new Date("2025-01-01"),
-    );
-    expect(changes).toHaveLength(2);
-    expect(changes[0]!.salary).toBe(110000);
-    expect(changes[0]!.effectiveDate).toBe("2025-06-01");
-    expect(changes[1]!.salary).toBe(120000);
+  it("returns an empty map for a profile with no entries", () => {
+    expect(applySalaryProfileRow({ salaries: {} }).size).toBe(0);
   });
 
-  it("returns only changes after asOfDate", async () => {
-    const changes = await getFutureSalaryChanges(
-      ctx.rawDb,
-      1,
-      new Date("2025-07-01"),
-    );
-    expect(changes).toHaveLength(1);
-    expect(changes[0]!.salary).toBe(120000);
-  });
-
-  it("returns empty array when no future changes", async () => {
-    const changes = await getFutureSalaryChanges(
-      ctx.rawDb,
-      1,
-      new Date("2027-01-01"),
-    );
-    expect(changes).toHaveLength(0);
-  });
-
-  it("returns empty for non-existent job", async () => {
-    const changes = await getFutureSalaryChanges(ctx.rawDb, 999);
-    expect(changes).toHaveLength(0);
+  it("loads a stored profile into a jobId-keyed map", () => {
+    const entry = {
+      salary: 100000,
+      bonusPercent: 0.05,
+      bonusMultiplier: 1,
+      monthsInBonusYear: 12,
+    };
+    const map = applySalaryProfileRow({ salaries: { "7": entry } });
+    expect(map.get(7)).toEqual(entry);
   });
 });

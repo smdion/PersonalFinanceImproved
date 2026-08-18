@@ -14,7 +14,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import {
   categoriesWithIrsLimit,
   getLimitGroup,
@@ -25,7 +25,7 @@ import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies"
 import { LoadingCard, ErrorCard } from "./utils";
 
 function RetirementCardImpl() {
-  const salaryOverrides = useSalaryOverrides();
+  const salaryActiveFields = useActiveSalaries();
   const [accBudgetProfileId] = usePersistedSetting<number | null>(
     "retirement_acc_budget_profile_id",
     null,
@@ -51,7 +51,7 @@ function RetirementCardImpl() {
     null,
   );
   const engineInput = {
-    ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(accBudgetProfileId != null
       ? { accumulationBudgetProfileId: accBudgetProfileId }
       : {}),

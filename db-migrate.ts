@@ -51,6 +51,7 @@ const VERSION_TABLE_NAMES = [
   "historical_notes",
   "relocation_scenarios",
   "jobs",
+  "historical_salaries",
   "budget_items",
   "savings_monthly",
   "savings_planned_transactions",
@@ -69,7 +70,6 @@ const VERSION_TABLE_NAMES = [
   "brokerage_planned_transactions",
   "annual_performance",
   "property_taxes",
-  "salary_changes",
   "paycheck_deductions",
   "contribution_accounts",
   "portfolio_accounts",
@@ -142,6 +142,61 @@ async function detectSchemaEra(
 }
 
 /**
+ * Export a JSON snapshot of every VERSION_TABLE_NAMES table and write it to
+ * disk. Shared by handleSquashUpgrade (pre-squash safety net) and the normal
+ * idempotent pre-apply loop's pre-0016 backup (see the call site right
+ * before migration 0016_drop_salary_ledger_tables's DROP TABLE runs) — same
+ * format either way, so a single "pre-upgrade-backup-*.json" file on disk
+ * always means the same thing to an operator regardless of which path wrote
+ * it.
+ */
+async function writePreMigrationBackupPg(
+  client: import("pg").PoolClient,
+  schemaVersion: string,
+): Promise<string | null> {
+  const tables: Record<string, unknown[]> = {};
+  for (const tableName of VERSION_TABLE_NAMES) {
+    try {
+      const { rows } = await client.query(`SELECT * FROM "${tableName}"`);
+      tables[tableName] = rows;
+    } catch {
+      tables[tableName] = [];
+    }
+  }
+
+  const backup = {
+    schemaVersion,
+    exportedAt: new Date().toISOString(),
+    preUpgradeBackup: true,
+    tables,
+  };
+
+  try {
+    const backupDir = fs.existsSync("/app/data") ? "/app/data" : ".";
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const backupPath = path.join(
+      backupDir,
+      `pre-upgrade-backup-${timestamp}.json`,
+    );
+    fs.writeFileSync(backupPath, JSON.stringify(backup));
+    log("info", "pre_migration_backup_complete", {
+      path: backupPath,
+      tableCount: Object.keys(tables).length,
+      totalRows: Object.values(tables).reduce(
+        (sum, rows) => sum + rows.length,
+        0,
+      ),
+    });
+    return backupPath;
+  } catch (backupErr) {
+    log("warn", "pre_migration_backup_write_failed", {
+      error: backupErr instanceof Error ? backupErr.message : String(backupErr),
+    });
+    return null;
+  }
+}
+
+/**
  * Handle a migration squash: when the DB has more applied migrations than the
  * journal has entries, a schema squash has occurred. This function:
  * 1. Creates a pre-upgrade backup
@@ -157,6 +212,10 @@ async function handleSquashUpgrade(
   journalPath: string,
 ): Promise<SquashResult> {
   const client = await pool.connect();
+  // Hoisted out of the try block (rather than declared where it's first
+  // assigned below) so the catch block can report whether a backup was
+  // already written to disk before whatever failed — see the catch block.
+  let backupPathBeforeFailure: string | null = null;
   try {
     // Drizzle ORM stores migrations in the "drizzle" schema.
     // Check if drizzle.__drizzle_migrations table exists.
@@ -250,46 +309,8 @@ async function handleSquashUpgrade(
     // 1. Export backup + clear journal (skip for partial recovery — already empty)
     let backupPath: string | null = null;
     if (!isPartialRecovery) {
-      const tables: Record<string, unknown[]> = {};
-      for (const tableName of VERSION_TABLE_NAMES) {
-        try {
-          const { rows } = await client.query(`SELECT * FROM "${tableName}"`);
-          tables[tableName] = rows;
-        } catch {
-          tables[tableName] = [];
-        }
-      }
-
-      const backup = {
-        schemaVersion,
-        exportedAt: new Date().toISOString(),
-        preUpgradeBackup: true,
-        tables,
-      };
-
-      try {
-        const backupDir = fs.existsSync("/app/data") ? "/app/data" : ".";
-        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-        backupPath = path.join(
-          backupDir,
-          `pre-upgrade-backup-${timestamp}.json`,
-        );
-        fs.writeFileSync(backupPath, JSON.stringify(backup));
-        log("info", "pre_migration_backup_complete", {
-          path: backupPath,
-          tableCount: Object.keys(tables).length,
-          totalRows: Object.values(tables).reduce(
-            (sum, rows) => sum + rows.length,
-            0,
-          ),
-        });
-      } catch (backupErr) {
-        log("warn", "pre_migration_backup_write_failed", {
-          error:
-            backupErr instanceof Error ? backupErr.message : String(backupErr),
-        });
-        backupPath = null;
-      }
+      backupPath = await writePreMigrationBackupPg(client, schemaVersion);
+      backupPathBeforeFailure = backupPath;
 
       // 2. Clear old migration journal
       await client.query("DELETE FROM drizzle.__drizzle_migrations");
@@ -300,11 +321,28 @@ async function handleSquashUpgrade(
 
     // 3. Apply each new journal migration idempotently and record its hash
     const crypto = await import("crypto");
+    // "Already done" AND "already moved past" are both benign here — this
+    // loop blindly replays potentially-ancient migrations against a DB that
+    // may already be arbitrarily far beyond them. A migration that creates
+    // something that already exists (duplicate_*) is exactly as expected as
+    // one that references a column/table a LATER migration already
+    // renamed or dropped (undefined_column/undefined_table) — e.g. 0005's
+    // `INSERT ... SELECT bonus_override FROM jobs` + `DROP COLUMN
+    // bonus_override`, replayed after some later migration already dropped
+    // that column for real. Without these two codes, a replay that reaches
+    // exactly this kind of statement hard-fails mid-loop, after the journal
+    // has already been cleared and earlier entries already committed —
+    // leaving __drizzle_migrations in a half-recovered state that requires
+    // manual repair (see .scratch/recover-migration-tracking.mjs for the
+    // one-off recovery this caused on the dev DB on 2026-08-18).
     const IGNORABLE_PG_CODES = new Set([
       "42701", // duplicate_column
       "42P07", // duplicate_table
       "42710", // duplicate_object (index, constraint, etc.)
+      "42704", // undefined_object (DROP CONSTRAINT/INDEX on missing object)
       "23505", // unique_violation
+      "42703", // undefined_column — already renamed/dropped by a later migration
+      "42P01", // undefined_table — already renamed/dropped by a later migration
     ]);
 
     for (const entry of journal.entries) {
@@ -312,6 +350,13 @@ async function handleSquashUpgrade(
       if (!fs.existsSync(sqlPath)) continue;
       const sql = fs.readFileSync(sqlPath, "utf-8");
       const hash = crypto.createHash("sha256").update(sql).digest("hex");
+
+      // See the matching comment in runPostgres's idempotent pre-apply loop
+      // — must run after the schema is caught up through 0015 but before
+      // 0016 drops the source tables, wherever that lands in this replay.
+      if (entry.tag === "0016_drop_salary_ledger_tables") {
+        await backfillHistoricalSalaries(pool);
+      }
 
       const statements = sql
         .split("--> statement-breakpoint")
@@ -390,10 +435,292 @@ async function handleSquashUpgrade(
     log("info", "squash_upgrade_complete", { schemaVersion });
     return { backupPath, schemaVersion, wasSquash: true };
   } catch (err) {
+    // A backup written before the failure is real, on-disk pre-upgrade
+    // state — say so explicitly. Without this, the swallow-and-continue
+    // behavior below (unchanged: callers proceed as if no squash happened)
+    // gives an operator no signal that a usable backup already exists, even
+    // though one may be sitting right there.
     log("warn", "squash_upgrade_failed", {
       error: err instanceof Error ? err.message : String(err),
+      ...(backupPathBeforeFailure
+        ? {
+            message: `backup written to ${backupPathBeforeFailure} before failure — see it for pre-upgrade state`,
+            backupPath: backupPathBeforeFailure,
+          }
+        : {}),
     });
     return { backupPath: null, schemaVersion: null, wasSquash: false };
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Freeze `salary_changes` + `job_bonus_overrides` into `historical_salaries`
+ * (past years only — the current year stays live/auto-fill, same rule
+ * historical.ts's computeSummary uses) and convert every Salary Profile's
+ * entries to complete-only for each person's currently-active job (dropping
+ * entries for ended/speculative jobs), BEFORE migration
+ * 0016_drop_salary_ledger_tables removes the source tables for good.
+ *
+ * Gated entirely on `salary_changes` still existing — a fresh install (no
+ * legacy data) or an already-migrated DB (dev, migrated by hand on
+ * 2026-08-18 via the identical logic in
+ * .scratch/migrate-to-historical-salaries.mjs) both skip this as a no-op.
+ *
+ * Callers must invoke this from WITHIN the migration-apply loop, immediately
+ * before applying the 0016 entry specifically — NOT once up front. A deploy
+ * can be arbitrarily far behind (missing 0013's `jobs.is_speculative`, not
+ * just 0015/0016), and this function queries that column; calling it before
+ * the schema has caught up crashes on "column is_speculative does not
+ * exist" (caught on the demo canary on 2026-08-18, never reached prod).
+ */
+async function backfillHistoricalSalaries(
+  pool: import("pg").Pool,
+): Promise<void> {
+  const client = await pool.connect();
+  try {
+    const { rows: tableCheck } = await client.query<{ exists: boolean }>(
+      `SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'salary_changes'
+      ) AS exists`,
+    );
+    if (!tableCheck[0]?.exists) return;
+
+    const currentYear = new Date().getFullYear();
+
+    await client.query("BEGIN");
+    try {
+      // This runs before the migration-apply loop, so 0015 (which creates
+      // this table) may not have run yet on a prod deploy that's starting
+      // further behind than dev was — create it here too so the backfill
+      // below always has somewhere to write. Matches 0015's DDL exactly
+      // (same constraint/index names) so 0015 itself becomes a clean no-op
+      // (duplicate_table/duplicate_object, already-ignorable) when it runs
+      // afterward, instead of silently creating a second redundant FK.
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS historical_salaries (
+          id serial PRIMARY KEY NOT NULL,
+          person_id integer NOT NULL,
+          year integer NOT NULL,
+          salary numeric(14, 2) NOT NULL,
+          bonus numeric(14, 2) DEFAULT '0' NOT NULL
+        )
+      `);
+      await client.query(`
+        DO $$ BEGIN
+          ALTER TABLE historical_salaries
+            ADD CONSTRAINT historical_salaries_person_id_people_id_fk
+            FOREIGN KEY (person_id) REFERENCES public.people(id)
+            ON DELETE cascade ON UPDATE no action;
+        EXCEPTION WHEN duplicate_object THEN NULL;
+        END $$
+      `);
+      await client.query(`
+        CREATE UNIQUE INDEX IF NOT EXISTS historical_salaries_person_year_idx
+          ON historical_salaries USING btree (person_id, year)
+      `);
+
+      const { rows: jobs } = await client.query<{
+        id: number;
+        person_id: number;
+        end_date: string | null;
+        end_year: number | null;
+        is_speculative: boolean;
+      }>(
+        `SELECT id, person_id, end_date, is_speculative,
+                EXTRACT(YEAR FROM end_date)::int AS end_year
+         FROM jobs`,
+      );
+      const jobById = new Map(jobs.map((j) => [j.id, j]));
+
+      // Year comes from SQL (EXTRACT), not a JS Date re-derivation — pg's
+      // driver parses a DATE column into a JS Date already shifted by the
+      // server's local timezone, so re-deriving the year via
+      // getUTCFullYear() disagrees with the year this same query's WHERE
+      // clause used for positive-UTC-offset zones (e.g. Jan 1 shifting into
+      // the prior UTC year). Selecting the year in SQL sidesteps the
+      // mismatch entirely instead of working around it in JS.
+      const { rows: pastChanges } = await client.query<{
+        job_id: number;
+        effective_date: string;
+        new_salary: string;
+        year: number;
+      }>(
+        `SELECT job_id, effective_date, new_salary,
+                EXTRACT(YEAR FROM effective_date)::int AS year
+         FROM salary_changes
+         WHERE EXTRACT(YEAR FROM effective_date) < $1
+         ORDER BY effective_date, job_id`,
+        [currentYear],
+      );
+      const { rows: pastOverrides } = await client.query<{
+        job_id: number;
+        year: number;
+        override_amount: string;
+      }>(
+        `SELECT job_id, year, override_amount FROM job_bonus_overrides WHERE year < $1`,
+        [currentYear],
+      );
+      const overrideMap = new Map(
+        pastOverrides.map((o) => [`${o.job_id}:${o.year}`, o.override_amount]),
+      );
+
+      // Per job, per year: the LAST (chronologically) change that landed in
+      // that year — `pastChanges` is ordered by effective_date, so a later
+      // iteration naturally overwrites an earlier same-year one.
+      const changesByJob = new Map<
+        number,
+        Map<number, { salary: string; effectiveDate: string }>
+      >();
+      for (const c of pastChanges) {
+        if (!changesByJob.has(c.job_id)) changesByJob.set(c.job_id, new Map());
+        changesByJob.get(c.job_id)!.set(c.year, {
+          salary: c.new_salary,
+          effectiveDate: c.effective_date,
+        });
+      }
+
+      // Resolve one winning (job, salary) per person per year, carrying a
+      // job's salary forward through years with no raise instead of
+      // leaving a gap, then pick the chronologically LATEST source across
+      // jobs when two jobs of the same person both cover a year (e.g. a
+      // same-year job change) — never "whichever job_id is higher".
+      const personYear = new Map<
+        number,
+        Map<number, { jobId: number; salary: string; effectiveDate: string }>
+      >();
+      for (const [jobId, yearMap] of changesByJob) {
+        const job = jobById.get(jobId);
+        if (!job || job.is_speculative) continue;
+        const years = [...yearMap.keys()].sort((a, b) => a - b);
+        if (years.length === 0) continue; // changesByJob always seeds >=1 entry; guard for TS
+        const firstYear = years[0]!;
+        // Carry forward through the job's own lifetime: up to its end year
+        // if it has ended, otherwise up to the last full (past) year —
+        // never past either bound, so an ended job's stale salary can't
+        // clobber a later job's real years.
+        const upperYear = Math.min(
+          job.end_year ?? currentYear - 1,
+          currentYear - 1,
+        );
+        if (upperYear < firstYear) continue;
+
+        if (!personYear.has(job.person_id))
+          personYear.set(job.person_id, new Map());
+        const yearsForPerson = personYear.get(job.person_id)!;
+
+        let carry = yearMap.get(firstYear)!;
+        for (let year = firstYear; year <= upperYear; year++) {
+          if (yearMap.has(year)) carry = yearMap.get(year)!;
+          const existing = yearsForPerson.get(year);
+          if (!existing || carry.effectiveDate > existing.effectiveDate) {
+            yearsForPerson.set(year, {
+              jobId,
+              salary: carry.salary,
+              effectiveDate: carry.effectiveDate,
+            });
+          }
+        }
+      }
+
+      let backfilled = 0;
+      for (const [personId, yearsMap] of personYear) {
+        for (const [year, info] of yearsMap) {
+          // Bonus attaches to the winning job's year regardless of whether
+          // that year also had an actual salary_changes row — a carried-
+          // forward (no-raise) year with its own bonus override still gets
+          // the bonus, instead of silently dropping it.
+          const bonus = overrideMap.get(`${info.jobId}:${year}`) ?? "0.00";
+          await client.query(
+            `INSERT INTO historical_salaries (person_id, year, salary, bonus)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (person_id, year) DO UPDATE SET salary = excluded.salary, bonus = excluded.bonus`,
+            [personId, year, info.salary, bonus],
+          );
+          backfilled++;
+        }
+      }
+
+      // "Live" salary per job = its most recent salary_changes row (any
+      // year, including the current one — what the job resolves to TODAY).
+      const { rows: allChanges } = await client.query<{
+        job_id: number;
+        new_salary: string;
+      }>(
+        "SELECT job_id, new_salary FROM salary_changes ORDER BY job_id, effective_date",
+      );
+      const liveSalaryByJob = new Map<number, string>();
+      for (const c of allChanges) liveSalaryByJob.set(c.job_id, c.new_salary);
+
+      const activeJobIds = new Set(
+        jobs
+          .filter((j) => !j.is_speculative && j.end_date === null)
+          .map((j) => j.id),
+      );
+
+      const { rows: profiles } = await client.query<{
+        id: number;
+        salaries: Record<
+          string,
+          {
+            salary?: number;
+            bonusPercent?: number;
+            bonusMultiplier?: number;
+            monthsInBonusYear?: number;
+          }
+        >;
+      }>("SELECT id, salaries FROM salary_profiles");
+
+      let convertedProfiles = 0;
+      for (const p of profiles) {
+        const next: Record<
+          string,
+          {
+            salary: number;
+            bonusPercent: number;
+            bonusMultiplier: number;
+            monthsInBonusYear: number;
+          }
+        > = {};
+        for (const [jobIdStr, entry] of Object.entries(p.salaries ?? {})) {
+          const jobId = Number(jobIdStr);
+          if (!activeJobIds.has(jobId)) continue;
+          // A profile entry pinning only bonus terms (no `salary`) on a job
+          // that also has no live salary_changes row has no real number to
+          // write — omit the entry entirely rather than fabricate
+          // `salary: 0`, which schema comments say is never a valid entry
+          // (a job either has ALL four fields or no key at all).
+          const resolvedSalary =
+            entry.salary ??
+            (liveSalaryByJob.has(jobId)
+              ? Number(liveSalaryByJob.get(jobId))
+              : undefined);
+          if (resolvedSalary === undefined) continue;
+          next[jobIdStr] = {
+            salary: resolvedSalary,
+            bonusPercent: entry.bonusPercent ?? 0,
+            bonusMultiplier: entry.bonusMultiplier ?? 1,
+            monthsInBonusYear: entry.monthsInBonusYear ?? 12,
+          };
+        }
+        await client.query(
+          "UPDATE salary_profiles SET salaries = $1 WHERE id = $2",
+          [JSON.stringify(next), p.id],
+        );
+        convertedProfiles++;
+      }
+
+      await client.query("COMMIT");
+      log("info", "historical_salaries_backfill_complete", {
+        historicalSalaryRowsWritten: backfilled,
+        salaryProfilesConverted: convertedProfiles,
+      });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    }
   } finally {
     client.release();
   }
@@ -451,12 +778,18 @@ async function runPostgres() {
         recorded.map((r: { hash: string }) => r.hash),
       );
       const crypto = await import("crypto");
+      // See the matching comment in handleSquashUpgrade above — this loop
+      // has the identical "replay a migration whose hash isn't recorded yet
+      // against a DB that may already be past it" shape, so it needs the
+      // same undefined_column/undefined_table tolerance.
       const IGNORABLE_PG_CODES = new Set([
         "42701", // duplicate_column
         "42P07", // duplicate_table
         "42710", // duplicate_object (index, constraint, etc.)
         "42704", // undefined_object (DROP CONSTRAINT/INDEX on missing object)
         "23505", // unique_violation
+        "42703", // undefined_column — already renamed/dropped by a later migration
+        "42P01", // undefined_table — already renamed/dropped by a later migration
       ]);
       for (const entry of journal.entries) {
         const sqlPath = path.resolve(`./drizzle/${entry.tag}.sql`);
@@ -464,6 +797,28 @@ async function runPostgres() {
         const sql = fs.readFileSync(sqlPath, "utf-8");
         const hash = crypto.createHash("sha256").update(sql).digest("hex");
         if (recordedHashes.has(hash)) continue;
+        // Must run AFTER the schema is caught up through 0015 (jobs.
+        // is_speculative from 0013, historical_salaries from 0015) but
+        // BEFORE 0016 drops salary_changes/job_bonus_overrides — a deploy
+        // can be arbitrarily far behind, not just missing 0015/0016, so
+        // this can't run once up front (see backfillHistoricalSalaries's
+        // docblock; this ordering bug shipped once already — surfaced on
+        // the demo canary, never reached prod).
+        if (entry.tag === "0016_drop_salary_ledger_tables") {
+          // 0016 permanently DROP TABLEs salary_changes/job_bonus_overrides
+          // (CASCADE) and the backfill above it in-place rewrites every
+          // salary_profiles row — unlike the squash-recovery path (which
+          // already took this same backup at squash-detection time), this
+          // normal idempotent-apply path has no backup yet. Take one now,
+          // reusing the exact same JSON-snapshot logic handleSquashUpgrade
+          // uses, so a normal deploy gets the same safety net before this
+          // one genuinely destructive migration.
+          await writePreMigrationBackupPg(
+            preClient,
+            "pre_0016_drop_salary_ledger_tables",
+          );
+          await backfillHistoricalSalaries(pool);
+        }
         const statements = sql
           .split("--> statement-breakpoint")
           .map((s: string) => s.trim())
@@ -605,6 +960,56 @@ async function runPostgres() {
 }
 
 /**
+ * SQLite twin of writePreMigrationBackupPg (see its docblock) — same
+ * VERSION_TABLE_NAMES snapshot, same JSON shape, same call sites (squash
+ * detection, and the normal pre-apply loop's pre-0016 backup).
+ */
+function writePreMigrationBackupSQLite(
+  sqlite: InstanceType<typeof import("better-sqlite3")>,
+  schemaVersion: string,
+): string | null {
+  const tables: Record<string, unknown[]> = {};
+  for (const tableName of VERSION_TABLE_NAMES) {
+    try {
+      tables[tableName] = sqlite.prepare(`SELECT * FROM "${tableName}"`).all();
+    } catch {
+      tables[tableName] = [];
+    }
+  }
+
+  const backup = {
+    schemaVersion,
+    exportedAt: new Date().toISOString(),
+    preUpgradeBackup: true,
+    tables,
+  };
+
+  try {
+    const backupDir = fs.existsSync("/app/data") ? "/app/data" : ".";
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const backupPath = path.join(
+      backupDir,
+      `pre-upgrade-backup-${timestamp}.json`,
+    );
+    fs.writeFileSync(backupPath, JSON.stringify(backup));
+    log("info", "pre_migration_backup_complete", {
+      path: backupPath,
+      tableCount: Object.keys(tables).length,
+      totalRows: Object.values(tables).reduce(
+        (sum, rows) => sum + rows.length,
+        0,
+      ),
+    });
+    return backupPath;
+  } catch (backupErr) {
+    log("warn", "pre_migration_backup_write_failed", {
+      error: backupErr instanceof Error ? backupErr.message : String(backupErr),
+    });
+    return null;
+  }
+}
+
+/**
  * Handle SQLite squash upgrade: same logic as PG but using better-sqlite3 API.
  * Detects squash, creates backup, clears old journal, applies migration
  * idempotently, and records the hash so Drizzle's migrate() is a no-op.
@@ -734,42 +1139,7 @@ function handleSQLiteSquashUpgrade(
   });
 
   // 1. Export backup
-  const tables: Record<string, unknown[]> = {};
-  for (const tableName of VERSION_TABLE_NAMES) {
-    try {
-      tables[tableName] = sqlite.prepare(`SELECT * FROM "${tableName}"`).all();
-    } catch {
-      tables[tableName] = [];
-    }
-  }
-
-  const backup = {
-    schemaVersion,
-    exportedAt: new Date().toISOString(),
-    preUpgradeBackup: true,
-    tables,
-  };
-
-  let backupPath: string | null = null;
-  try {
-    const backupDir = fs.existsSync("/app/data") ? "/app/data" : ".";
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    backupPath = path.join(backupDir, `pre-upgrade-backup-${timestamp}.json`);
-    fs.writeFileSync(backupPath, JSON.stringify(backup));
-    log("info", "pre_migration_backup_complete", {
-      path: backupPath,
-      tableCount: Object.keys(tables).length,
-      totalRows: Object.values(tables).reduce(
-        (sum, rows) => sum + rows.length,
-        0,
-      ),
-    });
-  } catch (backupErr) {
-    log("warn", "pre_migration_backup_write_failed", {
-      error: backupErr instanceof Error ? backupErr.message : String(backupErr),
-    });
-    backupPath = null;
-  }
+  const backupPath = writePreMigrationBackupSQLite(sqlite, schemaVersion);
 
   // 2. Clear old journal
   sqlite.prepare("DELETE FROM __drizzle_migrations").run();
@@ -783,6 +1153,13 @@ function handleSQLiteSquashUpgrade(
     const sql = fs.readFileSync(sqlPath, "utf-8");
     const hash = crypto.createHash("sha256").update(sql).digest("hex");
 
+    // See the matching comment in runPostgres's idempotent pre-apply loop
+    // — must run after the schema is caught up through 0015 but before
+    // 0016 drops the source tables, wherever that lands in this replay.
+    if (entry.tag === "0016_drop_salary_ledger_tables") {
+      backfillHistoricalSalariesSQLite(sqlite);
+    }
+
     const statements = sql
       .split("--> statement-breakpoint")
       .map((s: string) => s.trim())
@@ -795,9 +1172,17 @@ function handleSQLiteSquashUpgrade(
         } catch (stmtErr) {
           const msg = (stmtErr as Error).message ?? "";
           // SQLite: "table X already exists", "duplicate column name", etc.
+          // "no such column"/"no such table" is the mirror-image case — a
+          // later migration already renamed/dropped what this (older,
+          // blindly-replayed) migration is trying to touch. See the
+          // matching IGNORABLE_PG_CODES comment in handleSquashUpgrade
+          // above for why both directions are benign here.
           if (
             msg.includes("already exists") ||
-            msg.includes("duplicate column")
+            msg.includes("duplicate column") ||
+            msg.includes("no such column") ||
+            msg.includes("no such table") ||
+            msg.includes("no such index")
           ) {
             // Idempotent — ignore
           } else {
@@ -817,6 +1202,223 @@ function handleSQLiteSquashUpgrade(
 
   log("info", "sqlite_squash_upgrade_complete", { schemaVersion });
   return backupPath;
+}
+
+/**
+ * SQLite twin of backfillHistoricalSalaries (see its docblock above) — same
+ * gate (skip if `salary_changes` doesn't exist), same logic, same
+ * call-it-immediately-before-0016-within-the-loop timing requirement.
+ */
+export function backfillHistoricalSalariesSQLite(
+  sqlite: InstanceType<typeof import("better-sqlite3")>,
+): void {
+  const tableCheck = sqlite
+    .prepare(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='salary_changes'",
+    )
+    .get();
+  if (!tableCheck) return;
+
+  const currentYear = new Date().getFullYear();
+
+  const tx = sqlite.transaction(() => {
+    // See the matching comment in backfillHistoricalSalaries (pg) — 0015
+    // may not have run yet on a deploy starting further behind than dev.
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS historical_salaries (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        person_id integer NOT NULL REFERENCES people(id) ON DELETE cascade,
+        year integer NOT NULL,
+        salary text NOT NULL,
+        bonus text DEFAULT '0' NOT NULL
+      )
+    `);
+    sqlite.exec(`
+      CREATE UNIQUE INDEX IF NOT EXISTS historical_salaries_person_year_idx
+        ON historical_salaries (person_id, year)
+    `);
+
+    type JobRow = {
+      id: number;
+      person_id: number;
+      end_date: string | null;
+      end_year: number | null;
+      is_speculative: number;
+    };
+    const jobs = sqlite
+      .prepare(
+        `SELECT id, person_id, end_date, is_speculative,
+                CAST(strftime('%Y', end_date) AS INTEGER) AS end_year
+         FROM jobs`,
+      )
+      .all() as JobRow[];
+    const jobById = new Map(jobs.map((j) => [j.id, j]));
+
+    // Year comes from SQL (strftime), matching the pg twin — see its
+    // comment for why re-deriving the year from a parsed JS Date is
+    // timezone-dependent and must not be done here either, even though
+    // SQLite's driver doesn't itself shift the string.
+    type ChangeRow = {
+      job_id: number;
+      effective_date: string;
+      new_salary: string;
+      year: number;
+    };
+    const pastChanges = sqlite
+      .prepare(
+        "SELECT job_id, effective_date, new_salary, CAST(strftime('%Y', effective_date) AS INTEGER) AS year FROM salary_changes WHERE CAST(strftime('%Y', effective_date) AS INTEGER) < ? ORDER BY effective_date, job_id",
+      )
+      .all(currentYear) as ChangeRow[];
+    type OverrideRow = {
+      job_id: number;
+      year: number;
+      override_amount: string;
+    };
+    const pastOverrides = sqlite
+      .prepare(
+        "SELECT job_id, year, override_amount FROM job_bonus_overrides WHERE year < ?",
+      )
+      .all(currentYear) as OverrideRow[];
+    const overrideMap = new Map(
+      pastOverrides.map((o) => [`${o.job_id}:${o.year}`, o.override_amount]),
+    );
+
+    // Per job, per year: the LAST (chronologically) change that landed in
+    // that year.
+    const changesByJob = new Map<
+      number,
+      Map<number, { salary: string; effectiveDate: string }>
+    >();
+    for (const c of pastChanges) {
+      if (!changesByJob.has(c.job_id)) changesByJob.set(c.job_id, new Map());
+      changesByJob
+        .get(c.job_id)!
+        .set(c.year, { salary: c.new_salary, effectiveDate: c.effective_date });
+    }
+
+    // Resolve one winning (job, salary) per person per year — carry a
+    // job's salary forward through no-raise years, and when two jobs of
+    // the same person cover the same year (e.g. a same-year job change),
+    // keep the chronologically LATEST source, never "highest job_id".
+    const personYear = new Map<
+      number,
+      Map<number, { jobId: number; salary: string; effectiveDate: string }>
+    >();
+    for (const [jobId, yearMap] of changesByJob) {
+      const job = jobById.get(jobId);
+      if (!job || job.is_speculative) continue;
+      const years = [...yearMap.keys()].sort((a, b) => a - b);
+      if (years.length === 0) continue;
+      const firstYear = years[0]!;
+      const upperYear = Math.min(
+        job.end_year ?? currentYear - 1,
+        currentYear - 1,
+      );
+      if (upperYear < firstYear) continue;
+
+      if (!personYear.has(job.person_id))
+        personYear.set(job.person_id, new Map());
+      const yearsForPerson = personYear.get(job.person_id)!;
+
+      let carry = yearMap.get(firstYear)!;
+      for (let year = firstYear; year <= upperYear; year++) {
+        if (yearMap.has(year)) carry = yearMap.get(year)!;
+        const existing = yearsForPerson.get(year);
+        if (!existing || carry.effectiveDate > existing.effectiveDate) {
+          yearsForPerson.set(year, {
+            jobId,
+            salary: carry.salary,
+            effectiveDate: carry.effectiveDate,
+          });
+        }
+      }
+    }
+
+    const upsertHist = sqlite.prepare(`
+      INSERT INTO historical_salaries (person_id, year, salary, bonus)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT (person_id, year) DO UPDATE SET salary = excluded.salary, bonus = excluded.bonus
+    `);
+    let backfilled = 0;
+    for (const [personId, yearsMap] of personYear) {
+      for (const [year, info] of yearsMap) {
+        const bonus = overrideMap.get(`${info.jobId}:${year}`) ?? "0.00";
+        upsertHist.run(personId, year, info.salary, bonus);
+        backfilled++;
+      }
+    }
+
+    const allChanges = sqlite
+      .prepare(
+        "SELECT job_id, new_salary FROM salary_changes ORDER BY job_id, effective_date",
+      )
+      .all() as { job_id: number; new_salary: string }[];
+    const liveSalaryByJob = new Map<number, string>();
+    for (const c of allChanges) liveSalaryByJob.set(c.job_id, c.new_salary);
+
+    const activeJobIds = new Set(
+      jobs
+        .filter((j) => !j.is_speculative && j.end_date === null)
+        .map((j) => j.id),
+    );
+
+    type ProfileRow = { id: number; salaries: string };
+    const profiles = sqlite
+      .prepare("SELECT id, salaries FROM salary_profiles")
+      .all() as ProfileRow[];
+    const updateProfile = sqlite.prepare(
+      "UPDATE salary_profiles SET salaries = ? WHERE id = ?",
+    );
+    let convertedProfiles = 0;
+    for (const p of profiles) {
+      const salaries = JSON.parse(p.salaries || "{}") as Record<
+        string,
+        {
+          salary?: number;
+          bonusPercent?: number;
+          bonusMultiplier?: number;
+          monthsInBonusYear?: number;
+        }
+      >;
+      const next: Record<
+        string,
+        {
+          salary: number;
+          bonusPercent: number;
+          bonusMultiplier: number;
+          monthsInBonusYear: number;
+        }
+      > = {};
+      for (const [jobIdStr, entry] of Object.entries(salaries)) {
+        const jobId = Number(jobIdStr);
+        if (!activeJobIds.has(jobId)) continue;
+        // See the matching comment in backfillHistoricalSalaries (pg) —
+        // omit rather than fabricate `salary: 0` when neither the pin nor
+        // a live salary_changes row has a real number.
+        const resolvedSalary =
+          entry.salary ??
+          (liveSalaryByJob.has(jobId)
+            ? Number(liveSalaryByJob.get(jobId))
+            : undefined);
+        if (resolvedSalary === undefined) continue;
+        next[jobIdStr] = {
+          salary: resolvedSalary,
+          bonusPercent: entry.bonusPercent ?? 0,
+          bonusMultiplier: entry.bonusMultiplier ?? 1,
+          monthsInBonusYear: entry.monthsInBonusYear ?? 12,
+        };
+      }
+      updateProfile.run(JSON.stringify(next), p.id);
+      convertedProfiles++;
+    }
+
+    log("info", "historical_salaries_backfill_complete", {
+      dialect: "sqlite",
+      historicalSalaryRowsWritten: backfilled,
+      salaryProfilesConverted: convertedProfiles,
+    });
+  });
+  tx();
 }
 
 function runSQLite() {
@@ -874,6 +1476,20 @@ function runSQLite() {
       const sql = fs.readFileSync(sqlPath, "utf-8");
       const hash = crypto.createHash("sha256").update(sql).digest("hex");
       if (appliedHashes.has(hash)) continue;
+      // See the matching comment in runPostgres's idempotent pre-apply loop
+      // — must run after the schema is caught up through 0015 but before
+      // 0016 drops the source tables, wherever that lands in this replay.
+      if (entry.tag === "0016_drop_salary_ledger_tables") {
+        // Same reasoning as the Postgres normal pre-apply loop: this path
+        // (unlike squash recovery, which already backed up at squash
+        // detection) has no backup yet before 0016's destructive DROP
+        // TABLEs. Take one now with the same snapshot logic.
+        writePreMigrationBackupSQLite(
+          sqlite,
+          "pre_0016_drop_salary_ledger_tables",
+        );
+        backfillHistoricalSalariesSQLite(sqlite);
+      }
       const statements = sql
         .split("--> statement-breakpoint")
         .map((s: string) => s.trim())
@@ -886,7 +1502,10 @@ function runSQLite() {
             const msg = (stmtErr as Error).message ?? "";
             if (
               msg.includes("already exists") ||
-              msg.includes("duplicate column")
+              msg.includes("duplicate column") ||
+              msg.includes("no such column") ||
+              msg.includes("no such table") ||
+              msg.includes("no such index")
             ) {
               // idempotent — skip
             } else {
@@ -978,4 +1597,12 @@ async function run() {
   }
 }
 
-run();
+// Guard the top-level side effect so this file can be imported for its
+// exported functions (e.g. backfillHistoricalSalariesSQLite, from
+// tests/db/historical-salaries-backfill-migration.test.ts) without actually
+// running a migration. Vitest sets VITEST=true for every test process; the
+// real deploy entry point (`tsx db-migrate.ts`) never sets it, so this is a
+// no-op for the actual migration pipeline.
+if (!process.env.VITEST) {
+  run();
+}

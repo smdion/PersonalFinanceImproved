@@ -5,7 +5,6 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import {
   calculatePaycheck,
-  mapSalaryTimelineToPeriods,
   calculateBlendedAnnual,
 } from "@/lib/calculators/paycheck";
 import type { SalarySegment } from "@/lib/calculators/paycheck";
@@ -15,28 +14,23 @@ import {
   getPeriodsPerYear,
   getRegularPeriodsPerMonth,
   getBudgetFrequencyNote,
-  getCurrentSalary,
-  getFutureSalaryChanges,
-  getBonusOverridesForJobs,
+  resolveCompensation,
+  applyActiveSalary,
+  applyActiveBonusTerms,
   buildContribAccounts,
   requireLimit,
   loadAndApplyContribProfile,
-  loadAndApplySalaryProfile,
-  applySalaryOverride,
-  resolveBonusTerms,
-  applyContribOverrides,
+  loadEffectiveSalaryProfile,
+  applyContribActiveFields,
   buildSandboxContribRow,
 } from "@/server/helpers";
+import { applySandboxSalaryEntries } from "@/server/helpers/salary";
 import {
-  getSalaryTimelineForYear,
-  applySandboxSalaryEntries,
-} from "@/server/helpers/salary";
-import {
-  toSalaryOverrideMap,
+  toSalaryActiveMap,
   zSandboxSalaryEntries,
   zSandboxDeductionEdits,
   zSandboxDeductionAdditions,
-  zSandboxContribOverrides,
+  zSandboxContribActiveFields,
   zSandboxContribAdditions,
 } from "./_shared";
 import type {
@@ -84,7 +78,7 @@ export const paycheckRouter = createTRPCRouter({
     .input(
       z
         .object({
-          salaryOverrides: z
+          salaryActiveFields: z
             .array(z.object({ personId: z.number(), salary: z.number() }))
             .optional(),
           taxYearOverride: z.number().int().optional(),
@@ -100,8 +94,8 @@ export const paycheckRouter = createTRPCRouter({
           sandboxDeductionAdditions: zSandboxDeductionAdditions,
           /** The What-If tab's hand-edited contribution account values —
            *  one more layer on top of the picked Contribution Profile's own
-           *  overrides, via the SAME applyContribOverrides merge. */
-          sandboxContribOverrides: zSandboxContribOverrides,
+           *  overrides, via the SAME applyContribActiveFields merge. */
+          sandboxContribActiveFields: zSandboxContribActiveFields,
           /** The What-If tab's hand-added hypothetical contribution
            *  accounts — no DB row, personId-keyed. */
           sandboxContribAdditions: zSandboxContribAdditions,
@@ -109,7 +103,7 @@ export const paycheckRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      const salaryOverrideMap = toSalaryOverrideMap(input?.salaryOverrides);
+      const salaryActiveMap = toSalaryActiveMap(input?.salaryActiveFields);
       const deductionEditMap = new Map(
         (input?.sandboxDeductionEdits ?? []).map((e) => [
           e.id,
@@ -150,15 +144,16 @@ export const paycheckRouter = createTRPCRouter({
 
       // Salary and contribution overrides are two independent axes.
       // Precedence for salary: Plan/session overrides (already in the map,
-      // highest) > Salary Profile > live DB salary. The Contribution Profile
-      // contributes no salary at all — only account/job field overrides.
+      // highest) > Salary Profile. The Contribution Profile contributes no
+      // salary at all — only account/job field overrides. No explicit
+      // salaryProfileId falls back to the globally-active profile.
       const effectiveSalaryMap = applySandboxSalaryEntries(
         input?.sandboxSalaryEntries,
-        await loadAndApplySalaryProfile(
-          ctx.db,
-          input?.salaryProfileId,
-          salaryOverrideMap,
-        ),
+        salaryActiveMap,
+      );
+      const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
+        ctx.db,
+        input?.salaryProfileId,
       );
       const profileResult = await loadAndApplyContribProfile(
         ctx.db,
@@ -169,9 +164,10 @@ export const paycheckRouter = createTRPCRouter({
       // The What-If tab's sandbox edits are the highest-precedence tier,
       // applied AFTER the picked profile's own overrides — same merge
       // function, one more layer, never a second resolution path.
-      const effectiveContribs = applyContribOverrides(
+      const effectiveContribs = applyContribActiveFields(
         profileResult.contribs,
-        input?.sandboxContribOverrides ?? {},
+        input?.sandboxContribActiveFields ?? {},
+        true,
       );
       // Hypothetical additions have no DB row — appended for the duration
       // of this request only, never written anywhere. Negative ids can
@@ -184,13 +180,7 @@ export const paycheckRouter = createTRPCRouter({
       const effectiveJobs = profileResult.jobs;
 
       const asOfDate = new Date();
-      const bonusOverrides = await getBonusOverridesForJobs(
-        ctx.db,
-        effectiveJobs.map((j) => j.id),
-      );
-      const asOfYear = asOfDate.getFullYear();
 
-      // Use Promise.all since getCurrentSalary is async
       const results = await Promise.all(
         people.map(async (person) => {
           const activeJob = findActiveJob(effectiveJobs, person.id);
@@ -199,26 +189,13 @@ export const paycheckRouter = createTRPCRouter({
               person,
               job: null,
               salary: 0,
-              futureSalaryChanges: [],
               paycheck: null,
               tax: null,
               rawDeductions: [],
               rawContribs: [],
             };
           }
-          // Synthesized display field — not a DB column — so existing UI
-          // plumbing can keep reading job.bonusOverride as "this year's
-          // pinned bonus, if any" without knowing about the year-scoped
-          // job_bonus_overrides table underneath.
-          const resolvedBonusOverrideForClient =
-            bonusOverrides.get(`${activeJob.id}:${asOfYear}`) ?? null;
-          const jobForClient = {
-            ...activeJob,
-            bonusOverride:
-              resolvedBonusOverrideForClient !== null
-                ? resolvedBonusOverrideForClient.toFixed(2)
-                : null,
-          };
+          const jobForClient = activeJob;
 
           const bracketRow = allBrackets.find(
             (b) =>
@@ -230,7 +207,6 @@ export const paycheckRouter = createTRPCRouter({
               person,
               job: jobForClient,
               salary: 0,
-              futureSalaryChanges: [],
               paycheck: null,
               tax: null,
               rawDeductions: [],
@@ -238,21 +214,14 @@ export const paycheckRouter = createTRPCRouter({
             };
           }
 
-          const futureSalaryChanges = await getFutureSalaryChanges(
-            ctx.db,
+          // A job has no salary/bonus of its own — resolve against the
+          // Salary Profile, then the Plan/session + What-If sandbox tiers.
+          const comp = resolveCompensation(
+            salaryProfileActiveMap,
             activeJob.id,
-            asOfDate,
           );
-          // Plan/Salary-Profile override wins, else current salary
-          // from salary_changes (falls back to job starting salary).
-          const overrideSalary = effectiveSalaryMap.get(person.id);
-          const dbSalary = await getCurrentSalary(
-            ctx.db,
-            activeJob.id,
-            activeJob.annualSalary,
-            asOfDate,
-          );
-          const salary = applySalaryOverride(
+          const dbSalary = comp.salary;
+          const salary = applyActiveSalary(
             person.id,
             dbSalary,
             effectiveSalaryMap,
@@ -304,14 +273,13 @@ export const paycheckRouter = createTRPCRouter({
             periodsPerYear,
           );
 
-          // A Salary Profile pin on bonus terms is independent of a salary
-          // pin — resolveBonusTerms overlays whichever of bonusPercent/
-          // bonusMultiplier/monthsInBonusYear the profile pins onto the
-          // job's live values, same as resolveCompensation does for the
-          // Salary Profile editor. Reading activeJob's raw fields here
-          // silently ignored a pinned bonus for a pinned-or-unpinned salary
-          // alike.
-          const bonusTerms = resolveBonusTerms(activeJob, overrideSalary);
+          // The What-If sandbox can override bonus terms independently of
+          // salary — same per-field precedence as the salary merge above.
+          const personBonusEntry = effectiveSalaryMap.get(person.id);
+          const bonusTerms = applyActiveBonusTerms(
+            personBonusEntry,
+            comp.terms,
+          );
 
           const paycheckInput: PaycheckInput = {
             annualSalary: salary,
@@ -330,9 +298,18 @@ export const paycheckRouter = createTRPCRouter({
             limits: limitsRecord,
             ytdGrossEarnings: 0,
             bonusPercent: toNumber(bonusTerms.bonusPercent),
-            bonusMultiplier: toNumber(bonusTerms.bonusMultiplier),
-            bonusOverride:
-              bonusOverrides.get(`${activeJob.id}:${asOfYear}`) ?? null,
+            // A stored 0 is a real "no bonus this cycle" value; only a
+            // genuinely unset (null) multiplier defaults to 1× — see
+            // computeBonusGross's identical distinction.
+            bonusMultiplier:
+              bonusTerms.bonusMultiplier === null
+                ? 1
+                : toNumber(bonusTerms.bonusMultiplier),
+            // This year's actual paid-out bonus, if pinned on the Salary
+            // Profile entry — see SalaryProfileEntry.bonusOverride's
+            // docblock. Never flows into growth/projection math; only this
+            // live paycheck display reads it.
+            bonusOverride: comp.bonusOverride,
             monthsInBonusYear: bonusTerms.monthsInBonusYear ?? 12,
             includeContribInBonus: activeJob.include401kInBonus,
             bonusMonth: activeJob.bonusMonth,
@@ -341,70 +318,32 @@ export const paycheckRouter = createTRPCRouter({
           };
 
           const paycheck = calculatePaycheck(paycheckInput);
-          // Full-formula bonus, ignoring any current-year pin — lets the UI
-          // show "target" (nominal formula) alongside "actual" (resolved/
-          // pinned) instead of only ever showing the resolved value.
+          // The nominal formula figure, ignoring any current-year pin — lets
+          // the UI show "target" (formula) alongside "actual" (resolved)
+          // instead of only ever showing the resolved value.
           const fullFormulaBonusEstimate =
             paycheckInput.bonusOverride !== null
               ? calculatePaycheck({ ...paycheckInput, bonusOverride: null })
                   .bonusEstimate
               : paycheck.bonusEstimate;
 
-          // Blended annual computation — accounts for mid-year salary changes.
-          // Skip when a salary override is active (future salary preview toggle)
-          // since blended doesn't make sense with an overridden salary. A
-          // Salary-Profile-pinned bonus with no salary pin is not a salary
-          // override — overrideSalary is a SalaryProfileEntry object now, so
-          // checking its truthiness alone would also skip blending whenever
-          // only bonus terms are pinned.
+          // Blended annual computation. Salary is a flat number under the
+          // active Salary Profile — no mid-year timeline to blend across
+          // any more (see resolveCompensation's docblock), so this is
+          // always a single segment spanning the whole year; what's left of
+          // "blended" is folding in actual YTD performance data below.
           let blendedAnnual: BlendedAnnualTotals | null = null;
-          if (overrideSalary?.salary === undefined) {
+          {
             const currentYear = taxYear;
-            const anchorPayDate = new Date(
-              activeJob.anchorPayDate ?? activeJob.startDate,
-            );
-            const timeline = await getSalaryTimelineForYear(
-              ctx.db,
-              activeJob.id,
-              activeJob.annualSalary,
-              currentYear,
-            );
-            const periodSegments = mapSalaryTimelineToPeriods(
-              timeline,
-              activeJob.payPeriod,
-              anchorPayDate,
-              currentYear,
-            );
-
-            const salarySegments: SalarySegment[] = periodSegments.map(
-              (seg) => {
-                let segPaycheck: typeof paycheck;
-                if (seg.salary === salary) {
-                  // Same salary as current — reuse the already-computed paycheck
-                  segPaycheck = paycheck;
-                } else {
-                  // Different salary — rebuild contributions and recompute
-                  const segContribs = buildContribAccounts(
-                    jobContribs,
-                    personalContribs,
-                    seg.salary,
-                    periodsPerYear,
-                  );
-                  segPaycheck = calculatePaycheck({
-                    ...paycheckInput,
-                    annualSalary: seg.salary,
-                    contributionAccounts: segContribs,
-                  });
-                }
-                return {
-                  salary: seg.salary,
-                  effectiveDate: seg.effectiveDate,
-                  startPeriod: seg.startPeriod,
-                  endPeriod: seg.endPeriod,
-                  paycheck: segPaycheck,
-                };
+            const salarySegments: SalarySegment[] = [
+              {
+                salary,
+                effectiveDate: null,
+                startPeriod: 1,
+                endPeriod: periodsPerYear,
+                paycheck,
               },
-            );
+            ];
 
             blendedAnnual = calculateBlendedAnnual(
               salarySegments,
@@ -485,18 +424,23 @@ export const paycheckRouter = createTRPCRouter({
             person,
             job: jobForClient,
             salary,
-            /** The bonus terms actually in effect (Salary Profile pin, if
-             *  any, else the job record) — as numbers, for clients (e.g.
-             *  the What-If tab's editor) that need to pre-fill from the
-             *  resolved value rather than `job`'s raw, profile-unaware
+            /** The bonus terms actually in effect (the active Salary
+             *  Profile's resolved terms, with the What-If sandbox's own
+             *  edits layered on top — never a job fallback, jobs carry no
+             *  bonus terms of their own any more) — as numbers, for clients
+             *  (e.g. the What-If tab's editor) that need to pre-fill from
+             *  the resolved value rather than `job`'s raw, profile-unaware
              *  fields. Mirrors what `salary` already does for the salary
              *  axis. */
             resolvedBonusTerms: {
               bonusPercent: toNumber(bonusTerms.bonusPercent),
-              bonusMultiplier: toNumber(bonusTerms.bonusMultiplier) || 1,
+              bonusMultiplier:
+                bonusTerms.bonusMultiplier === null
+                  ? 1
+                  : toNumber(bonusTerms.bonusMultiplier),
               monthsInBonusYear: bonusTerms.monthsInBonusYear ?? 12,
+              bonusOverride: comp.bonusOverride,
             },
-            futureSalaryChanges,
             paycheck,
             fullFormulaBonusEstimate,
             blendedAnnual,

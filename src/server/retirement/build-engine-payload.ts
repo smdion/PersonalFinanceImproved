@@ -18,12 +18,10 @@ import { eq, asc, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import {
   toNumber,
-  getSalariesForJobs,
-  getCurrentSalary,
   getEffectiveIncome,
   getTotalCompensation,
-  getBonusOverridesForJobs,
-  applySalaryOverride,
+  applyActiveSalary,
+  applyActiveBonusTerms,
   getLatestSnapshot,
   computeBudgetAnnualTotal,
   requireLimit,
@@ -32,15 +30,15 @@ import {
   applyContribProfileRow,
   loadAndApplyContribProfile,
   applySalaryProfileRow,
-  loadAndApplySalaryProfile,
-  pinnedFields,
+  loadEffectiveSalaryProfile,
   resolveCompensation,
   resolveProfile,
   buildProfileContribData,
   getPrimaryPerson,
   pickActiveBudgetProfile,
+  resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
-import type { SalaryEntryMap } from "@/server/helpers";
+import type { SalaryEntryMap, SalaryProfileEntry } from "@/server/helpers";
 import type {
   TaxBuckets,
   AccountBalances,
@@ -73,6 +71,7 @@ import {
   incomeCapForMarginalRate,
 } from "@/lib/calculators/engine";
 import type { db as _db } from "@/lib/db";
+import { findActiveJob, filterActiveJobs } from "@/lib/pure/profiles";
 
 type Db = typeof _db;
 
@@ -215,7 +214,7 @@ export async function buildEnginePayload(
   db: Db,
   data: Awaited<ReturnType<typeof fetchRetirementData>>,
   opts: {
-    salaryOverrides?: { personId: number; salary: number }[];
+    salaryActiveFields?: { personId: number; salary: number }[];
     contributionProfileId?: number;
     salaryProfileId?: number;
     accumulationBudgetProfileId?: number;
@@ -270,11 +269,10 @@ export async function buildEnginePayload(
   if (!settings) return null;
 
   // Get filing status from primary person's active job, then find matching tax brackets
-  const primaryActiveJobs = patchedJobs.filter(
-    (j) => !j.endDate && j.personId === primaryPerson.id,
-  );
   const filingStatus =
-    settings.filingStatus ?? primaryActiveJobs[0]?.w4FilingStatus ?? "MFJ";
+    settings.filingStatus ??
+    findActiveJob(patchedJobs, primaryPerson.id)?.w4FilingStatus ??
+    "MFJ";
   const latestTaxYear =
     allTaxBrackets.length > 0
       ? Math.max(...allTaxBrackets.map((b) => b.taxYear))
@@ -327,126 +325,96 @@ export async function buildEnginePayload(
       : avgRetirementAge;
   const maxEndAge = Math.max(...perPersonSettings.map((p) => p.endAge));
 
-  // Budget profile summaries (for budget override "from profile" UI)
-  const budgetProfileSummaries = allBudgetProfiles.map((p) => {
-    const items = allBudgetItems.filter((i) => i.profileId === p.id);
-    const labels = p.columnLabels as string[];
-    const months = (p.columnMonths as number[] | null) ?? null;
-    const totals = labels.map((_: string, colIdx: number) =>
-      sumBy(items, (item) => (item.amounts as number[])[colIdx] ?? 0),
-    );
-    const weightedAnnualTotal = months
-      ? roundToCents(
-          sumBy(
-            totals.map((t, i) => t * (months[i] ?? 0)),
-            (v) => v,
-          ),
-        )
-      : null;
-    return {
-      id: p.id,
-      name: p.name,
-      isActive: p.isActive,
-      columnLabels: labels,
-      columnMonths: months,
-      columnTotals: totals,
-      weightedAnnualTotal,
-    };
-  });
+  // Budget profile summaries (for budget override "from profile" UI) — each
+  // linked item's dollar amount resolved through the same contribution-
+  // account chain computeActiveSummary uses (see resolveLinkedBudgetItemAmounts),
+  // not the raw `amounts` column, which is intentionally left stale for
+  // linked items and would silently undercount them here.
+  const budgetProfileSummaries = await Promise.all(
+    allBudgetProfiles.map(async (p) => {
+      const items = allBudgetItems.filter((i) => i.profileId === p.id);
+      const labels = p.columnLabels as string[];
+      const months = (p.columnMonths as number[] | null) ?? null;
+      const numColumns = labels.length;
+      const resolvedItems = await resolveLinkedBudgetItemAmounts(
+        db,
+        items,
+        numColumns,
+        new Array(numColumns).fill(opts.contributionProfileId ?? null),
+        new Array(numColumns).fill(opts.salaryProfileId ?? null),
+      );
+      const totals = labels.map((_: string, colIdx: number) =>
+        sumBy(resolvedItems, (item) => item.amounts[colIdx] ?? 0),
+      );
+      const weightedAnnualTotal = months
+        ? roundToCents(
+            sumBy(
+              totals.map((t, i) => t * (months[i] ?? 0)),
+              (v) => v,
+            ),
+          )
+        : null;
+      return {
+        id: p.id,
+        name: p.name,
+        isActive: p.isActive,
+        columnLabels: labels,
+        columnMonths: months,
+        columnTotals: totals,
+        weightedAnnualTotal,
+      };
+    }),
+  );
 
   // Age (average-based for multi-person households)
   const age = avgAge;
 
   // Salary
-  // Explicit UI overrides take priority, then the Salary Profile, then DB.
+  // Explicit UI active values take priority, then the Salary Profile, then DB.
   // The Contribution Profile applied above contributes no salary — the two
   // axes are independent pins.
-  const uiSalaryOverrideMap = new Map(
-    (opts.salaryOverrides ?? []).map(
+  const uiSalaryActiveMap = new Map(
+    (opts.salaryActiveFields ?? []).map(
       (o) => [o.personId, { salary: o.salary }] as const,
     ),
   );
   // C6: prefer the batch-fetched row when fetchRetirementData was given the
   // id; fall back to the async fetch for callers that only pass it here.
-  const salaryOverrideMap =
+  // Job-targeted (Salary Profile pins) — separate from uiSalaryActiveMap
+  // (person-targeted, Plan/session tier, always wins per field).
+  const salaryProfileActiveMap =
     data.salaryProfileRow !== undefined
-      ? applySalaryProfileRow(data.salaryProfileRow, uiSalaryOverrideMap)
-      : await loadAndApplySalaryProfile(
-          db,
-          opts.salaryProfileId,
-          uiSalaryOverrideMap,
-        );
+      ? applySalaryProfileRow(data.salaryProfileRow)
+      : await loadEffectiveSalaryProfile(db, opts.salaryProfileId);
   const asOfDate = referenceDate;
-  const activeJobs = patchedJobs.filter((j) => !j.endDate);
+  const activeJobs = filterActiveJobs(patchedJobs);
   // C7: use getSalariesForJobs helper (deduplicates the parallel-fetch pattern).
-  // Post-process to apply salary override map and compute totalComp.
-  const rawSalaries = await getSalariesForJobs(db, activeJobs, asOfDate);
-  // Per-person delta between this year's resolved (possibly pinned) bonus and
-  // the full-formula bonus — fed to the engine as a year-0-only adjustment so
-  // a pinned current-year bonus doesn't depress the compounding baseline for
-  // every future projected year (see currentYearBonusAdjustment's docblock
-  // in types/engine-projection.ts).
-  //
-  // This used to be skipped entirely for anyone present in
-  // salaryOverrideMap, on the premise that a pin "replaces the whole number,
-  // bonus included" — which was true only while a pin could ONLY be a flat
-  // salary that overwrote totalComp and discarded bonus outright. A Salary
-  // Profile entry now pins fields independently, so a pinned salary keeps
-  // live bonus terms and still earns a real bonus. Under that encoding the
-  // old guard suppressed a correction that IS needed, which is the exact
-  // inverse of its intent, so it is gone.
-  //
-  // What replaces it is not another guard but an identity. Both bonuses are
-  // computed from the SAME effective salary and the SAME effective bonus
-  // terms (pinned where pinned, live otherwise), differing only in whether
-  // job_bonus_overrides is applied. So the adjustment is exactly
-  // totalComp - totalCompFullFormula for every person, pinned or not, and
-  // can no longer double-count: whatever the pin changed, it changed on both
-  // sides of the subtraction.
-  //   - pinned salary, live bonus terms → correction still applies, computed
-  //     against the pinned salary.
-  //   - pinned bonus terms             → the pinned terms drive BOTH sides,
-  //     so the delta is the override-vs-pinned-formula gap.
-  //   - nothing pinned                 → identical to the old behaviour.
+  // Post-process to apply the Plan/session salary override and compute
+  // totalComp. A Salary Profile entry is now a complete, all-or-nothing
+  // number (see resolveCompensation's docblock) — there is no more
+  // "resolved actual vs full-formula" distinction to adjust for (job_bonus_
+  // overrides is gone), so currentYearBonusAdjustment is always empty; kept
+  // in the payload shape as a no-op rather than removed, since the engine
+  // still reads it defensively.
   const currentYearBonusAdjustmentByPerson = new Map<number, number>();
-  const jobSalaries = rawSalaries.map(
-    ({ job, baseSalary, effectiveIncome, resolvedBonusOverride }) => {
-      const entry = salaryOverrideMap.get(job.personId);
-      // This year's actual comp: pinned-or-live salary + pinned-or-live
-      // bonus terms, with job_bonus_overrides applied.
-      const resolved = resolveCompensation(
-        job,
-        baseSalary,
-        entry,
-        resolvedBonusOverride,
-      );
-      // The compounding baseline the engine grows from — same salary and
-      // same terms, but always the full formula bonus, never the pinned
-      // one, so year 1+ projections aren't depressed by this year's actual
-      // being lower.
-      const fullFormula = resolveCompensation(job, baseSalary, entry, null);
-      if (resolved.bonus !== fullFormula.bonus) {
-        currentYearBonusAdjustmentByPerson.set(
-          job.personId,
-          (currentYearBonusAdjustmentByPerson.get(job.personId) ?? 0) +
-            (resolved.bonus - fullFormula.bonus),
-        );
-      }
-      return {
-        job,
-        // effectiveIncome respects includeBonusInContributions and is
-        // computed off the LIVE salary, so a pinned salary replaces it
-        // wholesale exactly as before.
-        salary: applySalaryOverride(
-          job.personId,
-          effectiveIncome,
-          salaryOverrideMap,
-        ),
-        totalComp: resolved.totalComp,
-        totalCompFullFormula: fullFormula.totalComp,
-      };
-    },
-  );
+  const jobSalaries = activeJobs.map((job) => {
+    const comp = resolveCompensation(salaryProfileActiveMap, job.id);
+    const uiEntry = uiSalaryActiveMap.get(job.personId);
+    const salary = applyActiveSalary(
+      job.personId,
+      comp.salary,
+      uiSalaryActiveMap,
+    );
+    const bonusTerms = applyActiveBonusTerms(uiEntry, comp.terms);
+    const totalComp = getTotalCompensation(salary, bonusTerms);
+    return {
+      job,
+      // effectiveIncome respects includeBonusInContributions.
+      salary: getEffectiveIncome(job, salary, bonusTerms),
+      totalComp,
+      totalCompFullFormula: totalComp,
+    };
+  });
   // combinedSalary = effective income (respects includeBonusInContributions flag)
   // Used for contribution calculations where percent_of_salary uses the payroll basis
   // totalCompensation = always includes bonus (resolved/pinned, not full-formula)
@@ -846,12 +814,39 @@ export async function buildEnginePayload(
 
   const accMonths = (accProfile?.columnMonths as number[] | null) ?? null;
   const decMonths = (decProfile?.columnMonths as number[] | null) ?? null;
+  // Resolved through the same contribution-account chain
+  // computeActiveSummary uses (see resolveLinkedBudgetItemAmounts) rather
+  // than raw `amounts`, which is intentionally stale for contribution-linked
+  // items — reading it directly here silently dropped every linked item's
+  // dollar amount from accumulation/decumulation expenses.
+  const accNumColumns =
+    (accProfile?.columnLabels as string[] | null)?.length ?? 1;
+  const decNumColumns =
+    (decProfile?.columnLabels as string[] | null)?.length ?? 1;
+  const resolvedAccItems = opts.accumulationExpenseOverride
+    ? accItems
+    : await resolveLinkedBudgetItemAmounts(
+        db,
+        accItems,
+        accNumColumns,
+        new Array(accNumColumns).fill(opts.contributionProfileId ?? null),
+        new Array(accNumColumns).fill(opts.salaryProfileId ?? null),
+      );
+  const resolvedDecItems = opts.decumulationExpenseOverride
+    ? decItems
+    : await resolveLinkedBudgetItemAmounts(
+        db,
+        decItems,
+        decNumColumns,
+        new Array(decNumColumns).fill(opts.contributionProfileId ?? null),
+        new Array(decNumColumns).fill(opts.salaryProfileId ?? null),
+      );
   const accumulationExpenses =
     opts.accumulationExpenseOverride ??
-    computeBudgetAnnualTotal(accItems, accCol, accMonths);
+    computeBudgetAnnualTotal(resolvedAccItems, accCol, accMonths);
   const decumulationExpenses =
     opts.decumulationExpenseOverride ??
-    computeBudgetAnnualTotal(decItems, decCol, decMonths);
+    computeBudgetAnnualTotal(resolvedDecItems, decCol, decMonths);
   const annualExpensesVal = accumulationExpenses;
 
   // Build parentCategory lookup for contribution accounts (via linked performance account)
@@ -913,13 +908,14 @@ export async function buildEnginePayload(
   );
   const contributionSpecs = defaultContribData.contributionSpecs;
 
-  // Build live data refs for resolveProfile (DB rows before current profile applied)
+  // Build live data refs for resolveProfile (DB rows before current profile
+  // applied). No contributionMethod/contributionValue here — accounts carry
+  // no value of their own; resolveProfile adds those from the switched
+  // profile's own active fields, excluding accounts it has no value for.
   const liveContribRows = allContribsRaw.map((c) => ({
     ...c,
     accountType: c.accountType as AccountCategory,
     parentCategory: c.parentCategory ?? "",
-    contributionMethod: c.contributionMethod ?? "percent_of_salary",
-    contributionValue: String(c.contributionValue ?? "0"),
     taxTreatment: c.taxTreatment ?? "pre_tax",
     employerMatchType: c.employerMatchType ?? null,
     employerMatchValue: c.employerMatchValue
@@ -934,36 +930,23 @@ export async function buildEnginePayload(
     subType: c.subType,
     label: c.label ?? null,
   }));
-  // Intentionally live/un-overridden — this is the reference baseline a
-  // profile switch's stored salary override gets GROWN from ("Profile
-  // salary overrides are in today's dollars; grow to the switch year"
-  // below). Applying a Plan override here would double-count it into the
-  // profile-switch growth math. Do not "fix" this into resolveEffectiveSalary
-  // — see applySalaryOverride's docblock for the live-baseline rule.
-  const liveBonusOverrides = await getBonusOverridesForJobs(
-    db,
-    activeJobs.map((j) => j.id),
-  );
-  const liveAsOfYear = asOfDate.getFullYear();
-  const liveJobSalaries = await Promise.all(
-    activeJobs.map(async (j) => {
-      const dbSalary = await getCurrentSalary(
-        db,
-        j.id,
-        j.annualSalary,
-        asOfDate,
-      );
-      const resolvedOverride =
-        liveBonusOverrides.get(`${j.id}:${liveAsOfYear}`) ?? null;
-      return {
-        job: { id: j.id, personId: j.personId },
-        salary: getEffectiveIncome(j, dbSalary, resolvedOverride),
-        baseSalary: dbSalary,
-        totalComp: getTotalCompensation(j, dbSalary, resolvedOverride),
-        resolvedBonusOverride: resolvedOverride,
-      };
-    }),
-  );
+  // Intentionally un-overridden by the Plan/session tier — this is the
+  // reference baseline a profile switch's stored salary override gets
+  // GROWN from ("Profile salary overrides are in today's dollars; grow to
+  // the switch year" below). Applying a Plan override here would
+  // double-count it into the profile-switch growth math. A job has no
+  // salary/bonus of its own — the globally-ACTIVE Salary Profile
+  // (salaryProfileActiveMap, already loaded above) is the only live source.
+  const liveJobSalaries = activeJobs.map((j) => {
+    const comp = resolveCompensation(salaryProfileActiveMap, j.id);
+    return {
+      job: { id: j.id, personId: j.personId },
+      salary: getEffectiveIncome(j, comp.salary, comp.terms),
+      baseSalary: comp.salary,
+      totalComp: getTotalCompensation(comp.salary, comp.terms),
+      resolvedBonusOverride: null,
+    };
+  });
 
   const profileSwitches: ProfileSwitch[] = [];
 
@@ -999,24 +982,51 @@ export async function buildEnginePayload(
     // switch is expressed as one row per person, each contributing its own
     // person's value.
     //
-    // Only a pinned SALARY carries a number to grow. Someone whose entry
-    // pins nothing — or pins only bonus terms — is still following their job
-    // record for salary, which the engine is already projecting forward
-    // from; injecting anything for them here would compound a second,
-    // redundant salary path. Bonus terms are not a salary and are
-    // deliberately not injected as one.
-    const switchSalaryEntries = (salaryProfile?.salaries ??
+    // Only an entry that targets this person's active job carries a number
+    // to grow. Someone the switch profile says nothing about is still
+    // following their live salary, which the engine is already projecting
+    // forward from; injecting anything for them here would compound a
+    // second, redundant salary path.
+    // salaryProfile.salaries is jobId-keyed (a Salary Profile targets
+    // specific jobs, not people) — find this person's active job to look
+    // up their entry. Assumes one active job per person, same as
+    // everywhere else in the app.
+    const switchSalaryEntriesByJob = (salaryProfile?.salaries ??
       {}) as SalaryEntryMap;
-    const ownEntry = pinnedFields(
-      switchSalaryEntries[String(override.personId)],
-    );
+    const ownJob = activeJobs.find((j) => j.personId === override.personId);
+    const ownEntry = ownJob
+      ? switchSalaryEntriesByJob[String(ownJob.id)]
+      : undefined;
+    // A profile entry pinning only bonus terms (no `salary`) is not a
+    // salary to grow — same presence rule as before. Only the SALARY
+    // field's presence decides whether this row injects anything.
     const ownBaseSalary = ownEntry?.salary;
+    // Baseline this override replaces (salaryByPerson) is TOTAL comp
+    // (totalCompFullFormula, salary + bonus) — growing bare `.salary` here
+    // would silently drop the switched profile's bonus from projections.
+    // Bonus fields may be absent even when salary is pinned (entries here
+    // aren't guaranteed complete the way resolveCompensation's normal
+    // callers assume), so missing bonus terms mean "no bonus," not NaN.
+    const ownTotalComp =
+      ownBaseSalary !== undefined
+        ? getTotalCompensation(ownBaseSalary, {
+            bonusPercent:
+              ownEntry?.bonusPercent != null
+                ? String(ownEntry.bonusPercent)
+                : null,
+            bonusMultiplier:
+              ownEntry?.bonusMultiplier != null
+                ? String(ownEntry.bonusMultiplier)
+                : null,
+            monthsInBonusYear: ownEntry?.monthsInBonusYear ?? null,
+          })
+        : undefined;
     if (salaryProfile && ownBaseSalary !== undefined) {
       const yearsFromNow = override.projectionYear - currentYear;
       const personRaiseRate =
         raiseRateByPerson.get(override.personId) ?? primaryRaiseRate;
       const grownSalary =
-        ownBaseSalary * Math.pow(1 + personRaiseRate, yearsFromNow);
+        ownTotalComp! * Math.pow(1 + personRaiseRate, yearsFromNow);
       perPersonSalaryOverrides.push({
         personId: override.personId,
         year: override.projectionYear,
@@ -1035,16 +1045,54 @@ export async function buildEnginePayload(
     // Contribution side. A salary-only switch has nothing to build here.
     if (!contribProfile) continue;
 
+    // The switched profile's percent-of-salary contributions must be
+    // computed against the SWITCHED job's compensation, not the globally
+    // active Salary Profile's (liveJobSalaries) — otherwise a salary-profile
+    // switch never reaches contribution math at all. Overlay only the
+    // switched-to entry for this person's own job onto the live map; every
+    // other job keeps following its live salary, same rule as the salary
+    // override above.
+    // Normalize possibly-partial bonus fields to "no bonus" defaults — same
+    // reasoning as ownTotalComp above, since resolveCompensation assumes a
+    // complete entry and would otherwise turn missing fields into NaN.
+    const ownEntryNormalized: SalaryProfileEntry | undefined =
+      ownBaseSalary !== undefined
+        ? {
+            salary: ownBaseSalary,
+            bonusPercent: ownEntry?.bonusPercent ?? 0,
+            bonusMultiplier: ownEntry?.bonusMultiplier ?? 1,
+            monthsInBonusYear: ownEntry?.monthsInBonusYear ?? 12,
+            // Never carry a current-year pin into projection/contribution
+            // math — see SalaryProfileEntry.bonusOverride's docblock.
+            bonusOverride: null,
+          }
+        : undefined;
+    const switchJobSalaries = salaryProfile
+      ? activeJobs.map((j) => {
+          const map =
+            j.id === ownJob?.id && ownEntryNormalized !== undefined
+              ? new Map(salaryProfileActiveMap).set(j.id, ownEntryNormalized)
+              : salaryProfileActiveMap;
+          const comp = resolveCompensation(map, j.id);
+          return {
+            job: { id: j.id, personId: j.personId },
+            salary: getEffectiveIncome(j, comp.salary, comp.terms),
+            baseSalary: comp.salary,
+            totalComp: getTotalCompensation(comp.salary, comp.terms),
+            resolvedBonusOverride: null,
+          };
+        })
+      : liveJobSalaries;
+
     // The switched profile's percent-of-salary contributions are computed
     // against the switched SALARY (when this row also pins one) — that's
     // what the coupled salary+contribution profile used to do, preserved now
     // that the two are separate entities.
     const resolved = resolveProfile(
       contribProfile,
-      switchSalaryEntries,
       liveContribRows,
       activeJobs as (typeof schema.jobs.$inferSelect)[],
-      liveJobSalaries,
+      switchJobSalaries,
     );
 
     const data = buildProfileContribData(

@@ -14,7 +14,7 @@ import { useUser, hasPermission } from "@/lib/context/user-context";
 import { useScenario } from "@/lib/context/scenario-context";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import {
   isPortfolioParent,
@@ -48,7 +48,7 @@ export default function ContributionsPage() {
   const { data: profiles } = trpc.contributionProfile.list.useQuery();
   const [period, setPeriod] = useState<PeriodMode>("annual");
   const [activeProfileId] = useActiveContribProfile();
-  const salaryOverrides = useSalaryOverrides();
+  const salaryActiveFields = useActiveSalaries();
   // Independent Salary Profile axis (Plan pin -> globally-active setting).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   // Plan pin -> globally-active profile — the primary summary below must stay
@@ -65,7 +65,7 @@ export default function ContributionsPage() {
     },
   );
   const dataInput = {
-    ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(effectiveActiveContribProfileId != null
       ? { contributionProfileId: effectiveActiveContribProfileId }
       : {}),

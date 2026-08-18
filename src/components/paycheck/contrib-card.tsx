@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { Toggle } from "@/components/ui/toggle";
 import {
@@ -9,6 +10,8 @@ import {
 } from "@/lib/utils/format";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { InlineAccountType } from "./inline-account-type";
+import { InstitutionPicker } from "./institution-picker";
+import { trpc } from "@/lib/trpc";
 import type { ContribCardProps } from "./types";
 import {
   categoriesWithIrsLimit,
@@ -25,6 +28,7 @@ export function ContribCard({
   onUpdateContrib,
   onToggleAutoMax,
   onDeleteContrib,
+  onUpdateInstitution,
   _methodLabel,
   salary,
   periodsPerYear,
@@ -32,7 +36,18 @@ export function ContribCard({
   siblingAnnualContribs = 0,
   employerMatchAnnual = 0,
   readOnly,
+  contribValueReadOnly,
 }: ContribCardProps) {
+  const valueEditable = !readOnly && !contribValueReadOnly;
+  const [editingInstitution, setEditingInstitution] = useState(false);
+  const { data: performanceAccounts } =
+    trpc.settings.performanceAccounts.list.useQuery(undefined, {
+      enabled: !readOnly && !!onUpdateInstitution,
+    });
+  const linkedInstitution = performanceAccounts?.find(
+    (pa) => pa.id === c.performanceAccountId,
+  );
+
   return (
     <div className="bg-surface-primary border rounded-lg p-3 text-sm shadow-sm group/card relative">
       {!readOnly && onDeleteContrib && (
@@ -53,9 +68,9 @@ export function ContribCard({
       )}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          {c.displayNameOverride ? (
+          {c.displayNameActive ? (
             <span className="text-xs font-medium text-amber-600">
-              {c.displayNameOverride}
+              {c.displayNameActive}
             </span>
           ) : (
             <>
@@ -109,10 +124,10 @@ export function ContribCard({
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}
             type="number"
             className="font-medium"
-            isEditable={!readOnly}
+            isEditable={valueEditable}
           />
           <select
-            disabled={readOnly}
+            disabled={!valueEditable}
             value={c.contributionMethod}
             onChange={(e) =>
               onUpdateContrib(c.id, "contributionMethod", e.target.value)
@@ -139,6 +154,44 @@ export function ContribCard({
         <p className="text-caption text-faint mt-1">
           Shared contribution (total, not per person)
         </p>
+      )}
+
+      {/* Institution link/unlink */}
+      {!readOnly && onUpdateInstitution && (
+        <div className="mt-1">
+          {editingInstitution ? (
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <InstitutionPicker
+                  personId={c.ownership === "joint" ? null : c.personId}
+                  accountType={c.accountType}
+                  value={c.performanceAccountId}
+                  onChange={(id) => {
+                    onUpdateInstitution(c.id, id);
+                    setEditingInstitution(false);
+                  }}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingInstitution(false)}
+                className="text-caption text-faint hover:text-secondary pb-1.5"
+              >
+                Done
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditingInstitution(true)}
+              className="text-caption text-faint hover:text-secondary"
+            >
+              {linkedInstitution
+                ? accountDisplayName(linkedInstitution)
+                : "Link institution"}
+            </button>
+          )}
+        </div>
       )}
 
       {/* Employer match info — editable */}

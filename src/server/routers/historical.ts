@@ -1,14 +1,15 @@
-/** Historical data router providing year-end balance history, salary timelines, home improvements, other assets, and historical notes management. */
+/** Historical data router providing year-end balance history, per-person salary/bonus records, home improvements, other assets, and historical notes management. */
 import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { toNumber, buildYearEndHistory } from "@/server/helpers";
 import {
-  computeBonusGross,
-  getBonusOverridesForJobs,
+  loadEffectiveSalaryProfile,
+  resolveCompensation,
 } from "@/server/helpers/salary";
-import { zYearEndTargeting, toSalaryOverrideMap } from "./_shared";
+import { findActiveJob } from "@/lib/pure/profiles";
+import { zYearEndTargeting, toSalaryActiveMap } from "./_shared";
 
 export const historicalRouter = createTRPCRouter({
   computeSummary: protectedProcedure
@@ -18,7 +19,7 @@ export const historicalRouter = createTRPCRouter({
         yearEndHistory,
         people,
         jobs,
-        salaryChanges,
+        historicalSalaryRows,
         homeImprovements,
         otherAssets,
         notes,
@@ -26,14 +27,11 @@ export const historicalRouter = createTRPCRouter({
         buildYearEndHistory(ctx.db, new Date(), {
           budgetProfileId: input?.budgetProfileId,
           budgetColumn: input?.budgetColumn,
-          salaryOverrides: toSalaryOverrideMap(input?.salaryOverrides),
+          salaryActiveFields: toSalaryActiveMap(input?.salaryActiveFields),
         }),
         ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
         ctx.db.select().from(schema.jobs).orderBy(asc(schema.jobs.startDate)),
-        ctx.db
-          .select()
-          .from(schema.salaryChanges)
-          .orderBy(asc(schema.salaryChanges.effectiveDate)),
+        ctx.db.select().from(schema.historicalSalaries),
         ctx.db
           .select()
           .from(schema.homeImprovementItems)
@@ -45,101 +43,58 @@ export const historicalRouter = createTRPCRouter({
         ctx.db.select().from(schema.historicalNotes),
       ]);
 
-      // Salary history: build timeline per person
-      const salaryHistory = people.map((person) => {
-        const personJobs = jobs.filter((j) => j.personId === person.id);
-        const timeline: {
-          employer: string;
-          startDate: string;
-          endDate: string | null;
-          salary: number;
-          changes: {
-            effectiveDate: string;
-            newSalary: number;
-            reason: string | null;
-          }[];
-        }[] = [];
-
-        for (const job of personJobs) {
-          const jobChanges = salaryChanges
-            .filter((sc) => sc.jobId === job.id)
-            .map((sc) => ({
-              effectiveDate: sc.effectiveDate,
-              newSalary: toNumber(sc.newSalary),
-              reason: sc.notes,
-            }));
-
-          timeline.push({
-            employer: job.employerName,
-            startDate: job.startDate,
-            endDate: job.endDate,
-            salary: toNumber(job.annualSalary),
-            changes: jobChanges,
-          });
-        }
-
-        return { person: { id: person.id, name: person.name }, timeline };
-      });
-
-      // Build salary lookup: year → person → base salary (for table display)
-      const salaryByYear = new Map<number, Map<string, number>>();
-      for (const person of salaryHistory) {
-        for (const job of person.timeline) {
-          const startYear = new Date(job.startDate).getFullYear();
-          const endYear = job.endDate
-            ? new Date(job.endDate).getFullYear()
-            : new Date().getFullYear();
-          for (let y = startYear; y <= endYear; y++) {
-            if (!salaryByYear.has(y)) salaryByYear.set(y, new Map());
-            let salary = job.salary;
-            for (const ch of job.changes) {
-              if (new Date(ch.effectiveDate).getFullYear() <= y)
-                salary = ch.newSalary;
-            }
-            salaryByYear.get(y)!.set(person.person.name, salary);
-          }
-        }
-      }
-
-      // Build salary detail lookup: year → person → {base, bonus, total} (for tooltip)
-      const bonusOverrides = await getBonusOverridesForJobs(
+      const currentYear = new Date().getFullYear();
+      const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
         ctx.db,
-        jobs.map((j) => j.id),
+        null,
       );
+
+      // Every past year is a recorded fact, directly — historical_salaries
+      // is the single source (see its schema-pg.ts comment). The in-progress
+      // (current) year auto-fills from the active Salary Profile's complete
+      // entry for each person's current job UNTIL it's recorded, at which
+      // point the recorded fact wins (same "recorded fact beats live
+      // estimate" rule as everywhere else in the app).
+      const salaryByYear = new Map<number, Map<string, number>>();
       const salaryDetailsByYear = new Map<
         number,
         Map<string, { base: number; bonus: number; total: number }>
       >();
+      const personIdByName: Record<string, number> = {};
+      for (const person of people) personIdByName[person.name] = person.id;
+
+      const recordedYears = new Set<number>();
+      for (const row of historicalSalaryRows) {
+        const person = people.find((p) => p.id === row.personId);
+        if (!person) continue;
+        const base = toNumber(row.salary);
+        const bonus = toNumber(row.bonus);
+        if (!salaryByYear.has(row.year)) salaryByYear.set(row.year, new Map());
+        if (!salaryDetailsByYear.has(row.year))
+          salaryDetailsByYear.set(row.year, new Map());
+        salaryByYear.get(row.year)!.set(person.name, base);
+        salaryDetailsByYear
+          .get(row.year)!
+          .set(person.name, { base, bonus, total: base + bonus });
+        if (row.year === currentYear) recordedYears.add(person.id);
+      }
+
       for (const person of people) {
-        const personJobs = jobs.filter((j) => j.personId === person.id);
-        for (const job of personJobs) {
-          const startYear = new Date(job.startDate).getFullYear();
-          const endYear = job.endDate
-            ? new Date(job.endDate).getFullYear()
-            : new Date().getFullYear();
-          const jobChanges = salaryChanges.filter((sc) => sc.jobId === job.id);
-          for (let y = startYear; y <= endYear; y++) {
-            if (!salaryDetailsByYear.has(y))
-              salaryDetailsByYear.set(y, new Map());
-            let base = toNumber(job.annualSalary);
-            for (const ch of jobChanges) {
-              if (new Date(ch.effectiveDate).getFullYear() <= y)
-                base = toNumber(ch.newSalary);
-            }
-            const resolvedOverride =
-              bonusOverrides.get(`${job.id}:${y}`) ?? null;
-            const bonus = computeBonusGross(
-              base,
-              job.bonusPercent,
-              job.bonusMultiplier,
-              resolvedOverride,
-              job.monthsInBonusYear,
-            );
-            salaryDetailsByYear
-              .get(y)!
-              .set(person.name, { base, bonus, total: base + bonus });
-          }
-        }
+        if (recordedYears.has(person.id)) continue;
+        const activeJob = findActiveJob(jobs, person.id);
+        const comp = activeJob
+          ? resolveCompensation(salaryProfileActiveMap, activeJob.id)
+          : { salary: 0, bonus: 0 };
+        if (!salaryByYear.has(currentYear))
+          salaryByYear.set(currentYear, new Map());
+        if (!salaryDetailsByYear.has(currentYear))
+          salaryDetailsByYear.set(currentYear, new Map());
+        salaryByYear.get(currentYear)!.set(person.name, comp.salary);
+        salaryDetailsByYear.get(currentYear)!.set(person.name, {
+          base: comp.salary,
+          bonus: comp.bonus,
+          total: comp.salary + comp.bonus,
+        });
       }
 
       // Build home improvements cumulative by year
@@ -250,7 +205,7 @@ export const historicalRouter = createTRPCRouter({
         notesObj[key] = value;
       }
 
-      return { history, salaryHistory, notes: notesObj };
+      return { history, personIdByName, notes: notesObj };
     }),
 
   /** Update editable fields on a net_worth_annual row (income/tax + otherLiabilities only). */
@@ -297,6 +252,70 @@ export const historicalRouter = createTRPCRouter({
         .where(eq(schema.netWorthAnnual.id, row.id));
 
       return { success: true };
+    }),
+
+  /**
+   * One control per (person, year) — upsert so the caller never has to know
+   * whether a row already exists for that year. Editing just `salary` or
+   * just `bonus` (the Year-End History table's two separate columns) leaves
+   * the other field at whatever it already was.
+   *
+   * When there's no existing row to preserve a value from, the untouched
+   * field falls back to the SAME live estimate the current-year auto-fill
+   * in `computeSummary` shows (active job's compensation under the active
+   * Salary Profile) for the current year, or 0 for a past year with no
+   * prior record — never a bare 0 for the current year, which would
+   * silently zero out whichever field the user wasn't editing.
+   */
+  upsertSalary: adminProcedure
+    .input(
+      z.object({
+        personId: z.number().int(),
+        year: z.number().int().min(1900).max(2100),
+        salary: z.number().optional(),
+        bonus: z.number().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const existing = await ctx.db
+        .select()
+        .from(schema.historicalSalaries)
+        .where(
+          and(
+            eq(schema.historicalSalaries.personId, input.personId),
+            eq(schema.historicalSalaries.year, input.year),
+          ),
+        );
+
+      let fallbackSalary = toNumber(existing[0]?.salary);
+      let fallbackBonus = toNumber(existing[0]?.bonus);
+      if (!existing[0] && input.year === new Date().getFullYear()) {
+        const [jobs, salaryProfileActiveMap] = await Promise.all([
+          ctx.db.select().from(schema.jobs),
+          loadEffectiveSalaryProfile(ctx.db, null),
+        ]);
+        const activeJob = findActiveJob(jobs, input.personId);
+        const comp = activeJob
+          ? resolveCompensation(salaryProfileActiveMap, activeJob.id)
+          : { salary: 0, bonus: 0 };
+        fallbackSalary = comp.salary;
+        fallbackBonus = comp.bonus;
+      }
+
+      const salary = (input.salary ?? fallbackSalary).toFixed(2);
+      const bonus = (input.bonus ?? fallbackBonus).toFixed(2);
+      const rows = await ctx.db
+        .insert(schema.historicalSalaries)
+        .values({ personId: input.personId, year: input.year, salary, bonus })
+        .onConflictDoUpdate({
+          target: [
+            schema.historicalSalaries.personId,
+            schema.historicalSalaries.year,
+          ],
+          set: { salary, bonus },
+        })
+        .returning();
+      return rows[0]!;
     }),
 
   // --- Historical Notes ---

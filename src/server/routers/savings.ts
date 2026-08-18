@@ -25,8 +25,8 @@ import {
   toNumber,
   computeBudgetAnnualTotal,
   getPeriodsPerYear,
-  getCurrentSalary,
-  getBonusOverridesForJobs,
+  resolveCompensation,
+  loadEffectiveSalaryProfile,
   buildContribAccounts,
   requireLimit,
   getResolvedGoalAllocations,
@@ -34,7 +34,10 @@ import {
   resetProfileAllocationsToZero,
   getActiveBudgetProfile,
   resolveTargetBudgetProfile,
+  applyContribActiveFields,
+  fetchContributionProfile,
 } from "@/server/helpers";
+import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { buildBracketInput } from "./paycheck";
 import type { DeductionLine, PaycheckInput } from "@/lib/calculators/types";
 import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
@@ -56,13 +59,13 @@ import type { BudgetCategoryGroup, BudgetTransaction } from "@/lib/budget-api";
  * routing rules or growth rates are saved, so the value always reflects the
  * actual paycheck calculation rather than a client-supplied number.
  *
- * Intentionally does not apply a salary override map — this value gets
+ * Intentionally does not apply a salary active-value map — this value gets
  * persisted as a recorded fact, not shown as "what your finances look like
- * under the active Plan." See applySalaryOverride's docblock (server/helpers/salary.ts)
- * for the live-vs-override-aware rule.
+ * under the active Plan." See applyActiveSalary's docblock (server/helpers/salary.ts)
+ * for the live-vs-active rule.
  */
 async function computeJobNetPayPerCheck(
-  db: Parameters<typeof getCurrentSalary>[0],
+  db: DbType,
   jobId: number,
 ): Promise<number> {
   const taxYear = new Date().getFullYear();
@@ -78,40 +81,72 @@ async function computeJobNetPayPerCheck(
       message: "Job not found",
     });
 
-  const [allBrackets, jobDeductions, jobContribs, personalContribs, allLimits] =
-    await Promise.all([
-      db
-        .select()
-        .from(schema.taxBrackets)
-        .where(eq(schema.taxBrackets.taxYear, taxYear)),
-      db
-        .select()
-        .from(schema.paycheckDeductions)
-        .where(eq(schema.paycheckDeductions.jobId, jobId)),
-      db
-        .select()
-        .from(schema.contributionAccounts)
-        .where(
-          and(
-            eq(schema.contributionAccounts.jobId, jobId),
-            eq(schema.contributionAccounts.isActive, true),
-          ),
+  const [
+    allBrackets,
+    jobDeductions,
+    rawJobContribs,
+    rawPersonalContribs,
+    allLimits,
+    activeContribSetting,
+  ] = await Promise.all([
+    db
+      .select()
+      .from(schema.taxBrackets)
+      .where(eq(schema.taxBrackets.taxYear, taxYear)),
+    db
+      .select()
+      .from(schema.paycheckDeductions)
+      .where(eq(schema.paycheckDeductions.jobId, jobId)),
+    db
+      .select()
+      .from(schema.contributionAccounts)
+      .where(
+        and(
+          eq(schema.contributionAccounts.jobId, jobId),
+          eq(schema.contributionAccounts.isActive, true),
         ),
-      db
-        .select()
-        .from(schema.contributionAccounts)
-        .where(
-          and(
-            isNull(schema.contributionAccounts.jobId),
-            eq(schema.contributionAccounts.personId, job.personId),
-            eq(schema.contributionAccounts.isActive, true),
-          ),
+      ),
+    db
+      .select()
+      .from(schema.contributionAccounts)
+      .where(
+        and(
+          isNull(schema.contributionAccounts.jobId),
+          eq(schema.contributionAccounts.personId, job.personId),
+          eq(schema.contributionAccounts.isActive, true),
         ),
-      db
-        .select()
-        .from(schema.contributionLimits)
-        .where(eq(schema.contributionLimits.taxYear, taxYear)),
-    ]);
+      ),
+    db
+      .select()
+      .from(schema.contributionLimits)
+      .where(eq(schema.contributionLimits.taxYear, taxYear)),
+    db
+      .select()
+      .from(schema.appSettings)
+      .where(eq(schema.appSettings.key, SK_ACTIVE_CONTRIB_PROFILE_ID)),
+  ]);
+
+  // Accounts carry no contribution value of their own — resolve against the
+  // globally-ACTIVE Contribution Profile (not a Plan pin/session override),
+  // matching this function's "recorded fact" philosophy for salary above.
+  const activeContribProfileId = Number(activeContribSetting[0]?.value ?? NaN);
+  const contribProfile = Number.isFinite(activeContribProfileId)
+    ? await fetchContributionProfile(db, activeContribProfileId)
+    : null;
+  const accountActiveFields =
+    (
+      (contribProfile?.contributionActiveFields ?? {}) as {
+        contributionAccounts?: Record<string, Record<string, unknown>>;
+      }
+    ).contributionAccounts ?? {};
+  const jobContribs = applyContribActiveFields(
+    rawJobContribs,
+    accountActiveFields,
+  );
+  const personalContribs = applyContribActiveFields(
+    rawPersonalContribs,
+    accountActiveFields,
+  );
 
   const limitsMap = new Map<string, number>();
   const limitsRecord: Record<string, number> = {};
@@ -132,15 +167,13 @@ async function computeJobNetPayPerCheck(
       message: "No tax bracket data found for this job's filing status",
     });
 
-  const currentSalary = await getCurrentSalary(
-    db,
-    job.id,
-    job.annualSalary,
-    asOfDate,
-  );
-  const bonusOverrides = await getBonusOverridesForJobs(db, [job.id]);
-  const resolvedBonusOverride =
-    bonusOverrides.get(`${job.id}:${taxYear}`) ?? null;
+  // A job has no salary/bonus of its own — resolve against the globally-
+  // ACTIVE Salary Profile (same "recorded fact" philosophy as above,
+  // mirrored from the Contribution Profile resolution just above).
+  const salaryProfileActiveMap = await loadEffectiveSalaryProfile(db, null);
+  const comp = resolveCompensation(salaryProfileActiveMap, job.id);
+  const currentSalary = comp.salary;
+  const bonusTerms = comp.terms;
   const periodsPerYear = getPeriodsPerYear(job.payPeriod);
   const taxBrackets = buildBracketInput(bracketRow, limitsMap);
 
@@ -169,10 +202,10 @@ async function computeJobNetPayPerCheck(
     taxBrackets,
     limits: limitsRecord,
     ytdGrossEarnings: 0,
-    bonusPercent: toNumber(job.bonusPercent),
-    bonusMultiplier: toNumber(job.bonusMultiplier),
-    bonusOverride: resolvedBonusOverride,
-    monthsInBonusYear: job.monthsInBonusYear,
+    bonusPercent: toNumber(bonusTerms.bonusPercent),
+    bonusMultiplier: toNumber(bonusTerms.bonusMultiplier),
+    bonusOverride: null,
+    monthsInBonusYear: bonusTerms.monthsInBonusYear ?? 12,
     includeContribInBonus: job.include401kInBonus,
     bonusMonth: job.bonusMonth,
     bonusDayOfMonth: job.bonusDayOfMonth,
@@ -1840,7 +1873,12 @@ export const savingsRouter = createTRPCRouter({
           extraPaycheckRouting: schema.jobs.extraPaycheckRouting,
         })
         .from(schema.jobs)
-        .where(isNull(schema.jobs.endDate))
+        .where(
+          and(
+            isNull(schema.jobs.endDate),
+            eq(schema.jobs.isSpeculative, false),
+          ),
+        )
         .orderBy(asc(schema.jobs.personId), asc(schema.jobs.id));
       const people = await ctx.db
         .select({ id: schema.people.id, name: schema.people.name })

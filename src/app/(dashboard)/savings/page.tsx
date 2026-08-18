@@ -11,7 +11,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useLocalStorageSet } from "@/lib/hooks/use-local-storage-set";
-import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import {
   SummaryCards,
   NewFundFormCard,
@@ -70,11 +70,21 @@ import {
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
+import {
+  EditLockToggle,
+  EDIT_LOCK_KEYS,
+  useEditLock,
+} from "@/components/ui/edit-lock-toggle";
 
 export default function SavingsPage() {
   const user = useUser();
   const canEdit = hasPermission(user, "savings");
   const utils = trpc.useUtils();
+  // Same shared lock the Budget page's four profile tabs all use — locking
+  // one surface must lock the other, or a user who locks this data on one
+  // page can still freely edit it on the other with no unlock step.
+  const [savingsAllocationsLocked, toggleSavingsAllocationsLocked] =
+    useEditLock(EDIT_LOCK_KEYS.profileEditLocked);
 
   // ── Persisted settings ──
   const [efundBudgetColumn, setEfundBudgetColumn] = usePersistedSetting<number>(
@@ -123,7 +133,7 @@ export default function SavingsPage() {
   const { data: apiBalancesData } = trpc.savings.listApiBalances.useQuery();
   const { data: apiCategoriesData } = trpc.budget.listApiCategories.useQuery();
 
-  const salaryOverrides = useSalaryOverrides();
+  const salaryActiveFields = useActiveSalaries();
 
   // Independent Salary Profile axis (Plan pin -> column pin -> globally-active
   // setting) — mirrors the Contribution axis below so a per-column Salary
@@ -153,7 +163,7 @@ export default function SavingsPage() {
     selectedColumn: budgetColumn,
     contributionProfile: contributionProfileTiers,
     salaryProfile: salaryProfileTiers,
-    ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
   });
   const { data: budgetProfilesList } = useBudgetProfilesList();
 
@@ -183,7 +193,7 @@ export default function SavingsPage() {
   });
 
   const paycheckInput = {
-    ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(effectiveContribProfileId != null
       ? { contributionProfileId: effectiveContribProfileId }
       : {}),
@@ -231,7 +241,8 @@ export default function SavingsPage() {
       selectedColumn: budgetColumn,
       profileId: effectiveRecalcProfileId ?? undefined,
       contributionProfile: contributionProfileTiers,
-      ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+      salaryProfile: salaryProfileTiers,
+      ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     },
     { enabled: isPreviewingOtherProfile },
   );
@@ -686,7 +697,7 @@ export default function SavingsPage() {
             {/* Edit tabs */}
             {goalProjections.length > 0 && (
               <div className="border-t border-subtle/60 pt-4 space-y-4">
-                <div className="flex border-b">
+                <div className="flex border-b items-center">
                   {(
                     [
                       { key: "allocations", label: "Allocations" },
@@ -706,6 +717,15 @@ export default function SavingsPage() {
                       {label}
                     </button>
                   ))}
+                  {editTab === "allocations" && (
+                    <div className="ml-auto pr-2">
+                      <EditLockToggle
+                        locked={savingsAllocationsLocked}
+                        onToggle={toggleSavingsAllocationsLocked}
+                        disabled={!canEdit}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {editTab === "allocations" && (
@@ -827,7 +847,7 @@ export default function SavingsPage() {
                       totalMonthlyAllocation={totalMonthlyAllocation}
                       maxMonthlyFunding={maxMonthlyFunding}
                       monthlyPools={monthlyPools}
-                      canEdit={canEdit}
+                      canEdit={canEdit && !savingsAllocationsLocked}
                       onGoalUpdate={onGoalUpdate}
                       onGoalUpdateMulti={onGoalUpdateMulti}
                       editingMonth={editingMonth}
@@ -963,6 +983,7 @@ export default function SavingsPage() {
               apiBalanceMap={apiBalanceMap}
               apiServiceName={apiBalancesData?.service}
               canEdit={canEdit}
+              fundingLocked={savingsAllocationsLocked}
               onEditMonth={setEditingMonth}
               onDeleteOverride={apiSync.onDeleteOverride}
               efund={efund}

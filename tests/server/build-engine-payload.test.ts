@@ -98,16 +98,18 @@ async function seedRetirementSettings(
     .run();
 }
 
+/** Seeds a raw contribution account (no value of its own) and returns its
+ * id — pair with seedContributionProfileFor to give it a value. */
 async function seedContributionAccount(
   db: BetterSQLite3Database<typeof sqliteSchema>,
   personId: number,
   jobId: number | null,
   perfAccountId: number,
   overrides: Record<string, unknown> = {},
-) {
+): Promise<number> {
   const schema = await getSchema();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
-  (db as any)
+  const acct = (db as any)
     .insert(schema.contributionAccounts)
     .values({
       personId,
@@ -115,8 +117,6 @@ async function seedContributionAccount(
       accountType: "401k",
       parentCategory: "Retirement",
       taxTreatment: "pre_tax",
-      contributionMethod: "percent_of_salary",
-      contributionValue: "0.10",
       employerMatchType: "percent_of_contrib",
       employerMatchValue: "0.50",
       employerMaxMatchPct: "0.06",
@@ -124,13 +124,42 @@ async function seedContributionAccount(
       performanceAccountId: perfAccountId,
       ...overrides,
     })
-    .run();
+    .returning({ id: schema.contributionAccounts.id })
+    .get();
+  return acct.id;
+}
+
+/** Seeds a Contribution Profile giving each of the given account ids a
+ * percent_of_salary value of 0.10 — accounts carry no value of their own. */
+async function seedContributionProfileForAccounts(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  accountIds: number[],
+): Promise<number> {
+  const schema = await getSchema();
+  const contributionAccounts: Record<string, unknown> = {};
+  for (const id of accountIds) {
+    contributionAccounts[String(id)] = {
+      contributionValue: "0.10",
+      contributionMethod: "percent_of_salary",
+    };
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+  const profile = (db as any)
+    .insert(schema.contributionProfiles)
+    .values({
+      name: "Test Contrib Profile",
+      contributionActiveFields: { contributionAccounts, jobs: {} },
+    })
+    .returning({ id: schema.contributionProfiles.id })
+    .get();
+  return profile.id;
 }
 
 describe("buildEnginePayload — single-person household", () => {
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
   let personId: number;
+  let contributionProfileId: number;
 
   beforeAll(async () => {
     const ctx = await createTestCaller();
@@ -153,14 +182,24 @@ describe("buildEnginePayload — single-person household", () => {
     seedSnapshot(db, "2025-06-15", [
       { performanceAccountId: perfAcctId, amount: "250000", taxType: "preTax" },
     ]);
-    await seedContributionAccount(db, personId, jobId, perfAcctId);
+    const contribAcctId = await seedContributionAccount(
+      db,
+      personId,
+      jobId,
+      perfAcctId,
+    );
+    contributionProfileId = await seedContributionProfileForAccounts(db, [
+      contribAcctId,
+    ]);
   });
 
   afterAll(() => cleanup());
 
   it("resolves currentAge and retirementAge from settings", async () => {
-    const data = await fetchRetirementData(db);
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(db, { contributionProfileId });
+    const payload = await buildEnginePayload(db, data, {
+      contributionProfileId,
+    });
 
     // Age is derived from dateOfBirth at fetch time — assert it's in the
     // right ballpark rather than hardcoding an exact age that drifts with
@@ -172,16 +211,20 @@ describe("buildEnginePayload — single-person household", () => {
   });
 
   it("aggregates starting balances from the latest snapshot", async () => {
-    const data = await fetchRetirementData(db);
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(db, { contributionProfileId });
+    const payload = await buildEnginePayload(db, data, {
+      contributionProfileId,
+    });
 
     expect(payload.portfolioTotal).toBe(250000);
     expect(payload.baseEngineInput.startingBalances.preTax).toBe(250000);
   });
 
   it("builds a contribution spec with the seeded personId", async () => {
-    const data = await fetchRetirementData(db);
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(db, { contributionProfileId });
+    const payload = await buildEnginePayload(db, data, {
+      contributionProfileId,
+    });
 
     expect(payload.contributionSpecs.length).toBeGreaterThan(0);
     expect(payload.contributionSpecs[0]?.personId).toBe(personId);
@@ -194,6 +237,7 @@ describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
   let cleanup: () => void;
   let personAId: number;
   let personBId: number;
+  let contributionProfileId: number;
 
   beforeAll(async () => {
     const ctx = await createTestCaller();
@@ -229,23 +273,41 @@ describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
       { performanceAccountId: perfAcctA, amount: "250000", taxType: "preTax" },
       { performanceAccountId: perfAcctB, amount: "400000", taxType: "preTax" },
     ]);
-    await seedContributionAccount(db, personAId, jobAId, perfAcctA);
-    await seedContributionAccount(db, personBId, jobBId, perfAcctB);
+    const contribAcctA = await seedContributionAccount(
+      db,
+      personAId,
+      jobAId,
+      perfAcctA,
+    );
+    const contribAcctB = await seedContributionAccount(
+      db,
+      personBId,
+      jobBId,
+      perfAcctB,
+    );
+    contributionProfileId = await seedContributionProfileForAccounts(db, [
+      contribAcctA,
+      contribAcctB,
+    ]);
   });
 
   afterAll(() => cleanup());
 
   it("marks hasMultiplePeople and includes both people in perPersonSettings", async () => {
-    const data = await fetchRetirementData(db);
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(db, { contributionProfileId });
+    const payload = await buildEnginePayload(db, data, {
+      contributionProfileId,
+    });
 
     expect(payload.hasMultiplePeople).toBe(true);
     expect(payload.perPersonSettings.length).toBe(2);
   });
 
   it("populates catchupGroupParticipants with both people's birth years (H10)", async () => {
-    const data = await fetchRetirementData(db);
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(db, { contributionProfileId });
+    const payload = await buildEnginePayload(db, data, {
+      contributionProfileId,
+    });
 
     const participants =
       payload.baseEngineInput.catchupGroupParticipants?.["401k"];
@@ -256,8 +318,10 @@ describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
   });
 
   it("builds one contribution spec per person, each tagged with its own personId", async () => {
-    const data = await fetchRetirementData(db);
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(db, { contributionProfileId });
+    const payload = await buildEnginePayload(db, data, {
+      contributionProfileId,
+    });
 
     const specPersonIds = payload.contributionSpecs
       .map((s) => s.personId)
@@ -266,8 +330,10 @@ describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
   });
 
   it("aggregates starting balances across both people", async () => {
-    const data = await fetchRetirementData(db);
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(db, { contributionProfileId });
+    const payload = await buildEnginePayload(db, data, {
+      contributionProfileId,
+    });
 
     expect(payload.portfolioTotal).toBe(650000);
   });

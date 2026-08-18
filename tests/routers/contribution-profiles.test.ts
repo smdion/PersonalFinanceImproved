@@ -30,7 +30,7 @@ describe("contributionProfiles router", () => {
       // No synthetic id-0 entry is prepended any more.
       expect(profiles.map((p: { id: number }) => p.id)).not.toContain(0);
       expect(profiles.every((p: { id: number }) => p.id > 0)).toBe(true);
-      expect(profiles[0]!.overrideCount).toBe(0);
+      expect(profiles[0]!.activeFieldCount).toBe(0);
     });
 
     it("each profile has summary with numeric fields", async () => {
@@ -68,7 +68,7 @@ describe("contributionProfiles router", () => {
       const profile = await caller.contributionProfile.create({
         name: "Test Profile",
         description: "For testing",
-        contributionOverrides: { contributionAccounts: {}, jobs: {} },
+        contributionActiveFields: { contributionAccounts: {}, jobs: {} },
       });
       expect(profile).toBeDefined();
       expect(profile.name).toBe("Test Profile");
@@ -79,7 +79,7 @@ describe("contributionProfiles router", () => {
       const profile = await caller.contributionProfile.create({
         name: "Second Profile",
         description: "Another test",
-        contributionOverrides: { contributionAccounts: {}, jobs: {} },
+        contributionActiveFields: { contributionAccounts: {}, jobs: {} },
       });
       expect(typeof profile.id).toBe("number");
       expect(profile.id).toBeGreaterThan(0);
@@ -179,7 +179,7 @@ describe("contributionProfiles router", () => {
       const profile = await caller.contributionProfile.create({
         name: "Profile To Delete",
         description: "Will be deleted",
-        contributionOverrides: { contributionAccounts: {}, jobs: {} },
+        contributionActiveFields: { contributionAccounts: {}, jobs: {} },
       });
       deletableId = profile.id;
     });
@@ -213,7 +213,7 @@ describe("contributionProfiles router", () => {
       const profile = await caller.contributionProfile.create({
         name: "Resolve Test Profile",
         description: "Used to test resolve",
-        contributionOverrides: { contributionAccounts: {}, jobs: {} },
+        contributionActiveFields: { contributionAccounts: {}, jobs: {} },
       });
       profileId = profile.id;
     });

@@ -4,8 +4,8 @@
  * BudgetDetailPanel — right side of the master-detail grid in BudgetContent.
  * Extracted from budget-content.tsx (F4, v0.5.3) to meet the ≤400 line target.
  *
- * Renders the edit padlock (passed in as `lockToggle`) at the top of the
- * column, matching the other three Budget-page profile tabs.
+ * The edit padlock lives once, in the tab bar above (budget-content.tsx) —
+ * not here — so its position stays fixed across all four profile tabs.
  *
  * Consumes BudgetPageContext (cols, activeColumn, canEdit, editMode,
  * apiService, apiLinkedProfileId, apiLinkedColumnIndex) and receives the
@@ -93,8 +93,6 @@ type Props = {
   rowHandlers: RowHandlers;
   categoryMap: Map<string, RawItem[]>;
   createItem: CreateItemMutation;
-  /** The edit padlock, rendered at the top of this column (see below). */
-  lockToggle?: React.ReactNode;
 };
 
 export function BudgetDetailPanel({
@@ -118,7 +116,6 @@ export function BudgetDetailPanel({
   rowHandlers,
   categoryMap,
   createItem,
-  lockToggle,
 }: Props) {
   const {
     cols,
@@ -134,13 +131,6 @@ export function BudgetDetailPanel({
 
   return (
     <div className="border-t md:border-t-0 md:border-l pt-4 md:pt-0 md:pl-4">
-      {/* Edit padlock — same right-column position the Contribution, Salary
-          and Savings tabs use. Only the icon lives here; the profile badge,
-          sync buttons and save indicator stay in the summary bar above. */}
-      {lockToggle && (
-        <div className="flex items-center gap-2 mb-3">{lockToggle}</div>
-      )}
-
       {canEdit && showModeManager && (
         <BudgetModeManager
           cols={cols}

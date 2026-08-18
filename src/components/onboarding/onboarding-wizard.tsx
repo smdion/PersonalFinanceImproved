@@ -664,6 +664,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const createLocalAdmin = trpc.settings.createLocalAdmin.useMutation();
   const createPerson = trpc.settings.people.create.useMutation();
   const createJob = trpc.settings.jobs.create.useMutation();
+  const updateSalaryProfile = trpc.salaryProfile.update.useMutation();
   const completeOnboarding = trpc.settings.completeOnboarding.useMutation();
   const syncAll = trpc.sync.syncAll.useMutation();
   const utils = trpc.useUtils();
@@ -762,20 +763,56 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         createdPeopleIds.push(created!.id);
       }
 
-      // Create all jobs, mapping personIndex to the real person ID
+      // Create all jobs, mapping personIndex to the real person ID. A job
+      // carries no salary of its own — each one's annualSalary from the
+      // Income step goes into the household's Salary Profile below instead.
       const today = new Date().toISOString().substring(0, 10);
+      const jobEntries: Record<string, number> = {};
       for (const job of jobs) {
         const personId = createdPeopleIds[job.personIndex];
         if (personId === undefined) continue;
-        await createJob.mutateAsync({
+        const created = await createJob.mutateAsync({
           personId,
           employerName: job.employerName,
-          annualSalary: job.annualSalary,
           payPeriod: job.payPeriod,
           payWeek: "na",
           startDate: today,
           w4FilingStatus: "MFJ",
         });
+        if (created) jobEntries[String(created.id)] = Number(job.annualSalary);
+      }
+
+      // Give each new job a complete entry in the baseline Salary Profile
+      // (migrations always leave exactly one active profile behind, even on
+      // a fresh install) — no bonus assumed, plain on-target terms.
+      if (Object.keys(jobEntries).length > 0) {
+        const profiles = await utils.salaryProfile.list.fetch();
+        const baseline = profiles[0];
+        if (baseline) {
+          const salaries = { ...baseline.salaries } as Record<
+            string,
+            {
+              salary: number;
+              bonusPercent: number;
+              bonusMultiplier: number;
+              monthsInBonusYear: number;
+              bonusOverride: number | null;
+            }
+          >;
+          for (const [jobId, salary] of Object.entries(jobEntries)) {
+            salaries[jobId] = {
+              salary,
+              bonusPercent: 0,
+              bonusMultiplier: 1,
+              monthsInBonusYear: 12,
+              bonusOverride: null,
+            };
+          }
+          await updateSalaryProfile.mutateAsync({
+            id: baseline.id,
+            salaries,
+          });
+        }
       }
 
       // Mark onboarding complete

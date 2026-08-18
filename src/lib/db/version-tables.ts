@@ -54,6 +54,7 @@ export const VERSION_TABLES: VersionTableEntry[] = [
 
   // Tier 1 — depends on tier 0
   { name: "jobs", tier: 1 },
+  { name: "historical_salaries", tier: 1 },
   { name: "budget_items", tier: 1 },
   { name: "savings_monthly", tier: 1 },
   { name: "savings_planned_transactions", tier: 1 },
@@ -75,7 +76,6 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "utility_reading", tier: 1 },
 
   // Tier 2 — depends on tier 1
-  { name: "salary_changes", tier: 2 },
   { name: "paycheck_deductions", tier: 2 },
   { name: "contribution_accounts", tier: 2 },
   { name: "portfolio_accounts", tier: 2 },

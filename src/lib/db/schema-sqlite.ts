@@ -22,7 +22,6 @@ import type {
   PayWeek,
   TaxTreatment,
   MatchTaxTreatment,
-  ContributionMethod,
   EmployerMatchType,
   HsaCoverageType,
   AccountOwnership,
@@ -88,8 +87,7 @@ export type ExtraPaycheckRoutingData = {
 // ============================================================================
 // TABLE OF CONTENTS — sections below are in this order:
 //
-//   1.  People & Jobs .............. people, jobs, salaryChanges,
-//                                    jobBonusOverrides
+//   1.  People & Jobs .............. people, jobs
 //   2.  Contributions & Paycheck ... contributionAccounts, contributionLimits,
 //                                    paycheckDeductions
 //   3.  Budget ..................... budgetProfiles, budgetItems
@@ -151,15 +149,11 @@ export const jobs = sqliteTable(
       .references(() => people.id, { onDelete: "restrict" }),
     employerName: text("employer_name").notNull(),
     title: text("title"),
-    annualSalary: text("annual_salary").notNull(),
     payPeriod: text("pay_period").$type<PayPeriod>().notNull(),
     payWeek: text("pay_week").$type<PayWeek>().notNull(),
     startDate: text("start_date").notNull(),
     anchorPayDate: text("anchor_pay_date"), // a known payday — defaults to startDate if null
     endDate: text("end_date"),
-    bonusPercent: text("bonus_percent").notNull().default("0"),
-    bonusMultiplier: text("bonus_multiplier").notNull().default("1.0"),
-    monthsInBonusYear: integer("months_in_bonus_year").notNull().default(12),
     include401kInBonus: integer("include_401k_in_bonus", { mode: "boolean" })
       .notNull()
       .default(false),
@@ -181,47 +175,24 @@ export const jobs = sqliteTable(
     extraPaycheckRouting: text("extra_paycheck_routing", {
       mode: "json",
     }).$type<ExtraPaycheckRoutingData | null>(),
-  },
-  (table) => [index("jobs_person_id_idx").on(table.personId)],
-);
-
-export const salaryChanges = sqliteTable(
-  "salary_changes",
-  {
-    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-    jobId: integer("job_id")
+    /** A permanent, auto-provisioned peg for Salary Profiles to pin what-if
+     *  scenarios against (e.g. "moving to Chicago in 5 years") — never a
+     *  real job. Always has endDate: null (it never "ends") but must be
+     *  excluded everywhere "active job" means "this person's real job" —
+     *  see findActiveJob/filterActiveJobs in lib/pure/profiles.ts, the
+     *  single source of truth for that exclusion. */
+    isSpeculative: integer("is_speculative", { mode: "boolean" })
       .notNull()
-      .references(() => jobs.id, { onDelete: "cascade" }),
-    effectiveDate: text("effective_date").notNull(),
-    newSalary: text("new_salary").notNull(),
-    raisePercent: text("raise_percent"),
-    notes: text("notes"),
-  },
-  (table) => [index("salary_changes_job_id_idx").on(table.jobId)],
-);
-
-// Year-scoped bonus override — pins a job's actual known bonus for one
-// calendar year (e.g. once paid out and lower than the formula estimate)
-// without affecting the formula-computed bonus for any other year. Row
-// absent for a (jobId, year) pair means "use computeBonusGross's formula
-// for that year" — there is no shared/flat fallback the way the old
-// jobs.bonus_override column worked.
-export const jobBonusOverrides = sqliteTable(
-  "job_bonus_overrides",
-  {
-    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-    jobId: integer("job_id")
-      .notNull()
-      .references(() => jobs.id, { onDelete: "cascade" }),
-    year: integer("year").notNull(),
-    overrideAmount: text("override_amount").notNull(),
-    notes: text("notes"),
-    createdBy: text("created_by"),
-    updatedBy: text("updated_by"),
+      .default(false),
   },
   (table) => [
-    uniqueIndex("job_bonus_overrides_job_year_idx").on(table.jobId, table.year),
-    index("job_bonus_overrides_job_id_idx").on(table.jobId),
+    index("jobs_person_id_idx").on(table.personId),
+    index("jobs_is_speculative_idx").on(table.isSpeculative),
+    // Exactly one speculative job per person — a DB-enforced invariant, not
+    // just an app convention.
+    uniqueIndex("jobs_one_speculative_per_person_idx")
+      .on(table.personId)
+      .where(sql`${table.isSpeculative} = true`),
   ],
 );
 
@@ -242,10 +213,12 @@ export const contributionAccounts = sqliteTable(
     label: text("label"),
     parentCategory: text("parent_category").notNull().default("Retirement"),
     taxTreatment: text("tax_treatment").$type<TaxTreatment>().notNull(),
-    contributionMethod: text("contribution_method")
-      .$type<ContributionMethod>()
-      .notNull(),
-    contributionValue: text("contribution_value").notNull(),
+    // contributionMethod/contributionValue deliberately do NOT live here —
+    // an account is purely structural (what it IS); the actual contribution
+    // amount/method is ALWAYS a Contribution Profile's active-field entry
+    // (contribution_profiles.contribution_active_fields), never a fallback
+    // column on the account row. See applyContribActiveFields — there is no
+    // base-value fallback, an account with no active entry has no value.
     employerMatchType: text("employer_match_type")
       .$type<EmployerMatchType>()
       .notNull(),
@@ -940,6 +913,31 @@ export const homeImprovementItems = sqliteTable("home_improvement_items", {
   cost: text("cost").notNull(),
   note: text("note"),
 });
+
+// A person's recorded salary + paid bonus for one year — a direct fact,
+// the same as every other Historical year-end field (grossIncome,
+// combinedAgi, etc). Not derived from a job or any ledger — a job carries
+// no salary/bonus of its own (see jobs above), and there is no dated
+// raise/bonus history to walk. The current (in-progress) year has no row
+// here yet; it auto-fills from the active Salary Profile until recorded.
+export const historicalSalaries = sqliteTable(
+  "historical_salaries",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    personId: integer("person_id")
+      .notNull()
+      .references(() => people.id, { onDelete: "cascade" }),
+    year: integer("year").notNull(),
+    salary: text("salary").notNull(),
+    bonus: text("bonus").notNull().default("0"),
+  },
+  (table) => [
+    uniqueIndex("historical_salaries_person_year_idx").on(
+      table.personId,
+      table.year,
+    ),
+  ],
+);
 
 // Other asset items — carry-forward: latest value per name for a given year
 export const otherAssetItems = sqliteTable(
@@ -1777,7 +1775,7 @@ export const contributionProfiles = sqliteTable("contribution_profiles", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   name: text("name").notNull().unique(),
   description: text("description"),
-  contributionOverrides: text("contribution_overrides", { mode: "json" })
+  contributionActiveFields: text("contribution_active_fields", { mode: "json" })
     .$type<ScenarioOverrides>()
     .notNull()
     .default(sql`'{}'`),
@@ -1786,53 +1784,39 @@ export const contributionProfiles = sqliteTable("contribution_profiles", {
     .default(sql`(unixepoch())`),
 });
 
-// --- Salary profiles (per-person salary entries) ---
+// --- Salary profiles (per-job salary entries) ---
 //
 // A first-class sibling of Budget Profile / Contribution Profile: a named set
-// of per-person salary ENTRIES that any page can preview under. Deliberately
+// of per-job salary ENTRIES that any page can preview under. Deliberately
 // separate from contribution_profiles so "what if I earned X" and "what if I
-// contributed Y" are two independent pins rather than one coupled entity.
+// contributed Y" are two independent axes rather than one coupled entity.
 //
 // Every profile is an ordinary row — there is no `isDefault` column and no
 // synthetic id-0 "Live" row. An id either resolves to a real row or is an
 // error; it is never a sentinel.
 //
-// `salaries` is a SPARSE map of pins, and PRESENCE OF A FIELD IS THE PIN
-// SIGNAL. Each person's entry is an object of optional fields:
-//   { salary?, bonusPercent?, bonusMultiplier?, monthsInBonusYear? }
-// A field that is set pins that value for this profile. A field that is
-// absent resolves live from the job record (salary via getCurrentSalary:
-// salary_changes → jobs.annual_salary; bonus terms straight off `jobs`).
-// An empty object, or no key for the person at all, pins nothing — the two
-// are the same statement. There is no `mode` discriminator.
-//
-// The fields are INDEPENDENT: pinning a salary says nothing about bonus.
-// Someone can pin a salary and keep live bonus terms, pin bonus terms and
-// keep a live salary, or pin both. Only entries that pin something reach
-// the salary override map, so a map key means "has at least one pin" — see
-// salary.ts's applySalaryProfileRow for why that presence invariant
-// matters, and resolveCompensation for the one definition of what a person
-// earns under an entry.
-//
-// jobs.annual_salary / salary_changes stay the sole authority for "what is
-// this job's actual salary"; an unpinned field re-reads them on every
-// resolution, so there is nothing to sync and no drift to guard against.
-// Bonus terms on `jobs` are the same tier and likewise stay authoritative.
+// A job carries no salary or bonus terms of its own. `salaries` is a jobId →
+// COMPLETE entry map — see the docblock on the column below.
 
 export const salaryProfiles = sqliteTable("salary_profiles", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   name: text("name").notNull().unique(),
   description: text("description"),
-  /** personId → salary entry. See salaryEntriesSchema in json-schemas.ts. */
+  /** jobId → complete salary entry. A job either has ALL five fields (a
+   *  real, complete number for this profile) or no key at all (this
+   *  profile says nothing about that job — contributes $0, not a
+   *  fallback to some other value). No partial entries — see
+   *  salaryEntriesSchema in json-schemas.ts. */
   salaries: text("salaries", { mode: "json" })
     .$type<
       Record<
         string,
         {
-          salary?: number;
-          bonusPercent?: number;
-          bonusMultiplier?: number;
-          monthsInBonusYear?: number;
+          salary: number;
+          bonusPercent: number;
+          bonusMultiplier: number;
+          monthsInBonusYear: number;
+          bonusOverride: number | null;
         }
       >
     >()

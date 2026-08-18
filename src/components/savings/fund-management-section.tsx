@@ -90,6 +90,11 @@ export interface FundManagementSectionProps {
     }
   >;
   canEdit: boolean;
+  /** Same padlock as the Budget page's Savings tab / this page's Allocations
+   *  tab (EDIT_LOCK_KEYS.profileEditLocked) — funding-field edits made from a
+   *  fund card must respect the same lock as every other surface that edits
+   *  this exact data, or locking one surface doesn't actually protect it. */
+  fundingLocked?: boolean;
   /** From AllocationEditorSection — piped through to FundCard */
   onEditMonth: (monthDate: Date) => void;
   onDeleteOverride: (params: { goalId: number; monthDate: string }) => void;
@@ -157,6 +162,7 @@ export function FundManagementSection({
   childGoalsByParent,
   apiBalanceMap,
   canEdit,
+  fundingLocked = false,
   onEditMonth,
   onDeleteOverride,
   efund,
@@ -276,7 +282,7 @@ export function FundManagementSection({
     const raw = goalById.get(goalId);
     if (!raw) return;
     if (isFundingField(field)) {
-      if (activeProfileId == null) return;
+      if (activeProfileId == null || fundingLocked) return;
       const monthlyContribution =
         field === "monthlyContribution"
           ? parseFloat(value) || 0
@@ -340,7 +346,7 @@ export function FundManagementSection({
     const otherFields = Object.fromEntries(
       Object.entries(fields).filter(([k]) => !isFundingField(k)),
     );
-    if (fundingKeys.length > 0 && activeProfileId != null) {
+    if (fundingKeys.length > 0 && activeProfileId != null && !fundingLocked) {
       const monthlyContribution =
         "monthlyContribution" in fields
           ? parseFloat(fields.monthlyContribution ?? "0") || 0

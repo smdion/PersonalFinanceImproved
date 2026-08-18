@@ -1,152 +1,87 @@
 /**
  * Salary lookup and compensation helpers.
+ *
+ * A job carries no salary/bonus of its own. There are exactly two sources
+ * of truth for what someone earns:
+ *   - `historical_salaries` — a direct, per-person-per-year fact (past
+ *     years), edited on the Historical page. See routers/historical.ts.
+ *   - The active Salary Profile's entry for a job — a COMPLETE,
+ *     all-or-nothing number for the live/current picture (see
+ *     SalaryProfileEntry below). No partial/pinned state, no fallback to
+ *     "the job's live value" — a job has none.
  */
-import { eq, and, lte, gte, gt, desc, asc, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "./transforms";
 import type { Db } from "./transforms";
-
-/**
- * Get the current salary for a job by checking salary_changes first,
- * falling back to jobs.annual_salary if no changes exist.
- * Per Migration Plan section 12.27.
- */
-export async function getCurrentSalary(
-  db: Db,
-  jobId: number,
-  fallbackSalary: string,
-  asOfDate: Date = new Date(),
-): Promise<number> {
-  const changes = await db
-    .select()
-    .from(schema.salaryChanges)
-    .where(
-      and(
-        eq(schema.salaryChanges.jobId, jobId),
-        lte(
-          schema.salaryChanges.effectiveDate,
-          asOfDate.toISOString().slice(0, 10),
-        ),
-      ),
-    )
-    .orderBy(desc(schema.salaryChanges.effectiveDate))
-    .limit(1);
-
-  if (changes.length > 0 && changes[0]) {
-    return toNumber(changes[0].newSalary);
-  }
-  return toNumber(fallbackSalary);
-}
-
-/**
- * Apply a salary override map to an already-resolved raw salary — the
- * single "final merge" step (`override ?? raw`) that used to be re-typed
- * inline at every call site. Use this when the caller already has the raw
- * salary in hand for another purpose (e.g. also needs it un-overridden for
- * total-compensation math); use resolveEffectiveSalary below when it
- * doesn't and would otherwise fetch it just to throw it away.
- *
- * The map itself should already be the merged Plan+Salary-Profile map from
- * loadAndApplySalaryProfile (Plan wins if both are set) — this function
- * doesn't decide Plan vs. Profile precedence, only applies whatever map it's
- * handed. Contribution Profiles no longer carry salary at all; salary lives
- * on its own first-class Salary Profile entity.
- *
- * Reads ONLY the entry's `salary` field. A person whose profile entry pins
- * bonus terms but no salary has a map entry, so `map.has(personId)` is true,
- * yet their salary must still resolve live — which is exactly what
- * `?? rawSalary` does here. Never re-derive "is this person's salary pinned"
- * from `.has()`; ask for `.get(personId)?.salary !== undefined`.
- *
- * Whether a call site should PASS a populated map at all is a separate
- * decision: pass one when the output is presented as "what your finances
- * look like under the active Plan" (paycheck, budget item $ amounts); pass
- * an empty map when the output is a persisted snapshot or the live/control
- * arm of a comparison (see savings.ts's computeJobNetPayPerCheck,
- * retirement.ts's computeRelocationAnalysis, and this file's
- * loadLiveContribData for documented examples of the latter — overriding
- * those would corrupt what they're for, not fix them).
- */
-export function applySalaryOverride(
-  personId: number,
-  rawSalary: number,
-  salaryOverrideMap: SalaryOverrideMap,
-): number {
-  return salaryOverrideMap.get(personId)?.salary ?? rawSalary;
-}
+import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 // ---------------------------------------------------------------------------
-// Salary Profile resolution
+// Plan/session + What-If sandbox tiers — independent of Salary Profiles.
+// Both are ephemeral, request-scoped layers on top of whatever a Salary
+// Profile resolves to; neither is persisted salary "truth."
 // ---------------------------------------------------------------------------
 
-/**
- * One person's entry in a Salary Profile's `salaries` map.
- *
- * There is no discriminator. PRESENCE OF A FIELD IS THE PIN SIGNAL: a field
- * that is set pins that value for this profile, a field that is absent
- * resolves live from the job record on every read. An empty object (or no
- * key for the person at all) means nothing is pinned for them, which is why
- * a profile does not have to hold an entry for everyone to be complete.
- *
- * The fields are independent. Pinning `salary` says nothing about bonus:
- * a person can pin a salary and keep live bonus terms, pin bonus terms and
- * keep a live salary, or pin both. Code that treats "salary is pinned" as
- * "bonus is gone" is the shape of bug this encoding exists to make
- * unrepresentable — see resolveCompensation below, the single definition of
- * what a person earns under a profile.
- *
- * `bonusPercent` is a FRACTION (0.12 = 12%), matching jobs.bonus_percent.
- */
-export type SalaryProfileEntry = {
+/** A Plan/session or What-If sandbox salary/bonus tweak — genuinely
+ *  partial (e.g. "just try a different salary"), unlike a Salary Profile's
+ *  own entries. Presence per field is the signal here; absence falls
+ *  through to whatever the tier below already resolved. */
+export type SalaryOverrideEntry = {
   salary?: number;
   bonusPercent?: number;
   bonusMultiplier?: number;
   monthsInBonusYear?: number;
 };
 
-/** personId (as a string key) → salary entry. */
-export type SalaryEntryMap = Record<string, SalaryProfileEntry>;
+/** personId → the Plan/session tier's active salary override, if any. */
+export type SalaryActiveMap = Map<number, SalaryOverrideEntry>;
 
 /**
- * personId → the pinned fields in effect for that person, merged across the
- * Plan/session tier and the Salary Profile tier.
- *
- * A key exists only when SOMETHING is pinned, so `.has(personId)` means
- * "this person has at least one pin" — it does NOT mean their salary is
- * pinned. Ask `.get(personId)?.salary !== undefined` for that specific
- * question, and `?.bonusPercent !== undefined` (etc.) for bonus terms.
+ * Apply a salary active-value map to an already-resolved raw salary — the
+ * single "final merge" step (`active ?? raw`).
  */
-export type SalaryOverrideMap = Map<number, SalaryProfileEntry>;
-
-/** The bonus terms computeBonusGross takes, in its own argument types. */
-export type BonusTerms = {
-  bonusPercent: string | null;
-  bonusMultiplier: string | null;
-  monthsInBonusYear: number | null;
-};
-
-/** A job's permanent bonus terms — the live values a profile pin overlays. */
-type JobBonusFields = {
-  bonusPercent: string | null;
-  bonusMultiplier: string | null;
-  monthsInBonusYear: number | null;
-};
+export function applyActiveSalary(
+  personId: number,
+  rawSalary: number,
+  salaryActiveMap: SalaryActiveMap,
+): number {
+  return salaryActiveMap.get(personId)?.salary ?? rawSalary;
+}
 
 /**
- * Strip an entry down to just the fields it actually pins, dropping anything
- * absent, null, or non-finite. Returns undefined when nothing is pinned.
- *
- * This is the gate that keeps the override map's presence contract honest:
- * an entry that pins nothing must produce NO key, because a key that exists
- * but pins nothing would read as an override at every `.has()` call site
- * while carrying no value to apply.
+ * Merge a Plan/session or What-If sandbox entry's bonus-term overrides onto
+ * a Salary Profile's resolved terms — the override tier can adjust
+ * bonusPercent/bonusMultiplier/monthsInBonusYear independently of salary,
+ * same per-field precedence as applyActiveSalary for the salary field.
+ */
+export function applyActiveBonusTerms(
+  entry: SalaryOverrideEntry | undefined,
+  terms: BonusTerms,
+): BonusTerms {
+  return {
+    bonusPercent:
+      entry?.bonusPercent !== undefined
+        ? String(entry.bonusPercent)
+        : terms.bonusPercent,
+    bonusMultiplier:
+      entry?.bonusMultiplier !== undefined
+        ? String(entry.bonusMultiplier)
+        : terms.bonusMultiplier,
+    monthsInBonusYear: entry?.monthsInBonusYear ?? terms.monthsInBonusYear,
+  };
+}
+
+/**
+ * Strip an override entry down to just the fields it actually sets,
+ * dropping anything absent, null, or non-finite. Returns undefined when
+ * nothing is set.
  */
 export function pinnedFields(
-  entry: SalaryProfileEntry | null | undefined,
-): SalaryProfileEntry | undefined {
+  entry: SalaryOverrideEntry | null | undefined,
+): SalaryOverrideEntry | undefined {
   if (!entry) return undefined;
-  const out: SalaryProfileEntry = {};
+  const out: SalaryOverrideEntry = {};
   for (const key of [
     "salary",
     "bonusPercent",
@@ -160,108 +95,162 @@ export function pinnedFields(
 }
 
 /**
- * Narrow a Salary Profile's `salaries` map down to just the people whose
- * SALARY is pinned, as a plain personId → number record.
- *
- * This is deliberately lossy in exactly one direction: an entry with no
- * `salary` key produces NO key here. Everything downstream keys off presence
- * (`record[personId] !== undefined`) to mean "this person has an explicit
- * flat salary", so emitting a key for someone whose salary resolves live
- * would silently:
- *   - replace their real, dated salary history with a frozen number in
- *     paycheck/budget/contribution math,
- *   - feed the retirement profile-switch growth math the wrong base to
- *     compound from,
- *   - and (before the presence encoding) zero their bonus outright.
- * Keeping unpinned people out by construction is what lets every one of
- * those consumers stay exactly as it was.
- *
- * Bonus terms are NOT collapsed here — they are not expressible as a single
- * number and travel on the entry itself. Use resolveCompensation.
+ * Apply a What-If sandbox's hand-edited salary/bonus entries as the highest
+ * precedence tier, above the Plan/session tier already merged into the map.
+ * Gaps-only, per field.
  */
-export function pinnedSalaries(
-  salaries: SalaryEntryMap | null | undefined,
-): Record<string, number> {
-  const out: Record<string, number> = {};
-  for (const [personId, entry] of Object.entries(salaries ?? {})) {
-    const salary = pinnedFields(entry)?.salary;
-    if (salary !== undefined) out[personId] = salary;
+export function applySandboxSalaryEntries(
+  entries: Record<string, SalaryOverrideEntry> | null | undefined,
+  salaryActiveMap: SalaryActiveMap,
+): SalaryActiveMap {
+  if (!entries || Object.keys(entries).length === 0) return salaryActiveMap;
+  const map = new Map(salaryActiveMap);
+  for (const [personIdKey, rawEntry] of Object.entries(entries)) {
+    const pinned = pinnedFields(rawEntry);
+    if (!pinned) continue;
+    const personId = Number(personIdKey);
+    const existing = map.get(personId);
+    map.set(personId, existing ? { ...existing, ...pinned } : pinned);
   }
-  return out;
+  return map;
 }
 
+// ---------------------------------------------------------------------------
+// Salary Profile resolution — complete entries, no pinning
+// ---------------------------------------------------------------------------
+
 /**
- * Overlay a profile entry's pinned bonus terms onto a job's live ones.
- * Absent fields fall through to the job record — the whole point of the
- * presence encoding.
+ * One job's entry in a Salary Profile's `salaries` map. Always complete —
+ * a profile either has ALL FIVE of these fields for a job, or (no key at
+ * all) says nothing about it. There is no partial state, no "resolves
+ * live," no revert-to-something-else. A profile is its own self-contained
+ * world; if you want different numbers, use a different profile.
  *
- * Numbers are stringified because that is how jobs.bonus_percent /
- * bonus_multiplier arrive from the driver (numeric columns), and
- * computeBonusGross parses both the same way.
+ * `bonusPercent` is a FRACTION (0.12 = 12%).
+ *
+ * `bonusOverride`: this year's actual paid-out bonus, pinned once known —
+ * an orthogonal fact from the bonusPercent/bonusMultiplier/monthsInBonusYear
+ * formula, not a replacement for it. Only the current-year LIVE paycheck
+ * display reads it (via resolveCompensation's returned `bonusOverride`);
+ * growth/projection math always uses the formula fields untouched, so
+ * pinning one year's actual number never distorts future-year compounding.
+ * Still lives on this same entry — never a separate table/fallback.
  */
-export function resolveBonusTerms(
-  job: JobBonusFields,
-  entry: SalaryProfileEntry | null | undefined,
-): BonusTerms {
+export type SalaryProfileEntry = {
+  salary: number;
+  bonusPercent: number;
+  bonusMultiplier: number;
+  monthsInBonusYear: number;
+  bonusOverride: number | null;
+};
+
+/** A Salary Profile's own `salaries` map, keyed by jobId (string key) —
+ *  a profile targets a specific job's terms. */
+export type SalaryEntryMap = Record<string, SalaryProfileEntry>;
+
+/** jobId → that job's complete entry in the active Salary Profile, if any. */
+export type SalaryProfileActiveMap = Map<number, SalaryProfileEntry>;
+
+/** The bonus terms computeBonusGross takes, in its own argument types. */
+export type BonusTerms = {
+  bonusPercent: string | null;
+  bonusMultiplier: string | null;
+  monthsInBonusYear: number | null;
+};
+
+/**
+ * THE definition of what one job earns under a Salary Profile: the
+ * profile's own complete entry for that job, or nothing at all ($0, no
+ * bonus) if the profile doesn't mention it — never a fallback to a job
+ * column or a dated ledger, because neither exists any more.
+ *
+ * `bonus`/`totalComp` are always the pure FORMULA figures — every caller
+ * that grows compensation forward (retirement projections, contribution
+ * math) relies on that being untouched by a current-year pin. `bonusOverride`
+ * is returned alongside, unapplied, for the one caller (the live Paycheck
+ * display) that chooses to use it in place of the formula bonus for the
+ * current year specifically.
+ */
+export function resolveCompensation(
+  salaryProfileActiveMap: SalaryProfileActiveMap,
+  jobId: number,
+): {
+  salary: number;
+  bonus: number;
+  totalComp: number;
+  terms: BonusTerms;
+  bonusOverride: number | null;
+} {
+  const entry = salaryProfileActiveMap.get(jobId);
+  if (!entry) {
+    const terms: BonusTerms = {
+      bonusPercent: null,
+      bonusMultiplier: null,
+      monthsInBonusYear: null,
+    };
+    return { salary: 0, bonus: 0, totalComp: 0, terms, bonusOverride: null };
+  }
+  const terms: BonusTerms = {
+    bonusPercent: String(entry.bonusPercent),
+    bonusMultiplier: String(entry.bonusMultiplier),
+    monthsInBonusYear: entry.monthsInBonusYear,
+  };
+  const bonus = computeBonusGross(
+    entry.salary,
+    terms.bonusPercent,
+    terms.bonusMultiplier,
+    terms.monthsInBonusYear,
+  );
   return {
-    bonusPercent:
-      entry?.bonusPercent !== undefined
-        ? String(entry.bonusPercent)
-        : job.bonusPercent,
-    bonusMultiplier:
-      entry?.bonusMultiplier !== undefined
-        ? String(entry.bonusMultiplier)
-        : job.bonusMultiplier,
-    monthsInBonusYear:
-      entry?.monthsInBonusYear !== undefined
-        ? entry.monthsInBonusYear
-        : job.monthsInBonusYear,
+    salary: entry.salary,
+    bonus,
+    totalComp: entry.salary + bonus,
+    terms,
+    // `?? null`, not a bare passthrough: entries written before this field
+    // existed have the key absent entirely (`undefined`), not `null`. Both
+    // mean the exact same thing — "no pin" — so normalize here rather than
+    // treating an absent key as "somehow already a real override value."
+    bonusOverride: entry.bonusOverride ?? null,
   };
 }
 
 /**
- * THE definition of what one person earns under a Salary Profile entry:
- * pinned-or-live salary, plus a bonus computed from pinned-or-live bonus
- * terms AT THAT SALARY.
- *
- * Every consumer that reports or computes compensation under a profile goes
- * through this — resolveProfile's salary merge, build-engine-payload's
- * per-job comp, and the salary-profile router's own editor preview. They
- * used to each re-derive it, and they disagreed: the router included bonus
- * for a pinned salary while resolveProfile dropped it, so a pinned salary
- * silently lost its bonus from every contribution and projection number
- * while the editor kept showing it. Keeping the arithmetic in one function
- * is what makes those two agree by construction rather than by review.
- *
- * `resolvedBonusOverride` is this year's actual-bonus pin from
- * job_bonus_overrides (null when there is none) and, per computeBonusGross,
- * short-circuits the formula entirely when set.
+ * Resolve one person's income for a specific year using the same
+ * "recorded fact beats live estimate" fallback chain as historical.ts's
+ * computeSummary/upsertSalary: a historical_salaries row wins if recorded;
+ * otherwise, for the current year only, fall back to the active Salary
+ * Profile's complete entry for the person's active job. `recorded` is
+ * false only when neither source has anything — callers (e.g.
+ * performance.ts's finalizeYear) use that to avoid persisting a false $0.
  */
-export function resolveCompensation(
-  job: JobBonusFields,
-  liveSalary: number,
-  entry: SalaryProfileEntry | null | undefined,
-  resolvedBonusOverride: number | null,
-): { salary: number; bonus: number; totalComp: number; terms: BonusTerms } {
-  const salary = entry?.salary ?? liveSalary;
-  const terms = resolveBonusTerms(job, entry);
-  const bonus = computeBonusGross(
-    salary,
-    terms.bonusPercent,
-    terms.bonusMultiplier,
-    resolvedBonusOverride,
-    terms.monthsInBonusYear,
-  );
-  return { salary, bonus, totalComp: salary + bonus, terms };
+export function resolvePersonYearIncome(
+  year: number,
+  currentYear: number,
+  historicalRow: { salary: string | null; bonus: string | null } | undefined,
+  activeJobId: number | null | undefined,
+  salaryProfileActiveMap: SalaryProfileActiveMap,
+): { salary: number; bonus: number; recorded: boolean } {
+  if (historicalRow) {
+    return {
+      salary: toNumber(historicalRow.salary),
+      bonus: toNumber(historicalRow.bonus),
+      recorded: true,
+    };
+  }
+  if (year === currentYear && activeJobId != null) {
+    const hasEntry = salaryProfileActiveMap.has(activeJobId);
+    const comp = resolveCompensation(salaryProfileActiveMap, activeJobId);
+    return { salary: comp.salary, bonus: comp.bonus, recorded: hasEntry };
+  }
+  return { salary: 0, bonus: 0, recorded: false };
 }
 
 /**
  * Fetch a Salary Profile by id.
  *
  * A null/undefined id means "no Salary Profile selected at this call site"
- * (e.g. a Plan that pins nothing) and yields null. A non-null id that
- * doesn't resolve is a genuinely missing row, not a sentinel — there is no
- * synthetic "Live" id any more.
+ * and yields null. A non-null id that doesn't resolve is a genuinely
+ * missing row, not a sentinel.
  */
 export async function fetchSalaryProfile(
   db: Db,
@@ -276,318 +265,114 @@ export async function fetchSalaryProfile(
 }
 
 /**
- * Merge a Salary Profile's pinned per-person fields into an existing salary
- * override map — GAPS ONLY. Fields already in the map (Plan/session
- * overrides, the highest-precedence tier) always win, matching
- * applySalaryOverride's precedence contract.
- *
- * No-op (returns the map unchanged) when the id is null/undefined or the
- * profile no longer exists.
+ * Load a Salary Profile and build its job-targeted active-value map — see
+ * SalaryProfileActiveMap. Returns an empty map when the id is null/undefined
+ * or the profile no longer exists.
  */
 export async function loadAndApplySalaryProfile(
   db: Db,
   salaryProfileId: number | undefined | null,
-  salaryOverrideMap: SalaryOverrideMap,
-): Promise<SalaryOverrideMap> {
+): Promise<SalaryProfileActiveMap> {
   const profile = await fetchSalaryProfile(db, salaryProfileId);
-  return applySalaryProfileRow(profile, salaryOverrideMap);
+  return applySalaryProfileRow(profile);
 }
 
 /**
- * Synchronous twin of loadAndApplySalaryProfile for batch-fetched contexts
- * (mirrors applyContribProfileRow) — applies an already-fetched row without
- * issuing a query.
- *
- * INVARIANT: only entries that actually pin something are written into the
- * map. A person whose entry is empty (or absent) is left absent, so a map
- * key keeps meaning "this person has at least one pin" everywhere
- * downstream. See pinnedSalaries' docblock for what breaks if that is
- * violated.
- *
- * The gaps-only merge is PER FIELD, not per person. Plan/session overrides
- * only ever pin salary, so a per-person merge would make a Plan's salary pin
- * silently discard the profile's pinned bonus terms for that same person —
- * the pins are independent facts and each falls to the highest tier that
- * sets it.
+ * Same as loadAndApplySalaryProfile, but falls back to the globally-ACTIVE
+ * Salary Profile when no explicit id is given — the "viewing a specific
+ * profile" callers (Paycheck/Contribution pages) always pass their own
+ * resolved id, so this only matters when a caller genuinely has no
+ * preference (historical.ts, savings.ts, retirement.ts, helpers/
+ * contribution.ts's loadLiveContribData all call this with `null` for
+ * exactly that reason — call this instead of hand-rolling the app_settings
+ * lookup again). helpers/snapshot.ts's buildYearEndHistory is the one
+ * deliberate exception: it already has app_settings batch-fetched as part
+ * of a larger Promise.all, so re-deriving the active id from that
+ * in-memory array avoids a redundant query on a hot path.
+ */
+export async function loadEffectiveSalaryProfile(
+  db: Db,
+  salaryProfileId: number | null | undefined,
+): Promise<SalaryProfileActiveMap> {
+  if (salaryProfileId != null) {
+    return loadAndApplySalaryProfile(db, salaryProfileId);
+  }
+  const rows = await db
+    .select()
+    .from(schema.appSettings)
+    .where(eq(schema.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID));
+  const activeId = Number(rows[0]?.value ?? NaN);
+  return Number.isFinite(activeId)
+    ? loadAndApplySalaryProfile(db, activeId)
+    : new Map();
+}
+
+/**
+ * Synchronous twin of loadAndApplySalaryProfile for batch-fetched contexts —
+ * builds the map from an already-fetched row without issuing a query.
  */
 export function applySalaryProfileRow(
   profile: { salaries: SalaryEntryMap | null } | null | undefined,
-  salaryOverrideMap: SalaryOverrideMap,
-): SalaryOverrideMap {
-  if (!profile) return salaryOverrideMap;
-  const map = new Map(salaryOverrideMap);
+): SalaryProfileActiveMap {
+  const map: SalaryProfileActiveMap = new Map();
+  if (!profile) return map;
   const salaries = (profile.salaries ?? {}) as SalaryEntryMap;
-  for (const [personIdKey, rawEntry] of Object.entries(salaries)) {
-    const pinned = pinnedFields(rawEntry);
-    if (!pinned) continue;
-    const personId = Number(personIdKey);
-    const existing = map.get(personId);
-    // Spread order is the precedence: whatever the higher tier already set
-    // overwrites the profile's value for that field only.
-    map.set(personId, existing ? { ...pinned, ...existing } : pinned);
+  for (const [jobIdKey, entry] of Object.entries(salaries)) {
+    map.set(Number(jobIdKey), entry);
   }
   return map;
 }
 
 /**
- * Apply a What-If sandbox's hand-edited salary/bonus entries as the NEW
- * HIGHEST tier, above everything already merged into the map.
- *
- * Full precedence once this has run (highest first):
- *   sandbox entry (per field) > Plan/session salary override (salary only)
- *   > Salary Profile pin > live job record.
- *
- * There is deliberately no second merge implementation here. The gaps-only
- * merge in applySalaryProfileRow ("whatever the higher tier already set wins,
- * per field") is exactly the rule needed — with the ROLES SWAPPED: the
- * sandbox seeds the map (it's the higher tier now) and the already-resolved
- * lower tiers are handed in as the synthetic "profile row" that only fills
- * fields the sandbox left alone. Writing a bespoke merge here is how the two
- * would drift apart.
- *
- * `entries` is user-supplied (it comes straight off a form), so it goes
- * through pinnedFields like every other source — an empty/NaN/non-finite
- * field pins nothing and falls through to the tier below, and a person whose
- * entry pins nothing produces no key at all, preserving the map's
- * "a key means at least one pin" invariant.
- */
-export function applySandboxSalaryEntries(
-  entries: SalaryEntryMap | null | undefined,
-  salaryOverrideMap: SalaryOverrideMap,
-): SalaryOverrideMap {
-  if (!entries || Object.keys(entries).length === 0) return salaryOverrideMap;
-  const sandboxMap: SalaryOverrideMap = new Map();
-  for (const [personIdKey, rawEntry] of Object.entries(entries)) {
-    const pinned = pinnedFields(rawEntry);
-    if (pinned) sandboxMap.set(Number(personIdKey), pinned);
-  }
-  if (sandboxMap.size === 0) return salaryOverrideMap;
-  const lowerTiers: SalaryEntryMap = {};
-  for (const [personId, entry] of salaryOverrideMap) {
-    lowerTiers[String(personId)] = entry;
-  }
-  return applySalaryProfileRow({ salaries: lowerTiers }, sandboxMap);
-}
-
-/**
- * Resolve a job's effective salary end to end: fetches the raw current
- * salary (salary_changes history, falling back to jobs.annual_salary) and
- * applies applySalaryOverride to it. See applySalaryOverride's docblock for
- * the full precedence contract and when a call site should/shouldn't pass
- * a populated override map.
- */
-export async function resolveEffectiveSalary(
-  db: Db,
-  job: { id: number; personId: number; annualSalary: string },
-  salaryOverrideMap: SalaryOverrideMap,
-  asOfDate: Date = new Date(),
-): Promise<number> {
-  const raw = await getCurrentSalary(db, job.id, job.annualSalary, asOfDate);
-  return applySalaryOverride(job.personId, raw, salaryOverrideMap);
-}
-
-/**
- * Fetch current salary + effective income for a list of jobs.
- * Replaces the duplicated `Promise.all(jobs.map(j => getCurrentSalary(...)))` pattern
- * across paycheck, contribution, networth, retirement, and historical routers.
- */
-export async function getSalariesForJobs(
-  db: Db,
-  jobs: (typeof schema.jobs.$inferSelect)[],
-  asOfDate: Date = new Date(),
-): Promise<
-  {
-    job: typeof schema.jobs.$inferSelect;
-    baseSalary: number;
-    effectiveIncome: number;
-    /** This job's bonus override for asOfDate's calendar year, if any —
-     *  exposed so callers that also need getTotalCompensation don't have to
-     *  re-fetch it themselves. */
-    resolvedBonusOverride: number | null;
-  }[]
-> {
-  const bonusOverrides = await getBonusOverridesForJobs(
-    db,
-    jobs.map((j) => j.id),
-  );
-  const year = asOfDate.getFullYear();
-  return Promise.all(
-    jobs.map(async (job) => {
-      const baseSalary = await getCurrentSalary(
-        db,
-        job.id,
-        job.annualSalary,
-        asOfDate,
-      );
-      const resolvedBonusOverride =
-        bonusOverrides.get(`${job.id}:${year}`) ?? null;
-      const effectiveIncome = getEffectiveIncome(
-        job,
-        baseSalary,
-        resolvedBonusOverride,
-      );
-      return { job, baseSalary, effectiveIncome, resolvedBonusOverride };
-    }),
-  );
-}
-
-/**
- * Fetch every bonus override row for the given jobs, across all years,
- * keyed `"${jobId}:${year}"`. Batched (one query) rather than per-job so
- * callers that need multiple years for the same job set (e.g. historical.ts's
- * per-year reconstruction loop) don't re-query per year.
- */
-export async function getBonusOverridesForJobs(
-  db: Db,
-  jobIds: number[],
-): Promise<Map<string, number>> {
-  if (jobIds.length === 0) return new Map();
-  const rows = await db
-    .select()
-    .from(schema.jobBonusOverrides)
-    .where(inArray(schema.jobBonusOverrides.jobId, jobIds));
-  return new Map(
-    rows.map((r) => [`${r.jobId}:${r.year}`, toNumber(r.overrideAmount)]),
-  );
-}
-
-/**
  * Compute effective income for a job — salary + annual bonus when
- * includeBonusInContributions is true. Used for payroll contribution calculations
- * where the flag controls whether percent-of-salary deductions apply to bonus pay.
- *
- * `resolvedBonusOverride` must be resolved by the caller for the specific
- * year in question (via getBonusOverridesForJobs) — there is no shared
- * fallback the way the old flat jobs.bonus_override column had, so passing
- * the wrong year's value (or always-current when a past/future year is
- * intended) silently produces the wrong number.
+ * includeBonusInContributions is true. Used for payroll contribution
+ * calculations where the flag controls whether percent-of-salary deductions
+ * apply to bonus pay.
  */
 export function getEffectiveIncome(
-  job: typeof schema.jobs.$inferSelect,
+  job: { includeBonusInContributions: boolean },
   baseSalary: number,
-  resolvedBonusOverride: number | null,
+  bonusTerms: BonusTerms,
 ): number {
   if (!job.includeBonusInContributions) return baseSalary;
-  return getTotalCompensation(job, baseSalary, resolvedBonusOverride);
+  return getTotalCompensation(baseSalary, bonusTerms);
 }
 
 /**
  * Compute total compensation (salary + bonus) regardless of the
  * includeBonusInContributions flag. Used for display and projection
  * purposes where total comp is always the relevant number.
- *
- * See getEffectiveIncome's docblock for the `resolvedBonusOverride` contract.
  */
 export function getTotalCompensation(
-  job: typeof schema.jobs.$inferSelect,
   baseSalary: number,
-  resolvedBonusOverride: number | null,
+  bonusTerms: BonusTerms,
 ): number {
   const bonus = computeBonusGross(
     baseSalary,
-    job.bonusPercent,
-    job.bonusMultiplier,
-    resolvedBonusOverride,
-    job.monthsInBonusYear,
+    bonusTerms.bonusPercent,
+    bonusTerms.bonusMultiplier,
+    bonusTerms.monthsInBonusYear,
   );
   return baseSalary + bonus;
 }
 
 /**
- * Compute gross bonus amount from job fields.
+ * Compute gross bonus amount.
  * Formula: salary × bonusPercent × bonusMultiplier × (monthsInBonusYear / 12).
- * If bonusOverride is set (including explicitly to 0), returns that directly.
  */
 export function computeBonusGross(
   salary: number,
   bonusPercent: string | null,
   bonusMultiplier: string | null,
-  bonusOverride: number | null,
   monthsInBonusYear: number | null,
 ): number {
-  if (bonusOverride !== null) return roundToCents(bonusOverride);
   const pct = toNumber(bonusPercent);
   if (pct <= 0) return 0;
-  const mult = toNumber(bonusMultiplier) || 1;
+  // A stored 0 is a real "no bonus this cycle" value, not "unset" — only
+  // null (genuinely no multiplier on record) defaults to 1×. `toNumber`
+  // can't distinguish the two (both collapse to 0), so check before
+  // converting.
+  const mult = bonusMultiplier === null ? 1 : toNumber(bonusMultiplier);
   const months = monthsInBonusYear ?? 12;
   return roundToCents(salary * pct * mult * (months / 12));
-}
-
-/**
- * Get the next upcoming salary change for a job (effective date > asOfDate).
- * Returns null if no future change is scheduled.
- */
-export async function getFutureSalaryChanges(
-  db: Db,
-  jobId: number,
-  asOfDate: Date = new Date(),
-): Promise<{ salary: number; effectiveDate: string }[]> {
-  const changes = await db
-    .select()
-    .from(schema.salaryChanges)
-    .where(
-      and(
-        eq(schema.salaryChanges.jobId, jobId),
-        gt(
-          schema.salaryChanges.effectiveDate,
-          asOfDate.toISOString().slice(0, 10),
-        ),
-      ),
-    )
-    .orderBy(asc(schema.salaryChanges.effectiveDate));
-
-  return changes.map((c: { newSalary: string; effectiveDate: string }) => ({
-    salary: toNumber(c.newSalary),
-    effectiveDate: c.effectiveDate,
-  }));
-}
-
-/**
- * Get the full salary timeline for a job within a given year.
- * Returns entries in date order, starting with the rate effective on Jan 1
- * (from most recent change before the year, or job base salary as fallback),
- * followed by all changes within the year (past + future).
- */
-export async function getSalaryTimelineForYear(
-  db: Db,
-  jobId: number,
-  fallbackSalary: string,
-  year: number,
-): Promise<{ salary: number; effectiveDate: string | null }[]> {
-  const yearStart = `${year}-01-01`;
-  const yearEnd = `${year}-12-31`;
-
-  // Starting salary: most recent change before Jan 1 of the target year
-  const startingSalary = await getCurrentSalary(
-    db,
-    jobId,
-    fallbackSalary,
-    new Date(`${year}-01-01T00:00:00`),
-  );
-
-  // All changes within the target year (both past and future)
-  const changesInYear = await db
-    .select()
-    .from(schema.salaryChanges)
-    .where(
-      and(
-        eq(schema.salaryChanges.jobId, jobId),
-        gte(schema.salaryChanges.effectiveDate, yearStart),
-        lte(schema.salaryChanges.effectiveDate, yearEnd),
-      ),
-    )
-    .orderBy(asc(schema.salaryChanges.effectiveDate));
-
-  const timeline: { salary: number; effectiveDate: string | null }[] = [
-    { salary: startingSalary, effectiveDate: null },
-  ];
-
-  for (const c of changesInYear) {
-    timeline.push({
-      salary: toNumber(c.newSalary),
-      effectiveDate: c.effectiveDate,
-    });
-  }
-
-  return timeline;
 }

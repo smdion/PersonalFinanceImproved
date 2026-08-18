@@ -45,11 +45,14 @@ export function EditLockToggle({
  * one panel must not silently unlock another.
  */
 export const EDIT_LOCK_KEYS = {
-  budgetSalary: "ledgr:budget:salaryLocked",
-  budgetContrib: "ledgr:budget:contribLocked",
-  budgetBudget: "ledgr:budget:budgetLocked",
-  budgetSavings: "ledgr:budget:savingsLocked",
-  paycheckSalary: "ledgr:paycheck:salaryLocked",
+  /** One shared lock for every profile-editing surface in the app: all four
+   *  Budget page tabs (Salary, Contribution, Budget, Savings), the
+   *  standalone Savings page's allocation editor, and the Paycheck page's
+   *  Salary/Contribution profile editing — they all edit the same
+   *  underlying Salary/Contribution/Budget/Savings Profile data (just from
+   *  different pages), so one padlock covers all of it rather than several
+   *  independent locks that can drift out of sync with each other. */
+  profileEditLocked: "ledgr:budget:locked",
 } as const;
 
 /**

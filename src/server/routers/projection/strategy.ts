@@ -61,7 +61,7 @@ export const strategyRouter = createTRPCRouter({
     .input(
       z
         .object({
-          salaryOverrides: z
+          salaryActiveFields: z
             .array(z.object({ personId: z.number(), salary: z.number() }))
             .optional(),
           contributionProfileId: z.number().int().optional(),
@@ -82,12 +82,16 @@ export const strategyRouter = createTRPCRouter({
         data,
         { mcAssetClasses, mcCorrelations, mcGlidePath, effectiveInflationRisk },
       ] = await Promise.all([
-        fetchRetirementData(ctx.db, { snapshotId: input?.snapshotId }),
+        fetchRetirementData(ctx.db, {
+          snapshotId: input?.snapshotId,
+          contributionProfileId: input?.contributionProfileId,
+          salaryProfileId: input?.salaryProfileId,
+        }),
         buildMcInputs(ctx.db),
       ]);
 
       const payload = await buildEnginePayload(ctx.db, data, {
-        salaryOverrides: input?.salaryOverrides,
+        salaryActiveFields: input?.salaryActiveFields,
         contributionProfileId: input?.contributionProfileId,
         salaryProfileId: input?.salaryProfileId,
         accumulationBudgetProfileId: input?.accumulationBudgetProfileId,
@@ -237,7 +241,7 @@ export const strategyRouter = createTRPCRouter({
     .input(
       z
         .object({
-          salaryOverrides: z
+          salaryActiveFields: z
             .array(z.object({ personId: z.number(), salary: z.number() }))
             .optional(),
           contributionProfileId: z.number().int().optional(),
@@ -258,12 +262,16 @@ export const strategyRouter = createTRPCRouter({
         data,
         { mcAssetClasses, mcCorrelations, mcGlidePath, effectiveInflationRisk },
       ] = await Promise.all([
-        fetchRetirementData(ctx.db, { snapshotId: input?.snapshotId }),
+        fetchRetirementData(ctx.db, {
+          snapshotId: input?.snapshotId,
+          contributionProfileId: input?.contributionProfileId,
+          salaryProfileId: input?.salaryProfileId,
+        }),
         buildMcInputs(ctx.db),
       ]);
 
       const payload = await buildEnginePayload(ctx.db, data, {
-        salaryOverrides: input?.salaryOverrides,
+        salaryActiveFields: input?.salaryActiveFields,
         contributionProfileId: input?.contributionProfileId,
         salaryProfileId: input?.salaryProfileId,
         accumulationBudgetProfileId: input?.accumulationBudgetProfileId,

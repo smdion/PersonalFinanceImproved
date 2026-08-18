@@ -6,7 +6,6 @@ vi.mock("@/lib/db/schema", () => ({
   jobs: {},
   people: {},
   performanceAccounts: {},
-  salaryChanges: {},
   contributionProfiles: {},
 }));
 vi.mock("@/lib/db", () => ({ db: {} }));

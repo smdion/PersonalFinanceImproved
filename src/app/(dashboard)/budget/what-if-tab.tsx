@@ -45,6 +45,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/hooks/use-toast";
 import { formatCurrency, accountDisplayName } from "@/lib/utils/format";
@@ -71,6 +72,11 @@ import { BudgetPageContext } from "@/components/budget/budget-page-context";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FormError } from "@/components/ui/form-error";
+import { SlidePanel } from "@/components/ui/slide-panel";
+import {
+  ContribAccountForm,
+  type ContribAccountFormValues,
+} from "@/components/paycheck/contrib-account-form";
 import {
   useBudgetDerivedData,
   type SavingsGoalEntry,
@@ -121,40 +127,62 @@ function ProfilePicker({
  * Savings). Gives the tab visual structure instead of one long
  * undifferentiated column — each step is its own bounded region with a
  * clear "what is this for" line, matching how a multi-step form reads.
+ *
+ * Collapsible rather than a wizard: the whole point of What-If is seeing
+ * the cascade (a salary tweak in step 1 changes the leftover figure in
+ * step 3) so hiding earlier steps behind "Next" would work against the
+ * tool's purpose. Folding a step you're done with just reclaims vertical
+ * space — `headerExtra` (each step's key figure) stays visible either way,
+ * so a collapsed step still tells you what it resolved to.
  */
 function WhatIfStep({
   number,
   title,
   description,
   headerExtra,
+  defaultExpanded = true,
   children,
 }: {
   number: number;
   title: string;
   description?: string;
-  /** Right-aligned content in the header row (mode tabs, leftover figure). */
+  /** Right-aligned content in the header row (mode tabs, leftover figure).
+   *  Rendered outside the collapse toggle, so it stays visible — and its
+   *  own controls (e.g. the mode picker) stay clickable — when folded. */
   headerExtra?: ReactNode;
+  defaultExpanded?: boolean;
   children: ReactNode;
 }) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   return (
     <section className="rounded-lg border border-default bg-surface-sunken/40 p-4">
       <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
-        <div className="flex items-start gap-2.5">
+        <button
+          type="button"
+          onClick={() => setExpanded((e) => !e)}
+          className="flex items-start gap-2.5 text-left"
+          aria-expanded={expanded}
+        >
           <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-600 text-white text-micro font-semibold flex items-center justify-center mt-0.5">
             {number}
           </span>
           <div>
-            <h3 className="text-sm font-semibold text-primary leading-tight">
+            <h3 className="text-sm font-semibold text-primary leading-tight flex items-center gap-1">
               {title}
+              {expanded ? (
+                <ChevronDown className="w-3.5 h-3.5 text-faint" />
+              ) : (
+                <ChevronRight className="w-3.5 h-3.5 text-faint" />
+              )}
             </h3>
             {description && (
               <p className="text-caption text-faint mt-0.5">{description}</p>
             )}
           </div>
-        </div>
+        </button>
         {headerExtra}
       </div>
-      {children}
+      {expanded && children}
     </section>
   );
 }
@@ -204,9 +232,9 @@ function useSandboxState(salaryId: number | null, budgetId: number | null) {
   const [deductionAdditions, setDeductionAdditions] = useState<
     DeductionAddition[]
   >([]);
-  const [contribOverrides, setContribOverrides] = useState<Map<number, string>>(
-    new Map(),
-  );
+  const [contribActiveFields, setContribActiveFields] = useState<
+    Map<number, string>
+  >(new Map());
   const [contribAdditions, setContribAdditions] = useState<ContribAddition[]>(
     [],
   );
@@ -285,12 +313,15 @@ function useSandboxState(salaryId: number | null, budgetId: number | null) {
   const removeDeductionAddition = (localId: number) =>
     setDeductionAdditions((prev) => prev.filter((d) => d.localId !== localId));
 
-  const setContribOverride = (accountId: number, contributionValue: string) =>
-    setContribOverrides((prev) =>
+  const setContribActiveField = (
+    accountId: number,
+    contributionValue: string,
+  ) =>
+    setContribActiveFields((prev) =>
       new Map(prev).set(accountId, contributionValue),
     );
-  const resetContribOverride = (accountId: number) =>
-    setContribOverrides((prev) => {
+  const resetContribActiveField = (accountId: number) =>
+    setContribActiveFields((prev) => {
       const next = new Map(prev);
       next.delete(accountId);
       return next;
@@ -324,11 +355,11 @@ function useSandboxState(salaryId: number | null, budgetId: number | null) {
     setBudgetDrafts(new Map());
     setDeductionEdits(new Map());
     setDeductionAdditions([]);
-    setContribOverrides(new Map());
+    setContribActiveFields(new Map());
     setContribAdditions([]);
   };
 
-  const itemAmountOverrides = useMemo(
+  const itemAmountActiveFields = useMemo(
     () =>
       Array.from(budgetDrafts.entries()).map(([key, amount]) => {
         const [itemId, colIndex] = key.split(":").map(Number);
@@ -359,13 +390,13 @@ function useSandboxState(salaryId: number | null, budgetId: number | null) {
     [deductionAdditions],
   );
 
-  const sandboxContribOverrides = useMemo(() => {
+  const sandboxContribActiveFields = useMemo(() => {
     const out: Record<string, { contributionValue: string }> = {};
-    for (const [accountId, contributionValue] of contribOverrides) {
+    for (const [accountId, contributionValue] of contribActiveFields) {
       out[String(accountId)] = { contributionValue };
     }
     return out;
-  }, [contribOverrides]);
+  }, [contribActiveFields]);
 
   const sandboxContribAdditions = useMemo(
     () =>
@@ -393,7 +424,7 @@ function useSandboxState(salaryId: number | null, budgetId: number | null) {
     budgetDrafts,
     getDraft,
     setDraft,
-    itemAmountOverrides,
+    itemAmountActiveFields,
     deductionEdits,
     setDeductionEdit,
     resetDeductionEdit,
@@ -403,10 +434,10 @@ function useSandboxState(salaryId: number | null, budgetId: number | null) {
     removeDeductionAddition,
     sandboxDeductionEdits,
     sandboxDeductionAdditions,
-    contribOverrides,
-    setContribOverride,
-    resetContribOverride,
-    sandboxContribOverrides,
+    contribActiveFields,
+    setContribActiveField,
+    resetContribActiveField,
+    sandboxContribActiveFields,
     contribAdditions,
     addContribAddition,
     updateContribAddition,
@@ -418,7 +449,7 @@ function useSandboxState(salaryId: number | null, budgetId: number | null) {
       budgetDrafts.size > 0 ||
       deductionEdits.size > 0 ||
       deductionAdditions.length > 0 ||
-      contribOverrides.size > 0 ||
+      contribActiveFields.size > 0 ||
       contribAdditions.length > 0,
   };
 }
@@ -794,16 +825,16 @@ function WhatIfDeductionsEditor({
 /**
  * Per-person contribution accounts editor — same pin-editable pattern as
  * salary/deductions: pre-filled with the resolved current value, pinning on
- * change, ↺ to reset. Feeds `sandboxContribOverrides`, applied server-side
- * via the SAME `applyContribOverrides` merge a Contribution Profile's own
- * overrides go through — one more layer, not a parallel mechanism. Value is
+ * change, ↺ to reset. Feeds `sandboxContribActiveFields`, applied server-side
+ * via the SAME `applyContribActiveFields` merge a Contribution Profile's own
+ * active fields go through — one more layer, not a parallel mechanism. Value is
  * NOT percent/100 converted: `percent_of_salary` stores the raw percent
  * number (5 = 5%), matching how ContributionProfileManager already displays
  * it (`value%`), not a fraction like bonusPercent uses.
  */
 function WhatIfContributionsEditor({
   views,
-  overrides,
+  activeFields,
   onEdit,
   onReset,
   additions,
@@ -815,7 +846,7 @@ function WhatIfContributionsEditor({
   makeRealPendingId,
 }: {
   views: PaycheckPersonView[];
-  overrides: Map<number, string>;
+  activeFields: Map<number, string>;
   onEdit: (accountId: number, contributionValue: string) => void;
   onReset: (accountId: number) => void;
   additions: ContribAddition[];
@@ -896,7 +927,7 @@ function WhatIfContributionsEditor({
                     const isPercent =
                       c.contributionMethod === "percent_of_salary";
                     const liveValue = parseFloat(c.contributionValue);
-                    const override = overrides.get(c.id);
+                    const activeField = activeFields.get(c.id);
                     return (
                       <tr
                         key={c.id}
@@ -910,11 +941,14 @@ function WhatIfContributionsEditor({
                         </td>
                         <td className="py-1 px-3 text-right">
                           <div className="flex items-center justify-end gap-1">
+                            <span className="text-faint w-3 text-right shrink-0">
+                              {isPercent ? "" : "$"}
+                            </span>
                             <WhatIfPinnedCell
                               liveValue={liveValue}
                               pinnedValue={
-                                override !== undefined
-                                  ? parseFloat(override)
+                                activeField !== undefined
+                                  ? parseFloat(activeField)
                                   : undefined
                               }
                               onCommit={(n) => onEdit(c.id, String(n))}
@@ -922,7 +956,9 @@ function WhatIfContributionsEditor({
                               step={isPercent ? "0.5" : "10"}
                               width="w-20"
                             />
-                            {isPercent && <span className="text-faint">%</span>}
+                            <span className="text-faint w-3 text-left shrink-0">
+                              {isPercent ? "%" : ""}
+                            </span>
                           </div>
                         </td>
                         <td />
@@ -972,6 +1008,9 @@ function WhatIfContributionsEditor({
                         </td>
                         <td className="py-1 px-3 text-right">
                           <div className="flex items-center justify-end gap-1">
+                            <span className="text-faint w-3 text-right shrink-0">
+                              {isPercent ? "" : "$"}
+                            </span>
                             <input
                               type="number"
                               step={isPercent ? "0.5" : "10"}
@@ -983,7 +1022,9 @@ function WhatIfContributionsEditor({
                               }
                               className="w-20 text-xs text-right border rounded px-1.5 py-0.5 bg-surface-primary text-amber-600 font-medium border-amber-400 tabular-nums"
                             />
-                            {isPercent && <span className="text-faint">%</span>}
+                            <span className="text-faint w-3 text-left shrink-0">
+                              {isPercent ? "%" : ""}
+                            </span>
                           </div>
                         </td>
                         <td className="py-1 px-1">
@@ -1112,7 +1153,7 @@ export function WhatIfTab({
     sandboxSalaryEntries: sandbox.salaryEntries,
     sandboxDeductionEdits: sandbox.sandboxDeductionEdits,
     sandboxDeductionAdditions: sandbox.sandboxDeductionAdditions,
-    sandboxContribOverrides: sandbox.sandboxContribOverrides,
+    sandboxContribActiveFields: sandbox.sandboxContribActiveFields,
     sandboxContribAdditions: sandbox.sandboxContribAdditions,
   });
 
@@ -1150,8 +1191,8 @@ export function WhatIfTab({
       ...(Object.keys(sandbox.salaryEntries).length > 0
         ? { sandboxSalaryEntries: sandbox.salaryEntries }
         : {}),
-      ...(sandbox.itemAmountOverrides.length > 0
-        ? { itemAmountOverrides: sandbox.itemAmountOverrides }
+      ...(sandbox.itemAmountActiveFields.length > 0
+        ? { itemAmountActiveFields: sandbox.itemAmountActiveFields }
         : {}),
       ...(sandbox.sandboxDeductionEdits.length > 0
         ? { sandboxDeductionEdits: sandbox.sandboxDeductionEdits }
@@ -1159,8 +1200,8 @@ export function WhatIfTab({
       ...(sandbox.sandboxDeductionAdditions.length > 0
         ? { sandboxDeductionAdditions: sandbox.sandboxDeductionAdditions }
         : {}),
-      ...(Object.keys(sandbox.sandboxContribOverrides).length > 0
-        ? { sandboxContribOverrides: sandbox.sandboxContribOverrides }
+      ...(Object.keys(sandbox.sandboxContribActiveFields).length > 0
+        ? { sandboxContribActiveFields: sandbox.sandboxContribActiveFields }
         : {}),
       ...(sandbox.sandboxContribAdditions.length > 0
         ? { sandboxContribAdditions: sandbox.sandboxContribAdditions }
@@ -1197,7 +1238,7 @@ export function WhatIfTab({
     data: budgetData,
     savingsGoals,
     apiActualsData: null,
-    salaryOverrides: [],
+    salaryActiveFields: [],
     contributionProfileTiers,
     salaryProfileTiers,
     editMode: true,
@@ -1358,38 +1399,69 @@ export function WhatIfTab({
   const [contribMakeRealPendingId, setContribMakeRealPendingId] = useState<
     number | null
   >(null);
-  const contribMakeRealAdditionRef = useRef<number | null>(null);
+  // Holds the sandbox addition being converted — its value/method are what
+  // the user was previewing, and get carried into the real account's active
+  // field in whichever profile is currently in effect (contribId below), so
+  // "Make real" doesn't quietly lose the number the user was testing. The
+  // account itself carries no value of its own (see applyContribActiveFields).
+  const contribMakeRealAdditionRef = useRef<ContribAddition | null>(null);
+  const [makeRealAddition, setMakeRealAddition] =
+    useState<ContribAddition | null>(null);
+  const setContribAccountActiveFields =
+    trpc.contributionProfile.setAccountActiveFields.useMutation();
+  const onMakeRealSettled = (created: { id: number } | undefined) => {
+    const addition = contribMakeRealAdditionRef.current;
+    const finish = () => {
+      utils.contribution.invalidate();
+      utils.paycheck.invalidate();
+      utils.contributionProfile.invalidate();
+      if (addition) sandbox.removeContribAddition(addition.localId);
+      setContribMakeRealPendingId(null);
+      setMakeRealAddition(null);
+      toast.success(
+        `Added "${created ? accountDisplayName(created as Record<string, unknown>) : ""}" account to Contribution Profiles`,
+      );
+    };
+    if (created && addition && contribId != null) {
+      setContribAccountActiveFields.mutate(
+        {
+          profileId: contribId,
+          accountId: created.id,
+          fields: {
+            contributionValue: addition.contributionValue,
+            contributionMethod: addition.contributionMethod,
+          },
+        },
+        { onSuccess: finish, onError: finish },
+      );
+    } else {
+      finish();
+    }
+  };
+  const onMakeRealError = (err: { message?: string }) => {
+    setContribMakeRealPendingId(null);
+    toast.error(err.message || "Failed to add contribution account");
+  };
   const createContribAccount =
     trpc.settings.contributionAccounts.create.useMutation({
-      onSuccess: (created) => {
-        utils.contribution.invalidate();
-        utils.paycheck.invalidate();
-        const localId = contribMakeRealAdditionRef.current;
-        if (localId != null) sandbox.removeContribAddition(localId);
-        setContribMakeRealPendingId(null);
-        toast.success(
-          `Added "${created ? accountDisplayName(created) : ""}" account to Contribution Profiles`,
-        );
-      },
-      onError: (err) => {
-        setContribMakeRealPendingId(null);
-        toast.error(err.message || "Failed to add contribution account");
-      },
+      onSuccess: onMakeRealSettled,
+      onError: onMakeRealError,
     });
-  const handleMakeContribReal = (addition: ContribAddition) => {
-    contribMakeRealAdditionRef.current = addition.localId;
-    setContribMakeRealPendingId(addition.localId);
-    createContribAccount.mutate({
-      jobId: null,
-      personId: addition.personId,
-      accountType: addition.accountType,
-      parentCategory: getParentCategory(addition.accountType),
-      taxTreatment: getDefaultTaxTreatment(addition.accountType) as
-        "pre_tax" | "tax_free" | "after_tax" | "hsa",
-      contributionMethod: addition.contributionMethod,
-      contributionValue: addition.contributionValue,
-      employerMatchType: "none",
+  const updateContribAccount =
+    trpc.settings.contributionAccounts.update.useMutation({
+      onSuccess: onMakeRealSettled,
+      onError: onMakeRealError,
     });
+  const handleSaveMakeReal = (values: ContribAccountFormValues) => {
+    if (!makeRealAddition) return;
+    contribMakeRealAdditionRef.current = makeRealAddition;
+    setContribMakeRealPendingId(makeRealAddition.localId);
+    const { id, ...rest } = values;
+    if (id != null) {
+      updateContribAccount.mutate({ id, ...rest });
+    } else {
+      createContribAccount.mutate(rest);
+    }
   };
 
   const budgetProfileName =
@@ -1509,6 +1581,13 @@ export function WhatIfTab({
         number={1}
         title="Paycheck"
         description="Edit salary, bonus, or deductions to see the resulting take-home pay."
+        headerExtra={
+          netMonthlyIncome != null ? (
+            <span className="text-xs font-semibold text-indigo-700">
+              {formatCurrency(netMonthlyIncome)}/mo net
+            </span>
+          ) : undefined
+        }
       >
         {paycheckLoading ? (
           <Skeleton className="h-40 w-full" />
@@ -1566,15 +1645,15 @@ export function WhatIfTab({
         ) : (
           <WhatIfContributionsEditor
             views={views}
-            overrides={sandbox.contribOverrides}
-            onEdit={sandbox.setContribOverride}
-            onReset={sandbox.resetContribOverride}
+            activeFields={sandbox.contribActiveFields}
+            onEdit={sandbox.setContribActiveField}
+            onReset={sandbox.resetContribActiveField}
             additions={sandbox.contribAdditions}
             onAddAccount={sandbox.addContribAddition}
             onUpdateAddition={sandbox.updateContribAddition}
             onRemoveAddition={sandbox.removeContribAddition}
             canManagePaycheck={canManagePaycheck}
-            onMakeReal={handleMakeContribReal}
+            onMakeReal={setMakeRealAddition}
             makeRealPendingId={contribMakeRealPendingId}
           />
         )}
@@ -1676,6 +1755,9 @@ export function WhatIfTab({
       >
         <SavingsAllocationPanel
           canEdit
+          // No padlock to gate this: sandbox mode writes nothing but local
+          // preview state (via onLocalChange below), so it's always editable.
+          locked={false}
           sandbox
           viewingProfileId={budgetId}
           // The rail's own selection IS the tab's Budget Profile picker —
@@ -1723,8 +1805,11 @@ export function WhatIfTab({
                   duplicateProfile.mutate({
                     sourceProfileId: budgetId!,
                     name: duplicateName.trim(),
-                    ...(sandbox.itemAmountOverrides.length > 0
-                      ? { itemAmountOverrides: sandbox.itemAmountOverrides }
+                    ...(sandbox.itemAmountActiveFields.length > 0
+                      ? {
+                          itemAmountActiveFields:
+                            sandbox.itemAmountActiveFields,
+                        }
                       : {}),
                   })
                 }
@@ -1796,6 +1881,30 @@ export function WhatIfTab({
           )}
         </section>
       )}
+
+      <SlidePanel
+        isOpen={makeRealAddition != null}
+        onClose={() => setMakeRealAddition(null)}
+        title="Make Real: Contribution Account"
+      >
+        {makeRealAddition && (
+          <ContribAccountForm
+            initialValues={{
+              personId: makeRealAddition.personId,
+              accountType: makeRealAddition.accountType,
+              parentCategory: getParentCategory(makeRealAddition.accountType),
+              taxTreatment: getDefaultTaxTreatment(
+                makeRealAddition.accountType,
+              ) as "pre_tax" | "tax_free" | "after_tax" | "hsa",
+            }}
+            onSave={handleSaveMakeReal}
+            onCancel={() => setMakeRealAddition(null)}
+            isPending={
+              createContribAccount.isPending || updateContribAccount.isPending
+            }
+          />
+        )}
+      </SlidePanel>
     </div>
   );
 }

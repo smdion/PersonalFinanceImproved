@@ -1,7 +1,7 @@
 /** Data fetching and mutations for the projection card — deterministic engine query, Monte Carlo queries with prefetch, salary/budget override CRUD, and glide-path mutations. */
 import { useMemo, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
-import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { usePersistedToggle } from "@/lib/hooks/use-persisted-setting";
 import {
@@ -26,7 +26,7 @@ export function useProjectionQueries(
   form: ProjectionFormState,
   props: UseProjectionStateProps,
 ) {
-  const salaryOverrides = useSalaryOverrides();
+  const salaryActiveFields = useActiveSalaries();
   const {
     withdrawalRoutingMode,
     withdrawalOrder,
@@ -65,7 +65,8 @@ export function useProjectionQueries(
   // and as the foundation for sharedInput below.
   const baseSharedInput = useMemo(
     () => ({
-      salaryOverrides: salaryOverrides.length > 0 ? salaryOverrides : undefined,
+      salaryActiveFields:
+        salaryActiveFields.length > 0 ? salaryActiveFields : undefined,
       decumulationDefaults: {
         withdrawalRate: withdrawalRate / 100,
         withdrawalRoutingMode,
@@ -94,7 +95,7 @@ export function useProjectionQueries(
       ...(snapshotId != null ? { snapshotId } : {}),
     }),
     [
-      salaryOverrides,
+      salaryActiveFields,
       withdrawalRate,
       withdrawalRoutingMode,
       withdrawalOrder,

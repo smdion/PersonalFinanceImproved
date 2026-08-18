@@ -20,8 +20,6 @@ type ContribRecord = {
   jobId: number | null;
   accountType: string;
   taxTreatment: string;
-  contributionMethod: string;
-  contributionValue: string;
   employerMatchType: string;
   employerMatchValue: string | null;
   employerMaxMatchPct: string | null;
@@ -53,14 +51,42 @@ type PerfAccountRecord = {
   contributionScaling: string | null;
 };
 
+/** Contribution-account fields a Contribution Profile can own (see
+ *  contribAccountActiveFieldsSchema) that this page also exposes editors
+ *  for. Editing one of these routes into the active profile instead of the
+ *  raw account row — everything else here (accountType, personId, jobId,
+ *  taxTreatment, ownership, isActive, etc.) has no profile-level fallback
+ *  and always writes the raw row directly. */
+const PROFILE_OWNED_CONTRIB_FIELDS = [
+  "employerMatchType",
+  "employerMatchValue",
+  "employerMaxMatchPct",
+  "autoMaximize",
+] as const;
+
 export function useContributionAccountsMutations({
   allContribs,
+  activeContribProfileId,
   onCreatePerfSuccess,
 }: {
   allContribs: ContribRecord[];
+  /** The globally-effective Contribution Profile id (Plan pin -> globally-
+   *  active), if any. When set, PROFILE_OWNED_CONTRIB_FIELDS edits route
+   *  here instead of the raw account row. */
+  activeContribProfileId?: number | null;
   onCreatePerfSuccess?: () => void;
 }) {
   const utils = trpc.useUtils();
+
+  const setContribProfileFieldsMut =
+    trpc.contributionProfile.setAccountActiveFields.useMutation({
+      onSuccess: () => {
+        utils.contributionProfile.invalidate();
+        utils.paycheck.invalidate();
+        utils.retirement.invalidate();
+        utils.projection.invalidate();
+      },
+    });
 
   const updatePerfMut = trpc.settings.performanceAccounts.update.useMutation({
     onSuccess: () => {
@@ -179,8 +205,6 @@ export function useContributionAccountsMutations({
       personId: number | null;
       jobId: number | null;
       taxTreatment: string;
-      contributionMethod: string;
-      contributionValue: string;
       employerMatchType: string;
       employerMatchValue: string | null;
       employerMaxMatchPct: string | null;
@@ -196,6 +220,49 @@ export function useContributionAccountsMutations({
       isPayrollDeducted: boolean | null;
     }>,
   ) => {
+    // Route profile-owned fields (employer match terms, autoMaximize) into
+    // the active Contribution Profile when one is in effect, so an edit made
+    // here lands in the same place the Paycheck/Budget pages write to —
+    // otherwise this raw write is silently shadowed by the profile's own
+    // resolved value everywhere else in the app (see applyContribActiveFields).
+    if (activeContribProfileId != null) {
+      // contribAccountActiveFieldsSchema has no `null` variant for these
+      // fields (a profile entry is either set or absent, never explicitly
+      // nulled) — a "clear" edit (e.g. blanking Match %) has no profile-level
+      // representation, so it's dropped here rather than sent as an invalid
+      // value. It still isn't written to the raw row either, since that
+      // would be silently shadowed by whatever the profile already holds.
+      const profileFields: Partial<{
+        employerMatchType: string;
+        employerMatchValue: string | number;
+        employerMaxMatchPct: string | number;
+        autoMaximize: boolean;
+      }> = {};
+      for (const field of PROFILE_OWNED_CONTRIB_FIELDS) {
+        const value = updates[field];
+        if (value !== undefined && value !== null) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (profileFields as any)[field] = value;
+        }
+      }
+      if (Object.keys(profileFields).length > 0) {
+        setContribProfileFieldsMut.mutate({
+          profileId: activeContribProfileId,
+          accountId: c.id,
+          fields: profileFields,
+        });
+      }
+      // Everything else in `updates` (if any) still falls through to the raw
+      // write below — those fields have no profile-level fallback.
+      const rest = Object.fromEntries(
+        Object.entries(updates).filter(
+          ([key]) =>
+            !(PROFILE_OWNED_CONTRIB_FIELDS as readonly string[]).includes(key),
+        ),
+      );
+      if (Object.keys(rest).length === 0) return;
+      updates = rest as typeof updates;
+    }
     updateContribMut.mutate({
       id: c.id,
       personId: updates.personId !== undefined ? updates.personId : c.personId,
@@ -204,13 +271,6 @@ export function useContributionAccountsMutations({
         "401k" | "403b" | "ira" | "hsa" | "brokerage",
       taxTreatment: (updates.taxTreatment ?? c.taxTreatment) as
         "pre_tax" | "tax_free" | "after_tax" | "hsa",
-      contributionMethod: (updates.contributionMethod ??
-        c.contributionMethod) as
-        | "percent_of_salary"
-        | "fixed_per_period"
-        | "fixed_monthly"
-        | "fixed_annual",
-      contributionValue: updates.contributionValue ?? c.contributionValue,
       employerMatchType: (updates.employerMatchType ?? c.employerMatchType) as
         "none" | "percent_of_contribution" | "dollar_match" | "fixed_annual",
       employerMatchValue:

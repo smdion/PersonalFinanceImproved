@@ -35,6 +35,25 @@ ALTER TABLE "salary_profiles" RENAME COLUMN "salary_overrides" TO "salaries";-->
 --    Record<personId, {mode:"job"} | {mode:"fixed", salary}>. A person who
 --    had an entry was explicitly pinned -> fixed; everyone else follows their
 --    job. People with no rows at all (fresh DB) leave an empty map.
+--
+-- IDEMPOTENCY GUARD: this UPDATE reinterprets every key in `salaries` as a
+-- personId and rebuilds the map from `people` — replaying it against a
+-- database that has already moved past this shape (e.g. already rekeyed to
+-- jobId by 0012, or already holding complete entries) would misread those
+-- keys as personIds, find no pin for any of them, and silently collapse
+-- every entry to {mode:"job"}, discarding real data with nothing to throw
+-- (see 0012's identical guard and rationale — this is the same class of bug,
+-- caught by the same squash-recovery blind-replay scenario). The WHERE
+-- clause is a no-op once the data is no longer in the shape this statement
+-- consumes: the pre-0008 shape is "old sparse Record<personId, number>" per
+-- the comment above — a pinned entry's VALUE is a bare number. Every shape
+-- this migration or any later one produces stores an OBJECT value instead
+-- (this statement's own {mode:...}, 0009's {salary:...}, or a later
+-- complete entry) — a bare-number value can only exist pre-migration, so
+-- its presence (or an empty map) is the only safe trigger to run. Unlike
+-- the first guard attempt, this does not depend on keys resolving to a
+-- person — later shapes key by jobId, which would also fail that check and
+-- wrongly re-trigger.
 UPDATE "salary_profiles" sp
 SET "salaries" = COALESCE(
 	(
@@ -49,7 +68,13 @@ SET "salaries" = COALESCE(
 		FROM "people" p
 	),
 	'{}'::jsonb
-);--> statement-breakpoint
+)
+WHERE sp."salaries" = '{}'::jsonb
+	OR EXISTS (
+		SELECT 1
+		FROM jsonb_each(sp."salaries") AS already(key, value)
+		WHERE jsonb_typeof(already.value) = 'number'
+	);--> statement-breakpoint
 
 -- 3. Seed the ordinary profile that replaces the synthetic "Live" entry:
 --    every person follows their job record. `name` is unique, so pick the
@@ -58,6 +83,20 @@ SET "salaries" = COALESCE(
 --    4. Point app_settings.active_salary_profile_id at it wherever it is
 --    currently absent, JSON null, or the old 0 sentinel. An existing real id
 --    is left alone.
+--
+-- IDEMPOTENCY: this INSERT had no guard and unconditionally adds a fresh
+-- blank "Current (N)" row on every replay — harmless to existing data
+-- (nothing here overwrites another row), but real clutter: a squash-
+-- recovery replay spawns a new junk profile every time it fires. Can't
+-- guard on "does any salary_profiles row already exist" the way the
+-- contribution_profiles seed below does — 0007 may have already legitimately
+-- created OTHER profiles (copied from contribution_profiles that had real
+-- overrides) before this statement ever runs for the first time, so that
+-- would wrongly skip the seed on a genuine first run. The precise signal
+-- for "has THIS seed already happened" is the thing only this seed sets:
+-- app_settings.active_salary_profile_id holding a proper id. Pre-0008 that
+-- key is guaranteed absent/null/0 (see header comment); after 0008 runs
+-- once it's guaranteed a real id.
 WITH seeded AS (
 	INSERT INTO "salary_profiles" ("name", "description", "salaries")
 	SELECT
@@ -80,6 +119,12 @@ WITH seeded AS (
 			(SELECT jsonb_object_agg(p."id"::text, jsonb_build_object('mode', 'job')) FROM "people" p),
 			'{}'::jsonb
 		)
+	WHERE NOT EXISTS (
+		SELECT 1 FROM "app_settings" a
+		WHERE a."key" = 'active_salary_profile_id'
+			AND jsonb_typeof(a."value") != 'null'
+			AND a."value" != '0'::jsonb
+	)
 	RETURNING "id"
 )
 INSERT INTO "app_settings" ("key", "value")

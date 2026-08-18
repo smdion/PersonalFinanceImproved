@@ -7,11 +7,51 @@
  * using an isolated SQLite database per test suite.
  */
 import "./setup-mocks";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { createTestCaller, seedPerson, seedJob } from "./setup";
 import * as schema from "@/lib/db/schema-sqlite";
+import { invalidateYearEndCache } from "@/server/helpers";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
+
+// buildYearEndHistory (behind historical.computeSummary) keeps a 5-second,
+// untargeted, module-level cache to dedupe concurrent calls in production
+// (see its docblock in server/helpers/snapshot.ts). That cache is agnostic
+// of which DB a caller was built against, so two describes below — each with
+// their OWN isolated SQLite file — can otherwise read back a PREVIOUS
+// describe's cached result if both call computeSummary() with no explicit
+// targeting within the same 5-second window. Invalidate after every test so
+// each describe's calls only ever see its own DB.
+afterEach(() => invalidateYearEndCache());
+
+/** A minimal net_worth_annual row — just enough for that year to appear in
+ *  computeSummary's `history` array (see buildYearEndHistory). */
+function seedYearEndRow(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  year: number,
+) {
+  db.insert(schema.netWorthAnnual)
+    .values({
+      yearEndDate: `${year}-12-31`,
+      grossIncome: "0",
+      combinedAgi: "0",
+      cash: "0",
+      houseValue: "0",
+      retirementTotal: "0",
+      hsa: "0",
+      ltBrokerage: "0",
+      espp: "0",
+      rBrokerage: "0",
+      otherAssets: "0",
+      mortgageBalance: "0",
+      otherLiabilities: "0",
+      taxFreeTotal: "0",
+      taxDeferredTotal: "0",
+      portfolioTotal: "0",
+      portfolioByTaxLocation: { retirement: {}, portfolio: {} },
+    })
+    .run();
+}
 
 describe("historical router", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
@@ -31,7 +71,7 @@ describe("historical router", () => {
     it("returns the expected top-level shape", async () => {
       const summary = await caller.historical.computeSummary();
       expect(summary).toHaveProperty("history");
-      expect(summary).toHaveProperty("salaryHistory");
+      expect(summary).toHaveProperty("personIdByName");
       expect(summary).toHaveProperty("notes");
     });
 
@@ -40,10 +80,9 @@ describe("historical router", () => {
       expect(Array.isArray(summary.history)).toBe(true);
     });
 
-    it("salaryHistory is an empty array when no people exist", async () => {
+    it("personIdByName is empty when no people exist", async () => {
       const summary = await caller.historical.computeSummary();
-      expect(Array.isArray(summary.salaryHistory)).toBe(true);
-      expect(summary.salaryHistory).toHaveLength(0);
+      expect(Object.keys(summary.personIdByName)).toHaveLength(0);
     });
 
     it("notes is an empty object when no notes exist", async () => {
@@ -326,12 +365,15 @@ describe("historical router — update", () => {
   });
 });
 
-// ── SALARY HISTORY in computeSummary ──
+// ── SALARY in computeSummary — historical_salaries is the only past-year
+//    record; the in-progress year auto-fills from the active Salary
+//    Profile until it's explicitly recorded. ──
 
-describe("historical router — salary history", () => {
+describe("historical router — recorded salary history", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
+  let personId: number;
 
   beforeAll(async () => {
     const ctx = await createTestCaller();
@@ -339,65 +381,70 @@ describe("historical router — salary history", () => {
     db = ctx.db;
     cleanup = ctx.cleanup;
 
-    const personId = await seedPerson(db, "History Person", "1990-01-01");
-    const jobId = seedJob(db, personId, {
+    personId = await seedPerson(db, "History Person", "1990-01-01");
+    seedJob(db, personId, {
       employerName: "HistoryCo",
       annualSalary: "80000",
       startDate: "2019-01-01",
     });
+    seedYearEndRow(db, 2020);
+    seedYearEndRow(db, 2021);
 
-    // Add salary changes
-    db.insert(schema.salaryChanges)
-      .values({
-        jobId,
-        effectiveDate: "2020-01-01",
-        newSalary: "90000",
-        notes: "First raise",
-      })
-      .run();
-    db.insert(schema.salaryChanges)
-      .values({
-        jobId,
-        effectiveDate: "2021-06-01",
-        newSalary: "100000",
-        notes: "Promotion",
-      })
-      .run();
+    await caller.historical.upsertSalary({
+      personId,
+      year: 2020,
+      salary: 90000,
+      bonus: 5000,
+    });
+    await caller.historical.upsertSalary({
+      personId,
+      year: 2021,
+      salary: 100000,
+      bonus: 8000,
+    });
   });
 
   afterAll(() => cleanup());
 
-  it("salaryHistory contains one entry for the person", async () => {
+  it("personIdByName includes the seeded person", async () => {
     const summary = await caller.historical.computeSummary();
-    expect(summary.salaryHistory).toHaveLength(1);
-    expect(summary.salaryHistory[0]!.person.name).toBe("History Person");
+    expect(summary.personIdByName["History Person"]).toBe(personId);
   });
 
-  it("timeline has one job with the correct employer", async () => {
+  it("each recorded year's row carries that year's own salary and bonus", async () => {
     const summary = await caller.historical.computeSummary();
-    const timeline = summary.salaryHistory[0]!.timeline;
-    expect(timeline).toHaveLength(1);
-    expect(timeline[0]!.employer).toBe("HistoryCo");
-    expect(timeline[0]!.salary).toBe(80000);
+    const row2020 = summary.history.find((h) => h.year === 2020);
+    const row2021 = summary.history.find((h) => h.year === 2021);
+    expect(row2020?.salaries["History Person"]).toBe(90000);
+    expect(row2020?.salaryDetails["History Person"]?.bonus).toBe(5000);
+    expect(row2021?.salaries["History Person"]).toBe(100000);
+    expect(row2021?.salaryDetails["History Person"]?.bonus).toBe(8000);
   });
 
-  it("job has salary changes in the timeline", async () => {
+  it("upsertSalary updates in place without touching other years", async () => {
+    await caller.historical.upsertSalary({
+      personId,
+      year: 2020,
+      salary: 92000,
+    });
     const summary = await caller.historical.computeSummary();
-    const changes = summary.salaryHistory[0]!.timeline[0]!.changes;
-    expect(changes).toHaveLength(2);
-    expect(changes[0]!.newSalary).toBe(90000);
-    expect(changes[0]!.reason).toBe("First raise");
-    expect(changes[1]!.newSalary).toBe(100000);
-    expect(changes[1]!.reason).toBe("Promotion");
+    const row2020 = summary.history.find((h) => h.year === 2020);
+    const row2021 = summary.history.find((h) => h.year === 2021);
+    // Bonus untouched by a salary-only upsert.
+    expect(row2020?.salaries["History Person"]).toBe(92000);
+    expect(row2020?.salaryDetails["History Person"]?.bonus).toBe(5000);
+    expect(row2021?.salaries["History Person"]).toBe(100000);
   });
 });
 
-// ── Multiple people with multiple jobs ──
+// ── Multiple people ──
 
 describe("historical router — multiple people salary history", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
+  let alice: number;
+  let bob: number;
 
   beforeAll(async () => {
     const ctx = await createTestCaller();
@@ -405,48 +452,49 @@ describe("historical router — multiple people salary history", () => {
     db = ctx.db;
     cleanup = ctx.cleanup;
 
-    const person1 = await seedPerson(db, "Alice", "1988-03-15");
-    const person2 = await seedPerson(db, "Bob", "1990-07-20");
+    alice = await seedPerson(db, "Alice", "1988-03-15");
+    bob = await seedPerson(db, "Bob", "1990-07-20");
 
-    seedJob(db, person1, {
-      employerName: "AliceCo",
-      annualSalary: "100000",
-      startDate: "2020-01-01",
+    seedJob(db, alice, { employerName: "AliceCo", startDate: "2020-01-01" });
+    seedJob(db, bob, { employerName: "BobCo", startDate: "2021-06-01" });
+    seedYearEndRow(db, 2022);
+
+    await caller.historical.upsertSalary({
+      personId: alice,
+      year: 2022,
+      salary: 100000,
     });
-    seedJob(db, person2, {
-      employerName: "BobCo",
-      annualSalary: "85000",
-      startDate: "2021-06-01",
+    await caller.historical.upsertSalary({
+      personId: bob,
+      year: 2022,
+      salary: 85000,
     });
   });
 
   afterAll(() => cleanup());
 
-  it("salaryHistory contains entries for both people", async () => {
+  it("personIdByName maps both people", async () => {
     const summary = await caller.historical.computeSummary();
-    expect(summary.salaryHistory).toHaveLength(2);
-    const names = summary.salaryHistory.map((s) => s.person.name);
-    expect(names).toContain("Alice");
-    expect(names).toContain("Bob");
+    expect(summary.personIdByName["Alice"]).toBe(alice);
+    expect(summary.personIdByName["Bob"]).toBe(bob);
   });
 
-  it("each person's timeline contains their jobs", async () => {
+  it("the recorded year's row carries both people's salaries", async () => {
     const summary = await caller.historical.computeSummary();
-    const alice = summary.salaryHistory.find((s) => s.person.name === "Alice")!;
-    const bob = summary.salaryHistory.find((s) => s.person.name === "Bob")!;
-    expect(alice.timeline).toHaveLength(1);
-    expect(alice.timeline[0]!.employer).toBe("AliceCo");
-    expect(bob.timeline).toHaveLength(1);
-    expect(bob.timeline[0]!.employer).toBe("BobCo");
+    const row2022 = summary.history.find((h) => h.year === 2022);
+    expect(row2022?.salaries["Alice"]).toBe(100000);
+    expect(row2022?.salaries["Bob"]).toBe(85000);
   });
 });
 
-// ── Person with ended job ──
+// ── Current-year auto-fill from the active Salary Profile ──
 
-describe("historical router — person with ended job", () => {
+describe("historical router — current year auto-fill", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
+  let personId: number;
+  const currentYear = new Date().getFullYear();
 
   beforeAll(async () => {
     const ctx = await createTestCaller();
@@ -454,31 +502,32 @@ describe("historical router — person with ended job", () => {
     db = ctx.db;
     cleanup = ctx.cleanup;
 
-    const personId = await seedPerson(db, "Former Employee", "1985-01-01");
+    personId = await seedPerson(db, "Current Earner", "1990-01-01");
+    // seedJob writes a complete entry into the globally-active Salary
+    // Profile by default (see setup.ts's seedDefaultSalaryProfileEntry).
     seedJob(db, personId, {
-      employerName: "OldCo",
-      annualSalary: "70000",
-      startDate: "2015-01-01",
-      endDate: "2020-12-31",
-    });
-    seedJob(db, personId, {
-      employerName: "NewCo",
-      annualSalary: "95000",
-      startDate: "2021-01-15",
+      employerName: "ActiveCo",
+      annualSalary: "150000",
     });
   });
 
   afterAll(() => cleanup());
 
-  it("timeline contains both jobs for the person", async () => {
+  it("the in-progress year auto-fills from the active Salary Profile", async () => {
     const summary = await caller.historical.computeSummary();
-    const person = summary.salaryHistory[0]!;
-    expect(person.timeline).toHaveLength(2);
-    // Jobs are ordered by startDate ascending
-    expect(person.timeline[0]!.employer).toBe("OldCo");
-    expect(person.timeline[0]!.endDate).toBe("2020-12-31");
-    expect(person.timeline[1]!.employer).toBe("NewCo");
-    expect(person.timeline[1]!.endDate).toBeNull();
+    const row = summary.history.find((h) => h.year === currentYear);
+    expect(row?.salaries["Current Earner"]).toBe(150000);
+  });
+
+  it("an explicitly recorded current year wins over the auto-fill", async () => {
+    await caller.historical.upsertSalary({
+      personId,
+      year: currentYear,
+      salary: 160000,
+    });
+    const summary = await caller.historical.computeSummary();
+    const row = summary.history.find((h) => h.year === currentYear);
+    expect(row?.salaries["Current Earner"]).toBe(160000);
   });
 });
 
@@ -707,47 +756,33 @@ describe("historical router — salaries in history rows", () => {
     db = ctx.db;
     cleanup = ctx.cleanup;
 
-    // Seed a person with a job spanning multiple years
     const personId = await seedPerson(db, "Salary Worker", "1990-01-01");
-    const jobId = seedJob(db, personId, {
+    seedJob(db, personId, {
       employerName: "SalaryCo",
-      annualSalary: "80000",
       startDate: "2020-01-01",
     });
 
-    // Salary change in 2022
-    db.insert(schema.salaryChanges)
-      .values({
-        jobId,
-        effectiveDate: "2022-01-01",
-        newSalary: "95000",
-      })
-      .run();
-
-    // Seed net_worth_annual rows for 2020-2022
+    // Seed net_worth_annual rows for 2020-2022, and a directly-recorded
+    // historical_salaries fact for each — no more mid-year "changes" to
+    // walk, each year is its own flat record.
     for (const year of [2020, 2021, 2022]) {
-      db.insert(schema.netWorthAnnual)
-        .values({
-          yearEndDate: `${year}-12-31`,
-          grossIncome: "0",
-          combinedAgi: "0",
-          cash: "0",
-          houseValue: "0",
-          retirementTotal: "0",
-          hsa: "0",
-          ltBrokerage: "0",
-          espp: "0",
-          rBrokerage: "0",
-          otherAssets: "0",
-          mortgageBalance: "0",
-          otherLiabilities: "0",
-          taxFreeTotal: "0",
-          taxDeferredTotal: "0",
-          portfolioTotal: "0",
-          portfolioByTaxLocation: { retirement: {}, portfolio: {} },
-        })
-        .run();
+      seedYearEndRow(db, year);
     }
+    await caller.historical.upsertSalary({
+      personId,
+      year: 2020,
+      salary: 80000,
+    });
+    await caller.historical.upsertSalary({
+      personId,
+      year: 2021,
+      salary: 80000,
+    });
+    await caller.historical.upsertSalary({
+      personId,
+      year: 2022,
+      salary: 95000,
+    });
   });
 
   afterAll(() => cleanup());
@@ -755,25 +790,19 @@ describe("historical router — salaries in history rows", () => {
   it("history rows contain salaries object with person name as key", async () => {
     const summary = await caller.historical.computeSummary();
     const row2020 = summary.history.find((h) => h.year === 2020);
-    if (row2020) {
-      expect(row2020.salaries).toBeDefined();
-      expect(row2020.salaries["Salary Worker"]).toBe(80000);
-    }
+    expect(row2020?.salaries).toBeDefined();
+    expect(row2020?.salaries["Salary Worker"]).toBe(80000);
   });
 
-  it("salary reflects salary change for later years", async () => {
+  it("each year holds its own directly-recorded salary", async () => {
     const summary = await caller.historical.computeSummary();
     const row2022 = summary.history.find((h) => h.year === 2022);
-    if (row2022) {
-      expect(row2022.salaries["Salary Worker"]).toBe(95000);
-    }
+    expect(row2022?.salaries["Salary Worker"]).toBe(95000);
   });
 
-  it("salary before the change remains at original level", async () => {
+  it("an earlier year's record is untouched by a later year's", async () => {
     const summary = await caller.historical.computeSummary();
     const row2021 = summary.history.find((h) => h.year === 2021);
-    if (row2021) {
-      expect(row2021.salaries["Salary Worker"]).toBe(80000);
-    }
+    expect(row2021?.salaries["Salary Worker"]).toBe(80000);
   });
 });

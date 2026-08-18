@@ -610,10 +610,15 @@ export function computeHomeImprovementsCumulative(
  * Find active jobs at a given date.
  */
 export function filterActiveJobsAtDate<
-  T extends { startDate: string; endDate: string | null },
+  T extends {
+    startDate: string;
+    endDate: string | null;
+    isSpeculative: boolean;
+  },
 >(jobs: T[], asOfDate: Date): T[] {
   return jobs.filter(
     (j) =>
+      !j.isSpeculative &&
       new Date(j.startDate) <= asOfDate &&
       (!j.endDate || new Date(j.endDate) >= asOfDate),
   );

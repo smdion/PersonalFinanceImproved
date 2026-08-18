@@ -92,6 +92,12 @@ export default function HistoricalPage() {
   const upsertNoteMutation = trpc.historical.upsertNote.useMutation({
     onSuccess: invalidateAll,
   });
+  // Salary/bonus are direct per-person-per-year facts (historical_salaries)
+  // — a job has no salary/bonus of its own, so these are NOT net_worth_annual
+  // fields and need their own mutation (see historical.upsertSalary).
+  const upsertSalaryMutation = trpc.historical.upsertSalary.useMutation({
+    onSuccess: invalidateAll,
+  });
 
   const toggleGroup = (group: ColumnGroup) => {
     setHiddenGroups((prev) => {
@@ -134,7 +140,7 @@ export default function HistoricalPage() {
     );
   }
 
-  const { history, notes } = data;
+  const { history, notes, personIdByName } = data;
   const sorted = [...history].sort((a, b) => b.year - a.year);
   const latest = sorted[0]!;
   const earliest = sorted[sorted.length - 1]!;
@@ -235,13 +241,24 @@ export default function HistoricalPage() {
         <HistoricalTable
           rows={sorted}
           peopleNames={peopleNames}
+          personIdByName={personIdByName}
           hiddenGroups={hiddenGroups}
           notes={notes}
           onSave={(year, fields) => updateMutation.mutate({ year, fields })}
+          onSaveSalary={(personId, year, salary) =>
+            upsertSalaryMutation.mutate({ personId, year, salary })
+          }
+          onSaveBonus={(personId, year, bonus) =>
+            upsertSalaryMutation.mutate({ personId, year, bonus })
+          }
           onUpsertNote={(year, field, note) =>
             upsertNoteMutation.mutate({ year, field, note })
           }
-          isSaving={updateMutation.isPending || upsertNoteMutation.isPending}
+          isSaving={
+            updateMutation.isPending ||
+            upsertNoteMutation.isPending ||
+            upsertSalaryMutation.isPending
+          }
         />
       </Card>
     </div>
@@ -296,17 +313,23 @@ type HistoricalRow = {
 function HistoricalTable({
   rows,
   peopleNames,
+  personIdByName,
   hiddenGroups,
   notes,
   onSave,
+  onSaveSalary,
+  onSaveBonus,
   onUpsertNote,
   isSaving,
 }: {
   rows: HistoricalRow[];
   peopleNames: string[];
+  personIdByName: Record<string, number>;
   hiddenGroups: Set<ColumnGroup>;
   notes: Record<string, string>;
   onSave: (year: number, fields: Record<string, number>) => void;
+  onSaveSalary: (personId: number, year: number, salary: number) => void;
+  onSaveBonus: (personId: number, year: number, bonus: number) => void;
   onUpsertNote: (year: number, field: string, note: string) => void;
   isSaving: boolean;
 }) {
@@ -554,6 +577,14 @@ function HistoricalTable({
                 </span>
               </th>
             )}
+            {showSalary && (
+              <th
+                className="text-center px-1 py-1 text-faint font-medium border-l"
+                colSpan={peopleNames.length}
+              >
+                Gross Bonus
+              </th>
+            )}
           </tr>
           {/* Column headers — sticky Year, then scrollable */}
           <tr className="border-b">
@@ -611,7 +642,13 @@ function HistoricalTable({
             )}
             {showSalary &&
               peopleNames.map((name, idx) => (
-                <ColHeader key={name} border={idx === 0}>
+                <ColHeader key={`salary-${name}`} border={idx === 0}>
+                  {name}
+                </ColHeader>
+              ))}
+            {showSalary &&
+              peopleNames.map((name, idx) => (
+                <ColHeader key={`bonus-${name}`} border={idx === 0}>
                   {name}
                 </ColHeader>
               ))}
@@ -925,15 +962,58 @@ function HistoricalTable({
                     />
                   </>
                 )}
-                {/* Salary */}
+                {/* Salary — Historical is the source of truth: editing here
+                    writes a direct historical_salaries row for that
+                    person/year. The in-progress (current) year stays
+                    read-only/auto-computed (same isCurrent gate every other
+                    field here uses). */}
                 {showSalary &&
-                  peopleNames.map((name, idx) => (
-                    <NumCell
-                      key={name}
-                      value={row.salaries[name] ?? null}
-                      border={idx === 0}
-                    />
-                  ))}
+                  peopleNames.map((name, idx) => {
+                    const personId = personIdByName[name];
+                    return (
+                      <EditableCell
+                        key={`salary-${name}`}
+                        value={row.salaries[name] ?? null}
+                        field="salary"
+                        year={row.year}
+                        isCurrent={row.isCurrent}
+                        onSave={(year, fields) => {
+                          if (personId == null || fields.salary === undefined)
+                            return;
+                          onSaveSalary(personId, year, fields.salary);
+                        }}
+                        isSaving={isSaving}
+                        border={idx === 0}
+                        notes={notes}
+                        onUpsertNote={onUpsertNote}
+                      />
+                    );
+                  })}
+                {/* Gross Bonus — writes the same direct historical_salaries
+                    row's bonus field. The current year auto-fills from the
+                    active Salary Profile until a real bonus is recorded. */}
+                {showSalary &&
+                  peopleNames.map((name, idx) => {
+                    const personId = personIdByName[name];
+                    return (
+                      <EditableCell
+                        key={`bonus-${name}`}
+                        value={row.salaryDetails[name]?.bonus ?? null}
+                        field="bonus"
+                        year={row.year}
+                        isCurrent={row.isCurrent}
+                        onSave={(year, fields) => {
+                          if (personId == null || fields.bonus === undefined)
+                            return;
+                          onSaveBonus(personId, year, fields.bonus);
+                        }}
+                        isSaving={isSaving}
+                        border={idx === 0}
+                        notes={notes}
+                        onUpsertNote={onUpsertNote}
+                      />
+                    );
+                  })}
               </tr>
             );
           })}

@@ -12,12 +12,13 @@ import {
 import { paycheckRouter } from "./paycheck";
 import {
   zSandboxSalaryEntries,
-  zItemAmountOverrides,
-  toItemAmountOverrideMap,
+  zItemAmountActiveFields,
+  toItemAmountActiveMap,
   zSandboxDeductionEdits,
   zSandboxDeductionAdditions,
-  zSandboxContribOverrides,
+  zSandboxContribActiveFields,
   zSandboxContribAdditions,
+  toSalaryActiveMap,
 } from "./_shared";
 import { applySandboxSalaryEntries } from "@/server/helpers/salary";
 import {
@@ -25,7 +26,11 @@ import {
   SK_ACTIVE_SALARY_PROFILE_ID,
 } from "@/lib/constants/settings-keys";
 import * as schema from "@/lib/db/schema";
-import { canDeleteBudgetProfile, canRemoveColumn } from "@/lib/pure/profiles";
+import {
+  canDeleteBudgetProfile,
+  canRemoveColumn,
+  filterActiveJobs,
+} from "@/lib/pure/profiles";
 import {
   columnLabelsSchema,
   columnMonthsSchema,
@@ -35,26 +40,27 @@ import {
 } from "@/lib/db/json-schemas";
 import { calculateBudget } from "@/lib/calculators/budget";
 import {
+  resolveContributionProfileId,
   resolveContributionProfileIdsForAllColumns,
   resolveSalaryProfileIdsForAllColumns,
 } from "@/lib/calculators/contribution-profile-resolution";
 import type { BudgetInput } from "@/lib/calculators/types";
 import {
   computeBudgetAnnualTotal,
-  toNumber,
   getPeriodsPerYear,
   getEffectiveIncome,
-  getBonusOverridesForJobs,
-  resolveEffectiveSalary,
-  resolveBonusTerms,
+  resolveCompensation,
+  applyActiveSalary,
+  applyActiveBonusTerms,
   computeAnnualContribution,
   loadAndApplyContribProfile,
-  loadAndApplySalaryProfile,
+  loadEffectiveSalaryProfile,
   resolveJoblessPeriodsPerYear,
   applyContributionAccountEdit,
   resolveTargetBudgetProfile,
   getResolvedGoalAllocations,
-  applyContribOverrides,
+  applyContribActiveFields,
+  resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
 import { accountDisplayName } from "@/lib/utils/format";
 import {
@@ -129,6 +135,44 @@ const profileResolutionTiersSchema = z.object({
 
 type ProfileResolutionTiers = z.infer<typeof profileResolutionTiersSchema>;
 
+/**
+ * Resolve which Contribution Profile a budget-linked item edit should write
+ * into, for one specific item's column — same precedence
+ * (resolveContributionProfileId) the rest of the page already resolves with,
+ * so a linked item's edit lands in the exact profile the user is looking at.
+ * Throws rather than silently writing nowhere: contributionValue/Method have
+ * no account-level fallback anymore (see applyContribActiveFields), so an
+ * edit with no resolvable profile has nowhere correct to go.
+ */
+async function resolveEffectiveContribProfileIdForItem(
+  db: typeof import("@/lib/db").db,
+  item: { profileId: number },
+  colIndex: number,
+  tiers: ProfileResolutionTiers,
+): Promise<number> {
+  const [budgetProfile] = await db
+    .select({
+      columnLabels: schema.budgetProfiles.columnLabels,
+      columnContributionProfileIds:
+        schema.budgetProfiles.columnContributionProfileIds,
+    })
+    .from(schema.budgetProfiles)
+    .where(eq(schema.budgetProfiles.id, item.profileId));
+  const resolvedId = resolveContributionProfileId({
+    ...tiers,
+    columnPinIds: budgetProfile?.columnContributionProfileIds as
+      (number | null)[] | null,
+    numColumns: budgetProfile?.columnLabels.length ?? 0,
+    column: colIndex,
+  });
+  if (resolvedId == null) {
+    throw new Error(
+      "No Contribution Profile is resolvable for this edit — activate a Contribution Profile before editing a linked amount",
+    );
+  }
+  return resolvedId;
+}
+
 const NO_PROFILE_TIERS: ProfileResolutionTiers = {
   planPinId: null,
   localSelectionId: null,
@@ -161,7 +205,7 @@ export const budgetRouter = createTRPCRouter({
           /** The active Plan's pins, if a Plan is selected in the browser. */
           planContribProfileId: z.number().int().nullable().optional(),
           planSalaryProfileId: z.number().int().nullable().optional(),
-          salaryOverrides: z
+          salaryActiveFields: z
             .array(z.object({ personId: z.number(), salary: z.number() }))
             .optional(),
         })
@@ -256,8 +300,8 @@ export const budgetRouter = createTRPCRouter({
         const cached = netMonthlyByPair.get(key);
         if (cached !== undefined) return cached;
         const paycheckData = await paycheckCaller.computeSummary({
-          ...(input?.salaryOverrides && input.salaryOverrides.length > 0
-            ? { salaryOverrides: input.salaryOverrides }
+          ...(input?.salaryActiveFields && input.salaryActiveFields.length > 0
+            ? { salaryActiveFields: input.salaryActiveFields }
             : {}),
           ...(contribProfileId != null
             ? { contributionProfileId: contribProfileId }
@@ -296,23 +340,6 @@ export const budgetRouter = createTRPCRouter({
         const items = allItems.filter((i) => i.profileId === p.id);
         const labels = (p.columnLabels as string[]) ?? [];
         const months = (p.columnMonths as number[] | null) ?? null;
-        const colTotals = labels.map((_: string, ci: number) =>
-          items.reduce(
-            (sum, item) => sum + ((item.amounts as number[])[ci] ?? 0),
-            0,
-          ),
-        );
-        const monthlySavings = monthlySavingsByProfile.get(p.id) ?? 0;
-        // Annual: weighted if months set, otherwise column 0 * 12, plus
-        // savings (savings funding doesn't vary by mode — see
-        // savings_goal_profile_allocations' table comment).
-        const budgetAnnual = months
-          ? colTotals.reduce((sum, t, i) => sum + t * (months[i] ?? 0), 0)
-          : (colTotals[0] ?? 0) * 12;
-        const annualTotal = budgetAnnual + monthlySavings * 12;
-        const isWeighted = months !== null && months.length > 0;
-        const spending = isWeighted ? budgetAnnual / 12 : (colTotals[0] ?? 0);
-
         const numColumns = labels.length;
         const contribIds = resolveContributionProfileIdsForAllColumns({
           ...contribTiers,
@@ -325,6 +352,29 @@ export const budgetRouter = createTRPCRouter({
           columnPinIds: p.columnSalaryProfileIds as (number | null)[] | null,
           numColumns,
         });
+        // Resolved through the same chain computeActiveSummary uses (see
+        // resolveLinkedBudgetItemAmounts) — raw `amounts` silently dropped
+        // every contribution-linked item from this sidebar's totals.
+        const resolvedItems = await resolveLinkedBudgetItemAmounts(
+          ctx.db,
+          items,
+          numColumns,
+          contribIds,
+          salaryIds,
+        );
+        const colTotals = labels.map((_: string, ci: number) =>
+          resolvedItems.reduce((sum, item) => sum + (item.amounts[ci] ?? 0), 0),
+        );
+        const monthlySavings = monthlySavingsByProfile.get(p.id) ?? 0;
+        // Annual: weighted if months set, otherwise column 0 * 12, plus
+        // savings (savings funding doesn't vary by mode — see
+        // savings_goal_profile_allocations' table comment).
+        const budgetAnnual = months
+          ? colTotals.reduce((sum, t, i) => sum + t * (months[i] ?? 0), 0)
+          : (colTotals[0] ?? 0) * 12;
+        const annualTotal = budgetAnnual + monthlySavings * 12;
+        const isWeighted = months !== null && months.length > 0;
+        const spending = isWeighted ? budgetAnnual / 12 : (colTotals[0] ?? 0);
 
         // A weighted profile has no single "the" contribution profile — its
         // take-home is blended across modes exactly the way its spending is,
@@ -472,13 +522,11 @@ export const budgetRouter = createTRPCRouter({
          *  as the rest of the clone, so a mid-copy failure can't leave a
          *  half-edited profile behind (a copy-then-separate-batch-update
          *  would have exactly that window). */
-        itemAmountOverrides: zItemAmountOverrides,
+        itemAmountActiveFields: zItemAmountActiveFields,
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const itemOverrideMap = toItemAmountOverrideMap(
-        input.itemAmountOverrides,
-      );
+      const itemActiveMap = toItemAmountActiveMap(input.itemAmountActiveFields);
       return ctx.db.transaction(async (tx) => {
         const source = await tx
           .select()
@@ -511,11 +559,10 @@ export const budgetRouter = createTRPCRouter({
             items.map((i) => {
               const rawAmounts = i.amounts as number[];
               const amounts =
-                itemOverrideMap.size === 0
+                itemActiveMap.size === 0
                   ? rawAmounts
                   : rawAmounts.map(
-                      (amt, col) =>
-                        itemOverrideMap.get(`${i.id}:${col}`) ?? amt,
+                      (amt, col) => itemActiveMap.get(`${i.id}:${col}`) ?? amt,
                     );
               return {
                 profileId: created.id,
@@ -624,7 +671,7 @@ export const budgetRouter = createTRPCRouter({
            */
           contributionProfile: profileResolutionTiersSchema.optional(),
           salaryProfile: profileResolutionTiersSchema.optional(),
-          salaryOverrides: z
+          salaryActiveFields: z
             .array(z.object({ personId: z.number(), salary: z.number() }))
             .optional(),
           /** The What-If tab's hand-edited salary/bonus entries — see
@@ -635,8 +682,8 @@ export const budgetRouter = createTRPCRouter({
           sandboxSalaryEntries: zSandboxSalaryEntries,
           /** The What-If tab's hand-edited budget item amounts — one more
            *  layer on top of the existing per-item resolution chain (see
-           *  toItemAmountOverrideMap's docblock). */
-          itemAmountOverrides: zItemAmountOverrides,
+           *  toItemAmountActiveMap's docblock). */
+          itemAmountActiveFields: zItemAmountActiveFields,
           /** See paycheckRouter.computeSummary's identical fields — threaded
            *  into netMonthlyIncome's paycheck.computeSummary call below so a
            *  deduction edit/addition actually moves the income figure the
@@ -647,7 +694,7 @@ export const budgetRouter = createTRPCRouter({
            *  both to linked-item resolution (below) and netMonthlyIncome's
            *  paycheck.computeSummary call, so a contribution edit moves
            *  both consistently. */
-          sandboxContribOverrides: zSandboxContribOverrides,
+          sandboxContribActiveFields: zSandboxContribActiveFields,
           /** See paycheckRouter.computeSummary's identical field. */
           sandboxContribAdditions: zSandboxContribAdditions,
         })
@@ -714,18 +761,12 @@ export const budgetRouter = createTRPCRouter({
           (number | null)[] | null,
         numColumns,
       });
-
-      // Plan-level salaryOverrides are threaded through here so budget item
+      // Plan-level salaryActiveFields are threaded through here so budget item
       // $ amounts for percent-of-salary contributions stay consistent with
-      // what the Paycheck page shows under the same active Plan override —
-      // previously this always passed an empty map and silently ignored
-      // Plan overrides. Precedence: Plan overrides > Salary Profile > live.
-      const planSalaryOverrideMap = new Map(
-        (input?.salaryOverrides ?? []).map((o) => [
-          o.personId,
-          { salary: o.salary },
-        ]),
-      );
+      // what the Paycheck page shows under the same active Plan — previously
+      // this always passed an empty map and silently ignored the Plan's
+      // active salaries. Precedence: Plan active salary > Salary Profile > live.
+      const planSalaryActiveMap = toSalaryActiveMap(input?.salaryActiveFields);
 
       const linkedContribIds = new Set(
         items
@@ -748,11 +789,18 @@ export const budgetRouter = createTRPCRouter({
 
         const effectiveSalaryMap = applySandboxSalaryEntries(
           input?.sandboxSalaryEntries,
-          await loadAndApplySalaryProfile(
-            ctx.db,
-            salaryProfileId,
-            planSalaryOverrideMap,
-          ),
+          planSalaryActiveMap,
+        );
+        // salaryProfileId is null both transiently (tier resolution hasn't
+        // loaded a globalDefaultId yet) and permanently (a caller like the
+        // Net Worth page's budget summary that supplies no tiers at all) —
+        // loadAndApplySalaryProfile would silently return an empty map
+        // (zero salary/bonus) in the latter case, unlike every sibling
+        // procedure's null-id handling. Fall back to the globally-active
+        // Salary Profile the same way they do.
+        const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
+          ctx.db,
+          salaryProfileId,
         );
         const profileResult = await loadAndApplyContribProfile(
           ctx.db,
@@ -764,52 +812,35 @@ export const budgetRouter = createTRPCRouter({
         // contribution account must reflect the sandbox's edited value the
         // same way the paycheck/contribution routers do, or "edit the
         // contribution account" and "see it in the budget" disagree.
-        const activeContribs = applyContribOverrides(
+        const activeContribs = applyContribActiveFields(
           profileResult.contribs,
-          input?.sandboxContribOverrides ?? {},
+          input?.sandboxContribActiveFields ?? {},
+          true,
         );
-        const activeJobs = profileResult.jobs.filter((j) => !j.endDate);
+        const activeJobs = filterActiveJobs(profileResult.jobs);
         const defaultPeriodsPerYear = resolveJoblessPeriodsPerYear(activeJobs);
 
-        const bonusOverrides = await getBonusOverridesForJobs(
-          ctx.db,
-          activeJobs.map((j) => j.id),
-        );
-        const currentYear = new Date().getFullYear();
         const salaryByJobId = new Map<number, number>();
         for (const j of activeJobs) {
-          const salary = await resolveEffectiveSalary(
-            ctx.db,
-            j,
+          const comp = resolveCompensation(salaryProfileActiveMap, j.id);
+          // The What-If sandbox can override salary and/or bonus terms
+          // independently of the Salary Profile's own resolved values —
+          // same per-field precedence used everywhere else this tier
+          // applies. Reading j's raw fields here silently ignored a Salary
+          // Profile entry for linked contribution items on the Budget tab.
+          const sandboxEntry = effectiveSalaryMap.get(j.personId);
+          const salary = applyActiveSalary(
+            j.personId,
+            comp.salary,
             effectiveSalaryMap,
           );
-          const resolvedOverride =
-            bonusOverrides.get(`${j.id}:${currentYear}`) ?? null;
-          // A Salary Profile pin on bonus terms is independent of a salary
-          // pin — resolveBonusTerms overlays whichever of bonusPercent/
-          // bonusMultiplier/monthsInBonusYear the profile pins onto the
-          // job's live values, same as paycheck.ts/contribution.ts do.
-          // Reading j's raw fields here silently ignored a pinned bonus for
-          // linked contribution items on the Budget tab.
-          const bonusTerms = resolveBonusTerms(
-            j,
-            effectiveSalaryMap.get(j.personId),
-          );
-          const jobWithResolvedBonus = {
-            ...j,
-            bonusPercent: bonusTerms.bonusPercent ?? "0",
-            bonusMultiplier: bonusTerms.bonusMultiplier ?? "0",
-            monthsInBonusYear: bonusTerms.monthsInBonusYear ?? 12,
-          };
-          salaryByJobId.set(
-            j.id,
-            getEffectiveIncome(jobWithResolvedBonus, salary, resolvedOverride),
-          );
+          const bonusTerms = applyActiveBonusTerms(sandboxEntry, comp.terms);
+          salaryByJobId.set(j.id, getEffectiveIncome(j, salary, bonusTerms));
         }
 
         for (const c of activeContribs) {
           if (!linkedContribIds.has(c.id)) continue;
-          const val = toNumber(c.contributionValue);
+          const val = Number(c.contributionValue);
           const jobPeriodsPerYear = c.jobId
             ? getPeriodsPerYear(
                 activeJobs.find((j) => j.id === c.jobId)?.payPeriod ??
@@ -849,25 +880,25 @@ export const budgetRouter = createTRPCRouter({
       // replaces that column's DB amount. For unlinked items, use DB amounts
       // as-is. The What-If tab's hand-edited amounts are ONE MORE LAYER on
       // top of that resolution chain — never a replacement for it, per
-      // toItemAmountOverrideMap's docblock — applied here so every
+      // toItemAmountActiveMap's docblock — applied here so every
       // downstream total (result, allColumnResults, weightedAnnualTotal,
       // netMonthlyIncome's leftover) reflects the sandbox's edits through
       // the ONE resolution path instead of a second client-side computation.
-      const itemOverrideMap = toItemAmountOverrideMap(
-        input?.itemAmountOverrides,
+      const itemActiveMap = toItemAmountActiveMap(
+        input?.itemAmountActiveFields,
       );
-      const applyItemOverrides = (itemId: number, amounts: number[]) =>
-        itemOverrideMap.size === 0
+      const applyItemActiveFields = (itemId: number, amounts: number[]) =>
+        itemActiveMap.size === 0
           ? amounts
           : amounts.map(
-              (amt, col) => itemOverrideMap.get(`${itemId}:${col}`) ?? amt,
+              (amt, col) => itemActiveMap.get(`${itemId}:${col}`) ?? amt,
             );
       const budgetItems = items.map((i) => {
         const dbAmounts = i.amounts as number[];
         if (!i.contributionAccountId)
           return {
             ...i,
-            amounts: applyItemOverrides(i.id, dbAmounts),
+            amounts: applyItemActiveFields(i.id, dbAmounts),
             contribAmounts: null as number[] | null,
             contribAmount: null as number | null,
           };
@@ -878,7 +909,7 @@ export const budgetRouter = createTRPCRouter({
         );
         return {
           ...i,
-          amounts: applyItemOverrides(i.id, contribAmounts),
+          amounts: applyItemActiveFields(i.id, contribAmounts),
           contribAmounts,
           // Kept for the display path that only knows about one figure; it is
           // the SELECTED column's amount, not a value valid for all columns.
@@ -948,8 +979,8 @@ export const budgetRouter = createTRPCRouter({
           createCallerFactory(paycheckRouter)(ctx);
         const incomePaycheckData = await paycheckCallerForIncome.computeSummary(
           {
-            ...(input?.salaryOverrides && input.salaryOverrides.length > 0
-              ? { salaryOverrides: input.salaryOverrides }
+            ...(input?.salaryActiveFields && input.salaryActiveFields.length > 0
+              ? { salaryActiveFields: input.salaryActiveFields }
               : {}),
             ...(contribProfileIdByColumn[selectedColumn] != null
               ? {
@@ -969,8 +1000,8 @@ export const budgetRouter = createTRPCRouter({
             ...(input?.sandboxDeductionAdditions
               ? { sandboxDeductionAdditions: input.sandboxDeductionAdditions }
               : {}),
-            ...(input?.sandboxContribOverrides
-              ? { sandboxContribOverrides: input.sandboxContribOverrides }
+            ...(input?.sandboxContribActiveFields
+              ? { sandboxContribActiveFields: input.sandboxContribActiveFields }
               : {}),
             ...(input?.sandboxContribAdditions
               ? { sandboxContribAdditions: input.sandboxContribAdditions }
@@ -1021,6 +1052,7 @@ export const budgetRouter = createTRPCRouter({
         id: z.number().int(),
         colIndex: z.number().int(),
         amount: z.number(),
+        contributionProfile: profileResolutionTiersSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -1034,12 +1066,21 @@ export const budgetRouter = createTRPCRouter({
       // Linked items: the amount IS the budget amount from the user's
       // perspective, so budgetProcedure is intentionally allowed to write
       // through to the linked contribution account rather than the dead
-      // budget_items.amounts field it would otherwise shadow.
+      // budget_items.amounts field it would otherwise shadow. Writes into
+      // whichever Contribution Profile is currently in effect for this
+      // column — contributionValue/Method have no account-level fallback.
       if (item.contributionAccountId) {
+        const contribProfileId = await resolveEffectiveContribProfileIdForItem(
+          ctx.db,
+          item,
+          input.colIndex,
+          input.contributionProfile ?? NO_PROFILE_TIERS,
+        );
         await applyContributionAccountEdit(
           ctx.db,
           item.contributionAccountId,
           input.amount,
+          contribProfileId,
         );
         return item;
       }
@@ -1068,6 +1109,7 @@ export const budgetRouter = createTRPCRouter({
             amount: z.number(),
           }),
         ),
+        contributionProfile: profileResolutionTiersSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -1090,11 +1132,19 @@ export const budgetRouter = createTRPCRouter({
         // the permission-scope rationale). If a batch somehow carries more
         // than one distinct amount for the same linked item, last one wins.
         if (item.contributionAccountId) {
-          const amount = changes[changes.length - 1]!.amount;
+          const lastChange = changes[changes.length - 1]!;
+          const contribProfileId =
+            await resolveEffectiveContribProfileIdForItem(
+              ctx.db,
+              item,
+              lastChange.colIndex,
+              input.contributionProfile ?? NO_PROFILE_TIERS,
+            );
           await applyContributionAccountEdit(
             ctx.db,
             item.contributionAccountId,
-            amount,
+            lastChange.amount,
+            contribProfileId,
           );
           continue;
         }

@@ -4,9 +4,24 @@
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
-import { toNumber } from "./transforms";
+import { toNumber, getPeriodsPerYear } from "./transforms";
 import type { Db } from "./transforms";
 import { parseAppSettings } from "./settings";
+import { filterActiveJobs } from "@/lib/pure/profiles";
+import {
+  loadEffectiveSalaryProfile,
+  resolveCompensation,
+  applyActiveSalary,
+  applyActiveBonusTerms,
+  getEffectiveIncome,
+} from "./salary";
+import type { SalaryActiveMap } from "./salary";
+import {
+  loadAndApplyContribProfile,
+  applyContribActiveFields,
+  computeAnnualContribution,
+  resolveJoblessPeriodsPerYear,
+} from "./contribution";
 
 /** No TTL — cached YNAB data is kept until the user manually triggers a resync. */
 export const BUDGET_CACHE_MAX_AGE_MS = undefined;
@@ -251,6 +266,140 @@ export function computeBudgetAnnualTotal(
 }
 
 /**
+ * Resolve every linked budget item's per-column dollar amounts through the
+ * SAME contribution-account resolution `budget.computeActiveSummary` uses,
+ * instead of the item's raw `amounts` column (which is intentionally left
+ * stale for linked items — see budget.ts router's `updateItemAmount`/
+ * `updateItemAmounts`). Any caller that sums `budget_items.amounts` directly
+ * for a profile with contribution-linked items (retirement/projection engine
+ * inputs, net-worth year-end snapshots) silently undercounts every linked
+ * item, since its raw amount is never written past its `0` template value.
+ *
+ * `contribProfileIdByColumn`/`salaryProfileIdByColumn` must already reflect
+ * the caller's own Plan-pin/column-pin resolution for each column — this
+ * function does no tier resolution of its own, matching budget.ts's
+ * `computeContribMonthlyForPair` precedence exactly so a linked item's
+ * dollar figure can never disagree between the Budget tab and any other
+ * consumer.
+ */
+export async function resolveLinkedBudgetItemAmounts<
+  T extends {
+    id: number;
+    contributionAccountId: number | null;
+    amounts: unknown;
+  },
+>(
+  db: Db,
+  items: T[],
+  numColumns: number,
+  contribProfileIdByColumn: (number | null)[],
+  salaryProfileIdByColumn: (number | null)[],
+  opts?: { planSalaryActiveMap?: SalaryActiveMap },
+): Promise<(T & { amounts: number[] })[]> {
+  const linkedContribIds = new Set(
+    items
+      .filter((i) => i.contributionAccountId != null)
+      .map((i) => i.contributionAccountId!),
+  );
+  if (linkedContribIds.size === 0) {
+    return items.map((i) => ({ ...i, amounts: i.amounts as number[] }));
+  }
+
+  const rawContribs = await db
+    .select()
+    .from(schema.contributionAccounts)
+    .where(eq(schema.contributionAccounts.isActive, true));
+  const allJobs = await db.select().from(schema.jobs);
+  const planSalaryActiveMap: SalaryActiveMap =
+    opts?.planSalaryActiveMap ?? new Map();
+
+  const computeContribMonthlyForPair = async (
+    contribProfileId: number | null,
+    salaryProfileId: number | null,
+  ): Promise<Map<number, number>> => {
+    const contribMonthlyById = new Map<number, number>();
+    const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
+      db,
+      salaryProfileId,
+    );
+    const profileResult = await loadAndApplyContribProfile(
+      db,
+      contribProfileId,
+      rawContribs,
+      allJobs,
+    );
+    const activeContribs = applyContribActiveFields(
+      profileResult.contribs,
+      {},
+      true,
+    );
+    const activeJobs = filterActiveJobs(profileResult.jobs);
+    const defaultPeriodsPerYear = resolveJoblessPeriodsPerYear(activeJobs);
+
+    const salaryByJobId = new Map<number, number>();
+    for (const j of activeJobs) {
+      const comp = resolveCompensation(salaryProfileActiveMap, j.id);
+      const sandboxEntry = planSalaryActiveMap.get(j.personId);
+      const salary = applyActiveSalary(
+        j.personId,
+        comp.salary,
+        planSalaryActiveMap,
+      );
+      const bonusTerms = applyActiveBonusTerms(sandboxEntry, comp.terms);
+      salaryByJobId.set(j.id, getEffectiveIncome(j, salary, bonusTerms));
+    }
+
+    for (const c of activeContribs) {
+      if (!linkedContribIds.has(c.id)) continue;
+      const val = Number(c.contributionValue);
+      const jobPeriodsPerYear = c.jobId
+        ? getPeriodsPerYear(
+            activeJobs.find((j) => j.id === c.jobId)?.payPeriod ?? "biweekly",
+          )
+        : defaultPeriodsPerYear;
+      const salary = c.jobId ? (salaryByJobId.get(c.jobId) ?? 0) : 0;
+      const annual = computeAnnualContribution(
+        c.contributionMethod,
+        val,
+        salary,
+        jobPeriodsPerYear,
+      );
+      contribMonthlyById.set(c.id, annual / 12);
+    }
+    return contribMonthlyById;
+  };
+
+  const contribMonthlyByPair = new Map<string, Map<number, number>>();
+  const contribMonthlyByColumn: Map<number, number>[] = [];
+  for (let col = 0; col < numColumns; col++) {
+    const contribProfileId = contribProfileIdByColumn[col] ?? null;
+    const salaryProfileId = salaryProfileIdByColumn[col] ?? null;
+    const key = `${contribProfileId}:${salaryProfileId}`;
+    let monthlyById = contribMonthlyByPair.get(key);
+    if (!monthlyById) {
+      monthlyById = await computeContribMonthlyForPair(
+        contribProfileId,
+        salaryProfileId,
+      );
+      contribMonthlyByPair.set(key, monthlyById);
+    }
+    contribMonthlyByColumn.push(monthlyById);
+  }
+
+  return items.map((i) => {
+    if (i.contributionAccountId == null) {
+      return { ...i, amounts: i.amounts as number[] };
+    }
+    const accountId = i.contributionAccountId;
+    const amounts = Array.from(
+      { length: numColumns },
+      (_, col) => contribMonthlyByColumn[col]?.get(accountId) ?? 0,
+    );
+    return { ...i, amounts };
+  });
+}
+
+/**
  * Optional override of which budget profile/column to read — lets a caller ask
  * "what would annual expenses be under profile X, column Y" instead of always
  * reading the globally-active profile + `budget_active_column` setting.
@@ -287,8 +436,18 @@ export async function getAnnualExpensesFromBudget(
     .from(schema.budgetItems)
     .where(eq(schema.budgetItems.profileId, profile.id));
 
-  return computeBudgetAnnualTotal(
+  const columnLabels = profile.columnLabels as string[];
+  const numColumns = columnLabels.length;
+  const resolvedItems = await resolveLinkedBudgetItemAmounts(
+    db,
     items,
+    numColumns,
+    new Array(numColumns).fill(null),
+    new Array(numColumns).fill(null),
+  );
+
+  return computeBudgetAnnualTotal(
+    resolvedItems,
     column,
     profile.columnMonths as number[] | null,
   );

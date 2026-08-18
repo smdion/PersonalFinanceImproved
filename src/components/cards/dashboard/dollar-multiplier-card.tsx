@@ -9,13 +9,14 @@ import {
   formatNumber,
   formatPercent,
 } from "@/lib/utils/format";
-import { useSalaryOverrides } from "@/lib/hooks/use-salary-overrides";
+import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { sumBy } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
 
 function DollarMultiplierCardImpl() {
-  const salaryOverrides = useSalaryOverrides();
-  const engineInput = salaryOverrides.length > 0 ? { salaryOverrides } : {};
+  const salaryActiveFields = useActiveSalaries();
+  const engineInput =
+    salaryActiveFields.length > 0 ? { salaryActiveFields } : {};
   const { data, isLoading, error } =
     trpc.projection.computeProjection.useQuery(engineInput);
   const [calcAmount, setCalcAmount] = useState("");

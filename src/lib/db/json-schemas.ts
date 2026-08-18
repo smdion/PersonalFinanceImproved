@@ -110,7 +110,7 @@ export const skippedCategoryIdsSchema = z.array(z.string()).nullable();
 
 /**
  * scenarios.overrides — nested map: { entityType: { recordId: { field: value } } }
- * Also used by contribution_profiles.contribution_overrides.
+ * Also used by contribution_profiles.contribution_active_fields.
  */
 export const scenarioOverridesSchema = z.record(
   z.string(),
@@ -156,16 +156,17 @@ export const relocationScenarioParamsSchema = z.object({
 // ── salary_profiles ─────────────────────────────────────────────
 
 /**
- * salary_profiles.salaries — personId → salary entry.
+ * salary_profiles.salaries — jobId → salary entry.
  *
- * Every field is optional and PRESENCE IS THE PIN SIGNAL: a field that is
- * set pins that value for this profile, a field that is absent resolves
- * live from the job record. There is no `mode` discriminator — an empty
- * object pins nothing, which is indistinguishable in meaning from having no
- * key for the person at all.
+ * A job either has a COMPLETE entry (all four fields, a real self-contained
+ * number for this profile) or no key at all (this profile says nothing
+ * about that job, which resolves to $0/no bonus — never a fallback to some
+ * other value). There is no partial-pin state and no "live" concept: a
+ * profile is its own complete world, not a set of overrides on a shared
+ * baseline. If you want different numbers, use a different profile.
  *
- * `.strict()` so a stale `{mode:...}` payload from an old client is
- * rejected loudly rather than being stored and silently ignored.
+ * `.strict()` so a stale payload shape from an old client is rejected
+ * loudly rather than being stored and silently ignored.
  *
  * Bonus terms live HERE, not on a Contribution Profile: "what is my bonus"
  * is the same category of fact as "what is my salary". A Contribution
@@ -174,25 +175,41 @@ export const relocationScenarioParamsSchema = z.object({
  */
 export const salaryEntrySchema = z
   .object({
-    salary: z.number().optional(),
-    /** Fraction, not percent: 0.12 = 12%. Matches jobs.bonus_percent. */
-    bonusPercent: z.number().optional(),
-    bonusMultiplier: z.number().optional(),
-    monthsInBonusYear: z.number().optional(),
+    salary: z.number(),
+    /** Fraction, not percent: 0.12 = 12%. Matches the bonus % shown in the UI. */
+    bonusPercent: z.number(),
+    bonusMultiplier: z.number(),
+    monthsInBonusYear: z.number(),
+    /** This year's actual paid-out bonus, pinned once known — orthogonal to
+     *  the formula fields above, which growth/projection math always uses
+     *  untouched. Only the live Paycheck display reads this. */
+    bonusOverride: z.number().nullable(),
   })
   .strict();
 
-/** personId → salary entry. */
+/** jobId → salary entry. */
 export const salaryEntriesSchema = z.record(z.string(), salaryEntrySchema);
 
 // ── contribution_profiles ───────────────────────────────────────
 
 /**
- * Detailed contribution account override (write-path).
- * contribution_profiles.contribution_overrides uses scenarioOverridesSchema
- * at the structural level but the leaf objects have a known shape.
+ * Detailed contribution account active-field set (write-path). An entry
+ * existing at all does NOT by itself mean this profile has a value —
+ * an entry can legitimately exist to set only `isActive`/`displayNameActive`/
+ * a match field. `contributionValue`/`contributionMethod` are the only
+ * pair required TOGETHER (both or neither, enforced below) whenever either
+ * is present, because the account row itself carries no value to fall back
+ * to (see applyContribActiveFields — there is no base-value fallback). An
+ * account with no `contributionValue` set in the current profile has no
+ * resolvable contribution at all, which is the "incomplete profile" state
+ * surfaced by getIncompleteContribAccountIds. Every other field here stays
+ * genuinely optional — those describe account behavior a profile MAY
+ * customize, not "the" value.
+ * contribution_profiles.contribution_active_fields uses
+ * scenarioOverridesSchema at the structural level but the leaf objects have
+ * a known shape.
  */
-export const contribAccountOverrideSchema = z
+export const contribAccountActiveFieldsSchema = z
   .object({
     contributionValue: z.union([z.string(), z.number()]).optional(),
     contributionMethod: z.string().optional(),
@@ -201,12 +218,22 @@ export const contribAccountOverrideSchema = z
     employerMaxMatchPct: z.union([z.string(), z.number()]).optional(),
     autoMaximize: z.boolean().optional(),
     isActive: z.boolean().optional(),
-    displayNameOverride: z.string().optional(),
+    displayNameActive: z.string().optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (f) =>
+      (f.contributionValue === undefined) ===
+      (f.contributionMethod === undefined),
+    {
+      message:
+        "contributionValue and contributionMethod must be set together (or neither)",
+      path: ["contributionValue"],
+    },
+  );
 
 /**
- * Contribution-profile job override.
+ * Contribution-profile job active-field set.
  *
  * Bonus AMOUNT terms (bonusPercent / bonusMultiplier / monthsInBonusYear)
  * deliberately do NOT appear here — they moved to the Salary Profile entry,
@@ -215,7 +242,7 @@ export const contribAccountOverrideSchema = z
  * (include401kInBonus, includeBonusInContributions), plus the employer name
  * and the bonus pay DATE, which are neither.
  */
-export const jobOverrideSchema = z
+export const jobActiveFieldsSchema = z
   .object({
     bonusMonth: z.union([z.number(), z.null()]).optional(),
     bonusDayOfMonth: z.union([z.number(), z.null()]).optional(),
@@ -225,13 +252,13 @@ export const jobOverrideSchema = z
   })
   .strict();
 
-/** contribution_profiles.contribution_overrides — typed override structure */
-export const contributionOverridesSchema = z
+/** contribution_profiles.contribution_active_fields — typed active-field structure */
+export const contributionActiveFieldsSchema = z
   .object({
     contributionAccounts: z
-      .record(z.string(), contribAccountOverrideSchema)
+      .record(z.string(), contribAccountActiveFieldsSchema)
       .default({}),
-    jobs: z.record(z.string(), jobOverrideSchema).default({}),
+    jobs: z.record(z.string(), jobActiveFieldsSchema).default({}),
   })
   .strict()
   .default({ contributionAccounts: {}, jobs: {} });

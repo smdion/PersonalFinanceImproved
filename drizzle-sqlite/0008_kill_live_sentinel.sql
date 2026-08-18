@@ -12,6 +12,13 @@ ALTER TABLE `salary_profiles` RENAME COLUMN `salary_overrides` TO `salaries`;-->
 --    Record<personId, {mode:"job"} | {mode:"fixed", salary}>. json_object()
 --    values keep their JSON subtype through json_group_object, so these nest
 --    as objects rather than being re-quoted as strings.
+--
+-- IDEMPOTENCY GUARD: see drizzle/0008_kill_live_sentinel.sql (Postgres) for
+-- the full rationale. The pre-0008 shape stores a bare NUMBER per pinned
+-- person; every shape this migration or a later one produces stores an
+-- OBJECT instead, so a bare-number value (or an empty map) is the only
+-- safe trigger to re-run — checking whether keys resolve to a person
+-- would wrongly re-trigger on later, job-keyed shapes.
 UPDATE `salary_profiles`
 SET `salaries` = COALESCE(
 	(
@@ -26,12 +33,25 @@ SET `salaries` = COALESCE(
 		FROM `people` p
 	),
 	'{}'
-);--> statement-breakpoint
+)
+WHERE `salary_profiles`.`salaries` = '{}'
+	OR EXISTS (
+		SELECT 1
+		FROM json_each(`salary_profiles`.`salaries`) AS already
+		WHERE json_type(already.value) IN ('integer', 'real')
+	);--> statement-breakpoint
 
 -- 3. Seed the ordinary profile that replaces the synthetic "Live" entry:
 --    every person follows their job record. `name` is unique, so pick the
 --    first free candidate; if all are taken the NOT NULL constraint fails
 --    loudly rather than silently skipping the seed.
+--
+-- IDEMPOTENCY: see drizzle/0008_kill_live_sentinel.sql (Postgres) for the
+-- full rationale — this had no guard and would spawn a fresh blank
+-- "Current (N)" row on every squash-recovery replay. Can't gate on "does
+-- any salary_profiles row exist" (0007 may have legitimately created other
+-- profiles first), so gate on the thing only this seed sets:
+-- app_settings.active_salary_profile_id holding a proper id.
 INSERT INTO `salary_profiles` (`name`, `description`, `salaries`)
 SELECT
 	(
@@ -52,7 +72,14 @@ SELECT
 	COALESCE(
 		(SELECT json_group_object(CAST(p.`id` AS TEXT), json_object('mode', 'job')) FROM `people` p),
 		'{}'
-	);--> statement-breakpoint
+	)
+WHERE NOT EXISTS (
+	SELECT 1 FROM `app_settings` a
+	WHERE a.`key` = 'active_salary_profile_id'
+		AND a.`value` IS NOT NULL
+		AND a.`value` != 'null'
+		AND a.`value` != '0'
+);--> statement-breakpoint
 
 -- 4. Point app_settings.active_salary_profile_id at the row just seeded
 --    (highest id — nothing else inserts into this table in between) wherever

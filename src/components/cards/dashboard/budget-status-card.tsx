@@ -6,6 +6,8 @@ import { trpc } from "@/lib/trpc";
 import { Card, ProgressBar } from "@/components/ui/card";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
+import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { safeDivide, sumBy } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
 
@@ -13,8 +15,39 @@ const TOP_CATEGORY_COUNT = 3;
 
 function BudgetStatusCardImpl() {
   const [activeColumn] = usePersistedSetting<number>("budget_active_column", 0);
+  const [activeContribProfileId] = usePersistedSetting<number | null>(
+    "active_contrib_profile_id",
+    null,
+  );
+  const { data: contribProfilesList } =
+    trpc.contributionProfile.list.useQuery();
+  const { planPinId: planContribProfileId } = useEffectiveProfileId(
+    "contribution",
+    {
+      validIds: contribProfilesList?.map((p) => p.id),
+      localSelection: null,
+      globalDefaultId: activeContribProfileId,
+    },
+  );
+  const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
+  const { data: salaryProfilesList } = trpc.salaryProfile.list.useQuery();
+  const { planPinId: planSalaryProfileId } = useEffectiveProfileId("salary", {
+    validIds: salaryProfilesList?.map((p) => p.id),
+    localSelection: null,
+    globalDefaultId: rawActiveSalaryProfileId,
+  });
   const { data, isLoading, error } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
+    contributionProfile: {
+      planPinId: planContribProfileId,
+      localSelectionId: null,
+      globalDefaultId: activeContribProfileId,
+    },
+    salaryProfile: {
+      planPinId: planSalaryProfileId,
+      localSelectionId: null,
+      globalDefaultId: rawActiveSalaryProfileId,
+    },
   });
   const { data: actualsData } = trpc.budget.listApiActuals.useQuery();
   if (isLoading) return <LoadingCard title="Budget" />;

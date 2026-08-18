@@ -1,6 +1,6 @@
 "use client";
 
-import { useSalaryOverrides } from "./use-salary-overrides";
+import { useActiveSalaries } from "./use-salary-overrides";
 import { useEffectiveProfileId } from "./use-effective-profile-id";
 import { useBudgetProfilesList } from "./use-budget-profiles-list";
 
@@ -11,11 +11,11 @@ import { useBudgetProfilesList } from "./use-budget-profiles-list";
  * plus any active salary overrides, so net worth / historical / assets pages
  * stay in sync with what Paycheck/Budget/Savings show under the same Plan
  * instead of always reading raw global state. Single computation path: call
- * this instead of re-deriving budgetProfileId/salaryOverrides per page.
+ * this instead of re-deriving budgetProfileId/salaryActiveFields per page.
  */
 export function useYearEndTargetingInput(): {
   budgetProfileId?: number;
-  salaryOverrides?: { personId: number; salary: number }[];
+  salaryActiveFields?: { personId: number; salary: number }[];
 } {
   const { data: budgetProfiles } = useBudgetProfilesList();
   const activeBudgetProfileId =
@@ -28,12 +28,12 @@ export function useYearEndTargetingInput(): {
       globalDefaultId: activeBudgetProfileId,
     },
   );
-  const salaryOverrides = useSalaryOverrides();
+  const salaryActiveFields = useActiveSalaries();
 
   return {
     ...(effectiveBudgetProfileId != null
       ? { budgetProfileId: effectiveBudgetProfileId }
       : {}),
-    ...(salaryOverrides.length > 0 ? { salaryOverrides } : {}),
+    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
   };
 }

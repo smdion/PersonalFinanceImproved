@@ -6,11 +6,17 @@
  * setup — using an isolated SQLite database per suite.
  *
  * Also tests settings/paycheck CRUD procedures: people, jobs,
- * salaryChanges, contributionAccounts, deductions.
+ * contributionAccounts, deductions.
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createTestCaller, seedPerson, seedJob } from "./setup";
+import {
+  createTestCaller,
+  seedPerson,
+  seedJob,
+  seedPerformanceAccount,
+  seedContributionProfile,
+} from "./setup";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";
@@ -111,13 +117,6 @@ describe("paycheck router — seeded person, no job", () => {
       expect(entry.salary).toBe(0);
     });
 
-    it("futureSalaryChanges is an empty array", async () => {
-      const result = await caller.paycheck.computeSummary();
-      const entry = result.people[0]!;
-      expect(Array.isArray(entry.futureSalaryChanges)).toBe(true);
-      expect(entry.futureSalaryChanges).toHaveLength(0);
-    });
-
     it("rawDeductions is an empty array", async () => {
       const result = await caller.paycheck.computeSummary();
       const entry = result.people[0]!;
@@ -166,9 +165,9 @@ describe("paycheck router — optional input params", () => {
       expect(result).toHaveProperty("householdTax");
     });
 
-    it("empty salaryOverrides array does not affect results", async () => {
+    it("empty salaryActiveFields array does not affect results", async () => {
       const result = await caller.paycheck.computeSummary({
-        salaryOverrides: [],
+        salaryActiveFields: [],
       });
       expect(Array.isArray(result.people)).toBe(true);
       expect(result.people).toHaveLength(1);
@@ -196,10 +195,10 @@ describe("paycheck router — optional input params", () => {
     });
   });
 
-  describe("computeSummary with salaryOverride for seeded person", () => {
+  describe("computeSummary with active salary for seeded person", () => {
     it("accepts a salary override for the person — no job so still null paycheck", async () => {
       const result = await caller.paycheck.computeSummary({
-        salaryOverrides: [{ personId, salary: 120000 }],
+        salaryActiveFields: [{ personId, salary: 120000 }],
       });
       // No job exists, so override has no effect on paycheck (still null)
       expect(result.people).toHaveLength(1);
@@ -292,6 +291,102 @@ describe("settings.people CRUD", () => {
   });
 });
 
+// ── Settings: speculative-job auto-provisioning ─────────────────────────────
+
+describe("settings.people.create auto-provisions a speculative job", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let cleanup: () => void;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    caller = ctx.caller;
+    cleanup = ctx.cleanup;
+  });
+
+  afterAll(() => cleanup());
+
+  it("gives a newly-created person exactly one speculative job, atomically", async () => {
+    const person = await caller.settings.people.create({
+      name: "New Person",
+      dateOfBirth: "1995-01-01",
+    });
+    const jobs = await caller.settings.jobs.list();
+    const personJobs = jobs.filter((j) => j.personId === person!.id);
+    expect(personJobs).toHaveLength(1);
+    expect(personJobs[0]!.isSpeculative).toBe(true);
+    expect(personJobs[0]!.employerName).toBe("Speculative (What-If Planning)");
+    expect(personJobs[0]!.endDate).toBeNull();
+  });
+
+  it("the speculative job never appears in the Jobs Settings list a user would see", async () => {
+    // Mirrors historical/jobs.tsx's client-side filter — the peg is only
+    // ever surfaced through the Salary Profile editor's job picker.
+    const jobs = await caller.settings.jobs.list();
+    const visibleJobs = jobs.filter((j) => !j.isSpeculative);
+    expect(visibleJobs.every((j) => !j.isSpeculative)).toBe(true);
+    expect(jobs.some((j) => j.isSpeculative)).toBe(true);
+  });
+
+  it("deleting a person with only the speculative job succeeds (no FK block)", async () => {
+    const person = await caller.settings.people.create({
+      name: "Deletable",
+      dateOfBirth: "1999-01-01",
+    });
+    await caller.settings.people.delete({ id: person!.id });
+    const remaining = await caller.settings.people.list();
+    expect(remaining.some((p) => p.id === person!.id)).toBe(false);
+    const jobs = await caller.settings.jobs.list();
+    expect(jobs.some((j) => j.personId === person!.id)).toBe(false);
+  });
+
+  it("deleting a person with a REAL job still correctly fails", async () => {
+    const person = await caller.settings.people.create({
+      name: "Employed",
+      dateOfBirth: "1993-01-01",
+    });
+    await caller.settings.jobs.create({
+      personId: person!.id,
+      employerName: "Real Co",
+      payPeriod: "biweekly",
+      payWeek: "even",
+      startDate: "2022-01-01",
+      w4FilingStatus: "Single",
+    });
+    await expect(
+      caller.settings.people.delete({ id: person!.id }),
+    ).rejects.toThrow();
+  });
+});
+
+describe("settings.jobs.delete rejects deleting a speculative job", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let cleanup: () => void;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    caller = ctx.caller;
+    cleanup = ctx.cleanup;
+  });
+
+  afterAll(() => cleanup());
+
+  it("throws rather than deleting the speculative peg", async () => {
+    const person = await caller.settings.people.create({
+      name: "Guarded",
+      dateOfBirth: "1991-01-01",
+    });
+    const jobs = await caller.settings.jobs.list();
+    const speculativeJob = jobs.find(
+      (j) => j.personId === person!.id && j.isSpeculative,
+    )!;
+    await expect(
+      caller.settings.jobs.delete({ id: speculativeJob.id }),
+    ).rejects.toThrow(/speculative/i);
+    const stillThere = await caller.settings.jobs.list();
+    expect(stillThere.some((j) => j.id === speculativeJob.id)).toBe(true);
+  });
+});
+
 // ── Settings: Jobs CRUD ─────────────────────────────────────────────────────
 
 describe("settings.jobs CRUD", () => {
@@ -315,11 +410,10 @@ describe("settings.jobs CRUD", () => {
     expect(result).toHaveLength(0);
   });
 
-  it("create adds a job and returns it", async () => {
+  it("create adds a job with no salary of its own", async () => {
     const job = await caller.settings.jobs.create({
       personId,
       employerName: "Acme Corp",
-      annualSalary: "100000",
       payPeriod: "biweekly",
       payWeek: "even",
       startDate: "2022-01-15",
@@ -327,8 +421,8 @@ describe("settings.jobs CRUD", () => {
     });
     expect(job).toBeDefined();
     expect(job!.employerName).toBe("Acme Corp");
-    expect(job!.annualSalary).toBe("100000");
     expect(job!.payPeriod).toBe("biweekly");
+    expect(job).not.toHaveProperty("annualSalary");
   });
 
   it("list returns one job after create", async () => {
@@ -336,27 +430,26 @@ describe("settings.jobs CRUD", () => {
     expect(result).toHaveLength(1);
   });
 
-  it("update changes a job's salary", async () => {
+  it("update does not touch salary — a job carries none of its own", async () => {
     const jobs = await caller.settings.jobs.list();
     const id = jobs[0]!.id;
     const updated = await caller.settings.jobs.update({
       id,
       personId,
-      employerName: "Acme Corp",
-      annualSalary: "110000",
+      employerName: "Acme Corp Renamed",
       payPeriod: "biweekly",
       payWeek: "even",
       startDate: "2022-01-15",
       w4FilingStatus: "Single",
     });
-    expect(updated!.annualSalary).toBe("110000");
+    expect(updated!.employerName).toBe("Acme Corp Renamed");
+    expect(updated).not.toHaveProperty("annualSalary");
   });
 
   it("create a job with endDate", async () => {
     const job = await caller.settings.jobs.create({
       personId,
       employerName: "Old Corp",
-      annualSalary: "80000",
       payPeriod: "monthly",
       payWeek: "na",
       startDate: "2018-06-01",
@@ -377,80 +470,6 @@ describe("settings.jobs CRUD", () => {
 });
 
 // ── Settings: Salary Changes CRUD ───────────────────────────────────────────
-
-describe("settings.salaryChanges CRUD", () => {
-  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
-  let db: BetterSQLite3Database<typeof sqliteSchema>;
-  let cleanup: () => void;
-  let jobId: number;
-
-  beforeAll(async () => {
-    const ctx = await createTestCaller();
-    caller = ctx.caller;
-    db = ctx.db;
-    cleanup = ctx.cleanup;
-    const personId = await seedPerson(db, "Salary Person", "1990-01-01");
-    jobId = seedJob(db, personId);
-  });
-
-  afterAll(() => cleanup());
-
-  it("list returns empty array initially", async () => {
-    const result = await caller.settings.salaryChanges.list();
-    expect(result).toHaveLength(0);
-  });
-
-  it("create adds a salary change", async () => {
-    const change = await caller.settings.salaryChanges.create({
-      jobId,
-      effectiveDate: "2023-01-01",
-      newSalary: "130000",
-      raisePercent: "8.33",
-      notes: "Annual raise",
-    });
-    expect(change).toBeDefined();
-    expect(change!.newSalary).toBe("130000");
-    expect(change!.notes).toBe("Annual raise");
-  });
-
-  it("create a second salary change", async () => {
-    const change = await caller.settings.salaryChanges.create({
-      jobId,
-      effectiveDate: "2024-01-01",
-      newSalary: "140000",
-    });
-    expect(change!.effectiveDate).toBe("2024-01-01");
-  });
-
-  it("list returns both salary changes ordered by date", async () => {
-    const result = await caller.settings.salaryChanges.list();
-    expect(result).toHaveLength(2);
-    expect(result[0]!.effectiveDate).toBe("2023-01-01");
-    expect(result[1]!.effectiveDate).toBe("2024-01-01");
-  });
-
-  it("update changes the salary amount", async () => {
-    const changes = await caller.settings.salaryChanges.list();
-    const id = changes[0]!.id;
-    const updated = await caller.settings.salaryChanges.update({
-      id,
-      jobId,
-      effectiveDate: "2023-01-01",
-      newSalary: "135000",
-      notes: "Adjusted raise",
-    });
-    expect(updated!.newSalary).toBe("135000");
-    expect(updated!.notes).toBe("Adjusted raise");
-  });
-
-  it("delete removes a salary change", async () => {
-    const changes = await caller.settings.salaryChanges.list();
-    const id = changes[1]!.id;
-    await caller.settings.salaryChanges.delete({ id });
-    const remaining = await caller.settings.salaryChanges.list();
-    expect(remaining).toHaveLength(1);
-  });
-});
 
 // ── Settings: Deductions CRUD ───────────────────────────────────────────────
 
@@ -563,8 +582,6 @@ describe("settings.contributionAccounts CRUD", () => {
       accountType: "401k",
       parentCategory: "Retirement",
       taxTreatment: "pre_tax",
-      contributionMethod: "percent_of_salary",
-      contributionValue: "0.10",
       employerMatchType: "percent_of_contribution",
       employerMatchValue: "1.0",
       employerMaxMatchPct: "0.06",
@@ -572,7 +589,6 @@ describe("settings.contributionAccounts CRUD", () => {
     expect(acct).toBeDefined();
     expect(acct!.accountType).toBe("401k");
     expect(acct!.taxTreatment).toBe("pre_tax");
-    expect(acct!.contributionValue).toBe("0.10");
     expect(acct!.employerMatchType).toBe("percent_of_contribution");
   });
 
@@ -582,13 +598,10 @@ describe("settings.contributionAccounts CRUD", () => {
       accountType: "ira",
       parentCategory: "Retirement",
       taxTreatment: "tax_free",
-      contributionMethod: "fixed_annual",
-      contributionValue: "7000",
       employerMatchType: "none",
     });
     expect(acct!.accountType).toBe("ira");
     expect(acct!.taxTreatment).toBe("tax_free");
-    expect(acct!.contributionMethod).toBe("fixed_annual");
   });
 
   it("list returns both contribution accounts", async () => {
@@ -606,13 +619,11 @@ describe("settings.contributionAccounts CRUD", () => {
       accountType: "401k",
       parentCategory: "Retirement",
       taxTreatment: "pre_tax",
-      contributionMethod: "percent_of_salary",
-      contributionValue: "0.15",
       employerMatchType: "percent_of_contribution",
       employerMatchValue: "1.0",
       employerMaxMatchPct: "0.06",
     });
-    expect(updated!.contributionValue).toBe("0.15");
+    expect(updated!.employerMatchValue).toBe("1.0");
   });
 
   it("create a joint brokerage contribution account", async () => {
@@ -621,14 +632,79 @@ describe("settings.contributionAccounts CRUD", () => {
       accountType: "brokerage",
       parentCategory: "Portfolio",
       taxTreatment: "after_tax",
-      contributionMethod: "fixed_monthly",
-      contributionValue: "500",
       employerMatchType: "none",
       ownership: "joint",
     });
     expect(acct!.ownership).toBe("joint");
     expect(acct!.parentCategory).toBe("Portfolio");
     expect(acct!.personId).toBeNull();
+  });
+
+  it("create round-trips a full field payload (institution, label, subType, HSA coverage, match fields)", async () => {
+    const perfAcctId = seedPerformanceAccount(db, {
+      institution: "Fidelity",
+      accountType: "hsa",
+      parentCategory: "Retirement",
+    });
+    const acct = await caller.settings.contributionAccounts.create({
+      personId,
+      jobId,
+      accountType: "hsa",
+      subType: "Rollover",
+      label: "Family HSA",
+      parentCategory: "Retirement",
+      performanceAccountId: perfAcctId,
+      taxTreatment: "hsa",
+      employerMatchType: "fixed_annual",
+      employerMatchValue: "500",
+      employerMaxMatchPct: "0.05",
+      employerMatchTaxTreatment: "pre_tax",
+      hsaCoverageType: "family",
+      autoMaximize: true,
+      isActive: true,
+      ownership: "individual",
+      targetAnnual: "8000",
+      allocationPriority: 2,
+      notes: "Full-field creation smoke test",
+      isPayrollDeducted: true,
+    });
+    expect(acct).toBeDefined();
+    expect(acct!.subType).toBe("Rollover");
+    expect(acct!.label).toBe("Family HSA");
+    expect(acct!.performanceAccountId).toBe(perfAcctId);
+    expect(acct!.hsaCoverageType).toBe("family");
+    expect(acct!.employerMatchValue).toBe("500");
+    expect(acct!.employerMaxMatchPct).toBe("0.05");
+    expect(acct!.autoMaximize).toBe(true);
+    expect(acct!.targetAnnual).toBe("8000");
+    expect(acct!.allocationPriority).toBe(2);
+    expect(acct!.notes).toBe("Full-field creation smoke test");
+    expect(acct!.isPayrollDeducted).toBe(true);
+
+    const updated = await caller.settings.contributionAccounts.update({
+      id: acct!.id,
+      personId,
+      jobId,
+      accountType: "hsa",
+      subType: "Rollover",
+      label: "Family HSA — updated",
+      parentCategory: "Retirement",
+      performanceAccountId: perfAcctId,
+      taxTreatment: "hsa",
+      employerMatchType: "fixed_annual",
+      employerMatchValue: "500",
+      employerMaxMatchPct: "0.05",
+      employerMatchTaxTreatment: "pre_tax",
+      hsaCoverageType: "family",
+      autoMaximize: true,
+      isActive: true,
+      ownership: "individual",
+      targetAnnual: "8000",
+      allocationPriority: 2,
+      notes: "Full-field creation smoke test",
+      isPayrollDeducted: true,
+    });
+    expect(updated!.label).toBe("Family HSA — updated");
   });
 
   it("delete removes a contribution account", async () => {
@@ -691,11 +767,6 @@ describe("paycheck router — person with active job", () => {
       expect(entry.paycheck.gross).toBeGreaterThan(0);
     }
   });
-
-  it("futureSalaryChanges is empty when no changes are seeded", async () => {
-    const result = await caller.paycheck.computeSummary();
-    expect(result.people[0]!.futureSalaryChanges).toHaveLength(0);
-  });
 });
 
 // ── computeSummary with person + job that has an endDate ─────────────────────
@@ -740,6 +811,7 @@ describe("paycheck router — with deductions and contributions", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
+  let profileId: number;
 
   beforeAll(async () => {
     const ctx = await createTestCaller();
@@ -768,43 +840,63 @@ describe("paycheck router — with deductions and contributions", () => {
       })
       .run();
 
-    // Add a contribution account
-    db.insert(schema.contributionAccounts)
+    // Add a contribution account — no value of its own; the Contribution
+    // Profile below is what gives it one.
+    const contribAcct = db
+      .insert(schema.contributionAccounts)
       .values({
         personId,
         jobId,
         accountType: "401k",
         parentCategory: "Retirement",
         taxTreatment: "pre_tax",
-        contributionMethod: "percent_of_salary",
-        contributionValue: "0.10",
         employerMatchType: "percent_of_contribution",
         employerMatchValue: "1.0",
         employerMaxMatchPct: "0.06",
         isActive: true,
         ownership: "individual",
       })
-      .run();
+      .returning({ id: schema.contributionAccounts.id })
+      .get();
+
+    profileId = seedContributionProfile(db, {
+      name: "Full Setup Profile",
+      contributionActiveFields: {
+        contributionAccounts: {
+          [contribAcct.id]: {
+            contributionValue: "0.10",
+            contributionMethod: "percent_of_salary",
+          },
+        },
+        jobs: {},
+      },
+    });
   });
 
   afterAll(() => cleanup());
 
   it("rawDeductions includes the seeded deduction", async () => {
-    const result = await caller.paycheck.computeSummary();
+    const result = await caller.paycheck.computeSummary({
+      contributionProfileId: profileId,
+    });
     const entry = result.people[0]!;
     expect(entry.rawDeductions).toHaveLength(1);
     expect(entry.rawDeductions[0]!.deductionName).toBe("Health Insurance");
   });
 
   it("rawContribs includes the seeded contribution", async () => {
-    const result = await caller.paycheck.computeSummary();
+    const result = await caller.paycheck.computeSummary({
+      contributionProfileId: profileId,
+    });
     const entry = result.people[0]!;
     expect(entry.rawContribs.length).toBeGreaterThanOrEqual(1);
     expect(entry.rawContribs[0]!.accountType).toBe("401k");
   });
 
   it("salary reflects the job salary", async () => {
-    const result = await caller.paycheck.computeSummary();
+    const result = await caller.paycheck.computeSummary({
+      contributionProfileId: profileId,
+    });
     const entry = result.people[0]!;
     expect(entry.salary).toBe(150000);
   });
@@ -868,57 +960,13 @@ describe("paycheck router — multiple people", () => {
 
 // ── computeSummary with salary changes (future) ─────────────────────────────
 
-describe("paycheck router — with future salary changes", () => {
-  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
-  let db: BetterSQLite3Database<typeof sqliteSchema>;
-  let cleanup: () => void;
-
-  beforeAll(async () => {
-    const ctx = await createTestCaller();
-    caller = ctx.caller;
-    db = ctx.db;
-    cleanup = ctx.cleanup;
-
-    const personId = await seedPerson(db, "Raise Person", "1990-01-01");
-    const jobId = seedJob(db, personId, {
-      annualSalary: "100000",
-      startDate: "2020-01-01",
-    });
-
-    // Add a future salary change (next year)
-    const futureYear = new Date().getFullYear() + 1;
-    db.insert(schema.salaryChanges)
-      .values({
-        jobId,
-        effectiveDate: `${futureYear}-01-01`,
-        newSalary: "115000",
-        raisePercent: "15",
-        notes: "Future raise",
-      })
-      .run();
-  });
-
-  afterAll(() => cleanup());
-
-  it("futureSalaryChanges contains the upcoming raise", async () => {
-    const result = await caller.paycheck.computeSummary();
-    const entry = result.people[0]!;
-    expect(entry.futureSalaryChanges.length).toBeGreaterThanOrEqual(1);
-  });
-
-  it("current salary is still the original (not the future change)", async () => {
-    const result = await caller.paycheck.computeSummary();
-    const entry = result.people[0]!;
-    expect(entry.salary).toBe(100000);
-  });
-});
-
 // ── computeSummary with joint contribution accounts ─────────────────────────
 
 describe("paycheck router — joint contributions", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
+  let profileId: number;
 
   beforeAll(async () => {
     const ctx = await createTestCaller();
@@ -928,33 +976,51 @@ describe("paycheck router — joint contributions", () => {
 
     const personId = await seedPerson(db, "Joint Person", "1990-01-01");
 
-    // Joint contribution account (no job)
-    db.insert(schema.contributionAccounts)
+    // Joint contribution account (no job) — no value of its own; the
+    // Contribution Profile below is what gives it one.
+    const contribAcct = db
+      .insert(schema.contributionAccounts)
       .values({
         personId,
         accountType: "brokerage",
         parentCategory: "Portfolio",
         taxTreatment: "after_tax",
-        contributionMethod: "fixed_monthly",
-        contributionValue: "1000",
         employerMatchType: "none",
         isActive: true,
         ownership: "joint",
       })
-      .run();
+      .returning({ id: schema.contributionAccounts.id })
+      .get();
+
+    profileId = seedContributionProfile(db, {
+      name: "Joint Profile",
+      contributionActiveFields: {
+        contributionAccounts: {
+          [contribAcct.id]: {
+            contributionValue: "1000",
+            contributionMethod: "fixed_monthly",
+          },
+        },
+        jobs: {},
+      },
+    });
   });
 
   afterAll(() => cleanup());
 
   it("jointContribs contains the joint account", async () => {
-    const result = await caller.paycheck.computeSummary();
+    const result = await caller.paycheck.computeSummary({
+      contributionProfileId: profileId,
+    });
     expect(result.jointContribs).toHaveLength(1);
     expect(result.jointContribs[0]!.ownership).toBe("joint");
     expect(result.jointContribs[0]!.accountType).toBe("brokerage");
   });
 
   it("joint contribs are not in person's rawContribs", async () => {
-    const result = await caller.paycheck.computeSummary();
+    const result = await caller.paycheck.computeSummary({
+      contributionProfileId: profileId,
+    });
     // Person has no job, so rawContribs should be empty
     expect(result.people[0]!.rawContribs).toHaveLength(0);
   });

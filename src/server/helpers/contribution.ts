@@ -1,8 +1,9 @@
 /**
  * Contribution computation, aggregation, and profile resolution helpers.
  */
-import { eq, isNull } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
+import type { ScenarioOverrides } from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
 import { isTaxFree } from "@/lib/config/account-types";
 import type {
@@ -25,19 +26,25 @@ import type {
 } from "@/lib/config/enum-values";
 import { toNumber, getPeriodsPerYear } from "./transforms";
 import type { Db } from "./transforms";
-import { getCurrentSalary, pinnedFields, resolveCompensation } from "./salary";
-import type { SalaryEntryMap } from "./salary";
+import { filterActiveJobs } from "@/lib/pure/profiles";
+import {
+  getEffectiveIncome,
+  getTotalCompensation,
+  resolveCompensation,
+  loadEffectiveSalaryProfile,
+} from "./salary";
 
 /**
- * Bonus-AMOUNT fields a Contribution Profile is no longer allowed to
- * override — they moved to the Salary Profile entry (same tier as salary).
+ * Bonus-AMOUNT fields a Contribution Profile is no longer allowed to mark
+ * active — they moved to the Salary Profile entry (same tier as salary).
  *
- * The override filter is field-name-driven and these names all still exist
- * on `jobs`, so a stale key left behind in an old contribution_overrides
- * blob would otherwise keep being applied and keep changing someone's
- * compensation from the wrong profile. The migration strips them and
- * jobOverrideSchema rejects new ones; this is the runtime backstop that
- * makes a missed row inert rather than silently wrong.
+ * The active-field filter is field-name-driven and these names all still
+ * exist on `jobs`, so a stale key left behind in an old
+ * contribution_active_fields blob would otherwise keep being applied and
+ * keep changing someone's compensation from the wrong profile. The
+ * migration strips them and jobActiveFieldsSchema rejects new ones; this is
+ * the runtime backstop that makes a missed row inert rather than silently
+ * wrong.
  */
 const MOVED_TO_SALARY_PROFILE = new Set([
   "bonusPercent",
@@ -45,13 +52,13 @@ const MOVED_TO_SALARY_PROFILE = new Set([
   "monthsInBonusYear",
 ]);
 
-/** Job-override fields that are real columns AND still owned by this axis. */
-function pickJobOverrideFields(
-  overrides: Record<string, unknown>,
+/** Job active fields that are real columns AND still owned by this axis. */
+function pickJobActiveFields(
+  activeFields: Record<string, unknown>,
   job: object,
 ): Record<string, unknown> {
   return Object.fromEntries(
-    Object.entries(overrides).filter(
+    Object.entries(activeFields).filter(
       ([field]) => field in job && !MOVED_TO_SALARY_PROFILE.has(field),
     ),
   );
@@ -122,42 +129,75 @@ export function computeContributionValueFromMonthly(
  * Write-through for editing a budget-linked contribution account's value
  * from a monthly dollar amount (what the Budget page displays/edits).
  * Converts into the account's native unit and skips the write if the
- * account is already at that value (avoids float/rounding drift on
+ * profile's already at that value (avoids float/rounding drift on
  * fixed_annual / fixed_per_period round-trips).
+ *
+ * Writes into `contributionProfileId`'s active fields — accounts carry no
+ * value of their own (see applyContribActiveFields), so the caller must
+ * have already resolved which profile this edit belongs to (same
+ * Plan-pin → column-pin → local-selection → global-default precedence the
+ * rest of the page uses; see resolveEffectiveContribProfileIdForItem in
+ * routers/budget.ts).
  */
 export async function applyContributionAccountEdit(
   db: Db,
   contributionAccountId: number,
   monthlyAmount: number,
+  contributionProfileId: number,
 ): Promise<void> {
-  const [account] = await db
+  const [profile] = await db
     .select()
-    .from(schema.contributionAccounts)
-    .where(eq(schema.contributionAccounts.id, contributionAccountId));
-  if (!account) return; // stale FK — nothing to update
+    .from(schema.contributionProfiles)
+    .where(eq(schema.contributionProfiles.id, contributionProfileId));
+  if (!profile) return; // stale FK — nothing to update
+
+  const activeFields = (profile.contributionActiveFields ??
+    {}) as ScenarioOverrides;
+  const accountFields = (activeFields.contributionAccounts?.[
+    String(contributionAccountId)
+  ] ?? {}) as Record<string, unknown>;
+
+  // No account-level method to fall back to — a not-yet-valued account
+  // defaults to fixed_monthly, the exact unit this edit is already in.
+  const method =
+    (accountFields.contributionMethod as string) ?? "fixed_monthly";
 
   const activeJobs = await db
     .select()
     .from(schema.jobs)
-    .where(isNull(schema.jobs.endDate));
+    .where(
+      and(isNull(schema.jobs.endDate), eq(schema.jobs.isSpeculative, false)),
+    );
   const periodsPerYear = resolveJoblessPeriodsPerYear(activeJobs);
 
   const newValue = roundToCents(
-    computeContributionValueFromMonthly(
-      account.contributionMethod,
-      monthlyAmount,
-      periodsPerYear,
-    ),
+    computeContributionValueFromMonthly(method, monthlyAmount, periodsPerYear),
   );
 
-  if (Math.abs(newValue - toNumber(account.contributionValue)) < 0.005) {
+  const currentValue = accountFields.contributionValue;
+  if (
+    currentValue != null &&
+    Math.abs(newValue - Number(currentValue)) < 0.005
+  ) {
     return;
   }
 
+  const nextActiveFields: ScenarioOverrides = {
+    ...activeFields,
+    contributionAccounts: {
+      ...activeFields.contributionAccounts,
+      [String(contributionAccountId)]: {
+        ...accountFields,
+        contributionValue: String(newValue),
+        contributionMethod: method,
+      },
+    },
+  };
+
   await db
-    .update(schema.contributionAccounts)
-    .set({ contributionValue: String(newValue) })
-    .where(eq(schema.contributionAccounts.id, contributionAccountId));
+    .update(schema.contributionProfiles)
+    .set({ contributionActiveFields: nextActiveFields })
+    .where(eq(schema.contributionProfiles.id, contributionProfileId));
 }
 
 /**
@@ -201,13 +241,13 @@ export function computeEmployerMatch(
  * Employer match percentages are also stored as whole numbers.
  */
 export function buildContribAccounts(
-  jobContribs: (typeof schema.contributionAccounts.$inferSelect)[],
-  personalContribs: (typeof schema.contributionAccounts.$inferSelect)[],
+  jobContribs: ContribRowWithActiveFields[],
+  personalContribs: ContribRowWithActiveFields[],
   salary: number,
   periodsPerYear: number,
 ): ContributionAccountInput[] {
   return [...jobContribs, ...personalContribs].map((c) => {
-    const contribValue = toNumber(c.contributionValue);
+    const contribValue = Number(c.contributionValue);
     const annual = computeAnnualContribution(
       c.contributionMethod,
       contribValue,
@@ -271,7 +311,7 @@ type ContribRow = {
   label: string | null;
   parentCategory: string;
   contributionMethod: string;
-  contributionValue: string;
+  contributionValue: string | number;
   taxTreatment: string;
   employerMatchType: string | null;
   employerMatchValue: string | null;
@@ -314,7 +354,7 @@ export function aggregateContributionsByCategory(
 
   for (const c of activeContribs) {
     const cat = c.accountType;
-    const cv = toNumber(c.contributionValue);
+    const cv = Number(c.contributionValue);
     // Direct job link, or fall back to person's first active job when jobId is null
     const js = c.jobId
       ? jobSalaries.find((x) => x.job.id === c.jobId)
@@ -415,7 +455,7 @@ export function buildContributionDisplaySpecs(
   jobSalaries: JobSalaryRef[],
 ): ContribDisplaySpec[] {
   const rawSpecs = activeContribs
-    .filter((c) => toNumber(c.contributionValue) > 0)
+    .filter((c) => Number(c.contributionValue) > 0)
     .map((c) => {
       const ownerPerson = people.find((p) => p.id === c.personId);
       const job = c.jobId
@@ -426,7 +466,7 @@ export function buildContributionDisplaySpecs(
         : jobSalaries.find((x) => x.job.personId === c.personId);
       const salary = js?.salary ?? 0;
       const periods = getPeriodsPerYear(job?.payPeriod ?? "biweekly");
-      const cv = toNumber(c.contributionValue);
+      const cv = Number(c.contributionValue);
       const method = c.contributionMethod ?? "percent_of_salary";
       const value = method === "percent_of_salary" ? cv / 100 : cv;
       const annual = computeAnnualContribution(
@@ -486,7 +526,13 @@ export function buildContributionDisplaySpecs(
 // Contribution profile resolution
 // ---------------------------------------------------------------------------
 
-/** Row shape returned by loadLiveContribData for aggregation. */
+/**
+ * Row shape returned by loadLiveContribData for aggregation. No
+ * contributionMethod/contributionValue here — those are never carried by
+ * the account row itself (see applyContribActiveFields); resolveProfile
+ * adds them from a specific profile's active fields, and only for accounts
+ * that have an entry there.
+ */
 export type LiveContribRow = {
   personId: number | null;
   jobId: number | null;
@@ -494,8 +540,6 @@ export type LiveContribRow = {
   subType: string | null;
   label: string | null;
   parentCategory: string;
-  contributionMethod: string;
-  contributionValue: string;
   taxTreatment: string;
   employerMatchType: string | null;
   employerMatchValue: string | null;
@@ -503,54 +547,54 @@ export type LiveContribRow = {
   id: number;
 };
 
+/** LiveContribRow with a specific profile's active fields resolved onto
+ *  it — guaranteed to carry contributionValue/contributionMethod, since
+ *  rows with no active entry are excluded (see resolveProfile). */
+export type ResolvedContribRow = LiveContribRow & {
+  contributionValue: string | number;
+  contributionMethod: string;
+};
+
 /**
  * Load all live contribution data needed for profile resolution.
- * Intentionally live/un-overridden — this is the baseline every named
- * Contribution Profile's overrides get layered ON TOP OF (see
- * resolveProfile's callers), so it can't itself reflect a Plan override
- * without corrupting that layering. See applySalaryOverride's docblock
- * (./salary.ts) for the live-vs-override-aware rule.
+ * Intentionally live/unmodified — this is the baseline every named
+ * Contribution Profile's active fields get layered ON TOP OF (see
+ * resolveProfile's callers), so it can't itself reflect a Plan's active
+ * salary without corrupting that layering. See applyActiveSalary's docblock
+ * (./salary.ts) for the live-vs-active rule.
+ *
+ * A job has no salary/bonus of its own — the globally-ACTIVE Salary
+ * Profile is the only live source (see resolveCompensation's docblock).
+ * Resolving against it here (rather than "no profile at all") is what lets
+ * a Contribution Profile's percent-of-salary math have a real number to
+ * work from; Contribution and Salary Profiles remain independent axes —
+ * this always uses whichever Salary Profile is globally active, never a
+ * specific one a caller picked.
  */
-export async function loadLiveContribData(db: Db, asOfDate: Date = new Date()) {
+export async function loadLiveContribData(db: Db) {
   const [allJobs, allContribs, allPeople, allPerfAccounts] = await Promise.all([
     db.select().from(schema.jobs),
     db.select().from(schema.contributionAccounts),
     db.select().from(schema.people),
     db.select().from(schema.performanceAccounts),
   ]);
-  const activeJobs = allJobs.filter((j) => !j.endDate);
+  const activeJobs = filterActiveJobs(allJobs);
   const activeContribs = allContribs.filter((c) => c.isActive);
   const perfAccountMap = new Map(allPerfAccounts.map((pa) => [pa.id, pa]));
 
-  // Get current salaries (with salary_changes applied)
-  // Import salary helpers for bonus-aware compensation
-  const { getEffectiveIncome, getTotalCompensation, getBonusOverridesForJobs } =
-    await import("./salary");
-  const bonusOverrides = await getBonusOverridesForJobs(
-    db,
-    activeJobs.map((j) => j.id),
-  );
-  const asOfYear = asOfDate.getFullYear();
-  const jobSalaries = await Promise.all(
-    activeJobs.map(async (j) => {
-      const baseSalary = await getCurrentSalary(
-        db,
-        j.id,
-        j.annualSalary,
-        asOfDate,
-      );
-      const resolvedOverride =
-        bonusOverrides.get(`${j.id}:${asOfYear}`) ?? null;
-      return {
-        job: { id: j.id },
-        salary: getEffectiveIncome(j, baseSalary, resolvedOverride),
-        baseSalary,
-        totalComp: getTotalCompensation(j, baseSalary, resolvedOverride),
-        personId: j.personId,
-        resolvedBonusOverride: resolvedOverride,
-      };
-    }),
-  );
+  const salaryProfileActiveMap = await loadEffectiveSalaryProfile(db, null);
+
+  const jobSalaries = activeJobs.map((j) => {
+    const comp = resolveCompensation(salaryProfileActiveMap, j.id);
+    return {
+      job: { id: j.id },
+      salary: getEffectiveIncome(j, comp.salary, comp.terms),
+      baseSalary: comp.salary,
+      totalComp: getTotalCompensation(comp.salary, comp.terms),
+      personId: j.personId,
+      resolvedBonusOverride: null,
+    };
+  });
 
   const peopleMap = new Map(allPeople.map((p) => [p.id, p]));
 
@@ -563,8 +607,6 @@ export async function loadLiveContribData(db: Db, asOfDate: Date = new Date()) {
     label: c.label,
     parentCategory:
       c.parentCategory ?? getParentCategory(c.accountType as AccountCategory),
-    contributionMethod: c.contributionMethod,
-    contributionValue: c.contributionValue,
     taxTreatment: c.taxTreatment,
     employerMatchType: c.employerMatchType,
     employerMatchValue: c.employerMatchValue,
@@ -591,18 +633,10 @@ export async function loadLiveContribData(db: Db, asOfDate: Date = new Date()) {
 /**
  * Resolve a profile against live data, returning effective contribs + salaries.
  *
- * `salaryEntries` (personId → salary entry) is supplied by the CALLER — it
- * comes from whichever Salary Profile is active at that call site, not from
- * `profile` (contribution profiles no longer carry salary). Pass `{}` for
- * "live salary, nothing pinned". It's a required parameter precisely so every
- * call site has to make that choice explicitly.
- *
- * A person's entry pins only the fields it actually sets. Pinning `salary`
- * replaces the salary but leaves the bonus terms live; pinning bonus terms
- * leaves the salary live. Both feed resolveCompensation, which is also what
- * the salaryProfile router's editor preview uses — the two used to compute
- * total comp separately and disagree, with a pinned salary silently losing
- * its bonus here while the editor still displayed it.
+ * `liveJobSalaries` already reflects whichever Salary Profile is globally
+ * active (resolved once by the caller, e.g. loadLiveContribData) —
+ * contribution profiles no longer carry salary and there is nothing left
+ * to layer on top of it here.
  *
  * Generic over the row shapes so callers can hand in their own richer row
  * types (e.g. full contribution_accounts rows) and get them back unchanged
@@ -614,9 +648,6 @@ export function resolveProfile<
     id: number;
     personId: number;
     payPeriod: string;
-    bonusPercent: string | null;
-    bonusMultiplier: string | null;
-    monthsInBonusYear: number | null;
     includeBonusInContributions: boolean;
   },
   S extends {
@@ -633,78 +664,53 @@ export function resolveProfile<
 >(
   profile: Pick<
     typeof schema.contributionProfiles.$inferSelect,
-    "contributionOverrides"
+    "contributionActiveFields"
   >,
-  salaryEntries: SalaryEntryMap,
   liveContribs: C[],
   liveJobs: J[],
   liveJobSalaries: S[],
 ) {
-  const contribOverridesRoot = profile.contributionOverrides as Record<
+  const contribActiveFieldsRoot = profile.contributionActiveFields as Record<
     string,
     Record<string, Record<string, unknown>>
   >;
-  const contribOverrides = contribOverridesRoot.contributionAccounts ?? {};
-  const jobOverrides = contribOverridesRoot.jobs ?? {};
+  const accountActiveFields =
+    contribActiveFieldsRoot.contributionAccounts ?? {};
+  const jobActiveFields = contribActiveFieldsRoot.jobs ?? {};
 
-  // Apply the profile's pinned salary/bonus fields. Anything the entry does
-  // not pin keeps resolving live, so this is a no-op for people the profile
-  // says nothing about.
-  //
-  // totalComp is recomputed through resolveCompensation rather than being
-  // set to the salary: a pinned salary does NOT mean "no bonus". It used to,
-  // which silently dropped the bonus of every pinned person from
-  // contribution and employer-match math while the profile editor kept
-  // showing it — the two now share one definition and cannot diverge.
-  // resolvedBonusOverride (this year's actual-bonus pin) is likewise carried
-  // through instead of being discarded; it is orthogonal to the salary pin.
-  const jobSalaries = liveJobSalaries.map((js) => {
-    const job = liveJobs.find((j) => j.id === js.job.id);
-    if (!job) return js;
-    const entry = pinnedFields(salaryEntries[String(job.personId)]);
-    if (!entry) return js;
-    const comp = resolveCompensation(
-      job,
-      js.baseSalary,
-      entry,
-      js.resolvedBonusOverride,
-    );
-    return {
-      ...js,
-      baseSalary: comp.salary,
-      // The payroll basis follows the job's own includeBonusInContributions
-      // flag, exactly as getEffectiveIncome does for an unpinned person. A
-      // pinned salary used to bypass the flag and report a bare number here
-      // while totalComp dropped the bonus entirely; both now answer "does
-      // this person have a bonus" the same way.
-      salary: job.includeBonusInContributions ? comp.totalComp : comp.salary,
-      totalComp: comp.totalComp,
-    } as S;
-  });
-
-  // Apply contribution account overrides
+  // Apply contribution account active fields — same no-fallback,
+  // unconditional-merge, exclude-if-absent rule as applyContribActiveFields
+  // (the single source of truth for how active fields merge onto a row; a
+  // second hand-rolled copy of this logic here is exactly the kind of drift
+  // that let this one differ — filtering merged fields by `field in c` — from
+  // that one, which does a full merge). An account with no active-field
+  // entry under this profile has no value anywhere and is excluded, not
+  // passed through with a stale/absent value.
   const activeContribs = liveContribs
     .map((c) => {
-      const overrides = contribOverrides[String(c.id)];
-      if (!overrides) return c;
-      const validOverrides = Object.fromEntries(
-        Object.entries(overrides).filter(([field]) => field in c),
-      );
-      return { ...c, ...validOverrides };
+      const activeFields = accountActiveFields[String(c.id)];
+      // An entry can legitimately exist for isActive/displayNameActive/match
+      // fields alone — contributionValue is the specific thing with no
+      // fallback, so that's what determines whether this account resolves
+      // to anything at all.
+      if (!activeFields || activeFields.contributionValue === undefined)
+        return null;
+      return { ...c, ...activeFields } as C & {
+        contributionValue: string | number;
+        contributionMethod: string;
+        isActive?: boolean;
+      };
     })
-    .filter((c) => {
-      const overrides = contribOverrides[String(c.id)];
-      // If override explicitly sets isActive to false, filter it out
-      if (overrides && overrides.isActive === false) return false;
-      return true;
-    });
+    .filter((c): c is NonNullable<typeof c> => c !== null)
+    .filter((c) => c.isActive !== false);
 
-  // Apply job overrides (employer name, bonus pay date, bonus-contribution
-  // flags). Bonus AMOUNT terms are excluded — see MOVED_TO_SALARY_PROFILE.
+  // Apply job active fields (employer name, bonus pay date,
+  // bonus-contribution flags). Bonus AMOUNT terms are excluded — see
+  // MOVED_TO_SALARY_PROFILE.
   const patchedJobs = liveJobs.map((j) => {
-    const overrides = jobOverrides[String(j.id)];
-    if (!overrides) return j;
-    return { ...j, ...pickJobOverrideFields(overrides, j) };
+    const activeFields = jobActiveFields[String(j.id)];
+    if (!activeFields) return j;
+    return { ...j, ...pickJobActiveFields(activeFields, j) };
   });
 
   const activeJobs = patchedJobs.map((j) => ({
@@ -712,6 +718,19 @@ export function resolveProfile<
     personId: j.personId,
     payPeriod: j.payPeriod,
   }));
+
+  // Must derive from patchedJobs, not liveJobs — includeBonusInContributions
+  // is a job active field this profile can override, and getEffectiveIncome
+  // reads it (via `salary` here). Deriving from the unpatched job (the old
+  // `jobSalaries = liveJobSalaries` alias) meant toggling the flag on a
+  // Contribution Profile silently no-op'd: the flag was read before the
+  // patch that was supposed to change it.
+  const patchedJobById = new Map(patchedJobs.map((j) => [j.id, j]));
+  const jobSalaries = liveJobSalaries.map((js) => {
+    const patchedJob = patchedJobById.get(js.job.id);
+    const includeBonus = patchedJob?.includeBonusInContributions ?? false;
+    return { ...js, salary: includeBonus ? js.totalComp : js.baseSalary };
+  });
   const combinedSalary = jobSalaries.reduce((sum, js) => sum + js.salary, 0);
 
   return {
@@ -724,31 +743,66 @@ export function resolveProfile<
 }
 
 /**
- * Apply contribution profile overrides to raw DB contribution account rows.
- * Merges all override fields onto the row generically — both DB columns and
- * profile-only fields (e.g. displayNameOverride). The Zod .strict() schema
- * on the write path prevents invalid fields from entering.
- * Rows marked isActive=false in the override are filtered out.
+ * Apply a contribution profile's active fields to raw DB contribution
+ * account rows. Merges all active fields onto the row generically — both DB
+ * columns and profile-only fields (e.g. displayNameActive). The Zod
+ * .strict() schema on the write path prevents invalid fields from entering.
+ * Rows marked isActive=false are filtered out.
  *
- * contribOverrides shape: { "accountId": { field: value, ... } }
+ * accountActiveFields shape: { "accountId": { field: value, ... } }
  */
-export type ContribRowWithOverrides =
+export type ContribRowWithActiveFields =
   typeof schema.contributionAccounts.$inferSelect & {
-    displayNameOverride?: string;
+    contributionValue: string | number;
+    contributionMethod: string;
+    displayNameActive?: string;
   };
 
-export function applyContribOverrides(
-  rows: (typeof schema.contributionAccounts.$inferSelect)[],
-  contribOverrides: Record<string, Record<string, unknown>>,
-): ContribRowWithOverrides[] {
+export function applyContribActiveFields(
+  rows: (
+    typeof schema.contributionAccounts.$inferSelect | ContribRowWithActiveFields
+  )[],
+  accountActiveFields: Record<string, Record<string, unknown>>,
+  /**
+   * Callers layer this twice: once against a profile's active fields (raw
+   * account rows in, nothing resolved yet — the default), then again against
+   * the What-If sandbox's edits (already-resolved rows in, from the first
+   * pass). Pass `true` for that second layer so a row with no entry at THIS
+   * layer stays resolved with whatever the first layer gave it, instead of
+   * being excluded for having no value at this specific layer. See
+   * getIncompleteContribAccountIds for surfacing a missing value to the UI.
+   */
+  isOverlay = false,
+): ContribRowWithActiveFields[] {
   return rows
-    .map((row): ContribRowWithOverrides => {
-      const overrides = contribOverrides[String(row.id)];
-      if (!overrides) return row;
-      // Merge all override fields — both DB columns and profile-only fields
-      return { ...row, ...overrides } as ContribRowWithOverrides;
+    .map((row): ContribRowWithActiveFields | null => {
+      const activeFields = accountActiveFields[String(row.id)];
+      if (!activeFields || activeFields.contributionValue === undefined) {
+        return isOverlay ? (row as ContribRowWithActiveFields) : null;
+      }
+      return { ...row, ...activeFields } as ContribRowWithActiveFields;
     })
+    .filter((row): row is ContribRowWithActiveFields => row !== null)
     .filter((row) => row.isActive !== false);
+}
+
+/**
+ * Which of these accounts have no active value set under the given
+ * profile's active fields — the "incomplete profile" surface for the UI.
+ * Not a blocker: an incomplete profile still works everywhere (those
+ * accounts are simply excluded from calculations by applyContribActiveFields
+ * above), this is purely for surfacing the gap so it's never a silent one.
+ */
+export function getIncompleteContribAccountIds(
+  rows: { id: number }[],
+  accountActiveFields: Record<string, Record<string, unknown>>,
+): number[] {
+  return rows
+    .filter(
+      (row) =>
+        accountActiveFields[String(row.id)]?.contributionValue === undefined,
+    )
+    .map((row) => row.id);
 }
 
 /**
@@ -769,7 +823,7 @@ export function buildSandboxContribRow(
     contributionValue: string;
   },
   syntheticId: number,
-): typeof schema.contributionAccounts.$inferSelect {
+): ContribRowWithActiveFields {
   const category = addition.accountType as AccountCategory;
   return {
     id: syntheticId,
@@ -801,28 +855,28 @@ export function buildSandboxContribRow(
 }
 
 /**
- * Apply contribution profile job overrides to raw DB job rows.
+ * Apply a contribution profile's job active fields to raw DB job rows.
  *
- * Overrides the job fields a Contribution Profile still owns: employerName,
+ * Sets the job fields a Contribution Profile still owns: employerName,
  * the bonus PAY DATE (bonusMonth / bonusDayOfMonth), and the two flags that
  * decide how contributions are computed from a bonus (include401kInBonus,
  * includeBonusInContributions).
  *
- * It no longer overrides how BIG the bonus is. bonusPercent /
- * bonusMultiplier / monthsInBonusYear moved to the Salary Profile entry —
- * same tier as salary — so a Contribution Profile can no longer change
- * anyone's compensation.
+ * It no longer sets how BIG the bonus is. bonusPercent / bonusMultiplier /
+ * monthsInBonusYear moved to the Salary Profile entry — same tier as
+ * salary — so a Contribution Profile can no longer change anyone's
+ * compensation.
  *
- * jobOverrides shape: { "jobId": { field: value, ... } }
+ * jobActiveFields shape: { "jobId": { field: value, ... } }
  */
-export function applyJobOverrides(
+export function applyJobActiveFields(
   jobs: (typeof schema.jobs.$inferSelect)[],
-  jobOverrides: Record<string, Record<string, unknown>>,
+  jobActiveFields: Record<string, Record<string, unknown>>,
 ): (typeof schema.jobs.$inferSelect)[] {
   return jobs.map((job) => {
-    const overrides = jobOverrides[String(job.id)];
-    if (!overrides) return job;
-    return { ...job, ...pickJobOverrideFields(overrides, job) };
+    const activeFields = jobActiveFields[String(job.id)];
+    if (!activeFields) return job;
+    return { ...job, ...pickJobActiveFields(activeFields, job) };
   });
 }
 
@@ -831,7 +885,7 @@ export function applyJobOverrides(
  * selected (null/undefined id) or the row no longer exists.
  *
  * There is no `isDefault` concept any more: a profile whose
- * contributionOverrides are empty is simply a profile with nothing
+ * contributionActiveFields are empty is simply a profile with nothing
  * customized, and applying it is a no-op by content rather than by flag.
  * Was duplicated between this file's loadAndApplyContribProfile and
  * retirement.ts's own scenario-comparison resolver (M26,
@@ -852,13 +906,13 @@ export async function fetchContributionProfile(
 }
 
 /**
- * Load a contribution profile by ID and apply its overrides to raw DB rows.
- * Returns modified contribs + jobs — or the originals if no profile is
- * selected / the row is gone.
+ * Load a contribution profile by ID and apply its active fields to raw DB
+ * rows. Returns modified contribs + jobs — or the originals if no profile
+ * is selected / the row is gone.
  *
- * Purely contribution-account and job-field overrides. Salary is NOT part of
- * a Contribution Profile — call loadAndApplySalaryProfile (./salary.ts) for
- * that axis, independently.
+ * Purely contribution-account and job-field active fields. Salary is NOT
+ * part of a Contribution Profile — call loadAndApplySalaryProfile
+ * (./salary.ts) for that axis, independently.
  */
 export async function loadAndApplyContribProfile(
   db: Db,
@@ -866,7 +920,7 @@ export async function loadAndApplyContribProfile(
   allContribs: (typeof schema.contributionAccounts.$inferSelect)[],
   allJobs: (typeof schema.jobs.$inferSelect)[],
 ): Promise<{
-  contribs: ContribRowWithOverrides[];
+  contribs: ContribRowWithActiveFields[];
   jobs: (typeof schema.jobs.$inferSelect)[];
 }> {
   const profile = await fetchContributionProfile(db, profileId);
@@ -885,21 +939,27 @@ export function applyContribProfileRow(
   allContribs: (typeof schema.contributionAccounts.$inferSelect)[],
   allJobs: (typeof schema.jobs.$inferSelect)[],
 ): {
-  contribs: ContribRowWithOverrides[];
+  contribs: ContribRowWithActiveFields[];
   jobs: (typeof schema.jobs.$inferSelect)[];
 } {
   if (!profile) {
-    return { contribs: allContribs, jobs: allJobs };
+    // No profile at all — nothing resolves (same "no fallback" rule as a
+    // profile with empty active fields; there is no longer a live account
+    // value to fall back to).
+    return {
+      contribs: applyContribActiveFields(allContribs, {}),
+      jobs: allJobs,
+    };
   }
-  const overridesRoot = profile.contributionOverrides as Record<
+  const activeFieldsRoot = profile.contributionActiveFields as Record<
     string,
     Record<string, Record<string, unknown>>
   >;
-  const contribs = applyContribOverrides(
+  const contribs = applyContribActiveFields(
     allContribs,
-    overridesRoot.contributionAccounts ?? {},
+    activeFieldsRoot.contributionAccounts ?? {},
   );
-  const jobs = applyJobOverrides(allJobs, overridesRoot.jobs ?? {});
+  const jobs = applyJobActiveFields(allJobs, activeFieldsRoot.jobs ?? {});
   return { contribs, jobs };
 }
 

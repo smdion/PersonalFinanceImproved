@@ -16,6 +16,7 @@ import {
 } from "./setup";
 import * as schema from "@/lib/db/schema-sqlite";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import { eq } from "drizzle-orm";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -25,49 +26,99 @@ vi.mock("@/lib/budget-api", () => ({
 
 type TestDb = BetterSQLite3Database<typeof schema>;
 
-/** Insert a contribution account directly using correct schema column names. */
-function insertContribAccount(
-  db: TestDb,
-  overrides: Partial<typeof schema.contributionAccounts.$inferInsert> & {
-    personId: number;
-    accountType: string;
-  },
-): number {
-  const result = db
-    .insert(schema.contributionAccounts)
-    .values({
-      contributionMethod: "percent_of_salary",
-      contributionValue: "10",
-      taxTreatment: "pre_tax",
-      employerMatchType: "none",
-      parentCategory: "Retirement",
-      isActive: true,
-      ownership: "individual",
-      priorYearContribAmount: "0",
-      ...overrides,
-    })
-    .returning({ id: schema.contributionAccounts.id })
-    .get();
-  return result.id;
-}
-
 describe("contribution router", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: TestDb;
   let cleanup: () => void;
+  /**
+   * Accounts carry no value of their own — every test's contribution value
+   * lives in this one shared Contribution Profile's active fields instead.
+   * `computeSummary()` below defaults to it so existing test bodies don't
+   * each need to know or care about profile plumbing.
+   */
+  let defaultProfileId: number;
 
   beforeAll(async () => {
     const ctx = await createTestCaller();
     caller = ctx.caller;
     db = ctx.db;
     cleanup = ctx.cleanup;
+    defaultProfileId = seedContributionProfile(db, {
+      name: "Default Test Profile",
+      contributionActiveFields: { contributionAccounts: {}, jobs: {} },
+    });
   });
 
   afterAll(() => cleanup());
 
+  /** Insert a contribution account, giving it a value via the shared default
+   * Contribution Profile's active fields (accounts carry no value of their
+   * own anymore). */
+  function insertContribAccount(
+    dbArg: TestDb,
+    overrides: Partial<typeof schema.contributionAccounts.$inferInsert> & {
+      personId: number;
+      accountType: string;
+    },
+  ): number {
+    const { contributionValue, contributionMethod, ...rest } = overrides;
+    const result = dbArg
+      .insert(schema.contributionAccounts)
+      .values({
+        taxTreatment: "pre_tax",
+        employerMatchType: "none",
+        parentCategory: "Retirement",
+        isActive: true,
+        ownership: "individual",
+        priorYearContribAmount: "0",
+        ...rest,
+      })
+      .returning({ id: schema.contributionAccounts.id })
+      .get();
+    const value = contributionValue ?? "10";
+    const method = contributionMethod ?? "percent_of_salary";
+    const profile = dbArg
+      .select()
+      .from(schema.contributionProfiles)
+      .where(eq(schema.contributionProfiles.id, defaultProfileId))
+      .get()!;
+    const activeFields = profile.contributionActiveFields as {
+      contributionAccounts: Record<string, unknown>;
+      jobs: Record<string, unknown>;
+    };
+    dbArg
+      .update(schema.contributionProfiles)
+      .set({
+        contributionActiveFields: {
+          ...activeFields,
+          contributionAccounts: {
+            ...activeFields.contributionAccounts,
+            [String(result.id)]: {
+              contributionValue: String(value),
+              contributionMethod: String(method),
+            },
+          },
+        },
+      })
+      .where(eq(schema.contributionProfiles.id, defaultProfileId))
+      .run();
+    return result.id;
+  }
+
+  /** computeSummary defaulting to the shared default Contribution Profile —
+   * pass an explicit contributionProfileId to override it. */
+  function computeSummary(
+    input: Parameters<typeof caller.contribution.computeSummary>[0] = {},
+  ) {
+    return caller.contribution.computeSummary({
+      contributionProfileId: defaultProfileId,
+      ...input,
+    });
+  }
+
   describe("computeSummary — empty state", () => {
     it("returns empty when no people exist", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       expect(result).toBeDefined();
       expect(result.people).toEqual([]);
       expect(result.limits).toBeDefined();
@@ -87,7 +138,7 @@ describe("contribution router", () => {
     });
 
     it("returns person with zero salary and empty accounts", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       expect(person).toBeDefined();
       expect(person!.salary).toBe(0);
@@ -127,7 +178,7 @@ describe("contribution router", () => {
     });
 
     it("returns person with salary but empty account types", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       expect(person).toBeDefined();
       expect(person!.salary).toBe(100000);
@@ -138,7 +189,7 @@ describe("contribution router", () => {
     });
 
     it("returns periodsPerYear based on pay period", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       // biweekly = 26 periods
       expect(person!.periodsPerYear).toBe(26);
@@ -165,7 +216,7 @@ describe("contribution router", () => {
     });
 
     it("computes annual contribution as percentage of salary", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       expect(person).toBeDefined();
       // 10% of 120000 = 12000
@@ -180,7 +231,7 @@ describe("contribution router", () => {
     });
 
     it("computes IRS limit and funding percentage", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       const acctType = person!.accountTypes.find(
         (a) => a.categoryKey === "401k",
@@ -197,7 +248,7 @@ describe("contribution router", () => {
     });
 
     it("computes pctOfSalaryToMax", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       const acctType = person!.accountTypes.find(
         (a) => a.categoryKey === "401k",
@@ -210,7 +261,7 @@ describe("contribution router", () => {
     });
 
     it("includes perContribData for each raw contribution", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       expect(person!.perContribData.length).toBeGreaterThanOrEqual(1);
       const pcd = person!.perContribData[0]!;
@@ -220,7 +271,7 @@ describe("contribution router", () => {
     });
 
     it("computes retirement totals correctly", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       expect(person!.totals.views.projected.retirementWithoutMatch).toBe(12000);
       expect(person!.totals.views.projected.retirementWithMatch).toBe(12000);
@@ -251,7 +302,7 @@ describe("contribution router", () => {
     });
 
     it("computes employer match amount", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       expect(person).toBeDefined();
       const acctType = person!.accountTypes.find(
@@ -266,7 +317,7 @@ describe("contribution router", () => {
     });
 
     it("includes match in retirementWithMatch total", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       expect(person!.totals.views.projected.retirementWithoutMatch).toBe(6000);
       expect(person!.totals.views.projected.retirementWithMatch).toBe(9000);
@@ -293,7 +344,7 @@ describe("contribution router", () => {
     });
 
     it("classifies Roth contribution as taxFreeContrib", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       const acctType = person!.accountTypes.find(
         (a) => a.categoryKey === "401k",
@@ -327,7 +378,7 @@ describe("contribution router", () => {
     });
 
     it("computes annual contribution as value * periodsPerYear", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       const acctType = person!.accountTypes.find(
         (a) => a.categoryKey === "401k",
@@ -357,7 +408,7 @@ describe("contribution router", () => {
     });
 
     it("uses fixed annual value directly", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       const acctType = person!.accountTypes.find(
         (a) => a.categoryKey === "401k",
@@ -387,7 +438,7 @@ describe("contribution router", () => {
     });
 
     it("includes IRA in account types with IRS limit", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       const iraAcct = person!.accountTypes.find((a) => a.categoryKey === "ira");
       expect(iraAcct).toBeDefined();
@@ -398,7 +449,7 @@ describe("contribution router", () => {
     });
 
     it("includes IRA in perContribData", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       const iraPcd = person!.perContribData.find(
         (pcd) => pcd.limitGroup === "ira",
@@ -430,7 +481,7 @@ describe("contribution router", () => {
     });
 
     it("resolves family HSA limit", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       const hsaAcct = person!.accountTypes.find((a) => a.categoryKey === "hsa");
       expect(hsaAcct).toBeDefined();
@@ -469,7 +520,7 @@ describe("contribution router", () => {
     });
 
     it("computes brokerage contribution as fixed_monthly * 12", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       // Brokerage is overflow target — display name comes from perf account
       const brokAcct = person!.accountTypes.find(
@@ -482,7 +533,7 @@ describe("contribution router", () => {
     });
 
     it("includes portfolio totals", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       expect(person!.totals.views.projected.portfolioWithoutMatch).toBe(12000);
       expect(person!.totals.views.projected.portfolioWithMatch).toBe(12000);
@@ -533,13 +584,13 @@ describe("contribution router", () => {
     });
 
     it("returns all account types", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       expect(person!.accountTypes.length).toBeGreaterThanOrEqual(3);
     });
 
     it("sums retirement and portfolio totals separately", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       // 401k: 15% of 150000 = 22500 employee + 100% match on first 3% = 4500 match
       // IRA: 7000
@@ -557,7 +608,7 @@ describe("contribution router", () => {
     });
 
     it("includes perContribData for all contributions", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       expect(person!.perContribData.length).toBeGreaterThanOrEqual(3);
     });
@@ -583,7 +634,7 @@ describe("contribution router", () => {
     });
 
     it("applies catchup limit for age 50+", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       const acctType = person!.accountTypes.find(
         (a) => a.categoryKey === "401k",
@@ -614,7 +665,7 @@ describe("contribution router", () => {
     });
 
     it("applies super catchup limit for age 60-63", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       const acctType = person!.accountTypes.find(
         (a) => a.categoryKey === "401k",
@@ -644,8 +695,8 @@ describe("contribution router", () => {
     });
 
     it("uses overridden salary for contribution calculation", async () => {
-      const result = await caller.contribution.computeSummary({
-        salaryOverrides: [{ personId, salary: 200000 }],
+      const result = await computeSummary({
+        salaryActiveFields: [{ personId, salary: 200000 }],
       });
       const person = result.people.find((p) => p.person.id === personId);
       expect(person!.salary).toBe(200000);
@@ -676,7 +727,7 @@ describe("contribution router", () => {
     });
 
     it("includes joint accounts in jointAccountTypes", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       expect(result.jointAccountTypes.length).toBeGreaterThanOrEqual(1);
       const joint = result.jointAccountTypes.find((a) => a.isJoint === true);
       expect(joint).toBeDefined();
@@ -685,7 +736,7 @@ describe("contribution router", () => {
     });
 
     it("computes joint totals", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       expect(result.jointTotals.totalWithoutMatch).toBeGreaterThanOrEqual(
         24000,
       );
@@ -712,7 +763,7 @@ describe("contribution router", () => {
     });
 
     it("does not include inactive contributions", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       expect(person).toBeDefined();
       // Person should have no active contribution accounts
@@ -727,13 +778,12 @@ describe("contribution router", () => {
 
   describe("computeSummary — bonus contribution", () => {
     let personId: number;
+    let bonusSalaryProfileId: number;
 
     beforeAll(async () => {
       personId = await seedPerson(db, "Bonus-Person", "1990-06-15");
       const jobId = seedJob(db, personId, {
         annualSalary: "120000",
-        bonusPercent: "10",
-        bonusMultiplier: "1",
         include401kInBonus: true,
       });
       insertContribAccount(db, {
@@ -746,10 +796,25 @@ describe("contribution router", () => {
         employerMatchType: "none",
         parentCategory: "Retirement",
       });
+      // Bonus terms have no live value on the job any more — only a Salary
+      // Profile pin resolves them.
+      bonusSalaryProfileId = seedSalaryProfile(db, {
+        name: `bonus-salary-profile-${Date.now()}`,
+        salaries: {
+          [String(jobId)]: {
+            salary: 120000,
+            bonusPercent: 0.1,
+            bonusMultiplier: 1,
+            monthsInBonusYear: 12,
+          },
+        },
+      });
     });
 
     it("includes bonus contribution estimate in 401k", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary({
+        salaryProfileId: bonusSalaryProfileId,
+      });
       const person = result.people.find((p) => p.person.id === personId);
       expect(person).toBeDefined();
       expect(person!.bonusGross).toBeGreaterThan(0);
@@ -774,7 +839,7 @@ describe("contribution router", () => {
     });
 
     it("returns zero salary when only job is ended", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       expect(person).toBeDefined();
       expect(person!.salary).toBe(0);
@@ -810,7 +875,7 @@ describe("contribution router", () => {
     });
 
     it("uses performance account label for brokerage display name", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       const brokAcct = person!.accountTypes.find(
         (a) => a.parentCategory === "Portfolio",
@@ -841,21 +906,31 @@ describe("contribution router", () => {
       });
       profileId = seedContributionProfile(db, {
         name: `test-profile-${Date.now()}`,
-        contributionOverrides: {
+        contributionActiveFields: {
           contributionAccounts: {
-            [String(contribId)]: { contributionValue: "15" },
+            [String(contribId)]: {
+              contributionValue: "15",
+              contributionMethod: "percent_of_salary",
+            },
           },
           jobs: {},
         },
       });
       salaryProfileId = seedSalaryProfile(db, {
         name: `test-salary-profile-${Date.now()}`,
-        salaries: { [String(personId)]: { mode: "fixed", salary: 180000 } },
+        salaries: {
+          [String(jobId)]: {
+            salary: 180000,
+            bonusPercent: 0,
+            bonusMultiplier: 1,
+            monthsInBonusYear: 12,
+          },
+        },
       });
     });
 
     it("a Contribution Profile alone changes contributions, not salary", async () => {
-      const result = await caller.contribution.computeSummary({
+      const result = await computeSummary({
         contributionProfileId: profileId,
       });
       const person = result.people.find((p) => p.person.id === personId);
@@ -871,7 +946,7 @@ describe("contribution router", () => {
     });
 
     it("a Salary Profile alone changes salary, not contribution rates", async () => {
-      const result = await caller.contribution.computeSummary({
+      const result = await computeSummary({
         salaryProfileId,
       });
       const person = result.people.find((p) => p.person.id === personId);
@@ -884,7 +959,7 @@ describe("contribution router", () => {
     });
 
     it("both axes compose independently", async () => {
-      const result = await caller.contribution.computeSummary({
+      const result = await computeSummary({
         contributionProfileId: profileId,
         salaryProfileId,
       });
@@ -898,10 +973,10 @@ describe("contribution router", () => {
       expect(acctType!.employeeContrib).toBe(27000);
     });
 
-    it("an explicit salaryOverrides entry outranks the Salary Profile", async () => {
-      const result = await caller.contribution.computeSummary({
+    it("an explicit salaryActiveFields entry outranks the Salary Profile", async () => {
+      const result = await computeSummary({
         salaryProfileId,
-        salaryOverrides: [{ personId, salary: 210000 }],
+        salaryActiveFields: [{ personId, salary: 210000 }],
       });
       const person = result.people.find((p) => p.person.id === personId);
       expect(person!.salary).toBe(210000);
@@ -910,7 +985,7 @@ describe("contribution router", () => {
 
   describe("computeSummary — limits record returned", () => {
     it("returns current year IRS limits", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       expect(result.limits).toBeDefined();
       expect(result.limits["401k_employee_limit"]).toBe(24500);
       expect(result.limits["ira_limit"]).toBe(7500);
@@ -937,7 +1012,7 @@ describe("contribution router", () => {
     });
 
     it("includes non-null result when person has active job and contributions", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       expect(person!.result).not.toBeNull();
     });
@@ -963,7 +1038,7 @@ describe("contribution router", () => {
     });
 
     it("includes fixed annual employer match", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       const acctType = person!.accountTypes.find(
         (a) => a.categoryKey === "401k",
@@ -1004,7 +1079,7 @@ describe("contribution router", () => {
     });
 
     it("computes siblingAnnualTotal for contributions in same limit group", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       // Both are in 401k limit group — each should have sibling total of the other
       const pcds = person!.perContribData.filter(
@@ -1020,7 +1095,7 @@ describe("contribution router", () => {
     });
 
     it("aggregates both into single 401k account type", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       const acctTypes401k = person!.accountTypes.filter(
         (a) => a.categoryKey === "401k",
@@ -1050,7 +1125,7 @@ describe("contribution router", () => {
         employerMatchType: "none",
         parentCategory: "Retirement",
       });
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       expect(person!.periodsPerYear).toBe(24);
       const acctType = person!.accountTypes.find(
@@ -1095,7 +1170,7 @@ describe("contribution router", () => {
     });
 
     it("includes targetAnnual and allocationPriority in snapshot", async () => {
-      const result = await caller.contribution.computeSummary();
+      const result = await computeSummary();
       const person = result.people.find((p) => p.person.id === personId);
       const acctType = person!.accountTypes.find(
         (a) => a.categoryKey === "401k" && a.targetAnnual === 20000,
