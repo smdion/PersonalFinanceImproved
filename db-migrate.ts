@@ -329,6 +329,13 @@ async function handleSquashUpgrade(
       const sql = fs.readFileSync(sqlPath, "utf-8");
       const hash = crypto.createHash("sha256").update(sql).digest("hex");
 
+      // See the matching comment in runPostgres's idempotent pre-apply loop
+      // — must run after the schema is caught up through 0015 but before
+      // 0016 drops the source tables, wherever that lands in this replay.
+      if (entry.tag === "0016_drop_salary_ledger_tables") {
+        await backfillHistoricalSalaries(pool);
+      }
+
       const statements = sql
         .split("--> statement-breakpoint")
         .map((s: string) => s.trim())
@@ -427,9 +434,13 @@ async function handleSquashUpgrade(
  * legacy data) or an already-migrated DB (dev, migrated by hand on
  * 2026-08-18 via the identical logic in
  * .scratch/migrate-to-historical-salaries.mjs) both skip this as a no-op.
- * Runs BEFORE the migration-apply loop below so it always sees the source
- * tables while they still exist, regardless of how far behind a given prod
- * deploy is.
+ *
+ * Callers must invoke this from WITHIN the migration-apply loop, immediately
+ * before applying the 0016 entry specifically — NOT once up front. A deploy
+ * can be arbitrarily far behind (missing 0013's `jobs.is_speculative`, not
+ * just 0015/0016), and this function queries that column; calling it before
+ * the schema has caught up crashes on "column is_speculative does not
+ * exist" (caught on the demo canary on 2026-08-18, never reached prod).
  */
 async function backfillHistoricalSalaries(
   pool: import("pg").Pool,
@@ -619,11 +630,6 @@ async function runPostgres() {
       "./drizzle/meta/_journal.json",
     );
 
-    // See backfillHistoricalSalaries's docblock — must run before the
-    // migration-apply loop below, which is what actually drops
-    // salary_changes/job_bonus_overrides (0016_drop_salary_ledger_tables).
-    await backfillHistoricalSalaries(pool);
-
     // Apply any pending migrations idempotently before handing off to Drizzle's
     // migrate(). This handles upgrade DBs that already have tables/columns from
     // old pre-squash migrations — Drizzle's migrator has no savepoint support
@@ -671,6 +677,16 @@ async function runPostgres() {
         const sql = fs.readFileSync(sqlPath, "utf-8");
         const hash = crypto.createHash("sha256").update(sql).digest("hex");
         if (recordedHashes.has(hash)) continue;
+        // Must run AFTER the schema is caught up through 0015 (jobs.
+        // is_speculative from 0013, historical_salaries from 0015) but
+        // BEFORE 0016 drops salary_changes/job_bonus_overrides — a deploy
+        // can be arbitrarily far behind, not just missing 0015/0016, so
+        // this can't run once up front (see backfillHistoricalSalaries's
+        // docblock; this ordering bug shipped once already — surfaced on
+        // the demo canary, never reached prod).
+        if (entry.tag === "0016_drop_salary_ledger_tables") {
+          await backfillHistoricalSalaries(pool);
+        }
         const statements = sql
           .split("--> statement-breakpoint")
           .map((s: string) => s.trim())
@@ -990,6 +1006,13 @@ function handleSQLiteSquashUpgrade(
     const sql = fs.readFileSync(sqlPath, "utf-8");
     const hash = crypto.createHash("sha256").update(sql).digest("hex");
 
+    // See the matching comment in runPostgres's idempotent pre-apply loop
+    // — must run after the schema is caught up through 0015 but before
+    // 0016 drops the source tables, wherever that lands in this replay.
+    if (entry.tag === "0016_drop_salary_ledger_tables") {
+      backfillHistoricalSalariesSQLite(sqlite);
+    }
+
     const statements = sql
       .split("--> statement-breakpoint")
       .map((s: string) => s.trim())
@@ -1036,8 +1059,7 @@ function handleSQLiteSquashUpgrade(
 /**
  * SQLite twin of backfillHistoricalSalaries (see its docblock above) — same
  * gate (skip if `salary_changes` doesn't exist), same logic, same
- * before-the-migration-loop timing so it always runs while the source
- * tables still exist, regardless of how far behind a given deploy is.
+ * call-it-immediately-before-0016-within-the-loop timing requirement.
  */
 function backfillHistoricalSalariesSQLite(
   sqlite: InstanceType<typeof import("better-sqlite3")>,
@@ -1208,11 +1230,6 @@ function runSQLite() {
     "./drizzle-sqlite/meta/_journal.json",
   );
 
-  // See backfillHistoricalSalariesSQLite's docblock — must run before the
-  // migration-apply loop below, which is what actually drops
-  // salary_changes/job_bonus_overrides (0016_drop_salary_ledger_tables).
-  backfillHistoricalSalariesSQLite(sqlite);
-
   // Apply any pending migrations idempotently. Mirrors the PostgreSQL pre-apply
   // step: handles upgrade DBs that already have tables/columns from old pre-squash
   // migrations (or a squash SQL that was generated from a later schema snapshot),
@@ -1242,6 +1259,12 @@ function runSQLite() {
       const sql = fs.readFileSync(sqlPath, "utf-8");
       const hash = crypto.createHash("sha256").update(sql).digest("hex");
       if (appliedHashes.has(hash)) continue;
+      // See the matching comment in runPostgres's idempotent pre-apply loop
+      // — must run after the schema is caught up through 0015 but before
+      // 0016 drops the source tables, wherever that lands in this replay.
+      if (entry.tag === "0016_drop_salary_ledger_tables") {
+        backfillHistoricalSalariesSQLite(sqlite);
+      }
       const statements = sql
         .split("--> statement-breakpoint")
         .map((s: string) => s.trim())
