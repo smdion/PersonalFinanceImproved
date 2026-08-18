@@ -352,12 +352,9 @@ export const budgetRouter = createTRPCRouter({
           columnPinIds: p.columnSalaryProfileIds as (number | null)[] | null,
           numColumns,
         });
-        // Resolved through the same contribution-account chain
-        // computeActiveSummary uses (see resolveLinkedBudgetItemAmounts),
-        // using each column's own resolved Contribution/Salary Profile pins
-        // (same contribIds/salaryIds as the take-home computation below) —
-        // reading raw `amounts` here silently dropped every contribution-
-        // linked item from this sidebar's totals.
+        // Resolved through the same chain computeActiveSummary uses (see
+        // resolveLinkedBudgetItemAmounts) — raw `amounts` silently dropped
+        // every contribution-linked item from this sidebar's totals.
         const resolvedItems = await resolveLinkedBudgetItemAmounts(
           ctx.db,
           items,
