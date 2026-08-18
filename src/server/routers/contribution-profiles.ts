@@ -27,6 +27,7 @@ import {
   loadLiveContribData,
   resolveProfile,
   getIncompleteContribAccountIds,
+  type Db,
 } from "@/server/helpers";
 import { accountDisplayName } from "@/lib/utils/format";
 import { getDisplayConfig } from "@/lib/config/account-types";
@@ -40,6 +41,44 @@ import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 // Schemas imported from @/lib/db/json-schemas as centralized schemas.
 
 const ContributionActiveFieldsSchema = contributionActiveFieldsSchema;
+
+/**
+ * A joint account with no jobId has no single person's salary to resolve
+ * percent_of_salary against — the salary-resolution fallback in
+ * server/helpers/contribution.ts falls back to job-by-personId, which is
+ * null for joint accounts, silently computing a $0 salary instead of the
+ * intended percentage. contributionMethod is only ever set here now
+ * (accounts carry no method of their own), so every write path that can
+ * set it to percent_of_salary (create, update, setAccountActiveFields)
+ * must run this same check.
+ */
+async function assertNoJointPercentOfSalaryWithoutJob(
+  db: Db,
+  contributionActiveFields:
+    | { contributionAccounts?: Record<string, { contributionMethod?: string }> }
+    | undefined,
+): Promise<void> {
+  const incomingAccounts = contributionActiveFields?.contributionAccounts ?? {};
+  const percentOfSalaryIds = Object.entries(incomingAccounts)
+    .filter(([, f]) => f.contributionMethod === "percent_of_salary")
+    .map(([id]) => Number(id));
+  if (percentOfSalaryIds.length === 0) return;
+
+  const accounts = await db
+    .select({
+      id: schema.contributionAccounts.id,
+      ownership: schema.contributionAccounts.ownership,
+      jobId: schema.contributionAccounts.jobId,
+    })
+    .from(schema.contributionAccounts)
+    .where(inArray(schema.contributionAccounts.id, percentOfSalaryIds));
+  const invalid = accounts.find((a) => a.ownership === "joint" && !a.jobId);
+  if (invalid) {
+    throw new Error(
+      "Joint accounts using percent-of-salary contributions must be linked to a specific job",
+    );
+  }
+}
 
 export const contributionProfileRouter = createTRPCRouter({
   /**
@@ -366,6 +405,11 @@ export const contributionProfileRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      await assertNoJointPercentOfSalaryWithoutJob(
+        ctx.db,
+        input.contributionActiveFields,
+      );
+
       const rows = await ctx.db
         .insert(schema.contributionProfiles)
         .values({
@@ -396,36 +440,10 @@ export const contributionProfileRouter = createTRPCRouter({
         .where(eq(schema.contributionProfiles.id, input.id));
       if (!existing[0]) throw new Error("Profile not found");
 
-      // A joint account with no jobId has no single person's salary to
-      // resolve percent_of_salary against — the salary-resolution fallback
-      // in server/helpers/contribution.ts falls back to job-by-personId,
-      // which is null for joint accounts, silently computing a $0 salary
-      // instead of the intended percentage. contributionMethod is only ever
-      // set here now (accounts carry no method of their own), so this is
-      // where jointRequiresJobForPercentOfSalary's check moved.
-      const incomingAccounts =
-        input.contributionActiveFields?.contributionAccounts ?? {};
-      const percentOfSalaryIds = Object.entries(incomingAccounts)
-        .filter(([, f]) => f.contributionMethod === "percent_of_salary")
-        .map(([id]) => Number(id));
-      if (percentOfSalaryIds.length > 0) {
-        const accounts = await ctx.db
-          .select({
-            id: schema.contributionAccounts.id,
-            ownership: schema.contributionAccounts.ownership,
-            jobId: schema.contributionAccounts.jobId,
-          })
-          .from(schema.contributionAccounts)
-          .where(inArray(schema.contributionAccounts.id, percentOfSalaryIds));
-        const invalid = accounts.find(
-          (a) => a.ownership === "joint" && !a.jobId,
-        );
-        if (invalid) {
-          throw new Error(
-            "Joint accounts using percent-of-salary contributions must be linked to a specific job",
-          );
-        }
-      }
+      await assertNoJointPercentOfSalaryWithoutJob(
+        ctx.db,
+        input.contributionActiveFields,
+      );
 
       const updates: Partial<typeof schema.contributionProfiles.$inferInsert> =
         {};

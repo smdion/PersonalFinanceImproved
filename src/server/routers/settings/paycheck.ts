@@ -189,18 +189,21 @@ export const paycheckProcedures = {
         // The speculative-job peg is an implementation detail of this
         // person's row, not real employment history — delete it first so
         // it never blocks a person delete via jobs' onDelete: "restrict"
-        // FK. Any REAL job still correctly blocks the delete.
-        await ctx.db
-          .delete(schema.jobs)
-          .where(
-            and(
-              eq(schema.jobs.personId, input.id),
-              eq(schema.jobs.isSpeculative, true),
-            ),
-          );
-        return ctx.db
-          .delete(schema.people)
-          .where(eq(schema.people.id, input.id));
+        // FK. Any REAL job still correctly blocks the delete. Both deletes
+        // must be one transaction — otherwise a failed person delete (a
+        // real job still referencing them) leaves the peg gone with no
+        // re-provisioning path.
+        return ctx.db.transaction(async (tx) => {
+          await tx
+            .delete(schema.jobs)
+            .where(
+              and(
+                eq(schema.jobs.personId, input.id),
+                eq(schema.jobs.isSpeculative, true),
+              ),
+            );
+          return tx.delete(schema.people).where(eq(schema.people.id, input.id));
+        });
       }),
   }),
 

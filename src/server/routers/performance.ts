@@ -22,7 +22,10 @@ import {
   getEffectiveCash,
   getEffectiveOtherAssets,
   invalidateYearEndCache,
+  loadEffectiveSalaryProfile,
+  resolvePersonYearIncome,
 } from "@/server/helpers";
+import { findActiveJob } from "@/lib/pure/profiles";
 import {
   resolveCategoryValues,
   resolvePortfolioValues,
@@ -1372,15 +1375,48 @@ export const performanceRouter = createTRPCRouter({
         // directly now (a job has no salary/bonus of its own, and there is
         // no dated ledger to resolve a past year from any more; see
         // schema-pg.ts's historicalSalaries table comment). Sum every
-        // person's recorded salary + bonus for this year.
-        const yearSalaryRows = await tx
-          .select()
-          .from(schema.historicalSalaries)
-          .where(eq(schema.historicalSalaries.year, year));
-        const grossIncome = yearSalaryRows.reduce(
-          (s, r) => s + toNumber(r.salary) + toNumber(r.bonus),
-          0,
+        // person's recorded salary + bonus for this year, falling back
+        // (current year only) to the active Salary Profile the same way
+        // historical.ts's computeSummary/upsertSalary do — otherwise
+        // finalizing before anyone has recorded salary permanently writes
+        // a false $0 into net_worth_annual.
+        const [yearSalaryRows, allPeople, allJobs] = await Promise.all([
+          tx
+            .select()
+            .from(schema.historicalSalaries)
+            .where(eq(schema.historicalSalaries.year, year)),
+          tx.select().from(schema.people),
+          tx.select().from(schema.jobs),
+        ]);
+        const salaryRowByPerson = new Map(
+          yearSalaryRows.map((r) => [r.personId, r]),
         );
+        const currentYear = new Date().getFullYear();
+        const salaryProfileActiveMap =
+          year === currentYear
+            ? await loadEffectiveSalaryProfile(tx, null)
+            : new Map();
+        let grossIncome = 0;
+        let anyIncomeRecorded = false;
+        for (const person of allPeople) {
+          const activeJob = findActiveJob(allJobs, person.id);
+          const income = resolvePersonYearIncome(
+            year,
+            currentYear,
+            salaryRowByPerson.get(person.id),
+            activeJob?.id ?? null,
+            salaryProfileActiveMap,
+          );
+          grossIncome += income.salary + income.bonus;
+          if (income.recorded) anyIncomeRecorded = true;
+        }
+
+        if (allPeople.length > 0 && !anyIncomeRecorded) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `No salary data exists for ${year} yet. Record it on the Historical page (or complete the active Salary Profile's entries for the current year) before finalizing.`,
+          });
+        }
 
         // Check if row already exists for this year
         const existingNW = await tx.select().from(schema.netWorthAnnual);

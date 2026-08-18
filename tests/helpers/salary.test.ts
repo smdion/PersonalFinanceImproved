@@ -40,9 +40,10 @@ describe("computeBonusGross", () => {
     expect(computeBonusGross(120000, "0.10", null, null)).toBe(12000);
   });
 
-  it("defaults multiplier to 1 when zero", () => {
-    // "0" multiplier fallback → 1
-    expect(computeBonusGross(120000, "0.10", "0", null)).toBe(12000);
+  it("treats a stored zero multiplier as a real zero, not unset", () => {
+    // A stored "0" is a real "no bonus this cycle" value — only a
+    // genuinely null multiplier defaults to 1x. See computeBonusGross.
+    expect(computeBonusGross(120000, "0.10", "0", null)).toBe(0);
   });
 
   it("defaults monthsInBonusYear to 12 when null", () => {

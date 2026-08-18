@@ -8,6 +8,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
+## [0.7.4] - 2026-08-18
+
+### Fixed
+
+- **The Paycheck page's salary padlock now also locks the bonus % and multiplier fields.** Previously, locking the padlock protected the salary figure but left the bonus fields editable, silently failing to save any bonus edit made while locked.
+- **A stored bonus multiplier of exactly 0 is now treated as a real "no bonus this cycle" value**, instead of being silently bumped up to 1x.
+- **Finalizing a year on the Performance page no longer records $0 income** if that year's salary hasn't been entered yet — it now falls back to the same estimate the Historical page uses, or asks you to record the year's salary first.
+- **Switching Salary Profiles mid-Plan now carries the bonus into retirement projections and contribution calculations**, instead of only the base salary.
+- **Toggling "include bonus in contributions" on a Contribution Profile now actually takes effect** instead of silently no-op'ing.
+- **A household's expected year-to-date contribution figure now reflects any active What-If salary override**, matching the actual salary figure shown alongside it.
+- Fixed a case where the Net Worth page's budget summary could silently use $0 income when no Salary Profile was explicitly selected.
+- Deleting a person now cleans up correctly if the delete is interrupted partway through, instead of leaving an orphaned placeholder job behind.
+- Creating a new Contribution Profile now enforces the same validation as editing one.
+
+### Changed (internal hardening, no user-facing behavior change for existing data)
+
+- The one-time conversion that moved salary history off jobs and onto the Historical page is now safe to run twice, uses accurate per-year date handling regardless of server timezone, and correctly carries a salary forward through years with no raise recorded.
+- Production deploys now take an automatic safety backup immediately before that one-time conversion runs, in addition to the existing pre-upgrade backup.
+
 ## [0.7.3] - 2026-08-18
 
 ### Changed

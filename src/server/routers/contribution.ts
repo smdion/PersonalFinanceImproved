@@ -328,10 +328,19 @@ export const contributionRouter = createTRPCRouter({
         if (jobCache.has(c.jobId)) continue;
         const job = effectiveJobs.find((j) => j.id === c.jobId);
         if (!job) continue;
-        const salary = resolveCompensation(
+        // Must apply the same Plan/session override tier as the actual-salary
+        // computation below, or YTD-vs-actual diverges whenever a What-If
+        // salary override is active (expected YTD would keep using the
+        // un-overridden Salary Profile value).
+        const rawSalary = resolveCompensation(
           salaryProfileActiveMap,
           job.id,
         ).salary;
+        const salary = applyActiveSalary(
+          job.personId,
+          rawSalary,
+          effectiveSalaryMap,
+        );
         const periodsPerYear = getPeriodsPerYear(job.payPeriod);
         const anchor = job.anchorPayDate ? new Date(job.anchorPayDate) : null;
         const periodsElapsed = anchor
@@ -348,7 +357,7 @@ export const contributionRouter = createTRPCRouter({
         { contribId: number; expectedYtd: number }[]
       >();
       for (const c of activeContribs) {
-        const value = Number(c.contributionValue);
+        const value = toNumber(String(c.contributionValue));
         let expectedYtd = 0;
 
         const jd = c.jobId ? jobCache.get(c.jobId) : null;
@@ -526,7 +535,10 @@ export const contributionRouter = createTRPCRouter({
                   isInLimit401kGroup(c.accountType) &&
                   c.contributionMethod === "percent_of_salary",
               )
-              .reduce((s, c) => s + Number(c.contributionValue) / 100, 0);
+              .reduce(
+                (s, c) => s + toNumber(String(c.contributionValue)) / 100,
+                0,
+              );
             bonus401k = roundToCents(bonusGross * bonusPct);
           }
 
@@ -1053,7 +1065,7 @@ export const contributionRouter = createTRPCRouter({
       );
       const jointAccountTypes: AccountTypeSnapshot[] = [];
       for (const c of jointContribs) {
-        const val = Number(c.contributionValue);
+        const val = toNumber(String(c.contributionValue));
         const periodsPerYear =
           results[0]?.periodsPerYear ?? DEFAULT_PAY_PERIODS_PER_YEAR;
         const salary = 0;

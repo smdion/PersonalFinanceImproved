@@ -5,12 +5,11 @@ import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { toNumber, buildYearEndHistory } from "@/server/helpers";
 import {
-  loadAndApplySalaryProfile,
+  loadEffectiveSalaryProfile,
   resolveCompensation,
 } from "@/server/helpers/salary";
 import { findActiveJob } from "@/lib/pure/profiles";
 import { zYearEndTargeting, toSalaryActiveMap } from "./_shared";
-import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 export const historicalRouter = createTRPCRouter({
   computeSummary: protectedProcedure
@@ -45,16 +44,10 @@ export const historicalRouter = createTRPCRouter({
       ]);
 
       const currentYear = new Date().getFullYear();
-      const activeSalaryProfileSetting = await ctx.db
-        .select()
-        .from(schema.appSettings)
-        .where(eq(schema.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID));
-      const activeSalaryProfileId = Number(
-        activeSalaryProfileSetting[0]?.value ?? NaN,
+      const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
+        ctx.db,
+        null,
       );
-      const salaryProfileActiveMap = Number.isFinite(activeSalaryProfileId)
-        ? await loadAndApplySalaryProfile(ctx.db, activeSalaryProfileId)
-        : new Map();
 
       // Every past year is a recorded fact, directly — historical_salaries
       // is the single source (see its schema-pg.ts comment). The in-progress
@@ -265,8 +258,14 @@ export const historicalRouter = createTRPCRouter({
    * One control per (person, year) — upsert so the caller never has to know
    * whether a row already exists for that year. Editing just `salary` or
    * just `bonus` (the Year-End History table's two separate columns) leaves
-   * the other field at whatever it already was — falling back to the live
-   * estimate only when there's no existing row to preserve a value from.
+   * the other field at whatever it already was.
+   *
+   * When there's no existing row to preserve a value from, the untouched
+   * field falls back to the SAME live estimate the current-year auto-fill
+   * in `computeSummary` shows (active job's compensation under the active
+   * Salary Profile) for the current year, or 0 for a past year with no
+   * prior record — never a bare 0 for the current year, which would
+   * silently zero out whichever field the user wasn't editing.
    */
   upsertSalary: adminProcedure
     .input(
@@ -287,8 +286,24 @@ export const historicalRouter = createTRPCRouter({
             eq(schema.historicalSalaries.year, input.year),
           ),
         );
-      const salary = (input.salary ?? toNumber(existing[0]?.salary)).toFixed(2);
-      const bonus = (input.bonus ?? toNumber(existing[0]?.bonus)).toFixed(2);
+
+      let fallbackSalary = toNumber(existing[0]?.salary);
+      let fallbackBonus = toNumber(existing[0]?.bonus);
+      if (!existing[0] && input.year === new Date().getFullYear()) {
+        const [jobs, salaryProfileActiveMap] = await Promise.all([
+          ctx.db.select().from(schema.jobs),
+          loadEffectiveSalaryProfile(ctx.db, null),
+        ]);
+        const activeJob = findActiveJob(jobs, input.personId);
+        const comp = activeJob
+          ? resolveCompensation(salaryProfileActiveMap, activeJob.id)
+          : { salary: 0, bonus: 0 };
+        fallbackSalary = comp.salary;
+        fallbackBonus = comp.bonus;
+      }
+
+      const salary = (input.salary ?? fallbackSalary).toFixed(2);
+      const bonus = (input.bonus ?? fallbackBonus).toFixed(2);
       const rows = await ctx.db
         .insert(schema.historicalSalaries)
         .values({ personId: input.personId, year: input.year, salary, bonus })

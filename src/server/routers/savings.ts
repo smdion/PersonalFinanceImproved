@@ -26,7 +26,7 @@ import {
   computeBudgetAnnualTotal,
   getPeriodsPerYear,
   resolveCompensation,
-  loadAndApplySalaryProfile,
+  loadEffectiveSalaryProfile,
   buildContribAccounts,
   requireLimit,
   getResolvedGoalAllocations,
@@ -37,10 +37,7 @@ import {
   applyContribActiveFields,
   fetchContributionProfile,
 } from "@/server/helpers";
-import {
-  SK_ACTIVE_CONTRIB_PROFILE_ID,
-  SK_ACTIVE_SALARY_PROFILE_ID,
-} from "@/lib/constants/settings-keys";
+import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { buildBracketInput } from "./paycheck";
 import type { DeductionLine, PaycheckInput } from "@/lib/calculators/types";
 import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
@@ -173,16 +170,7 @@ async function computeJobNetPayPerCheck(
   // A job has no salary/bonus of its own — resolve against the globally-
   // ACTIVE Salary Profile (same "recorded fact" philosophy as above,
   // mirrored from the Contribution Profile resolution just above).
-  const activeSalaryProfileSetting = await db
-    .select()
-    .from(schema.appSettings)
-    .where(eq(schema.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID));
-  const activeSalaryProfileId = Number(
-    activeSalaryProfileSetting[0]?.value ?? NaN,
-  );
-  const salaryProfileActiveMap = Number.isFinite(activeSalaryProfileId)
-    ? await loadAndApplySalaryProfile(db, activeSalaryProfileId)
-    : new Map();
+  const salaryProfileActiveMap = await loadEffectiveSalaryProfile(db, null);
   const comp = resolveCompensation(salaryProfileActiveMap, job.id);
   const currentSalary = comp.salary;
   const bonusTerms = comp.terms;

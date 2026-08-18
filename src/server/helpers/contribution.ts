@@ -27,6 +27,12 @@ import type {
 import { toNumber, getPeriodsPerYear } from "./transforms";
 import type { Db } from "./transforms";
 import { filterActiveJobs } from "@/lib/pure/profiles";
+import {
+  getEffectiveIncome,
+  getTotalCompensation,
+  resolveCompensation,
+  loadEffectiveSalaryProfile,
+} from "./salary";
 
 /**
  * Bonus-AMOUNT fields a Contribution Profile is no longer allowed to mark
@@ -576,24 +582,7 @@ export async function loadLiveContribData(db: Db) {
   const activeContribs = allContribs.filter((c) => c.isActive);
   const perfAccountMap = new Map(allPerfAccounts.map((pa) => [pa.id, pa]));
 
-  const {
-    getEffectiveIncome,
-    getTotalCompensation,
-    resolveCompensation,
-    loadAndApplySalaryProfile,
-  } = await import("./salary");
-  const { SK_ACTIVE_SALARY_PROFILE_ID } =
-    await import("@/lib/constants/settings-keys");
-  const activeSalaryProfileSetting = await db
-    .select()
-    .from(schema.appSettings)
-    .where(eq(schema.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID));
-  const activeSalaryProfileId = Number(
-    activeSalaryProfileSetting[0]?.value ?? NaN,
-  );
-  const salaryProfileActiveMap = Number.isFinite(activeSalaryProfileId)
-    ? await loadAndApplySalaryProfile(db, activeSalaryProfileId)
-    : new Map();
+  const salaryProfileActiveMap = await loadEffectiveSalaryProfile(db, null);
 
   const jobSalaries = activeJobs.map((j) => {
     const comp = resolveCompensation(salaryProfileActiveMap, j.id);
@@ -688,7 +677,6 @@ export function resolveProfile<
   const accountActiveFields =
     contribActiveFieldsRoot.contributionAccounts ?? {};
   const jobActiveFields = contribActiveFieldsRoot.jobs ?? {};
-  const jobSalaries = liveJobSalaries;
 
   // Apply contribution account active fields — same no-fallback,
   // unconditional-merge, exclude-if-absent rule as applyContribActiveFields
@@ -730,6 +718,19 @@ export function resolveProfile<
     personId: j.personId,
     payPeriod: j.payPeriod,
   }));
+
+  // Must derive from patchedJobs, not liveJobs — includeBonusInContributions
+  // is a job active field this profile can override, and getEffectiveIncome
+  // reads it (via `salary` here). Deriving from the unpatched job (the old
+  // `jobSalaries = liveJobSalaries` alias) meant toggling the flag on a
+  // Contribution Profile silently no-op'd: the flag was read before the
+  // patch that was supposed to change it.
+  const patchedJobById = new Map(patchedJobs.map((j) => [j.id, j]));
+  const jobSalaries = liveJobSalaries.map((js) => {
+    const patchedJob = patchedJobById.get(js.job.id);
+    const includeBonus = patchedJob?.includeBonusInContributions ?? false;
+    return { ...js, salary: includeBonus ? js.totalComp : js.baseSalary };
+  });
   const combinedSalary = jobSalaries.reduce((sum, js) => sum + js.salary, 0);
 
   return {

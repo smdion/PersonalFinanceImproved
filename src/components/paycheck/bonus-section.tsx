@@ -13,6 +13,7 @@ export function BonusSection({
   resolvedBonusTerms,
   onUpdateJob,
   readOnly,
+  salaryReadOnly,
 }: {
   paycheck: PaycheckResult;
   job: {
@@ -31,10 +32,18 @@ export function BonusSection({
   onUpdateJob: (field: string, value: string) => void;
   /** Sandbox/preview mode — bonus terms are shown but not editable. */
   readOnly?: boolean;
+  /** Mirrors PersonPaycheck's salary padlock — bonus % and multiplier write
+   *  into the SAME Salary Profile entry as salary (see
+   *  writeSalaryProfileEntry in paycheck/page.tsx), so they must gate on
+   *  the same lock. Only those two fields respect it; "Paid in" and the two
+   *  toggles below are real job columns, unrelated to the Salary Profile,
+   *  and keep gating on `readOnly` alone. */
+  salaryReadOnly?: boolean;
 }) {
   const { bonusEstimate } = paycheck;
   if (bonusEstimate.bonusGross === 0 && resolvedBonusTerms.bonusPercent === 0)
     return null;
+  const bonusTermsEditable = !readOnly && !salaryReadOnly;
 
   return (
     <div className="space-y-2">
@@ -76,7 +85,7 @@ export function BonusSection({
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}
             type="number"
             className="font-medium"
-            isEditable={!readOnly}
+            isEditable={bonusTermsEditable}
           />
         </div>
         <div className="flex justify-between items-center">
@@ -93,7 +102,7 @@ export function BonusSection({
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}
             type="number"
             className="font-medium"
-            isEditable={!readOnly}
+            isEditable={bonusTermsEditable}
           />
         </div>
         <div className="flex justify-between items-center">

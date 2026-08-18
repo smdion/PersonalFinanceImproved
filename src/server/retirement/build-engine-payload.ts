@@ -37,7 +37,7 @@ import {
   getPrimaryPerson,
   pickActiveBudgetProfile,
 } from "@/server/helpers";
-import type { SalaryEntryMap } from "@/server/helpers";
+import type { SalaryEntryMap, SalaryProfileEntry } from "@/server/helpers";
 import type {
   TaxBuckets,
   AccountBalances,
@@ -955,13 +955,36 @@ export async function buildEnginePayload(
     const ownEntry = ownJob
       ? switchSalaryEntriesByJob[String(ownJob.id)]
       : undefined;
+    // A profile entry pinning only bonus terms (no `salary`) is not a
+    // salary to grow — same presence rule as before. Only the SALARY
+    // field's presence decides whether this row injects anything.
     const ownBaseSalary = ownEntry?.salary;
+    // Baseline this override replaces (salaryByPerson) is TOTAL comp
+    // (totalCompFullFormula, salary + bonus) — growing bare `.salary` here
+    // would silently drop the switched profile's bonus from projections.
+    // Bonus fields may be absent even when salary is pinned (entries here
+    // aren't guaranteed complete the way resolveCompensation's normal
+    // callers assume), so missing bonus terms mean "no bonus," not NaN.
+    const ownTotalComp =
+      ownBaseSalary !== undefined
+        ? getTotalCompensation(ownBaseSalary, {
+            bonusPercent:
+              ownEntry?.bonusPercent != null
+                ? String(ownEntry.bonusPercent)
+                : null,
+            bonusMultiplier:
+              ownEntry?.bonusMultiplier != null
+                ? String(ownEntry.bonusMultiplier)
+                : null,
+            monthsInBonusYear: ownEntry?.monthsInBonusYear ?? null,
+          })
+        : undefined;
     if (salaryProfile && ownBaseSalary !== undefined) {
       const yearsFromNow = override.projectionYear - currentYear;
       const personRaiseRate =
         raiseRateByPerson.get(override.personId) ?? primaryRaiseRate;
       const grownSalary =
-        ownBaseSalary * Math.pow(1 + personRaiseRate, yearsFromNow);
+        ownTotalComp! * Math.pow(1 + personRaiseRate, yearsFromNow);
       perPersonSalaryOverrides.push({
         personId: override.personId,
         year: override.projectionYear,
@@ -980,6 +1003,42 @@ export async function buildEnginePayload(
     // Contribution side. A salary-only switch has nothing to build here.
     if (!contribProfile) continue;
 
+    // The switched profile's percent-of-salary contributions must be
+    // computed against the SWITCHED job's compensation, not the globally
+    // active Salary Profile's (liveJobSalaries) — otherwise a salary-profile
+    // switch never reaches contribution math at all. Overlay only the
+    // switched-to entry for this person's own job onto the live map; every
+    // other job keeps following its live salary, same rule as the salary
+    // override above.
+    // Normalize possibly-partial bonus fields to "no bonus" defaults — same
+    // reasoning as ownTotalComp above, since resolveCompensation assumes a
+    // complete entry and would otherwise turn missing fields into NaN.
+    const ownEntryNormalized: SalaryProfileEntry | undefined =
+      ownBaseSalary !== undefined
+        ? {
+            salary: ownBaseSalary,
+            bonusPercent: ownEntry?.bonusPercent ?? 0,
+            bonusMultiplier: ownEntry?.bonusMultiplier ?? 1,
+            monthsInBonusYear: ownEntry?.monthsInBonusYear ?? 12,
+          }
+        : undefined;
+    const switchJobSalaries = salaryProfile
+      ? activeJobs.map((j) => {
+          const map =
+            j.id === ownJob?.id && ownEntryNormalized !== undefined
+              ? new Map(salaryProfileActiveMap).set(j.id, ownEntryNormalized)
+              : salaryProfileActiveMap;
+          const comp = resolveCompensation(map, j.id);
+          return {
+            job: { id: j.id, personId: j.personId },
+            salary: getEffectiveIncome(j, comp.salary, comp.terms),
+            baseSalary: comp.salary,
+            totalComp: getTotalCompensation(comp.salary, comp.terms),
+            resolvedBonusOverride: null,
+          };
+        })
+      : liveJobSalaries;
+
     // The switched profile's percent-of-salary contributions are computed
     // against the switched SALARY (when this row also pins one) — that's
     // what the coupled salary+contribution profile used to do, preserved now
@@ -988,7 +1047,7 @@ export async function buildEnginePayload(
       contribProfile,
       liveContribRows,
       activeJobs as (typeof schema.jobs.$inferSelect)[],
-      liveJobSalaries,
+      switchJobSalaries,
     );
 
     const data = buildProfileContribData(

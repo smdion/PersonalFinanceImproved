@@ -218,6 +218,7 @@ export function PersonPaycheck({
               resolvedBonusTerms={resolvedBonusTerms}
               onUpdateJob={onUpdateJob}
               readOnly={readOnly}
+              salaryReadOnly={salaryReadOnly}
             />
           </div>
         </div>

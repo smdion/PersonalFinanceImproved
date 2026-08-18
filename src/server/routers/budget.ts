@@ -54,7 +54,7 @@ import {
   applyActiveBonusTerms,
   computeAnnualContribution,
   loadAndApplyContribProfile,
-  loadAndApplySalaryProfile,
+  loadEffectiveSalaryProfile,
   resolveJoblessPeriodsPerYear,
   applyContributionAccountEdit,
   resolveTargetBudgetProfile,
@@ -784,7 +784,14 @@ export const budgetRouter = createTRPCRouter({
           input?.sandboxSalaryEntries,
           planSalaryActiveMap,
         );
-        const salaryProfileActiveMap = await loadAndApplySalaryProfile(
+        // salaryProfileId is null both transiently (tier resolution hasn't
+        // loaded a globalDefaultId yet) and permanently (a caller like the
+        // Net Worth page's budget summary that supplies no tiers at all) —
+        // loadAndApplySalaryProfile would silently return an empty map
+        // (zero salary/bonus) in the latter case, unlike every sibling
+        // procedure's null-id handling. Fall back to the globally-active
+        // Salary Profile the same way they do.
+        const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
           ctx.db,
           salaryProfileId,
         );

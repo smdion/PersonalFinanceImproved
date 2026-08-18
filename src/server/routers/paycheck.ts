@@ -298,7 +298,13 @@ export const paycheckRouter = createTRPCRouter({
             limits: limitsRecord,
             ytdGrossEarnings: 0,
             bonusPercent: toNumber(bonusTerms.bonusPercent),
-            bonusMultiplier: toNumber(bonusTerms.bonusMultiplier),
+            // A stored 0 is a real "no bonus this cycle" value; only a
+            // genuinely unset (null) multiplier defaults to 1× — see
+            // computeBonusGross's identical distinction.
+            bonusMultiplier:
+              bonusTerms.bonusMultiplier === null
+                ? 1
+                : toNumber(bonusTerms.bonusMultiplier),
             bonusOverride: null,
             monthsInBonusYear: bonusTerms.monthsInBonusYear ?? 12,
             includeContribInBonus: activeJob.include401kInBonus,
@@ -407,15 +413,20 @@ export const paycheckRouter = createTRPCRouter({
             person,
             job: jobForClient,
             salary,
-            /** The bonus terms actually in effect (Salary Profile pin, if
-             *  any, else the job record) — as numbers, for clients (e.g.
-             *  the What-If tab's editor) that need to pre-fill from the
-             *  resolved value rather than `job`'s raw, profile-unaware
+            /** The bonus terms actually in effect (the active Salary
+             *  Profile's resolved terms, with the What-If sandbox's own
+             *  edits layered on top — never a job fallback, jobs carry no
+             *  bonus terms of their own any more) — as numbers, for clients
+             *  (e.g. the What-If tab's editor) that need to pre-fill from
+             *  the resolved value rather than `job`'s raw, profile-unaware
              *  fields. Mirrors what `salary` already does for the salary
              *  axis. */
             resolvedBonusTerms: {
               bonusPercent: toNumber(bonusTerms.bonusPercent),
-              bonusMultiplier: toNumber(bonusTerms.bonusMultiplier) || 1,
+              bonusMultiplier:
+                bonusTerms.bonusMultiplier === null
+                  ? 1
+                  : toNumber(bonusTerms.bonusMultiplier),
               monthsInBonusYear: bonusTerms.monthsInBonusYear ?? 12,
             },
             paycheck,

@@ -188,6 +188,37 @@ export function resolveCompensation(
 }
 
 /**
+ * Resolve one person's income for a specific year using the same
+ * "recorded fact beats live estimate" fallback chain as historical.ts's
+ * computeSummary/upsertSalary: a historical_salaries row wins if recorded;
+ * otherwise, for the current year only, fall back to the active Salary
+ * Profile's complete entry for the person's active job. `recorded` is
+ * false only when neither source has anything — callers (e.g.
+ * performance.ts's finalizeYear) use that to avoid persisting a false $0.
+ */
+export function resolvePersonYearIncome(
+  year: number,
+  currentYear: number,
+  historicalRow: { salary: string | null; bonus: string | null } | undefined,
+  activeJobId: number | null | undefined,
+  salaryProfileActiveMap: SalaryProfileActiveMap,
+): { salary: number; bonus: number; recorded: boolean } {
+  if (historicalRow) {
+    return {
+      salary: toNumber(historicalRow.salary),
+      bonus: toNumber(historicalRow.bonus),
+      recorded: true,
+    };
+  }
+  if (year === currentYear && activeJobId != null) {
+    const hasEntry = salaryProfileActiveMap.has(activeJobId);
+    const comp = resolveCompensation(salaryProfileActiveMap, activeJobId);
+    return { salary: comp.salary, bonus: comp.bonus, recorded: hasEntry };
+  }
+  return { salary: 0, bonus: 0, recorded: false };
+}
+
+/**
  * Fetch a Salary Profile by id.
  *
  * A null/undefined id means "no Salary Profile selected at this call site"
@@ -224,8 +255,13 @@ export async function loadAndApplySalaryProfile(
  * Salary Profile when no explicit id is given — the "viewing a specific
  * profile" callers (Paycheck/Contribution pages) always pass their own
  * resolved id, so this only matters when a caller genuinely has no
- * preference, same as historical.ts/savings.ts/retirement.ts's inline
- * active-setting lookups.
+ * preference (historical.ts, savings.ts, retirement.ts, helpers/
+ * contribution.ts's loadLiveContribData all call this with `null` for
+ * exactly that reason — call this instead of hand-rolling the app_settings
+ * lookup again). helpers/snapshot.ts's buildYearEndHistory is the one
+ * deliberate exception: it already has app_settings batch-fetched as part
+ * of a larger Promise.all, so re-deriving the active id from that
+ * in-memory array avoids a redundant query on a hot path.
  */
 export async function loadEffectiveSalaryProfile(
   db: Db,
@@ -305,7 +341,11 @@ export function computeBonusGross(
 ): number {
   const pct = toNumber(bonusPercent);
   if (pct <= 0) return 0;
-  const mult = toNumber(bonusMultiplier) || 1;
+  // A stored 0 is a real "no bonus this cycle" value, not "unset" — only
+  // null (genuinely no multiplier on record) defaults to 1×. `toNumber`
+  // can't distinguish the two (both collapse to 0), so check before
+  // converting.
+  const mult = bonusMultiplier === null ? 1 : toNumber(bonusMultiplier);
   const months = monthsInBonusYear ?? 12;
   return roundToCents(salary * pct * mult * (months / 12));
 }

@@ -10,7 +10,7 @@ import {
   getEffectiveIncome,
   getTotalCompensation,
   resolveCompensation,
-  loadAndApplySalaryProfile,
+  loadEffectiveSalaryProfile,
   getPeriodsPerYear,
   getLatestSnapshot,
   computeAnnualContribution,
@@ -19,7 +19,6 @@ import {
   resolveProfile,
   getPrimaryPerson,
 } from "@/server/helpers";
-import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import type { ContribRowWithActiveFields } from "@/server/helpers/contribution";
 import { isRetirementParent } from "@/lib/config/account-types";
 import { getAge } from "@/lib/utils/date";
@@ -259,16 +258,10 @@ export const retirementRouter = createTRPCRouter({
       // scenarios is a separate, not-yet-built feature.
       const asOfDate = referenceDate;
       const activeJobs = filterActiveJobs(allJobs);
-      const activeSalaryProfileSetting = await ctx.db
-        .select()
-        .from(schema.appSettings)
-        .where(eq(schema.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID));
-      const activeSalaryProfileId = Number(
-        activeSalaryProfileSetting[0]?.value ?? NaN,
+      const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
+        ctx.db,
+        null,
       );
-      const salaryProfileActiveMap = Number.isFinite(activeSalaryProfileId)
-        ? await loadAndApplySalaryProfile(ctx.db, activeSalaryProfileId)
-        : new Map();
       const jobSalaries = activeJobs.map((j) => {
         const comp = resolveCompensation(salaryProfileActiveMap, j.id);
         return {
