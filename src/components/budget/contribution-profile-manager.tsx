@@ -36,7 +36,7 @@ export function ContributionProfileManager({
 }: {
   canEdit: boolean;
   /** Owned by budget-content.tsx's single tab-bar padlock — see its
-   *  useEditLock(EDIT_LOCK_KEYS.budgetContrib) call. */
+   *  useEditLock(EDIT_LOCK_KEYS.profileEditLocked) call. */
   locked: boolean;
 }) {
   const utils = trpc.useUtils();

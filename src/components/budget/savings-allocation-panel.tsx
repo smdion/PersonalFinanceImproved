@@ -41,7 +41,7 @@ export function SavingsAllocationPanel({
 }: {
   canEdit: boolean;
   /** Owned by budget-content.tsx's single tab-bar padlock — see its
-   *  useEditLock(EDIT_LOCK_KEYS.budgetSavings) call. The What-If tab's
+   *  useEditLock(EDIT_LOCK_KEYS.profileEditLocked) call. The What-If tab's
    *  sandbox instance of this panel has no such padlock (nothing here
    *  persists in sandbox mode), so it just passes `false`. */
   locked: boolean;

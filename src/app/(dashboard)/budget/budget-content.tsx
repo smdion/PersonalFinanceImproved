@@ -28,11 +28,7 @@ import type { ColumnResult } from "@/components/budget";
 import { BudgetPushYnabModal } from "@/components/budget/budget-push-ynab-modal";
 import { BudgetPullYnabModal } from "@/components/budget/budget-pull-ynab-modal";
 import { BudgetSummaryBar } from "@/components/budget/budget-summary-bar";
-import {
-  EditLockToggle,
-  EDIT_LOCK_KEYS,
-  useEditLock,
-} from "@/components/ui/edit-lock-toggle";
+import { EditLockToggle } from "@/components/ui/edit-lock-toggle";
 import {
   BudgetProfileSidebar,
   type BudgetProfileListEntry,
@@ -237,21 +233,6 @@ export function BudgetContent() {
     updateBatch,
     contributionProfileTiers,
   });
-
-  // Salary/Contribution/Savings tabs each keep their own persisted lock —
-  // unlocking one must not silently unlock another — but the padlock
-  // control itself lives once, at a fixed spot in the tab bar (see below),
-  // so it never moves as the user switches tabs or the active tab's
-  // content reflows between its locked/unlocked layouts.
-  const [salaryLocked, toggleSalaryLocked] = useEditLock(
-    EDIT_LOCK_KEYS.budgetSalary,
-  );
-  const [contribLocked, toggleContribLocked] = useEditLock(
-    EDIT_LOCK_KEYS.budgetContrib,
-  );
-  const [savingsLocked, toggleSavingsLocked] = useEditLock(
-    EDIT_LOCK_KEYS.budgetSavings,
-  );
 
   const {
     profile,
@@ -462,20 +443,27 @@ export function BudgetContent() {
           {/* One padlock, fixed here regardless of which tab is active —
               it used to live inside each tab's own panel, which meant its
               on-screen position shifted with that panel's locked/unlocked
-              layout. It reflects and toggles whichever tab's own lock is
-              current; What-If has none of its own (it's a preview, not an
-              editable surface), so nothing renders there. */}
+              layout. One lock (EDIT_LOCK_KEYS.profileEditLocked, via editMode/
+              toggleEditMode from useBudgetPageState) now covers all four
+              profile tabs — locking/unlocking on any one of them locks/
+              unlocks the rest too, so there's no "I locked Salary but
+              Contribution is still wide open" gap. toggleEditMode still
+              saves any pending Budget-tab drafts before locking, regardless
+              of which tab was active when the padlock was clicked. What-If
+              has none of its own (it's a preview, not an editable surface),
+              so nothing renders there. Only the `disabled` (visibility/
+              permission) condition stays tab-specific. */}
           {activeTab === "salary" && (
             <EditLockToggle
-              locked={salaryLocked}
-              onToggle={toggleSalaryLocked}
+              locked={!editMode}
+              onToggle={toggleEditMode}
               disabled={!hasPermission(user, "contributionProfile")}
             />
           )}
           {activeTab === "contributions" && (
             <EditLockToggle
-              locked={contribLocked}
-              onToggle={toggleContribLocked}
+              locked={!editMode}
+              onToggle={toggleEditMode}
               disabled={!hasPermission(user, "contributionProfile")}
             />
           )}
@@ -488,8 +476,8 @@ export function BudgetContent() {
           )}
           {activeTab === "savings" && (
             <EditLockToggle
-              locked={savingsLocked}
-              onToggle={toggleSavingsLocked}
+              locked={!editMode}
+              onToggle={toggleEditMode}
               disabled={!hasPermission(user, "savings")}
             />
           )}
@@ -615,7 +603,7 @@ export function BudgetContent() {
           <CardBoundary title="Salary Profiles">
             <SalaryProfileManager
               canEdit={hasPermission(user, "contributionProfile")}
-              locked={salaryLocked}
+              locked={!editMode}
             />
           </CardBoundary>
         )}
@@ -624,7 +612,7 @@ export function BudgetContent() {
           <CardBoundary title="Contribution Profiles">
             <ContributionProfileManager
               canEdit={hasPermission(user, "contributionProfile")}
-              locked={contribLocked}
+              locked={!editMode}
             />
           </CardBoundary>
         )}
@@ -648,7 +636,7 @@ export function BudgetContent() {
           <CardBoundary title="Savings Profiles">
             <SavingsAllocationPanel
               canEdit={hasPermission(user, "savings")}
-              locked={savingsLocked}
+              locked={!editMode}
               viewingProfileId={displayProfileId}
               onSelectProfile={setViewingProfileId}
               isPinned={isPinnedProfile}

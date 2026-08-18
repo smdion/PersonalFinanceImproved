@@ -47,10 +47,12 @@ export default function PaycheckPage() {
   const [contribProfileId] = useActiveContribProfile();
   const utils = trpc.useUtils();
 
-  /** One shared lock for both the Salary and Contribution profile axes —
-   *  they're edited from the same view, so one padlock covers both. */
+  /** Same shared lock as the Budget page's four profile tabs and the
+   *  standalone Savings page — Salary/Contribution profile editing here is
+   *  the same underlying data, just from a different page, so locking it
+   *  anywhere locks it everywhere. */
   const [profileLocked, toggleProfileLock] = useEditLock(
-    EDIT_LOCK_KEYS.paycheckProfile,
+    EDIT_LOCK_KEYS.profileEditLocked,
   );
 
   // Contribution profile state

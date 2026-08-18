@@ -91,7 +91,7 @@ export interface FundManagementSectionProps {
   >;
   canEdit: boolean;
   /** Same padlock as the Budget page's Savings tab / this page's Allocations
-   *  tab (EDIT_LOCK_KEYS.budgetSavings) — funding-field edits made from a
+   *  tab (EDIT_LOCK_KEYS.profileEditLocked) — funding-field edits made from a
    *  fund card must respect the same lock as every other surface that edits
    *  this exact data, or locking one surface doesn't actually protect it. */
   fundingLocked?: boolean;

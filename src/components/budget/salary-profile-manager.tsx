@@ -47,7 +47,7 @@ export function SalaryProfileManager({
 }: {
   canEdit: boolean;
   /** Owned by budget-content.tsx's single tab-bar padlock — see its
-   *  useEditLock(EDIT_LOCK_KEYS.budgetSalary) call. */
+   *  useEditLock(EDIT_LOCK_KEYS.profileEditLocked) call. */
   locked: boolean;
 }) {
   const utils = trpc.useUtils();

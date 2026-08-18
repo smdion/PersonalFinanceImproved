@@ -80,12 +80,11 @@ export default function SavingsPage() {
   const user = useUser();
   const canEdit = hasPermission(user, "savings");
   const utils = trpc.useUtils();
-  // Same lock the Budget page's Savings tab uses for this exact data
-  // (goal funding %/$ allocations) — locking one surface must lock the
-  // other, or a user who locks this data on one page can still freely edit
-  // it on the other with no unlock step.
+  // Same shared lock the Budget page's four profile tabs all use — locking
+  // one surface must lock the other, or a user who locks this data on one
+  // page can still freely edit it on the other with no unlock step.
   const [savingsAllocationsLocked, toggleSavingsAllocationsLocked] =
-    useEditLock(EDIT_LOCK_KEYS.budgetSavings);
+    useEditLock(EDIT_LOCK_KEYS.profileEditLocked);
 
   // ── Persisted settings ──
   const [efundBudgetColumn, setEfundBudgetColumn] = usePersistedSetting<number>(

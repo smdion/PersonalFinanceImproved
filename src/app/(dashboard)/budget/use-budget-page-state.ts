@@ -54,10 +54,12 @@ export function useBudgetPageState({
   // ---- Edit mode + draft store ----
 
   // Locked (read-only) is the default, persisted per-browser like every other
-  // padlock in the app. Stored as "locked" — editMode is its inverse — so the
-  // key matches the other profile tabs' `ledgr:budget:*Locked` convention.
+  // padlock in the app. Stored as "locked" — editMode is its inverse. Shares
+  // EDIT_LOCK_KEYS.profileEditLocked with the Salary/Contribution/Savings tabs —
+  // one padlock for the whole Budget page, not four independent ones that
+  // could drift out of sync.
   const [budgetLocked, setBudgetLocked] = useLocalStorage<boolean>(
-    EDIT_LOCK_KEYS.budgetBudget,
+    EDIT_LOCK_KEYS.profileEditLocked,
     true,
   );
   const editMode = !budgetLocked;
