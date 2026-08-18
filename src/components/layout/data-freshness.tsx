@@ -149,7 +149,7 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
       <TooltipPrimitive.Root delayDuration={300}>
         <TooltipPrimitive.Trigger asChild>
           <button
-            className="w-full flex items-center justify-center p-2 text-faint hover:text-primary transition-colors disabled:opacity-50"
+            className="relative w-full flex items-center justify-center p-2 text-faint hover:text-primary transition-colors disabled:opacity-50"
             onClick={handleSync}
             disabled={isSyncing}
             title={canSync ? "Sync data" : "Data freshness"}
@@ -157,6 +157,14 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
             <RefreshCw
               className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`}
             />
+            {simplefinHasError && (
+              <span
+                className="absolute top-1 right-1 text-amber-400 text-caption leading-none"
+                aria-label="Sync error"
+              >
+                ⚠
+              </span>
+            )}
           </button>
         </TooltipPrimitive.Trigger>
         <TooltipPrimitive.Portal>
@@ -189,6 +197,11 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
           <span className="text-label">
             Data{oldestLabel ? `: ${oldestLabel}` : ""}
           </span>
+          {simplefinHasError && (
+            <span className="text-amber-400" aria-label="Sync error">
+              ⚠
+            </span>
+          )}
         </button>
       </TooltipPrimitive.Trigger>
       <TooltipPrimitive.Portal>
