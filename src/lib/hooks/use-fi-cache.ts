@@ -68,15 +68,24 @@ export function deriveFI(
  * these overrides producing a *different projection* than what the rest of
  * the dashboard shows would otherwise get cached and rendered elsewhere as
  * "the real plan" (H12, .scratch/docs/review-findings.md).
+ *
+ * contributionProfileId/salaryProfileId are NOT checked for null here. Both
+ * current callers (this dashboard's retirement card and the Plan Health
+ * page) resolve these via useEffectiveProfileId/useEffectiveSalaryProfileId
+ * before querying, which returns the true globally-active profile id
+ * whenever isInScenario is false (a Plan pin — the only way to preview a
+ * *different* profile — requires an active Scenario, already excluded
+ * below). Treating a non-null id as inherently non-live would mean this
+ * cache is never written for any household with a Contribution/Salary
+ * Profile configured (M27, .scratch/docs/review-findings.md) — the engine
+ * input still needs an explicit id since "no profile" means $0
+ * contributions, not "use the active one".
  */
 export type FICacheInputSignals = {
   isInScenario: boolean;
   snapshotId?: number | null;
   accumulationOverrides?: unknown[] | null;
   decumulationOverrides?: unknown[] | null;
-  contributionProfileId?: number | null;
-  /** A Salary Profile preview is just as non-live as a Contribution Profile one. */
-  salaryProfileId?: number | null;
   parentCategoryFilter?: string | null;
   isPersonFiltered?: boolean;
 };
@@ -91,8 +100,6 @@ export function isLivePlanInput(signals: FICacheInputSignals): boolean {
     !(
       signals.decumulationOverrides && signals.decumulationOverrides.length > 0
     ) &&
-    signals.contributionProfileId == null &&
-    signals.salaryProfileId == null &&
     !signals.parentCategoryFilter &&
     !signals.isPersonFiltered
   );

@@ -15,6 +15,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
+import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import {
   categoriesWithIrsLimit,
   getLimitGroup,
@@ -26,6 +27,16 @@ import { LoadingCard, ErrorCard } from "./utils";
 
 function RetirementCardImpl() {
   const salaryActiveFields = useActiveSalaries();
+  // Contribution/Salary Profile axes — every other dashboard card resolves
+  // these before querying (M27, .scratch/docs/review-findings.md: this card
+  // used to omit both, which the engine treats as "no profile" = $0
+  // contributions, not "the active profile" — silently zeroing out
+  // Contributions/Coast FIRE/nest egg on this card alone).
+  const [activeContribProfileId] = usePersistedSetting<number | null>(
+    "active_contrib_profile_id",
+    null,
+  );
+  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [accBudgetProfileId] = usePersistedSetting<number | null>(
     "retirement_acc_budget_profile_id",
     null,
@@ -52,6 +63,10 @@ function RetirementCardImpl() {
   );
   const engineInput = {
     ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
+    ...(activeContribProfileId != null
+      ? { contributionProfileId: activeContribProfileId }
+      : {}),
+    ...salaryProfileInput,
     ...(accBudgetProfileId != null
       ? { accumulationBudgetProfileId: accBudgetProfileId }
       : {}),
@@ -76,8 +91,10 @@ function RetirementCardImpl() {
 
   useEffect(() => {
     if (!data?.result || isLoading || isFetching) return;
-    // This card never sets snapshot/profile/category-filter/override params
-    // (see engineInput above) — only the scenario axis can pollute it.
+    // This card never sets snapshot/category-filter/override params (see
+    // engineInput above) — only the scenario axis can make this non-live.
+    // contributionProfileId/salaryProfileId are always the resolved active
+    // profile here, not a preview — see isLivePlanInput's docstring.
     if (!isLivePlanInput({ isInScenario })) return;
     const withdrawalRate = Number(data.settings?.withdrawalRate ?? 0.04);
     const expenses = data.annualExpenses ?? 0;

@@ -144,19 +144,20 @@ export function useProjectionDerived(
     if (!engineData?.result || engineQuery.isLoading || engineQuery.isFetching)
       return;
     // Only the live, no-override retirement plan may populate the
-    // dashboard-wide FI cache — a scenario, historical snapshot, per-profile,
-    // per-category, or per-person filtered view is a DIFFERENT projection
-    // than what the rest of the dashboard shows (H12). Note: dragging the
+    // dashboard-wide FI cache — a scenario, historical snapshot, per-category,
+    // or per-person filtered view is a DIFFERENT projection than what the
+    // rest of the dashboard shows (H12). Note: dragging the
     // withdrawal-rate/order/split controls away from their stored defaults
     // isn't caught here yet — deferred, see review-findings.md H12.
+    // contributionProfileId/salaryProfileId aren't checked — they're always
+    // the resolved active profile absent a Plan pin, which isInScenario
+    // already excludes (see isLivePlanInput's docstring, M27).
     if (
       !isLivePlanInput({
         isInScenario,
         snapshotId,
         accumulationOverrides: accumOverrides,
         decumulationOverrides: decumOverrides,
-        contributionProfileId,
-        salaryProfileId,
         parentCategoryFilter,
         isPersonFiltered,
       })
