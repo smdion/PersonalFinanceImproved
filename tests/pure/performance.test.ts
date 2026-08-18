@@ -303,9 +303,24 @@ describe("computeHomeImprovementsCumulative", () => {
 
 describe("filterActiveJobsAtDate", () => {
   const jobs = [
-    { startDate: "2020-01-01", endDate: "2022-12-31", name: "old" },
-    { startDate: "2023-01-01", endDate: null, name: "current" },
-    { startDate: "2025-06-01", endDate: null, name: "future" },
+    {
+      startDate: "2020-01-01",
+      endDate: "2022-12-31",
+      isSpeculative: false,
+      name: "old",
+    },
+    {
+      startDate: "2023-01-01",
+      endDate: null,
+      isSpeculative: false,
+      name: "current",
+    },
+    {
+      startDate: "2025-06-01",
+      endDate: null,
+      isSpeculative: false,
+      name: "future",
+    },
   ];
 
   it("returns jobs active at a given date", () => {
@@ -317,6 +332,23 @@ describe("filterActiveJobsAtDate", () => {
   it("includes jobs ending on the exact date", () => {
     const active = filterActiveJobsAtDate(jobs, new Date("2022-12-31"));
     expect(active.map((j) => j.name)).toContain("old");
+  });
+
+  it("excludes a speculative job even though its window would otherwise match", () => {
+    const withSpeculative = [
+      ...jobs,
+      {
+        startDate: "2020-01-01",
+        endDate: null,
+        isSpeculative: true,
+        name: "spec",
+      },
+    ];
+    const active = filterActiveJobsAtDate(
+      withSpeculative,
+      new Date("2024-06-15"),
+    );
+    expect(active.map((j) => j.name)).not.toContain("spec");
   });
 });
 

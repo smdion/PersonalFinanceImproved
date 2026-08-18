@@ -9,11 +9,13 @@ import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 import type { Db } from "./transforms";
 import { parseAppSettings } from "./settings";
 import {
-  getSalariesForJobs,
   getTotalCompensation,
   applyActiveSalary,
+  resolveCompensation,
+  loadAndApplySalaryProfile,
 } from "./salary";
-import type { SalaryActiveMap } from "./salary";
+import type { SalaryActiveMap, SalaryProfileActiveMap } from "./salary";
+import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import {
   getEffectiveCash,
   getEffectiveOtherAssets,
@@ -31,6 +33,7 @@ import {
   PERF_CATEGORY_RETIREMENT,
 } from "@/lib/config/display-labels";
 import { sumAccounts, computeReturn } from "@/lib/pure/performance";
+import { filterActiveJobs } from "@/lib/pure/profiles";
 import { isDiscountBasisEmployerContrib } from "@/lib/config/account-types";
 
 // ---------------------------------------------------------------------------
@@ -353,6 +356,19 @@ export async function buildYearEndHistory(
       .from(schema.homeImprovementItems)
       .orderBy(asc(schema.homeImprovementItems.year)),
   ]);
+
+  // Bonus terms have no live value on a job any more — resolve against the
+  // globally-ACTIVE Salary Profile (this builds a permanent net_worth_annual
+  // record, a "recorded fact," same philosophy as savings.ts's
+  // computeJobNetPayPerCheck).
+  const activeSalaryProfileId = Number(
+    settings.find((s) => s.key === SK_ACTIVE_SALARY_PROFILE_ID)?.value ?? NaN,
+  );
+  const salaryProfileActiveMap: SalaryProfileActiveMap = Number.isFinite(
+    activeSalaryProfileId,
+  )
+    ? await loadAndApplySalaryProfile(db, activeSalaryProfileId)
+    : new Map();
 
   // Build cumulative home improvements by year from items table (source of truth).
   // The net_worth_annual.home_improvements_cumulative column is per-year, not cumulative — ignore it.
@@ -766,19 +782,17 @@ export async function buildYearEndHistory(
       : 0;
 
     // Gross income from active jobs (includes bonus — matches finalized year-end data)
-    const activeJobs = jobs.filter((j) => !j.endDate);
-    const jobSalaries = await getSalariesForJobs(db, activeJobs, asOfDate);
+    const activeJobs = filterActiveJobs(jobs);
     const salaryActiveMap = targeting?.salaryActiveFields ?? new Map();
-    const combinedGross = jobSalaries.reduce(
-      (s, js) =>
-        s +
-        getTotalCompensation(
-          js.job,
-          applyActiveSalary(js.job.personId, js.baseSalary, salaryActiveMap),
-          js.resolvedBonusOverride,
-        ),
-      0,
-    );
+    const combinedGross = activeJobs.reduce((s, job) => {
+      const comp = resolveCompensation(salaryProfileActiveMap, job.id);
+      const salary = applyActiveSalary(
+        job.personId,
+        comp.salary,
+        salaryActiveMap,
+      );
+      return s + getTotalCompensation(salary, comp.terms);
+    }, 0);
 
     const netWorth =
       portfolioTotal +
@@ -967,21 +981,18 @@ export async function buildYearEndHistory(
         const asOf = perfUpdated ? new Date(perfUpdated) : asOfDate;
         let totalSalary = 0;
         let weightedRatio = 0;
-        for (const js of jobSalaries) {
-          const ppy = PAY_PERIOD_CONFIG[js.job.payPeriod]?.periodsPerYear ?? 12;
-          const elapsed = js.job.anchorPayDate
+        for (const job of activeJobs) {
+          const ppy = PAY_PERIOD_CONFIG[job.payPeriod]?.periodsPerYear ?? 12;
+          const elapsed = job.anchorPayDate
             ? countPeriodsElapsed(
                 asOf,
-                js.job.payPeriod,
-                new Date(js.job.anchorPayDate),
+                job.payPeriod,
+                new Date(job.anchorPayDate),
               )
             : Math.round((asOf.getMonth() / 12) * ppy);
           const ratio = ppy > 0 ? elapsed / ppy : 0;
-          const salary = getTotalCompensation(
-            js.job,
-            js.baseSalary,
-            js.resolvedBonusOverride,
-          );
+          const comp = resolveCompensation(salaryProfileActiveMap, job.id);
+          const salary = getTotalCompensation(comp.salary, comp.terms);
           weightedRatio += ratio * salary;
           totalSalary += salary;
         }

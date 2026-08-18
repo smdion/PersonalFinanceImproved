@@ -75,8 +75,8 @@ export type PaycheckPersonView = {
   job: any;
   salary: number;
   /** The bonus terms actually in effect (Salary Profile pin, if any, else
-   *  the job record) — see paycheck.ts's identical field for why this
-   *  exists separately from `job`'s own (profile-unaware) bonus fields. */
+   *  unset) — a job carries no bonus terms of its own, so this is the only
+   *  source to pre-fill from. See paycheck.ts's identical field. */
   resolvedBonusTerms: {
     bonusPercent: number;
     bonusMultiplier: number;
@@ -341,7 +341,7 @@ export function usePaycheckPersonViews({
         accountType: c.accountType as AccountCategory,
         subType: c.subType ?? null,
         label: c.label ?? null,
-        contributionValue: c.contributionValue ?? "0",
+        contributionValue: String(c.contributionValue ?? "0"),
         contributionMethod: c.contributionMethod,
         taxTreatment: c.taxTreatment,
         ownerName: "Joint",

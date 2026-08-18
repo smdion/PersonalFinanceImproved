@@ -10,33 +10,31 @@ import type { PaycheckResult } from "./types";
 export function BonusSection({
   paycheck,
   job,
+  resolvedBonusTerms,
   onUpdateJob,
   readOnly,
 }: {
   paycheck: PaycheckResult;
   job: {
-    bonusPercent: string;
-    bonusMultiplier: string;
-    bonusOverride: string | null;
     bonusMonth: number | null;
     bonusDayOfMonth: number | null;
-    annualSalary: string;
     include401kInBonus: boolean;
     includeBonusInContributions: boolean;
+  };
+  /** A job carries no bonus terms of its own any more — this is the only
+   *  source to pre-fill from (Salary Profile entry, if any, else unset). */
+  resolvedBonusTerms: {
+    bonusPercent: number;
+    bonusMultiplier: number;
+    monthsInBonusYear: number;
   };
   onUpdateJob: (field: string, value: string) => void;
   /** Sandbox/preview mode — bonus terms are shown but not editable. */
   readOnly?: boolean;
 }) {
   const { bonusEstimate } = paycheck;
-  if (bonusEstimate.bonusGross === 0 && Number(job.bonusPercent) === 0)
+  if (bonusEstimate.bonusGross === 0 && resolvedBonusTerms.bonusPercent === 0)
     return null;
-
-  const hasOverride = job.bonusOverride !== null && job.bonusOverride !== "";
-  const calculatedGross =
-    Number(job.annualSalary) *
-    Number(job.bonusPercent) *
-    Number(job.bonusMultiplier || 1);
 
   return (
     <div className="space-y-2">
@@ -69,7 +67,7 @@ export function BonusSection({
         <div className="flex justify-between items-center">
           <span>Bonus %</span>
           <InlineEdit
-            value={String(Number(job.bonusPercent) * 100)}
+            value={String(resolvedBonusTerms.bonusPercent * 100)}
             onSave={(v) => {
               const pct = Number(v.replace(/[^0-9.]/g, "")) / 100;
               onUpdateJob("bonusPercent", String(pct));
@@ -87,7 +85,7 @@ export function BonusSection({
             <HelpTip text="Scales your bonus target — 1.0x means on-target, higher means exceeding expectations" />
           </span>
           <InlineEdit
-            value={String(Number(job.bonusMultiplier))}
+            value={String(resolvedBonusTerms.bonusMultiplier)}
             onSave={(v) =>
               onUpdateJob("bonusMultiplier", v.replace(/[^0-9.]/g, ""))
             }
@@ -95,31 +93,6 @@ export function BonusSection({
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}
             type="number"
             className="font-medium"
-            isEditable={!readOnly}
-          />
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="flex items-center gap-1">
-            {new Date().getFullYear()} Actual
-            <HelpTip text="Pin this year's actual bonus once it's paid out, instead of the calculated salary x percent x multiplier. Only affects this calendar year — next year's projections still use the full formula." />
-            {!hasOverride && (
-              <span className="text-caption text-faint">
-                (calc: {formatCurrency(calculatedGross)})
-              </span>
-            )}
-          </span>
-          <InlineEdit
-            value={hasOverride ? job.bonusOverride! : ""}
-            onSave={(v) => {
-              const cleaned = v.replace(/[^0-9.]/g, "");
-              onUpdateJob("bonusOverride", cleaned || "");
-            }}
-            formatDisplay={(v) =>
-              v && Number(v) > 0 ? formatCurrency(Number(v)) : "—"
-            }
-            parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-            type="number"
-            className={`font-medium ${hasOverride ? "text-amber-700" : "text-faint"}`}
             isEditable={!readOnly}
           />
         </div>

@@ -26,7 +26,11 @@ import {
   SK_ACTIVE_SALARY_PROFILE_ID,
 } from "@/lib/constants/settings-keys";
 import * as schema from "@/lib/db/schema";
-import { canDeleteBudgetProfile, canRemoveColumn } from "@/lib/pure/profiles";
+import {
+  canDeleteBudgetProfile,
+  canRemoveColumn,
+  filterActiveJobs,
+} from "@/lib/pure/profiles";
 import {
   columnLabelsSchema,
   columnMonthsSchema,
@@ -36,18 +40,18 @@ import {
 } from "@/lib/db/json-schemas";
 import { calculateBudget } from "@/lib/calculators/budget";
 import {
+  resolveContributionProfileId,
   resolveContributionProfileIdsForAllColumns,
   resolveSalaryProfileIdsForAllColumns,
 } from "@/lib/calculators/contribution-profile-resolution";
 import type { BudgetInput } from "@/lib/calculators/types";
 import {
   computeBudgetAnnualTotal,
-  toNumber,
   getPeriodsPerYear,
   getEffectiveIncome,
-  getBonusOverridesForJobs,
-  resolveEffectiveSalary,
-  resolveBonusTerms,
+  resolveCompensation,
+  applyActiveSalary,
+  applyActiveBonusTerms,
   computeAnnualContribution,
   loadAndApplyContribProfile,
   loadAndApplySalaryProfile,
@@ -129,6 +133,44 @@ const profileResolutionTiersSchema = z.object({
 });
 
 type ProfileResolutionTiers = z.infer<typeof profileResolutionTiersSchema>;
+
+/**
+ * Resolve which Contribution Profile a budget-linked item edit should write
+ * into, for one specific item's column — same precedence
+ * (resolveContributionProfileId) the rest of the page already resolves with,
+ * so a linked item's edit lands in the exact profile the user is looking at.
+ * Throws rather than silently writing nowhere: contributionValue/Method have
+ * no account-level fallback anymore (see applyContribActiveFields), so an
+ * edit with no resolvable profile has nowhere correct to go.
+ */
+async function resolveEffectiveContribProfileIdForItem(
+  db: typeof import("@/lib/db").db,
+  item: { profileId: number },
+  colIndex: number,
+  tiers: ProfileResolutionTiers,
+): Promise<number> {
+  const [budgetProfile] = await db
+    .select({
+      columnLabels: schema.budgetProfiles.columnLabels,
+      columnContributionProfileIds:
+        schema.budgetProfiles.columnContributionProfileIds,
+    })
+    .from(schema.budgetProfiles)
+    .where(eq(schema.budgetProfiles.id, item.profileId));
+  const resolvedId = resolveContributionProfileId({
+    ...tiers,
+    columnPinIds: budgetProfile?.columnContributionProfileIds as
+      (number | null)[] | null,
+    numColumns: budgetProfile?.columnLabels.length ?? 0,
+    column: colIndex,
+  });
+  if (resolvedId == null) {
+    throw new Error(
+      "No Contribution Profile is resolvable for this edit — activate a Contribution Profile before editing a linked amount",
+    );
+  }
+  return resolvedId;
+}
 
 const NO_PROFILE_TIERS: ProfileResolutionTiers = {
   planPinId: null,
@@ -712,7 +754,6 @@ export const budgetRouter = createTRPCRouter({
           (number | null)[] | null,
         numColumns,
       });
-
       // Plan-level salaryActiveFields are threaded through here so budget item
       // $ amounts for percent-of-salary contributions stay consistent with
       // what the Paycheck page shows under the same active Plan — previously
@@ -741,11 +782,11 @@ export const budgetRouter = createTRPCRouter({
 
         const effectiveSalaryMap = applySandboxSalaryEntries(
           input?.sandboxSalaryEntries,
-          await loadAndApplySalaryProfile(
-            ctx.db,
-            salaryProfileId,
-            planSalaryActiveMap,
-          ),
+          planSalaryActiveMap,
+        );
+        const salaryProfileActiveMap = await loadAndApplySalaryProfile(
+          ctx.db,
+          salaryProfileId,
         );
         const profileResult = await loadAndApplyContribProfile(
           ctx.db,
@@ -760,49 +801,32 @@ export const budgetRouter = createTRPCRouter({
         const activeContribs = applyContribActiveFields(
           profileResult.contribs,
           input?.sandboxContribActiveFields ?? {},
+          true,
         );
-        const activeJobs = profileResult.jobs.filter((j) => !j.endDate);
+        const activeJobs = filterActiveJobs(profileResult.jobs);
         const defaultPeriodsPerYear = resolveJoblessPeriodsPerYear(activeJobs);
 
-        const bonusOverrides = await getBonusOverridesForJobs(
-          ctx.db,
-          activeJobs.map((j) => j.id),
-        );
-        const currentYear = new Date().getFullYear();
         const salaryByJobId = new Map<number, number>();
         for (const j of activeJobs) {
-          const salary = await resolveEffectiveSalary(
-            ctx.db,
-            j,
+          const comp = resolveCompensation(salaryProfileActiveMap, j.id);
+          // The What-If sandbox can override salary and/or bonus terms
+          // independently of the Salary Profile's own resolved values —
+          // same per-field precedence used everywhere else this tier
+          // applies. Reading j's raw fields here silently ignored a Salary
+          // Profile entry for linked contribution items on the Budget tab.
+          const sandboxEntry = effectiveSalaryMap.get(j.personId);
+          const salary = applyActiveSalary(
+            j.personId,
+            comp.salary,
             effectiveSalaryMap,
           );
-          const resolvedOverride =
-            bonusOverrides.get(`${j.id}:${currentYear}`) ?? null;
-          // A Salary Profile pin on bonus terms is independent of a salary
-          // pin — resolveBonusTerms overlays whichever of bonusPercent/
-          // bonusMultiplier/monthsInBonusYear the profile pins onto the
-          // job's live values, same as paycheck.ts/contribution.ts do.
-          // Reading j's raw fields here silently ignored a pinned bonus for
-          // linked contribution items on the Budget tab.
-          const bonusTerms = resolveBonusTerms(
-            j,
-            effectiveSalaryMap.get(j.personId),
-          );
-          const jobWithResolvedBonus = {
-            ...j,
-            bonusPercent: bonusTerms.bonusPercent ?? "0",
-            bonusMultiplier: bonusTerms.bonusMultiplier ?? "0",
-            monthsInBonusYear: bonusTerms.monthsInBonusYear ?? 12,
-          };
-          salaryByJobId.set(
-            j.id,
-            getEffectiveIncome(jobWithResolvedBonus, salary, resolvedOverride),
-          );
+          const bonusTerms = applyActiveBonusTerms(sandboxEntry, comp.terms);
+          salaryByJobId.set(j.id, getEffectiveIncome(j, salary, bonusTerms));
         }
 
         for (const c of activeContribs) {
           if (!linkedContribIds.has(c.id)) continue;
-          const val = toNumber(c.contributionValue);
+          const val = Number(c.contributionValue);
           const jobPeriodsPerYear = c.jobId
             ? getPeriodsPerYear(
                 activeJobs.find((j) => j.id === c.jobId)?.payPeriod ??
@@ -1014,6 +1038,7 @@ export const budgetRouter = createTRPCRouter({
         id: z.number().int(),
         colIndex: z.number().int(),
         amount: z.number(),
+        contributionProfile: profileResolutionTiersSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -1027,12 +1052,21 @@ export const budgetRouter = createTRPCRouter({
       // Linked items: the amount IS the budget amount from the user's
       // perspective, so budgetProcedure is intentionally allowed to write
       // through to the linked contribution account rather than the dead
-      // budget_items.amounts field it would otherwise shadow.
+      // budget_items.amounts field it would otherwise shadow. Writes into
+      // whichever Contribution Profile is currently in effect for this
+      // column — contributionValue/Method have no account-level fallback.
       if (item.contributionAccountId) {
+        const contribProfileId = await resolveEffectiveContribProfileIdForItem(
+          ctx.db,
+          item,
+          input.colIndex,
+          input.contributionProfile ?? NO_PROFILE_TIERS,
+        );
         await applyContributionAccountEdit(
           ctx.db,
           item.contributionAccountId,
           input.amount,
+          contribProfileId,
         );
         return item;
       }
@@ -1061,6 +1095,7 @@ export const budgetRouter = createTRPCRouter({
             amount: z.number(),
           }),
         ),
+        contributionProfile: profileResolutionTiersSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -1083,11 +1118,19 @@ export const budgetRouter = createTRPCRouter({
         // the permission-scope rationale). If a batch somehow carries more
         // than one distinct amount for the same linked item, last one wins.
         if (item.contributionAccountId) {
-          const amount = changes[changes.length - 1]!.amount;
+          const lastChange = changes[changes.length - 1]!;
+          const contribProfileId =
+            await resolveEffectiveContribProfileIdForItem(
+              ctx.db,
+              item,
+              lastChange.colIndex,
+              input.contributionProfile ?? NO_PROFILE_TIERS,
+            );
           await applyContributionAccountEdit(
             ctx.db,
             item.contributionAccountId,
-            amount,
+            lastChange.amount,
+            contribProfileId,
           );
           continue;
         }

@@ -39,6 +39,7 @@ export type RawContrib = {
   allocationPriority: number;
   notes: string | null;
   displayNameActive?: string;
+  performanceAccountId: number | null;
 };
 
 // Deduction row data used for aligned rendering
@@ -69,6 +70,10 @@ export type ContribCardProps = {
     targetContribValue?: number,
   ) => void;
   onDeleteContrib?: (id: number) => void;
+  onUpdateInstitution?: (
+    id: number,
+    performanceAccountId: number | null,
+  ) => void;
   _methodLabel: (m: string) => string;
   salary?: number;
   periodsPerYear?: number;
@@ -86,22 +91,6 @@ export type CreateDeductionData = {
   amountPerPeriod: string;
   isPretax: boolean;
   ficaExempt: boolean;
-};
-
-export type CreateContribData = {
-  personId: number;
-  jobId?: number | null;
-  accountType: AccountCategory;
-  subType?: string | null;
-  label?: string | null;
-  parentCategory?: "Retirement" | "Portfolio";
-  taxTreatment: "pre_tax" | "tax_free" | "after_tax" | "hsa";
-  contributionMethod:
-    "percent_of_salary" | "fixed_per_period" | "fixed_monthly" | "fixed_annual";
-  contributionValue: string;
-  employerMatchType:
-    "none" | "percent_of_contribution" | "dollar_match" | "fixed_annual";
-  isActive: boolean;
 };
 
 export type JointContrib = {

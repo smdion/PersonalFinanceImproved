@@ -33,8 +33,6 @@ const active: Schema = isPostgres()
 
 export const people = active.people;
 export const jobs = active.jobs;
-export const salaryChanges = active.salaryChanges;
-export const jobBonusOverrides = active.jobBonusOverrides;
 export const contributionAccounts = active.contributionAccounts;
 export const contributionLimits = active.contributionLimits;
 export const paycheckDeductions = active.paycheckDeductions;
@@ -59,6 +57,7 @@ export const pendingRollovers = active.pendingRollovers;
 export const accountHoldings = active.accountHoldings;
 export const netWorthAnnual = active.netWorthAnnual;
 export const homeImprovementItems = active.homeImprovementItems;
+export const historicalSalaries = active.historicalSalaries;
 export const otherAssetItems = active.otherAssetItems;
 export const historicalNotes = active.historicalNotes;
 export const mortgageLoans = active.mortgageLoans;

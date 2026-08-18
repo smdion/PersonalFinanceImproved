@@ -18,7 +18,11 @@
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
-import { createTestCaller, seedStandardDataset } from "./setup";
+import {
+  createTestCaller,
+  seedStandardDataset,
+  seedContributionProfile,
+} from "./setup";
 import {
   buildEnginePayload,
   fetchRetirementData,
@@ -45,24 +49,38 @@ describe("engine input snapshot guard", () => {
 
     // Seed a 401k contribution account so that baseLimits / catchupLimits
     // are populated (limit computation iterates activeContribs per person).
-    // Correct field names: accountType (not category), contributionMethod (not
-    // method), contributionValue (not value). personId is NOT NULL.
-    db.insert(schema.contributionAccounts)
+    // Accounts carry no value of their own — the Contribution Profile below
+    // gives it one. Correct field names: accountType (not category),
+    // personId is NOT NULL.
+    const contribAcct = db
+      .insert(schema.contributionAccounts)
       .values({
         personId,
         jobId,
         accountType: "401k",
         parentCategory: "Retirement",
         taxTreatment: "pre_tax",
-        contributionMethod: "percent_of_salary",
-        contributionValue: "0.10",
         employerMatchType: "percent_of_contrib",
         employerMatchValue: "0.50",
         employerMaxMatchPct: "0.06",
         isActive: true,
         performanceAccountId: perfAcctId,
       })
-      .run();
+      .returning({ id: schema.contributionAccounts.id })
+      .get();
+
+    const contribProfileId = seedContributionProfile(db, {
+      name: "Snapshot Fixture Profile",
+      contributionActiveFields: {
+        contributionAccounts: {
+          [String(contribAcct.id)]: {
+            contributionValue: "0.10",
+            contributionMethod: "percent_of_salary",
+          },
+        },
+        jobs: {},
+      },
+    });
 
     // Add asset classes (engine needs these for MC trials)
     db.insert(schema.assetClassParams)
@@ -109,8 +127,12 @@ describe("engine input snapshot guard", () => {
       .run();
 
     // Fetch + build the payload that feeds every compute endpoint
-    const data = await fetchRetirementData(testCaller.db, {});
-    const result = await buildEnginePayload(testCaller.db, data, {});
+    const data = await fetchRetirementData(testCaller.db, {
+      contributionProfileId: contribProfileId,
+    });
+    const result = await buildEnginePayload(testCaller.db, data, {
+      contributionProfileId: contribProfileId,
+    });
     if (!result) {
       throw new Error(
         "buildEnginePayload returned null for the standard fixture",

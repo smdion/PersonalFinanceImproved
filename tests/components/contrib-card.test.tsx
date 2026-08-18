@@ -3,6 +3,16 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { ContribCard } from "@/components/paycheck/contrib-card";
 import type { RawContrib } from "@/components/paycheck/types";
 
+vi.mock("@/lib/trpc", () => ({
+  trpc: {
+    settings: {
+      performanceAccounts: {
+        list: { useQuery: () => ({ data: undefined }) },
+      },
+    },
+  },
+}));
+
 vi.mock("@/components/ui/inline-edit", () => ({
   InlineEdit: ({
     value,
@@ -85,6 +95,7 @@ const baseContrib: RawContrib = {
   targetAnnual: null,
   allocationPriority: 0,
   notes: null,
+  performanceAccountId: null,
 };
 
 const defaultProps = {

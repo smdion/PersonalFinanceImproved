@@ -23,9 +23,16 @@ import { EDIT_LOCK_KEYS } from "@/components/ui/edit-lock-toggle";
 const INITIAL_VISIBLE = 15;
 const LOAD_MORE_COUNT = 10;
 
+type ProfileResolutionTiers = {
+  planPinId: number | null;
+  localSelectionId: number | null;
+  globalDefaultId: number | null;
+};
+
 type UpdateBatch = {
   mutateAsync: (args: {
     updates: Array<{ id: number; colIndex: number; amount: number }>;
+    contributionProfile?: ProfileResolutionTiers;
   }) => Promise<unknown>;
 };
 
@@ -34,11 +41,15 @@ export function useBudgetPageState({
   nameColWidth,
   setNameColWidth,
   updateBatch,
+  contributionProfileTiers,
 }: {
   data: object | null | undefined;
   nameColWidth: number;
   setNameColWidth: (w: number) => void;
   updateBatch: UpdateBatch;
+  /** Which Contribution Profile a linked item's edit should land in — same
+   *  tiers object computeActiveSummary already resolves with. */
+  contributionProfileTiers: ProfileResolutionTiers;
 }) {
   // ---- Edit mode + draft store ----
 
@@ -77,10 +88,12 @@ export function useBudgetPageState({
   // Stable refs so saveAllDrafts never closes over stale values
   const editDraftsRef = useRef(editDrafts);
   const updateBatchRef = useRef(updateBatch);
+  const contributionProfileTiersRef = useRef(contributionProfileTiers);
   useEffect(() => {
     editDraftsRef.current = editDrafts;
     updateBatchRef.current = updateBatch;
-  }, [editDrafts, updateBatch]);
+    contributionProfileTiersRef.current = contributionProfileTiers;
+  }, [editDrafts, updateBatch, contributionProfileTiers]);
 
   const saveAllDrafts = async () => {
     const drafts = editDraftsRef.current;
@@ -96,7 +109,10 @@ export function useBudgetPageState({
         amount,
       };
     });
-    await updateBatchRef.current.mutateAsync({ updates });
+    await updateBatchRef.current.mutateAsync({
+      updates,
+      contributionProfile: contributionProfileTiersRef.current,
+    });
     setEditDrafts(new Map());
     setEditMode(false);
   };

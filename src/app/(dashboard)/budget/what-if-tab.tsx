@@ -72,6 +72,11 @@ import { BudgetPageContext } from "@/components/budget/budget-page-context";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FormError } from "@/components/ui/form-error";
+import { SlidePanel } from "@/components/ui/slide-panel";
+import {
+  ContribAccountForm,
+  type ContribAccountFormValues,
+} from "@/components/paycheck/contrib-account-form";
 import {
   useBudgetDerivedData,
   type SavingsGoalEntry,
@@ -1394,38 +1399,69 @@ export function WhatIfTab({
   const [contribMakeRealPendingId, setContribMakeRealPendingId] = useState<
     number | null
   >(null);
-  const contribMakeRealAdditionRef = useRef<number | null>(null);
+  // Holds the sandbox addition being converted — its value/method are what
+  // the user was previewing, and get carried into the real account's active
+  // field in whichever profile is currently in effect (contribId below), so
+  // "Make real" doesn't quietly lose the number the user was testing. The
+  // account itself carries no value of its own (see applyContribActiveFields).
+  const contribMakeRealAdditionRef = useRef<ContribAddition | null>(null);
+  const [makeRealAddition, setMakeRealAddition] =
+    useState<ContribAddition | null>(null);
+  const setContribAccountActiveFields =
+    trpc.contributionProfile.setAccountActiveFields.useMutation();
+  const onMakeRealSettled = (created: { id: number } | undefined) => {
+    const addition = contribMakeRealAdditionRef.current;
+    const finish = () => {
+      utils.contribution.invalidate();
+      utils.paycheck.invalidate();
+      utils.contributionProfile.invalidate();
+      if (addition) sandbox.removeContribAddition(addition.localId);
+      setContribMakeRealPendingId(null);
+      setMakeRealAddition(null);
+      toast.success(
+        `Added "${created ? accountDisplayName(created as Record<string, unknown>) : ""}" account to Contribution Profiles`,
+      );
+    };
+    if (created && addition && contribId != null) {
+      setContribAccountActiveFields.mutate(
+        {
+          profileId: contribId,
+          accountId: created.id,
+          fields: {
+            contributionValue: addition.contributionValue,
+            contributionMethod: addition.contributionMethod,
+          },
+        },
+        { onSuccess: finish, onError: finish },
+      );
+    } else {
+      finish();
+    }
+  };
+  const onMakeRealError = (err: { message?: string }) => {
+    setContribMakeRealPendingId(null);
+    toast.error(err.message || "Failed to add contribution account");
+  };
   const createContribAccount =
     trpc.settings.contributionAccounts.create.useMutation({
-      onSuccess: (created) => {
-        utils.contribution.invalidate();
-        utils.paycheck.invalidate();
-        const localId = contribMakeRealAdditionRef.current;
-        if (localId != null) sandbox.removeContribAddition(localId);
-        setContribMakeRealPendingId(null);
-        toast.success(
-          `Added "${created ? accountDisplayName(created) : ""}" account to Contribution Profiles`,
-        );
-      },
-      onError: (err) => {
-        setContribMakeRealPendingId(null);
-        toast.error(err.message || "Failed to add contribution account");
-      },
+      onSuccess: onMakeRealSettled,
+      onError: onMakeRealError,
     });
-  const handleMakeContribReal = (addition: ContribAddition) => {
-    contribMakeRealAdditionRef.current = addition.localId;
-    setContribMakeRealPendingId(addition.localId);
-    createContribAccount.mutate({
-      jobId: null,
-      personId: addition.personId,
-      accountType: addition.accountType,
-      parentCategory: getParentCategory(addition.accountType),
-      taxTreatment: getDefaultTaxTreatment(addition.accountType) as
-        "pre_tax" | "tax_free" | "after_tax" | "hsa",
-      contributionMethod: addition.contributionMethod,
-      contributionValue: addition.contributionValue,
-      employerMatchType: "none",
+  const updateContribAccount =
+    trpc.settings.contributionAccounts.update.useMutation({
+      onSuccess: onMakeRealSettled,
+      onError: onMakeRealError,
     });
+  const handleSaveMakeReal = (values: ContribAccountFormValues) => {
+    if (!makeRealAddition) return;
+    contribMakeRealAdditionRef.current = makeRealAddition;
+    setContribMakeRealPendingId(makeRealAddition.localId);
+    const { id, ...rest } = values;
+    if (id != null) {
+      updateContribAccount.mutate({ id, ...rest });
+    } else {
+      createContribAccount.mutate(rest);
+    }
   };
 
   const budgetProfileName =
@@ -1617,7 +1653,7 @@ export function WhatIfTab({
             onUpdateAddition={sandbox.updateContribAddition}
             onRemoveAddition={sandbox.removeContribAddition}
             canManagePaycheck={canManagePaycheck}
-            onMakeReal={handleMakeContribReal}
+            onMakeReal={setMakeRealAddition}
             makeRealPendingId={contribMakeRealPendingId}
           />
         )}
@@ -1845,6 +1881,30 @@ export function WhatIfTab({
           )}
         </section>
       )}
+
+      <SlidePanel
+        isOpen={makeRealAddition != null}
+        onClose={() => setMakeRealAddition(null)}
+        title="Make Real: Contribution Account"
+      >
+        {makeRealAddition && (
+          <ContribAccountForm
+            initialValues={{
+              personId: makeRealAddition.personId,
+              accountType: makeRealAddition.accountType,
+              parentCategory: getParentCategory(makeRealAddition.accountType),
+              taxTreatment: getDefaultTaxTreatment(
+                makeRealAddition.accountType,
+              ) as "pre_tax" | "tax_free" | "after_tax" | "hsa",
+            }}
+            onSave={handleSaveMakeReal}
+            onCancel={() => setMakeRealAddition(null)}
+            isPending={
+              createContribAccount.isPending || updateContribAccount.isPending
+            }
+          />
+        )}
+      </SlidePanel>
     </div>
   );
 }

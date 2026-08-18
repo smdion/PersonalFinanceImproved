@@ -146,6 +146,12 @@ async function seedRetirementScenario(
 }
 
 /** Insert a contribution account linked to a performance account and job. */
+/**
+ * Seeds a contribution account plus a Contribution Profile giving it a
+ * value (accounts carry no value of their own anymore). Returns the
+ * inserted account row extended with `contributionProfileId` for callers
+ * that need to resolve against it explicitly.
+ */
 async function seedContributionAccount(
   db: BetterSQLite3Database<typeof sqliteSchema>,
   personId: number,
@@ -154,8 +160,12 @@ async function seedContributionAccount(
   overrides: Record<string, unknown> = {},
 ) {
   const schema = await getSchema();
+  const { contributionValue, contributionMethod, ...rest } = overrides as {
+    contributionValue?: string;
+    contributionMethod?: string;
+  };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
-  return (db as any)
+  const acct = await (db as any)
     .insert(schema.contributionAccounts)
     .values({
       personId,
@@ -163,17 +173,35 @@ async function seedContributionAccount(
       accountType: "401k",
       parentCategory: "Retirement",
       taxTreatment: "pre_tax",
-      contributionMethod: "percent_of_salary",
-      contributionValue: "0.10",
       employerMatchType: "percent_of_contrib",
       employerMatchValue: "0.50",
       employerMaxMatchPct: "0.06",
       isActive: true,
       performanceAccountId: perfAccountId,
-      ...overrides,
+      ...rest,
     })
     .returning({ id: schema.contributionAccounts.id })
     .get();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+  const profile = await (db as any)
+    .insert(schema.contributionProfiles)
+    .values({
+      name: `Test Contrib Profile ${acct.id}`,
+      contributionActiveFields: {
+        contributionAccounts: {
+          [String(acct.id)]: {
+            contributionValue: contributionValue ?? "0.10",
+            contributionMethod: contributionMethod ?? "percent_of_salary",
+          },
+        },
+        jobs: {},
+      },
+    })
+    .returning({ id: schema.contributionProfiles.id })
+    .get();
+
+  return { ...acct, contributionProfileId: profile.id };
 }
 
 /** Mark a person as primary user. */
@@ -280,6 +308,7 @@ describe("retirement router -- populated data", () => {
   let jobId: number;
   let profileId: number;
   let perfAcctId: number;
+  let contributionProfileId: number;
 
   beforeAll(async () => {
     const ctx = await createTestCaller();
@@ -318,7 +347,8 @@ describe("retirement router -- populated data", () => {
     ]);
 
     // Seed contribution account
-    await seedContributionAccount(db, personId, jobId, perfAcctId);
+    const acct = await seedContributionAccount(db, personId, jobId, perfAcctId);
+    contributionProfileId = acct.contributionProfileId;
   });
 
   afterAll(() => cleanup());
@@ -329,6 +359,8 @@ describe("retirement router -- populated data", () => {
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
       relocationBudgetColumn: 0,
+      currentContributionProfileId: contributionProfileId,
+      relocationContributionProfileId: contributionProfileId,
     });
     expect(result.result).not.toBeNull();
     expect(result.budgetInfo).not.toBeNull();
@@ -438,6 +470,8 @@ describe("retirement router -- populated data", () => {
       currentBudgetColumn: 0,
       relocationProfileId: profileId,
       relocationBudgetColumn: 0,
+      currentContributionProfileId: contributionProfileId,
+      relocationContributionProfileId: contributionProfileId,
     });
     const r = result.result!;
     const cp = result.currentContribProfile as { annualContributions: number };

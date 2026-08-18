@@ -262,9 +262,11 @@ export type EngineAccumulationYear = {
   /** Projected annual expenses (inflated or budget-overridden). */
   projectedExpenses: number;
   hasSalaryOverride: boolean;
-  /** True when this year's salary reflects a current-year-only pinned bonus
-   *  (job_bonus_overrides), distinct from hasSalaryOverride which is set by
-   *  retirement_salary_overrides / perPersonSalaryOverrides. */
+  /** Always false — job_bonus_overrides is gone, so there is no more
+   *  "current-year actual vs formula" distinction to adjust for. Kept in
+   *  the payload shape as a no-op rather than removed, since the engine
+   *  still reads it defensively. Distinct from hasSalaryOverride, which is
+   *  set by retirement_salary_overrides / perPersonSalaryOverrides. */
   hasBonusAdjustment: boolean;
   hasBudgetOverride: boolean;
   /** Pro-rate fraction for year 0 (e.g. 0.833 = 10 of 12 months remaining). null for full years. */

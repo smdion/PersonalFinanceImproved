@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
+## [0.7.3] - 2026-08-18
+
+### Changed
+
+- **Salary and bonus history no longer lives on jobs.** The Historical page's Year-End table is now the single, direct record of what you earned each past year — editing a year there writes straight to that year's fact, with no more indirection through a job's dated raise ledger. The in-progress current year still auto-fills from your active Salary Profile until you record the real number.
+- **A Salary Profile's entry for a job is now complete or absent — never partial.** A job either has real numbers for salary, bonus %, multiplier, and months-in-bonus-year all together, or the profile says nothing about it and it contributes $0. There's no more "pin one field, the rest quietly falls back to something else" — if you want different numbers, use a different profile. The Salary Profile editor drops the old pin/live/revert-to-live controls entirely in favor of plain add/edit/remove per job.
+- **Creating a job no longer asks for a starting salary.** Jobs are now pure employment structure (employer, dates, payroll/withholding config) — pay comes exclusively from the Salary Profile you give that job an entry in. Onboarding's Income step still collects each person's starting pay, but now sets it up as a Salary Profile entry instead of a job field.
+- **Adding a Contribution Account is now available directly from the Contribution Profile manager**, alongside the existing profile compare view — no need to leave the page to set one up.
+
+### Fixed
+
+- **The Paycheck page's salary padlock is now a plain edit-protection toggle** instead of implying a "correct baseline" you could revert to — unlocking it lets you edit a job's entry in the currently-viewed Salary Profile directly.
+
 ## [0.7.2] - 2026-08-16
 
 ### Added

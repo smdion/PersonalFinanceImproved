@@ -16,11 +16,15 @@ import {
 
 export function CreateAccountForm({
   people,
+  defaultAccountType,
   onSubmit,
   onCancel,
   isPending,
 }: {
   people: { id: number; name: string }[];
+  /** Pre-select the account type — e.g. when opened from a contribution
+   *  form that already knows the type it needs an institution for. */
+  defaultAccountType?: AccountCategory;
   onSubmit: (vals: {
     institution: string;
     accountType: string;
@@ -37,7 +41,9 @@ export function CreateAccountForm({
   isPending: boolean;
 }) {
   const [institution, setInstitution] = useState("");
-  const [accountType, setAccountType] = useState(getAllCategories()[0]!);
+  const [accountType, setAccountType] = useState(
+    defaultAccountType ?? getAllCategories()[0]!,
+  );
   const [subType, setSubType] = useState("");
   const [label, setLabel] = useState("");
   const [displayName, setDisplayName] = useState("");

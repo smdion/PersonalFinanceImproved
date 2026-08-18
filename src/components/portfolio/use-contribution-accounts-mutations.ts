@@ -20,8 +20,6 @@ type ContribRecord = {
   jobId: number | null;
   accountType: string;
   taxTreatment: string;
-  contributionMethod: string;
-  contributionValue: string;
   employerMatchType: string;
   employerMatchValue: string | null;
   employerMaxMatchPct: string | null;
@@ -179,8 +177,6 @@ export function useContributionAccountsMutations({
       personId: number | null;
       jobId: number | null;
       taxTreatment: string;
-      contributionMethod: string;
-      contributionValue: string;
       employerMatchType: string;
       employerMatchValue: string | null;
       employerMaxMatchPct: string | null;
@@ -204,13 +200,6 @@ export function useContributionAccountsMutations({
         "401k" | "403b" | "ira" | "hsa" | "brokerage",
       taxTreatment: (updates.taxTreatment ?? c.taxTreatment) as
         "pre_tax" | "tax_free" | "after_tax" | "hsa",
-      contributionMethod: (updates.contributionMethod ??
-        c.contributionMethod) as
-        | "percent_of_salary"
-        | "fixed_per_period"
-        | "fixed_monthly"
-        | "fixed_annual",
-      contributionValue: updates.contributionValue ?? c.contributionValue,
       employerMatchType: (updates.employerMatchType ?? c.employerMatchType) as
         "none" | "percent_of_contribution" | "dollar_match" | "fixed_annual",
       employerMatchValue:

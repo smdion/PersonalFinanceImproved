@@ -21,7 +21,6 @@ import {
   parseAppSettings,
   getEffectiveCash,
   getEffectiveOtherAssets,
-  getSalariesForJobs,
   invalidateYearEndCache,
 } from "@/server/helpers";
 import {
@@ -32,7 +31,6 @@ import {
   assembleNetWorthValues,
   computePortfolioTotal,
   computeHomeImprovementsCumulative,
-  filterActiveJobsAtDate,
   sumAccounts,
   sumAnnualRows,
   computeReturn,
@@ -1316,7 +1314,6 @@ export const performanceRouter = createTRPCRouter({
           allSettings,
           mortgageLoans,
           mortgageExtras,
-          allJobs,
           homeImpItems,
           propTaxRows,
         ] = await Promise.all([
@@ -1326,7 +1323,6 @@ export const performanceRouter = createTRPCRouter({
             .select()
             .from(schema.mortgageExtraPayments)
             .orderBy(asc(schema.mortgageExtraPayments.paymentDate)),
-          tx.select().from(schema.jobs).orderBy(asc(schema.jobs.startDate)),
           tx.select().from(schema.homeImprovementItems),
           tx
             .select()
@@ -1372,15 +1368,17 @@ export const performanceRouter = createTRPCRouter({
             )
           : 0;
 
-        // Gross income from jobs active at year end
-        const activeJobsAtYearEnd = filterActiveJobsAtDate(allJobs, asOfDate);
-        const jobSalaries = await getSalariesForJobs(
-          tx,
-          activeJobsAtYearEnd,
-          asOfDate,
-        );
-        const grossIncome = jobSalaries.reduce(
-          (s, js) => s + js.effectiveIncome,
+        // Gross income for the finalized year — Historical owns this
+        // directly now (a job has no salary/bonus of its own, and there is
+        // no dated ledger to resolve a past year from any more; see
+        // schema-pg.ts's historicalSalaries table comment). Sum every
+        // person's recorded salary + bonus for this year.
+        const yearSalaryRows = await tx
+          .select()
+          .from(schema.historicalSalaries)
+          .where(eq(schema.historicalSalaries.year, year));
+        const grossIncome = yearSalaryRows.reduce(
+          (s, r) => s + toNumber(r.salary) + toNumber(r.bonus),
           0,
         );
 

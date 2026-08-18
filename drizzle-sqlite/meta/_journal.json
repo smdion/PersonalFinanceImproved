@@ -78,6 +78,48 @@
       "when": 1786978713056,
       "tag": "0010_contribution_active_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1786998014593,
+      "tag": "0011_contribution_accounts_no_base_value",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1787000000000,
+      "tag": "0012_salary_profile_job_keyed",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1787006852398,
+      "tag": "0013_speculative_jobs",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1787013438276,
+      "tag": "0014_salary_no_base_value",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1787024261733,
+      "tag": "0015_historical_salaries",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1787027444645,
+      "tag": "0016_drop_salary_ledger_tables",
+      "breakpoints": true
     }
   ]
 }

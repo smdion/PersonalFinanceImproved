@@ -157,7 +157,7 @@ describe("contributionProfiles coverage", () => {
   // ── GETBYID: real profile with account details ──
 
   describe("getById — account details with seeded contrib accounts", () => {
-    it("returns accountDetails with live values and active fields", async () => {
+    it("returns accountDetails with active fields", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const personId = await seedPerson(db, "Alex");
@@ -167,8 +167,6 @@ describe("contributionProfiles coverage", () => {
           jobId,
           accountType: "401k",
           taxTreatment: "pre_tax",
-          contributionMethod: "percent_of_salary",
-          contributionValue: "0.10",
         });
 
         const profileId = seedContribProfile(db, {
@@ -177,6 +175,7 @@ describe("contributionProfiles coverage", () => {
             contributionAccounts: {
               [String(acctId)]: {
                 contributionValue: "0.20",
+                contributionMethod: "percent_of_salary",
                 displayNameActive: "My Custom Name",
               },
             },
@@ -197,8 +196,13 @@ describe("contributionProfiles coverage", () => {
         // displayNameActive should be used as accountName
         expect(detail!.accountName).toBe("My Custom Name");
         expect(detail!.activeFields).toBeDefined();
-        expect(detail!.liveMethod).toBe("percent_of_salary");
-        expect(detail!.liveValue).toBe("0.10");
+        expect(detail!.isIncomplete).toBe(false);
+        expect(
+          (detail!.activeFields as Record<string, unknown>).contributionMethod,
+        ).toBe("percent_of_salary");
+        expect(
+          (detail!.activeFields as Record<string, unknown>).contributionValue,
+        ).toBe("0.20");
       } finally {
         cleanup();
       }
@@ -335,8 +339,6 @@ describe("contributionProfiles coverage", () => {
         const jobId = seedJob(db, personId, {
           employerName: "OriginalCo",
           annualSalary: "100000",
-          bonusPercent: "0.10",
-          bonusMultiplier: "1.0",
         });
 
         const profileId = seedContribProfile(db, {
@@ -345,7 +347,6 @@ describe("contributionProfiles coverage", () => {
             contributionAccounts: {},
             jobs: {
               [String(jobId)]: {
-                bonusPercent: "0.15",
                 employerName: "NewCo",
               },
             },
@@ -361,7 +362,7 @@ describe("contributionProfiles coverage", () => {
         const salary = result!.salaryDetails[0];
         expect(salary.jobActiveFields).toBeDefined();
         expect(salary.employerNameActive).toBe("NewCo");
-        expect(salary.liveSalary).toBe(100000);
+        expect(salary.employerName).toBe("OriginalCo");
       } finally {
         cleanup();
       }
@@ -434,7 +435,12 @@ describe("contributionProfiles coverage", () => {
         const updated = await caller.contributionProfile.update({
           id: seeded!.id,
           contributionActiveFields: {
-            contributionAccounts: { "1": { contributionValue: "0.20" } },
+            contributionAccounts: {
+              "1": {
+                contributionValue: "0.20",
+                contributionMethod: "percent_of_salary",
+              },
+            },
             jobs: {},
           },
         });
@@ -477,7 +483,12 @@ describe("contributionProfiles coverage", () => {
         const updated = await caller.contributionProfile.update({
           id: profileId,
           contributionActiveFields: {
-            contributionAccounts: { "1": { contributionValue: "0.2" } },
+            contributionAccounts: {
+              "1": {
+                contributionValue: "0.2",
+                contributionMethod: "percent_of_salary",
+              },
+            },
             jobs: {},
           },
         });
@@ -493,7 +504,7 @@ describe("contributionProfiles coverage", () => {
       }
     });
 
-    it("updates contribution active fields on a non-default profile", async () => {
+    it("updates contribution active fields on a non-default profile with job overrides", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const profileId = seedContribProfile(db, {
@@ -502,7 +513,12 @@ describe("contributionProfiles coverage", () => {
         const updated = await caller.contributionProfile.update({
           id: profileId,
           contributionActiveFields: {
-            contributionAccounts: { "5": { contributionValue: "500" } },
+            contributionAccounts: {
+              "5": {
+                contributionValue: "500",
+                contributionMethod: "fixed_annual",
+              },
+            },
             // employerName, not a bonus amount term — those moved to the
             // Salary Profile and jobActiveFieldsSchema now rejects them.
             jobs: { "2": { employerName: "ActiveFieldsCorp" } },
@@ -655,7 +671,11 @@ describe("contributionProfiles coverage", () => {
           description: "Has everything",
           contributionActiveFields: {
             contributionAccounts: {
-              "10": { contributionValue: "0.15", isActive: true },
+              "10": {
+                contributionValue: "0.15",
+                contributionMethod: "percent_of_salary",
+                isActive: true,
+              },
             },
             jobs: {
               "5": { include401kInBonus: true, employerName: "NewCorp" },
@@ -684,10 +704,8 @@ describe("contributionProfiles coverage", () => {
       try {
         const personId = await seedPerson(db, "Alex");
         seedJob(db, personId, { annualSalary: "100000" });
-        seedContribAccount(db, {
+        const acctId = seedContribAccount(db, {
           personId,
-          contributionMethod: "percent_of_salary",
-          contributionValue: "0.10",
           employerMatchType: "percent",
           employerMatchValue: "0.50",
           employerMaxMatchPct: "0.06",
@@ -695,6 +713,15 @@ describe("contributionProfiles coverage", () => {
 
         const profileId = seedContribProfile(db, {
           name: "ResolveData",
+          contributionActiveFields: {
+            contributionAccounts: {
+              [String(acctId)]: {
+                contributionValue: "0.10",
+                contributionMethod: "percent_of_salary",
+              },
+            },
+            jobs: {},
+          },
         });
 
         const result = await caller.contributionProfile.resolve({
@@ -735,7 +762,7 @@ describe("contributionProfiles coverage", () => {
         expect(result!.id).toBe(seeded!.id);
         expect(result!.accountDetails.length).toBe(1);
         expect(result!.salaryDetails.length).toBe(1);
-        expect(result!.salaryDetails[0].liveSalary).toBe(120000);
+        expect(result!.salaryDetails[0].employerName).toBe("TestCorp");
         // A profile with empty contributionActiveFields customizes nothing.
         expect(result!.accountDetails[0].activeFields).toBeNull();
       } finally {
@@ -836,18 +863,19 @@ describe("contributionProfiles coverage", () => {
     });
   });
 
-  // ── GETBYID: estimatedBonus field present ──
+  // ── GETBYID: bonus-inclusion toggles present (the only bonus-adjacent
+  // fields this axis still governs — amount terms live on the Salary
+  // Profile, see contribution-profiles.ts's salaryDetails docblock) ──
 
-  describe("getById — salaryDetails bonus fields", () => {
-    it("includes bonus-related live values", async () => {
+  describe("getById — salaryDetails bonus-inclusion toggles", () => {
+    it("includes the bonus-inclusion toggles from the job", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const personId = await seedPerson(db, "Alex");
         seedJob(db, personId, {
           annualSalary: "100000",
-          bonusPercent: "0.10",
-          bonusMultiplier: "1.5",
-          monthsInBonusYear: 12,
+          include401kInBonus: true,
+          includeBonusInContributions: true,
         });
 
         const profileId = seedContribProfile(db, { name: "BonusFieldTest" });
@@ -856,10 +884,8 @@ describe("contributionProfiles coverage", () => {
         });
         expect(result).not.toBeNull();
         const sal = result!.salaryDetails[0];
-        expect(sal.liveBonusPercent).toBe("0.10");
-        expect(sal.liveBonusMultiplier).toBe("1.5");
-        expect(sal.liveMonthsInBonusYear).toBe(12);
-        expect(typeof sal.estimatedBonus).toBe("number");
+        expect(sal.liveInclude401kInBonus).toBe(true);
+        expect(sal.liveIncludeBonusInContributions).toBe(true);
       } finally {
         cleanup();
       }
@@ -1069,7 +1095,10 @@ describe("contributionProfiles coverage", () => {
           name: "CompareA",
           contributionActiveFields: {
             contributionAccounts: {
-              [String(acctId)]: { contributionValue: "0.20" },
+              [String(acctId)]: {
+                contributionValue: "0.20",
+                contributionMethod: "percent_of_salary",
+              },
             },
             jobs: {},
           },
@@ -1080,7 +1109,10 @@ describe("contributionProfiles coverage", () => {
         expect(result.accounts.length).toBeGreaterThanOrEqual(1);
         const account = result.accounts.find((a) => a.id === acctId)!;
         expect(account).toBeDefined();
-        expect(account.live.contributionValue).toBe("0.10");
+        // No contributionValue/contributionMethod in `live` — accounts
+        // carry no value of their own anymore, only a profile's active
+        // fields does.
+        expect(account.live).not.toHaveProperty("contributionValue");
 
         const profile = result.profiles.find((p) => p.id === profileId)!;
         expect(profile).toBeDefined();

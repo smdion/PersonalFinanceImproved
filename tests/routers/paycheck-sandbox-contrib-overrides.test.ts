@@ -13,7 +13,13 @@ vi.mock("@/lib/budget-api", () => ({
   cacheGet: vi.fn().mockResolvedValue(null),
 }));
 
-import { createTestCaller, adminSession, seedPerson, seedJob } from "./setup";
+import {
+  createTestCaller,
+  adminSession,
+  seedPerson,
+  seedJob,
+  seedContributionProfile,
+} from "./setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 
 const SALARY = 120000;
@@ -23,7 +29,11 @@ async function seedContribAccount(
   personId: number,
   overrides: Record<string, unknown> = {},
 ) {
-  return db
+  const { contributionValue, contributionMethod, ...rest } = overrides as {
+    contributionValue?: string;
+    contributionMethod?: string;
+  };
+  const acct = db
     .insert(sqliteSchema.contributionAccounts)
     .values({
       personId,
@@ -31,15 +41,31 @@ async function seedContribAccount(
       accountType: "401k",
       parentCategory: "Retirement",
       taxTreatment: "pre_tax",
-      contributionMethod: "dollar_amount",
-      contributionValue: "100",
       employerMatchType: "none",
       isActive: true,
       ownership: "individual",
-      ...overrides,
+      ...rest,
     })
     .returning({ id: sqliteSchema.contributionAccounts.id })
     .get();
+
+  // Accounts carry no value of their own — give it one via a Contribution
+  // Profile so the router has something to resolve before the sandbox
+  // overlay in these tests layers its own edit on top.
+  const profileId = seedContributionProfile(db, {
+    name: `Sandbox Test Profile ${acct.id}`,
+    contributionActiveFields: {
+      contributionAccounts: {
+        [String(acct.id)]: {
+          contributionValue: contributionValue ?? "100",
+          contributionMethod: contributionMethod ?? "fixed_annual",
+        },
+      },
+      jobs: {},
+    },
+  });
+
+  return { ...acct, profileId };
 }
 
 describe("sandboxContribActiveFields", () => {
@@ -52,13 +78,16 @@ describe("sandboxContribActiveFields", () => {
         contributionValue: "100",
       });
 
-      const baseline = await caller.contribution.computeSummary();
+      const baseline = await caller.contribution.computeSummary({
+        contributionProfileId: contrib.profileId,
+      });
       const basePerContrib = baseline.people
         .find((p) => p.person.id === personId)!
         .perContribData.find((c) => c.contribId === contrib.id)!;
       expect(basePerContrib.annualAmount).toBeCloseTo(100, 2);
 
       const edited = await caller.contribution.computeSummary({
+        contributionProfileId: contrib.profileId,
         sandboxContribActiveFields: {
           [String(contrib.id)]: { contributionValue: "500" },
         },
@@ -86,7 +115,9 @@ describe("sandboxContribActiveFields", () => {
         personId: null,
       });
 
-      const baseline = await caller.paycheck.computeSummary();
+      const baseline = await caller.paycheck.computeSummary({
+        contributionProfileId: contrib.profileId,
+      });
       const basePerson = baseline.people.find((p) => p.person.id === personId)!;
       const baselinePreTax = basePerson.paycheck!.preTaxDeductions.reduce(
         (s: number, d: { amount: number }) => s + d.amount,
@@ -94,6 +125,7 @@ describe("sandboxContribActiveFields", () => {
       );
 
       const edited = await caller.paycheck.computeSummary({
+        contributionProfileId: contrib.profileId,
         sandboxContribActiveFields: {
           [String(contrib.id)]: { contributionValue: "20" },
         },

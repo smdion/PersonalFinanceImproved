@@ -51,6 +51,7 @@ const VERSION_TABLE_NAMES = [
   "historical_notes",
   "relocation_scenarios",
   "jobs",
+  "historical_salaries",
   "budget_items",
   "savings_monthly",
   "savings_planned_transactions",
@@ -69,7 +70,6 @@ const VERSION_TABLE_NAMES = [
   "brokerage_planned_transactions",
   "annual_performance",
   "property_taxes",
-  "salary_changes",
   "paycheck_deductions",
   "contribution_accounts",
   "portfolio_accounts",
@@ -300,11 +300,27 @@ async function handleSquashUpgrade(
 
     // 3. Apply each new journal migration idempotently and record its hash
     const crypto = await import("crypto");
+    // "Already done" AND "already moved past" are both benign here — this
+    // loop blindly replays potentially-ancient migrations against a DB that
+    // may already be arbitrarily far beyond them. A migration that creates
+    // something that already exists (duplicate_*) is exactly as expected as
+    // one that references a column/table a LATER migration already
+    // renamed or dropped (undefined_column/undefined_table) — e.g. 0005's
+    // `INSERT ... SELECT bonus_override FROM jobs` + `DROP COLUMN
+    // bonus_override`, replayed after some later migration already dropped
+    // that column for real. Without these two codes, a replay that reaches
+    // exactly this kind of statement hard-fails mid-loop, after the journal
+    // has already been cleared and earlier entries already committed —
+    // leaving __drizzle_migrations in a half-recovered state that requires
+    // manual repair (see .scratch/recover-migration-tracking.mjs for the
+    // one-off recovery this caused on the dev DB on 2026-08-18).
     const IGNORABLE_PG_CODES = new Set([
       "42701", // duplicate_column
       "42P07", // duplicate_table
       "42710", // duplicate_object (index, constraint, etc.)
       "23505", // unique_violation
+      "42703", // undefined_column — already renamed/dropped by a later migration
+      "42P01", // undefined_table — already renamed/dropped by a later migration
     ]);
 
     for (const entry of journal.entries) {
@@ -399,6 +415,186 @@ async function handleSquashUpgrade(
   }
 }
 
+/**
+ * Freeze `salary_changes` + `job_bonus_overrides` into `historical_salaries`
+ * (past years only — the current year stays live/auto-fill, same rule
+ * historical.ts's computeSummary uses) and convert every Salary Profile's
+ * entries to complete-only for each person's currently-active job (dropping
+ * entries for ended/speculative jobs), BEFORE migration
+ * 0016_drop_salary_ledger_tables removes the source tables for good.
+ *
+ * Gated entirely on `salary_changes` still existing — a fresh install (no
+ * legacy data) or an already-migrated DB (dev, migrated by hand on
+ * 2026-08-18 via the identical logic in
+ * .scratch/migrate-to-historical-salaries.mjs) both skip this as a no-op.
+ * Runs BEFORE the migration-apply loop below so it always sees the source
+ * tables while they still exist, regardless of how far behind a given prod
+ * deploy is.
+ */
+async function backfillHistoricalSalaries(
+  pool: import("pg").Pool,
+): Promise<void> {
+  const client = await pool.connect();
+  try {
+    const { rows: tableCheck } = await client.query<{ exists: boolean }>(
+      `SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'salary_changes'
+      ) AS exists`,
+    );
+    if (!tableCheck[0]?.exists) return;
+
+    const currentYear = new Date().getFullYear();
+
+    await client.query("BEGIN");
+    try {
+      // This runs before the migration-apply loop, so 0015 (which creates
+      // this table) may not have run yet on a prod deploy that's starting
+      // further behind than dev was — create it here too so the backfill
+      // below always has somewhere to write. Matches 0015's DDL exactly
+      // (same constraint/index names) so 0015 itself becomes a clean no-op
+      // (duplicate_table/duplicate_object, already-ignorable) when it runs
+      // afterward, instead of silently creating a second redundant FK.
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS historical_salaries (
+          id serial PRIMARY KEY NOT NULL,
+          person_id integer NOT NULL,
+          year integer NOT NULL,
+          salary numeric(14, 2) NOT NULL,
+          bonus numeric(14, 2) DEFAULT '0' NOT NULL
+        )
+      `);
+      await client.query(`
+        DO $$ BEGIN
+          ALTER TABLE historical_salaries
+            ADD CONSTRAINT historical_salaries_person_id_people_id_fk
+            FOREIGN KEY (person_id) REFERENCES public.people(id)
+            ON DELETE cascade ON UPDATE no action;
+        EXCEPTION WHEN duplicate_object THEN NULL;
+        END $$
+      `);
+      await client.query(`
+        CREATE UNIQUE INDEX IF NOT EXISTS historical_salaries_person_year_idx
+          ON historical_salaries USING btree (person_id, year)
+      `);
+
+      const { rows: jobs } = await client.query<{
+        id: number;
+        person_id: number;
+        end_date: string | null;
+        is_speculative: boolean;
+      }>("SELECT id, person_id, end_date, is_speculative FROM jobs");
+      const jobById = new Map(jobs.map((j) => [j.id, j]));
+
+      const { rows: pastChanges } = await client.query<{
+        job_id: number;
+        effective_date: string;
+        new_salary: string;
+      }>(
+        `SELECT job_id, effective_date, new_salary FROM salary_changes
+         WHERE EXTRACT(YEAR FROM effective_date) < $1
+         ORDER BY job_id, effective_date`,
+        [currentYear],
+      );
+      const { rows: pastOverrides } = await client.query<{
+        job_id: number;
+        year: number;
+        override_amount: string;
+      }>(
+        `SELECT job_id, year, override_amount FROM job_bonus_overrides WHERE year < $1`,
+        [currentYear],
+      );
+      const overrideMap = new Map(
+        pastOverrides.map((o) => [`${o.job_id}:${o.year}`, o.override_amount]),
+      );
+
+      let backfilled = 0;
+      for (const c of pastChanges) {
+        const job = jobById.get(c.job_id);
+        if (!job || job.is_speculative) continue;
+        const year = new Date(c.effective_date).getUTCFullYear();
+        const bonus = overrideMap.get(`${c.job_id}:${year}`) ?? "0.00";
+        await client.query(
+          `INSERT INTO historical_salaries (person_id, year, salary, bonus)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (person_id, year) DO UPDATE SET salary = excluded.salary, bonus = excluded.bonus`,
+          [job.person_id, year, c.new_salary, bonus],
+        );
+        backfilled++;
+      }
+
+      // "Live" salary per job = its most recent salary_changes row (any
+      // year, including the current one — what the job resolves to TODAY).
+      const { rows: allChanges } = await client.query<{
+        job_id: number;
+        new_salary: string;
+      }>(
+        "SELECT job_id, new_salary FROM salary_changes ORDER BY job_id, effective_date",
+      );
+      const liveSalaryByJob = new Map<number, string>();
+      for (const c of allChanges) liveSalaryByJob.set(c.job_id, c.new_salary);
+
+      const activeJobIds = new Set(
+        jobs
+          .filter((j) => !j.is_speculative && j.end_date === null)
+          .map((j) => j.id),
+      );
+
+      const { rows: profiles } = await client.query<{
+        id: number;
+        salaries: Record<
+          string,
+          {
+            salary?: number;
+            bonusPercent?: number;
+            bonusMultiplier?: number;
+            monthsInBonusYear?: number;
+          }
+        >;
+      }>("SELECT id, salaries FROM salary_profiles");
+
+      let convertedProfiles = 0;
+      for (const p of profiles) {
+        const next: Record<
+          string,
+          {
+            salary: number;
+            bonusPercent: number;
+            bonusMultiplier: number;
+            monthsInBonusYear: number;
+          }
+        > = {};
+        for (const [jobIdStr, entry] of Object.entries(p.salaries ?? {})) {
+          const jobId = Number(jobIdStr);
+          if (!activeJobIds.has(jobId)) continue;
+          next[jobIdStr] = {
+            salary: entry.salary ?? Number(liveSalaryByJob.get(jobId) ?? 0),
+            bonusPercent: entry.bonusPercent ?? 0,
+            bonusMultiplier: entry.bonusMultiplier ?? 1,
+            monthsInBonusYear: entry.monthsInBonusYear ?? 12,
+          };
+        }
+        await client.query(
+          "UPDATE salary_profiles SET salaries = $1 WHERE id = $2",
+          [JSON.stringify(next), p.id],
+        );
+        convertedProfiles++;
+      }
+
+      await client.query("COMMIT");
+      log("info", "historical_salaries_backfill_complete", {
+        historicalSalaryRowsWritten: backfilled,
+        salaryProfilesConverted: convertedProfiles,
+      });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    }
+  } finally {
+    client.release();
+  }
+}
+
 async function runPostgres() {
   const { drizzle } = await import("drizzle-orm/node-postgres");
   const { migrate } = await import("drizzle-orm/node-postgres/migrator");
@@ -422,6 +618,11 @@ async function runPostgres() {
       "./drizzle",
       "./drizzle/meta/_journal.json",
     );
+
+    // See backfillHistoricalSalaries's docblock — must run before the
+    // migration-apply loop below, which is what actually drops
+    // salary_changes/job_bonus_overrides (0016_drop_salary_ledger_tables).
+    await backfillHistoricalSalaries(pool);
 
     // Apply any pending migrations idempotently before handing off to Drizzle's
     // migrate(). This handles upgrade DBs that already have tables/columns from
@@ -451,12 +652,18 @@ async function runPostgres() {
         recorded.map((r: { hash: string }) => r.hash),
       );
       const crypto = await import("crypto");
+      // See the matching comment in handleSquashUpgrade above — this loop
+      // has the identical "replay a migration whose hash isn't recorded yet
+      // against a DB that may already be past it" shape, so it needs the
+      // same undefined_column/undefined_table tolerance.
       const IGNORABLE_PG_CODES = new Set([
         "42701", // duplicate_column
         "42P07", // duplicate_table
         "42710", // duplicate_object (index, constraint, etc.)
         "42704", // undefined_object (DROP CONSTRAINT/INDEX on missing object)
         "23505", // unique_violation
+        "42703", // undefined_column — already renamed/dropped by a later migration
+        "42P01", // undefined_table — already renamed/dropped by a later migration
       ]);
       for (const entry of journal.entries) {
         const sqlPath = path.resolve(`./drizzle/${entry.tag}.sql`);
@@ -795,9 +1002,16 @@ function handleSQLiteSquashUpgrade(
         } catch (stmtErr) {
           const msg = (stmtErr as Error).message ?? "";
           // SQLite: "table X already exists", "duplicate column name", etc.
+          // "no such column"/"no such table" is the mirror-image case — a
+          // later migration already renamed/dropped what this (older,
+          // blindly-replayed) migration is trying to touch. See the
+          // matching IGNORABLE_PG_CODES comment in handleSquashUpgrade
+          // above for why both directions are benign here.
           if (
             msg.includes("already exists") ||
-            msg.includes("duplicate column")
+            msg.includes("duplicate column") ||
+            msg.includes("no such column") ||
+            msg.includes("no such table")
           ) {
             // Idempotent — ignore
           } else {
@@ -817,6 +1031,155 @@ function handleSQLiteSquashUpgrade(
 
   log("info", "sqlite_squash_upgrade_complete", { schemaVersion });
   return backupPath;
+}
+
+/**
+ * SQLite twin of backfillHistoricalSalaries (see its docblock above) — same
+ * gate (skip if `salary_changes` doesn't exist), same logic, same
+ * before-the-migration-loop timing so it always runs while the source
+ * tables still exist, regardless of how far behind a given deploy is.
+ */
+function backfillHistoricalSalariesSQLite(
+  sqlite: InstanceType<typeof import("better-sqlite3")>,
+): void {
+  const tableCheck = sqlite
+    .prepare(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='salary_changes'",
+    )
+    .get();
+  if (!tableCheck) return;
+
+  const currentYear = new Date().getFullYear();
+
+  const tx = sqlite.transaction(() => {
+    // See the matching comment in backfillHistoricalSalaries (pg) — 0015
+    // may not have run yet on a deploy starting further behind than dev.
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS historical_salaries (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        person_id integer NOT NULL REFERENCES people(id) ON DELETE cascade,
+        year integer NOT NULL,
+        salary text NOT NULL,
+        bonus text DEFAULT '0' NOT NULL
+      )
+    `);
+    sqlite.exec(`
+      CREATE UNIQUE INDEX IF NOT EXISTS historical_salaries_person_year_idx
+        ON historical_salaries (person_id, year)
+    `);
+
+    type JobRow = {
+      id: number;
+      person_id: number;
+      end_date: string | null;
+      is_speculative: number;
+    };
+    const jobs = sqlite
+      .prepare("SELECT id, person_id, end_date, is_speculative FROM jobs")
+      .all() as JobRow[];
+    const jobById = new Map(jobs.map((j) => [j.id, j]));
+
+    type ChangeRow = {
+      job_id: number;
+      effective_date: string;
+      new_salary: string;
+    };
+    const pastChanges = sqlite
+      .prepare(
+        "SELECT job_id, effective_date, new_salary FROM salary_changes WHERE CAST(strftime('%Y', effective_date) AS INTEGER) < ? ORDER BY job_id, effective_date",
+      )
+      .all(currentYear) as ChangeRow[];
+    type OverrideRow = {
+      job_id: number;
+      year: number;
+      override_amount: string;
+    };
+    const pastOverrides = sqlite
+      .prepare(
+        "SELECT job_id, year, override_amount FROM job_bonus_overrides WHERE year < ?",
+      )
+      .all(currentYear) as OverrideRow[];
+    const overrideMap = new Map(
+      pastOverrides.map((o) => [`${o.job_id}:${o.year}`, o.override_amount]),
+    );
+
+    const upsertHist = sqlite.prepare(`
+      INSERT INTO historical_salaries (person_id, year, salary, bonus)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT (person_id, year) DO UPDATE SET salary = excluded.salary, bonus = excluded.bonus
+    `);
+    let backfilled = 0;
+    for (const c of pastChanges) {
+      const job = jobById.get(c.job_id);
+      if (!job || job.is_speculative) continue;
+      const year = new Date(c.effective_date).getUTCFullYear();
+      const bonus = overrideMap.get(`${c.job_id}:${year}`) ?? "0.00";
+      upsertHist.run(job.person_id, year, c.new_salary, bonus);
+      backfilled++;
+    }
+
+    const allChanges = sqlite
+      .prepare(
+        "SELECT job_id, new_salary FROM salary_changes ORDER BY job_id, effective_date",
+      )
+      .all() as { job_id: number; new_salary: string }[];
+    const liveSalaryByJob = new Map<number, string>();
+    for (const c of allChanges) liveSalaryByJob.set(c.job_id, c.new_salary);
+
+    const activeJobIds = new Set(
+      jobs
+        .filter((j) => !j.is_speculative && j.end_date === null)
+        .map((j) => j.id),
+    );
+
+    type ProfileRow = { id: number; salaries: string };
+    const profiles = sqlite
+      .prepare("SELECT id, salaries FROM salary_profiles")
+      .all() as ProfileRow[];
+    const updateProfile = sqlite.prepare(
+      "UPDATE salary_profiles SET salaries = ? WHERE id = ?",
+    );
+    let convertedProfiles = 0;
+    for (const p of profiles) {
+      const salaries = JSON.parse(p.salaries || "{}") as Record<
+        string,
+        {
+          salary?: number;
+          bonusPercent?: number;
+          bonusMultiplier?: number;
+          monthsInBonusYear?: number;
+        }
+      >;
+      const next: Record<
+        string,
+        {
+          salary: number;
+          bonusPercent: number;
+          bonusMultiplier: number;
+          monthsInBonusYear: number;
+        }
+      > = {};
+      for (const [jobIdStr, entry] of Object.entries(salaries)) {
+        const jobId = Number(jobIdStr);
+        if (!activeJobIds.has(jobId)) continue;
+        next[jobIdStr] = {
+          salary: entry.salary ?? Number(liveSalaryByJob.get(jobId) ?? 0),
+          bonusPercent: entry.bonusPercent ?? 0,
+          bonusMultiplier: entry.bonusMultiplier ?? 1,
+          monthsInBonusYear: entry.monthsInBonusYear ?? 12,
+        };
+      }
+      updateProfile.run(JSON.stringify(next), p.id);
+      convertedProfiles++;
+    }
+
+    log("info", "historical_salaries_backfill_complete", {
+      dialect: "sqlite",
+      historicalSalaryRowsWritten: backfilled,
+      salaryProfilesConverted: convertedProfiles,
+    });
+  });
+  tx();
 }
 
 function runSQLite() {
@@ -844,6 +1207,11 @@ function runSQLite() {
     "./drizzle-sqlite",
     "./drizzle-sqlite/meta/_journal.json",
   );
+
+  // See backfillHistoricalSalariesSQLite's docblock — must run before the
+  // migration-apply loop below, which is what actually drops
+  // salary_changes/job_bonus_overrides (0016_drop_salary_ledger_tables).
+  backfillHistoricalSalariesSQLite(sqlite);
 
   // Apply any pending migrations idempotently. Mirrors the PostgreSQL pre-apply
   // step: handles upgrade DBs that already have tables/columns from old pre-squash
@@ -886,7 +1254,9 @@ function runSQLite() {
             const msg = (stmtErr as Error).message ?? "";
             if (
               msg.includes("already exists") ||
-              msg.includes("duplicate column")
+              msg.includes("duplicate column") ||
+              msg.includes("no such column") ||
+              msg.includes("no such table")
             ) {
               // idempotent — skip
             } else {

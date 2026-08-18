@@ -6,16 +6,17 @@
  * and consumed by the relocation tool and potentially the retirement page.
  *
  * Salary is NOT part of a Contribution Profile — it lives on the independent
- * salaryProfile router. Every resolveProfile() call here therefore passes an
- * empty salary-entry map: these endpoints resolve the contribution axis
- * standalone, not paired with any particular Salary Profile.
+ * salaryProfile router. `loadLiveContribData` resolves salary against
+ * whichever Salary Profile is globally ACTIVE (a job has no salary of its
+ * own); these endpoints never pair with a specific, caller-chosen Salary
+ * Profile.
  *
  * There is no `isDefault` flag and no synthetic id-0 "Live" row: every
  * profile is an ordinary, renamable, editable row, and one with empty
  * contributionActiveFields is simply a profile with nothing customized.
  */
 import { z } from "zod/v4";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { createTRPCRouter } from "../trpc";
 import { canDeleteContribProfile } from "@/lib/pure/profiles";
 import { taxTreatmentToShortLabel } from "@/lib/config/display-labels";
@@ -23,14 +24,16 @@ import { protectedProcedure, contributionProfileProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import {
   aggregateContributionsByCategory,
-  computeBonusGross,
   loadLiveContribData,
-  toNumber,
   resolveProfile,
+  getIncompleteContribAccountIds,
 } from "@/server/helpers";
 import { accountDisplayName } from "@/lib/utils/format";
 import { getDisplayConfig } from "@/lib/config/account-types";
-import { contributionActiveFieldsSchema } from "@/lib/db/json-schemas";
+import {
+  contributionActiveFieldsSchema,
+  contribAccountActiveFieldsSchema,
+} from "@/lib/db/json-schemas";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 // ── Active-field shape validation (write-only — reads tolerate unexpected fields) ──
@@ -49,10 +52,11 @@ export const contributionProfileRouter = createTRPCRouter({
       .orderBy(schema.contributionProfiles.createdAt);
 
     // Load live data for resolving summaries
-    const { contribs, jobs, jobSalaries } = await loadLiveContribData(ctx.db);
+    const { contribs, jobs, jobSalaries, rawContribRows } =
+      await loadLiveContribData(ctx.db);
 
     const resolved = profiles.map((profile) => {
-      const r = resolveProfile(profile, {}, contribs, jobs, jobSalaries);
+      const r = resolveProfile(profile, contribs, jobs, jobSalaries);
       const agg = aggregateContributionsByCategory(
         r.activeContribs,
         r.activeJobs,
@@ -68,18 +72,26 @@ export const contributionProfileRouter = createTRPCRouter({
         0,
       );
 
+      const accountActiveFields =
+        (
+          profile.contributionActiveFields as Record<
+            string,
+            Record<string, Record<string, unknown>>
+          >
+        ).contributionAccounts ?? {};
+
       return {
         id: profile.id,
         name: profile.name,
         description: profile.description,
         createdAt: profile.createdAt.toISOString(),
-        activeFieldCount: Object.keys(
-          (
-            profile.contributionActiveFields as Record<
-              string,
-              Record<string, Record<string, unknown>>
-            >
-          ).contributionAccounts ?? {},
+        activeFieldCount: Object.keys(accountActiveFields).length,
+        // How many live accounts this profile has no value for at all —
+        // surfaced so an incomplete profile is never a silent gap (see
+        // getIncompleteContribAccountIds).
+        incompleteAccountCount: getIncompleteContribAccountIds(
+          rawContribRows,
+          accountActiveFields,
         ).length,
         summary: {
           combinedSalary: r.combinedSalary,
@@ -115,8 +127,9 @@ export const contributionProfileRouter = createTRPCRouter({
       const person =
         row.personId != null ? peopleMap.get(row.personId) : undefined;
       const institution =
-        jobs.find((j) => j.personId === row.personId && !j.endDate)
-          ?.employerName ?? "";
+        jobs.find(
+          (j) => j.personId === row.personId && !j.endDate && !j.isSpeculative,
+        )?.employerName ?? "";
       const accountName = accountDisplayName(
         {
           accountType: row.accountType,
@@ -144,8 +157,9 @@ export const contributionProfileRouter = createTRPCRouter({
         accountName:
           sameName.length > 0 ? `${accountName} — ${taxLabel}` : accountName,
         live: {
-          contributionValue: row.contributionValue,
-          contributionMethod: row.contributionMethod,
+          // No contributionValue/contributionMethod here — accounts carry
+          // no value of their own anymore (see applyContribActiveFields);
+          // every profile's own active field is the only source.
           employerMatchType: row.employerMatchType,
           employerMatchValue: row.employerMatchValue,
           employerMaxMatchPct: row.employerMaxMatchPct,
@@ -192,7 +206,7 @@ export const contributionProfileRouter = createTRPCRouter({
         peopleMap,
         perfAccountMap,
       } = await loadLiveContribData(ctx.db);
-      const resolved = resolveProfile(profile, {}, contribs, jobs, jobSalaries);
+      const resolved = resolveProfile(profile, contribs, jobs, jobSalaries);
 
       // Build per-account detail for the editor UI
       const contribActiveFieldsRoot =
@@ -247,8 +261,10 @@ export const contributionProfileRouter = createTRPCRouter({
         // Derive institution: perf account link → person's job employer → fallback empty
         const institution =
           displayPerfAccount?.institution ??
-          jobs.find((j) => j.personId === row.personId && !j.endDate)
-            ?.employerName ??
+          jobs.find(
+            (j) =>
+              j.personId === row.personId && !j.endDate && !j.isSpeculative,
+          )?.employerName ??
           "";
 
         // Use the shared accountDisplayName function — always pass institution so
@@ -292,54 +308,31 @@ export const contributionProfileRouter = createTRPCRouter({
           personId: row.personId,
           taxTreatment: row.taxTreatment,
           parentCategory: row.parentCategory,
-          // Live values
-          liveMethod: row.contributionMethod,
-          liveValue: row.contributionValue,
+          // Live values — no liveMethod/liveValue: accounts carry no
+          // contribution value/method of their own anymore, only this
+          // profile's activeFields does (see applyContribActiveFields).
           liveMatchType: row.employerMatchType,
           liveMatchValue: row.employerMatchValue,
           liveMaxMatchPct: row.employerMaxMatchPct,
           liveIsActive: row.isActive,
-          // Active values (null = inactive, follows the account's own value)
+          // Active values — null means this profile has no value at all for
+          // this account (isIncomplete), not "falls back to a live value".
           activeFields: activeFields ?? null,
+          isIncomplete: activeFields == null,
         };
       });
 
+      // Salary/bonus amounts have no live value on a job any more (only a
+      // Salary Profile entry resolves them) — this section only needs
+      // identity plus the two employer/bonus-inclusion toggles that
+      // Contribution Profiles actually govern.
       const salaryDetails = jobs.map((j) => {
         const person = peopleMap.get(j.personId);
-        const matchedSalary = jobSalaries.find((js) => js.job.id === j.id);
-        const currentSalary = matchedSalary?.salary ?? toNumber(j.annualSalary);
-        const resolvedBonusOverride =
-          matchedSalary?.resolvedBonusOverride ?? null;
-        // Full formula bonus, ignoring any override — lets the UI show
-        // "what would my full bonus be" alongside the pinned/resolved value.
-        const fullFormulaBonus = computeBonusGross(
-          currentSalary,
-          j.bonusPercent,
-          j.bonusMultiplier,
-          null,
-          j.monthsInBonusYear,
-        );
-        const estimatedBonus = computeBonusGross(
-          currentSalary,
-          j.bonusPercent,
-          j.bonusMultiplier,
-          resolvedBonusOverride,
-          j.monthsInBonusYear,
-        );
         return {
           jobId: j.id,
           personId: j.personId,
           personName: person?.name ?? `Person ${j.personId}`,
           employerName: j.employerName,
-          liveSalary: toNumber(j.annualSalary),
-          currentSalary,
-          estimatedBonus,
-          fullFormulaBonus,
-          // Bonus live values
-          liveBonusPercent: j.bonusPercent,
-          liveBonusMultiplier: j.bonusMultiplier,
-          liveBonusOverride: resolvedBonusOverride,
-          liveMonthsInBonusYear: j.monthsInBonusYear,
           liveInclude401kInBonus: j.include401kInBonus,
           liveIncludeBonusInContributions: j.includeBonusInContributions,
           // Job active fields from profile
@@ -403,6 +396,37 @@ export const contributionProfileRouter = createTRPCRouter({
         .where(eq(schema.contributionProfiles.id, input.id));
       if (!existing[0]) throw new Error("Profile not found");
 
+      // A joint account with no jobId has no single person's salary to
+      // resolve percent_of_salary against — the salary-resolution fallback
+      // in server/helpers/contribution.ts falls back to job-by-personId,
+      // which is null for joint accounts, silently computing a $0 salary
+      // instead of the intended percentage. contributionMethod is only ever
+      // set here now (accounts carry no method of their own), so this is
+      // where jointRequiresJobForPercentOfSalary's check moved.
+      const incomingAccounts =
+        input.contributionActiveFields?.contributionAccounts ?? {};
+      const percentOfSalaryIds = Object.entries(incomingAccounts)
+        .filter(([, f]) => f.contributionMethod === "percent_of_salary")
+        .map(([id]) => Number(id));
+      if (percentOfSalaryIds.length > 0) {
+        const accounts = await ctx.db
+          .select({
+            id: schema.contributionAccounts.id,
+            ownership: schema.contributionAccounts.ownership,
+            jobId: schema.contributionAccounts.jobId,
+          })
+          .from(schema.contributionAccounts)
+          .where(inArray(schema.contributionAccounts.id, percentOfSalaryIds));
+        const invalid = accounts.find(
+          (a) => a.ownership === "joint" && !a.jobId,
+        );
+        if (invalid) {
+          throw new Error(
+            "Joint accounts using percent-of-salary contributions must be linked to a specific job",
+          );
+        }
+      }
+
       const updates: Partial<typeof schema.contributionProfiles.$inferInsert> =
         {};
       if (input.name !== undefined) updates.name = input.name;
@@ -415,6 +439,71 @@ export const contributionProfileRouter = createTRPCRouter({
         .update(schema.contributionProfiles)
         .set(updates)
         .where(eq(schema.contributionProfiles.id, input.id))
+        .returning();
+      return rows[0]!;
+    }),
+
+  /**
+   * Set (merge) one account's active fields within a profile, without the
+   * caller needing to fetch/merge the full contributionActiveFields blob
+   * itself. Used right after creating a new contribution account (e.g.
+   * What-If's "Make real") to give it a real value in whichever profile is
+   * currently in effect — a brand-new account has no value anywhere until
+   * this runs.
+   */
+  setAccountActiveFields: contributionProfileProcedure
+    .input(
+      z.object({
+        profileId: z.number(),
+        accountId: z.number(),
+        fields: contribAccountActiveFieldsSchema,
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (input.fields.contributionMethod === "percent_of_salary") {
+        const [account] = await ctx.db
+          .select({
+            ownership: schema.contributionAccounts.ownership,
+            jobId: schema.contributionAccounts.jobId,
+          })
+          .from(schema.contributionAccounts)
+          .where(eq(schema.contributionAccounts.id, input.accountId));
+        if (account?.ownership === "joint" && !account.jobId) {
+          throw new Error(
+            "Joint accounts using percent-of-salary contributions must be linked to a specific job",
+          );
+        }
+      }
+
+      const existing = await ctx.db
+        .select()
+        .from(schema.contributionProfiles)
+        .where(eq(schema.contributionProfiles.id, input.profileId));
+      const profile = existing[0];
+      if (!profile) throw new Error("Profile not found");
+
+      const root = profile.contributionActiveFields as {
+        contributionAccounts?: Record<string, Record<string, unknown>>;
+        jobs?: Record<string, Record<string, unknown>>;
+      };
+      const nextActiveFields = {
+        ...root,
+        contributionAccounts: {
+          ...root.contributionAccounts,
+          [String(input.accountId)]: {
+            ...root.contributionAccounts?.[String(input.accountId)],
+            ...input.fields,
+          },
+        },
+      };
+
+      const rows = await ctx.db
+        .update(schema.contributionProfiles)
+        .set({
+          contributionActiveFields:
+            nextActiveFields as typeof profile.contributionActiveFields,
+        })
+        .where(eq(schema.contributionProfiles.id, input.profileId))
         .returning();
       return rows[0]!;
     }),
@@ -484,7 +573,7 @@ export const contributionProfileRouter = createTRPCRouter({
       if (!profile) return null;
 
       const { contribs, jobs, jobSalaries } = await loadLiveContribData(ctx.db);
-      const resolved = resolveProfile(profile, {}, contribs, jobs, jobSalaries);
+      const resolved = resolveProfile(profile, contribs, jobs, jobSalaries);
       const agg = aggregateContributionsByCategory(
         resolved.activeContribs,
         resolved.activeJobs,

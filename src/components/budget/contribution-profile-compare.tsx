@@ -2,10 +2,12 @@
 
 /**
  * Contribution Profile compare view (R20) — accounts as rows, profiles as
- * columns, each cell showing that profile's active value for the account or
- * "using account's own value" when the profile doesn't touch it. A standing
- * audit tool, not just a pre-swap warning: lets you sanity-check coverage
- * across every profile at once, not one at a time.
+ * columns, each cell showing that profile's own active value for the
+ * account, or "Not set" when the profile has no value for it at all. A
+ * standing audit tool, not just a pre-swap warning: lets you sanity-check
+ * coverage across every profile at once, not one at a time — "Not set" is
+ * a real gap to flag, not a benign fallback, since accounts carry no value
+ * of their own (see applyContribActiveFields).
  *
  * Kept as its own file rather than folded into contribution-profile-manager.tsx
  * (already ~1,457 lines, near the 1,500-line pnpm check:file-size warn
@@ -13,9 +15,9 @@
  * source this and the swap-time diff (R20 phase A) both consume.
  *
  * Cell display logic mirrors ProfileDetailPanel's per-account row in
- * contribution-profile-manager.tsx (hasActiveFields/activeValue/resolvedValue,
- * amber highlight when active, DISABLED badge when isActive:false) — same
- * resolution rule, just applied per cell instead of per row-of-one-profile.
+ * contribution-profile-manager.tsx (hasActiveFields/value, amber highlight
+ * when set, DISABLED badge when isActive:false) — same resolution rule,
+ * just applied per cell instead of per row-of-one-profile.
  */
 import { trpc } from "@/lib/trpc";
 
@@ -25,17 +27,12 @@ type ActiveFields = {
   isActive?: boolean;
 } | null;
 
-function cellLabel(
-  activeFields: ActiveFields,
-  live: { contributionValue: string; contributionMethod: string },
-) {
+function cellLabel(activeFields: ActiveFields) {
   const hasActiveFields = activeFields != null;
   const isDisabled = activeFields?.isActive === false;
-  const method = activeFields?.contributionMethod ?? live.contributionMethod;
-  const methodSuffix = method === "percent_of_salary" ? "%" : "";
-  const value = hasActiveFields
-    ? (activeFields?.contributionValue ?? live.contributionValue)
-    : live.contributionValue;
+  const methodSuffix =
+    activeFields?.contributionMethod === "percent_of_salary" ? "%" : "";
+  const value = activeFields?.contributionValue;
 
   return { hasActiveFields, isDisabled, value, methodSuffix };
 }
@@ -90,7 +87,7 @@ export function ContributionProfileCompare() {
                   String(account.id)
                 ] ?? null) as ActiveFields;
                 const { hasActiveFields, isDisabled, value, methodSuffix } =
-                  cellLabel(activeFields, account.live);
+                  cellLabel(activeFields);
                 return (
                   <td
                     key={p.id}
@@ -107,7 +104,7 @@ export function ContributionProfileCompare() {
                     ) : hasActiveFields ? (
                       `${value}${methodSuffix}`
                     ) : (
-                      "using account's own value"
+                      <span className="italic">Not set</span>
                     )}
                   </td>
                 );

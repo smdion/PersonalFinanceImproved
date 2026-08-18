@@ -1,22 +1,16 @@
 /**
- * REGRESSION TEST for a shipped silent-wrong-number bug.
+ * `paycheck.computeSummary` and `contribution.computeSummary` both resolve
+ * a job's bonus terms through `resolveCompensation`, so a Salary Profile
+ * with a different bonus percent/multiplier for the same job produces a
+ * genuinely different bonus — not the job's default/active-profile bonus.
  *
- * THE BUG. `paycheck.computeSummary` and `contribution.computeSummary` both
- * read a job's bonus terms (bonusPercent/bonusMultiplier/monthsInBonusYear)
- * straight off the raw `jobs` row, never through `resolveBonusTerms` — so a
- * Salary Profile that pins bonus terms (with or without also pinning salary)
- * was silently ignored by both routers, even though `salary-profiles.ts`'s
- * `getById`/`resolveProfile` (see salary-profile-comp-agreement.test.ts) and
- * `resolveCompensation` already treated a pinned bonus as real. The What-If
- * tab (and the real Paycheck page, for anyone with a pinned-bonus Salary
- * Profile active) displayed bonus-unaware net pay and contribution figures.
- *
- * THE TEST. Assert `paycheck.computeSummary`'s `bonusEstimate.bonusGross`
- * and `contribution.computeSummary`'s `bonusGross`, for a person under a
- * Salary Profile that pins ONLY bonus terms (salary stays live), equal the
- * pinned-formula bonus rather than the job's live-formula bonus. Pinned and
- * live formulas are chosen to disagree so a regression can't pass by
- * accident.
+ * A job has no bonus terms of its own any more: seedJob's
+ * bonusPercent/bonusMultiplier/monthsInBonusYear convenience fields (see
+ * setup.ts) write a complete entry into the shared DEFAULT active Salary
+ * Profile. These tests compare that default entry ("no salaryProfileId
+ * passed" falls back to the active profile — see
+ * loadEffectiveSalaryProfile) against an explicitly-passed alternate
+ * profile with different, complete bonus terms for the same job.
  */
 import "./setup-mocks";
 import { describe, it, expect, vi } from "vitest";
@@ -35,12 +29,12 @@ const LIVE_BONUS_PERCENT = 0.1;
 const PINNED_BONUS_PERCENT = 0.3;
 const PINNED_BONUS_MULTIPLIER = 2;
 
-describe("paycheck/contribution computeSummary honor a Salary Profile's pinned bonus terms", () => {
-  it("paycheck.computeSummary uses the pinned bonus, not the job's live bonus", async () => {
+describe("paycheck/contribution computeSummary honor a different Salary Profile's bonus terms", () => {
+  it("paycheck.computeSummary uses the explicit profile's bonus, not the default profile's", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const personId = await seedPerson(db, "BonusPinned");
-      seedJob(db, personId, {
+      const jobId = seedJob(db, personId, {
         annualSalary: String(LIVE_SALARY),
         bonusPercent: String(LIVE_BONUS_PERCENT),
         bonusMultiplier: "1.0",
@@ -48,9 +42,11 @@ describe("paycheck/contribution computeSummary honor a Salary Profile's pinned b
       });
 
       const salaries: SalaryEntryMap = {
-        [String(personId)]: {
+        [String(jobId)]: {
+          salary: LIVE_SALARY,
           bonusPercent: PINNED_BONUS_PERCENT,
           bonusMultiplier: PINNED_BONUS_MULTIPLIER,
+          monthsInBonusYear: 12,
         },
       };
       const profileId = db
@@ -81,11 +77,11 @@ describe("paycheck/contribution computeSummary honor a Salary Profile's pinned b
     }
   });
 
-  it("contribution.computeSummary uses the pinned bonus, not the job's live bonus", async () => {
+  it("contribution.computeSummary uses the explicit profile's bonus, not the default profile's", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const personId = await seedPerson(db, "BonusPinned");
-      seedJob(db, personId, {
+      const jobId = seedJob(db, personId, {
         annualSalary: String(LIVE_SALARY),
         bonusPercent: String(LIVE_BONUS_PERCENT),
         bonusMultiplier: "1.0",
@@ -93,9 +89,11 @@ describe("paycheck/contribution computeSummary honor a Salary Profile's pinned b
       });
 
       const salaries: SalaryEntryMap = {
-        [String(personId)]: {
+        [String(jobId)]: {
+          salary: LIVE_SALARY,
           bonusPercent: PINNED_BONUS_PERCENT,
           bonusMultiplier: PINNED_BONUS_MULTIPLIER,
+          monthsInBonusYear: 12,
         },
       };
       const profileId = db
@@ -111,8 +109,8 @@ describe("paycheck/contribution computeSummary honor a Salary Profile's pinned b
 
       // includeBonusInContributions defaults true, so this router's `salary`
       // is effective income (base + bonus) before the final bonusGross is
-      // computed off of it — a pre-existing two-step quirk this fix doesn't
-      // change, just makes bonus-terms-aware instead of job-live-only.
+      // computed off of it — a pre-existing two-step quirk, unrelated to
+      // which profile's terms are in effect.
       const pinnedEffective =
         LIVE_SALARY +
         LIVE_SALARY * PINNED_BONUS_PERCENT * PINNED_BONUS_MULTIPLIER;
@@ -133,14 +131,21 @@ describe("sandboxSalaryEntries is the highest precedence tier", () => {
   const PROFILE_SALARY = 150000;
   const SANDBOX_SALARY = 200000;
 
-  it("paycheck.computeSummary: sandbox salary beats a Salary Profile's pinned salary", async () => {
+  it("paycheck.computeSummary: sandbox salary beats the Salary Profile's entry", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const personId = await seedPerson(db, "Sandboxed");
-      seedJob(db, personId, { annualSalary: String(LIVE_SALARY) });
+      const jobId = seedJob(db, personId, {
+        annualSalary: String(LIVE_SALARY),
+      });
 
       const salaries: SalaryEntryMap = {
-        [String(personId)]: { salary: PROFILE_SALARY },
+        [String(jobId)]: {
+          salary: PROFILE_SALARY,
+          bonusPercent: 0,
+          bonusMultiplier: 1,
+          monthsInBonusYear: 12,
+        },
       };
       const profileId = db
         .insert(sqliteSchema.salaryProfiles)
@@ -169,11 +174,11 @@ describe("sandboxSalaryEntries is the highest precedence tier", () => {
     }
   });
 
-  it("contribution.computeSummary: sandbox bonus terms beat a Salary Profile's pinned bonus terms", async () => {
+  it("contribution.computeSummary: sandbox bonus terms beat the Salary Profile's entry", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const personId = await seedPerson(db, "Sandboxed");
-      seedJob(db, personId, {
+      const jobId = seedJob(db, personId, {
         annualSalary: String(LIVE_SALARY),
         bonusPercent: String(LIVE_BONUS_PERCENT),
         bonusMultiplier: "1.0",
@@ -181,7 +186,12 @@ describe("sandboxSalaryEntries is the highest precedence tier", () => {
       });
 
       const salaries: SalaryEntryMap = {
-        [String(personId)]: { bonusPercent: PINNED_BONUS_PERCENT },
+        [String(jobId)]: {
+          salary: LIVE_SALARY,
+          bonusPercent: PINNED_BONUS_PERCENT,
+          bonusMultiplier: 1,
+          monthsInBonusYear: 12,
+        },
       };
       const profileId = db
         .insert(sqliteSchema.salaryProfiles)

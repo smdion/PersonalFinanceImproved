@@ -13,6 +13,8 @@ import {
   seedStandardDataset,
   seedPerformanceAccount,
   seedSnapshot,
+  seedContributionProfile,
+  seedJob,
   adminSession,
 } from "./setup";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
@@ -238,17 +240,11 @@ describe("projection router — computeProjection full result path", () => {
         .returning({ id: schema.people.id })
         .get().id;
 
-      db.insert(schema.jobs)
-        .values({
-          personId,
-          employerName: "TestCo",
-          annualSalary: "120000",
-          payPeriod: "biweekly",
-          payWeek: "even",
-          startDate: "2020-01-01",
-          w4FilingStatus: "MFJ",
-        })
-        .run();
+      seedJob(db, personId, {
+        employerName: "TestCo",
+        startDate: "2020-01-01",
+        annualSalary: "120000",
+      });
 
       db.insert(schema.retirementSettings)
         .values({
@@ -882,29 +878,16 @@ describe("projection router — computeProjection edge cases", () => {
         .get().id;
 
       // Jobs for both
-      db.insert(schema.jobs)
-        .values({
-          personId: person1Id,
-          employerName: "Company A",
-          annualSalary: "100000",
-          payPeriod: "biweekly",
-          payWeek: "even",
-          startDate: "2020-01-01",
-          w4FilingStatus: "MFJ",
-        })
-        .run();
-
-      db.insert(schema.jobs)
-        .values({
-          personId: person2Id,
-          employerName: "Company B",
-          annualSalary: "80000",
-          payPeriod: "biweekly",
-          payWeek: "even",
-          startDate: "2020-01-01",
-          w4FilingStatus: "MFJ",
-        })
-        .run();
+      seedJob(db, person1Id, {
+        employerName: "Company A",
+        startDate: "2020-01-01",
+        annualSalary: "100000",
+      });
+      seedJob(db, person2Id, {
+        employerName: "Company B",
+        startDate: "2020-01-01",
+        annualSalary: "80000",
+      });
 
       // Budget profile
       db.insert(schema.budgetProfiles)
@@ -977,11 +960,10 @@ describe("projection router — computeProjection edge cases", () => {
         },
       ]);
 
-      db.insert(schema.contributionAccounts)
+      const rothContribAcct = db
+        .insert(schema.contributionAccounts)
         .values({
           accountType: "401k",
-          contributionMethod: "percent_of_salary",
-          contributionValue: "0.05",
           taxTreatment: "roth",
           employerMatchType: "none",
           isActive: true,
@@ -989,11 +971,26 @@ describe("projection router — computeProjection edge cases", () => {
           performanceAccountId: rothPerfAcctId,
           parentCategory: "Retirement",
         })
-        .run();
+        .returning({ id: schema.contributionAccounts.id })
+        .get();
+
+      const profileId = seedContributionProfile(db, {
+        name: "Roth Test Profile",
+        contributionActiveFields: {
+          contributionAccounts: {
+            [String(rothContribAcct.id)]: {
+              contributionValue: "0.05",
+              contributionMethod: "percent_of_salary",
+            },
+          },
+          jobs: {},
+        },
+      });
 
       const response = await caller.projection.computeProjection({
         accumulationOverrides: [],
         decumulationOverrides: [],
+        contributionProfileId: profileId,
       });
 
       expect(response).toHaveProperty("result");

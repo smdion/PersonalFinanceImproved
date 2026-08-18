@@ -229,13 +229,13 @@ describe("useContributionAccountsMutations", () => {
       useContributionAccountsMutations({ allContribs: [] }),
     );
     result.current.handleContribUpdate(baseContrib, {
-      contributionValue: "12",
+      autoMaximize: true,
     });
     expect(mutations.updateContrib.mutate).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 1,
         personId: 5,
-        contributionValue: "12",
+        autoMaximize: true,
       }),
     );
   });
@@ -257,7 +257,6 @@ describe("useContributionAccountsMutations", () => {
         // Unrelated fields carried over unchanged
         accountType: "401k",
         taxTreatment: "pre_tax",
-        contributionValue: "10",
       }),
     );
   });

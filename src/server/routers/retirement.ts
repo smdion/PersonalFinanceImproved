@@ -7,10 +7,10 @@ import * as schema from "@/lib/db/schema";
 import { calculateRelocation } from "@/lib/calculators/relocation";
 import {
   toNumber,
-  getCurrentSalary,
   getEffectiveIncome,
   getTotalCompensation,
-  getBonusOverridesForJobs,
+  resolveCompensation,
+  loadAndApplySalaryProfile,
   getPeriodsPerYear,
   getLatestSnapshot,
   computeAnnualContribution,
@@ -19,9 +19,12 @@ import {
   resolveProfile,
   getPrimaryPerson,
 } from "@/server/helpers";
+import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
+import type { ContribRowWithActiveFields } from "@/server/helpers/contribution";
 import { isRetirementParent } from "@/lib/config/account-types";
 import { getAge } from "@/lib/utils/date";
 import { roundToCents } from "@/lib/utils/math";
+import { filterActiveJobs } from "@/lib/pure/profiles";
 
 // `fetchRetirementData` and `buildEnginePayload` were moved to
 // `src/server/retirement/build-engine-payload.ts` in the v0.5.2 refactor.
@@ -247,42 +250,35 @@ export const retirementRouter = createTRPCRouter({
         }
       }
 
-      // Salary — intentionally live/unmodified. This is the control arm
-      // of the relocation comparison (liveCombinedSalary below); applying a
-      // Plan's active salary here would collapse the comparison it exists
-      // to run. See applyActiveSalary's docblock (server/helpers/salary.ts)
-      // for the live-vs-active rule.
+      // Salary — intentionally un-overridden by any Plan/session pin. This
+      // is the control arm of the relocation comparison; applying one here
+      // would collapse the comparison it exists to run. A job has no
+      // salary/bonus of its own any more, so the globally-ACTIVE Salary
+      // Profile is the only live source left (see resolveCompensation's
+      // docblock) — Plan-specific salary threading into relocation
+      // scenarios is a separate, not-yet-built feature.
       const asOfDate = referenceDate;
-      const activeJobs = allJobs.filter((j) => !j.endDate);
-      const bonusOverrides = await getBonusOverridesForJobs(
-        ctx.db,
-        activeJobs.map((j) => j.id),
+      const activeJobs = filterActiveJobs(allJobs);
+      const activeSalaryProfileSetting = await ctx.db
+        .select()
+        .from(schema.appSettings)
+        .where(eq(schema.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID));
+      const activeSalaryProfileId = Number(
+        activeSalaryProfileSetting[0]?.value ?? NaN,
       );
-      const asOfYear = asOfDate.getFullYear();
-      const jobSalaries = await Promise.all(
-        activeJobs.map(async (j) => {
-          const dbSalary = await getCurrentSalary(
-            ctx.db,
-            j.id,
-            j.annualSalary,
-            asOfDate,
-          );
-          const resolvedOverride =
-            bonusOverrides.get(`${j.id}:${asOfYear}`) ?? null;
-          return {
-            job: j,
-            salary: getEffectiveIncome(j, dbSalary, resolvedOverride),
-            baseSalary: dbSalary,
-            totalComp: getTotalCompensation(j, dbSalary, resolvedOverride),
-            resolvedBonusOverride: resolvedOverride,
-          };
-        }),
-      );
-      const liveCombinedSalary = jobSalaries.reduce(
-        (s, js) => s + js.salary,
-        0,
-      );
-
+      const salaryProfileActiveMap = Number.isFinite(activeSalaryProfileId)
+        ? await loadAndApplySalaryProfile(ctx.db, activeSalaryProfileId)
+        : new Map();
+      const jobSalaries = activeJobs.map((j) => {
+        const comp = resolveCompensation(salaryProfileActiveMap, j.id);
+        return {
+          job: j,
+          salary: getEffectiveIncome(j, comp.salary, comp.terms),
+          baseSalary: comp.salary,
+          totalComp: getTotalCompensation(comp.salary, comp.terms),
+          resolvedBonusOverride: null,
+        };
+      });
       // Contributions (live data)
       const activeContribs = allContribs.filter(
         (c) =>
@@ -290,15 +286,18 @@ export const retirementRouter = createTRPCRouter({
           (c.jobId === null && people.some((p) => p.id === c.personId)),
       );
 
-      // Helper to compute totals from a set of contrib rows + job salaries
+      // Helper to compute totals from a set of contrib rows + job salaries.
+      // `contribs` is always the output of resolveProfile/applyContribActiveFields
+      // (contributionValue/Method guaranteed present) — never the raw
+      // activeContribs rows, which carry no value of their own.
       const computeContribTotals = (
-        contribs: typeof activeContribs,
+        contribs: ContribRowWithActiveFields[],
         salaries: typeof jobSalaries,
       ) => {
         let totalContribs = 0;
         let totalEmployerMatch = 0;
         for (const c of contribs) {
-          const cv = toNumber(c.contributionValue);
+          const cv = Number(c.contributionValue);
           const js = salaries.find((x) => x.job.id === c.jobId);
           const job = activeJobs.find((j) => j.id === c.jobId);
           const salary = js?.salary ?? 0;
@@ -323,36 +322,23 @@ export const retirementRouter = createTRPCRouter({
         return { totalContribs, totalEmployerMatch };
       };
 
-      // Resolve contribution profiles for each scenario
+      // Resolve contribution profiles for each scenario. No profile
+      // (or a stale id that no longer exists) resolves against an empty
+      // active-fields map — accounts carry no value of their own anymore,
+      // so this correctly yields zero contributions rather than falling
+      // back to a "live" reading of the raw account rows.
       const resolveContribProfile = async (profileId: number | null) => {
-        if (!profileId) {
-          const totals = computeContribTotals(activeContribs, jobSalaries);
-          return {
-            combinedSalary: liveCombinedSalary,
-            annualContributions: totals.totalContribs,
-            employerMatch: totals.totalEmployerMatch,
-          };
-        }
-
-        const profile = await fetchContributionProfile(ctx.db, profileId);
-        if (!profile) {
-          const totals = computeContribTotals(activeContribs, jobSalaries);
-          return {
-            combinedSalary: liveCombinedSalary,
-            annualContributions: totals.totalContribs,
-            employerMatch: totals.totalEmployerMatch,
-          };
-        }
+        const profile = profileId
+          ? await fetchContributionProfile(ctx.db, profileId)
+          : null;
 
         // Shared resolver (was a near-duplicate re-implementation inline
-        // here — M26). Salary overrides are intentionally EMPTY: this is the
-        // control/comparison arm of the relocation analysis, and the salary
-        // baseline above is deliberately live/un-overridden. Salary Profiles
-        // are not threaded into relocation analysis yet; adding them here
-        // would need matching current/relocation Salary Profile inputs.
+        // here — M26). jobSalaries already reflects the globally-active
+        // Salary Profile — this is the control/comparison arm of the
+        // relocation analysis, so it stays un-overridden by any
+        // Plan-specific salary the way it always has.
         const resolved = resolveProfile(
-          profile,
-          {},
+          profile ?? { contributionActiveFields: {} },
           activeContribs,
           activeJobs,
           jobSalaries,

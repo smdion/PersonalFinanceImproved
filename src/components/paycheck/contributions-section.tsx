@@ -1,13 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { AccountBadge } from "@/components/ui/account-badge";
+import { SlidePanel } from "@/components/ui/slide-panel";
 import { SectionHeader } from "./section-header";
 import { ContribCard } from "./contrib-card";
-import { AddContribInline } from "./add-contrib-inline";
-import type { RawContrib, CreateContribData, JointContrib } from "./types";
+import {
+  ContribAccountForm,
+  type ContribAccountFormValues,
+} from "./contrib-account-form";
+import type { RawContrib, JointContrib } from "./types";
 import {
   CONTRIBUTION_METHOD_LABELS_SHORT,
   TAX_TREATMENT_LABELS as TAX_LABELS,
@@ -29,6 +34,7 @@ export function ContributionsSection({
   onToggleAutoMax,
   onDeleteContrib,
   onCreateContrib,
+  onUpdateInstitution,
   coverageNote,
   coverageNoteGroup,
   otherJointContribs,
@@ -63,7 +69,11 @@ export function ContributionsSection({
     targetContribValue?: number,
   ) => void;
   onDeleteContrib?: (id: number) => void;
-  onCreateContrib?: (data: CreateContribData) => void;
+  onCreateContrib?: (data: ContribAccountFormValues) => void;
+  onUpdateInstitution?: (
+    id: number,
+    performanceAccountId: number | null,
+  ) => void;
   coverageNote?: string;
   coverageNoteGroup?: string;
   otherJointContribs?: JointContrib[];
@@ -78,6 +88,8 @@ export function ContributionsSection({
    *  action is omitted entirely. */
   readOnly?: boolean;
 }) {
+  const [addingAccount, setAddingAccount] = useState(false);
+
   // Lookup from contribId -> per-contrib computed data (resolved upstream).
   const perContribMap = new Map<number, PerContribView>(
     perContribData.map((pcd) => [pcd.contribId, pcd]),
@@ -251,6 +263,7 @@ export function ContributionsSection({
                         onUpdateContrib={onUpdateContrib}
                         onToggleAutoMax={onToggleAutoMax}
                         onDeleteContrib={onDeleteContrib}
+                        onUpdateInstitution={onUpdateInstitution}
                         _methodLabel={methodLabel}
                         salary={salary}
                         periodsPerYear={periodsPerYear}
@@ -338,11 +351,45 @@ export function ContributionsSection({
 
           {/* Add new contribution account */}
           {!readOnly && onCreateContrib && personId && (
-            <AddContribInline
-              personId={personId}
-              jobId={jobId ?? null}
-              onCreateContrib={onCreateContrib}
-            />
+            <div className="flex justify-center pt-1">
+              <button
+                type="button"
+                onClick={() => setAddingAccount(true)}
+                className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 transition-colors"
+              >
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Add contribution account
+              </button>
+            </div>
+          )}
+          {!readOnly && onCreateContrib && personId && (
+            <SlidePanel
+              isOpen={addingAccount}
+              onClose={() => setAddingAccount(false)}
+              title="Add Contribution Account"
+            >
+              <ContribAccountForm
+                initialValues={{ personId, jobId: jobId ?? null }}
+                onSave={(data) => {
+                  onCreateContrib(data);
+                  setAddingAccount(false);
+                }}
+                onCancel={() => setAddingAccount(false)}
+              />
+            </SlidePanel>
           )}
 
           {/* Coverage note when its group is not in groupOrder */}

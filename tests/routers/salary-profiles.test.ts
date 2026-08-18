@@ -1,13 +1,13 @@
 /**
  * Salary Profiles router + helpers.
  *
- * Covers the behavior that moved off contribution_profiles when salary became
- * its own first-class entity — CRUD, delete guards (last-remaining,
- * globally-active, Plan-pinned) — plus the PRESENCE encoding that replaced
- * the `{mode:...}` discriminator: a field that is set pins that value, a
- * field that is absent resolves live, an entry that pins nothing contributes
- * NOTHING to the salary override map, and the merge into an existing map is
- * gaps-only per FIELD.
+ * Covers CRUD, delete guards (last-remaining, globally-active, Plan-pinned),
+ * and the complete-entry encoding: a profile's `salaries` map is jobId →
+ * COMPLETE entry (`{salary, bonusPercent, bonusMultiplier,
+ * monthsInBonusYear}`, all four, always). A job either has a real entry or
+ * (no key at all) the profile says nothing about it and it contributes $0 —
+ * there is no partial/pinned state and no live fallback, because a job has
+ * no salary of its own to fall back to.
  */
 import "./setup-mocks";
 import { vi, describe, it, expect } from "vitest";
@@ -23,11 +23,27 @@ import {
   applySalaryProfileRow,
   loadAndApplySalaryProfile,
   fetchSalaryProfile,
-  pinnedSalaries,
-  pinnedFields,
   resolveCompensation,
 } from "@/server/helpers/salary";
 import { canDeleteSalaryProfile } from "@/lib/pure/profiles";
+
+/** A complete entry — every field required, matching the stored shape. */
+function entry(
+  overrides: Partial<{
+    salary: number;
+    bonusPercent: number;
+    bonusMultiplier: number;
+    monthsInBonusYear: number;
+  }> = {},
+) {
+  return {
+    salary: 0,
+    bonusPercent: 0,
+    bonusMultiplier: 1,
+    monthsInBonusYear: 12,
+    ...overrides,
+  };
+}
 
 function seedSalaryProfile(
   db: Parameters<typeof seedPerson>[0],
@@ -64,27 +80,21 @@ describe("salaryProfile router", () => {
       }
     });
 
-    it("counts people with any pin, sums only pinned salaries", async () => {
+    it("counts jobs with an entry, sums only their salaries", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         seedSalaryProfile(db, {
-          name: "MixedModes",
+          name: "Mixed",
           salaries: {
-            "1": { salary: 150000 },
-            "2": { salary: 160000 },
-            "3": {},
-            // A bonus-only pin counts as a pinned PERSON but adds nothing
-            // to the pinned-salary total.
-            "4": { bonusPercent: 0.15 },
+            "1": entry({ salary: 150000 }),
+            "2": entry({ salary: 160000 }),
           },
         });
 
         const profiles = await caller.salaryProfile.list();
-        const p = profiles.find(
-          (x: { name: string }) => x.name === "MixedModes",
-        );
+        const p = profiles.find((x: { name: string }) => x.name === "Mixed");
         expect(p).toBeDefined();
-        expect(p!.pinnedCount).toBe(3);
+        expect(p!.pinnedCount).toBe(2);
         expect(p!.pinnedSalaryTotal).toBe(310000);
       } finally {
         cleanup();
@@ -93,17 +103,17 @@ describe("salaryProfile router", () => {
   });
 
   describe("getById", () => {
-    it("reports a pinned salary as the effective salary", async () => {
+    it("reports a job's complete entry as its effective salary", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const personId = await seedPerson(db, "Alex");
-        seedJob(db, personId, {
+        const jobId = seedJob(db, personId, {
           employerName: "TestCorp",
           annualSalary: "100000",
         });
         const profileId = seedSalaryProfile(db, {
           name: "Raise",
-          salaries: { [String(personId)]: { salary: 200000 } },
+          salaries: { [String(jobId)]: entry({ salary: 200000 }) },
         });
 
         const result = await caller.salaryProfile.getById({ id: profileId });
@@ -112,51 +122,68 @@ describe("salaryProfile router", () => {
         const sd = result!.salaryDetails[0]!;
         expect(sd.personName).toBe("Alex");
         expect(sd.employerName).toBe("TestCorp");
-        expect(sd.jobSalary).toBe(100000);
-        expect(sd.pinnedSalary).toBe(200000);
+        expect(sd.hasEntry).toBe(true);
+        expect(sd.salary).toBe(200000);
         expect(sd.effectiveSalary).toBe(200000);
-        // Bonus terms were not pinned, so they still resolve live.
-        expect(sd.pinnedBonusPercent).toBeNull();
       } finally {
         cleanup();
       }
     });
 
-    it("reports an unpinned person's live job salary as their effective salary", async () => {
+    it("never defaults the selected job to the speculative one, even though both have no endDate", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const realJobId = seedJob(db, personId, {
+          employerName: "RealCorp",
+          annualSalary: "120000",
+          startDate: "2020-01-01",
+        });
+        // Created AFTER the real job (more recent startDate), the way the
+        // auto-provisioning migration/people.create would — this is exactly
+        // the ordering that would wrongly win a naive "most recent job with
+        // no endDate" default-selection.
+        seedJob(db, personId, {
+          employerName: "Speculative (What-If Planning)",
+          annualSalary: "0",
+          startDate: "2026-01-01",
+          isSpeculative: true,
+        });
+        const profileId = seedSalaryProfile(db, {
+          name: "Fresh",
+          salaries: { [String(realJobId)]: entry({ salary: 120000 }) },
+        });
+
+        const result = await caller.salaryProfile.getById({ id: profileId });
+        const sd = result!.salaryDetails[0]!;
+        expect(sd.jobId).toBe(realJobId);
+        expect(sd.employerName).toBe("RealCorp");
+        // The speculative job still shows up as a pickable option.
+        expect(
+          sd.jobOptions.some((jo: { employerName: string }) =>
+            jo.employerName.includes("Speculative"),
+          ),
+        ).toBe(true);
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("reports $0/no entry for a job the profile doesn't mention", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const personId = await seedPerson(db, "Alex");
         seedJob(db, personId, { annualSalary: "120000" });
         const profileId = seedSalaryProfile(db, {
-          name: "Baseline",
-          salaries: { [String(personId)]: {} },
-        });
-
-        const result = await caller.salaryProfile.getById({ id: profileId });
-        const sd = result!.salaryDetails[0]!;
-        expect(sd.pinnedSalary).toBeNull();
-        expect(sd.jobSalary).toBe(120000);
-        expect(sd.effectiveSalary).toBe(120000);
-      } finally {
-        cleanup();
-      }
-    });
-
-    it("defaults a person with no entry yet to following their job", async () => {
-      const { caller, db, cleanup } = await createTestCaller(adminSession);
-      try {
-        const personId = await seedPerson(db, "Newcomer");
-        seedJob(db, personId, { annualSalary: "90000" });
-        // Profile created before this person existed — empty map.
-        const profileId = seedSalaryProfile(db, {
-          name: "Older",
+          name: "Empty",
           salaries: {},
         });
 
         const result = await caller.salaryProfile.getById({ id: profileId });
         const sd = result!.salaryDetails[0]!;
-        expect(sd.pinnedSalary).toBeNull();
-        expect(sd.effectiveSalary).toBe(90000);
+        expect(sd.hasEntry).toBe(false);
+        expect(sd.salary).toBe(0);
+        expect(sd.effectiveSalary).toBe(0);
       } finally {
         cleanup();
       }
@@ -174,44 +201,40 @@ describe("salaryProfile router", () => {
   });
 
   describe("create / update", () => {
-    it("creates a profile with explicit entries", async () => {
+    it("creates a profile with explicit complete entries", async () => {
       const { caller, cleanup } = await createTestCaller(adminSession);
       try {
         const profile = await caller.salaryProfile.create({
-          name: "Full Pin",
-          description: "Has everything",
+          name: "Full Entries",
+          description: "Has one job",
           salaries: {
-            "1": { salary: 150000 },
-            "2": {},
+            "1": entry({ salary: 150000 }),
           },
         });
-        expect(profile.name).toBe("Full Pin");
-        const s = profile.salaries as Record<string, { salary?: number }>;
-        expect(s["1"]).toEqual({ salary: 150000 });
-        // An entry that pins nothing is normalized away on write — it means
-        // the same as having no key, so only one representation is stored.
-        expect(s["2"]).toBeUndefined();
+        expect(profile.name).toBe("Full Entries");
+        const s = profile.salaries as Record<
+          string,
+          { salary: number; bonusPercent: number }
+        >;
+        expect(s["1"]).toEqual(entry({ salary: 150000 }));
       } finally {
         cleanup();
       }
     });
 
-    it("defaults to pinning nothing — never inherits another profile's pins", async () => {
+    it("defaults to empty — never inherits another profile's entries", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const alex = await seedPerson(db, "Alex");
         const sam = await seedPerson(db, "Sam");
-        // An existing profile with pins must not leak into the new one.
+        // An existing profile with entries must not leak into the new one.
         seedSalaryProfile(db, {
-          name: "Pinned",
-          salaries: { [String(alex)]: { salary: 999999 } },
+          name: "Loaded",
+          salaries: { [String(alex)]: entry({ salary: 999999 }) },
         });
 
         const profile = await caller.salaryProfile.create({ name: "Fresh" });
         expect(profile.description).toBeNull();
-        // Empty IS complete under the presence encoding: it says "this
-        // profile pins nothing", so there is no per-person enumeration to
-        // go stale when someone is added later.
         expect(profile.salaries).toEqual({});
         expect(sam).toBeGreaterThan(0);
       } finally {
@@ -225,31 +248,29 @@ describe("salaryProfile router", () => {
         const profileId = seedSalaryProfile(db, { name: "EntryUpdate" });
         const updated = await caller.salaryProfile.update({
           id: profileId,
-          salaries: { "1": { salary: 200000 } },
+          salaries: { "1": entry({ salary: 200000 }) },
         });
-        expect((updated.salaries as Record<string, unknown>)["1"]).toEqual({
-          salary: 200000,
-        });
+        expect((updated.salaries as Record<string, unknown>)["1"]).toEqual(
+          entry({ salary: 200000 }),
+        );
       } finally {
         cleanup();
       }
     });
 
     it("the migration-seeded baseline profile is an ordinary, editable row", async () => {
-      // The formerly-synthetic "Live" entry is now a normal row: it can be
-      // renamed and can carry pins like any other profile.
       const { caller, cleanup } = await createTestCaller(adminSession);
       try {
         const [seeded] = await caller.salaryProfile.list();
         const renamed = await caller.salaryProfile.update({
           id: seeded!.id,
           name: "My Baseline",
-          salaries: { "1": { salary: 123456 } },
+          salaries: { "1": entry({ salary: 123456 }) },
         });
         expect(renamed.name).toBe("My Baseline");
-        expect((renamed.salaries as Record<string, unknown>)["1"]).toEqual({
-          salary: 123456,
-        });
+        expect((renamed.salaries as Record<string, unknown>)["1"]).toEqual(
+          entry({ salary: 123456 }),
+        );
       } finally {
         cleanup();
       }
@@ -329,93 +350,38 @@ describe("canDeleteSalaryProfile", () => {
 });
 
 describe("salary profile merge helpers", () => {
+  // Keys are jobIds — a Salary Profile targets a specific job's terms, not
+  // "whichever job this person currently has".
   const profile = {
     id: 1,
     name: "Raise",
     description: null,
     salaries: {
-      "1": { salary: 200000 },
-      "2": { salary: 90000 },
-      // Pins nothing — the presence-encoding equivalent of the old
-      // {mode:"job"}. Must never reach the map.
-      "3": {},
-      // Pins ONLY bonus terms. Has a map entry (something IS pinned) but no
-      // salary, which is the distinction `.has()` cannot express.
-      "4": { bonusPercent: 0.25 },
+      "101": entry({ salary: 200000 }),
+      "102": entry({ salary: 90000 }),
     },
     createdAt: new Date(),
   };
 
-  it("fills gaps only — existing (Plan) entries win", () => {
-    const planMap = new Map([[1, { salary: 111111 }]]);
-    const merged = applySalaryProfileRow(profile, planMap);
-    expect(merged.get(1)?.salary).toBe(111111); // Plan override wins
-    expect(merged.get(2)?.salary).toBe(90000); // gap filled from the profile
+  it("builds a jobId-keyed map from the profile's entries", () => {
+    const map = applySalaryProfileRow(profile);
+    expect(map.get(101)?.salary).toBe(200000);
+    expect(map.get(102)?.salary).toBe(90000);
   });
 
-  it("merges gaps PER FIELD, not per person", () => {
-    // A Plan pins salary only. The profile's bonus pin for that same person
-    // must survive — a per-person merge would silently discard it, and the
-    // two pins are independent facts.
-    const planMap = new Map([[4, { salary: 123456 }]]);
-    const merged = applySalaryProfileRow(profile, planMap);
-    expect(merged.get(4)?.salary).toBe(123456);
-    expect(merged.get(4)?.bonusPercent).toBe(0.25);
+  it("has no key at all for a job the profile doesn't mention", () => {
+    const map = applySalaryProfileRow(profile);
+    expect(map.has(103)).toBe(false);
+    expect([...map.keys()].sort()).toEqual([101, 102]);
   });
 
-  it("NEVER populates the map for a person who pins nothing", () => {
-    // The core invariant. A key in this map means "has at least one pin";
-    // an entry that pins nothing must produce no key at all, or every
-    // `.has()` call site reads an override that carries no value.
-    const merged = applySalaryProfileRow(profile, new Map());
-    expect(merged.has(3)).toBe(false);
-    expect([...merged.keys()].sort()).toEqual([1, 2, 4]);
+  it("is an empty map for a profile with no entries at all", () => {
+    expect(applySalaryProfileRow({ ...profile, salaries: {} }).size).toBe(0);
   });
 
-  it("a map key does NOT imply the salary is pinned", () => {
-    // Person 4 pins bonus terms only. Anything reading `.has()` as "salary
-    // is pinned" gets this wrong; `?.salary !== undefined` gets it right.
-    const merged = applySalaryProfileRow(profile, new Map());
-    expect(merged.has(4)).toBe(true);
-    expect(merged.get(4)?.salary).toBeUndefined();
-  });
-
-  it("pinnedSalaries keeps only people whose SALARY is pinned", () => {
-    expect(pinnedSalaries(profile.salaries)).toEqual({
-      "1": 200000,
-      "2": 90000,
-    });
-    expect(pinnedSalaries({ "9": {} })).toEqual({});
-    // Bonus-only pins are not salaries and must not be collapsed into one.
-    expect(pinnedSalaries({ "9": { bonusPercent: 0.1 } })).toEqual({});
-    expect(pinnedSalaries(null)).toEqual({});
-  });
-
-  it("pinnedFields drops empty, null and non-finite values", () => {
-    expect(pinnedFields({})).toBeUndefined();
-    expect(pinnedFields(null)).toBeUndefined();
-    expect(pinnedFields({ salary: 100 })).toEqual({ salary: 100 });
-    expect(pinnedFields({ salary: undefined, bonusPercent: 0.1 })).toEqual({
-      bonusPercent: 0.1,
-    });
-    expect(pinnedFields({ salary: NaN })).toBeUndefined();
-  });
-
-  it("a profile that pins nothing leaves the map completely untouched", () => {
-    const nothing = { ...profile, salaries: { "1": {}, "2": {} } };
-    expect(applySalaryProfileRow(nothing, new Map()).size).toBe(0);
-  });
-
-  it("does not mutate the input map", () => {
-    const planMap = new Map([[1, { salary: 111111 }]]);
-    applySalaryProfileRow(profile, planMap);
-    expect(planMap.size).toBe(1);
-  });
-
-  it("is a no-op for a null/undefined profile", () => {
-    const planMap = new Map([[1, { salary: 111111 }]]);
-    expect(applySalaryProfileRow(null, planMap)).toBe(planMap);
-    expect(applySalaryProfileRow(undefined, planMap)).toBe(planMap);
+  it("is an empty map for a null/undefined profile", () => {
+    expect(applySalaryProfileRow(null).size).toBe(0);
+    expect(applySalaryProfileRow(undefined).size).toBe(0);
   });
 
   it("treats null/undefined as 'no profile selected', a missing id as not found", async () => {
@@ -431,38 +397,29 @@ describe("salary profile merge helpers", () => {
       // 0 is no longer a sentinel — it's just an id that doesn't exist.
       expect(await fetchSalaryProfile(dbAny, 0)).toBeNull();
 
-      const map = new Map([[1, { salary: 5 }]]);
-      expect(await loadAndApplySalaryProfile(dbAny, null, map)).toBe(map);
-      expect(await loadAndApplySalaryProfile(dbAny, 9999, map)).toBe(map);
+      expect((await loadAndApplySalaryProfile(dbAny, null)).size).toBe(0);
+      expect((await loadAndApplySalaryProfile(dbAny, 9999)).size).toBe(0);
     } finally {
       cleanup();
     }
   });
 
-  it("loads a stored profile and merges it gaps-only", async () => {
+  it("loads a stored profile into a jobId-keyed map", async () => {
     const { db, cleanup } = await createTestCaller(adminSession);
     try {
-      // Drizzle ORM: the helper is typed against the Postgres db instance,
-      // but the test harness's SQLite instance is structurally compatible
-      // for the simple select/insert calls these helpers make.
       // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM dual-driver test harness
       const dbAny = db as unknown as Parameters<typeof fetchSalaryProfile>[0];
       const profileId = seedSalaryProfile(db, {
         name: "Loaded",
         salaries: {
-          "1": { salary: 200000 },
-          "2": { salary: 90000 },
-          "3": {},
+          "201": entry({ salary: 200000 }),
+          "202": entry({ salary: 90000 }),
         },
       });
-      const merged = await loadAndApplySalaryProfile(
-        dbAny,
-        profileId,
-        new Map([[1, { salary: 111111 }]]),
-      );
-      expect(merged.get(1)?.salary).toBe(111111);
-      expect(merged.get(2)?.salary).toBe(90000);
-      expect(merged.has(3)).toBe(false);
+      const map = await loadAndApplySalaryProfile(dbAny, profileId);
+      expect(map.get(201)?.salary).toBe(200000);
+      expect(map.get(202)?.salary).toBe(90000);
+      expect(map.has(203)).toBe(false);
     } finally {
       cleanup();
     }
@@ -470,25 +427,14 @@ describe("salary profile merge helpers", () => {
 });
 
 describe("resolveCompensation — the single definition of pay under a profile", () => {
-  const job = {
-    bonusPercent: "0.1",
-    bonusMultiplier: "1",
-    monthsInBonusYear: 12,
-  };
-
-  it("pins nothing: salary and bonus both resolve live", () => {
-    const c = resolveCompensation(job, 100000, undefined, null);
-    expect(c).toMatchObject({
-      salary: 100000,
-      bonus: 10000,
-      totalComp: 110000,
-    });
+  it("no entry: salary and bonus are both zero", () => {
+    const c = resolveCompensation(new Map(), 1);
+    expect(c).toMatchObject({ salary: 0, bonus: 0, totalComp: 0 });
   });
 
-  it("a pinned salary KEEPS its bonus, scaled to the pinned salary", () => {
-    // The shipped bug: this used to produce totalComp === 200000, dropping
-    // the bonus entirely, while the profile editor displayed 220000.
-    const c = resolveCompensation(job, 100000, { salary: 200000 }, null);
+  it("a complete entry resolves salary and bonus together", () => {
+    const map = new Map([[1, entry({ salary: 200000, bonusPercent: 0.1 })]]);
+    const c = resolveCompensation(map, 1);
     expect(c).toMatchObject({
       salary: 200000,
       bonus: 20000,
@@ -496,46 +442,24 @@ describe("resolveCompensation — the single definition of pay under a profile",
     });
   });
 
-  it("pinned bonus terms apply to a live salary", () => {
-    const c = resolveCompensation(job, 100000, { bonusPercent: 0.25 }, null);
-    expect(c).toMatchObject({
-      salary: 100000,
-      bonus: 25000,
-      totalComp: 125000,
-    });
-  });
-
-  it("pinned salary and pinned terms compose", () => {
-    const c = resolveCompensation(
-      job,
-      100000,
-      { salary: 200000, bonusPercent: 0.25, bonusMultiplier: 2 },
-      null,
+  it("bonusMultiplier scales the bonus", () => {
+    const map = new Map([
+      [1, entry({ salary: 200000, bonusPercent: 0.25, bonusMultiplier: 2 })],
+    ]);
+    expect(resolveCompensation(map, 1).totalComp).toBe(
+      200000 + 200000 * 0.25 * 2,
     );
-    expect(c.totalComp).toBe(200000 + 200000 * 0.25 * 2);
   });
 
-  it("a job_bonus_overrides pin short-circuits the formula, pinned or not", () => {
-    expect(
-      resolveCompensation(job, 100000, { salary: 200000 }, 4000),
-    ).toMatchObject({ bonus: 4000, totalComp: 204000 });
-    expect(resolveCompensation(job, 100000, undefined, 4000)).toMatchObject({
-      bonus: 4000,
-      totalComp: 104000,
-    });
+  it("monthsInBonusYear prorates the bonus", () => {
+    const map = new Map([
+      [1, entry({ salary: 100000, bonusPercent: 0.1, monthsInBonusYear: 6 })],
+    ]);
+    expect(resolveCompensation(map, 1).bonus).toBe(5000);
   });
 
-  it("monthsInBonusYear prorates, live or pinned", () => {
-    expect(
-      resolveCompensation(
-        { ...job, monthsInBonusYear: 6 },
-        100000,
-        undefined,
-        null,
-      ).bonus,
-    ).toBe(5000);
-    expect(
-      resolveCompensation(job, 100000, { monthsInBonusYear: 6 }, null).bonus,
-    ).toBe(5000);
+  it("an entry for a DIFFERENT job never applies", () => {
+    const map = new Map([[11, entry({ salary: 90000 })]]);
+    expect(resolveCompensation(map, 1)).toMatchObject({ salary: 0, bonus: 0 });
   });
 });

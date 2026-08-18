@@ -226,17 +226,23 @@ describe("settingValueSchema", () => {
 // ── Contribution Profile Schemas ─────────────────────────────────
 
 describe("salaryEntriesSchema", () => {
-  it("accepts a mix of pinned and unpinned entries", () => {
+  const complete = (overrides: Record<string, unknown> = {}) => ({
+    salary: 120000,
+    bonusPercent: 0.1,
+    bonusMultiplier: 1,
+    monthsInBonusYear: 12,
+    ...overrides,
+  });
+
+  it("accepts a complete entry — all four fields required", () => {
     const result = salaryEntriesSchema.safeParse({
-      "1": { salary: 120000 },
-      "2": {}, // pins nothing — same meaning as having no key
-      "3": { bonusPercent: 0.15, bonusMultiplier: 2, monthsInBonusYear: 6 },
-      "4": { salary: 200000, bonusPercent: 0.1 },
+      "1": complete(),
+      "4": complete({ salary: 200000, bonusPercent: 0.2 }),
     });
     expect(result.success).toBe(true);
   });
 
-  it("accepts empty object", () => {
+  it("accepts empty object — a profile that mentions no jobs", () => {
     const result = salaryEntriesSchema.safeParse({});
     expect(result.success).toBe(true);
   });
@@ -246,10 +252,19 @@ describe("salaryEntriesSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("rejects a partial entry — entries are all-or-nothing, no partial pins", () => {
+    expect(salaryEntriesSchema.safeParse({ "1": {} }).success).toBe(false);
+    expect(
+      salaryEntriesSchema.safeParse({ "1": { salary: 120000 } }).success,
+    ).toBe(false);
+    expect(
+      salaryEntriesSchema.safeParse({ "1": { bonusPercent: 0.15 } }).success,
+    ).toBe(false);
+  });
+
   it("rejects the old {mode:...} discriminator outright", () => {
     // .strict() matters here: without it a stale client payload would be
-    // accepted, stored, and then silently ignored by every reader — the
-    // pin would appear to save and simply not take effect.
+    // accepted, stored, and then silently ignored by every reader.
     expect(
       salaryEntriesSchema.safeParse({ "1": { mode: "job" } }).success,
     ).toBe(false);
@@ -261,24 +276,27 @@ describe("salaryEntriesSchema", () => {
 
   it("rejects unknown fields", () => {
     const result = salaryEntriesSchema.safeParse({
-      "1": { salary: 100, bonusPercentage: 0.1 },
+      "1": complete({ bonusPercentage: 0.1 }),
     });
     expect(result.success).toBe(false);
   });
 
   it("rejects a non-number salary", () => {
     const result = salaryEntriesSchema.safeParse({
-      "1": { salary: "not a number" },
+      "1": complete({ salary: "not a number" }),
     });
     expect(result.success).toBe(false);
   });
 
   it("rejects non-number bonus terms", () => {
     expect(
-      salaryEntriesSchema.safeParse({ "1": { bonusPercent: "0.1" } }).success,
+      salaryEntriesSchema.safeParse({ "1": complete({ bonusPercent: "0.1" }) })
+        .success,
     ).toBe(false);
     expect(
-      salaryEntriesSchema.safeParse({ "1": { bonusMultiplier: null } }).success,
+      salaryEntriesSchema.safeParse({
+        "1": complete({ bonusMultiplier: null }),
+      }).success,
     ).toBe(false);
   });
 });
@@ -301,6 +319,7 @@ describe("contribAccountActiveFieldsSchema", () => {
   it("accepts string contribution values (percent notation)", () => {
     const result = contribAccountActiveFieldsSchema.safeParse({
       contributionValue: "10",
+      contributionMethod: "percent_of_salary",
       employerMatchValue: "6",
       employerMaxMatchPct: "4",
     });
@@ -380,8 +399,12 @@ describe("contributionActiveFieldsSchema", () => {
   it("accepts valid nested structure", () => {
     const result = contributionActiveFieldsSchema.safeParse({
       contributionAccounts: {
-        "5": { contributionValue: 1000, isActive: true },
-        "12": { contributionMethod: "percent_gross" },
+        "5": {
+          contributionValue: 1000,
+          contributionMethod: "fixed_annual",
+          isActive: true,
+        },
+        "12": { contributionMethod: "percent_gross", contributionValue: 500 },
       },
       jobs: {
         "1": { employerName: "TestCo", include401kInBonus: true },

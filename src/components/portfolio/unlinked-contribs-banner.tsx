@@ -9,15 +9,8 @@
  */
 
 import React from "react";
-import {
-  TAX_TREATMENT_LABELS as TAX_LABELS,
-  CONTRIBUTION_METHOD_AMOUNT_SUFFIXES,
-} from "@/lib/config/display-labels";
-import {
-  formatPercent,
-  formatCurrency,
-  accountDisplayName,
-} from "@/lib/utils/format";
+import { TAX_TREATMENT_LABELS as TAX_LABELS } from "@/lib/config/display-labels";
+import { formatPercent, accountDisplayName } from "@/lib/utils/format";
 
 type ContribEntry = {
   id: number;
@@ -26,8 +19,6 @@ type ContribEntry = {
   accountType: string;
   subType: string | null;
   taxTreatment: string;
-  contributionMethod: string;
-  contributionValue: string;
   employerMatchType: string;
   employerMatchValue: string | null;
   employerMaxMatchPct: string | null;
@@ -85,11 +76,6 @@ export function UnlinkedContribsBanner({
         {unlinkedContribs.map((c) => {
           const taxLabel = TAX_LABELS[c.taxTreatment] ?? c.taxTreatment;
           const acctType = c.subType ?? c.accountType;
-          const contribAmount = formatCurrency(parseFloat(c.contributionValue));
-          const contribDetail =
-            c.contributionMethod === "percent_of_salary"
-              ? `${c.contributionValue}% of salary`
-              : `${contribAmount}${CONTRIBUTION_METHOD_AMOUNT_SUFFIXES[c.contributionMethod] ?? ""}`;
           const matchDetail =
             c.employerMatchType !== "none" && c.employerMatchValue
               ? `, ${c.employerMatchValue}% match${c.employerMaxMatchPct ? ` up to ${formatPercent(parseFloat(c.employerMaxMatchPct))}` : ""}`
@@ -127,7 +113,7 @@ export function UnlinkedContribsBanner({
                 ))}
               </select>
               <span className="text-amber-800 text-xs">
-                {taxLabel} {acctType} — {contribDetail}
+                {taxLabel} {acctType}
                 {matchDetail} ({employer})
                 {!c.isActive && (
                   <span className="ml-1 text-micro px-1 py-0.5 rounded bg-surface-strong text-muted font-semibold">

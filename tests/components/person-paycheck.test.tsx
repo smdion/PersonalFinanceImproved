@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { SalaryTracker } from "@/components/paycheck/salary-tracker";
 import { PersonPaycheck } from "@/components/paycheck/person-paycheck";
 import type { PaycheckResult } from "@/lib/calculators/types/calculators";
 
@@ -56,10 +55,6 @@ vi.mock("@/components/paycheck/ss-cap-indicator", () => ({
 
 vi.mock("@/components/paycheck/pay-schedule-info", () => ({
   PayScheduleInfo: () => <div data-testid="pay-schedule">PaySchedule</div>,
-}));
-
-vi.mock("@/components/paycheck/salary-tracker", () => ({
-  SalaryTracker: () => <div data-testid="salary-tracker">SalaryTracker</div>,
 }));
 
 const baseJob = {
@@ -118,15 +113,6 @@ const defaultProps = {
   perContribData: [],
   contribExpanded: true,
   onToggleContrib: vi.fn(),
-  // Salary history is a slot the live caller fills — a read-only caller
-  // simply omits it, which is what the last test below asserts.
-  salaryHistorySlot: (
-    <SalaryTracker
-      jobId={1}
-      activeSalaryValue={null}
-      onToggleSalary={vi.fn()}
-    />
-  ),
   interaction: {
     kind: "live" as const,
     handlers: {
@@ -172,22 +158,6 @@ describe("PersonPaycheck", () => {
   it("renders pay schedule info", () => {
     render(<PersonPaycheck {...defaultProps} />);
     expect(screen.getByTestId("pay-schedule")).toBeInTheDocument();
-  });
-
-  it("renders salary tracker", () => {
-    render(<PersonPaycheck {...defaultProps} />);
-    expect(screen.getByTestId("salary-tracker")).toBeInTheDocument();
-  });
-
-  it("omits salary history entirely when no slot is passed (read-only tree)", () => {
-    render(
-      <PersonPaycheck
-        {...defaultProps}
-        salaryHistorySlot={undefined}
-        interaction={{ kind: "readonly" }}
-      />,
-    );
-    expect(screen.queryByTestId("salary-tracker")).toBeNull();
   });
 
   it("renders without title when job.title is null", () => {

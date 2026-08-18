@@ -156,16 +156,17 @@ export const relocationScenarioParamsSchema = z.object({
 // ── salary_profiles ─────────────────────────────────────────────
 
 /**
- * salary_profiles.salaries — personId → salary entry.
+ * salary_profiles.salaries — jobId → salary entry.
  *
- * Every field is optional and PRESENCE IS THE PIN SIGNAL: a field that is
- * set pins that value for this profile, a field that is absent resolves
- * live from the job record. There is no `mode` discriminator — an empty
- * object pins nothing, which is indistinguishable in meaning from having no
- * key for the person at all.
+ * A job either has a COMPLETE entry (all four fields, a real self-contained
+ * number for this profile) or no key at all (this profile says nothing
+ * about that job, which resolves to $0/no bonus — never a fallback to some
+ * other value). There is no partial-pin state and no "live" concept: a
+ * profile is its own complete world, not a set of overrides on a shared
+ * baseline. If you want different numbers, use a different profile.
  *
- * `.strict()` so a stale `{mode:...}` payload from an old client is
- * rejected loudly rather than being stored and silently ignored.
+ * `.strict()` so a stale payload shape from an old client is rejected
+ * loudly rather than being stored and silently ignored.
  *
  * Bonus terms live HERE, not on a Contribution Profile: "what is my bonus"
  * is the same category of fact as "what is my salary". A Contribution
@@ -174,23 +175,32 @@ export const relocationScenarioParamsSchema = z.object({
  */
 export const salaryEntrySchema = z
   .object({
-    salary: z.number().optional(),
-    /** Fraction, not percent: 0.12 = 12%. Matches jobs.bonus_percent. */
-    bonusPercent: z.number().optional(),
-    bonusMultiplier: z.number().optional(),
-    monthsInBonusYear: z.number().optional(),
+    salary: z.number(),
+    /** Fraction, not percent: 0.12 = 12%. Matches the bonus % shown in the UI. */
+    bonusPercent: z.number(),
+    bonusMultiplier: z.number(),
+    monthsInBonusYear: z.number(),
   })
   .strict();
 
-/** personId → salary entry. */
+/** jobId → salary entry. */
 export const salaryEntriesSchema = z.record(z.string(), salaryEntrySchema);
 
 // ── contribution_profiles ───────────────────────────────────────
 
 /**
- * Detailed contribution account active-field set (write-path). A field
- * present here means this profile has its own value for it (active);
- * absent means it falls through to the account's own live value (inactive).
+ * Detailed contribution account active-field set (write-path). An entry
+ * existing at all does NOT by itself mean this profile has a value —
+ * an entry can legitimately exist to set only `isActive`/`displayNameActive`/
+ * a match field. `contributionValue`/`contributionMethod` are the only
+ * pair required TOGETHER (both or neither, enforced below) whenever either
+ * is present, because the account row itself carries no value to fall back
+ * to (see applyContribActiveFields — there is no base-value fallback). An
+ * account with no `contributionValue` set in the current profile has no
+ * resolvable contribution at all, which is the "incomplete profile" state
+ * surfaced by getIncompleteContribAccountIds. Every other field here stays
+ * genuinely optional — those describe account behavior a profile MAY
+ * customize, not "the" value.
  * contribution_profiles.contribution_active_fields uses
  * scenarioOverridesSchema at the structural level but the leaf objects have
  * a known shape.
@@ -206,7 +216,17 @@ export const contribAccountActiveFieldsSchema = z
     isActive: z.boolean().optional(),
     displayNameActive: z.string().optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (f) =>
+      (f.contributionValue === undefined) ===
+      (f.contributionMethod === undefined),
+    {
+      message:
+        "contributionValue and contributionMethod must be set together (or neither)",
+      path: ["contributionValue"],
+    },
+  );
 
 /**
  * Contribution-profile job active-field set.

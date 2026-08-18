@@ -4,26 +4,21 @@ import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateContributions } from "@/lib/calculators/contribution";
-import {
-  countPeriodsElapsed,
-  mapSalaryTimelineToPeriods,
-} from "@/lib/calculators/paycheck";
+import { countPeriodsElapsed } from "@/lib/calculators/paycheck";
 import { accountDisplayName, stripInstitutionSuffix } from "@/lib/utils/format";
 import {
   toNumber,
   getPeriodsPerYear,
-  getCurrentSalary,
   getEffectiveIncome,
   getTotalCompensation,
-  getBonusOverridesForJobs,
+  resolveCompensation,
+  applyActiveSalary,
+  applyActiveBonusTerms,
   buildContribAccounts,
   computeAnnualContribution,
   computeBonusGross,
   loadAndApplyContribProfile,
-  loadAndApplySalaryProfile,
-  getSalaryTimelineForYear,
-  applyActiveSalary,
-  resolveBonusTerms,
+  loadEffectiveSalaryProfile,
   applySandboxSalaryEntries,
   applyContribActiveFields,
   buildSandboxContribRow,
@@ -279,14 +274,15 @@ export const contributionRouter = createTRPCRouter({
 
       // Two independent axes: Salary Profile fills salary gaps left by the
       // Plan/session overrides already in the map; Contribution Profile
-      // overrides account/job fields only.
+      // overrides account/job fields only. No explicit salaryProfileId
+      // falls back to the globally-active profile.
       const effectiveSalaryMap = applySandboxSalaryEntries(
         input?.sandboxSalaryEntries,
-        await loadAndApplySalaryProfile(
-          ctx.db,
-          input?.salaryProfileId,
-          salaryActiveMap,
-        ),
+        salaryActiveMap,
+      );
+      const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
+        ctx.db,
+        input?.salaryProfileId,
       );
       const profileResult = await loadAndApplyContribProfile(
         ctx.db,
@@ -299,6 +295,7 @@ export const contributionRouter = createTRPCRouter({
       const effectiveContribs = applyContribActiveFields(
         profileResult.contribs,
         input?.sandboxContribActiveFields ?? {},
+        true,
       );
       for (const [i, addition] of (
         input?.sandboxContribAdditions ?? []
@@ -309,21 +306,21 @@ export const contributionRouter = createTRPCRouter({
 
       const asOfDate = new Date();
 
-      // Split YTD actuals proportionally when multiple contribs share a perf account.
-      // Uses salary-timeline-aware expected YTD (not projected annual) so mid-year
-      // salary changes are reflected in the split ratio.
+      // Split YTD actuals proportionally when multiple contribs share a perf
+      // account, scaled by each job's elapsed pay-period fraction. Salary is
+      // a flat number under the active Salary Profile (no mid-year timeline
+      // to walk any more — see resolveCompensation's docblock), so expected
+      // YTD is just salary × pct × elapsed fraction.
       const activeContribs = effectiveContribs.filter((c) => c.isActive);
 
-      // Cache salary timelines and period data per job — used for proportional
-      // YTD split AND blended total compensation calculation
+      // Cache resolved salary and period data per job — used for
+      // proportional YTD split.
       const jobCache = new Map<
         number,
         {
-          timeline: { salary: number; effectiveDate: string | null }[];
+          salary: number;
           periodsPerYear: number;
           periodsElapsed: number;
-          anchorPayDate: Date | null;
-          payPeriod: string;
         }
       >();
       for (const c of activeContribs) {
@@ -331,27 +328,19 @@ export const contributionRouter = createTRPCRouter({
         if (jobCache.has(c.jobId)) continue;
         const job = effectiveJobs.find((j) => j.id === c.jobId);
         if (!job) continue;
-        const timeline = await getSalaryTimelineForYear(
-          ctx.db,
+        const salary = resolveCompensation(
+          salaryProfileActiveMap,
           job.id,
-          job.annualSalary,
-          currentYear,
-        );
+        ).salary;
         const periodsPerYear = getPeriodsPerYear(job.payPeriod);
         const anchor = job.anchorPayDate ? new Date(job.anchorPayDate) : null;
         const periodsElapsed = anchor
           ? countPeriodsElapsed(asOfDate, job.payPeriod, anchor)
           : Math.round((asOfDate.getMonth() / 12) * periodsPerYear);
-        jobCache.set(c.jobId, {
-          timeline,
-          periodsPerYear,
-          periodsElapsed,
-          anchorPayDate: anchor,
-          payPeriod: job.payPeriod,
-        });
+        jobCache.set(c.jobId, { salary, periodsPerYear, periodsElapsed });
       }
 
-      // Compute expected YTD for each contrib (salary-timeline-aware) and group by perf account.
+      // Compute expected YTD for each contrib and group by perf account.
       // expectedYtdMap is also used in the categoryMap loop for data-lag detection.
       const expectedYtdMap = new Map<number, number>();
       const byPerfId = new Map<
@@ -359,25 +348,14 @@ export const contributionRouter = createTRPCRouter({
         { contribId: number; expectedYtd: number }[]
       >();
       for (const c of activeContribs) {
-        const value = toNumber(c.contributionValue);
+        const value = Number(c.contributionValue);
         let expectedYtd = 0;
 
         const jd = c.jobId ? jobCache.get(c.jobId) : null;
         if (c.contributionMethod === "percent_of_salary" && jd) {
-          // Walk salary timeline periods to compute exact YTD
-          const segments = mapSalaryTimelineToPeriods(
-            jd.timeline,
-            jd.payPeriod,
-            jd.anchorPayDate ?? new Date(`${currentYear}-01-15T00:00:00`),
-            currentYear,
-          );
           const pct = value / 100;
-          for (const seg of segments) {
-            const segPeriods =
-              Math.min(seg.endPeriod, jd.periodsElapsed) - seg.startPeriod + 1;
-            if (segPeriods <= 0) continue;
-            expectedYtd += seg.salary * pct * (segPeriods / jd.periodsPerYear);
-          }
+          expectedYtd =
+            jd.salary * pct * (jd.periodsElapsed / jd.periodsPerYear);
         } else {
           // Fixed methods: scale by elapsed fraction
           const periodsPerYear =
@@ -422,14 +400,6 @@ export const contributionRouter = createTRPCRouter({
           });
         }
       }
-
-      const bonusOverrides = await getBonusOverridesForJobs(
-        ctx.db,
-        effectiveJobs.map((j) => j.id),
-      );
-      const asOfYear = asOfDate.getFullYear();
-      const resolveBonusOverride = (jobId: number) =>
-        bonusOverrides.get(`${jobId}:${asOfYear}`) ?? null;
 
       const results: PersonSnapshot[] = await Promise.all(
         people.map(async (person) => {
@@ -486,46 +456,22 @@ export const contributionRouter = createTRPCRouter({
             };
           }
 
-          const dbSalary = await getCurrentSalary(
-            ctx.db,
+          const comp = resolveCompensation(
+            salaryProfileActiveMap,
             activeJob.id,
-            activeJob.annualSalary,
-            asOfDate,
           );
-          const resolvedOverride = resolveBonusOverride(activeJob.id);
-          // A Salary Profile pin on bonus terms is independent of a salary
-          // pin — resolveBonusTerms overlays whichever of bonusPercent/
-          // bonusMultiplier/monthsInBonusYear the profile pins onto the
-          // job's live values. getEffectiveIncome/getTotalCompensation only
-          // read those three fields (plus includeBonusInContributions) off
-          // the job object, so a job-shaped object with the resolved terms
-          // substituted in gets them the pinned bonus without duplicating
-          // their arithmetic.
-          const bonusTerms = resolveBonusTerms(
-            activeJob,
-            effectiveSalaryMap.get(person.id),
-          );
-          const jobWithResolvedBonus = {
-            ...activeJob,
-            bonusPercent: bonusTerms.bonusPercent ?? "0",
-            bonusMultiplier: bonusTerms.bonusMultiplier ?? "0",
-            monthsInBonusYear: bonusTerms.monthsInBonusYear ?? 12,
-          };
-          const salary = applyActiveSalary(
+          // The What-If sandbox can override salary and/or bonus terms
+          // independently of the Salary Profile's own resolved values.
+          const personEntry = effectiveSalaryMap.get(person.id);
+          const dbSalary = applyActiveSalary(
             person.id,
-            getEffectiveIncome(
-              jobWithResolvedBonus,
-              dbSalary,
-              resolvedOverride,
-            ),
+            comp.salary,
             effectiveSalaryMap,
           );
+          const bonusTerms = applyActiveBonusTerms(personEntry, comp.terms);
+          const salary = getEffectiveIncome(activeJob, dbSalary, bonusTerms);
           // Total compensation (always includes bonus) — used for savings rate denominator
-          const totalCompensation = getTotalCompensation(
-            jobWithResolvedBonus,
-            dbSalary,
-            resolvedOverride,
-          );
+          const totalCompensation = getTotalCompensation(dbSalary, bonusTerms);
           const periodsPerYear = getPeriodsPerYear(activeJob.payPeriod);
           const periodsElapsedYtd = activeJob.anchorPayDate
             ? countPeriodsElapsed(
@@ -568,7 +514,6 @@ export const contributionRouter = createTRPCRouter({
             salary,
             bonusTerms.bonusPercent,
             bonusTerms.bonusMultiplier,
-            resolvedOverride,
             bonusTerms.monthsInBonusYear,
           );
 
@@ -581,7 +526,7 @@ export const contributionRouter = createTRPCRouter({
                   isInLimit401kGroup(c.accountType) &&
                   c.contributionMethod === "percent_of_salary",
               )
-              .reduce((s, c) => s + toNumber(c.contributionValue) / 100, 0);
+              .reduce((s, c) => s + Number(c.contributionValue) / 100, 0);
             bonus401k = roundToCents(bonusGross * bonusPct);
           }
 
@@ -1051,34 +996,11 @@ export const contributionRouter = createTRPCRouter({
           const ytdRatioForTotals =
             periodsPerYear > 0 ? periodsElapsedYtd / periodsPerYear : 0;
 
-          // Blended total compensation: weighted by salary timeline segments
-          const jc = activeJob.id ? jobCache.get(activeJob.id) : null;
-          let blendedTotalCompensation = totalCompensation;
-          if (jc && jc.timeline.length > 1) {
-            const segments = mapSalaryTimelineToPeriods(
-              jc.timeline,
-              jc.payPeriod,
-              jc.anchorPayDate ??
-                new Date(`${asOfDate.getFullYear()}-01-15T00:00:00`),
-              asOfDate.getFullYear(),
-            );
-            const blendedSalary = segments.reduce(
-              (s, seg) =>
-                s +
-                getEffectiveIncome(
-                  jobWithResolvedBonus,
-                  seg.salary,
-                  resolvedOverride,
-                ) *
-                  ((seg.endPeriod - seg.startPeriod + 1) / periodsPerYear),
-              0,
-            );
-            blendedTotalCompensation = getTotalCompensation(
-              jobWithResolvedBonus,
-              blendedSalary,
-              resolvedOverride,
-            );
-          }
+          // Salary is a flat number under the active Salary Profile — no
+          // mid-year timeline to blend across any more (see
+          // resolveCompensation's docblock), so blended and projected total
+          // compensation are the same figure.
+          const blendedTotalCompensation = totalCompensation;
 
           const totalsViews = computeViewAwareTotals({
             projected: {
@@ -1131,7 +1053,7 @@ export const contributionRouter = createTRPCRouter({
       );
       const jointAccountTypes: AccountTypeSnapshot[] = [];
       for (const c of jointContribs) {
-        const val = toNumber(c.contributionValue);
+        const val = Number(c.contributionValue);
         const periodsPerYear =
           results[0]?.periodsPerYear ?? DEFAULT_PAY_PERIODS_PER_YEAR;
         const salary = 0;

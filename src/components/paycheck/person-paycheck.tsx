@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency } from "@/lib/utils/format";
 import { useScenario } from "@/lib/context/scenario-context";
@@ -18,9 +18,9 @@ import type {
   RawContrib,
   DeductionRowData,
   CreateDeductionData,
-  CreateContribData,
   JointContrib,
 } from "./types";
+import type { ContribAccountFormValues } from "./contrib-account-form";
 import type { PerContribView } from "@/lib/hooks/use-paycheck-person-views";
 import type { BlendedAnnualTotals } from "@/lib/calculators/types/calculators";
 
@@ -30,11 +30,7 @@ import type { BlendedAnnualTotals } from "@/lib/calculators/types/calculators";
  * says so once and can't forget one of them.
  *
  * `kind: "readonly"` disables in-place editing throughout the tree and omits
- * the add/delete affordances entirely. That is the prop-gating half of the
- * rule; the other half is structural — a sub-component whose job is
- * triggering a distinct mutation ACTION (SalaryTracker's create/delete
- * salary-change buttons) is not gated by a flag at all, it is simply not
- * passed in (see `salaryHistorySlot`).
+ * the add/delete affordances entirely.
  */
 export type PersonPaycheckInteraction =
   | {
@@ -51,7 +47,11 @@ export type PersonPaycheckInteraction =
           targetContribValue?: number,
         ) => void;
         onDeleteContrib?: (id: number) => void;
-        onCreateContrib?: (data: CreateContribData) => void;
+        onCreateContrib?: (data: ContribAccountFormValues) => void;
+        onUpdateInstitution?: (
+          id: number,
+          performanceAccountId: number | null,
+        ) => void;
       };
     }
   | { kind: "readonly" };
@@ -62,6 +62,7 @@ export function PersonPaycheck({
   person,
   job,
   salary,
+  resolvedBonusTerms,
   paycheck,
   mode,
   blendedAnnual,
@@ -78,17 +79,12 @@ export function PersonPaycheck({
   onToggleContrib,
   sharedGroupOrder,
   interaction,
-  salaryHistorySlot,
 }: {
   person: { name: string; id: number };
   job: {
     id: number;
     employerName: string;
     title: string | null;
-    annualSalary: string;
-    bonusPercent: string;
-    bonusMultiplier: string;
-    bonusOverride: string | null;
     bonusMonth: number | null;
     bonusDayOfMonth: number | null;
     include401kInBonus: boolean;
@@ -103,6 +99,14 @@ export function PersonPaycheck({
     budgetPeriodsPerMonth?: string | null;
   };
   salary: number;
+  /** The bonus terms actually in effect (Salary Profile pin, if any, else
+   *  unset) — a job carries no bonus terms of its own any more, so this is
+   *  the only source BonusSection can pre-fill from. */
+  resolvedBonusTerms: {
+    bonusPercent: number;
+    bonusMultiplier: number;
+    monthsInBonusYear: number;
+  };
   paycheck: PaycheckResult;
   mode: ViewMode;
   blendedAnnual?: BlendedAnnualTotals;
@@ -124,14 +128,6 @@ export function PersonPaycheck({
   onToggleContrib: () => void;
   sharedGroupOrder?: string[];
   interaction: PersonPaycheckInteraction;
-  /**
-   * Where the salary-history UI goes, if the caller has one. Deliberately a
-   * slot rather than a `canEditSalaryHistory` flag: `SalaryTracker` creates
-   * and deletes real salary_changes rows, so in a sandbox it must be
-   * structurally absent from the tree — not present-but-disabled, which is a
-   * gate someone can forget.
-   */
-  salaryHistorySlot?: ReactNode;
 }) {
   const [addingDeduction, setAddingDeduction] = useState<{
     isPretax: boolean;
@@ -192,7 +188,6 @@ export function PersonPaycheck({
             onUpdateJob={onUpdateJob}
             readOnly={readOnly}
           />
-          {salaryHistorySlot}
         </div>
 
         {/* Two-column layout: Pay stub + Annual summary side by side */}
@@ -220,6 +215,7 @@ export function PersonPaycheck({
             <BonusSection
               paycheck={paycheck}
               job={job}
+              resolvedBonusTerms={resolvedBonusTerms}
               onUpdateJob={onUpdateJob}
               readOnly={readOnly}
             />
@@ -235,6 +231,7 @@ export function PersonPaycheck({
             onToggleAutoMax={handlers?.onToggleAutoMax}
             onDeleteContrib={handlers?.onDeleteContrib}
             onCreateContrib={handlers?.onCreateContrib}
+            onUpdateInstitution={handlers?.onUpdateInstitution}
             coverageNote={coverageNote}
             coverageNoteGroup={coverageNoteGroup}
             otherJointContribs={otherJointContribs}

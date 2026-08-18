@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { CONTRIBUTION_METHOD_LABELS } from "@/lib/config/display-labels";
 import { HelpTip } from "@/components/ui/help-tip";
 import { FormError } from "@/components/ui/form-error";
 import { useScenario } from "@/lib/context/scenario-context";
@@ -12,6 +13,11 @@ import { ProfileViewingBadge } from "./profile-viewing-badge";
 import { confirm, confirmWithDiff } from "@/components/ui/confirm-dialog";
 import { diffContribProfileSwap } from "@/lib/pure/contrib-profile-diff";
 import { ContributionProfileCompare } from "./contribution-profile-compare";
+import { SlidePanel } from "@/components/ui/slide-panel";
+import {
+  ContribAccountForm,
+  type ContribAccountFormValues,
+} from "@/components/paycheck/contrib-account-form";
 
 type ProfileSummary = {
   id: number;
@@ -49,6 +55,7 @@ export function ContributionProfileManager({
     null,
   );
   const [renameValue, setRenameValue] = useState("");
+  const [addingAccount, setAddingAccount] = useState(false);
 
   const invalidateProfileDeps = () => {
     utils.contributionProfile.invalidate();
@@ -56,6 +63,21 @@ export function ContributionProfileManager({
     utils.paycheck.invalidate();
     utils.projection.invalidate();
   };
+
+  const createContribAccount =
+    trpc.settings.contributionAccounts.create.useMutation({
+      onSuccess: () => {
+        invalidateProfileDeps();
+        setAddingAccount(false);
+      },
+    });
+  const updateContribAccount =
+    trpc.settings.contributionAccounts.update.useMutation({
+      onSuccess: () => {
+        invalidateProfileDeps();
+        setAddingAccount(false);
+      },
+    });
 
   const deleteMutation = trpc.contributionProfile.delete.useMutation({
     onSuccess: () => {
@@ -136,30 +158,62 @@ export function ContributionProfileManager({
       {/* R20: a standing audit view — accounts × profiles, not just this one
           profile's editor — kept as an internal toggle rather than a new
           top-level Budget-page tab (see contribution-profile-compare.tsx). */}
-      <div className="flex gap-1 mb-4 border-b">
-        <button
-          type="button"
-          onClick={() => setViewMode("profiles")}
-          className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
-            viewMode === "profiles"
-              ? "border-blue-600 text-blue-600"
-              : "border-transparent text-muted hover:text-secondary"
-          }`}
-        >
-          Profiles
-        </button>
-        <button
-          type="button"
-          onClick={() => setViewMode("compare")}
-          className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
-            viewMode === "compare"
-              ? "border-blue-600 text-blue-600"
-              : "border-transparent text-muted hover:text-secondary"
-          }`}
-        >
-          Compare
-        </button>
+      <div className="flex items-center justify-between mb-4 border-b">
+        <div className="flex gap-1">
+          <button
+            type="button"
+            onClick={() => setViewMode("profiles")}
+            className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+              viewMode === "profiles"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-muted hover:text-secondary"
+            }`}
+          >
+            Profiles
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("compare")}
+            className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+              viewMode === "compare"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-muted hover:text-secondary"
+            }`}
+          >
+            Compare
+          </button>
+        </div>
+        {canEdit && (
+          <button
+            type="button"
+            onClick={() => setAddingAccount(true)}
+            className="text-caption font-medium text-blue-600 hover:text-blue-700 mb-1.5"
+          >
+            + Add Account
+          </button>
+        )}
       </div>
+
+      <SlidePanel
+        isOpen={addingAccount}
+        onClose={() => setAddingAccount(false)}
+        title="Add Contribution Account"
+      >
+        <ContribAccountForm
+          onSave={(data: ContribAccountFormValues) => {
+            const { id, ...rest } = data;
+            if (id != null) {
+              updateContribAccount.mutate({ id, ...rest });
+            } else {
+              createContribAccount.mutate(rest);
+            }
+          }}
+          onCancel={() => setAddingAccount(false)}
+          isPending={
+            createContribAccount.isPending || updateContribAccount.isPending
+          }
+        />
+      </SlidePanel>
 
       {viewMode === "compare" && <ContributionProfileCompare />}
 
@@ -519,12 +573,11 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
               const af = ad.activeFields as Record<string, unknown> | null;
               const hasActiveFields = af !== null;
               const isProfileDisabled = af?.isActive === false;
-              const activeValue = hasActiveFields
-                ? String(af?.contributionValue ?? "")
-                : null;
-              const resolvedValue = (activeValue || ad.liveValue) ?? "";
+              const activeMethod = af?.contributionMethod as string | undefined;
+              const activeValue = af?.contributionValue as
+                string | number | undefined;
               const methodSuffix =
-                ad.liveMethod === "percent_of_salary" ? "%" : "";
+                activeMethod === "percent_of_salary" ? "%" : "";
               const hasActiveName =
                 ad.liveAccountName && ad.accountName !== ad.liveAccountName;
               return (
@@ -551,9 +604,11 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                     </span>
                   </td>
                   <td className="py-1.5 px-3 text-muted whitespace-nowrap">
-                    {ad.liveMethod === "percent_of_salary"
-                      ? "% salary"
-                      : "fixed"}
+                    {activeMethod
+                      ? activeMethod === "percent_of_salary"
+                        ? "% salary"
+                        : "fixed"
+                      : "—"}
                   </td>
                   <td
                     className={`py-1.5 px-3 text-right font-mono ${
@@ -562,8 +617,14 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                         : "text-secondary"
                     }`}
                   >
-                    {resolvedValue}
-                    {methodSuffix}
+                    {hasActiveFields ? (
+                      <>
+                        {activeValue}
+                        {methodSuffix}
+                      </>
+                    ) : (
+                      <span className="italic text-faint">Not set</span>
+                    )}
                   </td>
                   <td className="py-1.5 px-3 text-right text-faint">
                     {ad.liveMatchType && ad.liveMatchType !== "none" ? (
@@ -607,9 +668,6 @@ function ProfileEditor({
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [contribValues, setContribValues] = useState<Record<string, string>>(
-    {},
-  );
   const [matchValues, setMatchValues] = useState<
     Record<string, { matchValue?: string; maxMatchPct?: string }>
   >({});
@@ -629,16 +687,11 @@ function ProfileEditor({
   });
 
   const handleSave = () => {
+    // No contributionValue/Method here — a new profile starts with no
+    // value for any account (same "never silently inherit" principle
+    // already applied to salary pins); fill amounts in afterward via the
+    // standing editor, where a Method can be chosen alongside a Value.
     const contribAccounts: Record<string, Record<string, unknown>> = {};
-    for (const [accountId, val] of Object.entries(contribValues)) {
-      const num = parseFloat(val);
-      if (!isNaN(num)) {
-        contribAccounts[accountId] = {
-          ...(contribAccounts[accountId] ?? {}),
-          contributionValue: String(num),
-        };
-      }
-    }
     // Merge custom names into contrib accounts
     for (const [accountId, nameVal] of Object.entries(nameValues)) {
       if (nameVal.trim()) {
@@ -792,15 +845,16 @@ function ProfileEditor({
             <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
               Contributions
             </h4>
+            <p className="text-caption text-faint mb-2">
+              Contribution amounts aren&apos;t set here — this new profile
+              starts with none, same as every account&apos;s own value. Set them
+              afterward once the profile is created.
+            </p>
             <table className="w-full text-xs">
               <thead>
                 <tr className="text-muted border-b">
                   <th className="w-6 py-1.5"></th>
                   <th className="text-left py-1.5 font-medium">Account</th>
-                  <th className="text-right py-1.5 font-medium w-24">
-                    Current
-                  </th>
-                  <th className="text-right py-1.5 font-medium w-24">Value</th>
                   <th className="text-right py-1.5 font-medium w-24">
                     Employer Match
                   </th>
@@ -811,7 +865,6 @@ function ProfileEditor({
               </thead>
               <tbody>
                 {baseData.accountDetails.map((ad) => {
-                  const isPercent = ad.liveMethod === "percent_of_salary";
                   const fmtValue = (v: string | null | undefined) => {
                     if (!v) return "—";
                     const n = parseFloat(v);
@@ -870,48 +923,6 @@ function ProfileEditor({
                             className="w-full mt-0.5 px-1.5 py-0.5 text-caption border rounded bg-surface-primary text-primary"
                           />
                         )}
-                      </td>
-                      <td className="py-1.5 text-right text-muted font-mono">
-                        {isPercent ? "" : "$"}
-                        {fmtValue(ad.liveValue)}
-                        {isPercent ? "%" : ""}
-                      </td>
-                      <td className="py-1.5 text-right">
-                        <div className="flex items-center justify-end gap-0.5">
-                          {!isPercent && (
-                            <span className="text-caption text-faint">$</span>
-                          )}
-                          <input
-                            type="number"
-                            value={contribValues[String(ad.id)] ?? ""}
-                            onChange={(e) =>
-                              setContribValues((prev) => ({
-                                ...prev,
-                                [String(ad.id)]: e.target.value,
-                              }))
-                            }
-                            placeholder="same"
-                            className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
-                          />
-                          {isPercent && (
-                            <span className="text-caption text-faint">%</span>
-                          )}
-                          {contribValues[String(ad.id)] && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setContribValues((prev) => {
-                                  const next = { ...prev };
-                                  delete next[String(ad.id)];
-                                  return next;
-                                })
-                              }
-                              className="text-caption text-faint hover:text-red-500"
-                            >
-                              ×
-                            </button>
-                          )}
-                        </div>
                       </td>
                       <td className="py-1.5 text-right">
                         {hasMatch ? (
@@ -1243,8 +1254,8 @@ function ProfileInlineEditor({
                 <th className="text-left py-2 px-3 text-muted font-medium">
                   Account
                 </th>
-                <th className="text-right py-2 px-3 text-muted font-medium w-24">
-                  Current
+                <th className="text-left py-2 px-3 text-muted font-medium w-28">
+                  Method
                 </th>
                 <th className="text-right py-2 px-3 text-muted font-medium w-24">
                   Value
@@ -1260,7 +1271,11 @@ function ProfileInlineEditor({
             <tbody>
               {profile.accountDetails.map((ad, rowIdx) => {
                 const af = accountActiveFields(ad.id);
-                const isPercent = ad.liveMethod === "percent_of_salary";
+                const storedMethod =
+                  af.contributionMethod !== undefined
+                    ? String(af.contributionMethod)
+                    : "";
+                const isPercent = storedMethod === "percent_of_salary";
                 const fmtValue = (v: string | null | undefined) => {
                   if (!v) return "—";
                   const n = parseFloat(v);
@@ -1338,16 +1353,39 @@ function ProfileInlineEditor({
                         />
                       )}
                     </td>
-                    <td className="py-1.5 px-3 text-right text-muted font-mono">
-                      {isPercent ? "" : "$"}
-                      {fmtValue(ad.liveValue)}
-                      {isPercent ? "%" : ""}
+                    <td className="py-1.5 px-3">
+                      <select
+                        value={drafts[`a${ad.id}:method`] ?? storedMethod}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (storedValue.trim() !== "") {
+                            // A value already exists — method is already
+                            // required-and-present, safe to patch alone.
+                            patchAccount(ad.id, { contributionMethod: val });
+                          } else {
+                            // No value yet — contributionMethod can't be set
+                            // alone (required together). Track the pick
+                            // locally; the Value field's commit below picks
+                            // it up when a real value is finally entered.
+                            setDraft(`a${ad.id}:method`, val);
+                          }
+                        }}
+                        className="w-full px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
+                      >
+                        {Object.entries(CONTRIBUTION_METHOD_LABELS).map(
+                          ([k, label]) => (
+                            <option key={k} value={k}>
+                              {label}
+                            </option>
+                          ),
+                        )}
+                      </select>
                     </td>
                     <td className="py-1.5 px-3 text-right">
                       <div className="flex items-center justify-end gap-0.5">
-                        {!isPercent && (
-                          <span className="text-caption text-faint">$</span>
-                        )}
+                        <span className="text-caption text-faint w-3 text-right shrink-0">
+                          {isPercent ? "" : "$"}
+                        </span>
                         <input
                           type="number"
                           value={drafts[`a${ad.id}:value`] ?? storedValue}
@@ -1358,19 +1396,41 @@ function ProfileInlineEditor({
                             commitNumeric(
                               `a${ad.id}:value`,
                               storedValue,
-                              (value) =>
-                                patchAccount(ad.id, {
-                                  contributionValue: value,
-                                }),
+                              (value) => {
+                                if (value === undefined) {
+                                  // Cleared — both-or-neither, drop the
+                                  // method along with the value.
+                                  patchAccount(ad.id, {
+                                    contributionValue: undefined,
+                                    contributionMethod: undefined,
+                                  });
+                                } else if (storedValue.trim() === "") {
+                                  // First time this account gets a value —
+                                  // carry the (possibly just-picked) method
+                                  // along with it in the same patch.
+                                  patchAccount(ad.id, {
+                                    contributionValue: value,
+                                    contributionMethod:
+                                      drafts[`a${ad.id}:method`] ??
+                                      storedMethod ??
+                                      "percent_of_salary",
+                                  });
+                                  clearDraft(`a${ad.id}:method`);
+                                } else {
+                                  patchAccount(ad.id, {
+                                    contributionValue: value,
+                                  });
+                                }
+                              },
                               (num) => String(num),
                             )
                           }
-                          placeholder="same"
+                          placeholder="Not set"
                           className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
                         />
-                        {isPercent && (
-                          <span className="text-caption text-faint">%</span>
-                        )}
+                        <span className="text-caption text-faint w-3 text-left shrink-0">
+                          {isPercent ? "%" : ""}
+                        </span>
                       </div>
                     </td>
                     <td className="py-1.5 px-3 text-right">

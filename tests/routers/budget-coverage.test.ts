@@ -21,6 +21,8 @@ import {
   seedContributionProfile,
   viewerSession,
 } from "./setup";
+import * as sqliteSchema from "@/lib/db/schema-sqlite";
+import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -1348,13 +1350,11 @@ describe("budget router — computeActiveSummary with contribution-linked items"
     }
   });
 
-  it("honors the globally-active Contribution Profile as a fallback when the column has no explicit override — must match what use-budget-derived-data.ts's payroll breakdown resolves for the same column", async () => {
+  it("honors the globally-active Contribution Profile when the column has no explicit override — must match what use-budget-derived-data.ts's payroll breakdown resolves for the same column", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const seed = seedStandardDataset(db);
       const contrib = await seedContribAccount(db, seed.personId, {
-        contributionMethod: "dollar_amount",
-        contributionValue: "600",
         jobId: null,
       });
       await caller.budget.linkContributionAccount({
@@ -1366,18 +1366,22 @@ describe("budget router — computeActiveSummary with contribution-linked items"
         name: "Alt Contribution Profile",
         contributionActiveFields: {
           contributionAccounts: {
-            [String(contrib.id)]: { contributionValue: "900" },
+            [String(contrib.id)]: {
+              contributionValue: "900",
+              contributionMethod: "fixed_annual",
+            },
           },
         },
       });
 
-      // No Contribution Profile tiers at all → Live (the account's own $600).
+      // No Contribution Profile tiers at all — accounts carry no value of
+      // their own anymore, so a linked item with no resolvable profile
+      // contributes nothing.
       const liveSummary = await caller.budget.computeActiveSummary();
       const liveItem = liveSummary.rawItems!.find(
         (i) => i.id === seed.itemIds[0]!,
       );
-      // contribAmount is monthly; contributionValue "600" is annual → 50/mo.
-      expect(liveItem!.contribAmount).toBe(50);
+      expect(liveItem!.contribAmount).toBe(0);
 
       // No per-column override exists, but a globally-active Contribution
       // Profile is passed — the column must fall through to it (this is the
@@ -1403,8 +1407,6 @@ describe("budget router — computeActiveSummary with contribution-linked items"
     try {
       const seed = seedStandardDataset(db);
       const contrib = await seedContribAccount(db, seed.personId, {
-        contributionMethod: "dollar_amount",
-        contributionValue: "600",
         jobId: null,
       });
       await caller.budget.linkContributionAccount({
@@ -1416,7 +1418,10 @@ describe("budget router — computeActiveSummary with contribution-linked items"
         name: "Column Profile",
         contributionActiveFields: {
           contributionAccounts: {
-            [String(contrib.id)]: { contributionValue: "750" },
+            [String(contrib.id)]: {
+              contributionValue: "750",
+              contributionMethod: "fixed_annual",
+            },
           },
         },
       });
@@ -1424,7 +1429,10 @@ describe("budget router — computeActiveSummary with contribution-linked items"
         name: "Global Profile",
         contributionActiveFields: {
           contributionAccounts: {
-            [String(contrib.id)]: { contributionValue: "900" },
+            [String(contrib.id)]: {
+              contributionValue: "900",
+              contributionMethod: "fixed_annual",
+            },
           },
         },
       });
@@ -1458,26 +1466,67 @@ describe("budget router — computeActiveSummary with contribution-linked items"
         db,
         seed.personId,
         seed.jobId,
-        { contributionMethod: "percent_of_salary", contributionValue: "10" },
       );
       await caller.budget.linkContributionAccount({
         budgetItemId: seed.itemIds[0]!,
         contributionAccountId: contrib.id,
       });
+      // Accounts carry no value of their own — a Contribution Profile with
+      // the 10% active field is what both calls below resolve through; the
+      // salary axis (Plan-level active salary) is the only thing that
+      // changes between them.
+      const profileId = seedContributionProfile(db, {
+        name: "TenPercent",
+        contributionActiveFields: {
+          contributionAccounts: {
+            [String(contrib.id)]: {
+              contributionValue: "10",
+              contributionMethod: "percent_of_salary",
+            },
+          },
+        },
+      });
+      const contributionProfile = {
+        planPinId: null,
+        localSelectionId: null,
+        globalDefaultId: profileId,
+      };
+      // budget.computeActiveSummary resolves the Salary axis the same
+      // explicit way as Contribution — no salaryProfile input means "no
+      // preference," not "fall back to whatever's active" (see NO_PROFILE_TIERS
+      // in budget.ts). seedJob registered this job's $120,000 into the
+      // globally-active profile (setup.ts's seedDefaultSalaryProfileEntry),
+      // so pass that id explicitly, matching what the real client does.
+      const activeSalaryProfileId = Number(
+        db
+          .select()
+          .from(sqliteSchema.appSettings)
+          .where(eq(sqliteSchema.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID))
+          .get()?.value,
+      );
+      const salaryProfile = {
+        planPinId: null,
+        localSelectionId: null,
+        globalDefaultId: activeSalaryProfileId,
+      };
 
-      const salaryActiveFields = [{ personId: seed.personId, salary: 240000 }];
-
-      // Before the fix, computeActiveSummary had no salaryActiveFields input
-      // at all and this would silently stay at the $120,000 live figure.
-      const liveSummary = await caller.budget.computeActiveSummary();
+      const liveSummary = await caller.budget.computeActiveSummary({
+        contributionProfile,
+        salaryProfile,
+      });
       const liveItem = liveSummary.rawItems!.find(
         (i) => i.id === seed.itemIds[0]!,
       );
       expect(liveItem!.contribAmount).toBeCloseTo((120000 * 0.1) / 12, 2);
 
+      const salaryActiveFields = [{ personId: seed.personId, salary: 240000 }];
       const [paycheckResult, overriddenSummary] = await Promise.all([
         caller.paycheck.computeSummary({ salaryActiveFields }),
-        caller.budget.computeActiveSummary({ salaryActiveFields }),
+        caller.budget.computeActiveSummary({
+          salaryActiveFields,
+          contributionProfile,
+          salaryProfile,
+        }),
       ]);
 
       const paycheckPerson = paycheckResult.people.find(
@@ -1542,24 +1591,41 @@ describe("budget router — computeActiveSummary sandbox support", () => {
     try {
       const seed = seedStandardDataset(db);
       const contrib = await seedContribAccount(db, seed.personId, {
-        contributionMethod: "dollar_amount",
-        contributionValue: "600",
         jobId: null,
       });
       await caller.budget.linkContributionAccount({
         budgetItemId: seed.itemIds[0]!,
         contributionAccountId: contrib.id,
       });
+      const profileId = seedContributionProfile(db, {
+        name: "SixHundred",
+        contributionActiveFields: {
+          contributionAccounts: {
+            [String(contrib.id)]: {
+              contributionValue: "600",
+              contributionMethod: "fixed_annual",
+            },
+          },
+        },
+      });
+      const contributionProfile = {
+        planPinId: null,
+        localSelectionId: null,
+        globalDefaultId: profileId,
+      };
 
-      const withoutOverride = await caller.budget.computeActiveSummary();
+      const withoutOverride = await caller.budget.computeActiveSummary({
+        contributionProfile,
+      });
       const linkedItem = withoutOverride.rawItems!.find(
         (i) => i.id === seed.itemIds[0]!,
       );
-      // dollar_amount is treated as an annual figure by
+      // fixed_annual is treated as an annual figure by
       // computeContribMonthlyForPair — $600/yr resolves to $50/mo.
       expect(linkedItem!.contribAmount).toBeCloseTo(50, 2);
 
       const withOverride = await caller.budget.computeActiveSummary({
+        contributionProfile,
         itemAmountActiveFields: [
           { itemId: seed.itemIds[0]!, colIndex: 0, amount: 750 },
         ],
@@ -1639,7 +1705,10 @@ describe("budget router — computeActiveSummary resolves a profile PER COLUMN",
       name: "Column A Profile",
       contributionActiveFields: {
         contributionAccounts: {
-          [String(contrib.id)]: { contributionValue: "1200" }, // $100/mo
+          [String(contrib.id)]: {
+            contributionValue: "1200", // $100/mo
+            contributionMethod: "fixed_annual",
+          },
         },
       },
     });
@@ -1647,7 +1716,10 @@ describe("budget router — computeActiveSummary resolves a profile PER COLUMN",
       name: "Column B Profile",
       contributionActiveFields: {
         contributionAccounts: {
-          [String(contrib.id)]: { contributionValue: "2400" }, // $200/mo
+          [String(contrib.id)]: {
+            contributionValue: "2400", // $200/mo
+            contributionMethod: "fixed_annual",
+          },
         },
       },
     });
@@ -1755,7 +1827,10 @@ describe("budget router — computeActiveSummary resolves a profile PER COLUMN",
         name: "Plan-Pinned Profile",
         contributionActiveFields: {
           contributionAccounts: {
-            [String(contrib.id)]: { contributionValue: "3600" }, // $300/mo
+            [String(contrib.id)]: {
+              contributionValue: "3600", // $300/mo
+              contributionMethod: "fixed_annual",
+            },
           },
         },
       });
@@ -1808,7 +1883,10 @@ describe("budget router — listProfiles computes Unspent under the resolved pro
       name: "Max Out 401k",
       contributionActiveFields: {
         contributionAccounts: {
-          [String(contrib.id)]: { contributionValue: "25" },
+          [String(contrib.id)]: {
+            contributionValue: "25",
+            contributionMethod: "percent_of_salary",
+          },
         },
       },
     });
@@ -1890,7 +1968,10 @@ describe("budget router — listProfiles computes Unspent under the resolved pro
         name: "Plan-Pinned Contributions",
         contributionActiveFields: {
           contributionAccounts: {
-            [String(contrib.id)]: { contributionValue: "3" },
+            [String(contrib.id)]: {
+              contributionValue: "3",
+              contributionMethod: "percent_of_salary",
+            },
           },
         },
       });

@@ -10,6 +10,11 @@ import { db as appDb, pool } from "@/lib/db";
 import { isPostgres } from "@/lib/db/dialect";
 import { getParentCategory } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
+import {
+  SK_ACTIVE_CONTRIB_PROFILE_ID,
+  SK_ACTIVE_SALARY_PROFILE_ID,
+} from "@/lib/constants/settings-keys";
+import { speculativeJobValues } from "./settings/paycheck";
 
 /** Safe slug pattern — lowercase alphanumeric + hyphens, 1-40 chars. */
 const DEMO_SLUG_REGEX = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
@@ -50,23 +55,65 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
     .returning();
   const personIdByName = new Map(personRows.map((r) => [r.name, r.id]));
 
-  // 2. Jobs
+  // For parity with real usage — every person gets the same auto-provisioned
+  // speculative-job peg settings.people.create gives real people.
+  await db
+    .insert(schema.jobs)
+    .values(personRows.map((p) => speculativeJobValues(p.id)));
+
+  // 2. Jobs — a job carries no salary/bonus terms of its own; insert the
+  // job, then collect a COMPLETE entry (salary + all three bonus terms) to
+  // give it in a demo Salary Profile below — a profile entry is
+  // all-or-nothing, never a partial pin (mirrors the "Demo Contribution"
+  // profile pattern).
+  const salaryPinsByJobId: Record<
+    string,
+    {
+      salary: number;
+      bonusPercent: number;
+      bonusMultiplier: number;
+      monthsInBonusYear: number;
+    }
+  > = {};
   for (const j of profile.jobs) {
-    await db.insert(schema.jobs).values({
-      personId: personIdByName.get(j.personName)!,
-      employerName: j.employerName,
-      title: j.title,
-      annualSalary: j.annualSalary,
-      payPeriod: j.payPeriod,
-      payWeek: j.payWeek,
-      startDate: j.startDate,
-      anchorPayDate: j.anchorPayDate,
-      endDate: j.endDate,
-      bonusPercent: j.bonusPercent,
-      bonusMonth: j.bonusMonth,
-      bonusDayOfMonth: j.bonusDayOfMonth ?? null,
-      w4FilingStatus: j.w4FilingStatus,
-    });
+    const [createdJob] = await db
+      .insert(schema.jobs)
+      .values({
+        personId: personIdByName.get(j.personName)!,
+        employerName: j.employerName,
+        title: j.title,
+        payPeriod: j.payPeriod,
+        payWeek: j.payWeek,
+        startDate: j.startDate,
+        anchorPayDate: j.anchorPayDate,
+        endDate: j.endDate,
+        bonusMonth: j.bonusMonth,
+        bonusDayOfMonth: j.bonusDayOfMonth ?? null,
+        w4FilingStatus: j.w4FilingStatus,
+      })
+      .returning({ id: schema.jobs.id });
+    if (!createdJob) continue;
+    salaryPinsByJobId[String(createdJob.id)] = {
+      salary: Number(j.annualSalary),
+      bonusPercent: Number(j.bonusPercent),
+      bonusMultiplier: 1,
+      monthsInBonusYear: 12,
+    };
+  }
+  if (Object.keys(salaryPinsByJobId).length > 0) {
+    const [demoSalaryProfile] = await db
+      .insert(schema.salaryProfiles)
+      .values({
+        name: "Demo Salary",
+        salaries: salaryPinsByJobId,
+      })
+      .returning({ id: schema.salaryProfiles.id });
+    if (demoSalaryProfile) {
+      await db.insert(schema.appSettings).values({
+        key: SK_ACTIVE_SALARY_PROFILE_ID,
+        value: demoSalaryProfile.id,
+      });
+    }
   }
 
   // 3. Budget profiles
@@ -153,25 +200,58 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
     .returning();
   const _perfIdByLabel = new Map(perfRows.map((r) => [r.accountLabel, r.id]));
 
-  // 8. Contribution accounts
+  // 8. Contribution accounts — accounts carry no value of their own, so
+  // every demo account needs an explicit Contribution Profile active-field
+  // entry or it would render as $0/incomplete. Insert the accounts first
+  // (capturing their real ids), then seed one demo Contribution Profile
+  // whose active fields cover all of them, and make it the active profile.
+  const contribActiveFieldsByAccountId: Record<
+    string,
+    { contributionValue: string; contributionMethod: string }
+  > = {};
   for (const ca of profile.contributionAccounts) {
     const perfId = ca.perfAccountLabel
       ? (_perfIdByLabel.get(ca.perfAccountLabel) ?? null)
       : null;
-    await db.insert(schema.contributionAccounts).values({
-      personId: personIdByName.get(ca.personName)!,
-      accountType: ca.accountType,
-      parentCategory:
-        ca.parentCategory ??
-        getParentCategory(ca.accountType as AccountCategory),
-      taxTreatment: ca.taxTreatment as "pre_tax",
-      contributionMethod: ca.contributionMethod as "percent_of_salary",
-      contributionValue: ca.contributionValue,
-      employerMatchType: ca.employerMatchType as "none",
-      employerMatchValue: ca.employerMatchValue,
-      employerMaxMatchPct: ca.employerMaxMatchPct,
-      performanceAccountId: perfId,
-    });
+    const [created] = await db
+      .insert(schema.contributionAccounts)
+      .values({
+        personId: personIdByName.get(ca.personName)!,
+        accountType: ca.accountType,
+        parentCategory:
+          ca.parentCategory ??
+          getParentCategory(ca.accountType as AccountCategory),
+        taxTreatment: ca.taxTreatment as "pre_tax",
+        employerMatchType: ca.employerMatchType as "none",
+        employerMatchValue: ca.employerMatchValue,
+        employerMaxMatchPct: ca.employerMaxMatchPct,
+        performanceAccountId: perfId,
+      })
+      .returning({ id: schema.contributionAccounts.id });
+    if (created) {
+      contribActiveFieldsByAccountId[String(created.id)] = {
+        contributionValue: ca.contributionValue,
+        contributionMethod: ca.contributionMethod,
+      };
+    }
+  }
+  if (Object.keys(contribActiveFieldsByAccountId).length > 0) {
+    const [demoContribProfile] = await db
+      .insert(schema.contributionProfiles)
+      .values({
+        name: "Demo Contribution",
+        contributionActiveFields: {
+          contributionAccounts: contribActiveFieldsByAccountId,
+          jobs: {},
+        },
+      })
+      .returning({ id: schema.contributionProfiles.id });
+    if (demoContribProfile) {
+      await db.insert(schema.appSettings).values({
+        key: SK_ACTIVE_CONTRIB_PROFILE_ID,
+        value: demoContribProfile.id,
+      });
+    }
   }
 
   // 9. Portfolio snapshots

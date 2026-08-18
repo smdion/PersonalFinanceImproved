@@ -230,7 +230,13 @@ export function BudgetContent() {
     visibleCount,
     effectiveNameColWidth,
     onResizeStart,
-  } = useBudgetPageState({ data, nameColWidth, setNameColWidth, updateBatch });
+  } = useBudgetPageState({
+    data,
+    nameColWidth,
+    setNameColWidth,
+    updateBatch,
+    contributionProfileTiers,
+  });
 
   // Salary/Contribution/Savings tabs each keep their own persisted lock —
   // unlocking one must not silently unlock another — but the padlock
