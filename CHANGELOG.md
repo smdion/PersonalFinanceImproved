@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
+## [0.7.4] - Unreleased
+
+### Changed (internal)
+
+- Bumped `better-sqlite3` from 12.11.1 to 13.0.3.
+
 ## [0.7.3] - 2026-08-18
 
 ### Changed
