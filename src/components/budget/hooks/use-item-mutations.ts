@@ -36,11 +36,8 @@ type UseItemMutationsOpts = {
 
 export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
   const utils = trpc.useUtils();
-  const {
-    invalidateSummary,
-    invalidateSummaryAndSavings,
-    invalidateSummaryAndContributions,
-  } = useInvalidateBudget();
+  const { invalidateSummary, invalidateSummaryAndContributions } =
+    useInvalidateBudget();
 
   // --- Optimistic mutations ---
 
@@ -104,7 +101,7 @@ export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
         );
       }
     },
-    onSettled: () => utils.budget.computeActiveSummary.invalidate(),
+    onSettled: () => invalidateSummary(),
   });
 
   const updateItemEssential = trpc.budget.updateItemEssential.useMutation({
@@ -133,7 +130,7 @@ export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
         );
       }
     },
-    onSettled: () => utils.budget.computeActiveSummary.invalidate(),
+    onSettled: () => invalidateSummary(),
   });
 
   const updateCategoryEssential =
@@ -163,7 +160,7 @@ export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
           );
         }
       },
-      onSettled: () => utils.budget.computeActiveSummary.invalidate(),
+      onSettled: () => invalidateSummary(),
     });
 
   // --- Simple-invalidate mutations ---
@@ -184,7 +181,7 @@ export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
     onSuccess: invalidateSummary,
   });
   const convertToGoal = trpc.savings.convertBudgetItemToGoal.useMutation({
-    onSuccess: invalidateSummaryAndSavings,
+    onSuccess: invalidateSummary,
   });
 
   return {

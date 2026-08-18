@@ -21,27 +21,30 @@ export function useInvalidateBudget(): {
   invalidateSummary: () => void;
   invalidateSummaryAndProfiles: () => void;
   invalidateProfiles: () => void;
-  invalidateSummaryAndSavings: () => void;
   invalidateSummaryAndContributions: () => void;
 } {
   const utils = trpc.useUtils();
 
+  // Any structural or essential-flag change to a budget item can shift the
+  // API-actuals matching view (listApiActuals filters by budgetItems) and
+  // the e-fund target on the Savings Goals card (computeSummary sums
+  // essential-expense budget items) — both were previously left stale after
+  // a plain item add/delete/essential-toggle (M28,
+  // .scratch/docs/review-findings.md). Every other invalidate* variant below
+  // builds on this one so they can't drift out of sync with it again.
   const invalidateSummary = useCallback(() => {
     utils.budget.computeActiveSummary.invalidate();
+    utils.budget.listApiActuals.invalidate();
+    utils.savings.invalidate();
   }, [utils]);
 
   const invalidateSummaryAndProfiles = useCallback(() => {
-    utils.budget.computeActiveSummary.invalidate();
+    invalidateSummary();
     utils.budget.listProfiles.invalidate();
-  }, [utils]);
+  }, [utils, invalidateSummary]);
 
   const invalidateProfiles = useCallback(() => {
     utils.budget.listProfiles.invalidate();
-  }, [utils]);
-
-  const invalidateSummaryAndSavings = useCallback(() => {
-    utils.budget.computeActiveSummary.invalidate();
-    utils.savings.invalidate();
   }, [utils]);
 
   // Amount edits on a contribution-linked budget item write through to
@@ -49,21 +52,19 @@ export function useInvalidateBudget(): {
   // Projection/Savings/Brokerage/settings all read from — bust all of
   // them so a linked edit shows up everywhere without a manual reload.
   const invalidateSummaryAndContributions = useCallback(() => {
-    utils.budget.computeActiveSummary.invalidate();
+    invalidateSummary();
     utils.paycheck.invalidate();
     utils.contribution.invalidate();
     utils.retirement.invalidate();
     utils.projection.invalidate();
-    utils.savings.invalidate();
     utils.brokerage.invalidate();
     utils.settings.contributionAccounts.invalidate();
-  }, [utils]);
+  }, [utils, invalidateSummary]);
 
   return {
     invalidateSummary,
     invalidateSummaryAndProfiles,
     invalidateProfiles,
-    invalidateSummaryAndSavings,
     invalidateSummaryAndContributions,
   };
 }
