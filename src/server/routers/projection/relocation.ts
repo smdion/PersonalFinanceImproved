@@ -12,7 +12,10 @@ import { eq } from "drizzle-orm";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { calculateProjection } from "@/lib/calculators/engine";
 import { toNumber } from "@/server/helpers";
-import { computeBudgetAnnualTotal } from "@/server/helpers/budget";
+import {
+  computeBudgetAnnualTotal,
+  resolveLinkedBudgetItemAmounts,
+} from "@/server/helpers/budget";
 import {
   fetchRetirementData,
   buildEnginePayload,
@@ -118,6 +121,12 @@ export const relocationProjectionRouter = createTRPCRouter({
           .int()
           .nullable()
           .default(null),
+        // Same Salary Profile applies to both scenarios — relocation compares
+        // "stay" vs. "move" under one income trajectory, not two. Absent
+        // (null/undefined) means the caller's Plan-pin resolution didn't
+        // find one; falls through to the globally-active Salary Profile the
+        // same way every other engine-backed endpoint does.
+        salaryProfileId: z.number().int().nullable().default(null),
         yearAdjustments: z
           .array(
             z.object({
@@ -153,7 +162,14 @@ export const relocationProjectionRouter = createTRPCRouter({
       const currentYear = asOfDate.getFullYear();
 
       // Fetch all DB tables once — both scenarios share the same base data.
-      const data = await fetchRetirementData(ctx.db);
+      // C6 pre-fetch: batches the Salary Profile row alongside everything
+      // else when an id is known, same as scenarios.ts/monte-carlo.ts/
+      // coast-fire.ts. Contribution Profile is NOT pre-fetched here since
+      // each scenario applies its own (see the two buildEnginePayload calls
+      // below) — only one Salary Profile applies to both.
+      const data = await fetchRetirementData(ctx.db, {
+        salaryProfileId: input.salaryProfileId ?? undefined,
+      });
 
       // Load the same accumulation overrides the retirement page uses (stored in DB,
       // not passed via client state). Without these, the current scenario ignores
@@ -192,11 +208,46 @@ export const relocationProjectionRouter = createTRPCRouter({
         (i) => i.profileId === relocProfile.id,
       );
 
+      // Resolved through the same contribution-account chain
+      // computeActiveSummary/build-engine-payload.ts use (see
+      // resolveLinkedBudgetItemAmounts) rather than raw `amounts`, which is
+      // intentionally stale for contribution-linked items — reading it
+      // directly here silently dropped every linked item's dollar amount,
+      // diverging from what the Retirement page shows for the same profile.
+      const currentNumColumns =
+        (currentProfile.columnLabels as string[] | null)?.length ?? 1;
+      const relocNumColumns =
+        (relocProfile.columnLabels as string[] | null)?.length ?? 1;
+      const resolvedCurrentItems =
+        input.currentExpenseOverride !== null
+          ? currentItems
+          : await resolveLinkedBudgetItemAmounts(
+              ctx.db,
+              currentItems,
+              currentNumColumns,
+              new Array(currentNumColumns).fill(
+                input.currentContributionProfileId ?? null,
+              ),
+              new Array(currentNumColumns).fill(input.salaryProfileId ?? null),
+            );
+      const resolvedRelocItems =
+        input.relocationExpenseOverride !== null
+          ? relocItems
+          : await resolveLinkedBudgetItemAmounts(
+              ctx.db,
+              relocItems,
+              relocNumColumns,
+              new Array(relocNumColumns).fill(
+                input.relocationContributionProfileId ?? null,
+              ),
+              new Array(relocNumColumns).fill(input.salaryProfileId ?? null),
+            );
+
       const currentAnnualExpenses =
         input.currentExpenseOverride !== null
           ? input.currentExpenseOverride * 12
           : computeBudgetAnnualTotal(
-              currentItems,
+              resolvedCurrentItems,
               input.currentBudgetColumn,
               currentProfile.columnMonths as number[] | null,
             );
@@ -204,15 +255,18 @@ export const relocationProjectionRouter = createTRPCRouter({
         input.relocationExpenseOverride !== null
           ? input.relocationExpenseOverride * 12
           : computeBudgetAnnualTotal(
-              relocItems,
+              resolvedRelocItems,
               input.relocationBudgetColumn,
               relocProfile.columnMonths as number[] | null,
             );
 
-      // Build engine payloads — each scenario applies its own contribution profile.
+      // Build engine payloads — each scenario applies its own contribution
+      // profile, but shares the same (Plan-pinned or globally-active)
+      // Salary Profile, matching every other engine-backed endpoint.
       const currentPayload = await buildEnginePayload(ctx.db, data, {
         accumulationExpenseOverride: currentAnnualExpenses,
         contributionProfileId: input.currentContributionProfileId ?? undefined,
+        salaryProfileId: input.salaryProfileId ?? undefined,
       });
       if (!currentPayload) return null;
 
@@ -220,6 +274,7 @@ export const relocationProjectionRouter = createTRPCRouter({
         accumulationExpenseOverride: relocationAnnualExpenses,
         contributionProfileId:
           input.relocationContributionProfileId ?? undefined,
+        salaryProfileId: input.salaryProfileId ?? undefined,
       });
       if (!relocPayload) return null;
 

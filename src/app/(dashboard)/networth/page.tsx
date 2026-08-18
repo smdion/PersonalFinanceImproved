@@ -56,6 +56,8 @@ import { SpreadsheetView } from "@/components/networth/spreadsheet";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { useFICache } from "@/lib/hooks/use-fi-cache";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
+import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
+import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 
 export default function NetWorthPage() {
   const utils = trpc.useUtils();
@@ -65,8 +67,39 @@ export default function NetWorthPage() {
   const { data: historyData } = trpc.networth.listHistory.useQuery(targeting);
   const primaryBirthYear = historyData?.primaryBirthYear;
   const [budgetColumn] = usePersistedSetting<number>("budget_active_column", 0);
+  const [activeContribProfileId] = usePersistedSetting<number | null>(
+    "active_contrib_profile_id",
+    null,
+  );
+  const { data: contribProfilesList } =
+    trpc.contributionProfile.list.useQuery();
+  const { planPinId: planContribProfileId } = useEffectiveProfileId(
+    "contribution",
+    {
+      validIds: contribProfilesList?.map((p) => p.id),
+      localSelection: null,
+      globalDefaultId: activeContribProfileId,
+    },
+  );
+  const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
+  const { data: salaryProfilesList } = trpc.salaryProfile.list.useQuery();
+  const { planPinId: planSalaryProfileId } = useEffectiveProfileId("salary", {
+    validIds: salaryProfilesList?.map((p) => p.id),
+    localSelection: null,
+    globalDefaultId: rawActiveSalaryProfileId,
+  });
   const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: budgetColumn,
+    contributionProfile: {
+      planPinId: planContribProfileId,
+      localSelectionId: null,
+      globalDefaultId: activeContribProfileId,
+    },
+    salaryProfile: {
+      planPinId: planSalaryProfileId,
+      localSelectionId: null,
+      globalDefaultId: rawActiveSalaryProfileId,
+    },
   });
   const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
   const [useMarketValue, setUseMarketValue] = useState(true);

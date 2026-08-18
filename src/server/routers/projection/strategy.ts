@@ -82,7 +82,11 @@ export const strategyRouter = createTRPCRouter({
         data,
         { mcAssetClasses, mcCorrelations, mcGlidePath, effectiveInflationRisk },
       ] = await Promise.all([
-        fetchRetirementData(ctx.db, { snapshotId: input?.snapshotId }),
+        fetchRetirementData(ctx.db, {
+          snapshotId: input?.snapshotId,
+          contributionProfileId: input?.contributionProfileId,
+          salaryProfileId: input?.salaryProfileId,
+        }),
         buildMcInputs(ctx.db),
       ]);
 
@@ -258,7 +262,11 @@ export const strategyRouter = createTRPCRouter({
         data,
         { mcAssetClasses, mcCorrelations, mcGlidePath, effectiveInflationRisk },
       ] = await Promise.all([
-        fetchRetirementData(ctx.db, { snapshotId: input?.snapshotId }),
+        fetchRetirementData(ctx.db, {
+          snapshotId: input?.snapshotId,
+          contributionProfileId: input?.contributionProfileId,
+          salaryProfileId: input?.salaryProfileId,
+        }),
         buildMcInputs(ctx.db),
       ]);
 

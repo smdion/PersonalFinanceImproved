@@ -20,6 +20,7 @@ import {
   discretionaryColor,
 } from "@/lib/utils/colors";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
+import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 
 // Code-split the recharts-heavy chart row (v0.5 expert-review M8). Both
@@ -102,6 +103,13 @@ export default function ExpensesPage() {
   const scenarioActiveSalaries = useActiveSalaries();
   // Independent Salary Profile axis (Plan pin -> globally-active setting).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
+  const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
+  const { data: salaryProfilesList } = trpc.salaryProfile.list.useQuery();
+  const { planPinId: planSalaryProfileId } = useEffectiveProfileId("salary", {
+    validIds: salaryProfilesList?.map((p) => p.id),
+    localSelection: null,
+    globalDefaultId: rawActiveSalaryProfileId,
+  });
 
   // Plan pin -> globally-active profile for both budget and contribution —
   // this page has no local viewing picker of its own, so localSelection is
@@ -136,6 +144,11 @@ export default function ExpensesPage() {
       planPinId: planContribProfileId,
       localSelectionId: null,
       globalDefaultId: activeContribProfileId,
+    },
+    salaryProfile: {
+      planPinId: planSalaryProfileId,
+      localSelectionId: null,
+      globalDefaultId: rawActiveSalaryProfileId,
     },
     ...(scenarioActiveSalaries.length > 0
       ? { salaryActiveFields: scenarioActiveSalaries }

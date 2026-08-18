@@ -26,6 +26,8 @@ import { AccountCard } from "./contribution-accounts-card";
 import { CreateAccountForm } from "./contribution-accounts-create-form";
 import { useContributionAccountsMutations } from "./use-contribution-accounts-mutations";
 import { UnlinkedContribsBanner } from "./unlinked-contribs-banner";
+import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
+import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 
 export function ContributionAccountsSettings() {
   const user = useUser();
@@ -37,6 +39,24 @@ export function ContributionAccountsSettings() {
     trpc.settings.performanceAccounts.list.useQuery();
   const { data: latestSnap } =
     trpc.settings.portfolioSnapshots.getLatest.useQuery();
+
+  // Employer-match/auto-maximize fields on a contribution account are
+  // profile-ownable (see contribAccountActiveFieldsSchema) — when a
+  // Contribution Profile is active, editing them here must write into that
+  // same profile entry the Paycheck/Budget pages write into, not the raw
+  // account row, or an edit made here would be silently shadowed by the
+  // active profile everywhere else in the app.
+  const [rawActiveContribProfileId] = useActiveContribProfile();
+  const { data: contribProfilesList } =
+    trpc.contributionProfile.list.useQuery();
+  const { profileId: activeContribProfileId } = useEffectiveProfileId(
+    "contribution",
+    {
+      validIds: contribProfilesList?.map((p) => p.id),
+      localSelection: null,
+      globalDefaultId: rawActiveContribProfileId,
+    },
+  );
   const [showClosed, setShowClosed] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [expandedAcctId, setExpandedAcctId] = useState<number | null>(null);
@@ -139,6 +159,7 @@ export function ContributionAccountsSettings() {
     handleLinkContrib,
   } = useContributionAccountsMutations({
     allContribs,
+    activeContribProfileId,
     onCreatePerfSuccess: () => setCreatingAccount(false),
   });
 

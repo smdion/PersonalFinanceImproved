@@ -33,6 +33,8 @@ const invalidateFns = {
   retirement: vi.fn(),
   projection: vi.fn(),
   networth: vi.fn(),
+  contributionProfile: vi.fn(),
+  paycheck: vi.fn(),
 };
 
 const stableUtils = {
@@ -46,6 +48,8 @@ const stableUtils = {
   retirement: { invalidate: invalidateFns.retirement },
   projection: { invalidate: invalidateFns.projection },
   networth: { invalidate: invalidateFns.networth },
+  contributionProfile: { invalidate: invalidateFns.contributionProfile },
+  paycheck: { invalidate: invalidateFns.paycheck },
 };
 
 // Capture the mutate fn + onSuccess callback for each mutation so tests can
@@ -82,6 +86,9 @@ vi.mock("@/lib/trpc", () => ({
         updateAccount: mutationFactory("updatePortfolioAccount"),
         createAccount: mutationFactory("createPortfolioAccount"),
       },
+    },
+    contributionProfile: {
+      setAccountActiveFields: mutationFactory("setContribProfileFields"),
     },
   },
 }));

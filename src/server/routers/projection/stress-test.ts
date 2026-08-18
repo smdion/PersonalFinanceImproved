@@ -55,6 +55,8 @@ export const stressTestRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const data = await fetchRetirementData(ctx.db, {
         snapshotId: input?.snapshotId,
+        contributionProfileId: input?.contributionProfileId,
+        salaryProfileId: input?.salaryProfileId,
       });
       const payload = await buildEnginePayload(ctx.db, data, {
         salaryActiveFields: input?.salaryActiveFields,

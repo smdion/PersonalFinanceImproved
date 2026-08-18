@@ -36,6 +36,7 @@ import {
   buildProfileContribData,
   getPrimaryPerson,
   pickActiveBudgetProfile,
+  resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
 import type { SalaryEntryMap, SalaryProfileEntry } from "@/server/helpers";
 import type {
@@ -324,32 +325,46 @@ export async function buildEnginePayload(
       : avgRetirementAge;
   const maxEndAge = Math.max(...perPersonSettings.map((p) => p.endAge));
 
-  // Budget profile summaries (for budget override "from profile" UI)
-  const budgetProfileSummaries = allBudgetProfiles.map((p) => {
-    const items = allBudgetItems.filter((i) => i.profileId === p.id);
-    const labels = p.columnLabels as string[];
-    const months = (p.columnMonths as number[] | null) ?? null;
-    const totals = labels.map((_: string, colIdx: number) =>
-      sumBy(items, (item) => (item.amounts as number[])[colIdx] ?? 0),
-    );
-    const weightedAnnualTotal = months
-      ? roundToCents(
-          sumBy(
-            totals.map((t, i) => t * (months[i] ?? 0)),
-            (v) => v,
-          ),
-        )
-      : null;
-    return {
-      id: p.id,
-      name: p.name,
-      isActive: p.isActive,
-      columnLabels: labels,
-      columnMonths: months,
-      columnTotals: totals,
-      weightedAnnualTotal,
-    };
-  });
+  // Budget profile summaries (for budget override "from profile" UI) — each
+  // linked item's dollar amount resolved through the same contribution-
+  // account chain computeActiveSummary uses (see resolveLinkedBudgetItemAmounts),
+  // not the raw `amounts` column, which is intentionally left stale for
+  // linked items and would silently undercount them here.
+  const budgetProfileSummaries = await Promise.all(
+    allBudgetProfiles.map(async (p) => {
+      const items = allBudgetItems.filter((i) => i.profileId === p.id);
+      const labels = p.columnLabels as string[];
+      const months = (p.columnMonths as number[] | null) ?? null;
+      const numColumns = labels.length;
+      const resolvedItems = await resolveLinkedBudgetItemAmounts(
+        db,
+        items,
+        numColumns,
+        new Array(numColumns).fill(opts.contributionProfileId ?? null),
+        new Array(numColumns).fill(opts.salaryProfileId ?? null),
+      );
+      const totals = labels.map((_: string, colIdx: number) =>
+        sumBy(resolvedItems, (item) => item.amounts[colIdx] ?? 0),
+      );
+      const weightedAnnualTotal = months
+        ? roundToCents(
+            sumBy(
+              totals.map((t, i) => t * (months[i] ?? 0)),
+              (v) => v,
+            ),
+          )
+        : null;
+      return {
+        id: p.id,
+        name: p.name,
+        isActive: p.isActive,
+        columnLabels: labels,
+        columnMonths: months,
+        columnTotals: totals,
+        weightedAnnualTotal,
+      };
+    }),
+  );
 
   // Age (average-based for multi-person households)
   const age = avgAge;
@@ -799,12 +814,39 @@ export async function buildEnginePayload(
 
   const accMonths = (accProfile?.columnMonths as number[] | null) ?? null;
   const decMonths = (decProfile?.columnMonths as number[] | null) ?? null;
+  // Resolved through the same contribution-account chain
+  // computeActiveSummary uses (see resolveLinkedBudgetItemAmounts) rather
+  // than raw `amounts`, which is intentionally stale for contribution-linked
+  // items — reading it directly here silently dropped every linked item's
+  // dollar amount from accumulation/decumulation expenses.
+  const accNumColumns =
+    (accProfile?.columnLabels as string[] | null)?.length ?? 1;
+  const decNumColumns =
+    (decProfile?.columnLabels as string[] | null)?.length ?? 1;
+  const resolvedAccItems = opts.accumulationExpenseOverride
+    ? accItems
+    : await resolveLinkedBudgetItemAmounts(
+        db,
+        accItems,
+        accNumColumns,
+        new Array(accNumColumns).fill(opts.contributionProfileId ?? null),
+        new Array(accNumColumns).fill(opts.salaryProfileId ?? null),
+      );
+  const resolvedDecItems = opts.decumulationExpenseOverride
+    ? decItems
+    : await resolveLinkedBudgetItemAmounts(
+        db,
+        decItems,
+        decNumColumns,
+        new Array(decNumColumns).fill(opts.contributionProfileId ?? null),
+        new Array(decNumColumns).fill(opts.salaryProfileId ?? null),
+      );
   const accumulationExpenses =
     opts.accumulationExpenseOverride ??
-    computeBudgetAnnualTotal(accItems, accCol, accMonths);
+    computeBudgetAnnualTotal(resolvedAccItems, accCol, accMonths);
   const decumulationExpenses =
     opts.decumulationExpenseOverride ??
-    computeBudgetAnnualTotal(decItems, decCol, decMonths);
+    computeBudgetAnnualTotal(resolvedDecItems, decCol, decMonths);
   const annualExpensesVal = accumulationExpenses;
 
   // Build parentCategory lookup for contribution accounts (via linked performance account)

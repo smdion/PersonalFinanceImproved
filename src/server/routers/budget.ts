@@ -60,6 +60,7 @@ import {
   resolveTargetBudgetProfile,
   getResolvedGoalAllocations,
   applyContribActiveFields,
+  resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
 import { accountDisplayName } from "@/lib/utils/format";
 import {
@@ -339,23 +340,6 @@ export const budgetRouter = createTRPCRouter({
         const items = allItems.filter((i) => i.profileId === p.id);
         const labels = (p.columnLabels as string[]) ?? [];
         const months = (p.columnMonths as number[] | null) ?? null;
-        const colTotals = labels.map((_: string, ci: number) =>
-          items.reduce(
-            (sum, item) => sum + ((item.amounts as number[])[ci] ?? 0),
-            0,
-          ),
-        );
-        const monthlySavings = monthlySavingsByProfile.get(p.id) ?? 0;
-        // Annual: weighted if months set, otherwise column 0 * 12, plus
-        // savings (savings funding doesn't vary by mode — see
-        // savings_goal_profile_allocations' table comment).
-        const budgetAnnual = months
-          ? colTotals.reduce((sum, t, i) => sum + t * (months[i] ?? 0), 0)
-          : (colTotals[0] ?? 0) * 12;
-        const annualTotal = budgetAnnual + monthlySavings * 12;
-        const isWeighted = months !== null && months.length > 0;
-        const spending = isWeighted ? budgetAnnual / 12 : (colTotals[0] ?? 0);
-
         const numColumns = labels.length;
         const contribIds = resolveContributionProfileIdsForAllColumns({
           ...contribTiers,
@@ -368,6 +352,32 @@ export const budgetRouter = createTRPCRouter({
           columnPinIds: p.columnSalaryProfileIds as (number | null)[] | null,
           numColumns,
         });
+        // Resolved through the same contribution-account chain
+        // computeActiveSummary uses (see resolveLinkedBudgetItemAmounts),
+        // using each column's own resolved Contribution/Salary Profile pins
+        // (same contribIds/salaryIds as the take-home computation below) —
+        // reading raw `amounts` here silently dropped every contribution-
+        // linked item from this sidebar's totals.
+        const resolvedItems = await resolveLinkedBudgetItemAmounts(
+          ctx.db,
+          items,
+          numColumns,
+          contribIds,
+          salaryIds,
+        );
+        const colTotals = labels.map((_: string, ci: number) =>
+          resolvedItems.reduce((sum, item) => sum + (item.amounts[ci] ?? 0), 0),
+        );
+        const monthlySavings = monthlySavingsByProfile.get(p.id) ?? 0;
+        // Annual: weighted if months set, otherwise column 0 * 12, plus
+        // savings (savings funding doesn't vary by mode — see
+        // savings_goal_profile_allocations' table comment).
+        const budgetAnnual = months
+          ? colTotals.reduce((sum, t, i) => sum + t * (months[i] ?? 0), 0)
+          : (colTotals[0] ?? 0) * 12;
+        const annualTotal = budgetAnnual + monthlySavings * 12;
+        const isWeighted = months !== null && months.length > 0;
+        const spending = isWeighted ? budgetAnnual / 12 : (colTotals[0] ?? 0);
 
         // A weighted profile has no single "the" contribution profile — its
         // take-home is blended across modes exactly the way its spending is,

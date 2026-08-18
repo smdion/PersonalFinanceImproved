@@ -28,6 +28,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Fixed a case where the Net Worth page's budget summary could silently use $0 income when no Salary Profile was explicitly selected.
 - Deleting a person now cleans up correctly if the delete is interrupted partway through, instead of leaving an orphaned placeholder job behind.
 - Creating a new Contribution Profile now enforces the same validation as editing one.
+- **Several pages (Savings, Expenses, Net Worth, and two dashboard cards) now correctly reflect a Plan's pinned Salary Profile** in their budget totals, instead of silently falling back to whichever Salary Profile is globally active.
+- **Retirement projections, the year-end Net Worth history, and the Budget Profile sidebar's "Unspent" figure now correctly include budget items linked to a Contribution Account**, instead of showing them as $0.
+- **Editing an account's employer match or auto-maximize setting from the Portfolio page now updates the active Contribution Profile**, instead of writing to a value the active profile was already overriding elsewhere (which made the edit silently disappear).
+- **Locking the Savings allocation editor on the Budget page now also locks it on the standalone Savings page**, so a lock set on one page actually protects the same numbers everywhere they're editable.
+- **The Relocation tool's projections now correctly include budget items linked to a Contribution Account, and respect a Plan's pinned Salary Profile**, instead of silently undercounting linked expenses or ignoring the pinned salary — bringing it in line with the Retirement page for the same scenario.
 
 ### Changed (internal hardening, no user-facing behavior change for existing data)
 

@@ -38,6 +38,7 @@ import {
   DEFAULT_LOAN_TERM_YEARS,
 } from "@/lib/constants";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
+import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 
 export default function ToolsPage() {
   const user = useUser();
@@ -135,6 +136,16 @@ export default function ToolsPage() {
     relocCurrentContribProfileId ?? defaultContribProfileId ?? null;
   const effectiveTargetContribProfileId =
     relocTargetContribProfileId ?? defaultContribProfileId ?? null;
+
+  // Salary Profile axis (Plan pin -> globally-active setting) — one profile
+  // applies to both scenarios, matching every other engine-backed endpoint
+  // (Retirement page, Monte Carlo, Coast FIRE). Without this the engine-
+  // backed relocation projection silently fell back to whichever Salary
+  // Profile is globally active, diverging from the Retirement page's own
+  // number for the same "current" baseline whenever a Plan pins a
+  // different one.
+  const { salaryProfileId: effectiveSalaryProfileId } =
+    useEffectiveSalaryProfileId();
 
   // People for age display
   const { data: retData } = trpc.projection.computeProjection.useQuery({});
@@ -356,6 +367,7 @@ export default function ToolsPage() {
         saleProceeds: p.saleProceeds ?? null,
       })),
       moveYear: debouncedRelocInput.moveYear,
+      salaryProfileId: effectiveSalaryProfileId,
     },
     {
       enabled: effectiveCurrentProfileId > 0 && effectiveTargetProfileId > 0,

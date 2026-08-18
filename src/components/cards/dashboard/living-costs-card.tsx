@@ -15,24 +15,57 @@ import {
 } from "@/lib/config/living-costs";
 import { LoadingCard } from "./utils";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
+import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
+import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 
 function LivingCostsCardImpl() {
   const { viewMode } = useScenario();
   const isYtd = viewMode === "ytd";
   const isBlended = viewMode === "blended";
   const [budgetColumn] = usePersistedSetting<number>("budget_active_column", 0);
-  const { data: budgetData, isLoading: isBudgetLoading } =
-    trpc.budget.computeActiveSummary.useQuery({
-      selectedColumn: budgetColumn,
-    });
   const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
   const salaryActiveFields = useActiveSalaries();
   // Independent Salary Profile axis (Plan pin -> globally-active setting).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
+  const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
+  const { data: salaryProfilesList } = trpc.salaryProfile.list.useQuery();
+  const { planPinId: planSalaryProfileId } = useEffectiveProfileId("salary", {
+    validIds: salaryProfilesList?.map((p) => p.id),
+    localSelection: null,
+    globalDefaultId: rawActiveSalaryProfileId,
+  });
   const [activeContribProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",
     null,
   );
+  const { data: contribProfilesList } =
+    trpc.contributionProfile.list.useQuery();
+  const { planPinId: planContribProfileId } = useEffectiveProfileId(
+    "contribution",
+    {
+      validIds: contribProfilesList?.map((p) => p.id),
+      localSelection: null,
+      globalDefaultId: activeContribProfileId,
+    },
+  );
+  // Same tiers used by the paycheck query below, so the budget total and the
+  // income figure on this card never disagree about which Plan-pinned
+  // Salary/Contribution Profile is in effect.
+  const { data: budgetData, isLoading: isBudgetLoading } =
+    trpc.budget.computeActiveSummary.useQuery({
+      selectedColumn: budgetColumn,
+      contributionProfile: {
+        planPinId: planContribProfileId,
+        localSelectionId: null,
+        globalDefaultId: activeContribProfileId,
+      },
+      salaryProfile: {
+        planPinId: planSalaryProfileId,
+        localSelectionId: null,
+        globalDefaultId: rawActiveSalaryProfileId,
+      },
+      ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
+    });
   const lcQueryInput = {
     ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(activeContribProfileId != null

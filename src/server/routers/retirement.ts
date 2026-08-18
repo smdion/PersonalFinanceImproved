@@ -18,6 +18,7 @@ import {
   fetchContributionProfile,
   resolveProfile,
   getPrimaryPerson,
+  resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
 import type { ContribRowWithActiveFields } from "@/server/helpers/contribution";
 import { isRetirementParent } from "@/lib/config/account-types";
@@ -143,33 +144,47 @@ export const retirementRouter = createTRPCRouter({
       if (allBudgetProfiles.length === 0)
         return { result: null, budgetInfo: null };
 
-      // Build per-profile column totals
-      const profileSummaries = allBudgetProfiles.map((p) => {
-        const items = allBudgetItems.filter((i) => i.profileId === p.id);
-        const labels = p.columnLabels as string[];
-        const months = (p.columnMonths as number[] | null) ?? null;
-        const totals = labels.map((_: string, colIdx: number) =>
-          items.reduce(
-            (sum: number, item) =>
-              sum + ((item.amounts as number[])[colIdx] ?? 0),
-            0,
-          ),
-        );
-        const weightedAnnualTotal = months
-          ? roundToCents(
-              totals.reduce((sum, t, i) => sum + t * (months[i] ?? 0), 0),
-            )
-          : null;
-        return {
-          id: p.id,
-          name: p.name,
-          isActive: p.isActive,
-          columnLabels: labels,
-          columnMonths: months,
-          columnTotals: totals,
-          weightedAnnualTotal,
-        };
-      });
+      // Build per-profile column totals — resolved through the same
+      // contribution-account chain computeActiveSummary/build-engine-payload.ts
+      // use (see resolveLinkedBudgetItemAmounts) rather than raw `amounts`,
+      // which is intentionally stale for contribution-linked items. Live/
+      // globally-active profiles throughout (no Plan pin), matching this
+      // endpoint's documented "control arm" salary resolution below.
+      const profileSummaries = await Promise.all(
+        allBudgetProfiles.map(async (p) => {
+          const items = allBudgetItems.filter((i) => i.profileId === p.id);
+          const labels = p.columnLabels as string[];
+          const months = (p.columnMonths as number[] | null) ?? null;
+          const numColumns = labels.length;
+          const resolvedItems = await resolveLinkedBudgetItemAmounts(
+            ctx.db,
+            items,
+            numColumns,
+            new Array(numColumns).fill(null),
+            new Array(numColumns).fill(null),
+          );
+          const totals = labels.map((_: string, colIdx: number) =>
+            resolvedItems.reduce(
+              (sum: number, item) => sum + (item.amounts[colIdx] ?? 0),
+              0,
+            ),
+          );
+          const weightedAnnualTotal = months
+            ? roundToCents(
+                totals.reduce((sum, t, i) => sum + t * (months[i] ?? 0), 0),
+              )
+            : null;
+          return {
+            id: p.id,
+            name: p.name,
+            isActive: p.isActive,
+            columnLabels: labels,
+            columnMonths: months,
+            columnTotals: totals,
+            weightedAnnualTotal,
+          };
+        }),
+      );
 
       // Look up current and relocation monthly expenses
       const currentProfile = profileSummaries.find(
