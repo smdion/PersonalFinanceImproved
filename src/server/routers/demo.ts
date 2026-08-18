@@ -73,6 +73,7 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
       bonusPercent: number;
       bonusMultiplier: number;
       monthsInBonusYear: number;
+      bonusOverride: number | null;
     }
   > = {};
   for (const j of profile.jobs) {
@@ -98,6 +99,7 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
       bonusPercent: Number(j.bonusPercent),
       bonusMultiplier: 1,
       monthsInBonusYear: 12,
+      bonusOverride: null,
     };
   }
   if (Object.keys(salaryPinsByJobId).length > 0) {

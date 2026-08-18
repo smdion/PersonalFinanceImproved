@@ -121,18 +121,27 @@ export function applySandboxSalaryEntries(
 
 /**
  * One job's entry in a Salary Profile's `salaries` map. Always complete —
- * a profile either has ALL FOUR of these numbers for a job, or (no key at
+ * a profile either has ALL FIVE of these fields for a job, or (no key at
  * all) says nothing about it. There is no partial state, no "resolves
  * live," no revert-to-something-else. A profile is its own self-contained
  * world; if you want different numbers, use a different profile.
  *
  * `bonusPercent` is a FRACTION (0.12 = 12%).
+ *
+ * `bonusOverride`: this year's actual paid-out bonus, pinned once known —
+ * an orthogonal fact from the bonusPercent/bonusMultiplier/monthsInBonusYear
+ * formula, not a replacement for it. Only the current-year LIVE paycheck
+ * display reads it (via resolveCompensation's returned `bonusOverride`);
+ * growth/projection math always uses the formula fields untouched, so
+ * pinning one year's actual number never distorts future-year compounding.
+ * Still lives on this same entry — never a separate table/fallback.
  */
 export type SalaryProfileEntry = {
   salary: number;
   bonusPercent: number;
   bonusMultiplier: number;
   monthsInBonusYear: number;
+  bonusOverride: number | null;
 };
 
 /** A Salary Profile's own `salaries` map, keyed by jobId (string key) —
@@ -154,11 +163,24 @@ export type BonusTerms = {
  * profile's own complete entry for that job, or nothing at all ($0, no
  * bonus) if the profile doesn't mention it — never a fallback to a job
  * column or a dated ledger, because neither exists any more.
+ *
+ * `bonus`/`totalComp` are always the pure FORMULA figures — every caller
+ * that grows compensation forward (retirement projections, contribution
+ * math) relies on that being untouched by a current-year pin. `bonusOverride`
+ * is returned alongside, unapplied, for the one caller (the live Paycheck
+ * display) that chooses to use it in place of the formula bonus for the
+ * current year specifically.
  */
 export function resolveCompensation(
   salaryProfileActiveMap: SalaryProfileActiveMap,
   jobId: number,
-): { salary: number; bonus: number; totalComp: number; terms: BonusTerms } {
+): {
+  salary: number;
+  bonus: number;
+  totalComp: number;
+  terms: BonusTerms;
+  bonusOverride: number | null;
+} {
   const entry = salaryProfileActiveMap.get(jobId);
   if (!entry) {
     const terms: BonusTerms = {
@@ -166,7 +188,7 @@ export function resolveCompensation(
       bonusMultiplier: null,
       monthsInBonusYear: null,
     };
-    return { salary: 0, bonus: 0, totalComp: 0, terms };
+    return { salary: 0, bonus: 0, totalComp: 0, terms, bonusOverride: null };
   }
   const terms: BonusTerms = {
     bonusPercent: String(entry.bonusPercent),
@@ -184,6 +206,11 @@ export function resolveCompensation(
     bonus,
     totalComp: entry.salary + bonus,
     terms,
+    // `?? null`, not a bare passthrough: entries written before this field
+    // existed have the key absent entirely (`undefined`), not `null`. Both
+    // mean the exact same thing — "no pin" — so normalize here rather than
+    // treating an absent key as "somehow already a real override value."
+    bonusOverride: entry.bonusOverride ?? null,
   };
 }
 

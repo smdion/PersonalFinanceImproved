@@ -46,6 +46,7 @@ export function ContributionsSection({
   personId,
   jobId,
   readOnly,
+  contribValueReadOnly,
 }: {
   rawContribs: RawContrib[];
   /**
@@ -87,6 +88,11 @@ export function ContributionsSection({
   /** Sandbox/preview mode — cards are read-only and the "add account"
    *  action is omitted entirely. */
   readOnly?: boolean;
+  /** Mirrors PersonPaycheck's salary padlock — contributionValue/Method
+   *  write into the viewed Contribution Profile's active fields when
+   *  unlocked, so only that field gates on it; delete/toggle/institution
+   *  edits are unrelated and keep gating on `readOnly` alone. */
+  contribValueReadOnly?: boolean;
 }) {
   const [addingAccount, setAddingAccount] = useState(false);
 
@@ -271,6 +277,7 @@ export function ContributionsSection({
                         siblingAnnualContribs={pcd?.siblingAnnualTotal ?? 0}
                         employerMatchAnnual={pcd?.employerMatchAnnual ?? 0}
                         readOnly={readOnly}
+                        contribValueReadOnly={contribValueReadOnly}
                       />
                     );
                   })}
@@ -319,7 +326,7 @@ export function ContributionsSection({
                               parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                               type="number"
                               className="font-medium"
-                              isEditable={!readOnly}
+                              isEditable={!readOnly && !contribValueReadOnly}
                             />
                             <span className="text-faint">
                               {methodLabel(jc.contributionMethod)}

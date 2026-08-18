@@ -796,6 +796,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               bonusPercent: number;
               bonusMultiplier: number;
               monthsInBonusYear: number;
+              bonusOverride: number | null;
             }
           >;
           for (const [jobId, salary] of Object.entries(jobEntries)) {
@@ -804,6 +805,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               bonusPercent: 0,
               bonusMultiplier: 1,
               monthsInBonusYear: 12,
+              bonusOverride: null,
             };
           }
           await updateSalaryProfile.mutateAsync({

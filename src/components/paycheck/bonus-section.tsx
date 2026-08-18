@@ -6,9 +6,11 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SectionHeader } from "./section-header";
 import type { PaycheckResult } from "./types";
+import type { BonusEstimate } from "@/lib/calculators/types/calculators";
 
 export function BonusSection({
   paycheck,
+  fullFormulaBonusEstimate,
   job,
   resolvedBonusTerms,
   onUpdateJob,
@@ -16,6 +18,10 @@ export function BonusSection({
   salaryReadOnly,
 }: {
   paycheck: PaycheckResult;
+  /** The nominal formula bonus, ignoring any current-year pin — shown as
+   *  "(target: $X)" next to the Actual field so pinning a real number
+   *  doesn't hide what the formula would otherwise say. */
+  fullFormulaBonusEstimate: BonusEstimate;
   job: {
     bonusMonth: number | null;
     bonusDayOfMonth: number | null;
@@ -28,16 +34,21 @@ export function BonusSection({
     bonusPercent: number;
     bonusMultiplier: number;
     monthsInBonusYear: number;
+    /** This year's actual paid-out bonus, pinned on the same Salary Profile
+     *  entry — orthogonal to the formula fields above, which future-year
+     *  retirement projections always use untouched. Null means unpinned:
+     *  the live estimate below uses the formula. */
+    bonusOverride: number | null;
   };
   onUpdateJob: (field: string, value: string) => void;
   /** Sandbox/preview mode — bonus terms are shown but not editable. */
   readOnly?: boolean;
-  /** Mirrors PersonPaycheck's salary padlock — bonus % and multiplier write
-   *  into the SAME Salary Profile entry as salary (see
-   *  writeSalaryProfileEntry in paycheck/page.tsx), so they must gate on
-   *  the same lock. Only those two fields respect it; "Paid in" and the two
-   *  toggles below are real job columns, unrelated to the Salary Profile,
-   *  and keep gating on `readOnly` alone. */
+  /** Mirrors PersonPaycheck's salary padlock — bonus %, multiplier, and the
+   *  current-year Actual pin all write into the SAME Salary Profile entry
+   *  as salary (see writeSalaryProfileEntry in paycheck/page.tsx), so they
+   *  must gate on the same lock. Only those fields respect it; "Paid in"
+   *  and the two toggles below are real job columns, unrelated to the
+   *  Salary Profile, and keep gating on `readOnly` alone. */
   salaryReadOnly?: boolean;
 }) {
   const { bonusEstimate } = paycheck;
@@ -102,6 +113,35 @@ export function BonusSection({
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}
             type="number"
             className="font-medium"
+            isEditable={bonusTermsEditable}
+          />
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="flex items-center gap-1">
+            {new Date().getFullYear()} Actual
+            <HelpTip text="Pin this year's actual bonus once it's paid out, instead of the calculated salary x percent x multiplier. Only affects this calendar year — next year's projections still use the full formula." />
+            {resolvedBonusTerms.bonusOverride === null && (
+              <span className="text-caption text-faint">
+                (calc: {formatCurrency(fullFormulaBonusEstimate.bonusGross)})
+              </span>
+            )}
+          </span>
+          <InlineEdit
+            value={
+              resolvedBonusTerms.bonusOverride !== null
+                ? String(resolvedBonusTerms.bonusOverride)
+                : ""
+            }
+            onSave={(v) => {
+              const cleaned = v.replace(/[^0-9.]/g, "");
+              onUpdateJob("bonusOverride", cleaned);
+            }}
+            formatDisplay={(v) =>
+              v && Number(v) > 0 ? formatCurrency(Number(v)) : "—"
+            }
+            parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+            type="number"
+            className={`font-medium ${resolvedBonusTerms.bonusOverride !== null ? "text-amber-700" : "text-faint"}`}
             isEditable={bonusTermsEditable}
           />
         </div>

@@ -180,6 +180,10 @@ export const salaryEntrySchema = z
     bonusPercent: z.number(),
     bonusMultiplier: z.number(),
     monthsInBonusYear: z.number(),
+    /** This year's actual paid-out bonus, pinned once known — orthogonal to
+     *  the formula fields above, which growth/projection math always uses
+     *  untouched. Only the live Paycheck display reads this. */
+    bonusOverride: z.number().nullable(),
   })
   .strict();
 

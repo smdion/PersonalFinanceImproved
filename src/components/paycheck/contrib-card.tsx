@@ -36,7 +36,9 @@ export function ContribCard({
   siblingAnnualContribs = 0,
   employerMatchAnnual = 0,
   readOnly,
+  contribValueReadOnly,
 }: ContribCardProps) {
+  const valueEditable = !readOnly && !contribValueReadOnly;
   const [editingInstitution, setEditingInstitution] = useState(false);
   const { data: performanceAccounts } =
     trpc.settings.performanceAccounts.list.useQuery(undefined, {
@@ -122,10 +124,10 @@ export function ContribCard({
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}
             type="number"
             className="font-medium"
-            isEditable={!readOnly}
+            isEditable={valueEditable}
           />
           <select
-            disabled={readOnly}
+            disabled={!valueEditable}
             value={c.contributionMethod}
             onChange={(e) =>
               onUpdateContrib(c.id, "contributionMethod", e.target.value)

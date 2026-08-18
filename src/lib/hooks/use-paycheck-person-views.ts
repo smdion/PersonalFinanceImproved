@@ -81,9 +81,15 @@ export type PaycheckPersonView = {
     bonusPercent: number;
     bonusMultiplier: number;
     monthsInBonusYear: number;
+    bonusOverride: number | null;
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- router output shape
   paycheck: any;
+  /** The nominal formula bonus, ignoring any current-year pin — lets the UI
+   *  show "target" alongside "actual" when resolvedBonusTerms.bonusOverride
+   *  is set. Identical to paycheck.bonusEstimate when no override is set. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- router output shape
+  fullFormulaBonusEstimate: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- router output shape
   blendedAnnual: any;
   rawDeductions: RawDeduction[];
@@ -362,8 +368,15 @@ export function usePaycheckPersonViews({
           resolvedBonusTerms:
             "resolvedBonusTerms" in d
               ? d.resolvedBonusTerms
-              : { bonusPercent: 0, bonusMultiplier: 1, monthsInBonusYear: 12 },
+              : {
+                  bonusPercent: 0,
+                  bonusMultiplier: 1,
+                  monthsInBonusYear: 12,
+                  bonusOverride: null,
+                },
           paycheck: d.paycheck!,
+          fullFormulaBonusEstimate: (d as Record<string, unknown>)
+            .fullFormulaBonusEstimate,
           blendedAnnual: (d as Record<string, unknown>).blendedAnnual,
           rawDeductions: d.rawDeductions as RawDeduction[],
           rawContribs: d.rawContribs as RawContrib[],

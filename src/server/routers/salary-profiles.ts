@@ -123,9 +123,13 @@ export const salaryProfileRouter = createTRPCRouter({
           bonusPercent: entry?.bonusPercent ?? 0,
           bonusMultiplier: entry?.bonusMultiplier ?? 1,
           monthsInBonusYear: entry?.monthsInBonusYear ?? 12,
-          /** What this profile actually produces for this job. */
+          /** This year's actual paid-out bonus, pinned on the same entry —
+           *  see SalaryProfileEntry.bonusOverride's docblock. */
+          bonusOverride: entry?.bonusOverride ?? null,
+          /** What this profile actually produces for this job — the pinned
+           *  actual when set, else the formula estimate. */
           effectiveSalary: comp.salary,
-          estimatedBonus: comp.bonus,
+          estimatedBonus: comp.bonusOverride ?? comp.bonus,
         };
       };
 
@@ -163,6 +167,7 @@ export const salaryProfileRouter = createTRPCRouter({
           bonusPercent: selected?.bonusPercent ?? 0,
           bonusMultiplier: selected?.bonusMultiplier ?? 1,
           monthsInBonusYear: selected?.monthsInBonusYear ?? 12,
+          bonusOverride: selected?.bonusOverride ?? null,
           /** What this profile actually produces for this person. */
           effectiveSalary: selected?.effectiveSalary ?? 0,
           estimatedBonus: selected?.estimatedBonus ?? 0,

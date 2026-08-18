@@ -47,6 +47,7 @@ describe("paycheck/contribution computeSummary honor a different Salary Profile'
           bonusPercent: PINNED_BONUS_PERCENT,
           bonusMultiplier: PINNED_BONUS_MULTIPLIER,
           monthsInBonusYear: 12,
+          bonusOverride: null,
         },
       };
       const profileId = db
@@ -94,6 +95,7 @@ describe("paycheck/contribution computeSummary honor a different Salary Profile'
           bonusPercent: PINNED_BONUS_PERCENT,
           bonusMultiplier: PINNED_BONUS_MULTIPLIER,
           monthsInBonusYear: 12,
+          bonusOverride: null,
         },
       };
       const profileId = db
@@ -145,6 +147,7 @@ describe("sandboxSalaryEntries is the highest precedence tier", () => {
           bonusPercent: 0,
           bonusMultiplier: 1,
           monthsInBonusYear: 12,
+          bonusOverride: null,
         },
       };
       const profileId = db
@@ -191,6 +194,7 @@ describe("sandboxSalaryEntries is the highest precedence tier", () => {
           bonusPercent: PINNED_BONUS_PERCENT,
           bonusMultiplier: 1,
           monthsInBonusYear: 12,
+          bonusOverride: null,
         },
       };
       const profileId = db

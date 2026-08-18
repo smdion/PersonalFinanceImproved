@@ -182,6 +182,7 @@ describe("resolveCompensation", () => {
         bonusMultiplier: null,
         monthsInBonusYear: null,
       },
+      bonusOverride: null,
     });
   });
 
@@ -194,6 +195,7 @@ describe("resolveCompensation", () => {
           bonusPercent: 0.1,
           bonusMultiplier: 1,
           monthsInBonusYear: 12,
+          bonusOverride: null,
         },
       ],
     ]);

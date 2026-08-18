@@ -49,7 +49,10 @@ export const EDIT_LOCK_KEYS = {
   budgetContrib: "ledgr:budget:contribLocked",
   budgetBudget: "ledgr:budget:budgetLocked",
   budgetSavings: "ledgr:budget:savingsLocked",
-  paycheckSalary: "ledgr:paycheck:salaryLocked",
+  /** One shared lock for both the Salary and Contribution profile axes on
+   *  the Paycheck page — they're edited from the same view, so one padlock
+   *  covers both rather than needing two separate locks. */
+  paycheckProfile: "ledgr:paycheck:profileLocked",
 } as const;
 
 /**

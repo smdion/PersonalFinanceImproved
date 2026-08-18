@@ -34,6 +34,7 @@ function entry(
     bonusPercent: number;
     bonusMultiplier: number;
     monthsInBonusYear: number;
+    bonusOverride: number | null;
   }> = {},
 ) {
   return {
@@ -41,6 +42,7 @@ function entry(
     bonusPercent: 0,
     bonusMultiplier: 1,
     monthsInBonusYear: 12,
+    bonusOverride: null,
     ...overrides,
   };
 }

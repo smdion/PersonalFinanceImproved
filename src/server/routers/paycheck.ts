@@ -305,7 +305,11 @@ export const paycheckRouter = createTRPCRouter({
               bonusTerms.bonusMultiplier === null
                 ? 1
                 : toNumber(bonusTerms.bonusMultiplier),
-            bonusOverride: null,
+            // This year's actual paid-out bonus, if pinned on the Salary
+            // Profile entry — see SalaryProfileEntry.bonusOverride's
+            // docblock. Never flows into growth/projection math; only this
+            // live paycheck display reads it.
+            bonusOverride: comp.bonusOverride,
             monthsInBonusYear: bonusTerms.monthsInBonusYear ?? 12,
             includeContribInBonus: activeJob.include401kInBonus,
             bonusMonth: activeJob.bonusMonth,
@@ -314,7 +318,14 @@ export const paycheckRouter = createTRPCRouter({
           };
 
           const paycheck = calculatePaycheck(paycheckInput);
-          const fullFormulaBonusEstimate = paycheck.bonusEstimate;
+          // The nominal formula figure, ignoring any current-year pin — lets
+          // the UI show "target" (formula) alongside "actual" (resolved)
+          // instead of only ever showing the resolved value.
+          const fullFormulaBonusEstimate =
+            paycheckInput.bonusOverride !== null
+              ? calculatePaycheck({ ...paycheckInput, bonusOverride: null })
+                  .bonusEstimate
+              : paycheck.bonusEstimate;
 
           // Blended annual computation. Salary is a flat number under the
           // active Salary Profile — no mid-year timeline to blend across
@@ -428,6 +439,7 @@ export const paycheckRouter = createTRPCRouter({
                   ? 1
                   : toNumber(bonusTerms.bonusMultiplier),
               monthsInBonusYear: bonusTerms.monthsInBonusYear ?? 12,
+              bonusOverride: comp.bonusOverride,
             },
             paycheck,
             fullFormulaBonusEstimate,

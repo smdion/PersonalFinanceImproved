@@ -22,7 +22,10 @@ import type {
 } from "./types";
 import type { ContribAccountFormValues } from "./contrib-account-form";
 import type { PerContribView } from "@/lib/hooks/use-paycheck-person-views";
-import type { BlendedAnnualTotals } from "@/lib/calculators/types/calculators";
+import type {
+  BlendedAnnualTotals,
+  BonusEstimate,
+} from "@/lib/calculators/types/calculators";
 
 /**
  * Everything in this card that writes. Expressed as ONE discriminated prop
@@ -64,9 +67,11 @@ export function PersonPaycheck({
   salary,
   resolvedBonusTerms,
   paycheck,
+  fullFormulaBonusEstimate,
   mode,
   blendedAnnual,
   salaryReadOnly,
+  contribValueReadOnly,
   rawDeductions,
   rawContribs,
   perContribData,
@@ -106,14 +111,22 @@ export function PersonPaycheck({
     bonusPercent: number;
     bonusMultiplier: number;
     monthsInBonusYear: number;
+    bonusOverride: number | null;
   };
   paycheck: PaycheckResult;
+  /** The nominal formula bonus, ignoring any current-year pin — lets
+   *  BonusSection show "target" alongside "actual" when
+   *  resolvedBonusTerms.bonusOverride is set. */
+  fullFormulaBonusEstimate: BonusEstimate;
   mode: ViewMode;
   blendedAnnual?: BlendedAnnualTotals;
   /** True while a Salary Profile is being previewed with its padlock locked —
    *  the figure shown belongs to that profile, so it is not editable until the
    *  padlock is opened (which routes the edit to the profile, not the job). */
   salaryReadOnly?: boolean;
+  /** Mirrors the Contribution padlock — contributionValue/Method writes into
+   *  the viewed Contribution Profile's active fields when unlocked. */
+  contribValueReadOnly?: boolean;
   rawDeductions: RawDeduction[];
   rawContribs: RawContrib[];
   /** Contribution annual/limit figures, resolved ONCE by the caller's shared
@@ -214,6 +227,7 @@ export function PersonPaycheck({
             />
             <BonusSection
               paycheck={paycheck}
+              fullFormulaBonusEstimate={fullFormulaBonusEstimate}
               job={job}
               resolvedBonusTerms={resolvedBonusTerms}
               onUpdateJob={onUpdateJob}
@@ -244,6 +258,7 @@ export function PersonPaycheck({
             personId={person.id}
             jobId={job.id}
             readOnly={readOnly}
+            contribValueReadOnly={contribValueReadOnly}
           />
 
           {/* Add deduction form */}

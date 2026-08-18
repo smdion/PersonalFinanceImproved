@@ -234,6 +234,7 @@ function seedDefaultSalaryProfileEntry(
     bonusPercent: number;
     bonusMultiplier: number;
     monthsInBonusYear: number;
+    bonusOverride: number | null;
   },
 ): number {
   const settingRow = db
@@ -333,6 +334,7 @@ export function seedJob(
     bonusPercent: Number(bonusPercent ?? "0"),
     bonusMultiplier: Number(bonusMultiplier ?? "1"),
     monthsInBonusYear: monthsInBonusYear ?? 12,
+    bonusOverride: null,
   });
   return result.id;
 }

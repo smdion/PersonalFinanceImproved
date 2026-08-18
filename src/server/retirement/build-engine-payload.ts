@@ -1020,6 +1020,9 @@ export async function buildEnginePayload(
             bonusPercent: ownEntry?.bonusPercent ?? 0,
             bonusMultiplier: ownEntry?.bonusMultiplier ?? 1,
             monthsInBonusYear: ownEntry?.monthsInBonusYear ?? 12,
+            // Never carry a current-year pin into projection/contribution
+            // math — see SalaryProfileEntry.bonusOverride's docblock.
+            bonusOverride: null,
           }
         : undefined;
     const switchJobSalaries = salaryProfile

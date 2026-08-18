@@ -309,6 +309,9 @@ type JobOption = {
   bonusPercent: number;
   bonusMultiplier: number;
   monthsInBonusYear: number;
+  /** This year's actual paid-out bonus, pinned on the same entry — see
+   *  SalaryProfileEntry.bonusOverride's docblock. */
+  bonusOverride: number | null;
   /** What this profile actually produces for this job. */
   effectiveSalary: number;
   estimatedBonus: number;
@@ -335,17 +338,19 @@ type Detail = {
   bonusPercent: number;
   bonusMultiplier: number;
   monthsInBonusYear: number;
+  bonusOverride: number | null;
   effectiveSalary: number;
   estimatedBonus: number;
 };
 
-/** The complete entry shape written to the profile's jsonb — all four
+/** The complete entry shape written to the profile's jsonb — all five
  *  fields, always. */
 type Entry = {
   salary: number;
   bonusPercent: number;
   bonusMultiplier: number;
   monthsInBonusYear: number;
+  bonusOverride: number | null;
 };
 
 /** What a brand-new entry starts as when a job is explicitly added to a
@@ -355,6 +360,7 @@ const BLANK_ENTRY: Entry = {
   bonusPercent: 0,
   bonusMultiplier: 1,
   monthsInBonusYear: 12,
+  bonusOverride: null,
 };
 
 /**
@@ -375,6 +381,7 @@ function detailForJob(sd: Detail, jobId: number): Detail {
     bonusPercent: opt.bonusPercent,
     bonusMultiplier: opt.bonusMultiplier,
     monthsInBonusYear: opt.monthsInBonusYear,
+    bonusOverride: opt.bonusOverride,
     effectiveSalary: opt.effectiveSalary,
     estimatedBonus: opt.estimatedBonus,
   };
@@ -455,6 +462,38 @@ function EntryNumberCell({
   );
 }
 
+/** This year's actual bonus pin — a separate cell from EntryNumberCell
+ *  because it's nullable (empty = unpinned, formula applies) rather than
+ *  always-numeric like the three FIELDS above. */
+function BonusOverrideCell({
+  sd,
+  draft,
+  onDraft,
+  onCommit,
+}: {
+  sd: Detail;
+  draft: string | undefined;
+  onDraft: (value: string) => void;
+  onCommit: () => void;
+}) {
+  const value =
+    draft ?? (sd.bonusOverride !== null ? fmt(sd.bonusOverride) : "");
+  return (
+    <div className="flex items-center justify-end gap-1">
+      <span className="text-xs text-faint">$</span>
+      <input
+        type="number"
+        value={value}
+        onChange={(e) => onDraft(e.target.value)}
+        onBlur={onCommit}
+        placeholder="—"
+        step="1"
+        className="w-24 px-2 py-1 text-xs text-right border rounded bg-surface-primary text-primary"
+      />
+    </div>
+  );
+}
+
 /** Header row shared by the read-only and editable tables. */
 function SalaryTableHead({ editable }: { editable: boolean }) {
   return (
@@ -479,6 +518,9 @@ function SalaryTableHead({ editable }: { editable: boolean }) {
         >
           Multiplier
         </th>
+        <th className="text-right py-2 px-3 text-muted font-medium w-24">
+          Actual
+        </th>
         <th className="text-right py-2 px-3 text-muted font-medium w-28">
           Bonus
         </th>
@@ -502,7 +544,7 @@ function TotalsFooter({ combinedIncome }: { combinedIncome: number }) {
     <tfoot>
       <tr className="border-t-2 border-strong">
         <td
-          colSpan={6}
+          colSpan={7}
           className="py-2 pl-4 pr-3 text-right text-muted font-medium"
         >
           Household income under this profile
@@ -602,6 +644,17 @@ function ProfileDetail({ profileId }: { profileId: number }) {
               {cell(sd, "salary")}
               {cell(sd, "bonusPercent", "%")}
               {cell(sd, "bonusMultiplier", "×")}
+              <td
+                className={`py-1.5 px-3 text-right tabular-nums ${
+                  sd.hasEntry && sd.bonusOverride !== null
+                    ? "text-amber-700"
+                    : "text-faint"
+                }`}
+              >
+                {sd.hasEntry && sd.bonusOverride !== null
+                  ? formatCurrency(sd.bonusOverride)
+                  : "—"}
+              </td>
               <td
                 className={`py-1.5 px-3 text-right tabular-nums ${
                   sd.hasEntry ? "text-secondary" : "text-faint"
@@ -791,7 +844,11 @@ function ProfileEditPanel({
 
   /** Update one field of an already-existing entry. Entries are always
    *  complete, so this only ever runs for a job that already has one. */
-  const writeField = (sd: Detail, field: FieldKey, stored: number) => {
+  const writeField = (
+    sd: Detail,
+    field: FieldKey | "bonusOverride",
+    stored: number | null,
+  ) => {
     if (sd.jobId === null) return;
     const key = String(sd.jobId);
     const existing = profile.salaries[key];
@@ -803,6 +860,26 @@ function ProfileEditPanel({
         [key]: { ...existing, [field]: stored },
       },
     });
+  };
+
+  /** Empty clears the pin back to null (unpinned, formula applies) — unlike
+   *  the always-numeric fields below, an empty commit here is meaningful,
+   *  not a no-op. */
+  const commitBonusOverride = (sd: Detail) => {
+    const key = `${sd.personId}:bonusOverride`;
+    const draft = drafts[key];
+    if (draft === undefined) return;
+    clearDraft(key);
+    const trimmed = draft.trim();
+    if (trimmed === "") {
+      if (sd.bonusOverride === null) return;
+      writeField(sd, "bonusOverride", null);
+      return;
+    }
+    const num = parseFloat(trimmed);
+    if (isNaN(num) || num < 0) return;
+    if (sd.bonusOverride === num) return;
+    writeField(sd, "bonusOverride", num);
   };
 
   const commitField = (sd: Detail, field: FieldKey) => {
@@ -915,6 +992,16 @@ function ProfileEditPanel({
                         <td className="py-1.5 px-3">
                           {cellFor("bonusMultiplier", undefined, "×")}
                         </td>
+                        <td className="py-1.5 px-3">
+                          <BonusOverrideCell
+                            sd={sd}
+                            draft={drafts[`${sd.personId}:bonusOverride`]}
+                            onDraft={(v) =>
+                              setDraft(`${sd.personId}:bonusOverride`, v)
+                            }
+                            onCommit={() => commitBonusOverride(sd)}
+                          />
+                        </td>
                         <td className="py-1.5 px-3 text-right tabular-nums text-secondary">
                           {formatCurrency(sd.estimatedBonus)}
                         </td>
@@ -938,7 +1025,7 @@ function ProfileEditPanel({
                       </>
                     ) : (
                       <td
-                        colSpan={5}
+                        colSpan={6}
                         className="py-1.5 px-3 text-right text-faint"
                       >
                         <div className="flex items-center justify-end gap-2">

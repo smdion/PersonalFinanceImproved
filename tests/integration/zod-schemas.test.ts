@@ -231,10 +231,11 @@ describe("salaryEntriesSchema", () => {
     bonusPercent: 0.1,
     bonusMultiplier: 1,
     monthsInBonusYear: 12,
+    bonusOverride: null,
     ...overrides,
   });
 
-  it("accepts a complete entry — all four fields required", () => {
+  it("accepts a complete entry — all five fields required", () => {
     const result = salaryEntriesSchema.safeParse({
       "1": complete(),
       "4": complete({ salary: 200000, bonusPercent: 0.2 }),

@@ -2026,7 +2026,7 @@ export const salaryProfiles = pgTable("salary_profiles", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
   description: text("description"),
-  /** jobId → complete salary entry. A job either has ALL four fields (a
+  /** jobId → complete salary entry. A job either has ALL five fields (a
    *  real, complete number for this profile) or no key at all (this
    *  profile says nothing about that job — contributes $0, not a
    *  fallback to some other value). No partial entries — see
@@ -2040,6 +2040,7 @@ export const salaryProfiles = pgTable("salary_profiles", {
           bonusPercent: number;
           bonusMultiplier: number;
           monthsInBonusYear: number;
+          bonusOverride: number | null;
         }
       >
     >()
