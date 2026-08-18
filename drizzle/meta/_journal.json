@@ -120,6 +120,13 @@
       "when": 1787027436173,
       "tag": "0016_drop_salary_ledger_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1787074821545,
+      "tag": "0017_salary_entry_bonus_override",
+      "breakpoints": true
     }
   ]
 }
