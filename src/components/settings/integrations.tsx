@@ -4,6 +4,7 @@
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
+import { FormField, FormInput, FormSelect } from "@/components/forms";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import type { Service, PreviewData } from "./integrations-types";
 import { PreviewPanel } from "./integrations-preview-panel";
@@ -145,30 +146,23 @@ function ServiceCard({
           <div className="space-y-3">
             {service === "ynab" ? (
               <>
-                <div>
-                  <label className="block text-xs font-medium text-muted mb-1">
-                    {SERVICE_CREDENTIAL_FIELDS.ynab.token.label}
-                  </label>
-                  <input
+                <FormField label={SERVICE_CREDENTIAL_FIELDS.ynab.token.label}>
+                  <FormInput
                     type="password"
                     value={ynabToken}
                     onChange={(e) => setYnabToken(e.target.value)}
                     placeholder={
                       SERVICE_CREDENTIAL_FIELDS.ynab.token.placeholder
                     }
-                    className="w-full px-3 py-1.5 text-sm border border-strong rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted mb-1">
-                    {SERVICE_CREDENTIAL_FIELDS.ynab.budget.label}
-                  </label>
+                </FormField>
+                <FormField label={SERVICE_CREDENTIAL_FIELDS.ynab.budget.label}>
                   <div className="flex gap-2">
                     {ynabBudgets.length > 0 ? (
-                      <select
+                      <FormSelect
                         value={ynabBudgetId}
                         onChange={(e) => setYnabBudgetId(e.target.value)}
-                        className="flex-1 px-3 py-1.5 text-sm border border-strong rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        className="flex-1"
                       >
                         <option value="">Select a budget...</option>
                         {ynabBudgets.map((b) => (
@@ -176,14 +170,14 @@ function ServiceCard({
                             {b.name}
                           </option>
                         ))}
-                      </select>
+                      </FormSelect>
                     ) : (
-                      <input
+                      <FormInput
                         type="text"
                         value={ynabBudgetId}
                         onChange={(e) => setYnabBudgetId(e.target.value)}
                         placeholder='Click "Fetch" or enter UUID'
-                        className="flex-1 px-3 py-1.5 text-sm border border-strong rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        className="flex-1"
                       />
                     )}
                     <button
@@ -203,52 +197,44 @@ function ServiceCard({
                         {fetchBudgetsMut.data.error}
                       </p>
                     )}
-                </div>
+                </FormField>
               </>
             ) : (
               <>
-                <div>
-                  <label className="block text-xs font-medium text-muted mb-1">
-                    {SERVICE_CREDENTIAL_FIELDS.actual.url.label}
-                  </label>
-                  <input
+                <FormField label={SERVICE_CREDENTIAL_FIELDS.actual.url.label}>
+                  <FormInput
                     type="text"
                     value={actualUrl}
                     onChange={(e) => setActualUrl(e.target.value)}
                     placeholder={
                       SERVICE_CREDENTIAL_FIELDS.actual.url.placeholder
                     }
-                    className="w-full px-3 py-1.5 text-sm border border-strong rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted mb-1">
-                    {SERVICE_CREDENTIAL_FIELDS.actual.apiKey.label}
-                  </label>
-                  <input
+                </FormField>
+                <FormField
+                  label={SERVICE_CREDENTIAL_FIELDS.actual.apiKey.label}
+                >
+                  <FormInput
                     type="password"
                     value={actualApiKey}
                     onChange={(e) => setActualApiKey(e.target.value)}
                     placeholder={
                       SERVICE_CREDENTIAL_FIELDS.actual.apiKey.placeholder
                     }
-                    className="w-full px-3 py-1.5 text-sm border border-strong rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted mb-1">
-                    {SERVICE_CREDENTIAL_FIELDS.actual.budgetSyncId.label}
-                  </label>
-                  <input
+                </FormField>
+                <FormField
+                  label={SERVICE_CREDENTIAL_FIELDS.actual.budgetSyncId.label}
+                >
+                  <FormInput
                     type="text"
                     value={actualBudgetSyncId}
                     onChange={(e) => setActualBudgetSyncId(e.target.value)}
                     placeholder={
                       SERVICE_CREDENTIAL_FIELDS.actual.budgetSyncId.placeholder
                     }
-                    className="w-full px-3 py-1.5 text-sm border border-strong rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                   />
-                </div>
+                </FormField>
               </>
             )}
             <div className="flex items-center gap-2">
