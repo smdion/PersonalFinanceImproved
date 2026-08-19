@@ -8,7 +8,6 @@ import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "@/lib/hooks/use-toast";
 
 interface NewGoalForm {
   name: string;
@@ -41,15 +40,12 @@ export function BrokerageGoalsSection() {
       setShowCreate(false);
       setForm(emptyGoalForm);
     },
-    onError: (e) => toast.error(e.message || "Failed to create goal"),
   });
   const updateGoal = trpc.brokerage.updateGoal.useMutation({
     onSuccess: invalidateBrokerage,
-    onError: (e) => toast.error(e.message || "Failed to update goal"),
   });
   const deleteGoal = trpc.brokerage.deleteGoal.useMutation({
     onSuccess: invalidateBrokerage,
-    onError: (e) => toast.error(e.message || "Failed to delete goal"),
   });
 
   const [showCreate, setShowCreate] = useState(false);
