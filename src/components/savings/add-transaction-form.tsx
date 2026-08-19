@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { FormField, FormInput } from "@/components/forms";
 import { PlannedTxForm } from "./types";
 
 export function AddTransactionForm({
@@ -24,42 +25,34 @@ export function AddTransactionForm({
         Add Transaction &mdash; {goalName}
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div>
-          <label className="block text-xs text-faint mb-1">Date</label>
-          <input
+        <FormField label="Date">
+          <FormInput
             type="date"
             value={txForm.transactionDate}
             onChange={(e) =>
               setTxForm({ ...txForm, transactionDate: e.target.value })
             }
-            className="w-full border bg-surface-elevated text-primary rounded px-2 py-1 text-sm"
           />
-        </div>
-        <div>
-          <label className="block text-xs text-faint mb-1">
-            Amount (negative = spending)
-          </label>
-          <input
+        </FormField>
+        <FormField label="Amount (negative = spending)">
+          <FormInput
             type="number"
             step="0.01"
             value={txForm.amount}
             onChange={(e) => setTxForm({ ...txForm, amount: e.target.value })}
             placeholder="-5000"
-            className="w-full border bg-surface-elevated text-primary rounded px-2 py-1 text-sm"
           />
-        </div>
-        <div>
-          <label className="block text-xs text-faint mb-1">Description</label>
-          <input
+        </FormField>
+        <FormField label="Description">
+          <FormInput
             type="text"
             value={txForm.description}
             onChange={(e) =>
               setTxForm({ ...txForm, description: e.target.value })
             }
             placeholder="Spain trip"
-            className="w-full border bg-surface-elevated text-primary rounded px-2 py-1 text-sm"
           />
-        </div>
+        </FormField>
         <div>
           <label className="block text-xs text-faint mb-1">Recurring?</label>
           <div className="flex items-center gap-2">
@@ -71,7 +64,7 @@ export function AddTransactionForm({
               }
             />
             {txForm.isRecurring && (
-              <input
+              <FormInput
                 type="number"
                 min="1"
                 value={txForm.recurrenceMonths}
@@ -79,7 +72,7 @@ export function AddTransactionForm({
                   setTxForm({ ...txForm, recurrenceMonths: e.target.value })
                 }
                 placeholder="every N months"
-                className="border bg-surface-elevated text-primary rounded px-2 py-1 text-sm w-24"
+                className="w-24"
               />
             )}
           </div>
