@@ -142,13 +142,10 @@ function buildSubRowLabel(
   }
 
   if (owner) {
-    // Owner prefix uses an em dash (DESIGN.md "Snapshot Display" — WHO owns
-    // it), distinct from the parens used below for WHAT kind of sub-account
-    // it is (e.g. "Employer Match (Traditional)"). Decision confirmed
-    // 2026-08-19: code was the one out of sync with the documented example.
+    // Owner is primary; type goes in parens (omit if redundant with taxLabel)
     const qualifier =
       typeLabel !== taxLabel ? `${typeLabel} · ${taxLabel}` : typeLabel;
-    return `${owner} — ${qualifier}`;
+    return `${owner} (${qualifier})`;
   }
 
   return typeLabel !== taxLabel ? `${typeLabel} (${taxLabel})` : typeLabel;
