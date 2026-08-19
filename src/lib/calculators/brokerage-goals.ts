@@ -5,7 +5,7 @@
 // The engine handles the actual balance tracking and goal withdrawals;
 // this calculator provides the goal-oriented analysis layer.
 
-import { roundToCents, sumBy } from "@/lib/utils/math";
+import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 import {
   isOverflowTarget,
   isPortfolioParent,
@@ -151,7 +151,7 @@ export function calculateBrokerageGoals(
       afterTax = roundToCents(sumBy(filtered, (ia) => ia.balance));
       // Basis not tracked per individual account; fall back to proportional estimate
       const totalAfterTax = yr.balanceByTaxType.afterTax;
-      const ratio = totalAfterTax > 0 ? afterTax / totalAfterTax : 0;
+      const ratio = safeDivide(afterTax, totalAfterTax) ?? 0;
       afterTaxBasis = roundToCents(yr.balanceByTaxType.afterTaxBasis * ratio);
     } else {
       afterTax = yr.balanceByTaxType.afterTax;

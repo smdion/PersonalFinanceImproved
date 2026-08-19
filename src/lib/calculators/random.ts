@@ -4,6 +4,7 @@
  * Pure functions — no DB, no tRPC, no React.
  * Uses a simple but effective mulberry32 PRNG seeded for reproducibility.
  */
+import { safeDivide } from "../utils/math";
 
 // ---------------------------------------------------------------------------
 // Seeded PRNG (mulberry32) — fast, deterministic, 32-bit state
@@ -135,7 +136,7 @@ export function choleskyDecomposition(matrix: number[][]): number[][] {
         // Clamp to avoid NaN from floating-point rounding
         L[i]![j] = Math.sqrt(Math.max(diag, 0));
       } else {
-        L[i]![j] = L[j]![j]! > 0 ? (matrix[i]![j]! - sum) / L[j]![j]! : 0;
+        L[i]![j] = safeDivide(matrix[i]![j]! - sum, L[j]![j]!) ?? 0;
       }
     }
   }
@@ -267,7 +268,7 @@ export function interpolateAllocations(
 
   // Linear interpolation factor
   const range = upper.age - lower.age;
-  const t = range > 0 ? (age - lower.age) / range : 0;
+  const t = safeDivide(age - lower.age, range) ?? 0;
 
   // Collect all asset class IDs
   const allIds = Array.from(

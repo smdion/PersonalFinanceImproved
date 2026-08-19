@@ -26,7 +26,7 @@ import type {
   DistributionSummary,
   ProjectionInput,
 } from "./types";
-import { roundToCents, sumBy } from "../utils/math";
+import { roundToCents, sumBy, safeDivide } from "../utils/math";
 import { DEFAULT_RETURN_RATE } from "../constants";
 import type { EngineDecumulationYear } from "./types";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "../config/withdrawal-strategies";
@@ -339,13 +339,13 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
           ? yr.targetWithdrawal
           : year1Withdrawal * Math.pow(1 + trialInflationRate, di);
         stratRatiosByDecYear[di]!.push(
-          stratBase > 0 ? yr.totalWithdrawal / stratBase : 0,
+          safeDivide(yr.totalWithdrawal, stratBase) ?? 0,
         );
         if (budgetAtRet !== null) {
           const budgetInflFactor = Math.pow(1 + trialInflationRate, di);
           const budgetBase = budgetAtRet * budgetInflFactor;
           budgetRatiosByDecYear[di]!.push(
-            budgetBase > 0 ? yr.totalWithdrawal / budgetBase : 0,
+            safeDivide(yr.totalWithdrawal, budgetBase) ?? 0,
           );
         }
       }
@@ -357,7 +357,7 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
     // Sustainable withdrawal (nominal and present value)
     sustainableWithdrawals.push(result.sustainableWithdrawal);
     sustainableWithdrawalsPV.push(
-      pvDeflator > 0 ? result.sustainableWithdrawal / pvDeflator : 0,
+      safeDivide(result.sustainableWithdrawal, pvDeflator) ?? 0,
     );
   }
 
@@ -437,16 +437,15 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
 
   // Success rate: % of trials where portfolio balance stays above $0
   const successCount = terminalBalances.filter((b) => b > 0).length;
-  const successRate = numTrials > 0 ? successCount / numTrials : 0;
+  const successRate = safeDivide(successCount, numTrials) ?? 0;
 
   // Spending stability: % of trials where withdrawals met ≥75% of initial (inflation-adjusted)
-  const spendingStabilityRate =
-    numTrials > 0 ? spendingStableCount / numTrials : 0;
+  const spendingStabilityRate = safeDivide(spendingStableCount, numTrials) ?? 0;
 
   // Budget stability: same metric but against user's retirement budget
   const budgetStabilityRate =
-    retirementBudget !== null && numTrials > 0
-      ? budgetStableCount / numTrials
+    retirementBudget !== null
+      ? safeDivide(budgetStableCount, numTrials, null)
       : null;
 
   // Terminal balance stats

@@ -2,7 +2,7 @@
  * Pure business logic for household-level tax aggregation.
  * Extracted from paycheck router — no DB or I/O dependency.
  */
-import { sumBy } from "@/lib/utils/math";
+import { sumBy, safeDivide } from "@/lib/utils/math";
 
 /** Per-person tax data needed for household aggregation. */
 export type PersonTaxData = {
@@ -45,7 +45,7 @@ export function computeHouseholdTax(
     ficaSS: perPersonFicaSS,
     ficaMedicare: perPersonFicaMed,
     totalTax,
-    effectiveRate: combinedGross > 0 ? totalTax / combinedGross : 0,
+    effectiveRate: safeDivide(totalTax, combinedGross) ?? 0,
     marginalRate: combinedTaxResult.marginalRate,
   };
 }
