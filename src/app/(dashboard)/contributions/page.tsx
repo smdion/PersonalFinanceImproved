@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { safeDivide } from "@/lib/utils/math";
 import { categoryChartHex } from "@/lib/utils/colors";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { useScenario } from "@/lib/context/scenario-context";
@@ -277,18 +278,28 @@ export default function ContributionsPage() {
         {(() => {
           // Total savings rate — totalWith/Without already include joint accounts,
           // so this naturally captures the full household picture.
-          const hhRateWith =
-            combinedSalary > 0 ? totalWith / combinedSalary : 0;
-          const hhRateWithout =
-            combinedSalary > 0 ? totalWithout / combinedSalary : 0;
-          const retRateWith =
-            combinedSalary > 0 ? totalRetirementWith / combinedSalary : 0;
-          const retRateWithout =
-            combinedSalary > 0 ? totalRetirementWithout / combinedSalary : 0;
-          const portRateWith =
-            combinedSalary > 0 ? totalPortfolioWith / combinedSalary : 0;
-          const portRateWithout =
-            combinedSalary > 0 ? totalPortfolioWithout / combinedSalary : 0;
+          const hhRateWith = safeDivide(totalWith, combinedSalary, 0);
+          const hhRateWithout = safeDivide(totalWithout, combinedSalary, 0);
+          const retRateWith = safeDivide(
+            totalRetirementWith,
+            combinedSalary,
+            0,
+          );
+          const retRateWithout = safeDivide(
+            totalRetirementWithout,
+            combinedSalary,
+            0,
+          );
+          const portRateWith = safeDivide(
+            totalPortfolioWith,
+            combinedSalary,
+            0,
+          );
+          const portRateWithout = safeDivide(
+            totalPortfolioWithout,
+            combinedSalary,
+            0,
+          );
           const isBlended = viewMode === "blended";
           const primary = excludeMatch ? "without" : "with";
           return (
@@ -643,17 +654,21 @@ export default function ContributionsPage() {
                               <div
                                 className="h-full rounded-full bg-blue-500"
                                 style={{
-                                  width: `${Math.min(100, a.priorYear.limit > 0 ? (a.priorYear.amount / a.priorYear.limit) * 100 : 0)}%`,
+                                  width: `${Math.min(100, safeDivide(a.priorYear.amount, a.priorYear.limit, 0) * 100)}%`,
                                 }}
                               />
                             </div>
                             <span className="text-caption text-muted w-10 text-right">
-                              {a.priorYear.limit > 0
-                                ? formatPercent(
-                                    a.priorYear.amount / a.priorYear.limit,
-                                    0,
-                                  )
-                                : "—"}
+                              {(() => {
+                                const priorYearRatio = safeDivide(
+                                  a.priorYear.amount,
+                                  a.priorYear.limit,
+                                  null,
+                                );
+                                return priorYearRatio === null
+                                  ? "—"
+                                  : formatPercent(priorYearRatio, 0);
+                              })()}
                             </span>
                           </div>
                         </td>

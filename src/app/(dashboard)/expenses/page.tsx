@@ -550,9 +550,7 @@ export default function ExpensesPage() {
                     </td>
                     <td className="text-right py-2 px-3">
                       <ProgressBar
-                        value={
-                          totalBudgeted > 0 ? totalActual / totalBudgeted : 0
-                        }
+                        value={safeDivide(totalActual, totalBudgeted, 0)}
                       />
                     </td>
                   </tr>
