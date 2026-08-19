@@ -226,22 +226,22 @@ Portfolio Snapshots + Performance Data + Settings
 
 ### Shared State Sources
 
-| Data                       | Source                               | Key                                                                        |
-| -------------------------- | ------------------------------------ | -------------------------------------------------------------------------- |
-| Year-level financial data  | `buildYearEndHistory()`              | `YearEndRow` from `net_worth_annual` + live current year                   |
-| Tax location breakdown     | `YearEndRow.portfolioByTaxLocation`  | JSONB on `net_worth_annual` (finalized) / snapshot (current)               |
-| Budget column              | `app_settings`                       | `budget_active_column`                                                     |
-| Annual expenses            | `getAnnualExpensesFromBudget()`      | Uses `budget_active_column`                                                |
-| Current salary (raw)       | `getCurrentSalary()`                 | `salary_changes` → `jobs.annual_salary` fallback                           |
-| Current salary (effective) | `resolveEffectiveSalary()`           | `getCurrentSalary()` + the salary override map (below)                     |
-| Salary override map        | `loadAndApplySalaryProfile()`        | Plan/session pins, then the active Salary Profile's `mode:"fixed"` entries |
-| Portfolio balances         | `getLatestSnapshot()`                | Latest `portfolio_snapshots` row                                           |
-| Contribution accounts      | `buildContribAccounts()`             | `contribution_accounts` table                                              |
-| Contribution specs         | `buildContributionDisplaySpecs()`    | Per-account specs with match redistribution                                |
-| Category aggregations      | `aggregateContributionsByCategory()` | Contribution + match totals per account category                           |
-| Account type config        | `getAccountTypeConfig()`             | All account-type behavior (from `ACCOUNT_TYPE_CONFIG`)                     |
-| Parent category map        | `getParentCategory()`                | Account type → goal category (Retirement/Portfolio) via config             |
-| Mortgage balance           | `computeMortgageBalance()`           | Amortization from loans + extra payments                                   |
+| Data                               | Source                               | Key                                                                                                 |
+| ---------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| Year-level financial data          | `buildYearEndHistory()`              | `YearEndRow` from `net_worth_annual` + live current year                                            |
+| Tax location breakdown             | `YearEndRow.portfolioByTaxLocation`  | JSONB on `net_worth_annual` (finalized) / snapshot (current)                                        |
+| Budget column                      | `app_settings`                       | `budget_active_column`                                                                              |
+| Annual expenses                    | `getAnnualExpensesFromBudget()`      | Uses `budget_active_column`                                                                         |
+| Total compensation (profile-aware) | `resolveCompensation()`              | `server/helpers/salary.ts` — the single place salary+bonus is computed under a Salary Profile entry |
+| Salary override merge              | `applyActiveSalary()`                | Final `active ?? raw` merge of the Plan/session override onto an already-resolved raw salary        |
+| Salary override map                | `loadAndApplySalaryProfile()`        | Plan/session pins, then the active Salary Profile's entries                                         |
+| Portfolio balances                 | `getLatestSnapshot()`                | Latest `portfolio_snapshots` row                                                                    |
+| Contribution accounts              | `buildContribAccounts()`             | `contribution_accounts` table                                                                       |
+| Contribution specs                 | `buildContributionDisplaySpecs()`    | Per-account specs with match redistribution                                                         |
+| Category aggregations              | `aggregateContributionsByCategory()` | Contribution + match totals per account category                                                    |
+| Account type config                | `getAccountTypeConfig()`             | All account-type behavior (from `ACCOUNT_TYPE_CONFIG`)                                              |
+| Parent category map                | `getParentCategory()`                | Account type → goal category (Retirement/Portfolio) via config                                      |
+| Mortgage balance                   | `computeMortgageBalance()`           | Amortization from loans + extra payments                                                            |
 
 ### Rules
 
@@ -253,9 +253,11 @@ Portfolio Snapshots + Performance Data + Settings
 
 ### The Salary Profile layer
 
-`getCurrentSalary()` is the raw, un-overridden answer to "what does this job
-pay" and stays the sole authority for it — nothing writes salary back into
-`jobs` / `salary_changes` on its behalf. The same goes for the bonus terms on
+A job's own `jobs.annual_salary` (and its bonus fields) is the raw,
+un-overridden answer to "what does this job pay" and stays the sole
+authority for it — nothing writes salary back into `jobs` on its behalf,
+and no function name should be treated as a substitute for reading that
+column. The same goes for the bonus terms on
 `jobs` (`bonus_percent`, `bonus_multiplier`, `months_in_bonus_year`). A
 **Salary Profile** sits on top of both: `salary_profiles.salaries` maps a
 personId to an entry of **optional** fields, and
@@ -264,7 +266,7 @@ personId to an entry of **optional** fields, and
 
 ```ts
 type SalaryProfileEntry = {
-  salary?: number; // else getCurrentSalary() on every read
+  salary?: number; // else jobs.annual_salary on every read
   bonusPercent?: number; // fraction, 0.12 = 12%
   bonusMultiplier?: number;
   monthsInBonusYear?: number;
@@ -314,8 +316,8 @@ likewise not _displayed_ as a Contribution Profile statistic.
 ### Violations to Watch For
 
 - A router computing budget expenses with a different column index
-- A page showing salary that doesn't come from `getCurrentSalary()` (raw) or
-  `resolveEffectiveSalary()` / `applySalaryOverride()` (profile-aware)
+- A page showing salary that doesn't come from `jobs.annual_salary` (raw) or
+  `resolveCompensation()` / `applyActiveSalary()` (profile-aware)
 - An unpinned person's salary reaching the salary override map
 - `salaryOverrideMap.has(personId)` used to mean "this person's salary is
   pinned" (it means "has at least one pin" — check `?.salary !== undefined`)
@@ -535,7 +537,10 @@ This mapping is defined in `accountTypeToCategory()` in `performance.ts`. Annual
 ### Drizzle ORM Conventions
 
 - **NOT NULL** on every financial amount column unless explicitly nullable
-- **Decimal precision:** `decimal(12,2)` for dollars, `decimal(12,6)` for rates
+- **Decimal precision:** `decimal(14,2)` for dollars. Rate columns split
+  between `decimal(8,6)` and `decimal(12,6)` depending on the table — both
+  safely hold values in `[-1,1]`; there is no single documented convention
+  to match, so don't infer one from a neighboring column's comment
 - **Enums:** All enum fields use `pgEnum()` for DB-level validation
 - **JSONB:** Use `.$type<T>()` for type inference
 - **ON DELETE:** Default `RESTRICT`; `CASCADE` only for tightly coupled parent-child

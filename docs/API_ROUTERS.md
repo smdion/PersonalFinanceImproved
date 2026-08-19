@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**327 procedures across 36 routers.**
+**327 procedures across 39 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -60,6 +60,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | Procedure                            | Kind     | Auth                 | Description                                                                                                                                                                                              |
 | ------------------------------------ | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `addColumn`                          | mutation | `budgetProcedure`    | Add a new column (budget mode) to the target profile (active if not given).                                                                                                                              |
+| `computeActiveSummary`               | query    | `protectedProcedure` | Returns the active budget profile's calculator result for a given column.                                                                                                                                |
 | `createItem`                         | mutation | `budgetProcedure`    | Create a new budget item.                                                                                                                                                                                |
 | `createProfile`                      | mutation | `budgetProcedure`    | categories. Optionally links every starting column to a Contribution Profile so the new profile's income/take-home math uses that Contribution Profile from the start, instead of defaulting to Live and |
 | `deleteItem`                         | mutation | `budgetProcedure`    | Delete a budget item.                                                                                                                                                                                    |
@@ -99,14 +100,16 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `contribution-profiles`
 
-| Procedure | Kind     | Auth                           | Description                                                                                                                                                                                              |
-| --------- | -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `create`  | mutation | `contributionProfileProcedure` | Create a new contribution profile.                                                                                                                                                                       |
-| `delete`  | mutation | `contributionProfileProcedure` | active-profile setting must always resolve to a real row), when it's the globally-active selection, and when any Plan still pins it — the scenarios FK is `set null`, so without that check deleting wou |
-| `getById` | query    | `protectedProcedure`           | Get a single profile with fully resolved per-account details.                                                                                                                                            |
-| `list`    | query    | `protectedProcedure`           | List all contribution profiles with resolved summary totals.                                                                                                                                             |
-| `resolve` | query    | `protectedProcedure`           | Resolve a profile to aggregate totals — used by the relocation tool and any other consumer that needs salary/contribution/match numbers for a given profile.                                             |
-| `update`  | mutation | `contributionProfileProcedure` | Update an existing contribution profile.                                                                                                                                                                 |
+| Procedure                | Kind     | Auth                           | Description                                                                                                                                                                                              |
+| ------------------------ | -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `compareData`            | query    | `protectedProcedure`           | map, keyed by account id. Deliberately skips what `getById` does per profile — perf-account fuzzy matching and full display-name disambiguation — since those only need to happen once per account row,  |
+| `create`                 | mutation | `contributionProfileProcedure` | Create a new contribution profile.                                                                                                                                                                       |
+| `delete`                 | mutation | `contributionProfileProcedure` | active-profile setting must always resolve to a real row), when it's the globally-active selection, and when any Plan still pins it — the scenarios FK is `set null`, so without that check deleting wou |
+| `getById`                | query    | `protectedProcedure`           | Get a single profile with fully resolved per-account details.                                                                                                                                            |
+| `list`                   | query    | `protectedProcedure`           | List all contribution profiles with resolved summary totals.                                                                                                                                             |
+| `resolve`                | query    | `protectedProcedure`           | Resolve a profile to aggregate totals — used by the relocation tool and any other consumer that needs salary/contribution/match numbers for a given profile.                                             |
+| `setAccountActiveFields` | mutation | `contributionProfileProcedure` | caller needing to fetch/merge the full contributionActiveFields blob itself. Used right after creating a new contribution account (e.g. What-If's "Make real") to give it a real value in whichever prof |
+| `update`                 | mutation | `contributionProfileProcedure` | Update an existing contribution profile.                                                                                                                                                                 |
 
 ## `data-browser`
 
@@ -128,11 +131,12 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `historical`
 
-| Procedure        | Kind     | Auth                 | Description                                                                            |
-| ---------------- | -------- | -------------------- | -------------------------------------------------------------------------------------- |
-| `computeSummary` | query    | `protectedProcedure` | (no description)                                                                       |
-| `update`         | mutation | `adminProcedure`     | Update editable fields on a net_worth_annual row (income/tax + otherLiabilities only). |
-| `upsertNote`     | mutation | `adminProcedure`     | (no description)                                                                       |
+| Procedure        | Kind     | Auth                 | Description                                                                                                                                                                                              |
+| ---------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `computeSummary` | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
+| `update`         | mutation | `adminProcedure`     | Update editable fields on a net_worth_annual row (income/tax + otherLiabilities only).                                                                                                                   |
+| `upsertNote`     | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `upsertSalary`   | mutation | `adminProcedure`     | field falls back to the SAME live estimate the current-year auto-fill in `computeSummary` shows (active job's compensation under the active Salary Profile) for the current year, or 0 for a past year w |
 
 ## `mortgage`
 
@@ -184,11 +188,12 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `projection/monte-carlo`
 
-| Procedure                    | Kind     | Auth                | Description      |
-| ---------------------------- | -------- | ------------------- | ---------------- |
-| `updateClampBounds`          | mutation | `scenarioProcedure` | (no description) |
-| `updateGlidePathAllocations` | mutation | `scenarioProcedure` | (no description) |
-| `updateReturnRateTable`      | mutation | `scenarioProcedure` | (no description) |
+| Procedure                     | Kind     | Auth                 | Description                                                                                                                                                                                              |
+| ----------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `computeMonteCarloProjection` | query    | `protectedProcedure` | Runs N trials of the contribution engine with randomized return rates sampled from correlated log-normal distributions based on asset class parameters and glide path allocations from the DB. Returns p |
+| `updateClampBounds`           | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                                                         |
+| `updateGlidePathAllocations`  | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                                                         |
+| `updateReturnRateTable`       | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                                                         |
 
 ## `projection/presets`
 
@@ -199,6 +204,18 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `listPresets`              | query    | `protectedProcedure` | (no description)                                          |
 | `updateInflationOverrides` | mutation | `scenarioProcedure`  | Persist MC stochastic inflation overrides to appSettings. |
 | `updatePreset`             | mutation | `scenarioProcedure`  | Update an existing user Monte Carlo simulation preset.    |
+
+## `projection/relocation`
+
+| Procedure                       | Kind  | Auth                 | Description                                                                                                                                                                                              |
+| ------------------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `computeRelocationFiProjection` | query | `protectedProcedure` | the earliest year when the user can safely relocate and still retire at their configured retirementAge. Also returns year-by-year projection rows for the comparison table, and — when moveYear is provi |
+
+## `projection/scenarios`
+
+| Procedure           | Kind  | Auth                 | Description                                                                                                                                                                                              |
+| ------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `computeProjection` | query | `protectedProcedure` | and per-year sticky-forward overrides. All data (salary, contributions, portfolio, limits, return rates) comes from the same DB sources as the other endpoints — this engine just gives you much more gr |
 
 ## `projection/strategy`
 
@@ -215,13 +232,19 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | ------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `computeStressTest` | query | `protectedProcedure` | returnRates / inflationRate / salaryGrowthRate / withdrawalRate before calling calculateProjection. Returns summary metrics (nest egg at retirement, sustainable withdrawal, depletion age) so the PlanH |
 
+## `retirement`
+
+| Procedure                   | Kind  | Auth                 | Description      |
+| --------------------------- | ----- | -------------------- | ---------------- |
+| `computeRelocationAnalysis` | query | `protectedProcedure` | (no description) |
+
 ## `salary-profiles`
 
 | Procedure | Kind     | Auth                           | Description                                                                                                                                                                                              |
 | --------- | -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `create`  | mutation | `contributionProfileProcedure` | Under the presence encoding an empty map is already complete: it says "this profile pins nothing", which is exactly what a fresh profile means. The old encoding had to enumerate every person to say th |
+| `create`  | mutation | `contributionProfileProcedure` | Create a profile. `salaries` defaults to EMPTY — genuinely no job entries, not copied from any other profile. A new what-if profile must never silently inherit whatever another profile happened to say |
 | `delete`  | mutation | `contributionProfileProcedure` | Delete a profile. Blocked when it's the last one left (the active-profile setting must always resolve to a real row), when it's the globally-active selection, and when any Plan still pins it — the sce |
-| `getById` | query    | `protectedProcedure`           | One profile plus per-person live salary rows, so the editor can show what "follows job" currently resolves to without a second round trip.                                                               |
+| `getById` | query    | `protectedProcedure`           | One profile plus per-person resolved rows, so the editor can show what this profile actually produces for each job without a second round trip.                                                          |
 | `list`    | query    | `protectedProcedure`           | All salary profiles, oldest first. Real rows only.                                                                                                                                                       |
 | `update`  | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
 
@@ -334,33 +357,25 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `settings/paycheck`
 
-| Procedure            | Kind     | Auth                 | Description                                                                    |
-| -------------------- | -------- | -------------------- | ------------------------------------------------------------------------------ |
-| `create`             | mutation | `adminProcedure`     | (no description)                                                               |
-| `create`             | mutation | `adminProcedure`     | (no description)                                                               |
-| `create`             | mutation | `adminProcedure`     | (no description)                                                               |
-| `create`             | mutation | `adminProcedure`     | (no description)                                                               |
-| `create`             | mutation | `adminProcedure`     | (no description)                                                               |
-| `delete`             | mutation | `adminProcedure`     | (no description)                                                               |
-| `delete`             | mutation | `adminProcedure`     | (no description)                                                               |
-| `delete`             | mutation | `adminProcedure`     | (no description)                                                               |
-| `delete`             | mutation | `adminProcedure`     | (no description)                                                               |
-| `delete`             | mutation | `adminProcedure`     | (no description)                                                               |
-| `delete`             | mutation | `adminProcedure`     | (no description)                                                               |
-| `deleteByJobYear`    | mutation | `adminProcedure`     | needing to know the row id first (mirrors the upsert-by-key ergonomics above). |
-| `list`               | query    | `protectedProcedure` | (no description)                                                               |
-| `list`               | query    | `protectedProcedure` | (no description)                                                               |
-| `list`               | query    | `protectedProcedure` | (no description)                                                               |
-| `list`               | query    | `protectedProcedure` | (no description)                                                               |
-| `list`               | query    | `protectedProcedure` | (no description)                                                               |
-| `list`               | query    | `protectedProcedure` | (no description)                                                               |
-| `setPriorYearAmount` | mutation | `adminProcedure`     | (no description)                                                               |
-| `update`             | mutation | `adminProcedure`     | (no description)                                                               |
-| `update`             | mutation | `adminProcedure`     | (no description)                                                               |
-| `update`             | mutation | `adminProcedure`     | (no description)                                                               |
-| `update`             | mutation | `adminProcedure`     | (no description)                                                               |
-| `update`             | mutation | `adminProcedure`     | (no description)                                                               |
-| `upsert`             | mutation | `adminProcedure`     | has to know whether a row already exists for that year.                        |
+| Procedure            | Kind     | Auth                 | Description                    |
+| -------------------- | -------- | -------------------- | ------------------------------ |
+| `create`             | mutation | `adminProcedure`     | (no description)               |
+| `create`             | mutation | `adminProcedure`     | (no description)               |
+| `create`             | mutation | `adminProcedure`     | (no description)               |
+| `create`             | mutation | `adminProcedure`     | (no description)               |
+| `delete`             | mutation | `adminProcedure`     | (no description)               |
+| `delete`             | mutation | `adminProcedure`     | (no description)               |
+| `delete`             | mutation | `adminProcedure`     | (no description)               |
+| `delete`             | mutation | `adminProcedure`     | (no description)               |
+| `list`               | query    | `protectedProcedure` | (no description)               |
+| `list`               | query    | `protectedProcedure` | (no description)               |
+| `list`               | query    | `protectedProcedure` | (no description)               |
+| `list`               | query    | `protectedProcedure` | (no description)               |
+| `setPriorYearAmount` | mutation | `adminProcedure`     | (no description)               |
+| `update`             | mutation | `adminProcedure`     | routing rules has no need for. |
+| `update`             | mutation | `adminProcedure`     | (no description)               |
+| `update`             | mutation | `adminProcedure`     | (no description)               |
+| `update`             | mutation | `adminProcedure`     | (no description)               |
 
 ## `settings/retirement`
 

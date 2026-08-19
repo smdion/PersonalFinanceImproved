@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**64 tables.**
+**63 tables.**
 
 ## Mermaid diagram
 
@@ -12,12 +12,6 @@ erDiagram
     int id PK
   }
   jobs {
-    int id PK
-  }
-  salary_changes {
-    int id PK
-  }
-  job_bonus_overrides {
     int id PK
   }
   contribution_accounts {
@@ -87,6 +81,9 @@ erDiagram
     int id PK
   }
   home_improvement_items {
+    int id PK
+  }
+  historical_salaries {
     int id PK
   }
   other_asset_items {
@@ -201,8 +198,6 @@ erDiagram
     int id PK
   }
   jobs }o--|| people : references
-  salary_changes }o--|| jobs : references
-  job_bonus_overrides }o--|| jobs : references
   contribution_accounts }o--|| jobs : references
   contribution_accounts }o--|| people : references
   paycheck_deductions }o--|| jobs : references
@@ -225,6 +220,7 @@ erDiagram
   pending_rollovers }o--|| performance_accounts : references
   account_holdings }o--|| performance_accounts : references
   account_holdings }o--|| portfolio_snapshots : references
+  historical_salaries }o--|| people : references
   mortgage_what_if_scenarios }o--|| mortgage_loans : references
   mortgage_extra_payments }o--|| mortgage_loans : references
   property_taxes }o--|| mortgage_loans : references
@@ -263,9 +259,9 @@ erDiagram
 - **contribution_profiles**
 - **glide_path_allocations** → asset_class_params
 - **historical_notes**
+- **historical_salaries** → people
 - **home_improvement_items**
 - **irmaa_brackets**
-- **job_bonus_overrides** → jobs
 - **jobs** → people
 - **local_admins**
 - **ltcg_brackets**
@@ -292,7 +288,6 @@ erDiagram
 - **retirement_scenarios**
 - **retirement_settings** → people
 - **return_rate_table**
-- **salary_changes** → jobs
 - **salary_profiles**
 - **savings_allocation_overrides** → savings_goals
 - **savings_goal_profile_allocations** → savings_goals, budget_profiles
