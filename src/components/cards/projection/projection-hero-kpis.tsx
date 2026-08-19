@@ -106,10 +106,6 @@ function CompactRing({ rate, size = 48 }: { rate: number; size?: number }) {
 // ---------------------------------------------------------------------------
 
 export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
-  // Check via `state.result` before destructuring — result truthy always
-  // implies engineSettings defined (see use-projection-derived.ts).
-  if (!state.result) return null;
-
   const {
     result,
     engineSettings,
@@ -126,6 +122,8 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     coastFireMcQuery,
     coastFireMcResult,
   } = state;
+
+  if (!result) return null;
 
   const currentAge = result.projectionByYear[0]?.age ?? 0;
   const alreadyRetired = currentAge >= (engineSettings?.retirementAge ?? 999);
@@ -167,7 +165,8 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
       : b.age === engineSettings?.retirementAge,
   );
   const terminalYear =
-    baseYear + (engineSettings.endAge - (result.projectionByYear[0]?.age ?? 0));
+    baseYear +
+    (engineSettings!.endAge - (result.projectionByYear[0]?.age ?? 0));
   const depl = isPersonFiltered
     ? personDepletionInfo
     : result.portfolioDepletionAge

@@ -7,19 +7,16 @@ import type { ProjectionState } from "./projection-table-types";
 
 /** Compact depletion callout (1-liner) shown when MC has a depletion age. */
 export function McDepletionCallout({ state }: { state: ProjectionState }) {
-  // Check via `state.result` before destructuring — result truthy always
-  // implies engineSettings defined (see use-projection-derived.ts).
-  if (!state.result) return null;
-
   const { result, engineSettings, deflate, baseYear, mcQuery, mcLoading } =
     state;
 
-  if (!mcQuery.data?.result || mcLoading) return null;
+  if (!result || !mcQuery.data?.result || mcLoading) return null;
   if (!mcQuery.data.result.distributions.depletionAge) return null;
 
   const mc = mcQuery.data.result;
   const terminalYear =
-    baseYear + (engineSettings.endAge - (result.projectionByYear[0]?.age ?? 0));
+    baseYear +
+    (engineSettings!.endAge - (result.projectionByYear[0]?.age ?? 0));
   const tb = mc.distributions.terminalBalance;
   const deplPct = Math.round((1 - mc.successRate) * 100);
   const isLowRisk = mc.successRate >= 0.9;
