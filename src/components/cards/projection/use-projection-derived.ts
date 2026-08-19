@@ -78,13 +78,24 @@ export function useProjectionDerived(
   // coastFireOverrideAge while MC bands updated instantly.
   const engineData = engineQuery.data;
   const rawResult = useMemo(() => {
+    // Gate on engineData.result first, not just the coastFire branch: both
+    // computeProjection and computeCoastFireMC guard on the same
+    // payload-availability check server-side, so a coastFireMcResult can
+    // only be legitimately non-null when engineData.result is too. Without
+    // this guard, a stale/cached coastFireMcResult (longer staleTime,
+    // placeholderData retention) could keep rendering a projection after
+    // the underlying engine result has gone null (e.g. primary person
+    // deleted) — this also keeps `result` truthy always implying
+    // `engineSettings` defined below, removing the need for `!` assertions
+    // at every consumer.
+    if (!engineData?.result) return null;
     if (
       scenarioView === "coastFire" &&
       coastFireMcResult?.deterministicProjection
     ) {
       return coastFireMcResult.deterministicProjection;
     }
-    return engineData?.result ?? null;
+    return engineData.result;
   }, [
     scenarioView,
     coastFireMcResult?.deterministicProjection,
@@ -133,6 +144,10 @@ export function useProjectionDerived(
     return person?.id ?? primaryPersonId;
   }, [isPersonFiltered, personFilter, enginePeople, primaryPersonId]);
 
+  // Internal-only — safe to read with `?.` here since every use below is a
+  // fallback-guarded read, not an assumption the value exists. The
+  // externally-exposed `engineSettings` (in the return statement) is paired
+  // with `result` via a discriminated union instead.
   const engineSettings =
     engineData && engineData.result ? engineData.settings : undefined;
   const annualExpenses =
@@ -579,10 +594,23 @@ export function useProjectionDerived(
     [showAllYears, accumOverrides, decumOverrides, result],
   );
 
-  return {
+  // Individual account names for lump sum targeting
+  const individualAccountNames = useMemo(() => {
+    const first = result?.projectionByYear?.[0];
+    if (!first) return [];
+    return first.individualAccountBalances
+      .filter((ia) => isRetirementParent(ia.parentCategory))
+      .map((ia) => ({
+        name: ia.name,
+        category: ia.category,
+        taxType: ia.taxType,
+        ownerName: ia.ownerName,
+      }));
+  }, [result]);
+
+  const commonReturn = {
     engineData,
     rawResult,
-    result,
     combinedSalary,
     enginePeople,
     realDefaults,
@@ -591,7 +619,6 @@ export function useProjectionDerived(
     primaryPersonId,
     salaryByPerson,
     salaryOverridePersonId,
-    engineSettings,
     annualExpenses,
     decumulationExpenses,
     budgetProfileSummaries,
@@ -615,18 +642,17 @@ export function useProjectionDerived(
     avgBirthYear,
     displayAge,
     getFilteredYears,
-    // Individual account names for lump sum targeting
-    individualAccountNames: useMemo(() => {
-      const first = result?.projectionByYear?.[0];
-      if (!first) return [];
-      return first.individualAccountBalances
-        .filter((ia) => isRetirementParent(ia.parentCategory))
-        .map((ia) => ({
-          name: ia.name,
-          category: ia.category,
-          taxType: ia.taxType,
-          ownerName: ia.ownerName,
-        }));
-    }, [result]),
+    individualAccountNames,
   };
+
+  // Discriminated on `result`: consumers that check `state.result` (property
+  // access, not a pre-destructured local — TS narrowing doesn't survive
+  // destructuring across a union) before reading `state.engineSettings` get
+  // it typed as always-defined, no `!` needed. See callers in
+  // projection-chart.tsx, projection-hero-kpis.tsx, projection-mc-results.tsx,
+  // and cards/projection/index.tsx.
+  if (result && engineSettings) {
+    return { ...commonReturn, result, engineSettings };
+  }
+  return { ...commonReturn, result: null, engineSettings: undefined };
 }

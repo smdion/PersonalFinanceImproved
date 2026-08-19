@@ -29,6 +29,12 @@ import type { ProjectionState } from "./projection-table-types";
 export { ProjectionChartSkeleton } from "./projection-chart-skeleton";
 
 export function ProjectionChart({ state }: { state: ProjectionState }) {
+  // Check via `state.result` before destructuring — result truthy always
+  // implies engineSettings defined (see use-projection-derived.ts), but that
+  // pairing only survives TS narrowing through the object, not through
+  // pre-destructured locals.
+  if (!state.result) return null;
+
   const {
     result,
     engineSettings,
@@ -45,13 +51,11 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
     fanBandRange,
   } = state;
 
-  if (!result) return null;
-
   // Bars always show standalone deterministic projection.
   // MC fan bands + median line overlay on top via mcBandsByYear.
   const years = result.projectionByYear;
-  const retAge = engineSettings!.retirementAge;
-  const ssStartAge = engineSettings!.ssStartAge;
+  const retAge = engineSettings.retirementAge;
+  const ssStartAge = engineSettings.ssStartAge;
   // Detect RMD start age from first decumulation year with rmdAmount > 0
   const rmdStartAge =
     years.find((y) => y.phase === "decumulation" && y.rmdAmount > 0)?.age ??

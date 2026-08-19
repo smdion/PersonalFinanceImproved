@@ -746,10 +746,16 @@ export function ProjectionCard(props: {
                 computeTimeMs: mcQuery.data.result.computeTimeMs,
               }}
               deflate={(amount: number) => {
-                const termYear =
-                  baseYear +
-                  (engineSettings!.endAge -
-                    (result?.projectionByYear[0]?.age ?? 0));
+                // No early-return gate on `result` at this component's top
+                // level (unlike ProjectionChart/HeroKpis/McDepletionCallout),
+                // so engineSettings isn't guaranteed defined here the way
+                // the discriminated-return invariant covers those — fall
+                // back to no deflation rather than asserting with `!`.
+                const termYear = engineSettings
+                  ? baseYear +
+                    (engineSettings.endAge -
+                      (result?.projectionByYear[0]?.age ?? 0))
+                  : baseYear;
                 return deflate(amount, termYear);
               }}
             />
