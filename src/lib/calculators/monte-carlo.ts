@@ -27,14 +27,15 @@ import type {
   ProjectionInput,
 } from "./types";
 import { roundToCents, sumBy, safeDivide } from "../utils/math";
-import { DEFAULT_RETURN_RATE } from "../constants";
+import {
+  DEFAULT_RETURN_RATE,
+  MC_RETURN_CLAMP_MIN,
+  MC_RETURN_CLAMP_MAX,
+  MC_SPENDING_STABILITY_THRESHOLD,
+} from "../constants";
 import type { EngineDecumulationYear } from "./types";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "../config/withdrawal-strategies";
 import type { WithdrawalStrategyType } from "../config/withdrawal-strategies";
-
-/** A trial is "spending stable" if withdrawals stay ≥ this fraction of the initial
- *  inflation-adjusted withdrawal in every decumulation year. */
-const SPENDING_STABILITY_THRESHOLD = 0.75;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -113,8 +114,8 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
     inflationRisk,
   } = input;
   const seed = input.seed ?? Date.now();
-  const clampMin = input.returnClampMin ?? -0.5;
-  const clampMax = input.returnClampMax ?? 1.0;
+  const clampMin = input.returnClampMin ?? MC_RETURN_CLAMP_MIN;
+  const clampMax = input.returnClampMax ?? MC_RETURN_CLAMP_MAX;
 
   // Strategy config — determines whether stability baseline uses post-retirement
   // raise (from engine's projectedExpenses) or MC inflation (computed baseline).
@@ -304,7 +305,7 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
           if (baseline === 0 && y.totalWithdrawal === 0 && i > 0) return false;
           return (
             baseline === 0 ||
-            y.totalWithdrawal >= SPENDING_STABILITY_THRESHOLD * baseline
+            y.totalWithdrawal >= MC_SPENDING_STABILITY_THRESHOLD * baseline
           );
         });
       if (isStable) spendingStableCount++;
@@ -322,7 +323,9 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
           decYears.every((y, i) => {
             const inflationFactor = Math.pow(1 + trialInflationRate, i);
             const baseline = budgetAtRetirement * inflationFactor;
-            return y.totalWithdrawal >= SPENDING_STABILITY_THRESHOLD * baseline;
+            return (
+              y.totalWithdrawal >= MC_SPENDING_STABILITY_THRESHOLD * baseline
+            );
           });
         if (isBudgetStable) budgetStableCount++;
       }

@@ -7,7 +7,10 @@
  * SWR: 5.7% (40/60 portfolio, 90% success, 30 years).
  */
 import { roundToCents } from "../../utils/math";
-import { DEFAULT_STRATEGY_WITHDRAWAL_PERCENT } from "../../constants";
+import {
+  DEFAULT_STRATEGY_WITHDRAWAL_PERCENT,
+  DEFAULT_STRATEGY_FLOOR_PERCENT,
+} from "../../constants";
 import type {
   SpendingStrategyInput,
   SpendingStrategyResult,
@@ -22,7 +25,7 @@ export function applyConstantPercentage(
   const p = params as ConstantPercentageParams;
   const withdrawalPercent =
     p.withdrawalPercent ?? DEFAULT_STRATEGY_WITHDRAWAL_PERCENT;
-  const floorPercent = p.floorPercent ?? 0.9;
+  const floorPercent = p.floorPercent ?? DEFAULT_STRATEGY_FLOOR_PERCENT;
 
   // First decumulation year: capture initial amount
   if (crossYearState.initialWithdrawalAmount === null) {
