@@ -10,6 +10,7 @@ import { roundToCents } from "../../utils/math";
 import {
   DEFAULT_STRATEGY_WITHDRAWAL_PERCENT,
   DEFAULT_STRATEGY_FLOOR_PERCENT,
+  DEFAULT_ENDOWMENT_ROLLING_YEARS,
 } from "../../constants";
 import type {
   SpendingStrategyInput,
@@ -25,7 +26,7 @@ export function applyEndowment(
   const p = params as EndowmentParams;
   const withdrawalPercent =
     p.withdrawalPercent ?? DEFAULT_STRATEGY_WITHDRAWAL_PERCENT;
-  const rollingYears = p.rollingYears ?? 10;
+  const rollingYears = p.rollingYears ?? DEFAULT_ENDOWMENT_ROLLING_YEARS;
   const floorPercent = p.floorPercent ?? DEFAULT_STRATEGY_FLOOR_PERCENT;
 
   // Include current balance in history for the rolling average

@@ -114,6 +114,14 @@ export const DEFAULT_STRATEGY_WITHDRAWAL_PERCENT = 0.05;
  *  shared by the constant-percentage and endowment withdrawal strategies. */
 export const DEFAULT_STRATEGY_FLOOR_PERCENT = 0.9;
 
+/** Default rolling-average window (years) for the endowment withdrawal
+ *  strategy. Confirmed 2026-08-19: the UI config previously defaulted this
+ *  to 5 while the engine and server fallback both used 10 — a real,
+ *  user-facing divergence. Standardized on 10 (majority — engine, server
+ *  fallback, and methodology docs all already agreed) and wired all three
+ *  layers to this one constant so they can't drift apart again. */
+export const DEFAULT_ENDOWMENT_ROLLING_YEARS = 10;
+
 // ---------------------------------------------------------------------------
 // Monte Carlo / Projection
 // ---------------------------------------------------------------------------
