@@ -7,6 +7,7 @@ import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useInlineNumberEdit } from "@/lib/hooks/use-inline-number-edit";
 import { formatDate } from "@/lib/utils/format";
 import {
   PERF_CATEGORY_PORTFOLIO,
@@ -53,8 +54,6 @@ export default function PerformancePage() {
   const utils = trpc.useUtils();
   const [activeCategory, setActiveCategory] = useState(PERF_CATEGORY_PORTFOLIO);
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
-  const [editingCell, setEditingCell] = useState<EditingCell>(null);
-  const [editValue, setEditValue] = useState("");
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const [showUpdatePerformance, setShowUpdatePerformance] = useState(false);
   const [tableLocked, setTableLocked] = useState(true);
@@ -86,6 +85,34 @@ export default function PerformancePage() {
   const finalizeYear = trpc.performance.finalizeYear.useMutation({
     onSuccess: () => utils.performance.computeSummary.invalidate(),
   });
+
+  const {
+    editingKey: editingCell,
+    editValue,
+    setEditValue,
+    startEdit: startEditRaw,
+    commit: saveEdit,
+    handleKeyDown,
+  } = useInlineNumberEdit<NonNullable<EditingCell>>({
+    onCommit: ({ type, id, field }, value) => {
+      if (type === "annual") {
+        updateAnnual.mutate({ id, [field]: value });
+      } else if (type === "master") {
+        updateCostBasis.mutate({ performanceAccountId: id, costBasis: value });
+      } else {
+        updateAccount.mutate({ id, [field]: value });
+      }
+    },
+  });
+  const startEdit = (
+    type: "annual" | "account" | "master",
+    id: number,
+    field: string,
+    currentValue: number,
+  ) => {
+    if (!canEdit) return;
+    startEditRaw({ type, id, field }, currentValue);
+  };
 
   if (isLoading) {
     return (
@@ -367,44 +394,6 @@ export default function PerformancePage() {
     const match = allQuickSelects.find((o) => o.label === label);
     if (match) setSelectedAccountIds(new Set(match.ids));
   };
-
-  function startEdit(
-    type: "annual" | "account" | "master",
-    id: number,
-    field: string,
-    currentValue: number,
-  ) {
-    if (!canEdit) return;
-    setEditingCell({ type, id, field });
-    setEditValue(String(currentValue));
-  }
-
-  function saveEdit() {
-    if (!editingCell) return;
-    const { type, id, field } = editingCell;
-    const value = editValue.trim();
-    if (value === "") {
-      setEditingCell(null);
-      return;
-    }
-    if (type === "annual") {
-      updateAnnual.mutate({ id, [field]: value });
-    } else if (type === "master") {
-      updateCostBasis.mutate({ performanceAccountId: id, costBasis: value });
-    } else {
-      updateAccount.mutate({ id, [field]: value });
-    }
-    setEditingCell(null);
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      saveEdit();
-    } else if (e.key === "Escape") {
-      setEditingCell(null);
-    }
-  }
 
   return (
     <div>
