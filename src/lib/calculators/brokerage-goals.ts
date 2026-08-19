@@ -151,7 +151,7 @@ export function calculateBrokerageGoals(
       afterTax = roundToCents(sumBy(filtered, (ia) => ia.balance));
       // Basis not tracked per individual account; fall back to proportional estimate
       const totalAfterTax = yr.balanceByTaxType.afterTax;
-      const ratio = safeDivide(afterTax, totalAfterTax) ?? 0;
+      const ratio = safeDivide(afterTax, totalAfterTax, 0);
       afterTaxBasis = roundToCents(yr.balanceByTaxType.afterTaxBasis * ratio);
     } else {
       afterTax = yr.balanceByTaxType.afterTax;

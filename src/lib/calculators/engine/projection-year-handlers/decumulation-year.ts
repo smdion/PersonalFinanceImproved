@@ -376,6 +376,10 @@ export function runDecumulationYear(
   // Pre-RMD estimate may understate tax when RMD forces additional Traditional withdrawals.
   if (rmdOverrodeRouting && afterTaxNeed > 0) {
     const postRmdEffRate = taxCost / (afterTaxNeed + taxCost);
+    // Not a safeDivide candidate (advisor-reviewed, 2026-08-19): the guard
+    // is `< 1`, not a zero-denominator check — postRmdEffRate exceeding 1 is
+    // a real, semantically distinct case (over-withheld/clawback) from it
+    // being exactly 1, and safeDivide only special-cases denominator === 0.
     grossUpFactor =
       postRmdEffRate < 1 ? 1 / (1 - postRmdEffRate) : grossUpFactor;
   }

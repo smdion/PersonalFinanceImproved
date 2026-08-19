@@ -15,7 +15,7 @@ import type {
   AccountCategory,
   TaxSplitConfig,
 } from "../types";
-import { roundToCents } from "../../utils/math";
+import { roundToCents, safeDivide } from "../../utils/math";
 import {
   getRothFraction as configGetRothFraction,
   getAllCategories,
@@ -408,8 +408,7 @@ export function routeFromSpecs(
       getAccountTypeConfig(spec.category).fixedContribScalesWithSalary
     ) {
       // Fixed contributions that scale with salary growth (no IRS limit to track)
-      const salaryGrowthFactor =
-        baseSalary > 0 ? projectedSalary / baseSalary : 1;
+      const salaryGrowthFactor = safeDivide(projectedSalary, baseSalary, 1);
       projected = roundToCents(spec.baseAnnual * salaryGrowthFactor);
     } else {
       // Tax-advantaged fixed contributions (e.g. HSA): grow with IRS limit growth
@@ -471,7 +470,7 @@ export function routeFromSpecs(
         if (s.method === "percent_of_salary")
           return projectedSalary * s.salaryFraction * s.value;
         if (getAccountTypeConfig(s.category).fixedContribScalesWithSalary) {
-          const sgf = baseSalary > 0 ? projectedSalary / baseSalary : 1;
+          const sgf = safeDivide(projectedSalary, baseSalary, 1);
           return s.baseAnnual * sgf;
         }
         return s.baseAnnual * limitGrowthFactor;

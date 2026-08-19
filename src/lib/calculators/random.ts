@@ -136,7 +136,7 @@ export function choleskyDecomposition(matrix: number[][]): number[][] {
         // Clamp to avoid NaN from floating-point rounding
         L[i]![j] = Math.sqrt(Math.max(diag, 0));
       } else {
-        L[i]![j] = safeDivide(matrix[i]![j]! - sum, L[j]![j]!) ?? 0;
+        L[i]![j] = safeDivide(matrix[i]![j]! - sum, L[j]![j]!, 0);
       }
     }
   }
@@ -268,7 +268,7 @@ export function interpolateAllocations(
 
   // Linear interpolation factor
   const range = upper.age - lower.age;
-  const t = safeDivide(age - lower.age, range) ?? 0;
+  const t = safeDivide(age - lower.age, range, 0);
 
   // Collect all asset class IDs
   const allIds = Array.from(

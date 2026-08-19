@@ -339,13 +339,13 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
           ? yr.targetWithdrawal
           : year1Withdrawal * Math.pow(1 + trialInflationRate, di);
         stratRatiosByDecYear[di]!.push(
-          safeDivide(yr.totalWithdrawal, stratBase) ?? 0,
+          safeDivide(yr.totalWithdrawal, stratBase, 0),
         );
         if (budgetAtRet !== null) {
           const budgetInflFactor = Math.pow(1 + trialInflationRate, di);
           const budgetBase = budgetAtRet * budgetInflFactor;
           budgetRatiosByDecYear[di]!.push(
-            safeDivide(yr.totalWithdrawal, budgetBase) ?? 0,
+            safeDivide(yr.totalWithdrawal, budgetBase, 0),
           );
         }
       }
@@ -357,7 +357,7 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
     // Sustainable withdrawal (nominal and present value)
     sustainableWithdrawals.push(result.sustainableWithdrawal);
     sustainableWithdrawalsPV.push(
-      safeDivide(result.sustainableWithdrawal, pvDeflator) ?? 0,
+      safeDivide(result.sustainableWithdrawal, pvDeflator, 0),
     );
   }
 
@@ -437,10 +437,10 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
 
   // Success rate: % of trials where portfolio balance stays above $0
   const successCount = terminalBalances.filter((b) => b > 0).length;
-  const successRate = safeDivide(successCount, numTrials) ?? 0;
+  const successRate = safeDivide(successCount, numTrials, 0);
 
   // Spending stability: % of trials where withdrawals met ≥75% of initial (inflation-adjusted)
-  const spendingStabilityRate = safeDivide(spendingStableCount, numTrials) ?? 0;
+  const spendingStabilityRate = safeDivide(spendingStableCount, numTrials, 0);
 
   // Budget stability: same metric but against user's retirement budget
   const budgetStabilityRate =

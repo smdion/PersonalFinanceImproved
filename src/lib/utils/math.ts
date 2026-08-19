@@ -3,7 +3,23 @@
  * If fallback is null, returns null (caller must handle).
  * If fallback is a number, returns that number.
  * If fallback is omitted, returns 0.
+ *
+ * Overloaded so the common (non-null) cases type as `number`, not
+ * `number | null` — callers no longer need `?? 0`/`!`/`as number` to
+ * satisfy a `number`-typed field, which the audit identified as the actual
+ * reason this helper was under-adopted in favor of manual ternaries.
  */
+export function safeDivide(numerator: number, denominator: number): number;
+export function safeDivide(
+  numerator: number,
+  denominator: number,
+  fallback: number,
+): number;
+export function safeDivide(
+  numerator: number,
+  denominator: number,
+  fallback: null,
+): number | null;
 export function safeDivide(
   numerator: number,
   denominator: number,

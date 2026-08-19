@@ -431,6 +431,13 @@ export function estimateWithdrawalTaxCost(
   }
 
   const shouldGrossUp = taxRates.grossUpForTaxes !== false;
+  // Not safeDivide candidates (advisor-reviewed, 2026-08-19):
+  // effectiveTaxRate's guard variable (afterTaxNeed) differs from its actual
+  // denominator (afterTaxNeed + estTax) — safeDivide(estTax, afterTaxNeed +
+  // estTax, 0) is a different function (returns 1, not 0, when
+  // afterTaxNeed === 0 and estTax > 0). grossUpFactor's `< 1` guard is the
+  // same non-zero-denominator case as decumulation-year.ts's post-RMD
+  // recompute above.
   const effectiveTaxRate =
     afterTaxNeed > 0 ? estTax / (afterTaxNeed + estTax) : 0;
   const grossUpFactor =

@@ -45,7 +45,7 @@ export function computeHouseholdTax(
     ficaSS: perPersonFicaSS,
     ficaMedicare: perPersonFicaMed,
     totalTax,
-    effectiveRate: safeDivide(totalTax, combinedGross) ?? 0,
+    effectiveRate: safeDivide(totalTax, combinedGross, 0),
     marginalRate: combinedTaxResult.marginalRate,
   };
 }

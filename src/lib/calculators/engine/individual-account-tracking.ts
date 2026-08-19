@@ -16,7 +16,7 @@ import type {
   IndividualAccountYearBalance,
   IndividualAccountInput,
 } from "../types";
-import { roundToCents } from "../../utils/math";
+import { roundToCents, safeDivide } from "../../utils/math";
 import {
   getAccountTypeConfig,
   isOverflowTarget,
@@ -210,8 +210,7 @@ export function distributeContributions(
     } else if (
       getAccountTypeConfig(spec.category).fixedContribScalesWithSalary
     ) {
-      const salaryGrowthFactor =
-        currentSalary > 0 ? projectedSalary / currentSalary : 1;
+      const salaryGrowthFactor = safeDivide(projectedSalary, currentSalary, 1);
       projected = roundToCents(spec.baseAnnual * salaryGrowthFactor * proRate);
     } else {
       projected = roundToCents(spec.baseAnnual * lgf * proRate);
@@ -465,8 +464,7 @@ export function distributeContributions(
     } else if (
       getAccountTypeConfig(spec.category).fixedContribScalesWithSalary
     ) {
-      const salaryGrowthFactor =
-        currentSalary > 0 ? projectedSalary / currentSalary : 1;
+      const salaryGrowthFactor = safeDivide(projectedSalary, currentSalary, 1);
       projected = roundToCents(spec.baseAnnual * salaryGrowthFactor * proRate);
     } else {
       projected = roundToCents(spec.baseAnnual * lgf * proRate);

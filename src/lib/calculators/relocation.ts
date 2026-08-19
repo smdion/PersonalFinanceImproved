@@ -187,7 +187,7 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
   );
   // Decimal fraction (0.40 = 40%), consistent with every other *Percent/*Rate
   // field in the engine — the display site uses formatPercent() (M32).
-  const pctIncrease = safeDivide(annualDelta, currentAnnual) ?? 0;
+  const pctIncrease = safeDivide(annualDelta, currentAnnual, 0);
 
   // Pre-compute large purchase data
   const purchaseData = precomputePurchases(largePurchases);
@@ -198,17 +198,19 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
   // Savings rates (simplified: available = salary - expenses)
   const currentSavingsRate =
     roundToCents(
-      (safeDivide(
+      safeDivide(
         currentCombinedSalary - currentAnnual,
         currentCombinedSalary,
-      ) ?? 0) * 100,
+        0,
+      ) * 100,
     ) / 100;
   const relocationSavingsRate =
     roundToCents(
-      (safeDivide(
+      safeDivide(
         relocationCombinedSalary - relocationAnnual,
         relocationCombinedSalary,
-      ) ?? 0) * 100,
+        0,
+      ) * 100,
     ) / 100;
   const savingsRateDrop =
     roundToCents((currentSavingsRate - relocationSavingsRate) * 100) / 100;
@@ -216,10 +218,10 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
   // FI targets: annual expenses / withdrawal rate
   // Relocation FI target includes ongoing purchase costs (they're permanent expenses in retirement)
   const currentFiTarget = roundToCents(
-    safeDivide(currentAnnual, withdrawalRate) ?? 0,
+    safeDivide(currentAnnual, withdrawalRate, 0),
   );
   const relocationFiTarget = roundToCents(
-    safeDivide(relocationAnnual + ssMonthly * 12, withdrawalRate) ?? 0,
+    safeDivide(relocationAnnual + ssMonthly * 12, withdrawalRate, 0),
   );
   const additionalNestEgg = roundToCents(relocationFiTarget - currentFiTarget);
 
