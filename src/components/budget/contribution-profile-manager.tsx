@@ -10,6 +10,7 @@ import { FormField, FormInput } from "@/components/forms";
 import { useScenario } from "@/lib/context/scenario-context";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
+import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
 import { confirm, confirmWithDiff } from "@/components/ui/confirm-dialog";
 import { diffContribProfileSwap } from "@/lib/pure/contrib-profile-diff";
@@ -1091,19 +1092,10 @@ function ProfileInlineEditor({
   const { data: profile } = trpc.contributionProfile.getById.useQuery({
     id: profileId,
   });
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const { drafts, setDraft, clearDraft } = useDraftCommit();
   const updateMutation = trpc.contributionProfile.update.useMutation({
     onSuccess: () => onSaved(),
   });
-
-  const setDraft = (key: string, value: string) =>
-    setDrafts((prev) => ({ ...prev, [key]: value }));
-  const clearDraft = (key: string) =>
-    setDrafts((prev) => {
-      const next = { ...prev };
-      delete next[key];
-      return next;
-    });
 
   if (!profile) return null;
 

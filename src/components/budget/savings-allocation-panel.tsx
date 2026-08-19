@@ -7,8 +7,8 @@ import { sumBy } from "@/lib/utils/math";
 import { HelpTip } from "@/components/ui/help-tip";
 import { FormError } from "@/components/ui/form-error";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
-import { useState } from "react";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
+import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
 
 /**
  * Every savings goal's allocationPercent/monthlyContribution is owned
@@ -273,9 +273,11 @@ function SavingsAllocationTable({
   const { data: rows, isLoading } =
     trpc.savings.goalProfileAllocations.list.useQuery({ profileId });
 
-  const [drafts, setDrafts] = useState<
-    Record<number, { allocationPercent: string; monthlyContribution: string }>
-  >({});
+  const {
+    drafts: rawDrafts,
+    setDraft: setRawDraft,
+    clearDraft: clearRawDraft,
+  } = useDraftCommit();
 
   const invalidate = () => {
     utils.savings.goalProfileAllocations.list.invalidate();
@@ -305,35 +307,38 @@ function SavingsAllocationTable({
     );
   }
 
+  // useDraftCommit's drafts are a flat Record<string,string>; this panel
+  // needs two fields per row, so each is keyed "{goalId}:{field}" and
+  // commit() reads/clears both keys together — the two inputs share one
+  // upsert mutation that always sends both allocationPercent and
+  // monthlyContribution.
+  const draftKey = (
+    goalId: number,
+    field: "allocationPercent" | "monthlyContribution",
+  ) => `${goalId}:${field}`;
+
   const draftFor = (
     goalId: number,
     field: "allocationPercent" | "monthlyContribution",
     fallback: string,
-  ) => drafts[goalId]?.[field] ?? fallback;
+  ) => rawDrafts[draftKey(goalId, field)] ?? fallback;
 
   const setDraft = (
     goalId: number,
     field: "allocationPercent" | "monthlyContribution",
     value: string,
-  ) =>
-    setDrafts((prev) => ({
-      ...prev,
-      [goalId]: {
-        allocationPercent: prev[goalId]?.allocationPercent ?? "",
-        monthlyContribution: prev[goalId]?.monthlyContribution ?? "",
-        [field]: value,
-      },
-    }));
+  ) => setRawDraft(draftKey(goalId, field), value);
 
   const commit = (
     goalId: number,
     resolvedPercent: number | null,
     resolvedMonthly: number,
   ) => {
-    const draft = drafts[goalId];
-    if (!draft) return;
-    const percentStr = draft.allocationPercent.trim();
-    const monthlyStr = draft.monthlyContribution.trim();
+    const percentKey = draftKey(goalId, "allocationPercent");
+    const monthlyKey = draftKey(goalId, "monthlyContribution");
+    if (!(percentKey in rawDrafts) && !(monthlyKey in rawDrafts)) return;
+    const percentStr = (rawDrafts[percentKey] ?? "").trim();
+    const monthlyStr = (rawDrafts[monthlyKey] ?? "").trim();
     const allocationPercent =
       percentStr === "" ? resolvedPercent : parseFloat(percentStr);
     const monthlyContribution =
@@ -360,11 +365,8 @@ function SavingsAllocationTable({
         monthlyContribution,
       });
     }
-    setDrafts((prev) => {
-      const next = { ...prev };
-      delete next[goalId];
-      return next;
-    });
+    clearRawDraft(percentKey);
+    clearRawDraft(monthlyKey);
   };
 
   return (

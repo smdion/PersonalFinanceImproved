@@ -11,6 +11,7 @@ import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
 import { confirm } from "@/components/ui/confirm-dialog";
+import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
 
 /**
  * Salary Profiles tab — the "what if I earned X" axis.
@@ -772,7 +773,7 @@ function ProfileEditPanel({
   });
   const [error, setError] = useState<string | null>(null);
   /** In-progress text per field; cleared once its mutation is sent. */
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const { drafts, setDraft, clearDraft } = useDraftCommit();
   /** personId → jobId, when the user has picked a DIFFERENT job than the
    *  one the server selected by default (whichever job has an entry, else
    *  the active one) — the row's job picker. Client-only until a field is
@@ -786,15 +787,6 @@ function ProfileEditPanel({
     },
     onError: (e) => setError(e.message),
   });
-
-  const setDraft = (key: string, value: string) =>
-    setDrafts((prev) => ({ ...prev, [key]: value }));
-  const clearDraft = (key: string) =>
-    setDrafts((prev) => {
-      const next = { ...prev };
-      delete next[key];
-      return next;
-    });
 
   if (!profile) return null;
 
