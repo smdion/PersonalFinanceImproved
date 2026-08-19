@@ -215,7 +215,7 @@ Portfolio snapshot history and the new snapshot form group rows by their parent 
 **Sub-row labels** follow two rules:
 
 1. **Owner prefix**: Shown only when the performance account is joint (no individual owner) AND sub-rows have different `ownerPersonId` values. Example: "IRA (Vanguard)" has sub-rows "Alice — Roth" and "Bob — Roth".
-2. **Sub-account type**: When `subType` is present on the portfolio row (e.g., "Rollover", "Employer Match", "ESPP"), it's shown with the tax type in parentheses. When `subType` is null, the raw `accountType` is shown only if it differs from the parent performance account's type — otherwise just the tax type label.
+2. **Sub-account type**: `label` (a free-text user override on the portfolio row) takes precedence over `subType` when set. Otherwise, when `subType` is present (e.g., "Rollover", "Employer Match", "ESPP"), it's shown with the tax type in parentheses. When both are null, the raw `accountType` is shown only if it differs from the parent performance account's type — otherwise just the tax type label.
 
 **Example output:**
 
