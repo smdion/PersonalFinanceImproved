@@ -4,8 +4,7 @@
 
 import React, { useState } from "react";
 import { formatCurrency } from "@/lib/utils/format";
-import { taxTypeLabel } from "@/lib/utils/colors";
-import { TAX_TYPE_LABELS } from "@/lib/config/display-labels";
+import { taxTypeLabel, TAX_TYPE_COLORS } from "@/lib/utils/colors";
 import type { PortfolioSub } from "./contribution-accounts-types";
 
 export function SubAccountRow({
@@ -124,7 +123,7 @@ export function SubAccountRow({
             className={`text-caption text-faint bg-transparent border-none p-0 focus:ring-0${onUpdate ? "cursor-pointer hover:text-secondary" : "cursor-default"}`}
             title="Tax type"
           >
-            {Object.entries(TAX_TYPE_LABELS).map(([value, label]) => (
+            {Object.entries(TAX_TYPE_COLORS).map(([value, { label }]) => (
               <option key={value} value={value}>
                 {label}
               </option>
@@ -237,7 +236,7 @@ export function AddSubAccountForm({
             onChange={(e) => setTaxType(e.target.value)}
             className="w-full border rounded px-1.5 py-1 text-xs bg-surface-primary"
           >
-            {Object.entries(TAX_TYPE_LABELS).map(([value, label]) => (
+            {Object.entries(TAX_TYPE_COLORS).map(([value, { label }]) => (
               <option key={value} value={value}>
                 {label}
               </option>

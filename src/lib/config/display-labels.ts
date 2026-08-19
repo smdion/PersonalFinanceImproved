@@ -180,14 +180,6 @@ export const TAX_TREATMENT_TO_TAX_TYPE: Record<string, string> = {
   hsa: "hsa",
 };
 
-/** Tax type labels keyed by camelCase portfolio keys (preTax, taxFree, etc.). */
-export const TAX_TYPE_LABELS: Record<string, string> = {
-  preTax: "Tax-Deferred",
-  taxFree: "Tax-Free",
-  afterTax: "After-Tax",
-  hsa: "HSA",
-};
-
 /** Generic label lookup with fallback to key. */
 export function displayLabel(map: Record<string, string>, key: string): string {
   return map[key] ?? key;

@@ -78,7 +78,7 @@ export function accountTextColor(type: string): string {
 //   Pre-Tax → blue (like 401k), Tax-Free → purple (like IRA, often Roth),
 //   HSA → green (matches HSA account), After-Tax → amber (like Brokerage)
 
-const TAX_TYPE_COLORS: Record<
+export const TAX_TYPE_COLORS: Record<
   string,
   { bg: string; text: string; label: string }
 > = {
