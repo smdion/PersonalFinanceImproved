@@ -1,10 +1,17 @@
 import { useId, type ReactNode, isValidElement, cloneElement } from "react";
+import { HelpTip } from "@/components/ui/help-tip";
 
 type FormFieldProps = {
   /** Field label text. */
   label: string;
   /** Optional help text below the input. */
   help?: string;
+  /** Optional inline HelpTip icon immediately after the label — the
+   *  "label + inline HelpTip" convention used everywhere outside
+   *  components/forms/ (retirement/sections/, dashboard cards, etc.),
+   *  distinct from `help` (static text below the input). Purely additive
+   *  to the label span; does not touch the aria-wiring below. */
+  tooltip?: string;
   /** Error message — renders in red below the input. */
   error?: string | null;
   /** The input/select/textarea element. */
@@ -28,6 +35,7 @@ type FormFieldProps = {
 export function FormField({
   label,
   help,
+  tooltip,
   error,
   children,
   className = "",
@@ -52,7 +60,10 @@ export function FormField({
 
   return (
     <label className={`flex flex-col text-sm ${className}`}>
-      <span className="font-medium text-secondary">{label}</span>
+      <span className="font-medium text-secondary">
+        {label}
+        {tooltip && <HelpTip text={tooltip} />}
+      </span>
       <div className="mt-1">{enhancedChildren}</div>
       {help && !error && (
         <span className="text-xs text-faint mt-1">{help}</span>
