@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useCallback } from "react";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { FUND_COLORS } from "@/lib/utils/colors";
 import { sumBy, safeDivide } from "@/lib/utils/math";
+import { useInlineNumberEdit } from "@/lib/hooks/use-inline-number-edit";
 
 export interface FundAllocation {
   goalId: number;
@@ -25,6 +26,11 @@ function roundToCents(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+type EditField =
+  | { kind: "pool" }
+  | { kind: "amount"; goalId: number }
+  | { kind: "percent"; goalId: number };
+
 export function PoolDistributionEditor({
   pool,
   funds,
@@ -32,10 +38,6 @@ export function PoolDistributionEditor({
   onPoolChange,
   poolEditable = false,
 }: PoolDistributionEditorProps) {
-  const [editingField, setEditingField] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState("");
-  const [poolEditValue, setPoolEditValue] = useState("");
-
   const total = sumBy(funds, (f) => f.amount);
   const isBalanced = Math.abs(total - pool) < 1;
   const isUnderAllocated = total < pool - 1;
@@ -90,48 +92,47 @@ export function PoolDistributionEditor({
     }
   }, [funds, pool, remaining, onChange]);
 
-  const handlePoolCommit = () => {
-    const val = parseFloat(poolEditValue);
-    if (!isNaN(val) && val >= 0 && onPoolChange) {
-      onPoolChange(roundToCents(val));
-    }
-    setEditingField(null);
-  };
-
-  const handleAmountCommit = (goalId: number) => {
-    const val = parseFloat(editValue);
-    if (!isNaN(val) && val >= 0) {
-      updateFundAmount(goalId, val);
-    }
-    setEditingField(null);
-  };
-
-  const handlePercentCommit = (goalId: number) => {
-    const val = parseFloat(editValue);
-    if (!isNaN(val) && val >= 0 && val <= 100) {
-      updateFundPercent(goalId, val);
-    }
-    setEditingField(null);
-  };
+  const {
+    editingKey: editingField,
+    editValue,
+    setEditValue,
+    startEdit,
+    commit,
+    handleKeyDown,
+  } = useInlineNumberEdit<EditField>({
+    onCommit: (field, value) => {
+      const val = parseFloat(value);
+      if (isNaN(val) || val < 0) return;
+      if (field.kind === "pool") {
+        if (onPoolChange) onPoolChange(roundToCents(val));
+      } else if (field.kind === "amount") {
+        updateFundAmount(field.goalId, val);
+      } else if (val <= 100) {
+        updateFundPercent(field.goalId, val);
+      }
+    },
+  });
+  const isEditing = (field: EditField) =>
+    editingField !== null &&
+    editingField.kind === field.kind &&
+    ("goalId" in editingField ? editingField.goalId : undefined) ===
+      ("goalId" in field ? field.goalId : undefined);
 
   return (
     <div className="space-y-4">
       {/* Pool total */}
       <div className="flex items-center justify-between bg-surface-elevated rounded-lg px-4 py-3">
         <span className="text-sm text-secondary font-medium">Monthly Pool</span>
-        {poolEditable && editingField === "pool" ? (
+        {poolEditable && isEditing({ kind: "pool" }) ? (
           <div className="flex items-center gap-1.5">
             <span className="text-muted">$</span>
             <input
               type="number"
               autoFocus
-              value={poolEditValue}
-              onChange={(e) => setPoolEditValue(e.target.value)}
-              onBlur={handlePoolCommit}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handlePoolCommit();
-                if (e.key === "Escape") setEditingField(null);
-              }}
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onBlur={commit}
+              onKeyDown={handleKeyDown}
               className="w-28 text-right text-sm border border-blue-400 bg-surface-primary text-primary rounded px-2 py-1 tabular-nums"
             />
           </div>
@@ -139,10 +140,7 @@ export function PoolDistributionEditor({
           <button
             onClick={
               poolEditable
-                ? () => {
-                    setEditingField("pool");
-                    setPoolEditValue(String(Math.round(pool)));
-                  }
+                ? () => startEdit({ kind: "pool" }, Math.round(pool))
                 : undefined
             }
             className={`text-lg font-semibold tabular-nums text-primary ${
@@ -160,8 +158,6 @@ export function PoolDistributionEditor({
           const pct = safeDivide(fund.amount, pool, 0) * 100;
           const isDefault = Math.abs(fund.amount - fund.defaultAmount) < 0.01;
           const color = FUND_COLORS[fund.colorIndex % FUND_COLORS.length]!;
-          const editKeyAmt = `amt-${fund.goalId}`;
-          const editKeyPct = `pct-${fund.goalId}`;
 
           return (
             <div
@@ -221,18 +217,15 @@ export function PoolDistributionEditor({
               {/* % and $ inputs */}
               <div className="flex items-center justify-between">
                 {/* Percent */}
-                {editingField === editKeyPct ? (
+                {isEditing({ kind: "percent", goalId: fund.goalId }) ? (
                   <div className="flex items-center gap-1">
                     <input
                       type="number"
                       autoFocus
                       value={editValue}
                       onChange={(e) => setEditValue(e.target.value)}
-                      onBlur={() => handlePercentCommit(fund.goalId)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handlePercentCommit(fund.goalId);
-                        if (e.key === "Escape") setEditingField(null);
-                      }}
+                      onBlur={commit}
+                      onKeyDown={handleKeyDown}
                       step="0.1"
                       className="w-16 text-right text-sm border border-blue-400 bg-surface-primary text-primary rounded px-2 py-1 tabular-nums"
                     />
@@ -240,10 +233,12 @@ export function PoolDistributionEditor({
                   </div>
                 ) : (
                   <button
-                    onClick={() => {
-                      setEditingField(editKeyPct);
-                      setEditValue(pct.toFixed(1));
-                    }}
+                    onClick={() =>
+                      startEdit(
+                        { kind: "percent", goalId: fund.goalId },
+                        pct.toFixed(1),
+                      )
+                    }
                     className="text-sm tabular-nums text-muted hover:text-secondary cursor-pointer"
                   >
                     {formatPercent(pct / 100, 1)}
@@ -251,7 +246,7 @@ export function PoolDistributionEditor({
                 )}
 
                 {/* Dollar amount */}
-                {editingField === editKeyAmt ? (
+                {isEditing({ kind: "amount", goalId: fund.goalId }) ? (
                   <div className="flex items-center gap-1">
                     <span className="text-xs text-muted">$</span>
                     <input
@@ -259,20 +254,19 @@ export function PoolDistributionEditor({
                       autoFocus
                       value={editValue}
                       onChange={(e) => setEditValue(e.target.value)}
-                      onBlur={() => handleAmountCommit(fund.goalId)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleAmountCommit(fund.goalId);
-                        if (e.key === "Escape") setEditingField(null);
-                      }}
+                      onBlur={commit}
+                      onKeyDown={handleKeyDown}
                       className="w-24 text-right text-sm border border-blue-400 bg-surface-primary text-primary rounded px-2 py-1 tabular-nums"
                     />
                   </div>
                 ) : (
                   <button
-                    onClick={() => {
-                      setEditingField(editKeyAmt);
-                      setEditValue(String(Math.round(fund.amount * 100) / 100));
-                    }}
+                    onClick={() =>
+                      startEdit(
+                        { kind: "amount", goalId: fund.goalId },
+                        Math.round(fund.amount * 100) / 100,
+                      )
+                    }
                     className="text-sm tabular-nums font-semibold text-primary hover:text-blue-500 cursor-pointer"
                   >
                     {formatCurrency(fund.amount)}
