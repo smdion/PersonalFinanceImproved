@@ -512,14 +512,10 @@ export function runDecumulationYear(
   routeWarnings.push(...irmaaResult.warnings);
 
   // --- ACA Subsidy Awareness (Phase 7) ---
-  // Under-65 is the ACA marketplace-subsidy eligibility criterion this
-  // checks — it's the same real-world Medicare-eligibility event the IRMAA
-  // block above tests, not an independent regulatory threshold, so it
-  // shares MEDICARE_START_AGE (advisor-approved 2026-08-19).
   const allPersonsUnder65 =
     perPersonBirthYears && perPersonBirthYears.length > 0
-      ? perPersonBirthYears.every((by) => year - by < MEDICARE_START_AGE)
-      : age < MEDICARE_START_AGE;
+      ? perPersonBirthYears.every((by) => year - by < 65)
+      : age < 65;
   const acaResult = checkAca({
     enableAcaAwareness,
     allPersonsUnder65,
