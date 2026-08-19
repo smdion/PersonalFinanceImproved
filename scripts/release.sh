@@ -78,7 +78,10 @@ if [[ "$BRANCH" != "main" ]]; then
 fi
 
 # Check tag doesn't already exist
-if git rev-parse "$TAG" >/dev/null 2>&1; then
+# Use refs/tags/$TAG explicitly — a bare `git rev-parse "$TAG"` is ambiguous
+# and silently resolves to a same-named branch if one exists (e.g. a release
+# branch named after its own version), producing a false positive here.
+if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
   echo -e "${RED}Tag $TAG already exists.${NC}"
   exit 1
 fi
