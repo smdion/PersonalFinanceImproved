@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { FormError } from "@/components/ui/form-error";
+import { FormField, FormInput } from "@/components/forms";
 import { useScenario } from "@/lib/context/scenario-context";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
@@ -710,28 +711,22 @@ function ProfileCreatePanel({
 
       <div className="flex items-start justify-between gap-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
-          <div>
-            <label className="text-label font-medium text-muted">Name</label>
-            <input
+          <FormField label="Name">
+            <FormInput
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Promotion"
-              className="mt-0.5 w-full px-2 py-1.5 text-xs border rounded bg-surface-primary text-primary"
             />
-          </div>
-          <div>
-            <label className="text-label font-medium text-muted">
-              Description
-            </label>
-            <input
+          </FormField>
+          <FormField label="Description">
+            <FormInput
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Optional description"
-              className="mt-0.5 w-full px-2 py-1.5 text-xs border rounded bg-surface-primary text-primary"
             />
-          </div>
+          </FormField>
         </div>
         <div className="flex items-center gap-2 shrink-0 pt-4">
           <button
@@ -900,29 +895,23 @@ function ProfileEditPanel({
       {error && <FormError message={error} className="mb-3" />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-        <div>
-          <label className="text-label font-medium text-muted">Name</label>
-          <input
+        <FormField label="Name">
+          <FormInput
             type="text"
             value={drafts.name ?? profile.name}
             onChange={(e) => setDraft("name", e.target.value)}
             onBlur={commitName}
-            className="mt-0.5 w-full px-2 py-1.5 text-xs border rounded bg-surface-primary text-primary"
           />
-        </div>
-        <div>
-          <label className="text-label font-medium text-muted">
-            Description
-          </label>
-          <input
+        </FormField>
+        <FormField label="Description">
+          <FormInput
             type="text"
             value={drafts.description ?? profile.description ?? ""}
             onChange={(e) => setDraft("description", e.target.value)}
             onBlur={commitDescription}
             placeholder="Optional description"
-            className="mt-0.5 w-full px-2 py-1.5 text-xs border rounded bg-surface-primary text-primary"
           />
-        </div>
+        </FormField>
       </div>
 
       {details.length > 0 && (
