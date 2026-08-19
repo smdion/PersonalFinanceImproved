@@ -15,7 +15,7 @@ import {
   getApiConnection,
 } from "@/lib/budget-api";
 import { accountDisplayName } from "@/lib/utils/format";
-import { roundToCents } from "@/lib/utils/math";
+import { roundToCents, safeDivide } from "@/lib/utils/math";
 import { mappingsWithTypedIds } from "@/lib/utils/account-mapping";
 import { accountMappingSchema } from "@/lib/db/json-schemas";
 import { getApiAccountBalanceMap } from "@/server/helpers/api-balance-resolution";
@@ -565,7 +565,7 @@ export const syncMappingsRouter = createTRPCRouter({
             .where(eq(schema.portfolioAccounts.id, matchingRows[0]!.id));
         } else {
           // Multiple rows — scale proportionally to preserve sub-account ratios
-          const ratio = currentTotal > 0 ? apiBalance / currentTotal : 0;
+          const ratio = safeDivide(apiBalance, currentTotal, 0);
           for (const row of matchingRows) {
             const scaled = Number(row.amount) * ratio;
             await ctx.db

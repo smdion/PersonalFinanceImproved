@@ -30,6 +30,7 @@ import type {
 import { parseAppSettings, buildMortgageInputs } from "@/server/helpers";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
 import { accountDisplayName } from "@/lib/utils/format";
+import { safeDivide } from "@/lib/utils/math";
 import { serviceEnum } from "./_shared";
 
 export const syncCoreRouter = createTRPCRouter({
@@ -877,14 +878,20 @@ export const syncCoreRouter = createTRPCRouter({
       }
 
       const categories = Array.from(categoryData.entries())
-        .map(([name, { current, prior }]) => ({
-          name,
-          current,
-          prior,
-          diff: current - prior,
-          percentChange:
-            prior !== 0 ? ((current - prior) / Math.abs(prior)) * 100 : null,
-        }))
+        .map(([name, { current, prior }]) => {
+          const changeRatio = safeDivide(
+            current - prior,
+            Math.abs(prior),
+            null,
+          );
+          return {
+            name,
+            current,
+            prior,
+            diff: current - prior,
+            percentChange: changeRatio === null ? null : changeRatio * 100,
+          };
+        })
         .filter((c) => c.current !== 0 || c.prior !== 0)
         .sort((a, b) => Math.abs(b.current) - Math.abs(a.current));
 

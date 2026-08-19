@@ -61,7 +61,7 @@ import {
   isTaxFreeBucket,
   tracksCostBasis,
 } from "@/lib/config/account-types";
-import { roundToCents, sumBy } from "@/lib/utils/math";
+import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 import {
   IRS_LIMIT_GROWTH_RATE,
   FALLBACK_CONTRIBUTION_RATE,
@@ -566,11 +566,14 @@ export async function buildEnginePayload(
     let personTotal = 0;
     for (const [cat, amt] of Object.entries(personBals)) {
       const catTotal = totalByCategory[cat] ?? 1;
-      ownershipByPerson[name][cat] = catTotal > 0 ? amt / catTotal : 0;
+      ownershipByPerson[name][cat] = safeDivide(amt, catTotal, 0);
       personTotal += amt;
     }
-    ownershipByPerson[name]._overall =
-      portfolioTotal > 0 ? personTotal / portfolioTotal : 0;
+    ownershipByPerson[name]._overall = safeDivide(
+      personTotal,
+      portfolioTotal,
+      0,
+    );
   }
   // Cost basis from performance_accounts (per-account, user-maintained alongside portfolio updates)
   const settingsMap = new Map(
@@ -1111,8 +1114,11 @@ export async function buildEnginePayload(
       Object.values(data.baseYearContributions),
       (v) => v,
     );
-    const switchedContribRate =
-      switchedTotalComp > 0 ? switchedTotalContrib / switchedTotalComp : 0;
+    const switchedContribRate = safeDivide(
+      switchedTotalContrib,
+      switchedTotalComp,
+      0,
+    );
 
     // Contribution rate ceiling for the switched profile:
     // - Both comp AND contribs > 0: compute the real ratio
@@ -1149,8 +1155,7 @@ export async function buildEnginePayload(
     (c) => c.annual,
   );
   // Rate based on total compensation (always includes bonus)
-  const displayContribRate =
-    totalCompensation > 0 ? totalRealContrib / totalCompensation : 0;
+  const displayContribRate = safeDivide(totalRealContrib, totalCompensation, 0);
 
   // Account splits derived from actual contribution amounts
   const noContribData = totalRealContrib <= 0;

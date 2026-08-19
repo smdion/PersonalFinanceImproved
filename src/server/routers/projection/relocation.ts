@@ -25,7 +25,7 @@ import {
   getDefaultDecumulationOrder,
   DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
 } from "@/lib/config/account-types";
-import { calculateLoanMonthlyPayment } from "@/lib/utils/math";
+import { calculateLoanMonthlyPayment, safeDivide } from "@/lib/utils/math";
 import * as schema from "@/lib/db/schema";
 import type {
   AccumulationOverride,
@@ -369,8 +369,11 @@ export const relocationProjectionRouter = createTRPCRouter({
         relocAccRows[relocAccRows.length - 1]?.endBalance ?? 0;
 
       const withdrawalRate = toNumber(relocPayload.settings.withdrawalRate);
-      const relocationFiTarget =
-        withdrawalRate > 0 ? relocationAnnualExpenses / withdrawalRate : 0;
+      const relocationFiTarget = safeDivide(
+        relocationAnnualExpenses,
+        withdrawalRate,
+        0,
+      );
 
       const relocLastRow =
         relocResult.projectionByYear[relocResult.projectionByYear.length - 1];

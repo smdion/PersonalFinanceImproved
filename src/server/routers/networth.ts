@@ -5,6 +5,7 @@ import { DEFAULT_WITHDRAWAL_RATE, MS_PER_DAY } from "@/lib/constants";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { accountDisplayName } from "@/lib/utils/format";
+import { safeDivide } from "@/lib/utils/math";
 import {
   toNumber,
   computeMortgageBalance,
@@ -778,8 +779,11 @@ export const networthRouter = createTRPCRouter({
       const to = buildPoint(dateTo, toSnapshot, mortgageTo);
 
       const absoluteChange = to.netWorth - from.netWorth;
-      const percentChange =
-        from.netWorth !== 0 ? absoluteChange / Math.abs(from.netWorth) : 0;
+      const percentChange = safeDivide(
+        absoluteChange,
+        Math.abs(from.netWorth),
+        0,
+      );
 
       // Per-category deltas
       const categories = [

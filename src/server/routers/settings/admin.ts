@@ -22,7 +22,7 @@ import {
   RBAC_ADMIN_GROUP_KEY,
 } from "@/server/auth";
 import { buildAccountLabel } from "@/lib/utils/format";
-import { roundToCents } from "@/lib/utils/math";
+import { roundToCents, safeDivide } from "@/lib/utils/math";
 import {
   accountCategoryEnum,
   getAccountTypeConfig,
@@ -1028,8 +1028,7 @@ export const adminProcedures = {
                         eq(schema.portfolioAccounts.id, matchingRows[0]!.id),
                       );
                   } else {
-                    const ratio =
-                      currentTotal > 0 ? apiBalance / currentTotal : 0;
+                    const ratio = safeDivide(apiBalance, currentTotal, 0);
                     for (const row of matchingRows) {
                       const scaled = Number(row.amount) * ratio;
                       await ctx.db

@@ -5,6 +5,7 @@ import { eq, desc, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { AccountCategory } from "@/lib/calculators/types";
 import { toNumber, getPrimaryPerson } from "./transforms";
+import { safeDivide } from "@/lib/utils/math";
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 import type { Db } from "./transforms";
 import { parseAppSettings } from "./settings";
@@ -990,13 +991,13 @@ export async function buildYearEndHistory(
                 new Date(job.anchorPayDate),
               )
             : Math.round((asOf.getMonth() / 12) * ppy);
-          const ratio = ppy > 0 ? elapsed / ppy : 0;
+          const ratio = safeDivide(elapsed, ppy, 0);
           const comp = resolveCompensation(salaryProfileActiveMap, job.id);
           const salary = getTotalCompensation(comp.salary, comp.terms);
           weightedRatio += ratio * salary;
           totalSalary += salary;
         }
-        return totalSalary > 0 ? weightedRatio / totalSalary : 0;
+        return safeDivide(weightedRatio, totalSalary, 0);
       })(),
       // Placeholders — computed in final pass
       wealthScoreMarket: 0,

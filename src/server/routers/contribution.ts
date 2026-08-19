@@ -29,7 +29,7 @@ import {
   zSandboxContribActiveFields,
   zSandboxContribAdditions,
 } from "./_shared";
-import { roundToCents } from "@/lib/utils/math";
+import { roundToCents, safeDivide } from "@/lib/utils/math";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import { getAge, isPriorYearContribWindow } from "@/lib/utils/date";
 import {
@@ -1005,8 +1005,11 @@ export const contributionRouter = createTRPCRouter({
             ),
           );
 
-          const ytdRatioForTotals =
-            periodsPerYear > 0 ? periodsElapsedYtd / periodsPerYear : 0;
+          const ytdRatioForTotals = safeDivide(
+            periodsElapsedYtd,
+            periodsPerYear,
+            0,
+          );
 
           // Salary is a flat number under the active Salary Profile — no
           // mid-year timeline to blend across any more (see

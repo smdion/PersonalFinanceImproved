@@ -10,6 +10,7 @@ import {
   type Context,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
+import { safeDivide } from "@/lib/utils/math";
 import { calculateSavings } from "@/lib/calculators/savings";
 import { calculateEFund } from "@/lib/calculators/efund";
 import { calculatePaycheck } from "@/lib/calculators/paycheck";
@@ -589,8 +590,7 @@ export const savingsRouter = createTRPCRouter({
             name: g.name,
             currentBalance,
             targetBalance,
-            allocationPercent:
-              totalMonthlyPool > 0 ? monthlyContrib / totalMonthlyPool : 0,
+            allocationPercent: safeDivide(monthlyContrib, totalMonthlyPool, 0),
             isEmergencyFund: g.isEmergencyFund,
             isActive: g.isActive,
           };
