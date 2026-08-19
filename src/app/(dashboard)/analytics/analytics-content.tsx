@@ -725,20 +725,13 @@ export function AnalyticsContent() {
   const user = useUser();
   const canEdit = hasPermission(user, "portfolio");
 
-  // Gated on canEdit: analytics.ts's read queries require the "portfolio"
-  // permission server-side too (this app has no separate read/write
-  // permission tier anywhere), so a non-portfolio user hitting this page
-  // would otherwise fire 7 doomed FORBIDDEN requests before the `!canEdit`
-  // early return below ever renders. Decision confirmed 2026-08-19.
   const { data: accounts, isLoading: acctLoading } =
-    trpc.analytics.getAccounts.useQuery(undefined, { enabled: canEdit });
+    trpc.analytics.getAccounts.useQuery();
   const { data: snapshots, isLoading: snapLoading } =
-    trpc.analytics.getSnapshots.useQuery(undefined, { enabled: canEdit });
+    trpc.analytics.getSnapshots.useQuery();
   const { data: assetClasses, isLoading: acLoading } =
-    trpc.analytics.getAssetClasses.useQuery(undefined, { enabled: canEdit });
-  const { data: hasFmpKey } = trpc.analytics.hasFmpKey.useQuery(undefined, {
-    enabled: canEdit,
-  });
+    trpc.analytics.getAssetClasses.useQuery();
+  const { data: hasFmpKey } = trpc.analytics.hasFmpKey.useQuery();
 
   const [selectedSnapshotId, setSelectedSnapshotId] = useState<
     number | undefined
@@ -746,22 +739,18 @@ export function AnalyticsContent() {
   const [holdingsLocked, setHoldingsLocked] = useState(true);
 
   const { data: holdings, refetch: refetchHoldings } =
-    trpc.analytics.getHoldings.useQuery(
-      { snapshotId: selectedSnapshotId },
-      { enabled: canEdit },
-    );
+    trpc.analytics.getHoldings.useQuery({
+      snapshotId: selectedSnapshotId,
+    });
 
-  const { data: history } = trpc.analytics.getHoldingsHistory.useQuery(
-    {},
-    { enabled: canEdit },
-  );
+  const { data: history } = trpc.analytics.getHoldingsHistory.useQuery({});
 
   // Effective snapshot — from selected or from holdings query default
   const effectiveSnapshotId = selectedSnapshotId ?? holdings?.[0]?.snapshotId;
 
   const { data: balances } = trpc.analytics.getSnapshotBalances.useQuery(
     { snapshotId: effectiveSnapshotId! },
-    { enabled: canEdit && effectiveSnapshotId !== undefined },
+    { enabled: effectiveSnapshotId !== undefined },
   );
 
   // For now, skip age-based glide path lookup if we can't compute age
