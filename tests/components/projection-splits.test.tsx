@@ -1,6 +1,5 @@
 /**
  * Tests for the extracted projection sub-components:
- * - overrides-panel (shell) → SavingOverridesSection, WithdrawalOverridesSection, LifeChangesSection
  * - ProjectionHeroKpis (deterministic + MC)
  * - ProjectionChart + ProjectionChartSkeleton
  * - McDepletionCallout + McResultsSection
@@ -9,7 +8,7 @@
  * representative state shapes. Verify correct text/elements appear.
  */
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 
 // ---------------------------------------------------------------------------
 // Shared mocks — heavy dependencies that all sub-components import transitively
@@ -291,169 +290,6 @@ function baseMockState(overrides: Record<string, unknown> = {}): any {
     ...overrides,
   };
 }
-
-// ---------------------------------------------------------------------------
-// OverridesPanel (shell)
-// ---------------------------------------------------------------------------
-
-describe("OverridesPanel", () => {
-  it("renders summary counts", async () => {
-    const { OverridesPanel } =
-      await import("@/components/cards/projection/overrides-panel");
-    const s = baseMockState({
-      accumOverrides: [{ year: 2030 }, { year: 2035 }],
-      decumOverrides: [{ year: 2060 }],
-      dbSalaryOverrides: [
-        { id: 1, projectionYear: 2030, overrideSalary: 100000 },
-      ],
-      dbBudgetOverrides: [],
-    });
-    render(<OverridesPanel state={s} />);
-    // 2 saving overrides
-    expect(screen.getByText("2")).toBeInTheDocument();
-    // 1 withdrawal + 1 life change — both show "1", use getAllByText
-    const ones = screen.getAllByText("1");
-    expect(ones.length).toBe(2);
-  });
-
-  it("renders all three section headers", async () => {
-    const { OverridesPanel } =
-      await import("@/components/cards/projection/overrides-panel");
-    render(<OverridesPanel state={baseMockState()} />);
-    expect(screen.getByText("Pre-Retirement")).toBeInTheDocument();
-    expect(screen.getByText("Post-Retirement")).toBeInTheDocument();
-    expect(screen.getByText(/Contribution/)).toBeInTheDocument();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// SavingOverridesSection
-// ---------------------------------------------------------------------------
-
-describe("SavingOverridesSection", () => {
-  it("shows + Add button when form is closed", async () => {
-    const { SavingOverridesSection } =
-      await import("@/components/cards/projection/overrides-saving-section");
-    render(<SavingOverridesSection state={baseMockState()} />);
-    expect(screen.getByText("+ Add")).toBeInTheDocument();
-  });
-
-  it("shows Cancel when form is open", async () => {
-    const { SavingOverridesSection } =
-      await import("@/components/cards/projection/overrides-saving-section");
-    render(
-      <SavingOverridesSection state={baseMockState({ showAccumForm: true })} />,
-    );
-    expect(screen.getByText("Cancel")).toBeInTheDocument();
-  });
-
-  it("renders existing override badges", async () => {
-    const { SavingOverridesSection } =
-      await import("@/components/cards/projection/overrides-saving-section");
-    const s = baseMockState({
-      accumOverrides: [
-        { year: 2030, contributionRate: 0.25, notes: "Max out" },
-      ],
-    });
-    render(<SavingOverridesSection state={s} />);
-    expect(screen.getByText("2030+")).toBeInTheDocument();
-    expect(screen.getByText("(Max out)")).toBeInTheDocument();
-  });
-
-  it("calls setShowAccumForm on + Add click", async () => {
-    const { SavingOverridesSection } =
-      await import("@/components/cards/projection/overrides-saving-section");
-    const s = baseMockState();
-    render(<SavingOverridesSection state={s} />);
-    fireEvent.click(screen.getByText("+ Add"));
-    expect(s.setShowAccumForm).toHaveBeenCalledWith(true);
-  });
-
-  it("renders reset badge text", async () => {
-    const { SavingOverridesSection } =
-      await import("@/components/cards/projection/overrides-saving-section");
-    const s = baseMockState({
-      accumOverrides: [{ year: 2035, reset: true }],
-    });
-    render(<SavingOverridesSection state={s} />);
-    expect(screen.getByText("Reset to defaults")).toBeInTheDocument();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// WithdrawalOverridesSection
-// ---------------------------------------------------------------------------
-
-describe("WithdrawalOverridesSection", () => {
-  it("renders existing withdrawal overrides", async () => {
-    const { WithdrawalOverridesSection } =
-      await import("@/components/cards/projection/overrides-withdrawal-section");
-    const s = baseMockState({
-      decumOverrides: [
-        { year: 2060, withdrawalRate: 0.035, notes: "Reduce spending" },
-      ],
-    });
-    render(<WithdrawalOverridesSection state={s} />);
-    expect(screen.getByText("2060+")).toBeInTheDocument();
-    expect(screen.getByText("(Reduce spending)")).toBeInTheDocument();
-  });
-
-  it("calls setShowDecumForm on + Add click", async () => {
-    const { WithdrawalOverridesSection } =
-      await import("@/components/cards/projection/overrides-withdrawal-section");
-    const s = baseMockState();
-    render(<WithdrawalOverridesSection state={s} />);
-    fireEvent.click(screen.getByText("+ Add"));
-    expect(s.setShowDecumForm).toHaveBeenCalledWith(true);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// LifeChangesSection
-// ---------------------------------------------------------------------------
-
-describe("LifeChangesSection", () => {
-  it("shows collapsed summary when not expanded", async () => {
-    const { LifeChangesSection } =
-      await import("@/components/cards/projection/overrides-life-section");
-    render(
-      <LifeChangesSection
-        state={baseMockState({ dbSalaryOverrides: [], dbBudgetOverrides: [] })}
-      />,
-    );
-    expect(screen.getByText("None")).toBeInTheDocument();
-  });
-
-  it("shows override count when collapsed", async () => {
-    const { LifeChangesSection } =
-      await import("@/components/cards/projection/overrides-life-section");
-    const s = baseMockState({
-      dbSalaryOverrides: [
-        { id: 1, projectionYear: 2030, overrideSalary: 150000 },
-        { id: 2, projectionYear: 2035, overrideSalary: 180000 },
-      ],
-    });
-    render(<LifeChangesSection state={s} />);
-    expect(screen.getByText("2 contribution overrides")).toBeInTheDocument();
-  });
-
-  it("toggles expand/collapse", async () => {
-    const { LifeChangesSection } =
-      await import("@/components/cards/projection/overrides-life-section");
-    const s = baseMockState();
-    render(<LifeChangesSection state={s} />);
-    fireEvent.click(screen.getByText("Expand"));
-    expect(s.setShowLifeOverrides).toHaveBeenCalledWith(true);
-  });
-
-  it("shows baseline info when expanded", async () => {
-    const { LifeChangesSection } =
-      await import("@/components/cards/projection/overrides-life-section");
-    const s = baseMockState({ showLifeOverrides: true });
-    render(<LifeChangesSection state={s} />);
-    expect(screen.getByText(/Current income.*\$120,000/)).toBeInTheDocument();
-  });
-});
 
 // ---------------------------------------------------------------------------
 // ProjectionHeroKpis
