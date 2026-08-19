@@ -12,11 +12,6 @@ import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
 import { useScenario } from "@/lib/context/scenario-context";
 import {
-  computeHouseholdSavingsRate,
-  householdTotalCompensation,
-  isHighIncomeHousehold,
-} from "@/lib/pure/contributions";
-import {
   categoriesWithTaxPreference,
   isRetirementParent,
 } from "@/lib/config/account-types";
@@ -65,22 +60,30 @@ function SavingsRateCardImpl() {
   const people = data?.people?.filter((d) => d.result) ?? [];
 
   // Use totalCompensation (always includes bonus) — shared logic across all pages
-  const householdTotalComp = householdTotalCompensation(people);
-  const highIncome = isHighIncomeHousehold(
-    householdTotalComp,
-    highIncomeThreshold,
+  const householdTotalComp = people.reduce(
+    (s, d) => s + (d.totalCompensation ?? d.salary ?? 0),
+    0,
   );
+  const highIncome = householdTotalComp >= highIncomeThreshold;
 
   // Default: exclude match for high income, include for lower income
   // User can override via toggle (matchOverride)
   const excludeMatch = matchOverride !== null ? matchOverride : highIncome;
 
-  // Shared with FinancialCheckupCard — single source of truth (lib/pure/contributions.ts)
-  const { rate: totalRate } = computeHouseholdSavingsRate(
-    people,
-    viewMode,
-    excludeMatch,
-  );
+  // Server-computed view-aware savings rate (single source of truth)
+  const rateKey2 = excludeMatch
+    ? "savingsRateWithoutMatch"
+    : ("savingsRateWithMatch" as const);
+  const totalRate =
+    householdTotalComp > 0
+      ? people.reduce(
+          (s, d) =>
+            s +
+            (d.totals.views[viewMode][rateKey2] ?? 0) *
+              (d.totalCompensation ?? d.salary ?? 0),
+          0,
+        ) / householdTotalComp
+      : 0;
 
   // Total contributions from server view-aware totals
   const totalKey = excludeMatch ? "totalWithoutMatch" : "totalWithMatch";

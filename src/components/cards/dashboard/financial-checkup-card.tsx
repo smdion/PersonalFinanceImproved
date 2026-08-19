@@ -14,11 +14,6 @@ import {
   DEFAULT_HIGH_INCOME_THRESHOLD,
 } from "@/lib/constants";
 import { wealthScoreTier } from "@/lib/config/display-labels";
-import {
-  computeHouseholdSavingsRate,
-  householdTotalCompensation,
-  isHighIncomeHousehold,
-} from "@/lib/pure/contributions";
 import { useScenario } from "@/lib/context/scenario-context";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { LoadingCard, ErrorCard } from "./utils";
@@ -242,16 +237,26 @@ function FinancialCheckupCardImpl() {
 
   // 4. Savings Rate
   const contribPeople = contribs.data?.people?.filter((d) => d.result) ?? [];
-  // Shared with SavingsRateCard — single source of truth (lib/pure/contributions.ts)
-  const highIncome = isHighIncomeHousehold(
-    householdTotalCompensation(contribPeople),
-    highIncomeThreshold,
+  // Use totalCompensation (always includes bonus) — shared logic with contributions page
+  const householdTotalComp = contribPeople.reduce(
+    (s, d) => s + (d.totalCompensation ?? d.salary ?? 0),
+    0,
   );
-  const { rate: savingsRate } = computeHouseholdSavingsRate(
-    contribPeople,
-    viewMode,
-    highIncome,
-  );
+  const highIncome = householdTotalComp >= highIncomeThreshold;
+  // Use server-computed view-aware savings rates (single source of truth)
+  const rateKey = highIncome
+    ? "savingsRateWithoutMatch"
+    : ("savingsRateWithMatch" as const);
+  const savingsRate =
+    householdTotalComp > 0
+      ? contribPeople.reduce(
+          (s, d) =>
+            s +
+            (d.totals.views[viewMode][rateKey] ?? 0) *
+              (d.totalCompensation ?? d.salary ?? 0),
+          0,
+        ) / householdTotalComp
+      : 0;
   const parsedThresholds = (() => {
     try {
       const arr = JSON.parse(
