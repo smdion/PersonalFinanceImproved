@@ -5,6 +5,7 @@
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { formatPercent, formatCurrency } from "@/lib/utils/format";
+import { safeDivide } from "@/lib/utils/math";
 import type { DetailedHistoryRow } from "./types";
 
 type SpreadsheetNetWorthLocationProps = {
@@ -85,8 +86,8 @@ export function SpreadsheetNetWorthLocation({
               const valB = row.accessor(yearB);
               // Skip rows where both years have zero
               if (valA === 0 && valB === 0) return null;
-              const pctA = grossAssetsA > 0 ? valA / grossAssetsA : 0;
-              const pctB = grossAssetsB > 0 ? valB / grossAssetsB : 0;
+              const pctA = safeDivide(valA, grossAssetsA, 0);
+              const pctB = safeDivide(valB, grossAssetsB, 0);
 
               return (
                 <tr

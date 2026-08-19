@@ -5,7 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { sumBy } from "@/lib/utils/math";
+import { sumBy, safeDivide } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
@@ -168,7 +168,7 @@ function LivingCostsCardImpl() {
       (s, bc) => s + (categoryTotals.get(bc) ?? 0),
       0,
     );
-    const pct = incomeBase > 0 ? annual / incomeBase : 0;
+    const pct = safeDivide(annual, incomeBase, 0);
     const status =
       pct < range.low ? "below" : pct > range.high ? "above" : "on-target";
     return {

@@ -3,6 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { safeDivide } from "@/lib/utils/math";
 
 export function NetWorthComposition({
   portfolioTotal,
@@ -61,7 +62,7 @@ export function NetWorthComposition({
                 key={seg.label}
                 className={`${seg.color} h-full transition-all`}
                 style={{
-                  width: `${totalAssets > 0 ? (seg.value / totalAssets) * 100 : 0}%`,
+                  width: `${safeDivide(seg.value, totalAssets, 0) * 100}%`,
                 }}
                 title={`${seg.label}: ${formatCurrency(seg.value)}`}
               />
@@ -76,7 +77,7 @@ export function NetWorthComposition({
                 <span className={`w-2 h-2 rounded-full ${seg.color}`} />
                 <span>{seg.label}</span>
                 <span className="text-faint">
-                  {formatPercent(totalAssets > 0 ? seg.value / totalAssets : 0)}
+                  {formatPercent(safeDivide(seg.value, totalAssets, 0))}
                 </span>
               </div>
             ))}

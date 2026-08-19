@@ -5,7 +5,7 @@
 
 import { Card } from "@/components/ui/card";
 import { formatPercent } from "@/lib/utils/format";
-import { sumBy } from "@/lib/utils/math";
+import { sumBy, safeDivide } from "@/lib/utils/math";
 import { TAX_TYPE_LABELS } from "@/lib/config/display-labels";
 import type { TaxLocationBreakdown } from "./types";
 
@@ -59,8 +59,8 @@ function TaxLocationMiniTable({
           {taxTypes.map((taxType, index) => {
             const valA = yearAData[taxType] ?? 0;
             const valB = yearBData[taxType] ?? 0;
-            const pctA = totalA > 0 ? valA / totalA : 0;
-            const pctB = totalB > 0 ? valB / totalB : 0;
+            const pctA = safeDivide(valA, totalA, 0);
+            const pctB = safeDivide(valB, totalB, 0);
             // Use display label from config, with fallback
             const label = TAX_TYPE_LABELS[taxType] ?? taxType;
 

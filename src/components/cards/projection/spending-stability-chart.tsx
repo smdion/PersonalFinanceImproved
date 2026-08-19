@@ -11,6 +11,7 @@ import {
   compactCurrency,
 } from "@/lib/utils/format";
 import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
+import { safeDivide } from "@/lib/utils/math";
 import type { EngineDecumulationYear } from "@/lib/calculators/types";
 import {
   ComposedChart,
@@ -110,7 +111,7 @@ export function SpendingStabilityChart({
       // Matches monte-carlo.ts's own convention for a zero baseline (e.g.
       // Social Security fully covers year-1 spending): 0%, not a misleading
       // 100% that would hide real spending variability in later years.
-      const ratio = baseline > 0 ? yr.totalWithdrawal / baseline : 0;
+      const ratio = safeDivide(yr.totalWithdrawal, baseline, 0);
 
       const band = mcBandMap?.get(yr.age);
 

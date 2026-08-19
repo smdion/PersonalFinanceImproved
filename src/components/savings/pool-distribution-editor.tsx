@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from "react";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { FUND_COLORS } from "@/lib/utils/colors";
-import { sumBy } from "@/lib/utils/math";
+import { sumBy, safeDivide } from "@/lib/utils/math";
 
 export interface FundAllocation {
   goalId: number;
@@ -157,7 +157,7 @@ export function PoolDistributionEditor({
       {/* Fund rows */}
       <div className="space-y-2">
         {funds.map((fund) => {
-          const pct = pool > 0 ? (fund.amount / pool) * 100 : 0;
+          const pct = safeDivide(fund.amount, pool, 0) * 100;
           const isDefault = Math.abs(fund.amount - fund.defaultAmount) < 0.01;
           const color = FUND_COLORS[fund.colorIndex % FUND_COLORS.length]!;
           const editKeyAmt = `amt-${fund.goalId}`;

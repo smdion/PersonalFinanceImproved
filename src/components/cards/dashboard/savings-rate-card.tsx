@@ -6,7 +6,7 @@ import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";
-import { sumBy } from "@/lib/utils/math";
+import { sumBy, safeDivide } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
@@ -133,9 +133,8 @@ function SavingsRateCardImpl() {
       totalTaxFree += at.taxFreeContrib;
     }
   }
-  const tradPct = householdTotalComp > 0 ? totalTrad / householdTotalComp : 0;
-  const taxFreePct =
-    householdTotalComp > 0 ? totalTaxFree / householdTotalComp : 0;
+  const tradPct = safeDivide(totalTrad, householdTotalComp, 0);
+  const taxFreePct = safeDivide(totalTaxFree, householdTotalComp, 0);
 
   // After-tax and HSA are tax-treatment splits, not goal ones — either can
   // occur inside EITHER group above (e.g. a taxable brokerage account
@@ -230,11 +229,13 @@ function SavingsRateCardImpl() {
           const dollars = groupTotals[group];
           if (dollars === undefined) return null;
           const groupAfterTax = afterTaxByGroup[group] ?? 0;
-          const groupAfterTaxPct =
-            householdTotalComp > 0 ? groupAfterTax / householdTotalComp : 0;
+          const groupAfterTaxPct = safeDivide(
+            groupAfterTax,
+            householdTotalComp,
+            0,
+          );
           const groupHsa = hsaByGroup[group] ?? 0;
-          const groupHsaPct =
-            householdTotalComp > 0 ? groupHsa / householdTotalComp : 0;
+          const groupHsaPct = safeDivide(groupHsa, householdTotalComp, 0);
           const hasSubLines =
             (group === "retirement" && (totalTrad > 0 || totalTaxFree > 0)) ||
             groupAfterTax > 0 ||
@@ -245,7 +246,7 @@ function SavingsRateCardImpl() {
                 <span className="text-muted capitalize">{group}</span>
                 <span className="text-primary">
                   {formatBreakdownPercent(
-                    householdTotalComp > 0 ? dollars / householdTotalComp : 0,
+                    safeDivide(dollars, householdTotalComp, 0),
                   )}
                 </span>
               </div>
