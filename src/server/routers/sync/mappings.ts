@@ -20,6 +20,7 @@ import { mappingsWithTypedIds } from "@/lib/utils/account-mapping";
 import { accountMappingSchema } from "@/lib/db/json-schemas";
 import { getApiAccountBalanceMap } from "@/server/helpers/api-balance-resolution";
 import { pushSnapshotToBudgetApi } from "@/server/helpers/budget-api-push";
+import { applyPullMapping } from "@/server/helpers/apply-pull-mapping";
 import { serviceEnum } from "./_shared";
 
 export const syncMappingsRouter = createTRPCRouter({
@@ -302,50 +303,23 @@ export const syncMappingsRouter = createTRPCRouter({
     }
 
     const currentYear = new Date().getFullYear();
-    let pulled = 0;
 
-    for (const mapping of pullMappings) {
-      const apiBalance = apiBalanceMap.get(mapping.remoteAccountId);
-      if (apiBalance === undefined) continue;
+    const pulled = await ctx.db.transaction(async (tx) => {
+      let count = 0;
+      for (const mapping of pullMappings) {
+        const apiBalance = apiBalanceMap.get(mapping.remoteAccountId);
+        if (apiBalance === undefined) continue;
 
-      // Resolve asset name by ID when available
-      const localId = mapping.localId ?? mapping.localName; // backward compat
-      let assetName = mapping.localName;
-      if (mapping.assetId != null || localId.startsWith("asset:")) {
-        const assetId = mapping.assetId ?? parseInt(localId.split(":")[1]!, 10);
-        const assetRow = await ctx.db
-          .select()
-          .from(schema.otherAssetItems)
-          .where(eq(schema.otherAssetItems.id, assetId))
-          .then((r) => r[0]);
-        if (assetRow) assetName = assetRow.name;
-      }
-
-      // Upsert into other_asset_items for the current year
-      const existing = await ctx.db
-        .select()
-        .from(schema.otherAssetItems)
-        .where(eq(schema.otherAssetItems.name, assetName))
-        .then((rows) => rows.find((r) => r.year === currentYear));
-
-      if (existing) {
-        await ctx.db
-          .update(schema.otherAssetItems)
-          .set({
-            value: String(apiBalance),
-            note: `Synced from ${active.toUpperCase()}`,
-          })
-          .where(eq(schema.otherAssetItems.id, existing.id));
-      } else {
-        await ctx.db.insert(schema.otherAssetItems).values({
-          name: assetName,
-          year: currentYear,
-          value: String(apiBalance),
-          note: `Synced from ${active.toUpperCase()}`,
+        const result = await applyPullMapping(tx, {
+          mapping,
+          apiBalance,
+          service: active,
+          currentYear,
         });
+        if (result.applied) count++;
       }
-      pulled++;
-    }
+      return count;
+    });
 
     return { pulled };
   }),
