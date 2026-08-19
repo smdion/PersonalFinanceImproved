@@ -215,4 +215,72 @@ describe("useOptimisticMutation", () => {
     expect(toast.error).not.toHaveBeenCalled();
     expect(rollback).toHaveBeenCalled();
   });
+
+  it("awaits an async optimisticUpdate before firing the mutation", async () => {
+    const { mutation, calls } = makeFakeMutation<{ id: number }, unknown>();
+    let resolveUpdate!: (v: string) => void;
+    const optimisticUpdate = vi.fn(
+      () =>
+        new Promise<string>((resolve) => {
+          resolveUpdate = resolve;
+        }),
+    );
+    const rollback = vi.fn();
+
+    const { result } = renderHook(() =>
+      useOptimisticMutation(mutation, { optimisticUpdate, rollback }),
+    );
+
+    act(() => {
+      result.current.mutate({ id: 1 });
+    });
+
+    // The mutation must not fire until optimisticUpdate resolves.
+    expect(mutation.mutate).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolveUpdate("previous-state");
+      await Promise.resolve();
+    });
+
+    expect(mutation.mutate).toHaveBeenCalledWith({ id: 1 }, expect.anything());
+
+    act(() => {
+      calls[0]!.opts!.onError!(new Error("boom"));
+    });
+    expect(rollback).toHaveBeenCalledWith("previous-state");
+  });
+
+  it("calls onSettled after success and after a rolled-back error", () => {
+    const { mutation, calls } = makeFakeMutation<{ id: number }, unknown>();
+    const optimisticUpdate = vi.fn().mockReturnValue("previous-state");
+    const rollback = vi.fn();
+    const onSettled = vi.fn();
+
+    const { result } = renderHook(() =>
+      useOptimisticMutation(mutation, {
+        optimisticUpdate,
+        rollback,
+        onSettled,
+      }),
+    );
+
+    act(() => {
+      result.current.mutate({ id: 1 });
+    });
+    act(() => {
+      calls[0]!.opts!.onSuccess!(undefined);
+      calls[0]!.opts!.onSettled!();
+    });
+    expect(onSettled).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      result.current.mutate({ id: 2 });
+    });
+    act(() => {
+      calls[1]!.opts!.onError!(new Error("boom"));
+      calls[1]!.opts!.onSettled!();
+    });
+    expect(onSettled).toHaveBeenCalledTimes(2);
+  });
 });
