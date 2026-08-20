@@ -543,15 +543,23 @@ Defined in `src/app/globals.css` as CSS custom properties with light/dark overri
 
 **Borders:** `border-default` (standard), `border-subtle` (dividers), `border-strong` (inputs, emphasized).
 
-**Status colors** (use Tailwind scale directly):
+**Status colors** — sourced from `STATUS_COLORS` in `lib/utils/colors.ts`
+(one literal-Record lookup, not hardcoded per call site). Amber uses
+`text-amber-800` rather than `-700` because `-700` fails WCAG AA 4.5:1
+contrast on `bg-amber-100` (v0.5 expert-review M14) — this applies to
+plain status text too, not just filled badges/alerts, so there is only
+one canonical shade per color rather than a lighter "text-only" variant:
 
-| Context      | Classes                                                           |
-| ------------ | ----------------------------------------------------------------- |
-| Error        | `text-red-600`, `bg-red-50 border-red-200`                        |
-| Warning      | `text-amber-600`, `bg-amber-50 border-amber-200`                  |
-| Success      | `text-green-600`, `bg-green-50 border-green-200`                  |
-| Info/link    | `text-blue-600 hover:text-blue-700`, `bg-blue-50 border-blue-200` |
-| Danger hover | `hover:text-red-600`                                              |
+| Context      | Classes                                                            |
+| ------------ | ------------------------------------------------------------------ |
+| Error        | `text-red-700`, `bg-red-100 border-red-300`                        |
+| Warning      | `text-amber-800`, `bg-amber-100 border-amber-300`                  |
+| Success      | `text-green-700`, `bg-green-100 border-green-300`                  |
+| Info/link    | `text-blue-700 hover:text-blue-800`, `bg-blue-100 border-blue-300` |
+| Danger hover | `hover:text-red-700`                                               |
+
+Consumers: `Badge`, `toast.tsx`, `scenario-indicator.tsx`'s
+`ScenarioBanner`, `plan-health.tsx`'s `CalloutLine`.
 
 ### Component Catalog
 

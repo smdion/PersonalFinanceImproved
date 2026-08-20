@@ -43,6 +43,7 @@ import {
 } from "@/lib/pure/withdrawal-strategy-recommendation";
 import { deriveProjectionBand } from "@/lib/pure/projection-bands";
 import { formatPercent, formatCurrency } from "@/lib/utils/format";
+import { STATUS_COLORS } from "@/lib/utils/colors";
 
 interface PlanHealthCardProps {
   /** v0.5 M1 — accumulation account order. If absent, M1 callout is hidden. */
@@ -72,12 +73,13 @@ function CalloutLine({
   severity: "info" | "warn" | "danger";
   children: React.ReactNode;
 }) {
-  const cls =
+  const colors =
     severity === "danger"
-      ? "bg-red-50 text-red-700 border border-red-200"
+      ? STATUS_COLORS.red
       : severity === "warn"
-        ? "bg-amber-50 text-amber-800 border border-amber-200"
-        : "bg-blue-50 text-blue-700 border border-blue-200";
+        ? STATUS_COLORS.amber
+        : STATUS_COLORS.blue;
+  const cls = `${colors.bg} ${colors.text} border ${colors.border}`;
   return (
     <div className={`text-sm rounded px-3 py-2 ${cls}`} role="note">
       {children}

@@ -107,6 +107,39 @@ export function taxTypeLabel(taxType: string): string {
   return TAX_TYPE_COLORS[taxType]?.label ?? taxType;
 }
 
+// ── Status/severity colors (badges, toasts, alert banners) ──
+// Single source of truth for the filled-box shape (bg + text + border) used
+// by Badge, toast.tsx, scenario-indicator.tsx, and plan-health.tsx — these
+// had independently drifted to 4 different shade combinations for the same
+// 4 semantic colors before being consolidated here (Phase 4a). Shades are
+// Badge's original values, which carry a deliberate accessibility fix:
+// text-amber-700 fails WCAG AA 4.5:1 contrast on bg-amber-100, so amber
+// uses text-amber-800 (v0.5 expert-review M14). A consumer that doesn't
+// render a border (Badge) simply ignores that key.
+//
+// This is a different token than a plain inline status TEXT color with no
+// background (e.g. a standalone "Warning" label) — see DESIGN.md's
+// "Status colors" table, which now mirrors these same shades for full
+// consistency even though a filled box's contrast requirements don't
+// strictly apply to unfilled text.
+export const STATUS_COLORS: Record<
+  "red" | "green" | "amber" | "blue",
+  { bg: string; text: string; border: string }
+> = {
+  red: { bg: "bg-red-100", text: "text-red-700", border: "border-red-300" },
+  green: {
+    bg: "bg-green-100",
+    text: "text-green-700",
+    border: "border-green-300",
+  },
+  amber: {
+    bg: "bg-amber-100",
+    text: "text-amber-800",
+    border: "border-amber-300",
+  },
+  blue: { bg: "bg-blue-100", text: "text-blue-700", border: "border-blue-300" },
+};
+
 // ── Badge background colors ──
 // Derived from text color → matching light bg. Used by AccountBadge.
 // Explicitly listed so Tailwind JIT can detect the class names.
