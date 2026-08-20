@@ -67,14 +67,12 @@ const PROFILE_OWNED_CONTRIB_FIELDS = [
 export function useContributionAccountsMutations({
   allContribs,
   activeContribProfileId,
-  onCreatePerfSuccess,
 }: {
   allContribs: ContribRecord[];
   /** The globally-effective Contribution Profile id (Plan pin -> globally-
    *  active), if any. When set, PROFILE_OWNED_CONTRIB_FIELDS edits route
    *  here instead of the raw account row. */
   activeContribProfileId?: number | null;
-  onCreatePerfSuccess?: () => void;
 }) {
   const utils = trpc.useUtils();
 
@@ -103,7 +101,6 @@ export function useContributionAccountsMutations({
     {
       onSuccess: () => {
         utils.performance.performanceAccounts.invalidate();
-        onCreatePerfSuccess?.();
       },
     },
   );

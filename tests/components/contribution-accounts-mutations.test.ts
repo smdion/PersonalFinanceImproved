@@ -358,18 +358,14 @@ describe("useContributionAccountsMutations", () => {
   // onSuccess wiring
   // ---------------------------------------------------------------------
 
-  it("createPerfMut's onSuccess invalidates performanceAccounts and calls onCreatePerfSuccess", async () => {
+  it("createPerfMut's onSuccess invalidates performanceAccounts", async () => {
+    // No parent-UI-state callback here (RULES.md Mutation Hook Convention
+    // rule 3) — a caller that wants to react to success (e.g. closing a
+    // form) passes its own onSuccess at the .mutate() call site instead.
     const useContributionAccountsMutations = await importHook();
-    const onCreatePerfSuccess = vi.fn();
-    renderHook(() =>
-      useContributionAccountsMutations({
-        allContribs: [],
-        onCreatePerfSuccess,
-      }),
-    );
+    renderHook(() => useContributionAccountsMutations({ allContribs: [] }));
     onSuccessCallbacks.createPerf?.();
     expect(invalidateFns.performanceAccounts).toHaveBeenCalled();
-    expect(onCreatePerfSuccess).toHaveBeenCalled();
   });
 
   it("updatePerfMut's onSuccess invalidates performanceAccounts, retirement, projection, and networth", async () => {

@@ -160,7 +160,6 @@ export function ContributionAccountsSettings() {
   } = useContributionAccountsMutations({
     allContribs,
     activeContribProfileId,
-    onCreatePerfSuccess: () => setCreatingAccount(false),
   });
 
   if (allAccounts.length === 0 && !creatingAccount) return null;
@@ -273,11 +272,14 @@ export function ContributionAccountsSettings() {
                 <CreateAccountForm
                   people={peopleList}
                   onSubmit={(vals) =>
-                    createPerfMut.mutate({
-                      ...vals,
-                      accountType:
-                        vals.accountType as import("@/lib/config/account-types").AccountCategory,
-                    })
+                    createPerfMut.mutate(
+                      {
+                        ...vals,
+                        accountType:
+                          vals.accountType as import("@/lib/config/account-types").AccountCategory,
+                      },
+                      { onSuccess: () => setCreatingAccount(false) },
+                    )
                   }
                   onCancel={() => setCreatingAccount(false)}
                   isPending={createPerfMut.isPending}
