@@ -34,8 +34,12 @@ export interface UseInlineNumberEditReturn<TKey> {
   setEditValue: (v: string) => void;
   /** Begin editing `key`, seeding the draft from `currentValue`. */
   startEdit: (key: TKey, currentValue: number | string) => void;
-  /** Commit the current draft. A blank draft is a silent no-op cancel,
-   *  matching every reinvented copy of this pattern. */
+  /** Commit the current draft. A blank draft is a silent no-op cancel by
+   *  default — matching the numeric fields this hook was first written
+   *  for, where an empty input has no sensible value. Pass
+   *  `allowBlankCommit: true` for a field where blank is itself a
+   *  meaningful value (e.g. clearing a text label or note back to null) —
+   *  onCommit then fires with `value === ""` instead of being skipped. */
   commit: () => void;
   cancel: () => void;
   handleKeyDown: (e: KeyboardEvent) => void;
@@ -43,8 +47,10 @@ export interface UseInlineNumberEditReturn<TKey> {
 
 export function useInlineNumberEdit<TKey>({
   onCommit,
+  allowBlankCommit = false,
 }: {
   onCommit: (key: TKey, value: string) => void;
+  allowBlankCommit?: boolean;
 }): UseInlineNumberEditReturn<TKey> {
   const [editingKey, setEditingKey] = useState<TKey | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -59,13 +65,13 @@ export function useInlineNumberEdit<TKey>({
   const commit = useCallback(() => {
     if (editingKey === null) return;
     const value = editValue.trim();
-    if (value === "") {
+    if (value === "" && !allowBlankCommit) {
       setEditingKey(null);
       return;
     }
     onCommit(editingKey, value);
     setEditingKey(null);
-  }, [editingKey, editValue, onCommit]);
+  }, [editingKey, editValue, onCommit, allowBlankCommit]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {

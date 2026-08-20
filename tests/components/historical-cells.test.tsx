@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { EditableCell, EditableRateCell } from "@/components/historical/cells";
+import {
+  EditableCell,
+  EditableRateCell,
+  NoteButton,
+} from "@/components/historical/cells";
 
 // First direct coverage for these two cells. Written alongside their
 // migration onto useInlineNumberEdit (Phase 3 item 3d) — each previously
@@ -116,5 +120,75 @@ describe("EditableRateCell", () => {
     fireEvent.keyDown(input, { key: "Escape" });
     expect(onSave).not.toHaveBeenCalled();
     expect(screen.getByText("7.0%")).toBeInTheDocument();
+  });
+});
+
+describe("NoteButton", () => {
+  it("Save commits the typed note", () => {
+    const onUpsertNote = vi.fn();
+    render(<NoteButton year={2024} field="cost" onUpsertNote={onUpsertNote} />);
+
+    fireEvent.click(screen.getByTitle("Add note"));
+    const textarea = screen.getByPlaceholderText("Add note...");
+    fireEvent.change(textarea, { target: { value: "Roof replacement" } });
+    fireEvent.click(screen.getByText("Save"));
+
+    expect(onUpsertNote).toHaveBeenCalledWith(2024, "cost", "Roof replacement");
+  });
+
+  it("clearing an existing note to blank commits an empty note (not a cancel)", () => {
+    const onUpsertNote = vi.fn();
+    render(
+      <NoteButton
+        year={2024}
+        field="cost"
+        existingNote="Old note"
+        onUpsertNote={onUpsertNote}
+      />,
+    );
+
+    fireEvent.click(screen.getByTitle("Edit note"));
+    const textarea = screen.getByDisplayValue("Old note");
+    fireEvent.change(textarea, { target: { value: "" } });
+    fireEvent.click(screen.getByText("Save"));
+
+    expect(onUpsertNote).toHaveBeenCalledWith(2024, "cost", "");
+  });
+
+  it("Enter without Shift commits", () => {
+    const onUpsertNote = vi.fn();
+    render(<NoteButton year={2024} field="cost" onUpsertNote={onUpsertNote} />);
+
+    fireEvent.click(screen.getByTitle("Add note"));
+    const textarea = screen.getByPlaceholderText("Add note...");
+    fireEvent.change(textarea, { target: { value: "Quick note" } });
+    fireEvent.keyDown(textarea, { key: "Enter", shiftKey: false });
+
+    expect(onUpsertNote).toHaveBeenCalledWith(2024, "cost", "Quick note");
+  });
+
+  it("Shift+Enter does not commit (inserts a newline instead)", () => {
+    const onUpsertNote = vi.fn();
+    render(<NoteButton year={2024} field="cost" onUpsertNote={onUpsertNote} />);
+
+    fireEvent.click(screen.getByTitle("Add note"));
+    const textarea = screen.getByPlaceholderText("Add note...");
+    fireEvent.change(textarea, { target: { value: "Line one" } });
+    fireEvent.keyDown(textarea, { key: "Enter", shiftKey: true });
+
+    expect(onUpsertNote).not.toHaveBeenCalled();
+    expect(screen.getByDisplayValue("Line one")).toBeInTheDocument();
+  });
+
+  it("Cancel discards without committing", () => {
+    const onUpsertNote = vi.fn();
+    render(<NoteButton year={2024} field="cost" onUpsertNote={onUpsertNote} />);
+
+    fireEvent.click(screen.getByTitle("Add note"));
+    const textarea = screen.getByPlaceholderText("Add note...");
+    fireEvent.change(textarea, { target: { value: "Discarded" } });
+    fireEvent.click(screen.getByText("Cancel"));
+
+    expect(onUpsertNote).not.toHaveBeenCalled();
   });
 });

@@ -5,6 +5,7 @@
 import React, { useState } from "react";
 import { formatCurrency } from "@/lib/utils/format";
 import { taxTypeLabel, TAX_TYPE_COLORS } from "@/lib/utils/colors";
+import { useInlineNumberEdit } from "@/lib/hooks/use-inline-number-edit";
 import type { PortfolioSub } from "./contribution-accounts-types";
 
 export function SubAccountRow({
@@ -29,15 +30,20 @@ export function SubAccountRow({
   const ownerName = sub.ownerPersonId
     ? (people.find((p) => p.id === sub.ownerPersonId)?.name ?? "?")
     : "Joint";
-  const [editingLabel, setEditingLabel] = useState(false);
-  const [labelDraft, setLabelDraft] = useState(sub.label ?? "");
-
-  function commitLabel() {
-    setEditingLabel(false);
-    const trimmed = labelDraft.trim();
-    const next = trimmed || null;
-    if (next !== (sub.label ?? null)) onUpdate?.(sub.id, { label: next });
-  }
+  const {
+    editingKey: editingLabel,
+    editValue: labelDraft,
+    setEditValue: setLabelDraft,
+    startEdit: startEditLabel,
+    commit: commitLabel,
+    handleKeyDown: handleLabelKeyDown,
+  } = useInlineNumberEdit<true>({
+    allowBlankCommit: true,
+    onCommit: (_key, draft) => {
+      const next = draft.trim() || null;
+      if (next !== (sub.label ?? null)) onUpdate?.(sub.id, { label: next });
+    },
+  });
 
   return (
     <div
@@ -52,16 +58,7 @@ export function SubAccountRow({
               value={labelDraft}
               onChange={(e) => setLabelDraft(e.target.value)}
               onBlur={commitLabel}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  commitLabel();
-                }
-                if (e.key === "Escape") {
-                  setEditingLabel(false);
-                  setLabelDraft(sub.label ?? "");
-                }
-              }}
+              onKeyDown={handleLabelKeyDown}
               placeholder={sub.subType || taxLabel}
               className="border-b border-blue-400 bg-transparent outline-none text-xs w-full min-w-0"
             />
@@ -75,10 +72,7 @@ export function SubAccountRow({
               )}
               {onUpdate && (
                 <button
-                  onClick={() => {
-                    setLabelDraft(sub.label ?? "");
-                    setEditingLabel(true);
-                  }}
+                  onClick={() => startEditLabel(true, sub.label ?? "")}
                   title="Edit label"
                   className="text-faint hover:text-secondary shrink-0 ml-0.5"
                 >

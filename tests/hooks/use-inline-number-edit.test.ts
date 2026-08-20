@@ -75,6 +75,28 @@ describe("useInlineNumberEdit", () => {
     expect(result.current.editingKey).toBeNull();
   });
 
+  it("with allowBlankCommit, a blank draft still fires onCommit (e.g. clearing a text field)", () => {
+    const onCommit = vi.fn();
+    const { result } = renderHook(() =>
+      useInlineNumberEdit<CellKey>({ onCommit, allowBlankCommit: true }),
+    );
+
+    act(() =>
+      result.current.startEdit(
+        { type: "annual", id: 1, field: "label" },
+        "existing",
+      ),
+    );
+    act(() => result.current.setEditValue("   "));
+    act(() => result.current.commit());
+
+    expect(onCommit).toHaveBeenCalledWith(
+      { type: "annual", id: 1, field: "label" },
+      "",
+    );
+    expect(result.current.editingKey).toBeNull();
+  });
+
   it("commit with no active edit is a no-op", () => {
     const onCommit = vi.fn();
     const { result } = renderHook(() =>

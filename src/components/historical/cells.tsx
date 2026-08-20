@@ -93,19 +93,20 @@ export function NoteButton({
   existingNote?: string;
   onUpsertNote: (year: number, field: string, note: string) => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState("");
+  const {
+    editingKey: editing,
+    editValue: value,
+    setEditValue: setValue,
+    startEdit,
+    commit,
+    cancel,
+  } = useInlineNumberEdit<true>({
+    allowBlankCommit: true,
+    onCommit: (_key, draft) => onUpsertNote(year, field, draft),
+  });
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const open = () => {
-    setValue(existingNote ?? "");
-    setEditing(true);
-  };
-
-  const save = () => {
-    onUpsertNote(year, field, value);
-    setEditing(false);
-  };
+  const open = () => startEdit(true, existingNote ?? "");
 
   useEffect(() => {
     if (editing && inputRef.current) inputRef.current.focus();
@@ -122,24 +123,27 @@ export function NoteButton({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => {
+            // Shift+Enter inserts a newline instead of committing — the
+            // shared hook's handleKeyDown doesn't distinguish the two, so
+            // this field wires commit/cancel directly instead of using it.
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
-              save();
+              commit();
             }
-            if (e.key === "Escape") setEditing(false);
+            if (e.key === "Escape") cancel();
           }}
           className="w-48 h-14 text-xs p-1.5 border rounded resize-none focus:outline-none focus:ring-1 focus:ring-blue-400"
           placeholder="Add note..."
         />
         <div className="flex justify-end gap-1.5 mt-1.5">
           <button
-            onClick={() => setEditing(false)}
+            onClick={cancel}
             className="text-caption text-faint hover:text-muted"
           >
             Cancel
           </button>
           <button
-            onClick={save}
+            onClick={commit}
             className="text-caption text-blue-600 font-medium hover:text-blue-800"
           >
             Save
