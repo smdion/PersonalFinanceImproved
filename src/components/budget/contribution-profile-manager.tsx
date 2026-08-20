@@ -569,79 +569,135 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
             </tr>
           </thead>
           <tbody>
-            {profile.accountDetails.map((ad, rowIdx) => {
-              const af = ad.activeFields as Record<string, unknown> | null;
-              const hasActiveFields = af !== null;
-              const isProfileDisabled = af?.isActive === false;
-              const activeMethod = af?.contributionMethod as string | undefined;
-              const activeValue = af?.contributionValue as
-                string | number | undefined;
-              const methodSuffix =
-                activeMethod === "percent_of_salary" ? "%" : "";
-              const hasActiveName =
-                ad.liveAccountName && ad.accountName !== ad.liveAccountName;
-              return (
-                <tr
-                  key={ad.id}
-                  className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
-                    rowIdx % 2 === 1
-                      ? "bg-surface-sunken/60"
-                      : "bg-surface-primary"
-                  } ${isProfileDisabled ? "opacity-40" : ""}`}
-                >
-                  <td className="py-1.5 pl-4 pr-3 text-secondary">
-                    <span className="flex items-center gap-1.5">
-                      <span
-                        className={`${isProfileDisabled ? "line-through" : ""} ${hasActiveName ? "text-amber-600" : ""}`}
-                      >
-                        {ad.accountName}
-                      </span>
-                      {isProfileDisabled && (
-                        <span className="text-micro px-1 py-0.5 rounded bg-surface-strong text-muted font-semibold shrink-0">
-                          DISABLED
-                        </span>
-                      )}
-                    </span>
-                  </td>
-                  <td className="py-1.5 px-3 text-muted whitespace-nowrap">
-                    {activeMethod
-                      ? activeMethod === "percent_of_salary"
-                        ? "% salary"
-                        : "fixed"
-                      : "—"}
-                  </td>
-                  <td
-                    className={`py-1.5 px-3 text-right font-mono ${
-                      hasActiveFields && !isProfileDisabled
-                        ? "text-amber-600 font-medium"
-                        : "text-secondary"
-                    }`}
+            {(() => {
+              // Roth/Traditional splits of the same physical account (same
+              // person + account type) share one employer match — it's
+              // entered on only one of the split rows but applies against
+              // their COMBINED contributions, not each row's own. Merge the
+              // Match cell across such a group (via rowSpan) instead of
+              // repeating it once per row, which would misleadingly read as
+              // an independent match per split. Only merge when exactly one
+              // row in the group actually has match data — if multiple rows
+              // carry (possibly conflicting) match config, that's outside
+              // this assumption, so leave them per-row rather than guess
+              // which one is authoritative.
+              type AccountDetail = (typeof profile.accountDetails)[number];
+              const groups = new Map<string, AccountDetail[]>();
+              for (const ad of profile.accountDetails) {
+                const key = `${ad.personId}:${ad.accountType}`;
+                if (!groups.has(key)) groups.set(key, []);
+                groups.get(key)!.push(ad);
+              }
+              const mergedMatchInfo = new Map<
+                number,
+                { rowSpan: number; source: AccountDetail } | "skip"
+              >();
+              groups.forEach((group) => {
+                const first = group[0];
+                if (group.length <= 1 || !first) return;
+                const withMatch = group.filter(
+                  (ad) => ad.liveMatchType && ad.liveMatchType !== "none",
+                );
+                const matchSource = withMatch[0];
+                if (withMatch.length !== 1 || !matchSource) return;
+                mergedMatchInfo.set(first.id, {
+                  rowSpan: group.length,
+                  source: matchSource,
+                });
+                for (const ad of group.slice(1)) {
+                  mergedMatchInfo.set(ad.id, "skip");
+                }
+              });
+
+              return profile.accountDetails.map((ad, rowIdx) => {
+                const af = ad.activeFields as Record<string, unknown> | null;
+                const hasActiveFields = af !== null;
+                const isProfileDisabled = af?.isActive === false;
+                const activeMethod = af?.contributionMethod as
+                  string | undefined;
+                const activeValue = af?.contributionValue as
+                  string | number | undefined;
+                const methodSuffix =
+                  activeMethod === "percent_of_salary" ? "%" : "";
+                const hasActiveName =
+                  ad.liveAccountName && ad.accountName !== ad.liveAccountName;
+                const matchCell = mergedMatchInfo.get(ad.id);
+                const skipMatchCell = matchCell === "skip";
+                const matchRowSpan =
+                  matchCell && matchCell !== "skip"
+                    ? matchCell.rowSpan
+                    : undefined;
+                const matchSource =
+                  matchCell && matchCell !== "skip" ? matchCell.source : ad;
+                return (
+                  <tr
+                    key={ad.id}
+                    className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+                      rowIdx % 2 === 1
+                        ? "bg-surface-sunken/60"
+                        : "bg-surface-primary"
+                    } ${isProfileDisabled ? "opacity-40" : ""}`}
                   >
-                    {hasActiveFields ? (
-                      <>
-                        {activeValue}
-                        {methodSuffix}
-                      </>
-                    ) : (
-                      <span className="italic text-faint">Not set</span>
-                    )}
-                  </td>
-                  <td className="py-1.5 px-3 text-right text-faint">
-                    {ad.liveMatchType && ad.liveMatchType !== "none" ? (
-                      <span>
-                        {parseFloat(ad.liveMatchValue ?? "0")}%
-                        {ad.liveMaxMatchPct &&
-                        parseFloat(ad.liveMaxMatchPct) > 0
-                          ? ` to ${formatPercent(parseFloat(ad.liveMaxMatchPct), 2)}`
-                          : ""}
+                    <td className="py-1.5 pl-4 pr-3 text-secondary">
+                      <span className="flex items-center gap-1.5">
+                        <span
+                          className={`${isProfileDisabled ? "line-through" : ""} ${hasActiveName ? "text-amber-600" : ""}`}
+                        >
+                          {ad.accountName}
+                        </span>
+                        {isProfileDisabled && (
+                          <span className="text-micro px-1 py-0.5 rounded bg-surface-strong text-muted font-semibold shrink-0">
+                            DISABLED
+                          </span>
+                        )}
                       </span>
-                    ) : (
-                      <span className="text-faint">—</span>
+                    </td>
+                    <td className="py-1.5 px-3 text-muted whitespace-nowrap">
+                      {activeMethod
+                        ? activeMethod === "percent_of_salary"
+                          ? "% salary"
+                          : "fixed"
+                        : "—"}
+                    </td>
+                    <td
+                      className={`py-1.5 px-3 text-right font-mono ${
+                        hasActiveFields && !isProfileDisabled
+                          ? "text-amber-600 font-medium"
+                          : "text-secondary"
+                      }`}
+                    >
+                      {hasActiveFields ? (
+                        <>
+                          {activeValue}
+                          {methodSuffix}
+                        </>
+                      ) : (
+                        <span className="italic text-faint">Not set</span>
+                      )}
+                    </td>
+                    {!skipMatchCell && (
+                      <td
+                        className="py-1.5 px-3 text-right text-faint"
+                        rowSpan={matchRowSpan}
+                      >
+                        {matchSource.liveMatchType &&
+                        matchSource.liveMatchType !== "none" ? (
+                          <span>
+                            {parseFloat(matchSource.liveMatchValue ?? "0")}%
+                            {matchSource.liveMaxMatchPct &&
+                            parseFloat(matchSource.liveMaxMatchPct) > 0
+                              ? ` of ${formatPercent(parseFloat(matchSource.liveMaxMatchPct), 2)}`
+                              : ""}
+                          </span>
+                        ) : (
+                          <span className="text-faint">—</span>
+                        )}
+                      </td>
                     )}
-                  </td>
-                </tr>
-              );
-            })}
+                  </tr>
+                );
+              });
+            })()}
           </tbody>
         </table>
       </div>
