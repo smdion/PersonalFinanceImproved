@@ -13,6 +13,7 @@ import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export function ScenarioBar() {
   const {
@@ -484,18 +485,21 @@ export function ScenarioBar() {
                       className="w-full border border-strong rounded px-2 py-1 text-xs bg-surface-primary text-primary"
                     />
                     <div className="flex gap-1">
-                      <button
+                      <Button
                         onClick={handleCreate}
-                        className="flex-1 px-2 py-1.5 bg-blue-600 text-white rounded text-caption hover:bg-blue-700"
+                        size="sm"
+                        className="flex-1 !text-caption"
                       >
                         {creating === "persisted" ? "Save" : "Create Temp"}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => setCreating(null)}
-                        className="px-2 py-1.5 text-muted text-caption hover:text-secondary"
+                        className="!text-caption"
                       >
                         Cancel
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ) : (
@@ -509,13 +513,14 @@ export function ScenarioBar() {
                         >
                           + Saved
                         </button>
-                        <button
+                        <Button
+                          variant="ghost"
                           onClick={() => setCreating("session")}
-                          className="flex-1 text-center py-2 text-muted hover:bg-surface-elevated rounded transition-colors"
+                          className="flex-1 !py-2"
                           title="Create a quick what-if scenario (lost when you leave)"
                         >
                           + Quick
-                        </button>
+                        </Button>
                       </>
                     )}
                   </div>
