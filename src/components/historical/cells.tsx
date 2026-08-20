@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useInlineNumberEdit } from "@/lib/hooks/use-inline-number-edit";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -407,40 +408,40 @@ export function EditableCell({
   editableFields?: Set<string>;
   tooltipLines?: string[];
 }) {
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState("");
-
+  const {
+    editingKey,
+    editValue,
+    setEditValue,
+    startEdit: startEditRaw,
+    commit,
+    handleKeyDown,
+  } = useInlineNumberEdit<true>({
+    onCommit: (_key, draft) => {
+      const parsed = parseFloat(draft);
+      // homeImprovements is derived from the home_improvement_items table —
+      // it is read-only in this table and not persisted via this save path.
+      if (!isNaN(parsed) && parsed !== value && field !== "homeImprovements") {
+        onSave(year, { [field]: parsed });
+      }
+    },
+  });
   const startEdit = useCallback(() => {
     if (isCurrent) return;
-    setEditValue(value !== null ? String(value) : "");
-    setEditing(true);
-  }, [value, isCurrent]);
-
-  const save = useCallback(() => {
-    setEditing(false);
-    const parsed = parseFloat(editValue);
-    // homeImprovements is derived from the home_improvement_items table —
-    // it is read-only in this table and not persisted via this save path.
-    if (!isNaN(parsed) && parsed !== value && field !== "homeImprovements") {
-      onSave(year, { [field]: parsed });
-    }
-  }, [editValue, value, field, year, onSave]);
+    startEditRaw(true, value !== null ? String(value) : "");
+  }, [value, isCurrent, startEditRaw]);
 
   const noteKey = `${year}:${field}`;
   const existingNote = notes[noteKey];
 
-  if (editing) {
+  if (editingKey) {
     return (
       <td className={`py-0.5 px-0.5 ${border ? "border-l" : ""}`}>
         <input
           type="number"
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
-          onBlur={save}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") save();
-            if (e.key === "Escape") setEditing(false);
-          }}
+          onBlur={commit}
+          onKeyDown={handleKeyDown}
           className="w-20 text-right text-xs px-1 py-0.5 border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
           autoFocus
           disabled={isSaving}
@@ -508,30 +509,33 @@ export function EditableRateCell({
   notes: Record<string, string>;
   onUpsertNote: (year: number, field: string, note: string) => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState("");
-
+  const {
+    editingKey,
+    editValue,
+    setEditValue,
+    startEdit: startEditRaw,
+    commit,
+    handleKeyDown,
+  } = useInlineNumberEdit<true>({
+    onCommit: (_key, draft) => {
+      const parsed = parseFloat(draft);
+      if (!isNaN(parsed)) {
+        const rate = parsed / 100;
+        if (rate !== value) {
+          onSave(year, { [field]: rate });
+        }
+      }
+    },
+  });
   const startEdit = useCallback(() => {
     if (isCurrent) return;
-    setEditValue(value !== null ? (value * 100).toFixed(1) : "");
-    setEditing(true);
-  }, [value, isCurrent]);
-
-  const save = useCallback(() => {
-    setEditing(false);
-    const parsed = parseFloat(editValue);
-    if (!isNaN(parsed)) {
-      const rate = parsed / 100;
-      if (rate !== value) {
-        onSave(year, { [field]: rate });
-      }
-    }
-  }, [editValue, value, field, year, onSave]);
+    startEditRaw(true, value !== null ? (value * 100).toFixed(1) : "");
+  }, [value, isCurrent, startEditRaw]);
 
   const noteKey = `${year}:${field}`;
   const existingNote = notes[noteKey];
 
-  if (editing) {
+  if (editingKey) {
     return (
       <td className="py-0.5 px-0.5">
         <input
@@ -539,11 +543,8 @@ export function EditableRateCell({
           step="0.1"
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
-          onBlur={save}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") save();
-            if (e.key === "Escape") setEditing(false);
-          }}
+          onBlur={commit}
+          onKeyDown={handleKeyDown}
           className="w-14 text-right text-xs px-1 py-0.5 border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
           autoFocus
           disabled={isSaving}
