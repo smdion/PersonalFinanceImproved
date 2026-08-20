@@ -983,10 +983,12 @@ export const mortgageLoans = sqliteTable(
       .notNull()
       .default(false),
     // Self-reference to this table's own id (the loan this one replaced via
-    // refinance). No DB-level FK constraint yet — would need a data audit
-    // for orphaned/dangling values first (some rows may predate this
-    // column being populated consistently). No index either, since there's
-    // no constraint to back and no known query filters on it.
+    // refinance). FK constraint (ON DELETE SET NULL, matching
+    // savings_goals.parent_goal_id's precedent) added in
+    // 0019_mortgage_refinanced_from_fk.sql after a data audit confirmed no
+    // orphaned/dangling values — Drizzle can't express a self-reference
+    // inline, so the constraint lives in the hand-written migration, not
+    // here (same pattern as parent_goal_id).
     refinancedFromId: integer("refinanced_from_id"),
     paidOffDate: text("paid_off_date"),
     principalAndInterest: text("principal_and_interest").notNull(),
@@ -1005,7 +1007,10 @@ export const mortgageLoans = sqliteTable(
     apiBalance: text("api_balance"),
     apiBalanceDate: text("api_balance_date"),
   },
-  (table) => [index("mortgage_loans_is_active_idx").on(table.isActive)],
+  (table) => [
+    index("mortgage_loans_is_active_idx").on(table.isActive),
+    index("mortgage_loans_refinanced_from_id_idx").on(table.refinancedFromId),
+  ],
 );
 
 export const mortgageWhatIfScenarios = sqliteTable(
