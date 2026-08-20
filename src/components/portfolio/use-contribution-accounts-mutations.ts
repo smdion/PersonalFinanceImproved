@@ -133,17 +133,17 @@ export function useContributionAccountsMutations({
     });
 
   const updatePortfolioAccountMut =
-    trpc.settings.portfolioSnapshots.updateAccount.useMutation({
+    trpc.networth.portfolioSnapshots.updateAccount.useMutation({
       onSuccess: () => {
-        utils.settings.portfolioSnapshots.getLatest.invalidate();
+        utils.networth.portfolioSnapshots.getLatest.invalidate();
         utils.networth.invalidate();
       },
     });
 
   const createPortfolioAccountMut =
-    trpc.settings.portfolioSnapshots.createAccount.useMutation({
+    trpc.networth.portfolioSnapshots.createAccount.useMutation({
       onSuccess: () => {
-        utils.settings.portfolioSnapshots.getLatest.invalidate();
+        utils.networth.portfolioSnapshots.getLatest.invalidate();
         utils.networth.invalidate();
       },
     });

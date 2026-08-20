@@ -20,7 +20,7 @@ import { SummaryTable } from "./summary-table";
 
 export function AccountBalanceOverview() {
   const { data: latestSnap } =
-    trpc.settings.portfolioSnapshots.getLatest.useQuery();
+    trpc.networth.portfolioSnapshots.getLatest.useQuery();
   const { data: perfAccounts } =
     trpc.performance.performanceAccounts.list.useQuery();
   const { data: people } = trpc.settings.people.list.useQuery();

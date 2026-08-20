@@ -158,15 +158,20 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `networth`
 
-| Procedure                | Kind  | Auth                 | Description                                                                                                                                                                                       |
-| ------------------------ | ----- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `computeComparison`      | query | `protectedProcedure` | Compare net worth at two dates. Uses nearest portfolio snapshot for investment values, computes mortgage balance at each date, and uses current values for home/cash/other (noted as limitation). |
-| `computeDetailedHistory` | query | `protectedProcedure` | Used by the spreadsheet view; heavier than listHistory (which feeds charts).                                                                                                                      |
-| `computeFIProgress`      | query | `protectedProcedure` | (no description)                                                                                                                                                                                  |
-| `computeSummary`         | query | `protectedProcedure` | (no description)                                                                                                                                                                                  |
-| `listHistory`            | query | `protectedProcedure` | (no description)                                                                                                                                                                                  |
-| `listSnapshots`          | query | `protectedProcedure` | Paginated snapshot list with optional date range filter and sorting.                                                                                                                              |
-| `listSnapshotTotals`     | query | `protectedProcedure` | Lightweight snapshot totals for portfolio chart — returns (date, total) pairs.                                                                                                                    |
+| Procedure                | Kind     | Auth                 | Description                                                                                                                                                                                       |
+| ------------------------ | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `computeComparison`      | query    | `protectedProcedure` | Compare net worth at two dates. Uses nearest portfolio snapshot for investment values, computes mortgage balance at each date, and uses current values for home/cash/other (noted as limitation). |
+| `computeDetailedHistory` | query    | `protectedProcedure` | Used by the spreadsheet view; heavier than listHistory (which feeds charts).                                                                                                                      |
+| `computeFIProgress`      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                  |
+| `computeSummary`         | query    | `protectedProcedure` | (no description)                                                                                                                                                                                  |
+| `create`                 | mutation | `portfolioProcedure` | Create a new snapshot with all its accounts in a single call.                                                                                                                                     |
+| `createAccount`          | mutation | `portfolioProcedure` | Create a new sub-account row in the latest snapshot.                                                                                                                                              |
+| `delete`                 | mutation | `portfolioProcedure` | Delete a snapshot (cascades to its accounts).                                                                                                                                                     |
+| `getLatest`              | query    | `protectedProcedure` | Get the latest snapshot with its accounts (for pre-filling a new snapshot form).                                                                                                                  |
+| `listHistory`            | query    | `protectedProcedure` | (no description)                                                                                                                                                                                  |
+| `listSnapshots`          | query    | `protectedProcedure` | Paginated snapshot list with optional date range filter and sorting.                                                                                                                              |
+| `listSnapshotTotals`     | query    | `protectedProcedure` | Lightweight snapshot totals for portfolio chart — returns (date, total) pairs.                                                                                                                    |
+| `updateAccount`          | mutation | `portfolioProcedure` | Update a single portfolio account row (e.g. change owner, toggle active, set label, change tax type).                                                                                             |
 
 ## `paycheck`
 
@@ -331,35 +336,30 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `settings/admin`
 
-| Procedure                       | Kind     | Auth                 | Description                                                                                           |
-| ------------------------------- | -------- | -------------------- | ----------------------------------------------------------------------------------------------------- |
-| `backfillPerformanceAccountIds` | mutation | `adminProcedure`     | ══ BACKFILL PERFORMANCE ACCOUNT IDS ══                                                                |
-| `clearOverride`                 | mutation | `scenarioProcedure`  | Remove a single override from a scenario                                                              |
-| `create`                        | mutation | `scenarioProcedure`  | ══ SCENARIOS (global what-if system) ══                                                               |
-| `create`                        | mutation | `portfolioProcedure` | Create a new snapshot with all its accounts in a single call.                                         |
-| `createAccount`                 | mutation | `portfolioProcedure` | Create a new sub-account row in the latest snapshot.                                                  |
-| `delete`                        | mutation | `adminProcedure`     | Invalidate year-end cache when settings change (e.g. salary averaging toggle)                         |
-| `delete`                        | mutation | `scenarioProcedure`  | (no description)                                                                                      |
-| `delete`                        | mutation | `adminProcedure`     | (no description)                                                                                      |
-| `delete`                        | mutation | `adminProcedure`     | (no description)                                                                                      |
-| `delete`                        | mutation | `portfolioProcedure` | Delete a snapshot (cascades to its accounts).                                                         |
-| `get`                           | query    | `adminProcedure`     | Get current RBAC group mapping (DB overrides merged with defaults).                                   |
-| `getDataFreshness`              | query    | `protectedProcedure` | ══ DATA FRESHNESS ══                                                                                  |
-| `getLatest`                     | query    | `protectedProcedure` | Get the latest snapshot with its accounts (for pre-filling a new snapshot form).                      |
-| `list`                          | query    | `protectedProcedure` | ══ APP SETTINGS ══                                                                                    |
-| `list`                          | query    | `protectedProcedure` | ══ SCENARIOS (global what-if system) ══                                                               |
-| `list`                          | query    | `protectedProcedure` | ══ API CONNECTIONS ══                                                                                 |
-| `list`                          | query    | `protectedProcedure` | ══ RELOCATION SCENARIOS ══                                                                            |
-| `save`                          | mutation | `adminProcedure`     | (no description)                                                                                      |
-| `setBudgetProfilePin`           | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Budget Profile is "active" when this Plan is selected.                |
-| `setContributionProfilePin`     | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Contribution Profile is "active" when this Plan is selected.          |
-| `setOverride`                   | mutation | `scenarioProcedure`  | Update a single override within a scenario's overrides JSONB                                          |
-| `setSalaryProfilePin`           | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Salary Profile is "active" when this Plan is selected.                |
-| `update`                        | mutation | `scenarioProcedure`  | (no description)                                                                                      |
-| `updateAccount`                 | mutation | `portfolioProcedure` | Update a single portfolio account row (e.g. change owner, toggle active, set label, change tax type). |
-| `updateDataFreshness`           | mutation | `adminProcedure`     | (no description)                                                                                      |
-| `upsert`                        | mutation | `adminProcedure`     | (no description)                                                                                      |
-| `upsert`                        | mutation | `adminProcedure`     | (no description)                                                                                      |
+| Procedure                       | Kind     | Auth                 | Description                                                                                  |
+| ------------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------- |
+| `backfillPerformanceAccountIds` | mutation | `adminProcedure`     | ══ BACKFILL PERFORMANCE ACCOUNT IDS ══                                                       |
+| `clearOverride`                 | mutation | `scenarioProcedure`  | Remove a single override from a scenario                                                     |
+| `create`                        | mutation | `scenarioProcedure`  | ══ SCENARIOS (global what-if system) ══                                                      |
+| `delete`                        | mutation | `adminProcedure`     | Invalidate year-end cache when settings change (e.g. salary averaging toggle)                |
+| `delete`                        | mutation | `scenarioProcedure`  | (no description)                                                                             |
+| `delete`                        | mutation | `adminProcedure`     | (no description)                                                                             |
+| `delete`                        | mutation | `adminProcedure`     | (no description)                                                                             |
+| `get`                           | query    | `adminProcedure`     | Get current RBAC group mapping (DB overrides merged with defaults).                          |
+| `getDataFreshness`              | query    | `protectedProcedure` | ══ DATA FRESHNESS ══                                                                         |
+| `list`                          | query    | `protectedProcedure` | ══ APP SETTINGS ══                                                                           |
+| `list`                          | query    | `protectedProcedure` | ══ SCENARIOS (global what-if system) ══                                                      |
+| `list`                          | query    | `protectedProcedure` | ══ API CONNECTIONS ══                                                                        |
+| `list`                          | query    | `protectedProcedure` | ══ RELOCATION SCENARIOS ══                                                                   |
+| `save`                          | mutation | `adminProcedure`     | (no description)                                                                             |
+| `setBudgetProfilePin`           | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Budget Profile is "active" when this Plan is selected.       |
+| `setContributionProfilePin`     | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Contribution Profile is "active" when this Plan is selected. |
+| `setOverride`                   | mutation | `scenarioProcedure`  | Update a single override within a scenario's overrides JSONB                                 |
+| `setSalaryProfilePin`           | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Salary Profile is "active" when this Plan is selected.       |
+| `update`                        | mutation | `scenarioProcedure`  | (no description)                                                                             |
+| `updateDataFreshness`           | mutation | `adminProcedure`     | (no description)                                                                             |
+| `upsert`                        | mutation | `adminProcedure`     | (no description)                                                                             |
+| `upsert`                        | mutation | `adminProcedure`     | (no description)                                                                             |
 
 ## `settings/onboarding`
 

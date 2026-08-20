@@ -162,13 +162,13 @@ export function NewSnapshotForm({
   onSaved: () => void;
 }) {
   const { data: latestSnap, isLoading: loadingLatest } =
-    trpc.settings.portfolioSnapshots.getLatest.useQuery();
+    trpc.networth.portfolioSnapshots.getLatest.useQuery();
   const { data: perfAccounts, isLoading: loadingPerfAccounts } =
     trpc.performance.performanceAccounts.list.useQuery();
   const { data: people, isLoading: loadingPeople } =
     trpc.settings.people.list.useQuery();
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
-  const createMutation = trpc.settings.portfolioSnapshots.create.useMutation({
+  const createMutation = trpc.networth.portfolioSnapshots.create.useMutation({
     onSuccess: (data) => {
       // eslint-disable-next-line no-restricted-syntax -- type narrowing for untyped API response
       const sync = (data as unknown as Record<string, unknown>)

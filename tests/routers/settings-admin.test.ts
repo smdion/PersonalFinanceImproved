@@ -6,20 +6,19 @@
  *   - scenarios.list / create / update / delete
  *   - apiConnections.list / upsert / delete
  *   - relocationScenarios.list / save / delete
- *   - portfolioSnapshots.getLatest
  *   - getDataFreshness
  *   - rbacGroups.get
  *
- * savingsGoals and performanceAccounts CRUD moved out to savings.ts/
- * performance.ts respectively (Phase 6.3/6.4) — their tests moved to
- * savings-goals-crud.test.ts / performance.test.ts alongside them.
+ * savingsGoals, performanceAccounts, and portfolioSnapshots CRUD moved out
+ * to savings.ts/performance.ts/networth.ts respectively (Phase 6.3/6.4/6.5)
+ * — their tests moved to savings-goals-crud.test.ts / performance.test.ts /
+ * networth.test.ts alongside them.
  *
  * All procedures live at caller.settings.* because adminProcedures is spread
  * into settingsRouter (see src/server/routers/settings/index.ts).
  *
- * Permission-gated procedures (scenarioProcedure, portfolioProcedure) pass
- * through the admin role check automatically — the default adminSession has
- * role: "admin".
+ * Permission-gated procedures (scenarioProcedure) pass through the admin
+ * role check automatically — the default adminSession has role: "admin".
  */
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -554,78 +553,9 @@ describe("settings.relocationScenarios", () => {
 // performanceAccounts CRUD tests moved to performance.test.ts (procedures
 // moved to routers/performance.ts, Phase 6.4).
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PORTFOLIO SNAPSHOTS — getLatest
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe("settings.portfolioSnapshots.getLatest", () => {
-  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
-  let db: Awaited<ReturnType<typeof createTestCaller>>["db"];
-  let cleanup: () => void;
-
-  beforeAll(async () => {
-    const ctx = await createTestCaller(adminSession);
-    caller = ctx.caller;
-    db = ctx.db;
-    cleanup = ctx.cleanup;
-  });
-
-  afterAll(() => cleanup());
-
-  it("returns null when no snapshots exist", async () => {
-    const result = await caller.settings.portfolioSnapshots.getLatest();
-    expect(result).toBeNull();
-  });
-
-  it("returns the latest snapshot after one is seeded", async () => {
-    const perfAcctId = seedPerformanceAccount(db, {
-      institution: "Fidelity",
-      accountType: "401k",
-    });
-    seedSnapshot(db, "2025-06-30", [
-      { performanceAccountId: perfAcctId, amount: "50000", taxType: "preTax" },
-    ]);
-
-    const result = await caller.settings.portfolioSnapshots.getLatest();
-    expect(result).not.toBeNull();
-    expect(result!.snapshot.snapshotDate).toBe("2025-06-30");
-    expect(Array.isArray(result!.accounts)).toBe(true);
-    expect(result!.accounts).toHaveLength(1);
-  });
-
-  it("snapshot accounts include the correct amount", async () => {
-    const result = await caller.settings.portfolioSnapshots.getLatest();
-    expect(result).not.toBeNull();
-    expect(result!.accounts[0]!.amount).toBe("50000");
-  });
-
-  it("returns the most recent snapshot when multiple exist", async () => {
-    const perfAcctId = seedPerformanceAccount(db, {
-      institution: "Vanguard",
-      accountType: "ira",
-    });
-    seedSnapshot(db, "2025-12-31", [
-      {
-        performanceAccountId: perfAcctId,
-        amount: "75000",
-        taxType: "rothAfterTax",
-      },
-    ]);
-
-    const result = await caller.settings.portfolioSnapshots.getLatest();
-    expect(result).not.toBeNull();
-    expect(result!.snapshot.snapshotDate).toBe("2025-12-31");
-  });
-
-  it("returned snapshot has expected shape", async () => {
-    const result = await caller.settings.portfolioSnapshots.getLatest();
-    expect(result).not.toBeNull();
-    expect(result).toHaveProperty("snapshot");
-    expect(result).toHaveProperty("accounts");
-    expect(result!.snapshot).toHaveProperty("id");
-    expect(result!.snapshot).toHaveProperty("snapshotDate");
-  });
-});
+// portfolioSnapshots CRUD tests (getLatest/createAccount/updateAccount/
+// delete) moved to networth.test.ts (procedures moved to
+// routers/networth.ts, Phase 6.5).
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET DATA FRESHNESS
@@ -921,150 +851,6 @@ describe("settings.scenarios additional coverage", () => {
 });
 
 // performanceAccounts delete test moved to performance.test.ts (Phase 6.4).
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PORTFOLIO SNAPSHOTS — createAccount / updateAccount / delete
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe("settings.portfolioSnapshots createAccount/updateAccount/delete", () => {
-  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
-  let db: Awaited<ReturnType<typeof createTestCaller>>["db"];
-  let cleanup: () => void;
-  let snapId: number;
-  let personId: number;
-  let perfAcctId: number;
-  let createdAcctId: number;
-
-  beforeAll(async () => {
-    const ctx = await createTestCaller(adminSession);
-    caller = ctx.caller;
-    db = ctx.db;
-    cleanup = ctx.cleanup;
-    personId = await seedPerson(db, "Carol", "1992-07-10");
-    perfAcctId = seedPerformanceAccount(db, {
-      institution: "Fidelity",
-      accountType: "401k",
-    });
-    snapId = seedSnapshot(db, "2025-05-01", [
-      { performanceAccountId: perfAcctId, amount: "80000", taxType: "preTax" },
-    ]);
-  });
-
-  afterAll(() => cleanup());
-
-  it("creates a new account in an existing snapshot", async () => {
-    const result = await caller.settings.portfolioSnapshots.createAccount({
-      snapshotId: snapId,
-      institution: "Schwab",
-      taxType: "afterTax",
-      amount: "25000",
-      accountType: "ira",
-      parentCategory: "Retirement",
-      ownerPersonId: personId,
-    });
-    expect(result).toBeDefined();
-    expect(result.institution).toBe("Schwab");
-    expect(result.amount).toBe("25000");
-    expect(result.isActive).toBe(true);
-    createdAcctId = result.id;
-  });
-
-  it("new account appears in getLatest", async () => {
-    const latest = await caller.settings.portfolioSnapshots.getLatest();
-    expect(latest).not.toBeNull();
-    expect(latest!.accounts.length).toBeGreaterThanOrEqual(2);
-    const found = latest!.accounts.find(
-      (a: { id: number }) => a.id === createdAcctId,
-    );
-    expect(found).toBeDefined();
-    expect(found!.institution).toBe("Schwab");
-  });
-
-  it("updates an account owner", async () => {
-    await caller.settings.portfolioSnapshots.updateAccount({
-      id: createdAcctId,
-      ownerPersonId: personId,
-    });
-    const latest = await caller.settings.portfolioSnapshots.getLatest();
-    const found = latest!.accounts.find(
-      (a: { id: number }) => a.id === createdAcctId,
-    );
-    expect(found!.ownerPersonId).toBe(personId);
-  });
-
-  it("toggles isActive on an account", async () => {
-    await caller.settings.portfolioSnapshots.updateAccount({
-      id: createdAcctId,
-      isActive: false,
-    });
-    const latest = await caller.settings.portfolioSnapshots.getLatest();
-    const found = latest!.accounts.find(
-      (a: { id: number }) => a.id === createdAcctId,
-    );
-    expect(found!.isActive).toBe(false);
-  });
-
-  it("updateAccount with no changes is a no-op", async () => {
-    await caller.settings.portfolioSnapshots.updateAccount({
-      id: createdAcctId,
-    });
-    const latest = await caller.settings.portfolioSnapshots.getLatest();
-    const found = latest!.accounts.find(
-      (a: { id: number }) => a.id === createdAcctId,
-    );
-    expect(found).toBeDefined();
-  });
-
-  it("creates account with performanceAccountId link", async () => {
-    const result = await caller.settings.portfolioSnapshots.createAccount({
-      snapshotId: snapId,
-      institution: "Fidelity",
-      taxType: "preTax",
-      amount: "30000",
-      accountType: "401k",
-      parentCategory: "Retirement",
-      ownerPersonId: personId,
-      performanceAccountId: perfAcctId,
-    });
-    expect(result).toBeDefined();
-    expect(result.performanceAccountId).toBe(perfAcctId);
-  });
-
-  it("creates account with subType and label", async () => {
-    const result = await caller.settings.portfolioSnapshots.createAccount({
-      snapshotId: snapId,
-      institution: "Vanguard",
-      taxType: "taxFree",
-      amount: "10000",
-      accountType: "ira",
-      subType: "Roth",
-      label: "Roth IRA",
-      parentCategory: "Retirement",
-    });
-    expect(result).toBeDefined();
-    expect(result.subType).toBe("Roth");
-    expect(result.label).toBe("Roth IRA");
-  });
-
-  it("deletes a snapshot", async () => {
-    const newSnapId = seedSnapshot(db, "2025-03-01", [
-      { performanceAccountId: perfAcctId, amount: "70000" },
-    ]);
-    await caller.settings.portfolioSnapshots.delete({ id: newSnapId });
-
-    const latest = await caller.settings.portfolioSnapshots.getLatest();
-    expect(latest).not.toBeNull();
-    expect(latest!.snapshot.id).toBe(snapId);
-  });
-
-  it("delete is idempotent for non-existent snapshot", async () => {
-    // Should not throw
-    await caller.settings.portfolioSnapshots.delete({ id: 99999 });
-  });
-});
-
-// NOTE: portfolioSnapshots.create uses db.transaction() which is incompatible
-// with better-sqlite3 async pattern in tests. Tested via E2E instead.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // APP SETTINGS — non-admin filtering

@@ -31,7 +31,6 @@ import {
   createTestCaller,
   seedPerson,
   seedPerformanceAccount,
-  seedSnapshot,
   seedAppSetting,
   adminSession,
   viewerSession,
@@ -196,46 +195,8 @@ describe("settings.backfillPerformanceAccountIds", () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PORTFOLIO SNAPSHOTS — delete
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe("settings.portfolioSnapshots.delete", () => {
-  it("deletes an existing snapshot", async () => {
-    const ctx = await createTestCaller(adminSession);
-    try {
-      const perfAcctId = seedPerformanceAccount(ctx.db, {
-        institution: "Fidelity",
-        accountType: "401k",
-      });
-      const snapId = seedSnapshot(ctx.db, "2026-06-01", [
-        {
-          performanceAccountId: perfAcctId,
-          amount: "50000",
-          taxType: "preTax",
-        },
-      ]);
-
-      await ctx.caller.settings.portfolioSnapshots.delete({ id: snapId });
-
-      const latest = await ctx.caller.settings.portfolioSnapshots.getLatest();
-      expect(latest).toBeNull();
-    } finally {
-      ctx.cleanup();
-    }
-  });
-
-  it("is idempotent for non-existent snapshot", async () => {
-    const ctx = await createTestCaller(adminSession);
-    try {
-      await expect(
-        ctx.caller.settings.portfolioSnapshots.delete({ id: 99999 }),
-      ).resolves.toBeDefined();
-    } finally {
-      ctx.cleanup();
-    }
-  });
-});
+// portfolioSnapshots.delete/create additional coverage moved to
+// networth.test.ts (procedures moved to routers/networth.ts, Phase 6.5).
 
 // ─────────────────────────────────────────────────────────────────────────────
 // updateDataFreshness — additional branches
@@ -286,58 +247,6 @@ describe("settings.relocationScenarios additional", () => {
       });
       expect(result).toBeDefined();
       expect(result!.name).toBe("Rich Relocation");
-    } finally {
-      ctx.cleanup();
-    }
-  });
-});
-
-// performanceAccounts.create/update additional coverage moved to
-// performance.test.ts (procedures moved to routers/performance.ts, Phase 6.4).
-
-describe("portfolioSnapshots.create", () => {
-  it("creates a snapshot with no accounts", async () => {
-    const ctx = await createTestCaller(adminSession);
-    try {
-      const result = await ctx.caller.settings.portfolioSnapshots.create({
-        snapshotDate: "2025-06-15",
-        accounts: [],
-      });
-      expect(result.snapshotDate).toBe("2025-06-15");
-    } finally {
-      ctx.cleanup();
-    }
-  });
-
-  it("creates a snapshot with accounts and syncs parentCategory from the linked performance account", async () => {
-    const ctx = await createTestCaller(adminSession);
-    try {
-      const perfAcctId = seedPerformanceAccount(ctx.db, {
-        parentCategory: "Portfolio",
-      });
-      const result = await ctx.caller.settings.portfolioSnapshots.create({
-        snapshotDate: "2025-06-15",
-        accounts: [
-          {
-            institution: "Fidelity",
-            taxType: "preTax",
-            accountType: "401k",
-            amount: "10000",
-            ownerPersonId: null,
-            performanceAccountId: perfAcctId,
-          },
-        ],
-      });
-      expect(result.snapshotDate).toBe("2025-06-15");
-
-      const schema = await import("@/lib/db/schema");
-      const { eq } = await import("drizzle-orm");
-      const createdAccounts = await ctx.db
-        .select()
-        .from(schema.portfolioAccounts)
-        .where(eq(schema.portfolioAccounts.snapshotId, result.id));
-      expect(createdAccounts).toHaveLength(1);
-      expect(createdAccounts[0]?.parentCategory).toBe("Portfolio");
     } finally {
       ctx.cleanup();
     }

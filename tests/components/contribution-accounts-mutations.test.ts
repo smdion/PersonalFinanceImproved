@@ -40,16 +40,18 @@ const invalidateFns = {
 const stableUtils = {
   settings: {
     contributionAccounts: { invalidate: invalidateFns.contributionAccounts },
-    portfolioSnapshots: {
-      getLatest: { invalidate: invalidateFns.portfolioSnapshotsGetLatest },
-    },
   },
   performance: {
     performanceAccounts: { invalidate: invalidateFns.performanceAccounts },
   },
   retirement: { invalidate: invalidateFns.retirement },
   projection: { invalidate: invalidateFns.projection },
-  networth: { invalidate: invalidateFns.networth },
+  networth: {
+    invalidate: invalidateFns.networth,
+    portfolioSnapshots: {
+      getLatest: { invalidate: invalidateFns.portfolioSnapshotsGetLatest },
+    },
+  },
   contributionProfile: { invalidate: invalidateFns.contributionProfile },
   paycheck: { invalidate: invalidateFns.paycheck },
 };
@@ -79,6 +81,8 @@ vi.mock("@/lib/trpc", () => ({
         update: mutationFactory("updateContrib"),
         create: mutationFactory("createContrib"),
       },
+    },
+    networth: {
       portfolioSnapshots: {
         updateAccount: mutationFactory("updatePortfolioAccount"),
         createAccount: mutationFactory("createPortfolioAccount"),

@@ -207,7 +207,7 @@ export function PortfolioContent() {
     sortCol: sortCol ?? undefined,
     sortDir: sortDir,
   });
-  const deleteMutation = trpc.settings.portfolioSnapshots.delete.useMutation({
+  const deleteMutation = trpc.networth.portfolioSnapshots.delete.useMutation({
     onSuccess: () => {
       utils.networth.computeSummary.invalidate();
       utils.networth.listHistory.invalidate();
@@ -336,7 +336,7 @@ export function PortfolioContent() {
               utils.networth.computeSummary.invalidate();
               utils.networth.listHistory.invalidate();
               utils.networth.listSnapshots.invalidate();
-              utils.settings.portfolioSnapshots.getLatest.invalidate();
+              utils.networth.portfolioSnapshots.getLatest.invalidate();
             }}
           />
         </SlidePanel>

@@ -1,7 +1,7 @@
 /**
  * Shared helper for pushing portfolio snapshot balances to a budget API
  * (YNAB / Actual). Single computation path used by:
- *   - settings.portfolioSnapshots.create (auto-push on new snapshot)
+ *   - networth.portfolioSnapshots.create (auto-push on new snapshot)
  *   - sync.pushPortfolioToApi             (manual push of latest)
  *   - sync.resyncSnapshot                  (re-push an existing snapshot)
  *

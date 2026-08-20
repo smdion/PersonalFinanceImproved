@@ -37,12 +37,6 @@ describe("settings router barrel export", () => {
     expect(Array.isArray(result)).toBe(true);
   });
 
-  it("exposes portfolioSnapshots sub-router", async () => {
-    const result = await caller.settings.portfolioSnapshots.getLatest();
-    // Fresh DB — no snapshots
-    expect(result).toBeNull();
-  });
-
   it("exposes getDataFreshness procedure", async () => {
     const result = await caller.settings.getDataFreshness();
     expect(result).toHaveProperty("balanceDate");

@@ -38,7 +38,7 @@ export function ContributionAccountsSettings() {
   const { data: perfAccounts } =
     trpc.performance.performanceAccounts.list.useQuery();
   const { data: latestSnap } =
-    trpc.settings.portfolioSnapshots.getLatest.useQuery();
+    trpc.networth.portfolioSnapshots.getLatest.useQuery();
 
   // Employer-match/auto-maximize fields on a contribution account are
   // profile-ownable (see contribAccountActiveFieldsSchema) — when a
