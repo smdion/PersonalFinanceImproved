@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
+## [0.7.6] - 2026-08-20
+
+### Fixed
+
+- **Contribution Profiles: the Method dropdown and the Value field's $/% now agree for an account with no method set yet.** Previously an unset method rendered the dropdown as "% of Salary" (its first option) while the $/% prefix on the Value field was computed from the actual (empty) stored method and showed "$" instead — so a blank row's dropdown and value field visibly disagreed, and the mismatch could also affect what got saved on first entry.
+- **The new-profile form now lets you set a Method and Value per account at creation time**, instead of only being settable afterward in the standing profile editor. Leaving Value blank still leaves that account unset, same as before.
+- Removed the Employer Match/Match Cap placeholder hints on the new-profile form that showed each account's own live match config — they read as pre-filled defaults rather than examples.
+
 ## [0.7.4] - Unreleased
 
 ### Changed (internal)
