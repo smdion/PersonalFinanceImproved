@@ -3,15 +3,27 @@ import {
   estimateEffectiveTaxRate,
   incomeCapForMarginalRate,
   computeTaxableSS,
-  estimateWithdrawalTaxCost,
+  computeTaxFromSlots,
 } from "@/lib/calculators/engine/tax-estimation";
 
-import {
-  makeDecumulationConfig,
-  makeAccountBalances,
-  makeTaxBuckets,
-  TEST_BRACKETS,
-} from "./fixtures/engine-fixtures";
+import { makeTaxBuckets, TEST_BRACKETS } from "./fixtures/engine-fixtures";
+import type { DecumulationSlot } from "@/lib/calculators/types";
+
+function makeSlot(
+  category: DecumulationSlot["category"],
+  overrides: Partial<DecumulationSlot> = {},
+): DecumulationSlot {
+  return {
+    category,
+    withdrawal: 0,
+    rothWithdrawal: 0,
+    traditionalWithdrawal: 0,
+    cappedByAccount: false,
+    cappedByTaxType: false,
+    remainingNeed: 0,
+    ...overrides,
+  };
+}
 
 describe("estimateEffectiveTaxRate", () => {
   it("returns 0 for zero income", () => {
@@ -145,196 +157,94 @@ describe("computeTaxableSS", () => {
   });
 });
 
-describe("estimateWithdrawalTaxCost", () => {
-  it("returns zero tax for zero after-tax need", () => {
-    const result = estimateWithdrawalTaxCost({
-      afterTaxNeed: 0,
-      ssIncome: 20000,
-      filingStatus: "MFJ",
-      config: makeDecumulationConfig({
-        withdrawalRoutingMode: "bracket_filling",
-      }),
-      taxRates: {
-        grossUpForTaxes: true,
-        traditionalFallbackRate: 0.15,
-        roth: 0,
-        hsa: 0,
-        brokerage: 0.15,
-        taxBrackets: TEST_BRACKETS,
-        rothBracketTarget: 0.22,
-      },
+describe("computeTaxFromSlots", () => {
+  const baseTaxRates = {
+    traditionalFallbackRate: 0.15,
+    roth: 0,
+    hsa: 0,
+    brokerage: 0.15,
+    taxBrackets: TEST_BRACKETS,
+  };
+
+  it("returns zero tax cost for empty slots", () => {
+    const result = computeTaxFromSlots({
+      slots: [],
+      taxableSS: 0,
       balances: makeTaxBuckets(),
-      acctBal: makeAccountBalances(),
-      totalBalance: 1050000,
-      estTraditionalPortion: 0.5,
+      taxRates: baseTaxRates,
+      filingStatus: "MFJ",
     });
-    expect(result.estTax).toBe(0);
-    expect(result.effectiveTaxRate).toBe(0);
-    expect(result.grossUpFactor).toBe(1);
-    expect(result.targetWithdrawal).toBe(0);
+    expect(result.taxCost).toBe(0);
+    expect(result.totalTraditionalWithdrawal).toBe(0);
   });
 
-  it("computes gross-up factor for bracket_filling mode", () => {
-    const result = estimateWithdrawalTaxCost({
-      afterTaxNeed: 60000,
-      ssIncome: 24000,
-      filingStatus: "MFJ",
-      config: makeDecumulationConfig({
-        withdrawalRoutingMode: "bracket_filling",
-      }),
-      taxRates: {
-        grossUpForTaxes: true,
-        traditionalFallbackRate: 0.15,
-        roth: 0,
-        hsa: 0,
-        brokerage: 0.15,
-        taxBrackets: TEST_BRACKETS,
-        rothBracketTarget: 0.22,
-      },
+  it("taxes a traditional withdrawal at the bracket-estimated rate", () => {
+    const slots = [
+      makeSlot("401k", { withdrawal: 25000, traditionalWithdrawal: 25000 }),
+    ];
+    const result = computeTaxFromSlots({
+      slots,
+      taxableSS: 0,
       balances: makeTaxBuckets(),
-      acctBal: makeAccountBalances(),
-      totalBalance: 1050000,
-      estTraditionalPortion: 0.5,
-    });
-    expect(result.grossUpFactor).toBeGreaterThanOrEqual(1);
-    expect(result.grossedUpNeed).toBeGreaterThanOrEqual(60000);
-    expect(result.targetWithdrawal).toBeGreaterThanOrEqual(60000);
-  });
-
-  it("caps target withdrawal at total balance", () => {
-    const result = estimateWithdrawalTaxCost({
-      afterTaxNeed: 500000,
-      ssIncome: 0,
+      taxRates: baseTaxRates,
       filingStatus: "MFJ",
-      config: makeDecumulationConfig({
-        withdrawalRoutingMode: "bracket_filling",
-      }),
-      taxRates: {
-        grossUpForTaxes: true,
-        traditionalFallbackRate: 0.15,
-        roth: 0,
-        hsa: 0,
-        brokerage: 0.15,
-        taxBrackets: TEST_BRACKETS,
-        rothBracketTarget: 0.22,
-      },
-      balances: makeTaxBuckets({
-        preTax: 100,
-        taxFree: 100,
-        hsa: 100,
-        afterTax: 100,
-        afterTaxBasis: 50,
-      }),
-      acctBal: makeAccountBalances({
-        preTax: 100,
-        taxFree: 100,
-        hsa: 100,
-        afterTax: 100,
-        afterTaxBasis: 50,
-      }),
-      totalBalance: 400,
-      estTraditionalPortion: 0.25,
     });
-    expect(result.targetWithdrawal).toBeLessThanOrEqual(400);
+    // Same bracket math as estimateEffectiveTaxRate's own pinned test:
+    // income 25000 -> effective rate ~0.0338
+    expect(result.actualTraditionalRate).toBeCloseTo(0.0338, 3);
+    expect(result.taxCost).toBeCloseTo(25000 * result.actualTraditionalRate, 2);
   });
 
-  it("disables gross-up when grossUpForTaxes is false", () => {
-    const result = estimateWithdrawalTaxCost({
-      afterTaxNeed: 60000,
-      ssIncome: 0,
+  it("splits brokerage withdrawal into basis (tax-free) and gains (taxed)", () => {
+    const slots = [makeSlot("brokerage", { withdrawal: 10000 })];
+    const result = computeTaxFromSlots({
+      slots,
+      taxableSS: 0,
+      // afterTax 100k, basis 40k -> 40% of any brokerage withdrawal is basis
+      balances: { afterTax: 100000, afterTaxBasis: 40000 },
+      taxRates: baseTaxRates,
+      filingStatus: null, // no filingStatus -> flat taxRates.brokerage rate
+    });
+    expect(result.brokerageBasisPortion).toBeCloseTo(4000, 2);
+    expect(result.brokerageGainsPortion).toBeCloseTo(6000, 2);
+    expect(result.brokerageTaxCost).toBeCloseTo(6000 * 0.15, 2);
+    expect(result.taxCost).toBeCloseTo(result.brokerageTaxCost, 2);
+  });
+
+  it("Roth and HSA withdrawals are tax-free by default", () => {
+    const slots = [
+      makeSlot("403b", { withdrawal: 10000, rothWithdrawal: 10000 }),
+      makeSlot("hsa", { withdrawal: 5000 }),
+    ];
+    const result = computeTaxFromSlots({
+      slots,
+      taxableSS: 0,
+      balances: makeTaxBuckets(),
+      taxRates: baseTaxRates,
+      filingStatus: "MFJ",
+    });
+    expect(result.taxCost).toBe(0);
+  });
+
+  it("sums traditional + roth + hsa + brokerage tax into one taxCost", () => {
+    const slots = [
+      makeSlot("401k", { withdrawal: 20000, traditionalWithdrawal: 20000 }),
+      makeSlot("403b", { withdrawal: 5000, rothWithdrawal: 5000 }),
+      makeSlot("brokerage", { withdrawal: 8000 }),
+    ];
+    const result = computeTaxFromSlots({
+      slots,
+      taxableSS: 0,
+      balances: { afterTax: 80000, afterTaxBasis: 0 }, // 0 basis -> all gains
+      taxRates: { ...baseTaxRates, roth: 0.1 },
       filingStatus: null,
-      config: makeDecumulationConfig({
-        withdrawalRoutingMode: "bracket_filling",
-      }),
-      taxRates: {
-        grossUpForTaxes: false,
-        traditionalFallbackRate: 0.15,
-        roth: 0,
-        hsa: 0,
-        brokerage: 0.15,
-        taxBrackets: TEST_BRACKETS,
-        rothBracketTarget: 0.22,
-      },
-      balances: makeTaxBuckets(),
-      acctBal: makeAccountBalances(),
-      totalBalance: 1050000,
-      estTraditionalPortion: 0.5,
     });
-    expect(result.grossUpFactor).toBe(1);
-  });
-
-  it("handles waterfall routing mode", () => {
-    const result = estimateWithdrawalTaxCost({
-      afterTaxNeed: 60000,
-      ssIncome: 24000,
-      filingStatus: "MFJ",
-      config: makeDecumulationConfig({ withdrawalRoutingMode: "waterfall" }),
-      taxRates: {
-        grossUpForTaxes: true,
-        traditionalFallbackRate: 0.15,
-        roth: 0,
-        hsa: 0,
-        brokerage: 0.15,
-        taxBrackets: TEST_BRACKETS,
-        rothBracketTarget: 0.22,
-      },
-      balances: makeTaxBuckets(),
-      acctBal: makeAccountBalances(),
-      totalBalance: 1050000,
-      estTraditionalPortion: 0.5,
-    });
-    expect(result.grossUpFactor).toBeGreaterThanOrEqual(1);
-    expect(result.targetWithdrawal).toBeGreaterThan(0);
-  });
-
-  it("handles percentage routing mode (fallback path)", () => {
-    const result = estimateWithdrawalTaxCost({
-      afterTaxNeed: 60000,
-      ssIncome: 24000,
-      filingStatus: "MFJ",
-      config: makeDecumulationConfig({ withdrawalRoutingMode: "percentage" }),
-      taxRates: {
-        grossUpForTaxes: true,
-        traditionalFallbackRate: 0.15,
-        roth: 0,
-        hsa: 0,
-        brokerage: 0.15,
-        taxBrackets: TEST_BRACKETS,
-        rothBracketTarget: 0.22,
-      },
-      balances: makeTaxBuckets(),
-      acctBal: makeAccountBalances(),
-      totalBalance: 1050000,
-      estTraditionalPortion: 0.5,
-    });
-    expect(result.grossUpFactor).toBeGreaterThanOrEqual(1);
-  });
-
-  it("runs SS convergence with filing status and SS income", () => {
-    // With filing status + SS income, should run 2 iterations
-    const result = estimateWithdrawalTaxCost({
-      afterTaxNeed: 60000,
-      ssIncome: 30000,
-      filingStatus: "MFJ",
-      config: makeDecumulationConfig({
-        withdrawalRoutingMode: "bracket_filling",
-      }),
-      taxRates: {
-        grossUpForTaxes: true,
-        traditionalFallbackRate: 0.15,
-        roth: 0,
-        hsa: 0,
-        brokerage: 0.15,
-        taxBrackets: TEST_BRACKETS,
-        rothBracketTarget: 0.22,
-      },
-      balances: makeTaxBuckets(),
-      acctBal: makeAccountBalances(),
-      totalBalance: 1050000,
-      estTraditionalPortion: 0.5,
-    });
-    // taxableSS should be computed via IRS formula (not flat 85%)
-    expect(result.taxableSS).toBeGreaterThanOrEqual(0);
-    expect(result.taxableSS).toBeLessThanOrEqual(30000 * 0.85);
+    const expectedTraditionalTax = 20000 * result.actualTraditionalRate;
+    const expectedRothTax = 5000 * 0.1;
+    const expectedBrokerageTax = 8000 * 0.15; // all gains, flat rate (no filingStatus)
+    expect(result.taxCost).toBeCloseTo(
+      expectedTraditionalTax + expectedRothTax + expectedBrokerageTax,
+      2,
+    );
   });
 });

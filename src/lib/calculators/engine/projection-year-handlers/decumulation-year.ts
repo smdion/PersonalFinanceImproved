@@ -6,16 +6,12 @@
  * v0.5.2 refactor. Pure relocation — no logic changes, behavior byte-identical.
  */
 import type {
-  DecumulationSlot,
   EngineDecumulationYear,
   IndividualAccountYearBalance,
 } from "../../types";
 import { roundToCents, sumBy } from "../../../utils/math";
 import {
   getAllCategories,
-  getAccountTypeConfig,
-  categoriesWithTaxPreference,
-  getDefaultDecumulationOrder,
   isOverflowTarget,
   isPortfolioParent,
 } from "../../../config/account-types";
@@ -25,17 +21,9 @@ import { getLtcgRate, computeLtcgTax } from "../../../config/tax-tables";
 import { computeNiit } from "../../../config/niit";
 import { resolveDecumulationConfig } from "../override-resolution";
 import { applyGrowth } from "../growth-application";
-import {
-  estimateEffectiveTaxRate,
-  incomeCapForMarginalRate,
-  computeTaxableSS,
-  estimateWithdrawalTaxCost,
-} from "../tax-estimation";
-import {
-  routeWithdrawals,
-  routeWithdrawalsPercentage,
-  routeWithdrawalsBracketFilling,
-} from "../withdrawal-routing";
+import { computeTaxableSS, computeTaxFromSlots } from "../tax-estimation";
+import { estimateWithdrawalTaxCost } from "../tax-gross-up";
+import { routeForMode } from "../withdrawal-routing";
 import { enforceRmd } from "../rmd-enforcement";
 import {
   performRothConversion,
@@ -160,7 +148,7 @@ export function runDecumulationYear(
   const estTraditionalPortion =
     totalBalance > 0 ? balances.preTax / totalBalance : 0;
 
-  // SS convergence + gross-up estimation (extracted to tax-estimation module)
+  // SS convergence + gross-up estimation (extracted to tax-gross-up module)
   const taxEst = estimateWithdrawalTaxCost({
     afterTaxNeed,
     ssIncome,
@@ -170,7 +158,6 @@ export function runDecumulationYear(
     balances,
     acctBal,
     totalBalance,
-    estTraditionalPortion,
   });
   let { taxableSS } = taxEst;
   let { grossUpFactor } = taxEst;
@@ -181,77 +168,22 @@ export function runDecumulationYear(
   const acctBalances = acctBal;
   const preWithdrawalAcctBal = cloneAccountBalances(acctBal);
 
-  // Route withdrawals based on configured mode.
+  // Route withdrawals based on configured mode -- single dispatch point
+  // shared with tax-gross-up.ts's estimate (routeForMode in
+  // withdrawal-routing.ts), so a routing-mode-specific rule (like the Roth
+  // bracket overlay below) can't diverge between the estimate and real
+  // execution.
   // bracket_filling: tax-optimal -- fills traditional up to bracket cap, Roth for rest
   // waterfall: sequential drain in priority order (legacy behavior)
   // percentage: fixed % split across accounts
   //
   // For waterfall/percentage, Roth bracket optimization can still overlay
   // via rothBracketTarget (sets a traditional tax-type cap).
-  let routeResult: {
-    slots: DecumulationSlot[];
-    warnings: string[];
-    traditionalCap?: number;
-    unmetNeed?: number;
-  };
-
-  if (config.withdrawalRoutingMode === "bracket_filling") {
-    routeResult = routeWithdrawalsBracketFilling(
-      targetWithdrawal,
-      config,
-      acctBalances,
-      {
-        taxBrackets: taxRates.taxBrackets,
-        rothBracketTarget: taxRates.rothBracketTarget,
-        taxableSS,
-      },
-    );
-  } else if (config.withdrawalRoutingMode === "percentage") {
-    routeResult = routeWithdrawalsPercentage(
-      targetWithdrawal,
-      config,
-      acctBalances,
-    );
-  } else {
-    // Waterfall mode -- apply Roth bracket optimization overlay if configured
-    const routeConfig = { ...config };
-    if (
-      taxRates.rothBracketTarget != null &&
-      taxRates.taxBrackets &&
-      taxRates.taxBrackets.length > 0
-    ) {
-      const incomeCap = incomeCapForMarginalRate(
-        taxRates.rothBracketTarget,
-        taxRates.taxBrackets,
-      );
-      const rothOptTraditionalCap = roundToCents(
-        Math.max(0, incomeCap - taxableSS),
-      );
-      if (rothOptTraditionalCap < Infinity) {
-        const existingTradCap = routeConfig.withdrawalTaxTypeCaps.traditional;
-        routeConfig.withdrawalTaxTypeCaps = {
-          ...routeConfig.withdrawalTaxTypeCaps,
-          traditional:
-            existingTradCap !== null
-              ? Math.min(rothOptTraditionalCap, existingTradCap)
-              : rothOptTraditionalCap,
-        };
-        // Set Roth-split categories to traditional preference for bracket optimization,
-        // but only where the user hasn't set an explicit preference (null = no preference).
-        const tradOverrides = Object.fromEntries(
-          categoriesWithTaxPreference()
-            .filter((cat) => routeConfig.withdrawalTaxPreference[cat] === null)
-            .map((cat) => [cat, "traditional" as const]),
-        );
-        routeConfig.withdrawalTaxPreference = {
-          ...routeConfig.withdrawalTaxPreference,
-          ...tradOverrides,
-        };
-        routeConfig.withdrawalOrder = getDefaultDecumulationOrder();
-      }
-    }
-    routeResult = routeWithdrawals(targetWithdrawal, routeConfig, acctBalances);
-  }
+  const routeResult = routeForMode(targetWithdrawal, config, acctBalances, {
+    taxBrackets: taxRates.taxBrackets,
+    rothBracketTarget: taxRates.rothBracketTarget,
+    taxableSS,
+  });
 
   const { slots, warnings: routeWarnings } = routeResult;
   if (rothDivergence) routeWarnings.push(rothDivergence);
@@ -319,58 +251,44 @@ export function runDecumulationYear(
     );
   }
 
-  // Calculate tax cost per withdrawal type using bracket-estimated traditional rate
-  const hsaWithdrawal =
-    slots.find(
-      (s) =>
-        getAccountTypeConfig(s.category).balanceStructure === "single_bucket",
-    )?.withdrawal ?? 0;
-  const brokerageSlot = slots.find((s) => isOverflowTarget(s.category));
-  const brokerageWithdrawal = brokerageSlot?.withdrawal ?? 0;
-  // Re-estimate traditional rate on actual withdrawal amount (more accurate than pre-routing estimate)
+  // Calculate tax cost per withdrawal type -- single source of truth shared
+  // with tax-gross-up.ts's estimate (Phase 5 item 5.3).
+  const taxFromSlots = computeTaxFromSlots({
+    slots,
+    taxableSS,
+    balances,
+    taxRates,
+    filingStatus,
+    // Pass the authoritative post-RMD totals rather than letting this
+    // re-derive from slots: rmd-enforcement.ts tracks
+    // totalTraditionalWithdrawal incrementally (running += then
+    // roundToCents), which isn't bit-for-bit identical to a fresh
+    // roundToCents(sumBy(slots, ...)) over the same mutated slots.
+    totalTraditionalWithdrawal,
+    totalRothWithdrawal,
+  });
+  let brokerageTaxCost = taxFromSlots.brokerageTaxCost;
+  const brokerageBasisPortion = taxFromSlots.brokerageBasisPortion;
+  const brokerageGainsPortion = taxFromSlots.brokerageGainsPortion;
+  const hsaWithdrawal = taxFromSlots.hsaWithdrawal;
+  const actualTraditionalRate = taxFromSlots.actualTraditionalRate;
   const actualTaxableIncome = totalTraditionalWithdrawal + taxableSS;
-  const actualTraditionalRate =
-    taxRates.taxBrackets && taxRates.taxBrackets.length > 0
-      ? estimateEffectiveTaxRate(
-          actualTaxableIncome,
-          taxRates.taxBrackets,
-          taxRates.taxMultiplier,
-        )
-      : taxRates.traditionalFallbackRate;
-
-  // Basis-aware brokerage tax: only gains portion is taxable
-  let brokerageTaxCost = 0;
-  let brokerageBasisPortion = 0;
-  let brokerageGainsPortion = 0;
-  if (brokerageWithdrawal > 0 && balances.afterTax > 0) {
-    const basisRatio = Math.min(1, balances.afterTaxBasis / balances.afterTax);
-    brokerageBasisPortion = roundToCents(brokerageWithdrawal * basisRatio);
-    brokerageGainsPortion = roundToCents(
-      brokerageWithdrawal - brokerageBasisPortion,
-    );
-    // Progressive LTCG tax: stack gains on top of ordinary income across 0%/15%/20% brackets
-    brokerageTaxCost = filingStatus
-      ? roundToCents(
-          computeLtcgTax(
-            actualTaxableIncome,
-            brokerageGainsPortion,
-            filingStatus,
-          ),
-        )
-      : roundToCents(brokerageGainsPortion * taxRates.brokerage);
-    // Annotate the slot with basis/gains breakdown
-    if (brokerageSlot) {
-      brokerageSlot.basisPortion = brokerageBasisPortion;
-      brokerageSlot.gainsPortion = brokerageGainsPortion;
-    }
+  // Annotate the brokerage slot with its basis/gains breakdown -- same gate
+  // computeTaxFromSlots uses internally to decide whether there's a real
+  // split to report (leaves the slot's basisPortion/gainsPortion undefined
+  // otherwise, matching the original inline logic, rather than annotating
+  // with 0/0).
+  const brokerageSlot = slots.find((s) => isOverflowTarget(s.category));
+  if (
+    brokerageSlot &&
+    taxFromSlots.brokerageWithdrawal > 0 &&
+    balances.afterTax > 0
+  ) {
+    brokerageSlot.basisPortion = brokerageBasisPortion;
+    brokerageSlot.gainsPortion = brokerageGainsPortion;
   }
 
-  let taxCost = roundToCents(
-    totalTraditionalWithdrawal * actualTraditionalRate +
-      totalRothWithdrawal * taxRates.roth +
-      hsaWithdrawal * taxRates.hsa +
-      brokerageTaxCost,
-  );
+  let taxCost = taxFromSlots.taxCost;
 
   // Recompute grossUpFactor post-RMD for accurate diagnostics (#45).
   // Pre-RMD estimate may understate tax when RMD forces additional Traditional withdrawals.

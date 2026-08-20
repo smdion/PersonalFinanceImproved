@@ -23,6 +23,7 @@ import {
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
+  getDefaultDecumulationOrder,
 } from "../../config/account-types";
 import { incomeCapForMarginalRate } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
@@ -545,4 +546,106 @@ export function routeWithdrawalsBracketFilling(
     traditionalCap,
     unmetNeed: remaining > 0 ? remaining : undefined,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Mode dispatch — single entry point so real execution and tax-gross-up.ts's
+// estimate can never route differently for the same inputs (Phase 5 item 5.3).
+// ---------------------------------------------------------------------------
+
+export interface RouteBracketInfo {
+  taxBrackets?: WithholdingBracket[];
+  rothBracketTarget?: number;
+  taxableSS: number;
+}
+
+export type RouteResult = {
+  slots: DecumulationSlot[];
+  warnings: string[];
+  traditionalCap?: number;
+  unmetNeed?: number;
+};
+
+/**
+ * Apply the Roth-bracket-optimization overlay to a waterfall config: caps
+ * cross-account traditional withdrawals at the income level that keeps the
+ * target marginal bracket, and forces traditional preference on Roth-split
+ * categories the user hasn't explicitly set a preference on. No-op (returns
+ * the same config) when no rothBracketTarget is configured or there's no
+ * bracket data to compute a cap from.
+ */
+export function applyRothBracketOverlay(
+  config: ResolvedDecumulationConfig,
+  bracketInfo: RouteBracketInfo,
+): ResolvedDecumulationConfig {
+  if (
+    bracketInfo.rothBracketTarget == null ||
+    !bracketInfo.taxBrackets ||
+    bracketInfo.taxBrackets.length === 0
+  ) {
+    return config;
+  }
+  const incomeCap = incomeCapForMarginalRate(
+    bracketInfo.rothBracketTarget,
+    bracketInfo.taxBrackets,
+  );
+  const rothOptTraditionalCap = roundToCents(
+    Math.max(0, incomeCap - bracketInfo.taxableSS),
+  );
+  // Written as a negation of "< Infinity" (not ">= Infinity") so a NaN cap
+  // (shouldn't happen, but taxableSS/incomeCap are computed values) takes
+  // the same no-overlay path as the original inline logic did — NaN
+  // comparisons are always false either way, but ">=" would silently flip
+  // which branch that lands on.
+  if (!(rothOptTraditionalCap < Infinity)) return config;
+
+  const existingTradCap = config.withdrawalTaxTypeCaps.traditional;
+  const tradOverrides = Object.fromEntries(
+    categoriesWithTaxPreference()
+      .filter((cat) => config.withdrawalTaxPreference[cat] === null)
+      .map((cat) => [cat, "traditional" as const]),
+  );
+  return {
+    ...config,
+    withdrawalTaxTypeCaps: {
+      ...config.withdrawalTaxTypeCaps,
+      traditional:
+        existingTradCap !== null
+          ? Math.min(rothOptTraditionalCap, existingTradCap)
+          : rothOptTraditionalCap,
+    },
+    withdrawalTaxPreference: {
+      ...config.withdrawalTaxPreference,
+      ...tradOverrides,
+    },
+    withdrawalOrder: getDefaultDecumulationOrder(),
+  };
+}
+
+/**
+ * Route a withdrawal using whichever mode config.withdrawalRoutingMode
+ * selects — the single dispatch point both the real decumulation-year
+ * execution and tax-gross-up.ts's estimate call, so a routing-mode-specific
+ * rule (like the Roth-bracket overlay) can't be applied in one path and
+ * forgotten in the other.
+ */
+export function routeForMode(
+  targetWithdrawal: number,
+  config: ResolvedDecumulationConfig,
+  balances: AccountBalances,
+  bracketInfo: RouteBracketInfo,
+): RouteResult {
+  if (config.withdrawalRoutingMode === "bracket_filling") {
+    return routeWithdrawalsBracketFilling(targetWithdrawal, config, balances, {
+      taxBrackets: bracketInfo.taxBrackets,
+      rothBracketTarget: bracketInfo.rothBracketTarget,
+      taxableSS: bracketInfo.taxableSS,
+    });
+  }
+  if (config.withdrawalRoutingMode === "percentage") {
+    return routeWithdrawalsPercentage(targetWithdrawal, config, balances);
+  }
+  // Waterfall mode — apply Roth bracket optimization overlay if configured.
+  const routeConfig = applyRothBracketOverlay(config, bracketInfo);
+  return routeWithdrawals(targetWithdrawal, routeConfig, balances);
 }
