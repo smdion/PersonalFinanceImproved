@@ -571,6 +571,7 @@ Each page owns its domain data. Users should never have to leave a page to confi
 - **People** (name, DOB) — foundational identity used across all pages
 - **IRS Limits** — yearly reference data (401k/IRA/HSA caps, FICA rates, standard deductions)
 - **Tax Brackets** — yearly, multi-filing-status reference data
+- **Return Rates** (age-based expected rate of return) — reference/assumption data feeding projections broadly, not a single page's user-editable setting, despite superficially reading like the "Retirement ages, rates, scenarios" row above
 
 These are true cross-cutting reference data that no single page owns.
 
