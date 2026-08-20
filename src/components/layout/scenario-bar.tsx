@@ -14,6 +14,7 @@ import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useClickOutside } from "@/lib/hooks/use-click-outside";
 
 export function ScenarioBar() {
   const {
@@ -40,7 +41,10 @@ export function ScenarioBar() {
     null,
   );
   const [newName, setNewName] = useState("");
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useClickOutside<HTMLDivElement>(() => {
+    setDropdownOpen(false);
+    setCreating(null);
+  });
   const inputRef = useRef<HTMLInputElement>(null);
 
   const createMut = trpc.settings.scenarios.create.useMutation();
@@ -179,21 +183,6 @@ export function ScenarioBar() {
       setActiveSalaryId(id);
     }
   };
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
-        setDropdownOpen(false);
-        setCreating(null);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
 
   // Focus input when creating
   useEffect(() => {
