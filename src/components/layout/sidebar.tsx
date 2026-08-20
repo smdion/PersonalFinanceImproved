@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { Button } from "@/components/ui/button";
 import { DataFreshness } from "./data-freshness";
 import { signOut } from "next-auth/react";
 import {
@@ -430,16 +431,18 @@ export function Sidebar({
                 v{process.env.APP_VERSION}
               </span>
             )}
-          <button
+          <Button
+            variant="ghost"
+            size="xs"
             onClick={onToggleCollapse}
-            className="p-1 text-faint hover:text-primary transition-colors"
+            className="!p-1"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <ChevronsLeft
               className={`w-4 h-4 transition-transform duration-200 ${collapsed ? "rotate-180" : ""}`}
             />
-          </button>
+          </Button>
         </div>
       </aside>
     </>
