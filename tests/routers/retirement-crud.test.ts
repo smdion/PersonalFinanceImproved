@@ -1,12 +1,16 @@
 /**
- * Settings/retirement router integration tests.
+ * Retirement router CRUD integration tests.
  *
  * Tests CRUD operations for:
- *   - settings.retirementSettings (list / upsert)
- *   - settings.retirementSalaryOverrides (list / create / update / delete)
- *   - settings.retirementBudgetOverrides (list / create / update / delete)
- *   - settings.retirementScenarios (list / create / update / delete)
- *   - settings.returnRates (list / upsert / delete)
+ *   - retirement.retirementSettings (list / upsert)
+ *   - retirement.retirementSalaryOverrides (list / create / update / delete)
+ *   - retirement.retirementBudgetOverrides (list / create / update / delete)
+ *   - retirement.retirementScenarios (list / create / update / delete)
+ *   - retirement.returnRates (list / upsert / delete)
+ *
+ * Moved from routers/settings/retirement.ts to routers/retirement.ts (audit
+ * Batch 11 Finding 1 — page-ownership rule, RULES.md's "Settings Belong on
+ * Their Pages") — this file moved alongside it (2026-08-20).
  */
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -26,7 +30,7 @@ vi.mock("@/lib/budget-api", () => ({
 // RETIREMENT SETTINGS
 // ---------------------------------------------------------------------------
 
-describe("settings.retirementSettings", () => {
+describe("retirement.retirementSettings", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: Awaited<ReturnType<typeof createTestCaller>>["db"];
   let cleanup: () => void;
@@ -53,7 +57,7 @@ describe("settings.retirementSettings", () => {
 
   describe("list", () => {
     it("returns empty array initially", async () => {
-      const rows = await caller.settings.retirementSettings.list();
+      const rows = await caller.retirement.retirementSettings.list();
       expect(Array.isArray(rows)).toBe(true);
       expect(rows).toHaveLength(0);
     });
@@ -62,7 +66,7 @@ describe("settings.retirementSettings", () => {
   describe("upsert (insert)", () => {
     it("inserts retirement settings for a person", async () => {
       const result =
-        await caller.settings.retirementSettings.upsert(baseSettings());
+        await caller.retirement.retirementSettings.upsert(baseSettings());
       expect(result).toBeDefined();
       expect(result!.personId).toBe(personId);
       expect(result!.retirementAge).toBe(65);
@@ -70,7 +74,7 @@ describe("settings.retirementSettings", () => {
     });
 
     it("list returns the inserted settings", async () => {
-      const rows = await caller.settings.retirementSettings.list();
+      const rows = await caller.retirement.retirementSettings.list();
       expect(rows).toHaveLength(1);
       expect(rows[0]!.personId).toBe(personId);
     });
@@ -78,7 +82,7 @@ describe("settings.retirementSettings", () => {
 
   describe("upsert (update)", () => {
     it("updates existing settings for the same person", async () => {
-      const result = await caller.settings.retirementSettings.upsert({
+      const result = await caller.retirement.retirementSettings.upsert({
         ...baseSettings(),
         retirementAge: 60,
         endAge: 90,
@@ -90,14 +94,14 @@ describe("settings.retirementSettings", () => {
     });
 
     it("still only one row after update", async () => {
-      const rows = await caller.settings.retirementSettings.list();
+      const rows = await caller.retirement.retirementSettings.list();
       expect(rows).toHaveLength(1);
     });
   });
 
   describe("upsert with optional fields", () => {
     it("accepts all optional fields", async () => {
-      const result = await caller.settings.retirementSettings.upsert({
+      const result = await caller.retirement.retirementSettings.upsert({
         ...baseSettings(),
         postRetirementInflation: "0.025",
         salaryCap: "200000",
@@ -120,7 +124,7 @@ describe("settings.retirementSettings", () => {
       const { caller: viewerCaller, cleanup: vc } =
         await createTestCaller(viewerSession);
       try {
-        const rows = await viewerCaller.settings.retirementSettings.list();
+        const rows = await viewerCaller.retirement.retirementSettings.list();
         expect(Array.isArray(rows)).toBe(true);
       } finally {
         vc();
@@ -132,7 +136,7 @@ describe("settings.retirementSettings", () => {
         await createTestCaller(viewerSession);
       try {
         await expect(
-          viewerCaller.settings.retirementSettings.upsert(baseSettings()),
+          viewerCaller.retirement.retirementSettings.upsert(baseSettings()),
         ).rejects.toThrow();
       } finally {
         vc();
@@ -145,7 +149,7 @@ describe("settings.retirementSettings", () => {
 // RETIREMENT SALARY OVERRIDES
 // ---------------------------------------------------------------------------
 
-describe("settings.retirementSalaryOverrides", () => {
+describe("retirement.retirementSalaryOverrides", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: Awaited<ReturnType<typeof createTestCaller>>["db"];
   let cleanup: () => void;
@@ -165,12 +169,12 @@ describe("settings.retirementSalaryOverrides", () => {
     let overrideId: number;
 
     it("list is empty initially", async () => {
-      const rows = await caller.settings.retirementSalaryOverrides.list();
+      const rows = await caller.retirement.retirementSalaryOverrides.list();
       expect(rows).toHaveLength(0);
     });
 
     it("creates a salary override", async () => {
-      const created = await caller.settings.retirementSalaryOverrides.create({
+      const created = await caller.retirement.retirementSalaryOverrides.create({
         personId,
         projectionYear: 2030,
         overrideSalary: "150000",
@@ -184,24 +188,24 @@ describe("settings.retirementSalaryOverrides", () => {
     });
 
     it("creates a second override for a different year", async () => {
-      await caller.settings.retirementSalaryOverrides.create({
+      await caller.retirement.retirementSalaryOverrides.create({
         personId,
         projectionYear: 2035,
         overrideSalary: "180000",
       });
-      const rows = await caller.settings.retirementSalaryOverrides.list();
+      const rows = await caller.retirement.retirementSalaryOverrides.list();
       expect(rows.length).toBe(2);
     });
 
     it("list returns overrides ordered by projectionYear", async () => {
-      const rows = await caller.settings.retirementSalaryOverrides.list();
+      const rows = await caller.retirement.retirementSalaryOverrides.list();
       expect(rows[0]!.projectionYear).toBeLessThanOrEqual(
         rows[1]!.projectionYear,
       );
     });
 
     it("updates a salary override", async () => {
-      const updated = await caller.settings.retirementSalaryOverrides.update({
+      const updated = await caller.retirement.retirementSalaryOverrides.update({
         id: overrideId,
         personId,
         projectionYear: 2030,
@@ -213,10 +217,10 @@ describe("settings.retirementSalaryOverrides", () => {
     });
 
     it("deletes a salary override", async () => {
-      await caller.settings.retirementSalaryOverrides.delete({
+      await caller.retirement.retirementSalaryOverrides.delete({
         id: overrideId,
       });
-      const rows = await caller.settings.retirementSalaryOverrides.list();
+      const rows = await caller.retirement.retirementSalaryOverrides.list();
       expect(rows.every((r) => r.id !== overrideId)).toBe(true);
     });
   });
@@ -226,7 +230,7 @@ describe("settings.retirementSalaryOverrides", () => {
 // RETIREMENT BUDGET OVERRIDES
 // ---------------------------------------------------------------------------
 
-describe("settings.retirementBudgetOverrides", () => {
+describe("retirement.retirementBudgetOverrides", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: Awaited<ReturnType<typeof createTestCaller>>["db"];
   let cleanup: () => void;
@@ -246,12 +250,12 @@ describe("settings.retirementBudgetOverrides", () => {
     let overrideId: number;
 
     it("list is empty initially", async () => {
-      const rows = await caller.settings.retirementBudgetOverrides.list();
+      const rows = await caller.retirement.retirementBudgetOverrides.list();
       expect(rows).toHaveLength(0);
     });
 
     it("creates a budget override", async () => {
-      const created = await caller.settings.retirementBudgetOverrides.create({
+      const created = await caller.retirement.retirementBudgetOverrides.create({
         personId,
         projectionYear: 2032,
         overrideMonthlyBudget: "5000",
@@ -264,12 +268,12 @@ describe("settings.retirementBudgetOverrides", () => {
     });
 
     it("list returns created overrides", async () => {
-      const rows = await caller.settings.retirementBudgetOverrides.list();
+      const rows = await caller.retirement.retirementBudgetOverrides.list();
       expect(rows.length).toBe(1);
     });
 
     it("updates a budget override", async () => {
-      const updated = await caller.settings.retirementBudgetOverrides.update({
+      const updated = await caller.retirement.retirementBudgetOverrides.update({
         id: overrideId,
         personId,
         projectionYear: 2032,
@@ -281,10 +285,10 @@ describe("settings.retirementBudgetOverrides", () => {
     });
 
     it("deletes a budget override", async () => {
-      await caller.settings.retirementBudgetOverrides.delete({
+      await caller.retirement.retirementBudgetOverrides.delete({
         id: overrideId,
       });
-      const rows = await caller.settings.retirementBudgetOverrides.list();
+      const rows = await caller.retirement.retirementBudgetOverrides.list();
       expect(rows).toHaveLength(0);
     });
   });
@@ -294,7 +298,7 @@ describe("settings.retirementBudgetOverrides", () => {
 // RETIREMENT SCENARIOS
 // ---------------------------------------------------------------------------
 
-describe("settings.retirementScenarios", () => {
+describe("retirement.retirementScenarios", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let cleanup: () => void;
 
@@ -310,12 +314,12 @@ describe("settings.retirementScenarios", () => {
     let scenarioId: number;
 
     it("list is empty initially", async () => {
-      const rows = await caller.settings.retirementScenarios.list();
+      const rows = await caller.retirement.retirementScenarios.list();
       expect(rows).toHaveLength(0);
     });
 
     it("creates a scenario", async () => {
-      const created = await caller.settings.retirementScenarios.create({
+      const created = await caller.retirement.retirementScenarios.create({
         name: "Conservative",
         withdrawalRate: "0.035",
         targetAnnualIncome: "70000",
@@ -330,7 +334,7 @@ describe("settings.retirementScenarios", () => {
     });
 
     it("creates a second scenario with custom tax rates", async () => {
-      const created = await caller.settings.retirementScenarios.create({
+      const created = await caller.retirement.retirementScenarios.create({
         name: "Aggressive",
         withdrawalRate: "0.05",
         targetAnnualIncome: "100000",
@@ -348,13 +352,13 @@ describe("settings.retirementScenarios", () => {
     });
 
     it("list returns both scenarios ordered by id", async () => {
-      const rows = await caller.settings.retirementScenarios.list();
+      const rows = await caller.retirement.retirementScenarios.list();
       expect(rows.length).toBe(2);
       expect(rows[0]!.id).toBeLessThan(rows[1]!.id);
     });
 
     it("updates a scenario", async () => {
-      const updated = await caller.settings.retirementScenarios.update({
+      const updated = await caller.retirement.retirementScenarios.update({
         id: scenarioId,
         name: "Moderate Conservative",
         withdrawalRate: "0.038",
@@ -368,8 +372,8 @@ describe("settings.retirementScenarios", () => {
     });
 
     it("deletes a scenario", async () => {
-      await caller.settings.retirementScenarios.delete({ id: scenarioId });
-      const rows = await caller.settings.retirementScenarios.list();
+      await caller.retirement.retirementScenarios.delete({ id: scenarioId });
+      const rows = await caller.retirement.retirementScenarios.list();
       expect(rows.every((r) => r.id !== scenarioId)).toBe(true);
     });
   });
@@ -379,7 +383,7 @@ describe("settings.retirementScenarios", () => {
 // RETURN RATES
 // ---------------------------------------------------------------------------
 
-describe("settings.returnRates", () => {
+describe("retirement.returnRates", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let cleanup: () => void;
 
@@ -393,12 +397,12 @@ describe("settings.returnRates", () => {
 
   describe("CRUD", () => {
     it("list is empty initially", async () => {
-      const rows = await caller.settings.returnRates.list();
+      const rows = await caller.retirement.returnRates.list();
       expect(rows).toHaveLength(0);
     });
 
     it("upsert inserts a new return rate", async () => {
-      const result = await caller.settings.returnRates.upsert({
+      const result = await caller.retirement.returnRates.upsert({
         age: 30,
         rateOfReturn: "0.08",
       });
@@ -408,36 +412,36 @@ describe("settings.returnRates", () => {
     });
 
     it("upsert inserts a second rate for a different age", async () => {
-      await caller.settings.returnRates.upsert({
+      await caller.retirement.returnRates.upsert({
         age: 60,
         rateOfReturn: "0.05",
       });
-      const rows = await caller.settings.returnRates.list();
+      const rows = await caller.retirement.returnRates.list();
       expect(rows.length).toBe(2);
     });
 
     it("list returns rates ordered by age", async () => {
-      const rows = await caller.settings.returnRates.list();
+      const rows = await caller.retirement.returnRates.list();
       expect(rows[0]!.age).toBeLessThan(rows[1]!.age);
     });
 
     it("upsert updates an existing rate for the same age", async () => {
-      const result = await caller.settings.returnRates.upsert({
+      const result = await caller.retirement.returnRates.upsert({
         age: 30,
         rateOfReturn: "0.07",
       });
       expect(result!.rateOfReturn).toBe("0.07");
 
       // Still only two rows
-      const rows = await caller.settings.returnRates.list();
+      const rows = await caller.retirement.returnRates.list();
       expect(rows.length).toBe(2);
     });
 
     it("deletes a return rate by id", async () => {
-      const rows = await caller.settings.returnRates.list();
+      const rows = await caller.retirement.returnRates.list();
       const target = rows.find((r) => r.age === 60)!;
-      await caller.settings.returnRates.delete({ id: target.id });
-      const afterRows = await caller.settings.returnRates.list();
+      await caller.retirement.returnRates.delete({ id: target.id });
+      const afterRows = await caller.retirement.returnRates.list();
       expect(afterRows.length).toBe(1);
       expect(afterRows[0]!.age).toBe(30);
     });
@@ -448,7 +452,7 @@ describe("settings.returnRates", () => {
       const { caller: viewerCaller, cleanup: vc } =
         await createTestCaller(viewerSession);
       try {
-        const rows = await viewerCaller.settings.returnRates.list();
+        const rows = await viewerCaller.retirement.returnRates.list();
         expect(Array.isArray(rows)).toBe(true);
       } finally {
         vc();
@@ -460,7 +464,7 @@ describe("settings.returnRates", () => {
         await createTestCaller(viewerSession);
       try {
         await expect(
-          viewerCaller.settings.returnRates.upsert({
+          viewerCaller.retirement.returnRates.upsert({
             age: 40,
             rateOfReturn: "0.06",
           }),

@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**327 procedures across 38 routers.**
+**327 procedures across 37 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -246,9 +246,29 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `retirement`
 
-| Procedure                   | Kind  | Auth                 | Description      |
-| --------------------------- | ----- | -------------------- | ---------------- |
-| `computeRelocationAnalysis` | query | `protectedProcedure` | (no description) |
+| Procedure                   | Kind     | Auth                 | Description      |
+| --------------------------- | -------- | -------------------- | ---------------- |
+| `clear`                     | mutation | `brokerageProcedure` | (no description) |
+| `computeRelocationAnalysis` | query    | `protectedProcedure` | (no description) |
+| `create`                    | mutation | `adminProcedure`     | (no description) |
+| `create`                    | mutation | `adminProcedure`     | (no description) |
+| `create`                    | mutation | `adminProcedure`     | (no description) |
+| `delete`                    | mutation | `adminProcedure`     | (no description) |
+| `delete`                    | mutation | `adminProcedure`     | (no description) |
+| `delete`                    | mutation | `adminProcedure`     | (no description) |
+| `delete`                    | mutation | `adminProcedure`     | (no description) |
+| `get`                       | query    | `protectedProcedure` | (no description) |
+| `list`                      | query    | `protectedProcedure` | (no description) |
+| `list`                      | query    | `protectedProcedure` | (no description) |
+| `list`                      | query    | `protectedProcedure` | (no description) |
+| `list`                      | query    | `protectedProcedure` | (no description) |
+| `list`                      | query    | `protectedProcedure` | (no description) |
+| `save`                      | mutation | `brokerageProcedure` | (no description) |
+| `update`                    | mutation | `adminProcedure`     | (no description) |
+| `update`                    | mutation | `adminProcedure`     | (no description) |
+| `update`                    | mutation | `adminProcedure`     | (no description) |
+| `upsert`                    | mutation | `adminProcedure`     | (no description) |
+| `upsert`                    | mutation | `adminProcedure`     | (no description) |
 
 ## `salary-profiles`
 
@@ -371,31 +391,6 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `update`             | mutation | `adminProcedure`     | (no description)               |
 | `update`             | mutation | `adminProcedure`     | (no description)               |
 | `update`             | mutation | `adminProcedure`     | (no description)               |
-
-## `settings/retirement`
-
-| Procedure | Kind     | Auth                 | Description      |
-| --------- | -------- | -------------------- | ---------------- |
-| `clear`   | mutation | `brokerageProcedure` | (no description) |
-| `create`  | mutation | `adminProcedure`     | (no description) |
-| `create`  | mutation | `adminProcedure`     | (no description) |
-| `create`  | mutation | `adminProcedure`     | (no description) |
-| `delete`  | mutation | `adminProcedure`     | (no description) |
-| `delete`  | mutation | `adminProcedure`     | (no description) |
-| `delete`  | mutation | `adminProcedure`     | (no description) |
-| `delete`  | mutation | `adminProcedure`     | (no description) |
-| `get`     | query    | `protectedProcedure` | (no description) |
-| `list`    | query    | `protectedProcedure` | (no description) |
-| `list`    | query    | `protectedProcedure` | (no description) |
-| `list`    | query    | `protectedProcedure` | (no description) |
-| `list`    | query    | `protectedProcedure` | (no description) |
-| `list`    | query    | `protectedProcedure` | (no description) |
-| `save`    | mutation | `brokerageProcedure` | (no description) |
-| `update`  | mutation | `adminProcedure`     | (no description) |
-| `update`  | mutation | `adminProcedure`     | (no description) |
-| `update`  | mutation | `adminProcedure`     | (no description) |
-| `upsert`  | mutation | `adminProcedure`     | (no description) |
-| `upsert`  | mutation | `adminProcedure`     | (no description) |
 
 ## `settings/tax-limits`
 

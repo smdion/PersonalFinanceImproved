@@ -47,16 +47,15 @@ export function BrokerageContent() {
     null,
   );
   // Brokerage planned events (persisted to DB)
-  const brokerageLumpQuery = trpc.settings.projectionOverrides.get.useQuery({
+  const brokerageLumpQuery = trpc.retirement.projectionOverrides.get.useQuery({
     overrideType: "brokerage",
   });
-  const saveBrokerageLumps = trpc.settings.projectionOverrides.save.useMutation(
-    {
+  const saveBrokerageLumps =
+    trpc.retirement.projectionOverrides.save.useMutation({
       onSuccess: () => utils.brokerage.invalidate(),
-    },
-  );
+    });
   const clearBrokerageLumps =
-    trpc.settings.projectionOverrides.clear.useMutation({
+    trpc.retirement.projectionOverrides.clear.useMutation({
       onSuccess: () => utils.brokerage.invalidate(),
     });
   const [brokerageTouched, setBrokerageTouched] = useState(false);
