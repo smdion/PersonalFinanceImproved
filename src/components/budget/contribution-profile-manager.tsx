@@ -1275,7 +1275,16 @@ function ProfileInlineEditor({
                   af.contributionMethod !== undefined
                     ? String(af.contributionMethod)
                     : "";
-                const isPercent = storedMethod === "percent_of_salary";
+                // The <select> below has no blank option, so an unset
+                // storedMethod renders as the first CONTRIBUTION_METHOD_LABELS
+                // entry ("% of Salary") regardless of what this variable says.
+                // Fall back the same way here (and to any in-progress draft
+                // pick) so the $/% prefix-suffix always matches what the
+                // dropdown is actually showing.
+                const effectiveMethod =
+                  drafts[`a${ad.id}:method`] ??
+                  (storedMethod || "percent_of_salary");
+                const isPercent = effectiveMethod === "percent_of_salary";
                 const fmtValue = (v: string | null | undefined) => {
                   if (!v) return "—";
                   const n = parseFloat(v);
@@ -1355,7 +1364,7 @@ function ProfileInlineEditor({
                     </td>
                     <td className="py-1.5 px-3">
                       <select
-                        value={drafts[`a${ad.id}:method`] ?? storedMethod}
+                        value={effectiveMethod}
                         onChange={(e) => {
                           const val = e.target.value;
                           if (storedValue.trim() !== "") {
@@ -1410,10 +1419,7 @@ function ProfileInlineEditor({
                                   // along with it in the same patch.
                                   patchAccount(ad.id, {
                                     contributionValue: value,
-                                    contributionMethod:
-                                      drafts[`a${ad.id}:method`] ??
-                                      storedMethod ??
-                                      "percent_of_salary",
+                                    contributionMethod: effectiveMethod,
                                   });
                                   clearDraft(`a${ad.id}:method`);
                                 } else {
