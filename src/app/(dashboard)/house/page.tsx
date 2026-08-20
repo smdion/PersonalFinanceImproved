@@ -15,6 +15,7 @@ import { safeDivide } from "@/lib/utils/math";
 import { Lock, LockOpen } from "lucide-react";
 import { SyncBadge } from "@/components/ui/sync-badge";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
+import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
 
 export default function HousePage() {
   const targeting = useYearEndTargetingInput();
@@ -32,8 +33,7 @@ export default function HousePage() {
   const [newHIDesc, setNewHIDesc] = useState("");
   const [newHICost, setNewHICost] = useState("");
   const [editingHI, setEditingHI] = useState<number | null>(null);
-  const [editHIDesc, setEditHIDesc] = useState("");
-  const [editHICost, setEditHICost] = useState("");
+  const { drafts: hiDraft, setDraft: setHIDraft } = useDraftCommit();
 
   // Property tax form state
   const [addingTax, setAddingTax] = useState(false);
@@ -43,9 +43,7 @@ export default function HousePage() {
   const [taxNote, setTaxNote] = useState("");
   const [editingTax, setEditingTax] = useState<number | null>(null);
   const [taxLocked, setTaxLocked] = useState(true);
-  const [editTaxAssessed, setEditTaxAssessed] = useState("");
-  const [editTaxAmount, setEditTaxAmount] = useState("");
-  const [editTaxNote, setEditTaxNote] = useState("");
+  const { drafts: taxDraft, setDraft: setTaxDraft } = useDraftCommit();
 
   const invalidateAll = () => {
     utils.assets.invalidate();
@@ -407,8 +405,10 @@ export default function HousePage() {
                     <td className="py-1.5 text-right">
                       <input
                         type="number"
-                        value={editTaxAssessed}
-                        onChange={(e) => setEditTaxAssessed(e.target.value)}
+                        value={taxDraft.assessed ?? ""}
+                        onChange={(e) =>
+                          setTaxDraft("assessed", e.target.value)
+                        }
                         className="w-28 px-2 py-0.5 text-xs text-right border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
                         placeholder="Assessed Value"
                       />
@@ -416,8 +416,8 @@ export default function HousePage() {
                     <td className="py-1.5 text-right">
                       <input
                         type="number"
-                        value={editTaxAmount}
-                        onChange={(e) => setEditTaxAmount(e.target.value)}
+                        value={taxDraft.amount ?? ""}
+                        onChange={(e) => setTaxDraft("amount", e.target.value)}
                         className="w-24 px-2 py-0.5 text-xs text-right border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
                         autoFocus
                       />
@@ -426,8 +426,8 @@ export default function HousePage() {
                     <td className="py-1.5">
                       <input
                         type="text"
-                        value={editTaxNote}
-                        onChange={(e) => setEditTaxNote(e.target.value)}
+                        value={taxDraft.note ?? ""}
+                        onChange={(e) => setTaxDraft("note", e.target.value)}
                         className="w-full px-2 py-0.5 text-xs border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
                         placeholder="Note"
                       />
@@ -436,19 +436,20 @@ export default function HousePage() {
                       <Button
                         size="xs"
                         onClick={() => {
-                          if (editTaxAmount && loanId) {
+                          const amount = taxDraft.amount ?? "";
+                          if (amount && loanId) {
                             upsertTaxMutation.mutate({
                               loanId,
                               year: pt.year,
-                              assessedValue: editTaxAssessed
-                                ? Number(editTaxAssessed)
+                              assessedValue: taxDraft.assessed
+                                ? Number(taxDraft.assessed)
                                 : null,
-                              taxAmount: Number(editTaxAmount),
-                              note: editTaxNote || null,
+                              taxAmount: Number(amount),
+                              note: taxDraft.note || null,
                             });
                           }
                         }}
-                        disabled={!editTaxAmount}
+                        disabled={!taxDraft.amount}
                       >
                         Save
                       </Button>
@@ -467,13 +468,14 @@ export default function HousePage() {
                     onClick={() => {
                       if (taxLocked) return;
                       setEditingTax(pt.id);
-                      setEditTaxAssessed(
+                      setTaxDraft(
+                        "assessed",
                         pt.assessedValue != null
                           ? String(pt.assessedValue)
                           : "",
                       );
-                      setEditTaxAmount(String(pt.taxAmount));
-                      setEditTaxNote(pt.note ?? "");
+                      setTaxDraft("amount", String(pt.taxAmount));
+                      setTaxDraft("note", pt.note ?? "");
                     }}
                   >
                     <td className="py-1.5 font-medium">{pt.year}</td>
@@ -627,29 +629,31 @@ export default function HousePage() {
                     >
                       <input
                         type="text"
-                        value={editHIDesc}
-                        onChange={(e) => setEditHIDesc(e.target.value)}
+                        value={hiDraft.desc ?? ""}
+                        onChange={(e) => setHIDraft("desc", e.target.value)}
                         className="flex-1 px-2 py-0.5 text-xs border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
                         autoFocus
                       />
                       <input
                         type="number"
-                        value={editHICost}
-                        onChange={(e) => setEditHICost(e.target.value)}
+                        value={hiDraft.cost ?? ""}
+                        onChange={(e) => setHIDraft("cost", e.target.value)}
                         className="w-24 px-2 py-0.5 text-xs text-right border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
                       />
                       <Button
                         size="xs"
                         onClick={() => {
-                          if (editHIDesc.trim() && editHICost) {
+                          const desc = (hiDraft.desc ?? "").trim();
+                          const cost = hiDraft.cost ?? "";
+                          if (desc && cost) {
                             updateHIMutation.mutate({
                               id: hi.id,
-                              description: editHIDesc.trim(),
-                              cost: Number(editHICost),
+                              description: desc,
+                              cost: Number(cost),
                             });
                           }
                         }}
-                        disabled={!editHIDesc.trim() || !editHICost}
+                        disabled={!(hiDraft.desc ?? "").trim() || !hiDraft.cost}
                       >
                         Save
                       </Button>
@@ -666,8 +670,8 @@ export default function HousePage() {
                       className="group flex justify-between items-center py-1 border-b border-subtle pl-3 cursor-pointer"
                       onClick={() => {
                         setEditingHI(hi.id);
-                        setEditHIDesc(hi.description);
-                        setEditHICost(String(hi.cost));
+                        setHIDraft("desc", hi.description);
+                        setHIDraft("cost", String(hi.cost));
                       }}
                     >
                       <div className="flex-1 min-w-0">
