@@ -292,61 +292,8 @@ describe("settings.relocationScenarios additional", () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PERFORMANCE ACCOUNTS — create with subType and label
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe("settings.performanceAccounts.create additional", () => {
-  it("creates account with subType and displayName", async () => {
-    const ctx = await createTestCaller(adminSession);
-    try {
-      const personId = await seedPerson(ctx.db, "Frank", "1991-01-01");
-      const result = await ctx.caller.settings.performanceAccounts.create({
-        institution: "Fidelity",
-        accountType: "401k",
-        subType: "Roth",
-        label: "Roth 401k",
-        displayName: "Frank Fidelity Roth 401k",
-        ownerPersonId: personId,
-        ownershipType: "individual",
-        parentCategory: "Retirement",
-        isActive: true,
-        displayOrder: 5,
-      });
-      expect(result).toBeDefined();
-      expect(result!.subType).toBe("Roth");
-      expect(result!.label).toBe("Roth 401k");
-    } finally {
-      ctx.cleanup();
-    }
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TRANSACTION-WRAPPED PROCEDURES — previously misdiagnosed as untestable
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe("performanceAccounts.update", () => {
-  it("updates the master record and cascades accountLabel/parentCategory", async () => {
-    const ctx = await createTestCaller(adminSession);
-    try {
-      const id = seedPerformanceAccount(ctx.db, { institution: "Fidelity" });
-      const result = await ctx.caller.settings.performanceAccounts.update({
-        id,
-        institution: "Vanguard",
-        accountType: "401k",
-        ownershipType: "individual",
-        parentCategory: "Retirement",
-        isActive: true,
-        displayOrder: 1,
-      });
-      expect(result?.institution).toBe("Vanguard");
-      expect(result?.accountLabel).toContain("Vanguard");
-    } finally {
-      ctx.cleanup();
-    }
-  });
-});
+// performanceAccounts.create/update additional coverage moved to
+// performance.test.ts (procedures moved to routers/performance.ts, Phase 6.4).
 
 describe("portfolioSnapshots.create", () => {
   it("creates a snapshot with no accounts", async () => {

@@ -39,11 +39,13 @@ const invalidateFns = {
 
 const stableUtils = {
   settings: {
-    performanceAccounts: { invalidate: invalidateFns.performanceAccounts },
     contributionAccounts: { invalidate: invalidateFns.contributionAccounts },
     portfolioSnapshots: {
       getLatest: { invalidate: invalidateFns.portfolioSnapshotsGetLatest },
     },
+  },
+  performance: {
+    performanceAccounts: { invalidate: invalidateFns.performanceAccounts },
   },
   retirement: { invalidate: invalidateFns.retirement },
   projection: { invalidate: invalidateFns.projection },
@@ -73,11 +75,6 @@ vi.mock("@/lib/trpc", () => ({
   trpc: {
     useUtils: () => stableUtils,
     settings: {
-      performanceAccounts: {
-        update: mutationFactory("updatePerf"),
-        create: mutationFactory("createPerf"),
-        delete: mutationFactory("deletePerf"),
-      },
       contributionAccounts: {
         update: mutationFactory("updateContrib"),
         create: mutationFactory("createContrib"),
@@ -85,6 +82,13 @@ vi.mock("@/lib/trpc", () => ({
       portfolioSnapshots: {
         updateAccount: mutationFactory("updatePortfolioAccount"),
         createAccount: mutationFactory("createPortfolioAccount"),
+      },
+    },
+    performance: {
+      performanceAccounts: {
+        update: mutationFactory("updatePerf"),
+        create: mutationFactory("createPerf"),
+        delete: mutationFactory("deletePerf"),
       },
     },
     contributionProfile: {

@@ -22,7 +22,7 @@ export function AccountBalanceOverview() {
   const { data: latestSnap } =
     trpc.settings.portfolioSnapshots.getLatest.useQuery();
   const { data: perfAccounts } =
-    trpc.settings.performanceAccounts.list.useQuery();
+    trpc.performance.performanceAccounts.list.useQuery();
   const { data: people } = trpc.settings.people.list.useQuery();
 
   // Memoize all derived breakdowns from snapshot data. Hooks must be called

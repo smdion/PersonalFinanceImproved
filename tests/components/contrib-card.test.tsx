@@ -5,7 +5,7 @@ import type { RawContrib } from "@/components/paycheck/types";
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
-    settings: {
+    performance: {
       performanceAccounts: {
         list: { useQuery: () => ({ data: undefined }) },
       },

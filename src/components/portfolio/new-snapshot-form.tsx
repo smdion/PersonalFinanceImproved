@@ -164,7 +164,7 @@ export function NewSnapshotForm({
   const { data: latestSnap, isLoading: loadingLatest } =
     trpc.settings.portfolioSnapshots.getLatest.useQuery();
   const { data: perfAccounts, isLoading: loadingPerfAccounts } =
-    trpc.settings.performanceAccounts.list.useQuery();
+    trpc.performance.performanceAccounts.list.useQuery();
   const { data: people, isLoading: loadingPeople } =
     trpc.settings.people.list.useQuery();
   const [syncMessage, setSyncMessage] = useState<string | null>(null);

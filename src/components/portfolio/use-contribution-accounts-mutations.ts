@@ -88,25 +88,31 @@ export function useContributionAccountsMutations({
       },
     });
 
-  const updatePerfMut = trpc.settings.performanceAccounts.update.useMutation({
-    onSuccess: () => {
-      utils.settings.performanceAccounts.invalidate();
-      utils.retirement.invalidate();
-      utils.projection.invalidate();
-      utils.networth.invalidate();
+  const updatePerfMut = trpc.performance.performanceAccounts.update.useMutation(
+    {
+      onSuccess: () => {
+        utils.performance.performanceAccounts.invalidate();
+        utils.retirement.invalidate();
+        utils.projection.invalidate();
+        utils.networth.invalidate();
+      },
     },
-  });
+  );
 
-  const createPerfMut = trpc.settings.performanceAccounts.create.useMutation({
-    onSuccess: () => {
-      utils.settings.performanceAccounts.invalidate();
-      onCreatePerfSuccess?.();
+  const createPerfMut = trpc.performance.performanceAccounts.create.useMutation(
+    {
+      onSuccess: () => {
+        utils.performance.performanceAccounts.invalidate();
+        onCreatePerfSuccess?.();
+      },
     },
-  });
+  );
 
-  const deletePerfMut = trpc.settings.performanceAccounts.delete.useMutation({
-    onSuccess: () => utils.settings.performanceAccounts.invalidate(),
-  });
+  const deletePerfMut = trpc.performance.performanceAccounts.delete.useMutation(
+    {
+      onSuccess: () => utils.performance.performanceAccounts.invalidate(),
+    },
+  );
 
   const updateContribMut =
     trpc.settings.contributionAccounts.update.useMutation({

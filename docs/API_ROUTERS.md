@@ -181,12 +181,16 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `batchUpdateAccounts`    | mutation | `performanceProcedure` | Batch-update account_performance rows for the current year. Used by the Update Performance form to save all flow fields in one pass. Annual rollups are recomputed automatically by computeSummary on ne |
 | `computeSummary`         | query    | `protectedProcedure`   | computeSummary — returns all performance data joined through the master performance_accounts table. Includes: annual rollups, account-level detail, master account list, and current-year status.        |
 | `confirmPendingRollover` | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
+| `create`                 | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
 | `createAccount`          | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
 | `createPendingRollover`  | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
+| `delete`                 | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
 | `deleteAccount`          | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
 | `deletePendingRollover`  | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
 | `editPendingRollover`    | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
 | `finalizeYear`           | mutation | `performanceProcedure` | Finalize a year: marks all account_performance and annual_performance rows for that year as finalized, then auto-creates next year's rows for active accounts.                                           |
+| `list`                   | query    | `protectedProcedure`   | (no description)                                                                                                                                                                                         |
+| `update`                 | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
 | `updateAccount`          | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
 | `updateAnnual`           | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
 | `updateCostBasis`        | mutation | `performanceProcedure` | (no description)                                                                                                                                                                                         |
@@ -327,39 +331,35 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `settings/admin`
 
-| Procedure                       | Kind     | Auth                   | Description                                                                                           |
-| ------------------------------- | -------- | ---------------------- | ----------------------------------------------------------------------------------------------------- |
-| `backfillPerformanceAccountIds` | mutation | `adminProcedure`       | ══ BACKFILL PERFORMANCE ACCOUNT IDS ══                                                                |
-| `clearOverride`                 | mutation | `scenarioProcedure`    | Remove a single override from a scenario                                                              |
-| `create`                        | mutation | `scenarioProcedure`    | ══ SCENARIOS (global what-if system) ══                                                               |
-| `create`                        | mutation | `performanceProcedure` | (no description)                                                                                      |
-| `create`                        | mutation | `portfolioProcedure`   | Create a new snapshot with all its accounts in a single call.                                         |
-| `createAccount`                 | mutation | `portfolioProcedure`   | Create a new sub-account row in the latest snapshot.                                                  |
-| `delete`                        | mutation | `adminProcedure`       | Invalidate year-end cache when settings change (e.g. salary averaging toggle)                         |
-| `delete`                        | mutation | `scenarioProcedure`    | (no description)                                                                                      |
-| `delete`                        | mutation | `adminProcedure`       | (no description)                                                                                      |
-| `delete`                        | mutation | `adminProcedure`       | (no description)                                                                                      |
-| `delete`                        | mutation | `performanceProcedure` | (no description)                                                                                      |
-| `delete`                        | mutation | `portfolioProcedure`   | Delete a snapshot (cascades to its accounts).                                                         |
-| `get`                           | query    | `adminProcedure`       | Get current RBAC group mapping (DB overrides merged with defaults).                                   |
-| `getDataFreshness`              | query    | `protectedProcedure`   | ══ DATA FRESHNESS ══                                                                                  |
-| `getLatest`                     | query    | `protectedProcedure`   | Get the latest snapshot with its accounts (for pre-filling a new snapshot form).                      |
-| `list`                          | query    | `protectedProcedure`   | ══ APP SETTINGS ══                                                                                    |
-| `list`                          | query    | `protectedProcedure`   | ══ SCENARIOS (global what-if system) ══                                                               |
-| `list`                          | query    | `protectedProcedure`   | ══ API CONNECTIONS ══                                                                                 |
-| `list`                          | query    | `protectedProcedure`   | ══ RELOCATION SCENARIOS ══                                                                            |
-| `list`                          | query    | `protectedProcedure`   | ══ PERFORMANCE ACCOUNTS (master registry) ══                                                          |
-| `save`                          | mutation | `adminProcedure`       | (no description)                                                                                      |
-| `setBudgetProfilePin`           | mutation | `scenarioProcedure`    | Pin (or clear, with null) which Budget Profile is "active" when this Plan is selected.                |
-| `setContributionProfilePin`     | mutation | `scenarioProcedure`    | Pin (or clear, with null) which Contribution Profile is "active" when this Plan is selected.          |
-| `setOverride`                   | mutation | `scenarioProcedure`    | Update a single override within a scenario's overrides JSONB                                          |
-| `setSalaryProfilePin`           | mutation | `scenarioProcedure`    | Pin (or clear, with null) which Salary Profile is "active" when this Plan is selected.                |
-| `update`                        | mutation | `scenarioProcedure`    | (no description)                                                                                      |
-| `update`                        | mutation | `performanceProcedure` | (no description)                                                                                      |
-| `updateAccount`                 | mutation | `portfolioProcedure`   | Update a single portfolio account row (e.g. change owner, toggle active, set label, change tax type). |
-| `updateDataFreshness`           | mutation | `adminProcedure`       | (no description)                                                                                      |
-| `upsert`                        | mutation | `adminProcedure`       | (no description)                                                                                      |
-| `upsert`                        | mutation | `adminProcedure`       | (no description)                                                                                      |
+| Procedure                       | Kind     | Auth                 | Description                                                                                           |
+| ------------------------------- | -------- | -------------------- | ----------------------------------------------------------------------------------------------------- |
+| `backfillPerformanceAccountIds` | mutation | `adminProcedure`     | ══ BACKFILL PERFORMANCE ACCOUNT IDS ══                                                                |
+| `clearOverride`                 | mutation | `scenarioProcedure`  | Remove a single override from a scenario                                                              |
+| `create`                        | mutation | `scenarioProcedure`  | ══ SCENARIOS (global what-if system) ══                                                               |
+| `create`                        | mutation | `portfolioProcedure` | Create a new snapshot with all its accounts in a single call.                                         |
+| `createAccount`                 | mutation | `portfolioProcedure` | Create a new sub-account row in the latest snapshot.                                                  |
+| `delete`                        | mutation | `adminProcedure`     | Invalidate year-end cache when settings change (e.g. salary averaging toggle)                         |
+| `delete`                        | mutation | `scenarioProcedure`  | (no description)                                                                                      |
+| `delete`                        | mutation | `adminProcedure`     | (no description)                                                                                      |
+| `delete`                        | mutation | `adminProcedure`     | (no description)                                                                                      |
+| `delete`                        | mutation | `portfolioProcedure` | Delete a snapshot (cascades to its accounts).                                                         |
+| `get`                           | query    | `adminProcedure`     | Get current RBAC group mapping (DB overrides merged with defaults).                                   |
+| `getDataFreshness`              | query    | `protectedProcedure` | ══ DATA FRESHNESS ══                                                                                  |
+| `getLatest`                     | query    | `protectedProcedure` | Get the latest snapshot with its accounts (for pre-filling a new snapshot form).                      |
+| `list`                          | query    | `protectedProcedure` | ══ APP SETTINGS ══                                                                                    |
+| `list`                          | query    | `protectedProcedure` | ══ SCENARIOS (global what-if system) ══                                                               |
+| `list`                          | query    | `protectedProcedure` | ══ API CONNECTIONS ══                                                                                 |
+| `list`                          | query    | `protectedProcedure` | ══ RELOCATION SCENARIOS ══                                                                            |
+| `save`                          | mutation | `adminProcedure`     | (no description)                                                                                      |
+| `setBudgetProfilePin`           | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Budget Profile is "active" when this Plan is selected.                |
+| `setContributionProfilePin`     | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Contribution Profile is "active" when this Plan is selected.          |
+| `setOverride`                   | mutation | `scenarioProcedure`  | Update a single override within a scenario's overrides JSONB                                          |
+| `setSalaryProfilePin`           | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Salary Profile is "active" when this Plan is selected.                |
+| `update`                        | mutation | `scenarioProcedure`  | (no description)                                                                                      |
+| `updateAccount`                 | mutation | `portfolioProcedure` | Update a single portfolio account row (e.g. change owner, toggle active, set label, change tax type). |
+| `updateDataFreshness`           | mutation | `adminProcedure`     | (no description)                                                                                      |
+| `upsert`                        | mutation | `adminProcedure`     | (no description)                                                                                      |
+| `upsert`                        | mutation | `adminProcedure`     | (no description)                                                                                      |
 
 ## `settings/onboarding`
 

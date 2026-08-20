@@ -37,11 +37,6 @@ describe("settings router barrel export", () => {
     expect(Array.isArray(result)).toBe(true);
   });
 
-  it("exposes performanceAccounts sub-router", async () => {
-    const result = await caller.settings.performanceAccounts.list();
-    expect(Array.isArray(result)).toBe(true);
-  });
-
   it("exposes portfolioSnapshots sub-router", async () => {
     const result = await caller.settings.portfolioSnapshots.getLatest();
     // Fresh DB — no snapshots

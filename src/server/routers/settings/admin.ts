@@ -1,13 +1,11 @@
 import { z } from "zod/v4";
 import { eq, asc, desc, inArray, sql } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
 import {
   createTRPCRouter,
   protectedProcedure,
   adminProcedure,
   scenarioProcedure,
   portfolioProcedure,
-  performanceProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
@@ -20,7 +18,6 @@ import {
   RBAC_SETTINGS_PREFIX,
   RBAC_ADMIN_GROUP_KEY,
 } from "@/server/auth";
-import { buildAccountLabel } from "@/lib/utils/format";
 import { roundToCents, safeDivide } from "@/lib/utils/math";
 import {
   accountCategoryEnum,
@@ -28,12 +25,7 @@ import {
   parentCategoryEnum,
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
-import {
-  PORTFOLIO_TAX_TYPE_VALUES,
-  ACCOUNT_OWNERSHIP_VALUES,
-  RETIREMENT_BEHAVIOR_VALUES,
-  CONTRIBUTION_SCALING_VALUES,
-} from "@/lib/config/enum-values";
+import { PORTFOLIO_TAX_TYPE_VALUES } from "@/lib/config/enum-values";
 import { zDecimal, settingValue, recomputeAnnualRollups } from "./_shared";
 import {
   buildPrevInactiveKeys,
@@ -41,7 +33,6 @@ import {
   computeSnapshotEndingBalances,
   resolveSnapshotParentCategory,
 } from "@/lib/pure/portfolio";
-import { canDeletePerformanceAccount } from "@/lib/pure/profiles";
 import {
   apiConfigSchema,
   accountMappingSchema,
@@ -72,26 +63,6 @@ const portfolioSnapshotInput = z.object({
       performanceAccountId: z.number().int().nullable().optional(),
     }),
   ),
-});
-
-const performanceAccountInput = z.object({
-  institution: z.string().trim().min(1),
-  accountType: z.enum(accountCategoryEnum()),
-  subType: z.string().nullable().optional(),
-  label: z.string().trim().nullable().optional(),
-  displayName: z.string().trim().nullable().optional(),
-  ownerPersonId: z.number().int().nullable().optional(),
-  ownershipType: z.enum(ACCOUNT_OWNERSHIP_VALUES),
-  retirementBehavior: z
-    .enum(RETIREMENT_BEHAVIOR_VALUES)
-    .default("stops_at_owner_retirement"),
-  contributionScaling: z
-    .enum(CONTRIBUTION_SCALING_VALUES)
-    .default("scales_with_salary"),
-  costBasis: z.string().default("0"),
-  parentCategory: z.enum(parentCategoryEnum()),
-  isActive: z.boolean().default(true),
-  displayOrder: z.number().int().default(0),
 });
 
 // --- Procedures ---
@@ -598,164 +569,6 @@ export const adminProcedures = {
         alreadyLinked: allContribs.length - needsBackfill.length,
       };
     }),
-
-  // ══ PERFORMANCE ACCOUNTS (master registry) ══
-  performanceAccounts: createTRPCRouter({
-    list: protectedProcedure.query(({ ctx }) =>
-      ctx.db
-        .select()
-        .from(schema.performanceAccounts)
-        .orderBy(
-          asc(schema.performanceAccounts.displayOrder),
-          asc(schema.performanceAccounts.id),
-        ),
-    ),
-    create: performanceProcedure
-      .input(performanceAccountInput)
-      .mutation(async ({ ctx, input }) => {
-        // Resolve owner name for programmatic label
-        // Joint accounts always get "Joint" prefix; individual accounts get person name.
-        let ownerName: string | null =
-          input.ownershipType === "joint" ? "Joint" : null;
-        if (input.ownershipType !== "joint" && input.ownerPersonId) {
-          const [person] = await ctx.db
-            .select({ name: schema.people.name })
-            .from(schema.people)
-            .where(eq(schema.people.id, input.ownerPersonId));
-          ownerName = person?.name ?? null;
-        }
-        const accountLabel = buildAccountLabel({
-          ownerName,
-          accountType: input.accountType,
-          subType: input.subType ?? null,
-          label: input.label ?? null,
-          institution: input.institution,
-        });
-        const [created] = await ctx.db
-          .insert(schema.performanceAccounts)
-          .values({
-            ...input,
-            accountLabel,
-            ownerPersonId: input.ownerPersonId ?? null,
-            subType: input.subType ?? null,
-            label: input.label ?? null,
-          })
-          .returning();
-        return created;
-      }),
-    update: performanceProcedure
-      .input(
-        z
-          .object({ id: z.number().int() })
-          .extend(performanceAccountInput.shape),
-      )
-      .mutation(async ({ ctx, input: { id, ...data } }) => {
-        // Resolve owner name for programmatic label
-        // Joint accounts always get "Joint" prefix; individual accounts get person name.
-        let ownerName: string | null =
-          data.ownershipType === "joint" ? "Joint" : null;
-        if (data.ownershipType !== "joint" && data.ownerPersonId) {
-          const [person] = await ctx.db
-            .select({ name: schema.people.name })
-            .from(schema.people)
-            .where(eq(schema.people.id, data.ownerPersonId));
-          ownerName = person?.name ?? null;
-        }
-        const accountLabel = buildAccountLabel({
-          ownerName,
-          accountType: data.accountType,
-          subType: data.subType ?? null,
-          label: data.label ?? null,
-          institution: data.institution,
-        });
-        // Wrap entire cascade in a transaction for atomicity
-        return await ctx.db.transaction(async (tx) => {
-          // 1. Update the master record
-          const [updated] = await tx
-            .update(schema.performanceAccounts)
-            .set({
-              ...data,
-              accountLabel,
-              ownerPersonId: data.ownerPersonId ?? null,
-              subType: data.subType ?? null,
-              label: data.label ?? null,
-            })
-            .where(eq(schema.performanceAccounts.id, id))
-            .returning();
-          if (!updated) return null;
-
-          // 2. Cascade denormalized fields to accountPerformance rows
-          await tx
-            .update(schema.accountPerformance)
-            .set({
-              institution: updated.institution,
-              accountLabel: updated.accountLabel,
-              ownerPersonId: updated.ownerPersonId,
-              parentCategory: updated.parentCategory,
-            })
-            .where(eq(schema.accountPerformance.performanceAccountId, id));
-
-          // 3. Cascade parentCategory to linked contributionAccounts
-          await tx
-            .update(schema.contributionAccounts)
-            .set({ parentCategory: updated.parentCategory })
-            .where(eq(schema.contributionAccounts.performanceAccountId, id));
-
-          // 4. Cascade parentCategory to linked portfolioAccounts
-          await tx
-            .update(schema.portfolioAccounts)
-            .set({ parentCategory: updated.parentCategory })
-            .where(eq(schema.portfolioAccounts.performanceAccountId, id));
-
-          // 5. Recompute annual rollups for all affected years
-          const affectedYears = await tx
-            .select({ year: schema.accountPerformance.year })
-            .from(schema.accountPerformance)
-            .where(eq(schema.accountPerformance.performanceAccountId, id));
-          const uniqueYears = Array.from(
-            new Set(affectedYears.map((r) => r.year)),
-          );
-          for (const yr of uniqueYears) {
-            await recomputeAnnualRollups(tx, yr);
-          }
-
-          // 6. Stamp performance_last_updated for cache invalidation
-          const now = new Date().toISOString();
-          await tx
-            .insert(schema.appSettings)
-            .values({ key: "performance_last_updated", value: now })
-            .onConflictDoUpdate({
-              target: schema.appSettings.key,
-              set: { value: now },
-            });
-
-          return updated;
-        });
-      }),
-    delete: performanceProcedure
-      .input(z.object({ id: z.number().int() }))
-      .mutation(async ({ ctx, input }) => {
-        // Pre-check: accountPerformance FK is RESTRICT — validate before hitting DB error
-        const [perfCountRow] = await ctx.db
-          .select({ count: sql<number>`count(*)` })
-          .from(schema.accountPerformance)
-          .where(eq(schema.accountPerformance.performanceAccountId, input.id));
-        const perfCount = Number(perfCountRow?.count ?? 0);
-        const deleteCheck = canDeletePerformanceAccount(perfCount);
-        if (!deleteCheck.allowed) {
-          throw new TRPCError({
-            code: "PRECONDITION_FAILED",
-            message: deleteCheck.reason!,
-          });
-        }
-
-        // contributionAccounts and portfolioAccounts use SET NULL — they'll be unlinked
-        await ctx.db
-          .delete(schema.performanceAccounts)
-          .where(eq(schema.performanceAccounts.id, input.id));
-        return { success: true };
-      }),
-  }),
 
   // ══ PORTFOLIO SNAPSHOTS ══
   portfolioSnapshots: createTRPCRouter({

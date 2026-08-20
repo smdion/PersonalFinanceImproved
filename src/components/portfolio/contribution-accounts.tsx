@@ -36,7 +36,7 @@ export function ContributionAccountsSettings() {
   const { data: jobs } = trpc.settings.jobs.list.useQuery();
   const { data: contribs } = trpc.settings.contributionAccounts.list.useQuery();
   const { data: perfAccounts } =
-    trpc.settings.performanceAccounts.list.useQuery();
+    trpc.performance.performanceAccounts.list.useQuery();
   const { data: latestSnap } =
     trpc.settings.portfolioSnapshots.getLatest.useQuery();
 

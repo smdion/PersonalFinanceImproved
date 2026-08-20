@@ -30,11 +30,12 @@ export function InstitutionPicker({
 }) {
   const [creating, setCreating] = useState(false);
   const utils = trpc.useUtils();
-  const { data: accounts } = trpc.settings.performanceAccounts.list.useQuery();
+  const { data: accounts } =
+    trpc.performance.performanceAccounts.list.useQuery();
   const { data: people } = trpc.settings.people.list.useQuery();
-  const createPerf = trpc.settings.performanceAccounts.create.useMutation({
+  const createPerf = trpc.performance.performanceAccounts.create.useMutation({
     onSuccess: (created) => {
-      utils.settings.performanceAccounts.invalidate();
+      utils.performance.performanceAccounts.invalidate();
       setCreating(false);
       if (created) onChange(created.id);
     },

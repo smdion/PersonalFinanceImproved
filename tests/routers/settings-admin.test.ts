@@ -5,19 +5,21 @@
  *   - appSettings.list / upsert / delete
  *   - scenarios.list / create / update / delete
  *   - apiConnections.list / upsert / delete
- *   - savingsGoals.list / create / update / delete
  *   - relocationScenarios.list / save / delete
- *   - performanceAccounts.list / create
  *   - portfolioSnapshots.getLatest
  *   - getDataFreshness
  *   - rbacGroups.get
  *
+ * savingsGoals and performanceAccounts CRUD moved out to savings.ts/
+ * performance.ts respectively (Phase 6.3/6.4) — their tests moved to
+ * savings-goals-crud.test.ts / performance.test.ts alongside them.
+ *
  * All procedures live at caller.settings.* because adminProcedures is spread
  * into settingsRouter (see src/server/routers/settings/index.ts).
  *
- * Permission-gated procedures (scenarioProcedure, savingsProcedure,
- * performanceProcedure, portfolioProcedure) pass through the admin role check
- * automatically — the default adminSession has role: "admin".
+ * Permission-gated procedures (scenarioProcedure, portfolioProcedure) pass
+ * through the admin role check automatically — the default adminSession has
+ * role: "admin".
  */
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -549,143 +551,8 @@ describe("settings.relocationScenarios", () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PERFORMANCE ACCOUNTS
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe("settings.performanceAccounts", () => {
-  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
-  let db: Awaited<ReturnType<typeof createTestCaller>>["db"];
-  let cleanup: () => void;
-  let personId: number;
-
-  beforeAll(async () => {
-    const ctx = await createTestCaller(adminSession);
-    caller = ctx.caller;
-    db = ctx.db;
-    cleanup = ctx.cleanup;
-    personId = await seedPerson(db, "Alice", "1985-03-15");
-  });
-
-  afterAll(() => cleanup());
-
-  describe("list", () => {
-    it("returns an empty array on a fresh database", async () => {
-      const rows = await caller.settings.performanceAccounts.list();
-      expect(Array.isArray(rows)).toBe(true);
-      expect(rows).toHaveLength(0);
-    });
-
-    it("returns seeded accounts ordered by displayOrder then id", async () => {
-      seedPerformanceAccount(db, {
-        institution: "Fidelity",
-        accountType: "401k",
-        displayOrder: 2,
-      });
-      seedPerformanceAccount(db, {
-        institution: "Vanguard",
-        accountType: "ira",
-        displayOrder: 1,
-      });
-      const rows = await caller.settings.performanceAccounts.list();
-      expect(rows.length).toBeGreaterThanOrEqual(2);
-      // Vanguard (order=1) should come before Fidelity (order=2)
-      const vIdx = rows.findIndex(
-        (r: { institution: string }) => r.institution === "Vanguard",
-      );
-      const fIdx = rows.findIndex(
-        (r: { institution: string }) => r.institution === "Fidelity",
-      );
-      expect(vIdx).toBeLessThan(fIdx);
-    });
-  });
-
-  describe("create", () => {
-    it("creates a performance account without owner", async () => {
-      const result = await caller.settings.performanceAccounts.create({
-        institution: "Schwab",
-        accountType: "brokerage",
-        ownerPersonId: null,
-        ownershipType: "individual",
-        parentCategory: "Portfolio",
-        isActive: true,
-        displayOrder: 0,
-      });
-      expect(result).toBeDefined();
-      expect(result!.institution).toBe("Schwab");
-      expect(result!.accountType).toBe("brokerage");
-      expect(result!.ownerPersonId).toBeNull();
-    });
-
-    it("creates a performance account with an owner person", async () => {
-      const result = await caller.settings.performanceAccounts.create({
-        institution: "Fidelity",
-        accountType: "401k",
-        ownerPersonId: personId,
-        ownershipType: "individual",
-        parentCategory: "Retirement",
-        isActive: true,
-        displayOrder: 1,
-      });
-      expect(result).toBeDefined();
-      expect(result!.institution).toBe("Fidelity");
-      expect(result!.ownerPersonId).toBe(personId);
-    });
-
-    it("auto-generates accountLabel from institution + accountType + owner", async () => {
-      const result = await caller.settings.performanceAccounts.create({
-        institution: "Vanguard",
-        accountType: "ira",
-        ownerPersonId: personId,
-        ownershipType: "individual",
-        parentCategory: "Retirement",
-        isActive: true,
-        displayOrder: 2,
-      });
-      expect(result).toBeDefined();
-      // accountLabel is generated; it should at least be a non-empty string
-      expect(typeof result!.accountLabel).toBe("string");
-      expect(result!.accountLabel!.length).toBeGreaterThan(0);
-    });
-
-    it("creates an account with optional label override", async () => {
-      const result = await caller.settings.performanceAccounts.create({
-        institution: "Schwab",
-        accountType: "brokerage",
-        label: "Main Taxable",
-        ownerPersonId: null,
-        ownershipType: "individual",
-        parentCategory: "Portfolio",
-        isActive: true,
-        displayOrder: 3,
-      });
-      expect(result).toBeDefined();
-      expect(result!.label).toBe("Main Taxable");
-    });
-
-    it("created accounts appear in list", async () => {
-      const rows = await caller.settings.performanceAccounts.list();
-      const institutions = rows.map(
-        (r: { institution: string }) => r.institution,
-      );
-      expect(institutions).toContain("Schwab");
-    });
-
-    it("creates an inactive account", async () => {
-      const result = await caller.settings.performanceAccounts.create({
-        institution: "OldBank",
-        accountType: "brokerage",
-        ownerPersonId: null,
-        ownershipType: "individual",
-        parentCategory: "Portfolio",
-        isActive: false,
-        displayOrder: 99,
-      });
-      expect(result).toBeDefined();
-      expect(result!.isActive).toBe(false);
-    });
-  });
-});
+// performanceAccounts CRUD tests moved to performance.test.ts (procedures
+// moved to routers/performance.ts, Phase 6.4).
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PORTFOLIO SNAPSHOTS — getLatest
@@ -1053,77 +920,7 @@ describe("settings.scenarios additional coverage", () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PERFORMANCE ACCOUNTS — update / delete
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe("settings.performanceAccounts delete", () => {
-  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
-  let db: Awaited<ReturnType<typeof createTestCaller>>["db"];
-  let cleanup: () => void;
-
-  beforeAll(async () => {
-    const ctx = await createTestCaller(adminSession);
-    caller = ctx.caller;
-    db = ctx.db;
-    cleanup = ctx.cleanup;
-  });
-
-  afterAll(() => cleanup());
-
-  it("deletes an account with no linked performance records", async () => {
-    const tmp = await caller.settings.performanceAccounts.create({
-      institution: "TempBank",
-      accountType: "brokerage",
-      ownerPersonId: null,
-      ownershipType: "individual",
-      parentCategory: "Portfolio",
-      isActive: true,
-      displayOrder: 99,
-    });
-    const result = await caller.settings.performanceAccounts.delete({
-      id: tmp!.id,
-    });
-    expect(result).toEqual({ success: true });
-
-    const list = await caller.settings.performanceAccounts.list();
-    expect(list.find((r: { id: number }) => r.id === tmp!.id)).toBeUndefined();
-  });
-
-  it("delete is idempotent for non-existent id", async () => {
-    const result = await caller.settings.performanceAccounts.delete({
-      id: 99999,
-    });
-    expect(result).toEqual({ success: true });
-  });
-
-  it("rejects delete when performance records reference the account", async () => {
-    const personId = await seedPerson(db, "DeleteTest", "1990-01-01");
-    const acctId = seedPerformanceAccount(db, {
-      institution: "LinkedBank",
-      accountType: "401k",
-    });
-    // Seed an account_performance row referencing this account
-    db.insert((await import("@/lib/db/schema-sqlite")).accountPerformance)
-      .values({
-        year: 2025,
-        institution: "LinkedBank",
-        accountLabel: "LinkedBank 401k",
-        ownerPersonId: personId,
-        beginningBalance: "50000",
-        totalContributions: "10000",
-        yearlyGainLoss: "5000",
-        endingBalance: "65000",
-        parentCategory: "Retirement",
-        performanceAccountId: acctId,
-      })
-      .run();
-
-    await expect(
-      caller.settings.performanceAccounts.delete({ id: acctId }),
-    ).rejects.toThrow(/Cannot delete/);
-  });
-});
+// performanceAccounts delete test moved to performance.test.ts (Phase 6.4).
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PORTFOLIO SNAPSHOTS — createAccount / updateAccount / delete
@@ -1664,97 +1461,4 @@ describe("settings.relocationScenarios additional coverage", () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ADDITIONAL COVERAGE — performance accounts edge cases
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe("settings.performanceAccounts additional coverage", () => {
-  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
-  let db: Awaited<ReturnType<typeof createTestCaller>>["db"];
-  let cleanup: () => void;
-
-  beforeAll(async () => {
-    const ctx = await createTestCaller(adminSession);
-    caller = ctx.caller;
-    db = ctx.db;
-    cleanup = ctx.cleanup;
-  });
-
-  afterAll(() => cleanup());
-
-  it("creates with all optional fields", async () => {
-    const personId = await seedPerson(db, "FullFields", "1990-01-01");
-    const result = await caller.settings.performanceAccounts.create({
-      institution: "AllFields Bank",
-      accountType: "hsa",
-      subType: "Investment",
-      label: "HSA Investment",
-      displayName: "My HSA",
-      ownerPersonId: personId,
-      ownershipType: "individual",
-      parentCategory: "Retirement",
-      isActive: true,
-      displayOrder: 5,
-    });
-    expect(result).toBeDefined();
-    expect(result!.subType).toBe("Investment");
-    expect(result!.label).toBe("HSA Investment");
-    expect(result!.displayName).toBe("My HSA");
-    expect(result!.ownerPersonId).toBe(personId);
-  });
-
-  it("creates with joint ownership", async () => {
-    const result = await caller.settings.performanceAccounts.create({
-      institution: "Joint Bank",
-      accountType: "brokerage",
-      ownerPersonId: null,
-      ownershipType: "joint",
-      parentCategory: "Portfolio",
-      isActive: true,
-      displayOrder: 6,
-    });
-    expect(result).toBeDefined();
-    expect(result!.ownershipType).toBe("joint");
-  });
-
-  it("creates accounts with every valid accountType", async () => {
-    const types = ["401k", "403b", "ira", "hsa", "brokerage"];
-    for (const t of types) {
-      const result = await caller.settings.performanceAccounts.create({
-        institution: `${t}-Bank`,
-        accountType: t,
-        ownerPersonId: null,
-        ownershipType: "individual",
-        parentCategory: t === "brokerage" ? "Portfolio" : "Retirement",
-        isActive: true,
-        displayOrder: 0,
-      });
-      expect(result).toBeDefined();
-      expect(result!.accountType).toBe(t);
-    }
-  });
-
-  it("creates accounts with both parentCategory values", async () => {
-    const retResult = await caller.settings.performanceAccounts.create({
-      institution: "RetBank",
-      accountType: "401k",
-      ownerPersonId: null,
-      ownershipType: "individual",
-      parentCategory: "Retirement",
-      isActive: true,
-      displayOrder: 0,
-    });
-    expect(retResult!.parentCategory).toBe("Retirement");
-
-    const portResult = await caller.settings.performanceAccounts.create({
-      institution: "PortBank",
-      accountType: "brokerage",
-      ownerPersonId: null,
-      ownershipType: "individual",
-      parentCategory: "Portfolio",
-      isActive: true,
-      displayOrder: 0,
-    });
-    expect(portResult!.parentCategory).toBe("Portfolio");
-  });
-});
+// performanceAccounts additional coverage moved to performance.test.ts (Phase 6.4).
