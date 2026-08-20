@@ -1,10 +1,14 @@
 /**
- * Settings/mortgage router integration tests.
+ * Mortgage router CRUD integration tests.
  *
  * Tests CRUD operations for:
- *   - settings.mortgageLoans (list / create / update / delete)
- *   - settings.mortgageWhatIfScenarios (list / create / update / delete)
- *   - settings.mortgageExtraPayments (list / create / update / delete)
+ *   - mortgage.mortgageLoans (list / create / update / delete)
+ *   - mortgage.mortgageWhatIfScenarios (list / create / update / delete)
+ *   - mortgage.mortgageExtraPayments (list / create / update / delete)
+ *
+ * Moved from routers/settings/mortgage.ts to routers/mortgage.ts (audit
+ * Batch 11 Finding 1 — page-ownership rule, RULES.md's "Settings Belong on
+ * Their Pages") — this file moved alongside it (2026-08-20).
  */
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -19,7 +23,7 @@ vi.mock("@/lib/budget-api", () => ({
 // MORTGAGE LOANS
 // ---------------------------------------------------------------------------
 
-describe("settings.mortgageLoans", () => {
+describe("mortgage.mortgageLoans", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let cleanup: () => void;
 
@@ -44,7 +48,7 @@ describe("settings.mortgageLoans", () => {
 
   describe("list", () => {
     it("returns empty array initially", async () => {
-      const rows = await caller.settings.mortgageLoans.list();
+      const rows = await caller.mortgage.mortgageLoans.list();
       expect(Array.isArray(rows)).toBe(true);
       expect(rows).toHaveLength(0);
     });
@@ -52,7 +56,7 @@ describe("settings.mortgageLoans", () => {
 
   describe("create", () => {
     it("creates a mortgage loan and returns it", async () => {
-      const created = await caller.settings.mortgageLoans.create(baseLoan);
+      const created = await caller.mortgage.mortgageLoans.create(baseLoan);
       expect(created).toBeDefined();
       expect(created!.name).toBe("Primary Mortgage");
       expect(created!.isActive).toBe(true);
@@ -61,7 +65,7 @@ describe("settings.mortgageLoans", () => {
     });
 
     it("creates a second loan", async () => {
-      const created = await caller.settings.mortgageLoans.create({
+      const created = await caller.mortgage.mortgageLoans.create({
         ...baseLoan,
         name: "Rental Property",
         isActive: false,
@@ -71,16 +75,16 @@ describe("settings.mortgageLoans", () => {
     });
 
     it("list returns both loans", async () => {
-      const rows = await caller.settings.mortgageLoans.list();
+      const rows = await caller.mortgage.mortgageLoans.list();
       expect(rows.length).toBe(2);
     });
   });
 
   describe("update", () => {
     it("updates a loan name and returns the updated row", async () => {
-      const rows = await caller.settings.mortgageLoans.list();
+      const rows = await caller.mortgage.mortgageLoans.list();
       const loan = rows[0]!;
-      const updated = await caller.settings.mortgageLoans.update({
+      const updated = await caller.mortgage.mortgageLoans.update({
         id: loan.id,
         ...baseLoan,
         name: "Updated Mortgage",
@@ -92,10 +96,10 @@ describe("settings.mortgageLoans", () => {
 
   describe("delete", () => {
     it("deletes a loan", async () => {
-      const rows = await caller.settings.mortgageLoans.list();
+      const rows = await caller.mortgage.mortgageLoans.list();
       const beforeCount = rows.length;
-      await caller.settings.mortgageLoans.delete({ id: rows[0]!.id });
-      const afterRows = await caller.settings.mortgageLoans.list();
+      await caller.mortgage.mortgageLoans.delete({ id: rows[0]!.id });
+      const afterRows = await caller.mortgage.mortgageLoans.list();
       expect(afterRows.length).toBe(beforeCount - 1);
     });
   });
@@ -105,7 +109,7 @@ describe("settings.mortgageLoans", () => {
       const { caller: viewerCaller, cleanup: vc } =
         await createTestCaller(viewerSession);
       try {
-        const rows = await viewerCaller.settings.mortgageLoans.list();
+        const rows = await viewerCaller.mortgage.mortgageLoans.list();
         expect(Array.isArray(rows)).toBe(true);
       } finally {
         vc();
@@ -117,7 +121,7 @@ describe("settings.mortgageLoans", () => {
         await createTestCaller(viewerSession);
       try {
         await expect(
-          viewerCaller.settings.mortgageLoans.create(baseLoan),
+          viewerCaller.mortgage.mortgageLoans.create(baseLoan),
         ).rejects.toThrow();
       } finally {
         vc();
@@ -128,8 +132,8 @@ describe("settings.mortgageLoans", () => {
   describe("create with optional fields", () => {
     it("creates a loan with refinancedFromId and paidOffDate", async () => {
       // Create first loan to reference
-      const first = await caller.settings.mortgageLoans.create(baseLoan);
-      const created = await caller.settings.mortgageLoans.create({
+      const first = await caller.mortgage.mortgageLoans.create(baseLoan);
+      const created = await caller.mortgage.mortgageLoans.create({
         ...baseLoan,
         name: "Refi Loan",
         refinancedFromId: first!.id,
@@ -150,7 +154,7 @@ describe("settings.mortgageLoans", () => {
 // MORTGAGE WHAT-IF SCENARIOS
 // ---------------------------------------------------------------------------
 
-describe("settings.mortgageWhatIfScenarios", () => {
+describe("mortgage.mortgageWhatIfScenarios", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let cleanup: () => void;
   let loanId: number;
@@ -161,7 +165,7 @@ describe("settings.mortgageWhatIfScenarios", () => {
     cleanup = ctx.cleanup;
 
     // Seed a loan for FK references
-    const loan = await caller.settings.mortgageLoans.create({
+    const loan = await caller.mortgage.mortgageLoans.create({
       name: "Test Loan",
       isActive: true,
       principalAndInterest: "1500",
@@ -178,7 +182,7 @@ describe("settings.mortgageWhatIfScenarios", () => {
 
   describe("list", () => {
     it("returns empty array initially", async () => {
-      const rows = await caller.settings.mortgageWhatIfScenarios.list();
+      const rows = await caller.mortgage.mortgageWhatIfScenarios.list();
       expect(rows).toHaveLength(0);
     });
   });
@@ -187,7 +191,7 @@ describe("settings.mortgageWhatIfScenarios", () => {
     let scenarioId: number;
 
     it("creates a what-if scenario", async () => {
-      const created = await caller.settings.mortgageWhatIfScenarios.create({
+      const created = await caller.mortgage.mortgageWhatIfScenarios.create({
         loanId,
         label: "+$200/month",
         extraMonthlyPrincipal: "200",
@@ -199,7 +203,7 @@ describe("settings.mortgageWhatIfScenarios", () => {
     });
 
     it("creates scenario without loanId (applies to all)", async () => {
-      const created = await caller.settings.mortgageWhatIfScenarios.create({
+      const created = await caller.mortgage.mortgageWhatIfScenarios.create({
         label: "Global +$500/month",
         extraMonthlyPrincipal: "500",
         sortOrder: 2,
@@ -208,12 +212,12 @@ describe("settings.mortgageWhatIfScenarios", () => {
     });
 
     it("list returns created scenarios", async () => {
-      const rows = await caller.settings.mortgageWhatIfScenarios.list();
+      const rows = await caller.mortgage.mortgageWhatIfScenarios.list();
       expect(rows.length).toBe(2);
     });
 
     it("updates a scenario", async () => {
-      const updated = await caller.settings.mortgageWhatIfScenarios.update({
+      const updated = await caller.mortgage.mortgageWhatIfScenarios.update({
         id: scenarioId,
         loanId,
         label: "+$300/month",
@@ -225,8 +229,8 @@ describe("settings.mortgageWhatIfScenarios", () => {
     });
 
     it("deletes a scenario", async () => {
-      await caller.settings.mortgageWhatIfScenarios.delete({ id: scenarioId });
-      const rows = await caller.settings.mortgageWhatIfScenarios.list();
+      await caller.mortgage.mortgageWhatIfScenarios.delete({ id: scenarioId });
+      const rows = await caller.mortgage.mortgageWhatIfScenarios.list();
       expect(rows.every((r) => r.id !== scenarioId)).toBe(true);
     });
   });
@@ -236,7 +240,7 @@ describe("settings.mortgageWhatIfScenarios", () => {
 // MORTGAGE EXTRA PAYMENTS
 // ---------------------------------------------------------------------------
 
-describe("settings.mortgageExtraPayments", () => {
+describe("mortgage.mortgageExtraPayments", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let cleanup: () => void;
   let loanId: number;
@@ -246,7 +250,7 @@ describe("settings.mortgageExtraPayments", () => {
     caller = ctx.caller;
     cleanup = ctx.cleanup;
 
-    const loan = await caller.settings.mortgageLoans.create({
+    const loan = await caller.mortgage.mortgageLoans.create({
       name: "EP Test Loan",
       isActive: true,
       principalAndInterest: "1500",
@@ -265,12 +269,12 @@ describe("settings.mortgageExtraPayments", () => {
     let paymentId: number;
 
     it("list is empty initially", async () => {
-      const rows = await caller.settings.mortgageExtraPayments.list();
+      const rows = await caller.mortgage.mortgageExtraPayments.list();
       expect(rows).toHaveLength(0);
     });
 
     it("creates a one-time extra payment", async () => {
-      const created = await caller.settings.mortgageExtraPayments.create({
+      const created = await caller.mortgage.mortgageExtraPayments.create({
         loanId,
         paymentDate: "2023-06-15",
         amount: "5000",
@@ -284,7 +288,7 @@ describe("settings.mortgageExtraPayments", () => {
     });
 
     it("creates a recurring extra payment range", async () => {
-      const created = await caller.settings.mortgageExtraPayments.create({
+      const created = await caller.mortgage.mortgageExtraPayments.create({
         loanId,
         startDate: "2024-01-01",
         endDate: "2024-12-01",
@@ -296,12 +300,12 @@ describe("settings.mortgageExtraPayments", () => {
     });
 
     it("list returns created payments", async () => {
-      const rows = await caller.settings.mortgageExtraPayments.list();
+      const rows = await caller.mortgage.mortgageExtraPayments.list();
       expect(rows.length).toBe(2);
     });
 
     it("updates an extra payment", async () => {
-      const updated = await caller.settings.mortgageExtraPayments.update({
+      const updated = await caller.mortgage.mortgageExtraPayments.update({
         id: paymentId,
         loanId,
         paymentDate: "2023-07-15",
@@ -314,8 +318,8 @@ describe("settings.mortgageExtraPayments", () => {
     });
 
     it("deletes an extra payment", async () => {
-      await caller.settings.mortgageExtraPayments.delete({ id: paymentId });
-      const rows = await caller.settings.mortgageExtraPayments.list();
+      await caller.mortgage.mortgageExtraPayments.delete({ id: paymentId });
+      const rows = await caller.mortgage.mortgageExtraPayments.list();
       expect(rows.every((r) => r.id !== paymentId)).toBe(true);
     });
   });

@@ -22,7 +22,7 @@ export function WhatIfSection({
   const [amount, setAmount] = useState("");
   const [oneTimeAmount, setOneTimeAmount] = useState("");
 
-  const createMut = trpc.settings.mortgageWhatIfScenarios.create.useMutation({
+  const createMut = trpc.mortgage.mortgageWhatIfScenarios.create.useMutation({
     onSuccess: () => {
       utils.mortgage.computeActiveSummary.invalidate();
       setAdding(false);
@@ -30,7 +30,7 @@ export function WhatIfSection({
     },
   });
 
-  const updateMut = trpc.settings.mortgageWhatIfScenarios.update.useMutation({
+  const updateMut = trpc.mortgage.mortgageWhatIfScenarios.update.useMutation({
     onSuccess: () => {
       utils.mortgage.computeActiveSummary.invalidate();
       setEditingId(null);
@@ -38,11 +38,11 @@ export function WhatIfSection({
     },
   });
 
-  const deleteMut = trpc.settings.mortgageWhatIfScenarios.delete.useMutation({
+  const deleteMut = trpc.mortgage.mortgageWhatIfScenarios.delete.useMutation({
     onSuccess: () => utils.mortgage.computeActiveSummary.invalidate(),
   });
 
-  const reorderMut = trpc.settings.mortgageWhatIfScenarios.update.useMutation({
+  const reorderMut = trpc.mortgage.mortgageWhatIfScenarios.update.useMutation({
     onSuccess: () => utils.mortgage.computeActiveSummary.invalidate(),
   });
 
