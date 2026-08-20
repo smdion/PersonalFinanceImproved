@@ -6,25 +6,13 @@
  * single 22-mutation bundle, every section will re-render on every mutation's
  * pending flip — exactly the problem the 5-hook split is designed to prevent.
  *
- * ## Why this test is "stable identities" and not "render-counter"
- *
- * In PR 5, all five sections still live inside a single `PreviewPanel`
- * component. A budget mutation's `isPending` flip triggers a re-render of the
- * entire `PreviewPanel` regardless of how the mutations are bundled — React
- * has no way to know that the savings JSX doesn't depend on the budget
- * mutation. The true render-counter guard only becomes meaningful in PR 6,
- * once each section is its own `React.memo`-wrapped component.
- *
- * What PR 5 *can* guarantee — and what this test asserts — is that each
- * per-section hook returns a stable `mutations` object shape so that when
- * PR 6 lands, the memoized section components receive reference-stable props
- * across renders where their section's mutations did not change. If a future
- * refactor accidentally replaces one of the hooks with an inline
- * `useMutation()` in the parent, or regroups the mutations into a single
- * mega-hook, this test will fail because the mutation bundle will not match
- * the documented 5-hook shape.
- *
- * PR 6 will add the render-counter guard on top of this test.
+ * Each hook returns a flat `{ mutationName: UseMutationResult, ... }` object
+ * per RULES.md's Mutation Hook Convention (no `{ mutations: {...},
+ * invalidate }` wrapper — `invalidate` is used internally as each
+ * mutation's own `onSuccess` and is not part of the public return). This
+ * test asserts each hook's flat key set so that a future refactor that
+ * reintroduces the wrapper, drops a mutation, or regroups the 5 hooks into
+ * one mega-hook fails here rather than silently.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
@@ -105,18 +93,17 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
     const { useDriftMutations } =
       await import("@/components/settings/integrations/hooks/use-drift-mutations");
     const { result } = renderHook(() => useDriftMutations());
-    const keys = Object.keys(result.current.mutations).sort();
+    const keys = Object.keys(result.current).sort();
     expect(keys).toEqual(
       ["setLinkedColumn", "setLinkedProfile", "syncAllNames"].sort(),
     );
-    expect(typeof result.current.invalidate).toBe("function");
   });
 
   it("useBudgetMutations returns the expected 9-mutation shape", async () => {
     const { useBudgetIntegrationsMutations } =
       await import("@/components/settings/integrations/hooks/use-budget-mutations");
     const { result } = renderHook(() => useBudgetIntegrationsMutations());
-    const keys = Object.keys(result.current.mutations).sort();
+    const keys = Object.keys(result.current).sort();
     expect(keys).toEqual(
       [
         "createItem",
@@ -136,7 +123,7 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
     const { useSavingsMutations } =
       await import("@/components/settings/integrations/hooks/use-savings-mutations");
     const { result } = renderHook(() => useSavingsMutations());
-    const keys = Object.keys(result.current.mutations).sort();
+    const keys = Object.keys(result.current).sort();
     expect(keys).toEqual(
       [
         "createGoal",
@@ -153,7 +140,7 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
     const { useContribMutations } =
       await import("@/components/settings/integrations/hooks/use-contrib-mutations");
     const { result } = renderHook(() => useContribMutations());
-    const keys = Object.keys(result.current.mutations).sort();
+    const keys = Object.keys(result.current).sort();
     expect(keys).toEqual(["linkContrib", "unlinkContrib"].sort());
   });
 
@@ -161,7 +148,7 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
     const { usePortfolioMutations } =
       await import("@/components/settings/integrations/hooks/use-portfolio-mutations");
     const { result } = renderHook(() => usePortfolioMutations());
-    const keys = Object.keys(result.current.mutations).sort();
+    const keys = Object.keys(result.current).sort();
     expect(keys).toEqual(["createAssetAndMap", "updateMappings"].sort());
   });
 
@@ -181,7 +168,7 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
     expect(invalidatePreview).toHaveBeenCalledTimes(1);
   });
 
-  it("each section hook shares the same invalidate reference pattern", async () => {
+  it("every section hook returns a flat mutation bundle, not a { mutations, invalidate } wrapper", async () => {
     const [drift, budget, savings, contrib, portfolio] = await Promise.all([
       import("@/components/settings/integrations/hooks/use-drift-mutations"),
       import("@/components/settings/integrations/hooks/use-budget-mutations"),
@@ -189,7 +176,10 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
       import("@/components/settings/integrations/hooks/use-contrib-mutations"),
       import("@/components/settings/integrations/hooks/use-portfolio-mutations"),
     ]);
-    // Smoke: every hook exports a factory that returns { mutations, invalidate }
+    // Smoke: every hook exports a factory whose return is flat — each value
+    // is a mutation object (has `.mutate`), and neither `mutations` nor
+    // `invalidate` appears as a top-level key. Guards against RULES.md's
+    // Mutation Hook Convention wrapper shape creeping back in.
     for (const mod of [drift, budget, savings, contrib, portfolio]) {
       const hookName = Object.keys(mod).find((k) => k.startsWith("use")) as
         string | undefined;
@@ -197,9 +187,14 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const hook = (mod as any)[hookName!];
       const { result } = renderHook(() => hook());
-      expect(result.current).toHaveProperty("mutations");
-      expect(result.current).toHaveProperty("invalidate");
-      expect(typeof result.current.invalidate).toBe("function");
+      expect(result.current).not.toHaveProperty("mutations");
+      expect(result.current).not.toHaveProperty("invalidate");
+      const values = Object.values(result.current as Record<string, unknown>);
+      expect(values.length).toBeGreaterThan(0);
+      for (const value of values) {
+        expect(value).toHaveProperty("mutate");
+        expect(value).toHaveProperty("isPending");
+      }
     }
   });
 });
