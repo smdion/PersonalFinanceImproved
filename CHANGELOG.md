@@ -8,7 +8,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
-## [0.7.4] - Unreleased
+## [0.7.5] - Unreleased
+
+Ongoing remediation from a 43-batch, whole-codebase review (~150+ findings) — this release is a work in progress; entries below cover what's landed so far and will grow as the remaining phases ship.
+
+### Fixed
+
+- **Retirement withdrawal tax estimation now matches what actually gets withdrawn**, in three configurations where it previously didn't: percentage-split withdrawal mode (the estimate now uses your configured account splits, not raw portfolio-balance weights), waterfall mode with a Roth-bracket target set (the estimate now applies the same Roth-optimization overlay real withdrawals do), and bracket-filling mode with per-account withdrawal caps (the estimate now respects them). Previously the tax estimate that determines how much you need to withdraw to cover expenses after tax used different assumptions than the withdrawal that actually happened — in these three setups, that could mean withdrawing meaningfully more or less than intended.
+- **IRMAA and ACA subsidy eligibility now consistently use the same Medicare-start-age setting**, instead of the ACA check separately hardcoding 65.
+- **The account-owner label on Portfolio snapshot sub-rows** ("Alice — Roth") now matches the documented format in every case, instead of occasionally showing the wrong style for a given owner/tax-type combination.
+- **Tax-type labels ("Traditional"/"Roth" vs. "Tax-Deferred"/"Tax-Free") no longer disagree with each other** in the same view — one of the two label sources was retired in favor of the other.
+- **The Net Worth Composition bar chart's category colors now match the Net Worth Location pie chart's colors** for the same data (Portfolio/House/Cash/Other) — previously the two charts could show the same category in different colors.
+- **Clearing a Historical-page note, or a Portfolio sub-account's custom label, back to blank now actually saves the change** instead of silently being treated as "nothing to do."
+- Brokerage Goals mutations now surface an error message on failure instead of failing silently.
+- A stale cached Monte Carlo result can no longer, even in theory, leave retirement-projection settings mismatched with the projection data being shown.
+- Non-portfolio users visiting the Analytics page no longer briefly fire doomed permission-denied requests before the page's own access check kicks in.
+- Pulling assets from a connected budget API now writes updates inside the same transactional safety net syncing already had, and no longer silently mis-files a mortgage-linked account as a plain asset.
+- A handful of `Card`-based panels that weren't clickable no longer show a hover-lift affordance implying they were.
+
+### Changed (internal)
+
+- Large-scale internal consolidation from the ongoing code audit: extracted shared logic that had been independently (and in a few cases incorrectly) reimplemented across the codebase — household savings-rate calculation, home-improvement cost rollups, dropdown outside-click handling, several React hooks for optimistic updates and inline editing, and the withdrawal-tax-estimation math above. Removed roughly 2,500 lines of confirmed-dead code and 4 unused dependencies. Added missing database indexes on 5 foreign-key columns and removed a duplicate index. Extended shared UI primitives (`Badge`, `Button`, form fields) into several components that had been hand-rolling equivalent styling. No user-facing behavior change except where called out under Fixed above.
+
+## [0.7.4] - 2026-08-19
 
 ### Changed (internal)
 
