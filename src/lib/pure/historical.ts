@@ -61,6 +61,7 @@ export function buildSalaryByYear(
 
 /** An other-asset item from the DB. */
 export type OtherAssetItem = {
+  id?: number;
   name: string;
   year: number;
   value: string | null;
@@ -75,14 +76,24 @@ export function resolveCarryForwardAssetValue(
   items: OtherAssetItem[],
   name: string,
   year: number,
-): { value: number; note: string | null } | null {
+): {
+  id?: number;
+  value: number;
+  note: string | null;
+  yearRecorded: number;
+} | null {
   const entries = items.filter((a) => a.name === name && a.year <= year);
   if (entries.length === 0) return null;
   // Items are already sorted by year asc — take the last one
   const latest = entries[entries.length - 1]!;
   const val = toNumber(latest.value);
   if (val <= 0) return null;
-  return { value: val, note: latest.note };
+  return {
+    id: latest.id,
+    value: val,
+    note: latest.note,
+    yearRecorded: latest.year,
+  };
 }
 
 /**
@@ -93,15 +104,25 @@ export function resolveOtherAssetsForYear(
   allAssets: OtherAssetItem[],
   year: number,
 ): {
-  items: { name: string; value: number; note: string | null }[];
+  items: { id?: number; name: string; value: number; note: string | null }[];
   total: number;
 } {
   const uniqueNames = Array.from(new Set(allAssets.map((a) => a.name)));
-  const items: { name: string; value: number; note: string | null }[] = [];
+  const items: {
+    id?: number;
+    name: string;
+    value: number;
+    note: string | null;
+  }[] = [];
   for (const name of uniqueNames) {
     const resolved = resolveCarryForwardAssetValue(allAssets, name, year);
     if (resolved) {
-      items.push({ name, value: resolved.value, note: resolved.note });
+      items.push({
+        id: resolved.id,
+        name,
+        value: resolved.value,
+        note: resolved.note,
+      });
     }
   }
   return { items, total: sumBy(items, (i) => i.value) };
