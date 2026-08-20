@@ -162,7 +162,7 @@ vi.mock("@/lib/trpc", () => ({
         useQuery: () => ({ data: null, isLoading: false }),
       },
     },
-    settings: {
+    retirement: {
       retirementSettings: {
         upsert: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
       },

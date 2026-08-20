@@ -82,8 +82,16 @@ function parseRouterFile(filePath: string): ProcedureEntry[] {
     if (!procType || !procType.endsWith("Procedure")) continue;
 
     // Look ahead up to 30 lines for .query( or .mutation(
+    // Bug found by audit (2026-08-19): a fixed 30-line lookahead silently
+    // dropped procedures whose .input() schema pushed .query()/.mutation()
+    // further away — e.g. retirement.ts's computeRelocationAnalysis (60
+    // lines) and projection/scenarios.ts's computeProjection (43 lines)
+    // vanished from API_ROUTERS.md entirely, along with their whole router
+    // section. Stop early at the next procedure definition (a real
+    // boundary) instead of guessing a line count; keep a generous outer
+    // cap only as a sanity valve against pathological files.
     let kind: "query" | "mutation" | null = null;
-    for (let j = i; j < Math.min(i + 30, lines.length); j++) {
+    for (let j = i; j < Math.min(i + 150, lines.length); j++) {
       const next = lines[j]!;
       if (next.includes(".query(")) {
         kind = "query";
@@ -93,6 +101,10 @@ function parseRouterFile(filePath: string): ProcedureEntry[] {
         kind = "mutation";
         break;
       }
+      // Next procedure's definition line is a real boundary — stop looking
+      // rather than accidentally matching into the following procedure.
+      if (j > i && /^\s*[a-zA-Z][a-zA-Z0-9]*\s*:\s*\w+Procedure/.test(next))
+        break;
     }
     if (!kind) continue;
 

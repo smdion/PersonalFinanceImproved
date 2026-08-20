@@ -12,6 +12,9 @@ import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile"
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useClickOutside } from "@/lib/hooks/use-click-outside";
 
 export function ScenarioBar() {
   const {
@@ -38,7 +41,10 @@ export function ScenarioBar() {
     null,
   );
   const [newName, setNewName] = useState("");
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useClickOutside<HTMLDivElement>(() => {
+    setDropdownOpen(false);
+    setCreating(null);
+  });
   const inputRef = useRef<HTMLInputElement>(null);
 
   const createMut = trpc.settings.scenarios.create.useMutation();
@@ -178,21 +184,6 @@ export function ScenarioBar() {
     }
   };
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
-        setDropdownOpen(false);
-        setCreating(null);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
   // Focus input when creating
   useEffect(() => {
     if (creating) inputRef.current?.focus();
@@ -292,9 +283,7 @@ export function ScenarioBar() {
             )}
             <span className="font-medium">{activeLabel}</span>
             {isInScenario && overrideCount > 0 && (
-              <span className="bg-amber-200 text-amber-700 px-1 rounded text-caption">
-                {overrideCount}
-              </span>
+              <Badge color="amber">{overrideCount}</Badge>
             )}
             <svg
               className="w-3 h-3 text-faint"
@@ -335,8 +324,8 @@ export function ScenarioBar() {
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
                 Main Plan
                 {activeSelection.type === "main" && (
-                  <span className="ml-auto text-caption text-blue-500">
-                    Active
+                  <span className="ml-auto">
+                    <Badge color="blue">Active</Badge>
                   </span>
                 )}
               </button>
@@ -485,18 +474,21 @@ export function ScenarioBar() {
                       className="w-full border border-strong rounded px-2 py-1 text-xs bg-surface-primary text-primary"
                     />
                     <div className="flex gap-1">
-                      <button
+                      <Button
                         onClick={handleCreate}
-                        className="flex-1 px-2 py-1.5 bg-blue-600 text-white rounded text-caption hover:bg-blue-700"
+                        size="sm"
+                        className="flex-1 !text-caption"
                       >
                         {creating === "persisted" ? "Save" : "Create Temp"}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => setCreating(null)}
-                        className="px-2 py-1.5 text-muted text-caption hover:text-secondary"
+                        className="!text-caption"
                       >
                         Cancel
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ) : (
@@ -510,13 +502,14 @@ export function ScenarioBar() {
                         >
                           + Saved
                         </button>
-                        <button
+                        <Button
+                          variant="ghost"
                           onClick={() => setCreating("session")}
-                          className="flex-1 text-center py-2 text-muted hover:bg-surface-elevated rounded transition-colors"
+                          className="flex-1 !py-2"
                           title="Create a quick what-if scenario (lost when you leave)"
                         >
                           + Quick
-                        </button>
+                        </Button>
                       </>
                     )}
                   </div>

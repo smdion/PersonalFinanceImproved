@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
+import { safeDivide } from "@/lib/utils/math";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types.types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
@@ -160,7 +161,7 @@ export function summarizeDrift(accounts: SimplefinAccountListItem[]): {
 function DriftBadge({ drift, balance }: { drift: number; balance: number }) {
   if (drift === 0) return null;
   const prevBalance = balance - drift;
-  const driftPct = prevBalance !== 0 ? drift / prevBalance : null;
+  const driftPct = safeDivide(drift, prevBalance, null);
   return (
     <span
       className={`text-caption ${drift > 0 ? "text-green-600" : "text-red-600"}`}

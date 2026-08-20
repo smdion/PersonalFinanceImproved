@@ -11,6 +11,7 @@ import {
   compactCurrency,
 } from "@/lib/utils/format";
 import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
+import { safeDivide } from "@/lib/utils/math";
 import type { EngineDecumulationYear } from "@/lib/calculators/types";
 import {
   ComposedChart,
@@ -27,6 +28,7 @@ import {
 } from "recharts";
 import { ChartControls } from "./chart-controls";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
+import { CHART_COLORS } from "@/lib/utils/colors";
 import type { ProjectionState } from "./projection-table-types";
 
 export function SpendingStabilityChart({
@@ -110,7 +112,7 @@ export function SpendingStabilityChart({
       // Matches monte-carlo.ts's own convention for a zero baseline (e.g.
       // Social Security fully covers year-1 spending): 0%, not a misleading
       // 100% that would hide real spending variability in later years.
-      const ratio = baseline > 0 ? yr.totalWithdrawal / baseline : 0;
+      const ratio = safeDivide(yr.totalWithdrawal, baseline, 0);
 
       const band = mcBandMap?.get(yr.age);
 
@@ -318,7 +320,7 @@ export function SpendingStabilityChart({
                 type="monotone"
                 dataKey="mc_5_10"
                 stackId="mc"
-                fill="#ede9fe"
+                fill={CHART_COLORS.mcBandOuter}
                 fillOpacity={0.4}
                 stroke="none"
                 isAnimationActive={false}
@@ -329,7 +331,7 @@ export function SpendingStabilityChart({
                 type="monotone"
                 dataKey="mc_10_25"
                 stackId="mc"
-                fill="#c4b5fd"
+                fill={CHART_COLORS.mcBandInner}
                 fillOpacity={0.35}
                 stroke="none"
                 isAnimationActive={false}
@@ -341,7 +343,7 @@ export function SpendingStabilityChart({
                 dataKey="mc_25_75"
                 stackId="mc"
                 name="Confidence band"
-                fill="#8b5cf6"
+                fill={CHART_COLORS.mcBandMiddle}
                 fillOpacity={0.2}
                 stroke="none"
                 isAnimationActive={false}
@@ -351,7 +353,7 @@ export function SpendingStabilityChart({
                 type="monotone"
                 dataKey="mc_75_90"
                 stackId="mc"
-                fill="#c4b5fd"
+                fill={CHART_COLORS.mcBandInner}
                 fillOpacity={0.35}
                 stroke="none"
                 isAnimationActive={false}
@@ -362,7 +364,7 @@ export function SpendingStabilityChart({
                 type="monotone"
                 dataKey="mc_90_95"
                 stackId="mc"
-                fill="#ede9fe"
+                fill={CHART_COLORS.mcBandOuter}
                 fillOpacity={0.4}
                 stroke="none"
                 isAnimationActive={false}
@@ -392,7 +394,7 @@ export function SpendingStabilityChart({
               type="monotone"
               dataKey="mc_p50"
               name="Sim. median"
-              stroke="#7c3aed"
+              stroke={CHART_COLORS.mcMedian}
               strokeWidth={2}
               strokeDasharray="6 3"
               dot={false}

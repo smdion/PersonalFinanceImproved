@@ -12,12 +12,12 @@ export function ReturnRatesSettings() {
   const user = useUser();
   const admin = isAdmin(user);
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.settings.returnRates.list.useQuery();
-  const upsertMut = trpc.settings.returnRates.upsert.useMutation({
-    onSuccess: () => utils.settings.returnRates.list.invalidate(),
+  const { data, isLoading } = trpc.retirement.returnRates.list.useQuery();
+  const upsertMut = trpc.retirement.returnRates.upsert.useMutation({
+    onSuccess: () => utils.retirement.returnRates.list.invalidate(),
   });
-  const deleteMut = trpc.settings.returnRates.delete.useMutation({
-    onSuccess: () => utils.settings.returnRates.list.invalidate(),
+  const deleteMut = trpc.retirement.returnRates.delete.useMutation({
+    onSuccess: () => utils.retirement.returnRates.list.invalidate(),
   });
 
   const [showAddRow, setShowAddRow] = useState(false);

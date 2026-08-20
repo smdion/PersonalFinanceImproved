@@ -664,6 +664,154 @@ describe("distributeContributions", () => {
     expect(result.indIntentional.get(indKey(brokA))).toBe(6000);
   });
 
+  // Pinned-value tests below, ahead of a planned consolidation of this
+  // formula with the identical one duplicated in contribution-routing.ts
+  // (audit Batch 2 Finding 5). These cover the 3 branches/inputs not
+  // exercised above — proRate scaling, contributionScaling "fixed_amount",
+  // and fixedContribScalesWithSalary — so the refactor can be verified to
+  // produce byte-identical results for both Step 1 (specRaw) and Step 5
+  // (indIntentional).
+
+  it("percent_of_salary scales by proRate (Step 1 + Step 5)", () => {
+    const brokA = makeIndividualAccount({
+      name: "Brok A",
+      category: "brokerage",
+      taxType: "afterTax",
+      startingBalance: 0,
+    });
+    const indBal = new Map<string, number>();
+    indBal.set(indKey(brokA), 0);
+
+    const specs: ContributionSpec[] = [
+      makeContributionSpec({
+        category: "brokerage",
+        name: "Brok A",
+        method: "percent_of_salary",
+        value: 0.05,
+        salaryFraction: 1,
+        baseAnnual: 6000,
+        taxTreatment: "after_tax",
+      }),
+    ];
+    const specToAccount = new Map<string, string>();
+    specToAccount.set("Brok A::after_tax", indKey(brokA));
+
+    const result = distributeContributions({
+      slots: [],
+      contributionSpecs: specs,
+      indAccts: [brokA],
+      indKey,
+      indBal,
+      indParentCat: new Map(),
+      specToAccount,
+      accountsWithSpecs: new Set(specToAccount.values()),
+      projectedSalary: 120000,
+      currentSalary: 120000,
+      limitGrowthRate: 0.03,
+      yearIndex: 0,
+      proRate: 0.5,
+      overflowToBrokerage: 0,
+      rampAmount: 0,
+    });
+
+    // 120000 * 1 * 0.05 * 0.5 = 3000
+    expect(result.indIntentional.get(indKey(brokA))).toBe(3000);
+  });
+
+  it("contributionScaling fixed_amount: baseAnnual × limitGrowthFactor × proRate, salary-independent (Step 5)", () => {
+    // Step 5 (indIntentional) only tracks isOverflowTarget categories, i.e.
+    // brokerage — use contributionScaling: "fixed_amount" there to isolate
+    // that branch (it's checked before the salary-scaling branch).
+    const brokA = makeIndividualAccount({
+      name: "Brok A",
+      category: "brokerage",
+      taxType: "afterTax",
+      startingBalance: 0,
+    });
+    const indBal = new Map<string, number>();
+    indBal.set(indKey(brokA), 0);
+
+    const specs: ContributionSpec[] = [
+      makeContributionSpec({
+        category: "brokerage",
+        name: "Brok A",
+        method: "fixed_monthly",
+        contributionScaling: "fixed_amount",
+        baseAnnual: 4000,
+        taxTreatment: "after_tax",
+      }),
+    ];
+    const specToAccount = new Map<string, string>();
+    specToAccount.set("Brok A::after_tax", indKey(brokA));
+
+    const result = distributeContributions({
+      slots: [],
+      contributionSpecs: specs,
+      indAccts: [brokA],
+      indKey,
+      indBal,
+      indParentCat: new Map(),
+      specToAccount,
+      accountsWithSpecs: new Set(specToAccount.values()),
+      // Deliberately mismatched from currentSalary to prove this branch
+      // ignores salary entirely.
+      projectedSalary: 250000,
+      currentSalary: 120000,
+      limitGrowthRate: 0.03,
+      yearIndex: 1,
+      proRate: 0.5,
+      overflowToBrokerage: 0,
+      rampAmount: 0,
+    });
+
+    // 4000 * 1.03 * 0.5 = 2060
+    expect(result.indIntentional.get(indKey(brokA))).toBe(2060);
+  });
+
+  it("fixedContribScalesWithSalary category: baseAnnual × (projectedSalary/currentSalary) × proRate", () => {
+    const brokA = makeIndividualAccount({
+      name: "Brok A",
+      category: "brokerage",
+      taxType: "afterTax",
+      startingBalance: 0,
+    });
+    const indBal = new Map<string, number>();
+    indBal.set(indKey(brokA), 0);
+
+    const specs: ContributionSpec[] = [
+      makeContributionSpec({
+        category: "brokerage",
+        name: "Brok A",
+        method: "fixed_monthly",
+        baseAnnual: 10000,
+        taxTreatment: "after_tax",
+      }),
+    ];
+    const specToAccount = new Map<string, string>();
+    specToAccount.set("Brok A::after_tax", indKey(brokA));
+
+    const result = distributeContributions({
+      slots: [],
+      contributionSpecs: specs,
+      indAccts: [brokA],
+      indKey,
+      indBal,
+      indParentCat: new Map(),
+      specToAccount,
+      accountsWithSpecs: new Set(specToAccount.values()),
+      projectedSalary: 130000,
+      currentSalary: 120000,
+      limitGrowthRate: 0.03,
+      yearIndex: 0,
+      proRate: 0.5,
+      overflowToBrokerage: 0,
+      rampAmount: 0,
+    });
+
+    // 10000 * (130000/120000) * 0.5 = 5416.67
+    expect(result.indIntentional.get(indKey(brokA))).toBe(5416.67);
+  });
+
   it("returns empty maps when no specs or slots", () => {
     const result = distributeContributions({
       slots: [],

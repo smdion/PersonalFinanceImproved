@@ -229,32 +229,32 @@ export function MortgageSettings() {
   const user = useUser();
   const admin = isAdmin(user);
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.settings.mortgageLoans.list.useQuery();
+  const { data, isLoading } = trpc.mortgage.mortgageLoans.list.useQuery();
   const { data: extraPayments } =
-    trpc.settings.mortgageExtraPayments.list.useQuery();
-  const createLoan = trpc.settings.mortgageLoans.create.useMutation({
+    trpc.mortgage.mortgageExtraPayments.list.useQuery();
+  const createLoan = trpc.mortgage.mortgageLoans.create.useMutation({
     onSuccess: () => {
-      utils.settings.mortgageLoans.invalidate();
+      utils.mortgage.mortgageLoans.invalidate();
       setAdding(false);
     },
   });
-  const updateLoan = trpc.settings.mortgageLoans.update.useMutation({
+  const updateLoan = trpc.mortgage.mortgageLoans.update.useMutation({
     onSuccess: () => {
-      utils.settings.mortgageLoans.invalidate();
+      utils.mortgage.mortgageLoans.invalidate();
       setEditingId(null);
     },
   });
-  const deleteLoan = trpc.settings.mortgageLoans.delete.useMutation({
-    onSuccess: () => utils.settings.mortgageLoans.invalidate(),
+  const deleteLoan = trpc.mortgage.mortgageLoans.delete.useMutation({
+    onSuccess: () => utils.mortgage.mortgageLoans.invalidate(),
   });
-  const createExtra = trpc.settings.mortgageExtraPayments.create.useMutation({
+  const createExtra = trpc.mortgage.mortgageExtraPayments.create.useMutation({
     onSuccess: () => {
-      utils.settings.mortgageExtraPayments.invalidate();
+      utils.mortgage.mortgageExtraPayments.invalidate();
       setAddingExtra(false);
     },
   });
-  const deleteExtra = trpc.settings.mortgageExtraPayments.delete.useMutation({
-    onSuccess: () => utils.settings.mortgageExtraPayments.invalidate(),
+  const deleteExtra = trpc.mortgage.mortgageExtraPayments.delete.useMutation({
+    onSuccess: () => utils.mortgage.mortgageExtraPayments.invalidate(),
   });
 
   const [adding, setAdding] = useState(false);

@@ -149,8 +149,6 @@ vi.mock("@/lib/trpc", () => ({
         computeSummary: { invalidate: vi.fn() },
         listHistory: { invalidate: vi.fn() },
         listSnapshots: { invalidate: vi.fn() },
-      },
-      settings: {
         portfolioSnapshots: { getLatest: { invalidate: vi.fn() } },
       },
     }),
@@ -168,8 +166,6 @@ vi.mock("@/lib/trpc", () => ({
       listSnapshots: {
         useQuery: () => ({ data: mockPaginatedSnapshots }),
       },
-    },
-    settings: {
       portfolioSnapshots: {
         getLatest: {
           useQuery: () => ({ data: mockLatestSnap, isLoading: false }),
@@ -186,11 +182,15 @@ vi.mock("@/lib/trpc", () => ({
           }),
         },
       },
-      performanceAccounts: {
-        list: { useQuery: () => ({ data: mockPerfAccounts }) },
-      },
+    },
+    settings: {
       people: {
         list: { useQuery: () => ({ data: [{ id: 1, name: "Alice" }] }) },
+      },
+    },
+    performance: {
+      performanceAccounts: {
+        list: { useQuery: () => ({ data: mockPerfAccounts }) },
       },
     },
     sync: {

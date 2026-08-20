@@ -266,6 +266,7 @@ export const contributionAccounts = pgTable(
   (table) => [
     index("contribution_accounts_job_id_idx").on(table.jobId),
     index("contribution_accounts_person_id_idx").on(table.personId),
+    index("contribution_accounts_perf_acct_idx").on(table.performanceAccountId),
     index("contribution_accounts_acct_type_idx").on(table.accountType),
     index("contribution_accounts_parent_cat_idx").on(table.parentCategory),
     index("contribution_accounts_is_active_idx").on(table.isActive),
@@ -528,6 +529,7 @@ export const savingsGoalProfileAllocations = pgTable(
       table.goalId,
       table.budgetProfileId,
     ),
+    index("savings_goal_profile_alloc_profile_idx").on(table.budgetProfileId),
   ],
 );
 
@@ -648,6 +650,7 @@ export const performanceAccounts = pgTable(
       table.institution,
       table.accountLabel,
     ),
+    index("performance_accounts_owner_id_idx").on(table.ownerPersonId),
     index("performance_accounts_category_idx").on(table.parentCategory),
     index("performance_accounts_is_active_idx").on(table.isActive),
     check(
@@ -696,7 +699,6 @@ export const portfolioAccounts = pgTable(
   (table) => [
     index("portfolio_accounts_snapshot_id_idx").on(table.snapshotId),
     index("portfolio_accounts_owner_id_idx").on(table.ownerPersonId),
-    index("idx_portfolio_accounts_owner").on(table.ownerPersonId),
     index("portfolio_accounts_perf_acct_idx").on(table.performanceAccountId),
     index("portfolio_accounts_acct_type_idx").on(table.accountType),
     index("portfolio_accounts_parent_cat_idx").on(table.parentCategory),
@@ -1077,6 +1079,13 @@ export const mortgageLoans = pgTable(
     id: serial("id").primaryKey(),
     name: text("name").notNull(),
     isActive: boolean("is_active").notNull().default(false),
+    // Self-reference to this table's own id (the loan this one replaced via
+    // refinance). FK constraint (ON DELETE SET NULL, matching
+    // savings_goals.parent_goal_id's precedent) added in
+    // 0019_mortgage_refinanced_from_fk.sql after a data audit confirmed no
+    // orphaned/dangling values — Drizzle can't express a self-reference
+    // inline, so the constraint lives in the hand-written migration, not
+    // here (same pattern as parent_goal_id).
     refinancedFromId: integer("refinanced_from_id"),
     paidOffDate: date("paid_off_date"),
     principalAndInterest: decimal("principal_and_interest", {
@@ -1117,7 +1126,10 @@ export const mortgageLoans = pgTable(
     apiBalance: decimal("api_balance", { precision: 14, scale: 2 }),
     apiBalanceDate: date("api_balance_date"),
   },
-  (table) => [index("mortgage_loans_is_active_idx").on(table.isActive)],
+  (table) => [
+    index("mortgage_loans_is_active_idx").on(table.isActive),
+    index("mortgage_loans_refinanced_from_id_idx").on(table.refinancedFromId),
+  ],
 );
 
 export const mortgageWhatIfScenarios = pgTable(
@@ -1628,6 +1640,10 @@ export const apiConnections = pgTable(
     config: jsonb("config").$type<ApiConfig>().notNull(),
     accountMappings: jsonb("account_mappings").$type<AccountMapping[]>(),
     skippedCategoryIds: jsonb("skipped_category_ids").$type<string[]>(),
+    // References budgetProfiles.id — no DB-level FK constraint. Always
+    // resolved via allProfiles.find(p => p.id === conn.linkedProfileId) in
+    // server code (budget.ts, sync/core.ts); despite the generic name it
+    // is never polymorphic across other tables.
     linkedProfileId: integer("linked_profile_id"),
     linkedColumnIndex: integer("linked_column_index"),
     serverKnowledge: integer("server_knowledge"),
@@ -1942,6 +1958,7 @@ export const mcPresetGlidePaths = pgTable(
       table.assetClassId,
     ),
     index("mc_preset_gp_preset_idx").on(table.presetId),
+    index("mc_preset_gp_asset_class_idx").on(table.assetClassId),
   ],
 );
 
@@ -1959,6 +1976,7 @@ export const mcPresetReturnOverrides = pgTable(
   },
   (table) => [
     uniqueIndex("mc_preset_ro_idx").on(table.presetId, table.assetClassId),
+    index("mc_preset_ro_asset_class_idx").on(table.assetClassId),
   ],
 );
 

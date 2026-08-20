@@ -9,6 +9,10 @@ import {
   resolveCompensation,
 } from "@/server/helpers/salary";
 import { findActiveJob } from "@/lib/pure/profiles";
+import {
+  computeHomeImpCumulative,
+  resolveOtherAssetsForYear,
+} from "@/lib/pure/historical";
 import { zYearEndTargeting, toSalaryActiveMap } from "./_shared";
 
 export const historicalRouter = createTRPCRouter({
@@ -104,11 +108,7 @@ export const historicalRouter = createTRPCRouter({
       >();
       const allYears = yearEndHistory.map((r) => r.year);
       for (const year of allYears) {
-        const itemsUpToYear = homeImprovements.filter((hi) => hi.year <= year);
-        const cumulative = itemsUpToYear.reduce(
-          (sum, hi) => sum + toNumber(hi.cost),
-          0,
-        );
+        const cumulative = computeHomeImpCumulative(homeImprovements, year);
         const itemsThisYear = homeImprovements.filter((hi) => hi.year === year);
         homeImpByYear.set(year, { items: itemsThisYear, cumulative });
       }
@@ -117,33 +117,20 @@ export const historicalRouter = createTRPCRouter({
       const otherAssetsByYear = new Map<
         number,
         {
-          items: { name: string; value: number; note: string | null }[];
+          items: {
+            id?: number;
+            name: string;
+            value: number;
+            note: string | null;
+          }[];
           total: number;
         }
       >();
-      const uniqueAssetNames = Array.from(
-        new Set(otherAssets.map((a) => a.name)),
-      );
       for (const year of allYears) {
-        const items: { name: string; value: number; note: string | null }[] =
-          [];
-        for (const name of uniqueAssetNames) {
-          // Find the most recent entry for this asset at or before this year
-          const entries = otherAssets.filter(
-            (a) => a.name === name && a.year <= year,
-          );
-          if (entries.length > 0) {
-            const latest = entries[entries.length - 1]!; // already sorted by year asc
-            const val = toNumber(latest.value);
-            if (val > 0) {
-              items.push({ name, value: val, note: latest.note });
-            }
-          }
-        }
-        otherAssetsByYear.set(year, {
-          items,
-          total: items.reduce((s, i) => s + i.value, 0),
-        });
+        otherAssetsByYear.set(
+          year,
+          resolveOtherAssetsForYear(otherAssets, year),
+        );
       }
 
       // Build notes lookup: year:field → note

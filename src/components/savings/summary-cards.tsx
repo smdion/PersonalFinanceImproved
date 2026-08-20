@@ -3,7 +3,7 @@
 import React from "react";
 import { Card, Metric, ProgressBar } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { sumBy } from "@/lib/utils/math";
+import { sumBy, safeDivide } from "@/lib/utils/math";
 import { HelpTip } from "@/components/ui/help-tip";
 import type { GoalProjection } from "./types";
 
@@ -83,7 +83,7 @@ export function SummaryCards({
           {poolGoals
             .filter((g) => g.monthlyAllocation > 0)
             .map((g) => {
-              const pct = pool > 0 ? (g.monthlyAllocation / pool) * 100 : 0;
+              const pct = safeDivide(g.monthlyAllocation, pool, 0) * 100;
               return (
                 <div key={g.name} className="flex justify-between text-xs">
                   <span className="text-muted">{g.name}</span>

@@ -8,6 +8,7 @@ import {
 } from "@/lib/utils/format";
 import { GoalProjection, monthKey } from "./types";
 import { FUND_COLORS } from "@/lib/utils/colors";
+import { safeDivide } from "@/lib/utils/math";
 
 interface ContributionGridProps {
   goalProjections: GoalProjection[];
@@ -47,7 +48,7 @@ function DefaultContributionCell({
   const [dollarValue, setDollarValue] = useState("");
   const [percentValue, setPercentValue] = useState("");
 
-  const pct = pool > 0 ? (gp.monthlyAllocation / pool) * 100 : 0;
+  const pct = safeDivide(gp.monthlyAllocation, pool, 0) * 100;
 
   // Already-funded funds show a special indicator instead of editable $0
   const isFunded =

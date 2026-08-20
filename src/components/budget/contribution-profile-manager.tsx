@@ -6,9 +6,11 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { CONTRIBUTION_METHOD_LABELS } from "@/lib/config/display-labels";
 import { HelpTip } from "@/components/ui/help-tip";
 import { FormError } from "@/components/ui/form-error";
+import { FormField, FormInput } from "@/components/forms";
 import { useScenario } from "@/lib/context/scenario-context";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
+import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
 import { confirm, confirmWithDiff } from "@/components/ui/confirm-dialog";
 import { diffContribProfileSwap } from "@/lib/pure/contrib-profile-diff";
@@ -797,28 +799,22 @@ function ProfileEditor({
         <div className="flex items-start justify-between gap-3">
           {/* Name & Description */}
           <div className="grid grid-cols-2 gap-3 flex-1">
-            <div>
-              <label className="text-label font-medium text-muted">Name</label>
-              <input
+            <FormField label="Name">
+              <FormInput
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., Austin Relocation"
-                className="mt-0.5 w-full px-2 py-1.5 text-xs border rounded bg-surface-primary text-primary"
               />
-            </div>
-            <div>
-              <label className="text-label font-medium text-muted">
-                Description
-              </label>
-              <input
+            </FormField>
+            <FormField label="Description">
+              <FormInput
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Optional description"
-                className="mt-0.5 w-full px-2 py-1.5 text-xs border rounded bg-surface-primary text-primary"
               />
-            </div>
+            </FormField>
           </div>
           <div className="flex items-center gap-2 shrink-0 pt-4">
             <button
@@ -1096,19 +1092,10 @@ function ProfileInlineEditor({
   const { data: profile } = trpc.contributionProfile.getById.useQuery({
     id: profileId,
   });
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const { drafts, setDraft, clearDraft } = useDraftCommit();
   const updateMutation = trpc.contributionProfile.update.useMutation({
     onSuccess: () => onSaved(),
   });
-
-  const setDraft = (key: string, value: string) =>
-    setDrafts((prev) => ({ ...prev, [key]: value }));
-  const clearDraft = (key: string) =>
-    setDrafts((prev) => {
-      const next = { ...prev };
-      delete next[key];
-      return next;
-    });
 
   if (!profile) return null;
 
@@ -1217,29 +1204,23 @@ function ProfileInlineEditor({
       />
 
       <div className="grid grid-cols-2 gap-3 mb-5">
-        <div>
-          <label className="text-label font-medium text-muted">Name</label>
-          <input
+        <FormField label="Name">
+          <FormInput
             type="text"
             value={drafts["profile:name"] ?? profile.name}
             onChange={(e) => setDraft("profile:name", e.target.value)}
             onBlur={commitProfileName}
-            className="mt-0.5 w-full px-2 py-1.5 text-xs border rounded bg-surface-primary text-primary"
           />
-        </div>
-        <div>
-          <label className="text-label font-medium text-muted">
-            Description
-          </label>
-          <input
+        </FormField>
+        <FormField label="Description">
+          <FormInput
             type="text"
             value={drafts["profile:description"] ?? profile.description ?? ""}
             onChange={(e) => setDraft("profile:description", e.target.value)}
             onBlur={commitProfileDescription}
             placeholder="Optional description"
-            className="mt-0.5 w-full px-2 py-1.5 text-xs border rounded bg-surface-primary text-primary"
           />
-        </div>
+        </FormField>
       </div>
 
       {profile.accountDetails.length > 0 && (

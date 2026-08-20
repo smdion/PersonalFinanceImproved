@@ -32,6 +32,8 @@ import type {
 import { formatPercent } from "../utils/format";
 import { roundToCents, safeDivide, sumBy } from "../utils/math";
 import { MS_PER_DAY } from "../constants";
+import { PAY_PERIOD_LABELS } from "../config/display-labels";
+import { sumBracketTax } from "./tax-brackets";
 
 /** Maps pay frequency to the number of pay periods per year. */
 const PERIODS_PER_YEAR: Record<string, number> = {
@@ -71,12 +73,14 @@ function lookupFederalWithholding(
   bracketMin: number;
   baseWithholding: number;
 } {
-  let annualTax = 0;
   let marginalRate = 0;
   let bracketMin = 0;
-  let baseWithholding = 0;
 
-  // First pass: find the highest bracket that applies (for marginal rate reporting)
+  // First pass: find the highest bracket that applies (for marginal rate reporting).
+  // Boundary-inclusive (>=), unlike sumBracketTax's own marginalRate — this
+  // function needs the bracket the wage has REACHED (even if its taxable
+  // slice is 0, exactly at the boundary) to compute bracketMin/baseWithholding
+  // for the IRS withholding-table display; kept as its own pass deliberately.
   for (let i = brackets.length - 1; i >= 0; i--) {
     const bracket = brackets[i]!;
     if (adjustedAnnualWage >= bracket.min) {
@@ -86,27 +90,63 @@ function lookupFederalWithholding(
     }
   }
 
-  // Second pass: compute total tax by summing each bracket's contribution
-  for (let i = 0; i < brackets.length; i++) {
-    const bracket = brackets[i]!;
-    if (adjustedAnnualWage <= bracket.min) break;
-
-    const upper =
-      bracket.max !== null
-        ? Math.min(adjustedAnnualWage, bracket.max)
-        : adjustedAnnualWage;
-    const taxableInBracket = upper - bracket.min;
-    if (taxableInBracket > 0) {
-      annualTax += taxableInBracket * bracket.rate;
-    }
-  }
+  // Total tax: shared with tax.ts's annual-liability bracket walk
+  const annualTax = sumBracketTax(adjustedAnnualWage, brackets).total;
 
   // Base withholding = total tax minus the marginal bracket's contribution
   // This matches the IRS withholding table format: "base + rate × (wage - bracket floor)"
-  baseWithholding =
+  const baseWithholding =
     annualTax - (adjustedAnnualWage - bracketMin) * marginalRate;
 
   return { annualTax, marginalRate, bracketMin, baseWithholding };
+}
+
+/**
+ * Walks `anchorPayDate` forward or backward by `intervalDays` until it lands
+ * on the first payday on or after `referenceDate` (inclusive — the result
+ * may equal `referenceDate` exactly). Used to align an arbitrary known
+ * payday to the start of whichever year is being analyzed, before walking
+ * paydays forward from there.
+ *
+ * NOT used by findNextPayDate, which needs the payday strictly after (not
+ * on) its reference date — a different boundary, kept separate deliberately
+ * rather than folded into this same helper.
+ */
+function alignPaydayOnOrAfter(
+  anchorPayDate: Date,
+  referenceDate: Date,
+  intervalDays: number,
+): Date {
+  const msPerDay = MS_PER_DAY;
+  let payday = new Date(anchorPayDate);
+  while (payday > referenceDate) {
+    payday = new Date(payday.getTime() - intervalDays * msPerDay);
+  }
+  while (payday < referenceDate) {
+    payday = new Date(payday.getTime() + intervalDays * msPerDay);
+  }
+  return payday;
+}
+
+/**
+ * Social Security withholding for one pay period, given the wage base cap.
+ * Three cases: fully under the cap, fully over it (YTD already exceeded the
+ * cap before this period), or straddling it (this period crosses the cap).
+ */
+function computeSSWithholding(
+  periodFicaBase: number,
+  ytdFicaBaseAfter: number,
+  ssWageBase: number,
+  ssRate: number,
+): number {
+  if (ytdFicaBaseAfter <= ssWageBase) {
+    return periodFicaBase * ssRate;
+  }
+  if (ytdFicaBaseAfter - periodFicaBase >= ssWageBase) {
+    return 0;
+  }
+  const remainingBase = ssWageBase - (ytdFicaBaseAfter - periodFicaBase);
+  return remainingBase * ssRate;
 }
 
 /** Pre-tax treatments: traditional 401k ('pre_tax') and HSA ('hsa') both reduce taxable income. */
@@ -450,14 +490,8 @@ function findExtraPaycheckMonths(
   // Use UTC throughout to avoid timezone-induced off-by-one errors.
   // Anchor dates are parsed from date strings (UTC midnight), so all arithmetic must stay in UTC.
   const msPerDay = MS_PER_DAY;
-  let payday = new Date(anchorPayDate);
   const jan1 = new Date(Date.UTC(year, 0, 1));
-  while (payday > jan1) {
-    payday = new Date(payday.getTime() - 14 * msPerDay);
-  }
-  while (payday < jan1) {
-    payday = new Date(payday.getTime() + 14 * msPerDay);
-  }
+  let payday = alignPaydayOnOrAfter(anchorPayDate, jan1, 14);
 
   // Count paydays per month for the year (using UTC month)
   const paydayCounts = new Array(12).fill(0) as number[];
@@ -492,9 +526,7 @@ export function countPeriodsElapsed(
   const jan1 = new Date(Date.UTC(year, 0, 1));
 
   if (payPeriod === "biweekly") {
-    let payday = new Date(anchorPayDate);
-    while (payday > jan1) payday = new Date(payday.getTime() - 14 * msPerDay);
-    while (payday < jan1) payday = new Date(payday.getTime() + 14 * msPerDay);
+    let payday = alignPaydayOnOrAfter(anchorPayDate, jan1, 14);
 
     let count = 0;
     while (payday <= asOfDate) {
@@ -516,9 +548,7 @@ export function countPeriodsElapsed(
   }
 
   if (payPeriod === "weekly") {
-    let payday = new Date(anchorPayDate);
-    while (payday > jan1) payday = new Date(payday.getTime() - 7 * msPerDay);
-    while (payday < jan1) payday = new Date(payday.getTime() + 7 * msPerDay);
+    let payday = alignPaydayOnOrAfter(anchorPayDate, jan1, 7);
 
     let count = 0;
     while (payday <= asOfDate) {
@@ -566,9 +596,7 @@ export function getExtraPaycheckMonthKeys(
     const jan1 = new Date(Date.UTC(year, 0, 1));
     const dec31 = new Date(Date.UTC(year, 11, 31));
 
-    let payday = new Date(anchorPayDate);
-    while (payday > jan1) payday = new Date(payday.getTime() - 14 * msPerDay);
-    while (payday < jan1) payday = new Date(payday.getTime() + 14 * msPerDay);
+    let payday = alignPaydayOnOrAfter(anchorPayDate, jan1, 14);
 
     const counts = new Array(12).fill(0) as number[];
     while (payday <= dec31) {
@@ -618,12 +646,8 @@ function findBonusPeriod(
 
   if (payPeriod === "biweekly" || payPeriod === "weekly") {
     const interval = payPeriod === "biweekly" ? 14 : 7;
-    let payday = new Date(anchorPayDate);
     const jan1 = new Date(Date.UTC(year, 0, 1));
-    while (payday > jan1)
-      payday = new Date(payday.getTime() - interval * msPerDay);
-    while (payday < jan1)
-      payday = new Date(payday.getTime() + interval * msPerDay);
+    let payday = alignPaydayOnOrAfter(anchorPayDate, jan1, interval);
 
     let periodNum = 0;
     const dec31 = new Date(Date.UTC(year, 11, 31));
@@ -709,15 +733,12 @@ function buildYearSchedule(
     ytdFicaBase += periodFicaBase;
 
     // Social Security tax: three cases based on where we are relative to the wage base cap
-    let periodSS: number;
-    if (ytdFicaBase <= ssWageBase) {
-      periodSS = periodFicaBase * ssRate;
-    } else if (ytdFicaBase - periodFicaBase >= ssWageBase) {
-      periodSS = 0;
-    } else {
-      const remainingBase = ssWageBase - (ytdFicaBase - periodFicaBase);
-      periodSS = remainingBase * ssRate;
-    }
+    const periodSS = computeSSWithholding(
+      periodFicaBase,
+      ytdFicaBase,
+      ssWageBase,
+      ssRate,
+    );
 
     const periodMed = periodFicaBase * medRate;
 
@@ -782,7 +803,10 @@ function findNextPayDate(
   if (payPeriod === "biweekly" || payPeriod === "weekly") {
     const interval = payPeriod === "biweekly" ? 14 : 7;
     let payday = new Date(anchorPayDate);
-    // Walk backward past asOfDate, then forward to find first date > asOfDate
+    // Walk backward past asOfDate, then forward to find first date > asOfDate.
+    // Deliberately NOT alignPaydayOnOrAfter — that helper's boundary is
+    // inclusive (payday may equal referenceDate); this needs the payday
+    // strictly after asOfDate, so it keeps its own loop.
     while (payday > asOfDate)
       payday = new Date(payday.getTime() - interval * msPerDay);
     while (payday <= asOfDate)
@@ -820,13 +844,10 @@ function buildPayFrequencyLabel(
   payPeriod: string,
   payWeek: "even" | "odd" | "na",
 ): string {
-  const labels: Record<string, string> = {
-    weekly: "Weekly",
-    biweekly: "Biweekly",
-    semimonthly: "Semi-Monthly (1st & 15th)",
-    monthly: "Monthly",
-  };
-  const base = labels[payPeriod] ?? payPeriod;
+  const base = PAY_PERIOD_LABELS[payPeriod] ?? payPeriod;
+  if (payPeriod === "semimonthly") {
+    return `${base} (1st & 15th)`;
+  }
   if (payPeriod === "biweekly" && payWeek !== "na") {
     return `${base} (${payWeek === "even" ? "Even" : "Odd"} Weeks)`;
   }
@@ -1053,15 +1074,12 @@ export function calculateBlendedAnnual(
 
       // FICA: track cumulative base for SS cap
       ytdFicaBase += segFicaBase;
-      let periodSS: number;
-      if (ytdFicaBase <= ssWageBase) {
-        periodSS = segFicaBase * ssRate;
-      } else if (ytdFicaBase - segFicaBase >= ssWageBase) {
-        periodSS = 0;
-      } else {
-        const remainingBase = ssWageBase - (ytdFicaBase - segFicaBase);
-        periodSS = remainingBase * ssRate;
-      }
+      const periodSS = computeSSWithholding(
+        segFicaBase,
+        ytdFicaBase,
+        ssWageBase,
+        ssRate,
+      );
       const periodMed = segFicaBase * medRate;
 
       totalFicaSS += periodSS;

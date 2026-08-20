@@ -1,11 +1,15 @@
-// Amber uses text-amber-800 (not 700) because text-amber-700 on bg-amber-100
-// falls below WCAG AA 4.5:1 contrast for small text (v0.5 expert-review M14).
+import { STATUS_COLORS } from "@/lib/utils/colors";
+
+// red/green/amber/blue render from the shared STATUS_COLORS token (Phase
+// 4a) — Badge's bg+text pair is the source those shades were seeded from,
+// so this is a self-reference back to the values that used to live here
+// directly. gray/purple/indigo aren't "status" semantics and stay local.
 const colorStyles = {
   gray: "bg-surface-strong text-muted",
-  blue: "bg-blue-50 text-blue-700",
-  green: "bg-green-100 text-green-700",
-  red: "bg-red-100 text-red-700",
-  amber: "bg-amber-100 text-amber-800",
+  blue: `${STATUS_COLORS.blue.bg} ${STATUS_COLORS.blue.text}`,
+  green: `${STATUS_COLORS.green.bg} ${STATUS_COLORS.green.text}`,
+  red: `${STATUS_COLORS.red.bg} ${STATUS_COLORS.red.text}`,
+  amber: `${STATUS_COLORS.amber.bg} ${STATUS_COLORS.amber.text}`,
   purple: "bg-purple-50 text-purple-600",
   indigo: "bg-indigo-50 text-indigo-700",
 } as const;

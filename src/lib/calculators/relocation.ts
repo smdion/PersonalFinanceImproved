@@ -26,7 +26,11 @@ import type {
   RelocationResult,
   RelocationYearProjection,
 } from "./types";
-import { roundToCents, calculateLoanMonthlyPayment } from "../utils/math";
+import {
+  roundToCents,
+  calculateLoanMonthlyPayment,
+  safeDivide,
+} from "../utils/math";
 
 /**
  * Simple portfolio growth model for a single year.
@@ -183,7 +187,7 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
   );
   // Decimal fraction (0.40 = 40%), consistent with every other *Percent/*Rate
   // field in the engine — the display site uses formatPercent() (M32).
-  const pctIncrease = currentAnnual > 0 ? annualDelta / currentAnnual : 0;
+  const pctIncrease = safeDivide(annualDelta, currentAnnual, 0);
 
   // Pre-compute large purchase data
   const purchaseData = precomputePurchases(largePurchases);
@@ -193,31 +197,32 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
 
   // Savings rates (simplified: available = salary - expenses)
   const currentSavingsRate =
-    currentCombinedSalary > 0
-      ? roundToCents(
-          ((currentCombinedSalary - currentAnnual) / currentCombinedSalary) *
-            100,
-        ) / 100
-      : 0;
+    roundToCents(
+      safeDivide(
+        currentCombinedSalary - currentAnnual,
+        currentCombinedSalary,
+        0,
+      ) * 100,
+    ) / 100;
   const relocationSavingsRate =
-    relocationCombinedSalary > 0
-      ? roundToCents(
-          ((relocationCombinedSalary - relocationAnnual) /
-            relocationCombinedSalary) *
-            100,
-        ) / 100
-      : 0;
+    roundToCents(
+      safeDivide(
+        relocationCombinedSalary - relocationAnnual,
+        relocationCombinedSalary,
+        0,
+      ) * 100,
+    ) / 100;
   const savingsRateDrop =
     roundToCents((currentSavingsRate - relocationSavingsRate) * 100) / 100;
 
   // FI targets: annual expenses / withdrawal rate
   // Relocation FI target includes ongoing purchase costs (they're permanent expenses in retirement)
-  const currentFiTarget =
-    withdrawalRate > 0 ? roundToCents(currentAnnual / withdrawalRate) : 0;
-  const relocationFiTarget =
-    withdrawalRate > 0
-      ? roundToCents((relocationAnnual + ssMonthly * 12) / withdrawalRate)
-      : 0;
+  const currentFiTarget = roundToCents(
+    safeDivide(currentAnnual, withdrawalRate, 0),
+  );
+  const relocationFiTarget = roundToCents(
+    safeDivide(relocationAnnual + ssMonthly * 12, withdrawalRate, 0),
+  );
   const additionalNestEgg = roundToCents(relocationFiTarget - currentFiTarget);
 
   // Build lookup maps

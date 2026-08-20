@@ -18,6 +18,7 @@ import type { db as _db } from "@/lib/db";
 import {
   DEFAULT_WITHDRAWAL_RATE,
   DEFAULT_MC_INFLATION_RISK,
+  DEFAULT_ENDOWMENT_ROLLING_YEARS,
 } from "@/lib/constants";
 import type {
   AccountCategory,
@@ -173,7 +174,7 @@ export function buildStrategyParams(settings: {
     },
     endowment: {
       withdrawalPercent: toNumber(settings.enWithdrawalPercent ?? "0.05"),
-      rollingYears: settings.enRollingYears ?? 10,
+      rollingYears: settings.enRollingYears ?? DEFAULT_ENDOWMENT_ROLLING_YEARS,
       floorPercent: toNumber(settings.enFloorPercent ?? "0.90"),
     },
     vanguard_dynamic: {

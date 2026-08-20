@@ -7,15 +7,14 @@ import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useInlineNumberEdit } from "@/lib/hooks/use-inline-number-edit";
 import { formatDate } from "@/lib/utils/format";
 import {
   PERF_CATEGORY_PORTFOLIO,
-  PERF_CATEGORY_BROKERAGE,
-  FULLY_RETIREMENT_PERF_CATEGORIES,
   accountTypeToPerformanceCategory,
   type PerfCategory,
 } from "@/lib/config/display-labels";
-import { isRetirementParent } from "@/lib/config/account-types";
+import { isInRetirementPerformanceRollup } from "@/lib/config/account-types";
 import { PageHeader } from "@/components/ui/page-header";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -53,8 +52,6 @@ export default function PerformancePage() {
   const utils = trpc.useUtils();
   const [activeCategory, setActiveCategory] = useState(PERF_CATEGORY_PORTFOLIO);
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
-  const [editingCell, setEditingCell] = useState<EditingCell>(null);
-  const [editValue, setEditValue] = useState("");
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const [showUpdatePerformance, setShowUpdatePerformance] = useState(false);
   const [tableLocked, setTableLocked] = useState(true);
@@ -86,6 +83,34 @@ export default function PerformancePage() {
   const finalizeYear = trpc.performance.finalizeYear.useMutation({
     onSuccess: () => utils.performance.computeSummary.invalidate(),
   });
+
+  const {
+    editingKey: editingCell,
+    editValue,
+    setEditValue,
+    startEdit: startEditRaw,
+    commit: saveEdit,
+    handleKeyDown,
+  } = useInlineNumberEdit<NonNullable<EditingCell>>({
+    onCommit: ({ type, id, field }, value) => {
+      if (type === "annual") {
+        updateAnnual.mutate({ id, [field]: value });
+      } else if (type === "master") {
+        updateCostBasis.mutate({ performanceAccountId: id, costBasis: value });
+      } else {
+        updateAccount.mutate({ id, [field]: value });
+      }
+    },
+  });
+  const startEdit = (
+    type: "annual" | "account" | "master",
+    id: number,
+    field: string,
+    currentValue: number,
+  ) => {
+    if (!canEdit) return;
+    startEditRaw({ type, id, field }, currentValue);
+  };
 
   if (isLoading) {
     return (
@@ -136,7 +161,7 @@ export default function PerformancePage() {
   // closed/rolled-over account still had real balances in past years, and
   // the router's own Portfolio/Retirement rollups don't filter by current
   // isActive status when summing historical account_performance rows (see
-  // isInRetirementRollup below). Restricting the default to active-only
+  // isInRetirementPerformanceRollup below). Restricting the default to active-only
   // would make historical years permanently fail to match a whole-category
   // selection, defeating the stored-data-preference logic. The account
   // picker's own "Show inactive" toggle is a separate display concern —
@@ -230,23 +255,11 @@ export default function PerformancePage() {
   function setsEqual(a: Set<number>, b: Set<number>): boolean {
     return a.size === b.size && [...a].every((x) => b.has(x));
   }
-  // Mirrors the router's exact rollup definitions (performance.ts ~line
-  // 530-620) — NOT a blanket parentCategory filter. Retirement = every
-  // 401k/IRA + HSA account (regardless of parentCategory) plus only the
-  // Brokerage-category accounts tagged parentCategory==="Retirement".
   // Portfolio = grand total of every account-type category, unconditionally.
-  function isInRetirementRollup(
-    accountType: string | null,
-    parentCategory: string,
-  ): boolean {
-    const cat = accountTypeToPerformanceCategory(accountType);
-    if ((FULLY_RETIREMENT_PERF_CATEGORIES as readonly string[]).includes(cat)) {
-      return true;
-    }
-    return (
-      cat === PERF_CATEGORY_BROKERAGE && isRetirementParent(parentCategory)
-    );
-  }
+  // Retirement's definition (401k/IRA + HSA regardless of parentCategory,
+  // plus only Brokerage-category accounts tagged parentCategory===
+  // "Retirement") is shared with the router via isInRetirementPerformanceRollup
+  // — single source of truth, not mirrored here (audit Batch 31 Finding 1).
   function matchedCategoryForYear(year: number): string | null {
     const yearAccounts = (accountRows as AccountRow[]).filter(
       (r) => r.year === year,
@@ -272,7 +285,9 @@ export default function PerformancePage() {
     if ((parentCategories ?? []).includes("Retirement")) {
       const retIds = new Set(
         yearAccounts
-          .filter((r) => isInRetirementRollup(r.accountType, r.parentCategory))
+          .filter((r) =>
+            isInRetirementPerformanceRollup(r.accountType, r.parentCategory),
+          )
           .map((r) => r.performanceAccountId)
           .filter((id): id is number => id != null),
       );
@@ -351,7 +366,9 @@ export default function PerformancePage() {
       label: "Retirement",
       ids: new Set(
         typedMasterAccounts
-          .filter((m) => isInRetirementRollup(m.accountType, m.parentCategory))
+          .filter((m) =>
+            isInRetirementPerformanceRollup(m.accountType, m.parentCategory),
+          )
           .map((m) => m.id),
       ),
     },
@@ -367,44 +384,6 @@ export default function PerformancePage() {
     const match = allQuickSelects.find((o) => o.label === label);
     if (match) setSelectedAccountIds(new Set(match.ids));
   };
-
-  function startEdit(
-    type: "annual" | "account" | "master",
-    id: number,
-    field: string,
-    currentValue: number,
-  ) {
-    if (!canEdit) return;
-    setEditingCell({ type, id, field });
-    setEditValue(String(currentValue));
-  }
-
-  function saveEdit() {
-    if (!editingCell) return;
-    const { type, id, field } = editingCell;
-    const value = editValue.trim();
-    if (value === "") {
-      setEditingCell(null);
-      return;
-    }
-    if (type === "annual") {
-      updateAnnual.mutate({ id, [field]: value });
-    } else if (type === "master") {
-      updateCostBasis.mutate({ performanceAccountId: id, costBasis: value });
-    } else {
-      updateAccount.mutate({ id, [field]: value });
-    }
-    setEditingCell(null);
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      saveEdit();
-    } else if (e.key === "Escape") {
-      setEditingCell(null);
-    }
-  }
 
   return (
     <div>

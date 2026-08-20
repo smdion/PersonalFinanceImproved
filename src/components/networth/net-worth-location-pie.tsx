@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { safeDivide } from "@/lib/utils/math";
 import { sumBy } from "@/lib/utils/math";
 import {
   PieChart,
@@ -100,7 +101,7 @@ export function NetWorthLocationPie({
               </span>
               <div className="text-right">
                 <span className="font-medium">
-                  {formatPercent(total > 0 ? d.value / total : 0)}
+                  {formatPercent(safeDivide(d.value, total, 0))}
                 </span>
                 <span className="text-xs text-faint ml-2">
                   {formatCurrency(d.value)}

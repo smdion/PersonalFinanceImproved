@@ -67,14 +67,12 @@ const PROFILE_OWNED_CONTRIB_FIELDS = [
 export function useContributionAccountsMutations({
   allContribs,
   activeContribProfileId,
-  onCreatePerfSuccess,
 }: {
   allContribs: ContribRecord[];
   /** The globally-effective Contribution Profile id (Plan pin -> globally-
    *  active), if any. When set, PROFILE_OWNED_CONTRIB_FIELDS edits route
    *  here instead of the raw account row. */
   activeContribProfileId?: number | null;
-  onCreatePerfSuccess?: () => void;
 }) {
   const utils = trpc.useUtils();
 
@@ -88,25 +86,30 @@ export function useContributionAccountsMutations({
       },
     });
 
-  const updatePerfMut = trpc.settings.performanceAccounts.update.useMutation({
-    onSuccess: () => {
-      utils.settings.performanceAccounts.invalidate();
-      utils.retirement.invalidate();
-      utils.projection.invalidate();
-      utils.networth.invalidate();
+  const updatePerfMut = trpc.performance.performanceAccounts.update.useMutation(
+    {
+      onSuccess: () => {
+        utils.performance.performanceAccounts.invalidate();
+        utils.retirement.invalidate();
+        utils.projection.invalidate();
+        utils.networth.invalidate();
+      },
     },
-  });
+  );
 
-  const createPerfMut = trpc.settings.performanceAccounts.create.useMutation({
-    onSuccess: () => {
-      utils.settings.performanceAccounts.invalidate();
-      onCreatePerfSuccess?.();
+  const createPerfMut = trpc.performance.performanceAccounts.create.useMutation(
+    {
+      onSuccess: () => {
+        utils.performance.performanceAccounts.invalidate();
+      },
     },
-  });
+  );
 
-  const deletePerfMut = trpc.settings.performanceAccounts.delete.useMutation({
-    onSuccess: () => utils.settings.performanceAccounts.invalidate(),
-  });
+  const deletePerfMut = trpc.performance.performanceAccounts.delete.useMutation(
+    {
+      onSuccess: () => utils.performance.performanceAccounts.invalidate(),
+    },
+  );
 
   const updateContribMut =
     trpc.settings.contributionAccounts.update.useMutation({
@@ -127,17 +130,17 @@ export function useContributionAccountsMutations({
     });
 
   const updatePortfolioAccountMut =
-    trpc.settings.portfolioSnapshots.updateAccount.useMutation({
+    trpc.networth.portfolioSnapshots.updateAccount.useMutation({
       onSuccess: () => {
-        utils.settings.portfolioSnapshots.getLatest.invalidate();
+        utils.networth.portfolioSnapshots.getLatest.invalidate();
         utils.networth.invalidate();
       },
     });
 
   const createPortfolioAccountMut =
-    trpc.settings.portfolioSnapshots.createAccount.useMutation({
+    trpc.networth.portfolioSnapshots.createAccount.useMutation({
       onSuccess: () => {
-        utils.settings.portfolioSnapshots.getLatest.invalidate();
+        utils.networth.portfolioSnapshots.getLatest.invalidate();
         utils.networth.invalidate();
       },
     });

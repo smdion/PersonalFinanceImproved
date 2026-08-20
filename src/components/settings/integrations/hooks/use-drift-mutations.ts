@@ -24,10 +24,7 @@ export function useDriftMutations() {
     onSuccess: invalidate,
   });
 
-  return {
-    mutations: { syncAllNames, setLinkedProfile, setLinkedColumn },
-    invalidate,
-  };
+  return { syncAllNames, setLinkedProfile, setLinkedColumn };
 }
 
-export type DriftMutations = ReturnType<typeof useDriftMutations>["mutations"];
+export type DriftMutations = ReturnType<typeof useDriftMutations>;

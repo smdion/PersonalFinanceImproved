@@ -89,13 +89,20 @@ function groupFormRows(
   // Compute sub-labels (owner prefix + sub-account type + tax type)
   const allGroups = Array.from(groups.values());
   for (const group of allGroups) {
-    const ownerIds = new Set(
-      group.rows.map((r: AccountRow & { subLabel: string }) => r.ownerPersonId),
-    );
-    const hasMultipleOwners = ownerIds.size > 1;
     const pa = group.rows[0]?.performanceAccountId
       ? perfMap.get(group.rows[0].performanceAccountId)
       : null;
+    // DESIGN.md's owner-prefix rule is a two-part test: the performance
+    // account must be joint (ownerPersonId null) AND sub-rows must carry
+    // different ownerPersonId values. An unlinked group (pa === null) has
+    // no performance account to check jointness against — falls back to
+    // the owner-id-diff check alone, matching groupByPerformanceAccount's
+    // unlinked-group behavior in portfolio-content.tsx.
+    const isJointPerfAccount = pa ? pa.ownerPersonId == null : true;
+    const ownerIds = new Set(
+      group.rows.map((r: AccountRow & { subLabel: string }) => r.ownerPersonId),
+    );
+    const hasMultipleOwners = isJointPerfAccount && ownerIds.size > 1;
     const perfAccountType = (pa?.accountType ?? "").toLowerCase();
 
     for (const row of group.rows) {
@@ -103,6 +110,9 @@ function groupFormRows(
         ? personDisplayName(row.ownerPersonId, peopleMap)
         : null;
       const taxLabel = taxTypeLabel(row.taxType);
+      // DESIGN.md's sub-account-type rule only names subType, but `label` is
+      // a real, separate free-text override column — takes precedence when
+      // set (see DESIGN.md follow-up, Batch 25 F3).
       const displayName = row.label || row.subType;
 
       let typeLabel: string;
@@ -110,16 +120,25 @@ function groupFormRows(
         typeLabel = displayName;
       } else {
         const rawType = row.accountType.toLowerCase();
+        // Documented rule (DESIGN.md): show accountType only if it differs
+        // from the parent performance account's type. The extra
+        // `rawType !== taxType` condition previously suppressed this label
+        // whenever accountType happened to equal the taxType string (e.g.
+        // "hsa" vs "hsa"), which isn't in the spec.
         typeLabel =
-          rawType !== perfAccountType && rawType !== row.taxType.toLowerCase()
+          rawType !== perfAccountType
             ? getDisplayConfig(row.accountType).displayLabel
             : taxLabel;
       }
 
       if (owner) {
+        // Owner prefix uses an em dash (DESIGN.md "Snapshot Display" — WHO
+        // owns it), distinct from parens (WHAT kind of sub-account). Same
+        // fix as portfolio-content.tsx's buildSubRowLabel (decision point 1,
+        // 2026-08-19) — this file has its own copy of the same logic.
         const qualifier =
           typeLabel !== taxLabel ? `${typeLabel} · ${taxLabel}` : typeLabel;
-        row.subLabel = `${owner} (${qualifier})`;
+        row.subLabel = `${owner} — ${qualifier}`;
       } else {
         row.subLabel =
           typeLabel !== taxLabel ? `${typeLabel} (${taxLabel})` : typeLabel;
@@ -143,13 +162,13 @@ export function NewSnapshotForm({
   onSaved: () => void;
 }) {
   const { data: latestSnap, isLoading: loadingLatest } =
-    trpc.settings.portfolioSnapshots.getLatest.useQuery();
+    trpc.networth.portfolioSnapshots.getLatest.useQuery();
   const { data: perfAccounts, isLoading: loadingPerfAccounts } =
-    trpc.settings.performanceAccounts.list.useQuery();
+    trpc.performance.performanceAccounts.list.useQuery();
   const { data: people, isLoading: loadingPeople } =
     trpc.settings.people.list.useQuery();
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
-  const createMutation = trpc.settings.portfolioSnapshots.create.useMutation({
+  const createMutation = trpc.networth.portfolioSnapshots.create.useMutation({
     onSuccess: (data) => {
       // eslint-disable-next-line no-restricted-syntax -- type narrowing for untyped API response
       const sync = (data as unknown as Record<string, unknown>)

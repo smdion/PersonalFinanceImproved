@@ -7,7 +7,11 @@
  * SWR: 5.7% (40/60 portfolio, 90% success, 30 years).
  */
 import { roundToCents } from "../../utils/math";
-import { DEFAULT_STRATEGY_WITHDRAWAL_PERCENT } from "../../constants";
+import {
+  DEFAULT_STRATEGY_WITHDRAWAL_PERCENT,
+  DEFAULT_STRATEGY_FLOOR_PERCENT,
+  DEFAULT_ENDOWMENT_ROLLING_YEARS,
+} from "../../constants";
 import type {
   SpendingStrategyInput,
   SpendingStrategyResult,
@@ -22,8 +26,8 @@ export function applyEndowment(
   const p = params as EndowmentParams;
   const withdrawalPercent =
     p.withdrawalPercent ?? DEFAULT_STRATEGY_WITHDRAWAL_PERCENT;
-  const rollingYears = p.rollingYears ?? 10;
-  const floorPercent = p.floorPercent ?? 0.9;
+  const rollingYears = p.rollingYears ?? DEFAULT_ENDOWMENT_ROLLING_YEARS;
+  const floorPercent = p.floorPercent ?? DEFAULT_STRATEGY_FLOOR_PERCENT;
 
   // Include current balance in history for the rolling average
   const history = [...crossYearState.balanceHistory, portfolioBalance];

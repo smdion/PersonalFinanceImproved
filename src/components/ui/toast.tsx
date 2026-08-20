@@ -6,11 +6,12 @@ import {
   type ToastAction,
 } from "@/lib/hooks/use-toast";
 import { useEffect, useState } from "react";
+import { STATUS_COLORS } from "@/lib/utils/colors";
 
 const variantStyles: Record<ToastVariant, string> = {
-  success: "bg-green-50 border-green-300 text-green-800",
-  error: "bg-red-50 border-red-300 text-red-800",
-  info: "bg-blue-50 border-blue-300 text-blue-800",
+  success: `${STATUS_COLORS.green.bg} ${STATUS_COLORS.green.border} ${STATUS_COLORS.green.text}`,
+  error: `${STATUS_COLORS.red.bg} ${STATUS_COLORS.red.border} ${STATUS_COLORS.red.text}`,
+  info: `${STATUS_COLORS.blue.bg} ${STATUS_COLORS.blue.border} ${STATUS_COLORS.blue.text}`,
 };
 
 const variantIcons: Record<ToastVariant, string> = {

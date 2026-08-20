@@ -170,10 +170,9 @@ export function filterYearByParentCategory(
   }
   const origAfterTax = yr.balanceByTaxType.afterTax;
   const origBasis = yr.balanceByTaxType.afterTaxBasis;
-  byTax.afterTaxBasis =
-    origAfterTax > 0
-      ? roundToCents(origBasis * (byTax.afterTax / origAfterTax))
-      : 0;
+  byTax.afterTaxBasis = roundToCents(
+    origBasis * safeDivide(byTax.afterTax, origAfterTax),
+  );
   const byAcct = { ...yr.balanceByAccount };
   for (const cat of getAllCategories()) {
     const catIabs = filtered.filter((ia) => ia.category === cat);
@@ -193,7 +192,7 @@ export function filterYearByParentCategory(
     } else if (cfg.balanceStructure === "basis_tracking") {
       const bal = catIabs.reduce((s, ia) => s + ia.balance, 0);
       const origCatBal = getTotalBalance(yr.balanceByAccount[cat]);
-      const ratio = origCatBal > 0 ? bal / origCatBal : 0;
+      const ratio = safeDivide(bal, origCatBal);
       const origCatBasis =
         yr.balanceByAccount[cat].structure === "basis_tracking"
           ? yr.balanceByAccount[cat].basis
@@ -429,7 +428,7 @@ export function iaBelongsToBucket(
 // --- Shared calculation helpers ---
 
 export function percentOf(value: number, total: number): number {
-  return total > 0 ? Math.round((value / total) * 100) : 0;
+  return Math.round(safeDivide(value, total) * 100);
 }
 
 export function proRateMonths(fraction: number): number {
@@ -452,7 +451,7 @@ export function matchFracOf({
   matchAnnual,
   allMatchAnnual,
 }: MatchFracInput): number {
-  return allMatchAnnual > 0 ? matchAnnual / allMatchAnnual : 0;
+  return safeDivide(matchAnnual, allMatchAnnual);
 }
 
 export function computeColumnChange({

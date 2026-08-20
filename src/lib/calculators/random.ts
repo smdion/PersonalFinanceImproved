@@ -4,6 +4,7 @@
  * Pure functions — no DB, no tRPC, no React.
  * Uses a simple but effective mulberry32 PRNG seeded for reproducibility.
  */
+import { safeDivide } from "../utils/math";
 
 // ---------------------------------------------------------------------------
 // Seeded PRNG (mulberry32) — fast, deterministic, 32-bit state
@@ -58,6 +59,25 @@ export function sampleNormalMeanStd(
 // ---------------------------------------------------------------------------
 
 /**
+ * Convert an arithmetic mean/stdDev return pair into log-space parameters
+ * for a log-normal distribution: ln(1 + R) ~ Normal(m, s²), where
+ *   s² = ln(1 + σ²/(1+μ)²),  m = ln(1 + μ) - s²/2
+ * This ensures the arithmetic mean E[1+R] = 1+μ. Shared by geometricMean,
+ * sampleLogNormalReturn, and sampleCorrelatedReturns — previously each
+ * re-derived this parameterization independently.
+ */
+function logNormalParams(
+  meanReturn: number,
+  stdDev: number,
+): { s: number; m: number } {
+  const s = Math.log(
+    1 + (stdDev * stdDev) / ((1 + meanReturn) * (1 + meanReturn)),
+  );
+  const m = Math.log(1 + meanReturn) - s / 2;
+  return { s, m };
+}
+
+/**
  * Compute the geometric mean (median compounding rate) for a log-normal return distribution.
  *
  * Given arithmetic mean μ and volatility σ, the geometric mean is:
@@ -69,10 +89,8 @@ export function sampleNormalMeanStd(
  * arithmetic mean by the "volatility drag" factor.
  */
 export function geometricMean(meanReturn: number, stdDev: number): number {
-  const s = Math.log(
-    1 + (stdDev * stdDev) / ((1 + meanReturn) * (1 + meanReturn)),
-  );
-  return Math.exp(Math.log(1 + meanReturn) - s / 2) - 1;
+  const { m } = logNormalParams(meanReturn, stdDev);
+  return Math.exp(m) - 1;
 }
 
 /**
@@ -96,13 +114,7 @@ export function sampleLogNormalReturn(
   meanReturn: number,
   stdDev: number,
 ): number {
-  // Convert to log-space parameters
-  // μ is the arithmetic mean: E[1+R] = 1+μ
-  // Geometric mean (compounding rate) is lower by exp(-s²/2) due to volatility drag
-  const s = Math.log(
-    1 + (stdDev * stdDev) / ((1 + meanReturn) * (1 + meanReturn)),
-  );
-  const m = Math.log(1 + meanReturn) - s / 2;
+  const { s, m } = logNormalParams(meanReturn, stdDev);
   const logReturn = sampleNormalMeanStd(rng, m, Math.sqrt(s));
   return Math.exp(logReturn) - 1;
 }
@@ -135,7 +147,7 @@ export function choleskyDecomposition(matrix: number[][]): number[][] {
         // Clamp to avoid NaN from floating-point rounding
         L[i]![j] = Math.sqrt(Math.max(diag, 0));
       } else {
-        L[i]![j] = L[j]![j]! > 0 ? (matrix[i]![j]! - sum) / L[j]![j]! : 0;
+        L[i]![j] = safeDivide(matrix[i]![j]! - sum, L[j]![j]!, 0);
       }
     }
   }
@@ -194,10 +206,7 @@ export function sampleCorrelatedReturns(
   const returns: number[] = [];
   for (let i = 0; i < n; i++) {
     const ac = assetClasses[i]!;
-    const s = Math.log(
-      1 + (ac.stdDev * ac.stdDev) / ((1 + ac.meanReturn) * (1 + ac.meanReturn)),
-    );
-    const m = Math.log(1 + ac.meanReturn) - s / 2;
+    const { s, m } = logNormalParams(ac.meanReturn, ac.stdDev);
     const logReturn = m + Math.sqrt(s) * correlated[i]!;
     returns.push(Math.exp(logReturn) - 1);
   }
@@ -267,7 +276,7 @@ export function interpolateAllocations(
 
   // Linear interpolation factor
   const range = upper.age - lower.age;
-  const t = range > 0 ? (age - lower.age) / range : 0;
+  const t = safeDivide(age - lower.age, range, 0);
 
   // Collect all asset class IDs
   const allIds = Array.from(

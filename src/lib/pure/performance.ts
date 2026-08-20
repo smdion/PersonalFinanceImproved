@@ -3,7 +3,7 @@
  * These functions compute values without any DB or I/O dependency.
  */
 import { toNumber } from "@/server/helpers/transforms";
-import { sumBy } from "@/lib/utils/math";
+import { sumBy, safeDivide } from "@/lib/utils/math";
 
 /**
  * Modified Dietz return: gainLoss / (beginBal + netFlows/2).
@@ -20,8 +20,7 @@ export function computeReturn(
 ): number | null {
   const denominator =
     beginBal + (contribs + rollovers - distributions - fees) / 2;
-  if (denominator === 0) return null;
-  return gainLoss / denominator;
+  return safeDivide(gainLoss, denominator, null);
 }
 
 export type ChainedReturn = {
@@ -591,19 +590,6 @@ export function computePortfolioTotal(
   accounts: { endingBalance: string | null }[],
 ): number {
   return sumBy(accounts, (a) => toNumber(a.endingBalance));
-}
-
-/**
- * Compute cumulative home improvements up to a given year.
- */
-export function computeHomeImprovementsCumulative(
-  items: { year: number; cost: string | null }[],
-  upToYear: number,
-): number {
-  return sumBy(
-    items.filter((hi) => hi.year <= upToYear),
-    (hi) => toNumber(hi.cost),
-  );
 }
 
 /**

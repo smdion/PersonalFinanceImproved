@@ -41,7 +41,7 @@ export function ContribCard({
   const valueEditable = !readOnly && !contribValueReadOnly;
   const [editingInstitution, setEditingInstitution] = useState(false);
   const { data: performanceAccounts } =
-    trpc.settings.performanceAccounts.list.useQuery(undefined, {
+    trpc.performance.performanceAccounts.list.useQuery(undefined, {
       enabled: !readOnly && !!onUpdateInstitution,
     });
   const linkedInstitution = performanceAccounts?.find(

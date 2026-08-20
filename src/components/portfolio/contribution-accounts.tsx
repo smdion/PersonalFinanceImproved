@@ -36,9 +36,9 @@ export function ContributionAccountsSettings() {
   const { data: jobs } = trpc.settings.jobs.list.useQuery();
   const { data: contribs } = trpc.settings.contributionAccounts.list.useQuery();
   const { data: perfAccounts } =
-    trpc.settings.performanceAccounts.list.useQuery();
+    trpc.performance.performanceAccounts.list.useQuery();
   const { data: latestSnap } =
-    trpc.settings.portfolioSnapshots.getLatest.useQuery();
+    trpc.networth.portfolioSnapshots.getLatest.useQuery();
 
   // Employer-match/auto-maximize fields on a contribution account are
   // profile-ownable (see contribAccountActiveFieldsSchema) — when a
@@ -160,7 +160,6 @@ export function ContributionAccountsSettings() {
   } = useContributionAccountsMutations({
     allContribs,
     activeContribProfileId,
-    onCreatePerfSuccess: () => setCreatingAccount(false),
   });
 
   if (allAccounts.length === 0 && !creatingAccount) return null;
@@ -273,11 +272,14 @@ export function ContributionAccountsSettings() {
                 <CreateAccountForm
                   people={peopleList}
                   onSubmit={(vals) =>
-                    createPerfMut.mutate({
-                      ...vals,
-                      accountType:
-                        vals.accountType as import("@/lib/config/account-types").AccountCategory,
-                    })
+                    createPerfMut.mutate(
+                      {
+                        ...vals,
+                        accountType:
+                          vals.accountType as import("@/lib/config/account-types").AccountCategory,
+                      },
+                      { onSuccess: () => setCreatingAccount(false) },
+                    )
                   }
                   onCancel={() => setCreatingAccount(false)}
                   isPending={createPerfMut.isPending}

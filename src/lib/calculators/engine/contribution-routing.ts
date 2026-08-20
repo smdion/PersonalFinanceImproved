@@ -27,6 +27,7 @@ import {
   isTaxFree,
 } from "../../config/account-types";
 import { OVERFLOW_TOLERANCE } from "../../constants";
+import { projectSpecAmount } from "./contribution-projection";
 
 const ACCOUNT_CATEGORIES: AccountCategory[] = getAllCategories();
 
@@ -395,26 +396,14 @@ export function routeFromSpecs(
 
   // Compute each account's projected contribution
   for (const spec of specs) {
-    let projected: number;
-    if (spec.method === "percent_of_salary") {
-      // Use salaryFraction so multi-job households don't inflate per-account contributions
-      projected = roundToCents(
-        projectedSalary * spec.salaryFraction * spec.value,
-      );
-    } else if (spec.contributionScaling === "fixed_amount") {
-      // Fixed-amount specs use limit growth only — independent of salary changes
-      projected = roundToCents(spec.baseAnnual * limitGrowthFactor);
-    } else if (
-      getAccountTypeConfig(spec.category).fixedContribScalesWithSalary
-    ) {
-      // Fixed contributions that scale with salary growth (no IRS limit to track)
-      const salaryGrowthFactor =
-        baseSalary > 0 ? projectedSalary / baseSalary : 1;
-      projected = roundToCents(spec.baseAnnual * salaryGrowthFactor);
-    } else {
-      // Tax-advantaged fixed contributions (e.g. HSA): grow with IRS limit growth
-      projected = roundToCents(spec.baseAnnual * limitGrowthFactor);
-    }
+    // Use salaryFraction so multi-job households don't inflate per-account contributions
+    const projected = roundToCents(
+      projectSpecAmount(spec, {
+        projectedSalary,
+        salaryBase: baseSalary,
+        limitGrowthFactor,
+      }),
+    );
     byCategory[spec.category].specs.push({
       name: spec.name,
       amount: projected,
@@ -467,15 +456,12 @@ export function routeFromSpecs(
     const catSpecs = specs.filter((s) => s.category === cat);
     let rothFrac: number;
     if (catSpecs.length > 0) {
-      const specProjection = (s: (typeof catSpecs)[number]) => {
-        if (s.method === "percent_of_salary")
-          return projectedSalary * s.salaryFraction * s.value;
-        if (getAccountTypeConfig(s.category).fixedContribScalesWithSalary) {
-          const sgf = baseSalary > 0 ? projectedSalary / baseSalary : 1;
-          return s.baseAnnual * sgf;
-        }
-        return s.baseAnnual * limitGrowthFactor;
-      };
+      const specProjection = (s: (typeof catSpecs)[number]) =>
+        projectSpecAmount(s, {
+          projectedSalary,
+          salaryBase: baseSalary,
+          limitGrowthFactor,
+        });
       const rothAmount = catSpecs
         .filter((s) => isTaxFree(s.taxTreatment))
         .reduce((sum, s) => sum + specProjection(s), 0);

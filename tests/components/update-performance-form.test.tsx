@@ -31,7 +31,7 @@ let batchMutationState: {
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
-    settings: {
+    networth: {
       portfolioSnapshots: {
         getLatest: {
           useQuery: () => ({

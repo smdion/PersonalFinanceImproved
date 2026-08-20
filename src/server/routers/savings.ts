@@ -10,6 +10,7 @@ import {
   type Context,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
+import { safeDivide } from "@/lib/utils/math";
 import { calculateSavings } from "@/lib/calculators/savings";
 import { calculateEFund } from "@/lib/calculators/efund";
 import { calculatePaycheck } from "@/lib/calculators/paycheck";
@@ -28,7 +29,6 @@ import {
   resolveCompensation,
   loadEffectiveSalaryProfile,
   buildContribAccounts,
-  requireLimit,
   getResolvedGoalAllocations,
   upsertGoalProfileAllocation,
   resetProfileAllocationsToZero,
@@ -36,10 +36,11 @@ import {
   resolveTargetBudgetProfile,
   applyContribActiveFields,
   fetchContributionProfile,
+  buildPaycheckInputForJob,
 } from "@/server/helpers";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { buildBracketInput } from "./paycheck";
-import type { DeductionLine, PaycheckInput } from "@/lib/calculators/types";
+import type { DeductionLine } from "@/lib/calculators/types";
 import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
 import { zDecimal } from "./settings/_shared";
 import { targetModeSchema } from "@/lib/config/enum-values";
@@ -191,26 +192,20 @@ async function computeJobNetPayPerCheck(
     periodsPerYear,
   );
 
-  const paycheckInput: PaycheckInput = {
-    annualSalary: currentSalary,
-    payPeriod: job.payPeriod,
-    payWeek: job.payWeek,
-    anchorPayDate: new Date(job.anchorPayDate ?? job.startDate),
-    supplementalTaxRate: requireLimit(limitsMap, "supplemental_tax_rate"),
+  // Intentionally does not pass a bonusOverride — this value gets persisted
+  // as a recorded fact, not a live/pinned-actual view. See this function's
+  // own docblock.
+  const paycheckInput = buildPaycheckInputForJob(job, {
+    salary: currentSalary,
+    bonusTerms,
+    bonusOverride: null,
     contributionAccounts: contribAccounts,
     deductions,
     taxBrackets,
-    limits: limitsRecord,
-    ytdGrossEarnings: 0,
-    bonusPercent: toNumber(bonusTerms.bonusPercent),
-    bonusMultiplier: toNumber(bonusTerms.bonusMultiplier),
-    bonusOverride: null,
-    monthsInBonusYear: bonusTerms.monthsInBonusYear ?? 12,
-    includeContribInBonus: job.include401kInBonus,
-    bonusMonth: job.bonusMonth,
-    bonusDayOfMonth: job.bonusDayOfMonth,
+    limitsMap,
+    limitsRecord,
     asOfDate,
-  };
+  });
 
   const paycheck = calculatePaycheck(paycheckInput);
   return Math.round(paycheck.netPay * 100) / 100;
@@ -377,6 +372,22 @@ const plannedTransactionInput = z.object({
   description: z.string().min(1),
   isRecurring: z.boolean().default(false),
   recurrenceMonths: z.number().int().min(1).nullable().optional(),
+});
+
+const savingsGoalInput = z.object({
+  name: z.string().min(1),
+  parentGoalId: z.number().int().nullable().optional(),
+  targetAmount: zDecimal.nullable().optional(),
+  targetMonths: z.number().int().nullable().optional(),
+  targetDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .optional(),
+  priority: z.number().int().default(0),
+  isActive: z.boolean().default(true),
+  isEmergencyFund: z.boolean().default(false),
+  targetMode: targetModeSchema.default("fixed"),
 });
 
 export const savingsRouter = createTRPCRouter({
@@ -589,8 +600,7 @@ export const savingsRouter = createTRPCRouter({
             name: g.name,
             currentBalance,
             targetBalance,
-            allocationPercent:
-              totalMonthlyPool > 0 ? monthlyContrib / totalMonthlyPool : 0,
+            allocationPercent: safeDivide(monthlyContrib, totalMonthlyPool, 0),
             isEmergencyFund: g.isEmergencyFund,
             isActive: g.isActive,
           };
@@ -2139,5 +2149,57 @@ export const savingsRouter = createTRPCRouter({
         balance: Number(r.balance),
       })),
     };
+  }),
+
+  savingsGoals: createTRPCRouter({
+    list: protectedProcedure.query(({ ctx }) =>
+      ctx.db
+        .select()
+        .from(schema.savingsGoals)
+        .orderBy(asc(schema.savingsGoals.priority)),
+    ),
+    create: savingsProcedure
+      .input(savingsGoalInput)
+      .mutation(async ({ ctx, input }) => {
+        const goal = await ctx.db
+          .insert(schema.savingsGoals)
+          .values(input)
+          .returning()
+          .then((r) => r[0]!);
+        // Funding is per-profile with no shared default — every existing
+        // budget profile needs an explicit $0/no-percent row for this new
+        // goal (see savings_goal_profile_allocations' table comment).
+        const profiles = await ctx.db
+          .select({ id: schema.budgetProfiles.id })
+          .from(schema.budgetProfiles);
+        if (profiles.length > 0) {
+          await ctx.db.insert(schema.savingsGoalProfileAllocations).values(
+            profiles.map((p) => ({
+              goalId: goal.id,
+              budgetProfileId: p.id,
+              allocationPercent: null,
+              monthlyContribution: "0",
+            })),
+          );
+        }
+        return goal;
+      }),
+    update: savingsProcedure
+      .input(z.object({ id: z.number().int() }).extend(savingsGoalInput.shape))
+      .mutation(({ ctx, input: { id, ...data } }) =>
+        ctx.db
+          .update(schema.savingsGoals)
+          .set(data)
+          .where(eq(schema.savingsGoals.id, id))
+          .returning()
+          .then((r) => r[0]),
+      ),
+    delete: savingsProcedure
+      .input(z.object({ id: z.number().int() }))
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .delete(schema.savingsGoals)
+          .where(eq(schema.savingsGoals.id, input.id)),
+      ),
   }),
 });

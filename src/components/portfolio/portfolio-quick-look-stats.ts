@@ -7,6 +7,7 @@
  */
 
 import { MS_PER_DAY } from "@/lib/constants";
+import { safeDivide } from "@/lib/utils/math";
 
 export type PortfolioSnapshot = {
   id: number;
@@ -102,7 +103,7 @@ export function derivePortfolioQuickLookStats(
   // All-time high
   const ath = sorted.reduce((best, s) => (s.total > best.total ? s : best));
   const athDistance = current.total - ath.total;
-  const athDistancePct = ath.total > 0 ? (athDistance / ath.total) * 100 : 0;
+  const athDistancePct = safeDivide(athDistance, ath.total, 0) * 100;
 
   // Changes between consecutive snapshots
   const changes = sorted.slice(1).map((s, i) => {
@@ -111,7 +112,7 @@ export function derivePortfolioQuickLookStats(
     const days = Math.round(
       (new Date(s.date).getTime() - new Date(prev.date).getTime()) / MS_PER_DAY,
     );
-    const periodReturn = prev.total > 0 ? delta / prev.total : 0;
+    const periodReturn = safeDivide(delta, prev.total, 0);
     const deltaPct = periodReturn * 100;
     return { date: s.date, delta, deltaPct, days };
   });
@@ -247,8 +248,7 @@ export function derivePortfolioQuickLookStats(
 
   // All-time growth vs first snapshot
   const allTimeGrowth = current.total - first.total;
-  const allTimeGrowthPct =
-    first.total > 0 ? ((current.total - first.total) / first.total) * 100 : 0;
+  const allTimeGrowthPct = safeDivide(allTimeGrowth, first.total, 0) * 100;
 
   return {
     ath,

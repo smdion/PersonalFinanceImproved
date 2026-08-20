@@ -137,7 +137,7 @@ export function BudgetContent() {
     displayProfileId != null ? { profileId: displayProfileId } : undefined,
   );
   // Resolved per the profile being viewed (funding is entirely per-profile,
-  // same path the Savings page uses) — NOT settings.savingsGoals.list,
+  // same path the Savings page uses) — NOT savings.savingsGoals.list,
   // which no longer carries funding data at all (goal identity only).
   const { data: resolvedSavingsGoals } =
     trpc.savings.goalProfileAllocations.list.useQuery(

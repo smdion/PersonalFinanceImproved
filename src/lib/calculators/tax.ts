@@ -29,6 +29,7 @@
  */
 import type { TaxInput, TaxResult } from "./types";
 import { roundToCents, safeDivide } from "../utils/math";
+import { sumBracketTax } from "./tax-brackets";
 
 export function calculateTax(input: TaxInput): TaxResult {
   const warnings: string[] = [];
@@ -59,24 +60,9 @@ export function calculateTax(input: TaxInput): TaxResult {
   // ── Step 2: Federal income tax via progressive bracket walk ──
   // Walk brackets bottom-to-top, taxing each slice at its bracket rate.
   // The marginal rate is the rate of the highest bracket the income reaches.
-  let federalTax = 0;
-  let marginalRate = 0;
-
-  for (const bracket of taxBrackets.brackets) {
-    if (taxableIncome < bracket.min) break;
-
-    const upper =
-      bracket.max !== null
-        ? Math.min(taxableIncome, bracket.max)
-        : taxableIncome;
-    const taxableInBracket = upper - bracket.min;
-    if (taxableInBracket > 0) {
-      federalTax += taxableInBracket * bracket.rate;
-      marginalRate = bracket.rate;
-    }
-  }
-
-  federalTax = roundToCents(federalTax);
+  const bracketResult = sumBracketTax(taxableIncome, taxBrackets.brackets);
+  const marginalRate = bracketResult.marginalRate;
+  const federalTax = roundToCents(bracketResult.total);
 
   // ── Step 3: FICA Social Security ──
   // Employee pays 6.2% (from input) on gross income up to the wage base cap (e.g. $176,100).

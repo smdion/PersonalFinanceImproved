@@ -26,7 +26,11 @@ import {
 } from "@/lib/calculators/random";
 import { toNumber } from "@/server/helpers";
 import { sumBy } from "@/lib/utils/math";
-import { DEFAULT_MC_INFLATION_RISK } from "@/lib/constants";
+import {
+  DEFAULT_MC_INFLATION_RISK,
+  MC_RETURN_CLAMP_MIN,
+  MC_RETURN_CLAMP_MAX,
+} from "@/lib/constants";
 import type {
   AccountBalance,
   AccountCategory,
@@ -383,8 +387,12 @@ export const monteCarloRouter = createTRPCRouter({
         baseInflationRisk;
 
       // Resolve return clamp bounds from preset (or defaults)
-      const returnClampMin = preset ? toNumber(preset.returnClampMin) : -0.5;
-      const returnClampMax = preset ? toNumber(preset.returnClampMax) : 1.0;
+      const returnClampMin = preset
+        ? toNumber(preset.returnClampMin)
+        : MC_RETURN_CLAMP_MIN;
+      const returnClampMax = preset
+        ? toNumber(preset.returnClampMax)
+        : MC_RETURN_CLAMP_MAX;
 
       // Build MC-aligned deterministic return rates using GEOMETRIC means.
       // The arithmetic mean is the expected single-year return, but deterministic compounding

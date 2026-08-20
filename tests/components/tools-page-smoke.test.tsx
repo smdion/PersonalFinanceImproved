@@ -122,6 +122,8 @@ vi.mock("@/lib/trpc", () => ({
     useUtils: () => ({
       settings: {
         appSettings: { list: { invalidate: vi.fn() } },
+      },
+      projection: {
         relocationScenarios: { list: { invalidate: vi.fn() } },
       },
     }),
@@ -130,15 +132,6 @@ vi.mock("@/lib/trpc", () => ({
       appSettings: {
         list: { useQuery: () => ({ data: [] }) },
         upsert: { useMutation: () => ({ mutate: vi.fn() }) },
-      },
-      relocationScenarios: {
-        list: { useQuery: () => ({ data: [] }) },
-        save: {
-          useMutation: () => ({ mutate: saveMutate, isPending: false }),
-        },
-        delete: {
-          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-        },
       },
     },
     budget: {
@@ -167,6 +160,15 @@ vi.mock("@/lib/trpc", () => ({
         useQuery: () => ({
           data: { people: [{ id: 1, name: "Alice", birthYear: 1990 }] },
         }),
+      },
+      relocationScenarios: {
+        list: { useQuery: () => ({ data: [] }) },
+        save: {
+          useMutation: () => ({ mutate: saveMutate, isPending: false }),
+        },
+        delete: {
+          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        },
       },
       computeRelocationFiProjection: {
         useQuery: () => ({

@@ -165,27 +165,27 @@ export function useProjectionQueries(
   const invalidateEngine = () =>
     utils.projection.computeProjection.invalidate();
   const createSalaryOverride =
-    trpc.settings.retirementSalaryOverrides.create.useMutation({
+    trpc.retirement.retirementSalaryOverrides.create.useMutation({
       onSuccess: invalidateEngine,
     });
   const deleteSalaryOverride =
-    trpc.settings.retirementSalaryOverrides.delete.useMutation({
+    trpc.retirement.retirementSalaryOverrides.delete.useMutation({
       onSuccess: invalidateEngine,
     });
   const createBudgetOverride =
-    trpc.settings.retirementBudgetOverrides.create.useMutation({
+    trpc.retirement.retirementBudgetOverrides.create.useMutation({
       onSuccess: invalidateEngine,
     });
   const deleteBudgetOverride =
-    trpc.settings.retirementBudgetOverrides.delete.useMutation({
+    trpc.retirement.retirementBudgetOverrides.delete.useMutation({
       onSuccess: invalidateEngine,
     });
   const saveProjectionOverrides =
-    trpc.settings.projectionOverrides.save.useMutation({
+    trpc.retirement.projectionOverrides.save.useMutation({
       onSuccess: invalidateEngine,
     });
   const clearProjectionOverrides =
-    trpc.settings.projectionOverrides.clear.useMutation({
+    trpc.retirement.projectionOverrides.clear.useMutation({
       onSuccess: invalidateEngine,
     });
   const invalidateMc = () => {

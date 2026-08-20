@@ -23,7 +23,7 @@
 
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { HelpTip } from "@/components/ui/help-tip";
+import { FormField, FormInput, FormSelect } from "@/components/forms";
 import {
   ACCOUNT_TYPE_CONFIG,
   getAllCategories,
@@ -244,10 +244,6 @@ export function ContribAccountForm({
     });
   };
 
-  const inputCls =
-    "mt-1 block w-full text-sm border border-strong rounded px-2 py-1.5 bg-surface-primary";
-  const labelCls = "text-xs text-muted";
-
   return (
     <div className="space-y-3">
       {/* Always-visible mode indicator — the amber "existing accounts"
@@ -288,9 +284,8 @@ export function ContribAccountForm({
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <label className="block">
-          <span className={labelCls}>Owner</span>
-          <select
+        <FormField label="Owner">
+          <FormSelect
             value={
               v.ownership === "joint"
                 ? "joint"
@@ -306,7 +301,6 @@ export function ContribAccountForm({
                 set("personId", parseInt(val, 10));
               }
             }}
-            className={inputCls}
           >
             <option value="joint">Joint</option>
             {(people ?? []).map((p) => (
@@ -314,17 +308,15 @@ export function ContribAccountForm({
                 {p.name}
               </option>
             ))}
-          </select>
-        </label>
+          </FormSelect>
+        </FormField>
 
-        <label className="block">
-          <span className={labelCls}>Job</span>
-          <select
+        <FormField label="Job">
+          <FormSelect
             value={v.jobId ?? ""}
             onChange={(e) =>
               set("jobId", e.target.value ? parseInt(e.target.value, 10) : null)
             }
-            className={inputCls}
           >
             <option value="">Personal</option>
             {(jobs ?? []).map((j) => (
@@ -332,25 +324,23 @@ export function ContribAccountForm({
                 {j.employerName}
               </option>
             ))}
-          </select>
-        </label>
+          </FormSelect>
+        </FormField>
 
-        <label className="block">
-          <span className={labelCls}>Account Type</span>
-          <select
+        <FormField label="Account Type">
+          <FormSelect
             value={v.accountType}
             onChange={(e) =>
               handleAccountTypeChange(e.target.value as AccountCategory)
             }
-            className={inputCls}
           >
             {getAllCategories().map((c) => (
               <option key={c} value={c}>
                 {ACCOUNT_TYPE_CONFIG[c].displayLabel}
               </option>
             ))}
-          </select>
-        </label>
+          </FormSelect>
+        </FormField>
 
         <InstitutionPicker
           personId={v.ownership === "joint" ? null : effectivePersonId}
@@ -359,26 +349,22 @@ export function ContribAccountForm({
           onChange={(id) => set("performanceAccountId", id)}
         />
 
-        <label className="block">
-          <span className={labelCls}>Label</span>
-          <input
+        <FormField label="Label">
+          <FormInput
             type="text"
             value={v.label ?? ""}
             onChange={(e) => set("label", e.target.value || null)}
             placeholder="Optional"
-            className={inputCls}
           />
-        </label>
+        </FormField>
 
-        <label className="block">
-          <span className={labelCls}>Sub-Type</span>
-          <input
+        <FormField label="Sub-Type">
+          <FormInput
             type="text"
             list="contrib-account-form-subtype-options"
             value={v.subType ?? ""}
             onChange={(e) => set("subType", e.target.value || null)}
             placeholder="e.g. ESPP, Rollover"
-            className={inputCls}
           />
           {subTypeOptions.length > 0 && (
             <datalist id="contrib-account-form-subtype-options">
@@ -387,47 +373,42 @@ export function ContribAccountForm({
               ))}
             </datalist>
           )}
-        </label>
+        </FormField>
 
-        <label className="block">
-          <span className={labelCls}>Tax Treatment</span>
-          <select
+        <FormField label="Tax Treatment">
+          <FormSelect
             value={v.taxTreatment}
             onChange={(e) =>
               set("taxTreatment", e.target.value as TaxTreatment)
             }
-            className={inputCls}
           >
             {cfg.supportedTaxTreatments.map((t) => (
               <option key={t} value={t}>
                 {TAX_LABELS[t] ?? t}
               </option>
             ))}
-          </select>
-        </label>
+          </FormSelect>
+        </FormField>
 
-        <label className="block">
-          <span className={labelCls}>Match Type</span>
-          <select
+        <FormField label="Match Type">
+          <FormSelect
             value={v.employerMatchType}
             onChange={(e) =>
               set("employerMatchType", e.target.value as EmployerMatchType)
             }
-            className={inputCls}
           >
             {Object.entries(MATCH_LABELS).map(([k, label]) => (
               <option key={k} value={k}>
                 {label}
               </option>
             ))}
-          </select>
-        </label>
+          </FormSelect>
+        </FormField>
 
         {v.employerMatchType !== "none" && (
           <>
-            <label className="block">
-              <span className={labelCls}>Match Value</span>
-              <input
+            <FormField label="Match Value">
+              <FormInput
                 type="number"
                 step="any"
                 value={v.employerMatchValue ?? ""}
@@ -435,23 +416,19 @@ export function ContribAccountForm({
                   set("employerMatchValue", e.target.value || null)
                 }
                 placeholder="e.g. 50"
-                className={inputCls}
               />
-            </label>
-            <label className="block">
-              <span className={labelCls}>Match Cap %</span>
-              <input
+            </FormField>
+            <FormField label="Match Cap %">
+              <FormInput
                 type="number"
                 step="any"
                 value={matchCapPercent}
                 onChange={(e) => setMatchCapPercent(e.target.value)}
                 placeholder="e.g. 7"
-                className={inputCls}
               />
-            </label>
-            <label className="block">
-              <span className={labelCls}>Match Tax</span>
-              <select
+            </FormField>
+            <FormField label="Match Tax">
+              <FormSelect
                 value={v.employerMatchTaxTreatment}
                 onChange={(e) =>
                   set(
@@ -459,22 +436,20 @@ export function ContribAccountForm({
                     e.target.value as "pre_tax" | "tax_free",
                   )
                 }
-                className={inputCls}
               >
                 {Object.entries(MATCH_TAX_LABELS).map(([k, label]) => (
                   <option key={k} value={k}>
                     {label}
                   </option>
                 ))}
-              </select>
-            </label>
+              </FormSelect>
+            </FormField>
           </>
         )}
 
         {hasCoverage && (
-          <label className="block">
-            <span className={labelCls}>HSA Coverage</span>
-            <select
+          <FormField label="HSA Coverage">
+            <FormSelect
               value={v.hsaCoverageType ?? ""}
               onChange={(e) =>
                 set(
@@ -482,7 +457,6 @@ export function ContribAccountForm({
                   (e.target.value || null) as "self_only" | "family" | null,
                 )
               }
-              className={inputCls}
             >
               <option value="">—</option>
               {Object.entries(HSA_COVERAGE_LABELS).map(([k, label]) => (
@@ -490,39 +464,35 @@ export function ContribAccountForm({
                   {label}
                 </option>
               ))}
-            </select>
-          </label>
+            </FormSelect>
+          </FormField>
         )}
 
         {!cfg.hasIrsLimit && (
-          <label className="block">
-            <span className={labelCls}>Annual Target</span>
-            <input
+          <FormField label="Annual Target">
+            <FormInput
               type="number"
               step="any"
               value={v.targetAnnual ?? ""}
               onChange={(e) => set("targetAnnual", e.target.value || null)}
               placeholder="No target"
-              className={inputCls}
             />
-          </label>
+          </FormField>
         )}
 
         {cfg.isOverflowTarget && (
-          <label className="block">
-            <span className={`${labelCls} inline-flex items-center gap-1`}>
-              Overflow Priority
-              <HelpTip text="When contributions exceed IRS limits in tax-advantaged accounts, the excess overflows to brokerage accounts. Lower number = filled first." />
-            </span>
-            <input
+          <FormField
+            label="Overflow Priority"
+            tooltip="When contributions exceed IRS limits in tax-advantaged accounts, the excess overflows to brokerage accounts. Lower number = filled first."
+          >
+            <FormInput
               type="number"
               value={v.allocationPriority}
               onChange={(e) =>
                 set("allocationPriority", parseInt(e.target.value, 10) || 0)
               }
-              className={inputCls}
             />
-          </label>
+          </FormField>
         )}
 
         <div className="flex items-center gap-2 pt-5">
@@ -557,16 +527,14 @@ export function ContribAccountForm({
           </label>
         </div>
 
-        <label className="block col-span-2 md:col-span-3">
-          <span className={labelCls}>Notes</span>
-          <input
+        <FormField label="Notes" className="col-span-2 md:col-span-3">
+          <FormInput
             type="text"
             value={v.notes ?? ""}
             onChange={(e) => set("notes", e.target.value || null)}
             placeholder="Optional notes"
-            className={inputCls}
           />
-        </label>
+        </FormField>
       </div>
 
       {matchingExisting.length > 0 && (

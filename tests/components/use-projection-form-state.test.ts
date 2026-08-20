@@ -15,7 +15,7 @@ let decumQueryData: unknown[] | undefined;
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
-    settings: {
+    retirement: {
       projectionOverrides: {
         get: {
           useQuery: (input: { overrideType: string }) => ({

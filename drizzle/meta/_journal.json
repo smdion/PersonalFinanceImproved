@@ -127,6 +127,20 @@
       "when": 1787074821545,
       "tag": "0017_salary_entry_bonus_override",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1787192628324,
+      "tag": "0018_fk_index_cleanup",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1787200000000,
+      "tag": "0019_mortgage_refinanced_from_fk",
+      "breakpoints": true
     }
   ]
 }

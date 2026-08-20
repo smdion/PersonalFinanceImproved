@@ -37,22 +37,6 @@ describe("settings router barrel export", () => {
     expect(Array.isArray(result)).toBe(true);
   });
 
-  it("exposes savingsGoals sub-router", async () => {
-    const result = await caller.settings.savingsGoals.list();
-    expect(Array.isArray(result)).toBe(true);
-  });
-
-  it("exposes performanceAccounts sub-router", async () => {
-    const result = await caller.settings.performanceAccounts.list();
-    expect(Array.isArray(result)).toBe(true);
-  });
-
-  it("exposes portfolioSnapshots sub-router", async () => {
-    const result = await caller.settings.portfolioSnapshots.getLatest();
-    // Fresh DB — no snapshots
-    expect(result).toBeNull();
-  });
-
   it("exposes getDataFreshness procedure", async () => {
     const result = await caller.settings.getDataFreshness();
     expect(result).toHaveProperty("balanceDate");
@@ -63,11 +47,6 @@ describe("settings router barrel export", () => {
     const result = await caller.settings.rbacGroups.get();
     expect(result).toHaveProperty("adminGroup");
     expect(result).toHaveProperty("permissions");
-  });
-
-  it("exposes relocationScenarios sub-router", async () => {
-    const result = await caller.settings.relocationScenarios.list();
-    expect(Array.isArray(result)).toBe(true);
   });
 
   it("exposes apiConnections sub-router", async () => {

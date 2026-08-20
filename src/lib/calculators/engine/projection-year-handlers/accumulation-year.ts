@@ -11,7 +11,7 @@ import type {
   EngineAccumulationYear,
   IndividualAccountYearBalance,
 } from "../../types";
-import { roundToCents, sumBy } from "../../../utils/math";
+import { roundToCents, sumBy, safeDivide } from "../../../utils/math";
 import {
   getAllCategories,
   getAccountTypeConfig,
@@ -377,7 +377,7 @@ export function runAccumulationYear(
       slots.find((s) => isOverflowTarget(s.category))?.employeeContrib ?? 0;
     // Base year brokerage is intentional; scale proportionally with salary
     const baseIntentional = state.activeBaseYearContributions?.brokerage ?? 0;
-    const salaryScale = currentSalary > 0 ? projectedSalary / currentSalary : 1;
+    const salaryScale = safeDivide(projectedSalary, currentSalary, 1);
     const intentional = roundToCents(baseIntentional * salaryScale);
     const raw = Math.max(0, roundToCents(brokerageContrib - intentional));
     overflowToBrokerage = raw < OVERFLOW_TOLERANCE ? 0 : raw;

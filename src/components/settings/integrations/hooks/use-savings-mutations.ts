@@ -30,23 +30,18 @@ export function useSavingsMutations() {
   const linkReimbursement = trpc.savings.linkReimbursementCategory.useMutation({
     onSuccess: invalidate,
   });
-  const createGoal = trpc.settings.savingsGoals.create.useMutation({
+  const createGoal = trpc.savings.savingsGoals.create.useMutation({
     onSuccess: invalidate,
   });
 
   return {
-    mutations: {
-      linkSavings,
-      unlinkSavings,
-      renameSavingsToApi,
-      renameSavingsApiName,
-      linkReimbursement,
-      createGoal,
-    },
-    invalidate,
+    linkSavings,
+    unlinkSavings,
+    renameSavingsToApi,
+    renameSavingsApiName,
+    linkReimbursement,
+    createGoal,
   };
 }
 
-export type SavingsMutations = ReturnType<
-  typeof useSavingsMutations
->["mutations"];
+export type SavingsMutations = ReturnType<typeof useSavingsMutations>;

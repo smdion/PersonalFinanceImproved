@@ -84,12 +84,20 @@ describe("resolveCarryForwardAssetValue", () => {
 
   it("returns most recent value at-or-before year", () => {
     const result = resolveCarryForwardAssetValue(items, "Car", 2021);
-    expect(result).toEqual({ value: 15000, note: "Toyota" });
+    expect(result).toEqual({
+      value: 15000,
+      note: "Toyota",
+      yearRecorded: 2020,
+    });
   });
 
   it("returns updated value after change year", () => {
     const result = resolveCarryForwardAssetValue(items, "Car", 2023);
-    expect(result).toEqual({ value: 12000, note: "depreciated" });
+    expect(result).toEqual({
+      value: 12000,
+      note: "depreciated",
+      yearRecorded: 2022,
+    });
   });
 
   it("returns null when value drops to 0", () => {
@@ -104,7 +112,20 @@ describe("resolveCarryForwardAssetValue", () => {
 
   it("carries forward correctly across years", () => {
     const result = resolveCarryForwardAssetValue(items, "Boat", 2025);
-    expect(result).toEqual({ value: 30000, note: null });
+    expect(result).toEqual({ value: 30000, note: null, yearRecorded: 2021 });
+  });
+
+  it("passes through id when present (audit Batch 8 F1 — assets.ts needs it for sync lookups)", () => {
+    const itemsWithId = [
+      { id: 42, name: "Car", year: 2020, value: "15000", note: "Toyota" },
+    ];
+    const result = resolveCarryForwardAssetValue(itemsWithId, "Car", 2021);
+    expect(result).toEqual({
+      id: 42,
+      value: 15000,
+      note: "Toyota",
+      yearRecorded: 2020,
+    });
   });
 });
 
@@ -125,6 +146,20 @@ describe("resolveOtherAssetsForYear", () => {
     const result = resolveOtherAssetsForYear(assets, 2024);
     expect(result.items).toHaveLength(1); // only Boat
     expect(result.total).toBe(30000);
+  });
+
+  it("passes through id when present, omits it when absent", () => {
+    const withId = resolveOtherAssetsForYear(
+      [{ id: 1, name: "Car", year: 2020, value: "15000", note: null }],
+      2022,
+    );
+    expect(withId.items[0]!.id).toBe(1);
+
+    const withoutId = resolveOtherAssetsForYear(
+      [{ name: "Car", year: 2020, value: "15000", note: null }],
+      2022,
+    );
+    expect(withoutId.items[0]!.id).toBeUndefined();
   });
 });
 

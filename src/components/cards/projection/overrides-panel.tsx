@@ -1,11 +1,12 @@
 "use client";
 
-/** Unified overrides panel — thin shell that delegates to section components. */
+/** `SectionHeader` — shared small heading used by decumulation-config.tsx.
+ *  The unified overrides panel this file used to contain (`OverridesPanel`)
+ *  is dead: `index.tsx` renders `OverridesPanelV2` instead, and the three
+ *  section components it delegated to (SavingOverridesSection,
+ *  WithdrawalOverridesSection, LifeChangesSection) had zero other
+ *  importers — removed alongside it. */
 import { HelpTip } from "@/components/ui/help-tip";
-import type { ProjectionState } from "./projection-table-types";
-import { SavingOverridesSection } from "./overrides-saving-section";
-import { WithdrawalOverridesSection } from "./overrides-withdrawal-section";
-import { LifeChangesSection } from "./overrides-life-section";
 
 export function SectionHeader({
   title,
@@ -23,61 +24,6 @@ export function SectionHeader({
         {help && <HelpTip text={help} />}
       </h4>
       {children}
-    </div>
-  );
-}
-
-export type OverridesSectionProps = {
-  state: ProjectionState;
-  accumulationExpenseOverride?: number;
-};
-
-export type OverridesPanelProps = OverridesSectionProps;
-
-/**
- * Unified overrides panel — saving, withdrawal, salary, and budget overrides.
- * Extracted from ProjectionCard to reduce file size.
- */
-export function OverridesPanel({
-  state,
-  accumulationExpenseOverride,
-}: OverridesPanelProps) {
-  return (
-    <div className="border rounded-lg p-4 space-y-3">
-      <SectionHeader
-        title="Overrides"
-        help="Change contribution, withdrawal, salary, or budget settings at specific future years. Each override carries forward (sticky) until the next override for that field. Use 'Reset to defaults' to revert all fields at once."
-      />
-
-      {/* Summary counts */}
-      <div className="flex flex-wrap gap-3 text-xs text-muted">
-        <span>
-          <span className="font-medium text-emerald-700">
-            {state.accumOverrides.length}
-          </span>{" "}
-          pre-retirement
-        </span>
-        <span>
-          <span className="font-medium text-amber-700">
-            {state.decumOverrides.length}
-          </span>{" "}
-          post-retirement
-        </span>
-        <span>
-          <span className="font-medium text-secondary">
-            {(state.dbSalaryOverrides?.length ?? 0) +
-              (state.dbBudgetOverrides?.length ?? 0)}
-          </span>{" "}
-          life change
-        </span>
-      </div>
-
-      <SavingOverridesSection state={state} />
-      <WithdrawalOverridesSection state={state} />
-      <LifeChangesSection
-        state={state}
-        accumulationExpenseOverride={accumulationExpenseOverride}
-      />
     </div>
   );
 }

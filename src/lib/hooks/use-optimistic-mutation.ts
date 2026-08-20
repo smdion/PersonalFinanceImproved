@@ -42,13 +42,21 @@ import { toast } from "@/lib/hooks/use-toast";
 interface OptimisticMutationOptions<TInput, TPrevious> {
   /**
    * Apply the change to local cache before the mutation fires.
-   * Return the previous state so the rollback can restore it.
+   * Return the previous state so the rollback can restore it. May be async
+   * (e.g. to `await utils.x.cancel()` before reading/writing cache so an
+   * in-flight refetch can't clobber the optimistic write) — the mutation
+   * itself isn't fired until this resolves.
    */
-  optimisticUpdate: (input: TInput) => TPrevious;
+  optimisticUpdate: (input: TInput) => TPrevious | Promise<TPrevious>;
   /**
    * Restore the previous state on error.
    */
   rollback: (previousData: TPrevious) => void;
+  /**
+   * Called when the mutation settles (success or error), after any
+   * rollback. Typical use: invalidate queries to reconcile with the server.
+   */
+  onSettled?: () => void;
   /**
    * If true (default), shows a generic "Save failed — change rolled back"
    * toast on error. Set to false if the call site renders its own error UI.
@@ -103,32 +111,46 @@ export function useOptimisticMutation<TInput, TOutput, TPrevious>(
   const mutate = useCallback(
     (input: TInput) => {
       const ordinal = ++callOrdinalRef.current;
-      // Optimistically apply, capture previous state.
-      const previous = options.optimisticUpdate(input);
-      inflightRef.current.set(ordinal, previous);
       setHasRolledBack(false);
 
-      mutation.mutate(input, {
-        onSuccess: () => {
-          if (options.undo) {
-            const u = options.undo;
-            toast.undo(u.label, () => u.undoFn(input), u.windowMs ?? 5000);
-          }
-        },
-        onError: () => {
-          const prev = inflightRef.current.get(ordinal);
-          if (prev !== undefined) {
-            options.rollback(prev);
-            setHasRolledBack(true);
-          }
-          if (showErrorToast) {
-            toast.error("Save failed — your change has been rolled back.");
-          }
-        },
-        onSettled: () => {
-          inflightRef.current.delete(ordinal);
-        },
-      });
+      // Optimistically apply, capture previous state. May be async (e.g. an
+      // in-flight-query cancel before reading/writing cache) — the mutation
+      // itself waits for this to resolve. A synchronous optimisticUpdate
+      // still fires the mutation in the same tick (no artificial await),
+      // matching a plain function call's timing exactly.
+      const proceed = (previous: TPrevious) => {
+        inflightRef.current.set(ordinal, previous);
+
+        mutation.mutate(input, {
+          onSuccess: () => {
+            if (options.undo) {
+              const u = options.undo;
+              toast.undo(u.label, () => u.undoFn(input), u.windowMs ?? 5000);
+            }
+          },
+          onError: () => {
+            const prev = inflightRef.current.get(ordinal);
+            if (prev !== undefined) {
+              options.rollback(prev);
+              setHasRolledBack(true);
+            }
+            if (showErrorToast) {
+              toast.error("Save failed — your change has been rolled back.");
+            }
+          },
+          onSettled: () => {
+            inflightRef.current.delete(ordinal);
+            options.onSettled?.();
+          },
+        });
+      };
+
+      const result = options.optimisticUpdate(input);
+      if (result instanceof Promise) {
+        void result.then(proceed);
+      } else {
+        proceed(result);
+      }
     },
     [mutation, options, showErrorToast],
   );

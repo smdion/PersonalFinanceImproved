@@ -23,7 +23,7 @@ vi.mock("@/lib/trpc", () => ({
     useUtils: () => ({
       mortgage: { computeActiveSummary: { invalidate } },
     }),
-    settings: {
+    mortgage: {
       mortgageWhatIfScenarios: {
         create: {
           useMutation: (opts: { onSuccess?: () => void }) => ({

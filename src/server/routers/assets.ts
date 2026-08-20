@@ -12,6 +12,11 @@ import {
 } from "@/server/helpers";
 import { getActiveBudgetApi } from "@/lib/budget-api";
 import { zYearEndTargeting, toSalaryActiveMap } from "./_shared";
+import {
+  computeHomeImpCumulative,
+  resolveOtherAssetsForYear,
+  resolveCarryForwardAssetValue,
+} from "@/lib/pure/historical";
 
 export const assetsRouter = createTRPCRouter({
   /**
@@ -125,21 +130,15 @@ export const assetsRouter = createTRPCRouter({
         { items: typeof homeImprovements; cumulative: number }
       >();
       for (const year of allYears) {
-        const itemsUpToYear = homeImprovements.filter((hi) => hi.year <= year);
-        const cumulative = itemsUpToYear.reduce(
-          (sum, hi) => sum + toNumber(hi.cost),
-          0,
-        );
+        const cumulative = computeHomeImpCumulative(homeImprovements, year);
         const itemsThisYear = homeImprovements.filter((hi) => hi.year === year);
         homeImpByYear.set(year, { items: itemsThisYear, cumulative });
       }
 
-      // Build other assets by year (carry-forward: latest value per name where year <= target)
+      // Current year other asset items (carry-forward: latest value per name where year <= target)
       const uniqueAssetNames = Array.from(
         new Set(otherAssets.map((a) => a.name)),
       );
-
-      // Current year other asset items (carry-forward)
       const currentOtherAssetItems: Array<{
         id: number;
         name: string;
@@ -149,22 +148,20 @@ export const assetsRouter = createTRPCRouter({
         yearRecorded: number;
       }> = [];
       for (const name of uniqueAssetNames) {
-        const entries = otherAssets
-          .filter((a) => a.name === name && a.year <= currentYear)
-          .sort((a, b) => a.year - b.year);
-        if (entries.length > 0) {
-          const latest = entries[entries.length - 1]!;
-          const val = toNumber(latest.value);
-          if (val > 0) {
-            currentOtherAssetItems.push({
-              id: latest.id,
-              name,
-              value: val,
-              note: latest.note,
-              synced: mappedAssetIds.has(latest.id),
-              yearRecorded: latest.year,
-            });
-          }
+        const resolved = resolveCarryForwardAssetValue(
+          otherAssets,
+          name,
+          currentYear,
+        );
+        if (resolved) {
+          currentOtherAssetItems.push({
+            id: resolved.id!,
+            name,
+            value: resolved.value,
+            note: resolved.note,
+            synced: mappedAssetIds.has(resolved.id!),
+            yearRecorded: resolved.yearRecorded,
+          });
         }
       }
 
@@ -173,7 +170,7 @@ export const assetsRouter = createTRPCRouter({
         number,
         {
           items: {
-            id: number;
+            id?: number;
             name: string;
             value: number;
             note: string | null;
@@ -182,33 +179,10 @@ export const assetsRouter = createTRPCRouter({
         }
       >();
       for (const year of allYears) {
-        const items: {
-          id: number;
-          name: string;
-          value: number;
-          note: string | null;
-        }[] = [];
-        for (const name of uniqueAssetNames) {
-          const entries = otherAssets.filter(
-            (a) => a.name === name && a.year <= year,
-          );
-          if (entries.length > 0) {
-            const latest = entries[entries.length - 1]!;
-            const val = toNumber(latest.value);
-            if (val > 0) {
-              items.push({
-                id: latest.id,
-                name,
-                value: val,
-                note: latest.note,
-              });
-            }
-          }
-        }
-        otherAssetsByYear.set(year, {
-          items,
-          total: items.reduce((s, i) => s + i.value, 0),
-        });
+        otherAssetsByYear.set(
+          year,
+          resolveOtherAssetsForYear(otherAssets, year),
+        );
       }
 
       // Build notes lookup

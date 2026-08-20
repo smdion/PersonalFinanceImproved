@@ -46,10 +46,10 @@ export function useProjectionFormState() {
   );
 
   // --- Overrides (persisted to DB, loaded on mount) ---
-  const accumQuery = trpc.settings.projectionOverrides.get.useQuery({
+  const accumQuery = trpc.retirement.projectionOverrides.get.useQuery({
     overrideType: "accumulation",
   });
-  const decumQuery = trpc.settings.projectionOverrides.get.useQuery({
+  const decumQuery = trpc.retirement.projectionOverrides.get.useQuery({
     overrideType: "decumulation",
   });
   // Track whether local state has been touched (add/delete) — once touched, local state wins over DB

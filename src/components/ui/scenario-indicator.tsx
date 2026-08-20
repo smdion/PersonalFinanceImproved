@@ -3,6 +3,7 @@
 import React from "react";
 import { useScenario } from "@/lib/context/scenario-context";
 import { confirm } from "@/components/ui/confirm-dialog";
+import { STATUS_COLORS } from "@/lib/utils/colors";
 
 /**
  * Wraps a value display and adds a visual indicator when the value
@@ -55,7 +56,9 @@ export function ScenarioBanner() {
   if (!isInScenario || !activeScenario) return null;
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 mb-4 rounded-md bg-amber-50 border border-amber-200 text-xs text-amber-800">
+    <div
+      className={`flex items-center gap-2 px-3 py-1.5 mb-4 rounded-md border text-xs ${STATUS_COLORS.amber.bg} ${STATUS_COLORS.amber.border} ${STATUS_COLORS.amber.text}`}
+    >
       <svg
         className="w-3.5 h-3.5 text-amber-600 flex-shrink-0"
         fill="none"

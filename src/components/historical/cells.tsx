@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useInlineNumberEdit } from "@/lib/hooks/use-inline-number-edit";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -92,19 +93,20 @@ export function NoteButton({
   existingNote?: string;
   onUpsertNote: (year: number, field: string, note: string) => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState("");
+  const {
+    editingKey: editing,
+    editValue: value,
+    setEditValue: setValue,
+    startEdit,
+    commit,
+    cancel,
+  } = useInlineNumberEdit<true>({
+    allowBlankCommit: true,
+    onCommit: (_key, draft) => onUpsertNote(year, field, draft),
+  });
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const open = () => {
-    setValue(existingNote ?? "");
-    setEditing(true);
-  };
-
-  const save = () => {
-    onUpsertNote(year, field, value);
-    setEditing(false);
-  };
+  const open = () => startEdit(true, existingNote ?? "");
 
   useEffect(() => {
     if (editing && inputRef.current) inputRef.current.focus();
@@ -121,24 +123,27 @@ export function NoteButton({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => {
+            // Shift+Enter inserts a newline instead of committing — the
+            // shared hook's handleKeyDown doesn't distinguish the two, so
+            // this field wires commit/cancel directly instead of using it.
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
-              save();
+              commit();
             }
-            if (e.key === "Escape") setEditing(false);
+            if (e.key === "Escape") cancel();
           }}
           className="w-48 h-14 text-xs p-1.5 border rounded resize-none focus:outline-none focus:ring-1 focus:ring-blue-400"
           placeholder="Add note..."
         />
         <div className="flex justify-end gap-1.5 mt-1.5">
           <button
-            onClick={() => setEditing(false)}
+            onClick={cancel}
             className="text-caption text-faint hover:text-muted"
           >
             Cancel
           </button>
           <button
-            onClick={save}
+            onClick={commit}
             className="text-caption text-blue-600 font-medium hover:text-blue-800"
           >
             Save
@@ -246,16 +251,6 @@ export function NumCell({
       } ${red && value ? "text-red-600" : ""}`}
     >
       {value !== null && value !== undefined ? formatCurrency(value) : "\u2014"}
-    </td>
-  );
-}
-
-export function ChangeCell({ value }: { value: number | null }) {
-  return (
-    <td className={`text-right py-1.5 px-1.5 ${changeColor(value)}`}>
-      {value !== null
-        ? `${value >= 0 ? "+" : ""}${formatCurrency(value)}`
-        : "\u2014"}
     </td>
   );
 }
@@ -417,40 +412,40 @@ export function EditableCell({
   editableFields?: Set<string>;
   tooltipLines?: string[];
 }) {
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState("");
-
+  const {
+    editingKey,
+    editValue,
+    setEditValue,
+    startEdit: startEditRaw,
+    commit,
+    handleKeyDown,
+  } = useInlineNumberEdit<true>({
+    onCommit: (_key, draft) => {
+      const parsed = parseFloat(draft);
+      // homeImprovements is derived from the home_improvement_items table —
+      // it is read-only in this table and not persisted via this save path.
+      if (!isNaN(parsed) && parsed !== value && field !== "homeImprovements") {
+        onSave(year, { [field]: parsed });
+      }
+    },
+  });
   const startEdit = useCallback(() => {
     if (isCurrent) return;
-    setEditValue(value !== null ? String(value) : "");
-    setEditing(true);
-  }, [value, isCurrent]);
-
-  const save = useCallback(() => {
-    setEditing(false);
-    const parsed = parseFloat(editValue);
-    // homeImprovements is derived from the home_improvement_items table —
-    // it is read-only in this table and not persisted via this save path.
-    if (!isNaN(parsed) && parsed !== value && field !== "homeImprovements") {
-      onSave(year, { [field]: parsed });
-    }
-  }, [editValue, value, field, year, onSave]);
+    startEditRaw(true, value !== null ? String(value) : "");
+  }, [value, isCurrent, startEditRaw]);
 
   const noteKey = `${year}:${field}`;
   const existingNote = notes[noteKey];
 
-  if (editing) {
+  if (editingKey) {
     return (
       <td className={`py-0.5 px-0.5 ${border ? "border-l" : ""}`}>
         <input
           type="number"
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
-          onBlur={save}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") save();
-            if (e.key === "Escape") setEditing(false);
-          }}
+          onBlur={commit}
+          onKeyDown={handleKeyDown}
           className="w-20 text-right text-xs px-1 py-0.5 border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
           autoFocus
           disabled={isSaving}
@@ -518,30 +513,33 @@ export function EditableRateCell({
   notes: Record<string, string>;
   onUpsertNote: (year: number, field: string, note: string) => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState("");
-
+  const {
+    editingKey,
+    editValue,
+    setEditValue,
+    startEdit: startEditRaw,
+    commit,
+    handleKeyDown,
+  } = useInlineNumberEdit<true>({
+    onCommit: (_key, draft) => {
+      const parsed = parseFloat(draft);
+      if (!isNaN(parsed)) {
+        const rate = parsed / 100;
+        if (rate !== value) {
+          onSave(year, { [field]: rate });
+        }
+      }
+    },
+  });
   const startEdit = useCallback(() => {
     if (isCurrent) return;
-    setEditValue(value !== null ? (value * 100).toFixed(1) : "");
-    setEditing(true);
-  }, [value, isCurrent]);
-
-  const save = useCallback(() => {
-    setEditing(false);
-    const parsed = parseFloat(editValue);
-    if (!isNaN(parsed)) {
-      const rate = parsed / 100;
-      if (rate !== value) {
-        onSave(year, { [field]: rate });
-      }
-    }
-  }, [editValue, value, field, year, onSave]);
+    startEditRaw(true, value !== null ? (value * 100).toFixed(1) : "");
+  }, [value, isCurrent, startEditRaw]);
 
   const noteKey = `${year}:${field}`;
   const existingNote = notes[noteKey];
 
-  if (editing) {
+  if (editingKey) {
     return (
       <td className="py-0.5 px-0.5">
         <input
@@ -549,11 +547,8 @@ export function EditableRateCell({
           step="0.1"
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
-          onBlur={save}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") save();
-            if (e.key === "Escape") setEditing(false);
-          }}
+          onBlur={commit}
+          onKeyDown={handleKeyDown}
           className="w-14 text-right text-xs px-1 py-0.5 border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
           autoFocus
           disabled={isSaving}
@@ -583,224 +578,6 @@ export function EditableRateCell({
           />
         )}
       </span>
-    </td>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Line Item Cell — for Home Improvements and Other Assets
-// ---------------------------------------------------------------------------
-
-export function LineItemCell({
-  value,
-  items,
-  year,
-  isCurrent,
-  type,
-  onAddHI,
-  onDeleteHI,
-  onUpsertOA,
-  onDeleteOA,
-  notes,
-  onUpsertNote,
-}: {
-  value: number;
-  items: HIItem[];
-  year: number;
-  isCurrent: boolean;
-  type: "homeImprovement" | "otherAsset";
-  onAddHI?: (
-    year: number,
-    description: string,
-    cost: number,
-    note?: string,
-  ) => void;
-  onDeleteHI?: (id: number) => void;
-  onUpsertOA?: (
-    name: string,
-    year: number,
-    value: number,
-    note?: string,
-  ) => void;
-  onDeleteOA?: (id: number) => void;
-  notes: Record<string, string>;
-  onUpsertNote: (year: number, field: string, note: string) => void;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const [adding, setAdding] = useState(false);
-  const [newDesc, setNewDesc] = useState("");
-  const [newCost, setNewCost] = useState("");
-  const [newNote, setNewNote] = useState("");
-  const popoverRef = useRef<HTMLDivElement>(null);
-
-  const field = type === "homeImprovement" ? "homeImprovements" : "otherAssets";
-  const noteKey = `${year}:${field}`;
-  const existingNote = notes[noteKey];
-
-  useEffect(() => {
-    if (!expanded) return;
-    const handleClick = (e: MouseEvent) => {
-      if (
-        popoverRef.current &&
-        !popoverRef.current.contains(e.target as Node)
-      ) {
-        setExpanded(false);
-        setAdding(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [expanded]);
-
-  const handleAdd = () => {
-    const cost = parseFloat(newCost);
-    if (!newDesc.trim() || isNaN(cost)) return;
-    if (type === "homeImprovement" && onAddHI) {
-      onAddHI(year, newDesc.trim(), cost, newNote.trim() || undefined);
-    } else if (type === "otherAsset" && onUpsertOA) {
-      onUpsertOA(newDesc.trim(), year, cost, newNote.trim() || undefined);
-    }
-    setNewDesc("");
-    setNewCost("");
-    setNewNote("");
-    setAdding(false);
-  };
-
-  const hasItems = items.length > 0;
-
-  return (
-    <td className="text-right py-1.5 px-1.5 relative">
-      <span className="relative group/cell inline-flex items-center gap-0.5">
-        <span
-          className={`${!isCurrent ? "cursor-pointer hover:text-blue-600" : ""} ${hasItems ? "underline decoration-dotted decoration-gray-400" : ""}`}
-          onClick={!isCurrent ? () => setExpanded(!expanded) : undefined}
-          title={
-            !isCurrent
-              ? `Click to ${expanded ? "collapse" : "expand"} breakdown`
-              : undefined
-          }
-        >
-          {formatCurrency(value)}
-        </span>
-        {existingNote && <NoteIndicator note={existingNote} />}
-        {!isCurrent && (
-          <NoteButton
-            year={year}
-            field={field}
-            existingNote={existingNote}
-            onUpsertNote={onUpsertNote}
-          />
-        )}
-      </span>
-      {expanded && (
-        <div
-          ref={popoverRef}
-          className="absolute top-full right-0 mt-1 z-[9999] bg-surface-primary border rounded-lg shadow-xl p-3 min-w-[240px] text-left"
-        >
-          <div className="text-xs font-semibold text-muted mb-1.5">
-            {type === "homeImprovement"
-              ? `Home Improvements (through ${year})`
-              : `Other Assets (${year})`}
-          </div>
-          {items.length === 0 && (
-            <div className="text-xs text-faint italic mb-1">
-              No items tracked
-            </div>
-          )}
-          {items.map((item) => (
-            <div
-              key={`${item.description}-${item.id}`}
-              className="flex items-center justify-between text-xs py-0.5 group/item"
-            >
-              <span
-                className="flex-1 truncate text-secondary"
-                title={item.note ?? undefined}
-              >
-                {item.description}
-                {item.note && (
-                  <span className="text-faint ml-1">({item.note})</span>
-                )}
-              </span>
-              <span className="font-medium ml-3 tabular-nums">
-                {formatCurrency(item.cost)}
-              </span>
-              {!isCurrent && (
-                <button
-                  onClick={() => {
-                    if (type === "homeImprovement" && onDeleteHI)
-                      onDeleteHI(item.id);
-                    if (type === "otherAsset" && onDeleteOA)
-                      onDeleteOA(item.id);
-                  }}
-                  className="hidden group-hover/item:inline ml-1 text-red-400 hover:text-red-600"
-                  title="Remove"
-                >
-                  &times;
-                </button>
-              )}
-            </div>
-          ))}
-          {items.length > 0 && (
-            <div className="flex justify-between text-caption font-semibold border-t pt-0.5 mt-0.5">
-              <span>Total</span>
-              <span>{formatCurrency(value)}</span>
-            </div>
-          )}
-          {!isCurrent && !adding && (
-            <button
-              onClick={() => setAdding(true)}
-              className="text-caption text-blue-600 hover:text-blue-800 mt-1"
-            >
-              + Add item
-            </button>
-          )}
-          {adding && (
-            <div className="mt-1 space-y-1 border-t border-subtle pt-1">
-              <input
-                type="text"
-                placeholder={
-                  type === "homeImprovement" ? "Description" : "Asset name"
-                }
-                value={newDesc}
-                onChange={(e) => setNewDesc(e.target.value)}
-                className="w-full text-caption px-1 py-0.5 border rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
-                autoFocus
-              />
-              <input
-                type="number"
-                placeholder="Amount"
-                value={newCost}
-                onChange={(e) => setNewCost(e.target.value)}
-                className="w-full text-caption px-1 py-0.5 border rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
-              />
-              <input
-                type="text"
-                placeholder="Note (optional)"
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                className="w-full text-caption px-1 py-0.5 border rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleAdd();
-                }}
-              />
-              <div className="flex justify-end gap-1">
-                <button
-                  onClick={() => setAdding(false)}
-                  className="text-micro text-faint hover:text-muted"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAdd}
-                  className="text-micro text-blue-600 font-medium hover:text-blue-800"
-                >
-                  Add
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </td>
   );
 }

@@ -79,12 +79,12 @@ const mockExtraPayments = [
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     useUtils: () => ({
-      settings: {
+      mortgage: {
         mortgageLoans: { invalidate: invalidateLoans },
         mortgageExtraPayments: { invalidate: invalidateExtras },
       },
     }),
-    settings: {
+    mortgage: {
       mortgageLoans: {
         list: { useQuery: () => ({ data: mockLoans, isLoading: false }) },
         create: {

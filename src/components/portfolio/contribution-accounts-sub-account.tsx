@@ -4,8 +4,8 @@
 
 import React, { useState } from "react";
 import { formatCurrency } from "@/lib/utils/format";
-import { taxTypeLabel } from "@/lib/utils/colors";
-import { TAX_TYPE_LABELS } from "@/lib/config/display-labels";
+import { taxTypeLabel, TAX_TYPE_COLORS } from "@/lib/utils/colors";
+import { useInlineNumberEdit } from "@/lib/hooks/use-inline-number-edit";
 import type { PortfolioSub } from "./contribution-accounts-types";
 
 export function SubAccountRow({
@@ -30,15 +30,20 @@ export function SubAccountRow({
   const ownerName = sub.ownerPersonId
     ? (people.find((p) => p.id === sub.ownerPersonId)?.name ?? "?")
     : "Joint";
-  const [editingLabel, setEditingLabel] = useState(false);
-  const [labelDraft, setLabelDraft] = useState(sub.label ?? "");
-
-  function commitLabel() {
-    setEditingLabel(false);
-    const trimmed = labelDraft.trim();
-    const next = trimmed || null;
-    if (next !== (sub.label ?? null)) onUpdate?.(sub.id, { label: next });
-  }
+  const {
+    editingKey: editingLabel,
+    editValue: labelDraft,
+    setEditValue: setLabelDraft,
+    startEdit: startEditLabel,
+    commit: commitLabel,
+    handleKeyDown: handleLabelKeyDown,
+  } = useInlineNumberEdit<true>({
+    allowBlankCommit: true,
+    onCommit: (_key, draft) => {
+      const next = draft.trim() || null;
+      if (next !== (sub.label ?? null)) onUpdate?.(sub.id, { label: next });
+    },
+  });
 
   return (
     <div
@@ -53,16 +58,7 @@ export function SubAccountRow({
               value={labelDraft}
               onChange={(e) => setLabelDraft(e.target.value)}
               onBlur={commitLabel}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  commitLabel();
-                }
-                if (e.key === "Escape") {
-                  setEditingLabel(false);
-                  setLabelDraft(sub.label ?? "");
-                }
-              }}
+              onKeyDown={handleLabelKeyDown}
               placeholder={sub.subType || taxLabel}
               className="border-b border-blue-400 bg-transparent outline-none text-xs w-full min-w-0"
             />
@@ -76,10 +72,7 @@ export function SubAccountRow({
               )}
               {onUpdate && (
                 <button
-                  onClick={() => {
-                    setLabelDraft(sub.label ?? "");
-                    setEditingLabel(true);
-                  }}
+                  onClick={() => startEditLabel(true, sub.label ?? "")}
                   title="Edit label"
                   className="text-faint hover:text-secondary shrink-0 ml-0.5"
                 >
@@ -124,7 +117,7 @@ export function SubAccountRow({
             className={`text-caption text-faint bg-transparent border-none p-0 focus:ring-0${onUpdate ? "cursor-pointer hover:text-secondary" : "cursor-default"}`}
             title="Tax type"
           >
-            {Object.entries(TAX_TYPE_LABELS).map(([value, label]) => (
+            {Object.entries(TAX_TYPE_COLORS).map(([value, { label }]) => (
               <option key={value} value={value}>
                 {label}
               </option>
@@ -237,7 +230,7 @@ export function AddSubAccountForm({
             onChange={(e) => setTaxType(e.target.value)}
             className="w-full border rounded px-1.5 py-1 text-xs bg-surface-primary"
           >
-            {Object.entries(TAX_TYPE_LABELS).map(([value, label]) => (
+            {Object.entries(TAX_TYPE_COLORS).map(([value, { label }]) => (
               <option key={value} value={value}>
                 {label}
               </option>

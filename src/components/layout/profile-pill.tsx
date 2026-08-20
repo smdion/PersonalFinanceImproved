@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { useClickOutside } from "@/lib/hooks/use-click-outside";
 
 export type ProfileOption = {
   id: string | number;
@@ -27,18 +29,7 @@ export function ProfilePill({
   isPending,
 }: ProfilePillProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  // Close on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  const ref = useClickOutside<HTMLDivElement>(() => setOpen(false));
 
   const active = options.find((o) => o.isActive);
   const activeName = active?.name ?? "None";
@@ -92,10 +83,10 @@ export function ProfilePill({
               >
                 <span className="truncate">{o.name}</span>
                 {o.badge && (
-                  <span
-                    className={`ml-auto text-caption shrink-0 ${o.isActive ? "text-blue-500" : "text-faint"}`}
-                  >
-                    {o.badge}
+                  <span className="ml-auto shrink-0">
+                    <Badge color={o.badge === "Pinned" ? "amber" : "blue"}>
+                      {o.badge}
+                    </Badge>
                   </span>
                 )}
               </button>

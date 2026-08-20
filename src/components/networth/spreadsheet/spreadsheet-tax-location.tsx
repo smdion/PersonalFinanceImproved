@@ -1,12 +1,17 @@
 "use client";
 
 /** Tax Location YTD — two side-by-side mini tables showing Retirement and Portfolio
- *  tax-type distribution. Labels from display-labels.ts (per RULES.md). */
+ *  tax-type distribution. Labels from taxTypeLabel() (lib/utils/colors.ts) —
+ *  the same source tax-location-pie.tsx uses, so the pie chart and this
+ *  table agree on tax-type display text for identical data (Batch 26 F8:
+ *  previously used display-labels.ts's TAX_TYPE_LABELS, a second label
+ *  source that had genuinely drifted — "Tax-Deferred"/"Tax-Free" here vs
+ *  "Traditional"/"Roth" everywhere else). */
 
 import { Card } from "@/components/ui/card";
 import { formatPercent } from "@/lib/utils/format";
-import { sumBy } from "@/lib/utils/math";
-import { TAX_TYPE_LABELS } from "@/lib/config/display-labels";
+import { sumBy, safeDivide } from "@/lib/utils/math";
+import { taxTypeLabel } from "@/lib/utils/colors";
 import type { TaxLocationBreakdown } from "./types";
 
 type SpreadsheetTaxLocationProps = {
@@ -59,10 +64,10 @@ function TaxLocationMiniTable({
           {taxTypes.map((taxType, index) => {
             const valA = yearAData[taxType] ?? 0;
             const valB = yearBData[taxType] ?? 0;
-            const pctA = totalA > 0 ? valA / totalA : 0;
-            const pctB = totalB > 0 ? valB / totalB : 0;
+            const pctA = safeDivide(valA, totalA, 0);
+            const pctB = safeDivide(valB, totalB, 0);
             // Use display label from config, with fallback
-            const label = TAX_TYPE_LABELS[taxType] ?? taxType;
+            const label = taxTypeLabel(taxType);
 
             return (
               <tr

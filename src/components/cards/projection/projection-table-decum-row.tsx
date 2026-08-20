@@ -7,6 +7,7 @@ import {
   taxTypeLabel,
 } from "@/lib/utils/colors";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { safeDivide } from "@/lib/utils/math";
 import type {
   AccountCategory,
   EngineDecumulationYear,
@@ -698,7 +699,7 @@ export function DecumulationRow({
                   balance: spBal,
                   growth: spGrowth,
                 } of decSplits) {
-                  const frac = splitsTotal > 0 ? spBal / splitsTotal : 0;
+                  const frac = safeDivide(spBal, splitsTotal, 0);
                   const subItems: TooltipLineItem[] = [];
                   if (Math.abs(spGrowth) > 1)
                     subItems.push({

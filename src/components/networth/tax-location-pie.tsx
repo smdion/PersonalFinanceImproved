@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { safeDivide } from "@/lib/utils/math";
 import { taxTypeLabel, TAX_PIE_COLORS, CHART_COLORS } from "@/lib/utils/colors";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
 import {
@@ -86,9 +87,7 @@ export function TaxLocationPie({
               </span>
               <div className="text-right">
                 <span className="font-medium">
-                  {formatPercent(
-                    portfolioTotal > 0 ? d.value / portfolioTotal : 0,
-                  )}
+                  {formatPercent(safeDivide(d.value, portfolioTotal, 0))}
                 </span>
                 <span className="text-xs text-faint ml-2">
                   {formatCurrency(d.value)}

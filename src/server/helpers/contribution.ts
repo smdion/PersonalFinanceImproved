@@ -4,7 +4,7 @@
 import { and, eq, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { ScenarioOverrides } from "@/lib/db/schema";
-import { roundToCents } from "@/lib/utils/math";
+import { roundToCents, safeDivide } from "@/lib/utils/math";
 import { isTaxFree } from "@/lib/config/account-types";
 import type {
   ContributionAccountInput,
@@ -405,8 +405,11 @@ export function aggregateContributionsByCategory(
   for (const cat of categoriesWithTaxPreference()) {
     const total =
       contribByCategory[cat].rothAnnual + contribByCategory[cat].tradAnnual;
-    contribByCategory[cat].rothFraction =
-      total > 0 ? contribByCategory[cat].rothAnnual / total : 1;
+    contribByCategory[cat].rothFraction = safeDivide(
+      contribByCategory[cat].rothAnnual,
+      total,
+      1,
+    );
   }
 
   return {
@@ -1106,8 +1109,7 @@ export function buildProfileContribData(
         const js = jobSalaries.find((x) => x.job.id === c.jobId);
         const jobSalary = js ? js.salary : 0;
         baseAnnual = jobSalary * value;
-        salaryFraction =
-          totalCompensation > 0 ? jobSalary / totalCompensation : 1;
+        salaryFraction = safeDivide(jobSalary, totalCompensation, 1);
       } else if (method === "fixed_per_period") {
         value = cv;
         const job = activeJobs.find((j) => j.id === c.jobId);

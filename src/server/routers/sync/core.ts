@@ -19,6 +19,7 @@ import {
   cacheSet,
 } from "@/lib/budget-api";
 import { detectDrift, hasDrift } from "@/lib/budget-api/drift-detection";
+import { applyPullMapping } from "@/server/helpers/apply-pull-mapping";
 import type {
   BudgetApiService,
   BudgetAccount,
@@ -29,6 +30,7 @@ import type {
 import { parseAppSettings, buildMortgageInputs } from "@/server/helpers";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
 import { accountDisplayName } from "@/lib/utils/format";
+import { safeDivide } from "@/lib/utils/math";
 import { serviceEnum } from "./_shared";
 
 export const syncCoreRouter = createTRPCRouter({
@@ -238,93 +240,13 @@ export const syncCoreRouter = createTRPCRouter({
             const apiBalance = apiBalanceMap.get(mapping.remoteAccountId);
             if (apiBalance === undefined) continue;
 
-            // Resolve by localId prefix
-            const localId = mapping.localId ?? mapping.localName; // backward compat
-            // Prefer typed fields; fall back to prefix parsing for legacy mappings
-            if (mapping.loanId || localId.startsWith("mortgage:")) {
-              const loanId = mapping.loanId ?? Number(localId.split(":")[1]);
-              const mapType = mapping.loanMapType ?? localId.split(":")[2]; // 'propertyValue' or 'loanBalance'
-              if (mapType === "propertyValue") {
-                await tx
-                  .update(schema.mortgageLoans)
-                  .set({
-                    propertyValueEstimated: String(apiBalance),
-                    usePurchaseOrEstimated: "estimated",
-                  })
-                  .where(eq(schema.mortgageLoans.id, loanId));
-              }
-              if (mapType === "loanBalance") {
-                await tx
-                  .update(schema.mortgageLoans)
-                  .set({
-                    apiBalance: String(Math.abs(apiBalance)),
-                    apiBalanceDate: new Date().toISOString().slice(0, 10),
-                  })
-                  .where(eq(schema.mortgageLoans.id, loanId));
-              }
-              pulled++;
-              continue;
-            }
-
-            if (mapping.assetId != null || localId.startsWith("asset:")) {
-              // Resolve asset by ID → get current name → upsert by name+year
-              const assetId =
-                mapping.assetId ?? parseInt(localId.split(":")[1]!, 10);
-              const assetRow = await tx
-                .select()
-                .from(schema.otherAssetItems)
-                .where(eq(schema.otherAssetItems.id, assetId))
-                .then((r) => r[0]);
-              if (assetRow) {
-                const existing = await tx
-                  .select()
-                  .from(schema.otherAssetItems)
-                  .where(eq(schema.otherAssetItems.name, assetRow.name))
-                  .then((rows) => rows.find((r) => r.year === currentYear));
-                if (existing) {
-                  await tx
-                    .update(schema.otherAssetItems)
-                    .set({
-                      value: String(apiBalance),
-                      note: `Synced from ${service.toUpperCase()}`,
-                    })
-                    .where(eq(schema.otherAssetItems.id, existing.id));
-                } else {
-                  await tx.insert(schema.otherAssetItems).values({
-                    name: assetRow.name,
-                    year: currentYear,
-                    value: String(apiBalance),
-                    note: `Synced from ${service.toUpperCase()}`,
-                  });
-                }
-              }
-              pulled++;
-              continue;
-            }
-
-            // Fallback for unmigrated mappings (localName-based resolution)
-            const existing = await tx
-              .select()
-              .from(schema.otherAssetItems)
-              .where(eq(schema.otherAssetItems.name, mapping.localName))
-              .then((rows) => rows.find((r) => r.year === currentYear));
-            if (existing) {
-              await tx
-                .update(schema.otherAssetItems)
-                .set({
-                  value: String(apiBalance),
-                  note: `Synced from ${service.toUpperCase()}`,
-                })
-                .where(eq(schema.otherAssetItems.id, existing.id));
-            } else {
-              await tx.insert(schema.otherAssetItems).values({
-                name: mapping.localName,
-                year: currentYear,
-                value: String(apiBalance),
-                note: `Synced from ${service.toUpperCase()}`,
-              });
-            }
-            pulled++;
+            const result = await applyPullMapping(tx, {
+              mapping,
+              apiBalance,
+              service,
+              currentYear,
+            });
+            if (result.applied) pulled++;
           }
           return pulled;
         });
@@ -956,14 +878,20 @@ export const syncCoreRouter = createTRPCRouter({
       }
 
       const categories = Array.from(categoryData.entries())
-        .map(([name, { current, prior }]) => ({
-          name,
-          current,
-          prior,
-          diff: current - prior,
-          percentChange:
-            prior !== 0 ? ((current - prior) / Math.abs(prior)) * 100 : null,
-        }))
+        .map(([name, { current, prior }]) => {
+          const changeRatio = safeDivide(
+            current - prior,
+            Math.abs(prior),
+            null,
+          );
+          return {
+            name,
+            current,
+            prior,
+            diff: current - prior,
+            percentChange: changeRatio === null ? null : changeRatio * 100,
+          };
+        })
         .filter((c) => c.current !== 0 || c.prior !== 0)
         .sort((a, b) => Math.abs(b.current) - Math.abs(a.current));
 

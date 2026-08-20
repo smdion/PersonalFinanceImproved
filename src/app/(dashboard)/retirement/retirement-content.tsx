@@ -180,7 +180,7 @@ export function RetirementContent() {
     trpc.projection.computeProjection.useQuery(debouncedEngineInput, {
       placeholderData: (prev) => prev,
     });
-  const upsertSettings = trpc.settings.retirementSettings.upsert.useMutation({
+  const upsertSettings = trpc.retirement.retirementSettings.upsert.useMutation({
     onMutate: async (newSettings) => {
       // Optimistic update: immediately reflect the changed setting in the UI
       // so dropdowns/inputs update without waiting for the server round-trip.

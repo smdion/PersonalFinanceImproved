@@ -110,6 +110,18 @@ export const RMD_EXCISE_TAX_RATE = 0.25;
  *  dynamic, and endowment withdrawal strategies. */
 export const DEFAULT_STRATEGY_WITHDRAWAL_PERCENT = 0.05;
 
+/** Default spending floor (as a fraction of the initial withdrawal amount)
+ *  shared by the constant-percentage and endowment withdrawal strategies. */
+export const DEFAULT_STRATEGY_FLOOR_PERCENT = 0.9;
+
+/** Default rolling-average window (years) for the endowment withdrawal
+ *  strategy. Confirmed 2026-08-19: the UI config previously defaulted this
+ *  to 5 while the engine and server fallback both used 10 — a real,
+ *  user-facing divergence. Standardized on 10 (majority — engine, server
+ *  fallback, and methodology docs all already agreed) and wired all three
+ *  layers to this one constant so they can't drift apart again. */
+export const DEFAULT_ENDOWMENT_ROLLING_YEARS = 10;
+
 // ---------------------------------------------------------------------------
 // Monte Carlo / Projection
 // ---------------------------------------------------------------------------
@@ -117,6 +129,17 @@ export const DEFAULT_STRATEGY_WITHDRAWAL_PERCENT = 0.05;
 /** Success-rate threshold above which a Monte Carlo plan is considered
  *  "confident" (e.g. Coast FIRE reachability, strategy diagnosis). */
 export const MC_CONFIDENCE_THRESHOLD = 0.9;
+
+/** Default per-year return clamps for Monte Carlo trials (max 50% loss,
+ *  max 100% gain), shared by the calculator's own default and the server
+ *  fallback used when no preset is selected. */
+export const MC_RETURN_CLAMP_MIN = -0.5;
+export const MC_RETURN_CLAMP_MAX = 1.0;
+
+/** A trial is "spending stable" if withdrawals stay at or above this
+ *  fraction of the initial inflation-adjusted withdrawal in every
+ *  decumulation year. */
+export const MC_SPENDING_STABILITY_THRESHOLD = 0.75;
 
 /** Default inflation risk assumption for Monte Carlo simulations when no
  *  preset-specific value is configured. */

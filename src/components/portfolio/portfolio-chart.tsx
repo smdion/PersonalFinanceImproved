@@ -20,6 +20,7 @@ import {
   compactCurrency,
 } from "@/lib/utils/format";
 import { CHART_COLORS } from "@/lib/utils/colors";
+import { safeDivide } from "@/lib/utils/math";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
 
 type TimeFrame = "YTD" | "3M" | "6M" | "1Y" | "3Y" | "All";
@@ -63,8 +64,8 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
     return filtered.map((s, i) => {
       const prev = i > 0 ? filtered[i - 1] : null;
       const change = prev ? s.total - prev.total : null;
-      const changePct =
-        prev && prev.total > 0 ? (change! / prev.total) * 100 : null;
+      const changeRatio = prev ? safeDivide(change!, prev.total, null) : null;
+      const changePct = changeRatio === null ? null : changeRatio * 100;
       const d = new Date(s.date + "T00:00:00");
       return {
         date: s.date,
@@ -93,8 +94,7 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
   const first = chartData[0]!;
   const last = chartData[chartData.length - 1]!;
   const totalChange = last.total - first.total;
-  const totalChangePct =
-    first.total > 0 ? (totalChange / first.total) * 100 : 0;
+  const totalChangePct = safeDivide(totalChange, first.total, 0) * 100;
   const isPositive = totalChange >= 0;
 
   return (

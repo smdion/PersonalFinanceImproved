@@ -425,3 +425,65 @@ export function computeViewAwareTotals(input: {
 
   return { projected: projView, blended: blendedView, ytd: ytdView };
 }
+
+/** A person shape sufficient to derive a household savings rate — the
+ * subset of the contribution-summary router output both dashboard cards
+ * (Financial Checkup, Savings Rate) consume. */
+export type SavingsRatePerson = {
+  totalCompensation?: number | null;
+  salary?: number | null;
+  totals: {
+    views: Record<
+      ViewMode,
+      Pick<ViewAwareTotals, "savingsRateWithMatch" | "savingsRateWithoutMatch">
+    >;
+  };
+};
+
+/** Sum of each person's total compensation (falls back to salary). Compute
+ * once and reuse — callers typically need it both to decide `excludeMatch`
+ * (via `isHighIncomeHousehold`) and to weight the rate itself. */
+export function householdTotalCompensation(
+  people: SavingsRatePerson[],
+): number {
+  return people.reduce((s, d) => s + (d.totalCompensation ?? d.salary ?? 0), 0);
+}
+
+/** Household-level "is this a high earner" gate — same threshold comparison
+ * both dashboard cards use to decide whether employer match should be
+ * excluded from the headline savings rate by default. */
+export function isHighIncomeHousehold(
+  householdTotalComp: number,
+  highIncomeThreshold: number,
+): boolean {
+  return householdTotalComp >= highIncomeThreshold;
+}
+
+/**
+ * Weighted household savings rate for the given view mode — each person's
+ * view-aware rate weighted by their own total compensation, matching the
+ * server's per-person rate computation (`computeViewAwareTotals` above).
+ * Single source of truth for the number the Financial Checkup and Savings
+ * Rate cards both render side by side on the dashboard.
+ */
+export function computeHouseholdSavingsRate(
+  people: SavingsRatePerson[],
+  viewMode: ViewMode,
+  excludeMatch: boolean,
+): { householdTotalComp: number; rate: number } {
+  const householdTotalComp = householdTotalCompensation(people);
+  const rateKey = excludeMatch
+    ? "savingsRateWithoutMatch"
+    : "savingsRateWithMatch";
+  const rate =
+    householdTotalComp > 0
+      ? people.reduce(
+          (s, d) =>
+            s +
+            (d.totals.views[viewMode][rateKey] ?? 0) *
+              (d.totalCompensation ?? d.salary ?? 0),
+          0,
+        ) / householdTotalComp
+      : 0;
+  return { householdTotalComp, rate };
+}

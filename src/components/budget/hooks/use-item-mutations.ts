@@ -12,12 +12,16 @@
  *   Optimistic: updateCell (updateItemAmount), deleteItem,
  *     updateItemEssential, updateCategoryEssential.
  *
- * The four optimistic mutations each have their own ~25 lines of
- * onMutate/onError/onSettled boilerplate. Attempting to DRY them via a
- * shared `createOptimisticOptions` helper was tried but the context
- * type returned from onMutate does not flow through TRPC's
- * UseMutationOptions generic cleanly when spread from a helper, so the
- * safer choice is to keep each optimistic block inline.
+ * The four optimistic mutations previously each carried their own ~25
+ * lines of onMutate/onError/onSettled boilerplate inline — an earlier
+ * attempt to DRY them via a shared `createOptimisticOptions` helper
+ * (spreading generated options into tRPC's `useMutation`) hit a real
+ * TypeScript limitation: the context type returned from onMutate didn't
+ * flow through tRPC's `UseMutationOptions` generic cleanly when spread
+ * from a helper. `useOptimisticMutation` (`src/lib/hooks/`) sidesteps
+ * that by wrapping the mutation object from the outside instead of
+ * spreading into tRPC's options, so it isn't subject to the same
+ * generic-flow issue.
  *
  * `selectedColumn` is read through a ref so the mutations never
  * re-bind when the active column changes (matching the original inline
@@ -26,6 +30,7 @@
 
 import type { MutableRefObject } from "react";
 import { trpc } from "@/lib/trpc";
+import { useOptimisticMutation } from "@/lib/hooks/use-optimistic-mutation";
 import { useInvalidateBudget } from "./use-invalidate-budget";
 
 type UseItemMutationsOpts = {
@@ -41,101 +46,105 @@ export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
 
   // --- Optimistic mutations ---
 
-  const updateCell = trpc.budget.updateItemAmount.useMutation({
-    onMutate: async (variables) => {
-      await utils.budget.computeActiveSummary.cancel();
-      const queryInput = { selectedColumn: selectedColumnRef.current };
-      const previous = utils.budget.computeActiveSummary.getData(queryInput);
-      if (previous && "rawItems" in previous) {
-        utils.budget.computeActiveSummary.setData(queryInput, {
-          ...previous,
-          rawItems: previous.rawItems.map(
-            (item: (typeof previous.rawItems)[number]) => {
-              if (item.id !== variables.id) return item;
-              // Linked items display contribAmount, not amounts[col] — patch
-              // both so the optimistic update is actually visible.
-              if (item.contributionAccountId) {
-                return { ...item, contribAmount: variables.amount };
-              }
-              const newAmounts = [...item.amounts];
-              newAmounts[variables.colIndex] = variables.amount;
-              return { ...item, amounts: newAmounts };
-            },
-          ),
-        });
-      }
-      return { previous, queryInput };
+  const updateCell = useOptimisticMutation(
+    trpc.budget.updateItemAmount.useMutation(),
+    {
+      optimisticUpdate: async (variables) => {
+        await utils.budget.computeActiveSummary.cancel();
+        const queryInput = { selectedColumn: selectedColumnRef.current };
+        const previous = utils.budget.computeActiveSummary.getData(queryInput);
+        if (previous && "rawItems" in previous) {
+          utils.budget.computeActiveSummary.setData(queryInput, {
+            ...previous,
+            rawItems: previous.rawItems.map(
+              (item: (typeof previous.rawItems)[number]) => {
+                if (item.id !== variables.id) return item;
+                // Linked items display contribAmount, not amounts[col] —
+                // patch both so the optimistic update is actually visible.
+                if (item.contributionAccountId) {
+                  return { ...item, contribAmount: variables.amount };
+                }
+                const newAmounts = [...item.amounts];
+                newAmounts[variables.colIndex] = variables.amount;
+                return { ...item, amounts: newAmounts };
+              },
+            ),
+          });
+        }
+        return { previous, queryInput };
+      },
+      rollback: ({ previous, queryInput }) => {
+        if (previous) {
+          utils.budget.computeActiveSummary.setData(queryInput, previous);
+        }
+      },
+      onSettled: () => invalidateSummaryAndContributions(),
+      showErrorToast: false,
     },
-    onError: (_err, _variables, context) => {
-      if (context?.previous) {
-        utils.budget.computeActiveSummary.setData(
-          context.queryInput,
-          context.previous,
-        );
-      }
-    },
-    onSettled: () => invalidateSummaryAndContributions(),
-  });
+  );
 
-  const deleteItem = trpc.budget.deleteItem.useMutation({
-    onMutate: async (variables) => {
-      await utils.budget.computeActiveSummary.cancel();
-      const queryInput = { selectedColumn: selectedColumnRef.current };
-      const previous = utils.budget.computeActiveSummary.getData(queryInput);
-      if (previous && "rawItems" in previous) {
-        utils.budget.computeActiveSummary.setData(queryInput, {
-          ...previous,
-          rawItems: previous.rawItems.filter(
-            (item: (typeof previous.rawItems)[number]) =>
-              item.id !== variables.id,
-          ),
-        });
-      }
-      return { previous, queryInput };
+  const deleteItem = useOptimisticMutation(
+    trpc.budget.deleteItem.useMutation(),
+    {
+      optimisticUpdate: async (variables) => {
+        await utils.budget.computeActiveSummary.cancel();
+        const queryInput = { selectedColumn: selectedColumnRef.current };
+        const previous = utils.budget.computeActiveSummary.getData(queryInput);
+        if (previous && "rawItems" in previous) {
+          utils.budget.computeActiveSummary.setData(queryInput, {
+            ...previous,
+            rawItems: previous.rawItems.filter(
+              (item: (typeof previous.rawItems)[number]) =>
+                item.id !== variables.id,
+            ),
+          });
+        }
+        return { previous, queryInput };
+      },
+      rollback: ({ previous, queryInput }) => {
+        if (previous) {
+          utils.budget.computeActiveSummary.setData(queryInput, previous);
+        }
+      },
+      onSettled: () => invalidateSummary(),
+      showErrorToast: false,
     },
-    onError: (_err, _variables, context) => {
-      if (context?.previous) {
-        utils.budget.computeActiveSummary.setData(
-          context.queryInput,
-          context.previous,
-        );
-      }
-    },
-    onSettled: () => invalidateSummary(),
-  });
+  );
 
-  const updateItemEssential = trpc.budget.updateItemEssential.useMutation({
-    onMutate: async (variables) => {
-      await utils.budget.computeActiveSummary.cancel();
-      const queryInput = { selectedColumn: selectedColumnRef.current };
-      const previous = utils.budget.computeActiveSummary.getData(queryInput);
-      if (previous && "rawItems" in previous) {
-        utils.budget.computeActiveSummary.setData(queryInput, {
-          ...previous,
-          rawItems: previous.rawItems.map(
-            (item: (typeof previous.rawItems)[number]) =>
-              item.id === variables.id
-                ? { ...item, isEssential: variables.isEssential }
-                : item,
-          ),
-        });
-      }
-      return { previous, queryInput };
+  const updateItemEssential = useOptimisticMutation(
+    trpc.budget.updateItemEssential.useMutation(),
+    {
+      optimisticUpdate: async (variables) => {
+        await utils.budget.computeActiveSummary.cancel();
+        const queryInput = { selectedColumn: selectedColumnRef.current };
+        const previous = utils.budget.computeActiveSummary.getData(queryInput);
+        if (previous && "rawItems" in previous) {
+          utils.budget.computeActiveSummary.setData(queryInput, {
+            ...previous,
+            rawItems: previous.rawItems.map(
+              (item: (typeof previous.rawItems)[number]) =>
+                item.id === variables.id
+                  ? { ...item, isEssential: variables.isEssential }
+                  : item,
+            ),
+          });
+        }
+        return { previous, queryInput };
+      },
+      rollback: ({ previous, queryInput }) => {
+        if (previous) {
+          utils.budget.computeActiveSummary.setData(queryInput, previous);
+        }
+      },
+      onSettled: () => invalidateSummary(),
+      showErrorToast: false,
     },
-    onError: (_err, _variables, context) => {
-      if (context?.previous) {
-        utils.budget.computeActiveSummary.setData(
-          context.queryInput,
-          context.previous,
-        );
-      }
-    },
-    onSettled: () => invalidateSummary(),
-  });
+  );
 
-  const updateCategoryEssential =
-    trpc.budget.updateCategoryEssential.useMutation({
-      onMutate: async (variables) => {
+  const updateCategoryEssential = useOptimisticMutation(
+    trpc.budget.updateCategoryEssential.useMutation(),
+    {
+      optimisticUpdate: async (variables) => {
         await utils.budget.computeActiveSummary.cancel();
         const queryInput = { selectedColumn: selectedColumnRef.current };
         const previous = utils.budget.computeActiveSummary.getData(queryInput);
@@ -152,16 +161,15 @@ export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
         }
         return { previous, queryInput };
       },
-      onError: (_err, _variables, context) => {
-        if (context?.previous) {
-          utils.budget.computeActiveSummary.setData(
-            context.queryInput,
-            context.previous,
-          );
+      rollback: ({ previous, queryInput }) => {
+        if (previous) {
+          utils.budget.computeActiveSummary.setData(queryInput, previous);
         }
       },
       onSettled: () => invalidateSummary(),
-    });
+      showErrorToast: false,
+    },
+  );
 
   // --- Simple-invalidate mutations ---
 

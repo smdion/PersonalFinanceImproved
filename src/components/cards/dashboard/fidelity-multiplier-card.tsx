@@ -9,7 +9,7 @@ import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
-import { sumBy } from "@/lib/utils/math";
+import { sumBy, safeDivide } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
 
 /**
@@ -132,10 +132,9 @@ function FidelityMultiplierCardImpl() {
     salary = combinedSalary;
   }
 
-  const actualMultiplier = salary > 0 ? portfolio / salary : 0;
+  const actualMultiplier = safeDivide(portfolio, salary, 0);
   const target = getFidelityTarget(viewAge);
-  const progress =
-    target.multiplier > 0 ? actualMultiplier / target.multiplier : 0;
+  const progress = safeDivide(actualMultiplier, target.multiplier, 0);
   const isOnTrack = progress >= 1;
 
   // Build age options: every year from current through retirement age

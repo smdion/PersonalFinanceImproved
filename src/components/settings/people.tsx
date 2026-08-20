@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
+import { FormField, FormInput } from "@/components/forms";
 import { DataTable } from "./data-table";
 
 export function PeopleSettings() {
@@ -90,25 +91,21 @@ function PersonForm({
       }}
       className="flex flex-wrap gap-3 items-end"
     >
-      <label className="flex flex-col text-sm">
-        Name
-        <input
+      <FormField label="Name">
+        <FormInput
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          className="mt-1 px-2 py-1 border rounded"
         />
-      </label>
-      <label className="flex flex-col text-sm">
-        Date of Birth
-        <input
+      </FormField>
+      <FormField label="Date of Birth">
+        <FormInput
           type="date"
           value={dob}
           onChange={(e) => setDob(e.target.value)}
           required
-          className="mt-1 px-2 py-1 border rounded"
         />
-      </label>
+      </FormField>
       <label className="flex items-center gap-2 text-sm">
         <input
           type="checkbox"

@@ -275,8 +275,15 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                           defaultValue=""
                           onChange={(e) => {
                             if (!e.target.value) return;
+                            // Match on localId+localName together — localId
+                            // alone isn't unique for performance accounts
+                            // shared by two owners, so a plain localId match
+                            // would silently resolve to the wrong owner's
+                            // account when both share one option value.
                             const opt = availableLocal.find(
-                              (o) => o.localId === e.target.value,
+                              (o) =>
+                                `${o.localId}|${o.localName}` ===
+                                e.target.value,
                             );
                             if (!opt) return;
                             const updated = [
@@ -297,7 +304,10 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                         >
                           <option value="">Link to existing...</option>
                           {availableLocal.map((l) => (
-                            <option key={l.localId} value={l.localId}>
+                            <option
+                              key={`${l.localId}|${l.localName}`}
+                              value={`${l.localId}|${l.localName}`}
+                            >
                               {l.localName}
                             </option>
                           ))}
@@ -354,7 +364,14 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                       <optgroup label="Portfolio Accounts">
                         {unmappedPortfolio.map((a) => (
                           <option
-                            key={`p:${a.performanceAccountId}`}
+                            // performanceAccountId alone isn't unique here —
+                            // two people can share one performance account
+                            // (e.g. both have an IRA at the same
+                            // institution), which the server surfaces as
+                            // separate line items with distinct labels. See
+                            // sync/core.ts's portfolioLocalAccounts
+                            // aggregation comment.
+                            key={`p:${a.performanceAccountId}:${a.label}`}
                             value={`performance:${a.performanceAccountId}|${a.label}`}
                           >
                             {a.label} ({formatCurrency(a.balance)})

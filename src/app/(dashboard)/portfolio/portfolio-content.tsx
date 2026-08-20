@@ -105,13 +105,21 @@ function groupByPerformanceAccount(
     group.accounts.push(a);
     group.total += a.amount;
   }
-  // Detect multi-owner groups (e.g., joint IRA with multiple owner sub-rows)
+  // Detect multi-owner groups (e.g., joint IRA with multiple owner sub-rows).
+  // DESIGN.md's owner-prefix rule is a two-part test: the performance
+  // account must be joint (perfOwnerPersonId null) AND sub-rows must carry
+  // different ownerPersonId values — checking only the second half would
+  // wrongly prefix an individually-owned account whose sub-rows happen to
+  // carry mismatched owner IDs (a data inconsistency, not a real joint
+  // account).
   const result = Array.from(groups.values());
   for (const group of result) {
+    const isJointPerfAccount =
+      (group.accounts[0]?.perfOwnerPersonId ?? null) == null;
     const ownerIds = new Set(
       group.accounts.map((a: SnapshotAccountWithPerf) => a.ownerPersonId),
     );
-    group.hasMultipleOwners = ownerIds.size > 1;
+    group.hasMultipleOwners = isJointPerfAccount && ownerIds.size > 1;
   }
   // Sort by institution first, then by name within institution
   return result.sort(
@@ -127,6 +135,9 @@ function buildSubRowLabel(
 ): string {
   const owner = group.hasMultipleOwners && a.ownerName ? a.ownerName : null;
   const taxLabel = taxTypeLabel(a.taxType);
+  // DESIGN.md's sub-account-type rule only names subType, but `label` is a
+  // real, separate free-text override column on portfolio_accounts — it
+  // takes precedence when set (see DESIGN.md follow-up, Batch 25 F3).
   const displayName = a.label || a.subType;
 
   let typeLabel: string;
@@ -135,17 +146,25 @@ function buildSubRowLabel(
   } else {
     const rawType = a.accountType.toLowerCase();
     const perfType = (group.perfAccountType ?? "").toLowerCase();
+    // Documented rule (DESIGN.md): show accountType only if it differs from
+    // the parent performance account's type — that's the whole test. The
+    // extra `rawType !== taxType` condition previously suppressed this
+    // label whenever accountType happened to equal the taxType string
+    // (e.g. accountType "hsa" vs taxType "hsa"), which isn't in the spec.
     typeLabel =
-      rawType !== perfType && rawType !== a.taxType.toLowerCase()
+      rawType !== perfType
         ? getDisplayConfig(a.accountType).displayLabel
         : taxLabel;
   }
 
   if (owner) {
-    // Owner is primary; type goes in parens (omit if redundant with taxLabel)
+    // Owner prefix uses an em dash (DESIGN.md "Snapshot Display" — WHO owns
+    // it), distinct from the parens used below for WHAT kind of sub-account
+    // it is (e.g. "Employer Match (Traditional)"). Decision confirmed
+    // 2026-08-19: code was the one out of sync with the documented example.
     const qualifier =
       typeLabel !== taxLabel ? `${typeLabel} · ${taxLabel}` : typeLabel;
-    return `${owner} (${qualifier})`;
+    return `${owner} — ${qualifier}`;
   }
 
   return typeLabel !== taxLabel ? `${typeLabel} (${taxLabel})` : typeLabel;
@@ -188,7 +207,7 @@ export function PortfolioContent() {
     sortCol: sortCol ?? undefined,
     sortDir: sortDir,
   });
-  const deleteMutation = trpc.settings.portfolioSnapshots.delete.useMutation({
+  const deleteMutation = trpc.networth.portfolioSnapshots.delete.useMutation({
     onSuccess: () => {
       utils.networth.computeSummary.invalidate();
       utils.networth.listHistory.invalidate();
@@ -317,7 +336,7 @@ export function PortfolioContent() {
               utils.networth.computeSummary.invalidate();
               utils.networth.listHistory.invalidate();
               utils.networth.listSnapshots.invalidate();
-              utils.settings.portfolioSnapshots.getLatest.invalidate();
+              utils.networth.portfolioSnapshots.getLatest.invalidate();
             }}
           />
         </SlidePanel>

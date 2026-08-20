@@ -7,6 +7,8 @@
 //
 // References: Morningstar "State of Retirement Income: 2025"
 
+import { DEFAULT_ENDOWMENT_ROLLING_YEARS } from "../constants";
+
 // ---------------------------------------------------------------------------
 // Param field descriptor — drives UI rendering
 // ---------------------------------------------------------------------------
@@ -425,7 +427,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     usesPostRetirementRaise: false,
     defaultParams: {
       withdrawalPercent: 0.05,
-      rollingYears: 5,
+      rollingYears: DEFAULT_ENDOWMENT_ROLLING_YEARS,
       floorPercent: 0.9,
     },
     paramFields: [
@@ -452,9 +454,9 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         min: 3,
         max: 20,
         step: 1,
-        default: 5,
+        default: DEFAULT_ENDOWMENT_ROLLING_YEARS,
         tooltip:
-          "Number of years for the rolling average balance calculation. Standard endowment practice is 3–5 years.",
+          "Number of years for the rolling average balance calculation. A longer window smooths more volatility at the cost of responsiveness.",
         lever: { delta: 0.5, unit: "relative", targets: ["smoothness"] },
       },
       {
@@ -471,7 +473,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     ],
     crossYearStateKeys: ["initialWithdrawalAmount", "balanceHistory"],
     guide: {
-      how: "Withdraw 5% of the 5-year rolling average portfolio balance. This smooths out year-to-year market swings. A nominal floor at 90% of initial withdrawal prevents severe cuts.",
+      how: "Withdraw 5% of the 10-year rolling average portfolio balance. This smooths out year-to-year market swings. A nominal floor at 90% of initial withdrawal prevents severe cuts.",
       strengths: [
         "Smoother income than Constant Percentage — volatility is dampened by the rolling average",
         "Based on how university endowments (Yale, Stanford) manage spending",

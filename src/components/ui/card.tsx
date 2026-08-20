@@ -16,6 +16,11 @@ type CardProps = {
   isCollapsible?: boolean;
   /** Initial open state when collapsible. Defaults to true. */
   isDefaultOpen?: boolean;
+  /** Force the hover-lift/shadow treatment on even without href/isCollapsible
+   * — for cards with some other real interactive behavior (e.g. an onClick
+   * handler on content inside). Without href/isCollapsible/interactive, the
+   * card gets no hover chrome, since there's nothing to click. */
+  interactive?: boolean;
 };
 
 export function Card({
@@ -27,9 +32,11 @@ export function Card({
   headerRight,
   isCollapsible = false,
   isDefaultOpen = true,
+  interactive = false,
 }: CardProps) {
   const [isOpen, setIsOpen] = useState(isDefaultOpen);
-  const sharedClassName = `bg-surface-primary rounded-lg border border-default p-3 sm:p-4 shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all duration-200 ${className}`;
+  const isInteractive = !!href || isCollapsible || interactive;
+  const sharedClassName = `bg-surface-primary rounded-lg border border-default p-3 sm:p-4 shadow-sm transition-all duration-200 ${isInteractive ? "hover:shadow-md hover:-translate-y-[1px]" : ""} ${className}`;
 
   const content = (
     <>

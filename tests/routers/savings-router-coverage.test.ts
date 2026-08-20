@@ -1616,4 +1616,30 @@ describe("savings.extraPaycheckRouting", () => {
     const result = await caller.savings.extraPaycheckRouting.rematerialize();
     expect(result).toEqual({ ok: true });
   });
+
+  it("save always recomputes baseNetPayPerCheck server-side, ignoring the client-supplied value (pinned)", async () => {
+    // Pinned ahead of consolidating computeJobNetPayPerCheck's per-job
+    // paycheck-input construction with paycheck.ts router's equivalent
+    // (audit Batch 9 Finding 3). seedJob's defaults: $120,000 salary,
+    // biweekly, MFJ, no deductions/contributions, bonusPercent 0.
+    await caller.savings.extraPaycheckRouting.save({
+      jobId,
+      rules: [{ from: "2025-01", to: null, splits: [{ goalId, pct: 100 }] }],
+      // Deliberately wrong — proves the server ignores this and recomputes.
+      baseNetPayPerCheck: 999999,
+    });
+    const [row] = await db
+      .select({
+        extraPaycheckRouting: sqliteSchemaTables.jobs.extraPaycheckRouting,
+      })
+      .from(sqliteSchemaTables.jobs)
+      .where(eq(sqliteSchemaTables.jobs.id, jobId));
+    const baseNetPayPerCheck = row?.extraPaycheckRouting?.baseNetPayPerCheck;
+    expect(baseNetPayPerCheck).not.toBe(999999);
+    // $120,000 / 26 biweekly periods = $4,615.38 gross, minus federal
+    // withholding and FICA (no deductions/contributions seeded).
+    expect(baseNetPayPerCheck).toBeGreaterThan(3700);
+    expect(baseNetPayPerCheck).toBeLessThan(3900);
+    expect(baseNetPayPerCheck).toBe(3816.61);
+  });
 });

@@ -93,7 +93,7 @@ describe("ToastContainer", () => {
     mockToasts = [{ id: "t1", message: "Done", variant: "success" }];
     render(<ToastContainer />);
     const alert = screen.getByRole("alert");
-    expect(alert.className).toContain("bg-green-50");
+    expect(alert.className).toContain("bg-green-100");
     expect(alert.className).toContain("border-green-300");
   });
 
@@ -101,7 +101,7 @@ describe("ToastContainer", () => {
     mockToasts = [{ id: "t1", message: "Oops", variant: "error" }];
     render(<ToastContainer />);
     const alert = screen.getByRole("alert");
-    expect(alert.className).toContain("bg-red-50");
+    expect(alert.className).toContain("bg-red-100");
     expect(alert.className).toContain("border-red-300");
   });
 
@@ -109,7 +109,7 @@ describe("ToastContainer", () => {
     mockToasts = [{ id: "t1", message: "FYI", variant: "info" }];
     render(<ToastContainer />);
     const alert = screen.getByRole("alert");
-    expect(alert.className).toContain("bg-blue-50");
+    expect(alert.className).toContain("bg-blue-100");
     expect(alert.className).toContain("border-blue-300");
   });
 });

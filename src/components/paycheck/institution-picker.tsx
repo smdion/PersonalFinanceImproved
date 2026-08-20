@@ -11,6 +11,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { CreateAccountForm } from "@/components/portfolio/contribution-accounts-create-form";
+import { FormField, FormSelect } from "@/components/forms";
 import type { AccountCategory } from "@/lib/config/account-types";
 
 export function InstitutionPicker({
@@ -29,11 +30,12 @@ export function InstitutionPicker({
 }) {
   const [creating, setCreating] = useState(false);
   const utils = trpc.useUtils();
-  const { data: accounts } = trpc.settings.performanceAccounts.list.useQuery();
+  const { data: accounts } =
+    trpc.performance.performanceAccounts.list.useQuery();
   const { data: people } = trpc.settings.people.list.useQuery();
-  const createPerf = trpc.settings.performanceAccounts.create.useMutation({
+  const createPerf = trpc.performance.performanceAccounts.create.useMutation({
     onSuccess: (created) => {
-      utils.settings.performanceAccounts.invalidate();
+      utils.performance.performanceAccounts.invalidate();
       setCreating(false);
       if (created) onChange(created.id);
     },
@@ -72,15 +74,14 @@ export function InstitutionPicker({
   }
 
   return (
-    <label className="block">
-      <span className="text-xs text-muted">Institution</span>
-      <div className="flex gap-2 mt-1">
-        <select
+    <FormField label="Institution">
+      <div className="flex gap-2">
+        <FormSelect
           value={value ?? ""}
           onChange={(e) =>
             onChange(e.target.value ? parseInt(e.target.value, 10) : null)
           }
-          className="flex-1 min-w-0 text-sm border border-strong rounded px-2 py-1.5 bg-surface-primary"
+          className="flex-1 min-w-0"
         >
           <option value="">No linked institution</option>
           {compatible.map((pa) => (
@@ -89,7 +90,7 @@ export function InstitutionPicker({
               {pa.label ? ` — ${pa.label}` : ""}
             </option>
           ))}
-        </select>
+        </FormSelect>
         <button
           type="button"
           onClick={() => setCreating(true)}
@@ -98,6 +99,6 @@ export function InstitutionPicker({
           + New
         </button>
       </div>
-    </label>
+    </FormField>
   );
 }

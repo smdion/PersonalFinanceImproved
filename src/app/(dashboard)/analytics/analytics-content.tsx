@@ -26,6 +26,7 @@ import {
   coverageStatus,
 } from "@/lib/pure/analytics";
 import { ANALYTICS_WEIGHT_COVERAGE_WARN_BPS } from "@/lib/constants";
+import { EXPENSE_PIE_COLORS } from "@/lib/utils/colors";
 import {
   PieChart,
   Pie,
@@ -78,22 +79,14 @@ type DraftHolding = {
 };
 
 // ---------------------------------------------------------------------------
-// Colour palette (chart slices)
+// Colour palette (chart slices) — reuses the shared indexed palette
+// expenses-content.tsx uses for the same "arbitrary N categorical slices"
+// shape (asset classes here vs. expense categories there; the name is
+// expense-specific but the palette itself isn't semantically tied to it).
 // ---------------------------------------------------------------------------
 
-const CHART_COLORS = [
-  "#3b82f6",
-  "#10b981",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#06b6d4",
-  "#f97316",
-  "#84cc16",
-];
-
 function sliceColor(i: number) {
-  return CHART_COLORS[i % CHART_COLORS.length]!;
+  return EXPENSE_PIE_COLORS[i % EXPENSE_PIE_COLORS.length]!;
 }
 
 // ---------------------------------------------------------------------------
@@ -725,13 +718,20 @@ export function AnalyticsContent() {
   const user = useUser();
   const canEdit = hasPermission(user, "portfolio");
 
+  // Gated on canEdit: analytics.ts's read queries require the "portfolio"
+  // permission server-side too (this app has no separate read/write
+  // permission tier anywhere), so a non-portfolio user hitting this page
+  // would otherwise fire 7 doomed FORBIDDEN requests before the `!canEdit`
+  // early return below ever renders. Decision confirmed 2026-08-19.
   const { data: accounts, isLoading: acctLoading } =
-    trpc.analytics.getAccounts.useQuery();
+    trpc.analytics.getAccounts.useQuery(undefined, { enabled: canEdit });
   const { data: snapshots, isLoading: snapLoading } =
-    trpc.analytics.getSnapshots.useQuery();
+    trpc.analytics.getSnapshots.useQuery(undefined, { enabled: canEdit });
   const { data: assetClasses, isLoading: acLoading } =
-    trpc.analytics.getAssetClasses.useQuery();
-  const { data: hasFmpKey } = trpc.analytics.hasFmpKey.useQuery();
+    trpc.analytics.getAssetClasses.useQuery(undefined, { enabled: canEdit });
+  const { data: hasFmpKey } = trpc.analytics.hasFmpKey.useQuery(undefined, {
+    enabled: canEdit,
+  });
 
   const [selectedSnapshotId, setSelectedSnapshotId] = useState<
     number | undefined
@@ -739,18 +739,22 @@ export function AnalyticsContent() {
   const [holdingsLocked, setHoldingsLocked] = useState(true);
 
   const { data: holdings, refetch: refetchHoldings } =
-    trpc.analytics.getHoldings.useQuery({
-      snapshotId: selectedSnapshotId,
-    });
+    trpc.analytics.getHoldings.useQuery(
+      { snapshotId: selectedSnapshotId },
+      { enabled: canEdit },
+    );
 
-  const { data: history } = trpc.analytics.getHoldingsHistory.useQuery({});
+  const { data: history } = trpc.analytics.getHoldingsHistory.useQuery(
+    {},
+    { enabled: canEdit },
+  );
 
   // Effective snapshot — from selected or from holdings query default
   const effectiveSnapshotId = selectedSnapshotId ?? holdings?.[0]?.snapshotId;
 
   const { data: balances } = trpc.analytics.getSnapshotBalances.useQuery(
     { snapshotId: effectiveSnapshotId! },
-    { enabled: effectiveSnapshotId !== undefined },
+    { enabled: canEdit && effectiveSnapshotId !== undefined },
   );
 
   // For now, skip age-based glide path lookup if we can't compute age

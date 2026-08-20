@@ -20,7 +20,7 @@ describe("Badge", () => {
   });
 
   it.each([
-    ["blue", "bg-blue-50"],
+    ["blue", "bg-blue-100"],
     ["green", "bg-green-100"],
     ["red", "bg-red-100"],
     ["amber", "bg-amber-100"],

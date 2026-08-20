@@ -3,6 +3,8 @@
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { safeDivide } from "@/lib/utils/math";
+import { CHART_COLORS } from "@/lib/utils/colors";
 
 export function NetWorthComposition({
   portfolioTotal,
@@ -25,14 +27,27 @@ export function NetWorthComposition({
     portfolioTotal + cash + (hasHouse ? displayHomeValue : 0) + otherAssets;
   const totalLiab = totalLiabilities;
   const maxBar = Math.max(totalAssets, totalLiab, 1);
+  // Same 4-category palette NetWorthLocationPie renders — same data,
+  // same colors, so a user doesn't see Portfolio as one color in the pie
+  // chart and a different one here (Batch 26 Finding 1).
   const segments = [
-    { label: "Portfolio", value: portfolioTotal, color: "bg-indigo-500" },
+    {
+      label: "Portfolio",
+      value: portfolioTotal,
+      color: CHART_COLORS.piPortfolio,
+    },
     ...(hasHouse
-      ? [{ label: "Home", value: displayHomeValue, color: "bg-blue-400" }]
+      ? [
+          {
+            label: "Home",
+            value: displayHomeValue,
+            color: CHART_COLORS.piHouse,
+          },
+        ]
       : []),
-    { label: "Cash", value: cash, color: "bg-green-400" },
+    { label: "Cash", value: cash, color: CHART_COLORS.piCash },
     ...(otherAssets > 0
-      ? [{ label: "Other", value: otherAssets, color: "bg-surface-divider" }]
+      ? [{ label: "Other", value: otherAssets, color: CHART_COLORS.piOther }]
       : []),
   ];
 
@@ -59,9 +74,10 @@ export function NetWorthComposition({
             {segments.map((seg) => (
               <div
                 key={seg.label}
-                className={`${seg.color} h-full transition-all`}
+                className="h-full transition-all"
                 style={{
-                  width: `${totalAssets > 0 ? (seg.value / totalAssets) * 100 : 0}%`,
+                  width: `${safeDivide(seg.value, totalAssets, 0) * 100}%`,
+                  backgroundColor: seg.color,
                 }}
                 title={`${seg.label}: ${formatCurrency(seg.value)}`}
               />
@@ -73,10 +89,13 @@ export function NetWorthComposition({
                 key={seg.label}
                 className="flex items-center gap-1 text-xs text-muted"
               >
-                <span className={`w-2 h-2 rounded-full ${seg.color}`} />
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: seg.color }}
+                />
                 <span>{seg.label}</span>
                 <span className="text-faint">
-                  {formatPercent(totalAssets > 0 ? seg.value / totalAssets : 0)}
+                  {formatPercent(safeDivide(seg.value, totalAssets, 0))}
                 </span>
               </div>
             ))}

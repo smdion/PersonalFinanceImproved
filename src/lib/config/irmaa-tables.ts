@@ -6,7 +6,7 @@
 
 import type { FilingStatusType } from "../calculators/types";
 
-/** Medicare eligibility age — IRMAA surcharges apply from this age onward. */
+/** Medicare eligibility age. IRMAA surcharges apply from this age onward; it also backs ACA subsidy-eligibility checks elsewhere, since losing Medicare eligibility is the marketplace-subsidy criterion. */
 export const MEDICARE_START_AGE = 65;
 
 type IrmaaBracket = {

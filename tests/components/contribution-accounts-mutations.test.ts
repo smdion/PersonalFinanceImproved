@@ -39,15 +39,19 @@ const invalidateFns = {
 
 const stableUtils = {
   settings: {
-    performanceAccounts: { invalidate: invalidateFns.performanceAccounts },
     contributionAccounts: { invalidate: invalidateFns.contributionAccounts },
+  },
+  performance: {
+    performanceAccounts: { invalidate: invalidateFns.performanceAccounts },
+  },
+  retirement: { invalidate: invalidateFns.retirement },
+  projection: { invalidate: invalidateFns.projection },
+  networth: {
+    invalidate: invalidateFns.networth,
     portfolioSnapshots: {
       getLatest: { invalidate: invalidateFns.portfolioSnapshotsGetLatest },
     },
   },
-  retirement: { invalidate: invalidateFns.retirement },
-  projection: { invalidate: invalidateFns.projection },
-  networth: { invalidate: invalidateFns.networth },
   contributionProfile: { invalidate: invalidateFns.contributionProfile },
   paycheck: { invalidate: invalidateFns.paycheck },
 };
@@ -73,18 +77,22 @@ vi.mock("@/lib/trpc", () => ({
   trpc: {
     useUtils: () => stableUtils,
     settings: {
-      performanceAccounts: {
-        update: mutationFactory("updatePerf"),
-        create: mutationFactory("createPerf"),
-        delete: mutationFactory("deletePerf"),
-      },
       contributionAccounts: {
         update: mutationFactory("updateContrib"),
         create: mutationFactory("createContrib"),
       },
+    },
+    networth: {
       portfolioSnapshots: {
         updateAccount: mutationFactory("updatePortfolioAccount"),
         createAccount: mutationFactory("createPortfolioAccount"),
+      },
+    },
+    performance: {
+      performanceAccounts: {
+        update: mutationFactory("updatePerf"),
+        create: mutationFactory("createPerf"),
+        delete: mutationFactory("deletePerf"),
       },
     },
     contributionProfile: {
@@ -350,18 +358,14 @@ describe("useContributionAccountsMutations", () => {
   // onSuccess wiring
   // ---------------------------------------------------------------------
 
-  it("createPerfMut's onSuccess invalidates performanceAccounts and calls onCreatePerfSuccess", async () => {
+  it("createPerfMut's onSuccess invalidates performanceAccounts", async () => {
+    // No parent-UI-state callback here (RULES.md Mutation Hook Convention
+    // rule 3) — a caller that wants to react to success (e.g. closing a
+    // form) passes its own onSuccess at the .mutate() call site instead.
     const useContributionAccountsMutations = await importHook();
-    const onCreatePerfSuccess = vi.fn();
-    renderHook(() =>
-      useContributionAccountsMutations({
-        allContribs: [],
-        onCreatePerfSuccess,
-      }),
-    );
+    renderHook(() => useContributionAccountsMutations({ allContribs: [] }));
     onSuccessCallbacks.createPerf?.();
     expect(invalidateFns.performanceAccounts).toHaveBeenCalled();
-    expect(onCreatePerfSuccess).toHaveBeenCalled();
   });
 
   it("updatePerfMut's onSuccess invalidates performanceAccounts, retirement, projection, and networth", async () => {

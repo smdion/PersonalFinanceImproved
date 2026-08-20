@@ -9,7 +9,9 @@
  *   projection.ts          — orchestrator (shrinks as modules are extracted)
  *   override-resolution.ts — sticky-forward config resolution
  *   contribution-routing.ts — accumulation allocation + IRS limits
- *   tax-estimation.ts      — SS torpedo convergence + gross-up
+ *   tax-estimation.ts      — bracket/SS tax math + tax-from-slots
+ *   tax-gross-up.ts        — SS torpedo convergence + gross-up (calls
+ *                            withdrawal-routing.ts's routeForMode)
  *   withdrawal-routing.ts  — bracket-filling / waterfall / percentage
  *   balance-utils.ts       — cloning, conversion helpers
  *

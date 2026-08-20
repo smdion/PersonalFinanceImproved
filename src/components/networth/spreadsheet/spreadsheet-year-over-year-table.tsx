@@ -7,6 +7,7 @@
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { safeDivide } from "@/lib/utils/math";
 import {
   CASH_BASIS_HELP,
   combineCashBasisGainLoss,
@@ -287,8 +288,11 @@ export function SpreadsheetYearOverYearTable({
                   // Year A is current, Year B is finalized — prorate B down
                   const proratedB = valueB * yearA.ytdRatio;
                   dollarChange = valueA - proratedB;
-                  percentChange =
-                    proratedB !== 0 ? dollarChange / Math.abs(proratedB) : null;
+                  percentChange = safeDivide(
+                    dollarChange,
+                    Math.abs(proratedB),
+                    null,
+                  );
                   isProrated = true;
                 } else if (
                   annualize &&
@@ -301,14 +305,20 @@ export function SpreadsheetYearOverYearTable({
                   // Year B is current, Year A is finalized — prorate A down
                   const proratedA = valueA * yearB.ytdRatio;
                   dollarChange = proratedA - valueB;
-                  percentChange =
-                    valueB !== 0 ? dollarChange / Math.abs(valueB) : null;
+                  percentChange = safeDivide(
+                    dollarChange,
+                    Math.abs(valueB),
+                    null,
+                  );
                   isProrated = true;
                 } else {
                   // Both finalized, both current, market flows, or Actual YTD mode
                   dollarChange = valueA - valueB;
-                  percentChange =
-                    valueB !== 0 ? dollarChange / Math.abs(valueB) : null;
+                  percentChange = safeDivide(
+                    dollarChange,
+                    Math.abs(valueB),
+                    null,
+                  );
                 }
               }
 
