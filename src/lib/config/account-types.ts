@@ -59,7 +59,12 @@ import type {
 } from "./account-types.types";
 
 import { zeroBalanceForStructure } from "./account-balance";
-import { PERF_CATEGORY_HSA } from "./display-labels";
+import {
+  PERF_CATEGORY_HSA,
+  PERF_CATEGORY_BROKERAGE,
+  FULLY_RETIREMENT_PERF_CATEGORIES,
+  accountTypeToPerformanceCategory,
+} from "./display-labels";
 
 /** Create a zero-initialized AccountBalance for the given category. */
 export function zeroBalance(category: AccountCategory): AccountBalance {
@@ -570,6 +575,29 @@ export function isRetirementParent(
   parentCategory: string | undefined,
 ): boolean {
   return parentCategory === "Retirement";
+}
+
+/**
+ * Whether an account counts toward the synthesized "Retirement"
+ * parent-category performance rollup: either a fully-retirement performance
+ * category (401k/IRA, HSA — always Retirement regardless of parentCategory),
+ * or a Brokerage-category account explicitly tagged parentCategory ===
+ * "Retirement" (Brokerage is mixed — spans both Retirement and Portfolio
+ * goals, e.g. Retirement Brokerage vs. a taxable brokerage account).
+ *
+ * Single source of truth for this rule — shared between the performance
+ * router's actual rollup computation and the performance page's
+ * selection-matching UI (audit Batch 31 Finding 1).
+ */
+export function isInRetirementPerformanceRollup(
+  accountType: string | null,
+  parentCategory: string | undefined,
+): boolean {
+  const cat = accountTypeToPerformanceCategory(accountType);
+  if ((FULLY_RETIREMENT_PERF_CATEGORIES as readonly string[]).includes(cat)) {
+    return true;
+  }
+  return cat === PERF_CATEGORY_BROKERAGE && isRetirementParent(parentCategory);
 }
 
 /** Check if a parentCategory DB column value is Portfolio. Use this when checking the stored/user-editable field, not account type config. */

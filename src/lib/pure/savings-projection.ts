@@ -240,3 +240,66 @@ export function isFuturePlannedTx(
   }
   return false;
 }
+
+/** Per-earner inputs for computeDerivedPoolByYear. */
+export interface PoolGrowthEarner {
+  netPay: number;
+  /** Regular pay periods per month — used only when budgetPerMonth is absent. */
+  periodsPerYear: number;
+  /** Regular-checks-only periods per month (extra biweekly checks route
+   *  separately, not budget income) — preferred over periodsPerYear/12 when present. */
+  budgetPerMonth?: number;
+  /** Year (as a string key, e.g. "2027") → stored raise for that year. */
+  yearlyGrowth?: Record<string, { type: "pct" | "dollar"; value: number }>;
+}
+
+/**
+ * Projects the monthly savings pool forward across years by applying each
+ * earner's stored raise rates to their current net pay, holding budget
+ * expenses flat. Was implemented inline in savings/page.tsx, right next to
+ * projectGoalBalances — the one calculation on this page that hadn't
+ * followed the same "pure function, not page-local" pattern (audit Batch 31
+ * Finding 1).
+ *
+ * Year `startYear` is seeded directly from `maxMonthlyFunding` (today's
+ * actual computed pool, not a projection); each subsequent year compounds
+ * the previous year's raises onto every earner's current net pay.
+ */
+export function computeDerivedPoolByYear(
+  earners: PoolGrowthEarner[],
+  params: {
+    startYear: number;
+    projectionYears: number;
+    maxMonthlyFunding: number;
+    budgetMonthlyTotal: number;
+  },
+): Map<number, number> {
+  const { startYear, projectionYears, maxMonthlyFunding, budgetMonthlyTotal } =
+    params;
+  const derivedPoolByYear = new Map<number, number>();
+  derivedPoolByYear.set(startYear, maxMonthlyFunding);
+
+  for (let yr = startYear + 1; yr <= startYear + projectionYears; yr++) {
+    let projectedMonthlyNet = 0;
+    for (const earner of earners) {
+      const perMonth = earner.budgetPerMonth ?? earner.periodsPerYear / 12;
+      const raises = earner.yearlyGrowth ?? {};
+      let netPerCheck = earner.netPay;
+      for (let y = startYear + 1; y <= yr; y++) {
+        const e = raises[String(y)];
+        if (!e || e.value === 0) continue;
+        netPerCheck =
+          e.type === "pct"
+            ? netPerCheck * (1 + e.value / 100)
+            : netPerCheck + e.value;
+      }
+      projectedMonthlyNet += netPerCheck * perMonth;
+    }
+    derivedPoolByYear.set(
+      yr,
+      Math.max(0, projectedMonthlyNet - budgetMonthlyTotal),
+    );
+  }
+
+  return derivedPoolByYear;
+}

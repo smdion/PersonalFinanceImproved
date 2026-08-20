@@ -21,6 +21,8 @@ import {
 import {
   projectGoalBalances,
   buildSettledOccurrencesSet,
+  computeDerivedPoolByYear,
+  type PoolGrowthEarner,
 } from "@/lib/pure/savings-projection";
 import { TARGET_MODE_VALUES } from "@/lib/config/enum-values";
 import type { TargetMode } from "@/lib/config/enum-values";
@@ -388,47 +390,35 @@ export default function SavingsPage() {
   // Projects the monthly savings pool forward by applying each earner's stored
   // raise rates to their current net pay. Assumes flat budget expenses.
   const startYear = now.getFullYear();
-  const derivedPoolByYear = new Map<number, number>();
-
-  if (
-    maxMonthlyFunding !== null &&
-    budgetMonthlyTotal !== null &&
-    paycheckData
-  ) {
-    derivedPoolByYear.set(startYear, maxMonthlyFunding);
-    const activeEarners = paycheckData.people.filter(
-      (p) => p.paycheck && p.job,
-    );
-    for (let yr = startYear + 1; yr <= startYear + projectionYears; yr++) {
-      let projectedMonthlyNet = 0;
-      for (const p of activeEarners) {
-        const pc = p.paycheck as { netPay: number; periodsPerYear: number };
-        // Use budgetPerMonth (regular checks only) to match how maxMonthlyFunding
-        // is computed — extra biweekly checks are routed separately, not budget income.
-        const perMonth =
-          (p as { budgetPerMonth?: number }).budgetPerMonth ??
-          pc.periodsPerYear / 12;
-        const routing = (
-          p.job as { extraPaycheckRouting?: ExtraPaycheckRoutingData | null }
-        )?.extraPaycheckRouting;
-        const raises = routing?.yearlyGrowth ?? {};
-        let netPerCheck = pc.netPay;
-        for (let y = startYear + 1; y <= yr; y++) {
-          const e = raises[String(y)];
-          if (!e || e.value === 0) continue;
-          netPerCheck =
-            e.type === "pct"
-              ? netPerCheck * (1 + e.value / 100)
-              : netPerCheck + e.value;
-        }
-        projectedMonthlyNet += netPerCheck * perMonth;
-      }
-      derivedPoolByYear.set(
-        yr,
-        Math.max(0, projectedMonthlyNet - budgetMonthlyTotal),
-      );
-    }
-  }
+  const derivedPoolByYear: Map<number, number> =
+    maxMonthlyFunding !== null && budgetMonthlyTotal !== null && paycheckData
+      ? computeDerivedPoolByYear(
+          paycheckData.people
+            .filter((p) => p.paycheck && p.job)
+            .map((p): PoolGrowthEarner => {
+              const pc = p.paycheck as {
+                netPay: number;
+                periodsPerYear: number;
+              };
+              const routing = (
+                p.job as {
+                  extraPaycheckRouting?: ExtraPaycheckRoutingData | null;
+                }
+              )?.extraPaycheckRouting;
+              return {
+                netPay: pc.netPay,
+                periodsPerYear: pc.periodsPerYear,
+                // Use budgetPerMonth (regular checks only) to match how
+                // maxMonthlyFunding is computed — extra biweekly checks are
+                // routed separately, not budget income.
+                budgetPerMonth: (p as { budgetPerMonth?: number })
+                  .budgetPerMonth,
+                yearlyGrowth: routing?.yearlyGrowth,
+              };
+            }),
+          { startYear, projectionYears, maxMonthlyFunding, budgetMonthlyTotal },
+        )
+      : new Map();
 
   function getAllocationForYear(baseAmount: number, year: number): number {
     const projectedPool = derivedPoolByYear.get(year);

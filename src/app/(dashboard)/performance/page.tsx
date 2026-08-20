@@ -11,12 +11,10 @@ import { useInlineNumberEdit } from "@/lib/hooks/use-inline-number-edit";
 import { formatDate } from "@/lib/utils/format";
 import {
   PERF_CATEGORY_PORTFOLIO,
-  PERF_CATEGORY_BROKERAGE,
-  FULLY_RETIREMENT_PERF_CATEGORIES,
   accountTypeToPerformanceCategory,
   type PerfCategory,
 } from "@/lib/config/display-labels";
-import { isRetirementParent } from "@/lib/config/account-types";
+import { isInRetirementPerformanceRollup } from "@/lib/config/account-types";
 import { PageHeader } from "@/components/ui/page-header";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -163,7 +161,7 @@ export default function PerformancePage() {
   // closed/rolled-over account still had real balances in past years, and
   // the router's own Portfolio/Retirement rollups don't filter by current
   // isActive status when summing historical account_performance rows (see
-  // isInRetirementRollup below). Restricting the default to active-only
+  // isInRetirementPerformanceRollup below). Restricting the default to active-only
   // would make historical years permanently fail to match a whole-category
   // selection, defeating the stored-data-preference logic. The account
   // picker's own "Show inactive" toggle is a separate display concern —
@@ -257,23 +255,11 @@ export default function PerformancePage() {
   function setsEqual(a: Set<number>, b: Set<number>): boolean {
     return a.size === b.size && [...a].every((x) => b.has(x));
   }
-  // Mirrors the router's exact rollup definitions (performance.ts ~line
-  // 530-620) — NOT a blanket parentCategory filter. Retirement = every
-  // 401k/IRA + HSA account (regardless of parentCategory) plus only the
-  // Brokerage-category accounts tagged parentCategory==="Retirement".
   // Portfolio = grand total of every account-type category, unconditionally.
-  function isInRetirementRollup(
-    accountType: string | null,
-    parentCategory: string,
-  ): boolean {
-    const cat = accountTypeToPerformanceCategory(accountType);
-    if ((FULLY_RETIREMENT_PERF_CATEGORIES as readonly string[]).includes(cat)) {
-      return true;
-    }
-    return (
-      cat === PERF_CATEGORY_BROKERAGE && isRetirementParent(parentCategory)
-    );
-  }
+  // Retirement's definition (401k/IRA + HSA regardless of parentCategory,
+  // plus only Brokerage-category accounts tagged parentCategory===
+  // "Retirement") is shared with the router via isInRetirementPerformanceRollup
+  // — single source of truth, not mirrored here (audit Batch 31 Finding 1).
   function matchedCategoryForYear(year: number): string | null {
     const yearAccounts = (accountRows as AccountRow[]).filter(
       (r) => r.year === year,
@@ -299,7 +285,9 @@ export default function PerformancePage() {
     if ((parentCategories ?? []).includes("Retirement")) {
       const retIds = new Set(
         yearAccounts
-          .filter((r) => isInRetirementRollup(r.accountType, r.parentCategory))
+          .filter((r) =>
+            isInRetirementPerformanceRollup(r.accountType, r.parentCategory),
+          )
           .map((r) => r.performanceAccountId)
           .filter((id): id is number => id != null),
       );
@@ -378,7 +366,9 @@ export default function PerformancePage() {
       label: "Retirement",
       ids: new Set(
         typedMasterAccounts
-          .filter((m) => isInRetirementRollup(m.accountType, m.parentCategory))
+          .filter((m) =>
+            isInRetirementPerformanceRollup(m.accountType, m.parentCategory),
+          )
           .map((m) => m.id),
       ),
     },

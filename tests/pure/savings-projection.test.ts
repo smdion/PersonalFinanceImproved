@@ -19,7 +19,9 @@ import {
   buildSettledOccurrencesSet,
   projectGoalBalances,
   isFuturePlannedTx,
+  computeDerivedPoolByYear,
   type ProjectionGoalInput,
+  type PoolGrowthEarner,
 } from "@/lib/pure/savings-projection";
 import type { PlannedTransaction } from "@/components/savings/types";
 
@@ -403,5 +405,138 @@ describe("isFuturePlannedTx", () => {
       recurrenceMonths: null,
     });
     expect(isFuturePlannedTx(tx, now)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computeDerivedPoolByYear
+// ---------------------------------------------------------------------------
+
+function makeEarner(
+  overrides: Partial<PoolGrowthEarner> = {},
+): PoolGrowthEarner {
+  return {
+    netPay: 3000,
+    periodsPerYear: 26,
+    ...overrides,
+  };
+}
+
+describe("computeDerivedPoolByYear", () => {
+  it("seeds startYear directly from maxMonthlyFunding, not a projection", () => {
+    const result = computeDerivedPoolByYear([makeEarner()], {
+      startYear: 2026,
+      projectionYears: 3,
+      maxMonthlyFunding: 4500,
+      budgetMonthlyTotal: 6000,
+    });
+    expect(result.get(2026)).toBe(4500);
+  });
+
+  it("projects flat pool forward when no raises are stored", () => {
+    // netPay 3000 * (26/12 periods) = 6500/mo; minus 6000 budget = 500
+    const result = computeDerivedPoolByYear([makeEarner()], {
+      startYear: 2026,
+      projectionYears: 2,
+      maxMonthlyFunding: 4500,
+      budgetMonthlyTotal: 6000,
+    });
+    expect(result.get(2027)).toBeCloseTo(500, 6);
+    expect(result.get(2028)).toBeCloseTo(500, 6);
+  });
+
+  it("compounds a percent raise onto net pay for the target year and every year after", () => {
+    const earner = makeEarner({
+      yearlyGrowth: { "2027": { type: "pct", value: 10 } },
+    });
+    // 3000 * 1.10 * (26/12) = 7150/mo; minus 6000 = 1150
+    const result = computeDerivedPoolByYear([earner], {
+      startYear: 2026,
+      projectionYears: 3,
+      maxMonthlyFunding: 4500,
+      budgetMonthlyTotal: 6000,
+    });
+    expect(result.get(2027)).toBeCloseTo(1150, 6);
+    expect(result.get(2028)).toBeCloseTo(1150, 6); // raise persists into later years
+  });
+
+  it("applies a dollar raise as a flat addition to per-check net pay", () => {
+    const earner = makeEarner({
+      yearlyGrowth: { "2027": { type: "dollar", value: 100 } },
+    });
+    // (3000 + 100) * (26/12) = 6716.67/mo; minus 6000 = 716.67
+    const result = computeDerivedPoolByYear([earner], {
+      startYear: 2026,
+      projectionYears: 1,
+      maxMonthlyFunding: 4500,
+      budgetMonthlyTotal: 6000,
+    });
+    expect(result.get(2027)).toBeCloseTo(716.6666666667, 6);
+  });
+
+  it("ignores a raise entry with value 0", () => {
+    const earner = makeEarner({
+      yearlyGrowth: { "2027": { type: "pct", value: 0 } },
+    });
+    const result = computeDerivedPoolByYear([earner], {
+      startYear: 2026,
+      projectionYears: 1,
+      maxMonthlyFunding: 4500,
+      budgetMonthlyTotal: 6000,
+    });
+    expect(result.get(2027)).toBeCloseTo(500, 6);
+  });
+
+  it("prefers budgetPerMonth over periodsPerYear/12 when present", () => {
+    const earner = makeEarner({ periodsPerYear: 26, budgetPerMonth: 2 });
+    // 3000 * 2 = 6000/mo; minus 6000 = 0
+    const result = computeDerivedPoolByYear([earner], {
+      startYear: 2026,
+      projectionYears: 1,
+      maxMonthlyFunding: 4500,
+      budgetMonthlyTotal: 6000,
+    });
+    expect(result.get(2027)).toBe(0);
+  });
+
+  it("clamps a negative projected pool to 0", () => {
+    const result = computeDerivedPoolByYear([makeEarner({ netPay: 100 })], {
+      startYear: 2026,
+      projectionYears: 1,
+      maxMonthlyFunding: 4500,
+      budgetMonthlyTotal: 6000,
+    });
+    expect(result.get(2027)).toBe(0);
+  });
+
+  it("sums across multiple earners with independent raise schedules", () => {
+    const earners = [
+      makeEarner({
+        netPay: 3000,
+        periodsPerYear: 26,
+        yearlyGrowth: { "2027": { type: "pct", value: 10 } },
+      }),
+      makeEarner({ netPay: 2200, periodsPerYear: 24 }),
+    ];
+    // Earner 1: 3300 * (26/12) = 7150; Earner 2: 2200 * (24/12) = 4400
+    // Total 11550 - 6000 = 5550
+    const result = computeDerivedPoolByYear(earners, {
+      startYear: 2026,
+      projectionYears: 1,
+      maxMonthlyFunding: 4500,
+      budgetMonthlyTotal: 6000,
+    });
+    expect(result.get(2027)).toBeCloseTo(5550, 6);
+  });
+
+  it("returns only startYear when projectionYears is 0", () => {
+    const result = computeDerivedPoolByYear([makeEarner()], {
+      startYear: 2026,
+      projectionYears: 0,
+      maxMonthlyFunding: 4500,
+      budgetMonthlyTotal: 6000,
+    });
+    expect(result.size).toBe(1);
+    expect(result.get(2026)).toBe(4500);
   });
 });
