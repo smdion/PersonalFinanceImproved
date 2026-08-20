@@ -88,8 +88,6 @@ vi.mock("@/lib/trpc", () => {
         linkGoalToApi: mutationFactory(),
         unlinkGoalFromApi: mutationFactory(),
         linkReimbursementCategory: mutationFactory(),
-      },
-      settings: {
         savingsGoals: {
           create: mutationFactory(),
         },

@@ -30,7 +30,7 @@ export function useSavingsMutations() {
   const linkReimbursement = trpc.savings.linkReimbursementCategory.useMutation({
     onSuccess: invalidate,
   });
-  const createGoal = trpc.settings.savingsGoals.create.useMutation({
+  const createGoal = trpc.savings.savingsGoals.create.useMutation({
     onSuccess: invalidate,
   });
 

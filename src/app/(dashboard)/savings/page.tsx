@@ -289,7 +289,7 @@ export default function SavingsPage() {
     targetDate: "",
     parentGoalId: null,
   });
-  const createGoal = trpc.settings.savingsGoals.create.useMutation({
+  const createGoal = trpc.savings.savingsGoals.create.useMutation({
     onSuccess: () => {
       utils.savings.invalidate();
       setShowNewFund(false);

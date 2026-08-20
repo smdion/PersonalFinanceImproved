@@ -189,7 +189,7 @@ export function FundManagementSection({
   const utils = trpc.useUtils();
 
   // ── Mutations ──
-  const updateGoal = trpc.settings.savingsGoals.update.useMutation({
+  const updateGoal = trpc.savings.savingsGoals.update.useMutation({
     onSuccess: () => {
       utils.savings.invalidate();
       utils.budget.computeActiveSummary.invalidate();
@@ -205,7 +205,7 @@ export function FundManagementSection({
         utils.budget.computeActiveSummary.invalidate();
       },
     });
-  const deleteGoal = trpc.settings.savingsGoals.delete.useMutation({
+  const deleteGoal = trpc.savings.savingsGoals.delete.useMutation({
     onSuccess: () => {
       utils.savings.invalidate();
       utils.budget.computeActiveSummary.invalidate();

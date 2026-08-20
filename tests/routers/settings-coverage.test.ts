@@ -37,11 +37,6 @@ describe("settings router barrel export", () => {
     expect(Array.isArray(result)).toBe(true);
   });
 
-  it("exposes savingsGoals sub-router", async () => {
-    const result = await caller.settings.savingsGoals.list();
-    expect(Array.isArray(result)).toBe(true);
-  });
-
   it("exposes performanceAccounts sub-router", async () => {
     const result = await caller.settings.performanceAccounts.list();
     expect(Array.isArray(result)).toBe(true);

@@ -374,6 +374,22 @@ const plannedTransactionInput = z.object({
   recurrenceMonths: z.number().int().min(1).nullable().optional(),
 });
 
+const savingsGoalInput = z.object({
+  name: z.string().min(1),
+  parentGoalId: z.number().int().nullable().optional(),
+  targetAmount: zDecimal.nullable().optional(),
+  targetMonths: z.number().int().nullable().optional(),
+  targetDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .optional(),
+  priority: z.number().int().default(0),
+  isActive: z.boolean().default(true),
+  isEmergencyFund: z.boolean().default(false),
+  targetMode: targetModeSchema.default("fixed"),
+});
+
 export const savingsRouter = createTRPCRouter({
   computeSummary: protectedProcedure
     .input(z.object({ budgetTierOverride: z.number().optional() }).optional())
@@ -2133,5 +2149,57 @@ export const savingsRouter = createTRPCRouter({
         balance: Number(r.balance),
       })),
     };
+  }),
+
+  savingsGoals: createTRPCRouter({
+    list: protectedProcedure.query(({ ctx }) =>
+      ctx.db
+        .select()
+        .from(schema.savingsGoals)
+        .orderBy(asc(schema.savingsGoals.priority)),
+    ),
+    create: savingsProcedure
+      .input(savingsGoalInput)
+      .mutation(async ({ ctx, input }) => {
+        const goal = await ctx.db
+          .insert(schema.savingsGoals)
+          .values(input)
+          .returning()
+          .then((r) => r[0]!);
+        // Funding is per-profile with no shared default — every existing
+        // budget profile needs an explicit $0/no-percent row for this new
+        // goal (see savings_goal_profile_allocations' table comment).
+        const profiles = await ctx.db
+          .select({ id: schema.budgetProfiles.id })
+          .from(schema.budgetProfiles);
+        if (profiles.length > 0) {
+          await ctx.db.insert(schema.savingsGoalProfileAllocations).values(
+            profiles.map((p) => ({
+              goalId: goal.id,
+              budgetProfileId: p.id,
+              allocationPercent: null,
+              monthlyContribution: "0",
+            })),
+          );
+        }
+        return goal;
+      }),
+    update: savingsProcedure
+      .input(z.object({ id: z.number().int() }).extend(savingsGoalInput.shape))
+      .mutation(({ ctx, input: { id, ...data } }) =>
+        ctx.db
+          .update(schema.savingsGoals)
+          .set(data)
+          .where(eq(schema.savingsGoals.id, id))
+          .returning()
+          .then((r) => r[0]),
+      ),
+    delete: savingsProcedure
+      .input(z.object({ id: z.number().int() }))
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .delete(schema.savingsGoals)
+          .where(eq(schema.savingsGoals.id, input.id)),
+      ),
   }),
 });
