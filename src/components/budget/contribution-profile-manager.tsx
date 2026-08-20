@@ -673,6 +673,9 @@ function ProfileEditor({
   const [matchValues, setMatchValues] = useState<
     Record<string, { matchValue?: string; maxMatchPct?: string }>
   >({});
+  const [contribValues, setContribValues] = useState<
+    Record<string, { method?: string; value?: string }>
+  >({});
   const [jobValues, setJobValues] = useState<
     Record<string, Record<string, string>>
   >({});
@@ -689,11 +692,25 @@ function ProfileEditor({
   });
 
   const handleSave = () => {
-    // No contributionValue/Method here — a new profile starts with no
-    // value for any account (same "never silently inherit" principle
-    // already applied to salary pins); fill amounts in afterward via the
-    // standing editor, where a Method can be chosen alongside a Value.
+    // A new profile starts with no value for an account unless a value is
+    // entered here (same "never silently inherit" principle already applied
+    // to salary pins) — leaving Value blank leaves that account unset, same
+    // as every account's own value, editable afterward via the standing
+    // editor.
     const contribAccounts: Record<string, Record<string, unknown>> = {};
+    // Merge contribution method/value into contrib accounts
+    for (const [accountId, cVal] of Object.entries(contribValues)) {
+      if (cVal.value && cVal.value.trim()) {
+        const num = parseFloat(cVal.value);
+        if (!isNaN(num)) {
+          contribAccounts[accountId] = {
+            ...(contribAccounts[accountId] ?? {}),
+            contributionValue: String(num),
+            contributionMethod: cVal.method ?? "percent_of_salary",
+          };
+        }
+      }
+    }
     // Merge custom names into contrib accounts
     for (const [accountId, nameVal] of Object.entries(nameValues)) {
       if (nameVal.trim()) {
@@ -842,15 +859,17 @@ function ProfileEditor({
               Contributions
             </h4>
             <p className="text-caption text-faint mb-2">
-              Contribution amounts aren&apos;t set here — this new profile
-              starts with none, same as every account&apos;s own value. Set them
-              afterward once the profile is created.
+              Leave Value blank to start this account with no value, same as
+              every account&apos;s own value — set it afterward once the profile
+              is created, or fill it in now.
             </p>
             <table className="w-full text-xs">
               <thead>
                 <tr className="text-muted border-b">
                   <th className="w-6 py-1.5"></th>
                   <th className="text-left py-1.5 font-medium">Account</th>
+                  <th className="text-left py-1.5 font-medium w-28">Method</th>
+                  <th className="text-right py-1.5 font-medium w-24">Value</th>
                   <th className="text-right py-1.5 font-medium w-24">
                     Employer Match
                   </th>
@@ -861,18 +880,13 @@ function ProfileEditor({
               </thead>
               <tbody>
                 {baseData.accountDetails.map((ad) => {
-                  const fmtValue = (v: string | null | undefined) => {
-                    if (!v) return "—";
-                    const n = parseFloat(v);
-                    if (isNaN(n)) return v;
-                    return n % 1 === 0 ? String(n) : n.toFixed(2);
-                  };
                   const hasMatch =
                     ad.liveMatchType !== "none" && ad.liveMatchType !== null;
-                  const liveMaxMatchDisplay = ad.liveMaxMatchPct
-                    ? String(parseFloat(ad.liveMaxMatchPct) * 100)
-                    : "";
                   const isDisabled = disabledAccounts[String(ad.id)] ?? false;
+                  const contribVal = contribValues[String(ad.id)] ?? {};
+                  const effectiveMethod =
+                    contribVal.method ?? "percent_of_salary";
+                  const isPercent = effectiveMethod === "percent_of_salary";
                   return (
                     <tr
                       key={ad.id}
@@ -920,6 +934,58 @@ function ProfileEditor({
                           />
                         )}
                       </td>
+                      <td className="py-1.5 px-1.5">
+                        {!isDisabled && (
+                          <select
+                            value={effectiveMethod}
+                            onChange={(e) =>
+                              setContribValues((prev) => ({
+                                ...prev,
+                                [String(ad.id)]: {
+                                  ...prev[String(ad.id)],
+                                  method: e.target.value,
+                                },
+                              }))
+                            }
+                            className="w-full px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
+                          >
+                            {Object.entries(CONTRIBUTION_METHOD_LABELS).map(
+                              ([k, label]) => (
+                                <option key={k} value={k}>
+                                  {label}
+                                </option>
+                              ),
+                            )}
+                          </select>
+                        )}
+                      </td>
+                      <td className="py-1.5 text-right">
+                        {!isDisabled && (
+                          <div className="flex items-center justify-end gap-0.5">
+                            <span className="text-caption text-faint w-3 text-right shrink-0">
+                              {isPercent ? "" : "$"}
+                            </span>
+                            <input
+                              type="number"
+                              value={contribVal.value ?? ""}
+                              onChange={(e) =>
+                                setContribValues((prev) => ({
+                                  ...prev,
+                                  [String(ad.id)]: {
+                                    ...prev[String(ad.id)],
+                                    value: e.target.value,
+                                  },
+                                }))
+                              }
+                              placeholder="Not set"
+                              className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                            />
+                            <span className="text-caption text-faint w-3 text-left shrink-0">
+                              {isPercent ? "%" : ""}
+                            </span>
+                          </div>
+                        )}
+                      </td>
                       <td className="py-1.5 text-right">
                         {hasMatch ? (
                           <div className="flex items-center justify-end gap-0.5">
@@ -937,7 +1003,7 @@ function ProfileEditor({
                                   },
                                 }))
                               }
-                              placeholder={fmtValue(ad.liveMatchValue)}
+                              placeholder="—"
                               className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
                             />
                             <span className="text-caption text-faint">%</span>
@@ -963,7 +1029,7 @@ function ProfileEditor({
                                   },
                                 }))
                               }
-                              placeholder={liveMaxMatchDisplay || "—"}
+                              placeholder="—"
                               className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
                             />
                             <span className="text-caption text-faint">%</span>
