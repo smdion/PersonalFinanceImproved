@@ -12,6 +12,7 @@ import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile"
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
+import { Badge } from "@/components/ui/badge";
 
 export function ScenarioBar() {
   const {
@@ -292,9 +293,7 @@ export function ScenarioBar() {
             )}
             <span className="font-medium">{activeLabel}</span>
             {isInScenario && overrideCount > 0 && (
-              <span className="bg-amber-200 text-amber-700 px-1 rounded text-caption">
-                {overrideCount}
-              </span>
+              <Badge color="amber">{overrideCount}</Badge>
             )}
             <svg
               className="w-3 h-3 text-faint"
@@ -335,8 +334,8 @@ export function ScenarioBar() {
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
                 Main Plan
                 {activeSelection.type === "main" && (
-                  <span className="ml-auto text-caption text-blue-500">
-                    Active
+                  <span className="ml-auto">
+                    <Badge color="blue">Active</Badge>
                   </span>
                 )}
               </button>

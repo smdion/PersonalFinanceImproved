@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { Badge } from "@/components/ui/badge";
 
 export type ProfileOption = {
   id: string | number;
@@ -92,10 +93,10 @@ export function ProfilePill({
               >
                 <span className="truncate">{o.name}</span>
                 {o.badge && (
-                  <span
-                    className={`ml-auto text-caption shrink-0 ${o.isActive ? "text-blue-500" : "text-faint"}`}
-                  >
-                    {o.badge}
+                  <span className="ml-auto shrink-0">
+                    <Badge color={o.badge === "Pinned" ? "amber" : "blue"}>
+                      {o.badge}
+                    </Badge>
                   </span>
                 )}
               </button>
