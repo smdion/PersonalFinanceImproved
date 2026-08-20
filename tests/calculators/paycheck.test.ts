@@ -3,6 +3,8 @@ import {
   calculatePaycheck,
   calculateBlendedAnnual,
   mapSalaryTimelineToPeriods,
+  countPeriodsElapsed,
+  getExtraPaycheckMonthKeys,
   type SalarySegment,
 } from "@/lib/calculators/paycheck";
 import type { PaycheckResult } from "@/lib/calculators/types";
@@ -117,6 +119,57 @@ describe("calculatePaycheck", () => {
       const fica = result.bonusEstimate.bonusFica;
       // Net = gross - fed - fica (no contributions deducted)
       expect(bonusNet).toBeCloseTo(bonusGross - fedWH - fica, 0);
+    });
+  });
+
+  describe("payFrequencyLabel", () => {
+    // Pinned per audit Batch 4 Finding 4 (paycheck.ts's local label map
+    // consolidated onto display-labels.ts's PAY_PERIOD_LABELS) — semimonthly's
+    // "(1st & 15th)" suffix and biweekly's even/odd suffix are paycheck-specific
+    // detail not present in the shared base labels, preserved here explicitly.
+    it("weekly", () => {
+      const result = calculatePaycheck({
+        ...PERSON_A_PAYCHECK_INPUT,
+        payPeriod: "weekly",
+        payWeek: "na",
+      });
+      expect(result.payFrequencyLabel).toBe("Weekly");
+    });
+
+    it("monthly", () => {
+      const result = calculatePaycheck({
+        ...PERSON_A_PAYCHECK_INPUT,
+        payPeriod: "monthly",
+        payWeek: "na",
+      });
+      expect(result.payFrequencyLabel).toBe("Monthly");
+    });
+
+    it("semimonthly", () => {
+      const result = calculatePaycheck({
+        ...PERSON_A_PAYCHECK_INPUT,
+        payPeriod: "semimonthly",
+        payWeek: "na",
+      });
+      expect(result.payFrequencyLabel).toBe("Semi-Monthly (1st & 15th)");
+    });
+
+    it("biweekly even weeks", () => {
+      const result = calculatePaycheck({
+        ...PERSON_A_PAYCHECK_INPUT,
+        payPeriod: "biweekly",
+        payWeek: "even",
+      });
+      expect(result.payFrequencyLabel).toBe("Biweekly (Even Weeks)");
+    });
+
+    it("biweekly odd weeks", () => {
+      const result = calculatePaycheck({
+        ...PERSON_A_PAYCHECK_INPUT,
+        payPeriod: "biweekly",
+        payWeek: "odd",
+      });
+      expect(result.payFrequencyLabel).toBe("Biweekly (Odd Weeks)");
     });
   });
 
@@ -254,6 +307,158 @@ describe("calculateBlendedAnnual", () => {
     const maxSS =
       TAX_BRACKETS.socialSecurityWageBase * TAX_BRACKETS.socialSecurityRate;
     expect(result.ficaSS).toBeCloseTo(maxSS, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Anchor-payday date-walk pinned values (audit Batch 4 Finding 2)
+//
+// Pinned ahead of consolidating the "align anchor date to on/after a
+// reference date" idiom, duplicated across findExtraPaycheckMonths,
+// countPeriodsElapsed (2 branches), getExtraPaycheckMonthKeys, and
+// findBonusPeriod. findNextPayDate uses a different (exclusive) boundary
+// and is deliberately NOT included in that consolidation — pinned here too
+// so any accidental behavior merge would be caught.
+// ---------------------------------------------------------------------------
+
+describe("anchor-payday date-walk (pinned)", () => {
+  it("extraPaycheckMonths — Person A (anchor 2025-01-03)", () => {
+    const result = calculatePaycheck(PERSON_A_PAYCHECK_INPUT);
+    expect(result.extraPaycheckMonths).toEqual(["January", "August"]);
+  });
+
+  it("extraPaycheckMonths — Person B (anchor 2025-01-10)", () => {
+    const result = calculatePaycheck(PERSON_B_PAYCHECK_INPUT);
+    expect(result.extraPaycheckMonths).toEqual(["May", "October"]);
+  });
+
+  it("nextPayDate — biweekly (Person A)", () => {
+    expect(calculatePaycheck(PERSON_A_PAYCHECK_INPUT).nextPayDate).toBe(
+      "2025-03-14",
+    );
+  });
+
+  it("nextPayDate — biweekly (Person B)", () => {
+    expect(calculatePaycheck(PERSON_B_PAYCHECK_INPUT).nextPayDate).toBe(
+      "2025-03-21",
+    );
+  });
+
+  it("nextPayDate — weekly", () => {
+    const result = calculatePaycheck({
+      ...PERSON_A_PAYCHECK_INPUT,
+      payPeriod: "weekly",
+      anchorPayDate: new Date("2025-01-03"),
+    });
+    expect(result.nextPayDate).toBe("2025-03-14");
+  });
+
+  it("nextPayDate — semimonthly", () => {
+    const result = calculatePaycheck({
+      ...PERSON_A_PAYCHECK_INPUT,
+      payPeriod: "semimonthly",
+    });
+    expect(result.nextPayDate).toBe("2025-03-15");
+  });
+
+  it("countPeriodsElapsed — biweekly, mid-year and year-end", () => {
+    expect(
+      countPeriodsElapsed(
+        new Date("2025-03-07"),
+        "biweekly",
+        new Date("2025-01-03"),
+      ),
+    ).toBe(5);
+    expect(
+      countPeriodsElapsed(
+        new Date("2025-12-31"),
+        "biweekly",
+        new Date("2025-01-03"),
+      ),
+    ).toBe(26);
+  });
+
+  it("countPeriodsElapsed — weekly, mid-year and year-end", () => {
+    expect(
+      countPeriodsElapsed(
+        new Date("2025-03-07"),
+        "weekly",
+        new Date("2025-01-03"),
+      ),
+    ).toBe(10);
+    expect(
+      countPeriodsElapsed(
+        new Date("2025-12-31"),
+        "weekly",
+        new Date("2025-01-03"),
+      ),
+    ).toBe(52);
+  });
+
+  it("countPeriodsElapsed — semimonthly", () => {
+    expect(
+      countPeriodsElapsed(
+        new Date("2025-03-07"),
+        "semimonthly",
+        new Date("2025-01-03"),
+      ),
+    ).toBe(5);
+  });
+
+  it("getExtraPaycheckMonthKeys — 18 month horizon spans a year boundary", () => {
+    expect(
+      getExtraPaycheckMonthKeys(
+        new Date("2025-01-03"),
+        "biweekly",
+        new Date("2025-03-07"),
+        18,
+      ),
+    ).toEqual(["2025-08-01", "2026-01-01", "2026-07-01"]);
+  });
+
+  it.each([
+    [1, 15, 1],
+    [3, 15, 6],
+    [6, 15, 12],
+    [12, 15, 25],
+    [1, null, 1],
+    [3, null, 6],
+    [6, null, 12],
+    [12, null, 25],
+  ])(
+    "bonusPeriod — biweekly bonusMonth=%s day=%s",
+    (bonusMonth, bonusDayOfMonth, expected) => {
+      const result = calculatePaycheck({
+        ...PERSON_A_PAYCHECK_INPUT,
+        bonusMonth,
+        bonusDayOfMonth,
+      });
+      expect(result.bonusPeriod).toBe(expected);
+    },
+  );
+
+  it("bonusPeriod — semimonthly, day before/after the 16th split", () => {
+    const base = {
+      ...PERSON_A_PAYCHECK_INPUT,
+      payPeriod: "semimonthly" as const,
+      bonusMonth: 6,
+    };
+    expect(
+      calculatePaycheck({ ...base, bonusDayOfMonth: 20 }).bonusPeriod,
+    ).toBe(12);
+    expect(
+      calculatePaycheck({ ...base, bonusDayOfMonth: 10 }).bonusPeriod,
+    ).toBe(11);
+  });
+
+  it("bonusPeriod — monthly", () => {
+    const result = calculatePaycheck({
+      ...PERSON_A_PAYCHECK_INPUT,
+      payPeriod: "monthly",
+      bonusMonth: 6,
+      bonusDayOfMonth: null,
+    });
+    expect(result.bonusPeriod).toBe(6);
   });
 });
 
