@@ -8,9 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
-## [0.7.5] - Unreleased
+## [0.7.5] - 2026-08-20
 
-Ongoing remediation from a 43-batch, whole-codebase review (~150+ findings) — this release is a work in progress; entries below cover what's landed so far and will grow as the remaining phases ship.
+Remediation from a 43-batch, whole-codebase review (~150+ findings). Two large, lower-priority items (several large-file splits, and a handful of performance optimizations) were deliberately deferred to the roadmap rather than folded into this release.
 
 ### Fixed
 
