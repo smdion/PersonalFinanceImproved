@@ -16,7 +16,7 @@ import type {
   IndividualAccountYearBalance,
   IndividualAccountInput,
 } from "../types";
-import { roundToCents, safeDivide } from "../../utils/math";
+import { roundToCents } from "../../utils/math";
 import {
   getAccountTypeConfig,
   isOverflowTarget,
@@ -25,6 +25,7 @@ import {
   isTaxFreeBucket,
 } from "../../config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "../../config/display-labels";
+import { projectSpecAmount } from "./contribution-projection";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -199,22 +200,14 @@ export function distributeContributions(
     const sk = specKeyOf(spec);
     const acctName = specToAccount.get(sk);
     if (!acctName) continue;
-    let projected: number;
-    if (spec.method === "percent_of_salary") {
-      projected = roundToCents(
-        projectedSalary * spec.salaryFraction * spec.value * proRate,
-      );
-    } else if (spec.contributionScaling === "fixed_amount") {
-      // Fixed-amount specs use limit growth only — independent of salary changes
-      projected = roundToCents(spec.baseAnnual * lgf * proRate);
-    } else if (
-      getAccountTypeConfig(spec.category).fixedContribScalesWithSalary
-    ) {
-      const salaryGrowthFactor = safeDivide(projectedSalary, currentSalary, 1);
-      projected = roundToCents(spec.baseAnnual * salaryGrowthFactor * proRate);
-    } else {
-      projected = roundToCents(spec.baseAnnual * lgf * proRate);
-    }
+    const projected = roundToCents(
+      projectSpecAmount(spec, {
+        projectedSalary,
+        salaryBase: currentSalary,
+        limitGrowthFactor: lgf,
+        proRate,
+      }),
+    );
     specRaw.set(sk, projected);
     specAcct.set(sk, acctName);
   }
@@ -453,22 +446,14 @@ export function distributeContributions(
     if (!isOverflowTarget(spec.category)) continue;
     const acctName = specToAccount.get(specKeyOf(spec));
     if (!acctName) continue;
-    let projected: number;
-    if (spec.method === "percent_of_salary") {
-      projected = roundToCents(
-        projectedSalary * spec.salaryFraction * spec.value * proRate,
-      );
-    } else if (spec.contributionScaling === "fixed_amount") {
-      // Fixed-amount specs use limit growth only — independent of salary changes
-      projected = roundToCents(spec.baseAnnual * lgf * proRate);
-    } else if (
-      getAccountTypeConfig(spec.category).fixedContribScalesWithSalary
-    ) {
-      const salaryGrowthFactor = safeDivide(projectedSalary, currentSalary, 1);
-      projected = roundToCents(spec.baseAnnual * salaryGrowthFactor * proRate);
-    } else {
-      projected = roundToCents(spec.baseAnnual * lgf * proRate);
-    }
+    const projected = roundToCents(
+      projectSpecAmount(spec, {
+        projectedSalary,
+        salaryBase: currentSalary,
+        limitGrowthFactor: lgf,
+        proRate,
+      }),
+    );
     indIntentional.set(
       acctName,
       (indIntentional.get(acctName) ?? 0) + projected,

@@ -2,11 +2,13 @@ import { describe, it, expect } from "vitest";
 import {
   routeWaterfall,
   routePercentage,
+  routeFromSpecs,
 } from "@/lib/calculators/engine/contribution-routing";
 import {
   makeAccumulationConfig,
   makeYearLimits,
   makeEmployerMatch,
+  makeContributionSpec,
 } from "./fixtures/engine-fixtures";
 
 function slotFor(
@@ -242,5 +244,107 @@ describe("routePercentage", () => {
     const s401k = slotFor(slots, "401k")!;
     expect(s401k.rothContrib).toBeCloseTo(10000, -2);
     expect(s401k.traditionalContrib).toBeCloseTo(10000, -2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// routeFromSpecs
+//
+// Pinned-value tests for the per-spec projection formula, ahead of a planned
+// consolidation with the identical formula duplicated in
+// individual-account-tracking.ts (audit Batch 2 Finding 5). These pin
+// TODAY's output for each of the formula's 4 branches so the refactor can be
+// verified to produce byte-identical results.
+// ---------------------------------------------------------------------------
+
+describe("routeFromSpecs", () => {
+  const config = makeAccumulationConfig();
+
+  it("percent_of_salary: projectedSalary × salaryFraction × value", () => {
+    const spec = makeContributionSpec({
+      category: "ira",
+      method: "percent_of_salary",
+      value: 0.1,
+      salaryFraction: 0.5,
+      taxTreatment: "pre_tax",
+    });
+    const { slots } = routeFromSpecs(
+      [spec],
+      130000,
+      120000,
+      makeYearLimits(),
+      makeEmployerMatch(),
+      1.03,
+      config,
+    );
+    const ira = slotFor(slots, "ira")!;
+    // 130000 * 0.5 * 0.1 = 6500
+    expect(ira.employeeContrib).toBe(6500);
+    expect(ira.rothContrib).toBe(0);
+    expect(ira.traditionalContrib).toBe(6500);
+  });
+
+  it("contributionScaling fixed_amount: baseAnnual × limitGrowthFactor, salary-independent", () => {
+    const spec = makeContributionSpec({
+      category: "hsa",
+      method: "fixed_monthly",
+      contributionScaling: "fixed_amount",
+      baseAnnual: 4000,
+      taxTreatment: "hsa",
+    });
+    const { slots } = routeFromSpecs(
+      [spec],
+      130000,
+      120000,
+      makeYearLimits(),
+      makeEmployerMatch(),
+      1.03,
+      config,
+    );
+    const hsa = slotFor(slots, "hsa")!;
+    // 4000 * 1.03 = 4120, unaffected by projectedSalary/baseSalary
+    expect(hsa.employeeContrib).toBe(4120);
+  });
+
+  it("fixedContribScalesWithSalary category: baseAnnual × (projectedSalary / baseSalary)", () => {
+    const spec = makeContributionSpec({
+      category: "brokerage",
+      method: "fixed_monthly",
+      baseAnnual: 10000,
+      taxTreatment: "after_tax",
+    });
+    const { slots } = routeFromSpecs(
+      [spec],
+      130000,
+      120000,
+      makeYearLimits(),
+      makeEmployerMatch(),
+      1.03,
+      config,
+    );
+    const brok = slotFor(slots, "brokerage")!;
+    // 10000 * (130000 / 120000) = 10833.33
+    expect(brok.employeeContrib).toBe(10833.33);
+  });
+
+  it("plain fixed (no scaling flag, no fixed_amount): baseAnnual × limitGrowthFactor", () => {
+    const spec = makeContributionSpec({
+      category: "403b",
+      method: "fixed_monthly",
+      baseAnnual: 5000,
+      taxTreatment: "pre_tax",
+    });
+    const { slots } = routeFromSpecs(
+      [spec],
+      130000,
+      120000,
+      makeYearLimits(),
+      makeEmployerMatch(),
+      1.03,
+      config,
+    );
+    const s403b = slotFor(slots, "403b")!;
+    // 5000 * 1.03 = 5150, unaffected by projectedSalary/baseSalary
+    expect(s403b.employeeContrib).toBe(5150);
   });
 });
