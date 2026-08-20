@@ -9,6 +9,7 @@ import {
   resolveCompensation,
 } from "@/server/helpers/salary";
 import { findActiveJob } from "@/lib/pure/profiles";
+import { computeHomeImpCumulative } from "@/lib/pure/historical";
 import { zYearEndTargeting, toSalaryActiveMap } from "./_shared";
 
 export const historicalRouter = createTRPCRouter({
@@ -104,11 +105,7 @@ export const historicalRouter = createTRPCRouter({
       >();
       const allYears = yearEndHistory.map((r) => r.year);
       for (const year of allYears) {
-        const itemsUpToYear = homeImprovements.filter((hi) => hi.year <= year);
-        const cumulative = itemsUpToYear.reduce(
-          (sum, hi) => sum + toNumber(hi.cost),
-          0,
-        );
+        const cumulative = computeHomeImpCumulative(homeImprovements, year);
         const itemsThisYear = homeImprovements.filter((hi) => hi.year === year);
         homeImpByYear.set(year, { items: itemsThisYear, cumulative });
       }

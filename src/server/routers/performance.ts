@@ -26,6 +26,7 @@ import {
   resolvePersonYearIncome,
 } from "@/server/helpers";
 import { findActiveJob } from "@/lib/pure/profiles";
+import { computeHomeImpCumulative } from "@/lib/pure/historical";
 import {
   resolveCategoryValues,
   resolvePortfolioValues,
@@ -33,7 +34,6 @@ import {
   buildAccountKeys,
   assembleNetWorthValues,
   computePortfolioTotal,
-  computeHomeImprovementsCumulative,
   sumAccounts,
   sumAnnualRows,
   computeReturn,
@@ -1346,10 +1346,7 @@ export const performanceRouter = createTRPCRouter({
         const otherLiabilities = setting("current_other_liabilities", 0);
 
         // Compute cumulative home improvements from items table (not app_settings scalar)
-        const homeImprovements = computeHomeImprovementsCumulative(
-          homeImpItems,
-          year,
-        );
+        const homeImprovements = computeHomeImpCumulative(homeImpItems, year);
 
         // Snapshot property taxes from propertyTaxes table
         const propertyTaxes = propTaxRows.reduce(

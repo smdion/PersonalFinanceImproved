@@ -593,19 +593,6 @@ export function computePortfolioTotal(
 }
 
 /**
- * Compute cumulative home improvements up to a given year.
- */
-export function computeHomeImprovementsCumulative(
-  items: { year: number; cost: string | null }[],
-  upToYear: number,
-): number {
-  return sumBy(
-    items.filter((hi) => hi.year <= upToYear),
-    (hi) => toNumber(hi.cost),
-  );
-}
-
-/**
  * Find active jobs at a given date.
  */
 export function filterActiveJobsAtDate<

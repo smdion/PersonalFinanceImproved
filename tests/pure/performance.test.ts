@@ -2,7 +2,10 @@
  * Tests for pure business logic extracted from performance router's finalizeYear.
  * Covers: resolveCategoryValues, resolvePortfolioValues, filterAccountsForNextYear,
  * buildAccountKeys, assembleNetWorthValues, computePortfolioTotal,
- * computeHomeImprovementsCumulative, filterActiveJobsAtDate.
+ * filterActiveJobsAtDate.
+ * computeHomeImpCumulative (formerly a duplicate here as
+ * computeHomeImprovementsCumulative) now lives in lib/pure/historical.ts —
+ * see tests/pure/historical.test.ts.
  */
 import { describe, it, expect } from "vitest";
 import {
@@ -12,7 +15,6 @@ import {
   buildAccountKeys,
   assembleNetWorthValues,
   computePortfolioTotal,
-  computeHomeImprovementsCumulative,
   filterActiveJobsAtDate,
   computeEsppSummary,
   computeGainLoss,
@@ -278,26 +280,6 @@ describe("computePortfolioTotal", () => {
 
   it("returns 0 for empty array", () => {
     expect(computePortfolioTotal([])).toBe(0);
-  });
-});
-
-describe("computeHomeImprovementsCumulative", () => {
-  const items = [
-    { year: 2020, cost: "5000" },
-    { year: 2021, cost: "10000" },
-    { year: 2023, cost: "3000" },
-  ];
-
-  it("sums items up to given year", () => {
-    expect(computeHomeImprovementsCumulative(items, 2021)).toBe(15000);
-  });
-
-  it("includes all items when year is after last", () => {
-    expect(computeHomeImprovementsCumulative(items, 2025)).toBe(18000);
-  });
-
-  it("returns 0 for year before any items", () => {
-    expect(computeHomeImprovementsCumulative(items, 2019)).toBe(0);
   });
 });
 
