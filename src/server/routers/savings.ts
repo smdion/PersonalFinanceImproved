@@ -29,7 +29,6 @@ import {
   resolveCompensation,
   loadEffectiveSalaryProfile,
   buildContribAccounts,
-  requireLimit,
   getResolvedGoalAllocations,
   upsertGoalProfileAllocation,
   resetProfileAllocationsToZero,
@@ -37,10 +36,11 @@ import {
   resolveTargetBudgetProfile,
   applyContribActiveFields,
   fetchContributionProfile,
+  buildPaycheckInputForJob,
 } from "@/server/helpers";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { buildBracketInput } from "./paycheck";
-import type { DeductionLine, PaycheckInput } from "@/lib/calculators/types";
+import type { DeductionLine } from "@/lib/calculators/types";
 import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
 import { zDecimal } from "./settings/_shared";
 import { targetModeSchema } from "@/lib/config/enum-values";
@@ -192,26 +192,20 @@ async function computeJobNetPayPerCheck(
     periodsPerYear,
   );
 
-  const paycheckInput: PaycheckInput = {
-    annualSalary: currentSalary,
-    payPeriod: job.payPeriod,
-    payWeek: job.payWeek,
-    anchorPayDate: new Date(job.anchorPayDate ?? job.startDate),
-    supplementalTaxRate: requireLimit(limitsMap, "supplemental_tax_rate"),
+  // Intentionally does not pass a bonusOverride — this value gets persisted
+  // as a recorded fact, not a live/pinned-actual view. See this function's
+  // own docblock.
+  const paycheckInput = buildPaycheckInputForJob(job, {
+    salary: currentSalary,
+    bonusTerms,
+    bonusOverride: null,
     contributionAccounts: contribAccounts,
     deductions,
     taxBrackets,
-    limits: limitsRecord,
-    ytdGrossEarnings: 0,
-    bonusPercent: toNumber(bonusTerms.bonusPercent),
-    bonusMultiplier: toNumber(bonusTerms.bonusMultiplier),
-    bonusOverride: null,
-    monthsInBonusYear: bonusTerms.monthsInBonusYear ?? 12,
-    includeContribInBonus: job.include401kInBonus,
-    bonusMonth: job.bonusMonth,
-    bonusDayOfMonth: job.bonusDayOfMonth,
+    limitsMap,
+    limitsRecord,
     asOfDate,
-  };
+  });
 
   const paycheck = calculatePaycheck(paycheckInput);
   return Math.round(paycheck.netPay * 100) / 100;

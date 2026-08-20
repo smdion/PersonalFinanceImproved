@@ -23,6 +23,7 @@ import {
   loadEffectiveSalaryProfile,
   applyContribActiveFields,
   buildSandboxContribRow,
+  buildPaycheckInputForJob,
 } from "@/server/helpers";
 import { applySandboxSalaryEntries } from "@/server/helpers/salary";
 import {
@@ -34,7 +35,6 @@ import {
   zSandboxContribAdditions,
 } from "./_shared";
 import type {
-  PaycheckInput,
   DeductionLine,
   TaxBracketInput,
   TaxInput,
@@ -281,41 +281,21 @@ export const paycheckRouter = createTRPCRouter({
             comp.terms,
           );
 
-          const paycheckInput: PaycheckInput = {
-            annualSalary: salary,
-            payPeriod: activeJob.payPeriod,
-            payWeek: activeJob.payWeek,
-            anchorPayDate: new Date(
-              activeJob.anchorPayDate ?? activeJob.startDate,
-            ),
-            supplementalTaxRate: requireLimit(
-              limitsMap,
-              "supplemental_tax_rate",
-            ),
+          // This year's actual paid-out bonus, if pinned on the Salary
+          // Profile entry — see SalaryProfileEntry.bonusOverride's
+          // docblock. Never flows into growth/projection math; only this
+          // live paycheck display reads it.
+          const paycheckInput = buildPaycheckInputForJob(activeJob, {
+            salary,
+            bonusTerms,
+            bonusOverride: comp.bonusOverride,
             contributionAccounts: contribAccounts,
             deductions,
             taxBrackets: taxBracketInput,
-            limits: limitsRecord,
-            ytdGrossEarnings: 0,
-            bonusPercent: toNumber(bonusTerms.bonusPercent),
-            // A stored 0 is a real "no bonus this cycle" value; only a
-            // genuinely unset (null) multiplier defaults to 1× — see
-            // computeBonusGross's identical distinction.
-            bonusMultiplier:
-              bonusTerms.bonusMultiplier === null
-                ? 1
-                : toNumber(bonusTerms.bonusMultiplier),
-            // This year's actual paid-out bonus, if pinned on the Salary
-            // Profile entry — see SalaryProfileEntry.bonusOverride's
-            // docblock. Never flows into growth/projection math; only this
-            // live paycheck display reads it.
-            bonusOverride: comp.bonusOverride,
-            monthsInBonusYear: bonusTerms.monthsInBonusYear ?? 12,
-            includeContribInBonus: activeJob.include401kInBonus,
-            bonusMonth: activeJob.bonusMonth,
-            bonusDayOfMonth: activeJob.bonusDayOfMonth,
+            limitsMap,
+            limitsRecord,
             asOfDate,
-          };
+          });
 
           const paycheck = calculatePaycheck(paycheckInput);
           // The nominal formula figure, ignoring any current-year pin — lets
