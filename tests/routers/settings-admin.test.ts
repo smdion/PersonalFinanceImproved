@@ -5,14 +5,17 @@
  *   - appSettings.list / upsert / delete
  *   - scenarios.list / create / update / delete
  *   - apiConnections.list / upsert / delete
- *   - relocationScenarios.list / save / delete
  *   - getDataFreshness
  *   - rbacGroups.get
  *
- * savingsGoals, performanceAccounts, and portfolioSnapshots CRUD moved out
- * to savings.ts/performance.ts/networth.ts respectively (Phase 6.3/6.4/6.5)
- * — their tests moved to savings-goals-crud.test.ts / performance.test.ts /
- * networth.test.ts alongside them.
+ * savingsGoals, performanceAccounts, portfolioSnapshots, and
+ * relocationScenarios CRUD moved out to savings.ts/performance.ts/
+ * networth.ts/projection/relocation.ts respectively (Phase 6.3-6.6) — their
+ * tests moved to savings-goals-crud.test.ts / performance.test.ts /
+ * networth.test.ts / projection-relocation.test.ts alongside them. This
+ * completes Phase 6's settings-placement reorganization (audit Batch 11
+ * Finding 1) — everything remaining in adminProcedures is a genuine
+ * cross-cutting exception per RULES.md's Settings-page ownership table.
  *
  * All procedures live at caller.settings.* because adminProcedures is spread
  * into settingsRouter (see src/server/routers/settings/index.ts).
@@ -428,127 +431,8 @@ describe("settings.apiConnections", () => {
 // savings.savingsGoals CRUD tests moved to savings-goals-crud.test.ts
 // (procedures moved to routers/savings.ts, Phase 6.3).
 
-// ─────────────────────────────────────────────────────────────────────────────
-// RELOCATION SCENARIOS
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe("settings.relocationScenarios", () => {
-  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
-  let cleanup: () => void;
-  let savedId: number;
-
-  // Minimal valid relocationScenarioParamsSchema value
-  const minimalParams = {
-    currentProfileId: 1,
-    currentBudgetColumn: 0,
-    currentExpenseOverride: null,
-    relocationProfileId: 2,
-    relocationBudgetColumn: 0,
-    relocationExpenseOverride: null,
-    yearAdjustments: [],
-    largePurchases: [],
-    currentContributionProfileId: null,
-    relocationContributionProfileId: null,
-  };
-
-  beforeAll(async () => {
-    const ctx = await createTestCaller(adminSession);
-    caller = ctx.caller;
-    cleanup = ctx.cleanup;
-  });
-
-  afterAll(() => cleanup());
-
-  describe("list", () => {
-    it("returns an empty array on a fresh database", async () => {
-      const rows = await caller.settings.relocationScenarios.list();
-      expect(Array.isArray(rows)).toBe(true);
-      expect(rows).toHaveLength(0);
-    });
-  });
-
-  describe("save (create)", () => {
-    it("creates a new relocation scenario (no id supplied)", async () => {
-      const result = await caller.settings.relocationScenarios.save({
-        name: "NYC to Austin",
-        params: minimalParams,
-      });
-      expect(result).toBeDefined();
-      expect(result!.name).toBe("NYC to Austin");
-      expect(result!.params).toMatchObject({ currentProfileId: 1 });
-      savedId = result!.id;
-    });
-
-    it("created scenario appears in list", async () => {
-      const rows = await caller.settings.relocationScenarios.list();
-      expect(rows.find((r: { id: number }) => r.id === savedId)).toBeDefined();
-    });
-
-    it("creates a second scenario", async () => {
-      const result = await caller.settings.relocationScenarios.save({
-        name: "SF to Denver",
-        params: {
-          ...minimalParams,
-          currentProfileId: 3,
-          relocationProfileId: 4,
-        },
-      });
-      expect(result).toBeDefined();
-      expect(result!.name).toBe("SF to Denver");
-    });
-
-    it("list contains both scenarios", async () => {
-      const rows = await caller.settings.relocationScenarios.list();
-      const names = rows.map((r: { name: string }) => r.name);
-      expect(names).toContain("NYC to Austin");
-      expect(names).toContain("SF to Denver");
-    });
-  });
-
-  describe("save (update)", () => {
-    it("updates an existing scenario when id is provided", async () => {
-      const result = await caller.settings.relocationScenarios.save({
-        id: savedId,
-        name: "NYC to Austin — Revised",
-        params: { ...minimalParams, currentExpenseOverride: 500 },
-      });
-      expect(result).toBeDefined();
-      expect(result!.name).toBe("NYC to Austin — Revised");
-      expect(
-        (result!.params as typeof minimalParams).currentExpenseOverride,
-      ).toBe(500);
-    });
-
-    it("updated scenario is reflected in list", async () => {
-      const rows = await caller.settings.relocationScenarios.list();
-      const found = rows.find((r: { id: number }) => r.id === savedId);
-      expect(found).toBeDefined();
-      expect(found!.name).toBe("NYC to Austin — Revised");
-    });
-  });
-
-  describe("delete", () => {
-    it("deletes a relocation scenario", async () => {
-      const created = await caller.settings.relocationScenarios.save({
-        name: "Throwaway Relocation",
-        params: minimalParams,
-      });
-      expect(created).toBeDefined();
-
-      await caller.settings.relocationScenarios.delete({ id: created!.id });
-
-      const rows = await caller.settings.relocationScenarios.list();
-      expect(
-        rows.find((r: { id: number }) => r.id === created!.id),
-      ).toBeUndefined();
-    });
-
-    it("remaining scenarios are unaffected", async () => {
-      const rows = await caller.settings.relocationScenarios.list();
-      expect(rows.find((r: { id: number }) => r.id === savedId)).toBeDefined();
-    });
-  });
-});
+// relocationScenarios CRUD tests moved to projection-relocation.test.ts
+// (procedures moved to routers/projection/relocation.ts, Phase 6.6).
 
 // performanceAccounts CRUD tests moved to performance.test.ts (procedures
 // moved to routers/performance.ts, Phase 6.4).
@@ -1196,55 +1080,7 @@ describe("settings.apiConnections additional coverage", () => {
 
 // savings.savingsGoals additional coverage moved to savings-goals-crud.test.ts.
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ADDITIONAL COVERAGE — relocation scenarios edge cases
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe("settings.relocationScenarios additional coverage", () => {
-  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
-  let cleanup: () => void;
-
-  const fullParams = {
-    currentProfileId: 1,
-    currentBudgetColumn: 0,
-    currentExpenseOverride: 5000,
-    relocationProfileId: 2,
-    relocationBudgetColumn: 1,
-    relocationExpenseOverride: 4000,
-    yearAdjustments: [{ year: 2026, monthlyExpenses: 3000 }],
-    largePurchases: [{ name: "Car", purchasePrice: 35000, purchaseYear: 2027 }],
-    currentContributionProfileId: 1,
-    relocationContributionProfileId: 2,
-  };
-
-  beforeAll(async () => {
-    const ctx = await createTestCaller(adminSession);
-    caller = ctx.caller;
-    cleanup = ctx.cleanup;
-  });
-
-  afterAll(() => cleanup());
-
-  it("creates a scenario with full params", async () => {
-    const result = await caller.settings.relocationScenarios.save({
-      name: "Full Params Scenario",
-      params: fullParams,
-    });
-    expect(result).toBeDefined();
-    const params = result!.params as typeof fullParams;
-    expect(params.currentExpenseOverride).toBe(5000);
-    expect(params.relocationExpenseOverride).toBe(4000);
-  });
-
-  it("list returns scenarios ordered by updatedAt desc", async () => {
-    await caller.settings.relocationScenarios.save({
-      name: "Older Scenario",
-      params: { ...fullParams, currentProfileId: 10 },
-    });
-    const rows = await caller.settings.relocationScenarios.list();
-    expect(rows.length).toBeGreaterThanOrEqual(2);
-    // Most recently created/updated should be first
-  });
-});
+// relocationScenarios additional coverage moved to
+// projection-relocation.test.ts (Phase 6.6).
 
 // performanceAccounts additional coverage moved to performance.test.ts (Phase 6.4).

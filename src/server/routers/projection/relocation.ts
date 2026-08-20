@@ -1,5 +1,6 @@
 /**
- * Engine-backed relocation projection.
+ * Engine-backed relocation projection, plus relocation-scenario CRUD (list/
+ * save/delete for the Tools page's saved comparison scenarios).
  *
  * Runs the full retirement projection engine for both the current and
  * relocation budget scenarios. Returns portfolio-at-retirement deltas,
@@ -8,8 +9,12 @@
  * that switches from the current path to the relocation path at moveYear.
  */
 import { z } from "zod/v4";
-import { eq } from "drizzle-orm";
-import { createTRPCRouter, protectedProcedure } from "../../trpc";
+import { eq, desc } from "drizzle-orm";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  adminProcedure,
+} from "../../trpc";
 import { calculateProjection } from "@/lib/calculators/engine";
 import { toNumber } from "@/server/helpers";
 import {
@@ -31,6 +36,7 @@ import type {
   AccumulationOverride,
   DecumulationOverride,
 } from "@/lib/calculators/types";
+import { relocationScenarioParamsSchema } from "@/lib/db/json-schemas";
 
 /** Pre-computed large purchase data used for ongoing-cost budget overrides
  *  and the per-row portfolio impact indicator. */
@@ -574,4 +580,47 @@ export const relocationProjectionRouter = createTRPCRouter({
         baseYear: currentYear,
       };
     }),
+
+  relocationScenarios: createTRPCRouter({
+    list: protectedProcedure.query(({ ctx }) =>
+      ctx.db
+        .select()
+        .from(schema.relocationScenarios)
+        .orderBy(desc(schema.relocationScenarios.updatedAt)),
+    ),
+    save: adminProcedure
+      .input(
+        z.object({
+          id: z.number().int().optional(),
+          name: z.string().min(1),
+          params: relocationScenarioParamsSchema,
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        if (input.id) {
+          return ctx.db
+            .update(schema.relocationScenarios)
+            .set({
+              name: input.name,
+              params: input.params,
+              updatedAt: new Date(),
+            })
+            .where(eq(schema.relocationScenarios.id, input.id))
+            .returning()
+            .then((r) => r[0]);
+        }
+        return ctx.db
+          .insert(schema.relocationScenarios)
+          .values({ name: input.name, params: input.params })
+          .returning()
+          .then((r) => r[0]);
+      }),
+    delete: adminProcedure
+      .input(z.object({ id: z.number().int() }))
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .delete(schema.relocationScenarios)
+          .where(eq(schema.relocationScenarios.id, input.id)),
+      ),
+  }),
 });

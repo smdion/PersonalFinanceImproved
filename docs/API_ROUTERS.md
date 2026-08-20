@@ -228,9 +228,12 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `projection/relocation`
 
-| Procedure                       | Kind  | Auth                 | Description                                                                                                                                                                                              |
-| ------------------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `computeRelocationFiProjection` | query | `protectedProcedure` | the earliest year when the user can safely relocate and still retire at their configured retirementAge. Also returns year-by-year projection rows for the comparison table, and — when moveYear is provi |
+| Procedure                       | Kind     | Auth                 | Description                                                                                                                                                                                              |
+| ------------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `computeRelocationFiProjection` | query    | `protectedProcedure` | the earliest year when the user can safely relocate and still retire at their configured retirementAge. Also returns year-by-year projection rows for the comparison table, and — when moveYear is provi |
+| `delete`                        | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `list`                          | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
+| `save`                          | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
 
 ## `projection/scenarios`
 
@@ -338,20 +341,17 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 | Procedure                       | Kind     | Auth                 | Description                                                                                  |
 | ------------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------- |
-| `backfillPerformanceAccountIds` | mutation | `adminProcedure`     | ══ BACKFILL PERFORMANCE ACCOUNT IDS ══                                                       |
+| `backfillPerformanceAccountIds` | mutation | `adminProcedure`     | ══ RELOCATION SCENARIOS ══ ══ BACKFILL PERFORMANCE ACCOUNT IDS ══                            |
 | `clearOverride`                 | mutation | `scenarioProcedure`  | Remove a single override from a scenario                                                     |
 | `create`                        | mutation | `scenarioProcedure`  | ══ SCENARIOS (global what-if system) ══                                                      |
 | `delete`                        | mutation | `adminProcedure`     | Invalidate year-end cache when settings change (e.g. salary averaging toggle)                |
 | `delete`                        | mutation | `scenarioProcedure`  | (no description)                                                                             |
-| `delete`                        | mutation | `adminProcedure`     | (no description)                                                                             |
 | `delete`                        | mutation | `adminProcedure`     | (no description)                                                                             |
 | `get`                           | query    | `adminProcedure`     | Get current RBAC group mapping (DB overrides merged with defaults).                          |
 | `getDataFreshness`              | query    | `protectedProcedure` | ══ DATA FRESHNESS ══                                                                         |
 | `list`                          | query    | `protectedProcedure` | ══ APP SETTINGS ══                                                                           |
 | `list`                          | query    | `protectedProcedure` | ══ SCENARIOS (global what-if system) ══                                                      |
 | `list`                          | query    | `protectedProcedure` | ══ API CONNECTIONS ══                                                                        |
-| `list`                          | query    | `protectedProcedure` | ══ RELOCATION SCENARIOS ══                                                                   |
-| `save`                          | mutation | `adminProcedure`     | (no description)                                                                             |
 | `setBudgetProfilePin`           | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Budget Profile is "active" when this Plan is selected.       |
 | `setContributionProfilePin`     | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Contribution Profile is "active" when this Plan is selected. |
 | `setOverride`                   | mutation | `scenarioProcedure`  | Update a single override within a scenario's overrides JSONB                                 |

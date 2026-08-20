@@ -288,3 +288,203 @@ describe("projection.relocation — computeRelocationFiProjection", () => {
     }
   });
 });
+
+describe("projection.relocationScenarios", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let cleanup: () => void;
+  let savedId: number;
+
+  // Minimal valid relocationScenarioParamsSchema value
+  const minimalParams = {
+    currentProfileId: 1,
+    currentBudgetColumn: 0,
+    currentExpenseOverride: null,
+    relocationProfileId: 2,
+    relocationBudgetColumn: 0,
+    relocationExpenseOverride: null,
+    yearAdjustments: [],
+    largePurchases: [],
+    currentContributionProfileId: null,
+    relocationContributionProfileId: null,
+  };
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller(adminSession);
+    caller = ctx.caller;
+    cleanup = ctx.cleanup;
+  });
+
+  afterAll(() => cleanup());
+
+  describe("list", () => {
+    it("returns an empty array on a fresh database", async () => {
+      const rows = await caller.projection.relocationScenarios.list();
+      expect(Array.isArray(rows)).toBe(true);
+      expect(rows).toHaveLength(0);
+    });
+  });
+
+  describe("save (create)", () => {
+    it("creates a new relocation scenario (no id supplied)", async () => {
+      const result = await caller.projection.relocationScenarios.save({
+        name: "NYC to Austin",
+        params: minimalParams,
+      });
+      expect(result).toBeDefined();
+      expect(result!.name).toBe("NYC to Austin");
+      expect(result!.params).toMatchObject({ currentProfileId: 1 });
+      savedId = result!.id;
+    });
+
+    it("created scenario appears in list", async () => {
+      const rows = await caller.projection.relocationScenarios.list();
+      expect(rows.find((r: { id: number }) => r.id === savedId)).toBeDefined();
+    });
+
+    it("creates a second scenario", async () => {
+      const result = await caller.projection.relocationScenarios.save({
+        name: "SF to Denver",
+        params: {
+          ...minimalParams,
+          currentProfileId: 3,
+          relocationProfileId: 4,
+        },
+      });
+      expect(result).toBeDefined();
+      expect(result!.name).toBe("SF to Denver");
+    });
+
+    it("list contains both scenarios", async () => {
+      const rows = await caller.projection.relocationScenarios.list();
+      const names = rows.map((r: { name: string }) => r.name);
+      expect(names).toContain("NYC to Austin");
+      expect(names).toContain("SF to Denver");
+    });
+  });
+
+  describe("save (update)", () => {
+    it("updates an existing scenario when id is provided", async () => {
+      const result = await caller.projection.relocationScenarios.save({
+        id: savedId,
+        name: "NYC to Austin — Revised",
+        params: { ...minimalParams, currentExpenseOverride: 500 },
+      });
+      expect(result).toBeDefined();
+      expect(result!.name).toBe("NYC to Austin — Revised");
+      expect(
+        (result!.params as typeof minimalParams).currentExpenseOverride,
+      ).toBe(500);
+    });
+
+    it("updated scenario is reflected in list", async () => {
+      const rows = await caller.projection.relocationScenarios.list();
+      const found = rows.find((r: { id: number }) => r.id === savedId);
+      expect(found).toBeDefined();
+      expect(found!.name).toBe("NYC to Austin — Revised");
+    });
+  });
+
+  describe("delete", () => {
+    it("deletes a relocation scenario", async () => {
+      const created = await caller.projection.relocationScenarios.save({
+        name: "Throwaway Relocation",
+        params: minimalParams,
+      });
+      expect(created).toBeDefined();
+
+      await caller.projection.relocationScenarios.delete({ id: created!.id });
+
+      const rows = await caller.projection.relocationScenarios.list();
+      expect(
+        rows.find((r: { id: number }) => r.id === created!.id),
+      ).toBeUndefined();
+    });
+
+    it("remaining scenarios are unaffected", async () => {
+      const rows = await caller.projection.relocationScenarios.list();
+      expect(rows.find((r: { id: number }) => r.id === savedId)).toBeDefined();
+    });
+  });
+});
+
+describe("projection.relocationScenarios additional coverage", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let cleanup: () => void;
+
+  const fullParams = {
+    currentProfileId: 1,
+    currentBudgetColumn: 0,
+    currentExpenseOverride: 5000,
+    relocationProfileId: 2,
+    relocationBudgetColumn: 1,
+    relocationExpenseOverride: 4000,
+    yearAdjustments: [{ year: 2026, monthlyExpenses: 3000 }],
+    largePurchases: [{ name: "Car", purchasePrice: 35000, purchaseYear: 2027 }],
+    currentContributionProfileId: 1,
+    relocationContributionProfileId: 2,
+  };
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller(adminSession);
+    caller = ctx.caller;
+    cleanup = ctx.cleanup;
+  });
+
+  afterAll(() => cleanup());
+
+  it("creates a scenario with full params", async () => {
+    const result = await caller.projection.relocationScenarios.save({
+      name: "Full Params Scenario",
+      params: fullParams,
+    });
+    expect(result).toBeDefined();
+    const params = result!.params as typeof fullParams;
+    expect(params.currentExpenseOverride).toBe(5000);
+    expect(params.relocationExpenseOverride).toBe(4000);
+  });
+
+  it("list returns scenarios ordered by updatedAt desc", async () => {
+    await caller.projection.relocationScenarios.save({
+      name: "Older Scenario",
+      params: { ...fullParams, currentProfileId: 10 },
+    });
+    const rows = await caller.projection.relocationScenarios.list();
+    expect(rows.length).toBeGreaterThanOrEqual(2);
+    // Most recently created/updated should be first
+  });
+});
+
+describe("projection.relocationScenarios additional", () => {
+  const minimalParams = {
+    currentProfileId: 1,
+    currentBudgetColumn: 0,
+    currentExpenseOverride: null,
+    relocationProfileId: 2,
+    relocationBudgetColumn: 0,
+    relocationExpenseOverride: null,
+    yearAdjustments: [],
+    largePurchases: [],
+    currentContributionProfileId: null,
+    relocationContributionProfileId: null,
+  };
+
+  it("creates scenario with year adjustments and large purchases", async () => {
+    const ctx = await createTestCaller(adminSession);
+    try {
+      const result = await ctx.caller.projection.relocationScenarios.save({
+        name: "Rich Relocation",
+        params: {
+          ...minimalParams,
+          yearAdjustments: [{ year: 2027, monthlyExpenses: 5000 }],
+          largePurchases: [
+            { name: "Car", purchasePrice: 25000, purchaseYear: 2028 },
+          ],
+        },
+      });
+      expect(result).toBeDefined();
+      expect(result!.name).toBe("Rich Relocation");
+    } finally {
+      ctx.cleanup();
+    }
+  });
+});

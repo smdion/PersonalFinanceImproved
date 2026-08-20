@@ -49,11 +49,6 @@ describe("settings router barrel export", () => {
     expect(result).toHaveProperty("permissions");
   });
 
-  it("exposes relocationScenarios sub-router", async () => {
-    const result = await caller.settings.relocationScenarios.list();
-    expect(Array.isArray(result)).toBe(true);
-  });
-
   it("exposes apiConnections sub-router", async () => {
     const result = await caller.settings.apiConnections.list();
     expect(Array.isArray(result)).toBe(true);

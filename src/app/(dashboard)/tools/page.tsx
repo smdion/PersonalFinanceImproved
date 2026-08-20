@@ -102,19 +102,21 @@ export default function ToolsPage() {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [saveScenarioName, setSaveScenarioName] = useState("");
 
-  const scenariosQuery = trpc.settings.relocationScenarios.list.useQuery();
+  const scenariosQuery = trpc.projection.relocationScenarios.list.useQuery();
   const utils = trpc.useUtils();
-  const saveMutation = trpc.settings.relocationScenarios.save.useMutation({
+  const saveMutation = trpc.projection.relocationScenarios.save.useMutation({
     onSuccess: () => {
-      utils.settings.relocationScenarios.list.invalidate();
+      utils.projection.relocationScenarios.list.invalidate();
     },
   });
-  const deleteMutation = trpc.settings.relocationScenarios.delete.useMutation({
-    onSuccess: () => {
-      utils.settings.relocationScenarios.list.invalidate();
-      setSelectedScenarioId(null);
+  const deleteMutation = trpc.projection.relocationScenarios.delete.useMutation(
+    {
+      onSuccess: () => {
+        utils.projection.relocationScenarios.list.invalidate();
+        setSelectedScenarioId(null);
+      },
     },
-  });
+  );
 
   // Budget profiles for relocation selectors
   const budgetProfilesQuery = useBudgetProfilesList();

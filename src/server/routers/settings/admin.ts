@@ -21,7 +21,6 @@ import {
   apiConfigSchema,
   accountMappingSchema,
   scenarioOverridesSchema,
-  relocationScenarioParamsSchema,
 } from "@/lib/db/json-schemas";
 
 // --- Zod schemas ---
@@ -410,49 +409,6 @@ export const adminProcedures = {
   }),
 
   // ══ RELOCATION SCENARIOS ══
-  relocationScenarios: createTRPCRouter({
-    list: protectedProcedure.query(({ ctx }) =>
-      ctx.db
-        .select()
-        .from(schema.relocationScenarios)
-        .orderBy(desc(schema.relocationScenarios.updatedAt)),
-    ),
-    save: adminProcedure
-      .input(
-        z.object({
-          id: z.number().int().optional(),
-          name: z.string().min(1),
-          params: relocationScenarioParamsSchema,
-        }),
-      )
-      .mutation(async ({ ctx, input }) => {
-        if (input.id) {
-          return ctx.db
-            .update(schema.relocationScenarios)
-            .set({
-              name: input.name,
-              params: input.params,
-              updatedAt: new Date(),
-            })
-            .where(eq(schema.relocationScenarios.id, input.id))
-            .returning()
-            .then((r) => r[0]);
-        }
-        return ctx.db
-          .insert(schema.relocationScenarios)
-          .values({ name: input.name, params: input.params })
-          .returning()
-          .then((r) => r[0]);
-      }),
-    delete: adminProcedure
-      .input(z.object({ id: z.number().int() }))
-      .mutation(({ ctx, input }) =>
-        ctx.db
-          .delete(schema.relocationScenarios)
-          .where(eq(schema.relocationScenarios.id, input.id)),
-      ),
-  }),
-
   // ══ BACKFILL PERFORMANCE ACCOUNT IDS ══
   backfillPerformanceAccountIds: adminProcedure
     .input(

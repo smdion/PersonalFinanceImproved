@@ -214,44 +214,9 @@ describe("settings.updateDataFreshness additional", () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// RELOCATION SCENARIOS — additional coverage
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe("settings.relocationScenarios additional", () => {
-  const minimalParams = {
-    currentProfileId: 1,
-    currentBudgetColumn: 0,
-    currentExpenseOverride: null,
-    relocationProfileId: 2,
-    relocationBudgetColumn: 0,
-    relocationExpenseOverride: null,
-    yearAdjustments: [],
-    largePurchases: [],
-    currentContributionProfileId: null,
-    relocationContributionProfileId: null,
-  };
-
-  it("creates scenario with year adjustments and large purchases", async () => {
-    const ctx = await createTestCaller(adminSession);
-    try {
-      const result = await ctx.caller.settings.relocationScenarios.save({
-        name: "Rich Relocation",
-        params: {
-          ...minimalParams,
-          yearAdjustments: [{ year: 2027, monthlyExpenses: 5000 }],
-          largePurchases: [
-            { name: "Car", purchasePrice: 25000, purchaseYear: 2028 },
-          ],
-        },
-      });
-      expect(result).toBeDefined();
-      expect(result!.name).toBe("Rich Relocation");
-    } finally {
-      ctx.cleanup();
-    }
-  });
-});
+// relocationScenarios additional coverage moved to
+// projection-relocation.test.ts (procedures moved to
+// routers/projection/relocation.ts, Phase 6.6).
 
 describe("scenarios.setOverride / clearOverride", () => {
   async function seedScenario(
