@@ -1,7 +1,12 @@
 "use client";
 
 /** Balance projection chart — stacked bar (deterministic) + confidence bands + median line. */
-import { taxTypeLabel, categoryChartHex } from "@/lib/utils/colors";
+import {
+  taxTypeLabel,
+  categoryChartHex,
+  TAX_PIE_COLORS,
+  CHART_COLORS,
+} from "@/lib/utils/colors";
 import { ChartControls } from "./chart-controls";
 import { formatCurrency, compactCurrency } from "@/lib/utils/format";
 import type { EngineYearProjection } from "@/lib/calculators/types";
@@ -74,13 +79,6 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       (rmdIdx !== -1 && i === rmdIdx),
   );
 
-  // Hex colors for Recharts
-  const TAX_HEX: Record<string, string> = {
-    preTax: "#3b82f6",
-    taxFree: "#8b5cf6",
-    hsa: "#10b981",
-    afterTax: "#f97316",
-  };
   const TAX_KEYS = (["preTax", "taxFree", "hsa", "afterTax"] as const).filter(
     (t) => visibleColumns.balanceTaxTypes.has(t),
   );
@@ -166,7 +164,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
     balanceView === "taxType"
       ? TAX_KEYS.map((k) => ({
           key: k,
-          hex: TAX_HEX[k],
+          hex: TAX_PIE_COLORS[k],
           label: taxTypeLabel(k),
         }))
       : ACCT_SEGMENTS.map((s) => ({
@@ -341,7 +339,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                     type="monotone"
                     dataKey="mc_5_10"
                     stackId="mc"
-                    fill="#ede9fe"
+                    fill={CHART_COLORS.mcBandOuter}
                     fillOpacity={0.4}
                     stroke="none"
                     isAnimationActive={false}
@@ -352,7 +350,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                     type="monotone"
                     dataKey="mc_10_25"
                     stackId="mc"
-                    fill="#c4b5fd"
+                    fill={CHART_COLORS.mcBandInner}
                     fillOpacity={0.35}
                     stroke="none"
                     isAnimationActive={false}
@@ -362,7 +360,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                   type="monotone"
                   dataKey="mc_25_75"
                   stackId="mc"
-                  fill="#8b5cf6"
+                  fill={CHART_COLORS.mcBandMiddle}
                   fillOpacity={0.2}
                   stroke="none"
                   isAnimationActive={false}
@@ -372,7 +370,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                     type="monotone"
                     dataKey="mc_75_90"
                     stackId="mc"
-                    fill="#c4b5fd"
+                    fill={CHART_COLORS.mcBandInner}
                     fillOpacity={0.35}
                     stroke="none"
                     isAnimationActive={false}
@@ -383,7 +381,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                     type="monotone"
                     dataKey="mc_90_95"
                     stackId="mc"
-                    fill="#ede9fe"
+                    fill={CHART_COLORS.mcBandOuter}
                     fillOpacity={0.4}
                     stroke="none"
                     isAnimationActive={false}
@@ -413,7 +411,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
               <Line
                 type="monotone"
                 dataKey="mc_p50"
-                stroke="#7c3aed"
+                stroke={CHART_COLORS.mcMedian}
                 strokeWidth={2}
                 strokeDasharray="6 3"
                 dot={false}
@@ -490,7 +488,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             <span className="flex items-center gap-1">
               <span
                 className="w-3 h-0.5 rounded"
-                style={{ backgroundColor: "#7c3aed" }}
+                style={{ backgroundColor: CHART_COLORS.mcMedian }}
               />{" "}
               Sim. median
               {mcIsPrefetch && (
@@ -501,7 +499,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
               <span
                 className="w-3 h-1.5 rounded"
                 style={{
-                  backgroundColor: "#8b5cf6",
+                  backgroundColor: CHART_COLORS.mcBandMiddle,
                   opacity: 0.3,
                 }}
               />{" "}
@@ -513,7 +511,9 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                   className="w-3 h-1.5 rounded"
                   style={{
                     backgroundColor:
-                      fanBandRange === "p5-p95" ? "#ede9fe" : "#c4b5fd",
+                      fanBandRange === "p5-p95"
+                        ? CHART_COLORS.mcBandOuter
+                        : CHART_COLORS.mcBandInner,
                     opacity: fanBandRange === "p5-p95" ? 0.6 : 0.5,
                   }}
                 />{" "}

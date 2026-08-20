@@ -178,14 +178,18 @@ export const CHART_COLORS = {
   avgWealth: "#9ca3af", // gray-400
   prodigiousWealth: "#facc15", // yellow-400
   aawScore: "#059669", // emerald-600
-  // Monte Carlo percentile bands
+  // Monte Carlo percentile bands. mcGrid/mcAxis are the general chart
+  // grid/axis defaults (used well beyond MC charts — see chart-defaults.tsx).
+  // mcBandOuter/mcBandInner/mcBandMiddle/mcMedian are the fan-band palette
+  // shared by projection-chart.tsx and spending-stability-chart.tsx, which
+  // had each independently hardcoded this exact violet set locally before
+  // being consolidated here (Phase 4b).
   mcGrid: "#e5e7eb", // gray-200
   mcAxis: "#6b7280", // gray-500
-  mcBandOuter: "#dbeafe", // blue-100
-  mcBandInner: "#93c5fd", // blue-300
-  mcMedian: "#3b82f6", // blue-500
-  mcMedianStroke: "#2563eb", // blue-600
-  mcDeterministic: "#9ca3af", // gray-400
+  mcBandOuter: "#ede9fe", // violet-100 — 5-10 / 90-95 percentile fan
+  mcBandInner: "#c4b5fd", // violet-300 — 10-25 / 75-90 percentile fan
+  mcBandMiddle: "#8b5cf6", // violet-500 — 25-75 percentile fan + 50%-band legend swatch
+  mcMedian: "#7c3aed", // violet-600 — simulation median line
   // Performance chart
   perfBalance: "#4f46e5", // indigo-600
   perfReturn: "#10b981", // emerald-500

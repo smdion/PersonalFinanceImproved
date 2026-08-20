@@ -28,6 +28,7 @@ import {
 } from "recharts";
 import { ChartControls } from "./chart-controls";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
+import { CHART_COLORS } from "@/lib/utils/colors";
 import type { ProjectionState } from "./projection-table-types";
 
 export function SpendingStabilityChart({
@@ -319,7 +320,7 @@ export function SpendingStabilityChart({
                 type="monotone"
                 dataKey="mc_5_10"
                 stackId="mc"
-                fill="#ede9fe"
+                fill={CHART_COLORS.mcBandOuter}
                 fillOpacity={0.4}
                 stroke="none"
                 isAnimationActive={false}
@@ -330,7 +331,7 @@ export function SpendingStabilityChart({
                 type="monotone"
                 dataKey="mc_10_25"
                 stackId="mc"
-                fill="#c4b5fd"
+                fill={CHART_COLORS.mcBandInner}
                 fillOpacity={0.35}
                 stroke="none"
                 isAnimationActive={false}
@@ -342,7 +343,7 @@ export function SpendingStabilityChart({
                 dataKey="mc_25_75"
                 stackId="mc"
                 name="Confidence band"
-                fill="#8b5cf6"
+                fill={CHART_COLORS.mcBandMiddle}
                 fillOpacity={0.2}
                 stroke="none"
                 isAnimationActive={false}
@@ -352,7 +353,7 @@ export function SpendingStabilityChart({
                 type="monotone"
                 dataKey="mc_75_90"
                 stackId="mc"
-                fill="#c4b5fd"
+                fill={CHART_COLORS.mcBandInner}
                 fillOpacity={0.35}
                 stroke="none"
                 isAnimationActive={false}
@@ -363,7 +364,7 @@ export function SpendingStabilityChart({
                 type="monotone"
                 dataKey="mc_90_95"
                 stackId="mc"
-                fill="#ede9fe"
+                fill={CHART_COLORS.mcBandOuter}
                 fillOpacity={0.4}
                 stroke="none"
                 isAnimationActive={false}
@@ -393,7 +394,7 @@ export function SpendingStabilityChart({
               type="monotone"
               dataKey="mc_p50"
               name="Sim. median"
-              stroke="#7c3aed"
+              stroke={CHART_COLORS.mcMedian}
               strokeWidth={2}
               strokeDasharray="6 3"
               dot={false}

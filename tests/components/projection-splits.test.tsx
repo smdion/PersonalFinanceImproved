@@ -45,11 +45,21 @@ vi.mock("@/lib/utils/colors", () => ({
   taxTypeLabel: (k: string) => k,
   accountTextColor: () => "text-blue-500",
   categoryChartHex: () => "#aaa",
+  TAX_PIE_COLORS: {
+    preTax: "#3b82f6",
+    taxFree: "#8b5cf6",
+    hsa: "#10b981",
+    afterTax: "#f97316",
+  },
   CHART_COLORS: {
     income: "#aaa",
     expenses: "#bbb",
     net: "#ccc",
     balance: "#ddd",
+    mcBandOuter: "#ede9fe",
+    mcBandInner: "#c4b5fd",
+    mcBandMiddle: "#8b5cf6",
+    mcMedian: "#7c3aed",
   },
 }));
 

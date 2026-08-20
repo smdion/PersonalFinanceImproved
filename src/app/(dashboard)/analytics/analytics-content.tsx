@@ -26,6 +26,7 @@ import {
   coverageStatus,
 } from "@/lib/pure/analytics";
 import { ANALYTICS_WEIGHT_COVERAGE_WARN_BPS } from "@/lib/constants";
+import { EXPENSE_PIE_COLORS } from "@/lib/utils/colors";
 import {
   PieChart,
   Pie,
@@ -78,22 +79,14 @@ type DraftHolding = {
 };
 
 // ---------------------------------------------------------------------------
-// Colour palette (chart slices)
+// Colour palette (chart slices) — reuses the shared indexed palette
+// expenses-content.tsx uses for the same "arbitrary N categorical slices"
+// shape (asset classes here vs. expense categories there; the name is
+// expense-specific but the palette itself isn't semantically tied to it).
 // ---------------------------------------------------------------------------
 
-const CHART_COLORS = [
-  "#3b82f6",
-  "#10b981",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#06b6d4",
-  "#f97316",
-  "#84cc16",
-];
-
 function sliceColor(i: number) {
-  return CHART_COLORS[i % CHART_COLORS.length]!;
+  return EXPENSE_PIE_COLORS[i % EXPENSE_PIE_COLORS.length]!;
 }
 
 // ---------------------------------------------------------------------------
