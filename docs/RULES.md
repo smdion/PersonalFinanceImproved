@@ -226,22 +226,23 @@ Portfolio Snapshots + Performance Data + Settings
 
 ### Shared State Sources
 
-| Data                               | Source                               | Key                                                                                                 |
-| ---------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| Year-level financial data          | `buildYearEndHistory()`              | `YearEndRow` from `net_worth_annual` + live current year                                            |
-| Tax location breakdown             | `YearEndRow.portfolioByTaxLocation`  | JSONB on `net_worth_annual` (finalized) / snapshot (current)                                        |
-| Budget column                      | `app_settings`                       | `budget_active_column`                                                                              |
-| Annual expenses                    | `getAnnualExpensesFromBudget()`      | Uses `budget_active_column`                                                                         |
-| Total compensation (profile-aware) | `resolveCompensation()`              | `server/helpers/salary.ts` — the single place salary+bonus is computed under a Salary Profile entry |
-| Salary override merge              | `applyActiveSalary()`                | Final `active ?? raw` merge of the Plan/session override onto an already-resolved raw salary        |
-| Salary override map                | `loadAndApplySalaryProfile()`        | Plan/session pins, then the active Salary Profile's entries                                         |
-| Portfolio balances                 | `getLatestSnapshot()`                | Latest `portfolio_snapshots` row                                                                    |
-| Contribution accounts              | `buildContribAccounts()`             | `contribution_accounts` table                                                                       |
-| Contribution specs                 | `buildContributionDisplaySpecs()`    | Per-account specs with match redistribution                                                         |
-| Category aggregations              | `aggregateContributionsByCategory()` | Contribution + match totals per account category                                                    |
-| Account type config                | `getAccountTypeConfig()`             | All account-type behavior (from `ACCOUNT_TYPE_CONFIG`)                                              |
-| Parent category map                | `getParentCategory()`                | Account type → goal category (Retirement/Portfolio) via config                                      |
-| Mortgage balance                   | `computeMortgageBalance()`           | Amortization from loans + extra payments                                                            |
+| Data                               | Source                               | Key                                                                                                                                                                                                                                                         |
+| ---------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Year-level financial data          | `buildYearEndHistory()`              | `YearEndRow` from `net_worth_annual` + live current year                                                                                                                                                                                                    |
+| Tax location breakdown             | `YearEndRow.portfolioByTaxLocation`  | JSONB on `net_worth_annual` (finalized) / snapshot (current)                                                                                                                                                                                                |
+| Budget column                      | `app_settings`                       | `budget_active_column`                                                                                                                                                                                                                                      |
+| Annual expenses                    | `getAnnualExpensesFromBudget()`      | Uses `budget_active_column`                                                                                                                                                                                                                                 |
+| Total compensation (profile-aware) | `resolveCompensation()`              | `server/helpers/salary.ts` — the single place salary+bonus is computed under a Salary Profile entry                                                                                                                                                         |
+| Salary override merge              | `applyActiveSalary()`                | Final `active ?? raw` merge of the Plan/session override onto an already-resolved raw salary                                                                                                                                                                |
+| Salary override map                | `loadAndApplySalaryProfile()`        | Plan/session pins, then the active Salary Profile's entries                                                                                                                                                                                                 |
+| Portfolio balances                 | `getLatestSnapshot()`                | Latest `portfolio_snapshots` row                                                                                                                                                                                                                            |
+| Contribution accounts              | `buildContribAccounts()`             | `contribution_accounts` table                                                                                                                                                                                                                               |
+| Employer match                     | `computeGroupedEmployerMatch()`      | Combines Roth/Traditional splits of one account before applying the match cap once; every consumer (`buildContribAccounts`, `buildContributionDisplaySpecs`, `aggregateContributionsByCategory`, `retirement.ts`'s scenario comparison) routes through this |
+| Contribution specs                 | `buildContributionDisplaySpecs()`    | Per-account specs, incl. match via `computeGroupedEmployerMatch()`                                                                                                                                                                                          |
+| Category aggregations              | `aggregateContributionsByCategory()` | Contribution + match totals per account category, incl. match via `computeGroupedEmployerMatch()`                                                                                                                                                           |
+| Account type config                | `getAccountTypeConfig()`             | All account-type behavior (from `ACCOUNT_TYPE_CONFIG`)                                                                                                                                                                                                      |
+| Parent category map                | `getParentCategory()`                | Account type → goal category (Retirement/Portfolio) via config                                                                                                                                                                                              |
+| Mortgage balance                   | `computeMortgageBalance()`           | Amortization from loans + extra payments                                                                                                                                                                                                                    |
 
 ### Rules
 
@@ -250,6 +251,7 @@ Portfolio Snapshots + Performance Data + Settings
 3. **Scenarios are explicit opt-ins.** Override controls are clearly labeled as "what-if", not hidden divergences.
 4. **Shared helpers, not duplicated queries.** Use `helpers.ts` when multiple routers need the same derived value.
 5. **Age and personal data come from the `people` table.** Never hardcode ages or personal details.
+6. **Grep before reimplementing a documented rule.** Before writing a display rule, derived formula, or label mapping that plausibly already exists (check DESIGN.md and grep for similarly-named components/hooks first), find and reuse the existing implementation rather than writing a second one from the spec. Two independent implementations of the same rule will diverge — this is how the sub-row label rule, tax-type labels, and the household savings-rate formula each shipped real bugs after being written twice.
 
 ### The Salary Profile layer
 
@@ -361,6 +363,9 @@ likewise not _displayed_ as a Contribution Profile statistic.
 - A numeric fallback (`0.04`, `0.07`, `200000`) that doesn't reference its constant from `constants.ts`
 - Stored computed values without a documented sync/cascade mechanism
 - Business logic (math, validation, aggregation) written inline in a `.transaction()` callback or a router procedure handler instead of extracted to `src/lib/pure/`
+- A display rule, label mapping, or formula reimplemented in a second component instead of importing the existing function
+- A local hex/Tailwind color value for a chart series or a status/severity indicator instead of an export from `colors.ts`
+- A new `lib/pure/` function, hook, or `components/ui/` primitive merged with zero call sites
 
 ---
 
@@ -587,14 +592,17 @@ These are true cross-cutting reference data that no single page owns.
 - **Components never import from `server/`.** They consume data via tRPC hooks.
 - **Three state layers:** Server state (React Query via tRPC), Form state (React Hook Form), UI state (`useState`).
 - **Formatting — zero exceptions.** Use `formatCurrency()`, `formatPercent()`, `compactCurrency()`, `formatDate()` from `@/lib/utils/format`. **Never** inline formatting — this includes chart axis tick formatters, tooltip renderers, and input display formatters. If the canonical function doesn't support your precision needs, extend the function (e.g., `formatPercent(value, decimals)` already accepts a decimals argument) — don't bypass it. Inline `.toFixed(N) + '%'` and `'$${n/1000}k'` are violations.
-- **Colors:** Use centralized helpers from `@/lib/utils/colors.ts`. Never hardcode colors for account/tax types.
+- **Colors:** Use centralized helpers from `@/lib/utils/colors.ts` for **every** color that carries meaning — not just account/tax types. This includes chart-series colors, status/severity colors (success/warning/danger/info), and MC-band colors. Two components rendering the same category/status must import the same constant, never re-derive their own hex/Tailwind values inline — this is exactly how the net-worth bar chart and pie chart once showed different colors for the identical category, and how Badge/toast/banner each drifted to a different shade for the same severity.
   - **Account types** (401k, 403b, IRA, HSA, Brokerage): `accountColor()` (bg fill), `accountMatchColor()` (light fill), `accountBorderColor()` (left border), `accountTextColor()` (text)
   - **Tax treatments** (preTax, taxFree, hsa, afterTax): `taxTypeColor()` (bg fill for bars), `taxTypeTextColor()` (text for labels/cells)
+  - **Status/severity** (success, warning, danger, info): `STATUS_COLORS` — consumed by `Badge`, `toast`, `ScenarioBanner`, `CalloutLine`. Do not add a new local shade map for the same 4 semantic colors.
+  - **Chart series**: named exports from `colors.ts` (`CHART_COLORS`, `EXPENSE_PIE_COLORS`, `mcBandOuter`/`mcBandInner`/`mcMedian`/etc.) — never a local color array or hardcoded hex per chart file.
   - UI badges (BG, PC, etc.) must NOT use account-type colors — use indigo or gray to avoid overlap.
 - **Math:** Use `safeDivide()`, `roundToCents()`, `sumBy()` from `@/lib/utils/math.ts`.
 - **Shared components:** `EmptyState`, `HelpTip`, `AccountBadge`, `PageHeader`, `LoadingCard`, `ErrorCard`, `ContribPeriodToggle`.
 - **Account type config:** `src/lib/config/account-types.ts` is the single source for all account-type behavior. Use `getAccountTypeConfig()`, `getAllCategories()`, `isOverflowTarget()`, `categoriesWithIrsLimit()`, etc. — never hardcode category checks.
 - **Display labels:** Import from `src/lib/config/display-labels.ts`. Never define local label maps in components.
+- **New shared primitives ship with a real consumer.** A component/hook/util introduced specifically to replace duplicated logic (a new `lib/pure/` function, a `lib/hooks/` hook, a `components/ui/` primitive) must migrate at least one genuine call site in the same PR — never merge one with zero adopters "for later." `FormField`, `useOptimisticMutation`, and `safeDivide()` all shipped unused and the duplication they were meant to kill kept spreading for months until a dedicated audit rediscovered them.
 
 ### Refactoring: LOC vs per-file size
 

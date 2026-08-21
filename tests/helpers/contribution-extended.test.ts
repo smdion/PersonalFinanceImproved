@@ -22,6 +22,7 @@ import type { AccountCategory } from "@/lib/calculators/types";
 
 function makeContribRow(
   overrides: Partial<{
+    id: number;
     personId: number;
     jobId: number | null;
     accountType: AccountCategory;
@@ -37,6 +38,7 @@ function makeContribRow(
   }> = {},
 ) {
   return {
+    id: 1,
     personId: 1,
     jobId: 1,
     accountType: "401k" as AccountCategory,
@@ -85,10 +87,12 @@ describe("aggregateContributionsByCategory", () => {
   it("computes Roth fraction correctly", () => {
     const contribs = [
       makeContribRow({
+        id: 1,
         contributionValue: "8",
         taxTreatment: "pre_tax",
       }),
       makeContribRow({
+        id: 2,
         contributionValue: "4",
         taxTreatment: "tax_free",
       }),
@@ -132,15 +136,18 @@ describe("aggregateContributionsByCategory", () => {
   it("aggregates across multiple categories", () => {
     const contribs = [
       makeContribRow({
+        id: 1,
         accountType: "401k" as AccountCategory,
         contributionValue: "10",
       }),
       makeContribRow({
+        id: 2,
         accountType: "ira" as AccountCategory,
         contributionValue: "5",
         taxTreatment: "tax_free",
       }),
       makeContribRow({
+        id: 3,
         accountType: "hsa" as AccountCategory,
         contributionMethod: "fixed_annual",
         contributionValue: "4300",
@@ -585,8 +592,14 @@ describe("buildContributionDisplaySpecs", () => {
   });
 
   it("redistributes match proportionally within person+category group", () => {
+    // Only one of the two sibling rows carries real match config — the
+    // schema/computeGroupedEmployerMatch invariant (at most one row per
+    // job/person + accountType + parentCategory group may have real
+    // config; two independently-configured siblings is a data-integrity
+    // error, covered separately below).
     const contribs = [
       makeContribRow({
+        id: 1,
         contributionValue: "10", // 12000
         taxTreatment: "pre_tax",
         employerMatchType: "percent_of_contribution",
@@ -594,11 +607,9 @@ describe("buildContributionDisplaySpecs", () => {
         employerMaxMatchPct: "0.06",
       }),
       makeContribRow({
+        id: 2,
         contributionValue: "5", // 6000
         taxTreatment: "tax_free",
-        employerMatchType: "percent_of_contribution",
-        employerMatchValue: "100",
-        employerMaxMatchPct: "0.06",
       }),
     ];
     const people = [{ id: 1, name: "Alice" }];
@@ -613,10 +624,39 @@ describe("buildContributionDisplaySpecs", () => {
     );
 
     expect(specs).toHaveLength(2);
-    // Total match should be redistributed proportionally
+    // Combined rate = 18000/120000 = 0.15, capped at 0.06 -> total match
+    // = 120000 * 0.06 * 1.0 = 7200, split 2:1 by contribution share.
     const totalMatch = specs.reduce((s, sp) => s + sp.matchAnnual, 0);
-    expect(totalMatch).toBeGreaterThan(0);
+    expect(totalMatch).toBeCloseTo(7200);
     // Pre-tax has 2x the contribution, so should get 2x the match
     expect(specs[0].matchAnnual).toBeCloseTo(specs[1].matchAnnual * 2, 0);
+  });
+
+  it("throws when two sibling rows both carry real match config", () => {
+    const contribs = [
+      makeContribRow({
+        id: 1,
+        contributionValue: "10",
+        employerMatchType: "percent_of_contribution",
+        employerMatchValue: "100",
+        employerMaxMatchPct: "0.06",
+      }),
+      makeContribRow({
+        id: 2,
+        contributionValue: "5",
+        taxTreatment: "tax_free",
+        employerMatchType: "percent_of_contribution",
+        employerMatchValue: "100",
+        employerMaxMatchPct: "0.06",
+      }),
+    ];
+    expect(() =>
+      buildContributionDisplaySpecs(
+        contribs,
+        [{ id: 1, name: "Alice" }],
+        [makeJob()],
+        [makeJobSalary()],
+      ),
+    ).toThrow(/independently carry employer match config/);
   });
 });

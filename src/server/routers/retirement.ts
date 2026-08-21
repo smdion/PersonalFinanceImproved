@@ -25,7 +25,7 @@ import {
   getPeriodsPerYear,
   getLatestSnapshot,
   computeAnnualContribution,
-  computeEmployerMatch,
+  computeGroupedEmployerMatch,
   fetchContributionProfile,
   resolveProfile,
   getPrimaryPerson,
@@ -381,30 +381,47 @@ export const retirementRouter = createTRPCRouter({
         contribs: ContribRowWithActiveFields[],
         salaries: typeof jobSalaries,
       ) => {
-        let totalContribs = 0;
-        let totalEmployerMatch = 0;
+        const salaryById = new Map<number, number>();
+        const annualById = new Map<number, number>();
         for (const c of contribs) {
           const cv = Number(c.contributionValue);
           const js = salaries.find((x) => x.job.id === c.jobId);
           const job = activeJobs.find((j) => j.id === c.jobId);
           const salary = js?.salary ?? 0;
           const periods = getPeriodsPerYear(job?.payPeriod ?? "biweekly");
-          const annual = computeAnnualContribution(
-            c.contributionMethod,
-            cv,
-            salary,
-            periods,
+          salaryById.set(c.id, salary);
+          annualById.set(
+            c.id,
+            computeAnnualContribution(
+              c.contributionMethod,
+              cv,
+              salary,
+              periods,
+            ),
           );
-          totalContribs += annual;
-          totalEmployerMatch += computeEmployerMatch(
-            c.employerMatchType,
-            toNumber(c.employerMatchValue),
-            toNumber(c.employerMaxMatchPct),
-            annual,
-            c.contributionMethod,
-            cv,
-            salary,
-          );
+        }
+
+        const matchByRow = computeGroupedEmployerMatch(
+          contribs.map((c) => ({
+            id: c.id,
+            jobId: c.jobId,
+            personId: c.personId,
+            accountType: c.accountType,
+            parentCategory: c.parentCategory,
+            annual: annualById.get(c.id)!,
+            salary: salaryById.get(c.id)!,
+            employerMatchType: c.employerMatchType,
+            employerMatchValue: toNumber(c.employerMatchValue),
+            employerMaxMatchPct: toNumber(c.employerMaxMatchPct),
+            employerMatchTaxTreatment: "pre_tax", // not used by this total
+          })),
+        );
+
+        let totalContribs = 0;
+        let totalEmployerMatch = 0;
+        for (const c of contribs) {
+          totalContribs += annualById.get(c.id)!;
+          totalEmployerMatch += matchByRow.get(c.id)!.matchAnnual;
         }
         return { totalContribs, totalEmployerMatch };
       };

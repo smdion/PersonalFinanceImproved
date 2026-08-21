@@ -274,6 +274,25 @@ export const contributionAccounts = pgTable(
       "contribution_accounts_parent_cat_check",
       sql`parent_category IN ('Retirement', 'Portfolio')`,
     ),
+    // At most one active row per (job, accountType, parentCategory) may
+    // carry real employer match config. computeGroupedEmployerMatch
+    // (server/helpers/contribution.ts) combines a physical account's
+    // Roth/Traditional splits before applying the match cap once, and
+    // requires exactly one "winning" row's config for that group — two
+    // independently-configured siblings is an ambiguous state the app
+    // throws on rather than silently guessing at. These two indexes (job-
+    // linked and jobless-fallback-to-person, matching every caller's own
+    // resolution convention) stop that state from being written at all.
+    uniqueIndex("contribution_accounts_job_match_unq")
+      .on(table.jobId, table.accountType, table.parentCategory)
+      .where(
+        sql`${table.employerMatchType} <> 'none' AND ${table.jobId} IS NOT NULL AND ${table.isActive} = true`,
+      ),
+    uniqueIndex("contribution_accounts_person_match_unq")
+      .on(table.personId, table.accountType, table.parentCategory)
+      .where(
+        sql`${table.employerMatchType} <> 'none' AND ${table.jobId} IS NULL AND ${table.isActive} = true`,
+      ),
   ],
 );
 

@@ -23,6 +23,7 @@ import {
 import type {
   TaxTreatment,
   ContributionMethod,
+  MatchTaxTreatment,
 } from "@/lib/config/enum-values";
 import { toNumber, getPeriodsPerYear } from "./transforms";
 import type { Db } from "./transforms";
@@ -235,10 +236,165 @@ export function computeEmployerMatch(
 }
 
 /**
+ * Minimal row shape `computeGroupedEmployerMatch` needs — any call site
+ * adapts its own richer row type down to this before calling.
+ */
+export type GroupableMatchRow = {
+  id: number;
+  jobId: number | null;
+  personId: number | null;
+  accountType: string;
+  parentCategory: string;
+  /** This row's own annual contribution, already computed by the caller
+   *  (via computeAnnualContribution) against `salary` below. */
+  annual: number;
+  /** The salary this row's contribution is measured against. Every row in
+   *  the same group is expected to resolve to the same salary (they're the
+   *  same physical account's tax-treatment splits, on the same job) — a
+   *  mismatch is treated as a data-resolution bug, not silently averaged. */
+  salary: number;
+  employerMatchType: string | null;
+  employerMatchValue: number;
+  /** Fraction (e.g. 0.06 for 6%), not a whole-number percent — matches how
+   *  computeEmployerMatch already reads it. */
+  employerMaxMatchPct: number;
+  employerMatchTaxTreatment: MatchTaxTreatment;
+};
+
+export type GroupedMatchResult = {
+  matchAnnual: number;
+  employerMatchTaxTreatment: MatchTaxTreatment;
+};
+
+/**
+ * Compute employer match per row, correctly combining Roth/Traditional
+ * splits of the same physical account before applying the match cap.
+ *
+ * `computeEmployerMatch` caps a single row against ONLY that row's own
+ * contribution — correct for an account with no tax-treatment split, wrong
+ * the moment one physical account is split into a Roth row + a Traditional
+ * row (same job/person + accountType), since a real employer match cap
+ * applies to the account's combined contribution, not each split
+ * separately. This groups rows by resolved job (falling back to person —
+ * matches every caller's existing jobless-account convention) +
+ * accountType + parentCategory, resolves the single row that's allowed to
+ * carry real match config for that group, applies the cap once against the
+ * group's combined annual contribution, then redistributes the resulting
+ * total back onto each row proportionally by its own contribution share
+ * (same distribution math previously only used for display).
+ *
+ * parentCategory is part of the grouping key so match dollars can never
+ * silently cross between Retirement/Portfolio buckets — if a data entry
+ * mistake gives two real splits of the same account different
+ * parentCategory values, they're treated as separate (unfixed, per-row
+ * capped) groups rather than combined.
+ *
+ * At most one row per group may have a real (`!== "none"`) match type —
+ * enforced at the DB layer (see migration adding a partial unique index),
+ * but this throws defensively if it somehow arrives here anyway, rather
+ * than silently falling back to the broken per-row computation (that
+ * fallback would itself be a second computation path, and would invent a
+ * number for genuinely ambiguous config instead of surfacing the problem).
+ */
+export function computeGroupedEmployerMatch(
+  rows: GroupableMatchRow[],
+): Map<number, GroupedMatchResult> {
+  const groups = new Map<string, GroupableMatchRow[]>();
+  for (const r of rows) {
+    const jobKey = r.jobId != null ? `job:${r.jobId}` : `person:${r.personId}`;
+    const key = `${jobKey}:${r.accountType}:${r.parentCategory}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(r);
+  }
+
+  const result = new Map<number, GroupedMatchResult>();
+  groups.forEach((members) => {
+    const configRows = members.filter(
+      (m) => m.employerMatchType && m.employerMatchType !== "none",
+    );
+
+    if (configRows.length > 1) {
+      throw new Error(
+        `Multiple contribution_accounts rows (ids: ${configRows
+          .map((r) => r.id)
+          .join(", ")}) independently carry employer match config for the ` +
+          `same account (job/person + accountType + parentCategory). At ` +
+          `most one Roth/Traditional split of a physical account may hold ` +
+          `match config — fix the account data before contributions can ` +
+          `be computed correctly.`,
+      );
+    }
+
+    if (configRows.length === 0) {
+      for (const m of members) {
+        result.set(m.id, {
+          matchAnnual: 0,
+          employerMatchTaxTreatment: m.employerMatchTaxTreatment,
+        });
+      }
+      return;
+    }
+
+    const winner = configRows[0]!;
+    const combinedAnnual = members.reduce((sum, m) => sum + m.annual, 0);
+
+    for (const m of members) {
+      if (Math.abs(m.salary - winner.salary) > 0.01) {
+        throw new Error(
+          `Contribution rows ${winner.id} and ${m.id} grouped as the same ` +
+            `account (job/person + accountType + parentCategory) resolved ` +
+            `to different salaries (${winner.salary} vs ${m.salary}) — the ` +
+            `grouping key assumes siblings share one job's salary.`,
+        );
+      }
+    }
+
+    // Delegate the actual per-type match math to computeEmployerMatch
+    // itself — passing the GROUP's combined annual contribution and a
+    // method that isn't "percent_of_salary" (forcing computeEmployerMatch's
+    // percent_of_contribution branch to derive its rate from
+    // combinedAnnual/salary rather than a single row's own method/value).
+    // This is computed once per group, not once per row — for dollar_match/
+    // fixed_annual that's what prevents two independently-configured
+    // sibling rows from each returning the full flat amount and doubling
+    // it (prevented structurally here, and at the DB layer by the same
+    // constraint that limits a group to at most one match-config row).
+    const totalMatch = computeEmployerMatch(
+      winner.employerMatchType,
+      winner.employerMatchValue,
+      winner.employerMaxMatchPct,
+      combinedAnnual,
+      "combined", // not "percent_of_salary" — see comment above
+      0,
+      winner.salary,
+    );
+
+    for (const m of members) {
+      const share =
+        combinedAnnual > 0 ? m.annual / combinedAnnual : 1 / members.length;
+      result.set(m.id, {
+        matchAnnual: totalMatch * share,
+        // Match tax character is a plan property, not a per-split-row one
+        // — every row in the group gets the winning row's value, never its
+        // own (a Roth/Trad split shift must never reclassify match dollars).
+        employerMatchTaxTreatment: winner.employerMatchTaxTreatment,
+      });
+    }
+  });
+
+  return result;
+}
+
+/**
  * Build ContributionAccountInput[] from DB rows for a given job + person.
  * Handles percent_of_salary (stored as whole number, e.g. 14 = 14%),
- * fixed_per_period, and fixed_annual methods.
- * Employer match percentages are also stored as whole numbers.
+ * fixed_per_period, and fixed_annual methods. Employer match cap
+ * (employerMaxMatchPct) is stored as a fraction (e.g. 0.06 = 6%); the
+ * match rate (employerMatchValue) is a whole-number percent.
+ *
+ * Employer match is computed via computeGroupedEmployerMatch so a Roth +
+ * Traditional split of the same physical account gets capped against
+ * their combined contribution — see that function's docblock.
  */
 export function buildContribAccounts(
   jobContribs: ContribRowWithActiveFields[],
@@ -246,28 +402,47 @@ export function buildContribAccounts(
   salary: number,
   periodsPerYear: number,
 ): ContributionAccountInput[] {
-  return [...jobContribs, ...personalContribs].map((c) => {
+  const allContribs = [...jobContribs, ...personalContribs];
+
+  const annualById = new Map<number, number>();
+  for (const c of allContribs) {
     const contribValue = Number(c.contributionValue);
-    const annual = computeAnnualContribution(
-      c.contributionMethod,
-      contribValue,
-      salary,
-      periodsPerYear,
+    annualById.set(
+      c.id,
+      computeAnnualContribution(
+        c.contributionMethod,
+        contribValue,
+        salary,
+        periodsPerYear,
+      ),
     );
+  }
+
+  const matchByRow = computeGroupedEmployerMatch(
+    allContribs.map((c) => ({
+      id: c.id,
+      jobId: c.jobId,
+      personId: c.personId,
+      accountType: c.accountType,
+      parentCategory: c.parentCategory,
+      annual: annualById.get(c.id)!,
+      salary,
+      employerMatchType: c.employerMatchType,
+      employerMatchValue: toNumber(c.employerMatchValue),
+      employerMaxMatchPct: toNumber(c.employerMaxMatchPct),
+      employerMatchTaxTreatment: c.employerMatchTaxTreatment,
+    })),
+  );
+
+  return allContribs.map((c) => {
+    const contribValue = Number(c.contributionValue);
+    const annual = annualById.get(c.id)!;
     const perPeriod =
       c.contributionMethod === "fixed_per_period"
         ? contribValue
         : annual / periodsPerYear;
 
-    const matchAnnual = computeEmployerMatch(
-      c.employerMatchType,
-      toNumber(c.employerMatchValue),
-      toNumber(c.employerMaxMatchPct),
-      annual,
-      c.contributionMethod,
-      contribValue,
-      salary,
-    );
+    const match = matchByRow.get(c.id)!;
 
     // Group from config displayGroup
     const group = getDisplayGroup(c.accountType as AccountCategory);
@@ -283,8 +458,8 @@ export function buildContribAccounts(
       taxTreatment: c.taxTreatment,
       isPayrollDeducted: c.isPayrollDeducted ?? c.jobId !== null,
       group,
-      employerMatch: roundToCents(matchAnnual),
-      employerMatchTaxTreatment: c.employerMatchTaxTreatment,
+      employerMatch: roundToCents(match.matchAnnual),
+      employerMatchTaxTreatment: match.employerMatchTaxTreatment,
     };
   });
 }
@@ -352,8 +527,9 @@ export function aggregateContributionsByCategory(
     Map<string, number>
   >();
 
+  const salaryById = new Map<number, number>();
+  const annualById = new Map<number, number>();
   for (const c of activeContribs) {
-    const cat = c.accountType;
     const cv = Number(c.contributionValue);
     // Direct job link, or fall back to person's first active job when jobId is null
     const js = c.jobId
@@ -370,23 +546,36 @@ export function aggregateContributionsByCategory(
       salary,
       periods,
     );
+    salaryById.set(c.id, salary);
+    annualById.set(c.id, annual);
 
-    contribByCategory[cat].annual += annual;
+    contribByCategory[c.accountType].annual += annual;
     if (isTaxFree(c.taxTreatment)) {
-      contribByCategory[cat].rothAnnual += annual;
+      contribByCategory[c.accountType].rothAnnual += annual;
     } else {
-      contribByCategory[cat].tradAnnual += annual;
+      contribByCategory[c.accountType].tradAnnual += annual;
     }
+  }
 
-    const matchAmount = computeEmployerMatch(
-      c.employerMatchType,
-      toNumber(c.employerMatchValue),
-      toNumber(c.employerMaxMatchPct),
-      annual,
-      c.contributionMethod,
-      cv,
-      salary,
-    );
+  const matchByRow = computeGroupedEmployerMatch(
+    activeContribs.map((c) => ({
+      id: c.id,
+      jobId: c.jobId,
+      personId: c.personId,
+      accountType: c.accountType,
+      parentCategory: c.parentCategory,
+      annual: annualById.get(c.id)!,
+      salary: salaryById.get(c.id)!,
+      employerMatchType: c.employerMatchType,
+      employerMatchValue: toNumber(c.employerMatchValue),
+      employerMaxMatchPct: toNumber(c.employerMaxMatchPct),
+      employerMatchTaxTreatment: "pre_tax", // not used by this aggregation
+    })),
+  );
+
+  for (const c of activeContribs) {
+    const cat = c.accountType;
+    const matchAmount = matchByRow.get(c.id)!.matchAnnual;
     employerMatchByCategory[cat] += matchAmount;
 
     // Track match by parentCategory for correct per-account distribution
@@ -457,72 +646,67 @@ export function buildContributionDisplaySpecs(
   activeJobs: JobRef[],
   jobSalaries: JobSalaryRef[],
 ): ContribDisplaySpec[] {
-  const rawSpecs = activeContribs
-    .filter((c) => Number(c.contributionValue) > 0)
-    .map((c) => {
-      const ownerPerson = people.find((p) => p.id === c.personId);
-      const job = c.jobId
-        ? activeJobs.find((j) => j.id === c.jobId)
-        : activeJobs.find((j) => j.personId === c.personId);
-      const js = c.jobId
-        ? jobSalaries.find((x) => x.job.id === c.jobId)
-        : jobSalaries.find((x) => x.job.personId === c.personId);
-      const salary = js?.salary ?? 0;
-      const periods = getPeriodsPerYear(job?.payPeriod ?? "biweekly");
-      const cv = Number(c.contributionValue);
-      const method = c.contributionMethod ?? "percent_of_salary";
-      const value = method === "percent_of_salary" ? cv / 100 : cv;
-      const annual = computeAnnualContribution(
-        c.contributionMethod,
-        cv,
-        salary,
-        periods,
-      );
-      const matchAnnual = computeEmployerMatch(
-        c.employerMatchType,
-        toNumber(c.employerMatchValue),
-        toNumber(c.employerMaxMatchPct),
-        annual,
-        c.contributionMethod,
-        cv,
-        salary,
-      );
-      return {
-        id: c.id,
-        category: c.accountType,
-        name: c.subType ?? c.accountType,
-        method,
-        value,
-        baseAnnual: annual,
-        taxTreatment: c.taxTreatment,
-        ownerName: ownerPerson?.name ?? null,
-        personId: c.personId,
-        matchAnnual,
-      };
-    });
+  const filtered = activeContribs.filter(
+    (c) => Number(c.contributionValue) > 0,
+  );
 
-  // Redistribute match proportionally within each (person, category) group.
-  // e.g., if one person has Pre-Tax 401k (16%) + Roth 401k (5%), the total
-  // 401k match is split proportionally by annual contribution amount.
-  const groups = new Map<string, typeof rawSpecs>();
-  for (const s of rawSpecs) {
-    const key = `${s.personId}:${s.category}`;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(s);
+  const salaryById = new Map<number, number>();
+  const annualById = new Map<number, number>();
+  for (const c of filtered) {
+    const job = c.jobId
+      ? activeJobs.find((j) => j.id === c.jobId)
+      : activeJobs.find((j) => j.personId === c.personId);
+    const js = c.jobId
+      ? jobSalaries.find((x) => x.job.id === c.jobId)
+      : jobSalaries.find((x) => x.job.personId === c.personId);
+    const salary = js?.salary ?? 0;
+    const periods = getPeriodsPerYear(job?.payPeriod ?? "biweekly");
+    const cv = Number(c.contributionValue);
+    salaryById.set(c.id, salary);
+    annualById.set(
+      c.id,
+      computeAnnualContribution(c.contributionMethod, cv, salary, periods),
+    );
   }
-  groups.forEach((specs) => {
-    const totalMatch = specs.reduce((sum, sp) => sum + sp.matchAnnual, 0);
-    if (totalMatch <= 0 || specs.length <= 1) return;
-    const totalContrib = specs.reduce((sum, sp) => sum + sp.baseAnnual, 0);
-    for (const sp of specs) {
-      sp.matchAnnual =
-        totalContrib > 0
-          ? totalMatch * (sp.baseAnnual / totalContrib)
-          : totalMatch / specs.length;
-    }
-  });
 
-  return rawSpecs;
+  // computeGroupedEmployerMatch already does the correct proportional
+  // redistribution within each account's group (see its docblock) — no
+  // separate redistribution pass needed here any more.
+  const matchByRow = computeGroupedEmployerMatch(
+    filtered.map((c) => ({
+      id: c.id,
+      jobId: c.jobId,
+      personId: c.personId,
+      accountType: c.accountType,
+      parentCategory: c.parentCategory,
+      annual: annualById.get(c.id)!,
+      salary: salaryById.get(c.id)!,
+      employerMatchType: c.employerMatchType,
+      employerMatchValue: toNumber(c.employerMatchValue),
+      employerMaxMatchPct: toNumber(c.employerMaxMatchPct),
+      employerMatchTaxTreatment: "pre_tax", // not used by ContribDisplaySpec
+    })),
+  );
+
+  return filtered.map((c) => {
+    const ownerPerson = people.find((p) => p.id === c.personId);
+    const cv = Number(c.contributionValue);
+    const method = c.contributionMethod ?? "percent_of_salary";
+    const value = method === "percent_of_salary" ? cv / 100 : cv;
+
+    return {
+      id: c.id,
+      category: c.accountType,
+      name: c.subType ?? c.accountType,
+      method,
+      value,
+      baseAnnual: annualById.get(c.id)!,
+      taxTreatment: c.taxTreatment,
+      ownerName: ownerPerson?.name ?? null,
+      personId: c.personId,
+      matchAnnual: matchByRow.get(c.id)!.matchAnnual,
+    };
+  });
 }
 
 // ---------------------------------------------------------------------------

@@ -217,7 +217,8 @@ describe("contributionProfiles coverage", () => {
       try {
         const personId = await seedPerson(db, "Alex");
         const jobId = seedJob(db, personId, { employerName: "TechCorp" });
-        // Two 401k accounts, different tax treatments
+        // Two 401k accounts, different tax treatments. Only one sibling may
+        // carry real employer match config (contribution_accounts_job_match_unq).
         seedContribAccount(db, {
           personId,
           jobId,
@@ -230,6 +231,7 @@ describe("contributionProfiles coverage", () => {
           jobId,
           accountType: "401k",
           taxTreatment: "roth",
+          employerMatchType: "none",
           label: null,
         });
 
@@ -1146,10 +1148,13 @@ describe("contributionProfiles coverage", () => {
           accountType: "401k",
           taxTreatment: "pre_tax",
         });
+        // Only one sibling may carry real employer match config
+        // (contribution_accounts_person_match_unq).
         const roth = seedContribAccount(db, {
           personId,
           accountType: "401k",
           taxTreatment: "tax_free",
+          employerMatchType: "none",
         });
 
         const result = await caller.contributionProfile.compareData();
