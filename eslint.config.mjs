@@ -61,6 +61,20 @@ const config = [
           ],
         },
       ],
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "TSAsExpression > TSUnknownKeyword",
+          message:
+            "Avoid 'as unknown as' casts. Create a typed wrapper or use Zod parsing. Add eslint-disable with justification if unavoidable (e.g. Drizzle ORM).",
+        },
+        {
+          selector:
+            "Literal[value=/^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/]",
+          message:
+            "Hardcoded hex color. Use a named export from @/lib/utils/colors.ts instead (account/tax-type helpers, STATUS_COLORS, or a chart-series constant).",
+        },
+      ],
     },
   },
   {

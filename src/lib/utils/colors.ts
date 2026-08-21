@@ -210,7 +210,44 @@ export const CHART_COLORS = {
   wdComparisonGrid: "#374151", // gray-700
   wdComparisonAxis: "#9ca3af", // gray-400
   wdComparisonTooltipBg: "#1f2937", // gray-800
+  // Projection chart axis line (distinct from tick/grid — see mcGrid/mcAxis)
+  axisLine: "#d1d5db", // gray-300
+  // Projection chart reference-line markers (age axis + legend swatch)
+  ssMarker: "#2dd4bf", // teal-400 — Social Security start-age marker
+  rmdMarker: "#f59e0b", // amber-500 — RMD start-age marker
+  // Spending-stability chart's deterministic ratio bars
+  spendingRatioBar: "#3b82f6", // blue-500
+  // Fund mini-chart (savings goal sparkline)
+  fundChartNegative: "#ef4444", // red-500 — negative-balance area/withdrawal dot
+  fundChartTarget: "#10b981", // emerald-500 — target reference line + contribution dot
+  fundChartZeroLine: "#4b5563", // gray-600
+  fundChartDot: "#1f2937", // gray-800 — dot stroke/active-dot fill
+  // Savings trajectory chart tooltip's per-event amount color (lighter
+  // shades than the standard red/green — chosen for contrast against the
+  // tooltip's own light/dark background, see trajectoryChartPalette below)
+  trajectoryEventNegative: "#f87171", // red-400
+  trajectoryEventPositive: "#4ade80", // green-400
 };
+
+/**
+ * Theme-aware hex palette for the savings trajectory chart (grid/axis/
+ * tooltip colors that must flip with dark mode). Kept here rather than
+ * inline in the component so the file's hex literals stay centralized —
+ * see the no-restricted-syntax hardcoded-hex-color lint rule.
+ */
+export function trajectoryChartPalette(dark: boolean) {
+  return {
+    grid: dark ? "#374151" : "#e5e7eb",
+    axis: dark ? "#9ca3af" : "#6b7280",
+    axisLine: dark ? "#4b5563" : "#d1d5db",
+    tooltipBg: dark ? "#1f2937" : "#ffffff",
+    tooltipBorder: dark ? "#374151" : "#e5e7eb",
+    tooltipText: dark ? "#e5e7eb" : "#1f2937",
+    tooltipMuted: dark ? "#9ca3af" : "#6b7280",
+    dotFill: dark ? "#1f2937" : "#ffffff",
+    refLine: dark ? "#6b7280" : "#9ca3af",
+  };
+}
 
 /** Hex colors for tax-type pie/chart segments (Recharts needs hex, not Tailwind classes) */
 export const TAX_PIE_COLORS: Record<string, string> = {

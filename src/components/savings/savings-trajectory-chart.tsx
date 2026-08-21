@@ -19,7 +19,11 @@ import {
 } from "@/lib/utils/format";
 import { useTheme } from "@/lib/hooks/use-theme";
 import { GoalProjection, monthKey } from "./types";
-import { FUND_COLORS } from "@/lib/utils/colors";
+import {
+  FUND_COLORS,
+  CHART_COLORS,
+  trajectoryChartPalette,
+} from "@/lib/utils/colors";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
 
 interface TrajectoryDataPoint {
@@ -38,15 +42,7 @@ function useChartPalette() {
     negBadgeBg: "bg-red-50",
     negBadgeBorder: "border-red-200",
     negBadgeText: "text-red-600",
-    grid: dark ? "#374151" : "#e5e7eb",
-    axis: dark ? "#9ca3af" : "#6b7280",
-    axisLine: dark ? "#4b5563" : "#d1d5db",
-    tooltipBg: dark ? "#1f2937" : "#ffffff",
-    tooltipBorder: dark ? "#374151" : "#e5e7eb",
-    tooltipText: dark ? "#e5e7eb" : "#1f2937",
-    tooltipMuted: dark ? "#9ca3af" : "#6b7280",
-    dotFill: dark ? "#1f2937" : "#ffffff",
-    refLine: dark ? "#6b7280" : "#9ca3af",
+    ...trajectoryChartPalette(dark),
   };
 }
 
@@ -107,7 +103,10 @@ function EventTooltip({
                 key={ev.id}
                 style={{
                   paddingLeft: 12,
-                  color: ev.amount < 0 ? "#f87171" : "#4ade80",
+                  color:
+                    ev.amount < 0
+                      ? CHART_COLORS.trajectoryEventNegative
+                      : CHART_COLORS.trajectoryEventPositive,
                   fontSize: CHART_FONT.label,
                   marginTop: 1,
                 }}
