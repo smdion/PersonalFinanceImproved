@@ -271,6 +271,12 @@ export function ContribCard({
       )}
       {c.employerMatchType === "none" && (
         <div className="text-caption text-faint mt-1">
+          {employerMatchAnnual > 0 && (
+            <span className="text-muted mr-1">
+              Employer match: {formatCurrency(employerMatchAnnual)}/yr (combined
+              with this account&apos;s other tax-treatment split) ·
+            </span>
+          )}
           <select
             disabled={readOnly}
             value="none"
@@ -279,7 +285,11 @@ export function ContribCard({
             }
             className="text-caption text-faint bg-transparent border-none cursor-pointer hover:text-secondary focus:outline-none"
           >
-            <option value="none">No employer match</option>
+            <option value="none">
+              {employerMatchAnnual > 0
+                ? "No match config of its own"
+                : "No employer match"}
+            </option>
             <option value="percent_of_contribution">Add % match</option>
             <option value="fixed_annual">Add fixed annual match</option>
           </select>

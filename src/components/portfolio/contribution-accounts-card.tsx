@@ -112,6 +112,15 @@ export function AccountCard({
 
   const activeContribs = contributions.filter((c) => c.isActive);
   const inactiveContribs = contributions.filter((c) => !c.isActive);
+  // At most one active contribution per account holds real employer match
+  // config (computeGroupedEmployerMatch enforces this) — its match applies
+  // to the whole account, combining every active split's contribution
+  // before capping, not just its own. A sibling split with no config of its
+  // own still earns a real, proportional share of that match; ContributionRow
+  // uses this to say so instead of showing nothing.
+  const matchConfigContrib = activeContribs.find(
+    (c) => c.employerMatchType && c.employerMatchType !== "none",
+  );
   const activeSubs = portfolioSubs.filter((s) => s.isActive);
   const inactiveSubs = portfolioSubs.filter((s) => !s.isActive);
 
@@ -443,6 +452,14 @@ export function AccountCard({
                         people={people}
                         jobs={jobs}
                         accountTypeOptions={accountTypeOptions}
+                        sharedMatchFrom={
+                          (!c.employerMatchType ||
+                            c.employerMatchType === "none") &&
+                          matchConfigContrib &&
+                          matchConfigContrib.id !== c.id
+                            ? matchConfigContrib
+                            : undefined
+                        }
                         onUpdate={
                           onContribUpdate
                             ? (updates) => onContribUpdate(c, updates)

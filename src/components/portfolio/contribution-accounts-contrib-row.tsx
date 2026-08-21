@@ -24,12 +24,18 @@ export function ContributionRow({
   people,
   jobs,
   accountTypeOptions,
+  sharedMatchFrom,
   onUpdate,
 }: {
   contrib: ContribRow;
   people: { id: number; name: string }[];
   jobs: { id: number; employerName: string }[];
   accountTypeOptions: { value: string; label: string }[];
+  /** Set when this row has no match config of its own but a sibling split
+   *  of the same account does — that sibling's match is combined across
+   *  both splits before capping, so this row still earns a real,
+   *  proportional share (see computeGroupedEmployerMatch). */
+  sharedMatchFrom?: ContribRow;
   onUpdate?: (updates: Record<string, unknown>) => void;
 }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -45,6 +51,12 @@ export function ContributionRow({
   // Format match cap from decimal to percentage for display
   const matchCapDisplay = c.employerMaxMatchPct
     ? formatPercent(parseFloat(c.employerMaxMatchPct))
+    : "";
+  const sharedMatchCapDisplay = sharedMatchFrom?.employerMaxMatchPct
+    ? formatPercent(parseFloat(sharedMatchFrom.employerMaxMatchPct))
+    : "";
+  const sharedMatchLabel = sharedMatchFrom
+    ? `${sharedMatchFrom.employerMatchValue}% match up to ${sharedMatchCapDisplay || "no cap"}, combined with this account's ${TAX_LABELS[c.taxTreatment] ?? c.taxTreatment} contribution — see the ${TAX_LABELS[sharedMatchFrom.taxTreatment] ?? sharedMatchFrom.taxTreatment} row`
     : "";
   return (
     <div
@@ -68,9 +80,23 @@ export function ContributionRow({
               <span className="text-faint">
                 {c.employerMatchValue}% match
                 {matchCapDisplay ? ` up to ${matchCapDisplay}` : ""}
+                {sharedMatchFrom ? " (combined w/ other split)" : ""}
               </span>
             </>
           )}
+          {(!c.employerMatchType || c.employerMatchType === "none") &&
+            sharedMatchFrom && (
+              <>
+                <span className="text-faint">·</span>
+                <span className="text-faint">
+                  {sharedMatchFrom.employerMatchValue}% match up to{" "}
+                  {sharedMatchCapDisplay || "no cap"} (combined w/{" "}
+                  {TAX_LABELS[sharedMatchFrom.taxTreatment] ??
+                    sharedMatchFrom.taxTreatment}{" "}
+                  split)
+                </span>
+              </>
+            )}
           {c.subType && (
             <>
               <span className="text-faint">·</span>
@@ -186,6 +212,12 @@ export function ContributionRow({
               onChange={(val) => onUpdate?.({ employerMatchType: val })}
               disabled={!onUpdate}
             />
+            {(!c.employerMatchType || c.employerMatchType === "none") &&
+              sharedMatchFrom && (
+                <p className="col-span-2 md:col-span-4 text-caption text-faint -mt-1">
+                  This account&apos;s match — {sharedMatchLabel}
+                </p>
+              )}
             {c.employerMatchType !== "none" && (
               <>
                 <InlineText
@@ -215,7 +247,7 @@ export function ContributionRow({
                   disabled={!onUpdate}
                 />
                 <InlineSelect
-                  label="Match Tax"
+                  label="Match Deposits To"
                   value={c.employerMatchTaxTreatment}
                   options={Object.entries(MATCH_TAX_LABELS).map(([k, v]) => ({
                     value: k,

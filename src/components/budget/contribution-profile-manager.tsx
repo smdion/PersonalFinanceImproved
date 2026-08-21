@@ -575,14 +575,16 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
               // Roth/Traditional splits of the same physical account (same
               // person + account type) share one employer match — it's
               // entered on only one of the split rows but applies against
-              // their COMBINED contributions, not each row's own. Merge the
-              // Match cell across such a group (via rowSpan) instead of
-              // repeating it once per row, which would misleadingly read as
-              // an independent match per split. Only merge when exactly one
-              // row in the group actually has match data — if multiple rows
-              // carry (possibly conflicting) match config, that's outside
-              // this assumption, so leave them per-row rather than guess
-              // which one is authoritative.
+              // their COMBINED contributions, not each row's own. Show the
+              // SAME match text on every row in the group (rather than
+              // merging the cell via rowSpan) so it's unambiguous per-row
+              // which account it describes — a merged cell visually reads as
+              // belonging to whichever row it starts on, which is
+              // misleading when that happens to be the row WITHOUT the
+              // config. Only do this when exactly one row in the group
+              // actually has match data — if multiple rows carry (possibly
+              // conflicting) match config, that's outside this assumption,
+              // so leave them per-row rather than guess which is authoritative.
               type AccountDetail = (typeof profile.accountDetails)[number];
               const groups = new Map<string, AccountDetail[]>();
               for (const ad of profile.accountDetails) {
@@ -590,24 +592,23 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                 if (!groups.has(key)) groups.set(key, []);
                 groups.get(key)!.push(ad);
               }
-              const mergedMatchInfo = new Map<
-                number,
-                { rowSpan: number; source: AccountDetail } | "skip"
-              >();
+              const sharedMatchSource = new Map<number, AccountDetail>();
+              // ids of every row (both the config-holding row and its
+              // sibling) in a group whose match is combined across a split
+              // — used to show the same "combined" note on both rows.
+              const combinedGroupIds = new Set<number>();
               groups.forEach((group) => {
-                const first = group[0];
-                if (group.length <= 1 || !first) return;
+                if (group.length <= 1) return;
                 const withMatch = group.filter(
                   (ad) => ad.liveMatchType && ad.liveMatchType !== "none",
                 );
                 const matchSource = withMatch[0];
                 if (withMatch.length !== 1 || !matchSource) return;
-                mergedMatchInfo.set(first.id, {
-                  rowSpan: group.length,
-                  source: matchSource,
-                });
-                for (const ad of group.slice(1)) {
-                  mergedMatchInfo.set(ad.id, "skip");
+                for (const ad of group) combinedGroupIds.add(ad.id);
+                for (const ad of group) {
+                  if (ad.id !== matchSource.id) {
+                    sharedMatchSource.set(ad.id, matchSource);
+                  }
                 }
               });
 
@@ -623,14 +624,9 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                   activeMethod === "percent_of_salary" ? "%" : "";
                 const hasActiveName =
                   ad.liveAccountName && ad.accountName !== ad.liveAccountName;
-                const matchCell = mergedMatchInfo.get(ad.id);
-                const skipMatchCell = matchCell === "skip";
-                const matchRowSpan =
-                  matchCell && matchCell !== "skip"
-                    ? matchCell.rowSpan
-                    : undefined;
-                const matchSource =
-                  matchCell && matchCell !== "skip" ? matchCell.source : ad;
+                const sharedFrom = sharedMatchSource.get(ad.id);
+                const matchSource = sharedFrom ?? ad;
+                const isCombined = combinedGroupIds.has(ad.id);
                 return (
                   <tr
                     key={ad.id}
@@ -677,25 +673,36 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                         <span className="italic text-faint">Not set</span>
                       )}
                     </td>
-                    {!skipMatchCell && (
-                      <td
-                        className="py-1.5 px-3 text-right text-faint"
-                        rowSpan={matchRowSpan}
-                      >
-                        {matchSource.liveMatchType &&
-                        matchSource.liveMatchType !== "none" ? (
-                          <span>
-                            {parseFloat(matchSource.liveMatchValue ?? "0")}%
-                            {matchSource.liveMaxMatchPct &&
-                            parseFloat(matchSource.liveMaxMatchPct) > 0
-                              ? ` of ${formatPercent(parseFloat(matchSource.liveMaxMatchPct), 2)}`
-                              : ""}
-                          </span>
-                        ) : (
-                          <span className="text-faint">—</span>
-                        )}
-                      </td>
-                    )}
+                    <td className="py-1.5 px-3 text-right text-faint whitespace-nowrap">
+                      {matchSource.liveMatchType &&
+                      matchSource.liveMatchType !== "none" ? (
+                        <span
+                          title={
+                            isCombined ? "Combined with other split" : undefined
+                          }
+                        >
+                          {matchSource.liveMatchType ===
+                          "percent_of_contribution" ? (
+                            <>
+                              {parseFloat(matchSource.liveMatchValue ?? "0")}%
+                              {matchSource.liveMaxMatchPct &&
+                              parseFloat(matchSource.liveMaxMatchPct) > 0
+                                ? ` of ${formatPercent(parseFloat(matchSource.liveMaxMatchPct), 2)}`
+                                : ""}
+                            </>
+                          ) : (
+                            // dollar_match / fixed_annual — a flat dollar
+                            // amount, not a rate, so no "%" suffix.
+                            `${formatCurrency(parseFloat(matchSource.liveMatchValue ?? "0"))}/yr`
+                          )}
+                          {isCombined && (
+                            <span className="italic"> (combined)</span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-faint">—</span>
+                      )}
+                    </td>
                   </tr>
                 );
               });
@@ -1372,238 +1379,267 @@ function ProfileInlineEditor({
               </tr>
             </thead>
             <tbody>
-              {profile.accountDetails.map((ad, rowIdx) => {
-                const af = accountActiveFields(ad.id);
-                const storedMethod =
-                  af.contributionMethod !== undefined
-                    ? String(af.contributionMethod)
-                    : "";
-                // The <select> below has no blank option, so an unset
-                // storedMethod renders as the first CONTRIBUTION_METHOD_LABELS
-                // entry ("% of Salary") regardless of what this variable says.
-                // Fall back the same way here (and to any in-progress draft
-                // pick) so the $/% prefix-suffix always matches what the
-                // dropdown is actually showing.
-                const effectiveMethod =
-                  drafts[`a${ad.id}:method`] ??
-                  (storedMethod || "percent_of_salary");
-                const isPercent = effectiveMethod === "percent_of_salary";
-                const fmtValue = (v: string | null | undefined) => {
-                  if (!v) return "—";
-                  const n = parseFloat(v);
-                  if (isNaN(n)) return v;
-                  return n % 1 === 0 ? String(n) : n.toFixed(2);
-                };
-                const hasMatch =
-                  ad.liveMatchType !== "none" && ad.liveMatchType !== null;
-                const liveMaxMatchDisplay = ad.liveMaxMatchPct
-                  ? String(parseFloat(ad.liveMaxMatchPct) * 100)
-                  : "";
-                const isDisabled = af.isActive === false;
-                const storedValue =
-                  af.contributionValue !== undefined
-                    ? String(af.contributionValue)
-                    : "";
-                const storedName =
-                  af.displayNameActive !== undefined
-                    ? String(af.displayNameActive)
-                    : "";
-                const storedMatch =
-                  af.employerMatchValue !== undefined
-                    ? String(af.employerMatchValue)
-                    : "";
-                const storedCap =
-                  af.employerMaxMatchPct !== undefined
-                    ? String(Number(af.employerMaxMatchPct) * 100)
-                    : "";
-                return (
-                  <tr
-                    key={ad.id}
-                    className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
-                      rowIdx % 2 === 1
-                        ? "bg-surface-sunken/60"
-                        : "bg-surface-primary"
-                    } ${isDisabled ? "opacity-40" : ""}`}
-                  >
-                    <td className="py-1.5 pl-4 align-top">
-                      <input
-                        type="checkbox"
-                        checked={!isDisabled}
-                        onChange={(e) =>
-                          patchAccount(ad.id, {
-                            isActive: e.target.checked ? undefined : false,
-                          })
-                        }
-                        className="rounded border-strong mt-0.5"
-                        title={
-                          isDisabled
-                            ? "Account disabled in this profile"
-                            : "Account active"
-                        }
-                      />
-                    </td>
-                    <td className="py-1.5 px-3 text-secondary">
-                      <div className={isDisabled ? "line-through" : ""}>
-                        {ad.liveAccountName ?? ad.accountName}
-                      </div>
-                      {!isDisabled && (
+              {(() => {
+                // Same "combined across Roth/Trad splits" detection as the
+                // read-only Profiles summary table above — see its comment
+                // for the full rationale. Repeated here because this is a
+                // separate render path (the editable account table).
+                type AccountDetail = (typeof profile.accountDetails)[number];
+                const editGroups = new Map<string, AccountDetail[]>();
+                for (const ad of profile.accountDetails) {
+                  const key = `${ad.personId}:${ad.accountType}`;
+                  if (!editGroups.has(key)) editGroups.set(key, []);
+                  editGroups.get(key)!.push(ad);
+                }
+                const editSharedMatchSource = new Map<number, AccountDetail>();
+                editGroups.forEach((group) => {
+                  if (group.length <= 1) return;
+                  const withMatch = group.filter(
+                    (ad) => ad.liveMatchType && ad.liveMatchType !== "none",
+                  );
+                  const matchSource = withMatch[0];
+                  if (withMatch.length !== 1 || !matchSource) return;
+                  for (const ad of group) {
+                    if (ad.id !== matchSource.id) {
+                      editSharedMatchSource.set(ad.id, matchSource);
+                    }
+                  }
+                });
+                return profile.accountDetails.map((ad, rowIdx) => {
+                  const sharedFrom = editSharedMatchSource.get(ad.id);
+                  const af = accountActiveFields(ad.id);
+                  const storedMethod =
+                    af.contributionMethod !== undefined
+                      ? String(af.contributionMethod)
+                      : "";
+                  // The <select> below has no blank option, so an unset
+                  // storedMethod renders as the first CONTRIBUTION_METHOD_LABELS
+                  // entry ("% of Salary") regardless of what this variable says.
+                  // Fall back the same way here (and to any in-progress draft
+                  // pick) so the $/% prefix-suffix always matches what the
+                  // dropdown is actually showing.
+                  const effectiveMethod =
+                    drafts[`a${ad.id}:method`] ??
+                    (storedMethod || "percent_of_salary");
+                  const isPercent = effectiveMethod === "percent_of_salary";
+                  const hasMatch =
+                    ad.liveMatchType !== "none" && ad.liveMatchType !== null;
+                  const isDisabled = af.isActive === false;
+                  const storedValue =
+                    af.contributionValue !== undefined
+                      ? String(af.contributionValue)
+                      : "";
+                  const storedName =
+                    af.displayNameActive !== undefined
+                      ? String(af.displayNameActive)
+                      : "";
+                  const storedMatch =
+                    af.employerMatchValue !== undefined
+                      ? String(af.employerMatchValue)
+                      : "";
+                  const storedCap =
+                    af.employerMaxMatchPct !== undefined
+                      ? String(Number(af.employerMaxMatchPct) * 100)
+                      : "";
+                  return (
+                    <tr
+                      key={ad.id}
+                      className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+                        rowIdx % 2 === 1
+                          ? "bg-surface-sunken/60"
+                          : "bg-surface-primary"
+                      } ${isDisabled ? "opacity-40" : ""}`}
+                    >
+                      <td className="py-1.5 pl-4 align-top">
                         <input
-                          type="text"
-                          value={drafts[`a${ad.id}:name`] ?? storedName}
+                          type="checkbox"
+                          checked={!isDisabled}
                           onChange={(e) =>
-                            setDraft(`a${ad.id}:name`, e.target.value)
+                            patchAccount(ad.id, {
+                              isActive: e.target.checked ? undefined : false,
+                            })
                           }
-                          onBlur={() =>
-                            commitText(`a${ad.id}:name`, storedName, (value) =>
-                              patchAccount(ad.id, {
-                                displayNameActive: value,
-                              }),
-                            )
+                          className="rounded border-strong mt-0.5"
+                          title={
+                            isDisabled
+                              ? "Account disabled in this profile"
+                              : "Account active"
                           }
-                          placeholder="Custom name..."
-                          className="w-full mt-0.5 px-1.5 py-0.5 text-caption border rounded bg-surface-primary text-primary"
                         />
-                      )}
-                    </td>
-                    <td className="py-1.5 px-3">
-                      <select
-                        value={effectiveMethod}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (storedValue.trim() !== "") {
-                            // A value already exists — method is already
-                            // required-and-present, safe to patch alone.
-                            patchAccount(ad.id, { contributionMethod: val });
-                          } else {
-                            // No value yet — contributionMethod can't be set
-                            // alone (required together). Track the pick
-                            // locally; the Value field's commit below picks
-                            // it up when a real value is finally entered.
-                            setDraft(`a${ad.id}:method`, val);
-                          }
-                        }}
-                        className="w-full px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
-                      >
-                        {Object.entries(CONTRIBUTION_METHOD_LABELS).map(
-                          ([k, label]) => (
-                            <option key={k} value={k}>
-                              {label}
-                            </option>
-                          ),
+                      </td>
+                      <td className="py-1.5 px-3 text-secondary">
+                        <div className={isDisabled ? "line-through" : ""}>
+                          {ad.liveAccountName ?? ad.accountName}
+                        </div>
+                        {!isDisabled && (
+                          <input
+                            type="text"
+                            value={drafts[`a${ad.id}:name`] ?? storedName}
+                            onChange={(e) =>
+                              setDraft(`a${ad.id}:name`, e.target.value)
+                            }
+                            onBlur={() =>
+                              commitText(
+                                `a${ad.id}:name`,
+                                storedName,
+                                (value) =>
+                                  patchAccount(ad.id, {
+                                    displayNameActive: value,
+                                  }),
+                              )
+                            }
+                            placeholder="Custom name..."
+                            className="w-full mt-0.5 px-1.5 py-0.5 text-caption border rounded bg-surface-primary text-primary"
+                          />
                         )}
-                      </select>
-                    </td>
-                    <td className="py-1.5 px-3 text-right">
-                      <div className="flex items-center justify-end gap-0.5">
-                        <span className="text-caption text-faint w-3 text-right shrink-0">
-                          {isPercent ? "" : "$"}
-                        </span>
-                        <input
-                          type="number"
-                          value={drafts[`a${ad.id}:value`] ?? storedValue}
-                          onChange={(e) =>
-                            setDraft(`a${ad.id}:value`, e.target.value)
-                          }
-                          onBlur={() =>
-                            commitNumeric(
-                              `a${ad.id}:value`,
-                              storedValue,
-                              (value) => {
-                                if (value === undefined) {
-                                  // Cleared — both-or-neither, drop the
-                                  // method along with the value.
-                                  patchAccount(ad.id, {
-                                    contributionValue: undefined,
-                                    contributionMethod: undefined,
-                                  });
-                                } else if (storedValue.trim() === "") {
-                                  // First time this account gets a value —
-                                  // carry the (possibly just-picked) method
-                                  // along with it in the same patch.
-                                  patchAccount(ad.id, {
-                                    contributionValue: value,
-                                    contributionMethod: effectiveMethod,
-                                  });
-                                  clearDraft(`a${ad.id}:method`);
-                                } else {
-                                  patchAccount(ad.id, {
-                                    contributionValue: value,
-                                  });
-                                }
-                              },
-                              (num) => String(num),
-                            )
-                          }
-                          placeholder="Not set"
-                          className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
-                        />
-                        <span className="text-caption text-faint w-3 text-left shrink-0">
-                          {isPercent ? "%" : ""}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-1.5 px-3 text-right">
-                      {hasMatch ? (
+                      </td>
+                      <td className="py-1.5 px-3">
+                        <select
+                          value={effectiveMethod}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (storedValue.trim() !== "") {
+                              // A value already exists — method is already
+                              // required-and-present, safe to patch alone.
+                              patchAccount(ad.id, { contributionMethod: val });
+                            } else {
+                              // No value yet — contributionMethod can't be set
+                              // alone (required together). Track the pick
+                              // locally; the Value field's commit below picks
+                              // it up when a real value is finally entered.
+                              setDraft(`a${ad.id}:method`, val);
+                            }
+                          }}
+                          className="w-full px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
+                        >
+                          {Object.entries(CONTRIBUTION_METHOD_LABELS).map(
+                            ([k, label]) => (
+                              <option key={k} value={k}>
+                                {label}
+                              </option>
+                            ),
+                          )}
+                        </select>
+                      </td>
+                      <td className="py-1.5 px-3 text-right">
                         <div className="flex items-center justify-end gap-0.5">
+                          <span className="text-caption text-faint w-3 text-right shrink-0">
+                            {isPercent ? "" : "$"}
+                          </span>
                           <input
                             type="number"
-                            value={drafts[`a${ad.id}:match`] ?? storedMatch}
+                            value={drafts[`a${ad.id}:value`] ?? storedValue}
                             onChange={(e) =>
-                              setDraft(`a${ad.id}:match`, e.target.value)
+                              setDraft(`a${ad.id}:value`, e.target.value)
                             }
                             onBlur={() =>
                               commitNumeric(
-                                `a${ad.id}:match`,
-                                storedMatch,
-                                (value) =>
-                                  patchAccount(ad.id, {
-                                    employerMatchValue: value,
-                                  }),
+                                `a${ad.id}:value`,
+                                storedValue,
+                                (value) => {
+                                  if (value === undefined) {
+                                    // Cleared — both-or-neither, drop the
+                                    // method along with the value.
+                                    patchAccount(ad.id, {
+                                      contributionValue: undefined,
+                                      contributionMethod: undefined,
+                                    });
+                                  } else if (storedValue.trim() === "") {
+                                    // First time this account gets a value —
+                                    // carry the (possibly just-picked) method
+                                    // along with it in the same patch.
+                                    patchAccount(ad.id, {
+                                      contributionValue: value,
+                                      contributionMethod: effectiveMethod,
+                                    });
+                                    clearDraft(`a${ad.id}:method`);
+                                  } else {
+                                    patchAccount(ad.id, {
+                                      contributionValue: value,
+                                    });
+                                  }
+                                },
                                 (num) => String(num),
                               )
                             }
-                            placeholder={fmtValue(ad.liveMatchValue)}
-                            className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                            placeholder="Not set"
+                            className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
                           />
-                          <span className="text-caption text-faint">%</span>
+                          <span className="text-caption text-faint w-3 text-left shrink-0">
+                            {isPercent ? "%" : ""}
+                          </span>
                         </div>
-                      ) : (
-                        <span className="text-faint">—</span>
-                      )}
-                    </td>
-                    <td className="py-1.5 px-3 text-right">
-                      {hasMatch ? (
-                        <div className="flex items-center justify-end gap-0.5">
-                          <input
-                            type="number"
-                            value={drafts[`a${ad.id}:cap`] ?? storedCap}
-                            onChange={(e) =>
-                              setDraft(`a${ad.id}:cap`, e.target.value)
-                            }
-                            onBlur={() =>
-                              commitNumeric(
-                                `a${ad.id}:cap`,
-                                storedCap,
-                                (value) =>
-                                  patchAccount(ad.id, {
-                                    employerMaxMatchPct: value,
-                                  }),
-                                // Display percentage back to decimal (5 → 0.05)
-                                (num) => String(num / 100),
-                              )
-                            }
-                            placeholder={liveMaxMatchDisplay || "—"}
-                            className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
-                          />
-                          <span className="text-caption text-faint">%</span>
-                        </div>
-                      ) : (
-                        <span className="text-faint">—</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
+                      </td>
+                      <td className="py-1.5 px-3 text-right">
+                        {hasMatch ? (
+                          <div className="flex items-center justify-end gap-0.5">
+                            <input
+                              type="number"
+                              value={drafts[`a${ad.id}:match`] ?? storedMatch}
+                              onChange={(e) =>
+                                setDraft(`a${ad.id}:match`, e.target.value)
+                              }
+                              onBlur={() =>
+                                commitNumeric(
+                                  `a${ad.id}:match`,
+                                  storedMatch,
+                                  (value) =>
+                                    patchAccount(ad.id, {
+                                      employerMatchValue: value,
+                                    }),
+                                  (num) => String(num),
+                                )
+                              }
+                              placeholder="—"
+                              className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                            />
+                            <span className="text-caption text-faint">%</span>
+                          </div>
+                        ) : sharedFrom ? (
+                          <span
+                            className="text-faint italic"
+                            title={`Combined with this account's other tax-treatment split — match config is on the ${sharedFrom.accountName} row`}
+                          >
+                            (combined)
+                          </span>
+                        ) : (
+                          <span className="text-faint">—</span>
+                        )}
+                      </td>
+                      <td className="py-1.5 px-3 text-right">
+                        {hasMatch ? (
+                          <div className="flex items-center justify-end gap-0.5">
+                            <input
+                              type="number"
+                              value={drafts[`a${ad.id}:cap`] ?? storedCap}
+                              onChange={(e) =>
+                                setDraft(`a${ad.id}:cap`, e.target.value)
+                              }
+                              onBlur={() =>
+                                commitNumeric(
+                                  `a${ad.id}:cap`,
+                                  storedCap,
+                                  (value) =>
+                                    patchAccount(ad.id, {
+                                      employerMaxMatchPct: value,
+                                    }),
+                                  // Display percentage back to decimal (5 → 0.05)
+                                  (num) => String(num / 100),
+                                )
+                              }
+                              placeholder="—"
+                              className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                            />
+                            <span className="text-caption text-faint">%</span>
+                          </div>
+                        ) : (
+                          <span className="text-faint">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                });
+              })()}
             </tbody>
           </table>
         </div>
