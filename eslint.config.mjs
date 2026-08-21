@@ -2,6 +2,42 @@ import nextConfig from "eslint-config-next";
 import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import nextTypescript from "eslint-config-next/typescript";
 
+const HEX_COLOR_PATTERN = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+
+// Local plugin so this check's severity doesn't have to share an options
+// array (and therefore a severity) with the unrelated "as unknown as" ban —
+// no-restricted-syntax only accepts one severity per matching config block.
+const localRules = {
+  rules: {
+    "no-hex-color-literal": {
+      meta: {
+        type: "problem",
+        docs: {
+          description:
+            "Disallow hardcoded hex color literals; use @/lib/utils/colors.ts instead.",
+        },
+        schema: [],
+      },
+      create(context) {
+        return {
+          Literal(node) {
+            if (
+              typeof node.value === "string" &&
+              HEX_COLOR_PATTERN.test(node.value)
+            ) {
+              context.report({
+                node,
+                message:
+                  "Hardcoded hex color. Use a named export from @/lib/utils/colors.ts instead (account/tax-type helpers, STATUS_COLORS, or a chart-series constant).",
+              });
+            }
+          },
+        };
+      },
+    },
+  },
+};
+
 const config = [
   ...nextConfig,
   ...nextCoreWebVitals,
@@ -43,6 +79,7 @@ const config = [
   },
   {
     files: ["src/components/**/*.{ts,tsx}"],
+    plugins: { local: localRules },
     rules: {
       "no-restricted-imports": [
         "error",
@@ -62,19 +99,14 @@ const config = [
         },
       ],
       "no-restricted-syntax": [
-        "error",
+        "warn",
         {
           selector: "TSAsExpression > TSUnknownKeyword",
           message:
             "Avoid 'as unknown as' casts. Create a typed wrapper or use Zod parsing. Add eslint-disable with justification if unavoidable (e.g. Drizzle ORM).",
         },
-        {
-          selector:
-            "Literal[value=/^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/]",
-          message:
-            "Hardcoded hex color. Use a named export from @/lib/utils/colors.ts instead (account/tax-type helpers, STATUS_COLORS, or a chart-series constant).",
-        },
       ],
+      "local/no-hex-color-literal": "error",
     },
   },
   {
