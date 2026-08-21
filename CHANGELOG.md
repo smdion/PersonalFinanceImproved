@@ -8,14 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
-## [0.7.6] - Unreleased
+## [0.7.6] - 2026-08-21
 
 ### Fixed
 
 - **Contribution Profiles: the Method dropdown and the Value field's $/% now agree for an account with no method set yet.** Previously an unset method rendered the dropdown as "% of Salary" (its first option) while the $/% prefix on the Value field was computed from the actual (empty) stored method and showed "$" instead — so a blank row's dropdown and value field visibly disagreed, and the mismatch could also affect what got saved on first entry.
 - **The new-profile form now lets you set a Method and Value per account at creation time**, instead of only being settable afterward in the standing profile editor. Leaving Value blank still leaves that account unset, same as before.
 - Removed the Employer Match/Match Cap placeholder hints on the new-profile form that showed each account's own live match config — they read as pre-filled defaults rather than examples.
-- **The profile detail view's Match column now reads "50% of 7%" instead of "50% to 7%"**, and for an account split across Roth and Traditional (e.g. a single 401k), the match — which applies to the two rows' combined contribution, not each independently — is now shown once spanning both rows instead of being repeated as if each split had its own separate match.
+- **The profile detail view's Match column now reads "50% of 7%" instead of "50% to 7%"**, and for an account split across Roth and Traditional (e.g. a single 401k), both rows now clearly show the same shared match terms with a "(combined)" note, instead of the split without its own match settings looking like it had none.
+- **Employer match for an account split across Roth and Traditional contributions (e.g. a single 401k) is now calculated against your combined contribution to both, not just the portion in whichever split holds the match settings.** Previously, if your Traditional contribution alone already exceeded the match cap, this had no visible effect — but for anyone whose Roth/Traditional split shifted so neither portion alone reached the cap, match was being under-credited. Every place that shows employer match — the Paycheck page, the Portfolio account editor, and the Contribution Profiles pages — now consistently shows the real combined amount, including on the split that has no match settings of its own.
+- **The employer match tax-treatment control is relabeled "Match Deposits To"** (previously "Match Tax") with an explanation that it governs the whole account's match, not just the split it's entered on — most 401(k) plans deposit match as Traditional regardless of how you split your own contributions, though some newer plans allow a real Roth match.
+- Removed a second leftover instance of the live-match-config placeholder hint (see the new-profile form fix above) that was still showing on the existing-profile editor.
+
+### Changed (internal)
+
+- Added a database constraint preventing an account's Roth and Traditional splits from ever independently holding conflicting employer-match settings — confirmed against a live data check that nothing existing would violate it.
 
 ## [0.7.5] - 2026-08-20
 
