@@ -1008,6 +1008,15 @@ export async function buildEnginePayload(
     const switchSalaryEntriesByJob = (salaryProfile?.salaries ??
       {}) as SalaryEntryMap;
     const ownJob = activeJobs.find((j) => j.personId === override.personId);
+    // `ownEntry` here is intentionally read loosely (no completeness
+    // requirement) — a retirement_salary_overrides row only ever cares
+    // whether THIS entry pins a `salary`/bonus terms to grow, the same
+    // narrow presence rule this override mechanism has always used
+    // (predates Stage B). A real Salary Profile entry saved through the
+    // app is always complete-or-absent (salaryEntrySchema is `.strict()`),
+    // but nothing here depends on that for the salary-injection math below
+    // — see ownEntryNormalized further down for where completeness of the
+    // OTHER 11 fields actually matters.
     const ownEntry = ownJob
       ? switchSalaryEntriesByJob[String(ownJob.id)]
       : undefined;
@@ -1015,14 +1024,6 @@ export async function buildEnginePayload(
     // salary to grow — same presence rule as before. Only the SALARY
     // field's presence decides whether this row injects anything.
     const ownBaseSalary = ownEntry?.salary;
-    // The LIVE (currently-active) Salary Profile's own entry for this same
-    // job — fallback source for the 11 non-comp fields below when the
-    // switched-to entry doesn't set its own (a switch-year override that
-    // only pins income shouldn't silently reset pay schedule/W-4 to a
-    // hardcoded default when the live profile already has a real answer).
-    const liveOwnEntry = ownJob
-      ? salaryProfileActiveMap.get(ownJob.id)
-      : undefined;
     // Baseline this override replaces (salaryByPerson) is TOTAL comp
     // (totalCompFullFormula, salary + bonus) — growing bare `.salary` here
     // would silently drop the switched profile's bonus from projections.
@@ -1074,15 +1075,50 @@ export async function buildEnginePayload(
     // switched-to entry for this person's own job onto the live map; every
     // other job keeps following its live salary, same rule as the salary
     // override above.
-    // Normalize possibly-partial bonus fields to "no bonus" defaults — same
-    // reasoning as ownTotalComp above, since resolveCompensation assumes a
-    // complete entry and would otherwise turn missing fields into NaN.
-    // Non-comp fields (pay schedule, W-4, bonus date/flags) fall back to
-    // the LIVE Salary Profile's own entry for this job when the switched-to
-    // entry doesn't set its own — see liveOwnEntry's docblock above.
+    //
+    // The 11 non-comp fields (pay schedule, W-4, bonus date/flags) fall
+    // back to the LIVE Salary Profile's own entry for this job when the
+    // switched-to entry doesn't set its own — a switch-year override that
+    // only pins income shouldn't silently reset pay schedule/W-4. If a
+    // field can't be resolved from EITHER side, this overlay is dropped
+    // entirely rather than filling the gap with a hardcoded literal
+    // ("biweekly"/"MFJ"/etc.) — a relocation comparison built on a
+    // fabricated tax/schedule config is exactly the silent-wrong-number
+    // failure mode this profile model exists to prevent (RULES.md's "no
+    // hardcoded fallbacks"). Dropping the overlay falls through to using
+    // this job's LIVE entry entirely for contribution math, a safe
+    // degradation rather than a fabrication.
+    const liveOwnEntry = ownJob
+      ? salaryProfileActiveMap.get(ownJob.id)
+      : undefined;
+    const NON_COMP_FIELDS = [
+      "payPeriod",
+      "payWeek",
+      "anchorPayDate",
+      "budgetPeriodsPerMonth",
+      "w4FilingStatus",
+      "w4Box2cChecked",
+      "additionalFedWithholding",
+      "bonusMonth",
+      "bonusDayOfMonth",
+      "include401kInBonus",
+      "includeBonusInContributions",
+    ] as const satisfies readonly (keyof SalaryProfileEntry)[];
+    const nonCompFields: Record<string, unknown> = {};
+    let allNonCompFieldsResolved = true;
+    for (const field of NON_COMP_FIELDS) {
+      const value = ownEntry?.[field] ?? liveOwnEntry?.[field];
+      if (value === undefined) {
+        allNonCompFieldsResolved = false;
+        break;
+      }
+      nonCompFields[field] = value;
+    }
     const ownEntryNormalized: SalaryProfileEntry | undefined =
-      ownBaseSalary !== undefined
-        ? {
+      ownBaseSalary !== undefined &&
+      ownTotalComp !== undefined &&
+      allNonCompFieldsResolved
+        ? ({
             salary: ownBaseSalary,
             bonusPercent: ownEntry?.bonusPercent ?? 0,
             bonusMultiplier: ownEntry?.bonusMultiplier ?? 1,
@@ -1090,38 +1126,8 @@ export async function buildEnginePayload(
             // Never carry a current-year pin into projection/contribution
             // math — see SalaryProfileEntry.bonusOverride's docblock.
             bonusOverride: null,
-            payPeriod:
-              ownEntry?.payPeriod ?? liveOwnEntry?.payPeriod ?? "biweekly",
-            payWeek: ownEntry?.payWeek ?? liveOwnEntry?.payWeek ?? "na",
-            anchorPayDate:
-              ownEntry?.anchorPayDate ?? liveOwnEntry?.anchorPayDate ?? null,
-            budgetPeriodsPerMonth:
-              ownEntry?.budgetPeriodsPerMonth ??
-              liveOwnEntry?.budgetPeriodsPerMonth ??
-              null,
-            w4FilingStatus:
-              ownEntry?.w4FilingStatus ?? liveOwnEntry?.w4FilingStatus ?? "MFJ",
-            w4Box2cChecked:
-              ownEntry?.w4Box2cChecked ?? liveOwnEntry?.w4Box2cChecked ?? false,
-            additionalFedWithholding:
-              ownEntry?.additionalFedWithholding ??
-              liveOwnEntry?.additionalFedWithholding ??
-              0,
-            bonusMonth:
-              ownEntry?.bonusMonth ?? liveOwnEntry?.bonusMonth ?? null,
-            bonusDayOfMonth:
-              ownEntry?.bonusDayOfMonth ??
-              liveOwnEntry?.bonusDayOfMonth ??
-              null,
-            include401kInBonus:
-              ownEntry?.include401kInBonus ??
-              liveOwnEntry?.include401kInBonus ??
-              false,
-            includeBonusInContributions:
-              ownEntry?.includeBonusInContributions ??
-              liveOwnEntry?.includeBonusInContributions ??
-              false,
-          }
+            ...nonCompFields,
+          } as SalaryProfileEntry)
         : undefined;
     const switchedSalaryProfileActiveMap =
       ownJob && ownEntryNormalized !== undefined
