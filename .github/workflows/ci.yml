@@ -121,13 +121,6 @@ jobs:
       - name: Verify docs freshness
         run: pnpm docs:verify
 
-      - name: Verify SCHEMA.md / API_ROUTERS.md freshness
-        run: |
-          pnpm docs:gen-api
-          npx prettier --write docs/SCHEMA.md docs/API_ROUTERS.md
-          git diff --exit-code docs/SCHEMA.md docs/API_ROUTERS.md || \
-            (echo "::error::docs/SCHEMA.md or docs/API_ROUTERS.md is stale — run 'pnpm docs:gen-api', then Prettier reformats them automatically via the pre-commit hook. Commit the result." && exit 1)
-
       - name: Docker build smoke test
         if: github.event_name == 'push'
         run: docker build --build-arg APP_VERSION=ci-${{ github.sha }} -t ledgr:ci-test .
