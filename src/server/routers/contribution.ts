@@ -88,6 +88,18 @@ type AccountTypeSnapshot = {
   /** HSA contributions (taxTreatment: "hsa"). Tracked separately from
    *  tradContrib since HSA isn't Traditional/pre-tax retirement money. */
   hsaContrib: number;
+  /** Contributions NOT deducted from the paycheck (IRA, manually-funded
+   *  brokerage/HSA) — money that already reached net take-home pay before
+   *  being moved into the account. Same isPayrollDeducted resolution
+   *  paycheck.ts's calculator input uses (see buildContribAccounts):
+   *  explicit column value, else job-linked defaults to payroll-deducted.
+   *  Distinct from tax TREATMENT — a Roth 401k is post-tax but still
+   *  payroll-deducted, so it belongs in payrollDeductedContrib, not here,
+   *  same as a Traditional 401k. */
+  nonPayrollContrib: number;
+  /** The complement of nonPayrollContrib — deducted from the paycheck
+   *  before net pay is computed, regardless of tax treatment. */
+  payrollDeductedContrib: number;
   bonusContrib: number; // estimated 401k from bonus
   isJoint: boolean;
   hasDiscountBar: boolean; // config-driven: ESPP-style discount bar rendering
@@ -640,6 +652,8 @@ export const contributionRouter = createTRPCRouter({
               taxFree: number;
               afterTax: number;
               hsa: number;
+              nonPayroll: number;
+              payrollDeducted: number;
               isJoint: boolean;
               parentCategory: string;
               hasDiscountBar: boolean;
@@ -726,6 +740,8 @@ export const contributionRouter = createTRPCRouter({
               taxFree: 0,
               afterTax: 0,
               hsa: 0,
+              nonPayroll: 0,
+              payrollDeducted: 0,
               isJoint: false,
               parentCategory: rawContrib.parentCategory,
               hasDiscountBar: display.hasDiscountBar,
@@ -817,6 +833,14 @@ export const contributionRouter = createTRPCRouter({
             else if (acct.taxTreatment === "hsa")
               entry.hsa += acct.annualContribution;
             else entry.trad += acct.annualContribution;
+            // Same isPayrollDeducted resolution paycheck.ts's calculator
+            // input uses (buildContribAccounts) — independent of the tax
+            // treatment split above.
+            if (rawContrib.isPayrollDeducted ?? rawContrib.jobId !== null) {
+              entry.payrollDeducted += acct.annualContribution;
+            } else {
+              entry.nonPayroll += acct.annualContribution;
+            }
             if (rawContrib.ownership === "joint") entry.isJoint = true;
             categoryMap.set(cat, entry);
           }
@@ -914,6 +938,8 @@ export const contributionRouter = createTRPCRouter({
               taxFreeContrib: roundToCents(data.taxFree),
               afterTaxContrib: roundToCents(data.afterTax),
               hsaContrib: roundToCents(data.hsa),
+              nonPayrollContrib: roundToCents(data.nonPayroll),
+              payrollDeductedContrib: roundToCents(data.payrollDeducted),
               bonusContrib: bonusAdd,
               isJoint: data.isJoint,
               hasDiscountBar: data.hasDiscountBar,
@@ -1150,6 +1176,15 @@ export const contributionRouter = createTRPCRouter({
             c.taxTreatment === "after_tax" ? roundToCents(annual) : 0,
           // lint-violation-ok: taxTreatment value, not an accountType/category comparison
           hsaContrib: c.taxTreatment === "hsa" ? roundToCents(annual) : 0,
+          // Same isPayrollDeducted resolution as the per-person loop above.
+          nonPayrollContrib:
+            (c.isPayrollDeducted ?? c.jobId !== null)
+              ? 0
+              : roundToCents(annual),
+          payrollDeductedContrib:
+            (c.isPayrollDeducted ?? c.jobId !== null)
+              ? roundToCents(annual)
+              : 0,
           bonusContrib: 0,
           isJoint: true,
           hasDiscountBar: jDisplay.hasDiscountBar,

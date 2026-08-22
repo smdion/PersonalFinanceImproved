@@ -194,6 +194,49 @@ function LivingCostsCardImpl() {
     }
   }
 
+  // A budget item linked to a contribution account (rawItems[].
+  // contributionAccountId) resolves its dollar amount FROM that account —
+  // resolveLinkedBudgetItemAmounts, same mechanism the Budget page itself
+  // uses. That dollar figure is already counted once in the Portfolio/
+  // Retirement rows below (drawn straight from contribution.computeSummary)
+  // — leaving it in categoryTotals too would double-count it as BOTH budget
+  // spending and a contribution. Net it out here, at the source, so every
+  // downstream total (Ramsey rows, Unallocated) only ever sees each dollar
+  // once.
+  const linkedItems = (budgetData?.rawItems ?? []).filter(
+    (i) => i.contributionAccountId != null,
+  );
+  if (linkedItems.length > 0) {
+    const linkedAnnualByCategory = new Map<string, number>();
+    if (budgetData?.columnMonths && budgetData.allColumnResults) {
+      const cm = budgetData.columnMonths;
+      for (const item of linkedItems) {
+        let annual = 0;
+        for (let col = 0; col < cm.length; col++) {
+          annual += (item.contribAmounts?.[col] ?? 0) * (cm[col] ?? 0);
+        }
+        linkedAnnualByCategory.set(
+          item.category,
+          (linkedAnnualByCategory.get(item.category) ?? 0) + annual,
+        );
+      }
+    } else {
+      for (const item of linkedItems) {
+        const annual = (item.contribAmount ?? 0) * 12;
+        linkedAnnualByCategory.set(
+          item.category,
+          (linkedAnnualByCategory.get(item.category) ?? 0) + annual,
+        );
+      }
+    }
+    for (const [category, linkedAnnual] of linkedAnnualByCategory) {
+      categoryTotals.set(
+        category,
+        Math.max((categoryTotals.get(category) ?? 0) - linkedAnnual, 0),
+      );
+    }
+  }
+
   // Resolve mapping: app_settings override → default fallback
   const savedMapping = appSettings?.find(
     (s: { key: string }) => s.key === "living_cost_mapping",
@@ -219,23 +262,49 @@ function LivingCostsCardImpl() {
       pct,
       status,
     };
-  }).filter((r) => r.annual > 0);
+  }).filter((r) => r.annual > 0.5);
 
   const onTarget = rows.filter(
     (r) => r.status === "on-target" || r.status === "below",
   ).length;
 
-  // In Gross mode, append taxes/retirement/investments/unallocated to the
-  // SAME list the budget categories render in — `rows` above already
-  // recomputes against `incomeBase` (net or gross, whichever the toggle
-  // picked), so switching to Gross alone doesn't yet account for where the
-  // rest of gross income goes (budget categories only ever sum to a
-  // fraction of it). No target range on these — Ramsey's ranges don't cover
-  // taxes/savings. Employer match is excluded — it's not part of YOUR gross
-  // income, so including it would make the allocation sum past 100%.
+  // Append taxes/retirement/portfolio/savings/other-budget-spending/
+  // unallocated to the SAME list the budget categories render in, in BOTH
+  // modes — budget categories alone never sum anywhere near 100% of either
+  // income base. No target range on these — Ramsey's ranges don't cover
+  // taxes/savings/debt.
+  //
+  // The two modes show genuinely different numbers, not just a rescaled
+  // percentage — and the axis that matters is isPayrollDeducted, NOT tax
+  // treatment. A Roth 401k is post-tax but still deducted from the
+  // paycheck before net pay is computed, exactly like a Traditional 401k —
+  // neither ever reaches net take-home pay. Only non-payroll contributions
+  // (IRA, manually-funded brokerage/HSA) are genuinely money that WAS net
+  // income before you moved it — see nonPayrollContrib/payrollDeductedContrib
+  // on AccountTypeSnapshot (contribution.ts), which resolve this the same
+  // way paycheck.ts's calculator input does. Net mode counts only the
+  // non-payroll portion; Gross mode counts the full total (both), since
+  // both ultimately draw from gross. Employer match is excluded from both —
+  // it isn't part of YOUR income, so including it would push either
+  // allocation past 100%.
   const annualTaxes = paycheckData?.householdTax?.totalTax ?? 0;
   const contribPeople = contribData?.people ?? [];
   const contribJoint = contribData?.jointAccountTypes ?? [];
+  const allAccountTypes = [
+    ...contribPeople.flatMap((p) => p.accountTypes),
+    ...contribJoint,
+  ];
+  const retirementTypes = allAccountTypes.filter((a) =>
+    isRetirementParent(a.parentCategory),
+  );
+  const portfolioTypes = allAccountTypes.filter((a) =>
+    isPortfolioParent(a.parentCategory),
+  );
+  const retirementNonPayroll = sumBy(
+    retirementTypes,
+    (a) => a.nonPayrollContrib,
+  );
+  const portfolioNonPayroll = sumBy(portfolioTypes, (a) => a.nonPayrollContrib);
   const jointRetirementNoMatch = sumBy(
     contribJoint.filter((a) => isRetirementParent(a.parentCategory)),
     (a) => a.employeeContrib,
@@ -244,53 +313,58 @@ function LivingCostsCardImpl() {
     contribJoint.filter((a) => isPortfolioParent(a.parentCategory)),
     (a) => a.employeeContrib,
   );
-  const retirementNoMatch =
+  const retirementTotal =
     sumBy(
       contribPeople,
       (p) => p.totals.views[viewMode].retirementWithoutMatch,
     ) + jointRetirementNoMatch;
-  const investmentsNoMatch =
+  const portfolioTotal =
     sumBy(
       contribPeople,
       (p) => p.totals.views[viewMode].portfolioWithoutMatch,
     ) + jointPortfolioNoMatch;
+  // Unallocated uses ALL budget categories (not just the Ramsey-mapped
+  // ones shown as their own rows above) — a category with no Ramsey
+  // mapping still counts as spent, it just doesn't get its own labeled row.
   const totalBudgetSpending = sumBy(budget.categories, (cat) =>
     Math.max(categoryTotals.get(cat.name) ?? 0, 0),
   );
   const annualSavings =
     sumBy(savingsData?.savings.goals ?? [], (g) => g.monthlyAllocation) * 12;
+  const retirementShown = useGross ? retirementTotal : retirementNonPayroll;
+  const portfolioShown = useGross ? portfolioTotal : portfolioNonPayroll;
   const unallocated = Math.max(
-    grossIncome -
-      annualTaxes -
-      retirementNoMatch -
-      investmentsNoMatch -
+    incomeBase -
+      (useGross ? annualTaxes : 0) -
+      retirementShown -
+      portfolioShown -
       annualSavings -
       totalBudgetSpending,
     0,
   );
-  const extraGrossRows = useGross
-    ? [
-        { name: "Taxes", annual: annualTaxes, color: "bg-red-400" },
-        {
-          name: "Retirement",
-          annual: retirementNoMatch,
-          color: "bg-purple-400",
-        },
-        {
-          name: "Portfolio",
-          annual: investmentsNoMatch,
-          color: "bg-indigo-400",
-        },
-        { name: "Savings", annual: annualSavings, color: "bg-teal-400" },
-        {
-          name: "Unallocated",
-          annual: unallocated,
-          color: "bg-surface-strong",
-        },
-      ]
-        .map((r) => ({ ...r, pct: safeDivide(r.annual, grossIncome, 0) }))
-        .filter((r) => r.annual > 0)
-    : [];
+  const extraGrossRows = [
+    ...(useGross
+      ? [{ name: "Taxes", annual: annualTaxes, color: "bg-red-400" }]
+      : []),
+    { name: "Retirement", annual: retirementShown, color: "bg-purple-400" },
+    { name: "Portfolio", annual: portfolioShown, color: "bg-indigo-400" },
+    { name: "Savings", annual: annualSavings, color: "bg-teal-400" },
+    { name: "Unallocated", annual: unallocated, color: "bg-surface-strong" },
+  ]
+    .map((r) => ({ ...r, pct: safeDivide(r.annual, incomeBase, 0) }))
+    // A half-dollar floor, not `> 0` — floating-point subtraction upstream
+    // (categoryTotals nets out linked contribution-account items) can leave
+    // a sub-cent positive residue that would otherwise render as a
+    // confusing "0% ($0.00)" row.
+    .filter((r) => r.annual > 0.5);
+  // Sanity-check display, not a separate computation: Unallocated is built
+  // to absorb whatever's left, so this should always land at (or very near)
+  // 100% — the one case it visibly won't is genuine over-allocation (taxes +
+  // contributions + savings + budget spending together exceed income),
+  // where Unallocated's floor at $0 makes the shown total undercount on
+  // purpose rather than display a negative "leftover."
+  const totalPct =
+    sumBy(rows, (r) => r.pct) + sumBy(extraGrossRows, (r) => r.pct);
 
   return (
     <Card
@@ -298,7 +372,7 @@ function LivingCostsCardImpl() {
         <>
           Living Costs
           <HelpTip
-            text={`Budget categories as % of ${incomeLabel} income compared to Dave Ramsey's recommended ranges (Ramsey's original ranges are based on net take-home pay). Switch to Gross to also see taxes and retirement/investment contributions, so gross income is fully accounted for — not just budget spending.`}
+            text={`Budget categories as % of ${incomeLabel} income compared to Dave Ramsey's recommended ranges (Ramsey's original ranges are based on net take-home pay). Retirement/Portfolio/Savings/Unallocated below show where the rest of your ${incomeLabel} income goes: Net counts only non-payroll contributions (IRA, manually-funded brokerage/HSA) actually funded from take-home pay — payroll-deducted contributions, Roth included, never touch net pay; Gross counts your full contribution total, payroll and non-payroll combined, plus taxes. Unallocated includes any budget category with no Ramsey mapping, plus any genuinely untracked money.`}
           />
         </>
       }
@@ -410,6 +484,11 @@ function LivingCostsCardImpl() {
           </div>
         )}
       </div>
+      {extraGrossRows.length > 0 && (
+        <p className="mt-1 text-right text-micro text-faint">
+          Total: {formatPercent(totalPct, 0)} of {incomeLabel}
+        </p>
+      )}
       <div className="mt-2 flex gap-3 text-caption text-faint">
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-green-500" /> On target
@@ -426,7 +505,9 @@ function LivingCostsCardImpl() {
         </span>
         {extraGrossRows.length > 0 && (
           <span className="flex items-center gap-1 ml-auto">
-            <HelpTip text="Taxes/Retirement/Investments/Unallocated (below the Target legend) have no recommended range — they're shown so gross income is fully accounted for, not just budget spending. Employer match is excluded since it isn't part of your own gross income." />
+            <HelpTip
+              text={`Retirement/Portfolio/Savings/Unallocated${useGross ? "/Taxes" : ""} (below the Target legend) have no recommended range — they're shown so ${incomeLabel} income is fully accounted for, not just Ramsey-mapped budget spending. Employer match is excluded since it isn't part of your own income.`}
+            />
           </span>
         )}
       </div>
