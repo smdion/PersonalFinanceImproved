@@ -78,11 +78,22 @@ describe("jsonbLiteral", () => {
 });
 
 describe("validateColumns", () => {
-  // validateColumns depends on buildValidColumnsCache which uses require()
-  // for the dialect-specific schema. In test environment, schema-sqlite
-  // may not be available as a require() target. We test the validation
-  // logic by checking that the function exists and has the right signature.
-  it("is exported and callable", () => {
-    expect(typeof validateColumns).toBe("function");
+  it("does not throw for a real table with only real column names", () => {
+    mockedIsPostgres.mockReturnValue(false);
+    expect(() => validateColumns("people", ["id", "name"])).not.toThrow();
+  });
+
+  it("throws for an unknown column on a real table", () => {
+    mockedIsPostgres.mockReturnValue(false);
+    expect(() =>
+      validateColumns("people", ["id", "definitely_not_a_real_column"]),
+    ).toThrow(/Invalid column/);
+  });
+
+  it("throws for an unknown table", () => {
+    mockedIsPostgres.mockReturnValue(false);
+    expect(() =>
+      validateColumns("definitely_not_a_real_table", ["id"]),
+    ).toThrow(/Unknown table/);
   });
 });

@@ -9,6 +9,8 @@
 import { sql, getTableColumns } from "drizzle-orm";
 import { isPostgres } from "./dialect";
 import { VERSION_TABLES } from "./version-tables";
+import * as pgSchema from "./schema-pg";
+import * as sqliteSchema from "./schema-sqlite";
 
 // ---------------------------------------------------------------------------
 // Raw SQL execution
@@ -179,11 +181,7 @@ let _validColumnsCache: Map<string, Set<string>> | null = null;
 
 function buildValidColumnsCache(): Map<string, Set<string>> {
   if (_validColumnsCache) return _validColumnsCache;
-  /* eslint-disable @typescript-eslint/no-require-imports -- dynamic require is required for runtime dialect selection; schema-sqlite cannot be statically imported because it only exists in SQLite deployments */
-  const schema = isPostgres()
-    ? require("./schema-pg")
-    : require("./schema-sqlite");
-  /* eslint-enable @typescript-eslint/no-require-imports */
+  const schema = isPostgres() ? pgSchema : sqliteSchema;
   const cache = new Map<string, Set<string>>();
   for (const value of Object.values(schema)) {
     // Drizzle table objects have a Symbol that getTableColumns can read
