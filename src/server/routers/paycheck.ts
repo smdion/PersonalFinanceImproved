@@ -160,6 +160,7 @@ export const paycheckRouter = createTRPCRouter({
         input?.contributionProfileId,
         allContribs,
         allJobs,
+        allDeductions,
       );
       // The What-If tab's sandbox edits are the highest-precedence tier,
       // applied AFTER the picked profile's own overrides — same merge
@@ -229,13 +230,18 @@ export const paycheckRouter = createTRPCRouter({
           const periodsPerYear = getPeriodsPerYear(activeJob.payPeriod);
           const taxBracketInput = buildBracketInput(bracketRow, limitsMap);
 
-          const jobDeductions = allDeductions.filter(
+          // profileResult.deductions is already profile-resolved (live
+          // default, patched by any active-field value the profile sets) —
+          // the What-If sandbox edit below layers on top of THAT, same
+          // profile-then-sandbox precedence contribution accounts already
+          // use (applyContribActiveFields's isOverlay pass above).
+          const jobDeductions = profileResult.deductions.filter(
             (d) => d.jobId === activeJob.id,
           );
           const deductions: DeductionLine[] = jobDeductions.map((d) => ({
             name: d.deductionName,
-            // A sandbox edit is one more layer on top of the stored
-            // amount, applied here (not a second pass after
+            // A sandbox edit is one more layer on top of the profile-
+            // resolved amount, applied here (not a second pass after
             // calculatePaycheck) so it's the SAME arithmetic every other
             // deduction goes through.
             amount: deductionEditMap.get(d.id) ?? toNumber(d.amountPerPeriod),

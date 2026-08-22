@@ -13,6 +13,7 @@ export function PayScheduleInfo({
 }: {
   job: {
     payPeriod: string;
+    payWeek: string;
     anchorPayDate?: string | null;
     startDate: string;
     budgetPeriodsPerMonth?: string | null;
@@ -74,6 +75,17 @@ export function PayScheduleInfo({
             <option value="biweekly">Biweekly</option>
             <option value="semimonthly">Semi-Monthly</option>
             <option value="monthly">Monthly</option>
+          </select>
+          <select
+            value={job.payWeek}
+            onChange={(e) => onUpdateJob("payWeek", e.target.value)}
+            disabled={readOnly}
+            title="Which week of a biweekly cycle paychecks land on"
+            className="text-xs border rounded px-1.5 py-0.5 bg-surface-primary hover:border-strong cursor-pointer"
+          >
+            <option value="even">Even</option>
+            <option value="odd">Odd</option>
+            <option value="na">N/A</option>
           </select>
           <label
             className="flex items-center gap-1"

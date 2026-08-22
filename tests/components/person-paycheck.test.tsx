@@ -37,6 +37,12 @@ vi.mock("@/components/paycheck/bonus-section", () => ({
   BonusSection: () => <div data-testid="bonus-section">BonusSection</div>,
 }));
 
+vi.mock("@/components/paycheck/tax-withholding-section", () => ({
+  TaxWithholdingSection: () => (
+    <div data-testid="tax-withholding-section">TaxWithholdingSection</div>
+  ),
+}));
+
 vi.mock("@/components/paycheck/contributions-section", () => ({
   ContributionsSection: () => (
     <div data-testid="contributions-section">ContributionsSection</div>

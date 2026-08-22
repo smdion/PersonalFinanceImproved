@@ -80,6 +80,77 @@ async function assertNoJointPercentOfSalaryWithoutJob(
   }
 }
 
+/**
+ * w4FilingStatus + w4Box2cChecked form a composite key into the federal
+ * withholding bracket table. A profile can set either half independently
+ * (applyJobActiveFields only patches the field actually present), so the
+ * EFFECTIVE combination reaching bracket lookup is whichever half the
+ * profile sets, merged with the job's raw value for whichever half it
+ * doesn't. Validating this at write time — rather than deferring to a
+ * read-time error that could surface during an unrelated save (e.g.
+ * extra-paycheck routing) — is a hard requirement per the Contribution
+ * Profile plan's Ground Rules: a composite-key mismatch should never be
+ * persisted in the first place.
+ */
+async function assertJobTaxBracketsExist(
+  db: Db,
+  contributionActiveFields:
+    | {
+        jobs?: Record<
+          string,
+          { w4FilingStatus?: string; w4Box2cChecked?: boolean }
+        >;
+      }
+    | undefined,
+): Promise<void> {
+  const incomingJobs = contributionActiveFields?.jobs ?? {};
+  const jobIdsToCheck = Object.entries(incomingJobs)
+    .filter(
+      ([, f]) =>
+        f.w4FilingStatus !== undefined || f.w4Box2cChecked !== undefined,
+    )
+    .map(([id]) => Number(id));
+  if (jobIdsToCheck.length === 0) return;
+
+  const rawJobs = await db
+    .select({
+      id: schema.jobs.id,
+      w4FilingStatus: schema.jobs.w4FilingStatus,
+      w4Box2cChecked: schema.jobs.w4Box2cChecked,
+    })
+    .from(schema.jobs)
+    .where(inArray(schema.jobs.id, jobIdsToCheck));
+  const rawJobById = new Map(rawJobs.map((j) => [j.id, j]));
+
+  const taxYear = new Date().getFullYear();
+  const brackets = await db
+    .select({
+      filingStatus: schema.taxBrackets.filingStatus,
+      w4Checkbox: schema.taxBrackets.w4Checkbox,
+    })
+    .from(schema.taxBrackets)
+    .where(eq(schema.taxBrackets.taxYear, taxYear));
+  const bracketKeys = new Set(
+    brackets.map((b) => `${b.filingStatus}|${b.w4Checkbox}`),
+  );
+
+  for (const jobId of jobIdsToCheck) {
+    const rawJob = rawJobById.get(jobId);
+    if (!rawJob) continue; // stale id — nothing to validate against
+    const activeFields = incomingJobs[String(jobId)]!;
+    const effectiveFilingStatus =
+      activeFields.w4FilingStatus ?? rawJob.w4FilingStatus;
+    const effectiveCheckbox =
+      activeFields.w4Box2cChecked ?? rawJob.w4Box2cChecked;
+    if (!bracketKeys.has(`${effectiveFilingStatus}|${effectiveCheckbox}`)) {
+      throw new Error(
+        `No tax bracket data found for filing status "${effectiveFilingStatus}" ` +
+          `(multiple jobs: ${effectiveCheckbox}) for tax year ${taxYear} — cannot save this active-field combination.`,
+      );
+    }
+  }
+}
+
 export const contributionProfileRouter = createTRPCRouter({
   /**
    * List all contribution profiles with resolved summary totals.
@@ -409,6 +480,7 @@ export const contributionProfileRouter = createTRPCRouter({
         ctx.db,
         input.contributionActiveFields,
       );
+      await assertJobTaxBracketsExist(ctx.db, input.contributionActiveFields);
 
       const rows = await ctx.db
         .insert(schema.contributionProfiles)
@@ -444,6 +516,7 @@ export const contributionProfileRouter = createTRPCRouter({
         ctx.db,
         input.contributionActiveFields,
       );
+      await assertJobTaxBracketsExist(ctx.db, input.contributionActiveFields);
 
       const updates: Partial<typeof schema.contributionProfiles.$inferInsert> =
         {};

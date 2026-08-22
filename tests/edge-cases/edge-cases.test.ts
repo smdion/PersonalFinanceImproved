@@ -35,6 +35,7 @@ describe("paycheck edge cases", () => {
     payWeek: "even",
     anchorPayDate: new Date("2025-01-03"),
     supplementalTaxRate: 0.22,
+    additionalFedWithholding: 0,
     contributionAccounts: [],
     deductions: [],
     taxBrackets: MFJ_2C_BRACKETS,

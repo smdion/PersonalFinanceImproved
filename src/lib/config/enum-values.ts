@@ -10,6 +10,15 @@
 
 import { z } from "zod";
 
+// ── Decimal string (shared across routers and JSONB active-field schemas) ──
+
+/** Validates a string represents a valid decimal number. */
+export const zDecimal = z
+  .string()
+  .refine((v) => !isNaN(Number(v)) && v.trim() !== "", {
+    message: "Must be a valid number",
+  });
+
 // ── Pay Period ──
 
 export const PAY_PERIOD_VALUES = [

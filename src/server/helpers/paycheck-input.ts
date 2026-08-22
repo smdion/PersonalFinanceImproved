@@ -9,12 +9,14 @@
  * computeJobNetPayPerCheck resolve salary/contributions/deductions through
  * genuinely different pipelines — the router applies Plan/session
  * overrides, What-If sandbox edits, and bonus-term/deduction overrides;
- * computeJobNetPayPerCheck deliberately does NOT (its result is persisted
- * as a "recorded fact", not a live/active-override view — see its own
- * docblock). That's documented, intentional behavior to preserve, not
- * duplication to eliminate, so it stays separate. Only the part that's
- * truly identical either way — mapping already-resolved values onto
- * PaycheckInput's fields — is shared here.
+ * computeJobNetPayPerCheck resolves against the active Contribution
+ * Profile's active fields too (job tax-inputs, deductions, contributions,
+ * and salary all resolve the same way there as everywhere else in this
+ * system — there is no field-level carve-out; see the Contribution Profile
+ * plan's governing principle). Both pipelines land on the SAME resolved
+ * shape by the time they reach this file, which is why only the
+ * object-construction tail — mapping already-resolved values onto
+ * PaycheckInput's fields — needs to be, and is, shared here.
  */
 import type {
   PaycheckInput,
@@ -34,6 +36,7 @@ export interface JobForPaycheckInput {
   include401kInBonus: boolean;
   bonusMonth: number | null;
   bonusDayOfMonth: number | null;
+  additionalFedWithholding: string | number | null;
 }
 
 export interface ResolvedPaycheckInputs {
@@ -68,6 +71,11 @@ export function buildPaycheckInputForJob(
     supplementalTaxRate: requireLimit(
       resolved.limitsMap,
       "supplemental_tax_rate",
+    ),
+    additionalFedWithholding: toNumber(
+      job.additionalFedWithholding == null
+        ? null
+        : String(job.additionalFedWithholding),
     ),
     contributionAccounts: resolved.contributionAccounts,
     deductions: resolved.deductions,

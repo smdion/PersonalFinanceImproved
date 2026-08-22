@@ -245,7 +245,13 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     adjustedAnnualWage,
     input.taxBrackets.brackets,
   );
-  const federalWithholding = safeDivide(annualTax, periodsPerYear, 0)!;
+  // W-4 Line 4c: a flat extra dollar amount added directly to PER-CHECK
+  // withholding, never folded into adjustedAnnualWage before the bracket
+  // lookup (that would incorrectly annualize a per-check amount) and never
+  // applied to marginalRate (which feeds the bonus supplemental-rate path
+  // below — that's a flat rate, not the per-check W-4 mechanism).
+  const federalWithholding =
+    safeDivide(annualTax, periodsPerYear, 0)! + input.additionalFedWithholding;
 
   // ── Step 4: FICA taxes ──
   // Social Security: 6.2% (from input) on FICA base, capped at wage base (e.g. $176,100/year).

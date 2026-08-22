@@ -13,6 +13,7 @@ export { PayScheduleInfo } from "./pay-schedule-info";
 export { PayStub } from "./pay-stub";
 export { PersonPaycheck } from "./person-paycheck";
 export { SectionHeader } from "./section-header";
+export { TaxWithholdingSection } from "./tax-withholding-section";
 export { SSCapIndicator } from "./ss-cap-indicator";
 export { alignDeductionRows } from "./utils";
 export { WATERFALL_CATEGORIES, SUB_TYPE_OPTIONS } from "./types";

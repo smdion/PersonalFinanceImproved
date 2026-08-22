@@ -53,16 +53,31 @@ const MOVED_TO_SALARY_PROFILE = new Set([
   "monthsInBonusYear",
 ]);
 
+/**
+ * Presence-based active-field filter shared by jobs and deductions: an
+ * active field applies only if it names a real column on the record AND
+ * isn't in the caller's exclude set. Presence-based (`field in record`),
+ * never truthiness-based — an explicit `0` or `false` active-field value
+ * must still apply, not be treated as "not set".
+ */
+function pickEntityActiveFields(
+  activeFields: Record<string, unknown>,
+  record: object,
+  excludeSet: Set<string> = new Set(),
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(activeFields).filter(
+      ([field]) => field in record && !excludeSet.has(field),
+    ),
+  );
+}
+
 /** Job active fields that are real columns AND still owned by this axis. */
 function pickJobActiveFields(
   activeFields: Record<string, unknown>,
   job: object,
 ): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(activeFields).filter(
-      ([field]) => field in job && !MOVED_TO_SALARY_PROFILE.has(field),
-    ),
-  );
+  return pickEntityActiveFields(activeFields, job, MOVED_TO_SALARY_PROFILE);
 }
 
 /**
@@ -163,12 +178,21 @@ export async function applyContributionAccountEdit(
   const method =
     (accountFields.contributionMethod as string) ?? "fixed_monthly";
 
-  const activeJobs = await db
+  const rawActiveJobs = await db
     .select()
     .from(schema.jobs)
     .where(
       and(isNull(schema.jobs.endDate), eq(schema.jobs.isSpeculative, false)),
     );
+  // Patch against THIS edit's own profile (already fetched above), not the
+  // globally-active/budget-pinned one — using the forward path's profile
+  // here would resolve periodsPerYear against the wrong profile whenever
+  // the edit target isn't the globally-active profile, reproducing the
+  // exact bug this fix exists to close.
+  const activeJobs = applyJobActiveFields(
+    rawActiveJobs,
+    (activeFields.jobs ?? {}) as Record<string, Record<string, unknown>>,
+  );
   const periodsPerYear = resolveJoblessPeriodsPerYear(activeJobs);
 
   const newValue = roundToCents(
@@ -1068,6 +1092,31 @@ export function applyJobActiveFields(
 }
 
 /**
+ * Apply a contribution profile's deduction active fields to raw DB
+ * deduction rows. Deductions have a real, live `amountPerPeriod` on the
+ * row (unlike contribution accounts) — this only ever *patches* that value
+ * when a profile has one set (including an explicit `0`) and leaves the
+ * live default in place otherwise. Unlike applyContribActiveFields, this
+ * never drops a row: an unset deduction is still a real deduction, just at
+ * its live default amount.
+ *
+ * deductionActiveFields shape: { "deductionId": { amountPerPeriod: value } }
+ */
+export function applyDeductionActiveFields(
+  deductions: (typeof schema.paycheckDeductions.$inferSelect)[],
+  deductionActiveFields: Record<string, Record<string, unknown>>,
+): (typeof schema.paycheckDeductions.$inferSelect)[] {
+  return deductions.map((deduction) => {
+    const activeFields = deductionActiveFields[String(deduction.id)];
+    if (!activeFields) return deduction;
+    return {
+      ...deduction,
+      ...pickEntityActiveFields(activeFields, deduction),
+    };
+  });
+}
+
+/**
  * Fetch a contribution profile by ID, returning null when no profile is
  * selected (null/undefined id) or the row no longer exists.
  *
@@ -1094,24 +1143,34 @@ export async function fetchContributionProfile(
 
 /**
  * Load a contribution profile by ID and apply its active fields to raw DB
- * rows. Returns modified contribs + jobs — or the originals if no profile
- * is selected / the row is gone.
+ * rows. Returns modified contribs + jobs (+ deductions, when
+ * `allDeductions` is passed) — or the originals if no profile is selected /
+ * the row is gone.
  *
- * Purely contribution-account and job-field active fields. Salary is NOT
- * part of a Contribution Profile — call loadAndApplySalaryProfile
- * (./salary.ts) for that axis, independently.
+ * `allDeductions` is optional and deliberately not threaded through
+ * everywhere this function is called (budget.ts, build-engine-payload.ts
+ * don't need deduction data) — only the paycheck router path passes it.
+ * See the Contribution Profile plan's Ground Rules: widening this
+ * function's deduction support is scoped to its actual consumer, not
+ * `resolveProfile` generally.
+ *
+ * Purely contribution-account, job-field, and deduction active fields.
+ * Salary is NOT part of a Contribution Profile — call
+ * loadAndApplySalaryProfile (./salary.ts) for that axis, independently.
  */
 export async function loadAndApplyContribProfile(
   db: Db,
   profileId: number | undefined | null,
   allContribs: (typeof schema.contributionAccounts.$inferSelect)[],
   allJobs: (typeof schema.jobs.$inferSelect)[],
+  allDeductions?: (typeof schema.paycheckDeductions.$inferSelect)[],
 ): Promise<{
   contribs: ContribRowWithActiveFields[];
   jobs: (typeof schema.jobs.$inferSelect)[];
+  deductions: (typeof schema.paycheckDeductions.$inferSelect)[];
 }> {
   const profile = await fetchContributionProfile(db, profileId);
-  return applyContribProfileRow(profile, allContribs, allJobs);
+  return applyContribProfileRow(profile, allContribs, allJobs, allDeductions);
 }
 
 /**
@@ -1125,17 +1184,21 @@ export function applyContribProfileRow(
   profile: typeof schema.contributionProfiles.$inferSelect | null | undefined,
   allContribs: (typeof schema.contributionAccounts.$inferSelect)[],
   allJobs: (typeof schema.jobs.$inferSelect)[],
+  allDeductions?: (typeof schema.paycheckDeductions.$inferSelect)[],
 ): {
   contribs: ContribRowWithActiveFields[];
   jobs: (typeof schema.jobs.$inferSelect)[];
+  deductions: (typeof schema.paycheckDeductions.$inferSelect)[];
 } {
   if (!profile) {
     // No profile at all — nothing resolves (same "no fallback" rule as a
     // profile with empty active fields; there is no longer a live account
-    // value to fall back to).
+    // value to fall back to). Deductions still fall back to their live
+    // default — they carry a real base value, unlike contribution accounts.
     return {
       contribs: applyContribActiveFields(allContribs, {}),
       jobs: allJobs,
+      deductions: allDeductions ?? [],
     };
   }
   const activeFieldsRoot = profile.contributionActiveFields as Record<
@@ -1147,7 +1210,13 @@ export function applyContribProfileRow(
     activeFieldsRoot.contributionAccounts ?? {},
   );
   const jobs = applyJobActiveFields(allJobs, activeFieldsRoot.jobs ?? {});
-  return { contribs, jobs };
+  const deductions = allDeductions
+    ? applyDeductionActiveFields(
+        allDeductions,
+        activeFieldsRoot.deductions ?? {},
+      )
+    : [];
+  return { contribs, jobs, deductions };
 }
 
 // ---------------------------------------------------------------------------

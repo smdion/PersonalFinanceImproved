@@ -1516,3 +1516,129 @@ describe("retirement router -- all optional inputs combined", () => {
     expect(r.warnings).toBeInstanceOf(Array);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Contribution Profile plan: computeContribTotals must use the per-arm
+// resolved (profile-patched) jobs, not the outer raw activeJobs, for
+// fixed_per_period annualization — a per-arm payPeriod active field
+// previously had no effect on the relocation comparison's contribution math.
+// ---------------------------------------------------------------------------
+
+describe("computeRelocationAnalysis -- per-arm payPeriod resolution", () => {
+  it("a payPeriod active field on the relocation-arm profile changes fixed_per_period annualization", async () => {
+    const { caller, db, cleanup } = await createTestCaller();
+    try {
+      const personId = await seedPerson(db, "SchedulePerson", "1990-01-01");
+      await markPrimary(db, personId);
+      await seedRetirementSettings(db, personId);
+      const jobId = seedJob(db, personId, { payPeriod: "biweekly" });
+
+      const currentProfileId = await insertBudgetProfile(db, "Budget");
+      await insertBudgetItem(
+        db,
+        currentProfileId,
+        "Essentials",
+        "Rent",
+        [2000],
+      );
+
+      const perfAcctId = seedPerformanceAccount(db, {
+        parentCategory: "Retirement",
+        accountType: "401k",
+        ownerPersonId: personId,
+      });
+      seedSnapshot(db, "2025-06-15", [
+        {
+          performanceAccountId: perfAcctId,
+          amount: "50000",
+          taxType: "preTax",
+        },
+      ]);
+
+      const schema = await getSchema();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+      const acct = await (db as any)
+        .insert(schema.contributionAccounts)
+        .values({
+          personId,
+          jobId,
+          accountType: "401k",
+          parentCategory: "Retirement",
+          taxTreatment: "pre_tax",
+          employerMatchType: "none",
+          isActive: true,
+          performanceAccountId: perfAcctId,
+        })
+        .returning({ id: schema.contributionAccounts.id })
+        .get();
+
+      // Baseline arm: fixed_per_period $100, no payPeriod active field —
+      // annualizes against the job's real biweekly schedule (26 periods).
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+      const baselineProfile = await (db as any)
+        .insert(schema.contributionProfiles)
+        .values({
+          name: "Baseline Schedule",
+          contributionActiveFields: {
+            contributionAccounts: {
+              [String(acct.id)]: {
+                contributionValue: "100",
+                contributionMethod: "fixed_per_period",
+              },
+            },
+            jobs: {},
+          },
+        })
+        .returning({ id: schema.contributionProfiles.id })
+        .get();
+
+      // Comparison arm: same $100 fixed_per_period, but this profile also
+      // sets the job's payPeriod (+ coupled payWeek/anchorPayDate) to
+      // weekly (52 periods) — annualization should follow THIS arm's
+      // resolved schedule, not the outer raw job.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+      const weeklyProfile = await (db as any)
+        .insert(schema.contributionProfiles)
+        .values({
+          name: "Weekly Schedule",
+          contributionActiveFields: {
+            contributionAccounts: {
+              [String(acct.id)]: {
+                contributionValue: "100",
+                contributionMethod: "fixed_per_period",
+              },
+            },
+            jobs: {
+              [String(jobId)]: {
+                payPeriod: "weekly",
+                payWeek: "na",
+                anchorPayDate: "2026-01-02",
+              },
+            },
+          },
+        })
+        .returning({ id: schema.contributionProfiles.id })
+        .get();
+
+      const result = await caller.retirement.computeRelocationAnalysis({
+        currentProfileId,
+        currentBudgetColumn: 0,
+        relocationProfileId: currentProfileId,
+        relocationBudgetColumn: 0,
+        currentContributionProfileId: baselineProfile.id,
+        relocationContributionProfileId: weeklyProfile.id,
+      });
+
+      const current = (result as Record<string, unknown>)
+        .currentContribProfile as { annualContributions: number };
+      const relocation = (result as Record<string, unknown>)
+        .relocationContribProfile as { annualContributions: number };
+
+      // $100 x 26 (biweekly) vs $100 x 52 (weekly).
+      expect(current.annualContributions).toBeCloseTo(2600, 0);
+      expect(relocation.annualContributions).toBeCloseTo(5200, 0);
+    } finally {
+      cleanup();
+    }
+  });
+});

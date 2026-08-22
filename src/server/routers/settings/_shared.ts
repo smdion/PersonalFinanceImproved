@@ -1,20 +1,16 @@
-import { z } from "zod/v4";
 import { eq, and } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { db as appDb } from "@/lib/db";
 import { toNumber } from "@/server/helpers";
 import { settingValueSchema } from "@/lib/db/json-schemas";
+import { zDecimal } from "@/lib/config/enum-values";
 
 /** Accepts both the main db instance and transaction handles. */
 export type DbType =
   typeof appDb | Parameters<Parameters<typeof appDb.transaction>[0]>[0];
 
-/** Validates a string represents a valid decimal number. */
-export const zDecimal = z
-  .string()
-  .refine((v) => !isNaN(Number(v)) && v.trim() !== "", {
-    message: "Must be a valid number",
-  });
+/** Re-export the centralized decimal-string validator for backward compatibility. */
+export { zDecimal };
 
 /** Recompute annual_performance category rollups from account_performance for a given year. */
 export async function recomputeAnnualRollups(db: DbType, year: number) {

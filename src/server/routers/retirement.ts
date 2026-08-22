@@ -380,13 +380,20 @@ export const retirementRouter = createTRPCRouter({
       const computeContribTotals = (
         contribs: ContribRowWithActiveFields[],
         salaries: typeof jobSalaries,
+        // Profile-patched jobs (resolved.activeJobs), NOT the outer raw
+        // activeJobs closed over above — a per-arm profile-set payPeriod
+        // must affect fixed_per_period annualization here, since different
+        // arms can legitimately represent different real jobs/offers with
+        // different pay schedules. Defaults to the raw jobs only for the
+        // (non-comparison) live-data callers that never resolve a profile.
+        jobsForPeriods: { id: number; payPeriod: string }[] = activeJobs,
       ) => {
         const salaryById = new Map<number, number>();
         const annualById = new Map<number, number>();
         for (const c of contribs) {
           const cv = Number(c.contributionValue);
           const js = salaries.find((x) => x.job.id === c.jobId);
-          const job = activeJobs.find((j) => j.id === c.jobId);
+          const job = jobsForPeriods.find((j) => j.id === c.jobId);
           const salary = js?.salary ?? 0;
           const periods = getPeriodsPerYear(job?.payPeriod ?? "biweekly");
           salaryById.set(c.id, salary);
@@ -455,6 +462,7 @@ export const retirementRouter = createTRPCRouter({
         const totals = computeContribTotals(
           resolved.activeContribs,
           resolved.jobSalaries,
+          resolved.activeJobs,
         );
         return {
           combinedSalary: resolvedCombinedSalary,

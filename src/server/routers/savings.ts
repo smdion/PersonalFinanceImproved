@@ -35,6 +35,8 @@ import {
   getActiveBudgetProfile,
   resolveTargetBudgetProfile,
   applyContribActiveFields,
+  applyJobActiveFields,
+  applyDeductionActiveFields,
   fetchContributionProfile,
   buildPaycheckInputForJob,
 } from "@/server/helpers";
@@ -60,10 +62,21 @@ import type { BudgetCategoryGroup, BudgetTransaction } from "@/lib/budget-api";
  * routing rules or growth rates are saved, so the value always reflects the
  * actual paycheck calculation rather than a client-supplied number.
  *
- * Intentionally does not apply a salary active-value map — this value gets
- * persisted as a recorded fact, not shown as "what your finances look like
- * under the active Plan." See applyActiveSalary's docblock (server/helpers/salary.ts)
- * for the live-vs-active rule.
+ * Intentionally does not apply a salary active-value map (Plan/session pin)
+ * — this value gets persisted as a recorded fact, not shown as "what your
+ * finances look like under the active Plan." See applyActiveSalary's
+ * docblock (server/helpers/salary.ts) for the live-vs-active rule. Salary
+ * and Contribution PROFILE resolution (as opposed to a Plan/session pin) DO
+ * apply here, against the globally-active profile — contribution accounts,
+ * job tax-inputs (w4FilingStatus, w4Box2cChecked, additionalFedWithholding,
+ * payPeriod, payWeek, anchorPayDate), and deductions all resolve the same
+ * way, with no field-level carve-out (see the Contribution Profile plan's
+ * governing principle). payPeriod/payWeek/anchorPayDate are the denominator
+ * for every per-period value this function computes, so
+ * `extraPaycheckRouting.save`/`saveGrowth` reject the save outright if the
+ * globally-active profile's schedule fields don't match this job's real
+ * ones, rather than persisting an internally incoherent number — see those
+ * mutations.
  */
 async function computeJobNetPayPerCheck(
   db: DbType,
@@ -84,7 +97,7 @@ async function computeJobNetPayPerCheck(
 
   const [
     allBrackets,
-    jobDeductions,
+    rawJobDeductions,
     rawJobContribs,
     rawPersonalContribs,
     allLimits,
@@ -134,12 +147,14 @@ async function computeJobNetPayPerCheck(
   const contribProfile = Number.isFinite(activeContribProfileId)
     ? await fetchContributionProfile(db, activeContribProfileId)
     : null;
+  const contribActiveFieldsRoot = (contribProfile?.contributionActiveFields ??
+    {}) as {
+    contributionAccounts?: Record<string, Record<string, unknown>>;
+    jobs?: Record<string, Record<string, unknown>>;
+    deductions?: Record<string, Record<string, unknown>>;
+  };
   const accountActiveFields =
-    (
-      (contribProfile?.contributionActiveFields ?? {}) as {
-        contributionAccounts?: Record<string, Record<string, unknown>>;
-      }
-    ).contributionAccounts ?? {};
+    contribActiveFieldsRoot.contributionAccounts ?? {};
   const jobContribs = applyContribActiveFields(
     rawJobContribs,
     accountActiveFields,
@@ -148,6 +163,46 @@ async function computeJobNetPayPerCheck(
     rawPersonalContribs,
     accountActiveFields,
   );
+
+  // Job tax-inputs (filing status, withholding, schedule) and deductions
+  // resolve against the same globally-active profile, exactly like
+  // contribution accounts above — no field-level carve-out (see this
+  // function's docblock). This is what makes payPeriod/w4FilingStatus/
+  // deductions actually respond to a Contribution Profile switch on the
+  // Paycheck page and in this persisted snapshot alike.
+  const resolvedJobs = applyJobActiveFields(
+    [job],
+    contribActiveFieldsRoot.jobs ?? {},
+  );
+  const resolvedJob = resolvedJobs[0]!;
+  const jobDeductions = applyDeductionActiveFields(
+    rawJobDeductions,
+    contribActiveFieldsRoot.deductions ?? {},
+  );
+
+  // Guard against persisting an internally-incoherent baseNetPayPerCheck:
+  // payPeriod/payWeek/anchorPayDate are the denominator for every
+  // per-period value this function computes, and extra-paycheck routing
+  // always materializes real future transactions against the job's REAL
+  // schedule (extra-paycheck-materializer.ts reads job.payPeriod/
+  // anchorPayDate directly off the job row, never from this snapshot). If
+  // the globally-active profile's schedule for this job doesn't match
+  // reality, block the save rather than silently persist a per-check
+  // amount computed under a hypothetical cadence. This function is only
+  // ever called from extraPaycheckRouting.save/saveGrowth — both writes
+  // that persist baseNetPayPerCheck — so the check belongs here, once.
+  if (
+    resolvedJob.payPeriod !== job.payPeriod ||
+    resolvedJob.payWeek !== job.payWeek ||
+    resolvedJob.anchorPayDate !== job.anchorPayDate
+  ) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: contribProfile
+        ? `Cannot save extra-paycheck routing: profile "${contribProfile.name}" sets a pay schedule that doesn't match this job's actual pay period/anchor date. Switch the active profile to one matching this job's real schedule, or update the job's real pay period/anchor date, before saving.`
+        : "Cannot save extra-paycheck routing: this job's pay schedule is inconsistent.",
+    });
+  }
 
   const limitsMap = new Map<string, number>();
   const limitsRecord: Record<string, number> = {};
@@ -159,13 +214,15 @@ async function computeJobNetPayPerCheck(
 
   const bracketRow = allBrackets.find(
     (b) =>
-      b.filingStatus === job.w4FilingStatus &&
-      b.w4Checkbox === job.w4Box2cChecked,
+      b.filingStatus === resolvedJob.w4FilingStatus &&
+      b.w4Checkbox === resolvedJob.w4Box2cChecked,
   );
   if (!bracketRow)
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: "No tax bracket data found for this job's filing status",
+      message: contribProfile
+        ? `No tax bracket data found for the filing status set by profile "${contribProfile.name}" for this job.`
+        : "No tax bracket data found for this job's filing status.",
     });
 
   // A job has no salary/bonus of its own — resolve against the globally-
@@ -175,7 +232,7 @@ async function computeJobNetPayPerCheck(
   const comp = resolveCompensation(salaryProfileActiveMap, job.id);
   const currentSalary = comp.salary;
   const bonusTerms = comp.terms;
-  const periodsPerYear = getPeriodsPerYear(job.payPeriod);
+  const periodsPerYear = getPeriodsPerYear(resolvedJob.payPeriod);
   const taxBrackets = buildBracketInput(bracketRow, limitsMap);
 
   const deductions: DeductionLine[] = jobDeductions.map((d) => ({
@@ -194,8 +251,10 @@ async function computeJobNetPayPerCheck(
 
   // Intentionally does not pass a bonusOverride — this value gets persisted
   // as a recorded fact, not a live/pinned-actual view. See this function's
-  // own docblock.
-  const paycheckInput = buildPaycheckInputForJob(job, {
+  // own docblock. Uses resolvedJob (profile-patched), not the raw job, so
+  // payPeriod/payWeek/anchorPayDate/w4* here match whatever this same
+  // function just resolved contributions/deductions against.
+  const paycheckInput = buildPaycheckInputForJob(resolvedJob, {
     salary: currentSalary,
     bonusTerms,
     bonusOverride: null,

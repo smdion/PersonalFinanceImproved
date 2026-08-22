@@ -7,6 +7,7 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { PayStub } from "./pay-stub";
 import { AnnualSummary } from "./annual-summary";
 import { BonusSection } from "./bonus-section";
+import { TaxWithholdingSection } from "./tax-withholding-section";
 import { ContributionsSection } from "./contributions-section";
 import { AddDeductionForm } from "./add-deduction-form";
 import { SSCapIndicator } from "./ss-cap-indicator";
@@ -99,6 +100,7 @@ export function PersonPaycheck({
     personId: number;
     w4FilingStatus: string;
     w4Box2cChecked: boolean;
+    additionalFedWithholding: string;
     startDate: string;
     anchorPayDate?: string | null;
     budgetPeriodsPerMonth?: string | null;
@@ -224,6 +226,11 @@ export function PersonPaycheck({
               paycheck={paycheck}
               mode={mode}
               blendedAnnual={blendedAnnual}
+            />
+            <TaxWithholdingSection
+              job={job}
+              onUpdateJob={onUpdateJob}
+              readOnly={readOnly}
             />
             <BonusSection
               paycheck={paycheck}

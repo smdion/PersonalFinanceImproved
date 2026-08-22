@@ -40,6 +40,7 @@ export type PaycheckInput = {
   payWeek: "even" | "odd" | "na";
   anchorPayDate: Date; // a known payday for this job, used to derive extra paycheck months
   supplementalTaxRate: number; // IRS supplemental withholding rate (e.g. 0.22)
+  additionalFedWithholding: number; // W-4 Line 4c — flat extra $ added to PER-CHECK federal withholding after bracket withholding, never annualized and never applied to the supplemental bonus rate
   contributionAccounts: ContributionAccountInput[];
   deductions: DeductionLine[];
   taxBrackets: TaxBracketInput;

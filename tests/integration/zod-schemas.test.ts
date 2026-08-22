@@ -427,7 +427,11 @@ describe("contributionActiveFieldsSchema", () => {
     const result = contributionActiveFieldsSchema.safeParse(undefined);
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data).toEqual({ contributionAccounts: {}, jobs: {} });
+      expect(result.data).toEqual({
+        contributionAccounts: {},
+        jobs: {},
+        deductions: {},
+      });
     }
   });
 

@@ -90,12 +90,18 @@ export default function PaycheckPage() {
     },
   });
 
-  // Helper: update a field in the active profile's active fields
+  // Helper: update one or more fields in the active profile's active
+  // fields, in a single atomic write. Multi-field form exists because
+  // payPeriod/payWeek/anchorPayDate are a coupled schedule unit the write
+  // schema requires to be set together (or none) — editing just one of
+  // them via the single-field form would transiently violate that and be
+  // rejected. Callers editing an independent field can keep passing a
+  // single field/value pair.
   function updateProfileActiveField(
-    entityType: "contributionAccounts" | "jobs",
+    entityType: "contributionAccounts" | "jobs" | "deductions",
     entityId: number,
-    field: string,
-    value: unknown,
+    fieldOrFields: string | Record<string, unknown>,
+    value?: unknown,
   ) {
     if (!activeProfile) return;
     const existing = activeProfile.contributionActiveFields as Record<
@@ -103,9 +109,13 @@ export default function PaycheckPage() {
       Record<string, Record<string, unknown>>
     >;
     const entityActiveFields = { ...(existing[entityType] ?? {}) };
+    const patch =
+      typeof fieldOrFields === "string"
+        ? { [fieldOrFields]: value }
+        : fieldOrFields;
     entityActiveFields[String(entityId)] = {
       ...(entityActiveFields[String(entityId)] ?? {}),
-      [field]: value,
+      ...patch,
     };
     updateProfile.mutate({
       id: activeProfile.id,
@@ -121,7 +131,7 @@ export default function PaycheckPage() {
    * Returns true if handled by scenario or profile mode; false means caller should do a direct DB write.
    */
   function writeOverride(
-    entityType: "contributionAccounts" | "jobs",
+    entityType: "contributionAccounts" | "jobs" | "deductions",
     entityId: number,
     field: string,
     value: string | number | boolean | null,
@@ -499,14 +509,49 @@ export default function PaycheckPage() {
                             return;
                           }
                           // Profile mode: the remaining bonus-adjacent fields
-                          // (still real job columns) go to Contribution Profile
-                          // overrides.
+                          // (still real job columns), tax-input fields, and
+                          // the coupled payPeriod/payWeek/anchorPayDate
+                          // schedule unit all go to Contribution Profile
+                          // active fields — same mechanism, no field-level
+                          // carve-out (see the Contribution Profile plan's
+                          // governing principle). employerName was already
+                          // in the write-side schema allowlist but missing
+                          // here — a pre-existing gap, fixed in the same pass.
                           const contribProfileBonusFields = [
                             "bonusMonth",
                             "bonusDayOfMonth",
                             "include401kInBonus",
                             "includeBonusInContributions",
+                            "employerName",
+                            "w4FilingStatus",
+                            "w4Box2cChecked",
+                            "additionalFedWithholding",
+                            // payPeriod/payWeek/anchorPayDate are handled
+                            // above (coupled-triplet special case), not here.
                           ];
+                          // payPeriod/payWeek/anchorPayDate are a coupled
+                          // schedule unit the write schema requires set
+                          // together — write all three atomically, using
+                          // this job's currently-resolved values (already
+                          // live-default-or-active-profile, from `job`) for
+                          // the two fields not being edited right now.
+                          const schedulePeriodFields = [
+                            "payPeriod",
+                            "payWeek",
+                            "anchorPayDate",
+                          ];
+                          if (
+                            isProfileMode &&
+                            schedulePeriodFields.includes(field)
+                          ) {
+                            updateProfileActiveField("jobs", job.id, {
+                              payPeriod: job.payPeriod,
+                              payWeek: job.payWeek,
+                              anchorPayDate: job.anchorPayDate ?? undefined,
+                              [field]: parsed,
+                            });
+                            return;
+                          }
                           if (
                             isProfileMode &&
                             contribProfileBonusFields.includes(field)
@@ -546,7 +591,18 @@ export default function PaycheckPage() {
                           field: string,
                           value: string,
                         ) => {
-                          if (isInScenario) {
+                          // amountPerPeriod is the only deduction field a
+                          // Contribution Profile can set as an active field
+                          // (Part B scope) — route it through the same
+                          // scenario-or-profile dispatcher contribution
+                          // accounts already use. Structural fields
+                          // (deductionName/isPretax/ficaExempt) stay on the
+                          // old scenario-or-raw path — they're never
+                          // profile-settable.
+                          if (field === "amountPerPeriod") {
+                            if (writeOverride("deductions", id, field, value))
+                              return;
+                          } else if (isInScenario) {
                             setScenarioOverride("deductions", id, field, value);
                             return;
                           }
